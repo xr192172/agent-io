@@ -1,9 +1,13 @@
 /**
  * explore_code: 代码理解统一入口
  *
- * 将 search / diff_impact / arch_layer / guided_tour / check_monolith / derive_split /
- * derive_chain / derive_anim_flow / derive_algorithm / inject_replay / run_simulation /
- * reset_simulation / watch_project 工具聚合为单工具，通过 action 分发。
+ * 将 search / read / arch_layer / guided_tour / check_monolith / derive_mind_map /
+ * run_simulation / reset_simulation / watch 工具聚合为单工具，通过 action 分发。
+ * ★ 2026-10-21：删掉 6 个「别处已能回答、实测成功率 0-3%」的 action（diff_impact /
+ *   inject_replay / derive_split / derive_chain / derive_anim_flow / derive_algorithm）：
+ *   影响面 → `impact_analysis`；注入回放/回放观测 → `observe_instrument` + `observe_trace`；
+ *   拆分/调用链 → `feature_line` + `structure_gap`。实现文件**保留**（derive_chain / derive_algorithm
+ *   仍被 reconcile_chain / serve 调用），只是不再从这里分发。
  * （import_project 已拆分为独立工具，不再经此分发。）
  *
  * 设计动机：
@@ -25,18 +29,12 @@ import { assertExploreArgKeys, assertExploreRequired } from './explore_arg_spec.
 import { semanticSearch } from '../llm/semantic_search.js';
 import { ensureProjectIndex, ensureIndexAroundSeed } from '../../../infrastructure/index/index_freshness.js';
 import { scheduleBackfill, backfillState, backfillSummary } from '../../../infrastructure/index/index_backfill.js';
-import { diffImpact } from '../../../infrastructure/analysis/impact/diff_impact.js';
 import { archLayer } from '../../../infrastructure/analysis/structure/arch_layer.js';
 import type { LayerDef } from '../../../infrastructure/analysis/structure/layer_detect.js';
 import { guidedTour } from '../../../infrastructure/index/guided_tour.js';
 import { checkMonolith } from '../../../infrastructure/analysis/structure/monolith.js';
-import { injectReplay } from '../../../infrastructure/render/inject_replay.js';
 import { runSimulation, resetSimulation } from '../../design/lifecycle/simulation.js';
 import { dispatchWatch } from '../../dispatch.js';
-import { deriveAlgorithm } from '../../design/derive/derive_algorithm.js';
-import { deriveDetailChain } from '../../design/derive/derive_chain.js';
-import { deriveSplit, type DeriveSplitInput } from '../../design/derive/derive_split.js';
-import { deriveAnimFlow } from '../view/derive_anim_flow.js';
 import { deriveMindMap } from '../view/derive_mind_map.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -47,16 +45,10 @@ import { matchSymbols, describeSymbol } from '../../refactor/edit/edit_code.js';
 export const EXPLORE_ACTIONS = [
   'search',
   'read',
-  'diff_impact',
   'arch_layer',
   'guided_tour',
   'check_monolith',
-  'derive_split',
-  'derive_chain',
-  'derive_anim_flow',
-  'derive_algorithm',
   'derive_mind_map',
-  'inject_replay',
   'run_simulation',
   'reset_simulation',
   'watch',
@@ -78,9 +70,8 @@ function errMessage(err: unknown): string {
  *   · **不算"说谎"**：真实文本经 `---DATA---` 通道**确实到达模型**（在 `data` 里）。
  *     它属"宣告了却没实现"那一族（G7）吗？**不属** —— 那些 action 是真实现了的。
  *   · 唯一代价是**可读性**：模型若不读 `data`，就只看到「已完成」三个字。
- *   · ★ **改法只有"全改"**：本文件 `toResult(r, true)` 共 **10 处**调用点
- *     （`diff_impact` / `arch_layer` / `check_monolith` / `derive_split` / `derive_chain` /
- *      `derive_anim_flow` / `derive_algorithm` / `derive_mind_map` / `inject_replay` / `watch`），
+ *   · ★ **改法只有"全改"**：本文件 `toResult(r, true)` 共 **4 处**调用点（2026-10-21 删 6 个
+ *     action 后：`arch_layer` / `check_monolith` / `derive_mind_map` / `watch`），
  *     而每处的 `r` 结构**各不相同**（**没有共同摘要字段**）⇒ 只能逐处挑一句话提上来。
  *     **改一半 = 同一件事两套口径**（本仓头号病根）。
  *   · 更通用的落点在 `invokeTool`（唯一入口，把 data 的摘要提到外层）—— 但那会动**全部 59 个工具**
@@ -201,20 +192,6 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
         : '';
       return { message: r.message + tileNote + skipNote, data };
     }
-    case 'diff_impact': {
-      // ★ 零前置：影响面分析依赖符号边（call/type_ref/import）。空库先就地冷启建索引，
-      // 而不是让调用方先去跑 import_project（旧行为：返回"缓存中没有任何边，请先 import_project"）。
-      const impactRoot = path.resolve(requireStr(args, 'project_dir'));
-      await ensureProjectIndex(impactRoot);
-      const r = await diffImpact({
-        project_dir: requireStr(args, 'project_dir'),
-        feature: requireStr(args, 'feature'),
-        changed: (optionalArr(args, 'changed', 'string[]') as string[]) ?? [],
-        direction: args['direction'] as 'callers' | 'callees' | 'both' | undefined,
-        max_depth: args['max_depth'] as number | undefined,
-      });
-      return toResult(r, true);
-    }
     case 'arch_layer': {
       const r = await archLayer({
         feature: requireStr(args, 'feature'),
@@ -248,88 +225,12 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
       });
       return toResult(r, true);
     }
-    case 'derive_split': {
-      // ★ 2026-10-04（T17）：此前是纯空壳 —— 把 project_dir 当 feature 传、reports 恒传 `[]`，
-      //   buildSplitPreviewDsl 恒产**空几何**。现接上同名真实现 `derive_split.ts#deriveSplit`
-      //   （dry_run 默认 true = 只出草稿不落盘；dry_run=false 才写文件并跑编译/测试级验收）。
-      const r = await deriveSplit({
-        project_dir: requireStr(args, 'project_dir'),
-        target_file: requireStr(args, 'target_file'),
-        symbols: (optionalArr(args, 'symbols', 'string[]') as string[]) ?? [],
-        new_file: optionalStr(args, 'new_file'),
-        dry_run: optionalBool(args, 'dry_run'),
-        verify_compile: optionalBool(args, 'verify_compile'),
-        verify_test: optionalBool(args, 'verify_test'),
-        re_export_extracted: optionalBool(args, 're_export_extracted'),
-        subsplit: args['subsplit'] as DeriveSplitInput['subsplit'],
-      });
-      return toResult(r, true);
-    }
-    case 'derive_chain': {
-      // ★ 2026-10-04（T17）：此前是纯空壳 —— 只调辅助函数 `buildCallGraph([],[])`，恒返回空 Map。
-      //   现接上主函数 `derive_chain.ts#deriveDetailChain`（detail 变形链：函数骨架 + 调用图 → DSL）。
-      const r = await deriveDetailChain({
-        feature: requireStr(args, 'feature'),
-        node_id: requireStr(args, 'node_id'),
-        source_path: optionalStr(args, 'source_path'),
-        project_root: optionalStr(args, 'project_root'),
-        entry: optionalStr(args, 'entry'),
-        max_steps: optionalNum(args, 'max_steps'),
-        max_branches: optionalNum(args, 'max_branches'),
-        max_cross: optionalNum(args, 'max_cross'),
-      });
-      return toResult(r, true);
-    }
-    case 'derive_anim_flow': {
-      // ★★ 2026-10-01（T11 ③，补齐能力）：**此前这里是纯空壳** ——
-      //   只回显 `project_dir` 却宣告"异步 action 已完成"，**对 agent 说谎**（G7 门 §14.1 的铁证）。
-      //   本 action 的职责见 `derive_anim_flow.ts` 头注释：
-      //   **路线图序 14 —— L3 条件分支 + L4 函数绑定的自动生成层**：
-      //   引擎侧（animation_engine / anim_core）**已实现** L3/L4/L4.5，但 `animations_v2.flows`
-      //   原先只能手写；本实现把已提取的**调用链 + CFG 自动转成 flows**，让那些能力可被自动驱动。
-      //   ⇒ 现在真的调它。★ G7 门会复算"声明的实现符号 == case 里真的调了它"，所以下面这行不能少。
-      const r = await deriveAnimFlow({
-        feature: requireStr(args, 'feature'),
-        // 主干文件节点 id（semantic.files[].id）：flows 的 handler.file_id 与 detail 节点 host 都用它
-        node_id: requireStr(args, 'node_id'),
-        source_path: optionalStr(args, 'source_path'),
-        project_root: optionalStr(args, 'project_root'),
-        entry: optionalStr(args, 'entry'),
-        max_steps: optionalNum(args, 'max_steps'),
-        interval: optionalNum(args, 'interval'),
-        max_cfg_branches: optionalNum(args, 'max_cfg_branches'),
-      });
-      return toResult(r, true);
-    }
-    case 'derive_algorithm': {
-      // ★ 2026-10-04（T17）：此前是纯空壳 —— 只回显 `{project_dir}`，从不调用 deriveAlgorithm。
-      //   现接上同名真实现 `derive_algorithm.ts#deriveAlgorithm`（单函数体 → CFG 算法图，写回 DSL detail 层）。
-      const r = await deriveAlgorithm({
-        feature: requireStr(args, 'feature'),
-        node_id: requireStr(args, 'node_id'),
-        function: requireStr(args, 'function'),
-        source_path: optionalStr(args, 'source_path'),
-        project_root: optionalStr(args, 'project_root'),
-        max_depth: optionalNum(args, 'max_depth'),
-      });
-      return toResult(r, true);
-    }
     case 'derive_mind_map': {
       const r = await deriveMindMap({
         feature: requireStr(args, 'feature'),
         gen_descriptions: optionalBool(args, 'gen_descriptions'),
         max_files_per_community: optionalNum(args, 'max_files_per_community'),
         output_path: optionalStr(args, 'output_path'),
-      });
-      return toResult(r, true);
-    }
-    case 'inject_replay': {
-      const r = await injectReplay({
-        feature: requireStr(args, 'feature'),
-        flow_id: requireStr(args, 'flow_id'),
-        inject: args['inject'],
-        preset: args['preset'] as string | undefined,
-        list_presets: args['list_presets'] as boolean | undefined,
       });
       return toResult(r, true);
     }

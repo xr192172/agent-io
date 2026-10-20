@@ -234,12 +234,24 @@ export function qualifierMemberLines(src: string, qualifier: string): Array<{ li
  *  无分号风格的项目里 `/import[^;]*?;/` 会从第一个 import 贪婪吞到远处某个 `;`，
  *  把夹在中间的**使用行**一起抹掉（曾把 pet 渲染器 `image: ImageRenderer` 的活跃
  *  消费误判成死、误标下线候选）。以 `from` 定界则只在 import 语句自身范围内剔除，
- *  绝不越过模块说明符吞掉后续使用行。副作用导入 `import 'x'`（无 from）与动态
- *  `import(...)`（无 from）不匹配 → 保守保留（安全方向）。 */
+ *  绝不越过模块说明符吞掉后续使用行。
+ *  ★ 2026-10-21 实测修正：副作用导入 `import 'x'`（无 from）**并非"不匹配"** —— 它命中
+ *    `^import\s+` 后用 `[\s\S]*?` 一路吃到**后面某条** from，把两条 import 之间的**使用行**
+ *    整段抹成空格（夹具：lodash 的引用消失 → `no_reference`）。现改为**先单独抹副作用导入**
+ *    （①），并给 from 正则加 `(?!^import\b)` 边界（②）。
+ *  动态 `import(...)`（无 from）仍不匹配 → 保守保留（安全方向）。 */
 export function stripTsImportLines(src: string): string {
+  // 同一行内抹成空格；换行保留 ⇒ 行号不变（下游 enclosingSymbol 按行号归属符号）
+  const blank = (m: string): string => m.replace(/[^\n]/g, ' ');
   return src
-    .replace(/^import\s+(?:type\s+)?[\s\S]*?from\s+['"][^'"]+['"]\s*;?/gm, (m) => m.replace(/[^\n]/g, ' '))
-    .replace(/^[^\S\n]*[^\n]*=\s*require\([^)]*\)[^\n]*$/gm, (m) => m.replace(/[^\n]/g, ' '));
+    // ① 副作用导入（`import 'x'`，无 from）：**必须先单独抹**。
+    //   ★ 否则 ② 的 `^import\s+` 会命中它，再用 `[\s\S]*?` 一路吃到**后面某条** from，
+    //     把夹在中间的使用行整段抹成空格（2026-10-21 实测：使用行消失 ⇒ symbolHit=false ⇒ no_reference）。
+    .replace(/^import\s+(?:type\s+)?(['"])[^'"\n]+\1\s*;?/gm, blank)
+    // ② 带 from 的导入（可跨行）：`(?!^import\b)` 保证**不越过下一条 import** ——
+    //   即使 ① 漏了某种形态（语法不认识），也不会再吞掉两条 import 之间的代码。
+    .replace(/^import\s+(?:type\s+)?(?:(?!^import\b)[\s\S])*?from\s+(['"])[^'"\n]+\1\s*;?/gm, blank)
+    .replace(/^[^\S\n]*[^\n]*=\s*require\([^)]*\)[^\n]*$/gm, blank);
 }
 
 /** 行 → 最内层覆盖符号（找不到 = 包级/模块级作用域） */

@@ -30,24 +30,13 @@
 export const EXPLORE_ARGS: Record<string, readonly string[]> = {
   search: ['min_score', 'project_dir', 'query', 'top_k'],
   read: ['context', 'end', 'file', 'parent', 'project_dir', 'start', 'symbol', 'symbols', 'symbols_limit'],
-  diff_impact: ['changed', 'direction', 'feature', 'max_depth', 'project_dir'],
   arch_layer: ['check_violations', 'feature', 'layers', 'no_cache', 'persist'],
   guided_tour: ['feature'],
   check_monolith: [
     'base_dir', 'crit_lines', 'feature', 'files', 'flag_cohesive', 'max_files', 'no_cache',
     'preview_feature', 'project_dir', 'save_preview', 'warn_lines',
   ],
-  derive_split: [
-    'dry_run', 'new_file', 'project_dir', 're_export_extracted', 'subsplit', 'symbols',
-    'target_file', 'verify_compile', 'verify_test',
-  ],
-  derive_chain: ['entry', 'feature', 'max_branches', 'max_cross', 'max_steps', 'node_id', 'project_root', 'source_path'],
-  derive_anim_flow: [
-    'entry', 'feature', 'interval', 'max_cfg_branches', 'max_steps', 'node_id', 'project_root', 'source_path',
-  ],
-  derive_algorithm: ['feature', 'function', 'max_depth', 'node_id', 'project_root', 'source_path'],
   derive_mind_map: ['feature', 'gen_descriptions', 'max_files_per_community', 'output_path'],
-  inject_replay: ['feature', 'flow_id', 'inject', 'list_presets', 'preset'],
   run_simulation: ['events', 'feature'],
   reset_simulation: ['feature'],
   // ★ 注意 `watch` 的 `args` 里**自带一个 `action`**（那是 watch 自己的子动作，不是本工具的 action）——
@@ -123,10 +112,7 @@ export function assertExploreArgKeys(action: string, args: Record<string, unknow
 export const EXPLORE_REQUIRED: Record<string, readonly string[]> = {
   run_simulation: ['feature'],
   reset_simulation: ['feature'],
-  inject_replay: ['feature', 'flow_id'],
-  derive_anim_flow: ['feature', 'node_id'],
   search: ['project_dir'],
-  diff_impact: ['project_dir', 'feature'],
   arch_layer: ['feature'],
 };
 

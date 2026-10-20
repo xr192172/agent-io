@@ -34,7 +34,8 @@ const chk = (ok, label, extra = '') => {
 /** 真调 gateway（与服务器同一条路）。★ 返回 isError，好用断言"真的跑了" */
 const runOnce = async () => {
   const def = TOOL_DEFS.find((d) => d.name === 'consistency_check');
-  const r = await invokeTool(def, { feature: 'run82' });
+  // ★ 2026-10-21：**显式声明来源 = `cert`** —— 证会真跑工具，不清这一笔就会混进「agent 在用」的账里。
+  const r = await invokeTool(def, { feature: 'run82' }, 'cert');
   return { text: r.text ?? '', isError: !!r.isError };
 };
 const short = (s) => s.split('\n').slice(0, 2).join(' | ').slice(0, 150);

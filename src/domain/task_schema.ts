@@ -21,6 +21,7 @@
  *    含 `reading.observed` 这类**读数**）；本格只留 `{kind, at, by, verdict}` 四键，
  *    ★ **读数永远现算**（见 `TaskEvidenceRecord`）。
  */
+import { createHash } from 'node:crypto';
 import type { Expectation } from './expectation.js';
 import { postExpectations } from './expectation.js';
 import type { ProgressEvidence } from './overlay.js';
@@ -152,6 +153,115 @@ export interface TaskEvidenceRecord {
   agent?: string;
   /** 那次判定的结论（★ 结论可落，"读数"不落） */
   verdict: 'pass' | 'fail' | 'unsupported';
+  /**
+   * ★★★ 2026-10-21：**代码指纹** —— 这份证据「**还作数吗**」的机器判据（形状见 `TaskEvidenceFingerprint`）。
+   * ★ 缺省 / `null` = **历史证据**（指纹上线之前落的那些）⇒ 读端一律判 `unverifiable`，
+   *   ★ **不回填**：回填等于替历史编一个"当时那份代码长什么样"，那是假读数。
+   */
+  fingerprint?: TaskEvidenceFingerprint | null;
+}
+
+/**
+ * 收不进代码指纹的文件占位 —— 文件的**出现 / 消失**也必须让指纹变
+ * （否则"被覆盖的文件被删了"会伪装成"没变过"，正是本仓最反对的假绿灯）。
+ */
+export const ABSENT_FILE_HASH = '<absent>';
+
+/**
+ * 证据的**代码指纹**（2026-10-21）—— 「增量测试」的地基。
+ *
+ * ## 一句话语义
+ * `code` 没变 ⇒ 这份证据**仍有效** ⇒ **不重跑**；`code` 变了 ⇒ **自动失效** ⇒ 只重跑这一处。
+ * ★ 形状**照抄本仓已验证过的先例**（`index_integrity`：索引 schema v12 ≠ 当前 v13 ⇒ 判「不可信」⇒ 需重建）——
+ *   都是"拿当时记下的指纹 / 此刻现算的指纹"比一次，**不另设计一套判据**。
+ *
+ * ## 为什么它不是"复制事实"（与文件头铁律 2 的边界）
+ * 铁律 2 禁的是**能由 `cache.db` 现算的当前值**（`line` / `loc` / 当前 `hash`）。
+ * 而指纹记的是**那一刻**的代码长什么样 —— `cache.db` 只存"此刻"，**永远算不出"当时"**
+ * ⇒ 它是**事件**（与同一条记录里的 `at` 同族），不是事实的副本。
+ *
+ * ## 四件（用户 2026-10-21 裁定的形状）
+ * | 要的 | 落在哪 |
+ * |---|---|
+ * | 跑的是什么 | `what` |
+ * | 输入指纹 | `input`（判据集合的规范化指纹：**判据一变，这条判定就不再对应眼前的判据**）|
+ * | 输出 | 顶层 `verdict` —— ★ **不在这里再抄一份**（一事实两处 = 本仓头号病）|
+ * | 代码指纹 | `code` ＋ `covers`（**算在哪些文件上**必须一起落，否则读端无从复算）|
+ */
+export interface TaskEvidenceFingerprint {
+  /** 跑的是什么（命令原文 / `judgeExpectations:<node_id>` / `attestation:<by>`） */
+  what: string;
+  /** 输入指纹：**判据集合**的规范化指纹 */
+  input?: string;
+  /** 代码指纹：`covers` 这批文件的内容哈希聚合（sha1） */
+  code?: string;
+  /**
+   * 指纹算在**哪些文件**上（仓库相对路径，已排序）。
+   * ★ 空 / 缺省 = **覆盖集未知** ⇒ 该证据**不可判有效**（见 `evidenceFreshness`）。
+   * ★ 不许用"全仓指纹"顶替：那会让"改任何文件都失效" = 没有增量效果。
+   */
+  covers?: string[];
+}
+
+/**
+ * 内容指纹（sha1）。
+ * ★ 只回答"两串东西一样吗"；**文件哈希语义的唯一住处**仍是 `index/symbols.ts#contentHash`
+ *   （索引 / 写闸 / 对拍都用那一把）—— 这里不重定义"什么算文件变了"，只做聚合。
+ */
+export function fingerprintOf(parts: readonly string[]): string {
+  return createHash('sha1').update(parts.join('\u0000'), 'utf-8').digest('hex');
+}
+
+/**
+ * 把一组「文件 → 内容哈希」聚成一个代码指纹。
+ * ★ 先**按路径排序**再聚合：同一批文件换个遍历顺序不得换指纹（否则假失效 = 白白重跑）。
+ */
+export function codeFingerprintOf(
+  entries: ReadonlyArray<{ path: string; hash: string }>,
+): { code: string; covers: string[] } {
+  const sorted = [...entries].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  const covers = sorted.map((e) => e.path);
+  return { code: fingerprintOf(sorted.map((e) => `${e.path}:${e.hash}`)), covers };
+}
+
+/** 一条证据相对"此刻的代码"的处境（★ 唯一判据见 `evidenceFreshness`） */
+export type EvidenceFreshness = 'valid' | 'stale' | 'unverifiable';
+
+/**
+ * 这条证据**相对此刻**还作数吗 —— ★ 唯一判据（别处不许再写一套比较）。
+ *
+ * | 结论 | 含义 | 该做什么 |
+ * |---|---|---|
+ * | `valid` | 输入指纹与代码指纹都相同 | **不重跑** |
+ * | `stale` | 判据换了 / 代码动过 / 覆盖集变了 | **只重跑这一处** |
+ * | `unverifiable` | 没有指纹（历史证据）或覆盖集算不出来 | 要读数就重跑；★ **不许**当"有效"用 |
+ *
+ * ## 为什么**两个**指纹都要比（少比一个就有一类假有效）
+ * · 只比代码：`publish` 原地换判据后，文件一个字节没动 ⇒ 旧证据（在**旧判据**下全绿）
+ *   会被判"有效" ⇒ 新判据**一次都没跑过**却看着有证据。
+ * · 只比判据：判据没换但文件改了 ⇒ 那条"全绿"是新代码之前的读数。
+ * ⇒ 两个都要，任一不同即 `stale`。
+ *
+ * ★ `unverifiable` 必须与 `stale` **分开**：前者是"当年没记"，后者是"记了、但已不同"。
+ *   合并会让"没指纹的老证据"看起来像"需要重跑的坏证据"；更糟的是它会让"覆盖集未知"
+ *   静默变成"通过"（= 增量测试里最典型的假绿灯）。
+ *
+ * @param current 此刻现算的输入指纹与代码指纹（`covers` 必须与记录里的**同一批文件**，否则判 `stale`）
+ */
+export function evidenceFreshness(
+  rec: Pick<TaskEvidenceRecord, 'fingerprint'>,
+  current: { code: string; covers: readonly string[]; input?: string } | null | undefined,
+): EvidenceFreshness {
+  const fp = rec.fingerprint;
+  if (!fp || !fp.code || !fp.covers?.length) return 'unverifiable';
+  if (!current || !current.code) return 'unverifiable';
+  // ① 判据换了 ⇒ 这条判定不再对应眼前的判据（哪怕代码一个字节没动）
+  if (current.input !== undefined && fp.input !== undefined && current.input !== fp.input) return 'stale';
+  // ② 覆盖集变了 ⇒ 两边比的对不是同一批文件，比出来的"相同"没有意义
+  const sameSet =
+    current.covers.length === fp.covers.length && fp.covers.every((p, i) => p === current.covers[i]);
+  if (!sameSet) return 'stale';
+  return current.code === fp.code ? 'valid' : 'stale';
 }
 
 /**

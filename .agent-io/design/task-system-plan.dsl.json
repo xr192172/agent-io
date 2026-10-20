@@ -3997,7 +3997,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "task": {
+          "id": "file_src_application_cross_index_ts",
+          "summary": "【L1 待建构】入口层 · src/application/cross — 0 个 API（导入自 9 个模块）（src/application/cross/index.ts） ← 节点 file_src_application_cross_index_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_cross_index_ts\"].responsibility"
+          },
+          "owner": "general-purpose-1",
+          "claimed_at": "2026-10-20T16:36:48.713Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_api_signature_ts",
@@ -13233,7 +13245,7 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate",
+          "state": "claimed",
           "evidence": [
             {
               "kind": "attestation",
@@ -13260,16 +13272,13 @@
               "verdict": "pass"
             }
           ],
-          "owner": null,
-          "claimed_at": null,
+          "owner": "general-purpose-4",
+          "claimed_at": "2026-10-20T16:33:40.747Z",
           "reopened_at": "2026-10-20T10:47:41.583Z",
           "reopen_reason": "清注释里的用户原话",
-          "reopened_from": "deepseek-v4.1-flash",
-          "release_reason": "edit_code 批量格式未查清，未改",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T10:48:13.696Z"
+          "reopened_from": "deepseek-v4.1-flash"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -17704,7 +17713,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_meta_explore_explore_arg_spec_ts",
+          "summary": "【L1 待建构】核心层 · src/application/meta/explore — 3 个 API（导入自 0 个模块）（src/application/meta/explore/explore_arg_spec.ts） ← 节点 file_src_application_meta_explore_explore_arg_spec_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_explore_arg_spec_ts\"].responsibility"
+          },
+          "owner": "general-purpose-2",
+          "claimed_at": "2026-10-20T16:38:26.664Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_explore_explore_code_ts",
@@ -17725,17 +17746,14 @@
           "id": "file_src_application_meta_explore_explore_code_ts",
           "summary": "【L1 待建构】核心层 · src/application/meta/explore — 4 个 API（导入自 23 个模块）（src/application/meta/explore/explore_code.ts） ← 节点 file_src_application_meta_explore_explore_code_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_explore_code_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:07.310Z"
+          "owner": "general-purpose-2",
+          "claimed_at": "2026-10-20T16:38:26.590Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_explore_first_hop_args_ts",
@@ -17851,17 +17869,14 @@
           "id": "file_src_application_meta_index_ts",
           "summary": "【L1 待建构】入口层 · src/application/meta — 2 个 API（导入自 36 个模块）（src/application/meta/index.ts） ← 节点 file_src_application_meta_index_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_index_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:07.545Z"
+          "owner": "general-purpose-2",
+          "claimed_at": "2026-10-20T16:38:26.740Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_integrity_index_integrity_ts",
@@ -45105,14 +45120,11 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate",
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "改完（TaskSpec 加 reopened_from / reopen_reason），但卡上的旧判据 TERMINAL_TASK_STATES / isTerminalTaskState 已随 2026-10-20 改名失效（2 条红）⇒ 本笔不冒充收口，放回 candidate 等判据更新",
-          "released_by": "deepseek-v4.1-flash",
-          "released_at": "2026-10-20T10:42:12.340Z"
+          "state": "claimed",
+          "owner": "general-purpose-4",
+          "claimed_at": "2026-10-20T16:33:38.478Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_domain_types_ts",
@@ -48287,17 +48299,14 @@
           "id": "file_src_infrastructure_analysis_health_index_ts",
           "summary": "【L1 待建构】入口层 · src/infrastructure/analysis/health — 21 个 API（导入自 6 个模块）（src/infrastructure/analysis/health/index.ts） ← 节点 file_src_infrastructure_analysis_health_index_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_health_index_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:08.492Z"
+          "owner": "general-purpose-2",
+          "claimed_at": "2026-10-20T16:38:26.514Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_diff_ts",
@@ -49428,7 +49437,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "task": {
+          "id": "file_src_infrastructure_authoring_behavior_index_ts",
+          "summary": "【L1 待建构】入口层 · src/infrastructure/authoring/behavior — 28 个 API（导入自 9 个模块）（src/infrastructure/authoring/behavior/index.ts） ← 节点 file_src_infrastructure_authoring_behavior_index_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_behavior_index_ts\"].responsibility"
+          },
+          "owner": "general-purpose-1",
+          "claimed_at": "2026-10-20T16:39:48.422Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_const_eval_ts",
@@ -49540,7 +49561,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_authoring_translate_project_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure/authoring/translate — 14 个 API（导入自 14 个模块）（src/infrastructure/authoring/translate/project.ts） ← 节点 file_src_infrastructure_authoring_translate_project_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_translate_project_ts\"].responsibility"
+          },
+          "owner": "general-purpose-1",
+          "claimed_at": "2026-10-20T16:36:12.907Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_prompts_ts",
@@ -49588,7 +49621,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "utility"
+        "arch_layer": "utility",
+        "task": {
+          "id": "file_src_infrastructure_authoring_translate_tool_ts",
+          "summary": "【L1 待建构】工具层 · src/infrastructure/authoring/translate — 2 个 API（导入自 7 个模块）（src/infrastructure/authoring/translate/tool.ts） ← 节点 file_src_infrastructure_authoring_translate_tool_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_translate_tool_ts\"].responsibility"
+          },
+          "owner": "general-purpose-1",
+          "claimed_at": "2026-10-20T16:34:59.002Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_ts_codegen_ts",
@@ -49991,17 +50036,17 @@
           "id": "file_src_infrastructure_dogfood_stats_ts",
           "summary": "【L1 待建构】核心层 · src/infrastructure — 8 个 API（导入自 5 个模块）（src/infrastructure/dogfood_stats.ts） ← 节点 file_src_infrastructure_dogfood_stats_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "void",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_dogfood_stats_ts\"].responsibility"
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:17.202Z"
-        },
-        "status": "draft"
+          "reopened_at": null,
+          "release_reason": "补充已完成（unknown 说明 + 排序注释），tsc 0 error；先 release 才能 void（claimed 没有直达 void 的迁移）",
+          "released_by": "general-purpose-3",
+          "released_at": "2026-10-20T16:46:29.792Z"
+        }
       },
       {
         "id": "file_src_infrastructure_exec_guard_ts",
@@ -50049,7 +50094,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_graph_dead_deps_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure/graph — 9 个 API（导入自 5 个模块）（src/infrastructure/graph/dead_deps.ts） ← 节点 file_src_infrastructure_graph_dead_deps_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_dead_deps_ts\"].responsibility"
+          },
+          "owner": "general-purpose-2",
+          "claimed_at": "2026-10-20T16:38:26.437Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_graph_import_graph_ts",
@@ -50863,8 +50920,8 @@
             }
           ],
           "state": "claimed",
-          "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-20T15:14:17.906Z",
+          "owner": "general-purpose-2",
+          "claimed_at": "2026-10-20T16:49:20.251Z",
           "evidence": [
             {
               "kind": "expectations",
@@ -51318,17 +51375,16 @@
           "id": "file_src_presentation_cli_cli_ts",
           "summary": "【L1 待建构】核心层 · src/presentation/cli — 4 个 API（导入自 4 个模块）（src/presentation/cli/cli.ts） ← 节点 file_src_presentation_cli_cli_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "void",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_cli_cli_ts\"].responsibility"
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:18.171Z"
-        },
-        "status": "draft"
+          "release_reason": "cli.ts:277 传 via='cli' 已交付；先 release 才能 void",
+          "released_by": "general-purpose-3",
+          "released_at": "2026-10-20T16:43:29.180Z"
+        }
       },
       {
         "id": "file_src_presentation_cli_diagnose_loop_cli_ts",
@@ -51620,17 +51676,16 @@
           "id": "file_src_presentation_mcp_server_registry_ts",
           "summary": "【L1 待建构】核心层 · src/presentation/mcp — 25 个 API（导入自 26 个模块）（src/presentation/mcp/server_registry.ts） ← 节点 file_src_presentation_mcp_server_registry_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "void",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_registry_ts\"].responsibility"
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "T356 已改完（CALL_AUTHORIZE_FIELD）",
-          "released_by": "t356-authorize",
-          "released_at": "2026-10-20T13:29:36.559Z"
-        },
-        "status": "draft"
+          "release_reason": "invokeTool 第三参 via + 两条狗食记录带 via 已交付；先 release 才能 void",
+          "released_by": "general-purpose-3",
+          "released_at": "2026-10-20T16:43:29.010Z"
+        }
       },
       {
         "id": "file_src_presentation_mcp_tool_warnings_ts",
@@ -80254,7 +80309,8 @@
           }
         ],
         "lines": 167,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_api_signature_ts",
@@ -81043,7 +81099,7 @@
         ],
         "lines": 670,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -82261,7 +82317,8 @@
           }
         ],
         "lines": 150,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_explore_explore_code_ts",
@@ -82320,7 +82377,7 @@
         ],
         "lines": 593,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_explore_first_hop_args_ts",
@@ -82572,7 +82629,7 @@
         ],
         "lines": 1356,
         "layer": "entry",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_integrity_index_integrity_ts",
@@ -86963,7 +87020,7 @@
         ],
         "lines": 202,
         "layer": "service",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_domain_types_ts",
@@ -88353,7 +88410,7 @@
         ],
         "lines": 1310,
         "layer": "entry",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_diff_ts",
@@ -91572,7 +91629,8 @@
           }
         ],
         "lines": 1150,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_const_eval_ts",
@@ -91850,7 +91908,8 @@
           }
         ],
         "lines": 570,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_prompts_ts",
@@ -91898,7 +91957,8 @@
           }
         ],
         "lines": 160,
-        "layer": "utility"
+        "layer": "utility",
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_ts_codegen_ts",
@@ -92688,8 +92748,7 @@
           }
         ],
         "lines": 210,
-        "layer": "core",
-        "status": "draft"
+        "layer": "core"
       },
       {
         "id": "file_src_infrastructure_exec_guard_ts",
@@ -92758,7 +92817,8 @@
           }
         ],
         "lines": 654,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_graph_import_graph_ts",
@@ -95429,8 +95489,7 @@
           }
         ],
         "lines": 297,
-        "layer": "core",
-        "status": "draft"
+        "layer": "core"
       },
       {
         "id": "file_src_presentation_cli_diagnose_loop_cli_ts",
@@ -96277,8 +96336,7 @@
           }
         ],
         "lines": 988,
-        "layer": "core",
-        "status": "draft"
+        "layer": "core"
       },
       {
         "id": "file_src_presentation_mcp_tool_warnings_ts",
@@ -98806,11 +98864,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T16:28:44.874Z",
+    "saved_at": "2026-10-20T16:49:20.276Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792512216339,
-    "age": 1508535
+    "scanRev": 1792514947669,
+    "age": 12607
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

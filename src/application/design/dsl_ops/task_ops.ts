@@ -43,6 +43,7 @@ import type { EditResult } from './edit_result.js';
 import fs from 'node:fs';
 import { getDesignSheet, saveDesignSheet, getDesignSheetFile } from '../../../infrastructure/storage.js';
 import { loadOverlay } from '../../../infrastructure/storage_overlay.js';
+import path from 'node:path';
 import { applyOverlay, seedOverlayFromDsl, validateProgressEvidence, type ProgressEvidence } from '../../../domain/overlay.js';
 import {
   applicableTransitions,
@@ -52,8 +53,19 @@ import {
   type CardStanding,
   type ClaimIntent,
 } from '../../../domain/task_machine.js';
-import { postExpectations } from '../../../domain/expectation.js';
-import { progressOf, taskLevel, type TaskDiscussion, type TaskSpec, type TaskState } from '../../../domain/task_schema.js';
+import { expectationPaths, postExpectations } from '../../../domain/expectation.js';
+import {
+  ABSENT_FILE_HASH,
+  codeFingerprintOf,
+  fingerprintOf,
+  progressOf,
+  taskLevel,
+  type TaskDiscussion,
+  type TaskEvidenceFingerprint,
+  type TaskSpec,
+  type TaskState,
+} from '../../../domain/task_schema.js';
+import { contentHash } from '../../../infrastructure/index/symbols.js';
 import { updateStatus } from './status_tools.js';
 
 /** 本文件接受的 op（**结构类型**，不 import `update_feature` —— 那是反向依赖，会成环）。 */
@@ -172,14 +184,78 @@ function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
  */
 export function sameCriteria(card: TaskSpec, summary: string, expectations: readonly unknown[]): boolean {
   if ((card.summary ?? '') !== summary) return false;
-  const canon = (xs: readonly unknown[]): string =>
-    xs
-      .map((e) => {
-        const o = (e ?? {}) as Record<string, unknown>;
-        return JSON.stringify(Object.keys(o).sort().map((k) => [k, o[k]]));
-      })
-      .join('\n');
-  return canon(card.expectations ?? []) === canon(expectations);
+  return canonCriteria(card.expectations ?? []) === canonCriteria(expectations);
+}
+
+/**
+ * 判据集合的**规范形态**（按键名排序的 JSON，逐条一行）。
+ * ★ 「两条判据是否相同」（`sameCriteria`）与「判据的输入指纹」（`fingerprintEvidence`）**共用这一把尺** ——
+ *   分叉的后果是"换了判据"和"指纹没变"各说一套，而那正是证据失效判据的根。
+ */
+function canonCriteria(xs: readonly unknown[]): string {
+  return xs
+    .map((e) => {
+      const o = (e ?? {}) as Record<string, unknown>;
+      return JSON.stringify(
+        Object.keys(o)
+          .sort()
+          .map((k) => [k, o[k]]),
+      );
+    })
+    .join('\n');
+}
+
+/**
+ * 现算一组文件的**代码指纹**（`covers` = 调用方给的文件集 —— ★ 本函数**不发明覆盖关系**）。
+ *
+ * ★ 读盘、不读 `cache.db`：`files.content_hash` 可能是旧值（索引陈旧），而"证据还作数吗"
+ *   必须按**此刻的磁盘**判 —— 与 `intent/expectations.ts#indexStaleFor` 同一把尺（都走 `contentHash`）。
+ * ★ 读不到的文件记 `ABSENT_FILE_HASH`（不是跳过）：跳过去会让"被覆盖的文件被删了"伪装成"没变"。
+ */
+export function codeFingerprintAt(root: string, rels: readonly string[]): { code: string; covers: string[] } {
+  const abs = path.resolve(root);
+  const entries = [...new Set(rels)].map((rel) => {
+    let hash = ABSENT_FILE_HASH;
+    try {
+      hash = contentHash(fs.readFileSync(path.join(abs, rel.split('/').join(path.sep)), 'utf-8'));
+    } catch {
+      /* 读不到 ⇒ 保留占位（意图在常量名里，不静默跳过） */
+    }
+    return { path: rel, hash };
+  });
+  return codeFingerprintOf(entries);
+}
+
+/**
+ * 给「这一条证据」算指纹（四件里除"输出"之外的三件 —— ★ **输出就是顶层 `verdict`**，不重复落）。
+ *
+ * ## 覆盖集**只能从判据本身算**
+ * `covers` = 这张卡所有判据点名的文件（`expectationPaths`，含 `edge-*` 的对端 —— 对端变了判定也可能翻）。
+ * ★ 这是**现成的口径**，不是"这套测试覆盖哪些文件"的猜测：后者在 npm 生态里**算不出来**
+ *   （没有覆盖率数据就没有映射）⇒ 算不出来时**不填** `code`，由读端判 `unverifiable`；
+ *   拿"全仓指纹"或"空集"冒充会分别变成**零增量**和**假有效**，两个都比"说不知道"坏。
+ *
+ * @param sourceRoot 被分析项目的根（feature 的 `source_root`）；缺省 ⇒ 只算 `what` / `input`
+ */
+export function fingerprintEvidence(
+  card: Pick<TaskSpec, 'expectations'>,
+  sourceRoot: string | undefined,
+  nodeId: string,
+  ev: ProgressEvidence,
+): TaskEvidenceFingerprint {
+  const exp = card.expectations ?? [];
+  const what =
+    ev.kind === 'expectations'
+      ? `judgeExpectations:${nodeId}（${exp.length} 条判据）`
+      : ev.kind === 'reading'
+        ? ev.command
+        : `attestation:${ev.by}`;
+  const base: TaskEvidenceFingerprint = { what, input: fingerprintOf([canonCriteria(exp)]) };
+  const covers = [...new Set(exp.flatMap((e) => expectationPaths(e)))];
+  const root = typeof sourceRoot === 'string' && sourceRoot.trim() ? sourceRoot : null;
+  if (!covers.length || !root) return base;
+  const { code, covers: sorted } = codeFingerprintAt(root, covers);
+  return { ...base, code, covers: sorted };
 }
 
 /**
@@ -929,6 +1005,11 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   if (!reopenCheck.ok) throw new Error(`complete 被拒（重开账本）：${reopenCheck.reason}`);
 
   const at = new Date().toISOString();
+  // ★★★ 2026-10-21：**证据带代码指纹**（`task_schema.ts#TaskEvidenceFingerprint`）—— 「增量测试」的地基：
+  //   指纹没变 ⇒ 这条证据仍有效 ⇒ 不必重跑；变了 ⇒ 自动失效 ⇒ 只重跑这一处。
+  //   ★ `covers` 只从**判据自己点名的文件**算（`expectationPaths`），不发明"这套测试覆盖谁"；
+  //     算不出来就只落 `what`/`input`，读端判 `unverifiable`（**不是**"有效"）。
+  const fingerprint = fingerprintEvidence(card, dsl.source_root, node_id, evidence!);
   writeTask(feature, node_id, {
     ...card,
     state: 'done',
@@ -943,6 +1024,8 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
         by: evidence!.kind === 'attestation' ? evidence!.by : 'llm',
         ...(evidence!.kind === 'attestation' && evidence!.why ? { why: evidence!.why } : {}),
         ...(input.agent ? { agent: input.agent } : {}),
+        // ★ 2026-10-21：这条证据的**代码指纹**（`what` / `input` / `code` / `covers`）—— 见上面那段。
+        fingerprint,
         verdict: 'pass',
       },
     ],

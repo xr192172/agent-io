@@ -238,6 +238,7 @@ export function transpileToCjs(abs: string, src: string): { js: string } | { err
  */
 export function nodeRunnerSource(spec: BehaviorSpec): string {
   return `import { createRequire } from 'node:module';
+import path from 'node:path';
 
 const FUNC_NAME = ${JSON.stringify(spec.function)};
 const CASES = ${JSON.stringify(spec.cases)};
@@ -301,7 +302,7 @@ let loadStdout = '';
 try {
   _capStart();
   try {
-    mod = createRequire(import.meta.url)(process.argv[2]);
+    mod = createRequire(import.meta.url)(path.resolve(process.argv[2]));
   } finally {
     loadStdout = _capEnd();
   }

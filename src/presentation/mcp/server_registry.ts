@@ -45,7 +45,7 @@ export { mcpFace };
 // （`tools/stale_check` 的导入已随 P-F 删除：本文件不再直接消费它 —— 三个 stale 告警各自
 //   探测，`stale_check.formatStaleText` 仍由 lanes/observe.ts 的 `run_tests` 前置提示使用。）
 import { getProjectCacheDb, nearestCacheDb } from '../../infrastructure/index/db.js';
-import { recordDogfoodUsage } from '../../infrastructure/dogfood_stats.js';
+import { recordDogfoodUsage, type DogfoodVia } from '../../infrastructure/dogfood_stats.js';
 import { prewarmKernel } from '../../infrastructure/parse/index.js';
 
 /**
@@ -793,9 +793,20 @@ function validateToolArgs(def: ToolDef, a: Record<string, unknown>): string | nu
   return lines.join('\n');
 }
 
+/**
+ * 唯一调用咽喉：MCP 面 / CLI 面 / 证 / 扫射 / 门**全走这里**。
+ *
+ * ★★ 2026-10-21：第三个入参 `via` = **这次调用是从哪儿来的**，写进狗食账本（`DogfoodUsage.via`）。
+ *   ★ 为什么由**调用方声明**、而不是在这儿嗅探：本函数看不出自己是被谁调的 ——
+ *     `cli.ts` 与 MCP server 进程里都调它，而 `certs/*.mjs` / `mcp_scan.mjs` 直接 import 源码/产物。
+ *     「谁发起」只有发起者自己知道；在这儿猜（比如看 `process.argv`）等于把身份写死在进程长相上。
+ *   ★ 缺省 `'mcp'`：本函数最主要的入口是 MCP 面，别的入口**各自显式传**（cli / cert / sweep / gate）。
+ *   ★ 不改调用方 ⇒ 行为逐字不变，只是账本里多一个 `via:'mcp'`（历史行仍无 `via`，不回填）。
+ */
 export async function invokeTool(
   def: ToolDef,
   args: Record<string, unknown> | undefined,
+  via: DogfoodVia = 'mcp',
 ): Promise<{ text: string; isError?: boolean }> {
   const a = (args ?? {}) as Record<string, unknown>;
   // ★★★ 2026-10-10：**先**判"调用失败" —— 入参不过 schema 就到此为止（不再建索引 / 保鲜 / 注入告警）。
@@ -803,7 +814,9 @@ export async function invokeTool(
   //   为什么仍记狗食：失败也要被记（"漏参数"的频率本身就是"该怎么收敛/该补哪个文档"的原料）。
   const argError = validateToolArgs(def, a);
   if (argError) {
-    recordDogfoodUsage({ ts: new Date().toISOString(), tool: def.name, ok: false, ms: 0, err: argError.slice(0, 200) });
+    // ★ 2026-10-21：失败也记（漏参数的频率本身就是原料），并同样带上 `via` ——
+    //   ★ 少了它，「谁在漏参数」这半张账会混进证/扫射的失败（扫射专门拿 `{}` 去撞 schema）。
+    recordDogfoodUsage({ ts: new Date().toISOString(), tool: def.name, via, ok: false, ms: 0, err: argError.slice(0, 200) });
     return { text: argError, isError: true };
   }
   // ★ 首次接触 ⇒ 后台建索引（2026-09-15）：带 project_root 的调用若该项目还没有索引，
@@ -865,6 +878,8 @@ export async function invokeTool(
   recordDogfoodUsage({
     ts: new Date().toISOString(),
     tool: def.name,
+    // ★★ 2026-10-21：**从哪儿来的**（mcp / cli / cert / sweep / gate）—— 见 `DogfoodUsage.via`。
+    via,
     action: def.name === 'explore_code'
       ? (typeof a.action === 'string' ? a.action : undefined)
       : def.name === 'edit_code'

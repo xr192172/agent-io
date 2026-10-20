@@ -110,6 +110,8 @@ export interface ProjectResult {
   typesMap: TypesMapEntry[];
   /** B1 同类名冲突预检：翻译时就列出，避免 fix 阶段才爆 */
   conflicts: ConflictEntry[];
+  /** ★ 全工程 tsc 门禁读数（**编译 ≠ 行为**：只证明"能编译"，回执里不许被当成验证） */
+  tsc?: { ran: boolean; passed: boolean; clusters: TscCluster[] };
   ok: boolean;
 }
 
@@ -413,6 +415,8 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
   const singleTranslator = opts.fill && opts.translator ? opts.translator : null;
   const useBatch = opts.fill && !opts.translator;
   const diagnostics: string[] = [];
+  /** ★ tsc 门禁读数（**编译 ≠ 行为**；只有真跑了才有值） */
+  let tsc: ProjectResult['tsc'];
 
   // 第一遍：翻译每个文件，收集"名字 → 定义位置"（含类型/函数区分）与调用候选
   const modules: ProjectModule[] = [];
@@ -549,6 +553,7 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
   // 全工程 tsc 门禁：对内存模块树跑 TS preEmit，错误按根因聚类并入诊断（不阻断）
   if (opts.verify && modules.length) {
     const clusters = verifyProjectTree(modules);
+    tsc = { ran: true, passed: clusters.length === 0, clusters };
     if (clusters.length) {
       const total = clusters.reduce((s, c) => s + c.count, 0);
       diagnostics.push(
@@ -566,5 +571,5 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
     }
   }
 
-  return { modules, diagnostics, report, typesMap, conflicts, ok: modules.every((m) => m.issues.length === 0) };
+  return { modules, diagnostics, report, typesMap, conflicts, ...(tsc ? { tsc } : {}), ok: modules.every((m) => m.issues.length === 0) };
 }

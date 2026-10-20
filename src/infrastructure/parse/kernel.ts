@@ -91,6 +91,13 @@ export interface ParsedImport {
    * 判定它源自哪个 import 边，从而验证是否连向 target 定义模块。
    */
   bindings?: string[];
+  /**
+   * ★ 2026-10-21：模块源 / 绑定名的**判据来源**（`ast` 语法树子节点 / `regex` 正则兜底）。
+   *   只有做了区分的语言（go 别名 · python from · kotlin · php）才写；其余语言**不写这个字段**
+   *   —— 缺省 ≠ ast，缺省 = 本语言没有这条判据。
+   */
+  source_via?: ImportExtractVia;
+  bindings_via?: ImportExtractVia;
 }
 
 /** 函数级调用边（同文件内，AST 提取，路线图序号 3 的第一步） */
@@ -608,6 +615,24 @@ interface LangImportAdapter {
   /** 该语言专属的 import 源提取（形态复杂时用；简单字段走 importSourceField） */
   extractImportSources?: (node: SyntaxNodeLike) => string[];
   extractImportBindings?: (node: SyntaxNodeLike, paths: string[]) => string[];
+  /**
+   * ★ 2026-10-21：**带 `via` 的详细版** —— 判据来源必须说得清是「语法树子节点」还是「正则兜底」。
+   *   · 只有**这一层**会把 `via` 写进 `ParsedImport.source_via` / `bindings_via`；
+   *   · 没有这两个字段的语言（绝大多数）**不报 via** —— 而不是把「用正则读 `node.text`」的
+   *     老适配器谎称 `'ast'`（那会把"有没有真读语法树"这个事实又抹平）。
+   *   · `values` 为空也算取到了（via=ast）；只有**结构不认识**才退 regex。
+   */
+  extractImportSourcesEx?: (node: SyntaxNodeLike) => ImportExtract;
+  extractImportBindingsEx?: (node: SyntaxNodeLike, paths: string[]) => ImportExtract;
+}
+
+/** import 源/绑定的判据来源：`ast` = 语法树子节点；`regex` = 子节点缺失后的正则兜底 */
+export type ImportExtractVia = 'ast' | 'regex';
+
+/** 一次 import 提取的产物：值 + **它是怎么取到的**（可缺省 = 该语言未做区分） */
+interface ImportExtract {
+  values: string[];
+  via?: ImportExtractVia;
 }
 
 /** `#include "x.h"` / `#include <vector>` → 头文件路径（C 与 C++ 同型，共用一份正则，别抄第二份） */
@@ -656,6 +681,31 @@ function nthNamedChild(node: SyntaxNodeLike, n: number): SyntaxNodeLike | null {
     seen += 1;
   }
   return null;
+}
+
+/**
+ * ★ 2026-10-21：按**节点类型**取第一个命名子节点。
+ *
+ * 为什么需要它：kotlin / php 的 import 语法**没有字段名**（grammar 里 "fields": {}），
+ * 只能按子节点类型取（`identifier` / `import_alias` / `namespace_use_clause`）。
+ * ★ 只认**命名**节点（`isNamed === false` 的关键字/标点不算）——与 `nthNamedChild` 同一把尺。
+ */
+function firstNamedChildOfType(node: SyntaxNodeLike, type: string): SyntaxNodeLike | null {
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (c && c.isNamed !== false && c.type === type) return c;
+  }
+  return null;
+}
+
+/** 同上，取**全部**该类型的命名子节点（php 的 `use A, B;` 是多 clause） */
+function namedChildrenOfType(node: SyntaxNodeLike, type: string): SyntaxNodeLike[] {
+  const out: SyntaxNodeLike[] = [];
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (c && c.isNamed !== false && c.type === type) out.push(c);
+  }
+  return out;
 }
 
 /**
@@ -730,11 +780,19 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
       const p = fieldText(node, 'path');
       return p ? [stripQuotes(p)] : [];
     },
-    extractImportBindings(node, paths) {
+    extractImportBindingsEx(node, paths) {
+      // ★ AST：import_spec 的 `name` 字段就是别名（`alias "p"` / `_ "p"` / `. "p"`），
+      //   `path` 字段是模块路径（带引号 ⇒ stripQuotes）。
+      const alias = node.childForFieldName('name')?.text.trim() ?? '';
+      // ★ 取值域与旧正则**逐字等价**：标识符形态才算别名（`.` 点导入不算 ⇒ 回落末段名）。
+      if (/^[A-Za-z_][\w.]*$/.test(alias)) return { values: [alias], via: 'ast' };
+      const base = stripQuotes(fieldText(node, 'path')).split('/').pop();
+      if (base) return { values: [base], via: 'ast' };
+      // 兜底：AST 字段缺失（语法被破坏）⇒ 旧正则
       const m = node.text.match(/^\s*([A-Za-z_][\w.]*)\s*(?:"[^"]*"|`[^`]*`)/);
-      if (m) return [m[1]];
-      const base = paths[0]?.split('/').pop();
-      return base ? [base] : [];
+      if (m) return { values: [m[1]], via: 'regex' };
+      const fallback = paths[0]?.split('/').pop();
+      return { values: fallback ? [fallback] : [], via: 'regex' };
     },
   },
   python: {
@@ -745,8 +803,9 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     returnSep: ' -> ',
     stripSelfParam: true,
     closureLiteralNodeTypes: ['lambda'],
-    extractImportSources(node) {
+    extractImportSourcesEx(node) {
       if (node.type === 'import_statement') {
+        // `import a.b` / `import a.b as c`：本来就是按 dotted_name 节点取的
         const out: string[] = [];
         const collect = (n: SyntaxNodeLike): void => {
           for (let i = 0; i < n.childCount; i++) {
@@ -757,17 +816,23 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
           }
         };
         collect(node);
-        return out;
+        return { values: out, via: 'ast' };
       }
       if (node.type === 'import_from_statement') {
+        // ★ AST：`from X import …` 的模块名就在 `module_name` 字段；相对导入是 relative_import，
+        //   文本已自带前导点（`..pkg` / `.`）—— 不必再对着整句用 `^\s*from\s+(\.*)…` 拆。
+        const modNode = node.childForFieldName('module_name');
+        if (modNode) {
+          const srcText = modNode.text.trim();
+          return { values: srcText ? [srcText] : [], via: 'ast' };
+        }
+        // 兜底：字段缺失（语法被破坏）⇒ 旧正则
         const m = node.text.match(/^\s*from\s+(\.*)([\w.]*)\s+import/);
-        if (!m) return [];
-        const dots = m[1] || '';
-        const mod = m[2] || '';
-        if (dots) return [dots + mod];
-        return mod ? [mod] : [];
+        if (!m) return { values: [], via: 'regex' };
+        const srcText = (m[1] || '') + (m[2] || '');
+        return { values: srcText ? [srcText] : [], via: 'regex' };
       }
-      return [];
+      return { values: [], via: 'ast' };
     },
     extractImportBindings(node) {
       if (node.type === 'import_from_statement') {
@@ -905,20 +970,36 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     nameNodeTypes: ['simple_identifier', 'type_identifier'],
     bodyNodeTypes: ['function_body', 'class_body'],
     calleeIsFirstChild: true,
-    // `import a.b.C` / `import a.b.*` / `import a.b.C as D` → 模块路径（去通配/去别名）
-    extractImportSources(node) {
+    // `import a.b.C` / `import a.b.*` / `import a.b.C as D` → 模块路径
+    // ★ AST（实测 kotlin 0.3.8）：import_header 的第一个 `identifier` 子节点就是点分模块名；
+    //   通配 `.*` 是独立节点 `wildcard_import`、别名是 `import_alias` —— 都不在那段文本里 ⇒ 无需再剥。
+    extractImportSourcesEx(node) {
+      const modNode = firstNamedChildOfType(node, 'identifier');
+      if (modNode) {
+        const t = modNode.text.trim();
+        return { values: t ? [t] : [], via: 'ast' };
+      }
+      // 兜底：AST 认不出（语法被破坏）⇒ 旧正则
       let t = node.text.replace(/^\s*import\s+/, '').replace(/[\s;]+$/, '').trim();
       t = t.replace(/\s+as\s+[A-Za-z_]\w*$/, '').trim();
       t = t.replace(/\.\*$/, '');
-      return t ? [t] : [];
+      return { values: t ? [t] : [], via: 'regex' };
     },
     // `import a.b.C as D` → D；否则末段 C
-    extractImportBindings(node) {
+    extractImportBindingsEx(node) {
+      const aliasNode = firstNamedChildOfType(node, 'import_alias');
+      const aliasId = aliasNode ? firstNamedChildOfType(aliasNode, 'type_identifier') : null;
+      if (aliasId) return { values: [aliasId.text], via: 'ast' };
+      const modNode = firstNamedChildOfType(node, 'identifier');
+      if (modNode) {
+        const last = lastDotSegment(modNode.text);
+        return { values: last ? [last] : [], via: 'ast' };
+      }
       const asM = node.text.match(/\s+as\s+([A-Za-z_]\w*)\s*;?\s*$/);
-      if (asM) return [asM[1]];
+      if (asM) return { values: [asM[1]], via: 'regex' };
       const t = node.text.replace(/^\s*import\s+/, '').replace(/[\s;]+$/, '').trim().replace(/\.\*$/, '');
       const last = t.split('.').pop();
-      return last ? [last] : [];
+      return { values: last ? [last] : [], via: 'regex' };
     },
   },
   php: {
@@ -927,37 +1008,78 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     // ★ 数据：自由函数被调名在 `function` 字段；静态/实例调用在 `name` 字段
     //   （与改动前的 `'function'|'name'|'method'` 串在 PHP 上等价 —— 有意不改 callee_expr 形态）
     calleeFields: ['function', 'name'],
-    // `use Foo\Bar<;>` / `use Foo\Bar as Baz;` / `use Foo\{Bar, Baz};` / `use function Foo\bar;`
-    extractImportSources(node) {
+    // `use Foo\Bar;` / `use Foo\Bar as Baz;` / `use Foo\{Bar, Baz};` / `use function Foo\bar;`
+    // ★ AST：每个 `namespace_use_clause` 是一条；分组 `use Foo\{Bar, Baz}` 则是
+    //   namespace_name（头） + namespace_use_group（成员）。
+    extractImportSourcesEx(node) {
+      const headNode = firstNamedChildOfType(node, 'namespace_name') ?? firstNamedChildOfType(node, 'qualified_name');
+      const group = firstNamedChildOfType(node, 'namespace_use_group');
+      if (group) {
+        const head = headNode?.text.trim().replace(/\\$/, '') ?? '';
+        return { values: head ? [head] : [], via: 'ast' }; // 分组形式：主命名空间作为 source
+      }
+      const clauses = namedChildrenOfType(node, 'namespace_use_clause');
+      const values = clauses
+        .map((cl) =>
+          (firstNamedChildOfType(cl, 'qualified_name') ??
+            firstNamedChildOfType(cl, 'namespace_name') ??
+            firstNamedChildOfType(cl, 'name'))?.text.trim() ?? '',
+        )
+        .filter(Boolean);
+      if (values.length) return { values, via: 'ast' };
+      // 兜底：AST 认不出（语法被破坏）⇒ 旧正则
       let t = node.text.replace(/^\s*use\s+/, '').replace(/;\s*$/, '').trim();
       t = t.replace(/^function\s+/, '').replace(/^const\s+/, '');
       const brace = t.indexOf('{');
       if (brace >= 0) {
         const head = t.slice(0, brace).trim().replace(/\\$/, '');
-        return head ? [head] : []; // 分组形式：主命名空间作为 source（成员 binding 已各自提取）
+        return { values: head ? [head] : [], via: 'regex' };
       }
-      // 单条：Foo\Bar [/as Baz]
       const base = t.split(/\s+as\s+|\s+/, 1)[0] || t;
-      return base ? [base] : [];
+      return { values: base ? [base] : [], via: 'regex' };
     },
-    // binding：`use Foo\Bar as Baz → Baz`；否则末段 `Bar`；分组形式取每个成员末段
-    extractImportBindings(node) {
+    // binding：`use Foo\Bar as Baz` → Baz；否则末段 `Bar`；分组形式取每个成员末段
+    extractImportBindingsEx(node) {
+      const group = firstNamedChildOfType(node, 'namespace_use_group');
+      const clauses = namedChildrenOfType(group ?? node, 'namespace_use_clause');
+      if (clauses.length) {
+        const out = clauses
+          .map((cl) => {
+            const alias = cl.childForFieldName('alias');
+            if (alias?.text.trim()) return alias.text.trim();
+            const q =
+              firstNamedChildOfType(cl, 'qualified_name') ??
+              firstNamedChildOfType(cl, 'namespace_name') ??
+              firstNamedChildOfType(cl, 'name');
+            return q?.text.trim().split('\\').pop()?.trim() ?? '';
+          })
+          .filter(Boolean);
+        return { values: out, via: 'ast' };
+      }
+      // 兜底：AST 认不出 ⇒ 旧正则
       let t = node.text.replace(/^\s*use\s+/, '').replace(/;\s*$/, '').trim();
       t = t.replace(/^function\s+/, '').replace(/^const\s+/, '');
       const brace = t.indexOf('{');
       if (brace >= 0) {
         const inner = t.slice(brace + 1, t.lastIndexOf('}'));
-        return inner.split(',').map((s) => s.trim()).filter(Boolean).map((s) => {
-          const asM = s.match(/as\s+([A-Za-z_\x80-\xff]\w*)/);
-          if (asM) return [asM[1]];
-          const seg = s.trim().split('\\').pop()?.trim() || '';
-          return seg ? [seg] : [];
-        }).flat();
+        return {
+          values: inner
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .map((s) => {
+              const asM = s.match(/as\s+([A-Za-z_\x80-\xff]\w*)/);
+              if (asM) return asM[1];
+              return s.trim().split('\\').pop()?.trim() || '';
+            })
+            .filter(Boolean),
+          via: 'regex',
+        };
       }
       const asM = t.match(/\s+as\s+([A-Za-z_\x80-\xff]\w*)\s*$/);
-      if (asM) return [asM[1]];
+      if (asM) return { values: [asM[1]], via: 'regex' };
       const last = t.split('\\').pop()?.trim();
-      return last ? [last] : [];
+      return { values: last ? [last] : [], via: 'regex' };
     },
   },
   // ── TS 系四门：同一份契约（callNode + 被调字段 + import 源字段 + type-only 擦除）──
@@ -1335,23 +1457,26 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
 };
 
 /** 取某语言 import 的 source 列表（深适配查注册表；简单字段走 importSourceField） */
-function extractImportSources(node: SyntaxNodeLike, langName: string): string[] {
+function extractImportSources(node: SyntaxNodeLike, langName: string): ImportExtract {
   const a = LANG_ADAPTERS[langName];
-  if (a?.extractImportSources) return a.extractImportSources(node);
+  // ★ Ex 优先：只有它知道自己是「AST 取到的」还是「正则兜的」
+  if (a?.extractImportSourcesEx) return a.extractImportSourcesEx(node);
+  if (a?.extractImportSources) return { values: a.extractImportSources(node) };
   // ★ 典型形态：语句上有 `source` 字段（TS 系 `import x from 'y'`）。
   //   原先这里是 `langName === 'typescript' || 'tsx' || 'javascript' || 'jsx'` 的按语言 if，
   //   现改为表项数据 importSourceField。
   if (a?.importSourceField) {
     const s = fieldText(node, a.importSourceField);
-    return s ? [stripQuotes(s)] : [];
+    return { values: s ? [stripQuotes(s)] : [] };
   }
-  return [];
+  return { values: [] };
 }
 
 /** 取某语言 import 的本地绑定名（深适配查注册表；无则空） */
-function extractImportBindings(node: SyntaxNodeLike, langName: string, paths: string[]): string[] {
+function extractImportBindings(node: SyntaxNodeLike, langName: string, paths: string[]): ImportExtract {
   const a = LANG_ADAPTERS[langName];
-  return a?.extractImportBindings ? a.extractImportBindings(node, paths) : [];
+  if (a?.extractImportBindingsEx) return a.extractImportBindingsEx(node, paths);
+  return { values: a?.extractImportBindings ? a.extractImportBindings(node, paths) : [] };
 }
 
 function isCallNode(node: SyntaxNodeLike, lang: LanguageEntry): boolean {
@@ -1715,8 +1840,8 @@ function traverseAndExtractImports(
     // ⇒ 标记 type_only，依赖图/闭包不算边。判定收敛在 isTypeOnlyModuleStatement（唯一实现）；
     // 「哪些语言有这套语法」由适配器 erasedModuleStatements 声明（替代原先的 TS_FAMILY_LANGS Set）。
     const typeOnly = LANG_ADAPTERS[lang.name]?.erasedModuleStatements === true && isTypeOnlyModuleStatement(node.text);
-    const bindings = extractImportBindings(node, lang.name, sources);
-    for (const src of sources) {
+    const bindings = extractImportBindings(node, lang.name, sources.values);
+    for (const src of sources.values) {
       imports.push({
         source: src,
         kind: src.startsWith('.') ? 'relative' : 'package',
@@ -1726,7 +1851,10 @@ function traverseAndExtractImports(
           ? { start_index: node.startIndex, end_index: node.endIndex }
           : {}),
         ...(typeOnly ? { type_only: true } : {}),
-        ...(bindings.length > 0 ? { bindings } : {}),
+        ...(bindings.values.length > 0 ? { bindings: bindings.values } : {}),
+        // ★ 2026-10-21：判据来源（只有做了 AST/正则区分的语言才有）
+        ...(sources.via ? { source_via: sources.via } : {}),
+        ...(bindings.via ? { bindings_via: bindings.via } : {}),
       });
     }
     return; // import 节点内部不再递归

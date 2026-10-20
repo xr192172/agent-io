@@ -4,7 +4,8 @@
  * （2026-10-17 · service_flow 第⑤步「做事」的闸 · `docs/_extract/flow-check-1.md` F7）。
  *
  * ## 本笔新增的**方向**（B.1：新方向 ⇒ 必须新增一条打它的证）
- *   ① 新读数 `TaskGateBasis`（`no-files` / `no-feature-for-root` / `files-not-in-design` / `covered`）；
+ *   ① 新读数 `TaskGateBasis`（`no-files` / `no-feature-for-root` / `files-not-in-design` / `covered`；
+ *      ★ 2026-10-20 起多一个 `exempt` = **设计侧声明豁免**，见 `certs/t355-gate-exemption-cert.mjs`）；
  *   ② 新入口 `collectGateCoverage` —— **收集与判定分家**：收集失败在放行之前**抛**；
  *   ③ `nodeFilePath`：`path` 优先、回落 `description`（`path` 型节点不再被漏掉）。
  *

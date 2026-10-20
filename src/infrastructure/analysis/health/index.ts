@@ -386,6 +386,19 @@ function isValidBindName(name: string): boolean {
 }
 
 /**
+ * ★ 2026-10-21：按**节点类型**取第一个命名子节点（java 的 `import_declaration` 没有字段名，
+ * 模块名只能按类型取：`scoped_identifier` / 单段时 `identifier`）。
+ * ★ 只认命名节点（`isNamed === false` 的关键字/标点不算）。
+ */
+function firstNamedChildOfType(node: SyntaxNodeLike, type: string): SyntaxNodeLike | null {
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (c && c.isNamed !== false && c.type === type) return c;
+  }
+  return null;
+}
+
+/**
  * 从 AST 提取命名 import 绑定（TS/JS 家族 named+default+namespace+CJS require；Python from/import）。
  * Go 不提取（Go 未用 import 是编译错，编译器兜底）；其余语言返回空 → 走正则回退。
  * 结构实测（_dbg_ast*.mjs）：
@@ -487,12 +500,30 @@ function collectImportBinds(root: SyntaxNodeLike, lang: string): AstImportBind[]
     };
     walk(root);
   } else if (lang === 'java') {
-    // Java：import com.acme.Foo; / import static org.x.Bar;
+    // Java：import com.acme.Foo; / import java.util.*; / import static org.x.Bar;
     const walk = (n: SyntaxNodeLike): void => {
       if (n.type === 'import_declaration') {
         const line = n.startPosition.row + 1;
-        const body = n.text.replace(/^\s*import\s+static\s+/, '');
-        const m = body.match(/^\s*import\s+([\w.]+(?:\.[\w]+)*)\s*;/);
+        // ★ AST（实测 tree-sitter-java）：模块名 = 第一个 `scoped_identifier`（单段包名时是
+        //   `identifier`）；通配 `.*` 是后面的 `asterisk` 节点、`static` 是关键字匿名节点 ——
+        //   都不在模块名文本里 ⇒ 不必再对整句做 `import ([\w.]+);` 的拆解。
+        const modNode = firstNamedChildOfType(n, 'scoped_identifier') ?? firstNamedChildOfType(n, 'identifier');
+        // ★ 通配 `import java.util.*` / `import static java.util.Arrays.*` **不引入任何本地名**
+        //   ⇒ 不产绑定（与改前的正则同口径；否则 `util` / `Arrays` 会被误报成「未使用 import」）。
+        if (modNode && firstNamedChildOfType(n, 'asterisk')) return;
+        if (modNode) {
+          const module = modNode.text;
+          const bindNode = modNode.type === 'identifier' ? modNode : modNode.childForFieldName('name');
+          const bind = (bindNode?.text ?? module.split('.').pop() ?? '').trim();
+          if (isValidBindName(bind)) {
+            binds.push({ line, module, name: bind, startIndex: bindNode?.startIndex ?? nameNodeStart(n, bind) });
+          }
+          return;
+        }
+        // 兜底：AST 认不出（语法被破坏）⇒ 正则。★ 旧版先把 `import static ` 剥掉、再用 `^\s*import`
+        //   匹配 ⇒ **static 导入恒取不到**（实测：剥完已无 `import` 二字）；这里整句重匹配，
+        //   把 `static` 当可选前缀。
+        const m = n.text.match(/^\s*import\s+(?:static\s+)?([\w.]+)(?:\.\*)?\s*;/);
         if (m) {
           const segs = m[1].split('.');
           const bind = segs[segs.length - 1] || '';

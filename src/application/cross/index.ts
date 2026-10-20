@@ -25,7 +25,7 @@ export const CROSS_TOOLS: ToolDef[] = [
     name: 'translate_go_ts',
     title: 'Go→TS 半自动翻译（骨架 + 可选 LLM 填 + 可选行为对拍）',
     description:
-      '把 Go 源文件机械生成 TS 骨架 + 验证闸（默认）；fill=true 用 AGNES key 池 LLM 逐孔填函数体（需 AGNES_KEY_POOL 或本地 key-pool-proxy）；verify=true 再对已填的纯函数跑 Go↔TS 行为对拍（需 go 工具链）。跨语言翻译：函数/方法/struct/接口/named 别名/多返回元组/map·slice·指针/泛型/chan(近似)。★ 本工具即原 `translate_cli` 的能力载体（该 CLI 已于 2026-10-06 删除；argv 面由 `cli.js translate_go_ts` 投影提供 —— 下文「原 translate_cli 的 …」是历史对应关系）。',
+      '把 Go 源文件机械生成 TS 骨架 + 验证闸（默认），并给出一份**回执**：known（AST/常量/import/调用边的事实）/ unknowns（推测的惯用法映射、缺库、行为假设，**与 known 分开**）/ verification（只认对照测试；没测试就报 unverified，绝不当完成）；fill=true 用 AGNES key 池 LLM 逐孔填函数体（需 AGNES_KEY_POOL 或本地 key-pool-proxy）；verify=true 再对已填的纯函数跑 Go↔TS 行为对拍（需 go 工具链）。跨语言翻译：函数/方法/struct/接口/named 别名/多返回元组/map·slice·指针/泛型/chan(近似)。★ 本工具即原 `translate_cli` 的能力载体（该 CLI 已于 2026-10-06 删除；argv 面由 `cli.js translate_go_ts` 投影提供 —— 下文「原 translate_cli 的 …」是历史对应关系）。',
     inputSchema: {
       file: z.string().optional().describe('Go 源文件路径（绝对或相对 cwd）；与 projectDir 二选一'),
       projectDir: z.string().optional().describe('Go 项目目录：一次翻译整个项目（枚举 .go、跨文件 import、镜像落盘）'),
@@ -34,8 +34,12 @@ export const CROSS_TOOLS: ToolDef[] = [
       fill: z.boolean().optional().describe('用 AGNES key 池 LLM 逐孔填函数体'),
       holes: z.boolean().optional().describe('★ 一并返回每个待填孔给 LLM 的 prompt（原 translate_cli 的 --holes），见 data.hole_prompts。★ 与 fill 同一条门：只在 fill=false 时给（fill 时那些 prompt 已被消费）'),
       batchSize: z.number().int().min(1).optional().describe('★ projectDir 模式：一批函数一次 LLM 调用（原 translate_cli 的 --batch-size），默认 5'),
-      verify: z.boolean().optional().describe('★ 同名两义（如实写，别只看半句）：**projectDir 模式** = 全工程 tsc 门禁（原 translate_cli 的 --verify）；**单文件模式** = 对已填纯函数跑 Go↔TS 行为对拍（需 go 工具链）'),
+      verify: z.boolean().optional().describe('★ 同名两义（如实写，别只看半句）：**projectDir 模式** = 全工程 tsc 门禁（原 translate_cli 的 --verify，编译闸）；**单文件模式** = 对已填函数跑 Go↔TS **对照测试**（同一批输入逐条比，优先用仓库 *_test.go 的表驱动用例，需 go 工具链）。★ 结果见 data.receipt.verification：只有真跑过对照且全一致才是 verified，其余一律 unverified/diff'),
       maxRetries: z.number().int().min(0).max(6).optional().describe('LLM 纠错重试次数，默认 2'),
+      testCases: z
+        .array(z.object({ name: z.string().optional(), args: z.array(z.unknown()) }))
+        .optional()
+        .describe('★ 调用方显式给的对照用例（[{name?, args:[…]}]）：优先于仓库 *_test.go，同一批输入逐条比 Go 与 TS 输出'),
     },
     handler: wrapData(async (a) => translateGoTsHandler(a)),
   },
