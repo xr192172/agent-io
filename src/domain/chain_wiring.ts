@@ -753,8 +753,8 @@ export const CHAINS: readonly Chain[] = [
     steps: ['edit_dsl', 'consistency_check', 'archive'],
     evidence: 'verified',
     note:
-      '★★★ **用户裁定的「三步退役流」**（2026-10-11 逐字：*"设计侧应该先标记给它对删除……然后删除完了之后进行对拍的时候，' +
-      '发现这个地方确实删完了，才把它真正扫进历史堆里面"*）⇒ ①**标记** → ②**对拍** → ③**归档**。' +
+      '★★★ **三步退役流**：①**标记**（`data.lifecycle.status="deprecated"`）→ ②**对拍**（确认实现里真的删干净）' +
+      '→ ③**归档**（才扫进历史堆）。★ 三步缺一不可：只标记不算退役；未对拍不许归档。' +
       '★ 端到端真跑（2026-10-12，`run82` **真仓**，全程真落盘）：' +
       '`edit_dsl` 写 `data.lifecycle={status:"deprecated", retire_reason:"…"}` ⇒ `consistency_check` 的' +
       '**第三根轴** `retireFlow` 报 `{stage:"ready_to_archive"}`，**并把该文件放进 `touched.scope_files`** ⇒ ' +
@@ -861,7 +861,7 @@ export function hopsOf(chain: Chain): readonly HopVerdict[] {
 }
 
 /**
- * ★★★ `Chain.evidence` 的**呈现词**（2026-10-10，用户裁定：「**改词、不改数据**」）。
+ * ★★★ `Chain.evidence` 的**呈现词**（约束：**改词、不改数据**）。
  *
  * ## 病：`[verified]` 会被读成"现在能用"
  * 域里的取值是 `'verified'`，而 **`CHAINS[].evidence` 是硬编码字面量、运行时【不重验】** ⇒
@@ -978,7 +978,7 @@ export function deriveObjectChains(minLen = 2, maxLen = 6): string[][] {
  *     而**信息量恰好为零** —— 每个工具都在里面 ⇒ 狗食从它身上**看不出任何区别**（这正是"要减"的东西）。
  *     ⇒ 正确的给法 = **规则提一次**（见 `renderNextHops` 末尾那行脚注 + 接法表里的两行），
  *       **不按工具展开**。
- * ★ 用途（2026-10-06，用户裁定「**先不收敛，所有有可能的下一棒都给它**」）：
+ * ★ 用途（约束：**先不收敛，所有有可能的下一棒都给它**）：
  *   在**回执通道**里告诉调用方"从这一步能接哪几棒、用什么表达式"。
  */
 export function nextHopsOf(tool: string): readonly ChainEdge[] {
@@ -996,7 +996,7 @@ export function universalHopsOf(): readonly ChainEdge[] {
  * ★★ **不进产物**：它既不是契约（下游不会用它重算）、也不是剪贴板 —— 它是**提示**。
  *   塞进产物会同时干两件坏事：在契约里掺提示 + 让所有不接链的调用一起变胖。
  * ★ 无出边 ⇒ 返回**空串**（完全不注入）—— 今天 61 个工具里只有 3 个有出边。
- * ★★ **按边列全、不合并**（用户裁定：先不收敛）：同一下游有两条边就列两行。
+ * ★★ **按边列全、不合并**（先不收敛）：同一下游有两条边就列两行。
  */
 export function renderNextHops(tool: string): string {
   const edges = nextHopsOf(tool);

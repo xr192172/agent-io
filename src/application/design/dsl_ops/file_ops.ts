@@ -89,7 +89,7 @@ export interface UpdateFileInput {
   /**
    * ★★★ **文件生命周期**（T181）—— **标记待删（`deprecated`）/ 已归档（`archived`）** 走这里。
    *
-   * ★ 为什么要有它：用户裁定"**设计侧先标记待删 ⇒ 对拍确认实现里真没了 ⇒ 才扫进历史堆**"（三步流程）。
+   * ★ 为什么要有它：**退役必须三步** —— 设计侧先标记待删 ⇒ 对拍确认实现里真没了 ⇒ 才扫进历史堆。
    *   ⇒ **第一步就需要一个"标记"入口**，而此前 `lifecycle` **只有 `archive_node` 会写** ⇒ **标记没有路** ✗
    * ★★ 三方独立评审一致：(a) "写 `SemanticFile.status='deprecated'`" **不成立** ——
    *   `DiagramStatus` 只有 `draft|in_progress|done`（`geometry.ts:10`），**不含 deprecated**；

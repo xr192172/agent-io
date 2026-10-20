@@ -47,7 +47,7 @@ export type TaskState = (typeof TASK_STATES)[number];
 /**
  * **已了结**的状态（★ 只此一处；`isClosedTaskState` 是它的唯一读法）。
  *
- * ★★★ 2026-10-20 改名（dogfood #20 + 用户裁定加 `t_relaunch`）：
+ * ★★★ 2026-10-20 改名（dogfood #20；同时新增 `t_relaunch`）：
  *   原名叫 `TERMINAL_TASK_STATES = ['void']`，而 `isTerminalTaskState` 判的是 `done | void`
  *   —— **同一个概念两个答案**（C2：终态集合有两个家）。
  *   ★ 想"把字面量对齐成 done|void"是错的方向：那天加了 `t_relaunch`（void → candidate），

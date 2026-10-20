@@ -5123,7 +5123,12 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate"
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已完成，交回候选池",
+          "released_by": "deepseek-v4.1-flash",
+          "released_at": "2026-10-20T10:26:32.098Z"
         },
         "status": "draft"
       },
@@ -6291,7 +6296,12 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate"
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已完成，交回候选池",
+          "released_by": "deepseek-v4.1-flash",
+          "released_at": "2026-10-20T10:26:33.324Z"
         },
         "status": "draft"
       },
@@ -25501,7 +25511,12 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate"
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已完成，交回候选池",
+          "released_by": "deepseek-v4.1-flash",
+          "released_at": "2026-10-20T10:26:34.530Z"
         },
         "status": "draft"
       },
@@ -28860,7 +28875,12 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate"
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已完成，交回候选池",
+          "released_by": "deepseek-v4.1-flash",
+          "released_at": "2026-10-20T10:26:35.768Z"
         },
         "status": "draft"
       },
@@ -30876,7 +30896,12 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate"
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已完成，交回候选池",
+          "released_by": "deepseek-v4.1-flash",
+          "released_at": "2026-10-20T10:26:37.013Z"
         },
         "status": "draft"
       },
@@ -31977,7 +32002,12 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate"
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已完成，交回候选池",
+          "released_by": "deepseek-v4.1-flash",
+          "released_at": "2026-10-20T10:26:38.253Z"
         },
         "status": "draft"
       },
@@ -42086,7 +42116,12 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate"
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已完成，交回候选池",
+          "released_by": "deepseek-v4.1-flash",
+          "released_at": "2026-10-20T10:26:39.494Z"
         },
         "status": "draft"
       },
@@ -44939,7 +44974,12 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate"
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已完成，交回候选池",
+          "released_by": "deepseek-v4.1-flash",
+          "released_at": "2026-10-20T10:26:40.716Z"
         },
         "status": "draft"
       },
@@ -98606,11 +98646,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T10:06:46.644Z",
+    "saved_at": "2026-10-20T10:26:40.743Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792490660426,
-    "age": 146218
+    "scanRev": 1792491979769,
+    "age": 20974
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

@@ -78,7 +78,7 @@ export interface SemanticFile {
   status?: DiagramStatus;
   // ★★ 2026-10-01（T20 第 (2) 步）：`actual_deps` 与 `actual_apis` **已移除**。
   //   它们是**代码的事实**（权威在 tree-sitter 解析数据 `cache.db`），却被镜像进"意图册"——
-  //   用户原话：「意图册有三项东西，但是有一项东西其实本身就是代码的权威吧」。
+  //   ★ 规则：**事实只有一个家**（代码 / `cache.db` 是权威），意图册不复刻事实。
   //   镜像 = 第二份可写副本 = 判据分叉的温床。**要事实请走唯一入口**：
   //     `src/infrastructure/index/file_facts.ts` 的 `fileFacts(root, fileRel, feature?)`
   //   （`root` 取 DSL 自带的 `source_root`；DSL 只保留"事实的出处"，不保留事实本身。）

@@ -83,7 +83,7 @@ export interface SameIdDiff {
  *
  * ★ 与 `overlay.reconcileOverlay` 的"认亲"同族（`domain/overlay.ts:439` 按 `path` 认亲、
  *   `:442-444` 路径漂移时按签名认亲、`:447-451` 认不到 ⇒ 标 `orphaned` 不静默丢）——
- *   本类**照同一口径办**，只换键（这里是 `path`/`name`）。★ 用户原话："**赋予同一个 ID**" ⇒ 输出带 `id`。
+ *   本类**照同一口径办**，只换键（这里是 `path`/`name`）。★ 规则：**认到就赋予同一个 ID** ⇒ 输出带 `id`（= live 节点 id）。
  */
 export interface ResolvedDiff {
   /** 设计侧**无 id** 条目的**指代**（名字/路径；与 {@link designSheetRef} 同口径） */
