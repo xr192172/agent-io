@@ -2047,3 +2047,45 @@ const x = require('x')       某行紧跟 target 的 import
 
 ★ 两件事叠在一起（kernel 改动 + 删代码），比今天做的所有只读活都危险 ——
   **这是该清醒时做的，不是第三个小时硬推的。**
+
+---
+
+## 2026-10-20 早（三六）· imports 加 span：字段与抽取都对，但**只落了一半**（`133cd60c`）
+
+### 1. 加了什么
+
+`ParsedImport.start_index / end_index` + `imports` 表两列 + 写入代码。
+顺手修了一个**已有的坏行**：schema 里 `bindings TEXT不算边`（注释吃掉了类型名）。
+
+### 2. 抽取层是对的
+
+```
+parseFileFull('src/domain/task_machine.ts').imports[0]
+  → { source: '../application/design/intent/expectations.js', si: 1887, ei: 1993 }
+```
+
+### 3. ★★ 但 DB 里只有 39%（TS）
+
+```
+.go    67/67   100%
+.py    25/25   100%
+.mjs  420/544   77%
+.ts   686/1739  39%   ← 问题在这儿
+```
+
+`task_machine.ts` 的 3 条 import 在 DB 里全 NULL，而**内存里明明是 1887**。
+唯一写入点只有 `symbols.ts:511`，代码读下来是对的 —— **查了 20 分钟没定位到。**
+
+### 4. 所以不收口
+
+- 字段保留（抽取正确、对现有功能无害）
+- **但不能拿它去支撑 `remove_dead_imports`**（一半场景没 span）
+- 如实记为「未完成」，不写「已完成」
+
+### 5. 这一笔无卡
+
+`schema.ts` 的卡上一笔（identifiers）已 done；本次是同一节点的第二次改动，
+当前机制要先 reopen 才能立新卡，而我直接改了 —— **无卡，如实记录**。
+
+★ 这是今天**第二次**「查不透就停」，也是第二次**无卡改动**。
+两件事都指向同一个缺口：**同一节点的连续改动，没有顺畅的路**。
