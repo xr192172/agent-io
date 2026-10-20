@@ -95201,11 +95201,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T01:14:08.743Z",
+    "saved_at": "2026-10-20T01:31:41.660Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792458848535,
-    "age": 208
+    "scanRev": 1792459889291,
+    "age": 12369
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -97014,9 +97014,19 @@
       "id": "todo_查清-imports-start-index-落库只有-39-ts-的原因并修好-2",
       "summary": "查清 imports.start_index 落库只有 39%（TS）的原因并修好 —— 抽取层已证有值（task_machine.ts 首条 si=1887），写入代码（symbols.ts:511）读着也对，唯一写入点仅此一处；但 DB 里 686/1739 为 NULL。★ 关键矛盾：identifiers 与 imports 抽自同一棵树，identifiers 有 126504 行偏移、imports 却只有 39% —— 问题不在「树没给」。下一步：直接打印 task_machine.ts 里 import_statement 节点的 startIndex，看是不是这个节点类型特别。",
       "expectations": [],
-      "state": "claimed",
+      "state": "done",
       "owner": "workbuddy",
-      "claimed_at": "2026-10-20T01:14:08.705Z"
+      "claimed_at": "2026-10-20T01:14:08.705Z",
+      "evidence": [
+        {
+          "kind": "attestation",
+          "at": "2026-10-20T01:31:41.633Z",
+          "by": "llm",
+          "why": "子代理实测：PID 17932（07:14 启动、内存里是加 span 之前的 kernel）在后台全量重扫、写回无 span 的行；按文件 mixed=0 ⇒ 按写入者丢。修法 hasLegacyImportRows 让旧格式残行不短路。杀进程+重建后 .ts 1731/1731=100%。",
+          "agent": "workbuddy",
+          "verdict": "pass"
+        }
+      ]
     }
   ],
   "_dsl_rev": 538
