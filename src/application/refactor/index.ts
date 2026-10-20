@@ -487,6 +487,10 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
         renames: renames.map((x) => ({ from: String(x.from), to: String(x.to) })),
         dry_run: a.dry_run === true,
+        // ★★★ 2026-10-20（A7 闭合）：入口把逐调用 `actor` 往下传（与 `edit_code` 同一把尺）。
+        //   ★ `actor` 是**跨工具保留键**（`server_registry#CALL_ACTOR_FIELD` 注入 schema），本工具不必再声明一次；
+        //     这里只做"把入参交给 [B]"，不在这里解释身份。
+        actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
       });
       const fmt = (p: { from: string; to: string }, res?: { references: Array<{ file: string; fromSource: string; toSource: string }> }): string => {
         const lines = [`  - ${p.from} → ${p.to}`];
@@ -601,6 +605,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         to_file,
         to_symbol: typeof a.to_symbol === 'string' && a.to_symbol ? a.to_symbol : undefined,
         dry_run: a.dry_run === true,
+        // ★★★ 2026-10-20（A7 闭合）：同上 —— 逐调用 `actor` 交 [B]，不要在入口解释身份。
+        actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
       });
       // ★ 2026-10-20：闸读数的人读侧（pre-gate 阻断时为空，不加噪声）
       const gateLine = gateHumanLines(r.task_gate);
@@ -1781,6 +1787,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         project_dir,
         plan: plan as RefactorPlan,
         atomic: a.atomic === true,
+        // ★★★ 2026-10-20（A7 闭合 · 第 4 条写路）：身份交给 [B]，再由它传给唯一落盘的 `editCode`。
+        actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
       });
       const lines: string[] = [];
       lines.push(

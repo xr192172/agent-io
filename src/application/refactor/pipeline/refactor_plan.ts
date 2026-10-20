@@ -220,6 +220,12 @@ export async function applyRefactorPlan(args: {
   project_dir: string;
   plan: RefactorPlan;
   atomic?: boolean;
+  /**
+   * ★ 2026-10-20（A7 闭合 · 4 条写路的第 4 条）：**本次写入者身份**（与 claim 时 `data.owner` 同一个值）。
+   * 本函数**不自己过闸** —— 落盘一律交给 `editCode`（唯一实现，见文件头"只做编排"）；
+   * 但既然闸在 `editCode` 里，身份就必须**在这里往下传**，否则那条闸永远只看得见 env。
+   */
+  actor?: string;
 }): Promise<ApplyPlanResult> {
   const projectRoot = path.resolve(args.project_dir);
   const plan = args.plan;
@@ -303,6 +309,8 @@ export async function applyRefactorPlan(args: {
       op: 'replace_text',
       targets: pendingTargets,
       atomic,
+      // ★★★ 2026-10-20（A7 闭合）：身份一路往下传 —— 闸在 `editCode` 里，不传就等于没接（只有 env 兜底）。
+      actor: args.actor,
     });
     landed = r.data.items ?? [];
     wrote = r.data.written === true;

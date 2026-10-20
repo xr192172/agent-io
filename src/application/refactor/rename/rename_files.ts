@@ -39,6 +39,12 @@ export interface RenameFilesInput {
   renames: FileRenameItem[];
   /** true=只算全部 dry-run 影响面不落盘；默认优先整体校验，全通过才落盘 */
   dry_run?: boolean;
+  /**
+   * ★ 2026-10-20（A7 闭合）：**本次写入者身份**（A7 写闸用；与 claim 时 `data.owner` 同一个值）。
+   * ★ 本层要**两处**都用到它：① 批量闸（`assertSourceWriteRegisteredFor`）；
+   *   ② 逐条转发给 `renameFile`（它自己那层也有一道闸 —— 不能"外层知道、内层不知道"）。
+   */
+  actor?: string;
 }
 
 export interface RenameFilesResult {
@@ -115,7 +121,8 @@ async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResu
   let allOk = true;
   for (let i = 0; i < renames.length; i++) {
     const item = renames[i];
-    const result = await renameFile({ project_dir: projectDir, from: item.from, to: item.to, dry_run: true });
+    // ★ 2026-10-20：预览（dry_run）也转发 actor —— 本层不丢身份，内层将来加闸/加读数的口径才是同一把尺。
+    const result = await renameFile({ project_dir: projectDir, from: item.from, to: item.to, dry_run: true, actor: input.actor });
     previews.push({ index: i, from: item.from, to: item.to, ok: result.ok, blocked: result.ok ? undefined : result.blocked, result });
     if (!result.ok) allOk = false;
   }
@@ -148,7 +155,9 @@ async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResu
     //     （每条目的 from/to + 阶段 1 预览里列出的各 importer），不另立第二份清单。
     //   ★ 闸**不会**替你登记、也不降级放行：未登记 ⇒ 抛错、整批不落盘（与下方"回滚整批"同一目的）。
     // ★★★ 2026-10-20：返回值**不许再丢**（闸判了什么、豁免了谁，要随回执出去）。
-    gate = assertSourceWriteRegisteredFor(projectDir, [...touched], resolveActor());
+    // ★★★ 2026-10-20（A7 闭合 · 4 条写路的第 2 条）：`actor` **显式入参** —— 之前这里是 `resolveActor()`（无参），
+    //   只有 env 兜底 ⇒ 「谁在写」恒 null ⇒ A7 只走"提醒 + 放行"。与 `edit_code` 同一把尺（`args.actor`）。
+    gate = assertSourceWriteRegisteredFor(projectDir, [...touched], resolveActor(input.actor));
     // ★ T214 续8：**接住快照**（★ 否则失败时无从回滚 ✓ —— 原来这里把返回值丢了 ✗）
     snap = snapshotBeforeWrite(projectDir, `rename_files:${renames.length} 条`, [...touched]);
   }
@@ -156,7 +165,8 @@ async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResu
   let filesWritten = 0;
   for (let i = 0; i < renames.length; i++) {
     const item = renames[i];
-    const result = await renameFile({ project_dir: projectDir, from: item.from, to: item.to, dry_run: false });
+    // ★ 2026-10-20：真落盘也转发 actor（内层 renameFile 自己有闸 —— 身份必须一路到底）。
+    const result = await renameFile({ project_dir: projectDir, from: item.from, to: item.to, dry_run: false, actor: input.actor });
     if (!result.ok) {
       // ★★★ T214 续8：**不再直接 return** —— ★ 先记住"在第几条失败"，★ 出循环后**用它回滚整批** ✓
       //   ★★ 原来这里 `return { …, applied, blocked: [… 已应用 N 条 …] }` ⇒ **已落盘的【保留】** ✗
