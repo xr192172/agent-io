@@ -597,6 +597,10 @@ export function onDslChange(cb: DslChangeCallback): void {
  */
 export function saveDSL(dsl: DesignDSL, source: string = 'mcp', base_dsl_rev?: number): string {
   ensureFeaturesDir();
+  // ★★★ 2026-10-20：saveDSL 写的是**设计侧**（下面 `getDesignSheetFile`），而上面只建了 features/ ⇒
+  //   全新 `AGENT_IO_HOME` 下 `writeAtomic` 直接 ENOENT（实测：t352 / t353 的 seed 崩在这一行）。
+  //   ★ 与 `saveDesignSheet` 同一条纪律：**写之前先保证落点目录在**（不是测试夹具的问题，是真写端缺口）。
+  fs.mkdirSync(getDesignDir(), { recursive: true });
   // 乐观锁：读当前 rev 对比 base
   if (base_dsl_rev !== undefined) {
     const cur = currentDslRev(dsl.feature);
@@ -825,6 +829,38 @@ export function listFeatures(): DesignDSL[] {
     }
   }
   return dsls.sort((a, b) => a.feature.localeCompare(b.feature));
+}
+
+/**
+ * ★★★ 列出**设计侧**全部 sheet（`<dataHome>/.agent-io/design/<f>.dsl.json`）。
+ *
+ * ## 为什么需要它（2026-10-20 实测）
+ * `listFeatures()` 读的是 `features/` —— 那个目录 2026-10-18 搬走后**只剩 overlay**
+ * （本仓实测：2 个 `.overlay.json`、0 个 `.dsl.json`）⇒ 它返回 `[]`。
+ * 而写闸的 `collectGateCoverage` 用它 ⇒ `rootFeatureCount === 0` ⇒ `applicable:false`
+ * ⇒ **闸对全仓源码恒放行**（连"提醒"那一支都没走到）。
+ *
+ * ## 口径（★ 与 `getDSL` 同一处）
+ * 逐文件走 `getDesignSheet`（= `getDSL` 的底层读端），**不另写解析器、不接受第二份清单**。
+ * ★ 只认 `.dsl.json`：overlay 不是设计侧本身（它是进度轴）。
+ * ★ 读不出来 / 缺 `feature` 名 ⇒ **抛**（静默跳过会让"闸看不见某个 feature"变成放行理由）。
+ */
+export function listDesignSheets(): DesignDSL[] {
+  const dir = getDesignDir();
+  if (!fs.existsSync(dir)) return [];
+  const out: DesignDSL[] = [];
+  for (const f of fs.readdirSync(dir)) {
+    if (!f.endsWith('.dsl.json')) continue;
+    const feature = f.slice(0, -'.dsl.json'.length);
+    // ★ 读端唯一：getDesignSheet（非法 feature 名由 getDesignSheetFile 抛）
+    const dsl = getDesignSheet(feature);
+    if (!dsl) throw new Error(`设计侧文件读不出来（JSON 损坏？）：${path.join(dir, f)}`);
+    if (typeof dsl.feature !== 'string' || !dsl.feature) {
+      throw new Error(`设计侧文件缺 feature 名：${path.join(dir, f)}`);
+    }
+    out.push(dsl);
+  }
+  return out.sort((a, b) => a.feature.localeCompare(b.feature));
 }
 
 /**

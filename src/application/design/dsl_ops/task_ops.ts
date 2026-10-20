@@ -407,7 +407,9 @@ export function publishTask(input: TaskOpInput): EditResult {
           (existing.state === 'done'
             ? `★ 换这张**已完成（L2）**卡的判据的正路：\`reopen\`（带 owner + reason）→ 改 \`decision\` → ` +
               `\`publish\`（带 data.reason；原地换判据，evidence 逐条保留）。`
-            : `★ state=${existing.state} 是终态，不可换判据（要重做就另立节点 / 另开 feature）。`),
+            : `★ state=${existing.state} 不可换判据 —— ` +
+              `要重做请先 \`relaunch\`（带 reason，void → candidate），再改 \`decision\`、\`publish\`；` +
+              `★ 不必另开节点（节点 id 就是文件）。`),
       );
     }
     if (refresh && level === 'L1') {
@@ -854,7 +856,7 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
 // edit_dsl 路由（applyOperation 的 case 'task' 只调这里）
 // ─────────────────────────────────────────────────────────────
 
-/** `edit_dsl {type:'task', op:publish|claim|release|complete}` 的分派（★ 四个 action 的唯一入口）。 */
+/** `edit_dsl {type:'task', op:publish|claim|release|complete|void|reopen|relaunch}` 的分派（★ **唯一入口**；合法值只由 `op_data_spec.ts#OP_SPECS` 判）。 */
 /**
  * ★★★ 2026-10-19：**重开已完成的任务**（`done → claimed`）。
  *
@@ -911,6 +913,71 @@ export async function reopenTask(input: TaskOpInput): Promise<EditResult> {
   };
 }
 
+/**
+ * ★★★ 2026-10-20（用户裁定：「加 t_relaunch（void→candidate，理由必填）」）：
+ * **重新立卡**（`void → candidate`）。
+ *
+ * ## 与 `reopen` 的分界（★ 必须写在代码里，否则两个词会互相吃掉）
+ * ```
+ * t_reopen   : done → claimed     「接手」    —— 判据不变，原卡继续
+ * t_relaunch : void → candidate   「重新立卡」—— 判据要重给，卡回到没人领
+ * ```
+ * `void` 的语义是「**这件事不做了**」，不是「**这件事不存在过**」⇒ 要做回来了，
+ * 不该逼人另开节点（节点 id 就是文件，另开 = 同一文件两张卡）。
+ *
+ * ## ★ 为什么清空 `expectations`（这一条最容易做错）
+ * `candidate` 的含义 = **没人领 · 判据待 `publish` 重给**。
+ * 若保留旧判据：`claim` 读 `cardStanding` ⇒ 旧判据早就绿了 ⇒ `satisfied` ⇒ **拒领**（"没活干"），
+ * 于是这张卡既领不了、`publish` 又只认 `candidate`……那是把刚拆掉的死锁原样搬到 `void` 上。
+ * ⇒ **清空 `expectations`**（旧判据属于"已作废的那件事"），同时保留：
+ *   · `summary` —— 原来做的是什么（人读；`publish` 会按 decision 重写）；
+ *   · `evidence` —— "这活存在过"（与 `void` 同一条纪律：作废的是"要做"，不是"存在过"）。
+ * ⇒ 之后必须 `publish`（从 `decision` 重翻）才能 `claim` —— **判据不在这里给**（唯一来源仍是 decision）。
+ *
+ * ## 三条判据（`t_relaunch` 的 guard，这里只执行）
+ * ① `reason` 必填（为什么重新立卡）—— ★ 无理由的复活等于把"作废"当摆设
+ * ② `state === void` —— 由 `assertTransition` 从迁移表读，不另写一把尺
+ * ③ 清空后不可能"一出生就满足"（`expectations: []` ⇒ 没有可判绿的判据）
+ */
+export function relaunchTask(input: TaskOpInput): EditResult {
+  const { feature, node_id } = input;
+  const reason = (input.reason ?? '').trim();
+  if (!reason) {
+    throw new Error(
+      'relaunch 被拒：缺 `data.reason` —— 为什么重新立卡？（t_relaunch 第 1 条）无理由的复活等于把"作废"当摆设。',
+    );
+  }
+  const { card } = loadTask(feature, node_id);
+  assertTransition(card.state, 'candidate', 'relaunch');
+  const dropped = (card.expectations ?? []).length;
+  writeTask(feature, node_id, {
+    ...card,
+    state: 'candidate',
+    expectations: [],
+    owner: null,
+    claimed_at: null,
+    // ★ 重新立卡 = 新账：上一轮的重开欠账不跟过来（否则 publish 之后 complete 会被"旧账"拒）
+    reopened_at: null,
+  });
+  return {
+    message:
+      // ★ 首行自足（`edit_dsl` 只透出每个 op 的**首行**）
+      `已重新立卡任务 "${node_id}"（void → candidate）：旧判据 ${dropped} 条**已清空**（它们属于已作废的那件事），summary / evidence 保留。\n` +
+      `  理由：${reason}\n` +
+      `  ★ 下一步：① 改 decision（判据的唯一来源）；② \`{ type:'task', op:'publish', id:'${node_id}' }\` ⇒ 按 decision 重给判据；然后 \`claim\`。\n` +
+      `  ★ 现在直接 claim 会被拒（0 条后态判据 = 判不了）。\n` +
+      `  ★ 与 reopen 的区别：reopen = done → claimed「接手」（判据不变）；relaunch = void → candidate「重新立卡」（判据重给）。`,
+    feature,
+    data: {
+      node_id,
+      state: 'candidate' as TaskState,
+      expectations_dropped: dropped,
+      expectations_kept: 0,
+      progress: progressOf({ state: 'candidate' }),
+    },
+  };
+}
+
 export async function applyTaskOp(
   feature: string,
   op: TaskOpRequest,
@@ -941,8 +1008,11 @@ export async function applyTaskOp(
       return voidTask(input);
     case 'reopen':
       return reopenTask(input);
+    case 'relaunch':
+      // ★★★ 2026-10-20：void → candidate「重新立卡」（判据由 publish 重给）
+      return relaunchTask(input);
     default:
-      // ★ 合法性由 `OP_SPECS` 判（`task.ops` 只有三个）；走到这里说明表与分派漂了。
+      // ★ 合法性由 `OP_SPECS` 判（`task.ops` 是唯一清单）；走到这里说明表与分派漂了。
       throw new Error(`task 不支持操作: ${op.op}（合法值由 op_data_spec.ts 的 OP_SPECS.task.ops 判定）`);
   }
 }
@@ -1002,7 +1072,8 @@ export function publishFromDiff(feature: string, nodeId: string): EditResult {
  *
  * ## 规矩
  * ★ `reason` 必填（为什么这张卡不需要做了）—— 由 `OP_SPECS.task.required.void` 先拒。
- * ★ 已 `done` / 已 `void` 的卡不许再 void（终态不可变）。
+ * ★ 只有 `candidate` 能 void（迁移表说了算）。★ 2026-10-20：void **不再是终态** —— 它有了 `t_relaunch`
+ *   （void → candidate，重新立卡）；`done` 也早有 `t_reopen`。
  */
 export function voidTask(input: TaskOpInput): EditResult {
   const { feature, node_id, reason } = input;
@@ -1011,7 +1082,10 @@ export function voidTask(input: TaskOpInput): EditResult {
   }
   const { card } = loadTask(feature, node_id);
   if (card.state === 'done' || card.state === 'void') {
-    throw new Error(`void 被拒：state=${card.state} 是终态，不可再作废。`);
+    throw new Error(
+      `void 被拒：state=${card.state} 只能从 candidate 作废。` +
+        '★ 已 done 的卡要重做走 reopen；已 void 的卡要重做走 relaunch —— 都不是"再作废"这条路。',
+    );
   }
   assertTransition(card.state, 'void', 'void');
   writeTask(feature, node_id, { ...card, state: 'void' });

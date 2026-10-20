@@ -30,7 +30,7 @@ import { renderLiveFromDb } from '../../infrastructure/index/live_render.js';
 import { scanRevOf, type ScanRev } from '../../infrastructure/index/scan_rev.js';
 import { judgeExpectations } from '../design/intent/expectations.js';
 import { isSatisfied, releaseIfExpired, type CardStanding, type LeaseReleaseEvent } from '../../domain/task_machine.js';
-import { isTerminalTaskState, type TaskSpec, type TaskState } from '../../domain/task_schema.js';
+import { isClosedTaskState, type TaskSpec, type TaskState } from '../../domain/task_schema.js';
 import { expectationPhase } from '../../domain/expectation.js';
 
 /** 一条红判据的**点名**（不是计数 —— 计数说不出"哪条"）。 */
@@ -143,7 +143,9 @@ export async function patrolDrift(feature: string, opts: PatrolOptions): Promise
     const p = (n as { path?: string }).path;
     if (p) pathByCard.set(n.task.id, p);
   }
-  const open = cards.filter((c) => !isTerminalTaskState(c.state));
+  // ★ 2026-10-20：`isTerminalTaskState` → `isClosedTaskState` —— done/void 都能被重开/重生，
+  //   所以这里问的不是"能不能迁移"，而是"这张卡还开着吗"（已了结的不判、不报 missed_close）。
+  const open = cards.filter((c) => !isClosedTaskState(c.state));
 
   // ── 3. 判定器：一次批量，把"哪条判据红"点名出来（★ 判据只有这一把尺） ──
   const items = open.flatMap((c) =>

@@ -192,6 +192,12 @@
 - **A7 写闸的「谁在写」**：原来只认"有 claimed 卡"，不认人 ⇒ 加 `WriteActor` / `resolveActor` / `assertSourceWriteRegisteredFor`；★ **三种情形三种处置**（匹配放行 / 不匹配阻断 / 无 actor 提醒+放行）。实测：`34/26/5/3` → `34/28/3/3`，`t352` 18/0。
 - **B4 `blocked_by_open_question` 只有一半消费**：与 `enabled` 合成 **`TransitionState`**（三值必填）⇒ **"声明可走却挂着未决项"这个组合在类型上不存在**。
 
+### ★ 2026-10-20 两笔（用户裁定：①「接受，闸该真生效」②「加 t_relaunch」）
+- **`t_relaunch`（`void → candidate`，reason 必填）**：`void` **不再是终态** —— 「作废=这事不做了，不是这事不存在过」⇒ 能重新立卡。★ 与 `t_reopen` 的分界写进 `TRANSITIONS`：reopen = 接手（判据不变）· relaunch = 重新立卡（**清空 expectations**，判据由 `publish` 从 decision 重给）。实测：void 卡 relaunch ⇒ `candidate` / `expectations=0`；非 void 拒；缺 reason 拒；relaunch → publish → claim → 改盘 → complete 全程走通。
+- **写闸的覆盖率采集改读设计侧**：`collectGateCoverage` 原走 `listFeatures()`（`features/`，只剩 overlay）⇒ `rootFeatureCount=0` ⇒ 恒 `applicable:false`。现在走新增的 `storage.ts#listDesignSheets`（与 `getDSL` 同一读端）。实测：`totalFeatures=2 / rootFeatureCount=2 / covering=2`，`write_gate.ts` 判 `covered`；未领卡 ⇒ 拒、改别人的卡 ⇒ 拒（A7）。
+- ★ 顺带：`C2` 的"终态集合两个家"已随之**消失**（本仓已无终态：done 有 reopen、void 有 relaunch）⇒ 改名 `CLOSED_TASK_STATES` / `isClosedTaskState`（"这张卡还开着吗"），字面量只住常量一处。
+- ★ 顺带修：`saveDSL` 写 `design/` 前没 `mkdir`（10-18 搬家漏的）⇒ 全新 `AGENT_IO_HOME` 下 `t352`/`t353` 的 seed 直接 ENOENT；现已补，`t352` 18/0 真绿。
+
 ### A 级（会让人做错事 / 数据不一致）
 
 | # | 位置 | 缺陷 | 怎么判 |
@@ -213,7 +219,7 @@
 
 ### C 级
 - **C1** 注释里计数过期（`expectation.ts:25` 写"五种 kind"，实为六种；`task_ops.ts:667` 写"三个 op"，实为四个）
-- **C2** 终态集合有两个家（`TERMINAL_TASK_STATES` 零使用 + `isTerminalTaskState` 里三个字面量）
+- **C2** ✅ **已销（2026-10-20）**：本仓**已无终态**（`done` 有 `t_reopen`、`void` 有 `t_relaunch`）⇒ 那不是"两个家"，是"概念本身过期"；改名 `CLOSED_TASK_STATES` / `isClosedTaskState`（问的是"这张卡还开着吗"），字面量只住常量一处，消费点只剩 patrol
 
 ---
 
@@ -299,7 +305,7 @@
 |---|---|---|---|
 | **`.agent-io/design/<f>.dsl.json`** | ★★★ **设计 DSL（唯一权威）** —— 手写；结构 = fork 自实际侧 + 我改的那几处（带 `decision`） | `storage.ts#getDesignSheet` · `scripts/design-diff.mjs` | ✅ **白名单**（见下） |
 | `.agent-io/live/<f>.dsl.json` | **实际 DSL**（扫描产物） | `getLiveFeatureResolved` | ❌ |
-| `.agent-io/features/<f>.overlay.json` | **进度 overlay**（★ `features/<f>.json` 派生文件已退场，这里只剩 overlay） | `getDSL` / `edit_dsl` / 写闸 / 巡检——★ 都已读 design 侧 | ❌ |
+| `.agent-io/features/<f>.overlay.json` | **进度 overlay**（★ `features/<f>.json` 派生文件已退场，这里只剩 overlay） | `getDSL` / `edit_dsl` / 巡检；写闸只读它的 edge intent（前置闸）—— ★ **DSL 本体一律读 design 侧**。⚠️ **原文「都已读 design 侧」是假的**（2026-10-20 实测）：写闸的覆盖率采集 (`collectGateCoverage`) 此前仍走 `listFeatures()` 读 `features/` ⇒ 0 条 feature ⇒ 恒 `applicable:false`；现已改走 `listDesignSheets` | ❌ |
 | `.agent-io/cache.db` | 符号 / 调用 / import（`edges.kind = call 7528 · type_ref 4832 · import 1223`） | `get_dsl{query:'calls'}` 等 | ❌ |
 | `docs/DESIGN.md` | 设计文档（人读） | 人 | ✅ |
 

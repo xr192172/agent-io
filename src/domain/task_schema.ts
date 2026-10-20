@@ -45,14 +45,19 @@ export const TASK_STATES = ['candidate', 'claimed', 'done', 'void'] as const;
 export type TaskState = (typeof TASK_STATES)[number];
 
 /**
- * 终态（★ 只此一处）。
+ * **已了结**的状态（★ 只此一处；`isClosedTaskState` 是它的唯一读法）。
  *
- * ★★ 2026-10-19：**`done` 移出终态** —— 加了 `t_reopen`（done → claimed），
- *   因为 done 是终态时，同一节点的**第二个工作项无处安放**（publish 拒、release 只能 claimed→candidate）。
- *   ⇒ 现在只有 `void` 是真正的终态（作废就回不来了）。
- * ★ 附注：本常量**此前零消费者**（grep 只命中定义行）—— 它一直是"装饰"。
+ * ★★★ 2026-10-20 改名（dogfood #20 + 用户裁定加 `t_relaunch`）：
+ *   原名叫 `TERMINAL_TASK_STATES = ['void']`，而 `isTerminalTaskState` 判的是 `done | void`
+ *   —— **同一个概念两个答案**（C2：终态集合有两个家）。
+ *   ★ 想"把字面量对齐成 done|void"是错的方向：那天加了 `t_relaunch`（void → candidate），
+ *     `done` 又早有 `t_reopen`（done → claimed）⇒ **本仓已经没有"终态"这回事**
+ *     （每个状态都有可用出边）。
+ *   ⇒ 真正被消费的那个概念是「**这张卡还开着吗 / 还要不要巡**」——
+ *     消费点只有 patrol（`task_drift.ts`：已了结的卡不判、不报 missed_close）。
+ *   ⇒ 名字改成 `CLOSED`：`done` / `void` 是**两种结局**，都能被重开/重生，但都**不再是活**。
  */
-export const TERMINAL_TASK_STATES = ['void'] as const;
+export const CLOSED_TASK_STATES = ['done', 'void'] as const;
 
 /**
  * 运行期形状守卫：`unknown` ⇒ `TaskState`。
@@ -63,15 +68,15 @@ export function isTaskState(v: unknown): v is TaskState {
   return typeof v === 'string' && (TASK_STATES as readonly string[]).includes(v);
 }
 
-/** 是不是终态（终态不再迁移 —— 见 `task_machine.TRANSITIONS`）。 */
-export function isTerminalTaskState(s: TaskState): boolean {
-  switch (s) {
-    case 'done':
-    case 'void':
-      return true;
-    default:
-      return false;
-  }
+/**
+ * 这张卡**已了结**吗（= `state` 落在 `CLOSED_TASK_STATES` 里）。
+ *
+ * ★ 判据**只读那个常量**（不在这里再写一遍 `done`/`void` 字面量 —— 那就是 C2 的原病）。
+ * ★ 注意它**不**等于"不能迁移"：`done` 能 `t_reopen`、`void` 能 `t_relaunch`。
+ *   它回答的是巡航问题："这张卡还要不要判 / 要不要报 missed_close"。
+ */
+export function isClosedTaskState(s: TaskState): boolean {
+  return (CLOSED_TASK_STATES as readonly TaskState[]).includes(s);
 }
 
 /**

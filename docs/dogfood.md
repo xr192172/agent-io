@@ -283,6 +283,34 @@
 - `owner` 为空 ⇒ 放行；`actor` 为空 ⇒ 提醒+放行
 
 **49. 「防冒充」在本架构不可达** — `结论`
+
+**50. 「闸生效」的时刻是 `npm run build`，不是「改完 src」** — `已确认`
+- `edit_code` 跑的是 `dist/`；改完 `write_gate.ts` 但不 build ⇒ 闸还是旧的（我前几次写盘其实**没受闸**）
+- ⇒ 派活单里说"修完就立刻受闸"是对的，但**必须补一句**：受闸的时刻 = 下一次 build 之后；在那之前所有写入都是"旧闸"下的
+
+**51. `saveDSL` 写 `design/` 却不 `mkdir design/`** — `已修（2026-10-20）`
+- `saveDSL` 只 `ensureFeaturesDir()`（`storage.ts:599`），而落点是 `design/<f>.dsl.json`
+- ⇒ 任何用**全新 `AGENT_IO_HOME`** 的证在 `seed` 就 ENOENT：`t352` / `t353` 崩在这里（**与本次改动无关，10-18 搬家起就坏了**）
+- ⇒ 修法：写前 `fs.mkdirSync(getDesignDir(), { recursive: true })`（与 `saveDesignSheet` 同纪律）
+
+**52. ★ 证的夹具也是"第二份可达迁移表"** — `观察中`
+- `scripts/impl-fixture.mjs` F7 断言 `applicableTransitions(void) === []`；加 `t_relaunch` 后立刻假红
+- ⇒ 说明"迁移表只住一处"这句话**只对生产代码成立**：断言里还抄了一份"谁能走到哪"
+- ⇒ 状态机加边的标准动作应是：改 `TRANSITIONS` + `grep` 所有**断言过的可达集**
+
+**53. 写闸把 `certs/*.mjs` 也拦了** — `待裁`
+- 证与脚本是 design-canvas 的文件节点 ⇒ 修一张坏证也要先 publish + claim
+- 而"证坏了"的场景恰恰是"闸/契约本身坏了" —— 这时开卡依赖的正是坏掉的那条链
+- ⇒ 要么给 `certs/` `scripts/` 一条**显式豁免**（写明理由），要么接受"修证也走任务"（但要保证 publish 永远不依赖闸）
+
+**54. `edit_dsl` 的顶层 `reason` 会先吃掉"验收用的拒因"** — `已确认`
+- 我要验"relaunch 缺 reason ⇒ 拒"，结果 `edit_dsl` 先用 L3「原因太泛」把我拒了 ⇒ **分不清是谁拒的**
+- ⇒ 验收一条"会拒"的行为时，外层 reason 必须写清实体（本次写进节点 id 才过）
+
+**55. 手拼 args JSON 会被 shell 吃掉反引号/反斜杠** — `已确认`
+- 用 `bash heredoc` + `node -e "..."` 造 `--input` JSON 时，模板字符串里的反引号被执行、`\\n` 被折叠
+- 实测代价：一次把 `publish` 的拒因写成「要重做请先 （带 reason…）、；」——**代码里少了一句人话**，靠回读才发现
+- ⇒ 正确姿势：先把**新文本**写进文件（labs 里），再 `JSON.stringify` 包成 args —— 别在 shell 里拼
 - 宿主注入通道：**HTTP 侧有 `sessionId`（`X-WorkBuddy-MCP-Context`），stdio 侧没有**
 - 同一会话的子代理**共用一个 server 进程** ⇒ 进程/env 级身份区分不了它们
 - ⇒ A7 只能买**协作防撞**，买不到**防冒充**。**别按"安全"去卖它。**

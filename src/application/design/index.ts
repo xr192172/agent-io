@@ -222,7 +222,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
               .describe(
                 '操作名（★ 合法值**按 type 不同**，唯一判据 = op_data_spec.ts 的 OP_SPECS；' +
                   '填错会由 checkOpSpec 报出该 type 的全部合法值）。' +
-                  '例：node/edge/file/api 用 add/update/delete/move；task 用 publish/claim/release/complete/void/reopen',
+                  '例：node/edge/file/api 用 add/update/delete/move；task 用 publish/claim/release/complete/void/reopen/relaunch',
               ),
             /**
              * ★★★ 2026-10-20：**与 `op` 同病** —— 这里原是硬编码 `z.enum([...])`，

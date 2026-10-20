@@ -208,18 +208,28 @@ export const OP_SPECS: readonly OpSpec[] = [
   },
   {
     type: 'task',
-    ops: ['publish', 'claim', 'release', 'complete', 'void', 'reopen'],
+    // ★ 2026-10-20：加 relaunch（void → candidate，重新立卡；判据由 publish 重给）
+    ops: ['publish', 'claim', 'release', 'complete', 'void', 'reopen', 'relaunch'],
     idRequired: true,
     idNote: '任务格所在节点的 id（`geometry.nodes[].task`；★ 任务与节点同居）',
-    required: { claim: ['owner'], release: ['reason'], complete: ['evidence'], void: ['reason'], reopen: ['owner', 'reason'] },
+    required: {
+      claim: ['owner'],
+      release: ['reason'],
+      complete: ['evidence'],
+      void: ['reason'],
+      reopen: ['owner', 'reason'],
+      relaunch: ['reason'],
+    },
     note:
-      '★ **任务态唯一写端**（五态 `candidate|claimed|done|void|superseded`）；`node.status` 只是它的**派生值**（`task_schema.ts#progressOf`），不许直接改。' +
+      '★ **任务态唯一写端**（四态 `candidate|claimed|done|void`；★ superseded 已退场）；`node.status` 只是它的**派生值**（`task_schema.ts#progressOf`），不许直接改。' +
       'publish:**立卡=翻该节点的决策卡**：有后态判据⇒**L2**（summary+expectations 逐字搬）；' +
       '无 decision/太粗⇒**L1 建构卡**（**0 条期望**，验收=DSL 建构完整）；' +
       '★不收 data（**唯一例外**：`state=claimed` 的卡带 `data.reason` ⇒ **原地换判据**：只换 summary+expectations，' +
       'state/owner/evidence 全保留）· ' +
       'claim:`data.owner`（L2 须可领＝cardStanding，L1 看建构缺口）· release:`data.reason`（by 走顶层 `agent`）· ' +
-      'complete:`data.evidence`（同一把证据尺；L2 须 isSatisfied，L1 须建构完整）。',
+      'complete:`data.evidence`（同一把证据尺；L2 须 isSatisfied，L1 须建构完整）· ' +
+      'reopen:`data.owner`+`data.reason`（done→claimed「接手」，**判据不变**，原卡继续）· ' +
+      'relaunch:`data.reason`（void→candidate「重新立卡」，★ **清空 expectations**、保留 summary/evidence；判据要再用 publish 从 decision 重给 —— 与 reopen 不是一回事）。',
   },
 ];
 

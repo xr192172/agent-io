@@ -18,7 +18,7 @@
  *   F5c 后态红 · 归属 dep-done    ⇒ blocked
  *   F5d 后态红 · 归属 dep-pending ⇒ blocked
  *   F6 isClaimable 五值穷尽      ⇒ work/violated true；其余 false
- *   F7 applicableTransitions     ⇒ from=done 含 t_reopen；from=void 为空
+ *   F7 applicableTransitions     ⇒ from=done 含 t_reopen；from=void 含 t_relaunch（2026-10-20 加）
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -108,7 +108,7 @@ for (const [standing, expect] of claimableCases) {
 // ── F7：applicableTransitions 按 from + ready 过滤 ──
 const transCases = [
   ['done', ['t_reopen']],
-  ['void', []],
+  ['void', ['t_relaunch']],
   ['candidate', ['t_claim', 't_void', 't_done_from_candidate']],
 ];
 for (const [from, expectIds] of transCases) {

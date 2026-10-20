@@ -62,7 +62,7 @@ import { indexCoversDisk } from '../infrastructure/index/index_freshness.js';
 // ★★★ T328 步 6：**任务闸**要读「项目 → 设计 feature」的反查与 overlay 的 progress（唯一权威）。
 //   ★ 反查口径**与 `file_snapshot.ts`（T90）逐字同款**（`DSL.source_root === 项目根`）——
 //     那条路已在本仓跑过（它记"写前那一刻的决策"），此处**复用同一把尺**，不另立一套。
-import { listFeatures, getDSL, saveDSL } from '../infrastructure/storage.js';
+import { listDesignSheets, getDSL, saveDSL } from '../infrastructure/storage.js';
 import { loadOverlay } from '../infrastructure/storage_overlay.js';
 import type { Annotation } from '../domain/annotation.js';
 // ★★★ 2026-10-17（OQ10 裁定）：闸的判据从「overlay 的 progress 是否登记过」改成
@@ -539,7 +539,7 @@ export interface GateCoverageFeature {
 export interface GateCoverage {
   /** 收集到的 covering feature（有 `path → node_id` 表的那些） */
   features: GateCoverageFeature[];
-  /** `listFeatures()` 里一共有多少条（放行 note 的依据读数） */
+  /** 设计侧（`design/*.dsl.json`）一共列到多少条（放行 note 的依据读数） */
   totalFeatures: number;
   /** `source_root` 指到项目根的 feature 条数（= 0 ⇒ 合法的 applicable:false） */
   rootFeatureCount: number;
@@ -575,6 +575,11 @@ function nodeFilePath(
 /**
  * 该项目根上「**覆盖某批文件**」的设计 feature 列表（每个带 `path → node_id` 表）。
  *
+ * ★★★ 2026-10-20：**枚举源 = 设计侧**（`storage.ts#listDesignSheets` → `getDesignSheet`，与 `getDSL` 同一处）。
+ *   此前走 `listFeatures()` 读 `features/` —— 那个目录 2026-10-18 搬走后只剩 overlay ⇒ 返回 `[]`
+ *   ⇒ `rootFeatureCount=0` ⇒ `applicable:false`（"本项目不用任务系统"）⇒ **闸对全仓源码恒放行**。
+ *   ★ 实测（本仓）：`totalFeatures=2 / rootFeatureCount=2 / covering=2`，`write_gate.ts` 判 `covered`。
+ *
  * ★ 反查口径与 `file_snapshot.ts`（T90）**逐字同款**：`path.resolve(DSL.source_root) === 项目根`。
  * ★ 与 T90 的差别（**有意**，别照着 T90 的 `hits.length===1` 改回来）：T90 是"给快照**贴一条**意图"，
  *   贴错比不贴坏 ⇒ 只认**唯一命中**；本闸问的是"这次改动**有没有挂在任何一条**任务上"
@@ -596,7 +601,10 @@ export function collectGateCoverage(rootArg: string): GateCoverage {
     rootFeatureCount: 0,
     unaddressable: [],
   };
-  for (const d of listFeatures()) {
+  // ★★★ 2026-10-20：读**设计侧**（`getDesignSheet` 同一处），不是 `listFeatures()` 的 `features/`。
+  //   实测病：features/ 搬走后只剩 overlay ⇒ listFeatures() 返回 [] ⇒ rootFeatureCount=0
+  //   ⇒ applicable:false（"本项目不用任务系统"）⇒ **闸对全仓源码恒放行**。
+  for (const d of listDesignSheets()) {
     cov.totalFeatures++;
     if (!d.source_root || path.resolve(d.source_root) !== absRoot) continue;
     cov.rootFeatureCount++;
@@ -1048,7 +1056,7 @@ export function assertSourceWriteRegistered(
       `    agent: '<你的身份>',\n` +
       `    operations: [{ type:'task', op:'claim', id:'${first.cands[0].nodeId}', data:{ owner: '<你的身份>' } }] }\n` +
       `  · 任务格住在节点上：\`geometry.nodes[].task\`（★ 不是顶层 tasks[]、不是 overlay）。\n` +
-      `  · 任务态五态：candidate / claimed / done / void / superseded；\n` +
+      `  · 任务态四态：candidate / claimed / done / void（★ superseded 已退场；void 可用 relaunch 重新立卡）；\n` +
       `    ★ \`node.status\`（draft / in_progress / done）对它是**派生值**（progressOf），**不许直接改**。\n` +
       `  · claim 写前必过「可领」读数（cardStanding ∈ work/violated）；complete 必过「可收口」读数（isSatisfied）且另需 \`data.evidence\`（与 status 同一把证据尺）。\n` +
       `  · 覆盖这条改动的 feature 有多条时，在**任一条**里 claim 即可（本闸不替你挑）。\n` +

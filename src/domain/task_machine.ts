@@ -31,10 +31,11 @@
  * 它已经会区分 `pass / fail / unsupported`，且 `unsupported` **不算通过**。
  * 本文件**只**做四件事：① 按 phase 分区 ② 编排判定 ③ 派生五值 ④ 出迁移判据 / 租约回收。
  *
- * ## 迁移表（★ 逐条照设计 DSL；`candidate → done` **不实现**）
- * 见 {@link TRANSITIONS}。其中 `t_done_from_candidate` 带
- * `state: { kind: 'blocked', by: 'OQ1' }` ⇒ **声明为存在但不可走**：
- * ★ **没有任何代码路径**能执行它，等用户裁定（"『已满足』的卡：自动收口还是只提示"）。
+ * ## 迁移表（★ 逐条照设计 DSL）
+ * 见 {@link TRANSITIONS}。★ 2026-10-20：`candidate → done`（`t_done_from_candidate`）已按 OQ1
+ * 裁定实现为「主体显式收口」；同一天新增 `t_relaunch`（`void → candidate`，重新立卡）。
+ * ★ 因此**没有真正的终态**了：`done` 能 `t_reopen`、`void` 能 `t_relaunch`。
+ *   "这个状态还开着吗"由 `task_schema.ts#isClosedTaskState` 回答（done / void 已了结，不再巡）。
  */
 import { judgeExpectations, type ExpectationsReport } from '../application/design/intent/expectations.js';
 import { expectationPhase, expectationSubjectPath, normPath, postExpectations, type Expectation } from './expectation.js';
@@ -444,10 +445,9 @@ export interface TaskTransition {
 /**
  * ★★ **迁移表**（唯一住处；读处见 {@link applicableTransitions}）。
  *
- * ★ `t_done_from_candidate`（`candidate → done`）带 `state: { kind: 'blocked', by: 'OQ1' }`
- *   ⇒ **不可走**：设计 DSL 明写"仅当 OQ1 裁定为『自动收口』才允许存在；否则此迁移必须不存在"，
- *   而 OQ1 **用户尚未拍** ⇒ ★ **本笔不实现它**（没有任何代码路径会执行它）。
- *   ★ 它留在表里 = 让"被未决项挡住的迁移"**可见**（否则"少了一条迁移"与"没想到"分不清）。
+ * ★ 2026-10-20：`t_done_from_candidate`（`candidate → done`）**已实现**（OQ1 裁定：主体显式收口，
+ *   不许 patrol 自动置 done）；同日新增 `t_relaunch`（`void → candidate`）。
+ * ★ 两条"回头路"并存，别混：`t_reopen` = 接手（判据不变）· `t_relaunch` = 重新立卡（判据重给）。
  */
 export const TRANSITIONS: readonly TaskTransition[] = [
   {
@@ -516,6 +516,23 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     },
   },
   {
+    id: 't_relaunch',
+    from: 'void',
+    to: 'candidate',
+    state: { kind: 'ready' },
+    guard: {
+      clauses: [
+        '★ 用户 2026-10-20 裁定：「void 是『这事不做了』，不是『这事不存在过』」⇒ 必须能重新立卡，而不是另开节点',
+        '★★ 与 t_reopen 的分界（同一个词的两种活）：t_reopen = done → claimed「接手」（判据不变，原卡继续）；t_relaunch = void → candidate「重新立卡」（判据要重给，卡回到没人领）',
+        'reason 必填（为什么重新立卡）—— ★ 无理由的复活等于把「作废」当摆设',
+        '★ 清空 expectations：candidate 的含义是「没人领、判据待 publish 重给」；保留旧判据会让 claim 立刻 satisfied（没活可干）⇒ 与「重新立卡」自相矛盾',
+        '★ 判据不在这里重给：relaunch 只把卡放回 candidate，重给判据的唯一入口仍是 publish（从 decision 翻）',
+        '★ summary / evidence 保留（「这活存在过」的历史不删）；owner / claimed_at 必须为空（void 只能从 candidate 来，而 candidate 不持 owner）',
+        'CAS：state=void 时才写（防并发）',
+      ],
+    },
+  },
+  {
     id: 't_done_from_candidate',
     from: 'candidate',
     to: 'done',
@@ -535,11 +552,11 @@ export const TRANSITIONS: readonly TaskTransition[] = [
 ];
 
 /**
- * 某个状态**此刻可走**的迁移（★ 读处：只返回 `state.kind === 'ready'` 的；`blocked` / `unimplemented` 与终态出发的一律不返回）。
+ * 某个状态**此刻可走**的迁移（★ 读处：只返回 `state.kind === 'ready'` 的；`blocked` / `unimplemented` 一律不返回）。
  *
  * ★ 为什么要有它，而不是让调用方自己 `TRANSITIONS.filter(...)`：
- *   漏掉 `enabled` 这一条判断 ⇒ **被 OQ1 挡住的 `candidate → done` 会被当成可走**
- *   ⇒ 那正是设计 DSL 要防的"未领就被收口"。判据只住一处。
+ *   漏掉 `state.kind === 'ready'` 这一条判断 ⇒ **被未决项挡住 / 未实现的迁移会被当成可走**
+ *   （例：`t_done_from_candidate` 曾在 OQ1 未拍时挂着 `blocked`）⇒ 调用方会以为能走、然后撞"不支持"。判据只住一处。
  */
 export function applicableTransitions(from: TaskState): TaskTransition[] {
   return TRANSITIONS.filter((t) => t.state.kind === 'ready' && t.from === from);
