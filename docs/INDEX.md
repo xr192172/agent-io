@@ -1,66 +1,83 @@
-# docs 的入口 —— 先看这里
+# 现状
 
-> 2026-10-20 立。起因：用户问「我们之前归纳的那些『这个项目要有什么功能』的讨论没丢吧？」
-> 答：**没丢**（`VISION.md` + `GOAL.md`）。但 14 份文档散着，**没有入口 = 等于丢了**。
-> 本文件就是入口。**它只指路，不存内容**（内容仍在各文件，避免两份）。
+> 只有现状。没有历史、没有原话、没有理由。新的东西**改这张表**，不新开文档。
 
----
+## 一、目录
 
-## 一页纸：这个项目是什么
-
-> 把「设计意图」变成「机器可判、有人守、不自欺」的任务系统：
-> `设计写了 → 对拍变红 → 红就是任务 → 有人领 → 做完可验`
-> 要防的病只有一个：**设计说了、代码没做，而没人知道。** —— `GOAL.md`
-
----
-
-## ★ 必读三份（按这个顺序）
-
-| # | 文件 | 一句话 | 何时读 |
-|---|---|---|---|
-| 1 | `GOAL.md`（4.5KB） | **唯一的「为什么」**；四条支撑 G1–G4 各带判据 | **动手前** |
-| 2 | `VISION.md`（19KB） | **用户对每个功能的描述（原话，不加工）** —— 说「应该是什么」 | **判断"这个功能该不该这样做"时** |
-| 3 | `DESIGN.md`（37KB） | **实现现状** —— 说「现在是什么」；A1–A7 / C / D 节是缺陷台账 | **改之前** |
-
-★ `VISION.md` 与 `DESIGN.md` **冲突时不许我挑一个** —— `VISION.md` 有 §冲突 节，列出来请用户裁决。
-
----
-
-## 按任务查
-
-| 要做什么 | 看哪份 |
+| 路径 | 干什么 |
 |---|---|
-| 改**任务系统**（状态机/卡/判据） | `task-system-plan.dsl.json` + `DESIGN.md` 的 A 节 |
-| 改**重写/编辑** | `llm-rewrite-flow.md`（5 步链路 + 真实边界表） |
-| **派子代理** | `subagent-template.md`（硬约束 + 回报格式 + 已知坑） |
-| 查**哪里不顺手** | `dogfood.md`（42 条，A–E 分类） |
-| 查**欠账** | `todo.md`（唯一待办；★ 清单外先问） |
-| 看**讨论过程** | `DISCUSSION.md`（append-only，42+ 节，107KB） |
-| **判据**怎么写 | `GUIDE-GATE.md`（71KB，门与判据体系） |
-| **工具**怎么用 | `GUIDE-USAGE.md`（31KB） |
-| **踩过的坑** | `PITFALLS.md` |
-| 怎么**合并/仲裁** | `MERGE.md` / `ARBITRATION.md` |
+| `src/domain/` | 纯数据与判据：`task_machine`(状态机) `task_schema`(卡/期望) `geometry`(节点/边) `overlay`(进度底座) `expectation`(判据求值) |
+| `src/infrastructure/` | 外面的事：`parse/`(TS/Go 解析) `index/`(`cache.db` 符号表) `storage/`(DSL/overlay 读写) `graph/`(`import_project` 扫描) |
+| `src/application/` | 用例：`design/`(设计侧读写 + `design_line`) `refactor/`(改名/移动/编辑) `write_gate`(写闸) `patrol/`(漂移巡检) |
+| `src/presentation/` | MCP server + CLI |
+| `.agent-io/design/` | 设计侧：`*.dsl.json`(图) `*.overlay.json`(进度) |
+| `.agent-io/live/` | 实际侧快照（`import_project` 重扫产出，可覆盖） |
+| `.agent-io/cache.db` | 索引：符号 / import span / 调用。**不入库** |
+| `design-db/` | 344 份 `.calls.json`：设计 DB（从 DSL 派生，`gen-db` 全量重写） |
+| `certs/` | 证（`t*-cert.mjs`）+ 量具 + 夹具。**不受写闸管** |
+| `scripts/` | 运维脚本（verify / gen-db / 各种探针）。**不受写闸管** |
+| `docs/` | 见 §五 |
 
----
+## 二、工具（65 个，常用的这些）
 
-## ★ 铁律（不在这几份里，但比它们重要）
-
-用户裁定过、**不要再讨论**的：
-
-1. **概念正确 > 避免行为改变**。行为改变不是代价，是修复；「没测试所以不敢改」是错的推理。
-2. **不打补丁**：同一个错在 N 处各修一次 ⇒ 那是结构问题；修的时候想"加个特例"⇒ 停手。
-3. **失败就抛**，不许 `catch { return [] }` / 静默降级 / `try-catch` 兜底。
-4. **判据只住一处**（同一口径不许住两处、各持一份）。
-5. **"我以为" ≠ "实测"**。今天一天被推翻 4 次（旧进程写库 / prune 判据 / 写闸恒放行 / must_have 来源）。
-6. **派活 > 硬撑**。可逆的直接做，做完报账；不可逆的才停下来问。
-
----
-
-## 今天（2026-10-20）新增的四份
-
-| 文件 | 为什么有它 |
+| 工具 | 干什么 |
 |---|---|
-| `dogfood.md` | 用本仓工具时的**体验**（不是缺陷台账）；机制：每周一 automation + 每次派活加一条回报 |
-| `subagent-template.md` | **强制子代理用本仓工具**（`edit_code` / `design_line`），禁 `Write`/`Edit` |
-| `llm-rewrite-flow.md` | LLM 怎么写新功能（`diff → get_dsl → insert → symbol → rewrite` 5 步） |
-| 本文件 | 入口（防"14 份文档 = 没有文档"） |
+| `edit_dsl` | 改设计侧：`decision` / `task`(publish·claim·complete·reopen·relaunch·void) / `node` / `todo` |
+| `design_line` | 设计链读侧：`report` / `diff` / `rewrite`(只拉签名) / `gen-db` |
+| `get_dsl` | 查：`nodes` `node` `edges` `files` `file` `decisions` `pending` `pool` `scope` |
+| `edit_code` | 改源码：`replace_text` / `range` / `symbol` / `insert`。**走写闸 + 重建索引** |
+| `rename_files` / `move_symbol` | 改名 / 移动符号。**走写闸** |
+| `import_project` | 重扫实际侧 → `live/` + `cache.db` |
+| `find_references` / `explore_code` | 查引用 / 探索 |
+| `review_changes` | PR 流程：`list` / `show` / `approve` / `reject` |
+| `consistency_check` / `detect_drift` | 一致性 / 漂移 |
+
+## 三、功能与状态
+
+| 功能 | 干什么 | 状态 |
+|---|---|---|
+| 任务卡 | 节点上挂卡：`candidate`→`claimed`→`done`，判据在 `decision.expectations` | ✅ |
+| 判据 8 kind | `file-exists` `symbol-exists` `source-has` `call-exists` `edge-exists` `contract` `run` `expectations` | ✅ |
+| 写闸 | 改源码须有 claimed 卡；`gate:'exempt'` 的节点免闸 | ✅ 已真拦 |
+| A7 | `owner ≠ actor` ⇒ 拒 | ⚠️ 见 §四 |
+| 重写 | `design_line rewrite`：只把源码签名拉回设计签名 | ✅ 不生成实现 |
+| 设计 DB | `gen-db` 从 DSL 派生 344 份 | ✅ 有第 6 道门 `gen-db-check` |
+
+## 四、未完成
+
+| 什么 | 在哪 |
+|---|---|
+| A7 在 4 条写路没接 `actor`（`rename_file`/`rename_files`/`symbol_move`/`apply_refactor_plan`） | 那三个文件被 `codebuddy-deepseek` claim 着，先 release |
+| A7 默认仍是"提醒+放行"（`AGENT_IO_ACTOR_STRICT=1` 才拦） | `write_gate.ts` |
+| 自报拦不住冒充（stdio 拿不到可信身份） | 架构限制，非缺陷 |
+| L1 建构卡收不了口（`publish` 只能立 L1，`complete` 要求建构完整） | `task_ops.ts` |
+| `satisfied` 的卡锁死文件（`claim` 拒"没活干"，写闸只认 claimed） | `task_ops.ts` |
+| `edit_code` 接受空操作（`old_text == new_text` 也回 ✓） | `edit_code.ts` |
+| 3 个脚本仍 import `dist`（tsx 已装未用） | `scripts/gen-contracts|contract-calls|dep.mjs` |
+| `hook-task-gate.mjs` 是死闸（读不存在的文件 + 按 `path` 匹配而节点无 `path`） | `scripts/` |
+| `docs/gate-principle.md` 不存在但被 9~21 处引用 | 引用点 |
+| 12~25 个节点指向盘上不存在的路径 | `.agent-io/design/` |
+| `t337` 前提已破（两个 writer 写同一文件） | `certs/` |
+| 写闸只拦 MCP 工具面，`bash` 直写不拦；`.githooks/pre-commit` 只跑 `gen_agents` | 覆盖面 |
+| 93% 的 `src/` 文件不在任何 feature 的节点里 ⇒ 改它们走"无任务可挂、放行" | `.agent-io/design/` |
+
+## 五、文档
+
+| 文件 | 是什么 |
+|---|---|
+| `INDEX.md`（本文件） | **唯一入口** |
+| `GOAL.md` | 为什么做这个 |
+| `VISION.md` | 用户对每个功能的描述（原话） |
+| `DESIGN.md` | 缺陷台账（A/C/D 节） |
+| `GUIDE-GATE.md` | 判据与门的原则 |
+| `GUIDE-USAGE.md` | 工具怎么用 |
+| `dogfood.md` | 用本仓工具时的体验（表） |
+| `DISCUSSION.md` | 讨论日志（**只读，不是权威**） |
+| `todo.md` / `certs-4-ways.md` / `subagent-template.md` / `llm-rewrite-flow.md` / `PITFALLS.md` / `HANDOFF.md` / `MERGE.md` / `ARBITRATION.md` | 见其自身第一行 |
+
+## 六、规矩
+
+1. **判据只住一处**（同一口径不许住两处）
+2. **失败就抛**（不许静默兜底）
+3. **写文档 = 改这张表**（不新开、不追加）
+4. **没做完的写进 §四**（不另开文档）
