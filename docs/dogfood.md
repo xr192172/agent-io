@@ -314,3 +314,19 @@
 - 宿主注入通道：**HTTP 侧有 `sessionId`（`X-WorkBuddy-MCP-Context`），stdio 侧没有**
 - 同一会话的子代理**共用一个 server 进程** ⇒ 进程/env 级身份区分不了它们
 - ⇒ A7 只能买**协作防撞**，买不到**防冒充**。**别按"安全"去卖它。**
+
+---
+
+## 2026-10-20 追加（我自己踩的，第 2 次）
+
+**56. 在 `node -e "..."` 里写 Markdown 反引号 ⇒ bash 会执行它** — `待处理（约定）`
+- 实测：`node -e "…summary:'…用 \`isInstrumentPath\`…'"` ⇒
+  `bash: isInstrumentPath: command not found`，**summary 后半截被吃掉**（600+ 字变 430 字）
+- 这是 #55（子代理报的同一件事）**我当天就踩了第二次**
+- ⇒ **约定**：凡是**含反引号 / 反斜杠 / `$` 的长文本**，一律
+  **先用 Write 写成文件**（或 `--input` 读文件），**绝不在 `node -e "…"` 里内联**
+- ★ 而 `edit_dsl` 不报错（它拿到的是"合法的被截断 JSON"）⇒ 又一个"看起来成功"
+
+**57. `todo` 的 summary 被截断后没有补救路** — `观察中`
+- `edit_dsl` 没有 `update type=todo` ⇒ 想补全只能重 add 一条（然后旧的那条成垃圾）
+- ⇒ 配合 #42（add 不查同名），todo 会越来越脏
