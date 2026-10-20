@@ -360,3 +360,32 @@
 - `geometry.ts` 的决策卡 18 条判据全过 ⇒ publish 出 L2 且 satisfied ⇒ `claim` 被拒「只可收口，不可领」
 - 子代理最后是**先给决策卡加一条 `source-has gate?: NodeGate`（现在会红）**，才有活可领
 - 方向我认（先写判据、再改码），但**工具描述里没有这条路**，它是被拒了才知道
+
+---
+
+## 2026-10-20 追加（做 A7 入口时，子代理报的）
+
+**63. ★★★ 「设计好了但不会用」的物理形态 = 一个空括号** — `已解决（本次）`
+- `resolveActor(explicit?)` 的签名**早就有**显式参数
+- 但 5 个调用点**全部**写成 `resolveActor()`（`edit_code.ts:502/963`、`rename_file.ts:535`、`rename_files.ts:151`、`symbol_move.ts:499`）
+- ⇒ A7 恒 null 不是"没实现"，是**没人往里传**
+- ★ 教训：**"这个函数支持某参数"和"有人传它"是两件事**；前者能在类型里看出来，后者只能 grep 调用点
+
+**64. ★★ `satisfied` 的卡会把文件锁死** — `待处理（结构）`
+- `claim` 的判据是"有活可干"：判据全绿 ⇒ `satisfied` ⇒ **拒**
+- 而写闸只认 `claimed` ⇒ 那个文件**改不动**
+- 现状：写闸自己（`write_gate.ts`）就是这样；子代理靠"另一份 feature 里它没 decision ⇒ 会发 L1 建构卡"绕过去
+- ⇒ 需要一个"改判据/加期望后即可领"的路
+
+**65. ★ L1 建构卡是死胡同** — `待处理（结构）`
+- `publish` 只能立 L1（节点 `decision.summary` 为空）；L1 的 `complete` 要求"DSL 建构完整"
+- ⇒ **活干完了也永远收不了口** ⇒ 只能 `release` ⇒ 卡永远 candidate
+- ⇒ 子代理原话："对一个'接线回执'级别的任务，这是纯仪式成本"
+- ★ 影响：`void` 卡、`release` 卡会越积越多（今天已经 8 张 void）
+
+**66. `edit_code` 的空操作（#59）今天又骗了一次** — `待处理（真 bug）`
+- `old_text == new_text` ⇒ 回 ✓，**只悄悄改了行尾空白**
+- 靠再读文件才发现
+
+**67. watch / impact 会假报"改 A 报 B"**
+- 子代理改 `gen_design_db.ts`，它报「改 `src/domain/geometry.ts` (+13 符号)」，而 `git diff` 为空
