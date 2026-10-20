@@ -2329,3 +2329,55 @@ dir_..._render                  → [] + why_empty（同上）
 `semantic.files` 记的是「该文件的**顶层绑定**」，不是「API 面」：
 `.mjs` 的 const 一律 `kind:'type'`、没有 exported 标记 ⇒ `bad / now / d` 这种局部量也进了清单。
 子代理**没做"看着像局部就过滤"**（那是在猜）—— 这个判断是对的。
+
+---
+
+## 2026-10-20 早（四二）· 17 条历史欠账复核 + A6 修好（`83a89324`）
+
+### 1. 复核结果：还成立 11 · 已解决 3 · 过时 3
+
+**已解决（3）** —— 可以销账：
+```
+D-design-completeness   design-check.mjs 通过 10/0（执行器由 4a54250d 引入）
+rescan-index            files 531 / hash 一致 529 / imports span 2396-2396
+rescan-no-hash-update   symbols.ts:553 每次都 INSERT OR REPLACE content_hash（当初"不更新"实为"没扫到"）
+```
+
+**过时（3）** —— 前提没了：
+```
+D-dual-write           overlay 里的 decision 已经不存在了（overlay.ts:208/545/687）
+D-anti-decoration      "11/15 条边"的小图已成 625 节点/1134 边；再要求 1131 条事实边有判据是错方向
+D-parallel             path 覆盖率已 14/14、17/17；缺的是判定器本身
+```
+
+**还成立（11）** —— 其中最要紧的两条：
+```
+A6  已领卡 decision 可静默漂移     ← 本次修好
+D-actor-entry 没人设置 AGENT_IO_ACTOR ⇒ resolveActor() 恒 null ⇒ A7 的 owner 校验【整条是假的】
+```
+
+### 2. A6 修法：复用 `sameCriteria`，不新造判据
+
+```
+state ∈ {claimed,done} ∧ L2 ∧ reopened_at 为空 ⇒ 比 (summary, expectations)
+不同 ⇒ 拒，报错点名 reopen → 改 decision → publish{reason}
+```
+
+**两处偏离字面要求**（都有实测对照）：
+- 只对 **L2** 判（L1 的验收判据就是当下 decision，拦它会堵死 L1 唯一的收口路）
+- **`reopened_at` 非空时放行**（不豁免的话 `reopen → 改 decision` 会被自己拦，关键回路会死）
+
+验收 32/32（正面 2 + 反面 2 + 回路 1 + 回归 33 项仍全过）。
+
+### 3. 顺带修一处文档与修复矛盾
+
+`task_machine.ts:513` 原写「要换判据请**先改 decision 再 reopen**」—— 新闸下**先改会被拒**。
+改成 `reopen → 改 decision → publish{reason}`。
+
+★ 这条**是子代理报的**："我没有改这句（不在授权范围），但它现在是错的"。
+
+### 4. 子代理给的欠账分类建议（很有用）
+
+> 17 条混了三种债：代码缺陷（A3/A4/A6）、设计格式缺口（D-actor-entry）、运维状态（rescan）。
+> 没有 `kind` 字段，没法批量派活/批量复验。
+> **建议**：给 todo 加 `kind: code|design|ops` + `refs[]` + `verify`（一条可执行命令）+ `last_verified_at`
