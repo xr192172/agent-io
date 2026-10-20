@@ -51,7 +51,7 @@
 | A7 默认仍是"提醒+放行"（`AGENT_IO_ACTOR_STRICT=1` 才拦） | `write_gate.ts` |
 | 自报拦不住冒充（stdio 拿不到可信身份） | 架构限制，非缺陷 |
 | L1 建构卡收不了口（`publish` 只能立 L1，`complete` 要求建构完整） | `task_ops.ts` |
-| `satisfied` 的卡锁死文件（`claim` 拒"没活干"，写闸只认 claimed） | `task_ops.ts` |
+| ~~`satisfied` 锁死文件~~ 已修：`claim` 加 `intent=work|modify` | ✅ |
 | `edit_code` 接受空操作（`old_text == new_text` 也回 ✓） | `edit_code.ts` |
 | 4 个脚本仍 import `dist`（tsx 已装未用） | `scripts/` |
 | `hook-task-gate.mjs` 是死闸（读不存在的文件 + 按 `path` 匹配而节点无 `path`） | `scripts/` |
