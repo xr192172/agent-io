@@ -2026,3 +2026,24 @@ cardStanding：L192（定义）+ L341（使用）· slice 出来正好是 "cardS
 
 `remove_dead_imports.ts`（9 处正则、0 处 AST），而且它**改代码**（删 import）——
 比我原来以为的三处加起来都危险。
+
+### 5. 只剩的那个：`remove_dead_imports` 的 9 处正则在干什么
+
+```ts
+import {...} from 'x'        import type {} from 'x'     import X from 'x'
+import 'x'                   export * from 'x'           export {} from 'x'
+const x = require('x')       某行紧跟 target 的 import
+```
+
+**它是在用正则解析 import 语法**（8 种形态 + 一个行首判定）。
+
+### 6. 要换成 AST，缺一样东西
+
+`imports` 表有 `source / kind / type_only / line / bindings`，**但没有整句的 span**
+（`start_index/end_index`）—— 而**删除需要知道"从哪删到哪"**。
+
+⇒ 所以这不是"改个查询"就能完成的，要**先给 `imports` 加 span**（又是一轮 kernel 改动），
+   然后再改一个**会删代码**的工具。
+
+★ 两件事叠在一起（kernel 改动 + 删代码），比今天做的所有只读活都危险 ——
+  **这是该清醒时做的，不是第三个小时硬推的。**
