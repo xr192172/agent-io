@@ -43,6 +43,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { analyzeLocals, renameMany, resolveLocalAddress, type RenameItem } from '../../../infrastructure/parse/ast_rename.js';
 import { applyWrites } from '../edit/apply_writes.js';
+// ★ 2026-10-20：闸的读数**唯一带出口**（`applyWrites` 回执里的 `task_gate` 就是 `SourceWriteReport.task_gate`）
+import { attachGateNote } from '../gate_note.js';
 import { findLanguageByExt } from '../../../infrastructure/parse/languages.js';
 import type { WriteThroughOutcome } from '../../write_gate.js';
 
@@ -95,6 +97,12 @@ export interface LocalRenameBatchResult {
   snapshotId?: string;
   /** 索引写穿回执（`null` = 没做/没索引） */
   index: WriteThroughOutcome | null;
+  /**
+   * ★★★ 2026-10-20：**任务闸的放行读数**（含“本次写入 X 被豁免”的逐条点名）——
+   * 从 `applyWrites` 回执的 `task_gate`（= `SourceWriteReport.task_gate`）**原样转出**，不重新拼。
+   * ★ `dryRun` / 根外拒写（一个字节没写 ⇒ 闸没跑）⇒ 不给这个字段。
+   */
+  task_gate?: string;
   /** 整批被拒的理由（如文件在 `root` 之外 ⇒ 进不了快照也进不了索引） */
   blocked?: string[];
 }
@@ -214,13 +222,17 @@ export async function renameLocals(input: {
     return { ok: false, dryRun, items, changedFiles, filesWritten: 0, index: null, blocked: [why] };
   }
 
-  return {
-    ok: true,
-    dryRun,
-    items,
-    changedFiles,
-    filesWritten: receipt.written_files.length,
-    ...(receipt.snapshot_id ? { snapshotId: receipt.snapshot_id } : {}),
-    index: receipt.index,
-  };
+  return attachGateNote(
+    {
+      ok: true,
+      dryRun,
+      items,
+      changedFiles,
+      filesWritten: receipt.written_files.length,
+      ...(receipt.snapshot_id ? { snapshotId: receipt.snapshot_id } : {}),
+      index: receipt.index,
+    },
+    // ★ 闸的读数（含豁免点名）从 `applyWrites` 回执**原样转出** —— 本层不再自己算一遍。
+    receipt.task_gate,
+  );
 }

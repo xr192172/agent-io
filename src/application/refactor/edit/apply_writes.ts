@@ -32,6 +32,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { writeSourceFiles, type WriteThroughOutcome } from '../../write_gate.js';
+// ★ 2026-10-20：闸的读数**唯一带出口**（`writeSourceFiles` 把 `note` 逐字放在 `report.task_gate` 里，别在这里重新拼豁免文案）
+import { attachGateNote } from '../gate_note.js';
 import { toIndexKey } from '../../../infrastructure/index/symbols.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
@@ -55,6 +57,12 @@ export interface WriteReceipt {
   index_synced: Array<{ file: string; updated: boolean }>;
   /** 被拒绝落盘的文件（根外路径 ⇒ 无法快照/写穿）。有值即 `ok=false`。 */
   blocked?: string[];
+  /**
+   * ★★★ 2026-10-20：**任务闸的放行读数**（含“本次写入 X 被豁免”的逐条点名）。
+   * ★ 来源就是 `SourceWriteReport.task_gate`（闸已把 `note` 逐字存在那里）—— **不在这里重新取一次**。
+   * ★ `dryRun` / 根外拒写 / 无可写项：闸**压根没跑** ⇒ 不给这个字段（不凭空造一句）。
+   */
+  task_gate?: string;
 }
 
 /**
@@ -104,19 +112,23 @@ async function applyWritesCore(
     { label: note, onFile: (rel, status) => updatedByRel.set(rel, status === 'updated') },
   );
 
-  return {
-    ok: true,
-    written_files: written,
-    ...(report.snapshot?.id ? { snapshot_id: report.snapshot.id } : {}),
-    index: report.index,
-    // ★ 只有**真进了逐文件同步循环**（`mode === 'synced'`）才有逐文件判决。
-    //   没索引 / 写穿提前失败 ⇒ 给**空数组**，而不是一排 `updated:false` ——
-    //   后者会与"同步了但这个文件内容没变（skipped）"混为一谈，读的人没法分辨。
-    index_synced:
-      report.index?.mode === 'synced'
-        ? written.map((rel) => ({ file: rel, updated: updatedByRel.get(rel) === true }))
-        : [],
-  };
+  return attachGateNote(
+    {
+      ok: true,
+      written_files: written,
+      ...(report.snapshot?.id ? { snapshot_id: report.snapshot.id } : {}),
+      index: report.index,
+      // ★ 只有**真进了逐文件同步循环**（`mode === 'synced'`）才有逐文件判决。
+      //   没索引 / 写穿提前失败 ⇒ 给**空数组**，而不是一排 `updated:false` ——
+      //   后者会与"同步了但这个文件内容没变（skipped）"混为一谈，读的人没法分辨。
+      index_synced:
+        report.index?.mode === 'synced'
+          ? written.map((rel) => ({ file: rel, updated: updatedByRel.get(rel) === true }))
+          : [],
+    },
+    // ★ 闸的读数：`writeSourceFiles` 已经把 `note`（含豁免点名）放在这里了，本适配层只负责**带出去**。
+    report.task_gate,
+  );
 }
 
 /**

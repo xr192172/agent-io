@@ -326,6 +326,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
           scanned: { files: r.previews.length },
           ...(skippedEntries().length > 0 ? { skipped: skippedEntries() } : {}),
         };
+        // ★ 2026-10-20：局部支也送闸读数（走 `applyWrites` 回执，与 module 支**同一处**带出）
+        const gateLine = gateHumanLines(r.task_gate);
+        if (gateLine) parts.push(gateLine);
         return { message: parts.join('\n'), data: { ...r, bounds: localBounds } };
       }
       const fmt = (item: { file: string; symbol: string; to: string }, res?: { definition?: { file: string }; importers?: { file: string; ops?: { old: string; new: string }[] }[] }): string => {
@@ -430,6 +433,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         parts.push('\tdry-run 各条状态：');
         for (const p of r.previews) parts.push(`\t  [${p.ok ? '可落盘' : '被阻断'}] ${fmt(p.item, p.result)}`.replace(/\n/g, '\n\t  '));
         appendLiterals(parts, r);
+        // ★ 2026-10-20：被阻断的回执也要点名豁免（`exemptionLines` 的文档明写含拒绝/失败那种回执）。
+        const gateLine = gateHumanLines(r.task_gate);
+        if (gateLine) parts.push(gateLine);
         return { message: parts.join('\n'), data: { ...r, bounds: bounds() } };
       }
       const parts = [
@@ -439,6 +445,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       if (warn) parts.push(warn);
       for (const p of r.previews) parts.push(fmt(p.item, p.result).replace(/\n/g, '\n\t'));
       appendLiterals(parts, r);
+      // ★ 2026-10-20：闸的放行读数/豁免点名也进**人读**消息（不只埋在 `---DATA---`）。
+      const gateLine = gateHumanLines(r.task_gate);
+      if (gateLine) parts.push(gateLine);
       return { message: parts.join('\n'), data: { ...r, bounds: bounds() } };
     }),
   },
@@ -1059,6 +1068,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
           );
         }
         if (written === 0 && !receipt.blocked?.length) parts.push('  无待补全/无过期注释，或 LLM 未配置——未写任何文件。');
+        // ★ 2026-10-20：闸的放行读数/豁免点名（`applyWrites` 回执已带上，这里只往人读消息里搬）
+        const gateLine = gateHumanLines(receipt.task_gate);
+        if (gateLine) parts.push(gateLine);
         return { message: parts.join('\n'), data: { summary: s, files_changed: written, note: r.note } };
       }
       if (mode === 'dry_run') {
@@ -1623,6 +1635,11 @@ export const REFACTOR_TOOLS: ToolDef[] = [
             { note: `rules(apply:${use.map((r) => r.id).join(',')})` },
           );
           lines.push(``, `已写盘 ${receipt.written_files.length} 个文件（走写闸：写前快照 + 索引写穿保鲜）。`);
+          // ★ 2026-10-20：闸的放行读数/豁免点名（`applyWrites` 回执已带上，这里只往人读消息里搬）
+          {
+            const gateLine = gateHumanLines(receipt.task_gate);
+            if (gateLine) lines.push(gateLine);
+          }
         } else {
           lines.push(``, `（dry_run：未写盘。确认后传 dry_run=false 落盘）`);
         }

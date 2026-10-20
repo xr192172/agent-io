@@ -27,6 +27,8 @@ import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFrom
 import { setDesignIntent, type DesignEdgeIntentWrite } from '../intent/set_design_intent.js';
 import { renameFile, type RenameFileInput } from '../../refactor/rename/rename_file.js';
 import { editCode, type EditCodeArgs } from '../../refactor/edit/edit_code.js';
+// ★ 2026-10-20：闸读数的人读侧（唯一渲染处 = `gate_note.ts`；本文件**不自己拼豁免文案**）
+import { gateHumanLines } from '../../refactor/gate_note.js';
 import type { DesignDSL } from '../../../domain/types.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -710,7 +712,12 @@ export async function approveChange(project_dir: string, id: string, reviewer: s
         });
         return { ok: false, status: 'pending', error: '阻断：' + rblocked.join('；') };
       }
-      const result = `已移动 ${r.fromRel} → ${r.toRel}，改写 ${r.editCount} 处引用，重建索引`;
+      // ★★★ 2026-10-20：本文件**自己拼 result 字符串**（不是 `wrap()` 转发回执），所以闸的读数必须**显式**拼进来 ——
+      //   否则 `renameFile` 回执里的 `task_gate`（含“本次写入 X 被豁免”）就在这一行丢掉。
+      const base = `已移动 ${r.fromRel} → ${r.toRel}，改写 ${r.editCount} 处引用，重建索引`;
+      const gateLine = gateHumanLines(r.task_gate);
+      // ★ 闸读数进**存进台账的** result（`review_changes action=show/approve` 读的就是这一条，不是另拼一份）
+      const result = gateLine ? `${base}\n${gateLine}` : base;
       findAndUpdate(project_dir, id, (x) => {
         x.result = result;
         x.lastError = undefined;

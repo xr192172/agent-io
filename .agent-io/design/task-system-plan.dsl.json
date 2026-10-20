@@ -16831,7 +16831,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_design_workbench_code_workbench_ts",
+          "summary": "【L1 待建构】核心层 · src/application/design/workbench — 30 个 API（导入自 9 个模块）（src/application/design/workbench/code_workbench.ts） ← 节点 file_src_application_design_workbench_code_workbench_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_workbench_code_workbench_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "本笔改动已落盘并过 verify（回执接线：approveChange 的 result 串接上 gateHumanLines）；L1 卡收不了口 ⇒ 主动 release",
+          "released_by": "codebuddy-deepseek",
+          "released_at": "2026-10-20T08:15:30.910Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_workbench_dag_layout_ts",
@@ -18175,7 +18190,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_refactor_edit_apply_writes_ts",
+          "summary": "【L1 待建构】核心层 · src/application/refactor/edit — 3 个 API（导入自 5 个模块）（src/application/refactor/edit/apply_writes.ts） ← 节点 file_src_application_refactor_edit_apply_writes_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_apply_writes_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "本笔改动已落盘并过 verify（回执接线：apply_writes 回执里的 task_gate）；L1 卡收不了口（decision.summary 为空）⇒ 主动 release",
+          "released_by": "codebuddy-deepseek",
+          "released_at": "2026-10-20T08:15:30.679Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_edit_edit_code_ts",
@@ -18542,7 +18572,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_refactor_rename_rename_local_ts",
+          "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 1 个 API（导入自 6 个模块）（src/application/refactor/rename/rename_local.ts） ← 节点 file_src_application_refactor_rename_rename_local_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_local_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "本笔改动已落盘并过 verify（回执接线：rename_local 转出 applyWrites.task_gate）；L1 卡收不了口 ⇒ 主动 release",
+          "released_by": "codebuddy-deepseek",
+          "released_at": "2026-10-20T08:15:30.791Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_rename_rename_symbols_ts",
@@ -18558,7 +18603,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_refactor_rename_rename_symbols_ts",
+          "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 14 个 API（导入自 12 个模块）（src/application/refactor/rename/rename_symbols.ts） ← 节点 file_src_application_refactor_rename_rename_symbols_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_symbols_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "本笔改动已落盘并过 verify（回执接线：rename_symbols / apply_writes / rename_local / code_workbench）；L1 卡收不了口（decision.summary 为空）⇒ 主动 release，不占着钥匙",
+          "released_by": "codebuddy-deepseek",
+          "released_at": "2026-10-20T08:15:30.554Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_rename_symbol_move_ts",
@@ -79136,7 +79196,8 @@
           }
         ],
         "lines": 824,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_workbench_dag_layout_ts",
@@ -81889,7 +81950,8 @@
           }
         ],
         "lines": 153,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_edit_edit_code_ts",
@@ -82640,7 +82702,8 @@
           }
         ],
         "lines": 226,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_rename_rename_symbols_ts",
@@ -82705,7 +82768,8 @@
           }
         ],
         "lines": 806,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_rename_symbol_move_ts",
@@ -96333,11 +96397,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T07:33:04.344Z",
+    "saved_at": "2026-10-20T08:15:30.953Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792481293697,
-    "age": 290647
+    "scanRev": 1792484009880,
+    "age": 121073
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

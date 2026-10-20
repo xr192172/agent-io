@@ -47,6 +47,8 @@ import { renameFile } from './rename_file.js';
 import { resolveProjectRoot } from '../../../infrastructure/analysis/project_root/index.js';
 import { createProtectGuard } from '../../../infrastructure/analysis/refactor/protect.js';
 import { writeSourceFiles, type WriteThroughOutcome } from '../../write_gate.js';
+// ★ 2026-10-20：闸的读数**唯一带出口**（`writeSourceFiles` 把它逐字存在 `report.task_gate` 里，别在这里重新拼豁免文案）
+import { attachGateNote } from '../gate_note.js';
 // ★ T214：兑现"整批原子"要用它 —— ★ 用**写前那份快照**回滚整批（★ 零件现成，不造新轮子 ✓）
 import { rollbackFileSnapshot } from '../snapshot/file_snapshot.js';
 import type { ExternalRef } from '../../../infrastructure/analysis/project_root/index.js';
@@ -172,6 +174,13 @@ export interface RenameSymbolsResult {
   rolledBack?: boolean;
   /** ★ T214：回滚的**人话说明**（★ 成功说"已回滚整批"· 失败说"可能停在半改状态，请手动处理" ✓） */
   rollbackNote?: string;
+  /**
+   * ★★★ 2026-10-20：**任务闸的放行读数**（含“本次写入 X 被豁免”的逐条点名）——
+   * 两支都从**同一处**转出：module 支 = `writeSourceFiles` 的 `report.task_gate`；
+   * local 支 = `applyWrites` 回执的 `task_gate`（同一份 `SourceWriteReport.task_gate`）。
+   * ★ `dryRun` / 未定位到项目根（闸没跑）⇒ 不给这个字段。
+   */
+  task_gate?: string;
   /**
    * ★ 本次**解析出的项目根**（module 支的 `rootDir` / local 支的 `rootDir`）——
    *   两支各自在内部定位过它（此前只在手里、没进产物）；T18：回传给构造点与下游反查。
@@ -503,12 +512,17 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
         : `★★ **回滚失败**：${rb.message} —— ★ 项目可能停在半改状态，请手动处理`;
     }
   }
-  return {
-    ...gated.value,
-    indexWriteThrough: gated.report.index ?? { ok: false, mode: 'skipped', note: '未写穿' },
-    ...(rolledBack !== undefined ? { rolledBack } : {}),
-    ...(rollbackNote ? { rollbackNote } : {}),
-  };
+  // ★★★ 2026-10-20：闸的**放行读数**（含"本次写入 X 被豁免"）随回执带出 —— `gated.report.task_gate` 就是闸说的那句原话。
+  //   ★ 之前这里只把 `gated.value` 摊开、report 只取了 snapshot/index ⇒ 闸判了、豁免生效了，回执里一个字都没有（做了不说）。
+  return attachGateNote(
+    {
+      ...gated.value,
+      indexWriteThrough: gated.report.index ?? { ok: false, mode: 'skipped', note: '未写穿' },
+      ...(rolledBack !== undefined ? { rolledBack } : {}),
+      ...(rollbackNote ? { rollbackNote } : {}),
+    },
+    gated.report.task_gate,
+  );
 }
 
 // ──────────────── scope='local' 支：文件内局部绑定（产物适配成上面同一封回执） ────────────────
@@ -595,22 +609,26 @@ async function renameSymbolsLocal(input: RenameSymbolsInput): Promise<RenameSymb
     ? []
     : previews.filter((p) => p.ok).map((p) => ({ index: p.index, item: p.item, result: p.result! }));
 
-  return {
-    ok: r.ok,
-    scope: 'local',
-    dryRun: r.dryRun,
-    previews,
-    applied,
-    filesWritten: r.filesWritten,
-    project_dir: rootDir,
-    ...(r.blocked?.length ? { blocked: r.blocked } : {}),
-    indexWriteThrough:
-      r.index ?? {
-        ok: false,
-        mode: 'skipped',
-        note: r.dryRun ? 'dry_run：未落盘 ⇒ 未做索引写穿' : '无改动 ⇒ 未落盘、未做索引写穿',
-      },
-  };
+  return attachGateNote(
+    {
+      ok: r.ok,
+      scope: 'local',
+      dryRun: r.dryRun,
+      previews,
+      applied,
+      filesWritten: r.filesWritten,
+      project_dir: rootDir,
+      ...(r.blocked?.length ? { blocked: r.blocked } : {}),
+      indexWriteThrough:
+        r.index ?? {
+          ok: false,
+          mode: 'skipped',
+          note: r.dryRun ? 'dry_run：未落盘 ⇒ 未做索引写穿' : '无改动 ⇒ 未落盘、未做索引写穿',
+        },
+    },
+    // ★ local 支的闸读数也走**同一处**：`applyWrites` 已经把 `SourceWriteReport.task_gate` 带出来了。
+    r.task_gate,
+  );
 }
 
 // ──────────────── 字面量引用扫描（只报告，不改动） ────────────────

@@ -26,15 +26,27 @@ export interface GateNoteCarrier {
 }
 
 /**
+ * 闸读数的**两种来源**（同一句话 `note` 的两个携带者）：
+ * · `TaskGateOutcome` —— 直接调 `assertSourceWriteRegistered*` 的写路（rename_file / rename_files / symbol_move / edit_code）；
+ * · `string` —— 走 `writeSourceFiles` 的写路，闸把 `note` **逐字**放在 `SourceWriteReport.task_gate` 里。
+ * ★ `undefined` 仍然合法：dry_run / 未定位项目根时闸压根没跑，回执不该凭空多一个字段。
+ */
+export type GateNoteSource = Pick<TaskGateOutcome, 'note' | 'exempted'> | string | undefined;
+
+/**
  * 把闸的放行读数挂到回执上。
  *
  * ★ `gate` 可为 `undefined`：dry_run 分支根本没跑闸，那时回执不该凭空多一个字段。
  */
 export function attachGateNote<T extends object>(
   receipt: T,
-  gate: Pick<TaskGateOutcome, 'note' | 'exempted'> | undefined,
+  gate: GateNoteSource,
 ): T & GateNoteCarrier {
-  if (gate) (receipt as T & GateNoteCarrier).task_gate = gate.note;
+  // ★ 两种来源归一成**同一句话**（`note`），不各写一份取法：
+  //   · 直接调闸的写路 → `TaskGateOutcome.note`；
+  //   · 走 `writeSourceFiles` 的写路 → `SourceWriteReport.task_gate`（闸已经把 `note` 逐字存在这里）。
+  const note = typeof gate === 'string' ? gate : gate?.note;
+  if (note) (receipt as T & GateNoteCarrier).task_gate = note;
   return receipt as T & GateNoteCarrier;
 }
 
