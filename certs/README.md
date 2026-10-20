@@ -80,6 +80,7 @@ runner 用这个正则发现证书：
 | 路径 | 性质 | 进版本控制？ |
 |---|---|---|
 | `certs/*.{mjs,sh}` | 证 + 量具 + runner | ★ **是** |
+| `design-db/`（★ **仓库根**，不在这里） | **设计 DB 投影**：`gen-db` 每次**全量重写**的 344 份 `*.calls.json`。2026-10-20 从 `certs/` **搬出** —— 它与证**git 语义相反**（证只增、要逐行评审；投影每次全量重写）。位置的唯一住所 = `src/application/design/db/gen_design_db.ts#designDbDir` | ★ **是** |
 | `certs/t185-base/` | ★ **基线**：`t185-reset` 从它整份还原活态/存档/overlay | ★ **是**（它是"已知 good 状态"的唯一副本） |
 | `certs/t205-fixture/`、`certs/t213-fixture/` | 夹具**模板**（只读；证运行时往 `os.tmpdir()` 拷一份干活） | ★ **是** |
 | `certs/.work/` | **只有**运行期日志与产物：`cert-report.md`、`t187-out.txt`、`t189-sweep.json` | ✗ 被 gitignore |

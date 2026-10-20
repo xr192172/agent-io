@@ -27,9 +27,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+// ★ design-db 的输出目录只许有一个住所（`src/application/design/db/gen_design_db.ts#designDbDir`）。
+//   .mjs 拿不到 TS 源码的导出 ⇒ 取 dist 里的编译产物；★ 没构建过就 import 直接抛（不静默退回字面量）。
+import { designDbDir } from '../dist/src/application/design/db/gen_design_db.js';
 
 const DESIGN = '.agent-io/design/task-system-plan.dsl.json';
-const OUT_DIR = path.join('certs', 'design-db');
+/** ★ 输出目录的唯一住所 = `gen_design_db.ts#designDbDir`（import 编译产物，见文件头）；这里不再写第二份字面量 */
+const OUT_DIR = designDbDir('.');
 const DB = path.join('.agent-io', 'cache.db');
 const dry = process.argv.includes('--dry');
 

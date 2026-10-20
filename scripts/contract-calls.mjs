@@ -6,7 +6,7 @@
  * 于是"为了兼容旧格式"把自己做成了半吊子 —— 那正是"在旧东西上打补丁"。
  * ⇒ 现在**只认一种格式**，旧的手写契约（`task-ops.calls.json`）已删。
  *
- * ## 唯一的格式（`certs/design-db/<file>.calls.json`）
+ * ## 唯一的格式（`design-db/<file>.calls.json`）
  * ```json
  * {
  *   "calls":   [ { "from":"src/a.ts#f", "to":"src/b.ts#g", "why":"…", "debt":"A1" } ],
@@ -22,15 +22,19 @@
  *
  * ## 口径从哪来
  * 实际 = `cache.db` 的 `edges(kind='call')`（7528 条，`source/target` 形如 `path#symbol`）。
- * 设计 = `certs/design-db/*.calls.json`（全量 fork 自实际 + `dep` 加/删的增量）。
+ * 设计 = `design-db/*.calls.json`（全量 fork 自实际 + `dep` 加/删的增量）。
  *
  * 用法：`node scripts/contract-calls.mjs [--json] [--selftest]`
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+// ★ design-db 的位置只许有一个住所（`src/application/design/db/gen_design_db.ts#designDbDir`）：
+//   .mjs 拿不到 TS 的导出 ⇒ 取 dist 里的编译产物；★ 没构建过就 import 直接抛（不静默退回字面量）。
+import { designDbDir } from '../dist/src/application/design/db/gen_design_db.js';
 
-const DIR = path.join('certs', 'design-db');
+/** ★ 唯一住所 = `gen_design_db.ts#designDbDir`（见文件头的 import） */
+const DIR = designDbDir('.');
 const DB = path.join('.agent-io', 'cache.db');
 
 const norm = (s) => String(s).replace(/\\/g, '/');

@@ -366,7 +366,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         .enum(['report', 'gen-db', 'sync-signatures', 'rewrite', 'diff'])
         .optional()
         .describe(
-          'report=六步读数（默认，只读）· gen-db=设计 DSL → 设计 DB（写 certs/design-db/）· ' +
+          'report=六步读数（默认，只读）· gen-db=设计 DSL → 设计 DB（写 design-db/）· ' +
             'sync-signatures=⑥ 设计 DB → 源码，**只同步函数签名、不生成实现**（默认零写入，apply=true 才落盘）· ' +
             'rewrite=同一动作的旧名（保留兼容；输出里的 did_work/reason 一致）',
         ),
@@ -386,7 +386,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
           `设计 DB ${r.check ? '检查' : '生成'} · ${r.features} 个 feature · ${r.files} 个文件节点
 ` +
           `  ${r.check ? '不一致' : '生成'} ${r.check ? r.problems.length : r.written} · 未变 ${r.unchanged} · 清理陈旧 ${r.pruned}` +
-          (r.check ? '' : `\n★ 写盘：certs/design-db/（${r.written} 份有变化）`);
+          (r.check ? '' : `\n★ 写盘：design-db/（${r.written} 份有变化）`);
         const tail = r.problems.length
           ? `\n\n★ ${r.problems.length} 个问题：\n` + r.problems.slice(0, 12).map((p) => '    ' + p).join('\n')
           : '';
@@ -443,7 +443,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
           L.push('', `  ✗ 路径不存在：${String(a.file ?? '(未给 file)')}`);
           L.push('     ⇒ 这不是「没差异」：根本没有可比的源码文件。');
         } else if (r.reason === 'no_design_copy') {
-          L.push('', '  ✗ 设计 DB 没有这份文件的副本（certs/design-db/ 里没有它）⇒ 无可比对。');
+          L.push('', '  ✗ 设计 DB 没有这份文件的副本（design-db/ 里没有它）⇒ 无可比对。');
           L.push('     ⇒ 不是「没差异」；先用 ③ sync 设计 / ⑤ gen-design-db 补副本。');
         } else if (r.reason === 'uncomparable_kind') {
           const kinds = Object.keys(r.uncomparedByKind).join(' / ') || 'const / interface / type / class';

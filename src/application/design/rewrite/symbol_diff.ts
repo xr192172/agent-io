@@ -28,12 +28,14 @@
  * 实际侧一律**现场 `parseFileFull`**。
  *
  * ## 数据源
- * 设计侧：`certs/design-db/<a-b>.calls.json` 的 `symbols[]`
+ * 设计侧：`design-db/<a-b>.calls.json` 的 `symbols[]`
  * 实际侧：对源码现场 `parseFileFull`
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+// ★ 目录的唯一住所是 `gen_design_db.ts#designDbDir`；这里 import 时改名，避免与下面的局部变量同名。
+import { designDbDir as designDbDirOf } from '../db/gen_design_db.js';
 
 const norm = (s: unknown): string => String(s ?? '').replace(/\\/g, '/');
 
@@ -109,7 +111,7 @@ function byName(syms: SideSymbol[]): Map<string, SideSymbol[]> {
 export interface SymbolDiffArgs {
   /** 仓库根（绝对路径） */
   projectDir: string;
-  /** `certs/design-db`（默认 projectDir 下） */
+  /** `design-db`（默认 projectDir 下） */
   designDbDir?: string;
   /** 注入解析器（默认从 dist 动态载入内核）；给测试用 */
   parseFileFull?: (abs: string, content: string) => Promise<{ symbols?: SideSymbol[] }>;
@@ -141,7 +143,7 @@ export interface SymbolDiffResult {
  */
 export async function diffSymbols(args: SymbolDiffArgs): Promise<SymbolDiffResult> {
   const projectDir = path.resolve(args.projectDir);
-  const designDbDir = args.designDbDir ?? path.join(projectDir, 'certs', 'design-db');
+  const designDbDir = args.designDbDir ?? designDbDirOf(projectDir);
 
   let parseFileFull = args.parseFileFull;
   if (!parseFileFull) {

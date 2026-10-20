@@ -49462,9 +49462,9 @@
               "why": "★ 必含符号清单（LLM 写实现的输入）"
             }
           ],
-          "state": "done",
-          "owner": "workbuddy",
-          "claimed_at": "2026-10-20T03:31:05.501Z",
+          "state": "claimed",
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T06:28:37.710Z",
           "evidence": [
             {
               "kind": "expectations",
@@ -49479,9 +49479,9 @@
               "verdict": "pass"
             }
           ],
-          "reopened_at": null
+          "reopened_at": "2026-10-20T06:28:37.710Z"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision_history": [
           {
             "at": "2026-10-20T03:31:18.887Z",
@@ -49597,9 +49597,9 @@
               "why": "必须真的把 members 拷进副本（只有做了才会绿）"
             }
           ],
-          "state": "done",
-          "owner": "workbuddy",
-          "claimed_at": "2026-10-20T00:08:45.501Z",
+          "state": "claimed",
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T06:28:37.635Z",
           "evidence": [
             {
               "kind": "expectations",
@@ -49608,9 +49608,10 @@
               "agent": "workbuddy",
               "verdict": "pass"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-20T06:28:37.635Z"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision_history": [
           {
             "at": "2026-10-20T00:08:42.765Z",
@@ -49708,18 +49709,19 @@
               "why": "取源码路径的判据必须单独一个函数（优先 path 字段，退回注释）"
             }
           ],
-          "state": "done",
-          "owner": "workbuddy",
-          "claimed_at": "2026-10-19T13:59:16.532Z",
+          "state": "claimed",
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T06:28:37.849Z",
           "evidence": [
             {
               "kind": "expectations",
               "at": "2026-10-19T14:02:36.713Z",
               "verdict": "pass"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-20T06:28:37.849Z"
         },
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_rewrite_rewrite_ts",
@@ -49814,9 +49816,9 @@
               "why": "★ 至少一个具体 reason（区分\"没覆盖\"与\"路径错\"）"
             }
           ],
-          "state": "done",
-          "owner": "workbuddy",
-          "claimed_at": "2026-10-20T03:31:03.019Z",
+          "state": "claimed",
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T06:28:37.778Z",
           "evidence": [
             {
               "kind": "expectations",
@@ -49831,9 +49833,9 @@
               "verdict": "pass"
             }
           ],
-          "reopened_at": null
+          "reopened_at": "2026-10-20T06:28:37.778Z"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision_history": [
           {
             "at": "2026-10-20T03:31:17.643Z",
@@ -95766,25 +95768,25 @@
         "id": "file_src_application_design_line_design_line_ts",
         "path": "src/application/design/line/design_line.ts",
         "responsibility": "设计链六步读数（工具 design_line 的 report action）",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_db_gen_design_db_ts",
         "path": "src/application/design/db/gen_design_db.ts",
         "responsibility": "设计 DSL → 设计 DB（全量、与实际 DB 同构）",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_rewrite_symbol_diff_ts",
         "path": "src/application/design/rewrite/symbol_diff.ts",
         "responsibility": "设计 DB vs 源码的符号级判据（⑥ 的地基，全仓唯一一份）",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_rewrite_rewrite_ts",
         "path": "src/application/design/rewrite/rewrite.ts",
         "responsibility": "⑥ 设计 DB → 源码的编排（清单 → 语法门 → 落盘 → 复核）",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_line_design_diff_ts",
@@ -95865,11 +95867,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T05:25:18.444Z",
+    "saved_at": "2026-10-20T06:28:37.874Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792473312430,
-    "age": 606014
+    "age": 4405444
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

@@ -3,7 +3,7 @@
  *
  * ## 它做什么
  * ```
- * 设计 DB（certs/design-db/*.calls.json 的 symbols[].signature）
+ * 设计 DB（design-db/*.calls.json 的 symbols[].signature）
  *       ↕  diff（判据住在 ./symbol_diff.ts，全仓唯一一份）
  * 源码（现场 parseFileFull）
  * ⇒ 同一份 diff 出【三种】结论，各有各的处置：
@@ -61,7 +61,7 @@ export interface RewriteArgs {
  *
  * 每一格都是**实测过的不同处境**，不是枚举洁癖：
  * - `path_not_found`    给的 `file=` 根本不存在 ⇒ 没有可比对的源码（路径写错 / 打错一个字母）
- * - `no_design_copy`    源码在，但 `certs/design-db/` 没有它的副本（③ / ⑤ 没覆盖）
+ * - `no_design_copy`    源码在，但 `design-db/` 没有它的副本（③ / ⑤ 没覆盖）
  * - `uncomparable_kind` 有副本、也比了，可这个文件的符号**全是**不可比类型（只有 const/interface…）
  * - `no_diff`           有副本、有可比符号、比过了 —— 真的没差异
  * - `not_applied`       有差异，但 `apply=false`（零写入的刻意结果）

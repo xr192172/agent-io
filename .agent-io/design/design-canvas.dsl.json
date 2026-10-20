@@ -2180,7 +2180,19 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_scripts_contract-calls_mjs",
+          "summary": "【L1 待建构】核心层 · scripts — 3 个 API（导入自 3 个模块）（scripts/contract-calls.mjs） ← 节点 file_scripts_contract-calls_mjs",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_scripts_contract-calls_mjs\"].responsibility"
+          },
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T06:29:20.135Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_scripts_coverage_mjs",
@@ -2228,7 +2240,19 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_scripts_dep_mjs",
+          "summary": "【L1 待建构】核心层 · scripts — 0 个 API（导入自 2 个模块）（scripts/dep.mjs） ← 节点 file_scripts_dep_mjs",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_scripts_dep_mjs\"].responsibility"
+          },
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T06:29:20.163Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_scripts_design-check_mjs",
@@ -2340,7 +2364,19 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_scripts_gen-contracts_mjs",
+          "summary": "【L1 待建构】核心层 · scripts — 0 个 API（导入自 3 个模块）（scripts/gen-contracts.mjs） ← 节点 file_scripts_gen-contracts_mjs",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_scripts_gen-contracts_mjs\"].responsibility"
+          },
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T06:29:20.191Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_scripts_gen_agents_mjs",
@@ -3524,7 +3560,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "task": {
+          "id": "file_src_application_design_index_ts",
+          "summary": "【L1 待建构】入口层 · src/application/design — 0 个 API（导入自 20 个模块）（src/application/design/index.ts） ← 节点 file_src_application_design_index_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
+          },
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T06:29:20.217Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -19579,7 +19627,8 @@
           }
         ],
         "lines": 168,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_scripts_coverage_mjs",
@@ -19900,7 +19949,8 @@
           }
         ],
         "lines": 85,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_scripts_design-check_mjs",
@@ -20715,7 +20765,8 @@
           }
         ],
         "lines": 93,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_scripts_gen_agents_mjs",
@@ -27922,7 +27973,8 @@
           }
         ],
         "lines": 866,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -28124,5 +28176,12 @@
     }
   ],
   "annotations": [],
-  "_dsl_rev": 1
+  "_dsl_rev": 1,
+  "_sync": {
+    "saved_at": "2026-10-20T06:29:20.222Z",
+    "source": "design_sheet",
+    "feature": "design-canvas",
+    "scanRev": 1792473312430,
+    "age": 4447792
+  }
 }

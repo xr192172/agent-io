@@ -3,7 +3,7 @@
  *
  * ## 它生成什么（用户的关键定义，逐字留在注释里）
  * ```
- * certs/design-db/<file>.calls.json   ← 每个文件节点一份（全量）
+ * design-db/<file>.calls.json   ← 每个文件节点一份（全量）
  * ```
  *
  * ## 为什么必须【全量、和实际 DB 同构】
@@ -42,7 +42,7 @@ import { DatabaseSync } from 'node:sqlite';
 export interface GenDesignDbOptions {
   /** 只处理这个 feature（不传 = design/ 下全部） */
   feature?: string;
-  /** 只比对不写盘（真写会改 certs/design-db/） */
+  /** 只比对不写盘（真写会改 design-db/） */
   check?: boolean;
 }
 
@@ -75,12 +75,22 @@ export const outNameOf = (rel: string): string =>
   rel.replace(/^src\//, '').replace(/[/\\]/g, '-').replace(/\.ts$/, '') + '.calls.json';
 
 /**
+ * 设计 DB 的输出目录 —— ★ **唯一住所**（2026-10-20 从 `certs/` 下搬到**仓根** `design-db/`）。
+ *
+ * 消费者全部认这一处，不许各写一遍字面量：
+ * - `gen_design_db.ts` 自己
+ * - `design_line.ts` / `symbol_diff.ts`（TS 侧直接 import 本函数）
+ * - `scripts/gen-contracts.mjs` / `contract-calls.mjs` / `dep.mjs`（.mjs 侧 import dist 里的编译产物）
+ */
+export const designDbDir = (root: string): string => path.join(root, 'design-db');
+
+/**
  * 生成（或检查）设计 DB。
- * ★ 纯 I/O：读 `design/*.dsl.json` + `cache.db`，写 `certs/design-db/`。
+ * ★ 纯 I/O：读 `design/*.dsl.json` + `cache.db`，写 `designDbDir(root)`（= `<root>/design-db/`）。
  */
 export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDesignDbResult {
   const DESIGN_DIR = path.join(root, '.agent-io', 'design');
-  const OUT_DIR = path.join(root, 'certs', 'design-db');
+  const OUT_DIR = designDbDir(root);
   const CHECK = opts.check === true;
 
   const result: GenDesignDbResult = { features: 0, files: 0, written: 0, unchanged: 0, pruned: 0, problems: [], check: CHECK };

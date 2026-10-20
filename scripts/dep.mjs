@@ -26,8 +26,12 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+// ★ design-db 的位置只许有一个住所（`src/application/design/db/gen_design_db.ts#designDbDir`）：
+//   .mjs 拿不到 TS 的导出 ⇒ 取 dist 里的编译产物；★ 没构建过就 import 直接抛（不静默退回字面量）。
+import { designDbDir } from '../dist/src/application/design/db/gen_design_db.js';
 
-const DIR = path.join('certs', 'design-db');
+/** ★ 唯一住所 = `gen_design_db.ts#designDbDir`（见文件头的 import） */
+const DIR = designDbDir('.');
 const argv = process.argv.slice(2);
 const arg = (n) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? argv[i + 1] : undefined; };
 const has = (n) => argv.includes(`--${n}`);

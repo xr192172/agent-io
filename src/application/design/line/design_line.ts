@@ -24,6 +24,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { designDbDir } from '../db/gen_design_db.js';
 
 /** 单步读数 */
 export interface LineStep {
@@ -54,7 +55,7 @@ export function lineReport(root: string, feature: string): LineReport {
     db: path.join(root, '.agent-io', 'cache.db'),
     live: path.join(root, '.agent-io', 'live', `${feature}.dsl.json`),
     design: path.join(root, '.agent-io', 'design', `${feature}.dsl.json`),
-    designDb: path.join(root, 'certs', 'design-db'),
+    designDb: designDbDir(root),
   };
 
   // ── ① 源码 → 实际 DB ──
@@ -172,7 +173,7 @@ export function lineReport(root: string, feature: string): LineReport {
       by: 'gen-design-db（全量，与实际 DB 同构）',
       status: dbCount ? 'ok' : 'missing',
       reading: dbCount
-        ? `certs/design-db/：${dbCount} 份 · ${n(dbSyms)} 符号 · ${n(dbCalls2)} 调用 · ★ ${dbReqs} 条设计要求`
+        ? `design-db/：${dbCount} 份 · ${n(dbSyms)} 符号 · ${n(dbCalls2)} 调用 · ★ ${dbReqs} 条设计要求`
         : '设计 DB 未生成',
     },
     {
