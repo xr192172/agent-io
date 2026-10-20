@@ -19235,9 +19235,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "T356 已改完（handler 透传）",
-          "released_by": "t356-authorize",
-          "released_at": "2026-10-20T13:29:36.658Z"
+          "release_reason": "同上：refactor/index.ts 的 actor/authorize 透传已落盘，交回写权",
+          "released_by": "codebuddy-dogfood",
+          "released_at": "2026-10-20T13:56:27.203Z"
         },
         "status": "draft"
       },
@@ -19287,7 +19287,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_refactor_pipeline_refactor_pipeline_ts",
+          "summary": "【L1 待建构】核心层 · src/application/refactor/pipeline — 11 个 API（导入自 17 个模块）（src/application/refactor/pipeline/refactor_pipeline.ts） ← 节点 file_src_application_refactor_pipeline_refactor_pipeline_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_pipeline_refactor_pipeline_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "本轮补闸已完成并落盘（refactor_pipeline.ts + index.ts），不再占写权；早交回卡给下一个 owner",
+          "released_by": "codebuddy-dogfood",
+          "released_at": "2026-10-20T13:56:27.111Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_pipeline_refactor_plan_ts",
@@ -84845,7 +84860,8 @@
           }
         ],
         "lines": 753,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_pipeline_refactor_plan_ts",
@@ -98785,11 +98801,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T13:29:37.382Z",
+    "saved_at": "2026-10-20T13:56:27.232Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792502934697,
-    "age": 42685
+    "scanRev": 1792504542536,
+    "age": 44696
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

@@ -47,7 +47,7 @@ import type { JudgeIssue } from './refactor_judge.js';
 import { scanContracts, diffContracts, type ContractSnapshot, type ScanContractsOptions, type UndefinedRef } from '../../../infrastructure/analysis/contract_gate/index.js';
 import { checkEmbedSubmissions, type SubmitCheckResult } from '../../../infrastructure/analysis/submit_gate/index.js';
 import { planFunctionAnnotation } from '../annotate/function_annotation.js';
-import { syncSelfWrites, recordSelfWrite, writeThroughLine } from '../../write_gate.js';
+import { syncSelfWrites, recordSelfWrite, writeThroughLine, assertSourceWriteRegisteredFor, resolveActor } from '../../write_gate.js';
 
 // re-export 契约类型（向后兼容：外部可从本模块取用）
 export type {
@@ -88,6 +88,10 @@ export interface StageResult {
   /** 写闸收编（L1a）：本步终态（applied / 回滚后）的索引写穿结果（人读一行）。
    *  undefined = 该项目还没有索引 ⇒ 只真写、不写穿（纪律：绝不凭空建索引）。 */
   index_note?: string;
+  /** ★★★ 写闸（A7 + T356）放行读数（`TaskGateOutcome.note` **逐字**）—— 凭什么放行 / 豁免了谁 / 授权 scope。
+   *  ★ 不放进来就是“闸判了、豁免生效了、回执里一个字都没有”（本仓的病）。
+   *  ★ 被拒时不会走到这里：闸直接抛（见 `runStage` 里那一行）。 */
+  task_gate?: string;
 }
 
 export interface PipelineOptions {
@@ -132,6 +136,14 @@ export interface PipelineOptions {
   /** 多语言执行器注册表；缺省用内置 DEFAULT_LANGS（TS/Go）。新语言调用
    *  registerRefactorLanguage 后自动被拾取，无需传此参数。 */
   langs?: RefactorLangRegistry;
+  /** ★★★ 写闸（A7）：本次**写入者身份** —— 与 claim 时 `data.owner` **同一个值**。
+   *  本管线是**一次落一批文件**的写路（死 import / 死语句 / 包迁移），故必须与
+   *  `edit_code` / `rename_files` / `symbol_move` 同一条口径：不领任务不许悄悄改。 */
+  actor?: string | null;
+  /** ★★★ 写闸（T356 **按 run 授权**）：一个 scope 一次授权一批文件（文法见 `domain/scope.ts`）。
+   *  ★ 它**不放宽 A7** —— 该 scope 里仍须有一张 `owner===actor` 的 claimed 卡；
+   *    它只回答“这批文件是不是都在我领的那块地里”。 */
+  authorize?: string | null;
 }
 
 export interface PipelineResult {
@@ -615,6 +627,21 @@ export async function runRefactorPipeline(opts: PipelineOptions): Promise<Pipeli
       return;
     }
 
+    // ── 写闸（A7 + T356 按 run 授权）：**落盘之前**判一次，判的是本步真正会碰到的全部路径 ──
+    // 文件集 = 内容改写 ∪ 移动 from/to —— ★ rename 是“删一个 + 建一个”，**两边都算写**。
+    //
+    // ★ 为什么必须在这里，而且**不许**包成 `writeSourceFiles`（三条都是实测过的约束）：
+    //   ① `moves` 走的是 `fs.renameSync`，`writeSourceFiles` 只给 `mutate` 回调，**表达不了移动**；
+    //   ② 索引写穿是**故意**放在终态之后（applied / rolled_back 后，见下面 `finalize`）——
+    //      包进去会变成“写完立刻同步”，而且回滚后索引已经先脏了一轮；
+    //   ③ 拒绝必须发生在**任何** fs 写之前（先 mkdir/rename 再判 = 拒了也已经在盘上动过了）。
+    // 本函数**不重写闸的判据**：`note` 逐字进回执（`StageResult.task_gate`），拒绝直接抛。
+    const gateFiles: string[] = [
+      ...plan.absToNew.keys(),
+      ...moves.flatMap((m) => [m.from, m.to]),
+    ];
+    const gate = assertSourceWriteRegisteredFor(proj, gateFiles, resolveActor(opts.actor), opts.authorize);
+
     // ── 落盘（基于当前盘上内容——上一步已绿）──
     // 1) 先移动文件（先移动，absToNew 里移动后文件的 key 是其 to 路径，随后写覆盖）
     for (const m of moves) {
@@ -662,17 +689,15 @@ export async function runRefactorPipeline(opts: PipelineOptions): Promise<Pipeli
     const hasAuthoritative = commands.length > 0 || !!opts.verifyImpl;
 
     // ── 写闸收编（L1a）：本步**终态**（applied 或回滚后）把索引对齐磁盘 ──
-    // 文件集 = 内容改写 ∪ 移动 from/to：applied 时 from 已不在盘上（syncSelfWrites 按
-    // 存在性从索引移除）、to 是新内容；回滚时 from 回到原内容（hash 未变 ⇒ skipped 零成本）、
-    // to 不在盘上 ⇒ 同样移除。★ 只在终态跑一次：中途写穿会在回滚分支白做一轮同步。
+    // 文件集复用上面 `gateFiles` = 内容改写 ∪ 移动 from/to：applied 时 from 已不在盘上
+    // （syncSelfWrites 按存在性从索引移除）、to 是新内容；回滚时 from 回到原内容（hash 未变 ⇒
+    // skipped 零成本）、to 不在盘上 ⇒ 同样移除。★ 只在终态跑一次：中途写穿会在回滚分支白做一轮同步。
     // 已知边界：纯移动时若某引用方不在此批内容改写里，它指向旧路径符号的已解析边会被
     // FK 级联删除且无法按名重开 —— 由管线自身的 import 改写（大多数引用方在 absToNew 里）
     // 与 L4 reconcile 兜底；这比收编前"整步不同步"严格更好。
-    const gateFiles: string[] = [
-      ...plan.absToNew.keys(),
-      ...moves.flatMap((m) => [m.from, m.to]),
-    ];
     const finalize = async (stage: StageResult): Promise<void> => {
+      // ★ 闸的放行读数**逐字**上回执（A7 那条 / 授权 scope / 豁免名单）—— 判了不说 = 白判。
+      stage.task_gate = gate.note;
       try {
         const out = await syncSelfWrites(proj, gateFiles);
         if (out) stage.index_note = writeThroughLine(out);

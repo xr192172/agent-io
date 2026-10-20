@@ -1277,6 +1277,11 @@ export const REFACTOR_TOOLS: ToolDef[] = [
             : undefined,
         },
         verify,
+        // ★★★ 2026-10-20（补最后一个真后门）：本入口**从前一个人身份维度都没传** ——
+        //   `refactor_pipeline` 落盘前 0 处 `assertSourceWriteRegistered`（只有事后 `syncSelfWrites`）
+        //   ⇒ `actor` / `authorize` 在那条写路上**无处生效**。现在两个都带上（与 rename_* / edit_code 同一条口径）。
+        actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
+        authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
       });
 
       const parts = [
@@ -1297,6 +1302,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
           : s.outcome === 'not_verifiable' ? '未启用验证，已落盘'
           : '未启用';
         parts.push(`\t[${s.label}] ${s.outcome}——${kind}（改动 ${s.files_changed} 文件，${s.units_removed} 单位）`);
+        // ★ 2026-10-20：闸的放行读数（凭什么放 / 授权 scope / 豁免名单）逐字上人读面 ——
+        //   之前它只可能在 `data` 里，CLI 看回执看不到；与 rename_* / edit_code 用同一行渲染（`gateHumanLines`）。
+        if (s.task_gate) parts.push(`\t\t${gateHumanLines(s.task_gate)}`);
         // ★ 2026-10-08：`detail` 不止回滚有 —— 闸② 拦下的原因也走这里。
         //   原先只在 rolled_back 时渲染 ⇒ 闸② 的理由算出来了却**没人看见**（静默）。
         if (s.detail) parts.push(`\t\t${s.outcome === 'rolled_back' ? '回滚详情：' : ''}${s.detail}`);
