@@ -2275,3 +2275,57 @@ task_machine.ts: L39 1887/1993 · L40 1994/2116 · L41 2117/2195
 - `evidence.at` 是调用方填的字符串 ⇒ **存心伪造时间戳仍能过**
 - 故意把 decision 换成一条"已经成立"的平凡判据再 publish ⇒ 结账
 - ⇒ 本闸只保证"零动作"被拒；后者需要**两次显式动作 + 留下可复核的判据变更**
+
+---
+
+## 2026-10-20 早（四一）· 两张卡：`did_work` 与 `must_have`（`1832e6f4` / `7c0863d7`）
+
+### 1. 两卡都是用**今天的 3 步路径**开的
+
+```
+reopen（done→claimed，记 reopened_at）
+→ 改 decision（3 条 → 5 条 / 4 条）
+→ publish{reason}（原地换判据，evidence 逐条保留）
+⇒ 卡是 claimed，直接派子代理。没有 release、没有 claim。
+```
+
+**这是「publish 原地换判据」的第一次真实使用**（之前只有它自己的验收脚本）。
+
+### 2. 卡 1：`did_work` + `reason`（`rewrite.ts`）
+
+```
+path_not_found    → {"did_work":false,"reason":"path_not_found","ok":false}
+no_design_copy    → {"did_work":false,"reason":"no_design_copy","ok":true}
+no_diff           → {"did_work":false,"reason":"no_diff","scanned":1,"ok":true}
+uncomparable_kind → {"did_work":false,"reason":"uncomparable_kind"}
+有差异 + apply    → {"did_work":true,"applied":{"applied":1,"afterDiffer":0},"ok":true}
+gate_blocked      → 标准信封 + EXIT=1（改前：无信封 + 退 0）
+```
+
+子代理还加了 4 个它发现的真实态（`not_applied` / `already_applied` / `apply_failed` / `gate_blocked`）。
+
+### 3. 卡 2：`must_have`（`design_line.ts`）
+
+```
+file_scripts_snapshot_mjs       → REPO, SNAP, OBS, runObs, ...（13 个）
+file_scripts_structure_gap_mjs  → argv, asJson, rootArg, ...（8 个）
+dir_..._bricks                  → [] + why_empty: "设计侧只说'要这个目录'，说不出里面该有什么（信息不够，不编）"
+dir_..._render                  → [] + why_empty（同上）
+```
+
+### 4. ★ 子代理纠正了我**三个猜测**（这条比功能重要）
+
+我以为符号来自：节点的 `scope` / 相连的 `api`+`binding` 节点 / 决策卡的 `symbol-exists`。
+
+**实测三处全不成立**：
+- 节点**没有** `scope` 字段（只有决策卡上有，而 49 张卡 0 张写了）
+- 这个 DSL **没有** api/binding 节点（`node.type` 只有 `module 109 + file 516`）
+- 这 4 个节点**一条** `symbol-exists` 都没有
+
+⇒ 实际来源是 **`semantic.files[path].symbols`**（设计 DSL 自带的符号记录）。
+
+### 5. 一个如实报的缺口
+
+`semantic.files` 记的是「该文件的**顶层绑定**」，不是「API 面」：
+`.mjs` 的 const 一律 `kind:'type'`、没有 exported 标记 ⇒ `bad / now / d` 这种局部量也进了清单。
+子代理**没做"看着像局部就过滤"**（那是在猜）—— 这个判断是对的。
