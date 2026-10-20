@@ -818,11 +818,21 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     const db = input.cache_db;
     const sync = await syncProject(db, root, absFiles);
     cacheStats = { hits: 0, reparsed: 0, failed: 0 };
-    // 删除侦测：清掉磁盘上已不存在的文件的缓存行（比对基准是截断前完整列表）
-    const pruned = pruneDeletedFiles(db, root, walkedAll);
+    // 删除侦测：清掉磁盘上确实不存在的文件的缓存行（比对基准是截断前完整列表）
+    // ★ 回执分两种，不许混成一句：prune 的候选里有"磁盘真没了"和"走查规则主动跳过但文件还在"，
+    //   以前一律报"已从磁盘删除" ⇒ 实测每轮谎报 3 个（gitignore 命中的 check_*.mjs / test_*.ts、
+    //   ARCHIVE_DIRS 下的 archive_node.ts）。后者行保留，只报"越界未索引"。
+    const retainedOutOfWalk: string[] = [];
+    const pruned = pruneDeletedFiles(db, root, walkedAll, retainedOutOfWalk);
     if (pruned.length > 0) {
       skipped.push(
-        `缓存清理: ${pruned.length} 个文件已从磁盘删除（${pruned.slice(0, 3).join(', ')}${pruned.length > 3 ? ' 等' : ''}）`,
+        `缓存清理: ${pruned.length} 个文件已从磁盘删除（磁盘上确实不存在；${pruned.slice(0, 3).join(', ')}${pruned.length > 3 ? ' 等' : ''}）`,
+      );
+    }
+    if (retainedOutOfWalk.length > 0) {
+      skipped.push(
+        `越界未索引: ${retainedOutOfWalk.length} 个文件被走查规则排除但磁盘仍在，索引行保留` +
+          `（${retainedOutOfWalk.slice(0, 3).join(', ')}${retainedOutOfWalk.length > 3 ? ' 等' : ''}）`,
       );
     }
     const byPath = new Map(sync.results.map((r) => [r.path, r]));

@@ -1008,8 +1008,15 @@ function findCrossFileTarget(
 
 /**
  * 删除侦测（轻量形态）：比对 files 表与本次全量扫描列表，
- * 清掉磁盘上已不存在的文件的缓存行。在每次 sync 时顺带做，
+ * 清掉磁盘上真的不存在的文件的缓存行。在每次 sync 时顺带做，
  * 不做 fs 监听（监听属序号 11，届时换 removeFile 实时触发）。
+ *
+ * ★★ 函数名骗人：它判的是「**不在本次走查范围**」，不是「已删除」。
+ *   走查规则会主动跳过一批**仍然存在**的文件（`.gitignore` 命中的 `scripts/check_*.mjs`、
+ *   `test_*.ts`，以及 `ARCHIVE_DIRS` 下的归档文件）——它们不在 absPaths 里，但磁盘上好好的。
+ *   若只看「不在走查列表」就清行 ⇒ 这些越界文件每轮被删、又被 watch 收回来，形成拉锯。
+ *   ⇒ 判据必须是「不在走查列表 **且** `fs.existsSync` 为 false」。
+ *   注意：本函数只做**止损**（不误删）；"走查规则本身不读 gitignore"是另一件事。
  *
  * absPaths 必须是【完整】扫描列表（max_files 截断之前），否则误删。
  * ★ 「本文件管哪些行」走**源码尺**（`codeSourceExtSet()` = 可解析 ∩ 代码语言 + 小写归一 + 缓存，
@@ -1019,16 +1026,31 @@ function findCrossFileTarget(
  *   不受 import_project 扫描列表影响，避免多工具共享缓存时互踩。
  * ★ 为什么不用 `isSupported`（改前）：那只答"能不能解析"，`.json` 恰在差集里 ⇒ 会把别的工具/旧库的
  *   `.json` 行也当成"已删的源码"清掉 —— 两会话前 `walkFiles`（D6）犯的是同一个错（用错尺回答"什么算源码"）。
- * 返回被清理的相对路径列表。
+ *
+ * @param retainedOut 可选收集器：不在走查列表、但磁盘上仍在的文件（= 被走查规则排除的"越界未索引"）。
+ *                    供调用方在回执里与"真的删了"分开说 —— 两者以前被同一句话报成"已从磁盘删除"。
+ * @returns 被清理（真删除）的相对路径列表。
  */
-export function pruneDeletedFiles(db: Database, projectRoot: string, absPaths: string[]): string[] {
+export function pruneDeletedFiles(
+  db: Database,
+  projectRoot: string,
+  absPaths: string[],
+  retainedOut?: string[],
+): string[] {
   const alive = new Set(absPaths.map((p) => toRelPath(projectRoot, p)));
   // ★ 与 walkFiles/watch 共用 L1 的唯一用法（源码尺）——一次建集，逐行 `has` 查
   const codeExts = codeSourceExtSet();
   const rows = db.prepare('SELECT path FROM files').all() as Array<{ path: string }>;
-  const dead = rows
+  const outOfWalk = rows
     .map((r) => r.path)
     .filter((rel) => codeExts.has(path.posix.extname(rel).toLowerCase()) && !alive.has(rel));
+  // ★ 「不在走查列表」只是**嫌疑**：磁盘还在 ⇒ 是走查规则主动跳过的（gitignore / test_* / ARCHIVE_DIRS），
+  //   行必须保留；磁盘真没了 ⇒ 才是删除。这一句是本函数唯一的真相来源。
+  const dead: string[] = [];
+  for (const rel of outOfWalk) {
+    if (fs.existsSync(path.join(projectRoot, rel))) retainedOut?.push(rel);
+    else dead.push(rel);
+  }
   if (dead.length === 0) return [];
   const ownTx = !inTransaction(db);
   if (ownTx) db.exec('BEGIN');
