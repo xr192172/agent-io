@@ -189,6 +189,25 @@ export interface TaskSpec {
   /** 释放时刻（ISO 8601；与 `released_by` 同生共死） */
   released_at?: string | null;
   /**
+   * ★★★ **重开账本**（2026-10-20）：这张卡被 `reopen` 的时刻；**结清后置 `null`**。
+   *
+   * ## 它堵的是什么（白洞）
+   * 收归前 `reopen` 只写 `{state:'claimed', owner, claimed_at}` —— **不改判据、不清 evidence**
+   * ⇒ 旧判据仍然全绿 ⇒ **立刻 `complete` 就能再 done 一次，什么都没做**（0 工作量完成）。
+   *
+   * ## 语义（一句话）
+   * `reopened_at != null` ⇔ **这笔重开还没结清**：自那以后判据没换过、也没有带时间的新证据
+   * ⇒ `complete` 必须拒（"旧判据再跑一遍"不是新证据）。
+   * 结清只有两条路：① `publish` 在 claimed 上**真的换了判据**（写盘时置 `null`）；
+   * ② `complete` 带一条 `reading` / `attestation`，其 `at` **不早于** `reopened_at`。
+   *
+   * ## ★ 为什么是卡级事件字段，而不是给 expectation 加 `stale`
+   * `Expectation` 是 decision 与 task **共用**的形状；往里加 `stale` 会让判定器必须"记得忽略它"
+   * （= 又一处补丁），而清除者还要再定义一份。`reopened_at` 是**事件**，
+   * 而 `expectations` 的唯一写端是 `publish` ⇒ 结清者天然唯一（不必第二处权威）。
+   */
+  reopened_at?: string | null;
+  /**
    * ★ **未实现**（2026-10-18 标）：原设计是「新卡带 replaces ⇒ 旧卡转 superseded」，
    * 而 superseded 状态已于 2026-10-17 删除 ⇒ **本字段目前无状态可转、无读取方** ⇒ 死字段。
    * ★ 要复活它，先回答「取代后旧卡变成什么」（目前只有 done / void 两个终态）。

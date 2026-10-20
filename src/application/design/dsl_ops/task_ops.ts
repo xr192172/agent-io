@@ -149,6 +149,63 @@ function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
   saveDesignSheet(applyOverlay(nextDsl, ov));
 }
 
+/**
+ * 判据是否与卡上现有的**逐字相同**（`summary` + `expectations`）。
+ *
+ * ★ 为什么需要它：`publish` 的"原地换判据"是**重开账**的唯一结清口（见
+ *   `task_schema.ts#TaskSpec.reopened_at`）—— 若"换了等于没换"也放行，账就白结了。
+ * ★ 比较时**按键名排序**：decision 里键顺序变了不是"换判据"（同一个判据换了写法）。
+ */
+function sameCriteria(card: TaskSpec, summary: string, expectations: readonly unknown[]): boolean {
+  if ((card.summary ?? '') !== summary) return false;
+  const canon = (xs: readonly unknown[]): string =>
+    xs
+      .map((e) => {
+        const o = (e ?? {}) as Record<string, unknown>;
+        return JSON.stringify(Object.keys(o).sort().map((k) => [k, o[k]]));
+      })
+      .join('\n');
+  return canon(card.expectations ?? []) === canon(expectations);
+}
+
+/**
+ * ★★★ **重开账本闸**（`complete` 侧；`reopen` 是借方，这里是贷方）。
+ *
+ * ## 判据（一条）
+ * `reopened_at == null` ⇒ 放行；否则必须满足其一：
+ *  · 输入的 evidence 是 `reading` / `attestation`，且 `at` **不早于** `reopened_at`；
+ *  · （`publish` 真换了判据 ⇒ 写盘时已把 `reopened_at` 置 `null`，走不到这里。）
+ *
+ * ## ★ 为什么 `kind:'expectations'` 不算新证据（这不是苛刻，是白洞的定义）
+ * 这一档是**机器判**、**没有调用方时间戳**，它的内容恒等于"卡上这些判据现在全绿"——
+ * 而重开**不改判据** ⇒ 只要旧活做完过，它**必然**全绿，与"这次干没干活"无关。
+ * ⇒ 拿它当重开后的收口证据 = 把旧判据再跑一遍 = 白洞本身。
+ *
+ * ★ `at` 是调用方给的 ⇒ 本闸挡的是"零动作"，挡不住"存心伪造时间戳"（如实声明）。
+ */
+function reopenGate(
+  card: TaskSpec,
+  evidence: ProgressEvidence | undefined,
+): { ok: true } | { ok: false; reason: string } {
+  const reopenedAt = card.reopened_at;
+  if (!reopenedAt) return { ok: true };
+  const at = evidence && (evidence.kind === 'reading' || evidence.kind === 'attestation') ? evidence.at : undefined;
+  const t = at ? Date.parse(at) : NaN;
+  const r = Date.parse(reopenedAt);
+  if (Number.isFinite(t) && Number.isFinite(r) && t >= r) return { ok: true };
+  return {
+    ok: false,
+    reason:
+      `这张卡重开于 ${reopenedAt}，此后判据没换、也没有一条 at ≥ 该时刻的证据 ⇒ 现在收口只是把**旧判据**再跑一遍。` +
+      `\n★ 两条正路：① 改 decision 再 \`publish\`（带 data.reason ⇒ 原地换判据，账即结清）；` +
+      `② \`complete\` 带 \`reading\` / \`attestation\`，且 data.evidence.at 不早于 ${reopenedAt}。` +
+      `\n★ \`kind:'expectations'\` 在重开未结清时**不算新证据**：它没有时间戳，内容就是"旧判据仍然全绿" —— 而那正是本闸堵的白洞。` +
+      (at
+        ? `\n★ 实得 evidence.at=${at}（${Number.isFinite(t) ? '解析成功但早于重开时刻' : '不是合法时间'}）。`
+        : `\n★ 实得 evidence.kind=${evidence?.kind ?? '（无）'}（这一档没有调用方时间戳）。`),
+  };
+}
+
 // ─────────────────────────────────────────────────────────────
 // publish（立卡 = 翻决策卡）
 // ─────────────────────────────────────────────────────────────
@@ -363,14 +420,29 @@ export function publishTask(input: TaskOpInput): EditResult {
     }
   }
 
+  const nextSummary = decision?.summary ?? '';
+  /** ★ 这次 publish 是否**真的换了判据**（只在有旧卡时有意义；重开账结清要靠它） */
+  const sameAsCard = existing ? sameCriteria(existing, nextSummary, expectations) : false;
+
   if (level === 'L2') {
     // ★★ 已领卡的**原地换判据**：只换 summary + expectations，其余逐条保留（★ 尤其 evidence）。
     if (refresh) {
+      // ★★★ 重开账：`publish` 是唯一的结清口 ⇒ "换了等于没换"必须拒（否则账白结、白洞照旧）。
+      if (existing?.reopened_at && sameAsCard) {
+        throw new Error(
+          `publish 被拒（重开账未结清）：节点 "${node_id}" 的卡**重开于 ${existing.reopened_at}**，` +
+            `而这次 decision 的 summary + ${expectations.length} 条判据与卡上**逐字相同** ⇒ 换了等于没换。\n` +
+            `★ 要么真改 decision（summary 或至少一条判据），要么别用 publish 结账 —— ` +
+            `直接给一条带时间的新证据（\`reading\` / \`attestation\`，at 不早于 ${existing.reopened_at}）再 complete。`,
+        );
+      }
       const kept = existing?.evidence ?? [];
       writeTask(feature, node_id, {
         ...existing!,
-        summary: decision?.summary ?? '',
+        summary: nextSummary,
         expectations: expectations.map((e) => ({ ...e })),
+        // ★ 判据真换了 ⇒ 重开账结清（旧判据的"绿"不再算这次工作的证据）
+        ...(existing?.reopened_at ? { reopened_at: null } : {}),
       });
       return {
         message:
@@ -407,6 +479,9 @@ export function publishTask(input: TaskOpInput): EditResult {
       state: 'candidate',
       // ★ L1 ⇒ L2 升级：旧 L1 卡的证据**逐条搬进新卡**（TaskSpec 无卡片历史 ⇒ 不静默丢证据）
       ...(advance && existing?.evidence?.length ? { evidence: existing.evidence } : {}),
+      // ★★★ 重开账：candidate 重翻是**整卡重建**（下面的字段就是全部）⇒ 若判据与旧卡逐字相同，
+      //   必须把账带过去；否则 `reopen → release → publish → claim → complete` 就绕开了 complete 的闸。
+      ...(existing?.reopened_at && sameAsCard ? { reopened_at: existing.reopened_at } : {}),
     });
 
     return {
@@ -713,6 +788,11 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   // ★ 证据闸（唯一一把尺）：没证据 / 形状不对/期望类证据没全绿 ⇒ 当场拒。
   const gate = validateProgressEvidence('done', evidence);
   if (!gate.ok) throw new Error(`complete 被拒（证据闸）：${gate.reason}`);
+  // ★★★ 重开账闸（2026-10-20）：重开后的收口必须带**新的**东西 —— 判据换了（publish 结清）或新时间戳证据。
+  //   插在这里（satisfied / 建构完整 **之后**）的理由：它不回答"做没做完"，只回答"这次的 done 是不是新的"；
+  //   放前面会用"需要新证据"盖掉更可行动的"判据未过"。
+  const reopenCheck = reopenGate(card, evidence);
+  if (!reopenCheck.ok) throw new Error(`complete 被拒（重开账本）：${reopenCheck.reason}`);
 
   const at = new Date().toISOString();
   writeTask(feature, node_id, {
@@ -789,10 +869,13 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
  * ② `reason` 必填（为什么重开）—— ★ 无理由的重开等于把"完成"当摆设
  * ③ CAS：`state === done` 才写（`assertTransition` 从迁移表读，不另写一把尺）
  *
- * ★ **重开不改判据**：本函数只 `{ ...card, state:'claimed', owner, claimed_at }` —— 它**不重读 decision**，
+ * ★ **重开不改判据**：本函数只 `{ ...card, state:'claimed', owner, claimed_at, reopened_at }` —— 它**不重读 decision**，
  *   卡上的 `expectations` 原样留着（`evidence` 也原样留着）。⇒ 要换判据必须**再走一步 `publish`**：
  *   `reopen` → 改 `decision` → `publish`（state 已是 claimed，带 `data.reason` ⇒ 原地换判据，evidence 逐条保留）。
  *   ★ 只改 decision 不 publish ⇒ 卡上仍是**旧判据**（判据不跟着 decision 自动变）。
+ * ★★★ 2026-10-20：`reopened_at` 是**账本借方** —— 重开后"判据没换 + 没有新时间戳证据"的 `complete` 被拒
+ *   （否则 done → reopen → complete 就是零工作量再 done 一次）。结清口只有 `publish`（真换判据）与
+ *   `complete` 的新证据两条；判据见 `reopenGate`。
  */
 export async function reopenTask(input: TaskOpInput): Promise<EditResult> {
   const { feature, node_id } = input;
@@ -804,18 +887,21 @@ export async function reopenTask(input: TaskOpInput): Promise<EditResult> {
   }
   const { card, dsl } = loadTask(feature, node_id);
   assertTransition(card.state, 'claimed', 'reopen');
+  // ★ 重开时刻 = 账本借方（`TaskSpec.reopened_at`）；`claimed_at` 与它同源，不取两次时钟。
+  const now = new Date().toISOString();
   const next: TaskSpec = {
     ...card,
     state: 'claimed',
     owner: input.owner,
-    claimed_at: new Date().toISOString(),
+    claimed_at: now,
+    reopened_at: now,
   };
   writeTask(feature, node_id, next);
   return {
     message:
-      // ★ 首行自足（`edit_dsl` 只透出每个 op 的**首行**）—— 所以"判据没变 + 下一步是 publish"必须在首行。
-      `已重开任务 "${node_id}"（done → claimed，owner=${input.owner}）：判据仍是卡上那 ${(card.expectations ?? []).length} 条` +
-      `（★ 本步**不重读** decision）⇒ 要换判据必须 **edit decision 后再 publish**，否则卡上仍是旧判据。\n` +
+      // ★ 首行自足（`edit_dsl` 只透出每个 op 的**首行**）—— 所以"判据没变 + 账本已记 + 下一步"必须在首行。
+      `已重开任务 "${node_id}"（done → claimed，owner=${input.owner}）：判据仍是卡上那 ${(card.expectations ?? []).length} 条、` +
+      `**重开账已记（reopened_at=${now}）** —— 判据没换、又没有 at ≥ 该时刻的新证据，\`complete\` 会被拒。\n` +
       `  理由：${input.reason}\n` +
       `  ★ 两步：① \`edit_dsl { type:'decision', op:'update', id:'${node_id}', data:{ summary, expectations } }\`；` +
       `② \`{ type:'task', op:'publish', id:'${node_id}', data:{ reason:'…' } }\` ⇒ **原地换判据**` +
