@@ -95865,11 +95865,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T05:13:35.159Z",
+    "saved_at": "2026-10-20T05:25:18.444Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792473204231,
-    "age": 10928
+    "scanRev": 1792473312430,
+    "age": 606014
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -97762,6 +97762,13 @@
           "verdict": "pass"
         }
       ]
+    },
+    {
+      "id": "todo_侦察-实现-给-src-application-write-gate-ts-加-",
+      "summary": "【侦察→实现】给 src/application/write_gate.ts 加「量具豁免」：certs/（证）与 scripts/（运维脚本）不受任务闸。★ 现象（2026-10-20 实测）：写闸全仓受闸后，改一张坏证也要先 publish + claim；而「证坏了」往往正是「闸/契约坏了」，会成死循环（要修证 → 先立卡 → 立卡要先保证闸对 → 而闸对不对要靠证）。★ 设计要点：① 这是**放宽判据**，必须只放宽到「量具」，不许放宽到产品代码；② 豁免的判据只能住一处（），别在闸里散落路径字符串（本仓头号病根＝同一判据住两处）；③ 豁免必须**显式可查**（回执里说「本次写入被豁免为量具」，不许静默放行）；④ 反面对照：豁免生效后，改 src/ 下任一文件仍必须受闸。★ 边界： 是【Design DB】不是证 —— 它是派生物，但**不是量具**，要不要豁免单独判（VISION 冲突3 已裁「DSL 浅 · DB 在 certs/」）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
     }
   ],
   "_dsl_rev": 550
