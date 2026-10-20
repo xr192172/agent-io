@@ -1917,3 +1917,45 @@ DB 查询   ~0.1ms
 ⇒ **快 2.2ms 在 2.2 秒面前是噪声。**
 
 （标识符就不同：4 个消费者、每次全仓扫 ⇒ 2.2ms × 550 = 1.2 秒，**该进**。）
+
+---
+
+## 2026-10-20 早（三三）· identifiers 表：**这次没做成**，如实回滚（`c6041f37`）
+
+### 1. 要做的事（决策卡留着）
+
+`identifiers` 表（标识符出现位置），4 个消费者：`find_references` / `field_refs` / `rename_symbols` / `remove_dead_imports`。
+
+### 2. 失败在哪儿
+
+抽取逻辑要加进 `parseFileFull`，而**那个文件里不止一条 return 路径**
+（`parseFile` / `parseFileLite` / `parseFileFull` 各有各的 return）。
+
+我按"两处 return"改 ⇒ 把 `identifiers` 塞进了**没有该局部变量**的函数：
+
+```
+TS18004: No value exists in scope for the shorthand property 'identifiers'
+```
+
+**更糟的是**：`tsc` 失败后我继续跑 `import_project` ⇒ 它加载的是**坏 dist** ⇒
+索引被写成 **0 符号**（实测：`文件: 525 个 → 636 节点（符号 0 个）`）。
+
+### 3. 处置（不留坏状态）
+
+```
+git checkout 回滚 kernel / symbols / schema / db 四处
+重建索引 → 525 文件 / 3144 符号（恢复）
+npm run verify → 5 道门全过
+任务卡 release 回 candidate（★ 不是 complete —— 没做成就不该标完成）
+```
+
+### 4. 两条教训（下次的入口）
+
+> **① 改"多代码路径"的文件前，先数清有几处 return/出口。**
+> 别按"我记得有两处"去改 —— `parseFileFull` 实际有三条路径。
+
+> **② `tsc` 失败时绝不能继续跑 `import_project`。**
+> 它会把坏产物写成索引。顺序必须是：**编译先绿 → 再重建**，中间不夹任何"会读 dist"的动作。
+
+★ 这两条和昨天那条「还原要还原整个被影响的范围」是同一族：
+**动作之间有依赖时，前一步失败就不能执行后一步** —— 我这次就是"tsc 红了还往下跑"。
