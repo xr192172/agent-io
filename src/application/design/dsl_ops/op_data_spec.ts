@@ -226,7 +226,9 @@ export const OP_SPECS: readonly OpSpec[] = [
       '无 decision/太粗⇒**L1 建构卡**（**0 条期望**，验收=DSL 建构完整）；' +
       '★不收 data（**唯一例外**：`state=claimed` 的卡带 `data.reason` ⇒ **原地换判据**：只换 summary+expectations，' +
       'state/owner/evidence 全保留）· ' +
-      'claim:`data.owner`（L2 须可领＝cardStanding，L1 看建构缺口）· release:`data.reason`（by 走顶层 `agent`）· ' +
+      'claim:`data.owner`（L2 须可领＝cardStanding，L1 看建构缺口）· ' +
+      '★ 可选 `data.intent`：`work`（缺省，来补红）/ `modify`（判据可以全过，来改文件取**写权** —— 已完成 / 已满足的文件仍要能被下一个任务承载；回执写明"本次是修改不是补红"）· ' +
+      'release:`data.reason`（by 走顶层 `agent`）· ' +
       'complete:`data.evidence`（同一把证据尺；L2 须 isSatisfied，L1 须建构完整）· ' +
       'reopen:`data.owner`+`data.reason`（done→claimed「接手」，**判据不变**，原卡继续）· ' +
       'relaunch:`data.reason`（void→candidate「重新立卡」，★ **清空 expectations**、保留 summary/evidence；判据要再用 publish 从 decision 重给 —— 与 reopen 不是一回事）。',
@@ -395,7 +397,10 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
   // ★★★ 2026-10-17（T11）：`task` 的键集 —— **从实现读出**（`task_ops.ts` 的 `applyTaskOp` 只读
   //   `owner` / `reason` / `evidence`；`state` **不在这里**：它只能由 op（claim/release/complete）改，
   //   不是"data 里可以随便给的字段" —— 那会把唯一写端变成"谁都能把 state 塞成 done"）。
-  task: ['owner', 'reason', 'evidence'],
+  // ★★★ 2026-10-20：补 `intent`（claim 的**意图**：work=补红（缺省）/ modify=判据可全过、来改文件取写权）。
+  //   ★ 为什么不是新 op：`claim` 仍是那一步状态迁移（candidate→claimed），只是**来意**多了一维 ——
+  //     没有它，`satisfied` 卡永远领不到 ⇒ 写闸不认 ⇒ **文件永久只读**（结构性错误，见 task_machine.ts 文件头）。
+  task: ['owner', 'reason', 'evidence', 'intent'],
   todo: ['summary', 'decision', 'owner', 'id', 'node_id'],
 };
 /** ★★ 断言：`TYPE_KNOWN_KEYS` 的键集**必须恰好覆盖 `OP_SPECS` 的全部 type**（多 / 少都红）。 */

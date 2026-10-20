@@ -58,7 +58,8 @@ import { isTaskState, type TaskSpec, type TaskState } from './task_schema.js';
  *   · `work`      —— 后态判据有红，且红里有**本节点**的（或不对应任何节点）⇒ ★ 可领；
  *   · `violated`  —— 后态全过、**前态有红**（非法依赖/边界越权）⇒ ★ 可领（去拆），★ **不许收口**；
  *   · `blocked`   —— 后态有红，且**全部**落在**别的未完成节点**上 ⇒ ★ 拒（依赖未做，领了也改不动）；
- *   · `satisfied` —— 后态全过 ∧ 前态无红 ⇒ ★ **只可收口，不可领**（没活干）；
+ *   · `satisfied` —— 后态全过 ∧ 前态无红 ⇒ ★ **默认只可收口、不可领**（没活干）；
+ *     ★★ 2026-10-20：`intent='modify'` 时可领 —— **「没活干」≠「文件不可改」**（见下「写权 ≠ 卡的活跃度」）。
  *   · `unknowable`—— 后态一条不剩 / 后态有 unsupported / 后态全过但前态判不了 ⇒ ★ 拒（判不了）。
  *
  * ## ★ 两个读数轴是**分开**的（这是 `phase` 唯一的用处）
@@ -67,6 +68,19 @@ import { isTaskState, type TaskSpec, type TaskState } from './task_schema.js';
  * ⇒ 所以 `satisfied` 要求"后态全过 ∧ 前态无红"，而不是"把前态并进后态一起数条数"。
  *   ★ 这两句话不是同义的：前者让 `edge-absent` 的**失败**有处置（violated），
  *     又不让它把**满足度**污染成"天然成立"。
+ *
+ * ## ★★★ 写权 ≠ 卡的活跃度（2026-10-20 · 结构性修复）
+ * 病（用户原话）：*「一个任务已完结之后为什么会直接锁文件，而不是持续让它像**没有下过任务的文件**一样，
+ * 让它能够继续被下一个任务承载？」*
+ * 链路：`satisfied` ⇒ `claim` 拒 ⇒ **写闸只认 `claimed`** ⇒ 这个文件的任何改动都做不了（改一行注释都不行）。
+ * ⇒ 结构错误：把「**我有活要干**」（`claim` 的语义）与「**允许写这个文件**」（写闸的语义）绑成一件事。
+ * ⇒ 修法：`claim` 多一个**意图**维度（{@link ClaimIntent}）——
+ *   · `work`（缺省）= 判据有红，来补红（原语义**逐字不变**）；
+ *   · `modify`    = **判据已全过**，仍要改文件（改判据 / 重构 / 改注释）—— 取的是**写权**，不是补红；
+ *   ⇒ 「文件可写」只要求"有人声明了要写它"，不再要求"这张卡还有红"。
+ * ★ `blocked` / `unknowable` **连 modify 也拒**：那不是"卡不活跃"，是"改了也改不动 / 判不了"（依赖未做 / 判不了）。
+ * ★ `done` / `void` 的卡**仍不走 claim** —— 它们有专门的回头路（`t_reopen` / `t_relaunch`）：
+ *   那是**状态迁移**问题（卡已了结），与本条（卡没活干但文件要改）不是一件事。
  */
 export type CardStanding = 'work' | 'violated' | 'blocked' | 'satisfied' | 'unknowable';
 
@@ -260,7 +274,7 @@ export async function cardStanding(card: TaskSpec, opts: StandingInput): Promise
       standing: 'satisfied',
       reason:
         `已满足：后态判据 ${satisfaction.passed} 条全过、前态判据 ${violation.checked} 条无红` +
-        ` ⇒ **只可收口，不可领**（没活干）`,
+        ` ⇒ **只可收口**（没活干；★ 要改这个文件 —— 改判据 / 重构 / 改注释 —— 用 claim intent:modify）`,
     };
   }
 
@@ -315,11 +329,21 @@ export async function cardStanding(card: TaskSpec, opts: StandingInput): Promise
 }
 
 /**
- * ★★ **"可领"谓词**（`claim` 侧唯一的读法）：`work` 与 `violated` 都可领。
+ * ★★ **"可领"谓词**（`claim` 侧唯一的读法）：`work` / `violated` 恒可领；`satisfied` **只有 `modify` 意图**可领。
  * ★ 只此一处允许把"哪几个值算可领"写出来 —— 调用方**不许**自己写 `=== 'work'`。
+ *
+ * ## 为什么带 `intent`（2026-10-20 · 见文件头「写权 ≠ 卡的活跃度」）
+ * `claim` 原本只表达一件事 ——「**我有活要干**」—— 而写闸只认 `claimed` ⇒
+ *   一张 `satisfied` 的卡（判据全过、没活干）**永远领不到** ⇒ **它指向的文件永久只读**。
+ * ⇒ 把两件事分开：`work` = 来补红（缺省，判据必须没全过）；`modify` = 来改文件（判据可以全过，取写权）。
+ *   ★ 缺省仍是 `work` ⇒ **老调用方的行为逐字不变**（单参形态的语义没变）。
+ *   ★ `blocked` / `unknowable` 一律拒：那不是"没活干"，是"改不动 / 判不了"—— `modify` 也不行。
  */
-export function isClaimable(standing: CardStanding): boolean {
-  return standing === 'work' || standing === 'violated';
+export type ClaimIntent = 'work' | 'modify';
+
+export function isClaimable(standing: CardStanding, intent: ClaimIntent = 'work'): boolean {
+  if (standing === 'work' || standing === 'violated') return true;
+  return intent === 'modify' && standing === 'satisfied';
 }
 
 export interface SatisfactionVerdict {
@@ -457,9 +481,9 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     state: { kind: 'ready' },
     guard: {
       clauses: [
-        'isClaimable(cardStanding(card)) === true（★ 取五值里的 work / violated 两格 —— 有活干、或有违约要拆）',
+        'isClaimable(cardStanding(card), intent) === true（★ 取五值里的 work / violated 两格 —— 有活干、或有违约要拆；★ 另有 satisfied ∧ intent=modify）',
         '★ 按期望自带的 phase 分区（phase=post 供满足度，phase=pre 供违约轴）后：work = 后态有本节点的红；violated = 后态全过 ∧ 前态有红',
-        '★ satisfied 不在可领之列（没活干不许领）；blocked / unknowable 都拒（依赖未做 / 判不了）',
+        '★ satisfied 默认不可领（没活干）；★ 但 data.intent=modify 可领 —— 已完成 / 已满足的文件仍要能被下一个任务承载（改判据 / 重构 / 改注释），**写权不该由卡的活跃度决定**（2026-10-20）；blocked / unknowable 连 modify 也拒（依赖未做 / 判不了）',
         'target 在 DB 存在（不存在则走 t_void）',
         'CAS：state=candidate ∧ owner IS NULL 时才写 owner（changes === 1）',
       ],

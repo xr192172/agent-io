@@ -1,7 +1,7 @@
 /**
  * 设计层 overlay（design intent 增量保留层）
  *
- * 定位：真相 DSL（base）由代码扫描每次可再生，但设计意图（决策卡 / 决策历史 /
+ * 定位：真相 DSL（base）由代码扫描每次可再生（`import_project` 重建），但设计意图（决策卡 / 决策历史 /
  * 设计参数 / 标注 / user_node / 分镜 / 主题）不是扫描能重造的。过去真相一刷新，
  * 设计 DSL 整体被 finalizeDsl 覆盖（saveDSL 直写），意图全丢。
  *

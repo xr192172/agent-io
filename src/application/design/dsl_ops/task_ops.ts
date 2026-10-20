@@ -44,7 +44,14 @@ import fs from 'node:fs';
 import { getDesignSheet, saveDesignSheet, getDesignSheetFile } from '../../../infrastructure/storage.js';
 import { loadOverlay } from '../../../infrastructure/storage_overlay.js';
 import { applyOverlay, seedOverlayFromDsl, validateProgressEvidence, type ProgressEvidence } from '../../../domain/overlay.js';
-import { applicableTransitions, cardStanding, isClaimable, isSatisfied, type CardStanding } from '../../../domain/task_machine.js';
+import {
+  applicableTransitions,
+  cardStanding,
+  isClaimable,
+  isSatisfied,
+  type CardStanding,
+  type ClaimIntent,
+} from '../../../domain/task_machine.js';
 import { postExpectations } from '../../../domain/expectation.js';
 import { progressOf, taskLevel, type TaskDiscussion, type TaskSpec, type TaskState } from '../../../domain/task_schema.js';
 import { updateStatus } from './status_tools.js';
@@ -62,6 +69,13 @@ export interface TaskOpInput {
   node_id: string;
   /** 领取者身份（claim 必填 —— CAS 写的就是它） */
   owner?: string;
+  /**
+   * 领取**意图**（claim 可选；★ 2026-10-20）：
+   * · `work`（缺省）= 判据有红，来**补红**；
+   * · `modify`        = 判据**可以全过**，仍要改文件（改判据 / 重构 / 改注释）—— 取的是**写权**。
+   * ⇒ 没有它，"已满足的卡"就领不到 ⇒ 写闸不认 ⇒ **文件永久只读**（见 `task_machine.ts` 文件头）。
+   */
+  intent?: ClaimIntent;
   /** 释放原因（release 必填；`t_release`：显式 release 事件要带 reason） */
   reason?: string;
   /** 完成证据（complete 必填 —— 复用 `validateProgressEvidence` 三档） */
@@ -566,10 +580,15 @@ export function publishTask(input: TaskOpInput): EditResult {
  * 领取（`candidate → claimed`）。
  *
  * guard（逐条照 `task_plan.state_machine.transitions[t_claim]`）：
- *  ① `isClaimable(cardStanding(card))`（★ 本函数内直接调用 —— 不把"记得先判"留给调用方）；
+ *  ① `isClaimable(cardStanding(card), intent)`（★ 本函数内直接调用 —— 不把"记得先判"留给调用方）；
  *     ★ 读的是**五值读数里的"可领"两格**（`work` / `violated`），**不是**"判据全过"。
- *     ★★ `satisfied` 卡在这里**必拒**（没活干不许领）—— 这条与 `complete` 的判据**分开**：
- *        收口侧读 `isSatisfied`，两侧同源（都读 `cardStanding`）但**不是同一个谓词**。
+ *     ★★ `satisfied` 卡的处置**由意图决定**（2026-10-20）：
+ *        · 缺省 `intent='work'` ⇒ **必拒**（没活干不许领）—— 这条与 `complete` 的判据**分开**：
+ *          收口侧读 `isSatisfied`，两侧同源（都读 `cardStanding`）但**不是同一个谓词**；
+ *        · `intent='modify'` ⇒ **放行**（判据已全过，但文件要改：改判据 / 重构 / 改注释）——
+ *          ★ 放行的是**写权**，不是"这张卡又有活了"：回执逐字写"本次是【修改】不是【补红】"。
+ *     ★ 为什么不能只靠 reopen：`t_reopen` 只从 `done` 起跳；`candidate` + `satisfied` 既领不了、
+ *        也没有 reopen 可走 ⇒ 那张卡指向的文件**谁也改不了**（2026-10-20 实测：改一行注释都不行）。
  *  ② CAS：`state === 'candidate'` ∧ `owner` 为空 —— 否则**拒**（不覆盖别人的领）；
  *  ③ 写 `owner` + `claimed_at`（`releaseIfExpired` 的 TTL 靠它）。
  *
@@ -615,6 +634,16 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   const { dsl, card } = loadTask(feature, node_id);
   assertTransition(card.state, 'claimed', 'claim');
 
+  // ★★ 领取**意图**（2026-10-20）：缺省 `work` ⇒ **老调用方的行为逐字不变**。
+  //   ★ 运行期守卫：JSON 里的值不可信（`op_data_spec` 只查"键认不认"，不查枚举）。
+  const rawIntent = (input.intent ?? 'work') as string;
+  if (rawIntent !== 'work' && rawIntent !== 'modify') {
+    throw new Error(
+      `claim 被拒（intent 非法）：${JSON.stringify(input.intent)} —— 只认 work / modify：work=有活要补红（缺省）；modify=判据可以全过，来改文件、取写权。`,
+    );
+  }
+  const intent: ClaimIntent = rawIntent;
+
   // ── L1 建构卡：可领性看「DSL 建构完整吗」，不看对拍 ───────────────────────────
   const level = taskLevel(card);
   let levelNote: string;
@@ -636,13 +665,24 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     const root = requireRoot(dsl as { source_root?: string });
     // ★★ 判据复用（不新造第二把尺）：`cardStanding` 按 phase 分区 + `judgeExpectations` 判 + 派生五值。
     const standing = await cardStanding(card, { root, nodes: dsl.geometry?.nodes ?? [] });
-    if (!isClaimable(standing.standing)) {
+    if (!isClaimable(standing.standing, intent)) {
       throw new Error(
         `claim 被拒（可领性：${standing.standing}）：${standing.reason}\n` +
-          `★ 可领判据唯一出处 = src/domain/task_machine.ts#isClaimable（work / violated 才可领；satisfied 只可收口）。`,
+          `★ 可领判据唯一出处 = src/domain/task_machine.ts#isClaimable（work / violated 恒可领；` +
+          `satisfied 只在 intent=modify 时可领；blocked / unknowable 连 modify 也拒）。
+` +
+          (standing.standing === 'satisfied'
+            ? `★ 你是来**修改**这个文件（改判据 / 重构 / 改注释）⇒ 同一调用加 data.intent:modify —— ` +
+              `判据已全过，claim 取的是**写权**，不是"又有活干了"。`
+            : ''),
       );
     }
-    levelNote = `站位=${standing.standing}；${standing.reason}`;
+    // ★★ 回执**必须区分意图**：否则读端分不清"这次领到的是红"还是"写权"（用户 2026-10-20 的要求）。
+    levelNote =
+      intent === 'modify' && standing.standing === 'satisfied'
+        ? `站位=satisfied；★ 本次是【修改】不是【补红】（判据 ${standing.satisfaction.passed} 条全过 —— ` +
+          `claim 取的是**写权**：改判据 / 重构 / 改注释都走这条路；收口仍走 complete 的 isSatisfied）`
+        : `站位=${standing.standing}；${standing.reason}`;
     claimStanding = standing.standing;
   }
 
@@ -682,6 +722,7 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       state: 'claimed' as TaskState,
       owner,
       claimed_at: claimedAt,
+      intent,
       ...(claimStanding ? { standing: claimStanding } : {}),
       progress: progressOf({ state: 'claimed' }),
     },
@@ -1013,6 +1054,8 @@ export async function applyTaskOp(
     feature,
     node_id: nodeId,
     owner: typeof data.owner === 'string' ? data.owner : undefined,
+    // ★★ 2026-10-20：`intent` 只有 claim 读（其余 op 忽略）—— 合法值由 `claimTask` 的运行期守卫判。
+    intent: typeof data.intent === 'string' ? (data.intent as ClaimIntent) : undefined,
     reason: typeof data.reason === 'string' ? data.reason : undefined,
     evidence: data.evidence as ProgressEvidence | undefined,
     agent,

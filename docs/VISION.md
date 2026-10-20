@@ -20,7 +20,7 @@
 | 决策卡作用域 | 一张卡管一群互相连通的点（一个功能牵动的那一片） | ❌ `decision.scope` 只是一行字符串；连通点不落库 |
 | 任务卡 | 节点上挂卡：candidate → claimed → done / void；判据在 `decision.expectations` | ✅ 迁移表唯一 = `TRANSITIONS` |
 | 卡的两个级别 | 无可判判据 ⇒ L1 建构卡；有后态判据 ⇒ L2 实现卡 | ⚠️ L1 收口走 `constructionVerdict` 旁路；巡检看不见（DESIGN A5） |
-| 领卡 | 有活可干才可领（work / violated）；satisfied 只可收口 | ✅ `isClaimable` |
+| 领卡 | 有活可干才可领（work / violated）；**判据已全过的文件仍可被领走改**（satisfied + `intent:'modify'`，取写权） | ✅ `isClaimable(standing, intent)` |
 | 无节点任务 | `todos[]` 与 task 同一套状态机、同一套 op、同一个池子 | ✅ `todo` 走 claim / release / complete / void |
 | todo 的验收 | 没有 expectations（判不了），只收 attestation | ⚠️ 实际三档 evidence 都收 |
 | todo 的巡检 | patrol 把 todos 一起判（漏收口 / 应作废同样适用） | ❌ patrol 只判节点卡；todos 只出 `pending_design` |

@@ -10978,9 +10978,38 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate"
+          "state": "done",
+          "evidence": [
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T09:57:32.347Z",
+              "by": "llm",
+              "why": "32 条后态判据全过（cardStanding=satisfied）；仅为取写权走 done→reopen",
+              "agent": "deepseek-v4.1-flash",
+              "verdict": "pass"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T10:04:36.009Z",
+              "by": "llm",
+              "why": "task 的 data 键集补 intent；32 条判据全过，npm run verify 6 门全绿",
+              "agent": "deepseek-v4.1-flash",
+              "verdict": "pass"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T10:06:46.620Z",
+              "by": "llm",
+              "why": "task 的 data 键集补 intent、note 写明；32 条判据全过，verify 6 门全绿",
+              "agent": "deepseek-v4.1-flash",
+              "verdict": "pass"
+            }
+          ],
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T10:06:33.151Z",
+          "reopened_at": "2026-10-20T10:06:33.151Z"
         },
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_dsl_ops_status_tools_ts",
@@ -13194,9 +13223,38 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate"
+          "state": "done",
+          "evidence": [
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T09:57:30.252Z",
+              "by": "llm",
+              "why": "23 条后态判据全过（cardStanding=satisfied）；仅为取写权走 done→reopen",
+              "agent": "deepseek-v4.1-flash",
+              "verdict": "pass"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T10:04:33.887Z",
+              "by": "llm",
+              "why": "claimTask 读 data.intent 并区分回执；23 条判据全过，npm run verify 6 门全绿",
+              "agent": "deepseek-v4.1-flash",
+              "verdict": "pass"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T10:06:44.432Z",
+              "by": "llm",
+              "why": "claimTask 读 data.intent、回执区分修改/补红；23 条判据全过，verify 6 门全绿",
+              "agent": "deepseek-v4.1-flash",
+              "verdict": "pass"
+            }
+          ],
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T10:06:17.808Z",
+          "reopened_at": "2026-10-20T10:06:17.808Z"
         },
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -39525,9 +39583,21 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate"
+          "state": "done",
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T10:01:41.341Z",
+          "evidence": [
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T10:02:07.709Z",
+              "by": "llm",
+              "why": "本次只改了 src/domain/overlay.ts 的文件头注释（import_project 重建那一句）；30 条后态判据仍全过",
+              "agent": "deepseek-v4.1-flash",
+              "verdict": "pass"
+            }
+          ]
         },
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_domain_reasoning_ts",
@@ -44278,9 +44348,38 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate"
+          "state": "done",
+          "evidence": [
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T09:56:46.304Z",
+              "by": "llm",
+              "why": "23 条后态判据全过（cardStanding=satisfied）；仅为取写权走 done→reopen",
+              "agent": "deepseek-v4.1-flash",
+              "verdict": "pass"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T10:04:31.803Z",
+              "by": "llm",
+              "why": "isClaimable 加 ClaimIntent（work/modify）；23 条判据全过，npm run verify 6 门全绿",
+              "agent": "deepseek-v4.1-flash",
+              "verdict": "pass"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T10:06:42.270Z",
+              "by": "llm",
+              "why": "isClaimable 加 ClaimIntent(work/modify) + 写权与活跃度分家的设计说明；23 条判据全过，verify 6 门全绿，t332/t349/t351/t353 全绿",
+              "agent": "deepseek-v4.1-flash",
+              "verdict": "pass"
+            }
+          ],
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T10:06:33.080Z",
+          "reopened_at": "2026-10-20T10:06:33.080Z"
         },
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_domain_task_schema_ts",
@@ -80686,7 +80785,7 @@
         ],
         "lines": 482,
         "layer": "core",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_dsl_ops_status_tools_ts",
@@ -80747,7 +80846,7 @@
         ],
         "lines": 670,
         "layer": "core",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -86250,7 +86349,7 @@
         ],
         "lines": 984,
         "layer": "service",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_domain_reasoning_ts",
@@ -86612,7 +86711,7 @@
         ],
         "lines": 535,
         "layer": "service",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_domain_task_schema_ts",
@@ -98507,11 +98606,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T09:40:18.461Z",
+    "saved_at": "2026-10-20T10:06:46.644Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792489134507,
-    "age": 83954
+    "scanRev": 1792490660426,
+    "age": 146218
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -100495,7 +100594,14 @@
       "expectations": [],
       "state": "candidate",
       "owner": null
+    },
+    {
+      "id": "todo_结构-satisfied-不该锁死文件-现状-src-domain-task-m",
+      "summary": "【★★ 结构：satisfied 不该锁死文件】现状：src/domain/task_machine.ts 的 isClaimable 判据是「后态有红才可领」⇒ satisfied（判据全过）⇒ 拒「没活干」⇒ 写闸只认 claimed ⇒ 已完成文件的任何改动（含改注释、重构、补文档）全部做不了。★ 用户裁定（2026-10-20）：「一个任务已完结之后为什么会直接锁文件，而不是持续让它像没有下过任务的文件一样，让它能够继续被下一个任务承载」⇒ 文件的【可写性】不该由【卡的活跃度】决定。★ 修法（倾向 a，简单）：satisfied 也允许 claim，但回执必须区分意图——「判据全过：本次领卡是【修改】不是【补红】」；done/void 的卡走 reopen/relaunch 后同样可领。另一候选 b：claim 加 intent=work|modify（精确但多一个参数）。★ 不许的做法：① 给每个文件标 gate=exempt（那是绕过闸，不是修结构）；② void+relaunch（会清空判据 = 毁设计信息）。★ 验收：satisfied 的节点可 claim → 改一行注释 → complete → 再进行下一轮仍可 claim；同时 A7 仍拦「领别人 owner 的卡」；写闸对「无任何卡且节点非 exempt」仍拒。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
     }
   ],
-  "_dsl_rev": 681
+  "_dsl_rev": 691
 }
