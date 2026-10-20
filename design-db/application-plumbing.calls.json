@@ -38,54 +38,54 @@
       "name": "wrapData",
       "kind": "function",
       "line": 120,
-      "signature": "wrapData(fn: (args: Record<string, unknown>) => { message: string; data?: unknown } | Promise<{ message: string; data?: unknown }>,): ToolDef['handler']"
+      "signature": "wrapData(fn: (\n    args: Record<string, unknown>,\n  ) =>\n    | { message: string; data?: unknown; isError?: boolean }\n    | Promise<{ message: string; data?: unknown; isError?: boolean }>,): ToolDef['handler']"
     },
     {
       "name": "requireStr",
       "kind": "function",
-      "line": 156,
+      "line": 164,
       "signature": "requireStr(a: Record<string, unknown>, key: string): string"
     },
     {
       "name": "requireArr",
       "kind": "function",
-      "line": 170,
+      "line": 178,
       "signature": "requireArr(a: Record<string, unknown>, key: string, hint: string): unknown[]"
     },
     {
       "name": "optionalArr",
       "kind": "function",
-      "line": 189,
+      "line": 197,
       "signature": "optionalArr(a: Record<string, unknown>, key: string, hint: string): unknown[] | undefined"
     },
     {
       "name": "optionalStr",
       "kind": "function",
-      "line": 214,
+      "line": 222,
       "signature": "optionalStr(a: Record<string, unknown>, key: string, hint = 'string'): string | undefined"
     },
     {
       "name": "optionalNum",
       "kind": "function",
-      "line": 221,
+      "line": 229,
       "signature": "optionalNum(a: Record<string, unknown>, key: string, hint = 'number'): number | undefined"
     },
     {
       "name": "optionalBool",
       "kind": "function",
-      "line": 228,
+      "line": 236,
       "signature": "optionalBool(a: Record<string, unknown>, key: string, hint = 'boolean'): boolean | undefined"
     },
     {
       "name": "shapeErr",
       "kind": "function",
-      "line": 236,
+      "line": 244,
       "signature": "shapeErr(key: string, hint: string, v: unknown): string"
     },
     {
       "name": "looseInputSchema",
       "kind": "function",
-      "line": 253,
+      "line": 261,
       "signature": "looseInputSchema(shape: Record<string, unknown>): unknown"
     }
   ],

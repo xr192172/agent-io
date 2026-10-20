@@ -7,7 +7,7 @@
     {
       "name": "LineStep",
       "kind": "interface",
-      "line": 29,
+      "line": 30,
       "signature": "LineStep()",
       "members": [
         {
@@ -45,7 +45,7 @@
     {
       "name": "LineReport",
       "kind": "interface",
-      "line": 42,
+      "line": 43,
       "signature": "LineReport()",
       "members": [
         {
@@ -71,20 +71,138 @@
     {
       "name": "n",
       "kind": "const",
-      "line": 49,
+      "line": 50,
       "signature": "const n = (x: number): string => x.toLocaleString('en-US')"
     },
     {
       "name": "lineReport",
       "kind": "function",
-      "line": 52,
+      "line": 53,
       "signature": "lineReport(root: string, feature: string): LineReport"
     },
     {
       "name": "designLineHandler",
       "kind": "function",
-      "line": 197,
+      "line": 198,
       "signature": "designLineHandler(input: { project_dir: string; feature: string }): {\n  message: string;\n  data: LineReport;\n}"
+    },
+    {
+      "name": "MustHaveSymbol",
+      "kind": "interface",
+      "line": 241,
+      "signature": "MustHaveSymbol()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": 'decision.expectation' | 'semantic.files'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "why",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "MustHaveReport",
+      "kind": "interface",
+      "line": 258,
+      "signature": "MustHaveReport()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'file' | 'dir' | 'other'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "must_have",
+          "type": ": MustHaveSymbol[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "why_empty",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "drilled",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "AnyDesignNode",
+      "kind": "type",
+      "line": 272,
+      "signature": "AnyDesignNode()"
+    },
+    {
+      "name": "mhNorm",
+      "kind": "const",
+      "line": 275,
+      "signature": "const mhNorm = (p: string): string => String(p).replace(/\\\\/g, '/').repl…"
+    },
+    {
+      "name": "mhPathOf",
+      "kind": "function",
+      "line": 278,
+      "signature": "mhPathOf(node: AnyDesignNode): string | null"
+    },
+    {
+      "name": "mustHaveFor",
+      "kind": "function",
+      "line": 295,
+      "signature": "mustHaveFor(design: unknown, onlyDesignIds: string[]): MustHaveReport[]"
     }
   ],
   "imports": [
@@ -99,12 +217,56 @@
     {
       "source": "node:sqlite",
       "kind": "package"
+    },
+    {
+      "source": "../db/gen_design_db.js",
+      "kind": "relative"
     }
   ],
   "calls": [
     {
+      "from": "src/application/design/line/design_line.ts#lineReport",
+      "to": "src/application/design/db/gen_design_db.ts#designDbDir"
+    },
+    {
       "from": "src/application/design/line/design_line.ts#designLineHandler",
       "to": "src/application/design/line/design_line.ts#lineReport"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#mustHaveFor",
+      "to": "src/application/design/line/design_line.ts#mhNorm"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#mustHaveFor",
+      "to": "src/application/design/line/design_line.ts#mhNorm"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#mustHaveFor",
+      "to": "src/application/design/line/design_line.ts#mhNorm"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#mustHaveFor",
+      "to": "src/application/design/line/design_line.ts#mhNorm"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#mustHaveFor",
+      "to": "src/application/design/line/design_line.ts#mhNorm"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#mustHaveFor",
+      "to": "src/application/design/line/design_line.ts#mhNorm"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#mustHaveFor",
+      "to": "src/application/design/line/design_line.ts#mhNorm"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#mustHaveFor",
+      "to": "src/application/design/line/design_line.ts#mhPathOf"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#mustHaveFor",
+      "to": "src/application/design/line/design_line.ts#mhPathOf"
     },
     {
       "from": "src/application/design/line/design_line.ts#lineReport",

@@ -7,13 +7,13 @@
     {
       "name": "AnyNode",
       "kind": "type",
-      "line": 32,
+      "line": 35,
       "signature": "AnyNode()"
     },
     {
       "name": "AnyEdge",
       "kind": "type",
-      "line": 33,
+      "line": 36,
       "signature": "AnyEdge()",
       "members": [
         {
@@ -39,7 +39,7 @@
     {
       "name": "DesignDiffResult",
       "kind": "interface",
-      "line": 35,
+      "line": 38,
       "signature": "DesignDiffResult()",
       "members": [
         {
@@ -69,6 +69,12 @@
         {
           "name": "onlyDesign",
           "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "mustHave",
+          "type": ": MustHaveReport[]",
           "optional": false,
           "member_kind": "property"
         },
@@ -107,37 +113,37 @@
     {
       "name": "MEANINGFUL",
       "kind": "const",
-      "line": 55,
+      "line": 63,
       "signature": "const MEANINGFUL = ['decision', 'task', 'label', 'type', 'arch_layer', 'desc…"
     },
     {
       "name": "stripExt",
       "kind": "const",
-      "line": 57,
+      "line": 65,
       "signature": "const stripExt = (p: string): string => String(p).replace(/\\.(ts|tsx|mts|c…"
     },
     {
       "name": "normPath",
       "kind": "const",
-      "line": 58,
+      "line": 66,
       "signature": "const normPath = (p: string): string => stripExt(path.resolve(p)).replace(…"
     },
     {
       "name": "nodePath",
       "kind": "function",
-      "line": 61,
+      "line": 69,
       "signature": "nodePath(node: AnyNode | undefined): string | null"
     },
     {
       "name": "importSpecs",
       "kind": "function",
-      "line": 68,
+      "line": 76,
       "signature": "importSpecs(text: string): string[]"
     },
     {
       "name": "designDiff",
       "kind": "function",
-      "line": 76,
+      "line": 84,
       "signature": "designDiff(projectDir: string, feature: string): DesignDiffResult"
     }
   ],
@@ -149,6 +155,10 @@
     {
       "source": "node:path",
       "kind": "package"
+    },
+    {
+      "source": "./design_line.js",
+      "kind": "relative"
     }
   ],
   "calls": [
@@ -183,6 +193,10 @@
     {
       "from": "src/application/design/line/design_diff.ts#designDiff.checkEdgeInSource",
       "to": "src/application/design/line/design_diff.ts#stripExt"
+    },
+    {
+      "from": "src/application/design/line/design_diff.ts#designDiff",
+      "to": "src/application/design/line/design_line.ts#mustHaveFor"
     }
   ]
 }

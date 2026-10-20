@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/application/design/dsl_ops/task_ops.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/design/dsl_ops/task_ops.ts（★ 全量、与实际 DB 同构；从 design/design-canvas.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/design-canvas.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/design/dsl_ops/task_ops.ts",
   "symbols": [
     {
@@ -131,9 +131,21 @@
       "signature": "writeTask(feature: string, nodeId: string, next: TaskSpec): void"
     },
     {
+      "name": "sameCriteria",
+      "kind": "function",
+      "line": 159,
+      "signature": "sameCriteria(card: TaskSpec, summary: string, expectations: readonly unknown[]): boolean"
+    },
+    {
+      "name": "reopenGate",
+      "kind": "function",
+      "line": 186,
+      "signature": "reopenGate(card: TaskSpec,\n  evidence: ProgressEvidence | undefined,): { ok: true } | { ok: false; reason: string }"
+    },
+    {
       "name": "ConstructBasis",
       "kind": "interface",
-      "line": 190,
+      "line": 255,
       "signature": "ConstructBasis()",
       "members": [
         {
@@ -159,67 +171,73 @@
     {
       "name": "constructBasis",
       "kind": "function",
-      "line": 200,
+      "line": 265,
       "signature": "constructBasis(dsl: NonNullable<ReturnType<typeof getDesignSheet>>,\n  node: { id: string; type?: string; label?: string; title?: string; description?: string; path?: string },): ConstructBasis"
     },
     {
       "name": "constructionVerdict",
       "kind": "function",
-      "line": 243,
+      "line": 308,
       "signature": "constructionVerdict(dsl: NonNullable<ReturnType<typeof getDesignSheet>>,\n  nodeId: string,): { complete: boolean; missing: string[]; post: number }"
     },
     {
       "name": "publishTask",
       "kind": "function",
-      "line": 262,
+      "line": 327,
       "signature": "publishTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "claimTask",
       "kind": "function",
-      "line": 428,
+      "line": 583,
       "signature": "claimTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "releaseTask",
       "kind": "function",
-      "line": 522,
+      "line": 677,
       "signature": "releaseTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "completeTask",
       "kind": "function",
-      "line": 568,
+      "line": 723,
       "signature": "completeTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "reopenTask",
       "kind": "function",
-      "line": 717,
+      "line": 882,
       "signature": "reopenTask(input: TaskOpInput): Promise<EditResult>"
+    },
+    {
+      "name": "relaunchTask",
+      "kind": "function",
+      "line": 942,
+      "signature": "relaunchTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "applyTaskOp",
       "kind": "function",
-      "line": 744,
+      "line": 981,
       "signature": "applyTaskOp(feature: string,\n  op: TaskOpRequest,\n  agent?: string,): Promise<EditResult>"
     },
     {
       "name": "publishFromDiff",
       "kind": "function",
-      "line": 803,
+      "line": 1043,
       "signature": "publishFromDiff(feature: string, nodeId: string): EditResult"
     },
     {
       "name": "voidTask",
       "kind": "function",
-      "line": 837,
+      "line": 1078,
       "signature": "voidTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "applyTodoOp",
       "kind": "function",
-      "line": 876,
+      "line": 1120,
       "signature": "applyTodoOp(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
     }
   ],
@@ -288,6 +306,10 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#assertTransition"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#relaunchTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#assertTransition"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#voidTask",
       "to": "src/application/design/dsl_ops/task_ops.ts#assertTransition"
     },
@@ -328,6 +350,10 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#relaunchTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#voidTask",
       "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
     },
@@ -341,7 +367,15 @@
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#relaunchTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
       "to": "src/application/design/dsl_ops/task_ops.ts#releaseTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#reopenGate"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
@@ -356,8 +390,16 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#requireRoot"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#sameCriteria"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
       "to": "src/application/design/dsl_ops/task_ops.ts#voidTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
@@ -381,6 +423,10 @@
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#reopenTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#relaunchTask",
       "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
     },
     {
@@ -452,6 +498,10 @@
       "to": "src/domain/task_schema.ts#progressOf"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/domain/task_schema.ts#progressOf"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
       "to": "src/domain/task_schema.ts#progressOf"
     },
@@ -461,6 +511,10 @@
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/domain/task_schema.ts#progressOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#relaunchTask",
       "to": "src/domain/task_schema.ts#progressOf"
     },
     {

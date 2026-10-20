@@ -8,99 +8,25 @@
       "name": "LifecycleDeps",
       "kind": "interface",
       "line": 21,
-      "signature": "LifecycleDeps()",
-      "members": [
-        {
-          "name": "cleanup",
-          "type": ": () => void | Promise<void>",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "log",
-          "type": ": (msg: string) => void",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "exit",
-          "type": ": (code: number) => void",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "keepAliveOnRejection",
-          "type": ": boolean",
-          "optional": true,
-          "member_kind": "property"
-        }
-      ]
+      "signature": "LifecycleDeps()"
     },
     {
       "name": "LifecycleHook",
       "kind": "interface",
       "line": 32,
-      "signature": "LifecycleHook()",
-      "members": [
-        {
-          "name": "onUnhandledRejection",
-          "type": ": (reason: unknown) => void",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "onUncaughtException",
-          "type": ": (err: unknown) => void",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "onSignal",
-          "type": ": (signal: string) => void",
-          "optional": true,
-          "member_kind": "property"
-        }
-      ]
+      "signature": "LifecycleHook()"
     },
     {
       "name": "LifecycleHandle",
       "kind": "interface",
       "line": 38,
-      "signature": "LifecycleHandle()",
-      "members": [
-        {
-          "name": "uninstall",
-          "type": ": void",
-          "optional": false,
-          "member_kind": "method"
-        }
-      ]
+      "signature": "LifecycleHandle()"
     },
     {
       "name": "LifecycleHandlers",
       "kind": "interface",
       "line": 42,
-      "signature": "LifecycleHandlers()",
-      "members": [
-        {
-          "name": "onUnhandledRejection",
-          "type": ": (reason: unknown) => void",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "onUncaughtException",
-          "type": ": (err: unknown) => void",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "onSignal",
-          "type": ": (signal: string) => void",
-          "optional": false,
-          "member_kind": "property"
-        }
-      ]
+      "signature": "LifecycleHandlers()"
     },
     {
       "name": "describeError",

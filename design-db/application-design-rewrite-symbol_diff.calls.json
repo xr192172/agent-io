@@ -7,37 +7,37 @@
     {
       "name": "norm",
       "kind": "const",
-      "line": 38,
+      "line": 40,
       "signature": "const norm = (s: unknown): string => String(s ?? '').replace(/\\\\/g, '/')"
     },
     {
       "name": "COMPARABLE",
       "kind": "const",
-      "line": 41,
+      "line": 43,
       "signature": "const COMPARABLE = { function: 'signature', class: null, type: null, interfa…"
     },
     {
       "name": "DESIGN_DB_KINDS",
       "kind": "const",
-      "line": 62,
+      "line": 64,
       "signature": "const DESIGN_DB_KINDS = new Set(['function', 'class', 'type', 'interface', 'const'])"
     },
     {
       "name": "inDesignScope",
       "kind": "const",
-      "line": 64,
+      "line": 66,
       "signature": "const inDesignScope = (kind: string): boolean => DESIGN_DB_KINDS.has(kind)"
     },
     {
       "name": "isTopLevel",
       "kind": "const",
-      "line": 73,
+      "line": 75,
       "signature": "const isTopLevel = (sym: SideSymbol): boolean => sym.parent == null"
     },
     {
       "name": "SideSymbol",
       "kind": "interface",
-      "line": 76,
+      "line": 78,
       "signature": "SideSymbol()",
       "members": [
         {
@@ -81,19 +81,19 @@
     {
       "name": "sourceRelOf",
       "kind": "function",
-      "line": 92,
+      "line": 94,
       "signature": "sourceRelOf(dd: Record<string, unknown>): string"
     },
     {
       "name": "byName",
       "kind": "function",
-      "line": 99,
+      "line": 101,
       "signature": "byName(syms: SideSymbol[]): Map<string, SideSymbol[]>"
     },
     {
       "name": "SymbolDiffArgs",
       "kind": "interface",
-      "line": 109,
+      "line": 111,
       "signature": "SymbolDiffArgs()",
       "members": [
         {
@@ -131,9 +131,15 @@
     {
       "name": "SymbolDiffResult",
       "kind": "interface",
-      "line": 122,
+      "line": 124,
       "signature": "SymbolDiffResult()",
       "members": [
+        {
+          "name": "copies",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
         {
           "name": "scanned",
           "type": ": number",
@@ -181,13 +187,13 @@
     {
       "name": "diffSymbols",
       "kind": "function",
-      "line": 136,
+      "line": 144,
       "signature": "diffSymbols(args: SymbolDiffArgs): Promise<SymbolDiffResult>"
     },
     {
       "name": "uncomparedTotal",
       "kind": "function",
-      "line": 266,
+      "line": 277,
       "signature": "uncomparedTotal(uncompared: Map<string, number>): number"
     }
   ],
@@ -203,6 +209,10 @@
     {
       "source": "node:url",
       "kind": "package"
+    },
+    {
+      "source": "../db/gen_design_db.js",
+      "kind": "relative"
     }
   ],
   "calls": [

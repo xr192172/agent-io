@@ -7,19 +7,19 @@
     {
       "name": "refactorPlanSchema",
       "kind": "const",
-      "line": 69,
+      "line": 71,
       "signature": "const refactorPlanSchema = z.object({ schema: z.literal('refactor_plan/1'), plan_id:…"
     },
     {
       "name": "renderLiteralsSummary",
       "kind": "function",
-      "line": 121,
+      "line": 123,
       "signature": "renderLiteralsSummary(literals: ReadonlyArray<{ needle: string; matches: ReadonlyArray<unknown> }>,): string"
     },
     {
       "name": "REFACTOR_TOOLS",
       "kind": "const",
-      "line": 130,
+      "line": 132,
       "signature": "const REFACTOR_TOOLS = [ { name: 'diff_views', title: 'Compare design view vs li…"
     }
   ],
@@ -110,6 +110,10 @@
     },
     {
       "source": "./rename/rename_files.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./gate_note.js",
       "kind": "relative"
     },
     {

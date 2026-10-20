@@ -200,7 +200,7 @@
       "name": "matchSymbols",
       "kind": "function",
       "line": 146,
-      "signature": "matchSymbols(symbols: ParsedSymbol[], symbol: string, parent?: string): {\r\n  qnHits: ParsedSymbol[];\r\n  nameHits: ParsedSymbol[];\r\n}"
+      "signature": "matchSymbols(symbols: ParsedSymbol[], symbol: string, parent?: string): {\n  qnHits: ParsedSymbol[];\n  nameHits: ParsedSymbol[];\n}"
     },
     {
       "name": "describeSymbol",
@@ -218,7 +218,7 @@
       "name": "buildRangePreview",
       "kind": "function",
       "line": 174,
-      "signature": "buildRangePreview(start: number,\r\n  end: number,\r\n  total: number,\r\n  removed: string[],\r\n  added: string[],\r\n  overlapped: ParsedSymbol[],\r\n  quiet?: boolean,): string"
+      "signature": "buildRangePreview(start: number,\n  end: number,\n  total: number,\n  removed: string[],\n  added: string[],\n  overlapped: ParsedSymbol[],\n  quiet?: boolean,): string"
     },
     {
       "name": "buildGenericDiff",
@@ -230,7 +230,7 @@
       "name": "findBodyRange",
       "kind": "function",
       "line": 224,
-      "signature": "findBodyRange(absPath: string,\r\n  content: string,\r\n  symbol: string,\r\n  parent?: string,): Promise<{ startIndex: number; endIndex: number; startLine: number; endLine: number } | null>"
+      "signature": "findBodyRange(absPath: string,\n  content: string,\n  symbol: string,\n  parent?: string,): Promise<{ startIndex: number; endIndex: number; startLine: number; endLine: number } | null>"
     },
     {
       "name": "leadingSpaces",
@@ -363,13 +363,19 @@
           "type": ": boolean",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "task_gate",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "ReplaceTextPlan",
       "kind": "interface",
-      "line": 373,
+      "line": 381,
       "signature": "ReplaceTextPlan()",
       "members": [
         {
@@ -407,37 +413,57 @@
     {
       "name": "planReplaceText",
       "kind": "function",
-      "line": 391,
-      "signature": "planReplaceText(absPath: string,\r\n  content: string,\r\n  eol: string,\r\n  oldText: string,\r\n  newText: string,): Promise<ReplaceTextPlan>"
+      "line": 399,
+      "signature": "planReplaceText(absPath: string,\n  content: string,\n  eol: string,\n  oldText: string,\n  newText: string,): Promise<ReplaceTextPlan>"
+    },
+    {
+      "name": "GateReceipt",
+      "kind": "interface",
+      "line": 462,
+      "signature": "GateReceipt()",
+      "members": [
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "exempted",
+          "type": ": GateExemption[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "editCodeInner",
       "kind": "function",
-      "line": 453,
-      "signature": "editCodeInner(args: EditCodeArgs): Promise<{ message: string; data?: unknown }>"
+      "line": 467,
+      "signature": "editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise<{ message: string; data?: unknown }>"
     },
     {
       "name": "editCodeBatch",
       "kind": "function",
-      "line": 877,
+      "line": 897,
       "signature": "editCodeBatch(args: EditCodeArgs): Promise<{ message: string; data: EditReceipt }>"
     },
     {
       "name": "editCodeCore",
       "kind": "function",
-      "line": 1018,
+      "line": 1047,
       "signature": "editCodeCore(args: EditCodeArgs): Promise<{ message: string; data: EditReceipt }>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 1040,
+      "line": 1080,
       "signature": "touchedOf(args: EditCodeArgs, r: { message: string; data: EditReceipt }): Touched"
     },
     {
       "name": "editCode",
       "kind": "function",
-      "line": 1067,
+      "line": 1107,
       "signature": "editCode(args: EditCodeArgs): Promise<TouchedProduct<{ message: string; data: EditReceipt }>>"
     }
   ],
@@ -691,6 +717,14 @@
     {
       "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
       "to": "src/application/write_gate.ts#assertSourceWriteRegisteredFor"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
+      "to": "src/application/write_gate.ts#exemptionLines"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeCore",
+      "to": "src/application/write_gate.ts#exemptionLines"
     },
     {
       "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",

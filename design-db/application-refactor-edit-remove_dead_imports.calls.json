@@ -5,9 +5,41 @@
   "path": "src/application/refactor/edit/remove_dead_imports.ts",
   "symbols": [
     {
+      "name": "RemovedStatement",
+      "kind": "interface",
+      "line": 52,
+      "signature": "RemovedStatement()",
+      "members": [
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "via",
+          "type": ": 'span' | 'regex'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
       "name": "RemoveImportsResult",
       "kind": "interface",
-      "line": 34,
+      "line": 61,
       "signature": "RemoveImportsResult()",
       "members": [
         {
@@ -27,37 +59,149 @@
           "type": ": string",
           "optional": false,
           "member_kind": "property"
+        },
+        {
+          "name": "removed_statements",
+          "type": ": RemovedStatement[]",
+          "optional": false,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "escRe",
       "kind": "function",
-      "line": 43,
+      "line": 72,
       "signature": "escRe(s: string): string"
+    },
+    {
+      "name": "Cut",
+      "kind": "interface",
+      "line": 77,
+      "signature": "Cut()",
+      "members": [
+        {
+          "name": "start",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "via",
+          "type": ": 'span' | 'regex'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "lineAt",
+      "kind": "function",
+      "line": 84,
+      "signature": "lineAt(src: string, index: number): number"
+    },
+    {
+      "name": "applyCuts",
+      "kind": "function",
+      "line": 98,
+      "signature": "applyCuts(src: string, cuts: Cut[]): RemoveImportsResult"
     },
     {
       "name": "removeGoImports",
       "kind": "function",
-      "line": 50,
+      "line": 127,
       "signature": "removeGoImports(src: string, target: string): RemoveImportsResult"
+    },
+    {
+      "name": "tsImportRanges",
+      "kind": "function",
+      "line": 209,
+      "signature": "tsImportRanges(src: string, target: string): Array<[number, number]>"
     },
     {
       "name": "removeTsImports",
       "kind": "function",
-      "line": 126,
+      "line": 241,
       "signature": "removeTsImports(src: string, target: string): RemoveImportsResult"
     },
     {
       "name": "removeImportsFromSource",
       "kind": "function",
-      "line": 185,
+      "line": 251,
       "signature": "removeImportsFromSource(src: string, target: string, lang: 'go' | 'ts'): RemoveImportsResult"
+    },
+    {
+      "name": "ImportSpan",
+      "kind": "interface",
+      "line": 259,
+      "signature": "ImportSpan()",
+      "members": [
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "openIndexDb",
+      "kind": "function",
+      "line": 267,
+      "signature": "openIndexDb(projectDir: string): DatabaseSync | null"
+    },
+    {
+      "name": "hasRequireOf",
+      "kind": "function",
+      "line": 278,
+      "signature": "hasRequireOf(src: string, source: string): boolean"
+    },
+    {
+      "name": "spansForFile",
+      "kind": "function",
+      "line": 291,
+      "signature": "spansForFile(db: DatabaseSync,\r\n  projectDir: string,\r\n  absPath: string,\r\n  src: string,\r\n  sources: string[],): ImportSpan[] | null"
+    },
+    {
+      "name": "removeImportsBySpans",
+      "kind": "function",
+      "line": 338,
+      "signature": "removeImportsBySpans(src: string, spans: ImportSpan[]): RemoveImportsResult | null"
     },
     {
       "name": "DeadImportRemoval",
       "kind": "interface",
-      "line": 192,
+      "line": 355,
       "signature": "DeadImportRemoval()",
       "members": [
         {
@@ -83,7 +227,7 @@
     {
       "name": "FileRemoval",
       "kind": "interface",
-      "line": 198,
+      "line": 361,
       "signature": "FileRemoval()",
       "members": [
         {
@@ -95,6 +239,12 @@
         {
           "name": "lang",
           "type": ": 'go' | 'ts'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "via",
+          "type": ": 'span' | 'regex'",
           "optional": false,
           "member_kind": "property"
         },
@@ -113,9 +263,23 @@
       ]
     },
     {
+      "name": "RemovedStatementReceipt",
+      "kind": "interface",
+      "line": 371,
+      "signature": "RemovedStatementReceipt()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
       "name": "RemoveDeadImportResult",
       "kind": "interface",
-      "line": 205,
+      "line": 375,
       "signature": "RemoveDeadImportResult()",
       "members": [
         {
@@ -137,6 +301,12 @@
           "member_kind": "property"
         },
         {
+          "name": "removed_statements",
+          "type": ": RemovedStatementReceipt[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
           "name": "indexWriteThrough",
           "type": ": WriteThroughOutcome",
           "optional": true,
@@ -147,43 +317,49 @@
     {
       "name": "langOfFile",
       "kind": "function",
-      "line": 217,
+      "line": 389,
       "signature": "langOfFile(rel: string): 'go' | 'ts' | null"
+    },
+    {
+      "name": "countBySource",
+      "kind": "function",
+      "line": 396,
+      "signature": "countBySource(statements: RemovedStatement[]): Map<string, number>"
     },
     {
       "name": "computeChanges",
       "kind": "function",
-      "line": 225,
+      "line": 404,
       "signature": "computeChanges(opts: {\r\n  project_dir: string;\r\n  dead: DeadDepCandidate[];\r\n}): {\r\n  absToNew: Map<string, string>;\r\n  originals: Map<string, string>;\r\n  result: RemoveDeadImportResult;\r\n}"
     },
     {
       "name": "removeDeadImportsCore",
       "kind": "function",
-      "line": 293,
+      "line": 526,
       "signature": "removeDeadImportsCore(opts: {\r\n  project_dir: string;\r\n  dead: DeadDepCandidate[];\r\n}): RemoveDeadImportResult"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 329,
+      "line": 562,
       "signature": "touchedOf(opts: { project_dir: string }, r: RemoveDeadImportResult): Touched"
     },
     {
       "name": "writtenFilesOf",
       "kind": "function",
-      "line": 347,
+      "line": 580,
       "signature": "writtenFilesOf(projectDir: string, r: RemoveDeadImportResult): string[]"
     },
     {
       "name": "removeDeadImports",
       "kind": "function",
-      "line": 358,
+      "line": 591,
       "signature": "removeDeadImports(opts: {\r\n  project_dir: string;\r\n  dead: DeadDepCandidate[];\r\n}): TouchedProduct<RemoveDeadImportResult>"
     },
     {
       "name": "RemoveDeadImportsVerifyResult",
       "kind": "interface",
-      "line": 369,
+      "line": 602,
       "signature": "RemoveDeadImportsVerifyResult()",
       "members": [
         {
@@ -197,7 +373,7 @@
     {
       "name": "RemoveDeadImportsVerifyOptions",
       "kind": "interface",
-      "line": 381,
+      "line": 614,
       "signature": "RemoveDeadImportsVerifyOptions()",
       "members": [
         {
@@ -229,7 +405,7 @@
     {
       "name": "removeDeadImportsWithVerify",
       "kind": "function",
-      "line": 390,
+      "line": 623,
       "signature": "removeDeadImportsWithVerify(opts: RemoveDeadImportsVerifyOptions): RemoveDeadImportsVerifyResult"
     }
   ],
@@ -240,6 +416,10 @@
     },
     {
       "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:sqlite",
       "kind": "package"
     },
     {
@@ -256,6 +436,10 @@
       "kind": "relative"
     },
     {
+      "source": "../../../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
       "source": "../../../infrastructure/index/symbols.js",
       "kind": "relative"
     },
@@ -266,6 +450,18 @@
   ],
   "calls": [
     {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeTsImports",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#applyCuts"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeImportsBySpans",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#applyCuts"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#computeChanges",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#applyCuts"
+    },
+    {
       "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsCore",
       "to": "src/application/refactor/edit/remove_dead_imports.ts#computeChanges"
     },
@@ -274,16 +470,40 @@
       "to": "src/application/refactor/edit/remove_dead_imports.ts#computeChanges"
     },
     {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#computeChanges",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#countBySource"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#computeChanges",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#countBySource"
+    },
+    {
       "from": "src/application/refactor/edit/remove_dead_imports.ts#removeGoImports",
       "to": "src/application/refactor/edit/remove_dead_imports.ts#escRe"
     },
     {
-      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeTsImports",
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#tsImportRanges",
       "to": "src/application/refactor/edit/remove_dead_imports.ts#escRe"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#hasRequireOf",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#escRe"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#spansForFile",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#hasRequireOf"
     },
     {
       "from": "src/application/refactor/edit/remove_dead_imports.ts#computeChanges",
       "to": "src/application/refactor/edit/remove_dead_imports.ts#langOfFile"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#applyCuts",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#lineAt"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#computeChanges",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#openIndexDb"
     },
     {
       "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsWithVerify",
@@ -303,15 +523,31 @@
     },
     {
       "from": "src/application/refactor/edit/remove_dead_imports.ts#computeChanges",
-      "to": "src/application/refactor/edit/remove_dead_imports.ts#removeImportsFromSource"
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#removeGoImports"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#computeChanges",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#removeImportsBySpans"
     },
     {
       "from": "src/application/refactor/edit/remove_dead_imports.ts#removeImportsFromSource",
       "to": "src/application/refactor/edit/remove_dead_imports.ts#removeTsImports"
     },
     {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#computeChanges",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#spansForFile"
+    },
+    {
       "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImports",
       "to": "src/application/refactor/edit/remove_dead_imports.ts#touchedOf"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeTsImports",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#tsImportRanges"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#computeChanges",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#tsImportRanges"
     },
     {
       "from": "src/application/refactor/edit/remove_dead_imports.ts#touchedOf",
@@ -336,6 +572,18 @@
     {
       "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImports",
       "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#openIndexDb",
+      "to": "src/infrastructure/index/db.ts#findCacheDb"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#spansForFile",
+      "to": "src/infrastructure/index/symbols.ts#contentHash"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#spansForFile",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
     },
     {
       "from": "src/application/refactor/edit/remove_dead_imports.ts#writtenFilesOf",

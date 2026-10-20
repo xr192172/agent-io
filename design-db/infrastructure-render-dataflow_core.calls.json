@@ -8,193 +8,37 @@
       "name": "DfNodeLike",
       "kind": "interface",
       "line": 21,
-      "signature": "DfNodeLike()",
-      "members": [
-        {
-          "name": "id",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "label",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "layer",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "host",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "shapes",
-          "type": ": { in?: unknown; out?: unknown } | null",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "style",
-          "type": ": { shape?: string; tone?: string } | null",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "description",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        }
-      ]
+      "signature": "DfNodeLike()"
     },
     {
       "name": "DfEdgeLike",
       "kind": "interface",
       "line": 32,
-      "signature": "DfEdgeLike()",
-      "members": [
-        {
-          "name": "id",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "from",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "to",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "type",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "label",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        }
-      ]
+      "signature": "DfEdgeLike()"
     },
     {
       "name": "DfTraceStep",
       "kind": "interface",
       "line": 40,
-      "signature": "DfTraceStep()",
-      "members": [
-        {
-          "name": "nodeId",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "label",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "inValue",
-          "type": ": unknown",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "outValue",
-          "type": ": unknown",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "note",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        }
-      ]
+      "signature": "DfTraceStep()"
     },
     {
       "name": "DfTrace",
       "kind": "interface",
       "line": 53,
-      "signature": "DfTrace()",
-      "members": [
-        {
-          "name": "steps",
-          "type": ": DfTraceStep[]",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "branchEdgeIds",
-          "type": ": string[]",
-          "optional": false,
-          "member_kind": "property"
-        }
-      ]
+      "signature": "DfTrace()"
     },
     {
       "name": "DfJudgementBranch",
       "kind": "interface",
       "line": 64,
-      "signature": "DfJudgementBranch()",
-      "members": [
-        {
-          "name": "via",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "to",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        }
-      ]
+      "signature": "DfJudgementBranch()"
     },
     {
       "name": "DfJudgement",
       "kind": "interface",
       "line": 71,
-      "signature": "DfJudgement()",
-      "members": [
-        {
-          "name": "cond",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "nodeId",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "branches",
-          "type": ": DfJudgementBranch[]",
-          "optional": false,
-          "member_kind": "property"
-        }
-      ]
+      "signature": "DfJudgement()"
     },
     {
       "name": "collectJudgements",
@@ -212,27 +56,7 @@
       "name": "EvalResult",
       "kind": "interface",
       "line": 169,
-      "signature": "EvalResult()",
-      "members": [
-        {
-          "name": "ok",
-          "type": ": boolean",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "value",
-          "type": ": unknown",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "error",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        }
-      ]
+      "signature": "EvalResult()"
     },
     {
       "name": "evaluateCond",
@@ -256,33 +80,7 @@
       "name": "DfJudgementResult",
       "kind": "interface",
       "line": 237,
-      "signature": "DfJudgementResult()",
-      "members": [
-        {
-          "name": "evaluable",
-          "type": ": boolean",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "error",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "chosenVia",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "chosenTo",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        }
-      ]
+      "signature": "DfJudgementResult()"
     },
     {
       "name": "applyJudgements",

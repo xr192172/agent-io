@@ -8,101 +8,13 @@
       "name": "ArchifyTreeNode",
       "kind": "interface",
       "line": 15,
-      "signature": "ArchifyTreeNode()",
-      "members": [
-        {
-          "name": "id",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "label",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "role",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "type",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "sublabel",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "tag",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "file",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "pins",
-          "type": ": { in?: string[]; out?: string[] }",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "children",
-          "type": ": { nodes?: ArchifyTreeNode[]; edges?: ArchifyTreeEdge[] }",
-          "optional": true,
-          "member_kind": "property"
-        }
-      ]
+      "signature": "ArchifyTreeNode()"
     },
     {
       "name": "ArchifyTreeEdge",
       "kind": "interface",
       "line": 27,
-      "signature": "ArchifyTreeEdge()",
-      "members": [
-        {
-          "name": "id",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "from",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "to",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "label",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "kind",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        }
-      ]
+      "signature": "ArchifyTreeEdge()"
     },
     {
       "name": "adaptIRTree",

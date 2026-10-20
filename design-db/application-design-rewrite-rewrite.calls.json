@@ -7,7 +7,7 @@
     {
       "name": "RewriteArgs",
       "kind": "interface",
-      "line": 32,
+      "line": 46,
       "signature": "RewriteArgs()",
       "members": [
         {
@@ -43,14 +43,58 @@
       ]
     },
     {
+      "name": "RewriteReason",
+      "kind": "type",
+      "line": 72,
+      "signature": "RewriteReason()"
+    },
+    {
+      "name": "RewriteGate",
+      "kind": "interface",
+      "line": 83,
+      "signature": "RewriteGate()",
+      "members": [
+        {
+          "name": "stage",
+          "type": ": 'plan' | 'apply' | 'recheck'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
       "name": "RewriteResult",
       "kind": "interface",
-      "line": 45,
+      "line": 88,
       "signature": "RewriteResult()",
       "members": [
         {
           "name": "feature",
           "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "did_work",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": RewriteReason | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "gate",
+          "type": ": RewriteGate | null",
           "optional": false,
           "member_kind": "property"
         },
@@ -113,11 +157,25 @@
     {
       "name": "rewriteSymbols",
       "kind": "function",
-      "line": 73,
+      "line": 124,
       "signature": "rewriteSymbols(args: RewriteArgs): Promise<RewriteResult>"
+    },
+    {
+      "name": "noWorkReason",
+      "kind": "function",
+      "line": 197,
+      "signature": "noWorkReason(r: Pick<SymbolDiffResult, 'copies' | 'scanned' | 'same' | 'differ' | 'uncompared'>,\n  fileMissing: boolean,): RewriteReason"
     }
   ],
   "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
     {
       "source": "./symbol_diff.js",
       "kind": "relative"
@@ -130,7 +188,7 @@
   "calls": [
     {
       "from": "src/application/design/rewrite/rewrite.ts#rewriteSymbols",
-      "to": "src/application/design/rewrite/symbol_diff.ts#diffSymbols"
+      "to": "src/application/design/rewrite/rewrite.ts#noWorkReason"
     },
     {
       "from": "src/application/design/rewrite/rewrite.ts#rewriteSymbols",
@@ -138,6 +196,14 @@
     },
     {
       "from": "src/application/design/rewrite/rewrite.ts#rewriteSymbols",
+      "to": "src/application/design/rewrite/symbol_diff.ts#diffSymbols"
+    },
+    {
+      "from": "src/application/design/rewrite/rewrite.ts#rewriteSymbols",
+      "to": "src/application/design/rewrite/symbol_diff.ts#uncomparedTotal"
+    },
+    {
+      "from": "src/application/design/rewrite/rewrite.ts#noWorkReason",
       "to": "src/application/design/rewrite/symbol_diff.ts#uncomparedTotal"
     },
     {

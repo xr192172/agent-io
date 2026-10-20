@@ -38,7 +38,7 @@
       "name": "SCHEMA_VERSION",
       "kind": "const",
       "line": 66,
-      "signature": "const SCHEMA_VERSION = 10"
+      "signature": "const SCHEMA_VERSION = 12"
     },
     {
       "name": "getDbFile",
@@ -79,25 +79,25 @@
     {
       "name": "projectCachePool",
       "kind": "const",
-      "line": 213,
+      "line": 216,
       "signature": "const projectCachePool = new Map<string, Database>()"
     },
     {
       "name": "getProjectCacheDb",
       "kind": "function",
-      "line": 222,
+      "line": 225,
       "signature": "getProjectCacheDb(projectRoot: string): Database"
     },
     {
       "name": "closeAllProjectCacheDbs",
       "kind": "function",
-      "line": 233,
+      "line": 236,
       "signature": "closeAllProjectCacheDbs(): void"
     },
     {
       "name": "closeProjectCacheDb",
       "kind": "function",
-      "line": 245,
+      "line": 248,
       "signature": "closeProjectCacheDb(projectRoot: string): void"
     }
   ],

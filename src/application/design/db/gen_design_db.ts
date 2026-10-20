@@ -3,8 +3,13 @@
  *
  * ## 它生成什么（用户的关键定义，逐字留在注释里）
  * ```
- * design-db/<file>.calls.json   ← 每个文件节点一份（全量）
+ * design-db/<file>.calls.json   ← 每个文件一份（全量）
  * ```
+ * ★ 2026-10-20 订正：原文写的是"每个**文件节点**一份" —— 那是假门的源头。
+ *   一个路径可以被**多个 feature 各持一个节点**（实测今天 344 个路径 / 367 个节点 / 23 个多持有者），
+ *   而 `design-db` 只有**一份**投影 ⇒ 第二个节点永远对不上。
+ *   ⇒ 现在按**路径**归并：判据取并集、表头列出全部持有者、矛盾单独判真冲突
+ *     （`planDesignDb` 是唯一那一处；`DesignDbConflict` 写着什么是"真"什么不是）。
  *
  * ## 为什么必须【全量、和实际 DB 同构】
  * 用户原话（2026-10-19）："一个是渐进式解析，一个是渐入式重写 —— 我们既要重写设计 DSL，
@@ -34,38 +39,41 @@
  * - 只处理 `description` 以 `src/` 开头的节点（其他目录不进设计 DB）
  * - `symbols` / `imports` / `calls` 的**事实**取自 `cache.db`（设计 DSL 不存符号级事实）
  * - `check=true` **不写盘**（只报不一致），也不清理陈旧副本
+ * - ★ `check=true` 的红分两类，**不许合成一个计数**：
+ *   `drift`（重跑生成器就绿）vs `conflicts`（重跑一百遍也绿不了 ⇒ 该改设计）
+ * - ★ **门只由 `checkDesignDbStructure` 提供**（`scripts/gen-db-check.mjs`）：它只比设计侧
+ *   可复现的三样（`//source` / `requirements` / `requirements_calls` 的调用方），
+ *   因为 `cache.db` **不入库** —— 拿它当门 = 同一次提交在不同机器上红绿不同（另一种假门）。
+ * - ★ 本工具是**诊断**，不是门：要判"设计进没进投影"请跑 `node scripts/gen-db-check.mjs`。
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
-export interface GenDesignDbOptions {
-  /** 只处理这个 feature（不传 = design/ 下全部） */
-  feature?: string;
-  /** 只比对不写盘（真写会改 design-db/） */
-  check?: boolean;
-}
+// ★ 2026-10-20：`GenDesignDbOptions` / `GenDesignDbResult` 已下移到归并逻辑旁边
+//   （与 `DesignDbPlanItem` / `DesignDbConflict` 同住）—— 此前它们在这里，改归并时又在下面
+//   重写了一份，两份同名 interface 会**静默合并**（tsc 不报）⇒ 改字段时只改一份也编得过。
+//   ★ 这就是本仓头号病（同一判据住两处）的又一次现形：**编译通过 ≠ 只有一份**。
 
-export interface GenDesignDbResult {
-  /** 参与生成的 feature 数 */
-  features: number;
-  /** 处理过的文件节点数 */
-  files: number;
-  /** 本次写入的副本数 */
-  written: number;
-  /** 内容未变、跳过的副本数 */
-  unchanged: number;
-  /** 清理掉的陈旧副本数（check 模式恒 0） */
-  pruned: number;
-  /** 问题清单（读库失败 / check 模式下的不一致） */
-  problems: string[];
-  /** 本次是否 check 模式 */
-  check: boolean;
-}
+type RawExpectation = {
+  kind?: string;
+  path?: string;
+  symbol?: string;
+  target?: string;
+  from?: string;
+  to?: string;
+  signature?: string;
+  must?: string[];
+  mustNot?: string[];
+  expect?: string;
+  input?: unknown;
+  why?: string;
+};
 
 type AnyNode = {
+  id?: string;
   description?: string;
-  decision?: { expectations?: Array<{ kind?: string; symbol?: string; target?: string; why?: string; path?: string }> };
+  decision?: { expectations?: RawExpectation[] };
 };
 
 const norm = (s: unknown): string => String(s ?? '').replace(/\\/g, '/');
@@ -84,24 +92,283 @@ export const outNameOf = (rel: string): string =>
  */
 export const designDbDir = (root: string): string => path.join(root, 'design-db');
 
+/** 一个路径的一个**持有者**（= 某个 feature 里的那个节点） */
+export interface DesignDbHolder {
+  /** feature 名（= 设计文件名去后缀） */
+  feature: string;
+  /** 表头里的来源串：`design/<feature>.dsl.json` */
+  source: string;
+  node: AnyNode;
+}
+
+/** 归并后的一份投影的**设计侧输入**（★ 不含事实：symbols / imports / calls 全在 cache.db） */
+export interface DesignDbPlanItem {
+  /** 仓库相对路径 */
+  path: string;
+  /** 所有持有者的 feature（★ 稳定序 = 设计文件名排序） */
+  holders: string[];
+  /** 所有持有者的来源串（顺序与 holders 一致） */
+  sources: string[];
+  /** 所有持有者的判据**并集**（去重、稳定序） */
+  expectations: RawExpectation[];
+}
+
+/**
+ * ★★★ **真冲突**（2026-10-20）：两个 feature 对同一文件的要求**不可能同时满足**。
+ *
+ * 为什么必须与「投影陈旧」分开：
+ * - 投影陈旧 ⇒ **重跑生成器**就绿（`GenDesignDbResult.drift`）；
+ * - 真冲突 ⇒ 重跑一百遍也绿不了（`GenDesignDbResult.conflicts`）—— 只有**改设计**能修。
+ * 把两者混成一个计数，就是本仓最反对的那种读数：「红着，但没人知道该动哪儿」。
+ *
+ * 判据只有两条（★ 都是**可机器判定**的，不靠"两个 decision 逐字不同"）：
+ * ① 同一符号的两条 `signature-matches` 给出**不同签名** ⇒ 不可能同时成立；
+ * ② 一个 feature 的 `source-has.must` 与另一个的 `source-has.mustNot` 撞同一串 ⇒ 互斥。
+ * ★ 其余主张（file-exists / symbol-exists / call-exists / edge-* / run）都是**正向断言**，
+ *   两个 feature 各说一条只能**并集**，构不成矛盾 —— 所以今天 23 个多持有者路径里
+ *   真冲突是 **0 条**（实测，2026-10-20）。
+ */
+export interface DesignDbConflict {
+  path: string;
+  kind: 'signature-matches' | 'source-has';
+  /** 人话，点名两边的 feature 与各自的要求 */
+  detail: string;
+}
+
+/** 判据的去重键：**只含判据本体**（`why` 是理由，不进键 —— 同一判据两说理由不算两条） */
+const expectationKey = (e: RawExpectation): string =>
+  JSON.stringify([
+    e.kind ?? '',
+    norm(e.path ?? ''),
+    e.symbol ?? '',
+    norm(e.target ?? ''),
+    norm(e.from ?? ''),
+    norm(e.to ?? ''),
+    e.signature ?? '',
+    (e.must ?? []).join('\n'),
+    (e.mustNot ?? []).join('\n'),
+    e.expect ?? '',
+    JSON.stringify(e.input ?? null),
+  ]);
+
+/** 同一路径上两个持有者之间的**真冲突**（判据见 {@link DesignDbConflict}） */
+function conflictsOf(rel: string, holders: DesignDbHolder[]): DesignDbConflict[] {
+  const out: DesignDbConflict[] = [];
+
+  // ① signature-matches：同一符号被要求不同签名
+  const sigs = new Map<string, Map<string, string[]>>();
+  for (const h of holders) {
+    for (const e of h.node.decision?.expectations ?? []) {
+      if (e.kind !== 'signature-matches' || !e.symbol) continue;
+      const key = `${norm(e.path ?? rel)}#${e.symbol}`;
+      const bySig = sigs.get(key) ?? new Map<string, string[]>();
+      const sig = String(e.signature ?? '');
+      bySig.set(sig, [...(bySig.get(sig) ?? []), h.feature]);
+      sigs.set(key, bySig);
+    }
+  }
+  for (const [key, bySig] of sigs) {
+    if (bySig.size < 2) continue;
+    const said = [...bySig.entries()].map(([sig, who]) => `${who.join('+')} 要求 \`${sig}\``).join('；');
+    out.push({ path: rel, kind: 'signature-matches', detail: `${key} —— ${said}` });
+  }
+
+  // ② source-has：一边说"必须有"、另一边说"必须没有"同一串
+  const byFile = new Map<string, Array<{ feature: string; must: Set<string>; mustNot: Set<string> }>>();
+  for (const h of holders) {
+    for (const e of h.node.decision?.expectations ?? []) {
+      if (e.kind !== 'source-has') continue;
+      const file = norm(e.path ?? rel);
+      const list = byFile.get(file) ?? [];
+      let slot = list.find((x) => x.feature === h.feature);
+      if (!slot) {
+        slot = { feature: h.feature, must: new Set<string>(), mustNot: new Set<string>() };
+        list.push(slot);
+      }
+      for (const m of e.must ?? []) slot.must.add(String(m));
+      for (const m of e.mustNot ?? []) slot.mustNot.add(String(m));
+      byFile.set(file, list);
+    }
+  }
+  for (const [file, list] of byFile) {
+    for (const a of list) {
+      for (const b of list) {
+        if (a === b) continue;
+        for (const m of a.must) {
+          if (!b.mustNot.has(m)) continue;
+          out.push({
+            path: rel,
+            kind: 'source-has',
+            detail: `${file} —— ${a.feature} 要求源码里**必须有** \`${m}\`，而 ${b.feature} 要求**必须没有**它`,
+          });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * **归并计划**：读 `design/*.dsl.json`，把「一个路径」归成「一份投影」。
+ *
+ * ★ 这是本生成器的**唯一一处**决定"同一路径多个节点怎么办"的地方：
+ *   - **不是**各写一份（否则同一文件的 symbols/calls 会被复制 N 份，消费者还得再挑一次）；
+ *   - **不是**第一个/最后一个 feature 赢（那会让另一个节点**永远**对不上 —— 假门就是这么来的）；
+ *   - **而是**判据取并集 + 表头列出**全部**持有者 + 矛盾单独判（{@link DesignDbConflict}）。
+ *
+ * ★ 纯 DSL 读取（**不碰 cache.db**）⇒ 结构可复现（`checkDesignDbStructure` 靠它当门）。
+ */
+export function planDesignDb(
+  root: string,
+  opts: { feature?: string } = {},
+): {
+  features: string[];
+  nodes: number;
+  items: Map<string, DesignDbPlanItem>;
+  conflicts: DesignDbConflict[];
+  missingDir: boolean;
+} {
+  const DESIGN_DIR = path.join(root, '.agent-io', 'design');
+  const plan = {
+    features: [] as string[],
+    nodes: 0,
+    items: new Map<string, DesignDbPlanItem>(),
+    conflicts: [] as DesignDbConflict[],
+    missingDir: !fs.existsSync(DESIGN_DIR),
+  };
+  if (plan.missingDir) return plan;
+
+  let files = fs.readdirSync(DESIGN_DIR).filter((f) => f.endsWith('.dsl.json')).sort();
+  if (opts.feature) files = files.filter((f) => f === `${opts.feature}.dsl.json`);
+  plan.features = files.map((f) => f.replace(/\.dsl\.json$/, ''));
+
+  // ① 按路径收集**所有**持有者（同一路径允许被多个 feature 各持一个节点）
+  const byPath = new Map<string, DesignDbHolder[]>();
+  for (const f of files) {
+    const dsl = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8'));
+    const feature = f.replace(/\.dsl\.json$/, '');
+    for (const raw of (dsl.geometry?.nodes ?? []) as AnyNode[]) {
+      const rel = norm(raw.description);
+      if (!rel.startsWith('src/')) continue;
+      plan.nodes += 1;
+      const list = byPath.get(rel) ?? [];
+      list.push({ feature, source: `design/${f}`, node: raw });
+      byPath.set(rel, list);
+    }
+  }
+
+  // ② 一个路径 ⇒ 一份投影：判据并集（去重、稳定序）+ 真冲突单独收集
+  for (const [rel, holders] of byPath) {
+    const seen = new Set<string>();
+    const expectations: RawExpectation[] = [];
+    for (const h of holders) {
+      for (const e of h.node.decision?.expectations ?? []) {
+        const k = expectationKey(e);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        expectations.push(e);
+      }
+    }
+    plan.items.set(rel, {
+      path: rel,
+      holders: holders.map((h) => h.feature),
+      sources: holders.map((h) => h.source),
+      expectations,
+    });
+    plan.conflicts.push(...conflictsOf(rel, holders));
+  }
+  return plan;
+}
+
+/** 投影里的 `requirements`（★ 只收 `call-exists` —— 契约门读的是这个） */
+export function requirementsOf(item: DesignDbPlanItem): Array<Record<string, unknown>> {
+  return item.expectations
+    .filter((e) => e.kind === 'call-exists')
+    .map((e) => ({ kind: 'call-exists', symbol: e.symbol, target: e.target, ...(e.why ? { why: e.why } : {}) }));
+}
+
+/**
+ * 投影里的 `requirements_calls` 的**未解析形状**（`to` 要 cache.db 才能定住符号的家）。
+ * ★ 结构检查（无 cache.db）只比 `from` 与条数 —— 这就是"设计要求进没进投影"的可复现判据。
+ */
+export function requirementCallsOf(item: DesignDbPlanItem): Array<{ from: string; target: string; why?: string }> {
+  const out: Array<{ from: string; target: string; why?: string }> = [];
+  for (const e of item.expectations) {
+    if (e.kind !== 'call-exists') continue;
+    const fromFile = norm(e.path ?? item.path);
+    out.push({ from: `${fromFile}#${e.symbol}`, target: String(e.target ?? ''), ...(e.why ? { why: e.why } : {}) });
+  }
+  return out;
+}
+
+export interface GenDesignDbOptions {
+  /** 只处理这个 feature（不传 = design/ 下全部） */
+  feature?: string;
+  /** 只比对不写盘（真写会改 design-db/） */
+  check?: boolean;
+}
+
+export interface GenDesignDbResult {
+  /** 参与生成的 feature 数 */
+  features: number;
+  /** 参与生成的**文件节点**数（同一路径被两个 feature 持有 ⇒ 计 2） */
+  files: number;
+  /** 归并后的**投影份数**（一个路径一份） */
+  paths: number;
+  /** 本次写入的副本数 */
+  written: number;
+  /** 内容未变、跳过的副本数 */
+  unchanged: number;
+  /** 清理掉的陈旧副本数（check 模式恒 0） */
+  pruned: number;
+  /** 问题清单（读库失败 / 找不到设计目录） */
+  problems: string[];
+  /** ★ 投影与设计/事实不一致（**重跑生成器**能修） */
+  drift: string[];
+  /** ★ 真冲突（**重跑修不好**，只能改设计） */
+  conflicts: string[];
+  /** 本次是否 check 模式 */
+  check: boolean;
+}
+
+/** 真冲突的人话（生成器与结构检查共用同一句，别各写一份） */
+export const renderConflict = (c: DesignDbConflict): string =>
+  `${c.path}: ${c.detail} —— 两个 feature 对同一文件的要求不可能同时满足（该改设计；重跑生成器修不好）`;
+
 /**
  * 生成（或检查）设计 DB。
  * ★ 纯 I/O：读 `design/*.dsl.json` + `cache.db`，写 `designDbDir(root)`（= `<root>/design-db/`）。
+ *
+ * ★ 2026-10-20：**一个路径只写一份**（此前是"逐节点各写一遍同一个文件名" ⇒ 后写的覆盖前面的，
+ *   于是另一个 feature 的节点**永远**对不上 ⇒ `check=true` 结构上不可能绿）。
+ *   现在按 `planDesignDb` 归并后写，表头列出**全部**持有者。
  */
 export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDesignDbResult {
-  const DESIGN_DIR = path.join(root, '.agent-io', 'design');
   const OUT_DIR = designDbDir(root);
   const CHECK = opts.check === true;
 
-  const result: GenDesignDbResult = { features: 0, files: 0, written: 0, unchanged: 0, pruned: 0, problems: [], check: CHECK };
+  const result: GenDesignDbResult = {
+    features: 0,
+    files: 0,
+    paths: 0,
+    written: 0,
+    unchanged: 0,
+    pruned: 0,
+    problems: [],
+    drift: [],
+    conflicts: [],
+    check: CHECK,
+  };
 
-  if (!fs.existsSync(DESIGN_DIR)) {
-    result.problems.push(`找不到 ${DESIGN_DIR}`);
+  const plan = planDesignDb(root, { feature: opts.feature });
+  result.features = plan.features.length;
+  result.files = plan.nodes;
+  result.paths = plan.items.size;
+  result.conflicts = plan.conflicts.map(renderConflict);
+  if (plan.missingDir) {
+    result.problems.push(`找不到 ${path.join(root, '.agent-io', 'design')}`);
     return result;
   }
-  let files = fs.readdirSync(DESIGN_DIR).filter((f) => f.endsWith('.dsl.json'));
-  if (opts.feature) files = files.filter((f) => f === `${opts.feature}.dsl.json`);
-  result.features = files.length;
   if (!CHECK) fs.mkdirSync(OUT_DIR, { recursive: true });
 
   const dbPath = path.join(root, '.agent-io', 'cache.db');
@@ -117,101 +384,88 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
   );
 
   try {
-    for (const f of files) {
-      const dsl = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8'));
-      for (const raw of (dsl.geometry?.nodes ?? []) as AnyNode[]) {
-        const rel = norm(raw.description);
-        if (!rel.startsWith('src/')) continue;
-        result.files += 1;
+    for (const item of plan.items.values()) {
+      const rel = item.path;
 
-        let symbols: Array<Record<string, unknown>> = [];
-        let imports: Array<Record<string, unknown>> = [];
-        let calls: Array<Record<string, unknown>> = [];
-        try {
-          symbols = (qSymbols.all(rel) as Array<{ name: string; kind: string; start_line: number; signature: string | null; members: string | null }>).map(
-            (r) => ({
-              name: r.name,
-              kind: r.kind,
-              line: r.start_line,
-              ...(r.signature ? { signature: r.signature } : {}),
-              // ★ 2026-10-20：类型成员（JSON 里存的是字符串，这里还原成数组）
-              ...(r.members ? { members: JSON.parse(String(r.members)) } : {}),
-            }),
-          );
-          imports = (qImports.all(rel) as Array<{ source: string; kind: string; type_only: number | null }>).map((r) => ({
-            source: r.source,
+      let symbols: Array<Record<string, unknown>> = [];
+      let imports: Array<Record<string, unknown>> = [];
+      let calls: Array<Record<string, unknown>> = [];
+      try {
+        symbols = (qSymbols.all(rel) as Array<{ name: string; kind: string; start_line: number; signature: string | null; members: string | null }>).map(
+          (r) => ({
+            name: r.name,
             kind: r.kind,
-            ...(r.type_only ? { type_only: true } : {}),
-          }));
-          calls = (qCallsOut.all(rel + '#%') as Array<{ source: string; target: string }>).map((r) => ({
-            from: norm(r.source),
-            to: norm(r.target),
-          }));
-        } catch (e) {
-          result.problems.push(`${rel}: 读 cache.db 失败（${(e as Error)?.message ?? String(e)}）`);
-          continue;
-        }
-
-        const exps = raw.decision?.expectations ?? [];
-        const requirements = exps
-          .filter((e) => e.kind === 'call-exists')
-          .map((e) => ({ kind: 'call-exists', symbol: e.symbol, target: e.target, ...(e.why ? { why: e.why } : {}) }));
-
-        // ★ 设计要求单独一个字段：`calls` 是全量镜像（必然全绿），
-        //   `requirements_calls` 才是"设计说必须有"的 —— 契约门必须读它。
-        const requirementsCalls: Array<Record<string, unknown>> = [];
-        for (const e of exps) {
-          if (e.kind !== 'call-exists') continue;
-          const fromFile = norm(e.path ?? rel);
-          const home = qHome.get(e.target ?? '', fromFile) as { file_path?: string } | undefined;
-          if (!home) continue;
-          requirementsCalls.push({
-            from: `${fromFile}#${e.symbol}`,
-            to: `${norm(home.file_path)}#${e.target}`,
-            ...(e.why ? { why: e.why } : {}),
-          });
-        }
-
-        const payload = {
-          '//': `Design DB —— ${rel}（★ 全量、与实际 DB 同构；从 design/${f} 的节点生成）`,
-          '//generated_by': 'scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）',
-          '//source': `design/${f}`,
-          /** 副本自报路径（机器可读；此前只在首行注释里，消费者只能解析注释） */
-          path: rel,
-          symbols,
-          imports,
-          calls,
-          ...(requirements.length ? { requirements } : {}),
-          ...(requirementsCalls.length ? { requirements_calls: requirementsCalls } : {}),
-        };
-        const outPath = path.join(OUT_DIR, outNameOf(rel));
-        const text = JSON.stringify(payload, null, 2) + '\n';
-        const old = fs.existsSync(outPath) ? fs.readFileSync(outPath, 'utf8') : null;
-        if (old === text) {
-          result.unchanged += 1;
-          continue;
-        }
-        if (CHECK) {
-          result.problems.push(`${outNameOf(rel)}: 与当前设计不一致（该重跑生成器）`);
-          continue;
-        }
-        fs.writeFileSync(outPath, text);
-        result.written += 1;
+            line: r.start_line,
+            ...(r.signature ? { signature: r.signature } : {}),
+            // ★ 2026-10-20：类型成员（JSON 里存的是字符串，这里还原成数组）
+            ...(r.members ? { members: JSON.parse(String(r.members)) } : {}),
+          }),
+        );
+        imports = (qImports.all(rel) as Array<{ source: string; kind: string; type_only: number | null }>).map((r) => ({
+          source: r.source,
+          kind: r.kind,
+          ...(r.type_only ? { type_only: true } : {}),
+        }));
+        calls = (qCallsOut.all(rel + '#%') as Array<{ source: string; target: string }>).map((r) => ({
+          from: norm(r.source),
+          to: norm(r.target),
+        }));
+      } catch (e) {
+        result.problems.push(`${rel}: 读 cache.db 失败（${(e as Error)?.message ?? String(e)}）`);
+        continue;
       }
+
+      // ★ 设计要求单独一个字段：`calls` 是全量镜像（必然全绿），
+      //   `requirements_calls` 才是"设计说必须有"的 —— 契约门必须读它。
+      const requirementsCalls: Array<Record<string, unknown>> = [];
+      for (const spec of requirementCallsOf(item)) {
+        const home = qHome.get(spec.target, spec.from.split('#')[0]) as { file_path?: string } | undefined;
+        if (!home) continue;
+        requirementsCalls.push({
+          from: spec.from,
+          to: `${norm(home.file_path)}#${spec.target}`,
+          ...(spec.why ? { why: spec.why } : {}),
+        });
+      }
+
+      const sources = item.sources.join(', ');
+      const payload = {
+        '//': `Design DB —— ${rel}（★ 全量、与实际 DB 同构；从 ${sources} 的节点生成）`,
+        '//generated_by': 'scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）',
+        '//source': sources,
+        /** 副本自报路径（机器可读；此前只在首行注释里，消费者只能解析注释） */
+        path: rel,
+        symbols,
+        imports,
+        calls,
+        ...(requirementsOf(item).length ? { requirements: requirementsOf(item) } : {}),
+        ...(requirementsCalls.length ? { requirements_calls: requirementsCalls } : {}),
+      };
+      const outPath = path.join(OUT_DIR, outNameOf(rel));
+      const text = JSON.stringify(payload, null, 2) + '\n';
+      const old = fs.existsSync(outPath) ? fs.readFileSync(outPath, 'utf8') : null;
+      if (old === text) {
+        result.unchanged += 1;
+        continue;
+      }
+      if (CHECK) {
+        result.drift.push(`${outNameOf(rel)}: 与当前设计不一致（该重跑生成器）`);
+        continue;
+      }
+      fs.writeFileSync(outPath, text);
+      result.written += 1;
     }
   } finally {
     db.close();
   }
 
-  if (!CHECK) {
-    const expected = new Set<string>();
-    for (const f of files) {
-      const dsl = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8'));
-      for (const raw of (dsl.geometry?.nodes ?? []) as AnyNode[]) {
-        const rel = norm(raw.description);
-        if (rel.startsWith('src/')) expected.add(outNameOf(rel));
-      }
+  const expected = new Set([...plan.items.keys()].map(outNameOf));
+  if (CHECK) {
+    // ★ check 也要看"多出来的"：否则删了一个节点、副本留在盘上，这道读数永远是绿的
+    for (const name of fs.readdirSync(OUT_DIR)) {
+      if (!expected.has(name)) result.drift.push(`${name}: 设计里没有这个路径的节点（陈旧副本，该重跑生成器以清理）`);
     }
+  } else {
     for (const name of fs.readdirSync(OUT_DIR)) {
       if (!expected.has(name)) {
         fs.unlinkSync(path.join(OUT_DIR, name));
@@ -220,4 +474,93 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
     }
   }
   return result;
+}
+
+/** 结构检查的读数（★ 只覆盖**设计侧可复现**的那一半） */
+export interface DesignDbStructureResult {
+  paths: number;
+  files: number;
+  /** 设计里有、盘上没有 */
+  missing: string[];
+  /** 盘上有、但与设计的**设计要求/表头**对不上 */
+  stale: string[];
+  /** 盘上有、设计里没有 */
+  extra: string[];
+  conflicts: string[];
+  problems: string[];
+}
+
+/**
+ * ★★★ **结构检查 = 可以当门的那一半**（门：`scripts/gen-db-check.mjs`）。
+ *
+ * ## 为什么它与 `check=true` 不是同一件事（★ 别合并）
+ * `genDesignDb({check:true})` 比的是**整份字节**，其中 `symbols` / `imports` / `calls` 来自
+ * `cache.db` —— 而 `cache.db` **不入库**（实测：`git ls-files .agent-io` 只有 2 份 DSL）。
+ * ⇒ 把它当门 = 换一种假门：**同一次提交，在不同机器/不同索引版本上红绿不同**。
+ *
+ * 本函数只比**设计侧可复现**的三样（全部只依赖入库的 `design/*.dsl.json`）：
+ * ① `//source` 是否列出**全部**持有者；② `requirements` 是否等于设计判据的并集；
+ * ③ `requirements_calls` 的**调用方与条数**是否与设计一致（`to` 要 cache.db，不比）。
+ * 外加 ④ 缺副本 / ⑤ 多余副本。
+ *
+ * ## 它挡的是哪一类事故（这不是"普查"）
+ * 「设计加了 `call-exists` 但没重跑 gen-db」⇒ design-db 里的 `requirements_calls` 是**旧的**，
+ * 而 `scripts/contract-calls.mjs`（契约门）读的正是它 ⇒ **契约门在拿旧要求判新的代码**，静默撒谎。
+ */
+export function checkDesignDbStructure(root: string): DesignDbStructureResult {
+  const OUT_DIR = designDbDir(root);
+  const r: DesignDbStructureResult = {
+    paths: 0,
+    files: 0,
+    missing: [],
+    stale: [],
+    extra: [],
+    conflicts: [],
+    problems: [],
+  };
+  const plan = planDesignDb(root);
+  r.paths = plan.items.size;
+  r.files = plan.nodes;
+  if (plan.missingDir) {
+    r.problems.push(`找不到 ${path.join(root, '.agent-io', 'design')}`);
+    return r;
+  }
+  r.conflicts = plan.conflicts.map(renderConflict);
+
+  for (const item of plan.items.values()) {
+    const name = outNameOf(item.path);
+    const outPath = path.join(OUT_DIR, name);
+    if (!fs.existsSync(outPath)) {
+      r.missing.push(`${name}: 没有这份投影（设计里有 ${item.path}）`);
+      continue;
+    }
+    let disk: Record<string, unknown>;
+    try {
+      disk = JSON.parse(fs.readFileSync(outPath, 'utf8')) as Record<string, unknown>;
+    } catch (e) {
+      r.problems.push(`${name}: 读不出 JSON（${(e as Error)?.message ?? String(e)}）`);
+      continue;
+    }
+    const why: string[] = [];
+    if (norm(disk['//source']) !== item.sources.join(', ')) {
+      why.push(`//source 写的是 ${JSON.stringify(disk['//source'])}，设计里的持有者是 ${JSON.stringify(item.sources.join(', '))}`);
+    }
+    if (JSON.stringify(disk.requirements ?? []) !== JSON.stringify(requirementsOf(item))) {
+      why.push('requirements 与设计的判据不一致');
+    }
+    const wantFrom = requirementCallsOf(item).map((x) => x.from);
+    const gotFrom = ((disk.requirements_calls ?? []) as Array<{ from?: string }>).map((x) => norm(x.from));
+    if (JSON.stringify(gotFrom) !== JSON.stringify(wantFrom)) {
+      why.push(`requirements_calls 的调用方 ${JSON.stringify(gotFrom)} 与设计的 ${JSON.stringify(wantFrom)} 不一致`);
+    }
+    if (why.length) r.stale.push(`${name}: ${why.join('；')}（该重跑生成器）`);
+  }
+
+  const expected = new Set([...plan.items.keys()].map(outNameOf));
+  if (fs.existsSync(OUT_DIR)) {
+    for (const name of fs.readdirSync(OUT_DIR)) {
+      if (!expected.has(name)) r.extra.push(`${name}: 设计里没有对应的节点（陈旧副本，该重跑生成器清理）`);
+    }
+  }
+  return r;
 }

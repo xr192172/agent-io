@@ -335,97 +335,103 @@
     {
       "name": "lastLiveFallback",
       "kind": "const",
-      "line": 654,
+      "line": 658,
       "signature": "const lastLiveFallback = null"
     },
     {
       "name": "liveFallbackWarned",
       "kind": "const",
-      "line": 655,
+      "line": 659,
       "signature": "const liveFallbackWarned = false"
     },
     {
       "name": "getLiveFallback",
       "kind": "function",
-      "line": 658,
+      "line": 662,
       "signature": "getLiveFallback(): { file: string; error: string; at: string } | null"
     },
     {
       "name": "isLiveDslParseable",
       "kind": "function",
-      "line": 676,
+      "line": 680,
       "signature": "isLiveDslParseable(): boolean"
     },
     {
       "name": "currentDslRev",
       "kind": "function",
-      "line": 688,
+      "line": 692,
       "signature": "currentDslRev(feature: string): number"
     },
     {
       "name": "readDSLRaw",
       "kind": "function",
-      "line": 694,
+      "line": 698,
       "signature": "readDSLRaw(feature: string): DesignDSL | null"
     },
     {
       "name": "factsExternalized",
       "kind": "function",
-      "line": 739,
+      "line": 743,
       "signature": "factsExternalized(dsl: DesignDSL | null): boolean"
     },
     {
       "name": "factsBackfillBusy",
       "kind": "const",
-      "line": 748,
+      "line": 752,
       "signature": "const factsBackfillBusy = false"
     },
     {
       "name": "mergeFacts",
       "kind": "function",
-      "line": 751,
+      "line": 755,
       "signature": "mergeFacts(dsl: DesignDSL, rendered: DesignDSL): DesignDSL"
     },
     {
       "name": "withFacts",
       "kind": "function",
-      "line": 772,
+      "line": 776,
       "signature": "withFacts(dsl: DesignDSL | null, feature: string): DesignDSL | null"
     },
     {
       "name": "getDSL",
       "kind": "function",
-      "line": 787,
+      "line": 791,
       "signature": "getDSL(feature: string): DesignDSL | null"
     },
     {
       "name": "DSLView",
       "kind": "type",
-      "line": 792,
+      "line": 796,
       "signature": "DSLView()"
     },
     {
       "name": "getDSLByView",
       "kind": "function",
-      "line": 799,
+      "line": 803,
       "signature": "getDSLByView(feature: string, view: DSLView = 'design'): DesignDSL | null"
     },
     {
       "name": "listFeatures",
       "kind": "function",
-      "line": 810,
+      "line": 814,
       "signature": "listFeatures(): DesignDSL[]"
+    },
+    {
+      "name": "listDesignSheets",
+      "kind": "function",
+      "line": 848,
+      "signature": "listDesignSheets(): DesignDSL[]"
     },
     {
       "name": "deleteFeature",
       "kind": "function",
-      "line": 836,
+      "line": 872,
       "signature": "deleteFeature(feature: string): void"
     },
     {
       "name": "clearAllFeatures",
       "kind": "function",
-      "line": 872,
+      "line": 908,
       "signature": "clearAllFeatures(): void"
     }
   ],
@@ -598,7 +604,19 @@
       "to": "src/infrastructure/storage.ts#getDesignDir"
     },
     {
+      "from": "src/infrastructure/storage.ts#saveDSL",
+      "to": "src/infrastructure/storage.ts#getDesignDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#listDesignSheets",
+      "to": "src/infrastructure/storage.ts#getDesignDir"
+    },
+    {
       "from": "src/infrastructure/storage.ts#readDSLRaw",
+      "to": "src/infrastructure/storage.ts#getDesignSheet"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#listDesignSheets",
       "to": "src/infrastructure/storage.ts#getDesignSheet"
     },
     {

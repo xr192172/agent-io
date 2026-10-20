@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/application/design/dsl_ops/op_data_spec.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/design/dsl_ops/op_data_spec.ts（★ 全量、与实际 DB 同构；从 design/design-canvas.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/design-canvas.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/design/dsl_ops/op_data_spec.ts",
   "symbols": [
     {
@@ -63,163 +63,163 @@
     {
       "name": "BY_TYPE",
       "kind": "const",
-      "line": 224,
+      "line": 236,
       "signature": "const BY_TYPE = new Map(OP_SPECS.map((s) => [s.type, s]))"
     },
     {
       "name": "NODE_DATA_KEYS",
       "kind": "const",
-      "line": 236,
+      "line": 248,
       "signature": "const NODE_DATA_KEYS = [ 'label', 'description', 'type', 'status', 'bg', 'color'…"
     },
     {
       "name": "NodeNonDataKeys",
       "kind": "type",
-      "line": 271,
+      "line": 288,
       "signature": "NodeNonDataKeys()"
     },
     {
       "name": "NodeOwnedKeys",
       "kind": "type",
-      "line": 272,
+      "line": 289,
       "signature": "NodeOwnedKeys()"
     },
     {
       "name": "NodeKeysMissingFromList",
       "kind": "type",
-      "line": 281,
+      "line": 298,
       "signature": "NodeKeysMissingFromList()"
     },
     {
       "name": "_assertNodeKeysNoMissing",
       "kind": "const",
-      "line": 282,
+      "line": 299,
       "signature": "const _assertNodeKeysNoMissing = true"
     },
     {
       "name": "NodeKeysExtraInList",
       "kind": "type",
-      "line": 286,
+      "line": 303,
       "signature": "NodeKeysExtraInList()"
     },
     {
       "name": "_assertNodeKeysNoExtra",
       "kind": "const",
-      "line": 287,
+      "line": 304,
       "signature": "const _assertNodeKeysNoExtra = true"
     },
     {
       "name": "FILE_DATA_KEYS",
       "kind": "const",
-      "line": 292,
+      "line": 309,
       "signature": "const FILE_DATA_KEYS = [ 'path', 'responsibility', 'expected_apis', 'expected_de…"
     },
     {
       "name": "FileOwnedKeys",
       "kind": "type",
-      "line": 300,
+      "line": 317,
       "signature": "FileOwnedKeys()"
     },
     {
       "name": "FileKeysMissing",
       "kind": "type",
-      "line": 303,
+      "line": 320,
       "signature": "FileKeysMissing()"
     },
     {
       "name": "_assertFileNoMissing",
       "kind": "const",
-      "line": 304,
+      "line": 321,
       "signature": "const _assertFileNoMissing = true"
     },
     {
       "name": "FileKeysExtra",
       "kind": "type",
-      "line": 307,
+      "line": 324,
       "signature": "FileKeysExtra()"
     },
     {
       "name": "_assertFileNoExtra",
       "kind": "const",
-      "line": 308,
+      "line": 325,
       "signature": "const _assertFileNoExtra = true"
     },
     {
       "name": "EDGE_DATA_KEYS",
       "kind": "const",
-      "line": 313,
+      "line": 330,
       "signature": "const EDGE_DATA_KEYS = ['from', 'to', 'label', 'edge_type', 'arrow', 'layer'] as…"
     },
     {
       "name": "EdgeOwnedKeys",
       "kind": "type",
-      "line": 314,
+      "line": 331,
       "signature": "EdgeOwnedKeys()"
     },
     {
       "name": "EdgeKeysMissing",
       "kind": "type",
-      "line": 315,
+      "line": 332,
       "signature": "EdgeKeysMissing()"
     },
     {
       "name": "_assertEdgeNoMissing",
       "kind": "const",
-      "line": 316,
+      "line": 333,
       "signature": "const _assertEdgeNoMissing = true"
     },
     {
       "name": "EdgeKeysExtra",
       "kind": "type",
-      "line": 319,
+      "line": 336,
       "signature": "EdgeKeysExtra()"
     },
     {
       "name": "_assertEdgeNoExtra",
       "kind": "const",
-      "line": 320,
+      "line": 337,
       "signature": "const _assertEdgeNoExtra = true"
     },
     {
       "name": "TYPE_KNOWN_KEYS",
       "kind": "const",
-      "line": 340,
+      "line": 357,
       "signature": "const TYPE_KNOWN_KEYS = { node: NODE_DATA_KEYS, edge: EDGE_DATA_KEYS, file: FILE_…"
     },
     {
       "name": "KnownKeysMissingTypes",
       "kind": "type",
-      "line": 385,
+      "line": 402,
       "signature": "KnownKeysMissingTypes()"
     },
     {
       "name": "_assertKnownKeysCoverAll",
       "kind": "const",
-      "line": 386,
+      "line": 403,
       "signature": "const _assertKnownKeysCoverAll = true"
     },
     {
       "name": "KnownKeysExtraTypes",
       "kind": "type",
-      "line": 389,
+      "line": 406,
       "signature": "KnownKeysExtraTypes()"
     },
     {
       "name": "_assertKnownKeysNoExtraType",
       "kind": "const",
-      "line": 390,
+      "line": 407,
       "signature": "const _assertKnownKeysNoExtraType = true"
     },
     {
       "name": "CheckedOperation",
       "kind": "type",
-      "line": 409,
+      "line": 426,
       "signature": "CheckedOperation()"
     },
     {
       "name": "FeatureOperationLike",
       "kind": "interface",
-      "line": 412,
+      "line": 429,
       "signature": "FeatureOperationLike()",
       "members": [
         {
@@ -251,13 +251,13 @@
     {
       "name": "checkOpSpec",
       "kind": "function",
-      "line": 424,
+      "line": 441,
       "signature": "checkOpSpec(op: T): CheckedOperation<T>"
     },
     {
       "name": "renderOpSpecs",
       "kind": "function",
-      "line": 477,
+      "line": 494,
       "signature": "renderOpSpecs(): string"
     }
   ],

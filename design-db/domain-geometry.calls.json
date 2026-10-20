@@ -247,9 +247,21 @@
       ]
     },
     {
+      "name": "NODE_GATES",
+      "kind": "const",
+      "line": 136,
+      "signature": "const NODE_GATES = ['gated', 'exempt'] as const"
+    },
+    {
+      "name": "NodeGate",
+      "kind": "type",
+      "line": 137,
+      "signature": "NodeGate()"
+    },
+    {
       "name": "Node",
       "kind": "interface",
-      "line": 115,
+      "line": 140,
       "signature": "Node()",
       "members": [
         {
@@ -315,6 +327,12 @@
         {
           "name": "task",
           "type": ": TaskSpec",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "gate",
+          "type": ": NodeGate",
           "optional": true,
           "member_kind": "property"
         },
@@ -401,13 +419,13 @@
     {
       "name": "DecisionAuthor",
       "kind": "type",
-      "line": 213,
+      "line": 252,
       "signature": "DecisionAuthor()"
     },
     {
       "name": "NodeDecision",
       "kind": "interface",
-      "line": 216,
+      "line": 255,
       "signature": "NodeDecision()",
       "members": [
         {
@@ -511,7 +529,7 @@
     {
       "name": "DecisionDissent",
       "kind": "interface",
-      "line": 321,
+      "line": 360,
       "signature": "DecisionDissent()",
       "members": [
         {
@@ -537,7 +555,7 @@
     {
       "name": "DecisionHistoryEntry",
       "kind": "interface",
-      "line": 331,
+      "line": 370,
       "signature": "DecisionHistoryEntry()",
       "members": [
         {
@@ -575,7 +593,7 @@
     {
       "name": "EdgeStyle",
       "kind": "interface",
-      "line": 351,
+      "line": 390,
       "signature": "EdgeStyle()",
       "members": [
         {
@@ -595,7 +613,7 @@
     {
       "name": "Edge",
       "kind": "interface",
-      "line": 358,
+      "line": 397,
       "signature": "Edge()",
       "members": [
         {
@@ -657,7 +675,7 @@
     {
       "name": "Swimlane",
       "kind": "interface",
-      "line": 377,
+      "line": 416,
       "signature": "Swimlane()",
       "members": [
         {
@@ -701,7 +719,7 @@
     {
       "name": "Geometry",
       "kind": "interface",
-      "line": 392,
+      "line": 431,
       "signature": "Geometry()",
       "members": [
         {
@@ -763,7 +781,7 @@
     {
       "name": "ForceParams",
       "kind": "interface",
-      "line": 420,
+      "line": 459,
       "signature": "ForceParams()",
       "members": [
         {

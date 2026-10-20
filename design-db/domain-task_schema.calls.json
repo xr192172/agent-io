@@ -17,33 +17,33 @@
       "signature": "TaskState()"
     },
     {
-      "name": "TERMINAL_TASK_STATES",
+      "name": "CLOSED_TASK_STATES",
       "kind": "const",
-      "line": 55,
-      "signature": "const TERMINAL_TASK_STATES = ['void'] as const"
+      "line": 60,
+      "signature": "const CLOSED_TASK_STATES = ['done', 'void'] as const"
     },
     {
       "name": "isTaskState",
       "kind": "function",
-      "line": 62,
+      "line": 67,
       "signature": "isTaskState(v: unknown): v is TaskState"
     },
     {
-      "name": "isTerminalTaskState",
+      "name": "isClosedTaskState",
       "kind": "function",
-      "line": 67,
-      "signature": "isTerminalTaskState(s: TaskState): boolean"
+      "line": 78,
+      "signature": "isClosedTaskState(s: TaskState): boolean"
     },
     {
       "name": "progressOf",
       "kind": "function",
-      "line": 97,
+      "line": 102,
       "signature": "progressOf(task: Pick<TaskSpec, 'state'> | null | undefined): DiagramStatus | undefined"
     },
     {
       "name": "TaskDiscussion",
       "kind": "interface",
-      "line": 114,
+      "line": 119,
       "signature": "TaskDiscussion()",
       "members": [
         {
@@ -87,7 +87,7 @@
     {
       "name": "TaskEvidenceRecord",
       "kind": "interface",
-      "line": 136,
+      "line": 141,
       "signature": "TaskEvidenceRecord()",
       "members": [
         {
@@ -125,7 +125,7 @@
     {
       "name": "TaskSpec",
       "kind": "interface",
-      "line": 159,
+      "line": 164,
       "signature": "TaskSpec()",
       "members": [
         {
@@ -189,6 +189,12 @@
           "member_kind": "property"
         },
         {
+          "name": "reopened_at",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
           "name": "replaces",
           "type": ": string",
           "optional": true,
@@ -211,7 +217,7 @@
     {
       "name": "taskLevel",
       "kind": "function",
-      "line": 222,
+      "line": 246,
       "signature": "taskLevel(card: Pick<TaskSpec, 'expectations'>): 'L1' | 'L2'"
     }
   ],

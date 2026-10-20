@@ -133,6 +133,25 @@ const GATES = [
       '契约门只看结构、design:mutate 只看判据 ⇒ **“实现逻辑被改坏”平时没人抓**，这一门补那一格。' +
       '★ 只覆盖 cardStanding 的一个分支条件（如实声明，不吹）；但它是第一道能抓实现回归的门。',
   },
+  // ★★★ 2026-10-20（第六道）：**设计 DB 与设计 DSL 的结构一致性**。
+  //   为什么它算门、而 `design_line action=gen-db check=true` 不算：
+  //     `check=true` 比的是整份字节，含 `symbols/imports/calls` —— 它们来自 `cache.db`，
+  //     而 `cache.db` **不入库**（`git ls-files .agent-io` 只有 2 份 DSL）
+  //     ⇒ 把它当门 = 同一次提交在不同机器上红绿不同（另一种假门）。
+  //     本门只比**只依赖入库文件**的那几样：`//source` 的持有者、`requirements`、
+  //     `requirements_calls` 的调用方与条数、缺/多副本、**真冲突**。
+  //   它挡的事故（不是普查）：设计加了 `call-exists` 却没重跑生成器 ⇒ `design-db` 里是旧要求，
+  //     而 `scripts/contract-calls.mjs`（契约门）读的正是它 ⇒ **契约门静默拿旧要求判新代码**。
+  {
+    name: '设计 DB 结构',
+    kind: 'gate',
+    cmd: 'node',
+    args: ['scripts/gen-db-check.mjs'],
+    why:
+      '★ 生成物与它的消费者之间不允许有静默漂移：`design-db/*.calls.json` 是 `contract-calls` 的输入，' +
+      '它旧了，契约门就变成假门。★ 只读入库文件（`design/*.dsl.json` + `design-db/`），**不读 cache.db** ⇒ 可复现。' +
+      '★ 真冲突（两个 feature 对同一文件要求互斥）也在这里红 —— 那种红重跑修不好，只能改设计。',
+  },
   // ★★★ 2026-10-20：**删掉「结构意图 gap」这道门** —— 它指向 `scripts/structure_gap.mjs`，
   //   而那个脚本 2026-10-19 已随「它只指向已删的 tests/」一起删除 ⇒ 这道门从此 **永远 FAIL**
   //   （实测：Cannot find module `scripts/structure_gap.mjs`）。

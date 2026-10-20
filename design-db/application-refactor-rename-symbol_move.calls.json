@@ -7,7 +7,7 @@
     {
       "name": "MoveSymbolInput",
       "kind": "interface",
-      "line": 54,
+      "line": 56,
       "signature": "MoveSymbolInput()",
       "members": [
         {
@@ -51,7 +51,7 @@
     {
       "name": "MoveRedirect",
       "kind": "interface",
-      "line": 69,
+      "line": 71,
       "signature": "MoveRedirect()",
       "members": [
         {
@@ -83,7 +83,7 @@
     {
       "name": "MoveSymbolResult",
       "kind": "interface",
-      "line": 80,
+      "line": 82,
       "signature": "MoveSymbolResult()",
       "members": [
         {
@@ -169,19 +169,25 @@
           "type": ": boolean",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "task_gate",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "TS_EXTS",
       "kind": "const",
-      "line": 118,
+      "line": 126,
       "signature": "const TS_EXTS = new Set<string>(TS_JS_EXTS)"
     },
     {
       "name": "Edit",
       "kind": "interface",
-      "line": 120,
+      "line": 128,
       "signature": "Edit()",
       "members": [
         {
@@ -207,73 +213,73 @@
     {
       "name": "stripQuotes",
       "kind": "function",
-      "line": 126,
+      "line": 134,
       "signature": "stripQuotes(s: string): string"
     },
     {
       "name": "applyEdits",
       "kind": "function",
-      "line": 133,
+      "line": 141,
       "signature": "applyEdits(src: string, edits: Edit[]): string"
     },
     {
       "name": "squeezeBlankRuns",
       "kind": "function",
-      "line": 142,
+      "line": 150,
       "signature": "squeezeBlankRuns(lines: string[]): string[]"
     },
     {
       "name": "relImportPath",
       "kind": "function",
-      "line": 152,
+      "line": 160,
       "signature": "relImportPath(fromAbs: string, toAbs: string): string"
     },
     {
       "name": "IDENT_LIKE",
       "kind": "const",
-      "line": 159,
+      "line": 167,
       "signature": "const IDENT_LIKE = new Set(['identifier', 'type_identifier', 'property_ident…"
     },
     {
       "name": "isDeclNodeType",
       "kind": "function",
-      "line": 161,
+      "line": 169,
       "signature": "isDeclNodeType(t: string): boolean"
     },
     {
       "name": "declName",
       "kind": "function",
-      "line": 176,
+      "line": 184,
       "signature": "declName(node: { type: string; childForFieldName(f: string): unknown }): string | null"
     },
     {
       "name": "findNamedDeclInExport",
       "kind": "function",
-      "line": 192,
+      "line": 200,
       "signature": "findNamedDeclInExport(stmt: { type: string; childCount: number; child(i: number): unknown }, symbol: string): unknown | null"
     },
     {
       "name": "findTopLevelDeclRange",
       "kind": "function",
-      "line": 213,
+      "line": 221,
       "signature": "findTopLevelDeclRange(src: string,\n  filePath: string,\n  symbol: string,): Promise<{ startIndex: number; endIndex: number } | null>"
     },
     {
       "name": "moveSymbol",
       "kind": "function",
-      "line": 254,
+      "line": 262,
       "signature": "moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResult>"
     },
     {
       "name": "touchedOfMove",
       "kind": "function",
-      "line": 269,
+      "line": 277,
       "signature": "touchedOfMove(input: MoveSymbolInput, r: MoveSymbolResult): Touched"
     },
     {
       "name": "moveSymbolCore",
       "kind": "function",
-      "line": 279,
+      "line": 287,
       "signature": "moveSymbolCore(input: MoveSymbolInput): Promise<MoveSymbolResult>"
     }
   ],
@@ -308,6 +314,10 @@
       "type_only": true
     },
     {
+      "source": "../gate_note.js",
+      "kind": "relative"
+    },
+    {
       "source": "../../../infrastructure/index/db.js",
       "kind": "relative"
     },
@@ -334,6 +344,10 @@
     }
   ],
   "calls": [
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/refactor/gate_note.ts#attachGateNote"
+    },
     {
       "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
       "to": "src/application/refactor/rename/symbol_move.ts#applyEdits"

@@ -7,7 +7,7 @@
     {
       "name": "FileRenameItem",
       "kind": "interface",
-      "line": 27,
+      "line": 29,
       "signature": "FileRenameItem()",
       "members": [
         {
@@ -27,7 +27,7 @@
     {
       "name": "RenameFilesInput",
       "kind": "interface",
-      "line": 34,
+      "line": 36,
       "signature": "RenameFilesInput()",
       "members": [
         {
@@ -53,7 +53,7 @@
     {
       "name": "RenameFilesResult",
       "kind": "interface",
-      "line": 42,
+      "line": 44,
       "signature": "RenameFilesResult()",
       "members": [
         {
@@ -103,25 +103,31 @@
           "type": ": string",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "task_gate",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "renameFilesCore",
       "kind": "function",
-      "line": 79,
+      "line": 87,
       "signature": "renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResult>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 195,
+      "line": 211,
       "signature": "touchedOf(input: RenameFilesInput, r: RenameFilesResult): Touched"
     },
     {
       "name": "renameFiles",
       "kind": "function",
-      "line": 219,
+      "line": 235,
       "signature": "renameFiles(input: RenameFilesInput): Promise<TouchedProduct<RenameFilesResult>>"
     }
   ],
@@ -153,9 +159,21 @@
     {
       "source": "../../../domain/b_terms.js",
       "kind": "relative"
+    },
+    {
+      "source": "../gate_note.js",
+      "kind": "relative"
     }
   ],
   "calls": [
+    {
+      "from": "src/application/refactor/rename/rename_files.ts#renameFilesCore",
+      "to": "src/application/refactor/gate_note.ts#attachGateNote"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_files.ts#renameFilesCore",
+      "to": "src/application/refactor/gate_note.ts#attachGateNote"
+    },
     {
       "from": "src/application/refactor/rename/rename_files.ts#renameFilesCore",
       "to": "src/application/refactor/rename/rename_file.ts#renameFile"

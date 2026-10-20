@@ -7,7 +7,7 @@
     {
       "name": "WriteThroughOutcome",
       "kind": "interface",
-      "line": 77,
+      "line": 80,
       "signature": "WriteThroughOutcome()",
       "members": [
         {
@@ -87,7 +87,7 @@
     {
       "name": "SourceWriteReport",
       "kind": "interface",
-      "line": 107,
+      "line": 110,
       "signature": "SourceWriteReport()",
       "members": [
         {
@@ -119,61 +119,61 @@
     {
       "name": "EMPTY_CROSS",
       "kind": "const",
-      "line": 122,
+      "line": 125,
       "signature": "const EMPTY_CROSS = { total: 0, resolved: 0, external: 0, failed: 0 }"
     },
     {
       "name": "hasLiveIndex",
       "kind": "function",
-      "line": 136,
+      "line": 139,
       "signature": "hasLiveIndex(projectRoot: string): boolean"
     },
     {
       "name": "SELF_WRITE_MAX",
       "kind": "const",
-      "line": 157,
+      "line": 160,
       "signature": "const SELF_WRITE_MAX = 500"
     },
     {
       "name": "writeSelfWrites",
       "kind": "function",
-      "line": 159,
+      "line": 162,
       "signature": "writeSelfWrites(root: string, list: SelfWriteEntry[]): void"
     },
     {
       "name": "recordSelfWrite",
       "kind": "function",
-      "line": 186,
+      "line": 189,
       "signature": "recordSelfWrite(projectRoot: string, files: readonly string[], note?: string): number"
     },
     {
       "name": "syncSelfWrites",
       "kind": "function",
-      "line": 217,
+      "line": 220,
       "signature": "syncSelfWrites(projectRoot: string,\n  files: readonly string[],\n  opts: { syncIndex?: boolean; onFile?: (rel: string, status: SyncStatus) => void } = {},): Promise<WriteThroughOutcome | null>"
     },
     {
       "name": "resolveRefsAfterWrite",
       "kind": "function",
-      "line": 305,
+      "line": 308,
       "signature": "resolveRefsAfterWrite(db: Database,\n  root: string,\n  rels: readonly string[],\n  keepPending: boolean,): { refsReopened: number; refsReopenedFiles: number; cross: CrossFileResolveStats }"
     },
     {
       "name": "finishWriteThrough",
       "kind": "function",
-      "line": 335,
+      "line": 338,
       "signature": "finishWriteThrough(db: Database,\n  root: string,\n  rels: readonly string[],\n  out: WriteThroughOutcome,\n  errors: string[],\n  keepPending: boolean,): void"
     },
     {
       "name": "syncSelfWritesSync",
       "kind": "function",
-      "line": 388,
+      "line": 391,
       "signature": "syncSelfWritesSync(projectRoot: string,\n  files: readonly string[],\n  opts: { syncIndex?: boolean } = {},): WriteThroughOutcome | null"
     },
     {
       "name": "TaskGateOutcome",
       "kind": "interface",
-      "line": 482,
+      "line": 485,
       "signature": "TaskGateOutcome()",
       "members": [
         {
@@ -199,19 +199,25 @@
           "type": ": string[]",
           "optional": false,
           "member_kind": "property"
+        },
+        {
+          "name": "exempted",
+          "type": ": GateExemption[]",
+          "optional": false,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "TaskGateBasis",
       "kind": "type",
-      "line": 515,
+      "line": 525,
       "signature": "TaskGateBasis()"
     },
     {
       "name": "GateCoverageFeature",
       "kind": "interface",
-      "line": 523,
+      "line": 534,
       "signature": "GateCoverageFeature()",
       "members": [
         {
@@ -227,6 +233,12 @@
           "member_kind": "property"
         },
         {
+          "name": "gateByPath",
+          "type": ": Map<string, NodeGate | undefined>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
           "name": "taskById",
           "type": ": Map<string, TaskSpec>",
           "optional": false,
@@ -235,9 +247,29 @@
       ]
     },
     {
+      "name": "GateExemption",
+      "kind": "interface",
+      "line": 556,
+      "signature": "GateExemption()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "by",
+          "type": ": Array<{ feature: string; nodeId: string }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
       "name": "GateCoverage",
       "kind": "interface",
-      "line": 539,
+      "line": 572,
       "signature": "GateCoverage()",
       "members": [
         {
@@ -269,73 +301,79 @@
     {
       "name": "nodeFilePath",
       "kind": "function",
-      "line": 563,
+      "line": 596,
       "signature": "nodeFilePath(n: { type?: string; description?: string } & { path?: string },\n  sep: string,): string | undefined"
     },
     {
       "name": "collectGateCoverage",
       "kind": "function",
-      "line": 590,
+      "line": 628,
       "signature": "collectGateCoverage(rootArg: string): GateCoverage"
     },
     {
       "name": "recordUnaddressableWarnings",
       "kind": "function",
-      "line": 650,
+      "line": 704,
       "signature": "recordUnaddressableWarnings(items: GateCoverage['unaddressable'],\n  rels: readonly string[],): string[]"
+    },
+    {
+      "name": "exemptionLines",
+      "kind": "function",
+      "line": 770,
+      "signature": "exemptionLines(exempted: readonly GateExemption[]): string"
     },
     {
       "name": "WriteActor",
       "kind": "type",
-      "line": 766,
+      "line": 841,
       "signature": "WriteActor()"
     },
     {
       "name": "resolveActor",
       "kind": "function",
-      "line": 769,
+      "line": 844,
       "signature": "resolveActor(explicit?: WriteActor | null): WriteActor | null"
     },
     {
       "name": "assertSourceWriteRegisteredFor",
       "kind": "function",
-      "line": 780,
+      "line": 855,
       "signature": "assertSourceWriteRegisteredFor(projectRoot: string,\n  files: readonly string[],\n  actor?: WriteActor | null,): TaskGateOutcome"
     },
     {
       "name": "assertSourceWriteRegistered",
       "kind": "function",
-      "line": 788,
+      "line": 863,
       "signature": "assertSourceWriteRegistered(projectRoot: string,\n  files: readonly string[],\n  opts?: { actor?: WriteActor | null },): TaskGateOutcome"
     },
     {
       "name": "reopenAndResolveAfterWrite",
       "kind": "function",
-      "line": 1078,
+      "line": 1235,
       "signature": "reopenAndResolveAfterWrite(projectRoot: string,\n  files: readonly string[],): Promise<{\n  refsReopened: number;\n  refsReopenedFiles: number;\n  cross: { total: number; resolved: number; external: number; failed: number };\n  error?: string;\n}>"
     },
     {
       "name": "reopenNote",
       "kind": "function",
-      "line": 1106,
+      "line": 1263,
       "signature": "reopenNote(r: { refsReopened: number; error?: string }): string"
     },
     {
       "name": "writeSourceFiles",
       "kind": "function",
-      "line": 1121,
+      "line": 1278,
       "signature": "writeSourceFiles(projectRoot: string,\n  files: readonly string[],\n  mutate: () => T | Promise<T>,\n  opts: {\n    label?: string;\n    snapshot?: boolean;\n    syncIndex?: boolean;\n    before?: () => void;\n    /** 逐文件回报索引同步结果（`SyncStatus`）—— 供需要逐文件回执的调用方（如 `applyWrites`）用 */\n    onFile?: (rel: string, status: SyncStatus) => void;\n  } = {},): Promise<{ value: T; report: SourceWriteReport }>"
     },
     {
       "name": "snapshotAndRecordSelfWrite",
       "kind": "function",
-      "line": 1180,
+      "line": 1337,
       "signature": "snapshotAndRecordSelfWrite(projectRoot: string,\n  files: readonly string[],\n  opts: { label?: string; snapshot?: boolean } = {},): WriteThroughOutcome"
     },
     {
       "name": "writeThroughLine",
       "kind": "function",
-      "line": 1198,
+      "line": 1355,
       "signature": "writeThroughLine(index: WriteThroughOutcome | null): string"
     }
   ],
@@ -386,6 +424,11 @@
       "type_only": true
     },
     {
+      "source": "../domain/geometry.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
       "source": "../domain/task_schema.js",
       "kind": "relative"
     }
@@ -414,6 +457,18 @@
     {
       "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
       "to": "src/application/write_gate.ts#collectGateCoverage"
+    },
+    {
+      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "to": "src/application/write_gate.ts#exemptionLines"
+    },
+    {
+      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "to": "src/application/write_gate.ts#exemptionLines"
+    },
+    {
+      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "to": "src/application/write_gate.ts#exemptionLines"
     },
     {
       "from": "src/application/write_gate.ts#syncSelfWrites",
@@ -605,7 +660,7 @@
     },
     {
       "from": "src/application/write_gate.ts#collectGateCoverage",
-      "to": "src/infrastructure/storage.ts#listFeatures"
+      "to": "src/infrastructure/storage.ts#listDesignSheets"
     },
     {
       "from": "src/application/write_gate.ts#recordUnaddressableWarnings",

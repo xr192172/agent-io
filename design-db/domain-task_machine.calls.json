@@ -7,13 +7,13 @@
     {
       "name": "CardStanding",
       "kind": "type",
-      "line": 70,
+      "line": 71,
       "signature": "CardStanding()"
     },
     {
       "name": "StandingNode",
       "kind": "interface",
-      "line": 73,
+      "line": 74,
       "signature": "StandingNode()",
       "members": [
         {
@@ -39,7 +39,7 @@
     {
       "name": "StandingInput",
       "kind": "interface",
-      "line": 79,
+      "line": 80,
       "signature": "StandingInput()",
       "members": [
         {
@@ -59,7 +59,7 @@
     {
       "name": "SatisfactionCounts",
       "kind": "interface",
-      "line": 96,
+      "line": 97,
       "signature": "SatisfactionCounts()",
       "members": [
         {
@@ -91,7 +91,7 @@
     {
       "name": "ViolationCounts",
       "kind": "interface",
-      "line": 104,
+      "line": 105,
       "signature": "ViolationCounts()",
       "members": [
         {
@@ -117,7 +117,7 @@
     {
       "name": "StandingVerdict",
       "kind": "interface",
-      "line": 110,
+      "line": 111,
       "signature": "StandingVerdict()",
       "members": [
         {
@@ -179,37 +179,37 @@
     {
       "name": "RedAttribution",
       "kind": "type",
-      "line": 142,
+      "line": 143,
       "signature": "RedAttribution()"
     },
     {
       "name": "RedDisposition",
       "kind": "type",
-      "line": 149,
+      "line": 150,
       "signature": "RedDisposition()"
     },
     {
       "name": "RED_DISPOSITION",
       "kind": "const",
-      "line": 162,
+      "line": 163,
       "signature": "const RED_DISPOSITION = { own: 'claim', orphan: 'claim', 'dep-pending': 'wait', '…"
     },
     {
       "name": "cardStanding",
       "kind": "function",
-      "line": 192,
+      "line": 193,
       "signature": "cardStanding(card: TaskSpec, opts: StandingInput): Promise<StandingVerdict>"
     },
     {
       "name": "isClaimable",
       "kind": "function",
-      "line": 320,
+      "line": 321,
       "signature": "isClaimable(standing: CardStanding): boolean"
     },
     {
       "name": "SatisfactionVerdict",
       "kind": "interface",
-      "line": 324,
+      "line": 325,
       "signature": "SatisfactionVerdict()",
       "members": [
         {
@@ -241,13 +241,13 @@
     {
       "name": "isSatisfied",
       "kind": "function",
-      "line": 340,
+      "line": 341,
       "signature": "isSatisfied(card: TaskSpec, opts: StandingInput): Promise<SatisfactionVerdict>"
     },
     {
       "name": "LeaseReleaseEvent",
       "kind": "interface",
-      "line": 350,
+      "line": 351,
       "signature": "LeaseReleaseEvent()",
       "members": [
         {
@@ -291,19 +291,19 @@
     {
       "name": "releaseIfExpired",
       "kind": "function",
-      "line": 379,
+      "line": 380,
       "signature": "releaseIfExpired(cards: readonly TaskSpec[],\n  nowMs: number,\n  ttlMs: number,): LeaseReleaseEvent[]"
     },
     {
       "name": "TransitionState",
       "kind": "type",
-      "line": 427,
+      "line": 428,
       "signature": "TransitionState()"
     },
     {
       "name": "TaskTransition",
       "kind": "interface",
-      "line": 433,
+      "line": 434,
       "signature": "TaskTransition()",
       "members": [
         {
@@ -347,7 +347,7 @@
     {
       "name": "applicableTransitions",
       "kind": "function",
-      "line": 544,
+      "line": 561,
       "signature": "applicableTransitions(from: TaskState): TaskTransition[]"
     }
   ],

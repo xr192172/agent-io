@@ -3243,7 +3243,21 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "task": {
+          "id": "file_scripts_verify_mjs",
+          "summary": "【L1 待建构】核心层 · scripts — 3 个 API（导入自 5 个模块）（scripts/verify.mjs） ← 节点 file_scripts_verify_mjs",
+          "expectations": [],
+          "state": "void",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_scripts_verify_mjs\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "本次改动（scripts/verify.mjs 加第六道门）已完成",
+          "released_by": "codebuddy-main",
+          "released_at": "2026-10-20T07:59:20.540Z"
+        }
       },
       {
         "id": "file_scripts_verify_grammar_rebuild_mjs",
@@ -28353,10 +28367,10 @@
   "annotations": [],
   "_dsl_rev": 150,
   "_sync": {
-    "saved_at": "2026-10-20T06:46:57.584Z",
+    "saved_at": "2026-10-20T07:59:26.076Z",
     "source": "design_sheet",
     "feature": "design-canvas",
-    "scanRev": 1792477935700,
-    "age": 881884
+    "scanRev": 1792483098640,
+    "age": 67436
   }
 }

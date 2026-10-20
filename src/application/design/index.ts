@@ -370,7 +370,14 @@ export const DESIGN_TOOLS: ToolDef[] = [
             'sync-signatures=⑥ 设计 DB → 源码，**只同步函数签名、不生成实现**（默认零写入，apply=true 才落盘）· ' +
             'rewrite=同一动作的旧名（保留兼容；输出里的 did_work/reason 一致）',
         ),
-      check: z.boolean().optional().describe('★ 仅 action=gen-db：true 只比对不写盘、也不清理陈旧副本'),
+      check: z
+        .boolean()
+        .optional()
+        .describe(
+          '★ 仅 action=gen-db：true 只比对不写盘、也不清理陈旧副本。★ 回执把两种红分开：' +
+            '`真冲突`（两个 feature 对同一文件要求互斥 ⇒ 该改设计，重跑修不好）vs `投影陈旧`（该重跑）。' +
+            '★ 它比的是整份字节（含 cache.db 的事实）⇒ 它是**诊断**；可复现的那一半另有一道门：`node scripts/gen-db-check.mjs`。',
+        ),
       apply: z.boolean().optional().describe('★ 仅 action=sync-signatures/rewrite：true 才真落盘（默认零写入；落盘后会自动重算复核）'),
       file: z.string().optional().describe('★ 仅 action=sync-signatures/rewrite：只算一个文件（仓库相对路径）'),
       prefix: z.string().optional().describe('★ 仅 action=sync-signatures/rewrite：只算某个前缀（如 src/domain/）'),
@@ -383,13 +390,28 @@ export const DESIGN_TOOLS: ToolDef[] = [
           check: a.check === true,
         });
         const head =
-          `设计 DB ${r.check ? '检查' : '生成'} · ${r.features} 个 feature · ${r.files} 个文件节点
+          `设计 DB ${r.check ? '检查' : '生成'} · ${r.features} 个 feature · ${r.paths} 份投影（${r.files} 个文件节点）
 ` +
-          `  ${r.check ? '不一致' : '生成'} ${r.check ? r.problems.length : r.written} · 未变 ${r.unchanged} · 清理陈旧 ${r.pruned}` +
+          `  ${r.check ? '不一致' : '生成'} ${r.check ? r.drift.length : r.written} · 真冲突 ${r.conflicts.length} · 未变 ${r.unchanged} · 清理陈旧 ${r.pruned}` +
           (r.check ? '' : `\n★ 写盘：design-db/（${r.written} 份有变化）`);
-        const tail = r.problems.length
-          ? `\n\n★ ${r.problems.length} 个问题：\n` + r.problems.slice(0, 12).map((p) => '    ' + p).join('\n')
-          : '';
+        // ★ 2026-10-20：**两类红分开报** —— 真冲突重跑修不好（该改设计），陈旧投影重跑就绿。
+        //   此前两者挤在 `problems` 里一句「与当前设计不一致」，于是"23 条红"里到底是什么，没人能说。
+        const tail = [
+          r.conflicts.length
+            ? `\n\n★ ${r.conflicts.length} 条真冲突（该改设计 —— 重跑生成器修不好）：\n` +
+              r.conflicts.slice(0, 12).map((p) => '    ' + p).join('\n')
+            : '',
+          r.drift.length
+            ? `\n\n⚠ ${r.drift.length} 条投影与设计/事实不一致（该重跑生成器）：\n` +
+              r.drift.slice(0, 12).map((p) => '    ' + p).join('\n')
+            : '',
+          r.problems.length ? `\n\n★ ${r.problems.length} 个问题：\n` + r.problems.slice(0, 12).map((p) => '    ' + p).join('\n') : '',
+          r.check && !r.conflicts.length && !r.drift.length && !r.problems.length
+            ? '\n\n★ 一致：设计侧的每一条判据都已进 design-db，且没有两个 feature 对同一文件提出互相矛盾的要求。'
+            : '',
+        ]
+          .filter(Boolean)
+          .join('');
         return { message: head + tail, data: r };
       }
       if (action === 'sync-signatures' || action === 'rewrite') {
