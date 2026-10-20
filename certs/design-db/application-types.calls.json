@@ -8,7 +8,51 @@
       "name": "ToolDef",
       "kind": "interface",
       "line": 18,
-      "signature": "ToolDef()"
+      "signature": "ToolDef()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "inputSchema",
+          "type": ": Record<string, z.ZodType>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "handler",
+          "type": ": (args: Record<string, unknown>) => Promise<{ text: string; isError?: boolean }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "noAutoFresh",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "trustAnnotated",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     }
   ],
   "imports": [

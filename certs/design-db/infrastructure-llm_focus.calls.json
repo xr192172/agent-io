@@ -8,7 +8,33 @@
       "name": "LlmConfig",
       "kind": "interface",
       "line": 32,
-      "signature": "LlmConfig()"
+      "signature": "LlmConfig()",
+      "members": [
+        {
+          "name": "apiKey",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "model",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "baseURL",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "keys",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "getConfigHome",
@@ -32,7 +58,33 @@
       "name": "AgentConfig",
       "kind": "interface",
       "line": 75,
-      "signature": "AgentConfig()"
+      "signature": "AgentConfig()",
+      "members": [
+        {
+          "name": "apiKey",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "model",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "baseURL",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "keys",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "loadAgentConfig",
@@ -50,7 +102,27 @@
       "name": "ExplainConfig",
       "kind": "interface",
       "line": 167,
-      "signature": "ExplainConfig()"
+      "signature": "ExplainConfig()",
+      "members": [
+        {
+          "name": "apiKey",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "model",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "baseURL",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DEFAULT_DS_BASE_URL",
@@ -74,7 +146,21 @@
       "name": "ChatMessage",
       "kind": "interface",
       "line": 237,
-      "signature": "ChatMessage()"
+      "signature": "ChatMessage()",
+      "members": [
+        {
+          "name": "role",
+          "type": ": 'system' | 'user' | 'assistant'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "content",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "callChat",
@@ -86,19 +172,91 @@
       "name": "FocusNode",
       "kind": "interface",
       "line": 268,
-      "signature": "FocusNode()"
+      "signature": "FocusNode()",
+      "members": [
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ChainNodeInfo",
       "kind": "interface",
       "line": 273,
-      "signature": "ChainNodeInfo()"
+      "signature": "ChainNodeInfo()",
+      "members": [
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "func_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "is_judgement",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "is_cross",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FocusResult",
       "kind": "interface",
       "line": 284,
-      "signature": "FocusResult()"
+      "signature": "FocusResult()",
+      "members": [
+        {
+          "name": "llm",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "key_nodes",
+          "type": ": FocusNode[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "pickKeyNodes",

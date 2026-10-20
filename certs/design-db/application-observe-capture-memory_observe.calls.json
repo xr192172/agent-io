@@ -20,7 +20,63 @@
       "name": "MemSample",
       "kind": "interface",
       "line": 29,
-      "signature": "MemSample()"
+      "signature": "MemSample()",
+      "members": [
+        {
+          "name": "t",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rss",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "heapUsed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "heapTotal",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "external",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "arrayBuffers",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "usedHeap",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "heapLimit",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "canGc",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "baselines",
@@ -38,7 +94,27 @@
       "name": "CdpClient",
       "kind": "interface",
       "line": 57,
-      "signature": "CdpClient()"
+      "signature": "CdpClient()",
+      "members": [
+        {
+          "name": "send",
+          "type": ": Promise<any>",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "on",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "close",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "connectCdp",
@@ -98,7 +174,27 @@
       "name": "MemoryObserveInput",
       "kind": "interface",
       "line": 191,
-      "signature": "MemoryObserveInput()"
+      "signature": "MemoryObserveInput()",
+      "members": [
+        {
+          "name": "target",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "action",
+          "type": ": MemObserveAction",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "memoryObserveHandler",

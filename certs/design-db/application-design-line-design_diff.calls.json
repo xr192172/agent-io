@@ -14,13 +14,95 @@
       "name": "AnyEdge",
       "kind": "type",
       "line": 33,
-      "signature": "AnyEdge()"
+      "signature": "AnyEdge()",
+      "members": [
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DesignDiffResult",
       "kind": "interface",
       "line": 35,
-      "signature": "DesignDiffResult()"
+      "signature": "DesignDiffResult()",
+      "members": [
+        {
+          "name": "designNodes",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "liveNodes",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "designEdges",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "liveEdges",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "onlyDesign",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "onlyLive",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed",
+          "type": ": Array<{ id: string; fields: string[] }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "missedEdges",
+          "type": ": Array<{ from: string; to: string; verdict: string; evidence: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "realMissingEdges",
+          "type": ": Array<{ from: string; to: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "onlyLiveEdges",
+          "type": ": Array<{ from: string; to: string }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "MEANINGFUL",

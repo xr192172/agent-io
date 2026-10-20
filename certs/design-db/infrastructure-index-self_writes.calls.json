@@ -20,7 +20,27 @@
       "name": "SelfWriteEntry",
       "kind": "interface",
       "line": 27,
-      "signature": "SelfWriteEntry()"
+      "signature": "SelfWriteEntry()",
+      "members": [
+        {
+          "name": "at",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "readSelfWrites",

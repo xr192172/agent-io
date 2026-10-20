@@ -56,43 +56,273 @@
       "name": "BehaviorCase",
       "kind": "interface",
       "line": 63,
-      "signature": "BehaviorCase()"
+      "signature": "BehaviorCase()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "args",
+          "type": ": unknown[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kwargs",
+          "type": ": Record<string, unknown>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "BehaviorSpec",
       "kind": "interface",
       "line": 70,
-      "signature": "BehaviorSpec()"
+      "signature": "BehaviorSpec()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "function",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cases",
+          "type": ": BehaviorCase[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "timeout_ms",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "BehaviorSampleResult",
       "kind": "interface",
       "line": 84,
-      "signature": "BehaviorSampleResult()"
+      "signature": "BehaviorSampleResult()",
+      "members": [
+        {
+          "name": "case",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ret",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "BehaviorRun",
       "kind": "interface",
       "line": 94,
-      "signature": "BehaviorRun()"
+      "signature": "BehaviorRun()",
+      "members": [
+        {
+          "name": "file_abs",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_hash",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stdout",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "results",
+          "type": ": BehaviorSampleResult[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "BehaviorBaseline",
       "kind": "interface",
       "line": 108,
-      "signature": "BehaviorBaseline()"
+      "signature": "BehaviorBaseline()",
+      "members": [
+        {
+          "name": "spec",
+          "type": ": Omit<BehaviorSpec, 'project_dir'>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_hash",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "generated_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stdout",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "results",
+          "type": ": BehaviorSampleResult[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "baseline_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CaseDiff",
       "kind": "interface",
       "line": 119,
-      "signature": "CaseDiff()"
+      "signature": "CaseDiff()",
+      "members": [
+        {
+          "name": "case",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'same' | 'changed'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "before",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "after",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "before_error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "after_error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "BehaviorDiff",
       "kind": "interface",
       "line": 128,
-      "signature": "BehaviorDiff()"
+      "signature": "BehaviorDiff()",
+      "members": [
+        {
+          "name": "verdict",
+          "type": ": BehaviorVerdict",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "matched",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "details",
+          "type": ": CaseDiff[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "harnessSource",
@@ -224,7 +454,33 @@
       "name": "VerifyResult",
       "kind": "interface",
       "line": 821,
-      "signature": "VerifyResult()"
+      "signature": "VerifyResult()",
+      "members": [
+        {
+          "name": "baseline",
+          "type": ": BehaviorBaseline",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "run",
+          "type": ": BehaviorRun",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "diff",
+          "type": ": BehaviorDiff",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "baseline_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "verifyBaseline",
@@ -242,19 +498,115 @@
       "name": "BehaviorLangPack",
       "kind": "interface",
       "line": 907,
-      "signature": "BehaviorLangPack()"
+      "signature": "BehaviorLangPack()",
+      "members": [
+        {
+          "name": "lang",
+          "type": ": BehaviorLang",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "exts",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "toolchain",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "timeoutMs",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "build",
+          "type": ": BuiltPlan",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "parse",
+          "type": ": BehaviorSampleResult[] | { error: string }",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "execError",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "postCheck",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "BuildCtx",
       "kind": "interface",
       "line": 925,
-      "signature": "BuildCtx()"
+      "signature": "BuildCtx()",
+      "members": [
+        {
+          "name": "tmp",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "spec",
+          "type": ": BehaviorSpec",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "content",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "targetAbs",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "write",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "BuiltPlan",
       "kind": "interface",
       "line": 937,
-      "signature": "BuiltPlan()"
+      "signature": "BuiltPlan()",
+      "members": [
+        {
+          "name": "compile",
+          "type": ": { cmd: string; args: string[]; errPrefix: string }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "run",
+          "type": ": { cmd: string; args: string[]; cwd?: string }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "failRun",

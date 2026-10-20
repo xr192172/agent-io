@@ -8,7 +8,27 @@
       "name": "DeclReviewResult",
       "kind": "interface",
       "line": 31,
-      "signature": "DeclReviewResult()"
+      "signature": "DeclReviewResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "verdicts",
+          "type": ": DeclVerdict[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildDeclReviewPrompt",

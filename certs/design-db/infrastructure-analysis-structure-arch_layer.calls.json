@@ -8,25 +8,165 @@
       "name": "ArchLayerInput",
       "kind": "interface",
       "line": 33,
-      "signature": "ArchLayerInput()"
+      "signature": "ArchLayerInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "persist",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "layers",
+          "type": ": LayerDef[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "check_violations",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "no_cache",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ArchLayerFileAssign",
       "kind": "interface",
       "line": 46,
-      "signature": "ArchLayerFileAssign()"
+      "signature": "ArchLayerFileAssign()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "arch_layer",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LayerMatrixRow",
       "kind": "interface",
       "line": 58,
-      "signature": "LayerMatrixRow()"
+      "signature": "LayerMatrixRow()",
+      "members": [
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ArchLayerResult",
       "kind": "interface",
       "line": 64,
-      "signature": "ArchLayerResult()"
+      "signature": "ArchLayerResult()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total_files",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "classified",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "layers",
+          "type": ": ArchLayer[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "assignments",
+          "type": ": ArchLayerFileAssign[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "violations",
+          "type": ": LayerViolation[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer_matrix",
+          "type": ": LayerMatrixRow[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "limitations",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "persisted",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "collectSources",

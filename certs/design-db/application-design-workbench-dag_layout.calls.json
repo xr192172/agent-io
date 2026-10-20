@@ -8,13 +8,101 @@
       "name": "DagLayoutInput",
       "kind": "interface",
       "line": 16,
-      "signature": "DagLayoutInput()"
+      "signature": "DagLayoutInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "direction",
+          "type": ": 'horizontal' | 'vertical'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "h_gap",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "v_gap",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "width",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "respect_swimlanes",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ForceLayoutInput",
       "kind": "interface",
       "line": 30,
-      "signature": "ForceLayoutInput()"
+      "signature": "ForceLayoutInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "repulsion",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "stiffness",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "damping",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "iterations",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_radius",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "width",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "height",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "assertFlatLayoutSafe",
@@ -68,7 +156,45 @@
       "name": "ForceNode",
       "kind": "interface",
       "line": 363,
-      "signature": "ForceNode()"
+      "signature": "ForceNode()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "x",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "y",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "vx",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "vy",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fixed",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "forceLayout",
@@ -80,7 +206,21 @@
       "name": "GridAlignInput",
       "kind": "interface",
       "line": 514,
-      "signature": "GridAlignInput()"
+      "signature": "GridAlignInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "grid_size",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "gridAlign",

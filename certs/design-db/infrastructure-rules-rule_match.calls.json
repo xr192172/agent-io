@@ -8,19 +8,103 @@
       "name": "HoleBinding",
       "kind": "interface",
       "line": 27,
-      "signature": "HoleBinding()"
+      "signature": "HoleBinding()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RuleMatch",
       "kind": "interface",
       "line": 33,
-      "signature": "RuleMatch()"
+      "signature": "RuleMatch()",
+      "members": [
+        {
+          "name": "start",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "startLine",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "endLine",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "matchedText",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "indent",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "absorbsIndent",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "holes",
+          "type": ": HoleBinding[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "MatchOutcome",
       "kind": "interface",
       "line": 57,
-      "signature": "MatchOutcome()"
+      "signature": "MatchOutcome()",
+      "members": [
+        {
+          "name": "matches",
+          "type": ": RuleMatch[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ambiguous",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "holeNames",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "holeNamesOf",
@@ -50,7 +134,33 @@
       "name": "FileLine",
       "kind": "interface",
       "line": 129,
-      "signature": "FileLine()"
+      "signature": "FileLine()",
+      "members": [
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "folded",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "indexFile",

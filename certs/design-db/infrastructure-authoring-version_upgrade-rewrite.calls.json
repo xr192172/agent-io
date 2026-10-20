@@ -8,7 +8,57 @@
       "name": "RewriteItem",
       "kind": "interface",
       "line": 21,
-      "signature": "RewriteItem()"
+      "signature": "RewriteItem()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'feature' | 'removed'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "since",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "suggestion",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "auto",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "snippet",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildRewritePlan",
@@ -20,7 +70,27 @@
       "name": "PlanEdit",
       "kind": "interface",
       "line": 72,
-      "signature": "PlanEdit()"
+      "signature": "PlanEdit()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SAFE_SUBSTITUTIONS",
@@ -38,7 +108,21 @@
       "name": "ApplyResult",
       "kind": "interface",
       "line": 98,
-      "signature": "ApplyResult()"
+      "signature": "ApplyResult()",
+      "members": [
+        {
+          "name": "changedFiles",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "applied",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "applyEdits",

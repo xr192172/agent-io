@@ -8,7 +8,51 @@
       "name": "DogfoodUsage",
       "kind": "interface",
       "line": 25,
-      "signature": "DogfoodUsage()"
+      "signature": "DogfoodUsage()",
+      "members": [
+        {
+          "name": "ts",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tool",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "action",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ms",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "err",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "nextHops",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "MAX_ERR_LEN",
@@ -38,19 +82,97 @@
       "name": "DogfoodActionStat",
       "kind": "interface",
       "line": 67,
-      "signature": "DogfoodActionStat()"
+      "signature": "DogfoodActionStat()",
+      "members": [
+        {
+          "name": "calls",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ok",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "failed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DogfoodToolStat",
       "kind": "interface",
       "line": 73,
-      "signature": "DogfoodToolStat()"
+      "signature": "DogfoodToolStat()",
+      "members": [
+        {
+          "name": "tool",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "calls",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ok",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "failed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "by_action",
+          "type": ": Record<string, DogfoodActionStat>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "hinted",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DogfoodSnapshot",
       "kind": "interface",
       "line": 84,
-      "signature": "DogfoodSnapshot()"
+      "signature": "DogfoodSnapshot()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tools",
+          "type": ": DogfoodToolStat[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "emptyAction",

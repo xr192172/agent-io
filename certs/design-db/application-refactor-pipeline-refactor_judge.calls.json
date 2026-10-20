@@ -14,25 +14,153 @@
       "name": "JudgeIssue",
       "kind": "interface",
       "line": 26,
-      "signature": "JudgeIssue()"
+      "signature": "JudgeIssue()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "desc",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "severity",
+          "type": ": 'low' | 'medium' | 'high'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "confidence",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "JudgeDecision",
       "kind": "interface",
       "line": 43,
-      "signature": "JudgeDecision()"
+      "signature": "JudgeDecision()",
+      "members": [
+        {
+          "name": "issue_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "verdict",
+          "type": ": Verdict",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "confidence",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "JudgeInput",
       "kind": "interface",
       "line": 52,
-      "signature": "JudgeInput()"
+      "signature": "JudgeInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "issues",
+          "type": ": JudgeIssue[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "decide",
+          "type": ": (issues: JudgeIssue[]) => Promise<JudgeDecision[]> | JudgeDecision[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "escalate_to_inbox",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "JudgeResult",
       "kind": "interface",
       "line": 64,
-      "signature": "JudgeResult()"
+      "signature": "JudgeResult()",
+      "members": [
+        {
+          "name": "decided",
+          "type": ": { adopt: JudgeIssue[]; reject: JudgeIssue[] }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "escalated",
+          "type": ": JudgeIssue[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "decisions",
+          "type": ": JudgeDecision[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "meta",
+          "type": ": { total: number; adopted: number; rejected: number; unsure: number }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "review_prompt",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "normalize",

@@ -20,19 +20,127 @@
       "name": "SaveSnapshotInput",
       "kind": "interface",
       "line": 35,
-      "signature": "SaveSnapshotInput()"
+      "signature": "SaveSnapshotInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SnapshotInfo",
       "kind": "interface",
       "line": 41,
-      "signature": "SnapshotInfo()"
+      "signature": "SnapshotInfo()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "timestamp",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edge_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SaveSnapshotResult",
       "kind": "interface",
       "line": 53,
-      "signature": "SaveSnapshotResult()"
+      "signature": "SaveSnapshotResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "snapshot_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "timestamp",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "saveSnapshot",
@@ -68,13 +176,41 @@
       "name": "ListSnapshotsInput",
       "kind": "interface",
       "line": 151,
-      "signature": "ListSnapshotsInput()"
+      "signature": "ListSnapshotsInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ListSnapshotsResult",
       "kind": "interface",
       "line": 155,
-      "signature": "ListSnapshotsResult()"
+      "signature": "ListSnapshotsResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "snapshots",
+          "type": ": SnapshotInfo[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "listSnapshots",
@@ -86,13 +222,53 @@
       "name": "RollbackSnapshotInput",
       "kind": "interface",
       "line": 221,
-      "signature": "RollbackSnapshotInput()"
+      "signature": "RollbackSnapshotInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "snapshot_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RollbackSnapshotResult",
       "kind": "interface",
       "line": 226,
-      "signature": "RollbackSnapshotResult()"
+      "signature": "RollbackSnapshotResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "snapshot_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "restored_to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "rollbackSnapshot",
@@ -104,13 +280,47 @@
       "name": "DeleteSnapshotInput",
       "kind": "interface",
       "line": 310,
-      "signature": "DeleteSnapshotInput()"
+      "signature": "DeleteSnapshotInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "snapshot_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeleteSnapshotResult",
       "kind": "interface",
       "line": 315,
-      "signature": "DeleteSnapshotResult()"
+      "signature": "DeleteSnapshotResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "snapshot_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "deleteSnapshot",

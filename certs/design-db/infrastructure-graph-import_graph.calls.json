@@ -8,7 +8,39 @@
       "name": "ImportGraph",
       "kind": "interface",
       "line": 18,
-      "signature": "ImportGraph()"
+      "signature": "ImportGraph()",
+      "members": [
+        {
+          "name": "importeeOf",
+          "type": ": Map<string, Array<{ to: string; line: number | null }>>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "importeeOfValue",
+          "type": ": Map<string, Array<{ to: string; line: number | null }>>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "importerOf",
+          "type": ": Map<string, Array<{ to: string; line: number | null }>>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": FileEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "packageResolved",
+          "type": ": Map<string, boolean>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildImportGraph",

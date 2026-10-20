@@ -14,31 +14,167 @@
       "name": "StandingNode",
       "kind": "interface",
       "line": 73,
-      "signature": "StandingNode()"
+      "signature": "StandingNode()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "task",
+          "type": ": TaskSpec",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "StandingInput",
       "kind": "interface",
       "line": 79,
-      "signature": "StandingInput()"
+      "signature": "StandingInput()",
+      "members": [
+        {
+          "name": "root",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "nodes",
+          "type": ": readonly StandingNode[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SatisfactionCounts",
       "kind": "interface",
       "line": 96,
-      "signature": "SatisfactionCounts()"
+      "signature": "SatisfactionCounts()",
+      "members": [
+        {
+          "name": "checked",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "passed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "failed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unsupported",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ViolationCounts",
       "kind": "interface",
       "line": 104,
-      "signature": "ViolationCounts()"
+      "signature": "ViolationCounts()",
+      "members": [
+        {
+          "name": "checked",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "failed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unsupported",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "StandingVerdict",
       "kind": "interface",
       "line": 110,
-      "signature": "StandingVerdict()"
+      "signature": "StandingVerdict()",
+      "members": [
+        {
+          "name": "standing",
+          "type": ": CardStanding",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "satisfaction",
+          "type": ": SatisfactionCounts",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "violation",
+          "type": ": ViolationCounts",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "report",
+          "type": ": ExpectationsReport",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "preReport",
+          "type": ": ExpectationsReport",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "judged",
+          "type": ": { post: readonly Expectation[]; pre: readonly Expectation[] }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "redSeen",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "blockedBy",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RedAttribution",
@@ -74,7 +210,33 @@
       "name": "SatisfactionVerdict",
       "kind": "interface",
       "line": 324,
-      "signature": "SatisfactionVerdict()"
+      "signature": "SatisfactionVerdict()",
+      "members": [
+        {
+          "name": "satisfied",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "standing",
+          "type": ": CardStanding",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "verdict",
+          "type": ": StandingVerdict",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "isSatisfied",
@@ -86,7 +248,45 @@
       "name": "LeaseReleaseEvent",
       "kind": "interface",
       "line": 350,
-      "signature": "LeaseReleaseEvent()"
+      "signature": "LeaseReleaseEvent()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": 'lease_ttl'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "claimed_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "age_ms",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ttl_ms",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "releaseIfExpired",
@@ -104,7 +304,39 @@
       "name": "TaskTransition",
       "kind": "interface",
       "line": 433,
-      "signature": "TaskTransition()"
+      "signature": "TaskTransition()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": TaskState",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": TaskState",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "state",
+          "type": ": TransitionState",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "guard",
+          "type": ": {\n    clauses: readonly string[];\n  }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TRANSITIONS",

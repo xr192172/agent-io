@@ -8,13 +8,77 @@
       "name": "FeatureTreeInput",
       "kind": "interface",
       "line": 43,
-      "signature": "FeatureTreeInput()"
+      "signature": "FeatureTreeInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "db",
+          "type": ": import('../../index/db.js').Database",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "gen_names",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FeatureTreeResult",
       "kind": "interface",
       "line": 54,
-      "signature": "FeatureTreeResult()"
+      "signature": "FeatureTreeResult()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "features",
+          "type": ": Array<FeatureNode & { file_count: number }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unassigned_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "community_dir_diff",
+          "type": ": CommunityDirDiffEntry[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "toLlmCfg",

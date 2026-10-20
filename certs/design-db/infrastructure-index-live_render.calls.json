@@ -62,7 +62,27 @@
       "name": "ParsedFact",
       "kind": "interface",
       "line": 91,
-      "signature": "ParsedFact()"
+      "signature": "ParsedFact()",
+      "members": [
+        {
+          "name": "funcCount",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbols",
+          "type": ": Symbol[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "imports",
+          "type": ": Array<{ line: number; source: string; kind: 'relative' | 'package' }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "renderLiveFromDb",

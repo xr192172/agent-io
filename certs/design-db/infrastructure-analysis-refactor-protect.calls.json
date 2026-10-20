@@ -8,13 +8,35 @@
       "name": "RenameProtectRule",
       "kind": "interface",
       "line": 34,
-      "signature": "RenameProtectRule()"
+      "signature": "RenameProtectRule()",
+      "members": [
+        {
+          "name": "globs",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "markers",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RenameProtectConfig",
       "kind": "interface",
       "line": 39,
-      "signature": "RenameProtectConfig()"
+      "signature": "RenameProtectConfig()",
+      "members": [
+        {
+          "name": "rules",
+          "type": ": RenameProtectRule[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "loadRenameProtect",
@@ -32,19 +54,79 @@
       "name": "EditIn",
       "kind": "interface",
       "line": 78,
-      "signature": "EditIn()"
+      "signature": "EditIn()",
+      "members": [
+        {
+          "name": "pos",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "len",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CompiledRule",
       "kind": "interface",
       "line": 84,
-      "signature": "CompiledRule()"
+      "signature": "CompiledRule()",
+      "members": [
+        {
+          "name": "globs",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "markers",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ig",
+          "type": ": Ignore",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ProtectGuard",
       "kind": "interface",
       "line": 91,
-      "signature": "ProtectGuard()"
+      "signature": "ProtectGuard()",
+      "members": [
+        {
+          "name": "scan",
+          "type": ": { blocked: boolean; protectedLines: string[] }",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "isFrozen",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "isGeneratedFile",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "createProtectGuard",

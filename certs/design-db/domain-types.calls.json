@@ -8,7 +8,69 @@
       "name": "ThemeConfig",
       "kind": "interface",
       "line": 109,
-      "signature": "ThemeConfig()"
+      "signature": "ThemeConfig()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "primary",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "secondary",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "background",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "cardBg",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "border",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "textSub",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "accent",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ThemeId",
@@ -20,43 +82,375 @@
       "name": "ArchLayer",
       "kind": "interface",
       "line": 136,
-      "signature": "ArchLayer()"
+      "signature": "ArchLayer()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name_en",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "description_en",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "color",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FeatureCommunity",
       "kind": "interface",
       "line": 154,
-      "signature": "FeatureCommunity()"
+      "signature": "FeatureCommunity()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name_en",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "est_lines",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FeatureNode",
       "kind": "interface",
       "line": 170,
-      "signature": "FeatureNode()"
+      "signature": "FeatureNode()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name_en",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "communities",
+          "type": ": FeatureCommunity[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CommunityDirDiffEntry",
       "kind": "interface",
       "line": 188,
-      "signature": "CommunityDirDiffEntry()"
+      "signature": "CommunityDirDiffEntry()",
+      "members": [
+        {
+          "name": "file_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "community_id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "community_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "community_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FeatureTree",
       "kind": "interface",
       "line": 204,
-      "signature": "FeatureTree()"
+      "signature": "FeatureTree()",
+      "members": [
+        {
+          "name": "features",
+          "type": ": FeatureNode[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_map",
+          "type": ": Record<string, { feature_id: string; community_id: number }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": 'llm' | 'rule'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "community_dir_diff",
+          "type": ": CommunityDirDiffEntry[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DesignDSL",
       "kind": "interface",
       "line": 216,
-      "signature": "DesignDSL()"
+      "signature": "DesignDSL()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "version",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "source_root",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "_dsl_rev",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": DiagramStatus",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "theme",
+          "type": ": ThemeId",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "todos",
+          "type": ": import('./task_schema.js').TaskSpec[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "geometry",
+          "type": ": Geometry",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "semantic",
+          "type": ": Semantic",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotations",
+          "type": ": Annotation[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "canvas_notes",
+          "type": ": CanvasNote[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "animations",
+          "type": ": Animation[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "animations_v2",
+          "type": ": AnimationSystem",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "simulation",
+          "type": ": Simulation",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reasoning",
+          "type": ": ReasoningSystem",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "layers",
+          "type": ": ArchLayer[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature_tree",
+          "type": ": FeatureTree",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "user_nodes",
+          "type": ": UserNode[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "UserNode",
       "kind": "interface",
       "line": 266,
-      "signature": "UserNode()"
+      "signature": "UserNode()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parent_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parent_label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "created",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     }
   ],
   "imports": [

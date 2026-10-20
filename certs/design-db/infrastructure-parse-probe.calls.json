@@ -68,7 +68,33 @@
       "name": "LanguagePackageStatus",
       "kind": "interface",
       "line": 172,
-      "signature": "LanguagePackageStatus()"
+      "signature": "LanguagePackageStatus()",
+      "members": [
+        {
+          "name": "state",
+          "type": ": 'usable' | 'incompatible' | 'absent'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "version",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "usesNan",
+          "type": ": boolean | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pkgJson",
+          "type": ": Record<string, unknown> | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "languagePackageStatus",

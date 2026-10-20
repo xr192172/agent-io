@@ -8,31 +8,173 @@
       "name": "ShapeField",
       "kind": "interface",
       "line": 15,
-      "signature": "ShapeField()"
+      "signature": "ShapeField()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "required",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ShapeSchema",
       "kind": "interface",
       "line": 23,
-      "signature": "ShapeSchema()"
+      "signature": "ShapeSchema()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'struct' | 'interface' | 'type' | 'class'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fields",
+          "type": ": ShapeField[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "origin",
+          "type": ": 'ast' | 'runtime' | 'llm'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "notes",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "EffectTarget",
       "kind": "interface",
       "line": 35,
-      "signature": "EffectTarget()"
+      "signature": "EffectTarget()",
+      "members": [
+        {
+          "name": "target",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "op",
+          "type": ": 'write' | 'append' | 'delete' | 'acquire' | 'release'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reversible",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "origin",
+          "type": ": 'ast' | 'runtime'",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "BrickRole",
       "kind": "interface",
       "line": 50,
-      "signature": "BrickRole()"
+      "signature": "BrickRole()",
+      "members": [
+        {
+          "name": "class",
+          "type": ": 'business' | 'functional' | 'hybrid'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "basis",
+          "type": ": 'graph' | 'runtime' | 'llm' | 'mixed'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "confidence",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reasons",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "BrickContract",
       "kind": "interface",
       "line": 61,
-      "signature": "BrickContract()"
+      "signature": "BrickContract()",
+      "members": [
+        {
+          "name": "schema_version",
+          "type": ": 1",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "role",
+          "type": ": BrickRole",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "shapes",
+          "type": ": {\n    exposes: ShapeSchema[];\n    consumes: ShapeSchema[];\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "effects",
+          "type": ": {\n    /** 写哪些外部状态（全局 var/单例字段/文件系统）——静态提取范围外，observe 补 */\n    writes: EffectTarget[];\n    /** 占用哪些资源（端口/goroutine/连接池/句柄）——observe 补 */\n    holds: EffectTarget[];\n    /** 发出哪些事件（时间可组合性通道）——observe 补 */\n    emits: string[];\n    /** 读哪些配置项/env（积木\"出厂环境要求\"，AST 提取） */\n    reads_config: string[];\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "runtime",
+          "type": ": {\n    /** 观测窗口内调用次数（0 = 纯静态判定，confidence 上限 0.7） */\n    call_count: number;\n    /** 实测高频调用方（校验静态依赖图，发现图上看不到的隐式调用） */\n    top_callers: string[];\n    /** 实测读过的 config key / 写过的 target——校验 effects 清单真实性 */\n    observed_targets: string[];\n    last_seen?: string;\n  }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "provenance",
+          "type": ": {\n    source_project?: string;\n    commit?: string;\n    harvested_at?: string;\n    /** 最近一次 observe 动静对账时间（reconcile_effects 写入） */\n    last_reconciled?: string;\n  }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     }
   ],
   "imports": [],

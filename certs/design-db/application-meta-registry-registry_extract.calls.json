@@ -8,13 +8,65 @@
       "name": "RegistryTool",
       "kind": "interface",
       "line": 22,
-      "signature": "RegistryTool()"
+      "signature": "RegistryTool()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "summarySource",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "implModules",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RegistryExtractResult",
       "kind": "interface",
       "line": 33,
-      "signature": "RegistryExtractResult()"
+      "signature": "RegistryExtractResult()",
+      "members": [
+        {
+          "name": "tools",
+          "type": ": RegistryTool[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "importSymbols",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "extractDescription",

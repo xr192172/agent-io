@@ -14,7 +14,33 @@
       "name": "ParseCapability",
       "kind": "interface",
       "line": 28,
-      "signature": "ParseCapability()"
+      "signature": "ParseCapability()",
+      "members": [
+        {
+          "name": "tier",
+          "type": ": ParseTier",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lang",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "granularity",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "zeroTrustworthy",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "tierForLanguage",
@@ -44,7 +70,27 @@
       "name": "LanguageTierSummary",
       "kind": "interface",
       "line": 109,
-      "signature": "LanguageTierSummary()"
+      "signature": "LanguageTierSummary()",
+      "members": [
+        {
+          "name": "lang",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tier",
+          "type": ": ParseTier",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "summarizeLanguagesByTier",

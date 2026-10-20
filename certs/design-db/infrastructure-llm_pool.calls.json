@@ -8,7 +8,49 @@
       "name": "KeyPool",
       "kind": "class",
       "line": 15,
-      "signature": "KeyPool()"
+      "signature": "KeyPool()",
+      "members": [
+        {
+          "name": "ptr",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "blockedUntil",
+          "type": ": number[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "constructor",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "length",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "pick",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "hasAvailable",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "cooldown",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "loadKeys",

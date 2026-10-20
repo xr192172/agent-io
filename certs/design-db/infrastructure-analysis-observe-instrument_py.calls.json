@@ -74,7 +74,39 @@
       "name": "PyFn",
       "kind": "interface",
       "line": 109,
-      "signature": "PyFn()"
+      "signature": "PyFn()",
+      "members": [
+        {
+          "name": "node",
+          "type": ": AstNode",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'def' | 'lambda'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "params",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "body",
+          "type": ": AstNode | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "scanFunctions",

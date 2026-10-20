@@ -20,7 +20,45 @@
       "name": "DaemonHealth",
       "kind": "interface",
       "line": 23,
-      "signature": "DaemonHealth()"
+      "signature": "DaemonHealth()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pid",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "port",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "started_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "watches",
+          "type": ": Array<{\n    project_dir: string;\n    feature?: string;\n    rebuild: boolean;\n    impact_on_change: boolean;\n    started_at: string;\n    last_change_at?: string;\n    last_impact_seq?: number;\n    pending_declarations: number;\n  }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "probeDaemon",

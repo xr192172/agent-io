@@ -38,7 +38,27 @@
       "name": "DeclarationFiles",
       "kind": "interface",
       "line": 112,
-      "signature": "DeclarationFiles()"
+      "signature": "DeclarationFiles()",
+      "members": [
+        {
+          "name": "declaration",
+          "type": ": ToolchainDeclaration",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "boundary",
+          "type": ": number | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": Array<{ path: string; content: string }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "filesForDeclarations",
@@ -50,7 +70,39 @@
       "name": "ContractScanResult",
       "kind": "interface",
       "line": 141,
-      "signature": "ContractScanResult()"
+      "signature": "ContractScanResult()",
+      "members": [
+        {
+          "name": "root",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scan",
+          "type": ": ToolchainScan",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "features",
+          "type": ": Array<{ declaration: ToolchainDeclaration; boundary: number; hits: FeatureHit[] }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "removed",
+          "type": ": Array<{ declaration: ToolchainDeclaration; boundary: number; hits: RemovedHit[] }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "uncoveredExts",
+          "type": ": Array<{ ext: string; files: number }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "runContractScan",

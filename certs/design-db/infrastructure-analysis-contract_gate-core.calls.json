@@ -8,37 +8,175 @@
       "name": "UndefinedRef",
       "kind": "interface",
       "line": 22,
-      "signature": "UndefinedRef()"
+      "signature": "UndefinedRef()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ident",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "hint",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FileScan",
       "kind": "interface",
       "line": 31,
-      "signature": "FileScan()"
+      "signature": "FileScan()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lang",
+          "type": ": Lang",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "undefinedRefs",
+          "type": ": UndefinedRef[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SkippedFile",
       "kind": "interface",
       "line": 45,
-      "signature": "SkippedFile()"
+      "signature": "SkippedFile()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ext",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ContractSnapshot",
       "kind": "interface",
       "line": 52,
-      "signature": "ContractSnapshot()"
+      "signature": "ContractSnapshot()",
+      "members": [
+        {
+          "name": "at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": FileScan[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "undefinedRefs",
+          "type": ": UndefinedRef[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipped",
+          "type": ": SkippedFile[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ContractDiff",
       "kind": "interface",
       "line": 61,
-      "signature": "ContractDiff()"
+      "signature": "ContractDiff()",
+      "members": [
+        {
+          "name": "before",
+          "type": ": ContractSnapshot",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "after",
+          "type": ": ContractSnapshot",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "newIssues",
+          "type": ": UndefinedRef[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ScanContractsOptions",
       "kind": "interface",
       "line": 68,
-      "signature": "ScanContractsOptions()"
+      "signature": "ScanContractsOptions()",
+      "members": [
+        {
+          "name": "cwd",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "dirs",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "lang",
+          "type": ": Lang | 'auto'",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SRC_EXT",
@@ -62,7 +200,21 @@
       "name": "Cleaned",
       "kind": "type",
       "line": 129,
-      "signature": "Cleaned()"
+      "signature": "Cleaned()",
+      "members": [
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lineOf",
+          "type": ": number[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "cleanSource",
@@ -116,7 +268,27 @@
       "name": "ContractGateResult",
       "kind": "interface",
       "line": 305,
-      "signature": "ContractGateResult()"
+      "signature": "ContractGateResult()",
+      "members": [
+        {
+          "name": "scan",
+          "type": ": ContractSnapshot",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "contractGate",

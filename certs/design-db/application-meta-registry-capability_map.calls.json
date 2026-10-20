@@ -20,25 +20,123 @@
       "name": "ToolCatalogEntry",
       "kind": "interface",
       "line": 53,
-      "signature": "ToolCatalogEntry()"
+      "signature": "ToolCatalogEntry()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "inputKeys",
+          "type": ": readonly string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "requiredKeys",
+          "type": ": readonly string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LaneTool",
       "kind": "interface",
       "line": 72,
-      "signature": "LaneTool()"
+      "signature": "LaneTool()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "when",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "whenSource",
+          "type": ": 'curated' | 'derived'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Lane",
       "kind": "interface",
       "line": 81,
-      "signature": "Lane()"
+      "signature": "Lane()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": LaneId",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "desc",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tools",
+          "type": ": LaneTool[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "direct",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LaneAssign",
       "kind": "interface",
       "line": 104,
-      "signature": "LaneAssign()"
+      "signature": "LaneAssign()",
+      "members": [
+        {
+          "name": "lane",
+          "type": ": LaneId",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "when",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LANE_META",
@@ -104,7 +202,39 @@
       "name": "DomainNavView",
       "kind": "interface",
       "line": 439,
-      "signature": "DomainNavView()"
+      "signature": "DomainNavView()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "role",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "_domains",
@@ -146,7 +276,33 @@
       "name": "BuiltLanes",
       "kind": "interface",
       "line": 520,
-      "signature": "BuiltLanes()"
+      "signature": "BuiltLanes()",
+      "members": [
+        {
+          "name": "lanes",
+          "type": ": Lane[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unassigned",
+          "type": ": ToolCatalogEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stale",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "staleWhen",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildLanes",
@@ -188,7 +344,15 @@
       "name": "CapabilityMapInput",
       "kind": "interface",
       "line": 685,
-      "signature": "CapabilityMapInput()"
+      "signature": "CapabilityMapInput()",
+      "members": [
+        {
+          "name": "lane",
+          "type": ": LaneId",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "collectRequiredKeys",
@@ -206,7 +370,33 @@
       "name": "InputPath",
       "kind": "interface",
       "line": 786,
-      "signature": "InputPath()"
+      "signature": "InputPath()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "required",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "container",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "collectInputPaths",
@@ -236,7 +426,27 @@
       "name": "ChainHopVerdict",
       "kind": "interface",
       "line": 912,
-      "signature": "ChainHopVerdict()"
+      "signature": "ChainHopVerdict()",
+      "members": [
+        {
+          "name": "wants",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fed",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "state",
+          "type": ": 'ok' | 'no-need' | 'gap'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "chainVerdictsOf",

@@ -20,25 +20,147 @@
       "name": "DslWriteRequest",
       "kind": "interface",
       "line": 46,
-      "signature": "DslWriteRequest()"
+      "signature": "DslWriteRequest()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ops",
+          "type": ": Record<string, unknown>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "base_dsl_rev",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DslWriteResult",
       "kind": "interface",
       "line": 55,
-      "signature": "DslWriteResult()"
+      "signature": "DslWriteResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rev",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "conflict",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "current_rev",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "touched",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DaemonServerHandlers",
       "kind": "interface",
       "line": 65,
-      "signature": "DaemonServerHandlers()"
+      "signature": "DaemonServerHandlers()",
+      "members": [
+        {
+          "name": "health",
+          "type": ": () => Record<string, unknown>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "watch",
+          "type": ": (input: Record<string, unknown>) => Promise<Record<string, unknown>>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dslWrite",
+          "type": ": (req: DslWriteRequest) => Promise<DslWriteResult>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "alertsSince",
+          "type": ": (cursor: number) => { alerts: unknown[]; cursor: number }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "shutdown",
+          "type": ": () => Promise<void>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DaemonServer",
       "kind": "interface",
       "line": 78,
-      "signature": "DaemonServer()"
+      "signature": "DaemonServer()",
+      "members": [
+        {
+          "name": "start",
+          "type": ": Promise<{ port: number; host: string }>",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "stop",
+          "type": ": Promise<void>",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "broadcast",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "sseClientCount",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "hostAllowed",

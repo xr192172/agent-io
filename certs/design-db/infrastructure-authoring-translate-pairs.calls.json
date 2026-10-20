@@ -8,7 +8,27 @@
       "name": "TranslatePair",
       "kind": "interface",
       "line": 26,
-      "signature": "TranslatePair()"
+      "signature": "TranslatePair()",
+      "members": [
+        {
+          "name": "srcLang",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "srcExt",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dstLang",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TRANSLATE_PAIRS",
@@ -26,7 +46,51 @@
       "name": "TranslateResult",
       "kind": "interface",
       "line": 42,
-      "signature": "TranslateResult()"
+      "signature": "TranslateResult()",
+      "members": [
+        {
+          "name": "output",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "holePrompts",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "issues",
+          "type": ": VerifyIssue[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "units",
+          "type": ": TransUnit[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipped",
+          "type": ": SkippedDecl[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "translateGoToTs",

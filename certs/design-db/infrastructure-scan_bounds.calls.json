@@ -8,13 +8,65 @@
       "name": "ScanSkip",
       "kind": "interface",
       "line": 68,
-      "signature": "ScanSkip()"
+      "signature": "ScanSkip()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "why",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "count",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ScanBounds",
       "kind": "interface",
       "line": 81,
-      "signature": "ScanBounds()"
+      "signature": "ScanBounds()",
+      "members": [
+        {
+          "name": "scope",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scanned",
+          "type": ": { files?: number; positions?: number }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipped",
+          "type": ": ScanSkip[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "truncated",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": Record<string, number>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "boundsSkipFromExcluded",

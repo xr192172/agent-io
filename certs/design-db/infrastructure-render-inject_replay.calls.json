@@ -8,25 +8,183 @@
       "name": "InjectReplayInput",
       "kind": "interface",
       "line": 26,
-      "signature": "InjectReplayInput()"
+      "signature": "InjectReplayInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "flow_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "inject",
+          "type": ": unknown",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "preset",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "value",
+          "type": ": unknown",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "list_presets",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReplayRoute",
       "kind": "interface",
       "line": 39,
-      "signature": "ReplayRoute()"
+      "signature": "ReplayRoute()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": 'error' | 'branch' | 'direct' | 'none'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "error_type",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "severity",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "log",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "branch_condition",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "branch_index",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "effect",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ShapeCheck",
       "kind": "interface",
       "line": 52,
-      "signature": "ShapeCheck()"
+      "signature": "ShapeCheck()",
+      "members": [
+        {
+          "name": "target",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "valid",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "violations",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "InjectReplayResult",
       "kind": "interface",
       "line": 59,
-      "signature": "InjectReplayResult()"
+      "signature": "InjectReplayResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "flow_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "inject",
+          "type": ": unknown",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "classification",
+          "type": ": 'none' | 'declared' | 'undeclared'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "route",
+          "type": ": ReplayRoute",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "shape_check",
+          "type": ": ShapeCheck",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "presets",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "checkShape",

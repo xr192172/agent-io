@@ -50,43 +50,321 @@
       "name": "OverlayAnchor",
       "kind": "interface",
       "line": 202,
-      "signature": "OverlayAnchor()"
+      "signature": "OverlayAnchor()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'file' | 'dir' | 'brick' | 'symbol' | 'doc'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "attributes",
+          "type": ": Record<string, string | number | boolean>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotations",
+          "type": ": Annotation[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "stale",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "orphaned",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "_migratedFrom",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "lifecycle",
+          "type": ": FileLifecycle",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "progress",
+          "type": ": DiagramStatus",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "progress_evidence",
+          "type": ": ProgressEvidence",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "OverlayGlobal",
       "kind": "interface",
       "line": 262,
-      "signature": "OverlayGlobal()"
+      "signature": "OverlayGlobal()",
+      "members": [
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "theme",
+          "type": ": ThemeId",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotations",
+          "type": ": Annotation[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "user_nodes",
+          "type": ": UserNode[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "storyboard",
+          "type": ": unknown",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "goals",
+          "type": ": OverlayGoal[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "function_tags",
+          "type": ": Record<string, string[]>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "OverlayGoal",
       "kind": "interface",
       "line": 296,
-      "signature": "OverlayGoal()"
+      "signature": "OverlayGoal()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'active' | 'done' | 'parked' | 'dropped'",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "OverlayEdgeIntent",
       "kind": "interface",
       "line": 305,
-      "signature": "OverlayEdgeIntent()"
+      "signature": "OverlayEdgeIntent()",
+      "members": [
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "boundary",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "requires",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotations",
+          "type": ": Annotation[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'open' | 'resolved'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "orphaned",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "_migratedFrom",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DesignOverlay",
       "kind": "interface",
       "line": 338,
-      "signature": "DesignOverlay()"
+      "signature": "DesignOverlay()",
+      "members": [
+        {
+          "name": "version",
+          "type": ": 1",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "anchors",
+          "type": ": Record<string, OverlayAnchor>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edges",
+          "type": ": Record<string, OverlayEdgeIntent>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "global",
+          "type": ": OverlayGlobal",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnchorCandidate",
       "kind": "interface",
       "line": 349,
-      "signature": "AnchorCandidate()"
+      "signature": "AnchorCandidate()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'file' | 'dir' | 'brick' | 'symbol' | 'doc'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReconcileStats",
       "kind": "interface",
       "line": 358,
-      "signature": "ReconcileStats()"
+      "signature": "ReconcileStats()",
+      "members": [
+        {
+          "name": "retained",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "migrated",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "orphaned",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stale",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "nodePath",
@@ -110,7 +388,27 @@
       "name": "EdgeCandidate",
       "kind": "interface",
       "line": 410,
-      "signature": "EdgeCandidate()"
+      "signature": "EdgeCandidate()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildEdgeCandidates",

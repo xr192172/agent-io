@@ -8,19 +8,103 @@
       "name": "NamespaceDeclRule",
       "kind": "interface",
       "line": 49,
-      "signature": "NamespaceDeclRule()"
+      "signature": "NamespaceDeclRule()",
+      "members": [
+        {
+          "name": "nodeType",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "childTypes",
+          "type": ": readonly string[] | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "aliasOk",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "NamespaceLangRules",
       "kind": "interface",
       "line": 64,
-      "signature": "NamespaceLangRules()"
+      "signature": "NamespaceLangRules()",
+      "members": [
+        {
+          "name": "ext",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeNodes",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "idTypes",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "moduleDecl",
+          "type": ": NamespaceDeclRule",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "importDecl",
+          "type": ": NamespaceDeclRule",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "qualifiedRefNodes",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "moduleScope",
+          "type": ": {\n    readonly parentTypes: readonly string[];\n    readonly listTypes: readonly string[];\n    readonly grandparentTypes: readonly string[];\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "moduleOf",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "NamespaceLangSpec",
       "kind": "interface",
       "line": 98,
-      "signature": "NamespaceLangSpec()"
+      "signature": "NamespaceLangSpec()",
+      "members": [
+        {
+          "name": "analyze",
+          "type": ": Promise<GoModuleAnalysis | null>",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "makeNamespaceAnalyzer",
@@ -32,7 +116,45 @@
       "name": "NamespaceRenameArgs",
       "kind": "interface",
       "line": 268,
-      "signature": "NamespaceRenameArgs()"
+      "signature": "NamespaceRenameArgs()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dryRun",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolvedRoot",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "blocked",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "renameNamespaceSymbol",

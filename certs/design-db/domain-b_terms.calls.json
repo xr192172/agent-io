@@ -14,13 +14,95 @@
       "name": "BTerm",
       "kind": "interface",
       "line": 51,
-      "signature": "BTerm()"
+      "signature": "BTerm()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": BTermKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "meaning",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "debt",
+          "type": ": true",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fix",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "retired",
+          "type": ": 'product' | 'input' | 'both'",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Touched",
       "kind": "interface",
       "line": 97,
-      "signature": "Touched()"
+      "signature": "Touched()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "written_files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope_files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbols",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "nodes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "withTouched",
@@ -38,7 +120,21 @@
       "name": "BReceipt",
       "kind": "interface",
       "line": 204,
-      "signature": "BReceipt()"
+      "signature": "BReceipt()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "B_TERMS",

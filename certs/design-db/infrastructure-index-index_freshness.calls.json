@@ -14,7 +14,81 @@
       "name": "FreshnessReport",
       "kind": "interface",
       "line": 53,
-      "signature": "FreshnessReport()"
+      "signature": "FreshnessReport()",
+      "members": [
+        {
+          "name": "checked",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "resynced",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "added",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "removed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "failed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipped_adds",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "refsReopened",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "bootstrapped",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "selfWriteHits",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "truncated",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "state",
+          "type": ": IndexState",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ms",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "emptyReport",
@@ -44,7 +118,21 @@
       "name": "FreshnessOptions",
       "kind": "interface",
       "line": 120,
-      "signature": "FreshnessOptions()"
+      "signature": "FreshnessOptions()",
+      "members": [
+        {
+          "name": "bootstrap",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxFiles",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "hasChanges",
@@ -56,7 +144,27 @@
       "name": "ProjectIndex",
       "kind": "interface",
       "line": 132,
-      "signature": "ProjectIndex()"
+      "signature": "ProjectIndex()",
+      "members": [
+        {
+          "name": "db",
+          "type": ": Database",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "report",
+          "type": ": FreshnessReport",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "state",
+          "type": ": IndexState",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "indexedRelativeSet",
@@ -74,7 +182,39 @@
       "name": "StaleIndexProbe",
       "kind": "interface",
       "line": 173,
-      "signature": "StaleIndexProbe()"
+      "signature": "StaleIndexProbe()",
+      "members": [
+        {
+          "name": "stale",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sampled",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sample",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "selfWritesPending",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "detectStaleIndex",
@@ -86,13 +226,113 @@
       "name": "TileOptions",
       "kind": "interface",
       "line": 234,
-      "signature": "TileOptions()"
+      "signature": "TileOptions()",
+      "members": [
+        {
+          "name": "depth",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxFiles",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "directions",
+          "type": ": 'both' | 'out' | 'in'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "textScan",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxTextImporters",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxMs",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TileReport",
       "kind": "interface",
       "line": 263,
-      "signature": "TileReport()"
+      "signature": "TileReport()",
+      "members": [
+        {
+          "name": "seeds",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "newFiles",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "failed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stitched",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "visited",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "textScanned",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "textCandidates",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "partial",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stopReason",
+          "type": ": 'queue-empty' | 'budget' | 'depth' | 'no-seed' | 'time'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ms",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "fileOfNode",

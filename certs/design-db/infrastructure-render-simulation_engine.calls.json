@@ -14,13 +14,165 @@
       "name": "NodeUpdate",
       "kind": "interface",
       "line": 26,
-      "signature": "NodeUpdate()"
+      "signature": "NodeUpdate()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "style",
+          "type": ": { bg?: string; color?: string; border?: string; opacity?: number }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "highlight",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SimulationEngine",
       "kind": "class",
       "line": 34,
-      "signature": "SimulationEngine()"
+      "signature": "SimulationEngine()",
+      "members": [
+        {
+          "name": "sim",
+          "type": ": Simulation",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "state",
+          "type": ": EngineState",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "trace",
+          "type": ": SimulationTrace[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "step",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "listeners",
+          "type": ": Array<(updates: NodeUpdate[], trace: SimulationTrace) => void>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "constructor",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "reset",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "getState",
+          "type": ": EngineState",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "getTrace",
+          "type": ": SimulationTrace[]",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "onUpdate",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "processEvent",
+          "type": ": NodeUpdate[]",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "run",
+          "type": ": NodeUpdate[]",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "mapStateToNodes",
+          "type": ": NodeUpdate[]",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "evaluateCondition",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "evaluateExpression",
+          "type": ": unknown",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "executeAction",
+          "type": ": NodeUpdate[]",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "interpolateObject",
+          "type": ": Record<string, unknown>",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "recordTrace",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "interpolateTemplate",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "clone",
+          "type": ": T",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "applyNodeUpdates",

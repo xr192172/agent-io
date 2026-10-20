@@ -14,31 +14,233 @@
       "name": "SubSplitMethod",
       "kind": "interface",
       "line": 45,
-      "signature": "SubSplitMethod()"
+      "signature": "SubSplitMethod()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SubSplitGroupPlan",
       "kind": "interface",
       "line": 51,
-      "signature": "SubSplitGroupPlan()"
+      "signature": "SubSplitGroupPlan()",
+      "members": [
+        {
+          "name": "owner",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "methods",
+          "type": ": SubSplitMethod[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CommunitySubSplitPlan",
       "kind": "interface",
       "line": 57,
-      "signature": "CommunitySubSplitPlan()"
+      "signature": "CommunitySubSplitPlan()",
+      "members": [
+        {
+          "name": "community_id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "community_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "splittable",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "groups",
+          "type": ": SubSplitGroupPlan[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeriveSplitInput",
       "kind": "interface",
       "line": 65,
-      "signature": "DeriveSplitInput()"
+      "signature": "DeriveSplitInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "target_file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbols",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "new_file",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "dry_run",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "verify_compile",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "verify_test",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "re_export_extracted",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "subsplit",
+          "type": ": CommunitySubSplitPlan[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeriveSplitResult",
       "kind": "interface",
       "line": 92,
-      "signature": "DeriveSplitResult()"
+      "signature": "DeriveSplitResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dry_run",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "target_file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "new_file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "language",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "extracted",
+          "type": ": Array<{ name: string; kind: string; start_line: number; end_line: number; lines: number }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "imports_copied",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "imports_added_original",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "imports_added_new",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "references_to_extracted",
+          "type": ": Array<{ line: number; ref: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "new_content",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "original_content",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "verification",
+          "type": ": {\n    new_syntax_ok: boolean;\n    original_syntax_ok: boolean;\n    new_symbols: string[];\n    original_symbols: string[];\n    /** 裁剪掉的未用 import（编译器阻塞项，Go 未用 import 会使 go build 失败） */\n    imports_pruned_new: string[];\n    imports_pruned_original: string[];\n    /** 真实编译器验收结果（dry_run=false 且未关闭时存在） */\n    // ★★★ T214 续：**`ok` 改成可选** —— ★ 跳过时**省略**（= \"没这个结论\"），不写 `true` ✗\n    //   ★ 理由：★ `skipped` 已经在说\"没跑\" ✓ ⇒ 再回一个 `ok:true` 就是**冒充\"通过\"** ✗\n    //   ★ 口径（与\"没圈到就省略\"同）：★ **`ok:false` = 跑了、没过** · ★ **省略 = 没跑/没结论** · ★ `ok:true` = 跑了、过了\n    compile?: { command: string; ok?: boolean; output: string; skipped?: string };\n    /** 测试级验收结果（编译通过后、dry_run=false 且未关闭时存在） */\n    test?: { command: string; ok?: boolean; output: string; skipped?: string };\n    note?: string;\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rolled_back",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "subsplit",
+          "type": ": Array<{\n    community_name: string;\n    owner: string;\n    target_file: string;\n    new_file: string;\n    method_count: number;\n    ok: boolean;\n    note: string;\n  }>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LangId",
@@ -122,7 +324,51 @@
       "name": "Wiring",
       "kind": "interface",
       "line": 310,
-      "signature": "Wiring()"
+      "signature": "Wiring()",
+      "members": [
+        {
+          "name": "newFileHeader",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "copiedImports",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "importFromOriginalNames",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "importFromOriginalLine",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "importFromNewLine",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "needsCrossImport",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "neededBack",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildWiring",
@@ -146,7 +392,39 @@
       "name": "GoImportSpec",
       "kind": "interface",
       "line": 474,
-      "signature": "GoImportSpec()"
+      "signature": "GoImportSpec()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "alias",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pkg",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "clean",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "collectGoImportSpecs",

@@ -8,25 +8,177 @@
       "name": "DriftRed",
       "kind": "interface",
       "line": 37,
-      "signature": "DriftRed()"
+      "signature": "DriftRed()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DriftCard",
       "kind": "interface",
       "line": 44,
-      "signature": "DriftCard()"
+      "signature": "DriftCard()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "state",
+          "type": ": TaskState",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "standing",
+          "type": ": CardStanding",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "red",
+          "type": ": DriftRed[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "violation_red",
+          "type": ": DriftRed[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unsupported",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DriftReport",
       "kind": "interface",
       "line": 60,
-      "signature": "DriftReport()"
+      "signature": "DriftReport()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "root",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scan_rev",
+          "type": ": ScanRev",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scanned_at",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ttl_ms",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "live_nodes",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cards",
+          "type": ": DriftCard[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "missed_close",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "should_void",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "vanished",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "expired",
+          "type": ": LeaseReleaseEvent[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pending_design",
+          "type": ": { node_id: string; todos: string[] }[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unavailable",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PatrolOptions",
       "kind": "interface",
       "line": 89,
-      "signature": "PatrolOptions()"
+      "signature": "PatrolOptions()",
+      "members": [
+        {
+          "name": "root",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "now_ms",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ttl_ms",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "patrolDrift",

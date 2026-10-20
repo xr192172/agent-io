@@ -14,13 +14,71 @@
       "name": "FunctionEntry",
       "kind": "interface",
       "line": 20,
-      "signature": "FunctionEntry()"
+      "signature": "FunctionEntry()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": EntryKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "mcp",
+          "type": ": { title: string; description: string }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "cli",
+          "type": ": { file: string; desc: string; usage: string }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "desc",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "summarySource",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "implModules",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FunctionRegistry",
       "kind": "interface",
       "line": 36,
-      "signature": "FunctionRegistry()"
+      "signature": "FunctionRegistry()",
+      "members": [
+        {
+          "name": "entries",
+          "type": ": FunctionEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "meta",
+          "type": ": { mcp: number; cli: number; both: number; mcp_only: number; cli_only: number }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "collectFunctions",

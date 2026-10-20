@@ -8,13 +8,83 @@
       "name": "DeriveMindMapInput",
       "kind": "interface",
       "line": 40,
-      "signature": "DeriveMindMapInput()"
+      "signature": "DeriveMindMapInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "gen_descriptions",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_files_per_community",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "output_path",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "view",
+          "type": ": 'structure' | 'teach'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "incremental",
+          "type": ": { dirty_paths?: string[] }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeriveMindMapResult",
       "kind": "interface",
       "line": 58,
-      "signature": "DeriveMindMapResult()"
+      "signature": "DeriveMindMapResult()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "mode",
+          "type": ": 'llm' | 'rule'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "mind_map",
+          "type": ": MindMap",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "jsonFile",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "getMindMapFile",
@@ -50,13 +120,77 @@
       "name": "FileInfo",
       "kind": "interface",
       "line": 94,
-      "signature": "FileInfo()"
+      "signature": "FileInfo()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "responsibility",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lines",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "apis",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "actual_deps",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FileIndex",
       "kind": "type",
       "line": 108,
-      "signature": "FileIndex()"
+      "signature": "FileIndex()",
+      "members": [
+        {
+          "name": "exact",
+          "type": ": Map<string, FileInfo>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "bySuffix",
+          "type": ": Map<string, FileInfo>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildFileIndex",
@@ -152,7 +286,21 @@
       "name": "StepFlowOut",
       "kind": "interface",
       "line": 466,
-      "signature": "StepFlowOut()"
+      "signature": "StepFlowOut()",
+      "members": [
+        {
+          "name": "edges",
+          "type": ": TeachFlowEdge[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "gaps",
+          "type": ": TeachGap[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "deriveStepFlow",
@@ -164,7 +312,27 @@
       "name": "CrossFeatureFlowEdge",
       "kind": "interface",
       "line": 585,
-      "signature": "CrossFeatureFlowEdge()"
+      "signature": "CrossFeatureFlowEdge()",
+      "members": [
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "data",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "deriveCrossFeatureFlow",
@@ -176,7 +344,27 @@
       "name": "FileFlowNode",
       "kind": "interface",
       "line": 638,
-      "signature": "FileFlowNode()"
+      "signature": "FileFlowNode()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "inputs",
+          "type": ": TeachPin[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "outputs",
+          "type": ": TeachPin[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "deriveFileFlow",
@@ -230,7 +418,27 @@
       "name": "TeachScript",
       "kind": "interface",
       "line": 893,
-      "signature": "TeachScript()"
+      "signature": "TeachScript()",
+      "members": [
+        {
+          "name": "what",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "steps",
+          "type": ": TeachStep[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pipeline_like",
+          "type": ": { like?: boolean; why?: string }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "makeFileMatcher",
@@ -320,7 +528,27 @@
       "name": "PlaceProposalsResult",
       "kind": "interface",
       "line": 1933,
-      "signature": "PlaceProposalsResult()"
+      "signature": "PlaceProposalsResult()",
+      "members": [
+        {
+          "name": "proposals",
+          "type": ": ProposalFeature[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "mode",
+          "type": ": 'llm' | 'rule'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "placeProposals",
@@ -350,31 +578,233 @@
       "name": "ResolvedNoteTarget",
       "kind": "interface",
       "line": 2471,
-      "signature": "ResolvedNoteTarget()"
+      "signature": "ResolvedNoteTarget()",
+      "members": [
+        {
+          "name": "nodeId",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'file' | 'step' | 'feature' | 'other'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "via",
+          "type": ": 'anchor' | 'hit' | 'nearest'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "step",
+          "type": ": { seq: number; title: string; detail?: string }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": { id: string; path: string; name: string }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": {\n    title: string;\n    responsibility?: string;\n    layer?: string;\n    status?: string;\n    inputs?: string[];\n    outputs?: string[];\n    apis?: string[];\n  }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ResolvedCanvasNote",
       "kind": "interface",
       "line": 2497,
-      "signature": "ResolvedCanvasNote()"
+      "signature": "ResolvedCanvasNote()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "color",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'open' | 'done' | 'rejected'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "created",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "primitives",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "target",
+          "type": ": ResolvedNoteTarget | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TeachStepIdx",
       "kind": "interface",
       "line": 2512,
-      "signature": "TeachStepIdx()"
+      "signature": "TeachStepIdx()",
+      "members": [
+        {
+          "name": "featureId",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "featureLabel",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "seq",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "involves",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "inputs",
+          "type": ": TeachPin[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "outputs",
+          "type": ": TeachPin[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TeachIndex",
       "kind": "interface",
       "line": 2524,
-      "signature": "TeachIndex()"
+      "signature": "TeachIndex()",
+      "members": [
+        {
+          "name": "stepsByFeature",
+          "type": ": Map<string, TeachStepIdx[]>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "filesToSteps",
+          "type": ": Map<string, TeachStepIdx[]>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "features",
+          "type": ": Array<{ id: string; label: string; kind: string }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "NoteCtx",
       "kind": "interface",
       "line": 2534,
-      "signature": "NoteCtx()"
+      "signature": "NoteCtx()",
+      "members": [
+        {
+          "name": "fileIndex",
+          "type": ": FileIndex",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fileById",
+          "type": ": Map<string, FileInfo>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "nodeById",
+          "type": ": Map<string, Node>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "geoNodes",
+          "type": ": Node[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "teach",
+          "type": ": TeachIndex",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "featureNames",
+          "type": ": Map<string, string>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "resolveCanvasNoteTargets",
@@ -482,7 +912,57 @@
       "name": "CanvasNotesDigest",
       "kind": "interface",
       "line": 2866,
-      "signature": "CanvasNotesDigest()"
+      "signature": "CanvasNotesDigest()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "generated_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "open",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "done",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rejected",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "markdown",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "json",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "NOTE_STATUS_LABEL",

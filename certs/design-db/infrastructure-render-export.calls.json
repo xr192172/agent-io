@@ -38,13 +38,47 @@
       "name": "ExportSvgInput",
       "kind": "interface",
       "line": 104,
-      "signature": "ExportSvgInput()"
+      "signature": "ExportSvgInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "output_path",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ExportSvgResult",
       "kind": "interface",
       "line": 109,
-      "signature": "ExportSvgResult()"
+      "signature": "ExportSvgResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "exportSvg",
@@ -56,13 +90,47 @@
       "name": "ExportMarkdownInput",
       "kind": "interface",
       "line": 149,
-      "signature": "ExportMarkdownInput()"
+      "signature": "ExportMarkdownInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "output_path",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ExportMarkdownResult",
       "kind": "interface",
       "line": 154,
-      "signature": "ExportMarkdownResult()"
+      "signature": "ExportMarkdownResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "exportMarkdown",

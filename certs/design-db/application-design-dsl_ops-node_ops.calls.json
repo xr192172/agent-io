@@ -38,7 +38,171 @@
       "name": "AddNodeInput",
       "kind": "interface",
       "line": 98,
-      "signature": "AddNodeInput()"
+      "signature": "AddNodeInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "x",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "y",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "width",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "height",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "bg",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "color",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "border",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "borderRadius",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "shape",
+          "type": ": 'rect' | 'rounded' | 'circle' | 'diamond' | 'freeform'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "shadow",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "opacity",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": DiagramStatus",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "swimlane",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "content",
+          "type": ": NodeContent",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "sub_dsl",
+          "type": ": DesignDSL",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer",
+          "type": ": NodeLayer",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "host",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "shapes",
+          "type": ": NodeShapes",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "attributes",
+          "type": ": Record<string, string | number | boolean>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "decision",
+          "type": ": NodeDecision",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "agent",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "addNode",
@@ -50,7 +214,183 @@
       "name": "UpdateNodeInput",
       "kind": "interface",
       "line": 242,
-      "signature": "UpdateNodeInput()"
+      "signature": "UpdateNodeInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "x",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "y",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "width",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "height",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "bg",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "color",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "border",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "borderRadius",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "shape",
+          "type": ": 'rect' | 'rounded' | 'circle' | 'diamond' | 'freeform'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "shadow",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "opacity",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "path",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": DiagramStatus",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "swimlane",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "content",
+          "type": ": NodeContent",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "sub_dsl",
+          "type": ": DesignDSL",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer",
+          "type": ": NodeLayer | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "host",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "shapes",
+          "type": ": NodeShapes | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "attributes",
+          "type": ": Record<string, string | number | boolean> | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "decision",
+          "type": ": NodeDecision | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "decision_note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "author",
+          "type": ": DecisionAuthor",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "agent",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "assertDecisionFieldShapes",
@@ -74,7 +414,21 @@
       "name": "DeleteNodeInput",
       "kind": "interface",
       "line": 502,
-      "signature": "DeleteNodeInput()"
+      "signature": "DeleteNodeInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "deleteNode",

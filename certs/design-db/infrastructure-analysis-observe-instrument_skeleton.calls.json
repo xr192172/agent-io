@@ -8,7 +8,57 @@
       "name": "AstNode",
       "kind": "interface",
       "line": 56,
-      "signature": "AstNode()"
+      "signature": "AstNode()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "startIndex",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "endIndex",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "startPosition",
+          "type": ": { row: number; column: number }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "childCount",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "child",
+          "type": ": AstNode | null",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "childForFieldName",
+          "type": ": AstNode | null",
+          "optional": true,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "asNode",
@@ -20,7 +70,27 @@
       "name": "Insertion",
       "kind": "type",
       "line": 73,
-      "signature": "Insertion()"
+      "signature": "Insertion()",
+      "members": [
+        {
+          "name": "index",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "removeTo",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "site",
+          "type": ": InstrumentedSite",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "matchesContract",
@@ -50,7 +120,57 @@
       "name": "CollectSitesCtx",
       "kind": "interface",
       "line": 181,
-      "signature": "CollectSitesCtx()"
+      "signature": "CollectSitesCtx()",
+      "members": [
+        {
+          "name": "root",
+          "type": ": AstNode",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "content",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fileRel",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "probes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "insertions",
+          "type": ": Insertion[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fail",
+          "type": ": (message: string) => void",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "isBracelessBodyReturn",
@@ -62,7 +182,75 @@
       "name": "InstrumentHooks",
       "kind": "interface",
       "line": 229,
-      "signature": "InstrumentHooks()"
+      "signature": "InstrumentHooks()",
+      "members": [
+        {
+          "name": "lang",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "markers",
+          "type": ": { core: string; deep: string }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "comment",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "probeImport",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "rootMarker",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rootHint",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "buildImportStmt",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "packageDeclNode",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fnTypes",
+          "type": ": ReadonlySet<string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "collectSites",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "collectDeepSites",
+          "type": ": void",
+          "optional": true,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "BACKUP_DIR",

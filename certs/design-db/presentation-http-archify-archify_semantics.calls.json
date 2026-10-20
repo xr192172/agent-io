@@ -20,19 +20,145 @@
       "name": "SemanticNode",
       "kind": "interface",
       "line": 22,
-      "signature": "SemanticNode()"
+      "signature": "SemanticNode()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sublabel",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "tag",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "role",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pinsIn",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pinsOut",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SemanticEdge",
       "kind": "interface",
       "line": 23,
-      "signature": "SemanticEdge()"
+      "signature": "SemanticEdge()",
+      "members": [
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "data",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'flow' | 'async' | 'return' | 'error'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SemanticSurface",
       "kind": "interface",
       "line": 24,
-      "signature": "SemanticSurface()"
+      "signature": "SemanticSurface()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "nodes",
+          "type": ": SemanticNode[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edges",
+          "type": ": SemanticEdge[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "mainPath",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "colOrder",
+          "type": ": Map<string, number>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "groupOf",
+          "type": ": Map<string, string>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "legalNodeId",
@@ -44,13 +170,89 @@
       "name": "RawNode",
       "kind": "interface",
       "line": 31,
-      "signature": "RawNode()"
+      "signature": "RawNode()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "role",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "pins",
+          "type": ": { in?: string[]; out?: string[] }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "children",
+          "type": ": { nodes?: RawNode[]; edges?: REdge[] }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "REdge",
       "kind": "interface",
       "line": 32,
-      "signature": "REdge()"
+      "signature": "REdge()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "deriveSemantics",

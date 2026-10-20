@@ -8,13 +8,89 @@
       "name": "DeriveAlgorithmInput",
       "kind": "interface",
       "line": 24,
-      "signature": "DeriveAlgorithmInput()"
+      "signature": "DeriveAlgorithmInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "function",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source_path",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_root",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_depth",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeriveAlgorithmResult",
       "kind": "interface",
       "line": 38,
-      "signature": "DeriveAlgorithmResult()"
+      "signature": "DeriveAlgorithmResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "nodes_created",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edges_created",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "truncated",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dead_code",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "algorithm_stats",
+          "type": ": { steps: number; branches: number; loops: number; returns: number; throws: number; handlers: number }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "KIND_SHAPE",

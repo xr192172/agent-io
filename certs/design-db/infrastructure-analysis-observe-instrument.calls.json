@@ -14,7 +14,57 @@
       "name": "InstrNode",
       "kind": "interface",
       "line": 67,
-      "signature": "InstrNode()"
+      "signature": "InstrNode()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "startIndex",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "endIndex",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "startPosition",
+          "type": ": { row: number; column: number }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "childCount",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "child",
+          "type": ": InstrNode | null",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "childForFieldName",
+          "type": ": InstrNode | null",
+          "optional": true,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "asInstr",
@@ -32,19 +82,145 @@
       "name": "InstrumentedSite",
       "kind": "interface",
       "line": 87,
-      "signature": "InstrumentedSite()"
+      "signature": "InstrumentedSite()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'enter' | 'exit' | 'catch' | 'io' | 'deep'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "level",
+          "type": ": ProbeLevel",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "probe",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "extraProbes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "template",
+          "type": ": (inner: string) => string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "injected",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "InstrumentFileResult",
       "kind": "interface",
       "line": 124,
-      "signature": "InstrumentFileResult()"
+      "signature": "InstrumentFileResult()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sites",
+          "type": ": InstrumentedSite[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "functions",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "probeImport",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "InstrumentOptions",
       "kind": "interface",
       "line": 144,
-      "signature": "InstrumentOptions()"
+      "signature": "InstrumentOptions()",
+      "members": [
+        {
+          "name": "probeImport",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "projectRoot",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "backupRoot",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "write",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "enableDeep",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "contractProbes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PROBE_MARKER",
@@ -86,7 +262,45 @@
       "name": "ProbeLedger",
       "kind": "interface",
       "line": 232,
-      "signature": "ProbeLedger()"
+      "signature": "ProbeLedger()",
+      "members": [
+        {
+          "name": "projectRoot",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "instrumentedAt",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sites",
+          "type": ": InstrumentedSite[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": Array<{ file: string; sites: number; functions: number }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "contractMode",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "stats",
+          "type": ": {\n    /** 探针点总数 */\n    total: number;\n    /** 涉及文件数（★ 只数**有探针点**的文件 —— 与 `files.length` 不等） */\n    files: number;\n    /** 按插桩类型统计（enter/exit/catch/io/deep） */\n    perKind: Record<string, number>;\n    /** 按事件级别统计（core/event/deep） */\n    perLevel: Record<string, number>;\n  }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ledgerPath",

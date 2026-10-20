@@ -8,25 +8,183 @@
       "name": "ParsedSymbol",
       "kind": "interface",
       "line": 33,
-      "signature": "ParsedSymbol()"
+      "signature": "ParsedSymbol()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'function' | 'method' | 'class' | 'interface' | 'type' | 'const'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "qualified_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parent",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "is_closure",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "members",
+          "type": ": ParsedTypeMember[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ParsedImport",
       "kind": "interface",
       "line": 59,
-      "signature": "ParsedImport()"
+      "signature": "ParsedImport()",
+      "members": [
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'relative' | 'package'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type_only",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "bindings",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ParsedCall",
       "kind": "interface",
       "line": 80,
-      "signature": "ParsedCall()"
+      "signature": "ParsedCall()",
+      "members": [
+        {
+          "name": "caller",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "callee",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "callee_expr",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolved",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "callee_qn",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ParsedTypeRef",
       "kind": "interface",
       "line": 96,
-      "signature": "ParsedTypeRef()"
+      "signature": "ParsedTypeRef()",
+      "members": [
+        {
+          "name": "referrer",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolved",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "target_qn",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "nodeTypeToKind",
@@ -38,7 +196,75 @@
       "name": "SyntaxNodeLike",
       "kind": "interface",
       "line": 137,
-      "signature": "SyntaxNodeLike()"
+      "signature": "SyntaxNodeLike()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "startPosition",
+          "type": ": { row: number }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "endPosition",
+          "type": ": { row: number }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "startIndex",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "endIndex",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "isNamed",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "hasError",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "childForFieldName",
+          "type": ": SyntaxNodeLike | null",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "child",
+          "type": ": SyntaxNodeLike | null",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "childCount",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "fieldText",
@@ -116,7 +342,153 @@
       "name": "LangImportAdapter",
       "kind": "interface",
       "line": 464,
-      "signature": "LangImportAdapter()"
+      "signature": "LangImportAdapter()",
+      "members": [
+        {
+          "name": "callNode",
+          "type": ": string | string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "topLevelCall",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "calleeFields",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "calleeObjectField",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "calleeIsFirstChild",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "calleeChildIndex",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "bodyFields",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "bodyNodeTypes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "bodyIsExpression",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "bodyIsSelf",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "nameNodeTypes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "namePaths",
+          "type": ": string[][]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "nodeKindOverride",
+          "type": ": Record<string, ParsedSymbol['kind']>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbolDispatch",
+          "type": ": { field: string; kinds: Record<string, ParsedSymbol['kind']> }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbolRequireFields",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "importSourceField",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "erasedModuleStatements",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "returnSep",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "signatureHasReceiver",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "stripSelfParam",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "parentFromReceiver",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "closureLiteralNodeTypes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "extractImportSources",
+          "type": ": (node: SyntaxNodeLike) => string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "extractImportBindings",
+          "type": ": (node: SyntaxNodeLike, paths: string[]) => string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "includePath",
@@ -260,13 +632,29 @@
       "name": "TreeLike",
       "kind": "interface",
       "line": 1734,
-      "signature": "TreeLike()"
+      "signature": "TreeLike()",
+      "members": [
+        {
+          "name": "rootNode",
+          "type": ": SyntaxNodeLike",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ParserLike",
       "kind": "type",
       "line": 1737,
-      "signature": "ParserLike()"
+      "signature": "ParserLike()",
+      "members": [
+        {
+          "name": "parse",
+          "type": ": (input: string | ((byteOffset: number) => string)) => TreeLike",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "parseViaCallback",
@@ -296,7 +684,39 @@
       "name": "ParsedFile",
       "kind": "interface",
       "line": 1822,
-      "signature": "ParsedFile()"
+      "signature": "ParsedFile()",
+      "members": [
+        {
+          "name": "symbols",
+          "type": ": ParsedSymbol[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "imports",
+          "type": ": ParsedImport[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "calls",
+          "type": ": ParsedCall[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type_refs",
+          "type": ": ParsedTypeRef[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "parseTreeForFile",

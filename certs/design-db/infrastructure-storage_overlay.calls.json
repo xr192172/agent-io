@@ -26,7 +26,33 @@
       "name": "MergeResult",
       "kind": "interface",
       "line": 44,
-      "signature": "MergeResult()"
+      "signature": "MergeResult()",
+      "members": [
+        {
+          "name": "dsl",
+          "type": ": DesignDSL",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stats",
+          "type": ": ReconcileStats",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "seeded",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "syncTagsToOverlay",

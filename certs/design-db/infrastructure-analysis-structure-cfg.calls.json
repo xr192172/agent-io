@@ -14,19 +14,109 @@
       "name": "CfgNode",
       "kind": "interface",
       "line": 28,
-      "signature": "CfgNode()"
+      "signature": "CfgNode()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": CfgNodeKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "condition",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "col",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CfgEdge",
       "kind": "interface",
       "line": 40,
-      "signature": "CfgEdge()"
+      "signature": "CfgEdge()",
+      "members": [
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FunctionCfg",
       "kind": "interface",
       "line": 47,
-      "signature": "FunctionCfg()"
+      "signature": "FunctionCfg()",
+      "members": [
+        {
+          "name": "funcName",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "nodes",
+          "type": ": CfgNode[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edges",
+          "type": ": CfgEdge[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "truncated",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "deadCode",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CtrlKind",
@@ -56,13 +146,95 @@
       "name": "Exit",
       "kind": "interface",
       "line": 120,
-      "signature": "Exit()"
+      "signature": "Exit()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "via",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Ctx",
       "kind": "interface",
       "line": 125,
-      "signature": "Ctx()"
+      "signature": "Ctx()",
+      "members": [
+        {
+          "name": "lang",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxDepth",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "nodes",
+          "type": ": CfgNode[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edges",
+          "type": ": CfgEdge[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "seq",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "truncated",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "deadCode",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "returns",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "loopStack",
+          "type": ": Array<{ headerId: string; breaks: string[] }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "handlerStack",
+          "type": ": Array<{ id: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "uncaughtThrows",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "addNode",
@@ -134,7 +306,21 @@
       "name": "SeqResult",
       "kind": "interface",
       "line": 267,
-      "signature": "SeqResult()"
+      "signature": "SeqResult()",
+      "members": [
+        {
+          "name": "entry",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "exits",
+          "type": ": Exit[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildSeq",

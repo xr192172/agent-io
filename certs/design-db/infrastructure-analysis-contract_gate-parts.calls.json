@@ -14,13 +14,47 @@
       "name": "FileSymbols",
       "kind": "interface",
       "line": 17,
-      "signature": "FileSymbols()"
+      "signature": "FileSymbols()",
+      "members": [
+        {
+          "name": "declared",
+          "type": ": Set<string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "aliases",
+          "type": ": Set<string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "locals",
+          "type": ": Set<string>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RefHit",
       "kind": "interface",
       "line": 24,
-      "signature": "RefHit()"
+      "signature": "RefHit()",
+      "members": [
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ident",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "scanDotRefs",
@@ -32,7 +66,45 @@
       "name": "CgLangPackage",
       "kind": "interface",
       "line": 57,
-      "signature": "CgLangPackage()"
+      "signature": "CgLangPackage()",
+      "members": [
+        {
+          "name": "lang",
+          "type": ": Lang",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "exts",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reserved",
+          "type": ": ReadonlySet<string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "globals",
+          "type": ": ReadonlySet<string>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "collectSymbols",
+          "type": ": FileSymbols",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "collectReferences",
+          "type": ": RefHit[]",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "addDeclared",

@@ -8,31 +8,167 @@
       "name": "RefactorTarget",
       "kind": "interface",
       "line": 38,
-      "signature": "RefactorTarget()"
+      "signature": "RefactorTarget()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "old_text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "new_text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PlanHit",
       "kind": "interface",
       "line": 45,
-      "signature": "PlanHit()"
+      "signature": "PlanHit()",
+      "members": [
+        {
+          "name": "level",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "old_lines",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "new_lines",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RefactorPlanItem",
       "kind": "interface",
       "line": 54,
-      "signature": "RefactorPlanItem()"
+      "signature": "RefactorPlanItem()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "old",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "new",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "hit",
+          "type": ": PlanHit",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "preview",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RefactorPlanFile",
       "kind": "interface",
       "line": 67,
-      "signature": "RefactorPlanFile()"
+      "signature": "RefactorPlanFile()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "base_fingerprint",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "post_fingerprint",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RefactorPlan",
       "kind": "interface",
       "line": 79,
-      "signature": "RefactorPlan()"
+      "signature": "RefactorPlan()",
+      "members": [
+        {
+          "name": "schema",
+          "type": ": 'refactor_plan/1'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "plan_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "items",
+          "type": ": RefactorPlanItem[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": RefactorPlanFile[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "summary",
+          "type": ": { items: number; files: number; by_level: Record<string, number> }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SCHEMA",
@@ -74,13 +210,107 @@
       "name": "ApplyPlanItemResult",
       "kind": "interface",
       "line": 185,
-      "signature": "ApplyPlanItemResult()"
+      "signature": "ApplyPlanItemResult()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": ApplyItemStatus",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "hit",
+          "type": ": PlanHit",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol_diff",
+          "type": ": { added: number; removed: number; changed: number }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "index_synced",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ApplyPlanResult",
       "kind": "interface",
       "line": 194,
-      "signature": "ApplyPlanResult()"
+      "signature": "ApplyPlanResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "plan_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "written",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "items",
+          "type": ": ApplyPlanItemResult[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "applied",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "already_applied",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "failed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "atomic",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Decision",

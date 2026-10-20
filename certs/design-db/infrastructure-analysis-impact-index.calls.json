@@ -8,37 +8,205 @@
       "name": "ImpactSite",
       "kind": "interface",
       "line": 31,
-      "signature": "ImpactSite()"
+      "signature": "ImpactSite()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": 'import' | 'call' | 'type_ref'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "target_symbol",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "target_file",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ImpactedFile",
       "kind": "interface",
       "line": 42,
-      "signature": "ImpactedFile()"
+      "signature": "ImpactedFile()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "depth",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sites",
+          "type": ": ImpactSite[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dep_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "risk",
+          "type": ": 'high' | 'medium' | 'low'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ImpactChangePoint",
       "kind": "interface",
       "line": 54,
-      "signature": "ImpactChangePoint()"
+      "signature": "ImpactChangePoint()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ImpactReport",
       "kind": "interface",
       "line": 61,
-      "signature": "ImpactReport()"
+      "signature": "ImpactReport()",
+      "members": [
+        {
+          "name": "root",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "changePoints",
+          "type": ": ImpactChangePoint[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "missing",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": ImpactedFile[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "direct",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "high_risk",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fell_back",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "bounds",
+          "type": ": ScanBounds",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "HubFile",
       "kind": "interface",
       "line": 83,
-      "signature": "HubFile()"
+      "signature": "HubFile()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dependents",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dependencies",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "risk",
+          "type": ": 'high' | 'medium' | 'low'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ImpactOptions",
       "kind": "interface",
       "line": 92,
-      "signature": "ImpactOptions()"
+      "signature": "ImpactOptions()",
+      "members": [
+        {
+          "name": "maxDepth",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "EdgeMap",
@@ -50,7 +218,39 @@
       "name": "GraphResult",
       "kind": "interface",
       "line": 102,
-      "signature": "GraphResult()"
+      "signature": "GraphResult()",
+      "members": [
+        {
+          "name": "rels",
+          "type": ": Set<string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edges",
+          "type": ": EdgeMap",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reverse",
+          "type": ": Map<string, Set<string>>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "nameIndex",
+          "type": ": Map<string, Array<{ rel: string; sym: ParsedSymbol }>>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "excludedNonCode",
+          "type": ": Array<{ ext: string; count: number }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TYPE_KINDS",

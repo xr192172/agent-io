@@ -32,13 +32,71 @@
       "name": "SubmitApprovalInput",
       "kind": "interface",
       "line": 53,
-      "signature": "SubmitApprovalInput()"
+      "signature": "SubmitApprovalInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotation_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "assignee",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "submitter",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "comment",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SubmitApprovalResult",
       "kind": "interface",
       "line": 61,
-      "signature": "SubmitApprovalResult()"
+      "signature": "SubmitApprovalResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotation_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": ApprovalStatus",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "submitApproval",
@@ -68,13 +126,71 @@
       "name": "ReviewAnnotationInput",
       "kind": "interface",
       "line": 130,
-      "signature": "ReviewAnnotationInput()"
+      "signature": "ReviewAnnotationInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotation_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "decision",
+          "type": ": ApprovalDecision",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reviewer",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "comment",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReviewAnnotationResult",
       "kind": "interface",
       "line": 138,
-      "signature": "ReviewAnnotationResult()"
+      "signature": "ReviewAnnotationResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotation_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": ApprovalStatus",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "reviewAnnotation",
@@ -86,13 +202,53 @@
       "name": "ListApprovalsInput",
       "kind": "interface",
       "line": 186,
-      "signature": "ListApprovalsInput()"
+      "signature": "ListApprovalsInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": ApprovalStatus",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "assignee",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ListApprovalsResult",
       "kind": "interface",
       "line": 192,
-      "signature": "ListApprovalsResult()"
+      "signature": "ListApprovalsResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotations",
+          "type": ": Array<{\n    id: string;\n    text: string;\n    type?: string;\n    status: ApprovalStatus | 'draft';\n    assignee?: string;\n    node_id?: string;\n    history_count: number;\n  }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "listApprovals",
@@ -104,13 +260,59 @@
       "name": "GetApprovalHistoryInput",
       "kind": "interface",
       "line": 270,
-      "signature": "GetApprovalHistoryInput()"
+      "signature": "GetApprovalHistoryInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotation_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "GetApprovalHistoryResult",
       "kind": "interface",
       "line": 275,
-      "signature": "GetApprovalHistoryResult()"
+      "signature": "GetApprovalHistoryResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotation_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "current_status",
+          "type": ": ApprovalStatus | 'draft'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "history",
+          "type": ": ApprovalHistoryEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "getApprovalHistory",

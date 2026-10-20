@@ -8,7 +8,45 @@
       "name": "DetectDriftInput",
       "kind": "interface",
       "line": 25,
-      "signature": "DetectDriftInput()"
+      "signature": "DetectDriftInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "code_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope",
+          "type": ": 'changed' | 'all'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "since_ref",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed_files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "mode",
+          "type": ": 'check' | 'status'",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DriftStatus",
@@ -20,7 +58,69 @@
       "name": "DriftData",
       "kind": "interface",
       "line": 54,
-      "signature": "DriftData()"
+      "signature": "DriftData()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": DriftStatus",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "drifted",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope",
+          "type": ": { mode: 'changed' | 'all'; since_ref: string | null; changed_files: number }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "summary",
+          "type": ": {\n    checked_files: number;\n    /**\n     * ★★★ 2026-10-10：**本轮真的比了几条 `expected_apis`**（`matched+missing+mismatched+unexpected`）。\n     *   = 0 ⇒ `status='no_comparison'`（没得比）—— ★ 别把\"全 0\"读成\"对齐\"。\n     */\n    compared: number;\n    matched: number;\n    missing: number;\n    mismatched: number;\n    unexpected: number;\n    invariant_passed: number;\n    invariant_failed: number;\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stale_files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "missing_files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "suggestions",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "checked_at",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "persisted",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "driftFile",

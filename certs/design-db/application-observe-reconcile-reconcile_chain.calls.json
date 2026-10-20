@@ -8,31 +8,227 @@
       "name": "ReconcileChainInput",
       "kind": "interface",
       "line": 36,
-      "signature": "ReconcileChainInput()"
+      "signature": "ReconcileChainInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "events_files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "force",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_steps",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReconcileChainFunction",
       "kind": "interface",
       "line": 51,
-      "signature": "ReconcileChainFunction()"
+      "signature": "ReconcileChainFunction()",
+      "members": [
+        {
+          "name": "step",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "is_cross",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReconcileChainObserved",
       "kind": "interface",
       "line": 60,
-      "signature": "ReconcileChainObserved()"
+      "signature": "ReconcileChainObserved()",
+      "members": [
+        {
+          "name": "trace_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sequence",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "errs",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "events",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReconcileChainDeviation",
       "kind": "interface",
       "line": 67,
-      "signature": "ReconcileChainDeviation()"
+      "signature": "ReconcileChainDeviation()",
+      "members": [
+        {
+          "name": "probe",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "time",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rule",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReconcileChainResult",
       "kind": "interface",
       "line": 74,
-      "signature": "ReconcileChainResult()"
+      "signature": "ReconcileChainResult()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "host_file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "derive",
+          "type": ": 'derived' | 'cached'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "chain",
+          "type": ": ReconcileChainFunction[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "events",
+          "type": ": {\n    files: string[];\n    chain_events: number;\n    total_events: number;\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "observed",
+          "type": ": ReconcileChainObserved[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "deviations",
+          "type": ": ReconcileChainDeviation[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "chain_match",
+          "type": ": {\n    mode: 'bare-name';\n    status: 'satisfied' | 'broken' | 'unobserved' | 'no-events';\n    matched: number;\n    want: string[];\n    best_observed?: string[];\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "not_run",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "discoverEventFiles",

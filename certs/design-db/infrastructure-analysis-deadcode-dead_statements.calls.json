@@ -8,13 +8,65 @@
       "name": "DeadStatementRun",
       "kind": "interface",
       "line": 39,
-      "signature": "DeadStatementRun()"
+      "signature": "DeadStatementRun()",
+      "members": [
+        {
+          "name": "category",
+          "type": ": 'unreachable'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stmt_type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "snippet",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeadStatementReport",
       "kind": "interface",
       "line": 51,
-      "signature": "DeadStatementReport()"
+      "signature": "DeadStatementReport()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lang",
+          "type": ": 'go' | 'ts'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "runs",
+          "type": ": DeadStatementRun[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TS_TERMINAL",

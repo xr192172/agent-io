@@ -8,7 +8,27 @@
       "name": "EditResult",
       "kind": "interface",
       "line": 6,
-      "signature": "EditResult()"
+      "signature": "EditResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "data",
+          "type": ": unknown",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     }
   ],
   "imports": [],

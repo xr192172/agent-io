@@ -14,19 +14,175 @@
       "name": "EditCodeArgs",
       "kind": "interface",
       "line": 59,
-      "signature": "EditCodeArgs()"
+      "signature": "EditCodeArgs()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "op",
+          "type": ": EditCodeOp",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "parent",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "code",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "start",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "end",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "dry_run",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "quiet",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "old_text",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "new_text",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "sub",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "targets",
+          "type": ": Array<{ file: string; old_text: string; new_text: string }>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "atomic",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "EditBatchItem",
       "kind": "interface",
       "line": 103,
-      "signature": "EditBatchItem()"
+      "signature": "EditBatchItem()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "written",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "hit",
+          "type": ": { level: number; label: string; start_line: number; old_lines: number; new_lines: number }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol_diff",
+          "type": ": { added: number; removed: number; changed: number }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "index_synced",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LineOp",
       "kind": "interface",
       "line": 120,
-      "signature": "LineOp()"
+      "signature": "LineOp()",
+      "members": [
+        {
+          "name": "startIdx",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "insert",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "normalizeCode",
@@ -128,13 +284,125 @@
       "name": "EditReceipt",
       "kind": "interface",
       "line": 344,
-      "signature": "EditReceipt()"
+      "signature": "EditReceipt()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "op",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dry_run",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "written",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "hit",
+          "type": ": { level: number; label: string; start_line: number; old_lines: number; new_lines: number }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "index_synced",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol_diff",
+          "type": ": { added: number; removed: number; changed: number }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "items",
+          "type": ": EditBatchItem[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "succeeded",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "failed",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "atomic",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReplaceTextPlan",
       "kind": "interface",
       "line": 373,
-      "signature": "ReplaceTextPlan()"
+      "signature": "ReplaceTextPlan()",
+      "members": [
+        {
+          "name": "newContent",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "hit",
+          "type": ": NonNullable<EditReceipt['hit']>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "preview",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "levelNote",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "matchedLineCount",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "planReplaceText",

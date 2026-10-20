@@ -26,13 +26,71 @@
       "name": "ParityOptions",
       "kind": "interface",
       "line": 55,
-      "signature": "ParityOptions()"
+      "signature": "ParityOptions()",
+      "members": [
+        {
+          "name": "goSource",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "funcName",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tsOutput",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cases",
+          "type": ": BehaviorCase[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "params",
+          "type": ": TranslateParam[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "runHarnessImpl",
+          "type": ": typeof runHarness",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ParityResult",
       "kind": "interface",
       "line": 70,
-      "signature": "ParityResult()"
+      "signature": "ParityResult()",
+      "members": [
+        {
+          "name": "verdict",
+          "type": ": BehaviorDiff",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "goRun",
+          "type": ": BehaviorRun",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tsRun",
+          "type": ": BehaviorRun",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "checkTranslationParity",

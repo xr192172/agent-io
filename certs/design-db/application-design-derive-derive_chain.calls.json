@@ -8,13 +8,125 @@
       "name": "DeriveChainInput",
       "kind": "interface",
       "line": 23,
-      "signature": "DeriveChainInput()"
+      "signature": "DeriveChainInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source_path",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_root",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "entry",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_steps",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_branches",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_cross",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeriveChainResult",
       "kind": "interface",
       "line": 42,
-      "signature": "DeriveChainResult()"
+      "signature": "DeriveChainResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "chain",
+          "type": ": Array<{ step: number; name: string; signature: string; node_id: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "branch",
+          "type": ": Array<{ name: string; signature: string; node_id: string; caller: string; kind: 'jump' | 'extra' }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cross_calls",
+          "type": ": Array<{ caller: string; targets: string[] }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cross_trace",
+          "type": ": Array<{ caller: string; target: string; node_id: string; has_cfg: boolean }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipped",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "nodes_created",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edges_created",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Lang",
@@ -74,7 +186,21 @@
       "name": "Param",
       "kind": "interface",
       "line": 183,
-      "signature": "Param()"
+      "signature": "Param()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "parseParams",
@@ -98,7 +224,21 @@
       "name": "CallEdge",
       "kind": "interface",
       "line": 309,
-      "signature": "CallEdge()"
+      "signature": "CallEdge()",
+      "members": [
+        {
+          "name": "callee",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildCallGraph",

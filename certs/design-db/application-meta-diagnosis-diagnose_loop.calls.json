@@ -14,13 +14,65 @@
       "name": "DiagnoseLoopInput",
       "kind": "interface",
       "line": 42,
-      "signature": "DiagnoseLoopInput()"
+      "signature": "DiagnoseLoopInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symptom",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "apply",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "verify",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "verify_timeout_sec",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DiagnoseLoopResult",
       "kind": "interface",
       "line": 53,
-      "signature": "DiagnoseLoopResult()"
+      "signature": "DiagnoseLoopResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "touched",
+          "type": ": { project_dir: string; written_files?: string[] }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "data",
+          "type": ": {\r\n    stopped_at: DiagnoseLoopStage;\r\n    /** ★ 每一步的读数（★ 都不加工，原样给） */\r\n    cache?: { total: number; updated: number; failed: number; ms: number } | { error: string };\r\n    diagnosis?: { engine: string; root_cause: unknown; fix_suggestions: unknown };\r\n    patch?: { rationale: string; allowed_files: string[]; diff: string[]; changed_files: string[] };\r\n    applied?: boolean;\r\n    verify?: { command: string; ok: boolean; output_tail: string } | { skipped: true; reason: string };\r\n    reverted?: boolean;\r\n    /** ★★ 明确告诉调用方「下一步该做什么」（★ 尤其\"提交要你自己做\"） */\r\n    next: string;\r\n  }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "diagnoseLoop",

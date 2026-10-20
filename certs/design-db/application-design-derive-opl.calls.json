@@ -20,25 +20,159 @@
       "name": "OplApi",
       "kind": "interface",
       "line": 27,
-      "signature": "OplApi()"
+      "signature": "OplApi()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "OplDeclFile",
       "kind": "interface",
       "line": 34,
-      "signature": "OplDeclFile()"
+      "signature": "OplDeclFile()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lang",
+          "type": ": 'ts' | 'go' | 'py' | 'js'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "apis",
+          "type": ": OplApi[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "OplLiveFile",
       "kind": "interface",
       "line": 42,
-      "signature": "OplLiveFile()"
+      "signature": "OplLiveFile()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "state",
+          "type": ": OplLiveState",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "OplState",
       "kind": "interface",
       "line": 49,
-      "signature": "OplState()"
+      "signature": "OplState()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "idea",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parentFeat",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": OplStatus",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "mode",
+          "type": ": 'llm' | 'rule'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "decl",
+          "type": ": OplDeclFile[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "live",
+          "type": ": OplLiveFile[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "integrated",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "oplog",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "decl_code_context",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "created",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "updated",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "oplRoot",
@@ -134,7 +268,21 @@
       "name": "SignatureCacheEntry",
       "kind": "interface",
       "line": 246,
-      "signature": "SignatureCacheEntry()"
+      "signature": "SignatureCacheEntry()",
+      "members": [
+        {
+          "name": "h",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "apis",
+          "type": ": Record<string, string>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SignatureCache",

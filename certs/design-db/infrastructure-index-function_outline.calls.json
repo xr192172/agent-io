@@ -8,19 +8,181 @@
       "name": "FuncCallRef",
       "kind": "interface",
       "line": 17,
-      "signature": "FuncCallRef()"
+      "signature": "FuncCallRef()",
+      "members": [
+        {
+          "name": "fn_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cross",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FunctionOutlineFn",
       "kind": "interface",
       "line": 24,
-      "signature": "FunctionOutlineFn()"
+      "signature": "FunctionOutlineFn()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "qualified_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "calls",
+          "type": ": FuncCallRef[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "called_by",
+          "type": ": FuncCallRef[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "recursive",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature_name",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_responsibility",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "doc",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FunctionOutline",
       "kind": "interface",
       "line": 45,
-      "signature": "FunctionOutline()"
+      "signature": "FunctionOutline()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "source_root",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "db_file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "generated_at",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "functions",
+          "type": ": FunctionOutlineFn[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "symbolNameFromId",
@@ -62,13 +224,47 @@
       "name": "FeatureIndexDsl",
       "kind": "interface",
       "line": 244,
-      "signature": "FeatureIndexDsl()"
+      "signature": "FeatureIndexDsl()",
+      "members": [
+        {
+          "name": "feature_tree",
+          "type": ": {\n    features?: Array<{ id: string; name: string }>;\n    file_map?: Record<string, { feature_id: string; community_id?: number }>;\n  }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "semantic",
+          "type": ": {\n    files?: Array<{ id: string; path: string; responsibility?: string }>;\n  }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FeatureIndexEntry",
       "kind": "interface",
       "line": 255,
-      "signature": "FeatureIndexEntry()"
+      "signature": "FeatureIndexEntry()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "responsibility",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildFeatureIndex",

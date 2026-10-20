@@ -8,13 +8,47 @@
       "name": "LocateInput",
       "kind": "interface",
       "line": 21,
-      "signature": "LocateInput()"
+      "signature": "LocateInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parsed",
+          "type": ": SymptomParsed",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "anchor",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LocateResult",
       "kind": "interface",
       "line": 28,
-      "signature": "LocateResult()"
+      "signature": "LocateResult()",
+      "members": [
+        {
+          "name": "candidates",
+          "type": ": Candidate[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "warnings",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SOURCE_EXT_RE",
@@ -26,7 +60,45 @@
       "name": "NodeRow",
       "kind": "interface",
       "line": 35,
-      "signature": "NodeRow()"
+      "signature": "NodeRow()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "qualified_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "toCacheRel",

@@ -14,19 +14,103 @@
       "name": "FileDiff",
       "kind": "interface",
       "line": 42,
-      "signature": "FileDiff()"
+      "signature": "FileDiff()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "arch_layer",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "missing",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "mismatched",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unexpected",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "expectation_failures",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "retire",
+          "type": ": 'awaiting_delete' | 'ready_to_archive'",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DiffBlock",
       "kind": "interface",
       "line": 80,
-      "signature": "DiffBlock()"
+      "signature": "DiffBlock()",
+      "members": [
+        {
+          "name": "region",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "counts",
+          "type": ": {\n    missing: number;\n    mismatched: number;\n    unexpected: number;\n    expectation_failures: number;\n    /**\n     * ★ T187：本块里**处在退役流中**的文件数（`FileDiff.retire` 有值的那些）。\n     * ★ 单列一栏（而不是并进上面任一个）—— 因为它是**另一根轴**：\n     *   \"设计说该删\"既不是契约缺失、也不是验收失败 ⇒ 并进去会让读者把\"该归档\"\n     *   误读成\"契约没实现\"（而那会让人去改代码，方向正好相反）。\n     */\n    retire_files: number;\n  }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DiffBlocksResult",
       "kind": "interface",
       "line": 101,
-      "signature": "DiffBlocksResult()"
+      "signature": "DiffBlocksResult()",
+      "members": [
+        {
+          "name": "blocks",
+          "type": ": DiffBlock[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "clean_files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "notes",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildDiffBlocks",

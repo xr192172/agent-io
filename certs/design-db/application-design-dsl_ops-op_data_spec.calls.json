@@ -8,7 +8,51 @@
       "name": "OpSpec",
       "kind": "interface",
       "line": 38,
-      "signature": "OpSpec()"
+      "signature": "OpSpec()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ops",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "idRequired",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "idNote",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "required",
+          "type": ": Record<string, string[]>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "anyOf",
+          "type": ": Record<string, string[][]>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "OP_SPECS",
@@ -176,7 +220,33 @@
       "name": "FeatureOperationLike",
       "kind": "interface",
       "line": 412,
-      "signature": "FeatureOperationLike()"
+      "signature": "FeatureOperationLike()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "op",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "data",
+          "type": ": Record<string, unknown>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "checkOpSpec",

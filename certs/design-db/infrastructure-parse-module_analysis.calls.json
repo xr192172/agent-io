@@ -20,19 +20,115 @@
       "name": "ImportEdge",
       "kind": "interface",
       "line": 35,
-      "signature": "ImportEdge()"
+      "signature": "ImportEdge()",
+      "members": [
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "remoteName",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "remoteOffset",
+          "type": ": number | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "localName",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeOnly",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "star",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "isReexport",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ModuleRef",
       "kind": "interface",
       "line": 52,
-      "signature": "ModuleRef()"
+      "signature": "ModuleRef()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "offset",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "nodeType",
+          "type": ": NodeType",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ModuleAnalysis",
       "kind": "interface",
       "line": 58,
-      "signature": "ModuleAnalysis()"
+      "signature": "ModuleAnalysis()",
+      "members": [
+        {
+          "name": "rootOffsets",
+          "type": ": Map<string, number>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rootKinds",
+          "type": ": Map<string, string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rootRefs",
+          "type": ": ModuleRef[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "exportRefs",
+          "type": ": ModuleRef[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "imports",
+          "type": ": ImportEdge[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FN_TYPES",

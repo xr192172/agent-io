@@ -20,19 +20,199 @@
       "name": "StageResult",
       "kind": "interface",
       "line": 74,
-      "signature": "StageResult()"
+      "signature": "StageResult()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": StageId | string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "index",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "outcome",
+          "type": ": StageOutcome",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files_changed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "units_removed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "baseline",
+          "type": ": VerificationOutcome | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "after",
+          "type": ": VerificationOutcome | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "contract",
+          "type": ": { status: 'ok' | 'danger'; newIssues: UndefinedRef[] } | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "index_note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PipelineOptions",
       "kind": "interface",
       "line": 93,
-      "signature": "PipelineOptions()"
+      "signature": "PipelineOptions()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cwd",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "steps",
+          "type": ": {\n    /** 死语句自动删除（flagDeadStatements 自动扫目录）。可选 files 收敛范围 */\n    dead_statements?: { enabled?: boolean; files?: string[] };\n    /** 死 import 移除：未给 dead 清单时自动文件级检测（一键）；给了则用给定清单 */\n    dead_imports?: {\n      enabled?: boolean;\n      dead?: Array<{ source: string; files: string[] }>;\n    };\n    /** 包改名/提级：给 migrate 参数即启用；未给 enabled 且给了 migrate 也视为启用 */\n    package_migration?: {\n      enabled?: boolean;\n      migrate?: PackageMigrationSpec;\n    };\n    /** 函数语义注释（TS/JS）：扫覆盖→缺失的用 LLM 补→过期的(body指纹变)重注。默认 false，\n     *  enabled=true 开启；files 限定范围（相对 cwd）。写入由管线统一落盘/验证/回滚。 */\n    function_annotation?: {\n      enabled?: boolean;\n      files?: string[];\n    };\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "verify",
+          "type": ": boolean | { commands?: VerifyCommand[] }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "onReviewIssues",
+          "type": ": (issues: JudgeIssue[]) => void",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "contractGate",
+          "type": ": { enabled?: boolean; dirs?: string[] }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "submitCheck",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "verifyImpl",
+          "type": ": (o: { cwd: string; commands: VerifyCommand[] }) => VerificationOutcome",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "langs",
+          "type": ": RefactorLangRegistry",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PipelineResult",
       "kind": "interface",
       "line": 137,
-      "signature": "PipelineResult()"
+      "signature": "PipelineResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stages",
+          "type": ": StageResult[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total_files_changed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total_units_removed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "baseline",
+          "type": ": VerificationOutcome | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "planned_steps",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed_files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "submit_check",
+          "type": ": SubmitCheckResult | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "blocked",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "computeDeadStatementsPlan",
@@ -68,7 +248,45 @@
       "name": "ScheduledStep",
       "kind": "interface",
       "line": 391,
-      "signature": "ScheduledStep()"
+      "signature": "ScheduledStep()",
+      "members": [
+        {
+          "name": "stage",
+          "type": ": RefactorStageExecutor",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "enabled",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "dead",
+          "type": ": Array<{ source: string; files: string[] }>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "migrate",
+          "type": ": PackageMigrationSpec",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotate",
+          "type": ": Record<string, unknown>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "collectSteps",

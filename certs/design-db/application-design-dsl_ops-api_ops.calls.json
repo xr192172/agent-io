@@ -8,7 +8,33 @@
       "name": "AddExpectedApiInput",
       "kind": "interface",
       "line": 12,
-      "signature": "AddExpectedApiInput()"
+      "signature": "AddExpectedApiInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "notes",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "addExpectedApi",
@@ -20,7 +46,39 @@
       "name": "UpdateExpectedApiInput",
       "kind": "interface",
       "line": 42,
-      "signature": "UpdateExpectedApiInput()"
+      "signature": "UpdateExpectedApiInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "new_signature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "notes",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "updateExpectedApi",
@@ -32,7 +90,27 @@
       "name": "DeleteExpectedApiInput",
       "kind": "interface",
       "line": 73,
-      "signature": "DeleteExpectedApiInput()"
+      "signature": "DeleteExpectedApiInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "deleteExpectedApi",
@@ -44,13 +122,83 @@
       "name": "SetExpectedApisInput",
       "kind": "interface",
       "line": 104,
-      "signature": "SetExpectedApisInput()"
+      "signature": "SetExpectedApisInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "expected_apis",
+          "type": ": Array<{ signature: string; notes?: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SetExpectedApisData",
       "kind": "interface",
       "line": 115,
-      "signature": "SetExpectedApisData()"
+      "signature": "SetExpectedApisData()",
+      "members": [
+        {
+          "name": "mode",
+          "type": ": 'block-rewrite'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "before",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "after",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "added",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "removed",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kept",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "setExpectedApis",
@@ -62,7 +210,33 @@
       "name": "SetNodeSemanticInput",
       "kind": "interface",
       "line": 217,
-      "signature": "SetNodeSemanticInput()"
+      "signature": "SetNodeSemanticInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sync_status",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "setNodeSemantic",

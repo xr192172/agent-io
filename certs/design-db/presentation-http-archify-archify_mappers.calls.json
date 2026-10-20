@@ -20,7 +20,21 @@
       "name": "DiagramCandidate",
       "kind": "interface",
       "line": 15,
-      "signature": "DiagramCandidate()"
+      "signature": "DiagramCandidate()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": DiagramType",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ir",
+          "type": ": unknown",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "metaFor",

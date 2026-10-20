@@ -8,7 +8,27 @@
       "name": "CreateFeatureInput",
       "kind": "interface",
       "line": 13,
-      "signature": "CreateFeatureInput()"
+      "signature": "CreateFeatureInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "createFeature",
@@ -20,13 +40,65 @@
       "name": "CloneFeatureInput",
       "kind": "interface",
       "line": 79,
-      "signature": "CloneFeatureInput()"
+      "signature": "CloneFeatureInput()",
+      "members": [
+        {
+          "name": "source_feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "target_feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CloneFeatureResult",
       "kind": "interface",
       "line": 85,
-      "signature": "CloneFeatureResult()"
+      "signature": "CloneFeatureResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source_feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "target_feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "nodes_copied",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edges_copied",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "cloneFeature",

@@ -14,7 +14,21 @@
       "name": "SuggestOptions",
       "kind": "interface",
       "line": 36,
-      "signature": "SuggestOptions()"
+      "signature": "SuggestOptions()",
+      "members": [
+        {
+          "name": "max",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxDistance",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "normalize",

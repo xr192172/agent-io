@@ -8,7 +8,27 @@
       "name": "ConceptDef",
       "kind": "interface",
       "line": 23,
-      "signature": "ConceptDef()"
+      "signature": "ConceptDef()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "explanation",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CONCEPTS",
@@ -26,7 +46,33 @@
       "name": "SymbolInput",
       "kind": "interface",
       "line": 108,
-      "signature": "SymbolInput()"
+      "signature": "SymbolInput()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "qualified_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "detectConcepts",
@@ -38,19 +84,127 @@
       "name": "ConceptHit",
       "kind": "interface",
       "line": 208,
-      "signature": "ConceptHit()"
+      "signature": "ConceptHit()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "qualified_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "concepts",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LanguageConceptsInput",
       "kind": "interface",
       "line": 220,
-      "signature": "LanguageConceptsInput()"
+      "signature": "LanguageConceptsInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "concepts",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "limit",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LanguageConceptsResult",
       "kind": "interface",
       "line": 230,
-      "signature": "LanguageConceptsResult()"
+      "signature": "LanguageConceptsResult()",
+      "members": [
+        {
+          "name": "provider",
+          "type": ": 'detect'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "indexed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "matched",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "concept_counts",
+          "type": ": Array<{ id: string; name: string; count: number }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "hits",
+          "type": ": ConceptHit[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "resolveConceptFilter",

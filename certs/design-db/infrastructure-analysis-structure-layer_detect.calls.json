@@ -8,7 +8,45 @@
       "name": "LayerDef",
       "kind": "interface",
       "line": 23,
-      "signature": "LayerDef()"
+      "signature": "LayerDef()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "desc",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "color",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "patterns",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "allowed_deps",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LAYER_DEFS",
@@ -50,19 +88,91 @@
       "name": "ImportEdge",
       "kind": "interface",
       "line": 198,
-      "signature": "ImportEdge()"
+      "signature": "ImportEdge()",
+      "members": [
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "via",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LayerViolation",
       "kind": "interface",
       "line": 205,
-      "signature": "LayerViolation()"
+      "signature": "LayerViolation()",
+      "members": [
+        {
+          "name": "from_file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "from_layer",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to_file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to_layer",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "via",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DetectLayerViolationsInput",
       "kind": "interface",
       "line": 213,
-      "signature": "DetectLayerViolationsInput()"
+      "signature": "DetectLayerViolationsInput()",
+      "members": [
+        {
+          "name": "defs",
+          "type": ": LayerDef[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fileLayers",
+          "type": ": Record<string, string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edges",
+          "type": ": ImportEdge[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "parseImportsLight",

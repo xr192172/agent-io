@@ -8,7 +8,33 @@
       "name": "DictClassResult",
       "kind": "type",
       "line": 19,
-      "signature": "DictClassResult()"
+      "signature": "DictClassResult()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": 'global' | 'project' | 'unknown'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "term",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "aliases",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "classifyTerm",
@@ -20,7 +46,33 @@
       "name": "DictGenerationResult",
       "kind": "interface",
       "line": 75,
-      "signature": "DictGenerationResult()"
+      "signature": "DictGenerationResult()",
+      "members": [
+        {
+          "name": "newbie",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pm",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "senior",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "aliases",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "generateDictEntry",
@@ -32,7 +84,39 @@
       "name": "IngestResult",
       "kind": "interface",
       "line": 134,
-      "signature": "IngestResult()"
+      "signature": "IngestResult()",
+      "members": [
+        {
+          "name": "term",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'global' | 'project'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "entry",
+          "type": ": DictEntry",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dictSize",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ingestTerm",

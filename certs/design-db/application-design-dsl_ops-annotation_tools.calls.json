@@ -8,13 +8,89 @@
       "name": "ListAnnotationsInput",
       "kind": "interface",
       "line": 23,
-      "signature": "ListAnnotationsInput()"
+      "signature": "ListAnnotationsInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "severity",
+          "type": ": 'info' | 'warning' | 'critical'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "unresolved_only",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnnotationView",
       "kind": "interface",
       "line": 33,
-      "signature": "AnnotationView()"
+      "signature": "AnnotationView()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "severity",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "author",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "timestamp",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolved",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "listAnnotations",
@@ -26,7 +102,27 @@
       "name": "ResolveAnnotationInput",
       "kind": "interface",
       "line": 97,
-      "signature": "ResolveAnnotationInput()"
+      "signature": "ResolveAnnotationInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotation_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolution_note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "resolveAnnotation",
@@ -38,7 +134,45 @@
       "name": "AddAnnotationInput",
       "kind": "interface",
       "line": 138,
-      "signature": "AddAnnotationInput()"
+      "signature": "AddAnnotationInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": 'comment' | 'question' | 'issue' | 'suggestion' | 'approval'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "severity",
+          "type": ": 'info' | 'warning' | 'critical'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "author",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "addAnnotationByTool",

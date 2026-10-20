@@ -32,7 +32,21 @@
       "name": "DiscussionMicro",
       "kind": "interface",
       "line": 55,
-      "signature": "DiscussionMicro()"
+      "signature": "DiscussionMicro()",
+      "members": [
+        {
+          "name": "micro",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "open_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "renderMicro",
@@ -62,7 +76,27 @@
       "name": "ExpandContext",
       "kind": "interface",
       "line": 112,
-      "signature": "ExpandContext()"
+      "signature": "ExpandContext()",
+      "members": [
+        {
+          "name": "claiming",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "judgeFailed",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "expand",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "matchedExpandTriggers",

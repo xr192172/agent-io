@@ -50,7 +50,33 @@
       "name": "WatchEventResult",
       "kind": "interface",
       "line": 94,
-      "signature": "WatchEventResult()"
+      "signature": "WatchEventResult()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": WatchEventType",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rel",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_count",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "handleWatchEvent",
@@ -62,13 +88,77 @@
       "name": "WatchBatchSummary",
       "kind": "interface",
       "line": 132,
-      "signature": "WatchBatchSummary()"
+      "signature": "WatchBatchSummary()",
+      "members": [
+        {
+          "name": "changed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "deleted",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ignored",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "outOfScope",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "refsReopened",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "refsReopenedFiles",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "cross",
+          "type": ": { total: number; resolved: number; external: number; failed: number }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FlushBatchOptions",
       "kind": "interface",
       "line": 153,
-      "signature": "FlushBatchOptions()"
+      "signature": "FlushBatchOptions()",
+      "members": [
+        {
+          "name": "scopeToIndex",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "flushBatch",
@@ -80,7 +170,39 @@
       "name": "ReconcileSummary",
       "kind": "interface",
       "line": 246,
-      "signature": "ReconcileSummary()"
+      "signature": "ReconcileSummary()",
+      "members": [
+        {
+          "name": "scanned",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "deleted",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed_files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cross",
+          "type": ": CrossFileResolveStats",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "scanSyncFiles",
@@ -98,13 +220,83 @@
       "name": "WatchProjectOptions",
       "kind": "interface",
       "line": 331,
-      "signature": "WatchProjectOptions()"
+      "signature": "WatchProjectOptions()",
+      "members": [
+        {
+          "name": "project_root",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "db",
+          "type": ": Database",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "debounce_ms",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reconcile_interval_ms",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope_to_index",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "onChange",
+          "type": ": (summary: WatchBatchSummary) => void",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "onReconcile",
+          "type": ": (summary: ReconcileSummary) => void",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "onError",
+          "type": ": (err: Error) => void",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "WatchHandle",
       "kind": "interface",
       "line": 350,
-      "signature": "WatchHandle()"
+      "signature": "WatchHandle()",
+      "members": [
+        {
+          "name": "stop",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "status",
+          "type": ": { watching: boolean; project_root: string }",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "reconcileNow",
+          "type": ": Promise<ReconcileSummary>",
+          "optional": true,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "watchProject",

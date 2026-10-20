@@ -8,7 +8,27 @@
       "name": "RemoveImportsResult",
       "kind": "interface",
       "line": 34,
-      "signature": "RemoveImportsResult()"
+      "signature": "RemoveImportsResult()",
+      "members": [
+        {
+          "name": "removed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "output",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "escRe",
@@ -38,19 +58,91 @@
       "name": "DeadImportRemoval",
       "kind": "interface",
       "line": 192,
-      "signature": "DeadImportRemoval()"
+      "signature": "DeadImportRemoval()",
+      "members": [
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "removed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FileRemoval",
       "kind": "interface",
       "line": 198,
-      "signature": "FileRemoval()"
+      "signature": "FileRemoval()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lang",
+          "type": ": 'go' | 'ts'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "removals",
+          "type": ": DeadImportRemoval[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RemoveDeadImportResult",
       "kind": "interface",
       "line": 205,
-      "signature": "RemoveDeadImportResult()"
+      "signature": "RemoveDeadImportResult()",
+      "members": [
+        {
+          "name": "removal_reports",
+          "type": ": FileRemoval[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files_changed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "statements_removed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "indexWriteThrough",
+          "type": ": WriteThroughOutcome",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "langOfFile",
@@ -92,13 +184,47 @@
       "name": "RemoveDeadImportsVerifyResult",
       "kind": "interface",
       "line": 369,
-      "signature": "RemoveDeadImportsVerifyResult()"
+      "signature": "RemoveDeadImportsVerifyResult()",
+      "members": [
+        {
+          "name": "verification",
+          "type": ": {\r\n    enabled: boolean;\r\n    outcome: VerifyOutcomeKind;\r\n    baseline: VerificationOutcome | null;\r\n    after: VerificationOutcome | null;\r\n    rolled_back?: boolean;\r\n    /** baseline_fail / regression_rolled_back 时的失败详情 */\r\n    detail?: string;\r\n  }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RemoveDeadImportsVerifyOptions",
       "kind": "interface",
       "line": 381,
-      "signature": "RemoveDeadImportsVerifyOptions()"
+      "signature": "RemoveDeadImportsVerifyOptions()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dead",
+          "type": ": DeadDepCandidate[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "verify",
+          "type": ": boolean | { commands?: VerifyCommand[] }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "verifyImpl",
+          "type": ": (o: { cwd: string; commands: VerifyCommand[] }) => VerificationOutcome",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "removeDeadImportsWithVerify",

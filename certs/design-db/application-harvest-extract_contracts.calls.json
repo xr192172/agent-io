@@ -8,19 +8,145 @@
       "name": "ExtractContractsInput",
       "kind": "interface",
       "line": 40,
-      "signature": "ExtractContractsInput()"
+      "signature": "ExtractContractsInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "write_dsl",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "return_contracts",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FileContractReport",
       "kind": "interface",
       "line": 54,
-      "signature": "FileContractReport()"
+      "signature": "FileContractReport()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "language",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "role",
+          "type": ": BrickRole",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fan_in",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fan_out",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "shape_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reads_config",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "effects",
+          "type": ": {\n    writes: number;\n    holds: number;\n    emits: number;\n    /** 候选样例（最多 3 条，便于人扫一眼） */\n    samples: string[];\n  }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ExtractContractsResult",
       "kind": "interface",
       "line": 72,
-      "signature": "ExtractContractsResult()"
+      "signature": "ExtractContractsResult()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "written_to_dsl",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "contract_reports",
+          "type": ": FileContractReport[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "contracts",
+          "type": ": Record<string, BrickContract>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "contract_stats",
+          "type": ": {\n    total: number;\n    business: number;\n    functional: number;\n    hybrid: number;\n    avg_confidence: number;\n    low_confidence: number; // < 0.7，LLM 兜底候选\n    shapes_extracted: number;\n    config_keys: number;\n    /** effects 候选汇总（静态扫描，origin='ast'） */\n    writes_candidates: number;\n    holds_candidates: number;\n    emits_candidates: number;\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "BUSINESS_SEED_PATTERNS",
@@ -44,7 +170,45 @@
       "name": "SymbolRow",
       "kind": "interface",
       "line": 187,
-      "signature": "SymbolRow()"
+      "signature": "SymbolRow()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TS_FIELD_RE",
@@ -188,7 +352,27 @@
       "name": "EffectCandidates",
       "kind": "interface",
       "line": 479,
-      "signature": "EffectCandidates()"
+      "signature": "EffectCandidates()",
+      "members": [
+        {
+          "name": "writes",
+          "type": ": EffectTarget[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "holds",
+          "type": ": EffectTarget[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "emits",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "scanEffectCandidates",

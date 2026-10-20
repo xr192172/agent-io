@@ -8,7 +8,21 @@
       "name": "NeedleSignals",
       "kind": "interface",
       "line": 15,
-      "signature": "NeedleSignals()"
+      "signature": "NeedleSignals()",
+      "members": [
+        {
+          "name": "representative",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signals",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RepresentativeJudge",
@@ -20,7 +34,45 @@
       "name": "SamplingNeedle",
       "kind": "interface",
       "line": 25,
-      "signature": "SamplingNeedle()"
+      "signature": "SamplingNeedle()",
+      "members": [
+        {
+          "name": "trace_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "root",
+          "type": ": RunTreeNode",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "frames",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sampled_at",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "representative",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signals",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "NEEDLE_MARKER",

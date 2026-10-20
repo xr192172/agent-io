@@ -14,25 +14,105 @@
       "name": "ReasonValidationResult",
       "kind": "interface",
       "line": 27,
-      "signature": "ReasonValidationResult()"
+      "signature": "ReasonValidationResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer",
+          "type": ": ReasonFailLayer",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReasonEvidenceRef",
       "kind": "interface",
       "line": 36,
-      "signature": "ReasonEvidenceRef()"
+      "signature": "ReasonEvidenceRef()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": 'trace' | 'diff' | 'node' | 'edge' | 'metric'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ref",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReasonEvidenceResolver",
       "kind": "interface",
       "line": 42,
-      "signature": "ReasonEvidenceResolver()"
+      "signature": "ReasonEvidenceResolver()",
+      "members": [
+        {
+          "name": "exists",
+          "type": ": (ev: ReasonEvidenceRef) => boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "entityIds",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "traceRefs",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ValidateReasonInput",
       "kind": "interface",
       "line": 52,
-      "signature": "ValidateReasonInput()"
+      "signature": "ValidateReasonInput()",
+      "members": [
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence",
+          "type": ": ReasonEvidenceRef[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "level",
+          "type": ": 1 | 2 | 3 | 4",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolver",
+          "type": ": ReasonEvidenceResolver",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "MIN_REASON_CHARS",

@@ -8,25 +8,195 @@
       "name": "GatewayProvider",
       "kind": "interface",
       "line": 46,
-      "signature": "GatewayProvider()"
+      "signature": "GatewayProvider()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": 'openai-compatible'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "base_url",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "model",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "keys",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "weight",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "price_prompt_per_1m",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "price_completion_per_1m",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "enabled",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "created_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "GatewayConfig",
       "kind": "interface",
       "line": 69,
-      "signature": "GatewayConfig()"
+      "signature": "GatewayConfig()",
+      "members": [
+        {
+          "name": "providers",
+          "type": ": GatewayProvider[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "strategy",
+          "type": ": 'round_robin'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "UsageStat",
       "kind": "interface",
       "line": 75,
-      "signature": "UsageStat()"
+      "signature": "UsageStat()",
+      "members": [
+        {
+          "name": "provider_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "key_fp",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "calls",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "prompt_tokens",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "completion_tokens",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cost_usd",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "errors",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total_ms",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ChatResult",
       "kind": "interface",
       "line": 88,
-      "signature": "ChatResult()"
+      "signature": "ChatResult()",
+      "members": [
+        {
+          "name": "content",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "usage",
+          "type": ": { prompt_tokens: number; completion_tokens: number }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "provider_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "key_fp",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "model",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "gatewayCfgPath",
@@ -86,7 +256,81 @@
       "name": "ProviderView",
       "kind": "interface",
       "line": 208,
-      "signature": "ProviderView()"
+      "signature": "ProviderView()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "base_url",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "model",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "keys",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "key_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "weight",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "price_prompt_per_1m",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "price_completion_per_1m",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "enabled",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "created_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "listProvidersMasked",
@@ -98,7 +342,69 @@
       "name": "UpsertProviderInput",
       "kind": "interface",
       "line": 242,
-      "signature": "UpsertProviderInput()"
+      "signature": "UpsertProviderInput()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": 'openai-compatible'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "base_url",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "model",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "keys",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "weight",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "price_prompt_per_1m",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "price_completion_per_1m",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "enabled",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "upsertProvider",
@@ -146,7 +452,21 @@
       "name": "StatsView",
       "kind": "interface",
       "line": 363,
-      "signature": "StatsView()"
+      "signature": "StatsView()",
+      "members": [
+        {
+          "name": "per_key",
+          "type": ": UsageStat[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "totals",
+          "type": ": {\n    calls: number;\n    prompt_tokens: number;\n    completion_tokens: number;\n    cost_usd: number;\n    errors: number;\n  }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "getStats",
@@ -188,7 +508,33 @@
       "name": "Endpoint",
       "kind": "interface",
       "line": 421,
-      "signature": "Endpoint()"
+      "signature": "Endpoint()",
+      "members": [
+        {
+          "name": "provider",
+          "type": ": GatewayProvider",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "key",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pool",
+          "type": ": KeyPool",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "idx",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "pickEndpoint",
@@ -200,13 +546,52 @@
       "name": "GatewayChatOptions",
       "kind": "interface",
       "line": 456,
-      "signature": "GatewayChatOptions()"
+      "signature": "GatewayChatOptions()",
+      "members": [
+        {
+          "name": "temperature",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "timeoutMs",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxAttempts",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "jsonMode",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxTokens",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "GatewayHttpError",
       "kind": "class",
       "line": 468,
-      "signature": "GatewayHttpError()"
+      "signature": "GatewayHttpError()",
+      "members": [
+        {
+          "name": "constructor",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "callProvider",
@@ -230,7 +615,39 @@
       "name": "OpenAICompatRequest",
       "kind": "interface",
       "line": 587,
-      "signature": "OpenAICompatRequest()"
+      "signature": "OpenAICompatRequest()",
+      "members": [
+        {
+          "name": "model",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "messages",
+          "type": ": Array<{ role: string; content: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "temperature",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_tokens",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "stream",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "handleOpenAICompatRequest",

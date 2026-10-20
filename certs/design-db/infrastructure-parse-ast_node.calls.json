@@ -8,7 +8,51 @@
       "name": "N",
       "kind": "interface",
       "line": 18,
-      "signature": "N()"
+      "signature": "N()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "startIndex",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "endIndex",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "childCount",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "child",
+          "type": ": N | null",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "childForFieldName",
+          "type": ": N | null",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "NodeType",

@@ -8,19 +8,103 @@
       "name": "TaskOpRequest",
       "kind": "interface",
       "line": 53,
-      "signature": "TaskOpRequest()"
+      "signature": "TaskOpRequest()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "op",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "data",
+          "type": ": Record<string, unknown>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TaskOpInput",
       "kind": "interface",
       "line": 60,
-      "signature": "TaskOpInput()"
+      "signature": "TaskOpInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "owner",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence",
+          "type": ": ProgressEvidence",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "agent",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Loaded",
       "kind": "interface",
       "line": 77,
-      "signature": "Loaded()"
+      "signature": "Loaded()",
+      "members": [
+        {
+          "name": "dsl",
+          "type": ": NonNullable<ReturnType<typeof getDesignSheet>>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "nodeId",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "card",
+          "type": ": TaskSpec",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "loadTask",
@@ -50,7 +134,27 @@
       "name": "ConstructBasis",
       "kind": "interface",
       "line": 190,
-      "signature": "ConstructBasis()"
+      "signature": "ConstructBasis()",
+      "members": [
+        {
+          "name": "summary",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "missing",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "constructBasis",

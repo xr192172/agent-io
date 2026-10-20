@@ -8,7 +8,27 @@
       "name": "VerifyIssue",
       "kind": "interface",
       "line": 17,
-      "signature": "VerifyIssue()"
+      "signature": "VerifyIssue()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "gate",
+          "type": ": 'syntax' | 'structure'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "bodyText",

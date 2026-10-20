@@ -8,31 +8,143 @@
       "name": "DeadImportCandidate",
       "kind": "interface",
       "line": 38,
-      "signature": "DeadImportCandidate()"
+      "signature": "DeadImportCandidate()",
+      "members": [
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": 'no_reference'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "NeedsReviewCandidate",
       "kind": "interface",
       "line": 53,
-      "signature": "NeedsReviewCandidate()"
+      "signature": "NeedsReviewCandidate()",
+      "members": [
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": 'last_importer_with_load_effects'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "UnjudgedCandidate",
       "kind": "interface",
       "line": 60,
-      "signature": "UnjudgedCandidate()"
+      "signature": "UnjudgedCandidate()",
+      "members": [
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DetectDeadImportsOptions",
       "kind": "interface",
       "line": 65,
-      "signature": "DetectDeadImportsOptions()"
+      "signature": "DetectDeadImportsOptions()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DetectDeadImportsResult",
       "kind": "interface",
       "line": 71,
-      "signature": "DetectDeadImportsResult()"
+      "signature": "DetectDeadImportsResult()",
+      "members": [
+        {
+          "name": "dead",
+          "type": ": DeadImportCandidate[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "needsReview",
+          "type": ": NeedsReviewCandidate[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "unjudged",
+          "type": ": UnjudgedCandidate[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "scanned",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "limitations",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fileKind",
+          "type": ": Record<string, FileKind>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "byKind",
+          "type": ": Record<FileKind, number>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FileKind",

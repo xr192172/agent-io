@@ -8,25 +8,153 @@
       "name": "RunFrame",
       "kind": "interface",
       "line": 13,
-      "signature": "RunFrame()"
+      "signature": "RunFrame()",
+      "members": [
+        {
+          "name": "frame_id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parent_id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "probe",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "in",
+          "type": ": unknown",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "out",
+          "type": ": unknown",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dur_ms",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_ms",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "missingIn",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "missingOut",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RunTreeNode",
       "kind": "interface",
       "line": 30,
-      "signature": "RunTreeNode()"
+      "signature": "RunTreeNode()",
+      "members": [
+        {
+          "name": "children",
+          "type": ": RunTreeNode[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RunTrace",
       "kind": "interface",
       "line": 34,
-      "signature": "RunTrace()"
+      "signature": "RunTrace()",
+      "members": [
+        {
+          "name": "trace_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "frames",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "root",
+          "type": ": RunTreeNode",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RawEvent",
       "kind": "interface",
       "line": 40,
-      "signature": "RawEvent()"
+      "signature": "RawEvent()",
+      "members": [
+        {
+          "name": "probe",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "time",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fields",
+          "type": ": Record<string, unknown>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "trace_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "frame_id",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "parent_id",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "baseProbe",

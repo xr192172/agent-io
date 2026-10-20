@@ -8,19 +8,109 @@
       "name": "SimilarNameEntry",
       "kind": "interface",
       "line": 32,
-      "signature": "SimilarNameEntry()"
+      "signature": "SimilarNameEntry()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parentFunction",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "declLine",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "suggested",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SimilarNameCluster",
       "kind": "interface",
       "line": 44,
-      "signature": "SimilarNameCluster()"
+      "signature": "SimilarNameCluster()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scopeLabel",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "basis",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "entries",
+          "type": ": SimilarNameEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "offenders",
+          "type": ": SimilarNameEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DisambiguateOptions",
       "kind": "interface",
       "line": 59,
-      "signature": "DisambiguateOptions()"
+      "signature": "DisambiguateOptions()",
+      "members": [
+        {
+          "name": "llm",
+          "type": ": SimilarLlm | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxClusters",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SimilarLlm",
@@ -32,7 +122,27 @@
       "name": "DisambiguateResult",
       "kind": "interface",
       "line": 72,
-      "signature": "DisambiguateResult()"
+      "signature": "DisambiguateResult()",
+      "members": [
+        {
+          "name": "llm",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "clusters",
+          "type": ": SimilarNameCluster[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "levenshtein",

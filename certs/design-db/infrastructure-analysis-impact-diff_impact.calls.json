@@ -20,37 +20,319 @@
       "name": "DiffImpactInput",
       "kind": "interface",
       "line": 34,
-      "signature": "DiffImpactInput()"
+      "signature": "DiffImpactInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "direction",
+          "type": ": ImpactDirection",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_depth",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ImpactedSymbol",
       "kind": "interface",
       "line": 47,
-      "signature": "ImpactedSymbol()"
+      "signature": "ImpactedSymbol()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "qualified_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "depth",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "role",
+          "type": ": 'changed' | 'caller' | 'callee'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "via_edge",
+          "type": ": 'call' | 'type_ref'",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ImpactedFile",
       "kind": "interface",
       "line": 60,
-      "signature": "ImpactedFile()"
+      "signature": "ImpactedFile()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dsl_node_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "depth",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "direct",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "via_edges",
+          "type": ": EdgeKind[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DslContractHit",
       "kind": "interface",
       "line": 73,
-      "signature": "DslContractHit()"
+      "signature": "DslContractHit()",
+      "members": [
+        {
+          "name": "dsl_node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "api",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "api_source",
+          "type": ": 'expected' | 'actual'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "matched_symbol",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "depth",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DiffImpactResult",
       "kind": "interface",
       "line": 86,
-      "signature": "DiffImpactResult()"
+      "signature": "DiffImpactResult()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "direction",
+          "type": ": ImpactDirection",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_depth",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "impacted_files",
+          "type": ": ImpactedFile[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "impacted_symbols",
+          "type": ": ImpactedSymbol[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol_diffs",
+          "type": ": SymbolDiffInfo[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dsl_contract_hits",
+          "type": ": DslContractHit[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "warnings",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "has_call_edges",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edge_counts",
+          "type": ": { call: number; type_ref: number; import: number }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SymbolDiffInfo",
       "kind": "interface",
       "line": 111,
-      "signature": "SymbolDiffInfo()"
+      "signature": "SymbolDiffInfo()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "granularity",
+          "type": ": 'symbol' | 'file'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "added",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "removed",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "norm_changed",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "emptyResult",

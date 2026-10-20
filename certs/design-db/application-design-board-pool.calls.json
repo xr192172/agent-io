@@ -14,7 +14,33 @@
       "name": "BoardView",
       "kind": "interface",
       "line": 31,
-      "signature": "BoardView()"
+      "signature": "BoardView()",
+      "members": [
+        {
+          "name": "byState",
+          "type": ": Record<TaskState, number>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "shown",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "folded",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "listPool",

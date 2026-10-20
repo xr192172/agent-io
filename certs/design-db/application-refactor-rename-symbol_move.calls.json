@@ -8,19 +8,169 @@
       "name": "MoveSymbolInput",
       "kind": "interface",
       "line": 54,
-      "signature": "MoveSymbolInput()"
+      "signature": "MoveSymbolInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to_file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to_symbol",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "dry_run",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "MoveRedirect",
       "kind": "interface",
       "line": 69,
-      "signature": "MoveRedirect()"
+      "signature": "MoveRedirect()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "oldSource",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "newSource",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "MoveSymbolResult",
       "kind": "interface",
       "line": 80,
-      "signature": "MoveSymbolResult()"
+      "signature": "MoveSymbolResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to_file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "filesWritten",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dryRun",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "touched",
+          "type": ": Touched",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": { file: string; removed: string[]; startLine: number; endLine: number }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "target",
+          "type": ": { file: string; created: boolean; symbol: string }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "redirects",
+          "type": ": MoveRedirect[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "affectedFiles",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "blocked",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "externalRefs",
+          "type": ": ExternalRef[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "bounds",
+          "type": ": ScanBounds",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "toSymbolDeferred",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TS_EXTS",
@@ -32,7 +182,27 @@
       "name": "Edit",
       "kind": "interface",
       "line": 120,
-      "signature": "Edit()"
+      "signature": "Edit()",
+      "members": [
+        {
+          "name": "pos",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "len",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "stripQuotes",

@@ -446,7 +446,27 @@
       "name": "Narrations",
       "kind": "type",
       "line": 2105,
-      "signature": "Narrations()"
+      "signature": "Narrations()",
+      "members": [
+        {
+          "name": "newbie",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pm",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "senior",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "EXPLAIN_SCRIPT",

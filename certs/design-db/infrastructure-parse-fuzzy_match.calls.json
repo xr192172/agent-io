@@ -20,13 +20,77 @@
       "name": "FuzzyMatch",
       "kind": "interface",
       "line": 39,
-      "signature": "FuzzyMatch()"
+      "signature": "FuzzyMatch()",
+      "members": [
+        {
+          "name": "start",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "startLine",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "endLine",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "level",
+          "type": ": Exclude<FuzzyLevel, 0>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "matchedText",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "targetIndent",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LocateResult",
       "kind": "interface",
       "line": 53,
-      "signature": "LocateResult()"
+      "signature": "LocateResult()",
+      "members": [
+        {
+          "name": "match",
+          "type": ": FuzzyMatch | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "candidates",
+          "type": ": FuzzyMatch[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "level",
+          "type": ": FuzzyLevel",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "leadingWs",
@@ -56,7 +120,27 @@
       "name": "LineIndex",
       "kind": "interface",
       "line": 89,
-      "signature": "LineIndex()"
+      "signature": "LineIndex()",
+      "members": [
+        {
+          "name": "lines",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "starts",
+          "type": ": number[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lineOf",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "buildLineIndex",

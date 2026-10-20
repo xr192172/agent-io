@@ -8,37 +8,265 @@
       "name": "NodeLike",
       "kind": "interface",
       "line": 28,
-      "signature": "NodeLike()"
+      "signature": "NodeLike()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "startIndex",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "endIndex",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "childCount",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "child",
+          "type": ": NodeLike | null",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "childForFieldName",
+          "type": ": NodeLike | null",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "LocalBinding",
       "kind": "interface",
       "line": 38,
-      "signature": "LocalBinding()"
+      "signature": "LocalBinding()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'const' | 'let' | 'var' | 'param' | 'catch' | 'other'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scopeId",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parentFunction",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "declIndex",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "defs",
+          "type": ": number[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "refs",
+          "type": ": number[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LocalScope",
       "kind": "interface",
       "line": 54,
-      "signature": "LocalScope()"
+      "signature": "LocalScope()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'function' | 'block'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parentFunction",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "declared",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ScopeNode",
       "kind": "interface",
       "line": 64,
-      "signature": "ScopeNode()"
+      "signature": "ScopeNode()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'function' | 'block'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parentFunction",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parent",
+          "type": ": ScopeNode | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "bindings",
+          "type": ": Map<string, B>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "B",
       "kind": "interface",
       "line": 71,
-      "signature": "B()"
+      "signature": "B()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": LocalBinding['kind']",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope",
+          "type": ": ScopeNode",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "declIndex",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "defs",
+          "type": ": Set<number>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "refs",
+          "type": ": Set<number>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeclUnit",
       "kind": "interface",
       "line": 85,
-      "signature": "DeclUnit()"
+      "signature": "DeclUnit()",
+      "members": [
+        {
+          "name": "start",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "hasCall",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope",
+          "type": ": ScopeNode",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "members",
+          "type": ": B[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "subtreeHasCall",
@@ -74,7 +302,27 @@
       "name": "Decl",
       "kind": "interface",
       "line": 128,
-      "signature": "Decl()"
+      "signature": "Decl()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": LocalBinding['kind']",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "declIndex",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "forEachIdentifier",
@@ -140,7 +388,27 @@
       "name": "BuiltRaw",
       "kind": "interface",
       "line": 379,
-      "signature": "BuiltRaw()"
+      "signature": "BuiltRaw()",
+      "members": [
+        {
+          "name": "bindings",
+          "type": ": B[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scopes",
+          "type": ": LocalScope[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "units",
+          "type": ": DeclUnit[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildRaw",
@@ -176,7 +444,39 @@
       "name": "LocalAddressCandidate",
       "kind": "interface",
       "line": 418,
-      "signature": "LocalAddressCandidate()"
+      "signature": "LocalAddressCandidate()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": LocalBinding['kind']",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parentFunction",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LocalAddressResolution",
@@ -200,13 +500,59 @@
       "name": "RenameItem",
       "kind": "interface",
       "line": 531,
-      "signature": "RenameItem()"
+      "signature": "RenameItem()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RenameApplied",
       "kind": "interface",
       "line": 536,
-      "signature": "RenameApplied()"
+      "signature": "RenameApplied()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "why",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "renameMany",

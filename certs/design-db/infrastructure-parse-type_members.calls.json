@@ -26,13 +26,59 @@
       "name": "ParsedTypeMember",
       "kind": "interface",
       "line": 64,
-      "signature": "ParsedTypeMember()"
+      "signature": "ParsedTypeMember()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "optional",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "member_kind",
+          "type": ": 'property' | 'method'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ParsedTypeDecl",
       "kind": "interface",
       "line": 77,
-      "signature": "ParsedTypeDecl()"
+      "signature": "ParsedTypeDecl()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "members",
+          "type": ": ParsedTypeMember[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "memberNameOf",

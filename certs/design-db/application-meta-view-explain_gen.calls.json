@@ -8,7 +8,27 @@
       "name": "GeneratedNarrations",
       "kind": "interface",
       "line": 26,
-      "signature": "GeneratedNarrations()"
+      "signature": "GeneratedNarrations()",
+      "members": [
+        {
+          "name": "newbie",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pm",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "senior",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "extractJsonObject",

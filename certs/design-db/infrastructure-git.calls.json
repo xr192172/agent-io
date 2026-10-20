@@ -20,7 +20,21 @@
       "name": "GitStatus",
       "kind": "interface",
       "line": 26,
-      "signature": "GitStatus()"
+      "signature": "GitStatus()",
+      "members": [
+        {
+          "name": "modified",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "untracked",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "gitStatus",

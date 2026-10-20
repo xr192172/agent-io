@@ -8,37 +8,229 @@
       "name": "ReconcileEffectsInput",
       "kind": "interface",
       "line": 33,
-      "signature": "ReconcileEffectsInput()"
+      "signature": "ReconcileEffectsInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "events_files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "write_dsl",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FileReconcileReport",
       "kind": "interface",
       "line": 44,
-      "signature": "FileReconcileReport()"
+      "signature": "FileReconcileReport()",
+      "members": [
+        {
+          "name": "dsl_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "observed_from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "observed_events",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "confirmed",
+          "type": ": {\n    writes: number;\n    holds: number;\n    emits: number;\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "newly_observed",
+          "type": ": Array<{ kind: 'write' | 'hold' | 'emit'; target: string; op: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unobserved_candidates",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "runtime",
+          "type": ": {\n    call_count: number;\n    top_callers: string[];\n    last_seen: string;\n  }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReconcileEffectsResult",
       "kind": "interface",
       "line": 67,
-      "signature": "ReconcileEffectsResult()"
+      "signature": "ReconcileEffectsResult()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "events_files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "effect_events",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reconcile_reports",
+          "type": ": FileReconcileReport[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "incomplete",
+          "type": ": Array<{ dsl_path: string; kind: string; target: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "written_to_dsl",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reconcile_stats",
+          "type": ": {\n    files_matched: number;\n    candidates_confirmed: number;\n    newly_observed: number;\n    unobserved: number;\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "EffectEvent",
       "kind": "interface",
       "line": 89,
-      "signature": "EffectEvent()"
+      "signature": "EffectEvent()",
+      "members": [
+        {
+          "name": "probe",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "time",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fields",
+          "type": ": { file: string; kind: string; target: string; op: string }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RawEvent",
       "kind": "interface",
       "line": 96,
-      "signature": "RawEvent()"
+      "signature": "RawEvent()",
+      "members": [
+        {
+          "name": "probe",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "time",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fields",
+          "type": ": { level?: string; file?: string; kind?: string; target?: string; op?: string }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FileObservation",
       "kind": "interface",
       "line": 103,
-      "signature": "FileObservation()"
+      "signature": "FileObservation()",
+      "members": [
+        {
+          "name": "targets",
+          "type": ": Map<string, { kind: string; target: string; op: string; count: number }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "probes",
+          "type": ": Map<string, number>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lastSeen",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "listEventFiles",

@@ -8,19 +8,115 @@
       "name": "DesignEdgeIntentWrite",
       "kind": "interface",
       "line": 28,
-      "signature": "DesignEdgeIntentWrite()"
+      "signature": "DesignEdgeIntentWrite()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "boundary",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "requires",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'open' | 'resolved'",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SetDesignIntentInput",
       "kind": "interface",
       "line": 48,
-      "signature": "SetDesignIntentInput()"
+      "signature": "SetDesignIntentInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "goals",
+          "type": ": OverlayGoal[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "edge_intents",
+          "type": ": DesignEdgeIntentWrite[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SetDesignIntentResult",
       "kind": "interface",
       "line": 54,
-      "signature": "SetDesignIntentResult()"
+      "signature": "SetDesignIntentResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "goals",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edges_written",
+          "type": ": Array<{ id: string; from: string; to: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unmatched",
+          "type": ": Array<{ id?: string; from?: string; to?: string; reason?: string }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "setDesignIntentCore",

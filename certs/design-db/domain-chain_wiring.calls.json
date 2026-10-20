@@ -20,7 +20,51 @@
       "name": "ChainEdge",
       "kind": "interface",
       "line": 55,
-      "signature": "ChainEdge()"
+      "signature": "ChainEdge()",
+      "members": [
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fromKey",
+          "type": ": AnchorKey",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "toPath",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cardinality",
+          "type": ": 'single' | 'pick'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence",
+          "type": ": 'verified' | 'pending'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CHAIN_EDGES",
@@ -62,7 +106,33 @@
       "name": "Chain",
       "kind": "interface",
       "line": 686,
-      "signature": "Chain()"
+      "signature": "Chain()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "steps",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence",
+          "type": ": 'verified' | 'pending'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CHAINS",
@@ -86,7 +156,45 @@
       "name": "HopVerdict",
       "kind": "interface",
       "line": 830,
-      "signature": "HopVerdict()"
+      "signature": "HopVerdict()",
+      "members": [
+        {
+          "name": "hop",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "objectEdges",
+          "type": ": readonly ChainEdge[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scopeEdges",
+          "type": ": readonly ChainEdge[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'strong' | 'scope-only'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "hopsOf",

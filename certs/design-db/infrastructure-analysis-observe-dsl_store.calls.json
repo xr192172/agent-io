@@ -14,13 +14,77 @@
       "name": "HistoryEntry",
       "kind": "interface",
       "line": 45,
-      "signature": "HistoryEntry()"
+      "signature": "HistoryEntry()",
+      "members": [
+        {
+          "name": "version",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "decls",
+          "type": ": TSDLDecl[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "action",
+          "type": ": 'seed' | 'save' | 'approve' | 'rollback'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "from_version",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "verification",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SaveMeta",
       "kind": "interface",
       "line": 70,
-      "signature": "SaveMeta()"
+      "signature": "SaveMeta()",
+      "members": [
+        {
+          "name": "action",
+          "type": ": HistoryEntry['action']",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "verification",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "silentErrorDiscardDSL",
@@ -50,7 +114,80 @@
       "name": "DesignDSLStore",
       "kind": "class",
       "line": 151,
-      "signature": "DesignDSLStore()"
+      "signature": "DesignDSLStore()",
+      "members": [
+        {
+          "name": "dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "constructor",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "dslPath",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "histPath",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "load",
+          "type": ": DSLDoc | null",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "loadOrThrow",
+          "type": ": DSLDoc",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "seedDefault",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "save",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "rollback",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "history",
+          "type": ": HistoryEntry[]",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "writeDoc",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "appendHistory",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "defaultDSLDir",

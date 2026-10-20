@@ -8,37 +8,271 @@
       "name": "MonolithCommunity",
       "kind": "interface",
       "line": 38,
-      "signature": "MonolithCommunity()"
+      "signature": "MonolithCommunity()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "anchors",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbols",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "est_lines",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "MonolithFileView",
       "kind": "interface",
       "line": 55,
-      "signature": "MonolithFileView()"
+      "signature": "MonolithFileView()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lines",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "communities",
+          "type": ": Array<{ id: number; name: string; symbols: number }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "oversized",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnalyzeMonolithInput",
       "kind": "interface",
       "line": 64,
-      "signature": "AnalyzeMonolithInput()"
+      "signature": "AnalyzeMonolithInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "db",
+          "type": ": Database",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "warn_lines",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "crit_lines",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_anchors",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_iter",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "min_community_share",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnalyzeMonolithResult",
       "kind": "interface",
       "line": 82,
-      "signature": "AnalyzeMonolithResult()"
+      "signature": "AnalyzeMonolithResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "community_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "communities",
+          "type": ": MonolithCommunity[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_view",
+          "type": ": MonolithFileView[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dependencies",
+          "type": ": Array<[number, number, number]>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "split_candidates",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "community_subsplit",
+          "type": ": CommunitySubSplit[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SubSplitGroup",
       "kind": "interface",
       "line": 99,
-      "signature": "SubSplitGroup()"
+      "signature": "SubSplitGroup()",
+      "members": [
+        {
+          "name": "owner",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbols",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "methods",
+          "type": ": Array<{ name: string; file: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "est_lines",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CommunitySubSplit",
       "kind": "interface",
       "line": 113,
-      "signature": "CommunitySubSplit()"
+      "signature": "CommunitySubSplit()",
+      "members": [
+        {
+          "name": "community_id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "community_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "groups",
+          "type": ": SubSplitGroup[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "splittable",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cross_group_ratio",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ROLE_SUFFIX_RE",
@@ -50,7 +284,51 @@
       "name": "FuncNode",
       "kind": "interface",
       "line": 133,
-      "signature": "FuncNode()"
+      "signature": "FuncNode()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "qualified_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "owner",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ownerOf",
@@ -62,7 +340,21 @@
       "name": "CallGraph",
       "kind": "interface",
       "line": 160,
-      "signature": "CallGraph()"
+      "signature": "CallGraph()",
+      "members": [
+        {
+          "name": "adj",
+          "type": ": Map<number, number[]>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "inDegree",
+          "type": ": number[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildCallGraphFromCache",

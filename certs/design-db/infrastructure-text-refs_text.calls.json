@@ -8,7 +8,33 @@
       "name": "TextRefHit",
       "kind": "interface",
       "line": 24,
-      "signature": "TextRefHit()"
+      "signature": "TextRefHit()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'importIn' | 'mention'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "snippet",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "IMPORT_RE",

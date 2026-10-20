@@ -8,19 +8,121 @@
       "name": "PointReason",
       "kind": "interface",
       "line": 35,
-      "signature": "PointReason()"
+      "signature": "PointReason()",
+      "members": [
+        {
+          "name": "signal",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "weight",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ObservePoint",
       "kind": "interface",
       "line": 44,
-      "signature": "ObservePoint()"
+      "signature": "ObservePoint()",
+      "members": [
+        {
+          "name": "key",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'enter' | 'exit' | 'catch' | 'io' | 'deep'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "level",
+          "type": ": 'core' | 'event' | 'deep'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "score",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reasons",
+          "type": ": PointReason[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "occurrences",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RecommendOptions",
       "kind": "interface",
       "line": 57,
-      "signature": "RecommendOptions()"
+      "signature": "RecommendOptions()",
+      "members": [
+        {
+          "name": "maxPoints",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxFiles",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "write",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "focus",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "focusPaths",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FOCUS_BOOST",
@@ -32,13 +134,101 @@
       "name": "RecommendStats",
       "kind": "interface",
       "line": 75,
-      "signature": "RecommendStats()"
+      "signature": "RecommendStats()",
+      "members": [
+        {
+          "name": "filesWalked",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "filesScanned",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbolsScored",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sitesFound",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "deduped",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "returned",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "truncated",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cappedByDiversity",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ms",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RecommendResult",
       "kind": "interface",
       "line": 89,
-      "signature": "RecommendResult()"
+      "signature": "RecommendResult()",
+      "members": [
+        {
+          "name": "points",
+          "type": ": ObservePoint[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "contractProbes",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pointsFile",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stats",
+          "type": ": RecommendStats",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "summary",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SIGNAL_WEIGHTS",
@@ -92,7 +282,51 @@
       "name": "SymbolRow",
       "kind": "interface",
       "line": 139,
-      "signature": "SymbolRow()"
+      "signature": "SymbolRow()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "qualified_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "indegreeMap",

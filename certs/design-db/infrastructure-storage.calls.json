@@ -116,7 +116,39 @@
       "name": "BaselineFactsFile",
       "kind": "interface",
       "line": 328,
-      "signature": "BaselineFactsFile()"
+      "signature": "BaselineFactsFile()",
+      "members": [
+        {
+          "name": "version",
+          "type": ": 1",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "saved_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source_root",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": Record<string, { apis: string[]; deps: string[] }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "getBaselineFactsFile",
@@ -182,7 +214,51 @@
       "name": "ArchiveEntry",
       "kind": "interface",
       "line": 500,
-      "signature": "ArchiveEntry()"
+      "signature": "ArchiveEntry()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dsl",
+          "type": ": DesignDSL",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "retire_reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "merged_into",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "archived_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "getArchiveDir",

@@ -8,13 +8,53 @@
       "name": "JudgeVerdict",
       "kind": "interface",
       "line": 15,
-      "signature": "JudgeVerdict()"
+      "signature": "JudgeVerdict()",
+      "members": [
+        {
+          "name": "probe",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rule",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "result",
+          "type": ": 'ok' | 'deviation'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fields",
+          "type": ": Record<string, unknown>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ObserveRuleCtx",
       "kind": "interface",
       "line": 38,
-      "signature": "ObserveRuleCtx()"
+      "signature": "ObserveRuleCtx()",
+      "members": [
+        {
+          "name": "acknowledgedSpreads",
+          "type": ": ReadonlyMap<string, ReadonlySet<string>>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "silentErrorDiscard",
@@ -50,7 +90,27 @@
       "name": "ObserveRuleSpec",
       "kind": "interface",
       "line": 207,
-      "signature": "ObserveRuleSpec()"
+      "signature": "ObserveRuleSpec()",
+      "members": [
+        {
+          "name": "rule",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pred",
+          "type": ": (ev: TSEvent, ctx?: ObserveRuleCtx) => JudgeVerdict",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "OBSERVE_RULE_TABLE",

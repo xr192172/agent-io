@@ -32,7 +32,45 @@
       "name": "CapabilityDecl",
       "kind": "interface",
       "line": 52,
-      "signature": "CapabilityDecl()"
+      "signature": "CapabilityDecl()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "desc",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "default",
+          "type": ": SupportLevel",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "overrides",
+          "type": ": Partial<Record<LangId, SupportLevel>>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "notes",
+          "type": ": Partial<Record<LangId, string>>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "declared",
@@ -86,13 +124,59 @@
       "name": "CapabilityCell",
       "kind": "interface",
       "line": 112,
-      "signature": "CapabilityCell()"
+      "signature": "CapabilityCell()",
+      "members": [
+        {
+          "name": "lang",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "level",
+          "type": ": SupportLevel",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CapabilityAuditRow",
       "kind": "interface",
       "line": 118,
-      "signature": "CapabilityAuditRow()"
+      "signature": "CapabilityAuditRow()",
+      "members": [
+        {
+          "name": "decl",
+          "type": ": CapabilityDecl",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cells",
+          "type": ": CapabilityCell[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "gaps",
+          "type": ": CapabilityCell[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unknownLangs",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "diagnoseCapabilities",

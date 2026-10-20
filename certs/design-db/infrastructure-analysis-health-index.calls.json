@@ -26,25 +26,177 @@
       "name": "HealthIssue",
       "kind": "interface",
       "line": 79,
-      "signature": "HealthIssue()"
+      "signature": "HealthIssue()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": HealthKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "severity",
+          "type": ": HealthSeverity",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ComplexityEntry",
       "kind": "interface",
       "line": 91,
-      "signature": "ComplexityEntry()"
+      "signature": "ComplexityEntry()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "complexity",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "HealthReport",
       "kind": "interface",
       "line": 98,
-      "signature": "HealthReport()"
+      "signature": "HealthReport()",
+      "members": [
+        {
+          "name": "root",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fileCount",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "issues",
+          "type": ": HealthIssue[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "counts",
+          "type": ": Record<HealthKind, number>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "complexity",
+          "type": ": ComplexityEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "layers",
+          "type": ": {\n    domain: number;\n    infrastructure: number;\n    application: number;\n    presentation: number;\n    /** 不在 `src/<四层>/` 里的文件（测试/脚本/其它语言子项目/go 侧…）—— 不判层，但如实计数 */\n    outside: number;\n    violations: number;\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "score",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "grade",
+          "type": ": 'A' | 'B' | 'C' | 'D' | 'N/A'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "summary",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "bounds",
+          "type": ": ScanBounds",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "HealthOptions",
       "kind": "interface",
       "line": 146,
-      "signature": "HealthOptions()"
+      "signature": "HealthOptions()",
+      "members": [
+        {
+          "name": "complexityThreshold",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "top",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reachableRoots",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LAYER_SEGMENT_RE",
@@ -110,13 +262,41 @@
       "name": "NamedImportRef",
       "kind": "interface",
       "line": 364,
-      "signature": "NamedImportRef()"
+      "signature": "NamedImportRef()",
+      "members": [
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "module",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AstImportBind",
       "kind": "interface",
       "line": 371,
-      "signature": "AstImportBind()"
+      "signature": "AstImportBind()",
+      "members": [
+        {
+          "name": "startIndex",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "stripQuotes",
@@ -152,7 +332,33 @@
       "name": "ImportBindingFact",
       "kind": "interface",
       "line": 558,
-      "signature": "ImportBindingFact()"
+      "signature": "ImportBindingFact()",
+      "members": [
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "module",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "used",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "importBindingFactsFromRoot",

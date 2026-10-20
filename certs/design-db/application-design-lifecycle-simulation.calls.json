@@ -20,13 +20,65 @@
       "name": "RunSimulationInput",
       "kind": "interface",
       "line": 31,
-      "signature": "RunSimulationInput()"
+      "signature": "RunSimulationInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "events",
+          "type": ": Array<{ event: string; payload?: Record<string, unknown> }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reset_before_run",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RunSimulationResult",
       "kind": "interface",
       "line": 37,
-      "signature": "RunSimulationResult()"
+      "signature": "RunSimulationResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "finalState",
+          "type": ": Record<string, unknown>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "trace",
+          "type": ": SimulationTrace[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "nodeUpdates",
+          "type": ": Array<{ id: string; label?: string; style?: Record<string, unknown>; highlight?: boolean }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "runSimulation",
@@ -38,13 +90,47 @@
       "name": "GetSimulationStateInput",
       "kind": "interface",
       "line": 99,
-      "signature": "GetSimulationStateInput()"
+      "signature": "GetSimulationStateInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "GetSimulationStateResult",
       "kind": "interface",
       "line": 103,
-      "signature": "GetSimulationStateResult()"
+      "signature": "GetSimulationStateResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "state",
+          "type": ": Record<string, unknown>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "traceCount",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "getSimulationState",
@@ -56,13 +142,41 @@
       "name": "ResetSimulationInput",
       "kind": "interface",
       "line": 166,
-      "signature": "ResetSimulationInput()"
+      "signature": "ResetSimulationInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ResetSimulationResult",
       "kind": "interface",
       "line": 170,
-      "signature": "ResetSimulationResult()"
+      "signature": "ResetSimulationResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "state",
+          "type": ": Record<string, unknown>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "resetSimulation",

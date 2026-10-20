@@ -8,7 +8,33 @@
       "name": "FileFacts",
       "kind": "interface",
       "line": 36,
-      "signature": "FileFacts()"
+      "signature": "FileFacts()",
+      "members": [
+        {
+          "name": "apis",
+          "type": ": Array<{\n    name: string;\n    qualified_name: string;\n    signature: string | null;\n    /** ★ 行区间（1-based）：原来 DSL 镜像的 `notes` 里带\"L12-34\"这类注记，读者需要它来复原 */\n    start_line: number;\n    end_line: number;\n  }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "deps",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "matched_path",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "EMPTY",

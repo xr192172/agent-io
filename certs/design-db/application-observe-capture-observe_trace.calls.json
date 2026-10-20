@@ -8,13 +8,77 @@
       "name": "ObserveTraceCfg",
       "kind": "interface",
       "line": 17,
-      "signature": "ObserveTraceCfg()"
+      "signature": "ObserveTraceCfg()",
+      "members": [
+        {
+          "name": "events_path",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "events_text",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "keep",
+          "type": ": 'all' | 'default'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "trace_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "limit",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ObserveTraceResult",
       "kind": "interface",
       "line": 30,
-      "signature": "ObserveTraceResult()"
+      "signature": "ObserveTraceResult()",
+      "members": [
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total_traces",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dropped",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kept",
+          "type": ": SamplingNeedle[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "selected",
+          "type": ": SamplingNeedle",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "defaultEventsCandidates",

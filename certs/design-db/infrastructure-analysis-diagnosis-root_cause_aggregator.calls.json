@@ -8,19 +8,121 @@
       "name": "AggregateInput",
       "kind": "interface",
       "line": 27,
-      "signature": "AggregateInput()"
+      "signature": "AggregateInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parsed",
+          "type": ": SymptomParsed",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "candidates",
+          "type": ": Candidate[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence_chain",
+          "type": ": EvidenceStep[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reached",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "impact",
+          "type": ": Impact",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "db",
+          "type": ": Database",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AggregateResult",
       "kind": "interface",
       "line": 39,
-      "signature": "AggregateResult()"
+      "signature": "AggregateResult()",
+      "members": [
+        {
+          "name": "root_cause",
+          "type": ": RootCause",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fix_suggestions",
+          "type": ": FixSuggestion[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "limitations",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "engine",
+          "type": ": 'rule' | 'hybrid'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "llm_note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CaptureOpts",
       "kind": "interface",
       "line": 51,
-      "signature": "CaptureOpts()"
+      "signature": "CaptureOpts()",
+      "members": [
+        {
+          "name": "before",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "after",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxLines",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxChars",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "captureSnippet",
@@ -32,7 +134,39 @@
       "name": "Scored",
       "kind": "interface",
       "line": 95,
-      "signature": "Scored()"
+      "signature": "Scored()",
+      "members": [
+        {
+          "name": "candidate",
+          "type": ": Candidate",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "score",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "span",
+          "type": ": { start_line: number; end_line: number } | undefined",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reasons",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "clamp",
@@ -62,7 +196,21 @@
       "name": "LlmRootCauseJson",
       "kind": "interface",
       "line": 265,
-      "signature": "LlmRootCauseJson()"
+      "signature": "LlmRootCauseJson()",
+      "members": [
+        {
+          "name": "root_cause",
+          "type": ": { file_path?: string; line?: number; symbol?: string; reasoning?: string; confidence?: number }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fix_suggestions",
+          "type": ": Array<{\n    target_file?: string;\n    target_line?: number;\n    action?: FixSuggestion['action'];\n    description?: string;\n    rationale?: string;\n  }>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildPrompt",

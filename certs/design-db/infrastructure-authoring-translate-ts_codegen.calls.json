@@ -14,7 +14,27 @@
       "name": "MappedType",
       "kind": "interface",
       "line": 40,
-      "signature": "MappedType()"
+      "signature": "MappedType()",
+      "members": [
+        {
+          "name": "degree",
+          "type": ": 'direct' | 'unsupported'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ts",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "mapGoType",

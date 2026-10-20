@@ -26,31 +26,377 @@
       "name": "NodeStyle",
       "kind": "interface",
       "line": 37,
-      "signature": "NodeStyle()"
+      "signature": "NodeStyle()",
+      "members": [
+        {
+          "name": "shape",
+          "type": ": 'rect' | 'rounded' | 'circle' | 'diamond' | 'freeform' | 'parallelogram' | 'hexagon' | 'triangle'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "bg",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "color",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "tone",
+          "type": ": 'error' | 'success' | 'warning'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "border",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "borderRadius",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "shadow",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "opacity",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "BlockStyle",
       "kind": "interface",
       "line": 59,
-      "signature": "BlockStyle()"
+      "signature": "BlockStyle()",
+      "members": [
+        {
+          "name": "fontSize",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "bold",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "italic",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "color",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "align",
+          "type": ": 'left' | 'center' | 'right'",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ContentBlock",
       "kind": "interface",
       "line": 69,
-      "signature": "ContentBlock()"
+      "signature": "ContentBlock()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": 'text' | 'image' | 'color_block' | 'spacer' | 'code' | 'list' | 'divider' | 'badge'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "value",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "src",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "width",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "height",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "bg",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "border",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "borderRadius",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "padding",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "spacerHeight",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "children",
+          "type": ": ContentBlock[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "style",
+          "type": ": BlockStyle",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "visible",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "items",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "listType",
+          "type": ": 'ul' | 'ol'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "language",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "badgeColor",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "NodeContent",
       "kind": "interface",
       "line": 107,
-      "signature": "NodeContent()"
+      "signature": "NodeContent()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": 'text' | 'rich' | 'layout'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "blocks",
+          "type": ": ContentBlock[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Node",
       "kind": "interface",
       "line": 115,
-      "signature": "Node()"
+      "signature": "Node()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "x",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "y",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "width",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "height",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "style",
+          "type": ": NodeStyle",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "content",
+          "type": ": NodeContent",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "sub_dsl",
+          "type": ": DesignDSL",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": DiagramStatus",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "task",
+          "type": ": TaskSpec",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "swimlane",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "title_en",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer",
+          "type": ": NodeLayer",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "host",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "arch_layer",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "shapes",
+          "type": ": NodeShapes",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "attributes",
+          "type": ": Record<string, string | number | boolean>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "decision",
+          "type": ": NodeDecision",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "decision_history",
+          "type": ": DecisionHistoryEntry[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DecisionAuthor",
@@ -62,49 +408,395 @@
       "name": "NodeDecision",
       "kind": "interface",
       "line": 216,
-      "signature": "NodeDecision()"
+      "signature": "NodeDecision()",
+      "members": [
+        {
+          "name": "summary",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rationale",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "alternatives",
+          "type": ": { option: string; rejected_because: string }[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "consequences",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "acceptance",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "expectations",
+          "type": ": import('./expectation.js').Expectation[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'active' | 'draft'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "thread",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "tags",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "author",
+          "type": ": DecisionAuthor",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "agent",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "updated_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "dissent",
+          "type": ": DecisionDissent[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "votes",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence_source",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DecisionDissent",
       "kind": "interface",
       "line": 321,
-      "signature": "DecisionDissent()"
+      "signature": "DecisionDissent()",
+      "members": [
+        {
+          "name": "option",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "votes",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence_source",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DecisionHistoryEntry",
       "kind": "interface",
       "line": 331,
-      "signature": "DecisionHistoryEntry()"
+      "signature": "DecisionHistoryEntry()",
+      "members": [
+        {
+          "name": "at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "decision",
+          "type": ": NodeDecision",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "author",
+          "type": ": DecisionAuthor",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "agent",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "EdgeStyle",
       "kind": "interface",
       "line": 351,
-      "signature": "EdgeStyle()"
+      "signature": "EdgeStyle()",
+      "members": [
+        {
+          "name": "stroke",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "strokeWidth",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Edge",
       "kind": "interface",
       "line": 358,
-      "signature": "Edge()"
+      "signature": "Edge()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "style",
+          "type": ": EdgeStyle",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": 'straight' | 'curve' | 'dashed'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "arrow",
+          "type": ": 'forward' | 'reverse' | 'both' | 'none'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer",
+          "type": ": NodeLayer",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "intent",
+          "type": ": { reason?: string; boundary?: string }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Swimlane",
       "kind": "interface",
       "line": 377,
-      "signature": "Swimlane()"
+      "signature": "Swimlane()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "bg",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "color",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "y",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "height",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Geometry",
       "kind": "interface",
       "line": 392,
-      "signature": "Geometry()"
+      "signature": "Geometry()",
+      "members": [
+        {
+          "name": "layout",
+          "type": ": 'dag' | 'force' | 'grid' | 'vertical_flow' | 'horizontal_flow' | 'free'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "width",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "height",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "columns",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "grid_size",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "force_params",
+          "type": ": ForceParams",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "nodes",
+          "type": ": Node[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edges",
+          "type": ": Edge[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "swimlanes",
+          "type": ": Swimlane[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ForceParams",
       "kind": "interface",
       "line": 420,
-      "signature": "ForceParams()"
+      "signature": "ForceParams()",
+      "members": [
+        {
+          "name": "repulsion",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "stiffness",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "damping",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "iterations",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_radius",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     }
   ],
   "imports": [

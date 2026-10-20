@@ -8,13 +8,47 @@
       "name": "ProjectView",
       "kind": "interface",
       "line": 24,
-      "signature": "ProjectView()"
+      "signature": "ProjectView()",
+      "members": [
+        {
+          "name": "root",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sourceFiles",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "computedAt",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fromCache",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ProjectViewOptions",
       "kind": "interface",
       "line": 35,
-      "signature": "ProjectViewOptions()"
+      "signature": "ProjectViewOptions()",
+      "members": [
+        {
+          "name": "ttlMs",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PROJECT_VIEW_TTL_MS",

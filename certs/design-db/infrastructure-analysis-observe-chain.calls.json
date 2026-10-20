@@ -20,7 +20,33 @@
       "name": "TSChainObs",
       "kind": "interface",
       "line": 31,
-      "signature": "TSChainObs()"
+      "signature": "TSChainObs()",
+      "members": [
+        {
+          "name": "trace_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sequence",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "errs",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "events",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "MAX_CHAINS",
@@ -56,7 +82,27 @@
       "name": "TSChainMatch",
       "kind": "interface",
       "line": 130,
-      "signature": "TSChainMatch()"
+      "signature": "TSChainMatch()",
+      "members": [
+        {
+          "name": "chain",
+          "type": ": TSChainObs",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "matched",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "matchChainDecl",

@@ -8,7 +8,27 @@
       "name": "ImpactInput",
       "kind": "interface",
       "line": 16,
-      "signature": "ImpactInput()"
+      "signature": "ImpactInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "root_file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_depth",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "analyzeImpact",

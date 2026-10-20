@@ -26,7 +26,21 @@
       "name": "CapabilityGapStats",
       "kind": "interface",
       "line": 82,
-      "signature": "CapabilityGapStats()"
+      "signature": "CapabilityGapStats()",
+      "members": [
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "byCapability",
+          "type": ": Record<string, string[]>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "capabilityGaps",

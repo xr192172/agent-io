@@ -8,19 +8,181 @@
       "name": "QueryFeatureInput",
       "kind": "interface",
       "line": 78,
-      "signature": "QueryFeatureInput()"
+      "signature": "QueryFeatureInput()",
+      "members": [
+        {
+          "name": "query",
+          "type": ":\n    | 'dsl'\n    | 'features'\n    | 'nodes'\n    | 'edges'\n    | 'node'\n    | 'decisions'\n    | 'files'\n    | 'file'\n    | 'digest'\n    | 'scope'\n    | 'calls'\n    | 'functions'\n    | 'annotations'\n    | 'approvals'\n    | 'approval_history'\n    | 'snapshots'\n    | 'simulation_state'\n    | 'diff'\n    | 'goals'\n    | 'edge_intents'\n    | 'tag'\n    | 'pool'\n    | 'pending'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "thread",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "decision_status",
+          "type": ": 'active' | 'draft'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer",
+          "type": ": 'main' | 'error' | 'detail'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_layer",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_status",
+          "type": ": 'draft' | 'in_progress' | 'done'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotation_node_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "severity",
+          "type": ": 'info' | 'warning' | 'critical'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "unresolved_only",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'draft' | 'pending_review' | 'approved' | 'rejected' | 'needs_revision'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "assignee",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotation_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "tag",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature_a",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature_b",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "view",
+          "type": ": DSLView",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "view_b",
+          "type": ": DSLView",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "QueryFeatureResult",
       "kind": "interface",
       "line": 161,
-      "signature": "QueryFeatureResult()"
+      "signature": "QueryFeatureResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "data",
+          "type": ": unknown",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DSLWithMeta",
       "kind": "interface",
       "line": 168,
-      "signature": "DSLWithMeta()"
+      "signature": "DSLWithMeta()",
+      "members": [
+        {
+          "name": "meta",
+          "type": ": { goals?: OverlayGoal[]; function_tags?: Record<string, string[]> }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "requireFeature",

@@ -14,25 +14,117 @@
       "name": "NodeAttrDiff",
       "kind": "interface",
       "line": 63,
-      "signature": "NodeAttrDiff()"
+      "signature": "NodeAttrDiff()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "key",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "design",
+          "type": ": unknown",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "live",
+          "type": ": unknown",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SameIdDiff",
       "kind": "interface",
       "line": 75,
-      "signature": "SameIdDiff()"
+      "signature": "SameIdDiff()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "attrs",
+          "type": ": NodeAttrDiff[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ResolvedDiff",
       "kind": "interface",
       "line": 88,
-      "signature": "ResolvedDiff()"
+      "signature": "ResolvedDiff()",
+      "members": [
+        {
+          "name": "ref",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "matched_by",
+          "type": ": 'path' | 'name'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DesignSheetDiff",
       "kind": "interface",
       "line": 98,
-      "signature": "DesignSheetDiff()"
+      "signature": "DesignSheetDiff()",
+      "members": [
+        {
+          "name": "same_id",
+          "type": ": SameIdDiff[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "design_only",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "live_only",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolved",
+          "type": ": ResolvedDiff[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "counts",
+          "type": ": {\n    /** 设计图节点数 */\n    design: number;\n    /** live 节点数 */\n    live: number;\n    /** 指代相同且**逐字段一致**的节点数 */\n    same_identical: number;\n  }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "nodesOf",
@@ -62,7 +154,27 @@
       "name": "PendingEntry",
       "kind": "interface",
       "line": 204,
-      "signature": "PendingEntry()"
+      "signature": "PendingEntry()",
+      "members": [
+        {
+          "name": "ref",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "trimStr",

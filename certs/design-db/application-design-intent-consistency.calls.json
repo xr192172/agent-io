@@ -8,7 +8,27 @@
       "name": "BaselineDrift",
       "kind": "interface",
       "line": 70,
-      "signature": "BaselineDrift()"
+      "signature": "BaselineDrift()",
+      "members": [
+        {
+          "name": "compared",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": Array<{ path: string; added: string[]; removed: string[] }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "notes",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "checkBaselineDrift",
@@ -38,7 +58,45 @@
       "name": "RetireFlowEntry",
       "kind": "interface",
       "line": 187,
-      "signature": "RetireFlowEntry()"
+      "signature": "RetireFlowEntry()",
+      "members": [
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "design_status",
+          "type": ": 'deprecated'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "retire_reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "exists",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stage",
+          "type": ": RetireStage",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "origin",
+          "type": ": 'base_dsl' | 'overlay_tombstone'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "overlayTombstones",
@@ -74,37 +132,223 @@
       "name": "ConsistencyResult",
       "kind": "interface",
       "line": 300,
-      "signature": "ConsistencyResult()"
+      "signature": "ConsistencyResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fileResults",
+          "type": ": FileConsistency[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "invariantResults",
+          "type": ": InvariantResult[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "retireFlow",
+          "type": ": RetireFlowEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "baselineDrift",
+          "type": ": BaselineDrift",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "summary",
+          "type": ": {\n    total_files: number;\n    /**\n     * ★★★ **真的\"比\"了多少条 `expected_apis`**（= matched+missing+mismatched；每条约产生一条 `ApiMatch`）。\n     * ★ 它回答「**线 2 到底有没有对手**」；= 0 ⇒ `state='no_comparison'`（**什么都没比，别读成\"没问题\"**）。\n     */\n    compared: number;\n    matched: number;\n    missing: number;\n    mismatched: number;\n    unexpected: number;\n    invariant_passed: number;\n    invariant_failed: number;\n    /**\n     * ★★★ **三态机读值**（唯一判定见 `comparisonState`）：\n     *   `no_comparison` = 没得比（compared=0）；`consistent` = 比过且一致；`drifted` = 有漂移。\n     * ★ 有了它，调用方**不必**再从\"全 0\"里猜 —— 全 0 既可能是\"没得比\"，也可能是\"比过且全对\"。\n     */\n    state: ComparisonState;\n    /**\n     * ★ T184：三步流②的两个计数（**只数 `deprecated` 的文件**，与线 2 的计数不共用口径）。\n     *   `retire_pending` = 设计说该删、**实现还在**；`retire_ready` = 设计说该删、**实现也没了**。\n     *   ★ 两者之和 = `retireFlow.length`；`0` = 没有任何待删标记（**不是**\"都删完了\"）。\n     */\n    retire_pending: number;\n    retire_ready: number;\n  }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FileConsistency",
       "kind": "interface",
       "line": 348,
-      "signature": "FileConsistency()"
+      "signature": "FileConsistency()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": SemanticFile",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "exists",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "apis",
+          "type": ": ApiMatch[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "notes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ApiMatch",
       "kind": "interface",
       "line": 360,
-      "signature": "ApiMatch()"
+      "signature": "ApiMatch()",
+      "members": [
+        {
+          "name": "expected_signature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "expected_notes",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "actual_signature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "actual_location",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'matched' | 'missing' | 'mismatched' | 'unexpected'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "match_score",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "members",
+          "type": ": {\n    matched: number;\n    /** 契约声明了、实现里没有的成员名 */\n    missing: string[];\n    /** 两边都有、但**类型或可选性**漂移了的成员 */\n    drifted: Array<{ name: string; kind: 'type' | 'optional'; expected: string; actual: string }>;\n    /** 实现有、契约**未声明**的成员名（★ 不算差异，仅如实报出） */\n    extras: string[];\n    /** ★ 判不了的成员（如实现侧没写返回注解 ⇒ 类型无从比）—— 不许静默当成\"匹配\" */\n    unjudged: string[];\n  }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "InvariantResult",
       "kind": "interface",
       "line": 387,
-      "signature": "InvariantResult()"
+      "signature": "InvariantResult()",
+      "members": [
+        {
+          "name": "invariant",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'passed' | 'failed'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ConsistencyInput",
       "kind": "interface",
       "line": 393,
-      "signature": "ConsistencyInput()"
+      "signature": "ConsistencyInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "code_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ParsedApi",
       "kind": "interface",
       "line": 407,
-      "signature": "ParsedApi()"
+      "signature": "ParsedApi()",
+      "members": [
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end_line",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "normalizeSignature",

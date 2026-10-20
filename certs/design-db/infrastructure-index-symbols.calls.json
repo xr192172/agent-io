@@ -14,25 +14,183 @@
       "name": "SyncFileResult",
       "kind": "interface",
       "line": 36,
-      "signature": "SyncFileResult()"
+      "signature": "SyncFileResult()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": SyncStatus",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edge_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "call_count",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol_diff",
+          "type": ": { added: number; removed: number; changed: number }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SyncProjectResult",
       "kind": "interface",
       "line": 47,
-      "signature": "SyncProjectResult()"
+      "signature": "SyncProjectResult()",
+      "members": [
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "updated",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipped",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ignored",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "failed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ms",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "results",
+          "type": ": SyncFileResult[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cross",
+          "type": ": CrossFileResolveStats",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SymbolHit",
       "kind": "interface",
       "line": 59,
-      "signature": "SymbolHit()"
+      "signature": "SymbolHit()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "qualified_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "IndexStats",
       "kind": "interface",
       "line": 68,
-      "signature": "IndexStats()"
+      "signature": "IndexStats()",
+      "members": [
+        {
+          "name": "files",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "nodes",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edges",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_indexed_at",
+          "type": ": number | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "toIndexKey",
@@ -92,7 +250,51 @@
       "name": "SyncPrelude",
       "kind": "interface",
       "line": 224,
-      "signature": "SyncPrelude()"
+      "signature": "SyncPrelude()",
+      "members": [
+        {
+          "name": "rel",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fail",
+          "type": ": (error: string) => SyncFileResult",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "content",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stat",
+          "type": ": fs.Stats",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "hash",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "existing",
+          "type": ": { content_hash: string; norm_hash: string | null } | undefined",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ext",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PreludeResult",
@@ -128,7 +330,21 @@
       "name": "ReopenRefsResult",
       "kind": "interface",
       "line": 581,
-      "signature": "ReopenRefsResult()"
+      "signature": "ReopenRefsResult()",
+      "members": [
+        {
+          "name": "reopened",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "reopenRefsTo",
@@ -176,7 +392,33 @@
       "name": "CrossFileResolveStats",
       "kind": "interface",
       "line": 738,
-      "signature": "CrossFileResolveStats()"
+      "signature": "CrossFileResolveStats()",
+      "members": [
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolved",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "external",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "failed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "resolveCrossFileCalls",
@@ -206,19 +448,103 @@
       "name": "CachedSymbol",
       "kind": "interface",
       "line": 1014,
-      "signature": "CachedSymbol()"
+      "signature": "CachedSymbol()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "qualified_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "is_closure",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CachedImport",
       "kind": "interface",
       "line": 1025,
-      "signature": "CachedImport()"
+      "signature": "CachedImport()",
+      "members": [
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'relative' | 'package'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CachedFileParse",
       "kind": "interface",
       "line": 1031,
-      "signature": "CachedFileParse()"
+      "signature": "CachedFileParse()",
+      "members": [
+        {
+          "name": "line_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbols",
+          "type": ": CachedSymbol[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "imports",
+          "type": ": CachedImport[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "getFileParse",

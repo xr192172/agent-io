@@ -8,31 +8,167 @@
       "name": "SpringLayeringFile",
       "kind": "interface",
       "line": 30,
-      "signature": "SpringLayeringFile()"
+      "signature": "SpringLayeringFile()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pkg",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotations",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SpringLayeringPlan",
       "kind": "interface",
       "line": 37,
-      "signature": "SpringLayeringPlan()"
+      "signature": "SpringLayeringPlan()",
+      "members": [
+        {
+          "name": "total_files",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "classified",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "other",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer_counts",
+          "type": ": Record<string, number>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "assignments",
+          "type": ": SpringLayeringFile[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "base_package",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "limitations",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SpringLayeringInput",
       "kind": "interface",
       "line": 47,
-      "signature": "SpringLayeringInput()"
+      "signature": "SpringLayeringInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "target_base_package",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotation_layers",
+          "type": ": Record<string, string>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LayerMigration",
       "kind": "interface",
       "line": 54,
-      "signature": "LayerMigration()"
+      "signature": "LayerMigration()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "abs",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "old_pkg",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "new_pkg",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SpringMvcLayeringPlan",
       "kind": "interface",
       "line": 63,
-      "signature": "SpringMvcLayeringPlan()"
+      "signature": "SpringMvcLayeringPlan()",
+      "members": [
+        {
+          "name": "migrations",
+          "type": ": LayerMigration[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DEFAULT_ANNOTATION_LAYERS",
@@ -176,7 +312,21 @@
       "name": "SpringLayeringResult",
       "kind": "interface",
       "line": 605,
-      "signature": "SpringLayeringResult()"
+      "signature": "SpringLayeringResult()",
+      "members": [
+        {
+          "name": "dry_run",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "springMvcLayeringHandler",

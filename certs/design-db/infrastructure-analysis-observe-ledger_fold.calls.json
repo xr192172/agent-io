@@ -8,13 +8,65 @@
       "name": "SpreadPattern",
       "kind": "interface",
       "line": 32,
-      "signature": "SpreadPattern()"
+      "signature": "SpreadPattern()",
+      "members": [
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "violations",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LedgerStats",
       "kind": "interface",
       "line": 41,
-      "signature": "LedgerStats()"
+      "signature": "LedgerStats()",
+      "members": [
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "consumed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "violated",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "deviationRate",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "repeatSpreads",
+          "type": ": SpreadPattern[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "KNOWN_SPREAD_RULE",
@@ -26,7 +78,27 @@
       "name": "KnownSpreadConstraint",
       "kind": "interface",
       "line": 54,
-      "signature": "KnownSpreadConstraint()"
+      "signature": "KnownSpreadConstraint()",
+      "members": [
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "spread",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "violations",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "analyzeLedger",

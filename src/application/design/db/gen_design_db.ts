@@ -97,7 +97,8 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
   const dbPath = path.join(root, '.agent-io', 'cache.db');
   const db = new DatabaseSync(dbPath, { readOnly: true });
   const qSymbols = db.prepare(
-    "SELECT name, kind, start_line, signature FROM nodes WHERE file_path = ? AND parent IS NULL AND kind != 'file' ORDER BY start_line",
+    // ★ 2026-10-20：带上 members（type/interface 的定义；function 恒为 NULL）
+    "SELECT name, kind, start_line, signature, members FROM nodes WHERE file_path = ? AND parent IS NULL AND kind != 'file' ORDER BY start_line",
   );
   const qImports = db.prepare('SELECT source, kind, type_only FROM imports WHERE file_path = ? ORDER BY line');
   const qCallsOut = db.prepare("SELECT source, target FROM edges WHERE kind = 'call' AND source LIKE ? ORDER BY target");
@@ -117,8 +118,15 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
         let imports: Array<Record<string, unknown>> = [];
         let calls: Array<Record<string, unknown>> = [];
         try {
-          symbols = (qSymbols.all(rel) as Array<{ name: string; kind: string; start_line: number; signature: string | null }>).map(
-            (r) => ({ name: r.name, kind: r.kind, line: r.start_line, ...(r.signature ? { signature: r.signature } : {}) }),
+          symbols = (qSymbols.all(rel) as Array<{ name: string; kind: string; start_line: number; signature: string | null; members: string | null }>).map(
+            (r) => ({
+              name: r.name,
+              kind: r.kind,
+              line: r.start_line,
+              ...(r.signature ? { signature: r.signature } : {}),
+              // ★ 2026-10-20：类型成员（JSON 里存的是字符串，这里还原成数组）
+              ...(r.members ? { members: JSON.parse(String(r.members)) } : {}),
+            }),
           );
           imports = (qImports.all(rel) as Array<{ source: string; kind: string; type_only: number | null }>).map((r) => ({
             source: r.source,

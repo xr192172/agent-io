@@ -8,25 +8,117 @@
       "name": "Patch",
       "kind": "interface",
       "line": 24,
-      "signature": "Patch()"
+      "signature": "Patch()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "new_content",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PatchPlan",
       "kind": "interface",
       "line": 31,
-      "signature": "PatchPlan()"
+      "signature": "PatchPlan()",
+      "members": [
+        {
+          "name": "patches",
+          "type": ": Patch[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rationale",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AppliedPatch",
       "kind": "interface",
       "line": 37,
-      "signature": "AppliedPatch()"
+      "signature": "AppliedPatch()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "absFile",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "original",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RepairInput",
       "kind": "interface",
       "line": 44,
-      "signature": "RepairInput()"
+      "signature": "RepairInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "root_cause",
+          "type": ": RootCause",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fix_suggestions",
+          "type": ": FixSuggestion[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "allowed_files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "test_contract",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "allowedPatchFiles",
@@ -44,7 +136,21 @@
       "name": "PatchJson",
       "kind": "interface",
       "line": 78,
-      "signature": "PatchJson()"
+      "signature": "PatchJson()",
+      "members": [
+        {
+          "name": "patches",
+          "type": ": Array<{\n    file?: string;\n    start_line?: number;\n    end_line?: number;\n    new_content?: string;\n  }>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "rationale",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildRepairPrompt",
@@ -68,7 +174,21 @@
       "name": "ValidationError",
       "kind": "interface",
       "line": 165,
-      "signature": "ValidationError()"
+      "signature": "ValidationError()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "validatePatches",

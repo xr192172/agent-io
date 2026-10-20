@@ -8,19 +8,115 @@
       "name": "LogEntry",
       "kind": "interface",
       "line": 18,
-      "signature": "LogEntry()"
+      "signature": "LogEntry()",
+      "members": [
+        {
+          "name": "probe",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "time",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rule",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "result",
+          "type": ": 'ok' | 'deviation'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fields",
+          "type": ": Record<string, unknown>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LogQueryOptions",
       "kind": "interface",
       "line": 29,
-      "signature": "LogQueryOptions()"
+      "signature": "LogQueryOptions()",
+      "members": [
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "all",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LogQueryResult",
       "kind": "interface",
       "line": 37,
-      "signature": "LogQueryResult()"
+      "signature": "LogQueryResult()",
+      "members": [
+        {
+          "name": "eventsPath",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "anomalyCount",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipped",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "entries",
+          "type": ": LogEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "missing",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "norm",

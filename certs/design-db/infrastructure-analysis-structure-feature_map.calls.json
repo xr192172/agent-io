@@ -14,49 +14,257 @@
       "name": "FeatureMapOptions",
       "kind": "interface",
       "line": 30,
-      "signature": "FeatureMapOptions()"
+      "signature": "FeatureMapOptions()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source_root",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SimilarFeatureLink",
       "kind": "interface",
       "line": 37,
-      "signature": "SimilarFeatureLink()"
+      "signature": "SimilarFeatureLink()",
+      "members": [
+        {
+          "name": "featureId",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "score",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sharedBasenames",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeprecationEvidence",
       "kind": "interface",
       "line": 44,
-      "signature": "DeprecationEvidence()"
+      "signature": "DeprecationEvidence()",
+      "members": [
+        {
+          "name": "deadImportSources",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "deadSources",
+          "type": ": Array<{ source: string; files: string[] }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FeatureMapFeature",
       "kind": "interface",
       "line": 51,
-      "signature": "FeatureMapFeature()"
+      "signature": "FeatureMapFeature()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "frontend",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "backend",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "shared",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "similar",
+          "type": ": SimilarFeatureLink[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "repeatedFamilies",
+          "type": ": RepeatedFamily[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "deprecation",
+          "type": ": DeprecationEvidence",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RepeatedFamily",
       "kind": "interface",
       "line": 68,
-      "signature": "RepeatedFamily()"
+      "signature": "RepeatedFamily()",
+      "members": [
+        {
+          "name": "root",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FeatureMapEntry",
       "kind": "interface",
       "line": 79,
-      "signature": "FeatureMapEntry()"
+      "signature": "FeatureMapEntry()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "side",
+          "type": ": FeatureSide",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dead_sources",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FeatureMapMeta",
       "kind": "interface",
       "line": 93,
-      "signature": "FeatureMapMeta()"
+      "signature": "FeatureMapMeta()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source_root",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scanned_files",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "features",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "langs",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FeatureMapResult",
       "kind": "interface",
       "line": 102,
-      "signature": "FeatureMapResult()"
+      "signature": "FeatureMapResult()",
+      "members": [
+        {
+          "name": "file_map",
+          "type": ": FeatureMapEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "features",
+          "type": ": FeatureMapFeature[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scannedFiles",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "meta",
+          "type": ": FeatureMapMeta",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "limitations",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SKIP_DIRS",

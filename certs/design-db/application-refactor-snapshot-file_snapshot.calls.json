@@ -8,13 +8,71 @@
       "name": "FileSnapshotEntry",
       "kind": "interface",
       "line": 35,
-      "signature": "FileSnapshotEntry()"
+      "signature": "FileSnapshotEntry()",
+      "members": [
+        {
+          "name": "rel",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "existed",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "bytes",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FileSnapshotMeta",
       "kind": "interface",
       "line": 44,
-      "signature": "FileSnapshotMeta()"
+      "signature": "FileSnapshotMeta()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "createdAt",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": FileSnapshotEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "facts",
+          "type": ": Record<string, { apis: string[]; deps: string[] }>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "intents",
+          "type": ": Record<string, { summary?: string; acceptance?: string }>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "MAX_FILE_SNAPSHOTS",
@@ -62,7 +120,45 @@
       "name": "RollbackResult",
       "kind": "interface",
       "line": 223,
-      "signature": "RollbackResult()"
+      "signature": "RollbackResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "restored",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "removed",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "failed",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "snapshot",
+          "type": ": FileSnapshotMeta",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "rollbackFileSnapshot",

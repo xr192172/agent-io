@@ -8,13 +8,113 @@
       "name": "WriteThroughOutcome",
       "kind": "interface",
       "line": 77,
-      "signature": "WriteThroughOutcome()"
+      "signature": "WriteThroughOutcome()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "mode",
+          "type": ": 'synced' | 'deferred' | 'skipped'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "synced",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "skippedFiles",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "removed",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "failed",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "refsReopened",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "refsReopenedFiles",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "cross",
+          "type": ": { total: number; resolved: number; external: number; failed: number }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "ms",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SourceWriteReport",
       "kind": "interface",
       "line": 107,
-      "signature": "SourceWriteReport()"
+      "signature": "SourceWriteReport()",
+      "members": [
+        {
+          "name": "touched",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "snapshot",
+          "type": ": FileSnapshotMeta | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "index",
+          "type": ": WriteThroughOutcome | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "task_gate",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "EMPTY_CROSS",
@@ -74,7 +174,33 @@
       "name": "TaskGateOutcome",
       "kind": "interface",
       "line": 482,
-      "signature": "TaskGateOutcome()"
+      "signature": "TaskGateOutcome()",
+      "members": [
+        {
+          "name": "applicable",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "basis",
+          "type": ": TaskGateBasis",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "warnings",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TaskGateBasis",
@@ -86,13 +212,59 @@
       "name": "GateCoverageFeature",
       "kind": "interface",
       "line": 523,
-      "signature": "GateCoverageFeature()"
+      "signature": "GateCoverageFeature()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "byPath",
+          "type": ": Map<string, string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "taskById",
+          "type": ": Map<string, TaskSpec>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "GateCoverage",
       "kind": "interface",
       "line": 539,
-      "signature": "GateCoverage()"
+      "signature": "GateCoverage()",
+      "members": [
+        {
+          "name": "features",
+          "type": ": GateCoverageFeature[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "totalFeatures",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rootFeatureCount",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unaddressable",
+          "type": ": Array<{ feature: string; nodeId: string; type: string | undefined }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "nodeFilePath",

@@ -14,7 +14,39 @@
       "name": "ResolvedScope",
       "kind": "interface",
       "line": 47,
-      "signature": "ResolvedScope()"
+      "signature": "ResolvedScope()",
+      "members": [
+        {
+          "name": "scope",
+          "type": ": Scope",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_ids",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_ids",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "paths",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "notes",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LAYERS",

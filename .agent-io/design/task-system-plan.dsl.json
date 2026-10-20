@@ -48824,7 +48824,7 @@
         "path": "src/application/design/db/gen_design_db.ts",
         "description": "src/application/design/db/gen_design_db.ts",
         "decision": {
-          "summary": "设计 DSL → 设计 DB 的生成器，作为工具 `design_line` 的 `action=gen-db`。★ 全量、与实际 DB 同构（symbols / imports / calls 取自 cache.db，requirements 取自 decision.expectations）；每份副本自报 `path`。支持 `check` 模式（只比对不写），并在写模式下清理不再需要的陈旧副本。",
+          "summary": "设计 DSL → 设计 DB 的生成器，作为工具 design_line 的 action=gen-db。全量、与实际 DB 同构（symbols / imports / calls 取自 cache.db，requirements 取自 decision.expectations）；每份副本自报 path。2026-10-20 补：type/interface 的 members 也要拷 —— 此前设计 DB 的签名只有 Name()，将来重写源码时恢复不出类型定义。",
           "expectations": [
             {
               "kind": "file-exists",
@@ -48835,7 +48835,7 @@
               "kind": "symbol-exists",
               "path": "src/application/design/db/gen_design_db.ts",
               "symbol": "genDesignDb",
-              "why": "生成器必须是一个可单测的函数（不是 handler 里拼）"
+              "why": "生成器必须是一个可单测的函数"
             },
             {
               "kind": "source-has",
@@ -48843,20 +48843,28 @@
               "must": [
                 "gen-db"
               ],
-              "why": "action 要注册进 design_line 的 schema，否则工具面调不到"
+              "why": "action 要注册进 design_line 的 schema"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/db/gen_design_db.ts",
+              "must": [
+                "members"
+              ],
+              "why": "必须真的把 members 拷进副本（只有做了才会绿）"
             }
           ],
-          "rationale": "⑤ 是设计链的第五步，原先只有 scripts/gen-design-db.mjs（178 行），工具面没有 ⇒ 只能 node scripts/xxx。用户裁定第 3 步：把设计链 6 个脚本收成一个工具的多个 action。★ 选它做第二个是因为它最安全（读 DSL + cache.db，写的是生成物 certs/design-db/），且刚补好 path 契约。",
-          "consequences": "① 工具 design_line 多一个 action（report / gen-db）；② 删 scripts/gen-design-db.mjs；③ 生成物（362 份）不受影响 —— ★ 判据是「新旧实现输出逐字相同」，不是『看起来对』。",
-          "acceptance": "gen-db 生成的 362 份与旧脚本产出**逐字相同**（用 --check 与目录 diff 双向验证）；check 模式只报不写；陈旧副本会被清理且计数如实。",
+          "rationale": "⑤ 是设计链的第五步，原先只有 gen-design-db.mjs。用户裁定第 3 步：设计链脚本收成一个工具。补 members 的理由：cache.db 已经补全（1038/1017），而设计 DB 还是 Name() ⇒ 两侧不一致，而设计 DB 是重写源码的唯一输入。",
+          "consequences": "① 设计 DB 的副本多一个 members 字段；② 生成物变化（366 份里 type/interface 的那部分）；③ 判据是「设计 DB 副本里能查到 members」，不是「代码里有 members 这个词」。",
+          "acceptance": "设计 DB 里任一 interface 的副本（如 domain-task_machine.calls.json 的 StandingNode）带 members 数组；function 的副本不带 members（它们本来就没有）。",
           "status": "active",
-          "updated_at": "2026-10-19T13:45:28.428Z",
+          "updated_at": "2026-10-20T00:08:42.765Z",
           "author": "llm",
           "agent": "workbuddy"
         },
         "task": {
           "id": "file_src_application_design_db_gen_design_db_ts",
-          "summary": "设计 DSL → 设计 DB 的生成器，作为工具 `design_line` 的 `action=gen-db`。★ 全量、与实际 DB 同构（symbols / imports / calls 取自 cache.db，requirements 取自 decision.expectations）；每份副本自报 `path`。支持 `check` 模式（只比对不写），并在写模式下清理不再需要的陈旧副本。",
+          "summary": "设计 DSL → 设计 DB 的生成器，作为工具 design_line 的 action=gen-db。全量、与实际 DB 同构（symbols / imports / calls 取自 cache.db，requirements 取自 decision.expectations）；每份副本自报 path。2026-10-20 补：type/interface 的 members 也要拷 —— 此前设计 DB 的签名只有 Name()，将来重写源码时恢复不出类型定义。",
           "expectations": [
             {
               "kind": "file-exists",
@@ -48867,7 +48875,7 @@
               "kind": "symbol-exists",
               "path": "src/application/design/db/gen_design_db.ts",
               "symbol": "genDesignDb",
-              "why": "生成器必须是一个可单测的函数（不是 handler 里拼）"
+              "why": "生成器必须是一个可单测的函数"
             },
             {
               "kind": "source-has",
@@ -48875,21 +48883,70 @@
               "must": [
                 "gen-db"
               ],
-              "why": "action 要注册进 design_line 的 schema，否则工具面调不到"
+              "why": "action 要注册进 design_line 的 schema"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/db/gen_design_db.ts",
+              "must": [
+                "members"
+              ],
+              "why": "必须真的把 members 拷进副本（只有做了才会绿）"
             }
           ],
           "state": "done",
           "owner": "workbuddy",
-          "claimed_at": "2026-10-19T13:45:44.676Z",
+          "claimed_at": "2026-10-20T00:08:45.501Z",
           "evidence": [
             {
               "kind": "expectations",
-              "at": "2026-10-19T13:47:42.066Z",
+              "at": "2026-10-20T00:09:33.717Z",
+              "by": "llm",
+              "agent": "workbuddy",
               "verdict": "pass"
             }
           ]
         },
-        "status": "done"
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-10-20T00:08:42.765Z",
+            "decision": {
+              "summary": "设计 DSL → 设计 DB 的生成器，作为工具 `design_line` 的 `action=gen-db`。★ 全量、与实际 DB 同构（symbols / imports / calls 取自 cache.db，requirements 取自 decision.expectations）；每份副本自报 `path`。支持 `check` 模式（只比对不写），并在写模式下清理不再需要的陈旧副本。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "why": "生成逻辑要住 src（工具面）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "genDesignDb",
+                  "why": "生成器必须是一个可单测的函数（不是 handler 里拼）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "gen-db"
+                  ],
+                  "why": "action 要注册进 design_line 的 schema，否则工具面调不到"
+                }
+              ],
+              "rationale": "⑤ 是设计链的第五步，原先只有 scripts/gen-design-db.mjs（178 行），工具面没有 ⇒ 只能 node scripts/xxx。用户裁定第 3 步：把设计链 6 个脚本收成一个工具的多个 action。★ 选它做第二个是因为它最安全（读 DSL + cache.db，写的是生成物 certs/design-db/），且刚补好 path 契约。",
+              "consequences": "① 工具 design_line 多一个 action（report / gen-db）；② 删 scripts/gen-design-db.mjs；③ 生成物（362 份）不受影响 —— ★ 判据是「新旧实现输出逐字相同」，不是『看起来对』。",
+              "acceptance": "gen-db 生成的 362 份与旧脚本产出**逐字相同**（用 --check 与目录 diff 双向验证）；check 模式只报不写；陈旧副本会被清理且计数如实。",
+              "status": "active",
+              "updated_at": "2026-10-19T13:45:28.428Z",
+              "author": "llm",
+              "agent": "workbuddy"
+            },
+            "note": "给 src/application/design/db/gen_design_db.ts 的决策卡加第 4 条判据：拷 nodes.members",
+            "author": "llm",
+            "agent": "workbuddy"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_rewrite_symbol_diff_ts",
@@ -95022,11 +95079,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T00:07:00.586Z",
+    "saved_at": "2026-10-20T00:09:33.746Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792454820364,
-    "age": 222
+    "scanRev": 1792454973504,
+    "age": 242
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -96825,5 +96882,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 533
+  "_dsl_rev": 535
 }

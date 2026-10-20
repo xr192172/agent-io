@@ -8,31 +8,119 @@
       "name": "DeadImportsStepCfg",
       "kind": "interface",
       "line": 30,
-      "signature": "DeadImportsStepCfg()"
+      "signature": "DeadImportsStepCfg()",
+      "members": [
+        {
+          "name": "enabled",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "dead",
+          "type": ": Array<{ source: string; files: string[] }>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeadStatementsStepCfg",
       "kind": "interface",
       "line": 34,
-      "signature": "DeadStatementsStepCfg()"
+      "signature": "DeadStatementsStepCfg()",
+      "members": [
+        {
+          "name": "enabled",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PackageMigrationStepCfg",
       "kind": "interface",
       "line": 40,
-      "signature": "PackageMigrationStepCfg()"
+      "signature": "PackageMigrationStepCfg()",
+      "members": [
+        {
+          "name": "enabled",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "migrate",
+          "type": ": PackageMigrationSpec",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FunctionAnnotationStepCfg",
       "kind": "interface",
       "line": 44,
-      "signature": "FunctionAnnotationStepCfg()"
+      "signature": "FunctionAnnotationStepCfg()",
+      "members": [
+        {
+          "name": "enabled",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RefactorStepsCfg",
       "kind": "interface",
       "line": 50,
-      "signature": "RefactorStepsCfg()"
+      "signature": "RefactorStepsCfg()",
+      "members": [
+        {
+          "name": "dead_imports",
+          "type": ": DeadImportsStepCfg",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "dead_statements",
+          "type": ": DeadStatementsStepCfg",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "package_migration",
+          "type": ": PackageMigrationStepCfg",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "spring_mvc_layering",
+          "type": ": { enabled?: boolean; annotate?: Record<string, unknown> }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "function_annotation",
+          "type": ": FunctionAnnotationStepCfg",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RefactorStageKind",
@@ -44,37 +132,247 @@
       "name": "PackageMigrationSpec",
       "kind": "interface",
       "line": 67,
-      "signature": "PackageMigrationSpec()"
+      "signature": "PackageMigrationSpec()",
+      "members": [
+        {
+          "name": "moduleBase",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "prefix",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "packageRename",
+          "type": ": { from: string; to: string }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "packageRenameDir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "sourceExts",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "aliases",
+          "type": ": Array<{ importPath: string; from: string; to: string }>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipDirs",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "packageRenameTopLevelOnly",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FileMove",
       "kind": "interface",
       "line": 93,
-      "signature": "FileMove()"
+      "signature": "FileMove()",
+      "members": [
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RunningChangePlan",
       "kind": "interface",
       "line": 98,
-      "signature": "RunningChangePlan()"
+      "signature": "RunningChangePlan()",
+      "members": [
+        {
+          "name": "absToNew",
+          "type": ": Map<string, string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "originals",
+          "type": ": Map<string, string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "moves",
+          "type": ": FileMove[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "units",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "needsReview",
+          "type": ": Array<{ source: string; files: string[]; reason: string }>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "unjudged",
+          "type": ": Array<{ source: string; files: string[] }>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RefactorStageComputeArgs",
       "kind": "interface",
       "line": 130,
-      "signature": "RefactorStageComputeArgs()"
+      "signature": "RefactorStageComputeArgs()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cwd",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "dead",
+          "type": ": Array<{ source: string; files: string[] }>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "migrate",
+          "type": ": PackageMigrationSpec",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotate",
+          "type": ": Record<string, unknown>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RefactorStageExecutor",
       "kind": "interface",
       "line": 141,
-      "signature": "RefactorStageExecutor()"
+      "signature": "RefactorStageExecutor()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": RefactorStageKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "compute",
+          "type": ": RunningChangePlan | Promise<RunningChangePlan>",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "limitations",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LanguageRefactorExecutor",
       "kind": "interface",
       "line": 151,
-      "signature": "LanguageRefactorExecutor()"
+      "signature": "LanguageRefactorExecutor()",
+      "members": [
+        {
+          "name": "lang",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "isSourceFile",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "detectVerifyCommands",
+          "type": ": VerifyCommand[]",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "stages",
+          "type": ": RefactorStageExecutor[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "manifestFiles",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "manifestPriority",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "manifestPresent",
@@ -98,7 +396,38 @@
       "name": "RefactorLangRegistry",
       "kind": "class",
       "line": 207,
-      "signature": "RefactorLangRegistry()"
+      "signature": "RefactorLangRegistry()",
+      "members": [
+        {
+          "name": "m",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "register",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "get",
+          "type": ": LanguageRefactorExecutor | undefined",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "all",
+          "type": ": LanguageRefactorExecutor[]",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "forProject",
+          "type": ": LanguageRefactorExecutor[]",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     }
   ],
   "imports": [

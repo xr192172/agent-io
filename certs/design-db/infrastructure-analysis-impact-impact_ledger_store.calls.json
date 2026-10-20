@@ -14,19 +14,127 @@
       "name": "LedgerEntry",
       "kind": "interface",
       "line": 31,
-      "signature": "LedgerEntry()"
+      "signature": "LedgerEntry()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "created_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "declared_files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "expected_files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": LedgerEntryStatus",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "consumed_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "matched_seq",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "unexpected_files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "actual_files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolution",
+          "type": ": { at: string; reviewer: string; reason: string }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LedgerFile",
       "kind": "interface",
       "line": 51,
-      "signature": "LedgerFile()"
+      "signature": "LedgerFile()",
+      "members": [
+        {
+          "name": "version",
+          "type": ": 1",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "entries",
+          "type": ": LedgerEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ConsumeVerdict",
       "kind": "interface",
       "line": 57,
-      "signature": "ConsumeVerdict()"
+      "signature": "ConsumeVerdict()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'ok' | 'violated'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unexpected",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "actual",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "seq",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LEDGER_PENDING_TTL_MS",

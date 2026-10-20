@@ -8,13 +8,53 @@
       "name": "UpdateStatusInput",
       "kind": "interface",
       "line": 42,
-      "signature": "UpdateStatusInput()"
+      "signature": "UpdateStatusInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": DiagramStatus",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence",
+          "type": ": ProgressEvidence",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "StatusResult",
       "kind": "interface",
       "line": 58,
-      "signature": "StatusResult()"
+      "signature": "StatusResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "updateStatus",

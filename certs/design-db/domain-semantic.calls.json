@@ -8,31 +8,269 @@
       "name": "ExpectedApi",
       "kind": "interface",
       "line": 9,
-      "signature": "ExpectedApi()"
+      "signature": "ExpectedApi()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "end_line",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "notes",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "notes_en",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Symbol",
       "kind": "interface",
       "line": 24,
-      "signature": "Symbol()"
+      "signature": "Symbol()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'const' | 'type' | 'var' | 'struct' | 'interface' | 'class' | 'function' | 'method'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end_line",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "decision",
+          "type": ": NodeDecision",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "decision_history",
+          "type": ": DecisionHistoryEntry[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "lifecycle",
+          "type": ": SymbolLifecycle",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SymbolLifecycle",
       "kind": "interface",
       "line": 47,
-      "signature": "SymbolLifecycle()"
+      "signature": "SymbolLifecycle()",
+      "members": [
+        {
+          "name": "status",
+          "type": ": 'active' | 'deprecated' | 'superseded' | 'split' | 'merged'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "superseded_by",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "split_into",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "merged_from",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "retire_reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SemanticFile",
       "kind": "interface",
       "line": 63,
-      "signature": "SemanticFile()"
+      "signature": "SemanticFile()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "responsibility",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "responsibility_en",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "expected_apis",
+          "type": ": ExpectedApi[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "expected_deps",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "expected_behavior",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": DiagramStatus",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbols",
+          "type": ": Symbol[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "lines",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "contract",
+          "type": ": BrickContract",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "lifecycle",
+          "type": ": FileLifecycle",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FileLifecycle",
       "kind": "interface",
       "line": 116,
-      "signature": "FileLifecycle()"
+      "signature": "FileLifecycle()",
+      "members": [
+        {
+          "name": "status",
+          "type": ": 'active' | 'deprecated' | 'merged'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "merged_into",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "merged_from",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "retire_reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LIFECYCLE_KEYS",
@@ -74,19 +312,103 @@
       "name": "CodeTemplate",
       "kind": "interface",
       "line": 262,
-      "signature": "CodeTemplate()"
+      "signature": "CodeTemplate()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lang",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "template",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ext",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ScaffoldConfig",
       "kind": "interface",
       "line": 276,
-      "signature": "ScaffoldConfig()"
+      "signature": "ScaffoldConfig()",
+      "members": [
+        {
+          "name": "templates",
+          "type": ": CodeTemplate[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "markers",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "generate_ui_skeleton",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "ui_framework",
+          "type": ": 'vue' | 'react' | 'html'",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Semantic",
       "kind": "interface",
       "line": 288,
-      "signature": "Semantic()"
+      "signature": "Semantic()",
+      "members": [
+        {
+          "name": "files",
+          "type": ": SemanticFile[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "multi_file_invariants",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "expected_global_behavior",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "scaffold",
+          "type": ": ScaffoldConfig",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "hasFileEntries",

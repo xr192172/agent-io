@@ -8,13 +8,95 @@
       "name": "LoopOptions",
       "kind": "interface",
       "line": 69,
-      "signature": "LoopOptions()"
+      "signature": "LoopOptions()",
+      "members": [
+        {
+          "name": "minDeviationRate",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "minUndesigned",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "minRepeatSpreads",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "useLlm",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LoopResult",
       "kind": "interface",
       "line": 84,
-      "signature": "LoopResult()"
+      "signature": "LoopResult()",
+      "members": [
+        {
+          "name": "report",
+          "type": ": TSDiffReport",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "seeded",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "ledger",
+          "type": ": LedgerStats",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "triggered",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipReason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "proposals",
+          "type": ": Proposal[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "llmRun",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "llmDegraded",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "llmVerdicts",
+          "type": ": { result: 'ok' | 'deviation'; rule: string; reason: string }[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "withDefaults",

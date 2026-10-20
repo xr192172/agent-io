@@ -14,7 +14,51 @@
       "name": "DictEntry",
       "kind": "interface",
       "line": 31,
-      "signature": "DictEntry()"
+      "signature": "DictEntry()",
+      "members": [
+        {
+          "name": "term",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": DictKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "newbie",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pm",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "senior",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "aliases",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "generated_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DictLinks",
@@ -26,7 +70,27 @@
       "name": "DictionaryView",
       "kind": "interface",
       "line": 54,
-      "signature": "DictionaryView()"
+      "signature": "DictionaryView()",
+      "members": [
+        {
+          "name": "entries",
+          "type": ": DictEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "links",
+          "type": ": DictLinks",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "aliasesIndex",
+          "type": ": Record<string, string[]>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "_allowedRoots",

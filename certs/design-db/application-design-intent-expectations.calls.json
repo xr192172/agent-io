@@ -14,19 +14,109 @@
       "name": "ExpectationItem",
       "kind": "interface",
       "line": 45,
-      "signature": "ExpectationItem()"
+      "signature": "ExpectationItem()",
+      "members": [
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "expectation",
+          "type": ": Expectation",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "verdict",
+          "type": ": Verdict",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ExpectationsReport",
       "kind": "interface",
       "line": 54,
-      "signature": "ExpectationsReport()"
+      "signature": "ExpectationsReport()",
+      "members": [
+        {
+          "name": "checked",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "passed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "failed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unsupported",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "items",
+          "type": ": ExpectationItem[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "notes",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "conflicts",
+          "type": ": ExpectationConflict[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ExpectationConflict",
       "kind": "interface",
       "line": 70,
-      "signature": "ExpectationConflict()"
+      "signature": "ExpectationConflict()",
+      "members": [
+        {
+          "name": "subject",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sides",
+          "type": ": Array<{ node_id: string; kind: string; text: string }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "findExpectationConflicts",

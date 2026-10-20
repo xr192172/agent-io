@@ -68,13 +68,59 @@
       "name": "UpgradeScanResult",
       "kind": "interface",
       "line": 246,
-      "signature": "UpgradeScanResult()"
+      "signature": "UpgradeScanResult()",
+      "members": [
+        {
+          "name": "res",
+          "type": ": ContractScanResult",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "gates",
+          "type": ": StaticGateResult[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dynamicGates",
+          "type": ": DynamicGateResult[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lines",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "data",
+          "type": ": Record<string, unknown>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "UpgradeScanOptions",
       "kind": "interface",
       "line": 256,
-      "signature": "UpgradeScanOptions()"
+      "signature": "UpgradeScanOptions()",
+      "members": [
+        {
+          "name": "gate",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "dynamic",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "runUpgradeScan",
@@ -86,7 +132,27 @@
       "name": "UpgradeApplyResult",
       "kind": "interface",
       "line": 280,
-      "signature": "UpgradeApplyResult()"
+      "signature": "UpgradeApplyResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lines",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "report",
+          "type": ": Record<string, unknown>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "dirMissingLine",

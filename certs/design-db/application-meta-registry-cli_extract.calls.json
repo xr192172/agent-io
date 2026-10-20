@@ -8,13 +8,59 @@
       "name": "CliCommand",
       "kind": "interface",
       "line": 25,
-      "signature": "CliCommand()"
+      "signature": "CliCommand()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "desc",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "usage",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "implModules",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CliExtractResult",
       "kind": "interface",
       "line": 38,
-      "signature": "CliExtractResult()"
+      "signature": "CliExtractResult()",
+      "members": [
+        {
+          "name": "commands",
+          "type": ": CliCommand[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "extractImportMap",

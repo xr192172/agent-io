@@ -8,13 +8,77 @@
       "name": "OverviewSummary",
       "kind": "interface",
       "line": 28,
-      "signature": "OverviewSummary()"
+      "signature": "OverviewSummary()",
+      "members": [
+        {
+          "name": "one_liner",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "brief",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "mode",
+          "type": ": 'llm' | 'rule'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "OverviewResult",
       "kind": "interface",
       "line": 36,
-      "signature": "OverviewResult()"
+      "signature": "OverviewResult()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "summary",
+          "type": ": OverviewSummary",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "mind_map",
+          "type": ": MindMap",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "first_steps",
+          "type": ": TourStep[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "generated_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "overviewFile",
@@ -62,7 +126,33 @@
       "name": "GetOverviewInput",
       "kind": "interface",
       "line": 161,
-      "signature": "GetOverviewInput()"
+      "signature": "GetOverviewInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "refresh",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "refresh_llm",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "first_steps",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "STATISTICAL_DESC_RE",

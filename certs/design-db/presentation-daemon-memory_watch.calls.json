@@ -14,7 +14,51 @@
       "name": "MemoryWatchOpts",
       "kind": "interface",
       "line": 19,
-      "signature": "MemoryWatchOpts()"
+      "signature": "MemoryWatchOpts()",
+      "members": [
+        {
+          "name": "enabled",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "intervalMs",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "rssDeltaMb",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "leakRuns",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "leakDeltaMb",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "minAlertGapMs",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "targets",
+          "type": ": number[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "MemoryVerdict",
@@ -26,7 +70,27 @@
       "name": "JudgeOpts",
       "kind": "interface",
       "line": 38,
-      "signature": "JudgeOpts()"
+      "signature": "JudgeOpts()",
+      "members": [
+        {
+          "name": "rssDeltaMb",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "leakRuns",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "leakDeltaMb",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "judgeLeak",
@@ -44,7 +108,27 @@
       "name": "TargetState",
       "kind": "interface",
       "line": 83,
-      "signature": "TargetState()"
+      "signature": "TargetState()",
+      "members": [
+        {
+          "name": "baseline",
+          "type": ": MemSample | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "series",
+          "type": ": MemSample[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lastAlertAt",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "startMemoryWatch",

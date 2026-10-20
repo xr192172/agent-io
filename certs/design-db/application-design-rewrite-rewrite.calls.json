@@ -8,13 +8,107 @@
       "name": "RewriteArgs",
       "kind": "interface",
       "line": 32,
-      "signature": "RewriteArgs()"
+      "signature": "RewriteArgs()",
+      "members": [
+        {
+          "name": "projectDir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "onlyFile",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "prefix",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "apply",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RewriteResult",
       "kind": "interface",
       "line": 45,
-      "signature": "RewriteResult()"
+      "signature": "RewriteResult()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scanned",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "same",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "differ",
+          "type": ": SymbolDiffResult['differ']",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "uncompared",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "uncomparedByKind",
+          "type": ": Record<string, number>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unpaired",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "designOnly",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sourceOnly",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "applied",
+          "type": ": {\n    plan: RefactorPlan;\n    res: { applied: number; already_applied: number; failed: number; written: boolean; ok: boolean; items: Array<{ status: string; file: string; error?: string }> };\n    /** ★ 落盘后重算得到的 differ 数（不是 apply 前的） */\n    afterDiffer: number;\n    /** ★ 综合结论：apply 成功 且 复核为 0 */\n    ok: boolean;\n  } | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "rewriteSymbols",

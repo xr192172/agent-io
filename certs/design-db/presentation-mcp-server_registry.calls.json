@@ -176,7 +176,15 @@
       "name": "ArgValidator",
       "kind": "interface",
       "line": 678,
-      "signature": "ArgValidator()"
+      "signature": "ArgValidator()",
+      "members": [
+        {
+          "name": "safeParse",
+          "type": ": { success: boolean; error?: { issues: Array<{ path: Array<string | number> }> } }",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "_argValidators",

@@ -20,19 +20,109 @@
       "name": "RawLiteralMatch",
       "kind": "interface",
       "line": 63,
-      "signature": "RawLiteralMatch()"
+      "signature": "RawLiteralMatch()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pos",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "len",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "snippet",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": LiteralMatchKind",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LiteralMatch",
       "kind": "interface",
       "line": 75,
-      "signature": "LiteralMatch()"
+      "signature": "LiteralMatch()",
+      "members": [
+        {
+          "name": "decision",
+          "type": ": LiteralDecision",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "old",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "new",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RenameSymbolsItem",
       "kind": "interface",
       "line": 83,
-      "signature": "RenameSymbolsItem()"
+      "signature": "RenameSymbolsItem()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "decl_line",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "rename_file_if_matching",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ModuleSymbolRenameResult",
@@ -44,13 +134,137 @@
       "name": "RenameSymbolsResult",
       "kind": "interface",
       "line": 123,
-      "signature": "RenameSymbolsResult()"
+      "signature": "RenameSymbolsResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope",
+          "type": ": 'module' | 'local'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dryRun",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "previews",
+          "type": ": Array<{\n    index: number;\n    item: RenameSymbolsItem;\n    ok: boolean;\n    blocked?: string[];\n    result?: ModuleSymbolRenameResult;\n  }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "applied",
+          "type": ": Array<{ index: number; item: RenameSymbolsItem; result: ModuleSymbolRenameResult }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "filesWritten",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "blocked",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "literals",
+          "type": ": Array<{\n    index: number;\n    item: RenameSymbolsItem;\n    needle: string;\n    /** 新蛇形名（需要的话，字面量里它替换 needle） */\n    toSnake: string;\n    matches: LiteralMatch[];\n  }>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "literalFilesWritten",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "externalRefs",
+          "type": ": ExternalRef[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "indexWriteThrough",
+          "type": ": WriteThroughOutcome",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "rolledBack",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "rollbackNote",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RenameSymbolsInput",
       "kind": "interface",
       "line": 185,
-      "signature": "RenameSymbolsInput()"
+      "signature": "RenameSymbolsInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope",
+          "type": ": 'module' | 'local'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "renames",
+          "type": ": RenameSymbolsItem[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dry_run",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "report_literals",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "apply_literals",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "renameSymbolsCore",

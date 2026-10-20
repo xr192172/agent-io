@@ -8,7 +8,57 @@
       "name": "AddEdgeInput",
       "kind": "interface",
       "line": 13,
-      "signature": "AddEdgeInput()"
+      "signature": "AddEdgeInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edge_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "edge_type",
+          "type": ": 'straight' | 'curve' | 'dashed'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "arrow",
+          "type": ": 'forward' | 'reverse' | 'both' | 'none'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer",
+          "type": ": NodeLayer",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "addEdge",
@@ -20,7 +70,21 @@
       "name": "DeleteEdgeInput",
       "kind": "interface",
       "line": 72,
-      "signature": "DeleteEdgeInput()"
+      "signature": "DeleteEdgeInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edge_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "deleteEdge",

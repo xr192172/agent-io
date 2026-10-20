@@ -8,25 +8,111 @@
       "name": "GoSite",
       "kind": "interface",
       "line": 19,
-      "signature": "GoSite()"
+      "signature": "GoSite()",
+      "members": [
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "level",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "probe",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "GoFileResult",
       "kind": "interface",
       "line": 20,
-      "signature": "GoFileResult()"
+      "signature": "GoFileResult()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sites",
+          "type": ": GoSite[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "GoInstrumentOut",
       "kind": "interface",
       "line": 21,
-      "signature": "GoInstrumentOut()"
+      "signature": "GoInstrumentOut()",
+      "members": [
+        {
+          "name": "files",
+          "type": ": GoFileResult[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "restored",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "GoInstrumentOptions",
       "kind": "interface",
       "line": 23,
-      "signature": "GoInstrumentOptions()"
+      "signature": "GoInstrumentOptions()",
+      "members": [
+        {
+          "name": "dryRun",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "deep",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "effects",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "contractProbes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "scanDir",
@@ -110,7 +196,39 @@
       "name": "GoDepsCheck",
       "kind": "interface",
       "line": 292,
-      "signature": "GoDepsCheck()"
+      "signature": "GoDepsCheck()",
+      "members": [
+        {
+          "name": "needs_replace",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "needs_require",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "require_line",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "replace_line",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "checkGoObserveDeps",

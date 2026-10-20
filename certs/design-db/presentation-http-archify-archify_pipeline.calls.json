@@ -8,19 +8,91 @@
       "name": "ProductionItem",
       "kind": "interface",
       "line": 18,
-      "signature": "ProductionItem()"
+      "signature": "ProductionItem()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": DiagramType",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "delivered",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "htmlPath",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "candidate",
+          "type": ": unknown",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ProductionManifest",
       "kind": "interface",
       "line": 27,
-      "signature": "ProductionManifest()"
+      "signature": "ProductionManifest()",
+      "members": [
+        {
+          "name": "delivered",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "manifest",
+          "type": ": ProductionItem[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PipelineOptions",
       "kind": "interface",
       "line": 32,
-      "signature": "PipelineOptions()"
+      "signature": "PipelineOptions()",
+      "members": [
+        {
+          "name": "ir",
+          "type": ": ArchifyTreeNode",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fileIndex",
+          "type": ": FileIndex",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "archifyRoot",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "outDir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "runArchifyPipeline",

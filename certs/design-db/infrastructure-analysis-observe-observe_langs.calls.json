@@ -8,37 +8,265 @@
       "name": "ObserveSite",
       "kind": "interface",
       "line": 72,
-      "signature": "ObserveSite()"
+      "signature": "ObserveSite()",
+      "members": [
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "level",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "probe",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ObserveFileResult",
       "kind": "interface",
       "line": 79,
-      "signature": "ObserveFileResult()"
+      "signature": "ObserveFileResult()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sites",
+          "type": ": ObserveSite[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ObserveInstrumentReport",
       "kind": "interface",
       "line": 86,
-      "signature": "ObserveInstrumentReport()"
+      "signature": "ObserveInstrumentReport()",
+      "members": [
+        {
+          "name": "lang",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dryRun",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": ObserveFileResult[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scanned",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "preflight",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "ledger",
+          "type": ": { file: string; summary: string; raw: unknown }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "sinkHint",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ObserveUninstrumentReport",
       "kind": "interface",
       "line": 112,
-      "signature": "ObserveUninstrumentReport()"
+      "signature": "ObserveUninstrumentReport()",
+      "members": [
+        {
+          "name": "lang",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "restored",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "restoredFiles",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ledgerCleared",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ObserveLangPack",
       "kind": "interface",
       "line": 125,
-      "signature": "ObserveLangPack()"
+      "signature": "ObserveLangPack()",
+      "members": [
+        {
+          "name": "lang",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "isSourceFile",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "inProcess",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "instrument",
+          "type": ": Promise<ObserveInstrumentReport>",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "uninstrument",
+          "type": ": Promise<ObserveUninstrumentReport>",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "limitations",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sinkHint",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "detectVerifyCommands",
+          "type": ": VerifyCommand[]",
+          "optional": true,
+          "member_kind": "method"
+        },
+        {
+          "name": "manifestFiles",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ObserveInstrumentOptions",
       "kind": "interface",
       "line": 150,
-      "signature": "ObserveInstrumentOptions()"
+      "signature": "ObserveInstrumentOptions()",
+      "members": [
+        {
+          "name": "dryRun",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "projectRoot",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "contractProbes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "deep",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "effects",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "renderInstrumentReport",
@@ -80,7 +308,38 @@
       "name": "ObserveLangRegistry",
       "kind": "class",
       "line": 544,
-      "signature": "ObserveLangRegistry()"
+      "signature": "ObserveLangRegistry()",
+      "members": [
+        {
+          "name": "m",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "register",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "list",
+          "type": ": ObserveLangPack[]",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "pick",
+          "type": ": ObserveLangPack | null",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "pickAll",
+          "type": ": ObserveLangPack[]",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "observeLangs",

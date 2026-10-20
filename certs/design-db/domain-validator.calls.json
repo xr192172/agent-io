@@ -32,13 +32,47 @@
       "name": "ValidationErrorItem",
       "kind": "interface",
       "line": 36,
-      "signature": "ValidationErrorItem()"
+      "signature": "ValidationErrorItem()",
+      "members": [
+        {
+          "name": "key",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ValidationResult",
       "kind": "interface",
       "line": 43,
-      "signature": "ValidationResult()"
+      "signature": "ValidationResult()",
+      "members": [
+        {
+          "name": "valid",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "errors",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "keys",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "toResult",

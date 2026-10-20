@@ -8,19 +8,67 @@
       "name": "RoleFileInput",
       "kind": "interface",
       "line": 17,
-      "signature": "RoleFileInput()"
+      "signature": "RoleFileInput()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "apis",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RoleTitleOptions",
       "kind": "interface",
       "line": 26,
-      "signature": "RoleTitleOptions()"
+      "signature": "RoleTitleOptions()",
+      "members": [
+        {
+          "name": "batch",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "concurrency",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TitleEntry",
       "kind": "interface",
       "line": 33,
-      "signature": "TitleEntry()"
+      "signature": "TitleEntry()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "generateFileRoleTitles",

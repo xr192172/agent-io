@@ -14,31 +14,227 @@
       "name": "TranslateParam",
       "kind": "interface",
       "line": 21,
-      "signature": "TranslateParam()"
+      "signature": "TranslateParam()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TranslateMethod",
       "kind": "interface",
       "line": 29,
-      "signature": "TranslateMethod()"
+      "signature": "TranslateMethod()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "params",
+          "type": ": TranslateParam[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "result",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TransUnit",
       "kind": "interface",
       "line": 40,
-      "signature": "TransUnit()"
+      "signature": "TransUnit()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": TranslateKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dstLang",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "params",
+          "type": ": TranslateParam[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "result",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeParams",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeParamConstraints",
+          "type": ": Record<string, string>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeParamBounds",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "decision",
+          "type": ": DecisionShape",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "value",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "isVar",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeKind",
+          "type": ": 'struct' | 'interface' | 'alias'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fields",
+          "type": ": { name: string; type: string }[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "methods",
+          "type": ": TranslateMethod[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "aliasType",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "srcSnippet",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "srcLine",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "skeleton",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "bodyHole",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "constraints",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DecisionCase",
       "kind": "interface",
       "line": 94,
-      "signature": "DecisionCase()"
+      "signature": "DecisionCase()",
+      "members": [
+        {
+          "name": "labels",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "branchId",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DecisionShape",
       "kind": "interface",
       "line": 100,
-      "signature": "DecisionShape()"
+      "signature": "DecisionShape()",
+      "members": [
+        {
+          "name": "discriminant",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cases",
+          "type": ": DecisionCase[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "hasDefault",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DEFAULT_CONSTRAINTS",

@@ -8,19 +8,103 @@
       "name": "FileRenameItem",
       "kind": "interface",
       "line": 27,
-      "signature": "FileRenameItem()"
+      "signature": "FileRenameItem()",
+      "members": [
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RenameFilesInput",
       "kind": "interface",
       "line": 34,
-      "signature": "RenameFilesInput()"
+      "signature": "RenameFilesInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "renames",
+          "type": ": FileRenameItem[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dry_run",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RenameFilesResult",
       "kind": "interface",
       "line": 42,
-      "signature": "RenameFilesResult()"
+      "signature": "RenameFilesResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dryRun",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "previews",
+          "type": ": Array<{\n    index: number;\n    from: string;\n    to: string;\n    ok: boolean;\n    blocked?: string[];\n    result?: RenameFileResult;\n  }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "applied",
+          "type": ": Array<{ index: number; from: string; to: string; result: RenameFileResult }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "filesWritten",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "blocked",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "rolledBack",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "rollbackNote",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "renameFilesCore",

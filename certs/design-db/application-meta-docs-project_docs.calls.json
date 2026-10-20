@@ -8,13 +8,77 @@
       "name": "ProjectDoc",
       "kind": "interface",
       "line": 23,
-      "signature": "ProjectDoc()"
+      "signature": "ProjectDoc()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rel",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "abs",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tags",
+          "type": ": { features: string[]; steps: string[]; files: string[] }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tagged",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lines",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DocsManifest",
       "kind": "interface",
       "line": 42,
-      "signature": "DocsManifest()"
+      "signature": "DocsManifest()",
+      "members": [
+        {
+          "name": "docs",
+          "type": ": ProjectDoc[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dir",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "MAX_DOC_LINES",
@@ -74,7 +138,27 @@
       "name": "DocTargetSet",
       "kind": "interface",
       "line": 147,
-      "signature": "DocTargetSet()"
+      "signature": "DocTargetSet()",
+      "members": [
+        {
+          "name": "features",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "steps",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "hit",

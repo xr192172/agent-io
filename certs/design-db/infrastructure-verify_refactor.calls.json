@@ -8,13 +8,59 @@
       "name": "VerifyCommand",
       "kind": "interface",
       "line": 28,
-      "signature": "VerifyCommand()"
+      "signature": "VerifyCommand()",
+      "members": [
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cmd",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "args",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "timeoutMs",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "VerificationOutcome",
       "kind": "interface",
       "line": 36,
-      "signature": "VerificationOutcome()"
+      "signature": "VerificationOutcome()",
+      "members": [
+        {
+          "name": "status",
+          "type": ": 'pass' | 'fail' | 'skipped'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "runVerification",
@@ -38,13 +84,77 @@
       "name": "ApplyWithVerifyResult",
       "kind": "interface",
       "line": 129,
-      "signature": "ApplyWithVerifyResult()"
+      "signature": "ApplyWithVerifyResult()",
+      "members": [
+        {
+          "name": "applied",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "outcome",
+          "type": ": VerifyOutcomeKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "baseline",
+          "type": ": VerificationOutcome | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "after",
+          "type": ": VerificationOutcome | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rollback",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ApplyWithVerifyOpts",
       "kind": "interface",
       "line": 139,
-      "signature": "ApplyWithVerifyOpts()"
+      "signature": "ApplyWithVerifyOpts()",
+      "members": [
+        {
+          "name": "cwd",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "commands",
+          "type": ": VerifyCommand[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "apply",
+          "type": ": () => boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rollback",
+          "type": ": () => void",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "verify",
+          "type": ": (o: { cwd: string; commands: VerifyCommand[] }) => VerificationOutcome",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "applyWithVerify",

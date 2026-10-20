@@ -14,7 +14,33 @@
       "name": "ContractPageInput",
       "kind": "interface",
       "line": 49,
-      "signature": "ContractPageInput()"
+      "signature": "ContractPageInput()",
+      "members": [
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ContractPageResolution",
@@ -26,31 +52,269 @@
       "name": "ContractDefinition",
       "kind": "interface",
       "line": 62,
-      "signature": "ContractDefinition()"
+      "signature": "ContractDefinition()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "qualified_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ContractSite",
       "kind": "interface",
       "line": 76,
-      "signature": "ContractSite()"
+      "signature": "ContractSite()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "snippet",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ContractEdge",
       "kind": "interface",
       "line": 84,
-      "signature": "ContractEdge()"
+      "signature": "ContractEdge()",
+      "members": [
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "from_key",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "expr",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cardinality",
+          "type": ": 'single' | 'pick'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tag",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ContractTerm",
       "kind": "interface",
       "line": 97,
-      "signature": "ContractTerm()"
+      "signature": "ContractTerm()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "meaning",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "debt",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "retired",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fix",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ContractPageResult",
       "kind": "interface",
       "line": 109,
-      "signature": "ContractPageResult()"
+      "signature": "ContractPageResult()",
+      "members": [
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolution",
+          "type": ": ContractPageResolution",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolution_note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "definition",
+          "type": ": ContractDefinition",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "candidates",
+          "type": ": Array<{ file: string; line: number; kind: string; qualified_name: string; source: string }>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "members",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "members_note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "producers",
+          "type": ": { source: string; count: number; sites: ContractSite[]; note: string }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "consumers",
+          "type": ": { source: string; count: number; sites: ContractSite[]; note: string }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "chain_edges",
+          "type": ": ContractEdge[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "term",
+          "type": ": ContractTerm",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "limitations",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "lookupTerm",

@@ -8,43 +8,273 @@
       "name": "ElementState",
       "kind": "interface",
       "line": 9,
-      "signature": "ElementState()"
+      "signature": "ElementState()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "visible",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "x",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "y",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "width",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "height",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "content",
+          "type": ": NodeContent",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "highlight",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "opacity",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "style",
+          "type": ": NodeStyle",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnimationStage",
       "kind": "interface",
       "line": 34,
-      "signature": "AnimationStage()"
+      "signature": "AnimationStage()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "duration",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "elements",
+          "type": ": ElementState[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Animation",
       "kind": "interface",
       "line": 46,
-      "signature": "Animation()"
+      "signature": "Animation()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "stages",
+          "type": ": AnimationStage[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnimationTrigger",
       "kind": "interface",
       "line": 62,
-      "signature": "AnimationTrigger()"
+      "signature": "AnimationTrigger()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": 'periodic' | 'event' | 'state_change' | 'manual'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "interval",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "event",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "watch",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnimationValueSchema",
       "kind": "interface",
       "line": 79,
-      "signature": "AnimationValueSchema()"
+      "signature": "AnimationValueSchema()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": 'object' | 'array' | 'string' | 'number' | 'boolean' | 'integer' | 'null'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "properties",
+          "type": ": Record<string, AnimationValueSchema>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "items",
+          "type": ": AnimationValueSchema",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "required",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "enum",
+          "type": ": (string | number)[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "NodeShapes",
       "kind": "interface",
       "line": 97,
-      "signature": "NodeShapes()"
+      "signature": "NodeShapes()",
+      "members": [
+        {
+          "name": "in",
+          "type": ": AnimationValueSchema",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "out",
+          "type": ": AnimationValueSchema",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnimationValue",
       "kind": "interface",
       "line": 105,
-      "signature": "AnimationValue()"
+      "signature": "AnimationValue()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fields",
+          "type": ": AnimationValueSchema",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnimationHandlerMapping",
@@ -56,37 +286,259 @@
       "name": "AnimationError",
       "kind": "interface",
       "line": 121,
-      "signature": "AnimationError()"
+      "signature": "AnimationError()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "condition",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "severity",
+          "type": ": 'expected' | 'unexpected'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "value",
+          "type": ": AnimationValue",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "effect",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "log",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnimationHandler",
       "kind": "interface",
       "line": 142,
-      "signature": "AnimationHandler()"
+      "signature": "AnimationHandler()",
+      "members": [
+        {
+          "name": "file_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "api",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "input_mapping",
+          "type": ": AnimationHandlerMapping",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "output_mapping",
+          "type": ": AnimationHandlerMapping",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "errors",
+          "type": ": AnimationError[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "mock_result",
+          "type": ": unknown",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "mock_results",
+          "type": ": unknown[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "live",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnimationBranch",
       "kind": "interface",
       "line": 162,
-      "signature": "AnimationBranch()"
+      "signature": "AnimationBranch()",
+      "members": [
+        {
+          "name": "condition",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "value",
+          "type": ": AnimationValue",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "effect",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnimationFlow",
       "kind": "interface",
       "line": 174,
-      "signature": "AnimationFlow()"
+      "signature": "AnimationFlow()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "trigger",
+          "type": ": AnimationTrigger",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "value",
+          "type": ": AnimationValue",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "handler",
+          "type": ": AnimationHandler",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "branches",
+          "type": ": AnimationBranch[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "mock_values",
+          "type": ": Record<string, unknown>[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "effect",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnimationRuntime",
       "kind": "interface",
       "line": 197,
-      "signature": "AnimationRuntime()"
+      "signature": "AnimationRuntime()",
+      "members": [
+        {
+          "name": "mode",
+          "type": ": 'mock' | 'live'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "code_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "entry",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "timeout",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnimationSystem",
       "kind": "interface",
       "line": 212,
-      "signature": "AnimationSystem()"
+      "signature": "AnimationSystem()",
+      "members": [
+        {
+          "name": "version",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "flows",
+          "type": ": AnimationFlow[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "runtime",
+          "type": ": AnimationRuntime",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     }
   ],
   "imports": [

@@ -20,13 +20,113 @@
       "name": "RuleFixture",
       "kind": "interface",
       "line": 70,
-      "signature": "RuleFixture()"
+      "signature": "RuleFixture()",
+      "members": [
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "before",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "after",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "negative",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "lang",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Rule",
       "kind": "interface",
       "line": 83,
-      "signature": "Rule()"
+      "signature": "Rule()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tags",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "level",
+          "type": ": RuleLevel",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "language",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "createdFrom",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pattern",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "replace",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fixtures",
+          "type": ": RuleFixture[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sourcePath",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "rulesDir",
@@ -86,13 +186,47 @@
       "name": "RuleLoadError",
       "kind": "interface",
       "line": 259,
-      "signature": "RuleLoadError()"
+      "signature": "RuleLoadError()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LoadRulesResult",
       "kind": "interface",
       "line": 264,
-      "signature": "LoadRulesResult()"
+      "signature": "LoadRulesResult()",
+      "members": [
+        {
+          "name": "rules",
+          "type": ": Rule[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "errors",
+          "type": ": RuleLoadError[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "loadRules",

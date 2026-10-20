@@ -8,7 +8,39 @@
       "name": "ToolWarning",
       "kind": "interface",
       "line": 35,
-      "signature": "ToolWarning()"
+      "signature": "ToolWarning()",
+      "members": [
+        {
+          "name": "code",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "summary",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fix",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "WARNINGS_MARKER",
@@ -20,7 +52,33 @@
       "name": "WireWarning",
       "kind": "interface",
       "line": 55,
-      "signature": "WireWarning()"
+      "signature": "WireWarning()",
+      "members": [
+        {
+          "name": "code",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "summary",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fix",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "delivered",
@@ -68,7 +126,27 @@
       "name": "WarningEmission",
       "kind": "interface",
       "line": 123,
-      "signature": "WarningEmission()"
+      "signature": "WarningEmission()",
+      "members": [
+        {
+          "name": "warnings",
+          "type": ": WireWarning[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "block",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "emitWarnings",

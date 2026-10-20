@@ -26,7 +26,27 @@
       "name": "ResolvePathOptions",
       "kind": "interface",
       "line": 53,
-      "signature": "ResolvePathOptions()"
+      "signature": "ResolvePathOptions()",
+      "members": [
+        {
+          "name": "exts",
+          "type": ": readonly string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "indexFiles",
+          "type": ": readonly string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "bareBaseFirst",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CompletionStrategy",
@@ -38,7 +58,39 @@
       "name": "CompletionInput",
       "kind": "interface",
       "line": 112,
-      "signature": "CompletionInput()"
+      "signature": "CompletionInput()",
+      "members": [
+        {
+          "name": "base",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "baseExt",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "exts",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "indexFiles",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "bareBaseFirst",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "literalCandidates",
@@ -92,7 +144,27 @@
       "name": "ProjectImportHit",
       "kind": "interface",
       "line": 206,
-      "signature": "ProjectImportHit()"
+      "signature": "ProjectImportHit()",
+      "members": [
+        {
+          "name": "rel",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer",
+          "type": ": ProjectImportLayer | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tried",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ProjectImportOptions",

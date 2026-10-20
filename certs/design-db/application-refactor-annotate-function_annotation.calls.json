@@ -20,19 +20,151 @@
       "name": "FnTarget",
       "kind": "interface",
       "line": 32,
-      "signature": "FnTarget()"
+      "signature": "FnTarget()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "startLine",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "indent",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "body",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "bodyHash",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": FnCommentStatus",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "blockLines",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "blockStart",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnnotationSummary",
       "kind": "interface",
       "line": 50,
-      "signature": "AnnotationSummary()"
+      "signature": "AnnotationSummary()",
+      "members": [
+        {
+          "name": "files",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scanned",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "with_comment",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "missing",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stale",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "annotated",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "updated",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnnotationPlanResult",
       "kind": "interface",
       "line": 62,
-      "signature": "AnnotationPlanResult()"
+      "signature": "AnnotationPlanResult()",
+      "members": [
+        {
+          "name": "summary",
+          "type": ": AnnotationSummary",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "absToNew",
+          "type": ": Map<string, string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "originals",
+          "type": ": Map<string, string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "hashOf",
@@ -104,7 +236,27 @@
       "name": "PlanAnnotationInput",
       "kind": "interface",
       "line": 226,
-      "signature": "PlanAnnotationInput()"
+      "signature": "PlanAnnotationInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "absFiles",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "llm",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "planFunctionAnnotation",

@@ -32,49 +32,293 @@
       "name": "LifecycleHint",
       "kind": "interface",
       "line": 105,
-      "signature": "LifecycleHint()"
+      "signature": "LifecycleHint()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": 'retired' | 'merged' | 'superseded' | 'split'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DecisionElements",
       "kind": "interface",
       "line": 119,
-      "signature": "DecisionElements()"
+      "signature": "DecisionElements()",
+      "members": [
+        {
+          "name": "why",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "origin",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "subject",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AlternativeWhy",
       "kind": "interface",
       "line": 137,
-      "signature": "AlternativeWhy()"
+      "signature": "AlternativeWhy()",
+      "members": [
+        {
+          "name": "why",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "votes",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence_source",
+          "type": ": EvidenceSource[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "HarvestCandidate",
       "kind": "interface",
       "line": 147,
-      "signature": "HarvestCandidate()"
+      "signature": "HarvestCandidate()",
+      "members": [
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": HarvestSource",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ref",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "decision",
+          "type": ": NodeDecision",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "decision_history",
+          "type": ": DecisionHistoryEntry[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "votes",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "samples",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence_source",
+          "type": ": EvidenceSource[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "alternatives",
+          "type": ": AlternativeWhy[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "landing",
+          "type": ": 'ok' | 'not-in-feature'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lifecycle_hint",
+          "type": ": LifecycleHint",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "HarvestResult",
       "kind": "interface",
       "line": 199,
-      "signature": "HarvestResult()"
+      "signature": "HarvestResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "judged",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "candidates",
+          "type": ": HarvestCandidate[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence_by_file",
+          "type": ": FileEvidence[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "EvidenceExcerpt",
       "kind": "interface",
       "line": 219,
-      "signature": "EvidenceExcerpt()"
+      "signature": "EvidenceExcerpt()",
+      "members": [
+        {
+          "name": "evidence_source",
+          "type": ": EvidenceSource",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "summary",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "refs",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FileEvidence",
       "kind": "interface",
       "line": 228,
-      "signature": "FileEvidence()"
+      "signature": "FileEvidence()",
+      "members": [
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": HarvestSource",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "excerpts",
+          "type": ": EvidenceExcerpt[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "landing",
+          "type": ": 'ok' | 'not-in-feature'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "HarvestInput",
       "kind": "interface",
       "line": 242,
-      "signature": "HarvestInput()"
+      "signature": "HarvestInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "doc_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "git_root",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "limit",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "judge",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "BATCH_SIZE",
@@ -170,19 +414,79 @@
       "name": "TargetFile",
       "kind": "interface",
       "line": 423,
-      "signature": "TargetFile()"
+      "signature": "TargetFile()",
+      "members": [
+        {
+          "name": "rel",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "abs",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'code' | 'doc'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SignalLine",
       "kind": "interface",
       "line": 432,
-      "signature": "SignalLine()"
+      "signature": "SignalLine()",
+      "members": [
+        {
+          "name": "ref",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "EvidenceSignal",
       "kind": "interface",
       "line": 438,
-      "signature": "EvidenceSignal()"
+      "signature": "EvidenceSignal()",
+      "members": [
+        {
+          "name": "rel",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence_source",
+          "type": ": EvidenceSource",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lines",
+          "type": ": SignalLine[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "codeEvidence",
@@ -212,7 +516,21 @@
       "name": "DocCorpusEntry",
       "kind": "interface",
       "line": 549,
-      "signature": "DocCorpusEntry()"
+      "signature": "DocCorpusEntry()",
+      "members": [
+        {
+          "name": "rel",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "docsEvidence",
@@ -230,7 +548,39 @@
       "name": "EvidenceCtx",
       "kind": "interface",
       "line": 603,
-      "signature": "EvidenceCtx()"
+      "signature": "EvidenceCtx()",
+      "members": [
+        {
+          "name": "db",
+          "type": ": Database",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "gitRoot",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "gitRepoOk",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "gitLogLimit",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "docCorpus",
+          "type": ": DocCorpusEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "evidenceForSource",
@@ -242,7 +592,39 @@
       "name": "RawHit",
       "kind": "interface",
       "line": 632,
-      "signature": "RawHit()"
+      "signature": "RawHit()",
+      "members": [
+        {
+          "name": "key",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "why",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rationale",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ref",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence_source",
+          "type": ": EvidenceSource",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "extractJsonObject",
@@ -284,7 +666,39 @@
       "name": "VoteBin",
       "kind": "interface",
       "line": 751,
-      "signature": "VoteBin()"
+      "signature": "VoteBin()",
+      "members": [
+        {
+          "name": "why",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rationale",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ref",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "votes",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence_source",
+          "type": ": EvidenceSource[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "VoteTable",

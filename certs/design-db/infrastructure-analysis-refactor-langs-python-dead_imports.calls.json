@@ -14,13 +14,53 @@
       "name": "PyDeadImportCandidate",
       "kind": "interface",
       "line": 25,
-      "signature": "PyDeadImportCandidate()"
+      "signature": "PyDeadImportCandidate()",
+      "members": [
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": 'no_reference'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DetectPyDeadImportsResult",
       "kind": "interface",
       "line": 33,
-      "signature": "DetectPyDeadImportsResult()"
+      "signature": "DetectPyDeadImportsResult()",
+      "members": [
+        {
+          "name": "dead",
+          "type": ": PyDeadImportCandidate[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scanned",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "limitations",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "scanPySourceFiles",
@@ -32,13 +72,41 @@
       "name": "PyImportRef",
       "kind": "interface",
       "line": 70,
-      "signature": "PyImportRef()"
+      "signature": "PyImportRef()",
+      "members": [
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "bind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PyImportAnalysis",
       "kind": "interface",
       "line": 77,
-      "signature": "PyImportAnalysis()"
+      "signature": "PyImportAnalysis()",
+      "members": [
+        {
+          "name": "candidates",
+          "type": ": PyImportRef[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unsafe",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "analyzePyImports",

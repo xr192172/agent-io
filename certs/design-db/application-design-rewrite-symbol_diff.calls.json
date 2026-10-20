@@ -38,7 +38,45 @@
       "name": "SideSymbol",
       "kind": "interface",
       "line": 76,
-      "signature": "SideSymbol()"
+      "signature": "SideSymbol()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "parent",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "sourceRelOf",
@@ -56,13 +94,89 @@
       "name": "SymbolDiffArgs",
       "kind": "interface",
       "line": 109,
-      "signature": "SymbolDiffArgs()"
+      "signature": "SymbolDiffArgs()",
+      "members": [
+        {
+          "name": "projectDir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "designDbDir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "parseFileFull",
+          "type": ": (abs: string, content: string) => Promise<{ symbols?: SideSymbol[] }>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "onlyFile",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "prefix",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SymbolDiffResult",
       "kind": "interface",
       "line": 122,
-      "signature": "SymbolDiffResult()"
+      "signature": "SymbolDiffResult()",
+      "members": [
+        {
+          "name": "scanned",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "same",
+          "type": ": Array<{ file: string; name: string; kind: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "differ",
+          "type": ": Array<{ file: string; name: string; kind: string; dLine: number; aLine: number; old_text: string; new_text: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "uncompared",
+          "type": ": Map<string, number>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unpaired",
+          "type": ": Array<{ file: string; name: string; why: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "designOnly",
+          "type": ": Array<{ file: string; name: string; kind: string; line: number }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sourceOnly",
+          "type": ": Array<{ file: string; name: string; kind: string; line: number }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "diffSymbols",

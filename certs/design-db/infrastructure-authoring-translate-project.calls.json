@@ -20,37 +20,259 @@
       "name": "ProjectModule",
       "kind": "interface",
       "line": 54,
-      "signature": "ProjectModule()"
+      "signature": "ProjectModule()",
+      "members": [
+        {
+          "name": "fileAbs",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rel",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tsRel",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ts",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "imports",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "callRefsRaw",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "units",
+          "type": ": TransUnit[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "issues",
+          "type": ": VerifyIssue[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipped",
+          "type": ": SkippedDecl[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fillFailures",
+          "type": ": Map<string, string>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReportEntry",
       "kind": "interface",
       "line": 76,
-      "signature": "ReportEntry()"
+      "signature": "ReportEntry()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'ok' | 'skeleton' | 'llm_retry_fail' | 'skipped'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TypesMapEntry",
       "kind": "interface",
       "line": 86,
-      "signature": "TypesMapEntry()"
+      "signature": "TypesMapEntry()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ConflictEntry",
       "kind": "interface",
       "line": 96,
-      "signature": "ConflictEntry()"
+      "signature": "ConflictEntry()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sites",
+          "type": ": { kind: string; file: string; line: number }[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": 'cross_file' | 'mixed_kind'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ProjectResult",
       "kind": "interface",
       "line": 103,
-      "signature": "ProjectResult()"
+      "signature": "ProjectResult()",
+      "members": [
+        {
+          "name": "modules",
+          "type": ": ProjectModule[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "diagnostics",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "report",
+          "type": ": ReportEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "typesMap",
+          "type": ": TypesMapEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "conflicts",
+          "type": ": ConflictEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ProjectOptions",
       "kind": "interface",
       "line": 116,
-      "signature": "ProjectOptions()"
+      "signature": "ProjectOptions()",
+      "members": [
+        {
+          "name": "outDir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fill",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxRetries",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "verify",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "translator",
+          "type": ": import('./fill.js').HoleTranslator | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "batchSize",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "toPosix",
@@ -74,7 +296,21 @@
       "name": "SymbolDef",
       "kind": "interface",
       "line": 169,
-      "signature": "SymbolDef()"
+      "signature": "SymbolDef()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "isFunc",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "assembleModule",
@@ -116,7 +352,21 @@
       "name": "ProjectCallContext",
       "kind": "interface",
       "line": 293,
-      "signature": "ProjectCallContext()"
+      "signature": "ProjectCallContext()",
+      "members": [
+        {
+          "name": "funcSkel",
+          "type": ": Map<string, string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeSkel",
+          "type": ": Map<string, string>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildProjectCallNote",
@@ -128,7 +378,27 @@
       "name": "TscCluster",
       "kind": "interface",
       "line": 337,
-      "signature": "TscCluster()"
+      "signature": "TscCluster()",
+      "members": [
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sample",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TS_CODE_LABEL",

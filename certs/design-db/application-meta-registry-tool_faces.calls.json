@@ -14,7 +14,39 @@
       "name": "ToolFaceView",
       "kind": "interface",
       "line": 48,
-      "signature": "ToolFaceView()"
+      "signature": "ToolFaceView()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": FaceId",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "desc",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "names",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unknown",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "uniq",

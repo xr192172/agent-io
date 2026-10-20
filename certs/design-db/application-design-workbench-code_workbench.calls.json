@@ -14,7 +14,99 @@
       "name": "ChangeOp",
       "kind": "interface",
       "line": 38,
-      "signature": "ChangeOp()"
+      "signature": "ChangeOp()",
+      "members": [
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "op",
+          "type": ": 'range'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "start",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "end",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "code",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "oldName",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "newName",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "producer",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "suggested_name",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "est_lines",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "goals",
+          "type": ": OverlayGoal[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "edge_intents",
+          "type": ": DesignEdgeIntentWrite[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ChangeStatus",
@@ -26,25 +118,207 @@
       "name": "ChangeDiff",
       "kind": "interface",
       "line": 63,
-      "signature": "ChangeDiff()"
+      "signature": "ChangeDiff()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'replace' | 'rename'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "before",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "after",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ChangeReview",
       "kind": "interface",
       "line": 87,
-      "signature": "ChangeReview()"
+      "signature": "ChangeReview()",
+      "members": [
+        {
+          "name": "agent",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "verdict",
+          "type": ": 'comment' | 'approve' | 'reject'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PendingChange",
       "kind": "interface",
       "line": 97,
-      "signature": "PendingChange()"
+      "signature": "PendingChange()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": ChangeKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "op",
+          "type": ": ChangeOp",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "summary",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "diffs",
+          "type": ": ChangeDiff[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "preview",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": ChangeStatus",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lastError",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "result",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "submitted_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "decided_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "submitter",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reviews",
+          "type": ": ChangeReview[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reviewed_by",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ProposeInput",
       "kind": "interface",
       "line": 125,
-      "signature": "ProposeInput()"
+      "signature": "ProposeInput()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": ChangeKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "op",
+          "type": ": ChangeOp",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "submitter",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "safeName",
@@ -140,7 +414,39 @@
       "name": "DslRenameEdit",
       "kind": "interface",
       "line": 323,
-      "signature": "DslRenameEdit()"
+      "signature": "DslRenameEdit()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": 'node_label' | 'node_title' | 'edge_label'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "edge",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "collectDslRenameEdits",
@@ -206,7 +512,39 @@
       "name": "ApproveResult",
       "kind": "interface",
       "line": 570,
-      "signature": "ApproveResult()"
+      "signature": "ApproveResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": ChangeStatus",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "result",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "warning",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "checkReviewer",

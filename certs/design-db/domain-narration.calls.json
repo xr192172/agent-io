@@ -8,13 +8,47 @@
       "name": "NarrScene",
       "kind": "interface",
       "line": 14,
-      "signature": "NarrScene()"
+      "signature": "NarrScene()",
+      "members": [
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "facts",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ShapeLike",
       "kind": "interface",
       "line": 23,
-      "signature": "ShapeLike()"
+      "signature": "ShapeLike()",
+      "members": [
+        {
+          "name": "inputs",
+          "type": ": TeachPin[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "outputs",
+          "type": ": TeachPin[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "humanOf",

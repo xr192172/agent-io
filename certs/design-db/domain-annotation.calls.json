@@ -44,13 +44,155 @@
       "name": "ApprovalHistoryEntry",
       "kind": "interface",
       "line": 32,
-      "signature": "ApprovalHistoryEntry()"
+      "signature": "ApprovalHistoryEntry()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": ApprovalStatus",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "action",
+          "type": ": 'submit' | 'approve' | 'reject' | 'request_revision' | 'revise' | 'close'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "comment",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "actor",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "timestamp",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Annotation",
       "kind": "interface",
       "line": 42,
-      "signature": "Annotation()"
+      "signature": "Annotation()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "target_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": 'comment' | 'question' | 'issue' | 'suggestion' | 'approval'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "severity",
+          "type": ": 'info' | 'warning' | 'critical'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "author",
+          "type": ": 'human' | 'llm' | string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "created",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "timestamp",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolved",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolved_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolution_note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "approval_status",
+          "type": ": ApprovalStatus",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "approval_history",
+          "type": ": ApprovalHistoryEntry[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "assignee",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "tags",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "pos",
+          "type": ": { x: number; y: number }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     }
   ],
   "imports": [],

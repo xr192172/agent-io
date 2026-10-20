@@ -14,25 +14,195 @@
       "name": "NoteDecisionResult",
       "kind": "interface",
       "line": 38,
-      "signature": "NoteDecisionResult()"
+      "signature": "NoteDecisionResult()",
+      "members": [
+        {
+          "name": "note_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "action",
+          "type": ": DecideAction",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "llm",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": ChangeKind",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "change",
+          "type": ": ChangeOp",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "pending_change_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "preview",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DecideCanvasNotesInput",
       "kind": "interface",
       "line": 60,
-      "signature": "DecideCanvasNotesInput()"
+      "signature": "DecideCanvasNotesInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_file_lines",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "dry_run",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DecideCanvasNotesResult",
       "kind": "interface",
       "line": 70,
-      "signature": "DecideCanvasNotesResult()"
+      "signature": "DecideCanvasNotesResult()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "llm",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "open",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "decisions",
+          "type": ": NoteDecisionResult[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "applied_statuses",
+          "type": ": Array<{ id: string; status: 'done' | 'rejected' }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "proposed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "docs",
+          "type": ": { dir: string | null; total: number; injected: number }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FileExcerpt",
       "kind": "interface",
       "line": 92,
-      "signature": "FileExcerpt()"
+      "signature": "FileExcerpt()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "content",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "truncated",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "safeRel",
@@ -56,7 +226,27 @@
       "name": "RawDecision",
       "kind": "interface",
       "line": 132,
-      "signature": "RawDecision()"
+      "signature": "RawDecision()",
+      "members": [
+        {
+          "name": "action",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "change",
+          "type": ": { kind?: string; op?: Record<string, unknown> }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "extractJson",

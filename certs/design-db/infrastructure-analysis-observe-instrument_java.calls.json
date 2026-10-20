@@ -50,7 +50,45 @@
       "name": "JavaFnSlot",
       "kind": "interface",
       "line": 71,
-      "signature": "JavaFnSlot()"
+      "signature": "JavaFnSlot()",
+      "members": [
+        {
+          "name": "node",
+          "type": ": AstNode",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "owner",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "params",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "body",
+          "type": ": AstNode | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "probeNameOf",
@@ -122,7 +160,33 @@
       "name": "ProbeFields",
       "kind": "interface",
       "line": 312,
-      "signature": "ProbeFields()"
+      "signature": "ProbeFields()",
+      "members": [
+        {
+          "name": "fileRel",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "args",
+          "type": ": Array<[string, string]>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ret",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "level",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "probeCall",

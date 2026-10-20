@@ -26,31 +26,215 @@
       "name": "Prerequisite",
       "kind": "interface",
       "line": 61,
-      "signature": "Prerequisite()"
+      "signature": "Prerequisite()",
+      "members": [
+        {
+          "name": "state",
+          "type": ": PrerequisiteState",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ChainHopReading",
       "kind": "interface",
       "line": 68,
-      "signature": "ChainHopReading()"
+      "signature": "ChainHopReading()",
+      "members": [
+        {
+          "name": "hop",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'strong' | 'scope-only'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "object_edges",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope_edges",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PreparedStart",
       "kind": "interface",
       "line": 81,
-      "signature": "PreparedStart()"
+      "signature": "PreparedStart()",
+      "members": [
+        {
+          "name": "to_tool",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "args",
+          "type": ": Record<string, unknown>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "slots",
+          "type": ": PreparedSlot[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "limitations",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FirstHopArgsInput",
       "kind": "interface",
       "line": 95,
-      "signature": "FirstHopArgsInput()"
+      "signature": "FirstHopArgsInput()",
+      "members": [
+        {
+          "name": "chain",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "tool",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "defs",
+          "type": ": readonly ToolDef[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FirstHopArgsResult",
       "kind": "interface",
       "line": 109,
-      "signature": "FirstHopArgsResult()"
+      "signature": "FirstHopArgsResult()",
+      "members": [
+        {
+          "name": "mode",
+          "type": ": FirstHopMode",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolution",
+          "type": ": FirstHopResolution",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolution_note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "chain_name",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "chain_steps",
+          "type": ": readonly string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "chain_evidence",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "chain_note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "chain_hops",
+          "type": ": ChainHopReading[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "start",
+          "type": ": PreparedStart",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "prerequisite",
+          "type": ": Prerequisite",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "chains",
+          "type": ": Array<{\n    name: string;\n    evidence: string;\n    steps: readonly string[];\n    /** ★ 这条链的**起手** = 链的第一段工具名。 */\n    first_step: string;\n    /** ★ 起手的第一棒**有哪些必填意图位**（`declaredRequiredMembersOf` 的路径）。 */\n    first_step_required: string[];\n    prerequisite_state: PrerequisiteState;\n  }>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "limitations",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "not_determined",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "pathsOfTool",

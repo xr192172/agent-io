@@ -8,13 +8,107 @@
       "name": "MoveDomainInput",
       "kind": "interface",
       "line": 43,
-      "signature": "MoveDomainInput()"
+      "signature": "MoveDomainInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "domain_ids",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "dry_run",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "MoveDomainResult",
       "kind": "interface",
       "line": 55,
-      "signature": "MoveDomainResult()"
+      "signature": "MoveDomainResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dryRun",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": 'structure_gap.relocate_moves'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "domains",
+          "type": ": Array<{\n    domain_id: string;\n    from_dir: string;\n    to_dir: string;\n    files: Array<{ from: string; to: string }>;\n    /** ★ 旧目录里**本工具不搬**的条目（子目录 / 非源码 / 噪音名）—— 如实报，不静默 */\n    untouched: string[];\n  }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "per_file",
+          "type": ": Array<{ from: string; to: string; ok: boolean; blocked?: string[] }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total_files",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files_written",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "leftovers",
+          "type": ": Array<{ domain_id: string; dir: string; entries: string[] }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "removed_dirs",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "would_remove_dirs",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "leftover_dirs",
+          "type": ": Array<{ dir: string; entries: string[] }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "notes",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "untouchedEntries",
@@ -26,7 +120,33 @@
       "name": "MoveDomainOutput",
       "kind": "interface",
       "line": 105,
-      "signature": "MoveDomainOutput()"
+      "signature": "MoveDomainOutput()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "data",
+          "type": ": MoveDomainResult",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "touched",
+          "type": ": Touched",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "moveDomain",

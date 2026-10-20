@@ -8,7 +8,27 @@
       "name": "RuleRegression",
       "kind": "interface",
       "line": 70,
-      "signature": "RuleRegression()"
+      "signature": "RuleRegression()",
+      "members": [
+        {
+          "name": "checked",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "covered",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "uncovered",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DATA_DECL_RULES",
@@ -50,7 +70,27 @@
       "name": "DeclVerdict",
       "kind": "interface",
       "line": 141,
-      "signature": "DeclVerdict()"
+      "signature": "DeclVerdict()",
+      "members": [
+        {
+          "name": "result",
+          "type": ": 'ok' | 'deviation'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rule",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "verifyLLMCoverage",

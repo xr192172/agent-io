@@ -8,13 +8,65 @@
       "name": "WriteItem",
       "kind": "interface",
       "line": 39,
-      "signature": "WriteItem()"
+      "signature": "WriteItem()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "content",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "WriteReceipt",
       "kind": "interface",
       "line": 44,
-      "signature": "WriteReceipt()"
+      "signature": "WriteReceipt()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "written_files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "snapshot_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "index",
+          "type": ": WriteThroughOutcome | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "index_synced",
+          "type": ": Array<{ file: string; updated: boolean }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "blocked",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "applyWritesCore",

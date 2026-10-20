@@ -8,7 +8,27 @@
       "name": "FileRemoval",
       "kind": "interface",
       "line": 24,
-      "signature": "FileRemoval()"
+      "signature": "FileRemoval()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": SemanticFile",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_removed",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edges_removed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "removeFileFromDsl",

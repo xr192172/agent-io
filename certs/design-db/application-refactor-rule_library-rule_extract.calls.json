@@ -8,7 +8,39 @@
       "name": "LineDiff",
       "kind": "interface",
       "line": 32,
-      "signature": "LineDiff()"
+      "signature": "LineDiff()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": 'equal' | 'change' | 'del' | 'ins'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "beforeStart",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "beforeEnd",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "afterStart",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "afterEnd",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "diffLines",
@@ -32,7 +64,27 @@
       "name": "Token",
       "kind": "interface",
       "line": 115,
-      "signature": "Token()"
+      "signature": "Token()",
+      "members": [
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ident",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "prop",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "lexLine",
@@ -50,7 +102,27 @@
       "name": "GeneralizeResult",
       "kind": "interface",
       "line": 157,
-      "signature": "GeneralizeResult()"
+      "signature": "GeneralizeResult()",
+      "members": [
+        {
+          "name": "pattern",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "replace",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "holes",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "generalizeChange",
@@ -68,13 +140,47 @@
       "name": "ValidateIssue",
       "kind": "interface",
       "line": 230,
-      "signature": "ValidateIssue()"
+      "signature": "ValidateIssue()",
+      "members": [
+        {
+          "name": "code",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "severity",
+          "type": ": 'error' | 'warn'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ValidateResult",
       "kind": "interface",
       "line": 236,
-      "signature": "ValidateResult()"
+      "signature": "ValidateResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "issues",
+          "type": ": ValidateIssue[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "validateRule",
@@ -86,13 +192,83 @@
       "name": "ExtractInput",
       "kind": "interface",
       "line": 337,
-      "signature": "ExtractInput()"
+      "signature": "ExtractInput()",
+      "members": [
+        {
+          "name": "before",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "after",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "tags",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "level",
+          "type": ": RuleLevel",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "language",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "createdFrom",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ExtractResult",
       "kind": "interface",
       "line": 352,
-      "signature": "ExtractResult()"
+      "signature": "ExtractResult()",
+      "members": [
+        {
+          "name": "rule",
+          "type": ": Rule",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "validation",
+          "type": ": ValidateResult",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "generalization",
+          "type": ": GeneralizeResult & {\n    diffBlocks: number;\n    /** 候选 hole 总数（未放宽前） */\n    candidateHoles: number;\n    /** 试了几级（0 = 一上来就通过） */\n    ladderSteps: number;\n    /** 是否因放宽而放弃了泛化（true = 退化为字面量规则） */\n    degraded: boolean;\n    /** 每一级的裁决记录（诚实回执用） */\n    attempts: { holes: string[]; ok: boolean; codes: string[] }[];\n  }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "extractRule",

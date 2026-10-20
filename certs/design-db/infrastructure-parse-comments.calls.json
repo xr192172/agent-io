@@ -8,7 +8,21 @@
       "name": "Range",
       "kind": "interface",
       "line": 40,
-      "signature": "Range()"
+      "signature": "Range()",
+      "members": [
+        {
+          "name": "start",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "commentRangesSync",

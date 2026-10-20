@@ -20,7 +20,33 @@
       "name": "BatchUnitView",
       "kind": "interface",
       "line": 43,
-      "signature": "BatchUnitView()"
+      "signature": "BatchUnitView()",
+      "members": [
+        {
+          "name": "unit",
+          "type": ": TransUnit",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skeleton",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "srcSnippet",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "constraints",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildBatchFillPrompt",

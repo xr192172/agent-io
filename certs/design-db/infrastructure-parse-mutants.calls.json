@@ -8,7 +8,45 @@
       "name": "Mutant",
       "kind": "interface",
       "line": 24,
-      "signature": "Mutant()"
+      "signature": "Mutant()",
+      "members": [
+        {
+          "name": "op",
+          "type": ": 'swap-comparison'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "startIndex",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "endIndex",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "COMPARISON_SWAPS",
@@ -20,7 +58,39 @@
       "name": "NodeLike",
       "kind": "interface",
       "line": 50,
-      "signature": "NodeLike()"
+      "signature": "NodeLike()",
+      "members": [
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "startIndex",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "endIndex",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "startPosition",
+          "type": ": { row: number }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "children",
+          "type": ": NodeLike[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "extractMutants",

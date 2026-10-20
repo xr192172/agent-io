@@ -14,13 +14,95 @@
       "name": "PreparedSlot",
       "kind": "interface",
       "line": 65,
-      "signature": "PreparedSlot()"
+      "signature": "PreparedSlot()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "state",
+          "type": ": SlotState",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "value",
+          "type": ": unknown",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "expr",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "from_key",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "edge_from",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "candidates",
+          "type": ": readonly string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PreparedHop",
       "kind": "interface",
       "line": 86,
-      "signature": "PreparedHop()"
+      "signature": "PreparedHop()",
+      "members": [
+        {
+          "name": "to_tool",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "args",
+          "type": ": Record<string, unknown>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "slots",
+          "type": ": PreparedSlot[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "limitations",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "NextHopResolution",
@@ -32,13 +114,71 @@
       "name": "NextHopArgsResult",
       "kind": "interface",
       "line": 109,
-      "signature": "NextHopArgsResult()"
+      "signature": "NextHopArgsResult()",
+      "members": [
+        {
+          "name": "from_tool",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "touched_keys",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolution",
+          "type": ": NextHopResolution",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolution_note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "hops",
+          "type": ": PreparedHop[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "limitations",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "NextHopArgsInput",
       "kind": "interface",
       "line": 124,
-      "signature": "NextHopArgsInput()"
+      "signature": "NextHopArgsInput()",
+      "members": [
+        {
+          "name": "from_tool",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "to_tool",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "defs",
+          "type": ": readonly ToolDef[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "shortHint",

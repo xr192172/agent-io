@@ -8,13 +8,83 @@
       "name": "TSDLDecl",
       "kind": "interface",
       "line": 20,
-      "signature": "TSDLDecl()"
+      "signature": "TSDLDecl()",
+      "members": [
+        {
+          "name": "rule",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "probe",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "expect",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "constraint",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "chain",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "origin",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "verified_by",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TSDesignDSLDoc",
       "kind": "interface",
       "line": 43,
-      "signature": "TSDesignDSLDoc()"
+      "signature": "TSDesignDSLDoc()",
+      "members": [
+        {
+          "name": "version",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "updated_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "decls",
+          "type": ": TSDLDecl[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeviationKind",
@@ -26,25 +96,165 @@
       "name": "TSDeviation",
       "kind": "interface",
       "line": 53,
-      "signature": "TSDeviation()"
+      "signature": "TSDeviation()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": DeviationKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rule",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "probe",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "trace_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "window",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TSDiffReport",
       "kind": "interface",
       "line": 65,
-      "signature": "TSDiffReport()"
+      "signature": "TSDiffReport()",
+      "members": [
+        {
+          "name": "generated_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "event_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "deviations",
+          "type": ": TSDeviation[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unobserved",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "violated",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "undesigned",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "chain_broken",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TSProbeObs",
       "kind": "interface",
       "line": 77,
-      "signature": "TSProbeObs()"
+      "signature": "TSProbeObs()",
+      "members": [
+        {
+          "name": "probe",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "errs",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "benigns",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ops",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "events",
+          "type": ": TSEvent[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TSComparator",
       "kind": "class",
       "line": 87,
-      "signature": "TSComparator()"
+      "signature": "TSComparator()",
+      "members": [
+        {
+          "name": "loadDesign",
+          "type": ": TSDesignDSLDoc | null",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "aggregate",
+          "type": ": TSProbeObs[]",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "compare",
+          "type": ": TSDiffReport",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "renderTSDiffReport",

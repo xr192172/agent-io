@@ -14,7 +14,57 @@
       "name": "FileRuleOutcome",
       "kind": "interface",
       "line": 35,
-      "signature": "FileRuleOutcome()"
+      "signature": "FileRuleOutcome()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ruleId",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "state",
+          "type": ": ApplyState",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "hits",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "applied",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "todoReason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "before",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "after",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "commentStyleFor",
@@ -56,7 +106,39 @@
       "name": "ApplySummary",
       "kind": "interface",
       "line": 149,
-      "signature": "ApplySummary()"
+      "signature": "ApplySummary()",
+      "members": [
+        {
+          "name": "outcomes",
+          "type": ": FileRuleOutcome[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "applied",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "todo",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "clean",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "totalHits",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "applyRulesToFiles",
@@ -68,13 +150,53 @@
       "name": "BaselineEntry",
       "kind": "interface",
       "line": 196,
-      "signature": "BaselineEntry()"
+      "signature": "BaselineEntry()",
+      "members": [
+        {
+          "name": "ruleId",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "hits",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Baseline",
       "kind": "interface",
       "line": 203,
-      "signature": "Baseline()"
+      "signature": "Baseline()",
+      "members": [
+        {
+          "name": "version",
+          "type": ": 1",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "updatedAt",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "entries",
+          "type": ": BaselineEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "entryKey",
@@ -98,7 +220,45 @@
       "name": "RatchetDelta",
       "kind": "interface",
       "line": 242,
-      "signature": "RatchetDelta()"
+      "signature": "RatchetDelta()",
+      "members": [
+        {
+          "name": "key",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ruleId",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "current",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "baseline",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "added",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ratchetDelta",
@@ -110,7 +270,27 @@
       "name": "FixtureRunResult",
       "kind": "interface",
       "line": 277,
-      "signature": "FixtureRunResult()"
+      "signature": "FixtureRunResult()",
+      "members": [
+        {
+          "name": "ruleId",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "passed",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "failures",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "runFixtures",

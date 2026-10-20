@@ -20,31 +20,131 @@
       "name": "StageCtx",
       "kind": "interface",
       "line": 85,
-      "signature": "StageCtx()"
+      "signature": "StageCtx()",
+      "members": [
+        {
+          "name": "projectRoot",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "bootstrap",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "StageBase",
       "kind": "interface",
       "line": 105,
-      "signature": "StageBase()"
+      "signature": "StageBase()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": StageId",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "owner",
+          "type": ": StageOwner",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "inputs",
+          "type": ": readonly StageId[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "locate",
+          "type": ": (ctx: StageCtx) => string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DerivedStage",
       "kind": "interface",
       "line": 117,
-      "signature": "DerivedStage()"
+      "signature": "DerivedStage()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": 'derived'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "isFresh",
+          "type": ": (ctx: StageCtx) => boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "produce",
+          "type": ": (ctx: StageCtx) => Promise<void>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SourceStage",
       "kind": "interface",
       "line": 126,
-      "signature": "SourceStage()"
+      "signature": "SourceStage()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": 'source'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "why",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PendingStage",
       "kind": "interface",
       "line": 132,
-      "signature": "PendingStage()"
+      "signature": "PendingStage()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": 'pending'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "why",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Stage",
@@ -104,7 +204,21 @@
       "name": "EnsureResult",
       "kind": "interface",
       "line": 430,
-      "signature": "EnsureResult()"
+      "signature": "EnsureResult()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": StageId",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "action",
+          "type": ": 'fresh' | 'produced'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ensureStage",

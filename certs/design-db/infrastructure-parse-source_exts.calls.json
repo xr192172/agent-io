@@ -122,7 +122,27 @@
       "name": "UnmatchedExtFact",
       "kind": "interface",
       "line": 208,
-      "signature": "UnmatchedExtFact()"
+      "signature": "UnmatchedExtFact()",
+      "members": [
+        {
+          "name": "ext",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lang",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pkg",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "describeUnmatchedExt",
@@ -194,7 +214,26 @@
       "name": "SkipDirSetImpl",
       "kind": "class",
       "line": 346,
-      "signature": "SkipDirSetImpl()"
+      "signature": "SkipDirSetImpl()",
+      "members": [
+        {
+          "name": "extra",
+          "type": ": readonly string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "constructor",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "has",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "skipDirSet",

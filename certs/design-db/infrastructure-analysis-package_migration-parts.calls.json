@@ -38,7 +38,27 @@
       "name": "AliasEdit",
       "kind": "interface",
       "line": 72,
-      "signature": "AliasEdit()"
+      "signature": "AliasEdit()",
+      "members": [
+        {
+          "name": "start",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "replacement",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "stripQuotes",
@@ -74,19 +94,79 @@
       "name": "PmCollectArgs",
       "kind": "interface",
       "line": 153,
-      "signature": "PmCollectArgs()"
+      "signature": "PmCollectArgs()",
+      "members": [
+        {
+          "name": "src",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "exactPath",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fileAbs",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PmCollectResult",
       "kind": "interface",
       "line": 166,
-      "signature": "PmCollectResult()"
+      "signature": "PmCollectResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edits",
+          "type": ": AliasEdit[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "PmLangPackage",
       "kind": "interface",
       "line": 171,
-      "signature": "PmLangPackage()"
+      "signature": "PmLangPackage()",
+      "members": [
+        {
+          "name": "exts",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "collect",
+          "type": ": Promise<PmCollectResult>",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     }
   ],
   "imports": [

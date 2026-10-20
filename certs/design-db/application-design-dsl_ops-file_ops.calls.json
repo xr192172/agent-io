@@ -8,7 +8,57 @@
       "name": "AddFileInput",
       "kind": "interface",
       "line": 22,
-      "signature": "AddFileInput()"
+      "signature": "AddFileInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "responsibility",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "expected_apis",
+          "type": ": ExpectedApi[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "expected_deps",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "expected_behavior",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": DiagramStatus",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "addFile",
@@ -20,7 +70,57 @@
       "name": "UpdateFileInput",
       "kind": "interface",
       "line": 81,
-      "signature": "UpdateFileInput()"
+      "signature": "UpdateFileInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "responsibility",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "expected_deps",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "expected_behavior",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": DiagramStatus",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "lifecycle",
+          "type": ": FileLifecycle",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "updateFile",
@@ -32,7 +132,21 @@
       "name": "DeleteFileInput",
       "kind": "interface",
       "line": 145,
-      "signature": "DeleteFileInput()"
+      "signature": "DeleteFileInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "deleteFile",

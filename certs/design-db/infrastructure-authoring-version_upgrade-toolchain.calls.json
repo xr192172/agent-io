@@ -8,25 +8,135 @@
       "name": "ToolchainDeclaration",
       "kind": "interface",
       "line": 32,
-      "signature": "ToolchainDeclaration()"
+      "signature": "ToolchainDeclaration()",
+      "members": [
+        {
+          "name": "projectDir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tool",
+          "type": ": ToolName",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "declaredVersion",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "raw",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RuntimeInfo",
       "kind": "interface",
       "line": 41,
-      "signature": "RuntimeInfo()"
+      "signature": "RuntimeInfo()",
+      "members": [
+        {
+          "name": "tool",
+          "type": ": ToolName",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "version",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RuntimeMatch",
       "kind": "interface",
       "line": 47,
-      "signature": "RuntimeMatch()"
+      "signature": "RuntimeMatch()",
+      "members": [
+        {
+          "name": "projectDir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tool",
+          "type": ": ToolName",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "declaredVersion",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "localVersion",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'ok' | 'missing' | 'mismatch'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ToolchainScan",
       "kind": "interface",
       "line": 57,
-      "signature": "ToolchainScan()"
+      "signature": "ToolchainScan()",
+      "members": [
+        {
+          "name": "root",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "declarations",
+          "type": ": ToolchainDeclaration[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "runtimes",
+          "type": ": RuntimeInfo[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "matches",
+          "type": ": RuntimeMatch[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SKIP_DIRS",

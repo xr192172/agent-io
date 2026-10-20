@@ -14,7 +14,27 @@
       "name": "Edit",
       "kind": "interface",
       "line": 60,
-      "signature": "Edit()"
+      "signature": "Edit()",
+      "members": [
+        {
+          "name": "pos",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "len",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "applyEdits",
@@ -26,7 +46,33 @@
       "name": "RenameEditOp",
       "kind": "interface",
       "line": 75,
-      "signature": "RenameEditOp()"
+      "signature": "RenameEditOp()",
+      "members": [
+        {
+          "name": "pos",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "len",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "old",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "new",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "toOps",
@@ -38,13 +84,107 @@
       "name": "RenameSymbolFileInfo",
       "kind": "interface",
       "line": 95,
-      "signature": "RenameSymbolFileInfo()"
+      "signature": "RenameSymbolFileInfo()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "edits",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ops",
+          "type": ": RenameEditOp[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RenameSymbolResult",
       "kind": "interface",
       "line": 105,
-      "signature": "RenameSymbolResult()"
+      "signature": "RenameSymbolResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "definition",
+          "type": ": RenameSymbolFileInfo",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "importers",
+          "type": ": RenameSymbolFileInfo[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "filesWritten",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dryRun",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "externalRefs",
+          "type": ": ExternalRef[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipped",
+          "type": ": Array<{ path: string; why: string }>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "blocked",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "kindNodeTypes",
@@ -68,19 +208,121 @@
       "name": "LangRenameArgs",
       "kind": "interface",
       "line": 195,
-      "signature": "LangRenameArgs()"
+      "signature": "LangRenameArgs()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dryRun",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolvedRoot",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "blocked",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipped",
+          "type": ": Array<{ path: string; why: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "aliasCfg",
+          "type": ": AliasConfig | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LangPackage",
       "kind": "interface",
       "line": 208,
-      "signature": "LangPackage()"
+      "signature": "LangPackage()",
+      "members": [
+        {
+          "name": "exts",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rename",
+          "type": ": Promise<RenameSymbolResult>",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "GoModuleAnalysis",
       "kind": "interface",
       "line": 242,
-      "signature": "GoModuleAnalysis()"
+      "signature": "GoModuleAnalysis()",
+      "members": [
+        {
+          "name": "rootOffsets",
+          "type": ": Map<string, number>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rootKinds",
+          "type": ": Map<string, string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "refs",
+          "type": ": Map<string, number[]>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "defined",
+          "type": ": Set<string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "imports",
+          "type": ": Array<{ alias: string; path: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "selections",
+          "type": ": Map<string, Array<{ field: string; fieldOffset: number }>>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     }
   ],
   "imports": [

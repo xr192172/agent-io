@@ -8,25 +8,93 @@
       "name": "ChainTraceInput",
       "kind": "interface",
       "line": 22,
-      "signature": "ChainTraceInput()"
+      "signature": "ChainTraceInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "candidates",
+          "type": ": Candidate[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_depth",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ChainTraceResult",
       "kind": "interface",
       "line": 28,
-      "signature": "ChainTraceResult()"
+      "signature": "ChainTraceResult()",
+      "members": [
+        {
+          "name": "chain",
+          "type": ": EvidenceStep[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reached",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "warnings",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SymAdj",
       "kind": "interface",
       "line": 35,
-      "signature": "SymAdj()"
+      "signature": "SymAdj()",
+      "members": [
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'call' | 'type_ref'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FileAdj",
       "kind": "interface",
       "line": 36,
-      "signature": "FileAdj()"
+      "signature": "FileAdj()",
+      "members": [
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'import'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "traceChain",

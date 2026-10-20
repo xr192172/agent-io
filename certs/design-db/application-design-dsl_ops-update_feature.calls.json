@@ -8,13 +8,65 @@
       "name": "FeatureOperation",
       "kind": "interface",
       "line": 55,
-      "signature": "FeatureOperation()"
+      "signature": "FeatureOperation()",
+      "members": [
+        {
+          "name": "op",
+          "type": ":\n    | 'add'\n    | 'update'\n    | 'delete'\n    | 'move'\n    | 'resolve'\n    | 'submit'\n    | 'review'\n    | 'save'\n    | 'rollback'\n    | 'apply'\n    | 'reset'\n    | 'publish'\n    | 'claim'\n    | 'expectation.add'\n    | 'expectation.remove'\n    | 'release'\n    | 'complete'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ":\n    | 'node'\n    | 'edge'\n    | 'file'\n    | 'api'\n    | 'binding'\n    | 'status'\n    | 'annotation'\n    | 'approval'\n    | 'snapshot'\n    | 'layout'\n    | 'simulation'\n    | 'tag'\n    | 'decision'\n    | 'task'\n    | 'todo'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "data",
+          "type": ": Record<string, unknown>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "UpdateFeatureInput",
       "kind": "interface",
       "line": 128,
-      "signature": "UpdateFeatureInput()"
+      "signature": "UpdateFeatureInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "operations",
+          "type": ": FeatureOperation[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "agent",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "updateFeatureCore",
@@ -80,7 +132,15 @@
       "name": "DslWithMeta",
       "kind": "interface",
       "line": 684,
-      "signature": "DslWithMeta()"
+      "signature": "DslWithMeta()",
+      "members": [
+        {
+          "name": "meta",
+          "type": ": { function_tags?: Record<string, string[]> } & Record<string, unknown>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "resolveMemberFiles",
@@ -104,7 +164,15 @@
       "name": "DecisionTarget",
       "kind": "interface",
       "line": 826,
-      "signature": "DecisionTarget()"
+      "signature": "DecisionTarget()",
+      "members": [
+        {
+          "name": "node",
+          "type": ": { id: string; type?: string; description?: string; decision?: NodeDecision; decision_history?: import('../../../domain/types.js').DecisionHistoryEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "findDecisionTargetNode",

@@ -8,13 +8,95 @@
       "name": "ToolUsageRow",
       "kind": "interface",
       "line": 37,
-      "signature": "ToolUsageRow()"
+      "signature": "ToolUsageRow()",
+      "members": [
+        {
+          "name": "tool",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "calls",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ok",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "failed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DogfoodCoverage",
       "kind": "interface",
       "line": 51,
-      "signature": "DogfoodCoverage()"
+      "signature": "DogfoodCoverage()",
+      "members": [
+        {
+          "name": "usage_file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "registry_source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total_calls",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "registry_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "used_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "live_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dead",
+          "type": ": Array<{ tool: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stale",
+          "type": ": ToolUsageRow[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tools",
+          "type": ": DogfoodToolStat[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "computeDogfoodCoverage",

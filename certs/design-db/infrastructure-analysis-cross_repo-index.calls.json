@@ -8,25 +8,165 @@
       "name": "CrossRepoSym",
       "kind": "interface",
       "line": 27,
-      "signature": "CrossRepoSym()"
+      "signature": "CrossRepoSym()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "qn",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ProjectSymbolIndex",
       "kind": "interface",
       "line": 38,
-      "signature": "ProjectSymbolIndex()"
+      "signature": "ProjectSymbolIndex()",
+      "members": [
+        {
+          "name": "root",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fileCount",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbols",
+          "type": ": Map<string, CrossRepoSym[]>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SymbolCollision",
       "kind": "interface",
       "line": 46,
-      "signature": "SymbolCollision()"
+      "signature": "SymbolCollision()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "a",
+          "type": ": CrossRepoSym[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "b",
+          "type": ": CrossRepoSym[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "duplicate",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "CrossRepoReport",
       "kind": "interface",
       "line": 55,
-      "signature": "CrossRepoReport()"
+      "signature": "CrossRepoReport()",
+      "members": [
+        {
+          "name": "aRoot",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "bRoot",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "aFiles",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "bFiles",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "aSymbols",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "bSymbols",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "conflicts",
+          "type": ": SymbolCollision[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "duplicates",
+          "type": ": SymbolCollision[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "aOnly",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "bOnly",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "buildProjectIndex",

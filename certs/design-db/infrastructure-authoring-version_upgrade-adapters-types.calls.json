@@ -14,25 +14,111 @@
       "name": "VersionInfo",
       "kind": "interface",
       "line": 26,
-      "signature": "VersionInfo()"
+      "signature": "VersionInfo()",
+      "members": [
+        {
+          "name": "major",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "minor",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AdapterDeclaration",
       "kind": "interface",
       "line": 32,
-      "signature": "AdapterDeclaration()"
+      "signature": "AdapterDeclaration()",
+      "members": [
+        {
+          "name": "projectDir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "declaredVersion",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "raw",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SourceFile",
       "kind": "interface",
       "line": 40,
-      "signature": "SourceFile()"
+      "signature": "SourceFile()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "content",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FeatureRule",
       "kind": "interface",
       "line": 46,
-      "signature": "FeatureRule()"
+      "signature": "FeatureRule()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tool",
+          "type": ": ToolName",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "since",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pattern",
+          "type": ": RegExp",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rewrite",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeprecationKind",
@@ -44,31 +130,227 @@
       "name": "RemovedRule",
       "kind": "interface",
       "line": 58,
-      "signature": "RemovedRule()"
+      "signature": "RemovedRule()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tool",
+          "type": ": ToolName",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "since",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": DeprecationKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pattern",
+          "type": ": RegExp",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rewrite",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "StaticGateItem",
       "kind": "interface",
       "line": 68,
-      "signature": "StaticGateItem()"
+      "signature": "StaticGateItem()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'ok' | 'fail' | 'skipped'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DynamicGateItem",
       "kind": "interface",
       "line": 75,
-      "signature": "DynamicGateItem()"
+      "signature": "DynamicGateItem()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'ok' | 'fail' | 'skipped'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ProbeSpec",
       "kind": "interface",
       "line": 82,
-      "signature": "ProbeSpec()"
+      "signature": "ProbeSpec()",
+      "members": [
+        {
+          "name": "cmd",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "args",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parse",
+          "type": ": (stdout: string) => string | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LanguageAdapter",
       "kind": "interface",
       "line": 92,
-      "signature": "LanguageAdapter()"
+      "signature": "LanguageAdapter()",
+      "members": [
+        {
+          "name": "lang",
+          "type": ": ToolName",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "declarationFiles",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sourceExts",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipDirs",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "asdfToolNames",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "featureRules",
+          "type": ": FeatureRule[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "removedRules",
+          "type": ": RemovedRule[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "probe",
+          "type": ": ProbeSpec",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parseDeclarationFile",
+          "type": ": AdapterDeclaration[]",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "parseVersion",
+          "type": ": VersionInfo | null",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "featureBoundary",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "versionSatisfies",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "staticGate",
+          "type": ": StaticGateItem[]",
+          "optional": true,
+          "member_kind": "method"
+        },
+        {
+          "name": "dynamicGate",
+          "type": ": Promise<DynamicGateItem[]>",
+          "optional": true,
+          "member_kind": "method"
+        },
+        {
+          "name": "verifyCommands",
+          "type": ": VerifyCommand[]",
+          "optional": true,
+          "member_kind": "method"
+        }
+      ]
     }
   ],
   "imports": [

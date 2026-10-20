@@ -8,7 +8,33 @@
       "name": "ApproveResult",
       "kind": "interface",
       "line": 39,
-      "signature": "ApproveResult()"
+      "signature": "ApproveResult()",
+      "members": [
+        {
+          "name": "version",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "frozen",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "proposal",
+          "type": ": Proposal",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "freeze",

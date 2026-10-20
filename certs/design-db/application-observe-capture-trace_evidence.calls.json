@@ -8,13 +8,77 @@
       "name": "TraceRecord",
       "kind": "interface",
       "line": 48,
-      "signature": "TraceRecord()"
+      "signature": "TraceRecord()",
+      "members": [
+        {
+          "name": "trace_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "probe",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "duration_ms",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "missing_in",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "missing_out",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "in",
+          "type": ": unknown",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "out",
+          "type": ": unknown",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ObservedTrace",
       "kind": "interface",
       "line": 68,
-      "signature": "ObservedTrace()"
+      "signature": "ObservedTrace()",
+      "members": [
+        {
+          "name": "records",
+          "type": ": TraceRecord[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TraceEvidenceResult",

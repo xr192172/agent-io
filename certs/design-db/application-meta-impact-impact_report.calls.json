@@ -8,19 +8,151 @@
       "name": "ImpactReportSummary",
       "kind": "interface",
       "line": 24,
-      "signature": "ImpactReportSummary()"
+      "signature": "ImpactReportSummary()",
+      "members": [
+        {
+          "name": "seq",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "created_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed_files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "direction",
+          "type": ": ImpactDirection",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_depth",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "direct_files",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "indirect_files",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "direct_symbols",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "indirect_symbols",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "impacted_file_paths",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed_symbols",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "no_real_change",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "summary_line",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ImpactReportFile",
       "kind": "interface",
       "line": 50,
-      "signature": "ImpactReportFile()"
+      "signature": "ImpactReportFile()",
+      "members": [
+        {
+          "name": "summary",
+          "type": ": ImpactReportSummary",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "result",
+          "type": ": DiffImpactResult",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RunImpactReportInput",
       "kind": "interface",
       "line": 58,
-      "signature": "RunImpactReportInput()"
+      "signature": "RunImpactReportInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "direction",
+          "type": ": ImpactDirection",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_depth",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "impactDir",

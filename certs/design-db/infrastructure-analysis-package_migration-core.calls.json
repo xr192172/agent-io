@@ -14,7 +14,21 @@
       "name": "MigrationPlanOptions",
       "kind": "interface",
       "line": 59,
-      "signature": "MigrationPlanOptions()"
+      "signature": "MigrationPlanOptions()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "migrate",
+          "type": ": PackageMigrationSpec",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "computeMigrationPlan",

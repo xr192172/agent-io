@@ -8,7 +8,21 @@
       "name": "FingerprintFile",
       "kind": "interface",
       "line": 22,
-      "signature": "FingerprintFile()"
+      "signature": "FingerprintFile()",
+      "members": [
+        {
+          "name": "abs",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "rel",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "healthCacheDir",

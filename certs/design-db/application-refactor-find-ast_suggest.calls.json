@@ -20,7 +20,57 @@
       "name": "SuggestCandidate",
       "kind": "interface",
       "line": 30,
-      "signature": "SuggestCandidate()"
+      "signature": "SuggestCandidate()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parentFunction",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "refs",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "declLine",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "suggested",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "isIdent",
@@ -56,13 +106,53 @@
       "name": "SuggestOptions",
       "kind": "interface",
       "line": 106,
-      "signature": "SuggestOptions()"
+      "signature": "SuggestOptions()",
+      "members": [
+        {
+          "name": "llm",
+          "type": ": SuggestLlm | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "max",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "minLen",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SuggestResult",
       "kind": "interface",
       "line": 115,
-      "signature": "SuggestResult()"
+      "signature": "SuggestResult()",
+      "members": [
+        {
+          "name": "llm",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "candidates",
+          "type": ": SuggestCandidate[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DEFAULT_SYSTEM",

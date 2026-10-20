@@ -8,19 +8,67 @@
       "name": "JudgeEntry",
       "kind": "interface",
       "line": 24,
-      "signature": "JudgeEntry()"
+      "signature": "JudgeEntry()",
+      "members": [
+        {
+          "name": "verdict",
+          "type": ": JudgeVerdict",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "event",
+          "type": ": TSEvent",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "JudgeEntryWithLLM",
       "kind": "interface",
       "line": 30,
-      "signature": "JudgeEntryWithLLM()"
+      "signature": "JudgeEntryWithLLM()",
+      "members": [
+        {
+          "name": "llm",
+          "type": ": { result: 'ok' | 'deviation'; rule: string; reason: string }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "JudgeResult",
       "kind": "interface",
       "line": 36,
-      "signature": "JudgeResult()"
+      "signature": "JudgeResult()",
+      "members": [
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ok",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "deviation",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "entries",
+          "type": ": JudgeEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "normalizeEvents",

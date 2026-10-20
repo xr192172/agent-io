@@ -8,13 +8,65 @@
       "name": "DeprecateOfflinePlan",
       "kind": "interface",
       "line": 55,
-      "signature": "DeprecateOfflinePlan()"
+      "signature": "DeprecateOfflinePlan()",
+      "members": [
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeprecateOfflineOptions",
       "kind": "interface",
       "line": 62,
-      "signature": "DeprecateOfflineOptions()"
+      "signature": "DeprecateOfflineOptions()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "plans",
+          "type": ": DeprecateOfflinePlan[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "dry_run",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "remove_file",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "verify",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeprecateOutcome",
@@ -26,19 +78,103 @@
       "name": "DeprecateOfflineItem",
       "kind": "interface",
       "line": 88,
-      "signature": "DeprecateOfflineItem()"
+      "signature": "DeprecateOfflineItem()",
+      "members": [
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "module_file",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "consumers",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": DeprecateOutcome",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeprecateOfflineResult",
       "kind": "interface",
       "line": 96,
-      "signature": "DeprecateOfflineResult()"
+      "signature": "DeprecateOfflineResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dry_run",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "remove_file",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "candidates",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "offlined",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "items",
+          "type": ": DeprecateOfflineItem[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeprecateSink",
       "kind": "interface",
       "line": 112,
-      "signature": "DeprecateSink()"
+      "signature": "DeprecateSink()",
+      "members": [
+        {
+          "name": "written",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "goModulePrefix",

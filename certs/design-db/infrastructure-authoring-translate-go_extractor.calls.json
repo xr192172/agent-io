@@ -104,13 +104,71 @@
       "name": "ConstDecl",
       "kind": "interface",
       "line": 352,
-      "signature": "ConstDecl()"
+      "signature": "ConstDecl()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "isVar",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "expr",
+          "type": ": SyntaxNodeLike",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "src",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SkippedDecl",
       "kind": "interface",
       "line": 361,
-      "signature": "SkippedDecl()"
+      "signature": "SkippedDecl()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "firstExprChild",
@@ -134,13 +192,41 @@
       "name": "ExtractGoResult",
       "kind": "interface",
       "line": 432,
-      "signature": "ExtractGoResult()"
+      "signature": "ExtractGoResult()",
+      "members": [
+        {
+          "name": "units",
+          "type": ": TransUnit[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipped",
+          "type": ": SkippedDecl[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ExtractGoFileResult",
       "kind": "interface",
       "line": 443,
-      "signature": "ExtractGoFileResult()"
+      "signature": "ExtractGoFileResult()",
+      "members": [
+        {
+          "name": "missing",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "extractGoFromFile",

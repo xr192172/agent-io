@@ -8,19 +8,91 @@
       "name": "GenDesignDbOptions",
       "kind": "interface",
       "line": 42,
-      "signature": "GenDesignDbOptions()"
+      "signature": "GenDesignDbOptions()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "check",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "GenDesignDbResult",
       "kind": "interface",
       "line": 49,
-      "signature": "GenDesignDbResult()"
+      "signature": "GenDesignDbResult()",
+      "members": [
+        {
+          "name": "features",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "written",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unchanged",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pruned",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "problems",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "check",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "AnyNode",
       "kind": "type",
       "line": 66,
-      "signature": "AnyNode()"
+      "signature": "AnyNode()",
+      "members": [
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "decision",
+          "type": ": { expectations?: Array<{ kind?: string; symbol?: string; target?: string; why?: string; path?: string }> }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "norm",

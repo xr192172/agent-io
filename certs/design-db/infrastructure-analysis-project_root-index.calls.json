@@ -44,31 +44,113 @@
       "name": "ExternalRef",
       "kind": "interface",
       "line": 74,
-      "signature": "ExternalRef()"
+      "signature": "ExternalRef()",
+      "members": [
+        {
+          "name": "fromAbs",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolved",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ScanSkip",
       "kind": "interface",
       "line": 89,
-      "signature": "ScanSkip()"
+      "signature": "ScanSkip()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "why",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ExternalImporterResult",
       "kind": "interface",
       "line": 95,
-      "signature": "ExternalImporterResult()"
+      "signature": "ExternalImporterResult()",
+      "members": [
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipped",
+          "type": ": ScanSkip[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ExpansionResult",
       "kind": "interface",
       "line": 101,
-      "signature": "ExpansionResult()"
+      "signature": "ExpansionResult()",
+      "members": [
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "externalRefs",
+          "type": ": ExternalRef[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipped",
+          "type": ": ScanSkip[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RootsResult",
       "kind": "interface",
       "line": 108,
-      "signature": "RootsResult()"
+      "signature": "RootsResult()",
+      "members": [
+        {
+          "name": "roots",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipped",
+          "type": ": ScanSkip[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "isInsideRoot",
@@ -164,7 +246,27 @@
       "name": "LangResolveCtx",
       "kind": "interface",
       "line": 446,
-      "signature": "LangResolveCtx()"
+      "signature": "LangResolveCtx()",
+      "members": [
+        {
+          "name": "root",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "goModules",
+          "type": ": GoModule[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "seedPkgName",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "resolveLangImport",
@@ -236,7 +338,21 @@
       "name": "AliasConfig",
       "kind": "interface",
       "line": 623,
-      "signature": "AliasConfig()"
+      "signature": "AliasConfig()",
+      "members": [
+        {
+          "name": "baseUrl",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "paths",
+          "type": ": Array<{ prefix: string; targets: string[] }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "findConfigFile",

@@ -8,7 +8,21 @@
       "name": "ScanRev",
       "kind": "interface",
       "line": 23,
-      "signature": "ScanRev()"
+      "signature": "ScanRev()",
+      "members": [
+        {
+          "name": "rev",
+          "type": ": number | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "db",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "NONE",

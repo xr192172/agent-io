@@ -8,13 +8,65 @@
       "name": "VerifyInput",
       "kind": "interface",
       "line": 16,
-      "signature": "VerifyInput()"
+      "signature": "VerifyInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symptom_type",
+          "type": ": SymptomType",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "root_cause",
+          "type": ": RootCause",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "impact",
+          "type": ": Impact",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ProjectKind",
       "kind": "interface",
       "line": 23,
-      "signature": "ProjectKind()"
+      "signature": "ProjectKind()",
+      "members": [
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "test",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "typecheck",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "build",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "detectKind",

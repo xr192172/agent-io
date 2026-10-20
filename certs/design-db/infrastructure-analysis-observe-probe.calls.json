@@ -14,7 +14,15 @@
       "name": "SinkHolder",
       "kind": "type",
       "line": 32,
-      "signature": "SinkHolder()"
+      "signature": "SinkHolder()",
+      "members": [
+        {
+          "name": "[GLOBAL_SINK_KEY]",
+          "type": ": TSProbeCapture | null",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "getGlobalSink",
@@ -74,13 +82,47 @@
       "name": "ProbeFrame",
       "kind": "interface",
       "line": 117,
-      "signature": "ProbeFrame()"
+      "signature": "ProbeFrame()",
+      "members": [
+        {
+          "name": "trace_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "frame_id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parent_id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FrameCtx",
       "kind": "interface",
       "line": 124,
-      "signature": "FrameCtx()"
+      "signature": "FrameCtx()",
+      "members": [
+        {
+          "name": "started",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parent",
+          "type": ": FrameCtx",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "newTraceID",
@@ -122,7 +164,51 @@
       "name": "TSEvent",
       "kind": "interface",
       "line": 202,
-      "signature": "TSEvent()"
+      "signature": "TSEvent()",
+      "members": [
+        {
+          "name": "probe",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "time",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fields",
+          "type": ": Record<string, unknown>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "trace_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "frame_id",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "parent_id",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "MAX_FIELD_CHARS",
@@ -170,7 +256,44 @@
       "name": "TSProbeCapture",
       "kind": "class",
       "line": 319,
-      "signature": "TSProbeCapture()"
+      "signature": "TSProbeCapture()",
+      "members": [
+        {
+          "name": "eventsPath",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "onEvent",
+          "type": ": (ev: TSEvent) => void",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "constructor",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "pathFor",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "emit",
+          "type": ": TSEvent",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "clear",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "loadTSEvents",

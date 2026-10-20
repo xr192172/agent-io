@@ -8,7 +8,45 @@
       "name": "FillContext",
       "kind": "interface",
       "line": 18,
-      "signature": "FillContext()"
+      "signature": "FillContext()",
+      "members": [
+        {
+          "name": "unit",
+          "type": ": TransUnit",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skeleton",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "srcSnippet",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "constraints",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "projectNote",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "prompt",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "HoleTranslator",
@@ -20,7 +58,39 @@
       "name": "FillResult",
       "kind": "interface",
       "line": 35,
-      "signature": "FillResult()"
+      "signature": "FillResult()",
+      "members": [
+        {
+          "name": "unit",
+          "type": ": TransUnit",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "filledSource",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "issues",
+          "type": ": VerifyIssue[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "spliceBody",
@@ -86,7 +156,33 @@
       "name": "BatchFillOptions",
       "kind": "interface",
       "line": 167,
-      "signature": "BatchFillOptions()"
+      "signature": "BatchFillOptions()",
+      "members": [
+        {
+          "name": "batchSize",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxRetries",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "projectNote",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxSrcCharsPerBatch",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "sliceBatches",

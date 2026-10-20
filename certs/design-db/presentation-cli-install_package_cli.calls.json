@@ -8,7 +8,63 @@
       "name": "LangPackRow",
       "kind": "interface",
       "line": 48,
-      "signature": "LangPackRow()"
+      "signature": "LangPackRow()",
+      "members": [
+        {
+          "name": "lang",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pkg",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pin",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "installed",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "installedVersion",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "adapted",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "compat",
+          "type": ": TemplateCompat",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "usesNan",
+          "type": ": boolean | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "prebuild",
+          "type": ": boolean | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "hasHostPrebuild",

@@ -8,13 +8,65 @@
       "name": "LineStep",
       "kind": "interface",
       "line": 29,
-      "signature": "LineStep()"
+      "signature": "LineStep()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "by",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'ok' | 'missing' | 'pending'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reading",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LineReport",
       "kind": "interface",
       "line": 42,
-      "signature": "LineReport()"
+      "signature": "LineReport()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "steps",
+          "type": ": LineStep[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tally",
+          "type": ": { ok: number; missing: number; pending: number }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "n",

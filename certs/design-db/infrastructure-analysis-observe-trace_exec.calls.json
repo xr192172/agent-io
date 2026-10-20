@@ -8,25 +8,111 @@
       "name": "TraceStepSpec",
       "kind": "interface",
       "line": 27,
-      "signature": "TraceStepSpec()"
+      "signature": "TraceStepSpec()",
+      "members": [
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "func_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TraceExecStep",
       "kind": "interface",
       "line": 36,
-      "signature": "TraceExecStep()"
+      "signature": "TraceExecStep()",
+      "members": [
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "func_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'ok' | 'unsupported' | 'error'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "in_value",
+          "type": ": unknown",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "out_value",
+          "type": ": unknown",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TraceExecInput",
       "kind": "interface",
       "line": 46,
-      "signature": "TraceExecInput()"
+      "signature": "TraceExecInput()",
+      "members": [
+        {
+          "name": "steps",
+          "type": ": TraceStepSpec[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "input_value",
+          "type": ": unknown",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TraceExecResult",
       "kind": "interface",
       "line": 52,
-      "signature": "TraceExecResult()"
+      "signature": "TraceExecResult()",
+      "members": [
+        {
+          "name": "steps",
+          "type": ": TraceExecStep[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "entryParams",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "Lang",
@@ -56,7 +142,21 @@
       "name": "GoField",
       "kind": "interface",
       "line": 98,
-      "signature": "GoField()"
+      "signature": "GoField()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "findStruct",
@@ -86,7 +186,27 @@
       "name": "ExampleParam",
       "kind": "interface",
       "line": 182,
-      "signature": "ExampleParam()"
+      "signature": "ExampleParam()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "example",
+          "type": ": unknown",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "extractParamList",
@@ -134,7 +254,33 @@
       "name": "ResolvedFn",
       "kind": "interface",
       "line": 296,
-      "signature": "ResolvedFn()"
+      "signature": "ResolvedFn()",
+      "members": [
+        {
+          "name": "codeText",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "entryName",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "names",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "recv",
+          "type": ": { typeName: string; structDecl: string; zero: Record<string, string> }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "resolvePure",

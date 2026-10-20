@@ -8,13 +8,47 @@
       "name": "PendingAlert",
       "kind": "interface",
       "line": 25,
-      "signature": "PendingAlert()"
+      "signature": "PendingAlert()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "seq",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "created_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LoggedAlert",
       "kind": "interface",
       "line": 33,
-      "signature": "LoggedAlert()"
+      "signature": "LoggedAlert()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ALERT_INBOX_CAP",

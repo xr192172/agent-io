@@ -8,19 +8,157 @@
       "name": "FileKindCounts",
       "kind": "interface",
       "line": 38,
-      "signature": "FileKindCounts()"
+      "signature": "FileKindCounts()",
+      "members": [
+        {
+          "name": "main",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "test",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "noise",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "excluded",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "IntegrityIssue",
       "kind": "interface",
       "line": 49,
-      "signature": "IntegrityIssue()"
+      "signature": "IntegrityIssue()",
+      "members": [
+        {
+          "name": "code",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "severity",
+          "type": ": 'blocker' | 'warn' | 'info'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fix",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "IndexIntegrityResult",
       "kind": "interface",
       "line": 60,
-      "signature": "IndexIntegrityResult()"
+      "signature": "IndexIntegrityResult()",
+      "members": [
+        {
+          "name": "project_root",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "state",
+          "type": ": IndexState",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "refreshed",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "repair",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "counts",
+          "type": ": {\r\n    /** 索引里收录的文件数 */\r\n    indexed_files: number;\r\n    /** 磁盘上走查到的源码文件数（口径 = refs_text.walkSourceFiles） */\r\n    disk_files: number;\r\n    /** 磁盘有、索引没有（= 未索引区，拼图模式下正常） */\r\n    not_indexed: number;\r\n    /** ★ 磁盘源码按类拆分（本体/测试/噪音）—— 别只报一个\"未索引\"，那是两把尺的差 */\r\n    disk_files_by_kind: FileKindCounts;\r\n    /** 已索引按类拆分 */\r\n    indexed_files_by_kind: FileKindCounts;\r\n    /** 未索引按类拆分。★ `main > 0` 才是**真缺陷**；`test` 是 `include_tests=false` 的**有意结果** */\r\n    not_indexed_by_kind: FileKindCounts;\r\n    /**\r\n     * 索引有、**磁盘上没有**（= 需要清理的幽灵行）。\r\n     * ★ 判据 = 该路径 `fs.existsSync` 为 false —— **不是**\"不在源码走查集里\"。\r\n     *   为什么必须用 fs 存在性（2026-10-11 修）：原实现是 `!diskSet.has(p)`，而 `diskSet` 是\r\n     *   **源码走查**（`walkSourceFiles`，只收代码类扩展名）⇒ 任何被索引、却**不是代码类**的文件\r\n     *   （典型：`include_docs`/编辑路径落进索引的 `.md` 文档）都被误判成\"幽灵\"。实测本仓：\r\n     *   索引里 6 个 `.md` **都在磁盘上**，却被报成 6 条幽灵，且它给的 fix（`refresh:true 清理`）\r\n     *   是**空操作**（保鲜的删除侦测按 `fs.existsSync` 判定，磁盘在 ⇒ 不删）——\"说了做了、但没做\"。\r\n     */\r\n    ghosts: number;\r\n    nodes: number;\r\n    edges: number;\r\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "refs",
+          "type": ": {\r\n    /** 未决（还没解析，可能是拼图没长到） */\r\n    pending: number;\r\n    /** 已解析（连上了符号） */\r\n    resolved: number;\r\n    /** 外部/内置（不建边，正常） */\r\n    external: number;\r\n    /** 明确连不上 */\r\n    failed: number;\r\n    /**\r\n     * ★★ **陈旧断言**：说自己 resolved，但 `reference_name` 已不在索引里。\r\n     * 这些行对应的边早已被 FK 级联删掉且不会重建 ⇒ find_references / impact **静默漏报**。\r\n     * 可信度报告里这是**唯一一个 blocker 级**的指标。\r\n     */\r\n    stale_resolved: number;\r\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "freshness",
+          "type": ": {\r\n    /** 已索引文件里 stat 与库记录不一致的个数（需要保鲜） */\r\n    not_fresh: number;\r\n    /** 抽样列出的文件名（最多 20 条，供定位） */\r\n    not_fresh_sample: string[];\r\n    /**\r\n     * ★★ **refresh 覆盖不到**的那部分未保鲜文件（2026-10-11 加）。\r\n     * 判据 = 该相对路径**不在保鲜重同步范围内**（范围 = 索引器的 `walkFiles(root,false,false)`：\r\n     * 只走查**代码类**源码、且 `include_tests=false`）。典型：索引里的 `.md` 文档 ——\r\n     * 它们能进索引（`include_docs`/编辑路径），却**永不被保鲜重解析**。\r\n     * 为什么单列：`refresh:true` 之后若仍有 blocker，工具**必须**说清\"哪些是 refresh 覆盖不到的\"，\r\n     * 否则就会一边标\"已保鲜\"、一边留着没消的 blocker（**它自己给的 fix 对自己无效**）。\r\n     * ★ 仅当 `refresh:true` 时非空（只在保鲜范围内才有资格谈\"覆盖\"）。\r\n     */\r\n    not_fresh_out_of_scope: string[];\r\n    /** 待消费的自写登记文件数（同步写工具登记过、还没被读路径消费） */\r\n    self_writes_pending: number;\r\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "backfill",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "languages",
+          "type": ": LanguageTierSummary[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "issues",
+          "type": ": IntegrityIssue[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "verdict",
+          "type": ": 'trusted' | 'untrusted' | 'unknown'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "trustworthy",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "refresh_receipt",
+          "type": ": {\r\n    checked: number;\r\n    resynced: number;\r\n    added: number;\r\n    removed: number;\r\n    failed: number;\r\n    skipped_adds: number;\r\n    bootstrapped: number;\r\n    state: IndexState;\r\n  }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "summary",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "NOT_FRESH_SAMPLE",

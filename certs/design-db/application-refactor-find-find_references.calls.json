@@ -20,7 +20,33 @@
       "name": "CandidateScan",
       "kind": "interface",
       "line": 46,
-      "signature": "CandidateScan()"
+      "signature": "CandidateScan()",
+      "members": [
+        {
+          "name": "closureFiles",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "textAdded",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "textScanned",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "textBounded",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "boundsOf",
@@ -32,7 +58,21 @@
       "name": "CandidateSet",
       "kind": "interface",
       "line": 69,
-      "signature": "CandidateSet()"
+      "signature": "CandidateSet()",
+      "members": [
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scan",
+          "type": ": CandidateScan",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "indexCandidateFiles",
@@ -44,19 +84,151 @@
       "name": "ReferenceSite",
       "kind": "interface",
       "line": 136,
-      "signature": "ReferenceSite()"
+      "signature": "ReferenceSite()",
+      "members": [
+        {
+          "name": "offset",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReferenceFile",
       "kind": "interface",
       "line": 147,
-      "signature": "ReferenceFile()"
+      "signature": "ReferenceFile()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "refs",
+          "type": ": ReferenceSite[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "importSources",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FindReferencesResult",
       "kind": "interface",
       "line": 156,
-      "signature": "FindReferencesResult()"
+      "signature": "FindReferencesResult()",
+      "members": [
+        {
+          "name": "ok",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "mode",
+          "type": ": 'symbol' | 'field' | 'type'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "definition",
+          "type": ": { file: string; kind: string; refs: ReferenceSite[] }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "importers",
+          "type": ": ReferenceFile[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "importerCount",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fieldRefs",
+          "type": ": FieldRefFile[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fieldScope",
+          "type": ": FieldScopeReport",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeMembers",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeCandidates",
+          "type": ": TypeConstructCandidate[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "literals",
+          "type": ": Array<{ needle: string; matches: RawLiteralMatch[] }>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "bounds",
+          "type": ": ScanBounds",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "blocked",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "lineOf",

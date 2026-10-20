@@ -26,7 +26,39 @@
       "name": "StructureDomainDecl",
       "kind": "interface",
       "line": 67,
-      "signature": "StructureDomainDecl()"
+      "signature": "StructureDomainDecl()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "layer",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "role",
+          "type": ": DomainRole",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FlatDirDecl",
@@ -38,31 +70,167 @@
       "name": "StructureDomainsConfig",
       "kind": "interface",
       "line": 84,
-      "signature": "StructureDomainsConfig()"
+      "signature": "StructureDomainsConfig()",
+      "members": [
+        {
+          "name": "domains",
+          "type": ": StructureDomainDecl[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "flatDirs",
+          "type": ": FlatDirDecl[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "roles",
+          "type": ": Record<string, string>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "StructureGapItem",
       "kind": "interface",
       "line": 91,
-      "signature": "StructureGapItem()"
+      "signature": "StructureGapItem()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RelocateMove",
       "kind": "interface",
       "line": 101,
-      "signature": "RelocateMove()"
+      "signature": "RelocateMove()",
+      "members": [
+        {
+          "name": "domain_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "from_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "StructureGapReport",
       "kind": "interface",
       "line": 115,
-      "signature": "StructureGapReport()"
+      "signature": "StructureGapReport()",
+      "members": [
+        {
+          "name": "config_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "domain_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "flat_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "misplaced",
+          "type": ": StructureGapItem[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unlisted",
+          "type": ": StructureGapItem[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "missing",
+          "type": ": StructureGapItem[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unclassified",
+          "type": ": StructureGapItem[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "misnested",
+          "type": ": StructureGapItem[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "relocating",
+          "type": ": StructureGapItem[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "relocate_moves",
+          "type": ": RelocateMove[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "relocate_note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "StructureGapResult",
       "kind": "interface",
       "line": 211,
-      "signature": "StructureGapResult()"
+      "signature": "StructureGapResult()",
+      "members": [
+        {
+          "name": "configured",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "structureConfigPath",

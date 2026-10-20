@@ -8,13 +8,59 @@
       "name": "RebuildThrottleOptions",
       "kind": "interface",
       "line": 38,
-      "signature": "RebuildThrottleOptions()"
+      "signature": "RebuildThrottleOptions()",
+      "members": [
+        {
+          "name": "windowMs",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "run",
+          "type": ": () => Promise<void>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "setTimeout",
+          "type": ": (fn: () => void, ms: number) => unknown",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "clearTimeout",
+          "type": ": (id: unknown) => void",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "RebuildThrottler",
       "kind": "interface",
       "line": 48,
-      "signature": "RebuildThrottler()"
+      "signature": "RebuildThrottler()",
+      "members": [
+        {
+          "name": "trigger",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "flush",
+          "type": ": Promise<void>",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "pending",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "createRebuildThrottler",
@@ -26,13 +72,191 @@
       "name": "ImpactDeclaration",
       "kind": "interface",
       "line": 132,
-      "signature": "ImpactDeclaration()"
+      "signature": "ImpactDeclaration()",
+      "members": [
+        {
+          "name": "entry_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "declared_files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "expected_files",
+          "type": ": Set<string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "created_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ActiveWatch",
       "kind": "interface",
       "line": 142,
-      "signature": "ActiveWatch()"
+      "signature": "ActiveWatch()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "rebuild",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "diff_on_change",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "drift_on_change",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "impact_on_change",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "declarations",
+          "type": ": ImpactDeclaration[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "started_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_change_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_rebuild_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_diff_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_summary",
+          "type": ": WatchBatchSummary",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_reconcile",
+          "type": ": ReconcileSummary",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_diff",
+          "type": ": DiffViewsResult",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "pending_files",
+          "type": ": Set<string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pending_drift_files",
+          "type": ": Set<string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_drift",
+          "type": ": DriftData",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_drift_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_drift_status",
+          "type": ": DriftData['status']",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "drift_running",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "alerts",
+          "type": ": { seq: number; created_at: string; line: string }[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_impact_seq",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "handle",
+          "type": ": WatchHandle",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "throttle",
+          "type": ": RebuildThrottler",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "active",
@@ -80,13 +304,281 @@
       "name": "WatchProjectToolInput",
       "kind": "interface",
       "line": 243,
-      "signature": "WatchProjectToolInput()"
+      "signature": "WatchProjectToolInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "action",
+          "type": ": 'start' | 'status' | 'stop' | 'impact' | 'declare' | 'ledger'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "debounce_ms",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "rebuild_on_change",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "rebuild_window_ms",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reconcile_interval_ms",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "diff_on_change",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "drift_on_change",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "impact_on_change",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "seq",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "ledger_status",
+          "type": ": 'pending' | 'ok' | 'violated' | 'resolved' | 'expired' | 'all'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolve_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reviewer",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "WatchProjectToolResult",
       "kind": "interface",
       "line": 291,
-      "signature": "WatchProjectToolResult()"
+      "signature": "WatchProjectToolResult()",
+      "members": [
+        {
+          "name": "action",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "watching",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "running",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "rebuild",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "diff_on_change",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "started_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_change_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_rebuild_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_diff_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_summary",
+          "type": ": WatchBatchSummary",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_reconcile",
+          "type": ": ReconcileSummary",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "diff_alert",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "has_diff_changes",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "drift_on_change",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "drift_alert",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "has_drift",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_drift_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "impact_on_change",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "alerts",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_impact_seq",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "pending_declarations",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "unresolved_violations",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "ledger_entry_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "ledger_entries",
+          "type": ": LedgerEntry[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "observeEventsDir",

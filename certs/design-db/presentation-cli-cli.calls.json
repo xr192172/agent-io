@@ -62,7 +62,15 @@
       "name": "ZodLike",
       "kind": "interface",
       "line": 137,
-      "signature": "ZodLike()"
+      "signature": "ZodLike()",
+      "members": [
+        {
+          "name": "safeParse",
+          "type": ": { success: boolean }",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     },
     {
       "name": "coerceKeyValues",
@@ -80,7 +88,27 @@
       "name": "ZodFieldMeta",
       "kind": "type",
       "line": 239,
-      "signature": "ZodFieldMeta()"
+      "signature": "ZodFieldMeta()",
+      "members": [
+        {
+          "name": "isOptional",
+          "type": ": () => boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "description",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "_def",
+          "type": ": { description?: string; type?: string; typeName?: string }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "fieldDesc",

@@ -8,13 +8,95 @@
       "name": "NarrateStepInput",
       "kind": "interface",
       "line": 26,
-      "signature": "NarrateStepInput()"
+      "signature": "NarrateStepInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "write",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "NarrateStepResult",
       "kind": "interface",
       "line": 39,
-      "signature": "NarrateStepResult()"
+      "signature": "NarrateStepResult()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pins",
+          "type": ": { inputs: TeachPin[]; outputs: TeachPin[] }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scenes",
+          "type": ": NarrScene[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "mode",
+          "type": ": 'rule' | 'llm'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "brick",
+          "type": ": {\n    id: string;\n    name: string;\n    message: string;\n  }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "resolveSemanticFile",

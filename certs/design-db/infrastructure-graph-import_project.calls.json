@@ -8,13 +8,155 @@
       "name": "ImportProjectInput",
       "kind": "interface",
       "line": 39,
-      "signature": "ImportProjectInput()"
+      "signature": "ImportProjectInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "title",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "max_files",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "include_tests",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "include_docs",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "include_archive",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "cache_db",
+          "type": ": Database",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "live_only",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "rebuild_design",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "allow_design_drop",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "live_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "gen_roles",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "source_root",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ImportProjectResult",
       "kind": "interface",
       "line": 121,
-      "signature": "ImportProjectResult()"
+      "signature": "ImportProjectResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files_parsed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scope_files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbols_found",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dep_edges",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dirs_created",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipped",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cache",
+          "type": ": { hits: number; reparsed: number; failed: number }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SKIP_DIR_EXTRA",
@@ -110,7 +252,21 @@
       "name": "GiMatcher",
       "kind": "interface",
       "line": 204,
-      "signature": "GiMatcher()"
+      "signature": "GiMatcher()",
+      "members": [
+        {
+          "name": "base",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ig",
+          "type": ": Ignore",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "GitignoreMatchers",
@@ -146,7 +302,33 @@
       "name": "FileEntry",
       "kind": "interface",
       "line": 359,
-      "signature": "FileEntry()"
+      "signature": "FileEntry()",
+      "members": [
+        {
+          "name": "rel",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "abs",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ext",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "toPosix",
@@ -158,7 +340,21 @@
       "name": "GoModule",
       "kind": "interface",
       "line": 372,
-      "signature": "GoModule()"
+      "signature": "GoModule()",
+      "members": [
+        {
+          "name": "module",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "readGoModules",
@@ -188,7 +384,39 @@
       "name": "LayoutItem",
       "kind": "interface",
       "line": 551,
-      "signature": "LayoutItem()"
+      "signature": "LayoutItem()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "w",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "h",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "x",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "y",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "rankItems",

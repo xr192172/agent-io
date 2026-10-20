@@ -14,25 +14,141 @@
       "name": "FieldRefPoint",
       "kind": "interface",
       "line": 36,
-      "signature": "FieldRefPoint()"
+      "signature": "FieldRefPoint()",
+      "members": [
+        {
+          "name": "offset",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": FieldRefKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "snippet",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ownerType",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FieldRefFile",
       "kind": "interface",
       "line": 56,
-      "signature": "FieldRefFile()"
+      "signature": "FieldRefFile()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "refs",
+          "type": ": FieldRefPoint[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "FieldScopeReport",
       "kind": "interface",
       "line": 66,
-      "signature": "FieldScopeReport()"
+      "signature": "FieldScopeReport()",
+      "members": [
+        {
+          "name": "of_type",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "resolved",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "declared_in",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dropped_decl_points",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unverified_points",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TypeConstructCandidate",
       "kind": "interface",
       "line": 79,
-      "signature": "TypeConstructCandidate()"
+      "signature": "TypeConstructCandidate()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "offset",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "matched",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "snippet",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "lineOf",
@@ -62,7 +178,21 @@
       "name": "ClassifiedFieldRef",
       "kind": "interface",
       "line": 120,
-      "signature": "ClassifiedFieldRef()"
+      "signature": "ClassifiedFieldRef()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": FieldRefKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ownerType",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "classifyKeyOffsets",

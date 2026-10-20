@@ -20,31 +20,215 @@
       "name": "ReasoningStep",
       "kind": "interface",
       "line": 20,
-      "signature": "ReasoningStep()"
+      "signature": "ReasoningStep()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": ReasoningStepKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tokens",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "input",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reasoning",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "output",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "api",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "parent",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "depth",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "order",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "calls",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "round",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "args",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "result",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReasoningFold",
       "kind": "interface",
       "line": 56,
-      "signature": "ReasoningFold()"
+      "signature": "ReasoningFold()",
+      "members": [
+        {
+          "name": "at_step",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": ReasoningFoldKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "summary",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "folded",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReasoningBudget",
       "kind": "interface",
       "line": 70,
-      "signature": "ReasoningBudget()"
+      "signature": "ReasoningBudget()",
+      "members": [
+        {
+          "name": "max_tokens",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fold_at",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReasoningEntry",
       "kind": "interface",
       "line": 78,
-      "signature": "ReasoningEntry()"
+      "signature": "ReasoningEntry()",
+      "members": [
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ReasoningSystem",
       "kind": "interface",
       "line": 86,
-      "signature": "ReasoningSystem()"
+      "signature": "ReasoningSystem()",
+      "members": [
+        {
+          "name": "version",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "entry",
+          "type": ": ReasoningEntry",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "budget",
+          "type": ": ReasoningBudget",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "steps",
+          "type": ": ReasoningStep[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "folds",
+          "type": ": ReasoningFold[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     }
   ],
   "imports": [],

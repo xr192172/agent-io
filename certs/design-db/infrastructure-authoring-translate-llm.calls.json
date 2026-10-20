@@ -8,13 +8,41 @@
       "name": "PooledTranslatorConfig",
       "kind": "interface",
       "line": 15,
-      "signature": "PooledTranslatorConfig()"
+      "signature": "PooledTranslatorConfig()",
+      "members": [
+        {
+          "name": "temperature",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxTokens",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "ChatMessage",
       "kind": "interface",
       "line": 20,
-      "signature": "ChatMessage()"
+      "signature": "ChatMessage()",
+      "members": [
+        {
+          "name": "role",
+          "type": ": 'system' | 'user' | 'assistant'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "content",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "normalizeBody",

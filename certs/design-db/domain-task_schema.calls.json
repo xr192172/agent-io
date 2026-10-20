@@ -44,19 +44,169 @@
       "name": "TaskDiscussion",
       "kind": "interface",
       "line": 114,
-      "signature": "TaskDiscussion()"
+      "signature": "TaskDiscussion()",
+      "members": [
+        {
+          "name": "micro",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "user_quote",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "conclusion",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "open",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "decided_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "supersedes",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TaskEvidenceRecord",
       "kind": "interface",
       "line": 136,
-      "signature": "TaskEvidenceRecord()"
+      "signature": "TaskEvidenceRecord()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": ProgressEvidence['kind']",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "by",
+          "type": ": 'human' | 'llm'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "agent",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "verdict",
+          "type": ": 'pass' | 'fail' | 'unsupported'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "TaskSpec",
       "kind": "interface",
       "line": 159,
-      "signature": "TaskSpec()"
+      "signature": "TaskSpec()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "summary",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "expectations",
+          "type": ": Expectation[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "state",
+          "type": ": TaskState",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "owner",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "claimed_at",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "release_reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "released_by",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "released_at",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "replaces",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "evidence",
+          "type": ": TaskEvidenceRecord[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "discussion",
+          "type": ": TaskDiscussion",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "taskLevel",

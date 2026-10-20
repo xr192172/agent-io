@@ -32,7 +32,69 @@
       "name": "Proposal",
       "kind": "interface",
       "line": 47,
-      "signature": "Proposal()"
+      "signature": "Proposal()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "created_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "decls",
+          "type": ": TSDLDecl[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": ProposalStatus",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reviewed_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reviewer",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "verified_by",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "verification",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "proposalSeq",
@@ -68,7 +130,68 @@
       "name": "ProposalStore",
       "kind": "class",
       "line": 152,
-      "signature": "ProposalStore()"
+      "signature": "ProposalStore()",
+      "members": [
+        {
+          "name": "dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "constructor",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "dirPath",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "filePath",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "create",
+          "type": ": Proposal",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "list",
+          "type": ": Proposal[]",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "get",
+          "type": ": Proposal",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "reject",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "write",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "writeRaw",
+          "type": ": void",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
     }
   ],
   "imports": [

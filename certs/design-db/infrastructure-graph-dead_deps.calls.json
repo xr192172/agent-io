@@ -8,19 +8,121 @@
       "name": "DeadDepCandidate",
       "kind": "interface",
       "line": 41,
-      "signature": "DeadDepCandidate()"
+      "signature": "DeadDepCandidate()",
+      "members": [
+        {
+          "name": "source",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": 'no_reference' | 'unreachable_only'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DeadDepsResult",
       "kind": "interface",
       "line": 47,
-      "signature": "DeadDepsResult()"
+      "signature": "DeadDepsResult()",
+      "members": [
+        {
+          "name": "live_symbols",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total_symbols",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dead",
+          "type": ": DeadDepCandidate[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "limitations",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "live_symbols_by_file",
+          "type": ": Record<string, string[]>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "live_type_names",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SymbolRow",
       "kind": "interface",
       "line": 58,
-      "signature": "SymbolRow()"
+      "signature": "SymbolRow()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "end_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parent",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LIMITATIONS",

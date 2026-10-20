@@ -8,7 +8,33 @@
       "name": "EmbeddingConfig",
       "kind": "interface",
       "line": 31,
-      "signature": "EmbeddingConfig()"
+      "signature": "EmbeddingConfig()",
+      "members": [
+        {
+          "name": "baseURL",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "apiKey",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "model",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dim",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "DEFAULT_BASE_URL",
@@ -68,7 +94,21 @@
       "name": "EmbeddingResponseItem",
       "kind": "interface",
       "line": 98,
-      "signature": "EmbeddingResponseItem()"
+      "signature": "EmbeddingResponseItem()",
+      "members": [
+        {
+          "name": "embedding",
+          "type": ": number[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "index",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "embedTexts",
@@ -104,19 +144,133 @@
       "name": "SemanticHit",
       "kind": "interface",
       "line": 249,
-      "signature": "SemanticHit()"
+      "signature": "SemanticHit()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "qualified_name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "score",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SemanticSearchInput",
       "kind": "interface",
       "line": 260,
-      "signature": "SemanticSearchInput()"
+      "signature": "SemanticSearchInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "query",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "limit",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "min_score",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SemanticSearchResult",
       "kind": "interface",
       "line": 267,
-      "signature": "SemanticSearchResult()"
+      "signature": "SemanticSearchResult()",
+      "members": [
+        {
+          "name": "query",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "provider",
+          "type": ": 'exact' | 'semantic' | 'fts'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "indexed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "hits",
+          "type": ": SemanticHit[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "degraded",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "SYMBOL_QUERY_RE",
