@@ -95265,11 +95265,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T02:23:09.324Z",
+    "saved_at": "2026-10-20T02:34:18.847Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792462297750,
-    "age": 691574
+    "scanRev": 1792463649165,
+    "age": 9682
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -97095,6 +97095,52 @@
     {
       "id": "todo_持续收集-用本仓工具哪里不顺手-并汇总进-docs-dogfood-md-已建-",
       "summary": "持续收集「用本仓工具哪里不顺手」并汇总进 docs/dogfood.md（已建，2026-10-20 首版 13 条）。★ 机制两条：① 每周一 09:00 有 automation「agent-io dogfood 自检」跑一次真实小事并追加；② 每次派子代理时，在回报格式里加一条「用这个工具时哪里让你多做了动作 / 让你猜了」——2026-10-20 的子代理就是靠这条在第 5 分钟指出「库正在被旧进程写」，而我查代码查了 20 分钟。★ 判据：dogfood.md 记**体验**（想做什么 → 多做了什么/猜了什么），真缺陷进 docs/todo.md，两者不混。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_侦察-实现-imports-剩-0-4-prunedeletedfiles-与-",
+      "summary": "【侦察→实现】imports 剩 0.4%：`pruneDeletedFiles` 与 gitignore 规则拉锯。现象：`scripts/check_lang_pkgs.mjs` / `src/infrastructure/analysis/diagnosis/test_contract.ts` / `src/application/meta/archive/archive_node.ts` 三个文件被 `.gitignore`/archive 规则排除在走查之外，`pruneDeletedFiles`（在 `src/application/index/import_project.ts`）每轮删掉它们的行，而索引每轮又加回来。风险：这些行会反复\"有/无\"，依赖它们的查询结果不稳定。★ 侦察要点：`pruneDeletedFiles` 的删除判据是什么？\"走查策略有意跳过的文件\"和\"真的被删掉的文件\"在它眼里有区别吗？",
+      "expectations": [],
+      "state": "done",
+      "owner": "workbuddy",
+      "claimed_at": "2026-10-20T02:34:17.499Z",
+      "evidence": [
+        {
+          "kind": "attestation",
+          "at": "2026-10-20T02:34:18.821Z",
+          "by": "llm",
+          "why": "侦察确认：判据是不在走查列表且无 fs.existsSync；三个文件三个不同原因（2 个 gitignore + 1 个 ARCHIVE_DIRS 硬编码）。修法：dead 判据加 !existsSync + retainedOut 收集越界项；回执拆已删除/越界未索引。实跑：越界 3 个、真删除 0 个、不再谎报。verify 5 门全过。",
+          "agent": "workbuddy",
+          "verdict": "pass"
+        }
+      ]
+    },
+    {
+      "id": "todo_侦察-实现-done-卡不能连续改动-需要-追加一卡-的语义-现象-同一节点做第",
+      "summary": "【侦察→实现】`done` 卡不能连续改动：需要「追加一卡」的语义。现象：同一节点做第二件事时，`publish` 拒（\"覆盖它等于把已完成的判据换掉\"），`release` 只能 claimed→candidate，实际路径是 `reopen → release → 改 decision → publish` 四步。2026-10-20 我因此两次无卡改动（schema.ts 的 identifiers → imports span）。★ 侦察要点：四步里哪一步是真正必要的？能不能用一个 `supersede`（旧卡作废 + 新卡继承）替代？注意 `t_reopen`（done→claimed）已经在 2026-10-19 加了。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_实现-给-complete-挂变异测试-试点-不全局-现状-scripts-im",
+      "summary": "【实现】给 `complete` 挂变异测试（试点，不全局）。现状：`scripts/impl-mutate.mjs` 是手动工具；`scripts/impl-fixture.mjs` 24 场景、覆盖率 89%。目标：卡完成时（L2）能选跑变异，并在回执里给\"杀死/存活\"数字。★ 边界：先只对 `src/domain/task_machine.ts` 试点；存活点里 `reason` 文案相关的**不算缺陷**（夹具只钉 standing）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_实现-find-references-field-refs-的-定位-从正则换成",
+      "summary": "【实现】`find_references` / `field_refs` 的**定位**从正则换成 `identifiers` 表。现状：两者都是\"正则定位 + AST 分类\"（`field_refs` 有 18 处 AST 调用）。换掉定位能省 `readFileSync` 且不再误报注释。★ 边界：只换定位，**不动** `classifyOffset` 那套 AST 分类；`find_references` 的正则目前是**兜底**（`if (!anyAstHit)`），要看清再动。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_实现-task-plan-写端-唯一还要手改-json-的一块-现状-task-",
+      "summary": "【实现】`task_plan` 写端（唯一还要手改 JSON 的一块）。现状：`task-system-plan.dsl.json` 今天被手改 3 次（加 t_reopen / OQ1 / todo 语义）。目标：`edit_dsl` 能对 plan 本身做结构性写（加节点/加迁移/改 schema 引用），而不是手编辑 JSON。★ 边界：先只做\"读取 + 校验 + 写回\"三件事，**不做**自动推导。",
       "expectations": [],
       "state": "candidate",
       "owner": null
