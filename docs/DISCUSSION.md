@@ -1807,3 +1807,61 @@ reopen（done→claimed）→ release（claimed→candidate）
 | `nodes.signature`（type/interface） | `Name()` | `Name()`（不变） |
 | **`nodes.members`**（type/interface） | **不存在** | **1038 个节点有**（1017 interface 全覆盖） |
 | 设计 DB 的 interface 副本 | 只有 `Name()` | **带 members** |
+
+---
+
+## 2026-10-20 早（三一）· 夹具 4→16 · 覆盖率 47%→79% · 门抓到了我的 bug（`7795d96d`）
+
+### 1. 夹具扩展
+
+| 新场景 | 覆盖什么 |
+|---|---|
+| F5a–d | 红归属四种：`own`/`orphan` ⇒ `work`；`dep-done`/`dep-pending` ⇒ `blocked` |
+| F6 | `isClaimable` 五值穷尽（只有 `work`/`violated` 为真） |
+| F7 | `applicableTransitions` 按 from 过滤（`done` ⇒ `t_reopen`；`void` ⇒ 空） |
+
+```
+变异：杀死 9 → 15 · 存活 10 → 4
+覆盖率：47% → 79%
+```
+
+### 2. ★★ 门抓到了我自己工具的 bug
+
+跑完 `npm run verify`，**实现夹具 FAIL**——而我手工跑是 16/16。查下去：
+
+```js
+dist/src/domain/task_machine.js
+  return TRANSITIONS.filter((t) => t.state.kind === 'ready' && t.from !== from);   // ← !== ！
+```
+
+**`impl-mutate` 还原的是源文件，但 `dist` 是编译产物** ⇒ 它把**最后一个变异体**留在了 `dist` 里，
+之后所有测试都在跑**被污染的产物**。
+
+修：`finally` 里 `restore()` 之后**必须重编译**（编不过就抛，不许静默）。
+验证：跑完变异 `grep "t.from !== from"` = **0**；夹具 16/16；verify 5 门全过。
+
+> 昨天加「实现夹具」这道门时，理由是"契约门抓不到实现回归"。
+> **今天它抓的正是实现层的污染 —— 而且是我自己工具的。门按设计工作了。**
+
+★ 而且这暴露了我一个盲区：**变异器的"还原"只覆盖了它动过的东西（源文件），
+没覆盖它**影响**到的东西（dist）**。"还原"要还原**整个被影响的范围**，不只是**输入**。
+
+### 3. 剩 4 个存活点
+
+- `L342`：`isSatisfied` 的 standing 映射
+- `L387`：`releaseIfExpired` 的 state 判定（要造 TTL 超时场景）
+
+这两个函数还没有夹具。
+
+### 4. 回答用户的一个纠正
+
+用户问：「运算符和字面量不是那三个正则文件改用树的前置吗？」
+
+**需要分清两个东西**：
+
+| 抽什么 | 谁用 | 该进 DB 吗 |
+|---|---|---|
+| **标识符位置** | `find_references` · `field_refs` · `rename_symbols` · `remove_dead_imports` | ✅ 该（3-4 个消费者） |
+| **运算符**（`===`） | 只有变异器 | ❌ 暂不进（1 个） |
+
+⇒ 那 3 个文件要的是**标识符**，不是运算符。**用户说的「前置」指的是标识符那一半，是对的。**
