@@ -180,7 +180,15 @@ function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
  * · `state === 'candidate'`（没人领）⇒ **重翻**（用当下的 decision 覆盖）—— 决策改了，卡要跟上；
  * · `state === 'done'` 且**旧卡是 L1** ∧ 现在够得上 L2 ⇒ **升一级**（L1 干完了，正路是出 L2 卡）；
  *   ★ 旧卡的 `evidence` **逐条搬进新卡**（`TaskSpec` 没有卡片历史 —— 不静默丢证据）；
- * · 其余（`claimed` / L2 已 done / …）⇒ **拒**：覆盖会把"正在做的判据"换掉。
+ * · `state === 'claimed'` **且带 `data.reason`** ⇒ **原地换判据**（2026-10-20）：
+ *   ★ 只换 `summary` + `expectations`；`state` / `owner` / `claimed_at` / **`evidence`** / `discussion` 全部保留。
+ *   ★ 为什么要有它：`done` 的卡改判据原先要走 `reopen → release → 改 decision → publish → claim`
+ *     五步，其中 `release` / `claim` **纯为过校验**（publish 只认 candidate、写闸只认 claimed）；
+ *     而那条路上 publish 会**重建**卡 ⇒ 旧 `evidence` 静默丢失。现在 `reopen → 改 decision → publish`
+ *     三步，且证据一条不丢。
+ *   ★ 边界：不带 `reason` ⇒ 拒（改动要有理由）；新 decision 没有后态判据（= L1）⇒ 拒
+ *     （claimed 卡换成一 0 条判据的 L1 ⇒ `complete` 判"建构未完成"、只能 release 回 candidate 重来）。
+ * · 其余（L2 已 done / void / …）⇒ **拒**：覆盖会把"已完成/已作废"的判据换掉。
  *
  * ★ 本函数**不写 progress**：`node.status` 是 `task.state` 的派生值（`progressOf`），
  *   落盘时由 `applyOverlay` 投影（candidate ⇒ draft）。
@@ -261,21 +269,6 @@ function constructionVerdict(
 
 export function publishTask(input: TaskOpInput): EditResult {
   const { feature, node_id } = input;
-  // ★★★ publish 的输入**没有内容**：内容只能来自 decision。`owner/reason/evidence` 是 task 的已知键
-  //   （claim/release/complete 用），但**对 publish 无意义** ⇒ 显式拒，别让它们被静默忽略
-  //   （"你以为生效了、其实没有"正是 `checkOpSpec` 要防的那一类；`data.summary` 那种**未知键**由它先拒）。
-  const extra = [
-    input.owner !== undefined ? 'owner' : '',
-    input.reason !== undefined ? 'reason' : '',
-    input.evidence !== undefined ? 'evidence' : '',
-  ].filter(Boolean);
-  if (extra.length) {
-    throw new Error(
-      `publish 被拒（不接受 data）：收到 data.${extra.join(' / data.')} —— ★ 立卡的内容**只能**来自该节点的 \`decision\`，` +
-        `publish 不收任何 data 键。\n` +
-        `★ 领任务请走 \`op:'claim'\`（data.owner 是**那个** action 的参数）；立卡这一步没有可填的字段。`,
-    );
-  }
   const dsl = getDesignSheet(feature);
   if (!dsl) {
     throw new Error(`feature "${feature}" 不存在 —— 任务格住在设计 DSL 的节点上，先有 feature 才有家。`);
@@ -284,6 +277,35 @@ export function publishTask(input: TaskOpInput): EditResult {
   if (!node) {
     throw new Error(
       `节点 "${node_id}" 不在 feature "${feature}" 的 geometry.nodes 里 —— 立卡的对象是**节点**，找不到节点就没有决策卡可翻。`,
+    );
+  }
+
+  const existing = node.task;
+  /**
+   * ★★ 2026-10-20：**已领卡的原地换判据**（`reopen` 之后的正路）。
+   * ★ 判据只需两条：`state === 'claimed'` ∧ 带 `reason`（改动要有理由）。
+   * ★ 它只换 `summary` + `expectations` —— 其余字段（含 `evidence`）**逐条保留**。
+   */
+  const onClaimed = existing?.state === 'claimed';
+  const reason = (input.reason ?? '').trim();
+
+  // ★★★ publish 的输入**没有内容**：内容只能来自 decision。`owner/evidence` 是别的 action 的参数，
+  //   对 publish 无意义 ⇒ 显式拒，别让它们被静默忽略（"你以为生效了、其实没有"）。
+  //   ★ `reason` 是例外，但**只在 claimed 原地换判据时**才被接受（它是"为什么换"的理由，不是卡的内容）。
+  const extra = [
+    input.owner !== undefined ? 'owner' : '',
+    input.reason !== undefined ? 'reason' : '',
+    input.evidence !== undefined ? 'evidence' : '',
+  ].filter(Boolean);
+  const notAccepted = extra.filter((k) => !(k === 'reason' && onClaimed));
+  if (notAccepted.length) {
+    throw new Error(
+      `publish 被拒（不接受 data）：收到 data.${notAccepted.join(' / data.')} —— ★ 立卡的内容**只能**来自该节点的 \`decision\`。\n` +
+        `★ 领任务请走 \`op:'claim'\`（data.owner 是**那个** action 的参数）；立卡这一步没有可填的字段。` +
+        (notAccepted.includes('reason')
+          ? `\n★ \`data.reason\` **只在**已领（state=claimed）的卡上被接受（原地换判据要说明为什么改）；` +
+            `当前 state=${existing?.state ?? '（该节点上没有任务格）'} ⇒ 不收。`
+          : ''),
     );
   }
 
@@ -303,24 +325,80 @@ export function publishTask(input: TaskOpInput): EditResult {
       : `节点 "${node_id}" 的决策卡只有**前态判据**（\`phase='pre'\`，如 edge-absent）：现有 ${expectations.length} 条、` +
         `后态判据（\`phase='post'\`）**0 条** ⇒ 翻成 L2 的卡**必然领不了**（\`cardStanding\` 对空集给 unknowable）`;
 
-  // 已有任务格：只允许 ① 重翻 candidate ② L1(done) ⇒ L2 升一级；其余拒
+  // 已有任务格：只允许 ① 重翻 candidate ② L1(done) ⇒ L2 升一级 ③ claimed + reason ⇒ 原地换判据
   let advance = false;
-  if (node.task && node.task.state !== 'candidate') {
-    advance = node.task.state === 'done' && taskLevel(node.task) === 'L1' && level === 'L2';
-    if (!advance) {
+  let refresh = false;
+  if (existing && existing.state !== 'candidate') {
+    advance = existing.state === 'done' && taskLevel(existing) === 'L1' && level === 'L2';
+    refresh = onClaimed && reason.length > 0;
+    if (onClaimed && !refresh) {
       throw new Error(
-        `publish 被拒：节点 "${node_id}" 上已有一张 state=${node.task.state} 的任务卡` +
-          (node.task.owner ? `（owner=${node.task.owner}）` : '') +
-          `（级别 ${taskLevel(node.task)}） —— 覆盖它等于把"正在做/已完成"的判据换掉。\n` +
-          `★ 允许重翻 \`candidate\`（没人领）；★ 另允许一件事：**L1 已 done 且现在够得上 L2** ⇒ 升一级（` +
-          `这正是两级流程的正路，不是覆盖别人的活）。\n` +
-          `★ 要换其他已领/已完成（L2）的卡 ⇒ 先 \`release\`（或走 replaces/superseded —— 未实现）。`,
+        `publish 被拒：节点 "${node_id}" 上有一张 **state=claimed** 的任务卡` +
+          (existing.owner ? `（owner=${existing.owner}）` : '') +
+          ` —— 换掉它的判据等于把"正在做的活"换了验收标准，必须说明为什么。\n` +
+          `★ 确实要换 ⇒ 带上 \`data.reason\`：\`{ type:'task', op:'publish', id:'${node_id}', data:{ reason:'…' } }\`\n` +
+          `  这样只换 \`summary\` + \`expectations\`；state / owner / claimed_at / **evidence** 全部保留。`,
+      );
+    }
+    if (!advance && !refresh) {
+      throw new Error(
+        `publish 被拒：节点 "${node_id}" 上已有一张 state=${existing.state} 的任务卡` +
+          (existing.owner ? `（owner=${existing.owner}）` : '') +
+          `（级别 ${taskLevel(existing)}） —— 覆盖它等于把"已完成/已作废"的判据换掉。\n` +
+          `★ 允许重翻 \`candidate\`（没人领）；★ 允许 **L1 已 done 且现在够得上 L2** ⇒ 升一级；` +
+          `★ 允许 **claimed 带 \`data.reason\`** ⇒ 原地换判据。\n` +
+          (existing.state === 'done'
+            ? `★ 换这张**已完成（L2）**卡的判据的正路：\`reopen\`（带 owner + reason）→ 改 \`decision\` → ` +
+              `\`publish\`（带 data.reason；原地换判据，evidence 逐条保留）。`
+            : `★ state=${existing.state} 是终态，不可换判据（要重做就另立节点 / 另开 feature）。`),
+      );
+    }
+    if (refresh && level === 'L1') {
+      throw new Error(
+        `publish 被拒（原地换判据会得到一张收不了口的卡）：节点 "${node_id}" 的 decision 现在**没有后态判据**` +
+          `（phase='post' 0 条）⇒ 换上去的是一张 0 条期望的 L1 卡，而它 state 仍是 claimed ⇒ ` +
+          `\`complete\` 走 L1 尺会判"建构未完成"，先 release 回 candidate 才能重来。\n` +
+          `★ 怎么办：先给 decision 补至少一条相位 post 的判据（如 \`file-exists\`），再 publish。`,
       );
     }
   }
 
   if (level === 'L2') {
-    const refreshed = !!node.task;
+    // ★★ 已领卡的**原地换判据**：只换 summary + expectations，其余逐条保留（★ 尤其 evidence）。
+    if (refresh) {
+      const kept = existing?.evidence ?? [];
+      writeTask(feature, node_id, {
+        ...existing!,
+        summary: decision?.summary ?? '',
+        expectations: expectations.map((e) => ({ ...e })),
+      });
+      return {
+        message:
+          // ★ 首行自足（回执只透出首行）
+          `已原地换判据任务 "${node_id}"（state=claimed 不变，owner=${existing?.owner ?? '（空）'}）：` +
+          `summary + ${expectations.length} 条判据已按 decision 重写，evidence ${kept.length} 条**逐条保留**。\n` +
+          `★ 理由：${reason}\n` +
+          `★ 只换 \`summary\` + \`expectations\`；state / owner / claimed_at / evidence / discussion 全保留 —— ` +
+          `这正是它比"release → publish → claim"少两步、又不丢证据的原因。\n` +
+          `★ 内容来源 = \`geometry.nodes[${node_id}].decision\`（summary 逐字 + expectations 逐字）。\n` +
+          `★ 进度派生：task.state=claimed ⇒ progress=in_progress。下一步直接干活 → \`complete\`（写闸只认 claimed，已就位）。`,
+        feature,
+        data: {
+          node_id,
+          level: 'L2',
+          state: 'claimed' as TaskState,
+          owner: existing?.owner ?? null,
+          summary: decision?.summary ?? '',
+          expectations: expectations.length,
+          post_expectations: post.length,
+          evidence_kept: kept.length,
+          refreshed: true,
+          progress: progressOf({ state: 'claimed' }),
+        },
+      };
+    }
+
+    const refreshed = !!existing;
     writeTask(feature, node_id, {
       id: node.id,
       // ★★ 逐字来自决策卡（不裁剪、不改写、不拼 acceptance）—— 这样"卡的内容来自哪里"可对拍
@@ -328,7 +406,7 @@ export function publishTask(input: TaskOpInput): EditResult {
       expectations: expectations.map((e) => ({ ...e })),
       state: 'candidate',
       // ★ L1 ⇒ L2 升级：旧 L1 卡的证据**逐条搬进新卡**（TaskSpec 无卡片历史 ⇒ 不静默丢证据）
-      ...(advance && node.task?.evidence?.length ? { evidence: node.task.evidence } : {}),
+      ...(advance && existing?.evidence?.length ? { evidence: existing.evidence } : {}),
     });
 
     return {
@@ -711,8 +789,10 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
  * ② `reason` 必填（为什么重开）—— ★ 无理由的重开等于把"完成"当摆设
  * ③ CAS：`state === done` 才写（`assertTransition` 从迁移表读，不另写一把尺）
  *
- * ★ **重开不改判据**（`expectations` 仍来自 decision）。要换判据：先 `edit_dsl type=decision`
- *   改 decision，再 `reopen` —— 否则你会得到一张"用旧判据去验收新工作"的卡。
+ * ★ **重开不改判据**：本函数只 `{ ...card, state:'claimed', owner, claimed_at }` —— 它**不重读 decision**，
+ *   卡上的 `expectations` 原样留着（`evidence` 也原样留着）。⇒ 要换判据必须**再走一步 `publish`**：
+ *   `reopen` → 改 `decision` → `publish`（state 已是 claimed，带 `data.reason` ⇒ 原地换判据，evidence 逐条保留）。
+ *   ★ 只改 decision 不 publish ⇒ 卡上仍是**旧判据**（判据不跟着 decision 自动变）。
  */
 export async function reopenTask(input: TaskOpInput): Promise<EditResult> {
   const { feature, node_id } = input;
@@ -733,10 +813,14 @@ export async function reopenTask(input: TaskOpInput): Promise<EditResult> {
   writeTask(feature, node_id, next);
   return {
     message:
-      `已重开任务 "${node_id}"（done → claimed，owner=${input.owner}）\n` +
+      // ★ 首行自足（`edit_dsl` 只透出每个 op 的**首行**）—— 所以"判据没变 + 下一步是 publish"必须在首行。
+      `已重开任务 "${node_id}"（done → claimed，owner=${input.owner}）：判据仍是卡上那 ${(card.expectations ?? []).length} 条` +
+      `（★ 本步**不重读** decision）⇒ 要换判据必须 **edit decision 后再 publish**，否则卡上仍是旧判据。\n` +
       `  理由：${input.reason}\n` +
-      `  ★ 判据未变（仍来自 decision，${(card.expectations ?? []).length} 条）；` +
-      `要换判据请先 edit_dsl type=decision，再 reopen。`,
+      `  ★ 两步：① \`edit_dsl { type:'decision', op:'update', id:'${node_id}', data:{ summary, expectations } }\`；` +
+      `② \`{ type:'task', op:'publish', id:'${node_id}', data:{ reason:'…' } }\` ⇒ **原地换判据**` +
+      `（state 仍 claimed，owner / claimed_at / evidence / discussion 全部保留 —— 不用 release，也不用 claim）。\n` +
+      `  ★ 进度派生：task.state=claimed ⇒ progress=in_progress。`,
     feature,
   };
 }

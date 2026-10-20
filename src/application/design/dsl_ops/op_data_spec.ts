@@ -215,7 +215,9 @@ export const OP_SPECS: readonly OpSpec[] = [
     note:
       '★ **任务态唯一写端**（五态 `candidate|claimed|done|void|superseded`）；`node.status` 只是它的**派生值**（`task_schema.ts#progressOf`），不许直接改。' +
       'publish:**立卡=翻该节点的决策卡**：有后态判据⇒**L2**（summary+expectations 逐字搬）；' +
-      '无 decision/太粗⇒**L1 建构卡**（**0 条期望**，验收=DSL 建构完整）；★不收 data · ' +
+      '无 decision/太粗⇒**L1 建构卡**（**0 条期望**，验收=DSL 建构完整）；' +
+      '★不收 data（**唯一例外**：`state=claimed` 的卡带 `data.reason` ⇒ **原地换判据**：只换 summary+expectations，' +
+      'state/owner/evidence 全保留）· ' +
       'claim:`data.owner`（L2 须可领＝cardStanding，L1 看建构缺口）· release:`data.reason`（by 走顶层 `agent`）· ' +
       'complete:`data.evidence`（同一把证据尺；L2 须 isSatisfied，L1 须建构完整）。',
   },
