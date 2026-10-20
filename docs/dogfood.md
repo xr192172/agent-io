@@ -47,3 +47,9 @@
 ## 已修（一行一条，便于对照）
 
 `design_line ok:true 语义过载`（→ `did_work`+`reason`）· `写闸看不见 feature`（→ `listDesignSheets`）· `edit_code 扔掉闸的 note`（→ `gate_note`）· `A7 恒 null`（→ `actor` 入参）· `saveDSL 不 mkdir` · `TERMINAL_TASK_STATES` 两套答案（→ `CLOSED_TASK_STATES`）· `design-db 路径写两处`（→ `designDbDir()`）· `gen-db check 假门`（→ `planDesignDb` + 第 6 道门）
+
+## 输入
+
+| 什么 | 在哪 |
+|---|---|
+| `edit_code` 的**批量 ops 格式查不到**：`{ops:[{path,...}]}` 与 `{ops:[{file,...}]}` 都报「缺参数 file」，而 schema 里没写清 | `edit_code` |
