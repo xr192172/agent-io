@@ -76,7 +76,7 @@ export interface WriteReceipt {
 async function applyWritesCore(
   projectRoot: string,
   items: readonly WriteItem[],
-  opts: { dryRun?: boolean; note?: string } = {},
+  opts: { dryRun?: boolean; note?: string; actor?: string | null } = {},
 ): Promise<WriteReceipt> {
   const root = path.resolve(projectRoot);
   const note = opts.note ?? 'apply_writes';
@@ -109,7 +109,8 @@ async function applyWritesCore(
       for (const [rel, content] of byRel) fs.writeFileSync(path.join(root, rel), content, 'utf8');
       return written;
     },
-    { label: note, onFile: (rel, status) => updatedByRel.set(rel, status === 'updated') },
+    // ★★ 2026-10-20（A7 逐调用自报）：`actor` **只往下传、不在这里判** —— 判据仍只在 `write_gate` 一处。
+    { label: note, actor: opts.actor, onFile: (rel, status) => updatedByRel.set(rel, status === 'updated') },
   );
 
   return attachGateNote(
@@ -158,7 +159,7 @@ function touchedOf(projectRoot: string, r: WriteReceipt): Touched {
 export async function applyWrites(
   projectRoot: string,
   items: readonly WriteItem[],
-  opts: { dryRun?: boolean; note?: string } = {},
+  opts: { dryRun?: boolean; note?: string; actor?: string | null } = {},
 ): Promise<TouchedProduct<WriteReceipt>> {
   const r = await applyWritesCore(projectRoot, items, opts);
   return withTouched(r, touchedOf(projectRoot, r));

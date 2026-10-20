@@ -679,13 +679,48 @@ interface ArgValidator {
   safeParse(v: unknown): { success: boolean; error?: { issues: Array<{ path: Array<string | number> }> } };
 }
 
+/**
+ * ★★★ 2026-10-20（A7 闭合 · 逐调用自报）：**跨工具的保留入参 `actor`**。
+ *
+ * ## 病（实测）
+ * 写闸的判据（`write_gate#assertSourceWriteRegistered` 里 `owner !== actor ⇒ 拒`）早就写好了，
+ * 但**没人传 actor**：`.vscode/mcp.json` 与 `~/.workbuddy/mcp.json` 都没设 `AGENT_IO_ACTOR`
+ * ⇒ `resolveActor()` 恒 `null` ⇒ 闸永远走"提醒 + 放行" ⇒ **A7 在生产面一次都不会触发**。
+ * 今天验证 A7 看到的拒绝，是靠 CLI 手动 `AGENT_IO_ACTOR=xxx` 才造出来的 ——
+ * 即用户原话的"**设计好了但不会用**"（判据在、代码在、**入口没接**）。
+ *
+ * ## 为什么放在**入口**（而不是逐个工具加字段）
+ *   · `invokeTool` 是 MCP 面与 CLI 面的**唯一入口**（本文件上面那段注释已经写过这条理由）——
+ *     放这里 ⇒ 以后新增写工具**不用记得**加字段；也**不会**出现"4 个工具各持一份 actor 定义"。
+ *   · 入参 schema 是 `looseObject`（`plumbing#looseInputSchema`）⇒ 未知键本来就不会被丢；
+ *     这里再声明一次是为了**两件事**：① `tools/list` 里看得见（可发现性）；② `actor: 123` 这类
+ *     类型错能被拦住（不声明就只能静默透传）。
+ *
+ * ## 边界（别包装）
+ * 它是**自报**：stdio 侧的 MCP server 拿不到宿主可信身份（宿主只给 HTTP connector 注
+ * `X-WorkBuddy-MCP-Context`，stdio 只注入目录变量）⇒ 能买到的只是**协作防撞**，不是**防冒充**。
+ */
+const CALL_ACTOR_FIELD = {
+  actor: z
+    .string()
+    .optional()
+    .describe(
+      '★ 本次调用的**身份**（A7 写闸用）：与 claim 时 `data.owner` **同一个值**。' +
+        '写工具（edit_code / rename_symbols 等）靠它判「这张卡是不是你领的」；只读工具忽略它。' +
+        '★ 不传 ⇒ 落回 AGENT_IO_ACTOR ⇒ 都没有就「提醒 + 放行」（要改拒绝：AGENT_IO_ACTOR_STRICT=1）。',
+    ),
+};
+const CALL_ACTOR_KEYS = Object.keys(CALL_ACTOR_FIELD);
+/** 任何工具的 schema → 同一个（含 `actor` 的）schema。★ 一处拼装，别在调用点各写一遍。 */
+const withCallActor = (shape: Record<string, unknown>): Record<string, unknown> => ({ ...shape, ...CALL_ACTOR_FIELD });
+
 /** 每个 `def` 只构造一次 validator（SDK 那边也是注册时构造一次，这里对齐）。 */
 const _argValidators = new WeakMap<ToolDef, ArgValidator>();
 
 function argValidatorOf(def: ToolDef): ArgValidator {
   const cached = _argValidators.get(def);
   if (cached) return cached;
-  const v = looseInputSchema(def.inputSchema ?? {}) as unknown as ArgValidator;
+  const v = looseInputSchema(withCallActor(def.inputSchema ?? {})) as unknown as ArgValidator;
   _argValidators.set(def, v);
   return v;
 }
@@ -781,7 +816,9 @@ export async function invokeTool(
   }
   // ★ 参数纠错（Did you mean）：zod object 会**静默丢弃**未知键（错参数 = 结果莫名其妙），
   // 这里对"够像"的未知键给一条建议；只提示不阻断，不够像则静默（避免噪音）。
-  const knownArgs = Object.keys(def.inputSchema ?? {});
+  // ★★ 2026-10-20：已知键里**永远算上保留键**（否则 `actor` 会被当成拼错的参数，
+  //   回一句"你是不是想找 action" —— 而它其实是 A7 的正规入参）。
+  const knownArgs = [...Object.keys(def.inputSchema ?? {}), ...CALL_ACTOR_KEYS];
   const argHints = renderArgHints(unknownArgHints(a, knownArgs), knownArgs);
   // 狗食正式统计：记录每次工具调用的成败与子动作（失败静默，不阻断主流程）
   const t0 = Date.now();
@@ -974,7 +1011,7 @@ export function registerAllTools(server: McpServer): void {
   for (const def of exposed) {
     server.registerTool(
       def.name,
-      { title: def.title, description: def.description, inputSchema: looseInputSchema(def.inputSchema) as unknown as z.ZodRawShape },
+      { title: def.title, description: def.description, inputSchema: looseInputSchema(withCallActor(def.inputSchema ?? {})) as unknown as z.ZodRawShape },
       async (args) => {
         const r = await invokeTool(def, args as Record<string, unknown>);
         return textOut(r.text, r.isError);

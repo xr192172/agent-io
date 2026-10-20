@@ -97,6 +97,12 @@ export interface EditCodeArgs {
    * 缺省/false ⇒ **逐项独立**（失败项红、其余照常落盘）。dry_run 天然不落盘，与 atomic 无关。
    */
   atomic?: boolean;
+  /**
+   * ★★★ 2026-10-20（A7 逐调用自报）：**本次写入是谁**（与 claim 时的 `data.owner` **同一个值**）。
+   * ★ 不传 ⇒ 落回 `AGENT_IO_ACTOR` ⇒ 都没有就"提醒 + 放行"（闸的现有行为，`AGENT_IO_ACTOR_STRICT=1` 才会改拒）。
+   * ★ 它是 `server_registry#invokeTool` 的**保留键**（不写在这里的工具 schema 也能传 —— 那是 loose object）。
+   */
+  actor?: string;
 }
 
 /** ★ P-B：批量模式**逐项**回报（`targets[]` 专用；一项一条） */
@@ -499,7 +505,10 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     //   ★ 位置：快照**之前**（拒绝就是拒绝，连快照都不该建）。
     // ★★★ 2026-10-20：闸的**放行读数**（含“本次写入 X 被豁免”）带出去 —— 返回值不许再丢。
     //   ★ 仍然只调用**一次**（闸不便宜，且两次调用在并发下可能读到不同世界）。
-    const g = assertSourceWriteRegisteredFor(projectRoot, [relPath], resolveActor());
+    // ★★★ 2026-10-20（A7 闭合）：`actor` **显式入参** —— 之前这里写的是 `resolveActor()`（无参）
+    //   ⇒ 只可能读到 env，而生产面（stdio MCP）里 env 是空的 ⇒ 闸永远只能"提醒 + 放行"。
+    //   （这就是"判据在、代码在、入口没接"那一类的具体形状：一个空括号。）
+    const g = assertSourceWriteRegisteredFor(projectRoot, [relPath], resolveActor(args.actor));
     if (gateOut) {
       gateOut.note = g.note;
       gateOut.exempted = g.exempted;
@@ -960,7 +969,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   if (!dry && !blockedByAtomic) {
     // ★★★ T328 步 6：**未登记不许落盘** —— 整批先过一次闸（一次判定，失败 ⇒ 一个文件都不写）。
     // ★★ 2026-10-20：返回值**不许再丢**（豁免要在回执里点名）。
-    const gate = assertSourceWriteRegisteredFor(projectRoot, [...new Set(plans.filter((p) => p.ok).map((p) => p.file))], resolveActor());
+    // ★★★ 2026-10-20（A7 闭合）：同上 —— 批量路也要自报 `actor`（两处闸用**同一个** `resolveActor`）。
+    const gate = assertSourceWriteRegisteredFor(projectRoot, [...new Set(plans.filter((p) => p.ok).map((p) => p.file))], resolveActor(args.actor));
     gateNote = gate.note;
     gateExempted = gate.exempted;
     for (const absPath of [...new Set(plans.filter((p) => p.ok).map((p) => p.absPath))]) {

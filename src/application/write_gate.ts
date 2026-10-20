@@ -840,11 +840,37 @@ export function exemptionLines(exempted: readonly GateExemption[]): string {
  */
 export type WriteActor = string;
 
-/** ★ actor 从哪来：显式传参优先；否则读 `AGENT_IO_ACTOR`；都没有 ⇒ `null`（走"提醒+放行"那一格）。 */
+/**
+ * ★★★ 2026-10-20（A7 闭合 · 逐调用自报）：**actor 的唯一解析处**。
+ *
+ * 三个来源，优先级从上到下（**只有这一处**，claim 与写共用它 ⇒ 才保证 `owner === actor`）：
+ *   ① 显式入参 `actor`（MCP/CLI 逐调用传的顶层保留键，见 `server_registry#RESERVED_CALL_ARG`）；
+ *   ② 环境变量 `AGENT_IO_ACTOR`（会话级兜底；★ `scripts/install_mcp.mjs` 明确说**不在安装时写死**）；
+ *   ③ 都没有 ⇒ `null`（走"提醒 + 放行"那一格；`AGENT_IO_ACTOR_STRICT=1` 时改为拒绝，见下）。
+ *
+ * ★ 边界（如实写在这里，别在别处包装）：**自报拦不住冒充** —— stdio 侧的 MCP server
+ *   拿不到宿主可信身份（宿主只给 HTTP connector 注入 `X-WorkBuddy-MCP-Context`，stdio 只注入目录变量）
+ *   ⇒ A7 能买到的是**协作防撞**（两个人不会静默改同一处），**不是防冒充**。
+ */
 export function resolveActor(explicit?: WriteActor | null): WriteActor | null {
   if (explicit && explicit.trim()) return explicit.trim();
   const env = process.env.AGENT_IO_ACTOR;
   return env && env.trim() ? env.trim() : null;
+}
+
+/**
+ * ★★★ 2026-10-20（A7 **渐进开关**）：`AGENT_IO_ACTOR_STRICT=1` ⇒ 有 claimed 卡却**拿不到 actor** 时也拒绝。
+ *
+ * ## 为什么默认关（这是**判断**，不是懒）
+ * 一刀切（"没有 actor 就拒"）的代价是**立刻卡死现有工作流**：本仓现状是
+ *   · 绝大多数写调用（含正在跑的多个子代理）**不带** actor；
+ *   · 而带 claimed 卡的文件是主流（本文件自己就是）。
+ * ⇒ 打开当天，所有不带 actor 的写都会失败 —— 那不是"变严格"，是"停摆"。
+ * ⇒ 所以把它做成**可开可关的一次性开关**：先在"要防撞"的会话里打开，跑顺了再谈默认。
+ * ★ 关着的时候**也不是静默**：那条提醒会进闸的 `note`（进而进写工具回执），见 `assertSourceWriteRegistered`。
+ */
+export function actorStrict(): boolean {
+  return process.env.AGENT_IO_ACTOR_STRICT === '1';
 }
 
 /**
@@ -1021,6 +1047,8 @@ export function assertSourceWriteRegistered(
   const foreignClaim: Array<{ rel: string; feature: string; nodeId: string; owner: string; actor: string }> = [];
   /** ★ A7：有 claimed 卡，但**拿不到 actor / 卡上没有 owner** ⇒ 提醒 + 放行（不知道是谁，不损坏数据） */
   const actorWarnings: string[] = [];
+  /** ★★ 2026-10-20：同一批事实的**结构化读数**（给 `AGENT_IO_ACTOR_STRICT=1` 的拒绝用；不许再从 `actorWarnings` 反推） */
+  const missingActor: Array<{ rel: string; nodeId: string; owner: string | null }> = [];
   /** ★ 这批文件里**不在任何 covering feature 里**的（新建文件 / 未纳入设计）—— 放行，但**逐个点名** */
   const unmapped: string[] = [];
   let checked = 0;
@@ -1061,11 +1089,15 @@ export function assertSourceWriteRegistered(
     }
     const owner = claimed.task?.owner ?? null;
     if (!actor) {
-      // ★ G2 的"提醒"那一支：不知道是谁 ⇒ 不损坏数据 ⇒ 不该堵
+      // ★ G2 的"提醒"那一支：不知道是谁 ⇒ 不损坏数据 ⇒ 不该堵。
+      //   ★★★ 2026-10-20：**同一条事实记两处** —— `actorWarnings` 给人读（进回执 note），
+      //     `missingActor` 给 `AGENT_IO_ACTOR_STRICT=1` 的拒绝分支用（判据与读数同源，不各算一遍）。
       actorWarnings.push(
         `${rel}：节点 ${claimed.nodeId} 上有 claimed 卡（owner=${owner || '（空）'}），但**拿不到"谁在写"**` +
-          `（未传 actor，也没有 AGENT_IO_ACTOR）⇒ 按 G2 **提醒 + 放行**`,
+          `（本次调用未传 \`actor\`，也没有 AGENT_IO_ACTOR）⇒ 按 G2 **提醒 + 放行**` +
+          `（要它变拒绝：写调用带 \`actor:\'<你的身份>\'\`，或设 \`AGENT_IO_ACTOR_STRICT=1\`）`,
       );
+      missingActor.push({ rel, nodeId: claimed.nodeId, owner });
       continue;
     }
     if (owner && owner !== actor) {
@@ -1075,6 +1107,21 @@ export function assertSourceWriteRegistered(
     }
     // owner 匹配，或卡上没有 owner（无法比对）⇒ 放行
   }
+  // ★★★ 2026-10-20（A7 **渐进开关**）：有 claimed 卡却拿不到 actor ⇒ `AGENT_IO_ACTOR_STRICT=1` 时**拒绝**。
+  //   ★ 位置在"整批都豁免"之前：豁免是**设计侧**的权力（`gate='exempt'`），与"谁在写"无关；
+  //     而那些文件根本没进下面的核对循环 ⇒ `missingActor` 里不会有它们，这里不会误伤。
+  //   ★ 错误文案必须给出**两步就能过**的路（传 actor / 关开关），否则又是一条"只说不行"的墙。
+  if (missingActor.length && actorStrict()) {
+    throw new Error(
+      `拒绝落盘（任务闸 · A7 严格模式 AGENT_IO_ACTOR_STRICT=1）：${missingActor.length} 个文件有 claimed 卡，` +
+        `但**本次调用没有自报身份**（未传 \`actor\`，也没有 AGENT_IO_ACTOR）⇒ 无法核对"这张卡是不是你的"。\n` +
+        missingActor.map((x) => `  · ${x.rel} → 节点 ${x.nodeId} 的卡 owner=${x.owner ?? '（空）'}`).join('\n') +
+        `\n★ 怎么办（二选一）：\n` +
+        `  ① 写调用带身份：在同一个入参里加 \`actor: '<你的身份>'\`（与 claim 时 \`data.owner\` **一致**）；\n` +
+        `  ② 临时关掉严格模式：\`AGENT_IO_ACTOR_STRICT=0\`（或去掉该环境变量）⇒ 回到"提醒 + 放行"。`,
+    );
+  }
+
   // ★★★ 2026-10-20：**整批都靠设计侧豁免**（没有一张卡被核对）—— 这是一种独立的放行依据，
   //   不许混进下面 `files-not-in-design`（那会说成“不在设计里”，而事实相反：**设计里写了**，
   //   而且写的是“不用立卡”）。也不许静默：note 逐个点名。
@@ -1157,7 +1204,15 @@ export function assertSourceWriteRegistered(
         `已领任务：${checked} 个设计节点上都有 state=claimed 的任务卡（覆盖 feature：${covering.map((c) => c.feature).join(', ')}` +
         `${unmapped.length ? `；另有 ${unmapped.length} 个文件不在设计里、无任务可挂：${unmapped.join(', ')}` : ''}）` +
         (exempted.length ? `\n${exemptionLines(exempted)}` : '') +
-        (warnings.length ? `\n★ 另有 ${cov.unaddressable.length} 个节点收集失败（已放行 + 留痕）：\n${warnings.join('\n')}` : ''),
+        // ★★★ 2026-10-20：**两个来源分开写**。改前这两句是同一条 —— 拿 `cov.unaddressable.length`
+        //   去当"下面这些警告是什么"的标题 ⇒ 只有 A7 提醒时它会印成「另有 **0** 个节点收集失败：<A7 提醒>」
+        //   （标题与内容对不上，读的人会以为闸在说梦话）。
+        (cov.unaddressable.length
+          ? `\n★ 另有 ${cov.unaddressable.length} 个节点收集失败（已放行 + 留痕）：\n${warnings.slice(0, cov.unaddressable.length).join('\n')}`
+          : '') +
+        (actorWarnings.length
+          ? `\n★ A7「谁在写」**未核对**：${actorWarnings.length} 个文件有 claimed 卡，但本次调用没自报身份（已提醒 + 放行）：\n${actorWarnings.join('\n')}`
+          : ''),
       warnings,
       exempted,
     };
@@ -1286,6 +1341,13 @@ export async function writeSourceFiles<T>(
     before?: () => void;
     /** 逐文件回报索引同步结果（`SyncStatus`）—— 供需要逐文件回执的调用方（如 `applyWrites`）用 */
     onFile?: (rel: string, status: SyncStatus) => void;
+    /**
+     * ★★★ 2026-10-20（A7 逐调用自报）：本次写入的**身份**。
+     * ★ 之前这里**根本没有这个字段** —— 于是所有走 `writeSourceFiles` 的写路（`rename_symbols` /
+     *   `apply_refactor_plan` / `refactor_pipeline` …）都只能读 env，而 env 在生产面上是空的
+     *   ⇒ 闸只能"提醒 + 放行"。它与 `edit_code` 自己调闸那两处用**同一个** `resolveActor`。
+     */
+    actor?: WriteActor | null;
   } = {},
 ): Promise<{ value: T; report: SourceWriteReport }> {
   const root = path.resolve(projectRoot);
@@ -1294,7 +1356,7 @@ export async function writeSourceFiles<T>(
 
   // ★★★ T328 步 6：**未登记不许落盘** —— 闸在快照/真写**之前**（拒绝就是拒绝，绝不偷偷写一半）。
   //   ★ 它抛 ⇒ 本次一个字节都不落盘（`mutate` 不会被调用），调用方按普通错误上抛即可。
-  const taskGate = assertSourceWriteRegistered(root, files);
+  const taskGate = assertSourceWriteRegistered(root, files, { actor: resolveActor(opts.actor) });
 
   // ① 写前快照（失败绝不阻断：可撤回是增强，不是前提）
   //    用"写前可见的列表" —— 有些改动集合只有跑完才知道，那时再补快照已经晚了。

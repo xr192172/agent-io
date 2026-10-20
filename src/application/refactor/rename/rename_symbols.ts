@@ -203,6 +203,11 @@ export interface RenameSymbolsInput {
   report_literals?: boolean;
   /** 仅 `scope='module'`：true=在符号改名成功后，自动替换 decision=apply 的字面量（code/docs/test）；contract→需人审、history→保留、冻结行→跳过，均不写盘。dry_run 下只预览不入盘。 */
   apply_literals?: boolean;
+  /**
+   * ★★★ 2026-10-20（A7 逐调用自报）：**本次写入是谁**（与 claim 时 `data.owner` 同值）。
+   * ★ 之前 `writeSourceFiles` 只认 env，而生产面（stdio）没有 env ⇒ 闸对“谁在写”恒不设防。
+   */
+  actor?: string;
 }
 
 /** 入口：按「作用域」路由。这是 [C] 唯一要认识的 [B] 符号。 */
@@ -475,7 +480,11 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
     return { ...value, indexWriteThrough: { ok: false, mode: 'skipped', note: '未定位到项目根 ⇒ 跳过快照与索引写穿' } };
   }
 
-  const gated = await writeSourceFiles(gateRoot, touched, doWrite, { label: `rename_symbols: ${renames.length} 条` });
+  const gated = await writeSourceFiles(gateRoot, touched, doWrite, {
+    label: `rename_symbols: ${renames.length} 条`,
+    // ★★★ 2026-10-20（A7 逐调用自报）：显式入参 → 闸（判据仍只在 write_gate 一处）
+    actor: input.actor,
+  });
 
   // ★★★ T214（2026-10-13）：**真兑现"整批原子"** —— ★ 这是外部评测指出的**头号缺口** ✓
   //

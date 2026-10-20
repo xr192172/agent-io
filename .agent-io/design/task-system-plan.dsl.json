@@ -12660,7 +12660,156 @@
             },
             "agent": "all-externalize"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_application_design_dsl_ops_task_ops_ts",
+          "summary": "publish / claim / release / complete / void 五个 op，写 design/<f>.dsl.json 的 task 格。★ void 是卡生命周期的出口（candidate → void）：没有它会死锁 —— candidate + satisfied 时 claim 拒（satisfied 只可收口）、complete 拒（未领不能收口）⇒ 永远卡住；而'代码先于卡存在'时必然发生。★ publishFromDiff：从 diff 的差异建 L1 卡（VISION §7「无卡 ⇒ 补卡」）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "why": "动作要有落点"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "claimTask",
+              "target": "cardStanding",
+              "why": "★ 讨论 2 · P30：claim 读**可领**那一侧（work/violated 才可领）；satisfied 必拒（没活干不许领）"
+            },
+            {
+              "kind": "edge-exists",
+              "from": "src/application/design/dsl_ops/task_ops.ts",
+              "to": "src/domain/task_machine.ts",
+              "why": "op 层只能调状态机，不许自己判状态"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "completeTask",
+              "target": "isSatisfied",
+              "why": "★ 讨论 2 · P30 的结构判据：complete 读**可收口**那一侧（isSatisfied），★ 不许再与 claim 共用同一个判据 —— 共用会放行 violated 卡（后态全过、前态越权）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "completeTask",
+              "target": "validateProgressEvidence",
+              "why": "★ 接点③（证据闸）：置 done 前必须过既有 validateProgressEvidence（overlay.ts）—— ★ 复用，不新造第二把证据尺"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "completeTask",
+              "target": "updateStatus",
+              "why": "★ 接点④（状态唯一入口）：状态落盘只许走既有 updateStatus（status_tools.ts），不在 task 侧另写一份写盘 —— ★ 复用"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "publishTask",
+              "why": "立卡：从设计 DSL 抽出这一块 ⇒ 形成任务卡（= board 的发布动作）。★ 缺它则闸对'尚无任何 task'的 feature 不可满足"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "publishFromDiff",
+              "why": "★ diff 之后「无卡 ⇒ 补卡」的唯一入口（VISION §7）；它让差异能被上架，而不是靠人手点 publish"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "voidTask",
+              "why": "★ 卡生命周期的出口（candidate → void）；没有它，代码先于卡存在会让卡永久卡在 candidate + satisfied（claim 拒 / complete 拒）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "ConstructBasis",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "Loaded",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "TaskOpInput",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "TaskOpRequest",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "applyTaskOp",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "assertTransition",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "claimTask",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "completeTask",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "constructBasis",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "constructionVerdict",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "loadTask",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "releaseTask",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "requireRoot",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "writeTask",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            }
+          ],
+          "state": "candidate"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -18195,17 +18344,14 @@
           "id": "file_src_application_refactor_edit_apply_writes_ts",
           "summary": "【L1 待建构】核心层 · src/application/refactor/edit — 3 个 API（导入自 5 个模块）（src/application/refactor/edit/apply_writes.ts） ← 节点 file_src_application_refactor_edit_apply_writes_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_apply_writes_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "本笔改动已落盘并过 verify（回执接线：apply_writes 回执里的 task_gate）；L1 卡收不了口（decision.summary 为空）⇒ 主动 release",
-          "released_by": "codebuddy-deepseek",
-          "released_at": "2026-10-20T08:15:30.679Z"
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T08:21:58.056Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_edit_edit_code_ts",
@@ -18583,9 +18729,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "本笔改动已落盘并过 verify（回执接线：rename_local 转出 applyWrites.task_gate）；L1 卡收不了口 ⇒ 主动 release",
-          "released_by": "codebuddy-deepseek",
-          "released_at": "2026-10-20T08:15:30.791Z"
+          "release_reason": "仅用于 A7 正路验收，本笔不改 rename_local.ts",
+          "released_by": "deepseek-v4.1-flash",
+          "released_at": "2026-10-20T08:27:11.156Z"
         },
         "status": "draft"
       },
@@ -18608,17 +18754,14 @@
           "id": "file_src_application_refactor_rename_rename_symbols_ts",
           "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 14 个 API（导入自 12 个模块）（src/application/refactor/rename/rename_symbols.ts） ← 节点 file_src_application_refactor_rename_rename_symbols_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_symbols_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "本笔改动已落盘并过 verify（回执接线：rename_symbols / apply_writes / rename_local / code_workbench）；L1 卡收不了口（decision.summary 为空）⇒ 主动 release，不占着钥匙",
-          "released_by": "codebuddy-deepseek",
-          "released_at": "2026-10-20T08:15:30.554Z"
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T08:21:59.282Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_rename_symbol_move_ts",
@@ -49282,7 +49425,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_presentation_mcp_server_registry_ts",
+          "summary": "【L1 待建构】核心层 · src/presentation/mcp — 25 个 API（导入自 26 个模块）（src/presentation/mcp/server_registry.ts） ← 节点 file_src_presentation_mcp_server_registry_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_registry_ts\"].responsibility"
+          },
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T08:20:59.940Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_presentation_mcp_tool_warnings_ts",
@@ -78678,7 +78833,8 @@
           }
         ],
         "lines": 670,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -81951,7 +82107,7 @@
         ],
         "lines": 153,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_edit_edit_code_ts",
@@ -82769,7 +82925,7 @@
         ],
         "lines": 806,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_rename_symbol_move_ts",
@@ -93869,7 +94025,8 @@
           }
         ],
         "lines": 988,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_presentation_mcp_tool_warnings_ts",
@@ -96397,11 +96554,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T08:15:30.953Z",
+    "saved_at": "2026-10-20T08:27:11.184Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792484009880,
-    "age": 121073
+    "scanRev": 1792484732690,
+    "age": 98494
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

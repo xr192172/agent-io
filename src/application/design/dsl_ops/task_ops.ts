@@ -585,7 +585,31 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   const owner = (input.owner ?? '').trim();
   if (!owner) {
     throw new Error(
-      'claim 需要 `data.owner`（领取者身份）—— CAS 写的就是它；★ 工具**不替你编一个身份**（那是伪造）。',
+      'claim 需要 `data.owner`（领取者身份）—— CAS 写的就是它；★ 工具**不替你编一个身份**（那是伪造）。' +
+        (input.agent ? `\n★ 你本次已经传了顶层 \`agent: '${input.agent}'\` ⇒ 把它原样填进 \`data.owner\` 即可。` : ''),
+    );
+  }
+  // ★★★ 2026-10-20（A7 闭环 · c）：**actor 与 owner 必须一致**。
+  //
+  // ## 补的是什么洞
+  // A7 在写侧摊：“卡 owner ≠ 本次 actor ⇒ 拒”。但**领卡侧根本没看 actor** ——
+  // 顶层 `agent` 只拿去署名（decision.agent / released_by / evidence.agent），
+  // owner 只从 `data.owner` 来 ⇒ ⇒ **两个人可以用同一个 actor 各自领卡、或帮别人领一卡**，
+  // 写闸那条判据就变成一个“自己跟自己比”的空转。
+  // ⇒ 领卡这一步就对：**你只能说“我是谁”**，不能说“这张卡是他的”。
+  //
+  // ## 为什么只在“两个都给了且不一致”时拒
+  // · 只给 owner、没给 agent（老调用方）：行为**不变**（自报体系下“不报”仍是合法用法，只是 A7 在写侧
+  //   就只能“提醒 + 放行”）—— ★ 一刀切会把现有工作流全卡死。
+  // · 只给 agent、不给 owner：**不派生**（`data.owner` 仍是必填，见 `op_data_spec` 的
+  //   `required.claim`）；派生的代价是改那份契约，收益只是少写一个键。
+  const actor = (input.agent ?? '').trim();
+  if (actor && actor !== owner) {
+    throw new Error(
+      `claim 被拒（A7）：本次调用的身份 \`actor\`（顶层 agent）= **${actor}**，` +
+        `而你要写进去的 \`data.owner\` = **${owner}** —— 两者不一致。\n` +
+        `★ 为什么拦：写闸核对的是“卡的 owner 是不是**你**”；允许替别人领卡，A7 就成了空转。\n` +
+        `★ 怎么办：\`data.owner\` 填 \`${actor}\`（你自己的身份）；要替别人领，就让对方自己领。`,
     );
   }
   const { dsl, card } = loadTask(feature, node_id);
