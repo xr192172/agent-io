@@ -49,7 +49,7 @@ import { syncFile } from '../../../infrastructure/index/symbols.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/text/line_utils.js';
 import { snapshotBeforeWrite } from '../snapshot/file_snapshot.js';
-import { assertSourceWriteRegistered, reopenAndResolveAfterWrite, reopenNote, assertSourceWriteRegisteredFor, resolveActor } from '../../write_gate.js';
+import { assertSourceWriteRegistered, reopenAndResolveAfterWrite, reopenNote, assertSourceWriteRegisteredFor, resolveActor, exemptionLines, type GateExemption } from '../../write_gate.js';
 import { toIndexKey } from '../../../infrastructure/index/symbols.js';
 import { locateReplaceText, realignNewTextTo, FUZZY_LEVEL_LABEL } from '../../../infrastructure/parse/fuzzy_match.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
@@ -366,6 +366,14 @@ export interface EditReceipt {
   failed?: number;
   /** ★ P-B 批量专有：是否启用原子性（任一项失败则整批不落盘） */
   atomic?: boolean;
+  /**
+   * ★★★ 2026-10-20（`docs/certs-4-ways.md` ③）：**任务闸的放行读数**（闸的 `note`）。
+   *
+   * ★ 之前这个值**根本不存在**：调用点是 `assertSourceWriteRegisteredFor(...)`（返回值丢弃）
+   *   ⇒ 闸写了几百行的“凭什么放行”与“豁免了谁”，**从未进过任何回执**（只拦不说）。
+   *   ⇒ 而“豁免必须可查，不许静默”正靠这一行落地（`write_gate.ts#exemptionLines`）。
+   */
+  task_gate?: string;
 }
 
 /** ★ P-B：`replace_text` 的**纯规划结果**（不写盘、不碰索引）—— 单文件路径与 targets[] 批量共用同一份实现。
@@ -450,7 +458,13 @@ export async function planReplaceText(
   };
 }
 
-async function editCodeInner(args: EditCodeArgs): Promise<{ message: string; data?: unknown }> {
+/** ★ 2026-10-20：把任务闸的放行读数**带出**到回执（`editCodeInner` 有 10 处 return，不逐处改）。 */
+interface GateReceipt {
+  note?: string;
+  exempted?: GateExemption[];
+}
+
+async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise<{ message: string; data?: unknown }> {
   const { op } = args;
   const projectRoot = path.resolve(args.project_dir);
   const absPath = path.isAbsolute(args.file) ? args.file : path.resolve(projectRoot, args.file);
@@ -483,7 +497,13 @@ async function editCodeInner(args: EditCodeArgs): Promise<{ message: string; dat
     // ★★★ T328 步 6：**未登记不许落盘** —— 本工具**不走 `writeSourceFiles`**（内联四件套），
     //   所以闸必须在这里**显式**调一次，否则最大的那条"改源码"路会成为绕过口。
     //   ★ 位置：快照**之前**（拒绝就是拒绝，连快照都不该建）。
-    assertSourceWriteRegisteredFor(projectRoot, [relPath], resolveActor());
+    // ★★★ 2026-10-20：闸的**放行读数**（含“本次写入 X 被豁免”）带出去 —— 返回值不许再丢。
+    //   ★ 仍然只调用**一次**（闸不便宜，且两次调用在并发下可能读到不同世界）。
+    const g = assertSourceWriteRegisteredFor(projectRoot, [relPath], resolveActor());
+    if (gateOut) {
+      gateOut.note = g.note;
+      gateOut.exempted = g.exempted;
+    }
     snapshotBeforeWrite(projectRoot, `edit_code:${op}:${relPath}`, [relPath]);
   }
 
@@ -934,9 +954,15 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   const symbolDiffByFile = new Map<string, EditReceipt['symbol_diff']>();
   const indexStatusByFile = new Map<string, string>();
   const writtenFiles = new Set<string>();
+  /** ★ 2026-10-20：闸的放行读数（干跑 / 被原子性拦下时没有 —— 那时闸根本没跑） */
+  let gateNote: string | undefined;
+  let gateExempted: GateExemption[] = [];
   if (!dry && !blockedByAtomic) {
     // ★★★ T328 步 6：**未登记不许落盘** —— 整批先过一次闸（一次判定，失败 ⇒ 一个文件都不写）。
-    assertSourceWriteRegisteredFor(projectRoot, [...new Set(plans.filter((p) => p.ok).map((p) => p.file))], resolveActor());
+    // ★★ 2026-10-20：返回值**不许再丢**（豁免要在回执里点名）。
+    const gate = assertSourceWriteRegisteredFor(projectRoot, [...new Set(plans.filter((p) => p.ok).map((p) => p.file))], resolveActor());
+    gateNote = gate.note;
+    gateExempted = gate.exempted;
     for (const absPath of [...new Set(plans.filter((p) => p.ok).map((p) => p.absPath))]) {
       const rel = path.relative(projectRoot, absPath).split(path.sep).join('/');
       // 逐文件一份快照（**不是**"一份含全部文件"）。粒度这条**证不出必要性**（见文件头「落盘形态」块），
@@ -992,6 +1018,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   }
   const previews = plans.filter((p) => p.preview).map((p) => `— ${p.file}\n${p.preview}`);
   if (previews.length > 0) lines.push('', ...previews);
+  // ★★★ 2026-10-20：批量也要点名豁免（与单文件那条**同一句话**，来自 `exemptionLines`）
+  if (gateExempted.length) lines.push('', exemptionLines(gateExempted));
 
   return {
     message: lines.join('\n'),
@@ -1006,6 +1034,7 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       succeeded,
       failed,
       atomic,
+      ...(gateNote ? { task_gate: gateNote } : {}),
     },
   };
 }
@@ -1017,7 +1046,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
  */
 async function editCodeCore(args: EditCodeArgs): Promise<{ message: string; data: EditReceipt }> {
   if (Array.isArray(args.targets)) return editCodeBatch(args);
-  const r = await editCodeInner(args);
+  const gateOut: GateReceipt = {};
+  const r = await editCodeInner(args, gateOut);
   const base: EditReceipt = {
     ok: true,
     op: String(args.op),
@@ -1025,7 +1055,17 @@ async function editCodeCore(args: EditCodeArgs): Promise<{ message: string; data
     dry_run: args.dry_run === true,
     written: args.dry_run !== true,
   };
-  return { message: r.message, data: { ...base, ...((r.data as Partial<EditReceipt>) ?? {}) } };
+  // ★★★ 2026-10-20（`docs/certs-4-ways.md` ③）：**豁免必须点名，不许静默** ——
+  //   点名写在**人读消息**里（不只埋在 `---DATA---` 里：没人会去析 JSON 看自己是不是被豁免了）。
+  const exemptNote = gateOut.exempted?.length ? `\n${exemptionLines(gateOut.exempted)}` : '';
+  return {
+    message: r.message + exemptNote,
+    data: {
+      ...base,
+      ...((r.data as Partial<EditReceipt>) ?? {}),
+      ...(gateOut.note ? { task_gate: gateOut.note } : {}),
+    },
+  };
 }
 
 /**

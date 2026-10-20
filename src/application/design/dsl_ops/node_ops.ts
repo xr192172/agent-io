@@ -3,6 +3,10 @@
  */
 
 import type { DesignDSL, Node, NodeStyle, NodeContent, DiagramStatus, NodeLayer, NodeShapes, NodeDecision, DecisionHistoryEntry, DecisionAuthor, AnimationValueSchema } from '../../../domain/types.js';
+// ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：写闸的豁免判据 = `Node.gate`。
+//   取值域与缺省口径的**唯一住处**是 `domain/geometry.ts#NODE_GATES`；本文件只做**写端校验**
+//   （写进来的值必须在那两个里 —— 与 `path` 的 `normalizeNodePath` 同一个道理：入口自己把关）。
+import { NODE_GATES, type NodeGate } from '../../../domain/geometry.js';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import type { EditResult } from './edit_result.js';
 // ★★ 2026-10-09（T74）：`expectations` 会被程序判 ⇒ 写进来时校验（坏形状响亮拒绝）
@@ -93,6 +97,25 @@ function normalizeNodePath(raw: unknown, kind: unknown): string {
   return p.split(/[\\/]+/).join('/');
 }
 
+/**
+ * ★★★ **写端校验**（2026-10-20 · `docs/certs-4-ways.md` 裁决 ③）：`gate` 只认两个值。
+ *
+ * ★ 为什么在入口就把错值抛掉（而不是存进去让闸去容错）：闸读不懂的值只能按 `gated` 处理，
+ *   于是“我写了 `exempt `（带空格）/`Exempt`”与“我什么都没写”在闸眼里长得一模一样——
+ *   那就是「同一事实两个意思」，而且错的那一边（以为豁免了）**永不报错**。
+ * ★ 不给值（`undefined`）**不是错**：缺省 = 不写这个键 = 按 `gated` 处理（`Node.gate` 注释）。
+ */
+function normalizeGate(raw: unknown): NodeGate {
+  const s = String(raw);
+  if (!(NODE_GATES as readonly string[]).includes(s)) {
+    throw new Error(
+      `gate 非法：${JSON.stringify(raw)} ⇒ 只能取 ${NODE_GATES.join(' / ')}。` +
+        '（★ 不写这个键 = 按 gated 处理（受闸）；★ 要豁免必须**显式**写 `exempt`。）',
+    );
+  }
+  return s as NodeGate;
+}
+
 
 // ─────────────────────────────────────────────────────────────
 // add_node：添加节点
@@ -116,6 +139,8 @@ export interface AddNodeInput {
   type?: string;
   /** ★ 显式文件指针（仓库相对路径）—— 见 `Node.path`；给了就按 `PATH_NODE_KINDS` 校验 kind */
   path?: string;
+  /** ★ 写闸豁免声明（`'gated' | 'exempt'`；**缺省 = gated**）—— 见 `Node.gate` / `NODE_GATES` */
+  gate?: NodeGate;
   description?: string;
   status?: DiagramStatus;
   swimlane?: string;
@@ -138,7 +163,7 @@ export interface AddNodeInput {
 }
 
 export function addNode(input: AddNodeInput): EditResult {
-  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, path: nodePathInput, description, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, agent } = input;
+  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, path: nodePathInput, gate: gateInput, description, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, agent } = input;
 
   const dsl = getDSL(feature);
   if (!dsl) {
@@ -168,6 +193,8 @@ export function addNode(input: AddNodeInput): EditResult {
   //   · path 非空 / 仓库相对 / 无 `..`（`normalizeNodePath`）；
   //   · kind（`type`）必须在 `PATH_NODE_KINDS` 里；不给 type ⇒ 按 `file`（文件指针的默认 kind）。
   const nodePathValue = nodePathInput === undefined ? undefined : normalizeNodePath(nodePathInput, type);
+  // ★★ 豁免声明：与 `path` 同一把尺（入口校验）；缺省不写这个键 ⇒ 闸按 `gated` 处理。
+  const gateValue = gateInput === undefined ? undefined : normalizeGate(gateInput);
   const nodeType = type ?? (nodePathValue ? 'file' : undefined);
   if (shapes) assertValidShapes(shapes);
   // ★★ 2026-10-09（T74）：与 update 路径同一个校验（`expectations` 是会被程序判的字段）
@@ -195,6 +222,7 @@ export function addNode(input: AddNodeInput): EditResult {
     style: Object.keys(style).length > 0 ? style : undefined,
     type: nodeType,
     path: nodePathValue,
+    gate: gateValue,
     description,
     // ★★★ T328：**不再把 `status` 落进 base**（旧轴直写）。进度改走权威（下面的 `updateStatus`）——
     //   它同时也是 evidence 闸的入口：不带证据置 `done` ⇒ 当场拒（"不许默默勾上"）。
@@ -260,6 +288,8 @@ export interface UpdateNodeInput {
   type?: string;
   /** ★ 显式文件指针；`null` = 清除该字段（该节点不再指向具体文件） */
   path?: string | null;
+  /** ★ 写闸豁免声明；`null` = 清除（回到缺省 = 受闸）。见 `Node.gate` / `NODE_GATES` */
+  gate?: NodeGate | null;
   description?: string;
   status?: DiagramStatus;
   swimlane?: string;
@@ -439,7 +469,7 @@ export function applyDecisionWrite(
 }
 
 export function updateNode(input: UpdateNodeInput): EditResult {
-  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, path: nodePathInput, description, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, decision_note, author, agent } = input;
+  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, path: nodePathInput, gate: gateInput, description, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, decision_note, author, agent } = input;
 
   const dsl = getDSL(feature);
   if (!dsl) {
@@ -465,6 +495,14 @@ export function updateNode(input: UpdateNodeInput): EditResult {
     delete node.path;
   } else {
     node.path = normalizeNodePath(nodePathInput, type ?? node.type);
+  }
+  // ★ `gate`（写闸豁免声明）：`null` = 清除（回到缺省 = 受闸）；给了值 ⇒ 与造节点**同一把尺**。
+  if (gateInput === undefined) {
+    // 不改
+  } else if (gateInput === null) {
+    delete node.gate;
+  } else {
+    node.gate = normalizeGate(gateInput);
   }
   if (description !== undefined) node.description = description;
   // ★★★ T328：进度**不在此裸写** `Node.status`（旧轴/base）—— 见下方 saveDSL 后的 `updateStatus`。

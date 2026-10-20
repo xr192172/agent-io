@@ -1550,7 +1550,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_run-all-certs_mjs",
@@ -1566,7 +1567,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t136-unused-export-cert_mjs",
@@ -1582,7 +1584,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t181-cert_sh",
@@ -1598,7 +1601,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t181-reset_mjs",
@@ -1614,7 +1618,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t182-cert_mjs",
@@ -1630,7 +1635,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t182b-cert_sh",
@@ -1646,7 +1652,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t182b-tombstone-cert_mjs",
@@ -1662,7 +1669,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t183-cert_mjs",
@@ -1678,7 +1686,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t184-cert_mjs",
@@ -1694,7 +1703,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t184b-cert_mjs",
@@ -1710,7 +1720,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t184b-probe_mjs",
@@ -1726,7 +1737,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t185-cert_mjs",
@@ -1742,7 +1754,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t185-reset_mjs",
@@ -1758,7 +1771,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t186-cert_mjs",
@@ -1774,7 +1788,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t186b-cert_mjs",
@@ -1790,7 +1805,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t187-probe_mjs",
@@ -1806,7 +1822,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t188-cert_mjs",
@@ -1822,7 +1839,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t189-measure_mjs",
@@ -1838,7 +1856,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t189-sweep_mjs",
@@ -1854,7 +1873,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t190-cert_mjs",
@@ -1870,7 +1890,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t191-cert_mjs",
@@ -1886,7 +1907,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t192-flow_mjs",
@@ -1902,7 +1924,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t192-phantom_mjs",
@@ -1918,7 +1941,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t192-pointer-sweep_mjs",
@@ -1934,7 +1958,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t193-card_mjs",
@@ -1950,7 +1975,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t194-flat_mjs",
@@ -1966,7 +1992,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t195-gate-removal_mjs",
@@ -1982,7 +2009,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t196-pointers_mjs",
@@ -1998,7 +2026,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t197-args_mjs",
@@ -2014,7 +2043,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t197c-approvals-cert_mjs",
@@ -2030,7 +2060,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t197sub-approval_mjs",
@@ -2046,7 +2077,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t197sub-flow-cert_mjs",
@@ -2062,7 +2094,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t198-status_mjs",
@@ -2078,7 +2111,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t198sub-approval-cert_mjs",
@@ -2094,7 +2128,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t200-goals_mjs",
@@ -2110,7 +2145,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t201-decoy_mjs",
@@ -2126,7 +2162,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t202-diagnose-loop_mjs",
@@ -2142,7 +2179,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t203-touched-audit_mjs",
@@ -2158,7 +2196,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t203b-declared_mjs",
@@ -2174,7 +2213,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t205-splitchain_mjs",
@@ -2190,7 +2230,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t212-regex-vs-ast_mjs",
@@ -2206,7 +2247,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t213-must-export_mjs",
@@ -2222,7 +2264,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t238-freshness-cert_mjs",
@@ -2238,7 +2281,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t245-index-key-cert_mjs",
@@ -2254,7 +2298,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t246-partial-cert_mjs",
@@ -2270,7 +2315,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t247-coverage-cert_mjs",
@@ -2286,7 +2332,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t251-data-parser-cert_mjs",
@@ -2302,7 +2349,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t316-observe-pack-cert_mjs",
@@ -2318,7 +2366,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t326-tool-surface-cost-cert_mjs",
@@ -2334,7 +2383,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t328-progress-authority-cert_mjs",
@@ -2350,7 +2400,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t329-scope-decision-cert_mjs",
@@ -2366,7 +2417,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t330-pending-view-cert_mjs",
@@ -2382,7 +2434,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t331-entry-size-cert_mjs",
@@ -2398,7 +2451,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t332-requires-gate-cert_mjs",
@@ -2414,7 +2468,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t333-attestation-binding-cert_mjs",
@@ -2430,7 +2485,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t334-mcp-evidence-path-cert_mjs",
@@ -2446,7 +2502,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t335-expectation-from-acceptance-cert_mjs",
@@ -2462,7 +2519,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t336-design-to-diffblocks-cert_mjs",
@@ -2478,7 +2536,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t337-design-sheet-cert_mjs",
@@ -2494,7 +2553,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t338-design-sheet-ref-cert_mjs",
@@ -2510,7 +2570,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t339-design-sheet-pending-home-cert_mjs",
@@ -2526,7 +2587,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t340-edit-dsl-validate-gate-cert_mjs",
@@ -2542,7 +2604,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t341-error-key-gate-cert_mjs",
@@ -2558,7 +2621,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t342-anchor-broken-repair-cert_mjs",
@@ -2574,7 +2638,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t343-contract-not-from-code-and-attestation-applies-cert_mjs",
@@ -2590,7 +2655,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t344-design-sheet-resolved-cert_mjs",
@@ -2606,7 +2672,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t345-read-side-facts-backfill-cert_mjs",
@@ -2622,7 +2689,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t346-type-only-edge-verdict-cert_mjs",
@@ -2638,7 +2706,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t347-receipt-completeness-cert_mjs",
@@ -2654,7 +2723,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t348-phase-classification-cert_mjs",
@@ -2670,7 +2740,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t349-task-home-cert_mjs",
@@ -2686,7 +2757,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t350-publish-task-cert_mjs",
@@ -2702,7 +2774,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t351-card-standing-cert_mjs",
@@ -2718,7 +2791,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t352-write-gate-coverage-cert_mjs",
@@ -2734,7 +2808,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t353-gate-principle-unblock-cert_mjs",
@@ -2750,7 +2825,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t354-incremental-verify-cert_mjs",
@@ -2766,7 +2842,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_dogfood_build_cache_mjs",
@@ -3070,7 +3147,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_clean_dist_mjs",
@@ -3086,7 +3164,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_demo_mjs",
@@ -3102,7 +3181,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_dev_mjs",
@@ -3118,7 +3198,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_diff_language_rosters_py",
@@ -3134,7 +3215,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_freeze_grammar_sources_py",
@@ -3150,7 +3232,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_gen_agents_mjs",
@@ -3166,7 +3249,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_gen_cognition_mjs",
@@ -3182,7 +3266,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_gen_endpoints_schema_mjs",
@@ -3198,7 +3283,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_gen_manifest_mjs",
@@ -3214,7 +3300,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_gen_teach_cjs",
@@ -3230,7 +3317,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_grammar_shim_mjs",
@@ -3246,7 +3334,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_hook-task-gate_mjs",
@@ -3262,7 +3351,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_hub_mjs",
@@ -3278,7 +3368,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_install_global_skill_mjs",
@@ -3294,7 +3385,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_install_mcp_mjs",
@@ -3310,7 +3402,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_mcp_mcp_call_mjs",
@@ -3326,7 +3419,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_mcp_mcp_scan_mjs",
@@ -3342,7 +3436,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_mcp_mcp_smoke_mjs",
@@ -3358,7 +3453,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_measure_b_contract_mjs",
@@ -3374,7 +3470,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_merge_language_roster_py",
@@ -3390,7 +3487,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_net_probe_mjs",
@@ -3406,7 +3504,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_new-observe-lang_mjs",
@@ -3422,7 +3521,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_plan-assertions_mjs",
@@ -3438,7 +3538,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_cc_equiv_mjs",
@@ -3454,7 +3555,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_closure_multi_mjs",
@@ -3470,7 +3572,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_demand_side_mjs",
@@ -3486,7 +3589,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_edge_diff_mjs",
@@ -3502,7 +3606,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_extract_hard_mjs",
@@ -3518,7 +3623,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_extract_quality_mjs",
@@ -3534,7 +3640,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_impact_reverse_mjs",
@@ -3550,7 +3657,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_tool_smells_mjs",
@@ -3566,7 +3674,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_tool_surface_mjs",
@@ -3582,7 +3691,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_verdict_grid_mjs",
@@ -3598,7 +3708,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_xfile_resolve_mjs",
@@ -3614,7 +3725,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_promote_agent_io_mcp_mjs",
@@ -3630,7 +3742,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_rebuild_feature_mjs",
@@ -3646,7 +3759,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_rebuild_teach_cjs",
@@ -3662,7 +3776,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_relink_specifiers_mjs",
@@ -3678,7 +3793,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_run-invariant-checks_mjs",
@@ -3694,7 +3810,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_scan_canvas_ts",
@@ -3710,7 +3827,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_setup_mjs",
@@ -3726,7 +3844,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_snapshot_mjs",
@@ -3742,7 +3861,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_structure_gap_mjs",
@@ -3758,7 +3878,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_task-system-static_mjs",
@@ -3774,7 +3895,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_ts_kernel_probe_mjs",
@@ -3790,7 +3912,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_verify-changed_mjs",
@@ -3806,7 +3929,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_verify_mjs",
@@ -3822,7 +3946,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_verify_grammar_rebuild_mjs",
@@ -3838,7 +3963,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_vocabulary_mjs",
@@ -3854,7 +3980,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_src_application_cross_index_ts",
@@ -18064,7 +18191,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_refactor_edit_edit_code_ts",
+          "summary": "【L1 待建构】核心层 · src/application/refactor/edit — 21 个 API（导入自 11 个模块）（src/application/refactor/edit/edit_code.ts） ← 节点 file_src_application_refactor_edit_edit_code_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_edit_code_ts\"].responsibility"
+          },
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T06:46:50.622Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_edit_remove_dead_imports_ts",
@@ -18917,9 +19056,9 @@
               "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
             }
           ],
-          "state": "done",
-          "owner": "codebuddy",
-          "claimed_at": "2026-10-20T05:12:56.875Z",
+          "state": "claimed",
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T06:46:50.691Z",
           "evidence": [
             {
               "kind": "attestation",
@@ -18936,7 +19075,7 @@
               "verdict": "pass"
             }
           ],
-          "reopened_at": "2026-10-20T05:12:56.875Z"
+          "reopened_at": "2026-10-20T06:46:50.691Z"
         },
         "decision_history": [
           {
@@ -22260,7 +22399,7 @@
             "note": "file_src_application_write_gate_ts：覆盖率采集必须读设计侧 design/，否则闸看不见任何 feature"
           }
         ],
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_domain_animation_ts",
@@ -31487,10 +31626,18 @@
               "path": "src/domain/geometry.ts",
               "symbol": "resolveDiagramStatus",
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/domain/geometry.ts",
+              "must": [
+                "gate?: NodeGate"
+              ],
+              "why": "写闸的豁免判据必须住设计侧：Node 上要有 gate 字段（'gated' | 'exempt'），闸只读它、不按路径前缀判"
             }
           ],
-          "updated_at": "2026-10-19T01:47:30.395Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-20T06:46:49.917Z",
+          "agent": "deepseek-v4.1-flash"
         },
         "decision_history": [
           {
@@ -32659,8 +32806,258 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-20T06:46:49.917Z",
+            "decision": {
+              "summary": "Node 类型（含正式字段 path）+ Edge + decision 的形状",
+              "acceptance": "path 优先、description 回落（与 write_gate / task_machine / overlay 同一把尺）",
+              "provenance": {
+                "kind": "defect",
+                "where": "静态扫描：设计缺口 D1（要改的文件无节点）",
+                "note": "★ 补它是为了\"设计覆盖完整\"——让写闸能认这文件、增量验证能命中它；不是因为它有红"
+              },
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "Node",
+                  "why": "★ 节点的形状（path 是正式字段 —— 写端造得出\"只带路径\"的节点）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "NodeDecision",
+                  "why": "★ 决策卡的形状：summary + acceptance + expectations"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/geometry.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "BlockStyle",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "ContentBlock",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "DecisionAuthor",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "DecisionDissent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "DecisionHistoryEntry",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "DiagramStatus",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "Edge",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "EdgeStyle",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "ForceParams",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "Geometry",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "NodeContent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "NodeLayer",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "NodeStyle",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "Swimlane",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "resolveDiagramStatus",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "updated_at": "2026-10-19T01:47:30.395Z",
+              "agent": "all-externalize"
+            },
+            "note": "第③步：给 Node 加 gate 字段（写闸按设计侧声明的豁免）。先给 file_src_domain_geometry_ts 的决策卡补一条后态判据（Node.gate 必须存在），再翻卡领取 write_gate.ts / geometry.ts / import_project.ts / edit_code.ts 四个文件节点。",
+            "agent": "deepseek-v4.1-flash"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_domain_geometry_ts",
+          "summary": "Node 类型（含正式字段 path）+ Edge + decision 的形状",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "Node",
+              "why": "★ 节点的形状（path 是正式字段 —— 写端造得出\"只带路径\"的节点）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "NodeDecision",
+              "why": "★ 决策卡的形状：summary + acceptance + expectations"
+            },
+            {
+              "kind": "file-exists",
+              "path": "src/domain/geometry.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "BlockStyle",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "ContentBlock",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "DecisionAuthor",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "DecisionDissent",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "DecisionHistoryEntry",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "DiagramStatus",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "Edge",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "EdgeStyle",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "ForceParams",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "Geometry",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "NodeContent",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "NodeLayer",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "NodeStyle",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "Swimlane",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "resolveDiagramStatus",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/domain/geometry.ts",
+              "must": [
+                "gate?: NodeGate"
+              ],
+              "why": "写闸的豁免判据必须住设计侧：Node 上要有 gate 字段（'gated' | 'exempt'），闸只读它、不按路径前缀判"
+            }
+          ],
+          "state": "claimed",
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T06:46:50.341Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_domain_mindmap_ts",
@@ -47389,7 +47786,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_graph_import_project_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure/graph — 12 个 API（导入自 16 个模块）（src/infrastructure/graph/import_project.ts） ← 节点 file_src_infrastructure_graph_import_project_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_import_project_ts\"].responsibility"
+          },
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T06:46:50.481Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_index_db_ts",
@@ -50197,7 +50606,9 @@
             }
           ]
         },
-        "status": "done"
+        "status": "done",
+        "gate": "exempt",
+        "style": {}
       }
     ],
     "edges": [
@@ -81488,7 +81899,8 @@
           }
         ],
         "lines": 1070,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_edit_remove_dead_imports_ts",
@@ -82744,7 +83156,7 @@
         ],
         "lines": 1210,
         "layer": "core",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_domain_animation_ts",
@@ -83454,7 +83866,8 @@
           }
         ],
         "lines": 431,
-        "layer": "service"
+        "layer": "service",
+        "status": "in_progress"
       },
       {
         "id": "file_src_domain_mindmap_ts",
@@ -90016,7 +90429,8 @@
           }
         ],
         "lines": 1479,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_index_db_ts",
@@ -95867,11 +96281,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T06:28:37.874Z",
+    "saved_at": "2026-10-20T06:46:50.714Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792473312430,
-    "age": 4405444
+    "scanRev": 1792477935700,
+    "age": 875014
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -97773,5 +98187,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 550
+  "_dsl_rev": 679
 }

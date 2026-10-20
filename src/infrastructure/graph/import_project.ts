@@ -24,6 +24,9 @@ import path from 'node:path';
 import ignore from 'ignore';
 import type { Ignore } from 'ignore';
 import type { DesignDSL, Node, Edge, SemanticFile, ExpectedApi, Symbol } from '../../domain/types.js';
+// ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：`gate`（写闸豁免声明）是**设计侧裁定**，
+//   重扫只重建“结构”，**不许把它抹掉**（见下面 `carryOverNodeGates`）。
+import type { NodeGate } from '../../domain/geometry.js';
 import { saveDSL, saveLiveFeature, ensureBaseline, getDSL, saveBaselineFactsIfAbsent } from '../storage.js';
 // ★ T85/D2：基线事实**独立取**（索引器的事实）—— **绝不从 DSL 取**（那是「自己测自己」）
 import { fileFacts } from '../index/file_facts.js';
@@ -218,6 +221,36 @@ export type GitignoreMatchers = Map<string, Ignore>;
  * 收集项目根及全部嵌套 .gitignore（不进 SKIP_DIRS 跳过的目录——node_modules
  * 里的 .gitignore 不该管项目主体）。仅读取，不改动任何文件。
  */
+/**
+ * ★★★ 2026-10-20（第③步）：把旧设计 DSL 上的 `gate`（写闸豁免声明）按**节点 id** 搬回重建后的 DSL。
+ *
+ * ## 为什么必须有这一步（实测，不是推测）
+ * `rebuild_design=true` 走的是：扫描出 `layered` → `mergeDesignLayer(layered)` → `saveDSL(designDsl)`。
+ * 而 `mergeDesignLayer` 的 base 是**扫描产物**，`applyOverlay` 只投影 `attributes` / `progress` /
+ * `lifecycle` 三样 ⇒ 探针跑完 `gate = undefined`（`_design-canvas-labs/probe-gate-survives-merge.mjs`）。
+ * ⇒ 不住这一步的话，“把豁免写进 DSL”只在**日常不重建**时成立，一次 `rebuild_design` 就静默清零。
+ *
+ * ## 口径
+ * · 按 id 搬（id 还在 = 还是同一个节点）；节点被删/改名 ⇒ 声明跟着消失（那是正确行为）；
+ * · **只搬 `gate` 一个字段**，不碰 `decision` / `task`（它们已有自己的保护：上面 `lostIntent` 拦重建）。
+ * ★ 这是**保数据**，不是判据：谁该豁免仍然只由设计侧那个字段说了算，本函数不增不减。
+ */
+function carryOverNodeGates(prev: DesignDSL | null, next: DesignDSL): number {
+  if (!prev) return 0;
+  const gateById = new Map<string, NodeGate>();
+  for (const n of prev.geometry?.nodes ?? []) if (n.gate) gateById.set(n.id, n.gate);
+  if (!gateById.size) return 0;
+  let carried = 0;
+  for (const n of next.geometry?.nodes ?? []) {
+    const g = gateById.get(n.id);
+    if (g) {
+      n.gate = g;
+      carried++;
+    }
+  }
+  return carried;
+}
+
 export function collectGitignore(root: string): GitignoreMatchers | null {
   const matchers: GitignoreMatchers = new Map();
   const stack: string[] = [root];
@@ -1111,6 +1144,11 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       //   ★ 以前这里落的是**未合并的 `layered`**，把上面那次合并整个覆盖掉 ⇒ 决策卡一重建就丢。
       const { dsl: designDsl, message: ovMsg } = mergeDesignLayer(layered);
       overlayNote = ovMsg;
+      // ★★★ 2026-10-20（第③步）：**豁免声明不许被重扫抹掉** —— 实测 `mergeDesignLayer`
+      //   的 base 是扫描产物，`gate` 会在这一行之后变成 `undefined` ⇒ 按 id 从旧设计搬回来。
+      //   ★ 搬了多少要能看见（否的话“豁免突然没了”只能靠人回忆）。
+      const gatesCarried = carryOverNodeGates(prevDesign, designDsl);
+      if (gatesCarried) overlayNote += ` · 搬回 ${gatesCarried} 个节点的 gate（豁免声明，重扫不抹）`;
       designAction = designExists
         ? '（★ 本次**按你的显式要求重建了设计 DSL**：结构来自扫描 —— 人手加的节点会丢，故受 `allow_design_drop` 把关）'
         : '（★ 设计**原本不存在** ⇒ 本次从"实际"**fork 了一份设计 DSL**；此后默认不再自动重建）';

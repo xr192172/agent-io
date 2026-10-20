@@ -111,6 +111,31 @@ export interface NodeContent {
   blocks?: ContentBlock[];
 }
 
+/**
+ * ★★★ **写闸的豁免判据（住设计侧）** —— `Node.gate` 的唯一取值域（2026-10-20 · `docs/certs-4-ways.md` 裁决 ③）。
+ *
+ * ## 它回答什么
+ * 「这个节点指向的文件，改它要不要先领卡？」—— 判据**只住这一个字段**（在设计 DSL 里），
+ * 闸（`application/write_gate.ts#collectGateCoverage`）**只读它**，**不按路径前缀判**。
+ *
+ * ## 为什么不许写进闸的代码（用户裁定 2026-10-20）
+ * 「豁免判据**必须住设计侧**，不许写在闸的代码里（路径前缀 = 头号病根）」——
+ * `if (rel.startsWith('certs/'))` 会让「哪些文件不受闸管」变成一行没人评审的代码，
+ * 新增一个目录就得回去加一行；它读起来像实现细节，**实际是政策**。
+ * ⇒ 政策住数据：每个节点自己声明；改政策 = 改 DSL（可 diff、可评审、可逐节点）。
+ *
+ * ## 取值
+ * · `'exempt'` = **显式**声明「这是量具/工具，不该立卡」⇒ 闸放行，但回执**必须点名**
+ *   （`本次写入 <path> 被豁免（节点 gate=exempt）`）—— 豁免可查，不许静默。
+ * · `'gated'`（或**缺省**）= 受闸。★ **缺省按 gated 处理，不按 exempt**：漏标 = 仍受闸
+ *   （安全方向）；反过来说，默认豁免会让**新加的产品文件**自动逃闸。
+ *
+ * ★ 多 feature 指向同一文件时：**所有**指向它的节点都标 `exempt` 才豁免
+ *   （AND；漏一个 = 仍受闸 —— 标错一个 feature 不会静默打开闸）。
+ */
+export const NODE_GATES = ['gated', 'exempt'] as const;
+export type NodeGate = (typeof NODE_GATES)[number];
+
 /** 几何层节点 */
 export interface Node {
   id: string;
@@ -145,6 +170,20 @@ export interface Node {
    * 读时现算、不落盘 —— 见 `overlay.ts#applyOverlay`。
    */
   task?: TaskSpec;
+  /**
+   * ★★★ **写闸是否管这个节点指向的文件**（2026-10-20 · `docs/certs-4-ways.md` 裁决 ③）。
+   *
+   * ## 为什么住这里（用户裁定）
+   * 「证 = 量具，随时可修，不该立卡」∧「豁免判据**必须住设计侧**，不许写在闸的代码里」。
+   * ⇒ 判据 = 这个字段（数据，可 diff / 可逐节点评审）；闸只读它。
+   *
+   * ## 取值与缺省
+   * · `'exempt'`：显式豁免（量具 / 工具）⇒ 闸放行，且回执**点名**该路径（不许静默）；
+   * · `'gated'` 或 **缺省**：受闸。★ 缺省一律按 `gated` 走（漏标 = 仍受闸 = 安全方向）。
+   * ★ 多 feature 指向同一路径时 **AND**：所有指向它的节点都 `exempt` 才豁免。
+   * ★ 取值域 / 理由 / 为什么不按路径前缀 = {@link NODE_GATES} 注释（唯一住处）。
+   */
+  gate?: NodeGate;
   /** 所属泳道 ID（对应 geometry.swimlanes[].id） */
   swimlane?: string;
   /** 节点类型描述（如 service/module/database/api/queue/ui） */

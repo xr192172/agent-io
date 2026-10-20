@@ -65,6 +65,9 @@ import { indexCoversDisk } from '../infrastructure/index/index_freshness.js';
 import { listDesignSheets, getDSL, saveDSL } from '../infrastructure/storage.js';
 import { loadOverlay } from '../infrastructure/storage_overlay.js';
 import type { Annotation } from '../domain/annotation.js';
+// ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：豁免判据的**取值域**住 `domain/geometry.ts`，
+//   本文件**只读**它（`nodes[].gate`）—— **不按路径前缀判**（路径前缀 = 本仓头号病根）。
+import type { NodeGate } from '../domain/geometry.js';
 // ★★★ 2026-10-17（OQ10 裁定）：闸的判据从「overlay 的 progress 是否登记过」改成
 //   「**该节点上是否有 state=claimed 的 task**」—— 任务格是唯一权威（`task_plan.task_home`），
 //   progress 对它只是派生值（`progressOf`）。
@@ -509,6 +512,13 @@ export interface TaskGateOutcome {
    *   `overlay` 的警告列表没有读端（写进去等于又一处"写而无人读"）。
    */
   warnings: string[];
+  /**
+   * ★★★ 2026-10-20（`docs/certs-4-ways.md` ③）：本次**靠设计侧声明豁过去**的文件。
+   *
+   * ★ “豁免必须可查，不许静默”的**结构保证**：闸给出清单，调用方（`edit_code`）按它**点名**。
+   * ★ 空数组 = 本次没有任何豁免（不是“没算”——没算就跑不到这里）。
+   */
+  exempted: GateExemption[];
 }
 
 /** 任务闸放行的依据分类（★ 唯一取值处；`applicable:false` 只许前两格） */
@@ -517,14 +527,37 @@ export type TaskGateBasis =
   | 'no-feature-for-root' // 没有任何 feature 的 source_root 指到项目根（= 本项目不用任务系统）
   | 'files-not-in-design' // 有 feature 指到根，但这批文件不在任何一条里（新建 / 未纳入设计）
   | 'unaddressable' // ★ 2026-10-17：有文件节点**收集失败**（缺 path/description）⇒ 放行 + 留痕（不再抛错）
+  | 'exempt' // ★ 2026-10-20：**设计侧声明豁免**（指向它的节点全部 gate='exempt'）⇒ 放行 + 点名
   | 'covered'; // 有覆盖 feature，已逐个判过任务卡
 
 /** 一条 covering feature 的 `path → node_id` 表 + 任务格 */
 export interface GateCoverageFeature {
   feature: string;
   byPath: Map<string, string>;
+  /**
+   * ★★★ 2026-10-20：**与 `byPath` 同键空间**的 `gate` 读数（`undefined` = 节点没声明 ⇒ 按 `gated`）。
+   *
+   * ★ 为什么另开一张表而不是改 `byPath` 的值形状：`byPath` 是既有契约
+   *   （`certs/t352-*` / `t353-*` 直接把值当 node_id 比对）⇒ 改形状 = 多破两条证。
+   * ★ 两张表**在同一个循环里建**（见 `collectGateCoverage`）—— 不许在别处再建第三张。
+   */
+  gateByPath: Map<string, NodeGate | undefined>;
   /** ★ node_id → 任务格（`geometry.nodes[].task`）—— 闸的判据读它（OQ10） */
   taskById: Map<string, TaskSpec>;
+}
+
+/**
+ * ★★★ 一次**被豁免**的写入（2026-10-20 · `docs/certs-4-ways.md` ③）——“豁免必须可查，不许静默”
+ * 的结构化载体：闸把“哪些文件靠什么豁的”交回给调用方，调用方**必须**在回执里点名。
+ *
+ * ★ 为什么是结构化而不是只拼字符串：`note` 是给人读的；调用方要判“这次要不要点名”，
+ *   只能靠 `note.includes('豁免')` 那种**字符串嗅探** —— 那是本仓反复报过的“拿文本当判据”。
+ */
+export interface GateExemption {
+  /** 仓库相对路径（posix 分隔） */
+  path: string;
+  /** 依据：哪个 feature 的哪个节点声明了 `gate:'exempt'`（AND 语义 ⇒ 指向它的节点全部列出） */
+  by: Array<{ feature: string; nodeId: string }>;
 }
 
 /**
@@ -609,12 +642,18 @@ export function collectGateCoverage(rootArg: string): GateCoverage {
     if (!d.source_root || path.resolve(d.source_root) !== absRoot) continue;
     cov.rootFeatureCount++;
     const byPath = new Map<string, string>();
+    // ★★★ 2026-10-20：**与 `byPath` 在同一个循环里建**（同键空间）—— 豁免判据的唯一读数处。
+    const gateByPath = new Map<string, NodeGate | undefined>();
+    /** ★ 只给下面 `semantic.files` 兜底用：那一路只知道 id，要按 id 找节点上有没有声明 gate */
+    const gateById = new Map<string, NodeGate>();
     const taskById = new Map<string, TaskSpec>();
     for (const n of d.geometry?.nodes ?? []) {
       if (n.task) taskById.set(n.id, n.task);
+      if (n.gate) gateById.set(n.id, n.gate);
       const rel = nodeFilePath(n as { type?: string; description?: string } & { path?: string }, path.sep);
       if (rel) {
         byPath.set(rel, n.id);
+        gateByPath.set(rel, n.gate); // ★ 未声明 ⇒ undefined ⇒ 下面一律按 gated 处理（安全方向）
         continue;
       }
       // ★ 只有"文件型节点"才算收集失败 —— 聚合/模块节点本来就不指文件。
@@ -624,10 +663,17 @@ export function collectGateCoverage(rootArg: string): GateCoverage {
     }
     // 兜底：`semantic.files` 里有、几何层没有同名节点的（不该发生，但**不静默漏判**）
     for (const f of d.semantic?.files ?? []) {
-      if (f.path && !byPath.has(f.path)) byPath.set(f.path.split(path.sep).join('/'), f.id);
+      if (f.path && !byPath.has(f.path)) {
+        const rel = f.path.split(path.sep).join('/');
+        byPath.set(rel, f.id);
+        // ★ 这条路只知道 id：按 id 回查节点有没有声明 gate。查不到 ⇒ undefined（按 gated）。
+        //   ★ 不补这一行的话，「只有 semantic.files 指着的文件」将**永远无法被豁免**
+        //   （今天实测 0 条这样的路径，但那是数据现状，不是设计）。
+        gateByPath.set(rel, gateById.get(f.id));
+      }
     }
     // ★ `byPath` 为空且 `fileNodes > 0` 已在上面进 `unaddressable`（那只可能是"节点不可寻址"这一种病因）
-    if (byPath.size) cov.features.push({ feature: d.feature, byPath, taskById });
+    if (byPath.size) cov.features.push({ feature: d.feature, byPath, gateByPath, taskById });
   }
   return cov;
 }
@@ -711,6 +757,27 @@ function recordUnaddressableWarnings(
     );
   }
   return out;
+}
+
+/**
+ * ★★★ 豁免的**回执点名**（唯一渲染处；2026-10-20 · `docs/certs-4-ways.md` ③）。
+ *
+ * 用户裁定原话：*“回执必须点名：本次写入 `<path>` 被豁免（节点 `gate=exempt`）—— 不许静默”*。
+ * ⇒ 只要本批里有豁免，回执（含**拒绝**那种回执）就必须把它写出来：
+ *   · 豁免了**什么**（路径）· **凭什么**（哪个 feature 的哪个节点）· **谁定的**（设计侧，不是闸）。
+ * ★ 空数组 ⇒ 返回空串（不加噪声）——但“豁免了却不说”在任何分支都不允许。
+ */
+export function exemptionLines(exempted: readonly GateExemption[]): string {
+  if (!exempted.length) return '';
+  return (
+    `★ 本次写入 ${exempted.length} 个文件被豁免（依据：**设计侧**节点声明 \`gate='exempt'\`；闸不替你豁免，只读它）：\n` +
+    exempted
+      .map(
+        (e) =>
+          `  · 本次写入 ${e.path} 被豁免（节点 ${e.by.map((b) => `${b.nodeId}，feature=${b.feature}`).join(' / ')}，gate=exempt）`,
+      )
+      .join('\n')
+  );
 }
 
 /**
@@ -806,6 +873,7 @@ export function assertSourceWriteRegistered(
       basis: 'no-files',
       note: '没有落在项目根内的文件 ⇒ 任务闸不适用（放行；依据：入参里 0 个文件落在项目根内）',
       warnings: [],
+      exempted: [],
     };
   }
 
@@ -825,9 +893,33 @@ export function assertSourceWriteRegistered(
         `本项目不用任务系统：${cov.totalFeatures} 条 feature 里，**0 条**的 source_root 指到 ${root} ` +
         `（判据：path.resolve(source_root) === 项目根）⇒ 任务闸不适用（放行）`,
       warnings,
+      exempted: [],
     };
   }
   const covering = cov.features;
+
+  // ★★★ 2026-10-20（第③步 · `docs/certs-4-ways.md` 裁决 ③）：**豁免判据（唯一一处）**
+  //
+  // ## 判据
+  //   「**所有**指向这个文件的节点都显式声明 `gate:'exempt'`」才豁免；否则仍受闸。
+  //   · 没声明（`undefined`）⇒ 按 `gated` ⇒ 仍受闸（漏标 ≠ 豁免 —— 安全方向）；
+  //   · 两份 feature 各持一份节点时（实测 certs/ 89+77、scripts/ 60+51）⇒ **AND**。
+  //
+  // ## 为什么 AND 而不是 OR
+  //   现有“claim”那条用的是 OR（任一 feature 有卡就算登记，不替人挑）。豁免**不能照抄**：
+  //   OR 会让“在**任意一份** feature 里标一行”就静默打开**另一个 feature 的地盘** ——
+  //   那正是 Step-5 警告的「静默的豁免扩张」，而且标的那个节点可能是个幽灵。
+  //   ★ AND 的代价写在失败信息里：只标一份 = 仍被拦，且**点名是哪一侧没标**（下面 `partialExempt`）。
+  const candidatesOf = (rel: string) =>
+    covering
+      .map((c) => ({ feature: c.feature, nodeId: c.byPath.get(rel), gate: c.gateByPath.get(rel) }))
+      .filter((x): x is { feature: string; nodeId: string; gate: NodeGate | undefined } => !!x.nodeId);
+  const isExempt = (cands: ReturnType<typeof candidatesOf>): boolean =>
+    cands.length > 0 && cands.every((c) => c.gate === 'exempt');
+  /** 本次被豁免的（回执要逐个点名） */
+  const exempted: GateExemption[] = [];
+  /** ★ 只标了一份的：仍受闸，但**必须说清是哪一侧没标**（否则“我标了呀”会变成一次没头冤案） */
+  const partialExempt: Array<{ rel: string; exempt: Array<{ feature: string; nodeId: string }>; gated: Array<{ feature: string; nodeId: string; gate: NodeGate | undefined }> }> = [];
 
   // overlay 按 feature 懒读一次（★ 只作**前置闸**的回落值：有 task 的节点用派生进度）
   const ovByFeature = new Map<string, ReturnType<typeof loadOverlay>>();
@@ -874,9 +966,11 @@ export function assertSourceWriteRegistered(
       return ovByFeature.get(feature)?.edges ?? {};
     };
     for (const rel of rels) {
-      const cands = covering
-        .map((c) => ({ feature: c.feature, nodeId: c.byPath.get(rel) }))
-        .filter((x): x is { feature: string; nodeId: string } => !!x.nodeId);
+      const cands = candidatesOf(rel);
+      // ★★★ 2026-10-20：豁免的文件**不参与任务闸的任何一条判据**（含前置闸）——
+      //   它是量具：证坏着的时候也要能修，否则“证坏了 → 改不进去 → 证修不好”就是那个环
+      //   （`docs/certs-4-ways.md` 里四家都指过）。★ 豁免是设计侧声明，不是本闸给的。
+      if (isExempt(cands)) continue;
       for (const { feature, nodeId } of cands) {
         for (const [edgeId, ei] of Object.entries(edgesOf(feature))) {
           if (!ei.requires || ei.requires.length === 0) continue; // ★★ 没标 requires ⇒ 不拦
@@ -931,12 +1025,25 @@ export function assertSourceWriteRegistered(
   const unmapped: string[] = [];
   let checked = 0;
   for (const rel of rels) {
-    const cands = covering
-      .map((c) => ({ feature: c.feature, nodeId: c.byPath.get(rel) }))
-      .filter((x): x is { feature: string; nodeId: string } => !!x.nodeId);
+    const cands = candidatesOf(rel);
     if (!cands.length) {
       unmapped.push(rel); // 本项目有任务系统，但这条路径确实不在设计里 ⇒ 放行（下面 note 逐个点名）
       continue;
+    }
+    // ★★★ 2026-10-20：设计侧声明了豁免（指向它的节点**全部** `gate='exempt'`）⇒ 放行，但**记名**
+    //   （`exempted` 会在每一条回执里点名；不许静默）。
+    if (isExempt(cands)) {
+      exempted.push({ path: rel, by: cands.map((c) => ({ feature: c.feature, nodeId: c.nodeId })) });
+      continue;
+    }
+    // ★ 只标了一份（另一份没标/是幽灵）⇒ **仍受闸**，但把“哪一侧没标”记下来，进拒绝信息。
+    const markedExempt = cands.filter((c) => c.gate === 'exempt');
+    if (markedExempt.length) {
+      partialExempt.push({
+        rel,
+        exempt: markedExempt.map((c) => ({ feature: c.feature, nodeId: c.nodeId })),
+        gated: cands.filter((c) => c.gate !== 'exempt'),
+      });
     }
     checked++;
     // ★★★ OQ10 裁定：只有"该节点上有一张 **claimed** 的任务卡"才算登记。
@@ -968,6 +1075,29 @@ export function assertSourceWriteRegistered(
     }
     // owner 匹配，或卡上没有 owner（无法比对）⇒ 放行
   }
+  // ★★★ 2026-10-20：**整批都靠设计侧豁免**（没有一张卡被核对）—— 这是一种独立的放行依据，
+  //   不许混进下面 `files-not-in-design`（那会说成“不在设计里”，而事实相反：**设计里写了**，
+  //   而且写的是“不用立卡”）。也不许静默：note 逐个点名。
+  if (!checked && exempted.length) {
+    const also: string[] = [];
+    if (unmapped.length) {
+      also.push(`${unmapped.length} 个文件不在任何 covering feature 里（无任务可挂、放行）：${unmapped.join(', ')}`);
+    }
+    if (cov.unaddressable.length) {
+      also.push(`${cov.unaddressable.length} 个文件节点收集失败（缺 path/description，已放行 + 留痕）：\n${warnings.join('\n')}`);
+    }
+    return {
+      applicable: true, // ★ 本项目**有**任务系统；只是这批文件被设计侧明确宣布“不受闸”
+      basis: 'exempt',
+      note:
+        exemptionLines(exempted) +
+        (also.length ? `\n★ 本批另有别的放行情形：\n${also.map((s) => `  · ${s}`).join('\n')}` : '') +
+        `\n  ★ 依据读数：${cov.totalFeatures} 条 feature 里 ${cov.rootFeatureCount} 条 source_root 指到本根、` +
+        `${covering.length} 条收集到了 path→node 表（共 ${covering.reduce((s, c) => s + c.byPath.size, 0)} 条路径）。`,
+      warnings,
+      exempted,
+    };
+  }
   if (!checked) {
     // ★ 2026-10-17：收集失败**不再抛**（`gate-principle.md` §二）。★ 但也不许混进
     //   `files-not-in-design` 那句"都不在设计里"——那会变成**一句假话**（节点在，只是指不出文件）。
@@ -983,6 +1113,7 @@ export function assertSourceWriteRegistered(
           `★ 依据读数：${cov.totalFeatures} 条 feature 里 ${cov.rootFeatureCount} 条 source_root 指到本根、` +
           `${covering.length} 条收集到了 path→node 表（共 ${covering.reduce((s, c) => s + c.byPath.size, 0)} 条路径）。`,
         warnings,
+        exempted: [],
       };
     }
     return {
@@ -996,6 +1127,7 @@ export function assertSourceWriteRegistered(
         `  ★ 若其中某条其实**已经在设计里**（只是节点缺 path/description）⇒ 那属于"收集失败"：` +
         `本函数**不抛**，而是**放行 + 把警告写进该 feature 的 annotations**（见 basis:'unaddressable' 那一支）。`,
       warnings,
+      exempted: [],
     };
   }
   // ★★★ A7（2026-10-17）：`owner` 不匹配 ⇒ **阻断**。
@@ -1024,8 +1156,10 @@ export function assertSourceWriteRegistered(
       note:
         `已领任务：${checked} 个设计节点上都有 state=claimed 的任务卡（覆盖 feature：${covering.map((c) => c.feature).join(', ')}` +
         `${unmapped.length ? `；另有 ${unmapped.length} 个文件不在设计里、无任务可挂：${unmapped.join(', ')}` : ''}）` +
+        (exempted.length ? `\n${exemptionLines(exempted)}` : '') +
         (warnings.length ? `\n★ 另有 ${cov.unaddressable.length} 个节点收集失败（已放行 + 留痕）：\n${warnings.join('\n')}` : ''),
       warnings,
+      exempted,
     };
   }
 
@@ -1065,6 +1199,21 @@ export function assertSourceWriteRegistered(
       `source_root === 项目根 ∧ 该文件是它的文件节点）∧ 覆盖它的 feature 里**没有一条**在该节点上有一张 ` +
       `state='claimed' 的任务卡。\n` +
       `  放行：项目无 feature 指向它 / 文件不是任何一条的节点（新建或未纳入设计）/ 已在任一条里 claim。` +
+      (exempted.length ? `\n${exemptionLines(exempted)}` : '') +
+      (partialExempt.length
+        ? `\n★ 注意（只标了一半）：本批 ${partialExempt.length} 个文件**只有部分 feature 标了 \`gate:'exempt'\`** ⇒ 仍受闸：\n` +
+          partialExempt
+            .map(
+              (p) =>
+                `  · ${p.rel}：已标 ${p.exempt.map((e) => `${e.nodeId}（${e.feature}）`).join(' / ')}；` +
+                `**没标/仍是 gated** ${p.gated.map((g) => `${g.nodeId}（${g.feature}，gate=${g.gate ?? '未声明'}）`).join(' / ')}`,
+            )
+            .join('\n')
+        : '') +
+      `\n★ 若这条其实是**量具/工具**（证、脚本、生成物 —— 不该立卡）⇒ **在设计侧声明豁免**（★ 不是本闸的权力，闸只读）：\n` +
+      `  { feature: '<覆盖它的 feature>', reason: '把 <路径> 标为量具（豁免写闸）', agent: '<你>',\n` +
+      `    operations: [{ type:'node', op:'update', id:'<该路径在该 feature 里的节点 id>', data:{ gate:'exempt' } }] }\n` +
+      `  · ★ 多份 feature 指向同一文件时**每一份都要标**（AND；漏一份 = 仍受闸，本回执会点名是哪一侧没标）。\n` +
       (warnings.length ? `\n★ 另：本批有 ${cov.unaddressable.length} 个节点**收集失败**（已按"放行 + 留痕"处理）：\n${warnings.join('\n')}` : ''),
   );
 }

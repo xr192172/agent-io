@@ -107,9 +107,15 @@
       "signature": "const outNameOf = (rel: string): string => rel.replace(/^src\\//, '').replac…"
     },
     {
+      "name": "designDbDir",
+      "kind": "const",
+      "line": 85,
+      "signature": "const designDbDir = (root: string): string => path.join(root, 'design-db')"
+    },
+    {
       "name": "genDesignDb",
       "kind": "function",
-      "line": 81,
+      "line": 91,
       "signature": "genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDesignDbResult"
     }
   ],
@@ -128,6 +134,10 @@
     }
   ],
   "calls": [
+    {
+      "from": "src/application/design/db/gen_design_db.ts#genDesignDb",
+      "to": "src/application/design/db/gen_design_db.ts#designDbDir"
+    },
     {
       "from": "src/application/design/db/gen_design_db.ts#genDesignDb",
       "to": "src/application/design/db/gen_design_db.ts#norm"

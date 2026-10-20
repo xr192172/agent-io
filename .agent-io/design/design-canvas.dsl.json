@@ -436,7 +436,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_design-contracts_application_design_dsl_ops_node_ops_ts_contract_ts",
@@ -452,7 +453,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_design-contracts_application_design_dsl_ops_op_data_spec_ts_contract_ts",
@@ -468,7 +470,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_design-contracts_application_design_dsl_ops_task_ops_ts_contract_ts",
@@ -484,7 +487,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_design-contracts_application_patrol_task_drift_ts_contract_ts",
@@ -500,7 +504,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_design-contracts_application_write_gate_ts_contract_ts",
@@ -516,7 +521,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_design-contracts_domain_discussion_log_ts_contract_ts",
@@ -532,7 +538,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_design-contracts_domain_expectation_ts_contract_ts",
@@ -548,7 +555,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_design-contracts_domain_geometry_ts_contract_ts",
@@ -564,7 +572,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_design-contracts_domain_task_machine_ts_contract_ts",
@@ -580,7 +589,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_design-contracts_domain_task_schema_ts_contract_ts",
@@ -596,7 +606,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_design-contracts_domain_validator_ts_contract_ts",
@@ -612,7 +623,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_observe-skeleton-cert_mjs",
@@ -628,7 +640,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_run-all-certs_mjs",
@@ -644,7 +657,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t136-unused-export-cert_mjs",
@@ -660,7 +674,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t181-cert_sh",
@@ -676,7 +691,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t181-reset_mjs",
@@ -692,7 +708,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t182-cert_mjs",
@@ -708,7 +725,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t182b-cert_sh",
@@ -724,7 +742,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t182b-tombstone-cert_mjs",
@@ -740,7 +759,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t183-cert_mjs",
@@ -756,7 +776,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t184-cert_mjs",
@@ -772,7 +793,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t184b-cert_mjs",
@@ -788,7 +810,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t184b-probe_mjs",
@@ -804,7 +827,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t185-cert_mjs",
@@ -820,7 +844,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t185-reset_mjs",
@@ -836,7 +861,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t186-cert_mjs",
@@ -852,7 +878,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t186b-cert_mjs",
@@ -868,7 +895,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t187-probe_mjs",
@@ -884,7 +912,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t188-cert_mjs",
@@ -900,7 +929,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t189-measure_mjs",
@@ -916,7 +946,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t189-sweep_mjs",
@@ -932,7 +963,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t190-cert_mjs",
@@ -948,7 +980,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t191-cert_mjs",
@@ -964,7 +997,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t192-flow_mjs",
@@ -980,7 +1014,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t192-phantom_mjs",
@@ -996,7 +1031,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t192-pointer-sweep_mjs",
@@ -1012,7 +1048,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t193-card_mjs",
@@ -1028,7 +1065,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t194-flat_mjs",
@@ -1044,7 +1082,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t195-gate-removal_mjs",
@@ -1060,7 +1099,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t196-pointers_mjs",
@@ -1076,7 +1116,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t197-args_mjs",
@@ -1092,7 +1133,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t197c-approvals-cert_mjs",
@@ -1108,7 +1150,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t197sub-approval_mjs",
@@ -1124,7 +1167,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t197sub-flow-cert_mjs",
@@ -1140,7 +1184,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t198-status_mjs",
@@ -1156,7 +1201,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t198sub-approval-cert_mjs",
@@ -1172,7 +1218,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t200-goals_mjs",
@@ -1188,7 +1235,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t201-decoy_mjs",
@@ -1204,7 +1252,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t202-diagnose-loop_mjs",
@@ -1220,7 +1269,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t203-touched-audit_mjs",
@@ -1236,7 +1286,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t203b-declared_mjs",
@@ -1252,7 +1303,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t205-splitchain_mjs",
@@ -1268,7 +1320,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t212-regex-vs-ast_mjs",
@@ -1284,7 +1337,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t213-must-export_mjs",
@@ -1300,7 +1354,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t238-freshness-cert_mjs",
@@ -1316,7 +1371,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t245-index-key-cert_mjs",
@@ -1332,7 +1388,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t246-partial-cert_mjs",
@@ -1348,7 +1405,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t247-coverage-cert_mjs",
@@ -1364,7 +1422,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t251-data-parser-cert_mjs",
@@ -1380,7 +1439,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t316-observe-pack-cert_mjs",
@@ -1396,7 +1456,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t326-tool-surface-cost-cert_mjs",
@@ -1412,7 +1473,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t328-progress-authority-cert_mjs",
@@ -1428,7 +1490,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t329-scope-decision-cert_mjs",
@@ -1444,7 +1507,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t330-pending-view-cert_mjs",
@@ -1460,7 +1524,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t331-entry-size-cert_mjs",
@@ -1476,7 +1541,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t332-requires-gate-cert_mjs",
@@ -1492,7 +1558,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t333-attestation-binding-cert_mjs",
@@ -1508,7 +1575,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t334-mcp-evidence-path-cert_mjs",
@@ -1524,7 +1592,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t335-expectation-from-acceptance-cert_mjs",
@@ -1540,7 +1609,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t336-design-to-diffblocks-cert_mjs",
@@ -1556,7 +1626,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t337-design-sheet-cert_mjs",
@@ -1572,7 +1643,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t338-design-sheet-ref-cert_mjs",
@@ -1588,7 +1660,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t339-design-sheet-pending-home-cert_mjs",
@@ -1604,7 +1677,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t340-edit-dsl-validate-gate-cert_mjs",
@@ -1620,7 +1694,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t341-error-key-gate-cert_mjs",
@@ -1636,7 +1711,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t342-anchor-broken-repair-cert_mjs",
@@ -1652,7 +1728,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t343-contract-not-from-code-and-attestation-applies-cert_mjs",
@@ -1668,7 +1745,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t344-design-sheet-resolved-cert_mjs",
@@ -1684,7 +1762,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t345-read-side-facts-backfill-cert_mjs",
@@ -1700,7 +1779,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t346-type-only-edge-verdict-cert_mjs",
@@ -1716,7 +1796,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t347-receipt-completeness-cert_mjs",
@@ -1732,7 +1813,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t348-phase-classification-cert_mjs",
@@ -1748,7 +1830,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t349-task-home-cert_mjs",
@@ -1764,7 +1847,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t350-publish-task-cert_mjs",
@@ -1780,7 +1864,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t351-card-standing-cert_mjs",
@@ -1796,7 +1881,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t352-write-gate-coverage-cert_mjs",
@@ -1812,7 +1898,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t353-gate-principle-unblock-cert_mjs",
@@ -1828,7 +1915,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t354-incremental-verify-cert_mjs",
@@ -1844,7 +1932,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_dogfood_build_cache_mjs",
@@ -2148,7 +2237,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_clean_dist_mjs",
@@ -2164,7 +2254,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_contract-calls_mjs",
@@ -2192,7 +2283,8 @@
           "owner": "deepseek-v4.1-flash",
           "claimed_at": "2026-10-20T06:29:20.135Z"
         },
-        "status": "in_progress"
+        "status": "in_progress",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_coverage_mjs",
@@ -2208,7 +2300,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_demo_mjs",
@@ -2224,7 +2317,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_dep_mjs",
@@ -2252,7 +2346,8 @@
           "owner": "deepseek-v4.1-flash",
           "claimed_at": "2026-10-20T06:29:20.163Z"
         },
-        "status": "in_progress"
+        "status": "in_progress",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_design-check_mjs",
@@ -2268,7 +2363,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_design-diff_mjs",
@@ -2284,7 +2380,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_dev_mjs",
@@ -2300,7 +2397,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_diff_language_rosters_py",
@@ -2316,7 +2414,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_fork-design_mjs",
@@ -2332,7 +2431,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_freeze_grammar_sources_py",
@@ -2348,7 +2448,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_gen-contracts_mjs",
@@ -2376,7 +2477,8 @@
           "owner": "deepseek-v4.1-flash",
           "claimed_at": "2026-10-20T06:29:20.191Z"
         },
-        "status": "in_progress"
+        "status": "in_progress",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_gen_agents_mjs",
@@ -2392,7 +2494,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_gen_cognition_mjs",
@@ -2408,7 +2511,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_gen_endpoints_schema_mjs",
@@ -2424,7 +2528,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_gen_manifest_mjs",
@@ -2440,7 +2545,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_gen_teach_cjs",
@@ -2456,7 +2562,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_grammar_shim_mjs",
@@ -2472,7 +2579,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_hook-task-gate_mjs",
@@ -2488,7 +2596,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_hub_mjs",
@@ -2504,7 +2613,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_impact_mjs",
@@ -2520,7 +2630,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_install_global_skill_mjs",
@@ -2536,7 +2647,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_install_mcp_mjs",
@@ -2552,7 +2664,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_mcp_mcp_call_mjs",
@@ -2568,7 +2681,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_mcp_mcp_scan_mjs",
@@ -2584,7 +2698,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_mcp_mcp_smoke_mjs",
@@ -2600,7 +2715,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_measure_b_contract_mjs",
@@ -2616,7 +2732,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_merge_language_roster_py",
@@ -2632,7 +2749,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_mutate_mjs",
@@ -2648,7 +2766,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_net_probe_mjs",
@@ -2664,7 +2783,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_new-observe-lang_mjs",
@@ -2680,7 +2800,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_patrol_mjs",
@@ -2696,7 +2817,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_plan-assertions_mjs",
@@ -2712,7 +2834,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_cc_equiv_mjs",
@@ -2728,7 +2851,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_closure_multi_mjs",
@@ -2744,7 +2868,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_demand_side_mjs",
@@ -2760,7 +2885,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_edge_diff_mjs",
@@ -2776,7 +2902,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_extract_hard_mjs",
@@ -2792,7 +2919,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_extract_quality_mjs",
@@ -2808,7 +2936,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_impact_reverse_mjs",
@@ -2824,7 +2953,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_tool_smells_mjs",
@@ -2840,7 +2970,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_tool_surface_mjs",
@@ -2856,7 +2987,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_verdict_grid_mjs",
@@ -2872,7 +3004,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_xfile_resolve_mjs",
@@ -2888,7 +3021,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_promote_agent_io_mcp_mjs",
@@ -2904,7 +3038,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_rebuild_feature_mjs",
@@ -2920,7 +3055,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_rebuild_teach_cjs",
@@ -2936,7 +3072,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_relink_specifiers_mjs",
@@ -2952,7 +3089,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_run-invariant-checks_mjs",
@@ -2968,7 +3106,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_scan_canvas_ts",
@@ -2984,7 +3123,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_setup_mjs",
@@ -3000,7 +3140,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_snapshot_mjs",
@@ -3016,7 +3157,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_structure_gap_mjs",
@@ -3032,7 +3174,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_task-system-static_mjs",
@@ -3048,7 +3191,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_ts_kernel_probe_mjs",
@@ -3064,7 +3208,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_verify-changed_mjs",
@@ -3080,7 +3225,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_verify_mjs",
@@ -3096,7 +3242,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_verify_grammar_rebuild_mjs",
@@ -3112,7 +3259,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_vocabulary_mjs",
@@ -3128,7 +3276,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_src_application_cross_index_ts",
@@ -3464,7 +3613,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_design_dsl_ops_node_ops_ts",
+          "summary": "【L1 待建构】核心层 · src/application/design/dsl_ops — 8 个 API（导入自 6 个模块）（src/application/design/dsl_ops/node_ops.ts） ← 节点 file_src_application_design_dsl_ops_node_ops_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_node_ops_ts\"].responsibility"
+          },
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T06:46:57.579Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_dsl_ops_op_data_spec_ts",
@@ -3480,7 +3641,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_design_dsl_ops_op_data_spec_ts",
+          "summary": "【L1 待建构】核心层 · src/application/design/dsl_ops — 2 个 API（导入自 4 个模块）（src/application/design/dsl_ops/op_data_spec.ts） ← 节点 file_src_application_design_dsl_ops_op_data_spec_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_op_data_spec_ts\"].responsibility"
+          },
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T06:46:57.551Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_dsl_ops_status_tools_ts",
@@ -27590,7 +27763,8 @@
           }
         ],
         "lines": 537,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_dsl_ops_op_data_spec_ts",
@@ -27802,7 +27976,8 @@
           }
         ],
         "lines": 495,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_dsl_ops_status_tools_ts",
@@ -28176,12 +28351,12 @@
     }
   ],
   "annotations": [],
-  "_dsl_rev": 1,
+  "_dsl_rev": 150,
   "_sync": {
-    "saved_at": "2026-10-20T06:29:20.222Z",
+    "saved_at": "2026-10-20T06:46:57.584Z",
     "source": "design_sheet",
     "feature": "design-canvas",
-    "scanRev": 1792473312430,
-    "age": 4447792
+    "scanRev": 1792477935700,
+    "age": 881884
   }
 }

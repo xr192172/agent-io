@@ -274,6 +274,11 @@ export const NODE_DATA_KEYS = [
   //   ⇒ 「接取要 path 型节点」而「造节点要已有节点」= 环。
   //   ★ 判据（非空 / 仓库相对 / kind 合法）住 `node_ops.ts#normalizeNodePath` 一处，本清单只声明"认这个键"。
   'path',
+  // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：**写闸的豁免判据 `gate`**（`'gated' | 'exempt'`）。
+  //   ★ 不加这一个键 ⇒ `data` 里写 `gate` 会被「不被认的键」拒 ⇒ **设计侧声明不了豁免**
+  //     ⇒ 豁免只剩「写回闸的代码」那一条路（= 用户裁定禁止的路径前缀）。
+  //   ★ 取值域 / 缺省口径的唯一住处 = `domain/geometry.ts#NODE_GATES`（本清单只声明"认这个键"）。
+  'gate',
   'decision',
   'decision_note',
   'author',
