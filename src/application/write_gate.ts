@@ -1395,17 +1395,26 @@ export async function writeSourceFiles<T>(
 /**
  * 同步工具用：只做**快照 + 自写登记**（不做写穿 —— `syncFile` 是异步的，同步调用者 await 不了）。
  * 索引一致性由读路径（`ensureFreshIndex` 优先消费自写登记）保证。
+ *
+ * ★★★ 2026-10-20（A7 闭合 · 补最后一个漏口）：**本函数原先连 `actor` 参数都没有**。
+ *
+ * 实测病灶：`remove_dead_imports` 走这条路，传 `actor=me` 去改 `owner=alice` 的文件**照样落盘成功**，
+ * 回执里连 `task_gate` 都没有 —— 因为它调的是 `assertSourceWriteRegistered(root, files)`（无 actor 形参）
+ * ⇒ 闸只能落进"拿不到 actor ⇒ 提醒 + 放行"那一格。
+ * ★ 修法与 `writeSourceFiles` **同一把尺**：形参收 `actor`，在本函数内 `resolveActor` **一次**
+ *   （判据仍住在 `assertSourceWriteRegistered` 一处，调用处不再包一层判断）。
  */
 export function snapshotAndRecordSelfWrite(
   projectRoot: string,
   files: readonly string[],
-  opts: { label?: string; snapshot?: boolean } = {},
+  opts: { label?: string; snapshot?: boolean; actor?: WriteActor | null } = {},
 ): WriteThroughOutcome {
   const root = path.resolve(projectRoot);
   const rels = [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
   // ★★★ T328 步 6：**未登记不许落盘** —— 同步签名的工具（remove_dead_imports / scaffold）走这条。
   //   ★ 闸在快照 + 自写登记**之前**（拒绝就是拒绝；否则"登记了自写却没落盘"会留下假账）。
-  assertSourceWriteRegistered(root, files);
+  //   ★★★ 2026-10-20：`actor` 必须**往下传** —— 不传就等于把 A7 关掉（本函数此前正是如此）。
+  assertSourceWriteRegistered(root, files, { actor: resolveActor(opts.actor) });
   const hasIndex = hasLiveIndex(root);
   if (opts.snapshot !== false) snapshotBeforeWrite(root, opts.label ?? 'source write', rels);
   if (!hasIndex) return { ok: false, mode: 'skipped', note: '该项目还没有索引 ⇒ 只真写，未登记' };

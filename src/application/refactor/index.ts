@@ -996,6 +996,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         project_dir,
         dead,
         verify: verify as RemoveDeadImportsVerifyOptions['verify'] | undefined,
+        // ★★★ 2026-10-20（A7 闭合 · 补漏口）：身份一路传给 `snapshotAndRecordSelfWrite`。
+        //   此前这里**没有这个字段**，而那条路连形参都没有 ⇒ 闸只能"提醒 + 放行"。
+        actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
       });
       const parts = [
         `移除死 import 完成：改写 ${r.files_changed} 个文件，删除 ${r.statements_removed} 条 import 语句。`,
@@ -1808,6 +1811,11 @@ export const REFACTOR_TOOLS: ToolDef[] = [
           lines.push(`  ✗ ${it.file}：${it.error ?? '未知失败'}`);
         }
       }
+      // ★★★ 2026-10-20（A7 闭合 · 回执线）：闸读数进**人读消息**
+      //   —— 与其它三条写路（rename_files / symbol_move / edit_code）**同一句话**（`gateHumanLines`，不另写渲染）。
+      //   机器侧字段仍是 `task_gate`（已随 `data: r` 原样带出）。
+      const gateLine = gateHumanLines(r.task_gate);
+      if (gateLine) lines.push(gateLine);
       return { message: lines.join('\n'), data: r };
     }),
   },

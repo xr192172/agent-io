@@ -119,6 +119,8 @@ export interface EditBatchItem {
   symbol_diff?: { added: number; removed: number; changed: number };
   /** 该文件本次落盘后索引同步状态 */
   index_synced?: string;
+  /** ★ 2026-10-20：**空操作**（该项替换后内容未变）—— 未写盘、未重建索引 */
+  no_op?: boolean;
   /** 失败原因（ok=false 时必有） */
   error?: string;
 }
@@ -358,6 +360,8 @@ export interface EditReceipt {
   written: boolean;
   /** `replace_text` 专有：命中位置与级别 */
   hit?: { level: number; label: string; start_line: number; old_lines: number; new_lines: number };
+  /** ★ 2026-10-20：**空操作**（old_text 与 new_text 等价、内容逐字未变）—— 此时 `written:false` 且索引未重建 */
+  no_op?: boolean;
   /** 落盘后索引同步状态 */
   index_synced?: string;
   /** 符号 diff（落盘后才有） */
@@ -387,6 +391,15 @@ export interface EditReceipt {
 export interface ReplaceTextPlan {
   /** 编辑后的完整文件内容（已过语法门） */
   newContent: string;
+  /**
+   * ★★★ 2026-10-20：**空操作** —— 替换后内容与原文**逐字相同**。
+   *
+   * 判据 = `newContent === content`（**不是** `oldText === newText`）：后者会漏掉模糊级重排后
+   * 仍然等价的情形；而真正要回答的问题是"**文件变了吗**"（没变就没什么可写、也没什么可重建）。
+   * ★ 调用方必须据此**不写盘、不重建索引**，并在回执里明说"空操作，未改动" ——
+   *   旧行为是照写不误、回 ✓、还重建索引（实测骗过两个子代理）。
+   */
+  noop: boolean;
   hit: NonNullable<EditReceipt['hit']>;
   /** diff 预览（"-" 侧为**实际命中的文件片段**，模糊级 ≠ 传入 old_text） */
   preview: string;
@@ -451,6 +464,8 @@ export async function planReplaceText(
   );
   return {
     newContent,
+    // ★★★ 2026-10-20：空操作判据（唯一一处）—— 只看“结果跟原文一样吗”
+    noop: newContent === content,
     hit: {
       level: m.level,
       label: FUZZY_LEVEL_LABEL[m.level],
@@ -687,6 +702,23 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
         data: { hit: plan.hit },
       };
     }
+    // ★★★ 2026-10-20：**空操作不许假装落了盘** —— 内容逐字未变 ⇒ 不写、不重建索引，
+    //   并在回执里**明说**“空操作，未改动”。
+    //   前者会骗过调用方（实测骗过两个子代理：它们看到 ✓ 就当改动生效了）。
+    if (plan.noop) {
+      return {
+        message:
+          `= 空操作，未改动 ${relPath} L${plan.hit.start_line}（唯一命中 · L${plan.hit.level}·${plan.hit.label}）：` +
+          `替换后内容与原文**逐字相同**（old_text 与 new_text 等价）⇒ **未写盘、未重建索引**。` +
+          `\n★ 若你本以为会变，说明 old_text/new_text 写错了（或这处改动早已存在）；不要把它当成功。`,
+        data: {
+          hit: plan.hit,
+          written: false,
+          no_op: true,
+          index_synced: '未重建（空操作：文件内容未变）',
+        },
+      };
+    }
     fs.writeFileSync(absPath, plan.newContent, 'utf8');
     const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
     const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
@@ -921,6 +953,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     hit?: NonNullable<EditReceipt['hit']>;
     preview?: string;
     error?: string;
+    /** ★ 2026-10-20：该项**空操作**（替换后内容与当前内容逐字相同）—— 不落盘、不进闸、不重建索引 */
+    noop?: boolean;
   }
 
   // ── 阶段 1：逐项规划（不落盘）。虚拟文件集保证同文件多目标按序叠加 ──
@@ -943,8 +977,16 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       const cur = virtual.get(absPath) ?? fs.readFileSync(absPath, 'utf8');
       const eol = detectEol(cur);
       const plan = await planReplaceText(absPath, cur, eol, t.old_text, t.new_text);
-      virtual.set(absPath, plan.newContent);
-      plans.push({ file: relPath, absPath, ok: true, hit: plan.hit, preview: plan.preview });
+      // ★★★ 2026-10-20：空操作 ⇒ **不推进虚拟文件集**（内容没变），也不进闸/落盘/索引那一批。
+      if (!plan.noop) virtual.set(absPath, plan.newContent);
+      plans.push({
+        file: relPath,
+        absPath,
+        ok: true,
+        hit: plan.hit,
+        preview: plan.preview,
+        ...(plan.noop ? { noop: true } : {}),
+      });
     } catch (e) {
       plans.push({
         file: relPath || String(t?.file ?? `targets[${i}]`),
@@ -970,10 +1012,16 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     // ★★★ T328 步 6：**未登记不许落盘** —— 整批先过一次闸（一次判定，失败 ⇒ 一个文件都不写）。
     // ★★ 2026-10-20：返回值**不许再丢**（豁免要在回执里点名）。
     // ★★★ 2026-10-20（A7 闭合）：同上 —— 批量路也要自报 `actor`（两处闸用**同一个** `resolveActor`）。
-    const gate = assertSourceWriteRegisteredFor(projectRoot, [...new Set(plans.filter((p) => p.ok).map((p) => p.file))], resolveActor(args.actor));
-    gateNote = gate.note;
-    gateExempted = gate.exempted;
-    for (const absPath of [...new Set(plans.filter((p) => p.ok).map((p) => p.absPath))]) {
+    // ★ 2026-10-20：**空操作项不进闸**（它不写盘，写闸管不着它；拉进来只会让不该拒的批被拒）。
+    //   ★ 全批都是空操作 ⇒ 一个文件都不写 ⇒ **闸根本不跑**（那时回执也不该凭空多一个 `task_gate`，
+    //     否则会印一句“没有落在项目根内的文件”去描述一件根本没发生的事）。
+    const writeRels = [...new Set(plans.filter((p) => p.ok && !p.noop).map((p) => p.file))];
+    const gate = writeRels.length
+      ? assertSourceWriteRegisteredFor(projectRoot, writeRels, resolveActor(args.actor))
+      : null;
+    gateNote = gate?.note;
+    gateExempted = gate?.exempted ?? [];
+    for (const absPath of [...new Set(plans.filter((p) => p.ok && !p.noop).map((p) => p.absPath))]) {
       const rel = path.relative(projectRoot, absPath).split(path.sep).join('/');
       // 逐文件一份快照（**不是**"一份含全部文件"）。粒度这条**证不出必要性**（见文件头「落盘形态」块），
       // 但本笔**不动它**：改粒度 = 改**可观察**行为（`snapshot(action="list")` 条目数、`rollback latest` 的语义），
@@ -998,13 +1046,18 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     ok: p.ok,
     written: p.ok && writtenFiles.has(p.absPath),
     ...(p.hit ? { hit: p.hit } : {}),
+    // ★ 2026-10-20：空操作项逐项点名（`written:false` + `no_op:true`）—— 不许只给一个 ✓ 就算完
+    ...(p.noop ? { no_op: true, index_synced: '未重建（空操作：文件内容未变）' } : {}),
     ...(p.ok && symbolDiffByFile.has(p.absPath) ? { symbol_diff: symbolDiffByFile.get(p.absPath)! } : {}),
     ...(p.ok && indexStatusByFile.has(p.absPath) ? { index_synced: indexStatusByFile.get(p.absPath)! } : {}),
     ...(p.error ? { error: p.error } : {}),
   }));
 
   // ── 消息（供人读）：逐项一行 + 全部预览（dry-run 亦一次性给全）──
-  const mark = dry ? '[干跑] ' : blockedByAtomic ? '⛔ ' : failed === 0 ? '✓ ' : '⚠ ';
+  const noopCount = plans.filter((p) => p.noop).length;
+  // ★ 2026-10-20：全批空操作时**不许打 ✓**（那就是旧行为“骗过两个子代理”的形状）⇒ 用 `=`。
+  const mark =
+    dry ? '[干跑] ' : blockedByAtomic ? '⛔ ' : failed > 0 ? '⚠ ' : writtenFiles.size > 0 ? '✓ ' : noopCount > 0 ? '= ' : '✓ ';
   const head =
     mark +
     `批量 replace_text：${plans.length} 项（成功 ${succeeded} / 失败 ${failed}）` +
@@ -1013,11 +1066,17 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
         ? '，未写盘'
         : blockedByAtomic
           ? `，原子性开启且有 ${failed} 项失败 ⇒ 整批未落盘`
-          : `，已写盘 ${writtenFiles.size} 个文件`
+          : writtenFiles.size > 0
+            ? `，已写盘 ${writtenFiles.size} 个文件${noopCount ? `（另有 ${noopCount} 项空操作，未改动、未重建索引）` : ''}`
+            : noopCount > 0
+              ? `，全批 ${noopCount} 项均为空操作 ⇒ 未改动、未重建索引`
+              : '，未写盘'
     }`;
   const lines: string[] = [head];
   for (const it of items) {
-    if (it.ok && it.hit) {
+    if (it.ok && it.no_op) {
+      lines.push(`  = ${it.file} L${it.hit?.start_line ?? '?'} 空操作，未改动（替换后内容与原文逐字相同；未写盘、未重建索引）`);
+    } else if (it.ok && it.hit) {
       lines.push(
         `  ✓ ${it.file} L${it.hit.start_line}（L${it.hit.level}·${it.hit.label}）` +
           `${it.hit.old_lines} 行 → ${it.hit.new_lines} 行${it.written ? '' : '（未落盘）'}`,
@@ -1026,7 +1085,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       lines.push(`  ✗ ${it.file}：${it.error ?? '未知失败'}`);
     }
   }
-  const previews = plans.filter((p) => p.preview).map((p) => `— ${p.file}\n${p.preview}`);
+  // ★ 2026-10-20：空操作项**不出预览**（它的 diff 两侧逐字相同，只会让人以为“改了什么”）。
+  const previews = plans.filter((p) => p.preview && !p.noop).map((p) => `— ${p.file}\n${p.preview}`);
   if (previews.length > 0) lines.push('', ...previews);
   // ★★★ 2026-10-20：批量也要点名豁免（与单文件那条**同一句话**，来自 `exemptionLines`）
   if (gateExempted.length) lines.push('', exemptionLines(gateExempted));

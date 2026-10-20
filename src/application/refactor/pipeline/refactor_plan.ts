@@ -33,6 +33,8 @@ import crypto from 'node:crypto';
 import { detectEol } from '../../../infrastructure/text/line_utils.js';
 import { locateReplaceText } from '../../../infrastructure/parse/fuzzy_match.js';
 import { planReplaceText, editCode, type EditBatchItem } from '../edit/edit_code.js';
+// ★★★ 2026-10-20（A7 闭合 · 回执线）：闸读数**唯一带出口**（`attachGateNote`）—— 不另写渲染。
+import { attachGateNote } from '../gate_note.js';
 
 /** 一次目标替换：文件内一次**唯一**文本替换（与 `edit_code(targets[])` 同形状） */
 export interface RefactorTarget {
@@ -202,6 +204,12 @@ export interface ApplyPlanResult {
   already_applied: number;
   failed: number;
   atomic: boolean;
+  /**
+   * ★★★ 2026-10-20（A7 闭合 · 回执线）：**任务闸的放行读数**（闸的 `note` 逐字，含豁免点名）。
+   * 来源 = `editCode` 回执的 `data.task_gate`（闸在那边跑，本层只负责**带出来**）。
+   * ★ 全幂等重放（没有任何 pending ⇒ 没调 `editCode`）时**没有这个字段** —— 那时候闸压根没跑。
+   */
+  task_gate?: string;
 }
 
 type Decision =
@@ -275,6 +283,12 @@ export async function applyRefactorPlan(args: {
     }
     try {
       const p = await planReplaceText(absPath, cur, detectEol(cur), it.old, it.new);
+      // ★★★ 2026-10-20：空操作（替换后内容与当前内容逐字相同）⇒ 视为已应用，**不交给 `editCode`**
+      //   （没东西可写）。否则它会拿到一个 `written:false` 的项，被误判成“因 atomic 未落盘”。
+      if (p.noop) {
+        decisions.push({ kind: 'already_applied' });
+        continue;
+      }
       virtual.set(absPath, p.newContent); // 同文件后续项基于"本轮已应用"的内容决策
       decisions.push({ kind: 'pending', hit: p.hit });
     } catch (planErr) {
@@ -298,6 +312,8 @@ export async function applyRefactorPlan(args: {
 
   let landed: EditBatchItem[] = [];
   let wrote = false;
+  /** ★★★ 2026-10-20：闸的放行读数（含豁免点名）—— 从 `editCode` 的回执里接住，不许丢 */
+  let gateNote: string | undefined;
   // ★ atomic 的"全成或全不成"必须覆盖**决策期**的失败（冲突/读不到）：有这类失败 ⇒ 一件也不落盘。
   const blockedByAtomic = atomic && decisions.some((d) => d.kind === 'failed');
   if (pendingTargets.length > 0 && !blockedByAtomic) {
@@ -314,6 +330,8 @@ export async function applyRefactorPlan(args: {
     });
     landed = r.data.items ?? [];
     wrote = r.data.written === true;
+    // ★★★ 2026-10-20（回执线）：把闸的读数接住 —— 下面 `attachGateNote` 负责挂到回执上。
+    gateNote = r.data.task_gate;
   }
   const landedIdxOf = new Map<number, number>();
   pendingAt.forEach((planIdx, k) => landedIdxOf.set(planIdx, k));
@@ -345,7 +363,7 @@ export async function applyRefactorPlan(args: {
   const already_applied = items.filter((x) => x.status === 'already_applied').length;
   const failed = items.filter((x) => x.status === 'failed').length;
 
-  return {
+  const receipt: ApplyPlanResult = {
     ok: failed === 0,
     plan_id: plan.plan_id,
     written: wrote,
@@ -356,4 +374,8 @@ export async function applyRefactorPlan(args: {
     failed,
     atomic,
   };
+  // ★★★ 2026-10-20（A7 闭合 · 第 4 条写路的回执线）：闸判了、豁免了，就必须**带出来**。
+  //   改前：`editCode` 的回执只取了 `items` / `written` ⇒ `task_gate` 在**这一层被丢掉**
+  //   （DATA 里只有 ok/plan_id/written/items）。★ 统一走 `attachGateNote`（唯一带出口，不另写渲染）。
+  return attachGateNote(receipt, gateNote);
 }

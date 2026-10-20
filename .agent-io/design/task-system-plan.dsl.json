@@ -19026,9 +19026,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "子代理已结束，释放占用的卡",
+          "release_reason": "子代理完成，释放",
           "released_by": "workbuddy",
-          "released_at": "2026-10-20T10:49:13.382Z"
+          "released_at": "2026-10-20T11:31:04.249Z"
         },
         "status": "draft"
       },
@@ -19096,9 +19096,9 @@
               "why": "★ end_index 不含结尾换行 ⇒ 删整句必须自己吃掉一个 \\r?\\n（子代理实测）"
             }
           ],
-          "state": "done",
-          "owner": "workbuddy",
-          "claimed_at": "2026-10-20T01:55:40.316Z",
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
           "evidence": [
             {
               "kind": "expectations",
@@ -19107,9 +19107,13 @@
               "agent": "workbuddy",
               "verdict": "pass"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-20T11:16:04.268Z",
+          "release_reason": "子代理完成，释放",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T11:31:04.332Z"
         },
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
@@ -19218,7 +19222,7 @@
           "claimed_at": null,
           "release_reason": "子代理完成，释放",
           "released_by": "workbuddy",
-          "released_at": "2026-10-20T11:02:22.076Z"
+          "released_at": "2026-10-20T11:31:04.407Z"
         },
         "status": "draft"
       },
@@ -19297,7 +19301,7 @@
           "claimed_at": null,
           "release_reason": "子代理完成，释放",
           "released_by": "workbuddy",
-          "released_at": "2026-10-20T11:02:22.153Z"
+          "released_at": "2026-10-20T11:31:04.484Z"
         },
         "status": "draft"
       },
@@ -20005,12 +20009,20 @@
               "by": "llm",
               "why": "write_gate.ts:1059 的说明从「五态…superseded」改为四态并点明 void 可 relaunch；collectGateCoverage 仍走 listDesignSheets（实测 rootFeatureCount=2）",
               "verdict": "pass"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T11:15:57.546Z",
+              "by": "llm",
+              "why": "claim 被拒的读数：该节点 29 条后态判据全过（isSatisfied=true）⇒ 原卡已满足；本条只把它收口，便于接手新改动（write_gate.ts 的 snapshotAndRecordSelfWrite 补 actor）",
+              "agent": "deepseek-v4.1-flash",
+              "verdict": "pass"
             }
           ],
-          "reopened_at": "2026-10-20T06:46:50.691Z",
-          "release_reason": "子代理已结束，释放占用的卡",
+          "reopened_at": "2026-10-20T11:15:57.812Z",
+          "release_reason": "子代理完成，释放",
           "released_by": "workbuddy",
-          "released_at": "2026-10-20T10:49:13.840Z"
+          "released_at": "2026-10-20T11:31:04.557Z"
         },
         "decision_history": [
           {
@@ -84392,7 +84404,7 @@
         ],
         "lines": 452,
         "layer": "core",
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
@@ -98757,11 +98769,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T11:02:40.643Z",
+    "saved_at": "2026-10-20T11:31:04.589Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792493763099,
-    "age": 397544
+    "scanRev": 1792495740842,
+    "age": 123747
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -100768,5 +100780,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 695
+  "_dsl_rev": 696
 }

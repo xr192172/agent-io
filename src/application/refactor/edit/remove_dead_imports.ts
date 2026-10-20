@@ -526,6 +526,11 @@ function computeChanges(opts: {
 function removeDeadImportsCore(opts: {
   project_dir: string;
   dead: DeadDepCandidate[];
+  /**
+   * ★★★ 2026-10-20（A7 闭合）：**本次写入者身份** —— 一路交到 `snapshotAndRecordSelfWrite`。
+   * ★ 不传 ⇒ 闸只能读 env，而生产面（stdio MCP）env 是空的 ⇒ 闸永远"提醒 + 放行"。
+   */
+  actor?: string;
 }): RemoveDeadImportResult {
   const { absToNew, result } = computeChanges(opts);
   if (absToNew.size === 0) return result;
@@ -538,6 +543,8 @@ function removeDeadImportsCore(opts: {
   //   整批落回 L1b（idxPre 已登记，登记项按内容 hash 幂等，重复消费无害）。
   const idxPre = snapshotAndRecordSelfWrite(opts.project_dir, files, {
     label: `remove_dead_imports: ${absToNew.size} 文件`,
+    // ★★★ 2026-10-20（A7 闭合）：身份往下传 —— 本函数是同步签名，闸就在上面那个函数里。
+    actor: opts.actor,
   });
   for (const [abs, newSrc] of absToNew) fs.writeFileSync(abs, newSrc, 'utf-8');
   const idxSync = syncSelfWritesSync(opts.project_dir, files);
@@ -591,6 +598,8 @@ export function writtenFilesOf(projectDir: string, r: RemoveDeadImportResult): s
 export function removeDeadImports(opts: {
   project_dir: string;
   dead: DeadDepCandidate[];
+  /** ★ 2026-10-20（A7）：本次写入者身份（与 claim 时 `data.owner` 同一个值），直通 `removeDeadImportsCore` */
+  actor?: string;
 }): TouchedProduct<RemoveDeadImportResult> {
   const r = removeDeadImportsCore(opts);
   return withTouched(r, touchedOf(opts, r));
@@ -614,6 +623,11 @@ export interface RemoveDeadImportsVerifyResult extends RemoveDeadImportResult {
 export interface RemoveDeadImportsVerifyOptions {
   project_dir: string;
   dead: DeadDepCandidate[];
+  /**
+   * ★★★ 2026-10-20（A7 闭合）：本次写入者身份 —— 本函数的落盘同样走
+   * `snapshotAndRecordSelfWrite`（验证闭环那条也在内），不传就是“闸只看得见 env”。
+   */
+  actor?: string;
   /** false/缺省 = 只执行不验证；true = 自动探测命令；{commands} = 自定义验证命令组 */
   verify?: boolean | { commands?: VerifyCommand[] };
   /** 单测注入的验证执行器（默认跑真命令） */
@@ -659,7 +673,11 @@ export function removeDeadImportsWithVerify(opts: RemoveDeadImportsVerifyOptions
   //   本路径同样是同步签名 ⇒ 写前快照 + 自写登记（L1b 兜底）；⑤ 同步写穿（2026-09-15）：
   //   解析器已预热则当场直连 L1a，优先取同步结果（`syncFile` 按内容 hash 判定，
   //   "写完又回滚回原样"自然落成 skipped，不会假报改动）。
-  const idxPre = snapshotAndRecordSelfWrite(cwd, [...c.absToNew.keys()], { label: 'remove_dead_imports: 验证闭环' });
+  const idxPre = snapshotAndRecordSelfWrite(cwd, [...c.absToNew.keys()], {
+    label: 'remove_dead_imports: 验证闭环',
+    // ★★★ 2026-10-20（A7 闭合）：验证闭环这条同样要报身份（它也是真落盘）。
+    actor: opts.actor,
+  });
   const idxSync = syncSelfWritesSync(cwd, [...c.absToNew.keys()]);
   const idx = idxSync ?? idxPre;
 
