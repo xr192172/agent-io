@@ -1826,6 +1826,11 @@ export interface ParsedFile {
   calls: ParsedCall[];
   /** 类型引用边（同文件解析，TS 系 v1；跨文件引用 resolved=false） */
   type_refs: ParsedTypeRef[];
+  /**
+   * ★ 2026-10-20：**标识符出现位置**（不是声明，是每一次出现）。
+   *   `identifier` / `property_identifier` / `type_identifier` / `shorthand_property_identifier`。
+   */
+  identifiers?: ParsedIdentifier[];
   /** 解析失败原因（语言包加载失败 / parse 抛错）；成功时缺省。
    *  调用方借此区分"文件本为空"与"解析静默失败"（后者会丢依赖边）。 */
   error?: string;
@@ -1861,6 +1866,51 @@ export async function parseTreeForFile(
   return { root: tree.rootNode, langName: lang.name };
 }
 
+/** 一次标识符出现（AST 给的，不是正则扫的） */
+export interface ParsedIdentifier {
+  name: string;
+  kind: 'identifier' | 'property' | 'type' | 'shorthand';
+  /** 1-based 行 */
+  line: number;
+  /**
+   * ★ 列号：**当前恒 0** —— `SyntaxNodeLike` 只暴露 `startPosition.row`（无 column）。
+   *   精确定位靠 `start_index`；列号等解析层补上再说，**不猜**。
+   */
+  col: number;
+  start_index: number;
+  end_index: number;
+}
+
+/** 节点类型 → 标识符种类（★ 只这四类算"标识符出现"；声明节点的名字也在其中） */
+const IDENT_KIND_OF: Record<string, ParsedIdentifier["kind"]> = {
+  identifier: 'identifier',
+  property_identifier: 'property',
+  type_identifier: 'type',
+  shorthand_property_identifier: 'shorthand',
+};
+
+/**
+ * 遍历树抽标识符（**不重新 parse**，用的是同一次解析的树）。
+ * ★ 不去重、不判语义：同一名字在不同作用域出现多次，这里就有多行 ——
+ *   "哪个是真引用"是消费者的判断，不是解析层的。
+ * ★ 没有字符偏移的节点**不记**（宁可少报：靠行号猜位置会指向错的地方）。
+ */
+function traverseAndExtractIdentifiers(root: SyntaxNodeLike, out: ParsedIdentifier[]): void {
+  const walk = (n: SyntaxNodeLike): void => {
+    const kind = IDENT_KIND_OF[n.type];
+    const si = n.startIndex;
+    const ei = n.endIndex;
+    if (kind && si !== undefined && ei !== undefined) {
+      out.push({ name: n.text, kind, line: n.startPosition.row + 1, col: 0, start_index: si, end_index: ei });
+    }
+    for (let i = 0; i < n.childCount; i++) {
+      const c = n.child(i);
+      if (c) walk(c);
+    }
+  };
+  walk(root);
+}
+
 export async function parseFileFull(filePath: string, content: string): Promise<ParsedFile> {
   const empty: ParsedFile = { symbols: [], imports: [], calls: [], type_refs: [] };
   const ext = '.' + (filePath.split('.').pop() || '');
@@ -1880,7 +1930,9 @@ export async function parseFileFull(filePath: string, content: string): Promise<
     traverseAndExtractImports(tree.rootNode, lang, imports);
     traverseAndExtractCalls(tree.rootNode, lang, symbols, calls);
     traverseAndExtractTypeRefs(tree.rootNode, lang, symbols, typeRefs);
-    return { symbols, imports, calls, type_refs: typeRefs };
+    const identifiers: ParsedIdentifier[] = [];
+    traverseAndExtractIdentifiers(tree.rootNode, identifiers);
+    return { symbols, imports, calls, type_refs: typeRefs, identifiers };
   } catch (e) {
     console.warn(`[ts_kernel] parse ${filePath} failed: ${(e as Error).message}`);
     return { ...empty, error: (e as Error).message };
@@ -1935,7 +1987,9 @@ export function parseFileFullSync(filePath: string, content: string): ParsedFile
     traverseAndExtractImports(tree.rootNode, lang, imports);
     traverseAndExtractCalls(tree.rootNode, lang, symbols, calls);
     traverseAndExtractTypeRefs(tree.rootNode, lang, symbols, typeRefs);
-    return { symbols, imports, calls, type_refs: typeRefs };
+    const identifiers: ParsedIdentifier[] = [];
+    traverseAndExtractIdentifiers(tree.rootNode, identifiers);
+    return { symbols, imports, calls, type_refs: typeRefs, identifiers };
   } catch (e) {
     console.warn(`[ts_kernel] parse(sync) ${filePath} failed: ${(e as Error).message}`);
     return { ...empty, error: (e as Error).message };

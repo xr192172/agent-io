@@ -38,6 +38,22 @@ CREATE TABLE IF NOT EXISTS schema_versions (
 );
 
 -- 节点：文件节点 + 符号节点（函数/类/接口/类型/方法）
+-- ★ 2026-10-20（v11）：**标识符位置**表。
+--   消费者：find_references / field_refs / rename_symbols / remove_dead_imports。
+--   它们现在都用正则扫源码 —— 会漏（别名/解构/动态访问）也会误报（注释/字符串）。
+--   ★ 只记【出现位置】，不记语义：同名多义、作用域遮蔽，要靠调用方结合 nodes 自己判。
+CREATE TABLE IF NOT EXISTS identifiers (
+    file_path   TEXT NOT NULL,
+    name        TEXT NOT NULL,
+    kind        TEXT NOT NULL,   -- identifier / property / type / shorthand
+    line        INTEGER NOT NULL,
+    col         INTEGER NOT NULL,
+    start_index INTEGER NOT NULL,
+    end_index   INTEGER NOT NULL,
+    PRIMARY KEY (file_path, start_index)
+);
+CREATE INDEX IF NOT EXISTS idx_identifiers_name ON identifiers(name);
+
 CREATE TABLE IF NOT EXISTS nodes (
     id TEXT PRIMARY KEY,
     kind TEXT NOT NULL,

@@ -63,7 +63,7 @@ export function endBatch(db: Database, rollback = false): void {
   txDepth.set(key, d - 1);
 }
 
-export const SCHEMA_VERSION = 10; // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
+export const SCHEMA_VERSION = 11; // v11：identifiers 表（标识符位置）—— 旧库无此表，清库重解析 // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
 
 /** 默认 db 文件路径：<dataHome>/.agent-io/cache.db */
 export function getDbFile(): string {

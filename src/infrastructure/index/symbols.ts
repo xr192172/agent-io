@@ -376,6 +376,14 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
       )
       .all({ tp: `${rel}#%`, sp: `${rel}#%` }) as Array<{ source: string; target: string; kind: string; line: number; col: number | null; metadata: string | null }>;
     db.prepare("DELETE FROM nodes WHERE file_path = $p AND kind != 'file'").run({ p: rel });
+    // ★ 2026-10-20：标识符位置表（全删全插；它跟着文件内容走）
+    db.prepare('DELETE FROM identifiers WHERE file_path = $p').run({ p: rel });
+    const insIdent = db.prepare(
+      'INSERT OR REPLACE INTO identifiers(file_path, name, kind, line, col, start_index, end_index) VALUES ($fp, $nm, $k, $ln, $col, $si, $ei)',
+    );
+    for (const idn of parsed.identifiers ?? []) {
+      insIdent.run({ fp: rel, nm: idn.name, k: idn.kind, ln: idn.line, col: idn.col, si: idn.start_index, ei: idn.end_index });
+    }
     const insNode = db.prepare(
       `INSERT INTO nodes(id, kind, name, qualified_name, file_path, language, start_line, end_line, parent, signature, docstring, sym_hash, is_closure, members, updated_at)
        VALUES ($id, $k, $nm, $qn, $fp, $lang, $sl, $el, $par, $sig, NULL, $h, $isClos, $mem, $ts)`,

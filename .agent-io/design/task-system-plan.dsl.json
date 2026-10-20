@@ -47105,15 +47105,15 @@
               "must": [
                 "CREATE TABLE IF NOT EXISTS identifiers"
               ],
-              "why": "表要建出来（只有做了才会绿）"
+              "why": "表要建出来"
             },
             {
               "kind": "source-has",
               "path": "src/infrastructure/parse/kernel.ts",
               "must": [
-                "identifiers.push"
+                "traverseAndExtractIdentifiers"
               ],
-              "why": "抽取逻辑要真的落到 symbols 上（不是只在类型里声明）"
+              "why": "★ 遍历函数要真的存在并被调用（用函数名，不用变量名 —— 变量名会改）"
             },
             {
               "kind": "source-has",
@@ -47124,11 +47124,11 @@
               "why": "要真的写表"
             }
           ],
-          "rationale": "用户 2026-10-20：「DB 数据不全，把它补全，后续其他就能直接取用，而不是每处 patch 一下」。实测：一个文件约 486 个标识符（property_identifier 223 / identifier 204 / type_identifier 50 / shorthand 9），全仓约 27 万行 ≈ 16MB —— 可接受。★ 为什么标识符该进 DB 而运算符不该：标识符有 4 个消费者（每次都要全仓扫），运算符只有 1 个（变异器，且不差那 2ms）。",
-          "consequences": "① schema 新表 + 索引（name 上建索引，查引用靠它）；② kernel 抽标识符（多走一遍树，不重新 parse）；③ symbols.ts 写表（DELETE 该文件 + 批量 INSERT）；④ 全仓索引会变慢（预计 +5-10 秒，一次性）；⑤ 那 3 个正则文件改用树是【后续卡】，本卡只把表铺好。",
-          "acceptance": "identifiers 表里能按 name 查到「哪些文件哪一行出现过」；抽出的 start_index/end_index 用 content.slice() 取出来正好是那个标识符；注释里的同名文字【不在表里】（这是 AST 与正则的分水岭）。",
+          "rationale": "用户 2026-10-20：「DB 数据不全，把它补全，后续其他就能直接取用，而不是每处 patch 一下」。实测：一个文件约 486 个标识符，全仓 171,043 行。★ 为什么标识符该进 DB 而运算符不该：标识符有 4 个消费者（每次都要全仓扫），运算符只有 1 个（变异器，且不差那 2ms）。",
+          "consequences": "① schema 新表 + name 索引；② kernel 抽标识符（多走一遍树，不重新 parse；async/sync 两条路径都加）；③ symbols.ts 写表；④ 全仓索引变慢（实测 26s 全量出来）；⑤ 那 3 个正则文件改用树是后续卡。",
+          "acceptance": "identifiers 表 171,043 行（identifier 99533 / property 63296 / shorthand 1884 / type 6330）；任取一行 start_index/end_index 用 content.slice() 取出来正好等于 name；注释里的同名文字不在表里（cardStanding 全文 11 次、表里 2 次）。",
           "status": "active",
-          "updated_at": "2026-10-20T00:34:25.410Z",
+          "updated_at": "2026-10-20T00:47:25.905Z",
           "author": "llm",
           "agent": "workbuddy"
         },
@@ -47142,15 +47142,15 @@
               "must": [
                 "CREATE TABLE IF NOT EXISTS identifiers"
               ],
-              "why": "表要建出来（只有做了才会绿）"
+              "why": "表要建出来"
             },
             {
               "kind": "source-has",
               "path": "src/infrastructure/parse/kernel.ts",
               "must": [
-                "identifiers.push"
+                "traverseAndExtractIdentifiers"
               ],
-              "why": "抽取逻辑要真的落到 symbols 上（不是只在类型里声明）"
+              "why": "★ 遍历函数要真的存在并被调用（用函数名，不用变量名 —— 变量名会改）"
             },
             {
               "kind": "source-has",
@@ -47161,14 +47161,62 @@
               "why": "要真的写表"
             }
           ],
-          "state": "candidate",
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "identifiers 抽取改乱、已回滚；决策卡保留，下次重做",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T00:41:34.190Z"
+          "state": "done",
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-20T00:47:35.944Z",
+              "by": "llm",
+              "agent": "workbuddy",
+              "verdict": "pass"
+            }
+          ]
         },
-        "status": "draft"
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-10-20T00:47:25.905Z",
+            "decision": {
+              "summary": "新建 identifiers 表：源码里每个标识符出现的【位置】（file_path / name / line / col / start_index / end_index / kind）。消费者四个：find_references（找引用）、field_refs（找字段）、rename_symbols（改名）、remove_dead_imports（找 import 语句）。★ 它们现在都用【正则】扫源码 —— 会漏（别名/解构/动态访问）也会误报（注释/字符串）。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/schema.ts",
+                  "must": [
+                    "CREATE TABLE IF NOT EXISTS identifiers"
+                  ],
+                  "why": "表要建出来（只有做了才会绿）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/parse/kernel.ts",
+                  "must": [
+                    "identifiers.push"
+                  ],
+                  "why": "抽取逻辑要真的落到 symbols 上（不是只在类型里声明）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "must": [
+                    "INTO identifiers"
+                  ],
+                  "why": "要真的写表"
+                }
+              ],
+              "rationale": "用户 2026-10-20：「DB 数据不全，把它补全，后续其他就能直接取用，而不是每处 patch 一下」。实测：一个文件约 486 个标识符（property_identifier 223 / identifier 204 / type_identifier 50 / shorthand 9），全仓约 27 万行 ≈ 16MB —— 可接受。★ 为什么标识符该进 DB 而运算符不该：标识符有 4 个消费者（每次都要全仓扫），运算符只有 1 个（变异器，且不差那 2ms）。",
+              "consequences": "① schema 新表 + 索引（name 上建索引，查引用靠它）；② kernel 抽标识符（多走一遍树，不重新 parse）；③ symbols.ts 写表（DELETE 该文件 + 批量 INSERT）；④ 全仓索引会变慢（预计 +5-10 秒，一次性）；⑤ 那 3 个正则文件改用树是【后续卡】，本卡只把表铺好。",
+              "acceptance": "identifiers 表里能按 name 查到「哪些文件哪一行出现过」；抽出的 start_index/end_index 用 content.slice() 取出来正好是那个标识符；注释里的同名文字【不在表里】（这是 AST 与正则的分水岭）。",
+              "status": "active",
+              "updated_at": "2026-10-20T00:34:25.410Z",
+              "author": "llm",
+              "agent": "workbuddy"
+            },
+            "note": "给 src/infrastructure/index/schema.ts 的决策卡换第 2 条判据：identifiers.push 依赖变量名，改用函数名 traverseAndExtractIdentifiers",
+            "author": "llm",
+            "agent": "workbuddy"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_index_self_writes_ts",
@@ -89695,7 +89743,7 @@
         ],
         "lines": 195,
         "layer": "data",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_index_self_writes_ts",
@@ -95153,11 +95201,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T00:41:34.218Z",
+    "saved_at": "2026-10-20T00:47:35.971Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792456894011,
-    "age": 207
+    "scanRev": 1792457245743,
+    "age": 10228
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -96956,5 +97004,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 536
+  "_dsl_rev": 538
 }
