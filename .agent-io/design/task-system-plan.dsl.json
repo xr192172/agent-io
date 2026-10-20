@@ -95265,11 +95265,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T02:34:18.847Z",
+    "saved_at": "2026-10-20T03:00:08.117Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792463649165,
-    "age": 9682
+    "scanRev": 1792465118045,
+    "age": 90072
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -97144,6 +97144,24 @@
       "expectations": [],
       "state": "candidate",
       "owner": null
+    },
+    {
+      "id": "todo_侦察-实现-堵-reopen-的白洞-重开后直接-complete-就能再-do",
+      "summary": "【侦察→实现】堵 `reopen` 的白洞：**重开后直接 complete 就能再 done 一次，什么都没做**。★ 现象：`reopenTask`（src/application/design/dsl_ops/task_ops.ts:727-732）只做 `{...card, state:'claimed', owner, claimed_at}` —— **不改判据、不清 evidence** ⇒ 旧判据仍全绿 ⇒ 立刻 complete 就能\"再完成一次\"。★ 验收（硬标准）：重开后**不带新证据/判据未变的 complete 必须被拒**；而**真做完**（有新证据 或 判据变了）能正常收口 —— 两条都要实测。★ 设计空间（子代理定，别照抄）：加 `reopened_at` 让 complete 校验 evidence 时间？reopen 时清 evidence（旧记录进 discussion）？还是给判据加\"需重验\"标记？★ 注意：不许把合法路径堵死（reopen → 真干活 → complete 必须通）。",
+      "expectations": [],
+      "state": "done",
+      "owner": "workbuddy",
+      "claimed_at": "2026-10-20T03:00:06.820Z",
+      "evidence": [
+        {
+          "kind": "attestation",
+          "at": "2026-10-20T03:00:08.089Z",
+          "by": "llm",
+          "why": "C′ 方案：TaskSpec.reopened_at 账本 + publish 结账 + complete 的 reopenGate。正面 5 条全拒（立刻 complete / 什么都不做 / 早于重开的时间戳 / publish 没变 / release→publish 绕路）；反面 3 条全通（换判据 / 新 reading / todo 重开），33/33。不放宽：重开后判据不变被拒 —— 与零工作量不可区分。",
+          "agent": "workbuddy",
+          "verdict": "pass"
+        }
+      ]
     }
   ],
   "_dsl_rev": 540
