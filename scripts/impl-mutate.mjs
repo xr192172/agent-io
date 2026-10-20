@@ -135,6 +135,11 @@ try {
   }
 } finally {
   restore();
+  // ★★★ 2026-10-20：**还原源码之后必须重编译** ——
+  //   dist 是编译产物，只还原 .ts 会把**最后一个变异体**留在 dist 里，
+  //   之后所有测试都在跑被污染的产物（实测：夹具门抓到了 dist 里的 t.from !== from）。
+  //   ⇒ 这一步不许省，也不许"失败就静默"：编不过就抛。
+  execFileSync(process.execPath, [tscLocal], { cwd: ROOT, stdio: ["ignore", "pipe", "pipe"] });
 }
 
 // ④ 还原自检：byte-for-byte
