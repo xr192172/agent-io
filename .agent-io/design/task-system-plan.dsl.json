@@ -18709,6 +18709,14 @@
               "path": "src/application/write_gate.ts",
               "symbol": "writeThroughLine",
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/write_gate.ts",
+              "must": [
+                "listDesignSheets"
+              ],
+              "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
             }
           ],
           "creator": "workbuddy-main",
@@ -18720,12 +18728,12 @@
             "to": "design",
             "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
           },
-          "updated_at": "2026-10-19T01:47:24.652Z",
+          "updated_at": "2026-10-20T05:07:11.163Z",
           "agent": "all-externalize"
         },
         "task": {
           "id": "file_src_application_write_gate_ts",
-          "summary": "写源码前必须挂任务，且【挂的是你自己的任务】—— 现在只判\"该节点有 claimed 卡\"，不问 owner、不问时效",
+          "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
           "expectations": [
             {
               "kind": "symbol-exists",
@@ -18743,9 +18751,192 @@
               "kind": "file-exists",
               "path": "src/application/write_gate.ts",
               "why": "节点地址（已存在，作为基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "resolveActor",
+              "why": "★ actor 的解析只许一处（读 AGENT_IO_ACTOR）；claim 与写共用同一个解析 ⇒ 才保证 owner === actor 这条判据成立"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => {\n    const dirs = ['src/application', 'src/presentation', 'src/infrastructure', 'src/domain'];\n    let hit = 0;\n    const walk = (d) => {\n      for (const f of fs.readdirSync(path.join(root, d), { withFileTypes: true })) {\n        const p = path.join(d, f.name);\n        if (f.isDirectory()) { walk(p); continue; }\n        if (!/.(ts|mjs|js)$/.test(f.name)) continue;\n        if (/process.env.AGENT_IO_ACTORs*=[^=]/.test(fs.readFileSync(path.join(root, p), 'utf8'))) hit++;\n      }\n    };\n    for (const d of dirs) walk(d);\n    return hit >= 1;\n  })()",
+              "blocked_by": "等 5 个写源码的工具加 agent 参数（★ actor 该从调用方进，不是从 env）",
+              "why": "★ D-actor-entry：闸要判「卡是不是你的」，而 actor 现在没有可靠来源"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "EMPTY_CROSS",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "GateCoverage",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "GateCoverageFeature",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "SELF_WRITE_MAX",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "SourceWriteReport",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "TaskGateBasis",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "TaskGateOutcome",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "WriteThroughOutcome",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "assertSourceWriteRegistered",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "collectGateCoverage",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "finishWriteThrough",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "hasLiveIndex",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "nodeFilePath",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "recordSelfWrite",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "recordUnaddressableWarnings",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "reopenAndResolveAfterWrite",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "reopenNote",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "resolveRefsAfterWrite",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "snapshotAndRecordSelfWrite",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "syncSelfWrites",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "syncSelfWritesSync",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "writeSelfWrites",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "writeSourceFiles",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "writeThroughLine",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/write_gate.ts",
+              "must": [
+                "listDesignSheets"
+              ],
+              "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
             }
           ],
-          "state": "void"
+          "state": "done",
+          "owner": "codebuddy",
+          "claimed_at": "2026-10-20T05:12:56.875Z",
+          "evidence": [
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T05:09:13.330Z",
+              "by": "llm",
+              "why": "collectGateCoverage 已改走 listDesignSheets；实测 totalFeatures=2 rootFeatureCount=2，src/application/write_gate.ts 判 covered；未领/改别人两路实测被拒",
+              "verdict": "pass"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T05:13:35.118Z",
+              "by": "llm",
+              "why": "write_gate.ts:1059 的说明从「五态…superseded」改为四态并点明 void 可 relaunch；collectGateCoverage 仍走 listDesignSheets（实测 rootFeatureCount=2）",
+              "verdict": "pass"
+            }
+          ],
+          "reopened_at": "2026-10-20T05:12:56.875Z"
         },
         "decision_history": [
           {
@@ -21868,8 +22059,208 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-20T05:07:11.163Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "WriteActor",
+                  "why": "★ 写闸要知道\"谁在写\" —— 现在 assertSourceWriteRegistered(projectRoot, files) 签名里没有身份维度"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "assertSourceWriteRegisteredFor",
+                  "why": "★ 按 actor 判定的入口：要求\"覆盖该文件的节点上存在 claimed 卡，且 owner === actor\"（现在只要求\"存在 claimed 卡\"）"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/write_gate.ts",
+                  "why": "节点地址（已存在，作为基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "resolveActor",
+                  "why": "★ actor 的解析只许一处（读 AGENT_IO_ACTOR）；claim 与写共用同一个解析 ⇒ 才保证 owner === actor 这条判据成立"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n    const dirs = ['src/application', 'src/presentation', 'src/infrastructure', 'src/domain'];\n    let hit = 0;\n    const walk = (d) => {\n      for (const f of fs.readdirSync(path.join(root, d), { withFileTypes: true })) {\n        const p = path.join(d, f.name);\n        if (f.isDirectory()) { walk(p); continue; }\n        if (!/.(ts|mjs|js)$/.test(f.name)) continue;\n        if (/process.env.AGENT_IO_ACTORs*=[^=]/.test(fs.readFileSync(path.join(root, p), 'utf8'))) hit++;\n      }\n    };\n    for (const d of dirs) walk(d);\n    return hit >= 1;\n  })()",
+                  "blocked_by": "等 5 个写源码的工具加 agent 参数（★ actor 该从调用方进，不是从 env）",
+                  "why": "★ D-actor-entry：闸要判「卡是不是你的」，而 actor 现在没有可靠来源"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "EMPTY_CROSS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "GateCoverage",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "GateCoverageFeature",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "SELF_WRITE_MAX",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "SourceWriteReport",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "TaskGateBasis",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "TaskGateOutcome",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "WriteThroughOutcome",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "assertSourceWriteRegistered",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "collectGateCoverage",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "finishWriteThrough",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "hasLiveIndex",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "nodeFilePath",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "recordSelfWrite",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "recordUnaddressableWarnings",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "reopenAndResolveAfterWrite",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "reopenNote",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "resolveRefsAfterWrite",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "snapshotAndRecordSelfWrite",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "syncSelfWrites",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "syncSelfWritesSync",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "writeSelfWrites",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "writeSourceFiles",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "writeThroughLine",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-10-19T01:47:24.652Z",
+              "agent": "all-externalize"
+            },
+            "note": "file_src_application_write_gate_ts：覆盖率采集必须读设计侧 design/，否则闸看不见任何 feature"
           }
-        ]
+        ],
+        "status": "done"
       },
       {
         "id": "file_src_domain_animation_ts",
@@ -47939,7 +48330,74 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "data"
+        "arch_layer": "data",
+        "decision": {
+          "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/infrastructure/storage.ts",
+              "why": "这个文件的职责就是「读写 DSL」——它不在，任务/设计都没有落脚点"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/storage.ts",
+              "symbol": "listDesignSheets",
+              "why": "设计侧枚举只许有一个入口：写闸读覆盖率、别的读端要列 feature 都走它（否则又是「两份清单」）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/storage.ts",
+              "symbol": "getDesignSheet",
+              "why": "listDesignSheets 必须与 getDesignSheet 同源（同一份设计侧），不许另写一个解析器"
+            }
+          ],
+          "updated_at": "2026-10-20T05:07:12.409Z"
+        },
+        "task": {
+          "id": "file_src_infrastructure_storage_ts",
+          "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/infrastructure/storage.ts",
+              "why": "这个文件的职责就是「读写 DSL」——它不在，任务/设计都没有落脚点"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/storage.ts",
+              "symbol": "listDesignSheets",
+              "why": "设计侧枚举只许有一个入口：写闸读覆盖率、别的读端要列 feature 都走它（否则又是「两份清单」）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/storage.ts",
+              "symbol": "getDesignSheet",
+              "why": "listDesignSheets 必须与 getDesignSheet 同源（同一份设计侧），不许另写一个解析器"
+            }
+          ],
+          "state": "done",
+          "owner": "codebuddy",
+          "claimed_at": "2026-10-20T05:11:18.949Z",
+          "evidence": [
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T05:09:20.687Z",
+              "by": "llm",
+              "why": "src/infrastructure/storage.ts 新增 listDesignSheets（走 getDesignSheet 同一读端）；写闸已改用它，实测 rootFeatureCount=2",
+              "verdict": "pass"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T05:12:37.663Z",
+              "by": "llm",
+              "why": "saveDSL 写 design/ 前补 mkdir（与 saveDesignSheet 同纪律）；实测 t352-write-gate-coverage-cert 18/0 真绿、t353/t349/t351 全绿",
+              "verdict": "pass"
+            }
+          ],
+          "reopened_at": "2026-10-20T05:11:18.949Z"
+        },
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_storage_overlay_ts",
@@ -82283,7 +82741,8 @@
           }
         ],
         "lines": 1210,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_domain_animation_ts",
@@ -91748,7 +92207,8 @@
           }
         ],
         "lines": 913,
-        "layer": "data"
+        "layer": "data",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_storage_overlay_ts",
@@ -95405,11 +95865,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T03:56:15.652Z",
+    "saved_at": "2026-10-20T05:13:35.159Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792468575311,
-    "age": 341
+    "scanRev": 1792473204231,
+    "age": 10928
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -97304,5 +97764,5 @@
       ]
     }
   ],
-  "_dsl_rev": 544
+  "_dsl_rev": 550
 }
