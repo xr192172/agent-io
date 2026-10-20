@@ -245,3 +245,44 @@
 - `todo_查清-imports-start-index-落库只有-39-ts的原因并修好` 与 `...-2` 是**同一件事的两条**
 - 起因：我第二次 `add` 时不知道第一条已经建了（`add` 不回显"已有同名"）
 - ⇒ `todo` 的 `add` 应该查同名（或至少警告）
+
+---
+
+## 2026-10-20 追加（查 D-actor-entry 时，子代理报的 7 条）
+
+**43. ★★ 写闸「看不见任何 feature」是独立于 actor 的第一层问题** — `待处理`
+- `getDSL` 读 `.agent-io/design/`，而 `collectGateCoverage` 走 `listFeatures()` 读 `.agent-io/features/`（`write_gate.ts:599` → `storage.ts:810`）
+- `features/` 里只剩 2 个 overlay、**0** 个 `.dsl.json`
+- ⇒ `applicable:false, basis:'no-feature-for-root'`，**连"提醒+放行"都没走到**（`:815` 比 `:916` 早 return）
+- ★ `DESIGN.md:302` 写着"写闸…都已读 design 侧" —— **这句是假的**
+- ⇒ 修 actor 不修这个 = 闸仍然永不触发
+
+**44. `edit_code` 没有 `agent` 字段** — `不是 bug，是我记错`
+- 只有 `edit_dsl` 有 `agent`（`design/index.ts:188`）
+- 我派活时写"`edit_code` 已有 `agent` 字段" ⇒ 子代理多花一步 grep 纠正
+- ⇒ **派活单里的"已有事实"也要能被标 `[未核]`**
+
+**45. ★ `agent` 与 `owner` 不是同一条通路** — `待处理`
+- `edit_dsl.agent` 只做**署名**（decision.agent / released_by / evidence.agent）
+- **`claim` 完全不用 `agent`**（owner 只从 `data.owner` 来）；`publish` 忽略它；写闸只读 `resolveActor()`→env
+- `src/application/design/**` 里 `resolveActor` **0 处 import**
+- ⇒ 同一语义（身份），三条通路，没有权威
+
+**46. ★ `publish{reason}` 能改别人的卡（今天刚做的功能是个洞）** — `待处理`
+- 只判 `state==='claimed'` ∧ 有 `reason`，**不判 owner**（`task_ops.ts:393-445`）
+- A7 只守源码写入、不守卡本身 ⇒ "改掉别人的验收标准再让他收口"这条路没堵
+- 同族：`complete` / `void` / `reopen` 也都不校验 owner
+- ★ `reopen` 更是**合法绕过**：`done→claimed` 直接把人换成 `data.owner`
+
+**47. ★ `write_gate.ts` 自己的卡是 `void`（终态）** — `待处理（死锁）`
+- `publish` 从 void 拒、`reopen` 只从 done 走（全表无 `from:'void'`）
+- ⇒ **一旦覆盖采集修好，改 `write_gate.ts` 会被"未领任务"拦，而报错给的两条路都走不通**
+
+**48. A7 拦的不是"所有非 owner 写入"** — `观察中`
+- 只取**第一个命中的 covering feature** 的 claimed 卡（若那张 owner 为空，即使别处有别人的 claimed 卡也放行）
+- `owner` 为空 ⇒ 放行；`actor` 为空 ⇒ 提醒+放行
+
+**49. 「防冒充」在本架构不可达** — `结论`
+- 宿主注入通道：**HTTP 侧有 `sessionId`（`X-WorkBuddy-MCP-Context`），stdio 侧没有**
+- 同一会话的子代理**共用一个 server 进程** ⇒ 进程/env 级身份区分不了它们
+- ⇒ A7 只能买**协作防撞**，买不到**防冒充**。**别按"安全"去卖它。**
