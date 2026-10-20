@@ -98806,11 +98806,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T15:14:17.932Z",
+    "saved_at": "2026-10-20T16:28:44.874Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792504668734,
-    "age": 4589198
+    "scanRev": 1792512216339,
+    "age": 1508535
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -100819,6 +100819,48 @@
     {
       "id": "todo_写闸覆盖面-6-个入口绕开或丢身份-子代理逐个实测-读码列出-2026-10-2",
       "summary": "【★ 写闸覆盖面：6 个入口绕开或丢身份】子代理逐个实测/读码列出（2026-10-20）：① refactor_pipeline（pipeline/refactor_pipeline.ts:632/653）**直接 fs.writeFileSync，完全不走闸**；② code_workbench（design/workbench/code_workbench.ts:765/784）调 editCode 但不传 actor；③ design_line action=sync-signatures/rewrite（design/rewrite/rewrite.ts:160）调 applyRefactorPlan 不传 actor，且 task_gate 在这一层又丢；④ deprecate_offline（deprecate_offline/deprecate_offline.ts:374）调 removeDeadImportsWithVerify 不传 actor，且会物理删文件；⑤ diagnose / diagnose_loop（infrastructure/analysis/diagnosis/repair.ts:236）**直接 fs.writeFileSync**；⑥ upgrade apply（authoring/version_upgrade/rewrite.ts:133）**直接 fs.writeFileSync**。★ ①②③④ 属「同一条链的出口没接全」；⑤⑥ 与 refactor_pipeline 属**结构性绕过**（不走 writeSourceFiles / editCode，自己 fs.writeFileSync）。★ 正解不是逐个加 actor，而是问「为什么允许绕过」：要么让这三个走统一的落盘层，要么在 write_gate 里加一条「本仓所有落盘必须经 X」的读数（但那是普查，要谨慎）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_p1-增量测试的地基-evidence-带代码指纹-用户裁定-2026-10-2",
+      "summary": "【P1 增量测试的地基：evidence 带代码指纹】用户裁定（2026-10-21）：开发期只跑\"改过的 + 受影响的\"，冻结期跑一次全量然后封存。实现形式不是新框架，而是：evidence 加 {输入指纹, 输出指纹, 代码指纹}；指纹没变 ⇒ 证据仍有效，不重跑；变了 ⇒ 自动失效。★ 形状已验证过：index_integrity 的 \"schema v12 ≠ 当前 v13 ⇒ 不可信 ⇒ 需重建\" 是同一个形状。★ 现成指纹：files.content_hash（四道准入在用）。★ 落点：src/application/refactor/edit/../observe/runtime/run_tests.ts 的回执 + task_schema 的 evidence 结构。★ 不许：改 expectations 的 run（它是纯读布尔表达式，每次判都求值，加跑命令会慢到不可用）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_p1-增量测试的选量-测试-文件映射-现状-run-tests-跑-npm-te",
+      "summary": "【P1 增量测试的选量：测试 ↔ 文件映射】现状：run_tests 跑 npm test 只给一条退出码，不知道覆盖了哪些文件 ⇒ 算不出\"改 x.ts 该跑哪些测试\"。★ 静态覆盖：identifiers（311,927 行）+ edges.call（7,363 条）已能算\"哪个测试文件引用了哪个源文件的符号\"。★ 动态覆盖：跑一次全量，记录每个测试碰了哪些文件（需要插桩；observe_instrument 已存在）。★ 两者对上 = 覆盖率。产出：改 x.ts ⇒ 受影响的测试清单。★ 前置：先做 evidence 指纹那条。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_内化-3-个-归位-2-个-子代理审计已给依据-别重议-①-canvas-not",
+      "summary": "【内化 3 个 + 归位 2 个（子代理审计已给依据，别重议）】① canvas_notes → get_dsl query=canvas_notes（get_dsl 已有 19 个 query，这是唯一缺的同族分支）；② design_intent 的 set → edit_dsl type=intent（★ 读侧已并完：query=goals / query=edge_intents 都在 get_dsl）；③ feature_line → design_line action=feature-line；④ review_changes / observe_proposals 从 meta 线【归位】到 design 线（它们操作设计侧审批面，入口不动）。★ 不许并的：read_project_docs（读 md 不是 DSL 对象）· observe_*（判据在日志）· contract_page（AST 查询）· snapshot（和 get_dsl query=snapshots 是两个库）。★ design_intent 的 propose 留在审批面，只并 set。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_删-5-个-explore-code-action-修-3-处正则-修-1-个既",
+      "summary": "【删 5 个 explore_code action + 修 3 处正则 + 修 1 个既有 bug】删（判据：别处已能回答）：diff_impact(146/0 ← impact_analysis 已覆盖) · watch(145/1 ← 每次查询前自动保鲜) · inject_replay(179/0 ← observe_instrument+observe_trace 已覆盖) · derive_anim_flow(147/3) · derive_algorithm(147/3) · derive_split(146/2) · derive_chain(146/2)。★ 修 bug（实测，与本次同源）：dead_deps.ts 的 stripTsImportLines 遇到 import 'x';（副作用无 from）会一路吃到下一个 from，把中间代码抹掉。★ 低危正则（改用 AST 子节点）：kernel.ts:721/761/902/928（import 已确认节点）· health/index.ts:495（Java import 声明）。★ Go struct 缺口：type_members.ts 的 TYPE_DECL_NODES 没登记 struct_type/interface_type ⇒ extract_contracts 的 10 条兜底全是 Go（真覆盖缺口）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_translate-go-ts-照-rea-补两件-unknowns-对照测试-",
+      "summary": "【translate_go_ts 照 REA 补两件：unknowns + 对照测试】依据（REA = github.com/morluto/rea，11 万星）：判据不是\"AST 一致\"，是\"新旧执行同样操作，比较输出\"（Aegis 133 组全一致；DX-Ball 3,205 组全一致）。★ 要补：① 回执带 unknowns（分开\"已知\"与\"推测\"，不许把合理故事当事实）；② 强制对照测试：没有测试就报【未验证】，不许报【完成】。★ 不许：把\"能编译\"当成功。★ 用户裁定：判据是\"功能达成\"不是\"结构相同\"——不能直接映射的可以手动翻译，能映射的搭映射表。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_账本加-via-字段-分清-agent-用了-证书跑了-扫射跑了-现状-agen",
+      "summary": "【账本加 via 字段：分清 agent 用了 / 证书跑了 / 扫射跑了】现状：.agent-io/dogfood/usage.jsonl（16,422 行）的 DogfoodUsage 只有 {ts,tool,action,ok,ms,nextHops,err}，没有 actor / via ⇒ 分不清\"agent 用了\"和\"证书/扫射跑了\"（canvas_notes 7 次成功全落在 4 个扫射日，无法判断有没有人真用）。★ 最小改动：recordDogfoodUsage 加 via: mcp|cli|cert|sweep|gate（一条字段就够）。★ 顺带：mcp_scan.mjs 直接 def.handler({}) 绕过 invokeTool ⇒ 不入账；verify 门跑的那一遍也不在账本里。★ 这条不做，\"哪些工具没用\"永远是猜的。",
       "expectations": [],
       "state": "candidate",
       "owner": null
