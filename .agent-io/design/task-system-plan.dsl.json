@@ -95265,11 +95265,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T02:15:50.939Z",
+    "saved_at": "2026-10-20T02:23:09.324Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792462297750,
-    "age": 253189
+    "age": 691574
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -97091,6 +97091,13 @@
           "verdict": "pass"
         }
       ]
+    },
+    {
+      "id": "todo_持续收集-用本仓工具哪里不顺手-并汇总进-docs-dogfood-md-已建-",
+      "summary": "持续收集「用本仓工具哪里不顺手」并汇总进 docs/dogfood.md（已建，2026-10-20 首版 13 条）。★ 机制两条：① 每周一 09:00 有 automation「agent-io dogfood 自检」跑一次真实小事并追加；② 每次派子代理时，在回报格式里加一条「用这个工具时哪里让你多做了动作 / 让你猜了」——2026-10-20 的子代理就是靠这条在第 5 分钟指出「库正在被旧进程写」，而我查代码查了 20 分钟。★ 判据：dogfood.md 记**体验**（想做什么 → 多做了什么/猜了什么），真缺陷进 docs/todo.md，两者不混。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
     }
   ],
   "_dsl_rev": 540
