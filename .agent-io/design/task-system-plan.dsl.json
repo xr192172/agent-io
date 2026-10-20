@@ -95201,11 +95201,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T00:47:35.971Z",
+    "saved_at": "2026-10-20T01:14:08.743Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792457245743,
-    "age": 10228
+    "scanRev": 1792458848535,
+    "age": 208
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -97002,6 +97002,21 @@
       "expectations": [],
       "state": "candidate",
       "owner": null
+    },
+    {
+      "id": "todo_查清-imports-start-index-落库只有-39-ts-的原因并修好",
+      "summary": "查清 imports.start_index 落库只有 39%（TS）的原因并修好 —— 抽取层已证有值（task_machine.ts 首条 si=1887），写入代码（symbols.ts:511）读着也对，唯一写入点仅此一处；但 DB 里 686/1739 为 NULL。★ 关键矛盾：identifiers 与 imports 抽自同一棵树，identifiers 有 126504 行偏移、imports 却只有 39% —— 问题不在「树没给」。下一步：直接打印 task_machine.ts 里 import_statement 节点的 startIndex，看是不是这个节点类型特别。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_查清-imports-start-index-落库只有-39-ts-的原因并修好-2",
+      "summary": "查清 imports.start_index 落库只有 39%（TS）的原因并修好 —— 抽取层已证有值（task_machine.ts 首条 si=1887），写入代码（symbols.ts:511）读着也对，唯一写入点仅此一处；但 DB 里 686/1739 为 NULL。★ 关键矛盾：identifiers 与 imports 抽自同一棵树，identifiers 有 126504 行偏移、imports 却只有 39% —— 问题不在「树没给」。下一步：直接打印 task_machine.ts 里 import_statement 节点的 startIndex，看是不是这个节点类型特别。",
+      "expectations": [],
+      "state": "claimed",
+      "owner": "workbuddy",
+      "claimed_at": "2026-10-20T01:14:08.705Z"
     }
   ],
   "_dsl_rev": 538

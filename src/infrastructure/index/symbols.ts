@@ -235,6 +235,26 @@ interface SyncPrelude {
 type PreludeResult = { ok: true; pre: SyncPrelude } | { ok: false; early: SyncFileResult };
 
 /**
+ * 缓存行是否是**旧解析格式**留下的（⇒ 不能按「内容没变」短路，必须重解析）。
+ *
+ * 为什么需要（实测，2026-10-20）：`content_hash` 相同只能证明「源码没变」，
+ * 证明不了「库里那几行是当前解析器产出的」。v12 给 `imports` 加 `start_index/end_index`
+ * 之后，旧格式的行**永远是 NULL**，而这里按 hash 短路 ⇒ 这些行**没有任何机会被修好**：
+ * 手工清表重建会被在跑的长进程（旧 dist 的 MCP / watch_project）再写回旧格式，
+ * 于是 `.ts` 的 span 覆盖率长期停在 39%（实测 668/1739）。
+ *
+ * 判据只用「整条 import 全都没有 span」——观测到污染是**按文件全有/全无**
+ * （474 个文件里 mixed=0），因此不会对正常文件误触发；也不会每轮空转重解析：
+ * 当前 kernel 对 import 节点恒给 span（实测一次全量导入、零例外）。
+ */
+function hasLegacyImportRows(db: Database, rel: string): boolean {
+  const row = db
+    .prepare('SELECT COUNT(*) n, COUNT(start_index) si FROM imports WHERE file_path = $p')
+    .get({ p: rel }) as { n: number; si: number };
+  return row.n > 0 && row.si === 0;
+}
+
+/**
  * 前置（同步、无解析）：读盘 + 内容 hash 短路。
  * `early` = 短路结果（读盘失败 / 内容未变 skipped）。
  *
@@ -273,7 +293,11 @@ function syncFilePrelude(db: Database, projectRoot: string, absPath: string): Pr
       m: Math.round(stat.mtimeMs),
       p: rel,
     });
-    return { ok: false, early: { path: rel, status: 'skipped', node_count: 0, edge_count: 0 } };
+    // ★ 2026-10-20：短路还要求「库里那几行是当前解析格式」（见 hasLegacyImportRows）。
+    //   旧格式的行不短路 ⇒ 下一次同步就地重解析并补上，不再永久停在 NULL。
+    if (!hasLegacyImportRows(db, rel)) {
+      return { ok: false, early: { path: rel, status: 'skipped', node_count: 0, edge_count: 0 } };
+    }
   }
 
   return {

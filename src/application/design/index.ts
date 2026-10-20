@@ -224,25 +224,19 @@ export const DESIGN_TOOLS: ToolDef[] = [
                   '填错会由 checkOpSpec 报出该 type 的全部合法值）。' +
                   '例：node/edge/file/api 用 add/update/delete/move；task 用 publish/claim/release/complete/void/reopen',
               ),
+            /**
+             * ★★★ 2026-10-20：**与 `op` 同病** —— 这里原是硬编码 `z.enum([...])`，
+             *   而合法 type 的真判据只有 `OP_SPECS`（`checkOpSpec` 按 op 查表）。
+             *   漂的证据：**`todo` 在 OP_SPECS 里有、这个枚举里没有** ⇒ 加 todo 的入口根本调不通。
+             *   ⇒ 收敛成 `z.string()`，报错交给 `checkOpSpec`（它列合法值 + 指路）。
+             *   ★ 这是同一天内第二处「硬编码枚举 vs OP_SPECS 各持一份」—— 上一处是 `op`。
+             */
             type: z
-              .enum([
-                'node',
-                'edge',
-                'file',
-                'api',
-                'binding',
-                'status',
-                'annotation',
-                'approval',
-                'snapshot',
-                'layout',
-                'simulation',
-                'tag',
-                'decision',
-                'task',
-              ])
+              .string()
               .describe(
-                '目标类型：node/edge/file/api/binding/status 几何与语义；annotation/approval/snapshot/layout/simulation 协作与整理；tag=功能标记；decision=决策卡写入口（★ **字段清单与形状见描述里的「data 契约」段**；★ 未决分歧进 data.dissent，**不是** data.alternatives）；task=任务格（★ 唯一写端：publish/claim/release/complete；★ publish 把节点的 decision 翻成任务卡）',
+                '目标类型（★ 合法值**按 op 不同**，唯一判据 = op_data_spec.ts 的 OP_SPECS；' +
+                  '填错会由 checkOpSpec 报出该 op 的全部合法 type）。' +
+                  '例：op=add 时 type 可为 node/edge/file/api/tag/decision/task/todo',
               ),
             id: z.string().optional().describe('目标 ID（annotation/approval/snapshot/layout/simulation 可省略，用 data 传参）'),
             data: z.record(z.string(), z.unknown()).optional(),
