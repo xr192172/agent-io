@@ -98769,11 +98769,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T11:31:04.589Z",
+    "saved_at": "2026-10-20T11:31:22.397Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792495740842,
-    "age": 123747
+    "age": 141555
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -100775,6 +100775,13 @@
     {
       "id": "todo_断线-apply-refactor-plan-回执不带-task-gate-闸判",
       "summary": "【断线：apply_refactor_plan 回执不带 task_gate】闸判了、豁免了，但 editCode 的 task_gate 在 applyRefactorPlan 这一层被丢 ⇒ 回执 DATA 里只有 ok/plan_id/written/items。★ 做法：照 refactor/gate_note.ts 的 attachGateNote() 接上（判据一处）。★ 另：cli <tool> --schema 不显示 actor（edit_code 也一样，CLI 展示层旧缺口）；MCP tools/list 里有。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_写闸覆盖面-6-个入口绕开或丢身份-子代理逐个实测-读码列出-2026-10-2",
+      "summary": "【★ 写闸覆盖面：6 个入口绕开或丢身份】子代理逐个实测/读码列出（2026-10-20）：① refactor_pipeline（pipeline/refactor_pipeline.ts:632/653）**直接 fs.writeFileSync，完全不走闸**；② code_workbench（design/workbench/code_workbench.ts:765/784）调 editCode 但不传 actor；③ design_line action=sync-signatures/rewrite（design/rewrite/rewrite.ts:160）调 applyRefactorPlan 不传 actor，且 task_gate 在这一层又丢；④ deprecate_offline（deprecate_offline/deprecate_offline.ts:374）调 removeDeadImportsWithVerify 不传 actor，且会物理删文件；⑤ diagnose / diagnose_loop（infrastructure/analysis/diagnosis/repair.ts:236）**直接 fs.writeFileSync**；⑥ upgrade apply（authoring/version_upgrade/rewrite.ts:133）**直接 fs.writeFileSync**。★ ①②③④ 属「同一条链的出口没接全」；⑤⑥ 与 refactor_pipeline 属**结构性绕过**（不走 writeSourceFiles / editCode，自己 fs.writeFileSync）。★ 正解不是逐个加 actor，而是问「为什么允许绕过」：要么让这三个走统一的落盘层，要么在 write_gate 里加一条「本仓所有落盘必须经 X」的读数（但那是普查，要谨慎）。",
       "expectations": [],
       "state": "candidate",
       "owner": null
