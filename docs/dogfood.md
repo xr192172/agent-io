@@ -53,3 +53,4 @@
 | 什么 | 在哪 |
 |---|---|
 | `edit_code` 的**批量 ops 格式查不到**：`{ops:[{path,...}]}` 与 `{ops:[{file,...}]}` 都报「缺参数 file」，而 schema 里没写清 | `edit_code` |
+| `remove_dead_imports` 的写闸**没有 actor 参数** ⇒ 传 `actor` 也拦不住（实测：改 owner=alice 的文件照样落盘，回执无 `task_gate`） | `write_gate.ts#snapshotAndRecordSelfWrite` |

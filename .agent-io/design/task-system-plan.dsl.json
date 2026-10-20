@@ -98757,11 +98757,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T11:02:22.420Z",
+    "saved_at": "2026-10-20T11:02:40.643Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792493763099,
-    "age": 379321
+    "age": 397544
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -100749,6 +100749,20 @@
     {
       "id": "todo_结构-satisfied-不该锁死文件-现状-src-domain-task-m",
       "summary": "【★★ 结构：satisfied 不该锁死文件】现状：src/domain/task_machine.ts 的 isClaimable 判据是「后态有红才可领」⇒ satisfied（判据全过）⇒ 拒「没活干」⇒ 写闸只认 claimed ⇒ 已完成文件的任何改动（含改注释、重构、补文档）全部做不了。★ 用户裁定（2026-10-20）：「一个任务已完结之后为什么会直接锁文件，而不是持续让它像没有下过任务的文件一样，让它能够继续被下一个任务承载」⇒ 文件的【可写性】不该由【卡的活跃度】决定。★ 修法（倾向 a，简单）：satisfied 也允许 claim，但回执必须区分意图——「判据全过：本次领卡是【修改】不是【补红】」；done/void 的卡走 reopen/relaunch 后同样可领。另一候选 b：claim 加 intent=work|modify（精确但多一个参数）。★ 不许的做法：① 给每个文件标 gate=exempt（那是绕过闸，不是修结构）；② void+relaunch（会清空判据 = 毁设计信息）。★ 验收：satisfied 的节点可 claim → 改一行注释 → complete → 再进行下一轮仍可 claim；同时 A7 仍拦「领别人 owner 的卡」；写闸对「无任何卡且节点非 exempt」仍拒。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_真漏-remove-dead-imports-的写闸没有-actor-参数-实测",
+      "summary": "【★ 真漏：remove_dead_imports 的写闸没有 actor 参数】实测：传 actor:\"me\" 去改 owner=alice 的文件 ⇒ 照样落盘成功，回执里连 task_gate 都没有（子代理实测，非推测）。根因：它走 write_gate#snapshotAndRecordSelfWrite（write_gate.ts 内），那条路的闸【连 actor 参数都没有】。同族三条（推测，未实跑）：① design_line action=rewrite → rewriteSymbols → applyRefactorPlan 不传 actor（刚接好的链在这一入口又断）；② rename_symbols 的文件联动内层 renameFile 不传 actor（AGENT_IO_ACTOR_STRICT=1 下会「外层放行、内层拒」自相矛盾）；③ code_workbench 的 renameFile/editCode 三处不传（它经人工 approve 落地，不是 MCP 工具）。★ 正解：让 snapshotAndRecordSelfWrite 也接 actor（判据一处），别再各接一遍。★ 验收：remove_dead_imports 传 actor=me 改 owner=alice 的文件 ⇒ A7 必须拒。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_断线-apply-refactor-plan-回执不带-task-gate-闸判",
+      "summary": "【断线：apply_refactor_plan 回执不带 task_gate】闸判了、豁免了，但 editCode 的 task_gate 在 applyRefactorPlan 这一层被丢 ⇒ 回执 DATA 里只有 ok/plan_id/written/items。★ 做法：照 refactor/gate_note.ts 的 attachGateNote() 接上（判据一处）。★ 另：cli <tool> --schema 不显示 actor（edit_code 也一样，CLI 展示层旧缺口）；MCP tools/list 里有。",
       "expectations": [],
       "state": "candidate",
       "owner": null
