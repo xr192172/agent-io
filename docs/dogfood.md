@@ -227,3 +227,21 @@
 
 **40. ★ 全部工具都把「我什么都没做」渲染成 `✓`** — `待处理`
 - 缺一个统一的 `did_work: false`
+
+---
+
+## 2026-10-20 追加（查欠账时撞到的）
+
+**41. ★ `claim` / `void` / `release` 对 `todo` 的定位走的是 `geometry.nodes`** — `待处理（真 bug）`
+- 实测：对 `todo_查清-imports-start-index-落库只有-39-ts的原因并修好` 调 `claim`，报
+  「节点 "..." 不在 feature "task-system-plan" 的 geometry.nodes 里 —— 任务与节点同居，找不到节点就没有家」
+- 但这条 todo **确实在 `todos[]` 里**（`get_dsl` 读得到，`state=candidate`）
+- ⇒ `edit_dsl` 的 `type` 已经支持 `todo`（今天加的），但 **`claim` 的实现还在按节点找**
+- ★ 而今天之前那几次 todo 的 claim 是**成功的**（`pruneDeletedFiles` / `reopen 白洞`）——
+  说明两条路径**有时走对有时走错**，取决于 id 长什么样（带 `-2` 后缀的那条成功了）
+- 影响：**陈旧 todo 无法销账**（这条是今天 imports span 那件事的第一版，已被 `-2` 取代）
+
+**42. todo 里有重复条目** — `待处理`
+- `todo_查清-imports-start-index-落库只有-39-ts的原因并修好` 与 `...-2` 是**同一件事的两条**
+- 起因：我第二次 `add` 时不知道第一条已经建了（`add` 不回显"已有同名"）
+- ⇒ `todo` 的 `add` 应该查同名（或至少警告）
