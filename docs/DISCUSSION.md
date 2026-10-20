@@ -1959,3 +1959,38 @@ npm run verify → 5 道门全过
 
 ★ 这两条和昨天那条「还原要还原整个被影响的范围」是同一族：
 **动作之间有依赖时，前一步失败就不能执行后一步** —— 我这次就是"tsc 红了还往下跑"。
+
+---
+
+## 2026-10-20 早（三四）· identifiers 表建成（`10a032dc`）—— 上次失败的那张表
+
+### 1. 结果
+
+```
+identifiers: 171,043 行
+  identifier 99533 · property 63296 · shorthand 1884 · type 6330
+cardStanding：L192（定义）+ L341（使用）· slice 出来正好是 "cardStanding" · 2/2 命中
+全文出现 11 次 · 表里 2 次 ⇒ 9 处在【注释/字符串】里
+```
+
+**最后那条就是分水岭**：正则会把那 9 处也当成引用。
+
+### 2. ★ 上次失败，这次怎么改的
+
+| 上次 | 这次 |
+|---|---|
+| 按"记得有两处 return"改 | **先把出口列出来**：`grep -n "export async function parse"` ⇒ 发现**两个** `parseFileFull`（async / sync）；`grep -n "traverseAndExtractTypeRefs("` ⇒ 发现**两处相同行** |
+| 从前往后改（行号漂移） | **从大到小按行号改**（1938 → 1937 → 1883 → 1882） |
+| tsc 红了还跑 `import_project` | **严格顺序**：tsc 绿 → 清表 → 导入 |
+
+### 3. 判据也修了一条
+
+第 2 条原写 `source-has identifiers.push` —— **依赖变量名**（我实际用的是 `out.push`）。
+
+⇒ 换成 `traverseAndExtractIdentifiers`（**函数名**）。
+
+> **判据不该钉"变量叫什么"** —— 那是最容易被重构改掉的东西。
+
+### 4. 收口路径
+
+判据曾红过 1 条 ⇒ 从 `candidate` 直接收口（OQ1 裁定：显式收口，owner 可为空）。**第二次实战。**
