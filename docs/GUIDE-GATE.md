@@ -10,7 +10,7 @@
 | 2 | MCP 工具签名 | 全部工具的 handler 守卫（直接 import `TOOL_DEFS` 调 `def.handler({})`，绕过 zod） | `node scripts/mcp/mcp_scan.mjs`（需先有 `dist/`） | 补缺参守卫 / 修 schema；改完重建 dist 再跑 |
 | 3 | Go 编译 | `observe-lang-go` 全部包 | `go build ./...`（cwd=`observe-lang-go`） | 改 Go 源码；机器没 `go` ⇒ SKIP |
 | 4 | Go 静态检查 | 同上 | `go vet ./...`（cwd=`observe-lang-go`） | 按 vet 报的改；没 `go` ⇒ SKIP |
-| 5 | 实现夹具 | `cardStanding` 四个行为分支（`satisfied` / `work` / `violated` / `unknowable`） | `node scripts/impl-fixture.mjs` | 改实现；**不改夹具的期望值** |
+| 5 | 实现夹具 | `cardStanding` 五个行为分支（`satisfied` / `work` / `violated` / `blocked` / `unknowable`） | `node scripts/impl-fixture.mjs` | 改实现；**不改夹具的期望值** |
 | 6 | 设计 DB 结构 | `design-db/*.calls.json` 与 `design/*.dsl.json` 的一致性（只读入库文件，不读 `cache.db`）：`//source` 持有者、`requirements`、`requirements_calls` 的调用方与条数、缺/多副本、真冲突 | `node scripts/gen-db-check.mjs` | 重跑 `design_line action=gen-db` 重生成投影；报 `真冲突`（两 feature 对同一文件互斥）⇒ 改设计，重跑修不好 |
 
 总门三态：
@@ -25,6 +25,8 @@
 - 加门只改 `scripts/verify.mjs` 的 `GATES`。加之前先答"什么输入会让它红"，答不出就别加。
 - **永远绿或永远红的门等于没有门**：先让它能失败，再修它报的东西。
 - ts 门用 `process.execPath` + `shell:false`（路径含空格，经 cmd 会被截断）；其余门在 Windows 上 `shell:true`。
+- **报账只认总门**：`npm run verify` 才算"跑过"。不许只跑自己挑的几道就说全绿——"没报错"与"没跑"在输出上分不出。
+- 实现夹具只钉**行为**（`cardStanding`），不钉 `reason` 文案：文案变异的"存活"是正确信号，不计欠账。
 
 ## 二、证的结论
 
@@ -58,9 +60,13 @@
 | `run` | 给 `input` 跑 `expect` 表达式 | `expect` | post |
 
 - 每条都要 `why`（非空），否则写入被拒。
-- `run` 专属字段：`input` / `input_ref` / `blocked_by`（有值 ⇒ 判 `pending`，不跑 `expect`）/ `mutants_ignore[]`（不参与突变的 input 字段）。`expect` 的求值域只有 `input` / `root` / `validateDSL`，不是任意代码执行。
+- `run` 专属字段：`input` / `input_ref` / `blocked_by`（有值 ⇒ 判 `pending`，不跑 `expect`）/ `mutants_ignore[]`（不参与突变的 input 字段）。`expect` 的求值域只有 `input` / `root` / `validateDSL` / `fs` / `path`，**没有 `import`** ⇒ 调不到项目模块，只能断言 `validateDSL` 或文件文本。要真跑被测函数得加 `target{module,fn}` + `cases[]`（未做，见 `INDEX.md` §四）。
+- `run` 只许读 + 判，不许副作用（写盘 / 改状态）。
+- `signature-matches` 比的是「设计侧存的签名（意图）」与「源码签名（事实）」。设计 DSL 该存签名，不该存从源码抽出来的结构化契约（派生量，会不同步）。
+- `edge-exists` / `edge-absent` 的 `from` / `to` 是**文件路径**（来自 `cache.db` 的 import 依赖）；DSL `edges[].from/to` 是**节点 id**。同名不同义。
 - 求值结论四态：`pass` / `fail` / `unsupported`（判不了，单列，不算过也不算不过）/ `pending`。
 - 卡的结论五态（`cardStanding`）：`work` / `violated` / `blocked` / `satisfied` / `unknowable`，由 `RED_DISPOSITION` 派生。
+- 两道闸方向相反、用同一把尺：`claim` 只认 `work` / `violated`（有活干）；`complete` 只认 `satisfied`（干完了）。
 - 只有 `post` 参与"是否已满足"；`pre`（`edge-absent`）在未施工时天然成立，拿它判满足会恒真。
 - 依赖事实只为 TS/JS 相对导入生成 ⇒ 其余语言的 `edge-*` 走 `unsupported`。
 
@@ -82,6 +88,7 @@
 
 - 消融不红 = 假绿。**修完 bug 先问"撤掉它会红吗"，答不出来就还没修完。**
 - 出生证要**回读确认注入落盘**；变异体必须就是那个要防的形状。
+- 变异体只许两态：**杀死 / 存活**。"编译不过" = 程序起不来 = 被检出 = **杀死**；单列 `broken` 等于把它放过了。
 
 ### 4.3 读数只许落四态
 
@@ -104,6 +111,8 @@
 - 假红两条出口：✅ 修判据；❌ 改被检对象去迎合（放宽阈值 / 加豁免 / 删字段）。
 - **先证明判据错了，再动判据；绝不动被检对象。**
 - 第 ① 档统一自检句：**"如果这件事坏了，这个读数会变成什么？"** 答不出一个必然不同的读数，就还在 ①。
+- **判据写弱 = 恒真**：`must` 串在目标文件里到处都是（`'diff'` 这种词在注释、别的工具名里都有）⇒ 只有"做了才会出现"的标识符才算判据（钉函数名，不钉变量名）。
+- **充分条件当必要条件**会挡合法输入：T20 用"库里有这个文件"证明"有依据"，只对改已有文件成立；新建的依据是**期望**（同批 `file-exists`）。
 
 ### 4.5 严重度
 
@@ -118,6 +127,7 @@
 - 门不能把自己数进去；排除用单独常量，不塞进豁免名单。
 - **判据 / 规格 / 答案清单不许放进被测对象的读写范围。**
 - 文本判据必带作用域（文件？路径参数？读还是写？）；先剥注释；能读结构化字段就不读散文。
+- **还原要还原被影响的范围**：变异器还原源文件后必须重编译——`dist` 里会留着最后一个变异体，否则后续测试都在跑被污染的产物。
 
 ### 4.7 门的输入
 
@@ -133,6 +143,17 @@
 顺序：**编译器 / 类型系统** → **现成工具**（ESLint `no-restricted-imports`、dependency-cruiser、knip、Nx boundaries、`eslint-plugin-boundaries`）→ 自写。
 
 自写只留给编译器与工具查不了的：文本重复、图的**无环**、**运行期行为**（方向 / 反饱和 / 双向自证）。
+
+### 4.9 判据能自动到哪一层
+
+| 层 | 能自动判吗 | 谁在判 |
+|---|---|---|
+| 事实在不在（文件 / 符号 / 边） | 能，接近 100% | 文件系统 / AST |
+| 判据有没有被写死 | 能 | `design:mutate`（存活 = 假绿） |
+| 判据选的「尺」对不对 | **不能** | 只有意图（人 / LLM） |
+| 判据实现对不对 | 部分 | 夹具 + 局部变异（逐个补，不是一次点亮） |
+
+程序判事实、数次数、跑突变；LLM 选尺、复核、宣布完成。**全程可以没有"人"，但每一步都要有主体——责任链没有断点。**
 
 ## 五、门报绿但你不信：八步
 

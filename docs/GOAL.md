@@ -23,4 +23,4 @@
 | W3 | 先看全貌再动手 | 动手前给出 `file:line` 与消费方 | `get_dsl` · `explore_code` · `find_references` |
 | W4 | 借独立视角 | 重大改动前派不知情子代理通读 | 派子代理 |
 | W5 | 把"怎样对"讲清 | 每个可选值带 `use_when` + `not_when` | ⚠️ 工具 schema 里没有 `not_when` → `src/application/*/index.ts` |
-| W6 | 文档只有一份 | 新内容进 `INDEX.md`，不新开 md | ⚠️ `docs/` 现有 13 份 md |
+| W6 | 文档只有一份 | 新内容进 `INDEX.md`，不新开 md | ⚠️ `docs/` 现有 12 份 md |

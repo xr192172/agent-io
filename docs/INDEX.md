@@ -36,7 +36,7 @@
 
 | 功能 | 干什么 | 状态 |
 |---|---|---|
-| 任务卡 | 节点上挂卡：`candidate`→`claimed`→`done`，判据在 `decision.expectations` | ✅ |
+| 任务卡 | 节点上挂卡：`candidate`→`claimed`→`done`；`candidate` 也可直接 `done`（显式收口，owner 可空）；`done` 可 `reopen`，`void` 可 `relaunch`。判据在 `decision.expectations`，`evidence` 记 `by` / `agent` | ✅ |
 | 判据 8 kind | `file-exists` `symbol-exists` `signature-matches` `edge-exists` `edge-absent` `call-exists` `source-has` `run` | ✅ |
 | 写闸 | 改源码须有 claimed 卡；`gate:'exempt'` 的节点免闸 | ✅ 已真拦 |
 | A7 | `owner ≠ actor` ⇒ 拒 | ⚠️ 见 §四 |
@@ -61,7 +61,16 @@
 | 12~25 个节点指向盘上不存在的路径 | `.agent-io/design/` |
 | `t337` 前提已破（两个 writer 写同一文件） | `certs/` |
 | 写闸只拦 MCP 工具面，`bash` 直写不拦；`.githooks/pre-commit` 只跑 `gen_agents` | 覆盖面 |
-| 覆盖是 **98%**（337/344 个 `src/` 文件在设计侧），但**有 claimed 卡的只有 4/367 ≈ 1%** ⇒ 闸一开，改任何已纳设计的文件都会被拒，除非领卡或 `authorize` | `.agent-io/design/` |
+| 覆盖是 **98%**（337/341 个 `src/` 文件在设计侧），但 claimed 卡只覆盖 **4 个 `src/` 文件**（另有 3 个 `scripts/*`）⇒ 闸一开，改绝大多数已纳设计的文件都会被拒，除非领卡或 `authorize` | `.agent-io/design/` |
+| `task_plan` 仍是工具面外的飞地：不在 `DesignDSL` 类型、没有 `edit_dsl` op（`design-check` 直接读 JSON）⇒ 改它只能手改 | `.agent-io/design/` |
+| `run` 缺 `target` / `cases`（求值域没有 `import`）⇒ 调不到被测模块；`parse/params.ts` 与 `ParsedSymbol.exported` 也未做 ⇒ 契约测试生成器拼不起来。且多数读文本判据的目标是**内部语句**，没有可测的导出接口（模块层缺口，要改代码结构） | `expectations.ts` · `parse/` |
+| 跨文件 `obj.method()` 不建调用边（v1 保守标 `external`，不做接收者类型推断）⇒ 跨文件方法调用的 `call-exists` 判不了 | `index/symbols.ts#resolveCrossFileCalls` |
+| `observe_proposals` 是「实际 → 设计」的回流通道，但没有生产使用（0 提案）。定位仍是：判结果用 `run`，判过程（步数 / 耗时 / 重试）才插桩 | `.agent-io/observe/` |
+| 批量删孤儿节点无一键路径（**有意**）：只能逐条走 `edit_dsl`；不得绕过它直接调 `updateFeature` | `edit_dsl` |
+| `certs/t350` 读 `docs/task-system-plan.dsl.json`——文件不在库（`docs/*` 被 ignore）⇒ 该证跑不起来 | `certs/t350-publish-task-cert.mjs` |
+| 全语言通用 = 语言能力表（`parser` / `compiler` / `testRunner` / `probes`），不是"多支持几门语言"；增量编译是 TS 专属，不进通用层 | `parse/languages.ts` · `verify.mjs` |
+| `task.expectations` 仍是 `decision.expectations` 的副本（靠 A6 闸防漂移，不是单一来源） | `task_schema.ts` · `task_ops.ts` |
+| `reopen` 的闸只堵"零动作"：伪造 `evidence.at` 时间戳仍能过 | `task_ops.ts#reopenGate` |
 
 ## 五、文档
 
@@ -77,8 +86,8 @@
 | `GUIDE-GATE.md` | 门的清单（verify 6 道门 / 证的四态 / 判据 8 kind） |
 | `GUIDE-USAGE.md` | 工具与流程（工具表 / 典型流程 / 派子代理） |
 | `dogfood.md` | 用本仓工具时的体验（表） |
-| `DISCUSSION.md` | 讨论日志（**只读，不是权威**） |
-| `todo.md` / `certs-4-ways.md` / `PITFALLS.md` / `HANDOFF.md` / `MERGE.md` / `ARBITRATION.md` | 见其自身第一行 |
+| `DISCUSSION.md` | 讨论留下的判断（**别处没有且仍成立**的：直链边界 / DSL 全量+笔迹 / 语义不可代验）；历史过程在 git |
+| `todo.md` / `PITFALLS.md` / `MERGE.md` / `ARBITRATION.md` | 见其自身第一行 |
 
 ## 六、规矩
 
@@ -86,3 +95,5 @@
 2. **失败就抛**（不许静默兜底）
 3. **写文档 = 改这张表**（不新开、不追加）
 4. **没做完的写进 §四**（不另开文档）
+5. **读数与派生量不落盘**（"发生过什么"可存，"现在是多少"只能现算；能由事实现算的不存）
+6. **判据只住 `src`**（`scripts/` 可以是薄投影，不能持有判据）

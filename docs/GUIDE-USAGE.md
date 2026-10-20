@@ -31,6 +31,7 @@
 - CLI 入参三种形式**不可同时给**：`k=v` 平铺（按 schema 转类型）/ `--json '{…}'`（嵌套、数组）/ `--input args.json`。
 - 查单个工具的入参：`cli.js <tool> --schema`（`--help` 不可用）。
 - 产物：人读回执 + `\n---DATA---\n` + 一行 JSON；`touched` 在 JSON 那一层。
+- 三种 diff 别混：**节点级** `design_line action=diff` / **符号级** `action=sync-signatures` / **语义级** `judgeExpectations`（判据）。
 - **写闸**：改源码须先有 `claimed` 卡（`edit_dsl op=claim`）；`gate:'exempt'` 的节点免闸。写闸只装在本仓写工具上（`edit_code` / `rename_*` / `move_symbol` / `apply_refactor_plan`），`Write` / `Edit` / shell 直写绕过它。
 
 ## 二、典型流程
@@ -38,6 +39,7 @@
 | 想做什么 | 几步 |
 |---|---|
 | 改一个函数 | `edit_dsl(op:publish)` → `edit_dsl(op:claim, data.owner)` → `edit_code op=symbol` → `edit_dsl(op:complete, data.evidence)` |
+| 改一张已完成卡的判据 | `edit_dsl(op:reopen)` → 改 `decision` → `edit_dsl(op:publish, data.reason)`（原地换 `summary` + `expectations`，`evidence` 保留） |
 | 改一处文本（不知符号/行号） | `edit_code op=replace_text dry_run=true` → 同参去掉 `dry_run` |
 | 加一个新文件 | `design_line action=diff` → `get_dsl query=node` → `edit_code op=insert` → `edit_code op=symbol` → `design_line action=sync-signatures apply=true` |
 | 按设计重写一片 | `design_line action=diff` → `get_dsl query=scope scope=<expr>` → 逐节点 claim → `edit_code` → complete |
@@ -51,6 +53,9 @@
 | 重生成设计 DB | `design_line action=gen-db`（`check=true` 只比对不写盘） |
 | 交活前 | `npm run verify`（6 道门）+ `npm run certs`（见 `GUIDE-GATE.md`） |
 | 开并行支线 | `git worktree add`（§2.4） |
+
+- **新建文件的设计（T20）**：必须在**同一批** `node.add` 的 `data.decision.expectations` 里带一条 `file-exists` 指向该路径。闸要的是"依据"不是"现状"——新文件没有现状可读，别造空壳骗闸。`delete` 不参与本闸（它断言"不该存在"，不需要现状）。
+- 立卡要早于动手：先做后立卡，判据只剩"注册"能红 ⇒ 卡一出生就 `satisfied`，没有"有活可干"的证据（要改只能 `claim intent=modify` 取写权）。
 
 ### 2.1 加一个工具：7 处登记
 
@@ -177,6 +182,13 @@ git worktree list && git -C D:/project_develop/<仓名>-<线名> status -sb
 | `design_line` 的 `ok:true` 语义过载 | 看 `did_work` / `reason` / `differ` / `scanned` |
 | `remove_dead_imports` 不能按文件调 | 必填 `dead` 列表，先由上游算出候选 |
 | `edit_code` 的「索引失败」混在 `✓` 行 | 看 `---DATA---` 里的 `written` |
+| `edit_dsl` 改 `decision` 的 `expectations` 是**整体替换** | 必须传全量；少传 = 静默删掉旧判据 |
+| 会改源码的动作默认只看 | `apply` 不传 = 不落盘；落盘后必须复核（`afterDiffer > 0` ⇒ 不算成功） |
+| `node.layer` 只认 `main` / `error` / `detail` | `arch_layer` 是分组谓词（`ArchLayer.id`），不是节点键 |
+| `file.add` 必须带 `id` | 且与 `node.add` **同批**，否则 `anchor_broken` |
+| 改 TS 里的 `\n` | 用 `Edit`，不用脚本拼：python 三引号会把 `\\n` 变成真换行，留下未闭合字符串 |
+| `tsc` 报错后 | 不许跑 `import_project`：它会加载坏 `dist`，把索引写成 0 符号。顺序必须是编译绿 → 再重建 |
+| 变异 / 还原之后 | 必须重编译；源文件还原 ≠ 产物还原（`dist` 里会留最后一个变异体） |
 | `import_project` 的 `max_files` 默认 200 | 全量重建传 `10000` |
 | 清库后 `SCHEMA_VERSION` 不二次触发 | 直接 `DELETE FROM nodes/files/...` 再导入 |
 | 长进程（MCP server）用旧 dist 写库 | 改完先 `build`，再确认没有旧进程 |
@@ -207,3 +219,5 @@ git worktree list && git -C D:/project_develop/<仓名>-<线名> status -sb
 - 读侧保鲜在 `registerAllTools` 唯一入口：`hasLiveIndex && !def.noAutoFresh` ⇒ `ensureProjectIndex`。
 - 定位"哪个调用慢"：逐工具计时 + 边跑边 append 到 jsonl + 单工具超时。
 - 跑探针前必须重建 dist，否则静默跑旧代码（判据：读到的字段是 `undefined`）。
+- 什么该进 DB：看**消费者数 × 频次**。标识符有 4 个消费者且要全仓扫 ⇒ 进表；运算符只有变异器 1 个 ⇒ 不进。
+- AST 树不持久化：`children` 是 getter，JSON 还原不成树；重新 parse 单文件是毫秒级，比读 JSON 重建更快。真正的收益是**一套遍历 API（一致性）**，不是速度。
