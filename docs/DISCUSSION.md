@@ -1768,3 +1768,42 @@ StandingNode: [{"name":"id","type":": string"},{"name":"path","type":": string",
 ### 5. 没做
 
 `gen_design_db` 把 members 拷进设计 DB —— 它的卡已 `done`，要 reopen 才能改。
+
+---
+
+## 2026-10-20 早（三十）· 设计 DB 拷 members（`6f7a259f`）
+
+### 1. 改动与验证
+
+```
+gen_design_db 的 SELECT 加 members → payload 还原成数组
+certs/design-db/domain-task_machine.calls.json
+  StandingNode : [{"name":"id","type":": string"},{"name":"path",...}]   ✓
+  cardStanding : 无 members（function 本来就没有）                        ✓
+```
+
+★ 验证看的是**产物**，不是代码。
+
+### 2. ★ 「done 卡改判据」的完整路径走通了（第二次）
+
+```
+reopen（done→claimed）→ release（claimed→candidate）
+→ 改 decision（3 条 → 4 条，加 source-has members）
+→ publish 重翻 → claim → 改 → complete
+```
+
+**这次没有沿用旧判据**——旧 3 条不含 `members`，绿了也说明不了新功能。
+今天上午刚栽过一次「判据绿但数据空」，没再重犯。
+
+### 3. 一个小坑
+
+手写 JSON 时混进英文双引号（`"重写源码"`）⇒ 解析失败。用 node 生成 JSON，不手拼。
+
+### 4. 现在 DB 层的状态
+
+| | 之前 | 现在 |
+|---|---|---|
+| `nodes.signature`（function） | 完整 | 完整（不变） |
+| `nodes.signature`（type/interface） | `Name()` | `Name()`（不变） |
+| **`nodes.members`**（type/interface） | **不存在** | **1038 个节点有**（1017 interface 全覆盖） |
+| 设计 DB 的 interface 副本 | 只有 `Name()` | **带 members** |
