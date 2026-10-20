@@ -45,6 +45,8 @@ import { runRefactorPipeline } from './pipeline/refactor_pipeline.js';
 import { removeDeadImports, removeDeadImportsWithVerify } from './edit/remove_dead_imports.js';
 import type { RemoveDeadImportsVerifyOptions } from './edit/remove_dead_imports.js';
 import { renameFiles } from './rename/rename_files.js';
+// ★ 2026-10-20：三条写路共用的闸读数人读侧（机器侧字段仍是 `task_gate`，形状照抄 `edit_code`）
+import { gateHumanLines } from './gate_note.js';
 import { renameSymbols } from './rename/rename_symbols.js';
 import { applyRulesToFiles, collectRuleTargets, loadBaseline, ratchetDelta, runFixtures, writeBaseline } from './rule_library/rule_apply.js';
 import { extractRule } from './rule_library/rule_extract.js';
@@ -501,6 +503,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         parts.push(`\t${(r.blocked || []).join('\n\t')}`);
         parts.push('\tdry-run 各条状态：');
         for (const p of r.previews) parts.push(`\t  [${p.ok ? '可落盘' : '被阻断'}] ${fmt(p, p.result)}`.replace(/\n/g, '\n\t  '));
+        // ★ 2026-10-20：闸的放行读数/豁免点名也进**人读**消息（不只埋在 `---DATA---`）。
+        const gateLine = gateHumanLines(r.task_gate);
+        if (gateLine) parts.push(gateLine);
         return { message: parts.join('\n'), data: r };
       }
       const parts = [
@@ -510,6 +515,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         r.dryRun ? `[批量文件改名 dry-run 预览·未落盘] 共 ${r.previews.length} 条` : `批量文件改名完成：${r.previews.length} 条，落盘 ${r.filesWritten} 个文件`,
       ];
       for (const p of r.previews) parts.push(fmt(p, p.result).replace(/\n/g, '\n\t'));
+      // ★ 2026-10-20：闸的放行读数/豁免点名也进**人读**消息（不只埋在 `---DATA---`）。
+      const gateLine = gateHumanLines(r.task_gate);
+      if (gateLine) parts.push(gateLine);
       return { message: parts.join('\n'), data: r };
     }),
   },
@@ -585,10 +593,13 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         to_symbol: typeof a.to_symbol === 'string' && a.to_symbol ? a.to_symbol : undefined,
         dry_run: a.dry_run === true,
       });
+      // ★ 2026-10-20：闸读数的人读侧（pre-gate 阻断时为空，不加噪声）
+      const gateLine = gateHumanLines(r.task_gate);
       if (!r.ok) {
         return {
           message: `移动被阻断${r.dryRun ? '（整体未落盘）' : ''}：\n` + (r.blocked || []).join('\n') +
-            (r.toSymbolDeferred ? '\n⚠ to_symbol 改名未启用，改名请走 safe_rename。' : ''),
+            (r.toSymbolDeferred ? '\n⚠ to_symbol 改名未启用，改名请走 safe_rename。' : '') +
+            (gateLine ? `\n${gateLine}` : ''),
           data: r,
         };
       }
@@ -606,6 +617,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         for (const e of r.externalRefs.slice(0, 8)) parts.push(`  - ${e.resolved}${e.source ? `（import ${e.source}）` : ''}`);
       }
       if (r.toSymbolDeferred) parts.push('⚠ to_symbol 改名未启用，改名请走 safe_rename。');
+      if (gateLine) parts.push(gateLine);
       return { message: parts.join('\n'), data: r };
     }),
   },

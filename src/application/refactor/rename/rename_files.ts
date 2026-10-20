@@ -23,6 +23,8 @@ import { snapshotBeforeWrite } from '../snapshot/file_snapshot.js';
 // ★ T214 续8：兑现"整批不落盘"要用它 —— ★ 用**写前那份快照**回滚整批（★ 与 rename_symbols 对称 ✓）
 import { rollbackFileSnapshot } from '../snapshot/file_snapshot.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
+// ★ 2026-10-20：任务闸的放行读数（note / 豁免）带出口 —— 三条写路共用同一份
+import { attachGateNote } from '../gate_note.js';
 
 export interface FileRenameItem {
   /** 源文件：相对 project_dir 或绝对路径 */
@@ -74,6 +76,12 @@ export interface RenameFilesResult {
   rolledBack?: boolean;
   /** ★ T214 续8：回滚的**人话说明**（★ 成功说"已回滚整批"· 失败说"可能停在半改状态，请手动处理" ✓） */
   rollbackNote?: string;
+  /**
+   * ★★★ 2026-10-20：**任务闸的放行读数**（闸的 `note`；含豁免点名）。
+   * ★ 之前 `assertSourceWriteRegisteredFor(...)` 的返回值被丢了 ⇒ 闸判了、豁免生效了，回执里一个字都没有。
+   * ★ 形状照抄 `edit_code`（`EditReceipt.task_gate`）；人读侧由 `refactor/index.ts` 追加。
+   */
+  task_gate?: string;
 }
 
 async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResult> {
@@ -125,6 +133,8 @@ async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResu
   let snap: ReturnType<typeof snapshotBeforeWrite> = null;
   let failedAt = -1;
   let failedBlocked = '';
+  /** ★ 2026-10-20：闸的放行读数（在拍快照那段里拿到；后面两个出口都要带它） */
+  let gate: ReturnType<typeof assertSourceWriteRegisteredFor> | undefined;
   {
     const touched = new Set<string>();
     for (const p of previews) {
@@ -137,7 +147,8 @@ async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResu
     //   ★ 闸的对象 = 本批**会动到的全部文件** —— 复用上面刚拼好的 `touched`
     //     （每条目的 from/to + 阶段 1 预览里列出的各 importer），不另立第二份清单。
     //   ★ 闸**不会**替你登记、也不降级放行：未登记 ⇒ 抛错、整批不落盘（与下方"回滚整批"同一目的）。
-    assertSourceWriteRegisteredFor(projectDir, [...touched], resolveActor());
+    // ★★★ 2026-10-20：返回值**不许再丢**（闸判了什么、豁免了谁，要随回执出去）。
+    gate = assertSourceWriteRegisteredFor(projectDir, [...touched], resolveActor());
     // ★ T214 续8：**接住快照**（★ 否则失败时无从回滚 ✓ —— 原来这里把返回值丢了 ✗）
     snap = snapshotBeforeWrite(projectDir, `rename_files:${renames.length} 条`, [...touched]);
   }
@@ -185,10 +196,15 @@ async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResu
           '⇒ **项目回到改写前状态** ✓（★ 上面 `applied[]` 里列的文件**其实已被改回** ✓）'
         : `★★ **回滚失败**：${rb.message} —— ★ 项目可能停在半改状态，请手动处理`;
     }
-    return { ok: false, previews, applied, filesWritten, blocked: [failedBlocked], rolledBack, rollbackNote };
+    // ★ 2026-10-20：失败回执也要点名豁免（不是只有成功才报）。
+    return attachGateNote(
+      { ok: false, previews, applied, filesWritten, blocked: [failedBlocked], rolledBack, rollbackNote },
+      gate,
+    );
   }
 
-  return { ok: true, previews, applied, filesWritten };
+  // ★ 2026-10-20：任务闸的放行读数（note / 豁免点名）随回执带出 —— 不再“做了不说”。
+  return attachGateNote({ ok: true, previews, applied, filesWritten }, gate);
 }
 
 /** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */

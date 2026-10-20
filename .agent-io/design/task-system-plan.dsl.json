@@ -18378,7 +18378,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "task": {
+          "id": "file_src_application_refactor_index_ts",
+          "summary": "【L1 待建构】入口层 · src/application/refactor — 1 个 API（导入自 34 个模块）（src/application/refactor/index.ts） ← 节点 file_src_application_refactor_index_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_index_ts\"].responsibility"
+          },
+          "owner": "codebuddy-deepseek",
+          "claimed_at": "2026-10-20T07:24:41.779Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_parse_capability_parse_capability_ts",
@@ -18474,7 +18486,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_refactor_rename_rename_file_ts",
+          "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 14 个 API（导入自 11 个模块）（src/application/refactor/rename/rename_file.ts） ← 节点 file_src_application_refactor_rename_rename_file_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_file_ts\"].responsibility"
+          },
+          "owner": "codebuddy-deepseek",
+          "claimed_at": "2026-10-20T07:24:41.370Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_rename_rename_files_ts",
@@ -18490,7 +18514,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_refactor_rename_rename_files_ts",
+          "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 3 个 API（导入自 7 个模块）（src/application/refactor/rename/rename_files.ts） ← 节点 file_src_application_refactor_rename_rename_files_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_files_ts\"].responsibility"
+          },
+          "owner": "codebuddy-deepseek",
+          "claimed_at": "2026-10-20T07:24:41.504Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_rename_rename_local_ts",
@@ -18538,7 +18574,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_refactor_rename_symbol_move_ts",
+          "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 11 个 API（导入自 13 个模块）（src/application/refactor/rename/symbol_move.ts） ← 节点 file_src_application_refactor_rename_symbol_move_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_symbol_move_ts\"].responsibility"
+          },
+          "owner": "codebuddy-deepseek",
+          "claimed_at": "2026-10-20T07:24:41.637Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_rule_library_rule_apply_ts",
@@ -82237,7 +82285,8 @@
           }
         ],
         "lines": 1772,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_parse_capability_parse_capability_ts",
@@ -82529,7 +82578,8 @@
           }
         ],
         "lines": 607,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_rename_rename_files_ts",
@@ -82559,7 +82609,8 @@
           }
         ],
         "lines": 222,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_rename_rename_local_ts",
@@ -82705,7 +82756,8 @@
           }
         ],
         "lines": 559,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_rule_library_rule_apply_ts",
@@ -96281,11 +96333,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T06:46:50.714Z",
+    "saved_at": "2026-10-20T07:24:41.805Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792477935700,
-    "age": 875014
+    "scanRev": 1792479555817,
+    "age": 1525988
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

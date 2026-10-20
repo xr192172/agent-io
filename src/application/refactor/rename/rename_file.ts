@@ -27,6 +27,8 @@ import { reopenAndResolveAfterWrite, assertSourceWriteRegisteredFor, resolveActo
 // ★ T336（2026-10-16）：接上唯一写盘闸 —— 未登记不许落盘（同族：`rename_files` / `edit_code` / `write_gate` 是唯一权威）
 import { assertSourceWriteRegistered } from '../../write_gate.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
+// ★ 2026-10-20：任务闸的放行读数（note / 豁免）带出口 —— 三条写路共用同一份（`refactor/gate_note.ts`）
+import { attachGateNote } from '../gate_note.js';
 
 // 扫描范围内源码扩展名：TS 系全量 + Python（相对导入语义与 TS 同构，复用同一相对路径重算逻辑）。
 // Go 的 import 是模块包路径（非相对文件路径），移动单文件不改变途径名 → 不纳入扫描。
@@ -84,6 +86,12 @@ export interface RenameFileResult {
   /** 无法自动处理、需人工确认的事项（语义变化等） */
   pending: string[];
   blocked?: string[];
+  /**
+   * ★★★ 2026-10-20：**任务闸的放行读数**（闸的 `note`；含豁免点名）。
+   * ★ 之前调用点把 `assertSourceWriteRegisteredFor(...)` 的返回值丢了 ⇒ 闸判了、豁免生效了，
+   *   回执里一个字都没有。字段名与形状照抄 `edit_code`（`EditReceipt.task_gate`）。
+   */
+  task_gate?: string;
 }
 
 function toPosix(p: string): string {
@@ -522,8 +530,9 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
   //   同族（`rename_files.ts` / `edit_code.ts`）：闸调在**落盘前**（拒绝就是拒绝 —— 一个字节都不该写）。
   //   ★ 闸的对象 = 本次**会动到的全部文件**：被移动的源文件（`fromAbs`，删）+ 目标文件（`toAbs`，建/写）
   //     + 各被改写引用的 importer（`byImporter` 的 keys）—— 复用既有集合，不另立第二份清单。
-  //   ★ 闸**不会**替你登记、也不降级放行：未登记 ⇒ 抛错、不落盘（与下方"中途失败回滚拷贝"同一目的）。
-  assertSourceWriteRegisteredFor(projectRoot, [fromAbs, toAbs, ...[...byImporter.values()].map((i) => i.importerAbs)], resolveActor());
+  // ★★★ 2026-10-20：闸的**放行读数**带出去（返回值不许再丢 —— 之前就是“做了不说”）。
+  //   ★ 形状照抄 `edit_code`：机器侧 `task_gate`，人读侧由 `refactor/index.ts` 追加 `gateHumanLines`。
+  const gate = assertSourceWriteRegisteredFor(projectRoot, [fromAbs, toAbs, ...[...byImporter.values()].map((i) => i.importerAbs)], resolveActor());
 
   // 3) 原子化执行——先复制，再改写引用，最后删除原文件。
   //    原实现是先 renameSync 再改引用，中途任何一步（文件改写/索引写入）失败
@@ -573,10 +582,14 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
       /* 清理失败不影响主错误返回 */
     }
     copySucceeded = false;
-    return {
-      ok: false, dryRun, fromRel, toRel, moved: false, references, editCount, pending,
-      blocked: [`rename_file 中途失败（已回滚拷贝）：${(e as Error).message}`],
-    };
+    // ★ 2026-10-20：中途失败的回执也要点名豁免（`exemptionLines` 的文档明写含拒绝/失败那种回执）。
+    return attachGateNote(
+      {
+        ok: false, dryRun, fromRel, toRel, moved: false, references, editCount, pending,
+        blocked: [`rename_file 中途失败（已回滚拷贝）：${(e as Error).message}`],
+      },
+      gate,
+    );
   } finally {
     // 保险：如果失败回滚路径上有任何遗留，务必清掉 toAbs
     if (!copySucceeded && fs.existsSync(toAbs)) {
@@ -587,7 +600,8 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
     closeProjectCacheDb(projectRoot);
   }
 
-  return { ok: true, dryRun, fromRel, toRel, moved: true, references, editCount, pending };
+  // ★ 2026-10-20：任务闸的放行读数（note / 豁免点名）随回执带出 —— 不再“做了不说”。
+  return attachGateNote({ ok: true, dryRun, fromRel, toRel, moved: true, references, editCount, pending }, gate);
 }
 
 /** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */

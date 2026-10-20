@@ -39,6 +39,8 @@ import { parseAstRoot, TS_JS_EXTS } from '../../../infrastructure/parse/index.js
 import { syncFile } from '../../../infrastructure/index/symbols.js';
 // ★ 「调用即备料」：产物端统一契约（`Touched` 在 domain，application 单向依赖它 ✓）
 import type { Touched } from '../../../domain/b_terms.js';
+// ★ 2026-10-20：任务闸的放行读数（note / 豁免）带出口 —— 三条写路共用同一份
+import { attachGateNote } from '../gate_note.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/text/line_utils.js';
 import { snapshotBeforeWrite } from '../snapshot/file_snapshot.js';
@@ -108,6 +110,12 @@ export interface MoveSymbolResult {
   bounds?: ScanBounds;
   /** 传了 to_symbol 但 v1 未启用改名 */
   toSymbolDeferred?: boolean;
+  /**
+   * ★★★ 2026-10-20：**任务闸的放行读数**（闸的 `note`；含豁免点名）。
+   * ★ 之前 `assertSourceWriteRegisteredFor(...)` 的返回值被丢了 ⇒ 闸判了、豁免生效了，回执里一个字都没有。
+   * ★ 形状照抄 `edit_code`（`EditReceipt.task_gate`）；人读侧由 `refactor/index.ts` 追加。
+   */
+  task_gate?: string;
 }
 
 // ─────────────────────────────────────────────
@@ -279,6 +287,8 @@ function touchedOfMove(input: MoveSymbolInput, r: MoveSymbolResult): Touched {
 async function moveSymbolCore(input: MoveSymbolInput): Promise<MoveSymbolResult> {
   const blocked: string[] = [];
   const dryRun = input.dry_run === true;
+  /** ★ 2026-10-20：闸的放行读数（干跑不跑闸 ⇒ 保持 undefined，回执不凭空多字段） */
+  let gate: ReturnType<typeof assertSourceWriteRegisteredFor> | undefined;
 
   // 0. 路径/根/alias 解析
   const effectiveRoot = input.project_dir ? path.resolve(String(input.project_dir)) : undefined;
@@ -485,7 +495,8 @@ async function moveSymbolCore(input: MoveSymbolInput): Promise<MoveSymbolResult>
     //   同族（`rename_files.ts` / `rename_file.ts` / `edit_code.ts`）：闸调在**落盘前**、且**在拍快照之前**
     //   （拒绝就是拒绝 —— 连快照都不该建）。★ 闸的对象 = `affectedFiles`（源 + 目标 + 各 importer），复用既有集合。
     //   ★ 闸**不会**替你登记、也不降级放行：未登记 ⇒ 抛错、不落盘。
-    assertSourceWriteRegisteredFor(resolvedRoot, affectedFiles, resolveActor());
+    // ★★★ 2026-10-20：返回值**不许再丢**（闸判了什么、豁免了谁，要随回执出去）。
+    gate = assertSourceWriteRegisteredFor(resolvedRoot, affectedFiles, resolveActor());
     snapshotBeforeWrite(
       resolvedRoot,
       `move_symbol:${input.symbol}→${path.basename(toAbs)}`,
@@ -543,7 +554,8 @@ async function moveSymbolCore(input: MoveSymbolInput): Promise<MoveSymbolResult>
   //     而该文件本轮被另一执行者锁定（详见提交信息"已知未做"）。
   const _rw = await reopenAndResolveAfterWrite(resolvedRoot, [sourceAbs, toAbs, ...importerEdits.keys()]);
 
-  return {
+  // ★ 2026-10-20：任务闸的放行读数（note / 豁免点名）随回执带出 —— 不再“做了不说”。
+  return attachGateNote({
     ok: true,
     symbol: input.symbol,
     to_file: (path.relative(resolvedRoot, toAbs) || toAbs).replace(/\\/g, '/'),
@@ -555,5 +567,5 @@ async function moveSymbolCore(input: MoveSymbolInput): Promise<MoveSymbolResult>
     externalRefs,
     bounds,
     ...(toSymbolDeferred ? { toSymbolDeferred: true } : {}),
-  };
+  }, gate);
 }
