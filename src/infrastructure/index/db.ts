@@ -63,7 +63,7 @@ export function endBatch(db: Database, rollback = false): void {
   txDepth.set(key, d - 1);
 }
 
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10; // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
 
 /** 默认 db 文件路径：<dataHome>/.agent-io/cache.db */
 export function getDbFile(): string {
@@ -182,6 +182,9 @@ export function openDb(dbFile: string = getDbFile()): Database {
     "ALTER TABLE symbol_diffs ADD COLUMN norm_to TEXT NOT NULL DEFAULT ''",
     'ALTER TABLE imports ADD COLUMN type_only INTEGER NOT NULL DEFAULT 0',
     'ALTER TABLE nodes ADD COLUMN is_closure INTEGER NOT NULL DEFAULT 0',
+    // ★ v10：nodes.members（类型成员 JSON）—— type/interface 的 signature 只有 `Name()`，
+    //   定义本身此前无处可落（gen_design_db 拷过去也是 `Name()`）
+    'ALTER TABLE nodes ADD COLUMN members TEXT',
     // ★ v9：imports.bindings（该 import 绑定的本地名）—— 让跨文件引用能判 external
     'ALTER TABLE imports ADD COLUMN bindings TEXT',
   ]) {

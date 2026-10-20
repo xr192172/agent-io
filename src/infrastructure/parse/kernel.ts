@@ -28,6 +28,8 @@ import { isLanguageInstalled, isExtSupported, listSupportedExts, probeInstalledL
 import { getParser, getParserSync, clearLoaderCache } from './loader.js';
 import { missingLanguageHint } from './lang_hint.js';
 
+import { typeMembersOf, TYPE_DECL_NODES, type ParsedTypeMember } from './type_members.js';
+
 export interface ParsedSymbol {
   name: string;
   kind: 'function' | 'method' | 'class' | 'interface' | 'type' | 'const';
@@ -44,6 +46,13 @@ export interface ParsedSymbol {
    *   - 顶层 const/var 绑定裸闭包值（Go `var x = func(){}`、Python `x = lambda`）。
    */
   is_closure?: boolean;
+  /**
+   * ★ 2026-10-20：**类型成员**（`name` / `type` / `optional`），只对 `type` / `interface` / `class` 有。
+   *
+   * 为什么单独一个字段而不是塞进 `signature`：`signature` 对这三类是 `Name()`（成员全丢），
+   * 而对 `function` 是完整的参数列表 —— **两者语义本来就不同**，强行统一会两头不讨好。
+   */
+  members?: ParsedTypeMember[];
 }
 
 /** import 依赖（用于 import_project 的跨文件边推导） */
@@ -398,6 +407,8 @@ function traverseAndExtract(
         start_line: node.startPosition.row + 1,
         end_line: node.endPosition.row + 1,
         qualified_name: qn,
+        // ★ 2026-10-20：类型声明把成员抽出来（`typeMembersOf` 早就有，只是没接上）
+        ...(TYPE_DECL_NODES.has(node.type) ? { members: typeMembersOf(node) } : {}),
         signature,
         parent: symbolParent,
         is_closure: isClosureSymbol ? true : undefined,

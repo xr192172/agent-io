@@ -47385,18 +47385,105 @@
         },
         "arch_layer": "utility",
         "decision": {
-          "summary": "解析内核：把源码解析成 ParsedFile（symbols/imports/calls/type_refs）。★ v9 起 TS 系（typescript/tsx/javascript/jsx）共享一份 import 绑定提取器 —— 四个适配器各写一份会各自漂移；被 syncFile / parseFileFull 调用，bindings 落 imports 表后供 resolveCrossFileCalls 判 external。",
+          "summary": "补一个**真缺的字段**：`nodes.members`（类型成员：名字 / 类型注解 / 可选性）。★ 现在 `type`/`interface` 的 `signature` 全是 `Name()`（成员全丢），而 `parse/type_members.ts` **早就能提取**——只是 `kernel` 抽 symbols 时**没调它**。这是「能力在、没接上」的典型。",
           "expectations": [
             {
-              "kind": "symbol-exists",
-              "symbol": "TS_LIKE_IMPORT_BINDINGS",
+              "kind": "source-has",
               "path": "src/infrastructure/parse/kernel.ts",
-              "why": "★ v9 的共享实现：四个 TS 系适配器共用这一份 import 绑定提取器（今天实测：四个都没实现 ⇒ bindings 恒空 ⇒ 2,728 条引用误判 failed）"
+              "must": [
+                "typeMembersOf"
+              ],
+              "why": "★ 必须真的调用成员提取器（这是「能力在没接上」的修法）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/index/schema.ts",
+              "must": [
+                "members TEXT"
+              ],
+              "why": "表结构要有这一列"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/index/db.ts",
+              "must": [
+                "ADD COLUMN members"
+              ],
+              "why": "旧库要能 ALTER 出来（新库靠 CREATE TABLE）"
             }
           ],
-          "updated_at": "2026-10-19T09:27:37.964Z",
-          "agent": "workbuddy-main"
-        }
+          "updated_at": "2026-10-20T00:01:05.376Z",
+          "agent": "workbuddy",
+          "rationale": "用户 2026-10-20：『我们的 DB 数据不全，把它补全，后续其他就能直接取用，而不是每处 patch 一下』。★ 实证：`nodes.signature` 对 type/interface 是 `Name()`（如 `StandingNode()`），而它有两个真实消费者 —— `gen_design_db` 把它**拷进设计 DB**（将来重写源码恢复不出定义）、`derive_chain` 用它推形状（推不出来）。★ function 的 signature 是**完整**的（`check(name, ok, detail)`）⇒ 只补 type/interface 这一类。",
+          "consequences": "① `ParsedSymbol` 加 `members?`；② schema 加 `members TEXT`（+ 旧库 ALTER）；③ 写 nodes 时落 members；④ ★ `gen_design_db` 拷贝 members 是**下一卡**（它的卡已 done，要 reopen）；⑤ 全语言通用：`typeMembersOf` 已按 `TYPE_DECL_NODES` 判节点类型，其他语言要各自补那张表。",
+          "acceptance": "`StandingNode` 这类 interface 在 cache.db 里能查到 `members`（含 name/type/optional），而不是只有 `StandingNode()`；`function` 的行为不变（signature 完整、members 为空）。",
+          "status": "active",
+          "author": "llm"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-20T00:01:05.376Z",
+            "decision": {
+              "summary": "解析内核：把源码解析成 ParsedFile（symbols/imports/calls/type_refs）。★ v9 起 TS 系（typescript/tsx/javascript/jsx）共享一份 import 绑定提取器 —— 四个适配器各写一份会各自漂移；被 syncFile / parseFileFull 调用，bindings 落 imports 表后供 resolveCrossFileCalls 判 external。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "symbol": "TS_LIKE_IMPORT_BINDINGS",
+                  "path": "src/infrastructure/parse/kernel.ts",
+                  "why": "★ v9 的共享实现：四个 TS 系适配器共用这一份 import 绑定提取器（今天实测：四个都没实现 ⇒ bindings 恒空 ⇒ 2,728 条引用误判 failed）"
+                }
+              ],
+              "updated_at": "2026-10-19T09:27:37.964Z",
+              "agent": "workbuddy-main"
+            },
+            "note": "给 src/infrastructure/parse/kernel.ts 立卡：补 DB 字段 nodes.members（类型成员），修「DB 不全」",
+            "author": "llm",
+            "agent": "workbuddy"
+          }
+        ],
+        "task": {
+          "id": "file_src_infrastructure_parse_kernel_ts",
+          "summary": "补一个**真缺的字段**：`nodes.members`（类型成员：名字 / 类型注解 / 可选性）。★ 现在 `type`/`interface` 的 `signature` 全是 `Name()`（成员全丢），而 `parse/type_members.ts` **早就能提取**——只是 `kernel` 抽 symbols 时**没调它**。这是「能力在、没接上」的典型。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/parse/kernel.ts",
+              "must": [
+                "typeMembersOf"
+              ],
+              "why": "★ 必须真的调用成员提取器（这是「能力在没接上」的修法）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/index/schema.ts",
+              "must": [
+                "members TEXT"
+              ],
+              "why": "表结构要有这一列"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/index/db.ts",
+              "must": [
+                "ADD COLUMN members"
+              ],
+              "why": "旧库要能 ALTER 出来（新库靠 CREATE TABLE）"
+            }
+          ],
+          "state": "done",
+          "owner": "workbuddy",
+          "claimed_at": "2026-10-20T00:01:07.871Z",
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-20T00:07:00.562Z",
+              "by": "llm",
+              "agent": "workbuddy",
+              "verdict": "pass"
+            }
+          ]
+        },
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_parse_lang_hint_ts",
@@ -90412,7 +90499,8 @@
           }
         ],
         "lines": 1907,
-        "layer": "utility"
+        "layer": "utility",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_parse_lang_hint_ts",
@@ -94934,11 +95022,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T23:54:51.245Z",
+    "saved_at": "2026-10-20T00:07:00.586Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792454091022,
-    "age": 223
+    "scanRev": 1792454820364,
+    "age": 222
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -96737,5 +96825,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 531
+  "_dsl_rev": 533
 }

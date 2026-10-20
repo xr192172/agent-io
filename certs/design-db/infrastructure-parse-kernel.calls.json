@@ -7,361 +7,361 @@
     {
       "name": "ParsedSymbol",
       "kind": "interface",
-      "line": 31,
+      "line": 33,
       "signature": "ParsedSymbol()"
     },
     {
       "name": "ParsedImport",
       "kind": "interface",
-      "line": 50,
+      "line": 59,
       "signature": "ParsedImport()"
     },
     {
       "name": "ParsedCall",
       "kind": "interface",
-      "line": 71,
+      "line": 80,
       "signature": "ParsedCall()"
     },
     {
       "name": "ParsedTypeRef",
       "kind": "interface",
-      "line": 87,
+      "line": 96,
       "signature": "ParsedTypeRef()"
     },
     {
       "name": "nodeTypeToKind",
       "kind": "function",
-      "line": 103,
+      "line": 112,
       "signature": "nodeTypeToKind(nodeType: string, parent?: string): ParsedSymbol['kind']"
     },
     {
       "name": "SyntaxNodeLike",
       "kind": "interface",
-      "line": 128,
+      "line": 137,
       "signature": "SyntaxNodeLike()"
     },
     {
       "name": "fieldText",
       "kind": "function",
-      "line": 145,
+      "line": 154,
       "signature": "fieldText(node: SyntaxNodeLike | null, fieldName: string): string"
     },
     {
       "name": "isValidIdentifier",
       "kind": "function",
-      "line": 152,
+      "line": 161,
       "signature": "isValidIdentifier(s: string): boolean"
     },
     {
       "name": "DEFAULT_NAME_NODE_TYPES",
       "kind": "const",
-      "line": 169,
+      "line": 178,
       "signature": "const DEFAULT_NAME_NODE_TYPES = ['identifier', 'property_identifier', 'type_identifier', …"
     },
     {
       "name": "DEFAULT_BODY_FIELDS",
       "kind": "const",
-      "line": 174,
+      "line": 183,
       "signature": "const DEFAULT_BODY_FIELDS = ['body', 'suite']"
     },
     {
       "name": "nameAtNode",
       "kind": "function",
-      "line": 177,
+      "line": 186,
       "signature": "nameAtNode(node: SyntaxNodeLike, types: string[], nameField: string, depth: number): string"
     },
     {
       "name": "nameViaTypes",
       "kind": "function",
-      "line": 192,
+      "line": 201,
       "signature": "nameViaTypes(node: SyntaxNodeLike, types: string[], nameField: string, depth = 0): string"
     },
     {
       "name": "nameStep",
       "kind": "function",
-      "line": 207,
+      "line": 216,
       "signature": "nameStep(node: SyntaxNodeLike, step: string): SyntaxNodeLike | null"
     },
     {
       "name": "childIndexOf",
       "kind": "function",
-      "line": 218,
+      "line": 227,
       "signature": "childIndexOf(node: SyntaxNodeLike, target: SyntaxNodeLike | null): number | null"
     },
     {
       "name": "resolveName",
       "kind": "function",
-      "line": 235,
+      "line": 244,
       "signature": "resolveName(node: SyntaxNodeLike, lang: LanguageEntry): { name: string; fromIndex: number | null }"
     },
     {
       "name": "stripParens",
       "kind": "function",
-      "line": 279,
+      "line": 288,
       "signature": "stripParens(s: string): string"
     },
     {
       "name": "buildSignature",
       "kind": "function",
-      "line": 293,
+      "line": 302,
       "signature": "buildSignature(node: SyntaxNodeLike, fieldMap: LanguageEntry['field_map'], lang: LanguageEntry): string"
     },
     {
       "name": "traverseAndExtract",
       "kind": "function",
-      "line": 325,
+      "line": 334,
       "signature": "traverseAndExtract(node: SyntaxNodeLike,\n  lang: LanguageEntry,\n  symbols: ParsedSymbol[],\n  parent: string | undefined,\n  depth: number = 0,\n  enclosingIsFunction: boolean = false,): void"
     },
     {
       "name": "LangImportAdapter",
       "kind": "interface",
-      "line": 453,
+      "line": 464,
       "signature": "LangImportAdapter()"
     },
     {
       "name": "includePath",
       "kind": "function",
-      "line": 582,
+      "line": 593,
       "signature": "includePath(node: SyntaxNodeLike): string[]"
     },
     {
       "name": "lastDotSegment",
       "kind": "function",
-      "line": 588,
+      "line": 599,
       "signature": "lastDotSegment(p: string): string"
     },
     {
       "name": "splitTopLevel",
       "kind": "function",
-      "line": 599,
+      "line": 610,
       "signature": "splitTopLevel(text: string, sep = ','): string[]"
     },
     {
       "name": "nthNamedChild",
       "kind": "function",
-      "line": 618,
+      "line": 629,
       "signature": "nthNamedChild(node: SyntaxNodeLike, n: number): SyntaxNodeLike | null"
     },
     {
       "name": "TS_LIKE_IMPORT_BINDINGS",
       "kind": "const",
-      "line": 651,
+      "line": 662,
       "signature": "const TS_LIKE_IMPORT_BINDINGS = (node: SyntaxNodeLike): string[] => { const out: string[]…"
     },
     {
       "name": "LANG_ADAPTERS",
       "kind": "const",
-      "line": 684,
+      "line": 695,
       "signature": "const LANG_ADAPTERS = { go: { callNode: 'call_expression', // ★ 数据（原先散在 kernel …"
     },
     {
       "name": "extractImportSources",
       "kind": "function",
-      "line": 1306,
+      "line": 1317,
       "signature": "extractImportSources(node: SyntaxNodeLike, langName: string): string[]"
     },
     {
       "name": "extractImportBindings",
       "kind": "function",
-      "line": 1320,
+      "line": 1331,
       "signature": "extractImportBindings(node: SyntaxNodeLike, langName: string, paths: string[]): string[]"
     },
     {
       "name": "isCallNode",
       "kind": "function",
-      "line": 1325,
+      "line": 1336,
       "signature": "isCallNode(node: SyntaxNodeLike, lang: LanguageEntry): boolean"
     },
     {
       "name": "isSymbolNode",
       "kind": "function",
-      "line": 1337,
+      "line": 1348,
       "signature": "isSymbolNode(node: SyntaxNodeLike, lang: LanguageEntry): boolean"
     },
     {
       "name": "symbolKind",
       "kind": "function",
-      "line": 1347,
+      "line": 1358,
       "signature": "symbolKind(node: SyntaxNodeLike, lang: LanguageEntry, parent?: string): ParsedSymbol['kind']"
     },
     {
       "name": "bodyChildren",
       "kind": "function",
-      "line": 1369,
+      "line": 1380,
       "signature": "bodyChildren(node: SyntaxNodeLike, lang: LanguageEntry, nameIndex: number | null): SyntaxNodeLike[] | null"
     },
     {
       "name": "firstNamedChild",
       "kind": "function",
-      "line": 1417,
+      "line": 1428,
       "signature": "firstNamedChild(node: SyntaxNodeLike): SyntaxNodeLike | null"
     },
     {
       "name": "extractCallee",
       "kind": "function",
-      "line": 1433,
+      "line": 1444,
       "signature": "extractCallee(callNode: SyntaxNodeLike, langName: string): { name: string; expr: string } | null"
     },
     {
       "name": "extractCallsFromBody",
       "kind": "function",
-      "line": 1463,
+      "line": 1474,
       "signature": "extractCallsFromBody(node: SyntaxNodeLike,\n  lang: LanguageEntry,\n  callerQn: string,\n  calls: ParsedCall[],\n  symbols: ParsedSymbol[],\n  depth: number = 0): void"
     },
     {
       "name": "traverseAndExtractCalls",
       "kind": "function",
-      "line": 1499,
+      "line": 1510,
       "signature": "traverseAndExtractCalls(node: SyntaxNodeLike,\n  lang: LanguageEntry,\n  symbols: ParsedSymbol[],\n  calls: ParsedCall[],\n  funcStack: string[] = [],\n  depth: number = 0): void"
     },
     {
       "name": "TYPE_KINDS",
       "kind": "const",
-      "line": 1550,
+      "line": 1561,
       "signature": "const TYPE_KINDS = new Set(['interface', 'type', 'class'])"
     },
     {
       "name": "traverseAndExtractTypeRefs",
       "kind": "function",
-      "line": 1559,
+      "line": 1570,
       "signature": "traverseAndExtractTypeRefs(node: SyntaxNodeLike,\n  lang: LanguageEntry,\n  symbols: ParsedSymbol[],\n  typeRefs: ParsedTypeRef[],\n  stack: Array<{ qn: string; defName: string; defRow: number }> = [],\n  depth: number = 0,): void"
     },
     {
       "name": "stripQuotes",
       "kind": "function",
-      "line": 1610,
+      "line": 1621,
       "signature": "stripQuotes(s: string): string"
     },
     {
       "name": "isTypeOnlyModuleStatement",
       "kind": "function",
-      "line": 1654,
+      "line": 1665,
       "signature": "isTypeOnlyModuleStatement(text: string): boolean"
     },
     {
       "name": "traverseAndExtractImports",
       "kind": "function",
-      "line": 1673,
+      "line": 1684,
       "signature": "traverseAndExtractImports(node: SyntaxNodeLike,\n  lang: LanguageEntry,\n  imports: ParsedImport[],\n  depth: number = 0): void"
     },
     {
       "name": "STRING_PARSE_LIMIT",
       "kind": "const",
-      "line": 1719,
+      "line": 1730,
       "signature": "const STRING_PARSE_LIMIT = 32768"
     },
     {
       "name": "CALLBACK_CHUNK",
       "kind": "const",
-      "line": 1721,
+      "line": 1732,
       "signature": "const CALLBACK_CHUNK = 8192"
     },
     {
       "name": "TreeLike",
       "kind": "interface",
-      "line": 1723,
+      "line": 1734,
       "signature": "TreeLike()"
     },
     {
       "name": "ParserLike",
       "kind": "type",
-      "line": 1726,
+      "line": 1737,
       "signature": "ParserLike()"
     },
     {
       "name": "parseViaCallback",
       "kind": "function",
-      "line": 1729,
+      "line": 1740,
       "signature": "parseViaCallback(parser: ParserLike, content: string): TreeLike"
     },
     {
       "name": "parseContent",
       "kind": "function",
-      "line": 1747,
+      "line": 1758,
       "signature": "parseContent(parser: ParserLike, content: string): TreeLike"
     },
     {
       "name": "parseAstRootSync",
       "kind": "function",
-      "line": 1774,
+      "line": 1785,
       "signature": "parseAstRootSync(filePath: string,\n  content: string,): { root: SyntaxNodeLike; langName: string } | null"
     },
     {
       "name": "parseAstRoot",
       "kind": "function",
-      "line": 1791,
+      "line": 1802,
       "signature": "parseAstRoot(filePath: string,\n  content: string,): Promise<{ root: SyntaxNodeLike; langName: string } | null>"
     },
     {
       "name": "ParsedFile",
       "kind": "interface",
-      "line": 1811,
+      "line": 1822,
       "signature": "ParsedFile()"
     },
     {
       "name": "parseTreeForFile",
       "kind": "function",
-      "line": 1840,
+      "line": 1851,
       "signature": "parseTreeForFile(filePath: string,\n  content: string,): Promise<{ root: SyntaxNodeLike; langName: string } | null>"
     },
     {
       "name": "parseFileFull",
       "kind": "function",
-      "line": 1853,
+      "line": 1864,
       "signature": "parseFileFull(filePath: string, content: string): Promise<ParsedFile>"
     },
     {
       "name": "parseFile",
       "kind": "function",
-      "line": 1882,
+      "line": 1893,
       "signature": "parseFile(filePath: string, content: string): Promise<ParsedSymbol[]>"
     },
     {
       "name": "parseFileFullSync",
       "kind": "function",
-      "line": 1908,
+      "line": 1919,
       "signature": "parseFileFullSync(filePath: string, content: string): ParsedFile"
     },
     {
       "name": "parserReadyForFile",
       "kind": "function",
-      "line": 1935,
+      "line": 1946,
       "signature": "parserReadyForFile(filePath: string): boolean"
     },
     {
       "name": "canParseFileSync",
       "kind": "function",
-      "line": 1945,
+      "line": 1956,
       "signature": "canParseFileSync(filePath: string): boolean"
     },
     {
       "name": "prewarmKernel",
       "kind": "function",
-      "line": 1956,
+      "line": 1967,
       "signature": "prewarmKernel(): Promise<{\n  warmed: number;\n  /** 装了但**加载失败**的扩展名（沿用原字段名 —— 原调用方文案写「语言包」是错的，它是 ext） */\n  missing: string[];\n  /**\n   * ★★ 2026-10-08 新增：**注册了但包没装**的语言名。\n   *\n   * 为什么必须报出来：它们此前落在 `warmed` 与 `missing` 的**夹缝**里，**完全看不见** ——\n   * 因为原实现只遍历 `probeInstalledLanguages()`（**已装的**）⇒ 未装的**连循环都进不去**。\n   * ★ `tsx` / `jsx` 就是在这里藏了很久：`.tsx` 全体解析不出来，\n   *   而预热报告显示的是「34 个解析器就绪，缺 0 个语言包」—— 听起来一切正常。\n   */\n  notInstalled: string[];\n}>"
     },
     {
       "name": "isSupported",
       "kind": "function",
-      "line": 1989,
+      "line": 2000,
       "signature": "isSupported(ext: string): boolean"
     },
     {
       "name": "listSupportedLanguages",
       "kind": "function",
-      "line": 1994,
+      "line": 2005,
       "signature": "listSupportedLanguages(): string[]"
     },
     {
       "name": "listSupportedExtensions",
       "kind": "function",
-      "line": 1999,
+      "line": 2010,
       "signature": "listSupportedExtensions(): string[]"
     },
     {
       "name": "_reset",
       "kind": "function",
-      "line": 2004,
+      "line": 2015,
       "signature": "_reset(): void"
     }
   ],
@@ -389,6 +389,10 @@
     },
     {
       "source": "./lang_hint.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./type_members.js",
       "kind": "relative"
     }
   ],
@@ -820,6 +824,10 @@
     {
       "from": "src/infrastructure/parse/kernel.ts#listSupportedLanguages",
       "to": "src/infrastructure/parse/probe.ts#probeInstalledLanguages"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtract",
+      "to": "src/infrastructure/parse/type_members.ts#typeMembersOf"
     }
   ]
 }

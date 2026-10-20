@@ -377,8 +377,8 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
       .all({ tp: `${rel}#%`, sp: `${rel}#%` }) as Array<{ source: string; target: string; kind: string; line: number; col: number | null; metadata: string | null }>;
     db.prepare("DELETE FROM nodes WHERE file_path = $p AND kind != 'file'").run({ p: rel });
     const insNode = db.prepare(
-      `INSERT INTO nodes(id, kind, name, qualified_name, file_path, language, start_line, end_line, parent, signature, docstring, sym_hash, is_closure, updated_at)
-       VALUES ($id, $k, $nm, $qn, $fp, $lang, $sl, $el, $par, $sig, NULL, $h, $isClos, $ts)`,
+      `INSERT INTO nodes(id, kind, name, qualified_name, file_path, language, start_line, end_line, parent, signature, docstring, sym_hash, is_closure, members, updated_at)
+       VALUES ($id, $k, $nm, $qn, $fp, $lang, $sl, $el, $par, $sig, NULL, $h, $isClos, $mem, $ts)`,
     );
     const seenIds = new Set<string>();
     parsed.symbols.forEach((s, i) => {
@@ -389,6 +389,8 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
         id: id, k: s.kind, nm: s.name, qn: s.qualified_name, fp: rel, lang: ext,
         sl: s.start_line, el: s.end_line, par: s.parent ?? null, sig: s.signature ?? null,
         h: symHashList[i], isClos: s.is_closure ? 1 : 0, ts: now,
+        // ★ 2026-10-20：类型成员（JSON）—— 没有就存 NULL（function 永远没有）
+        mem: s.members && s.members.length ? JSON.stringify(s.members) : null,
       });
     });
 
