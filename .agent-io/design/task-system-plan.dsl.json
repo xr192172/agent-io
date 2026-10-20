@@ -18080,7 +18080,70 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "decision": {
+          "summary": "删死 import 的**定位**改用 `cache.db` 的 `imports.start_index / end_index`（整句 span），不再用 9 条正则去猜 8 种 import 形态（`import {}` / `import type {}` / `import X` / `import \"x\"` / `export * from` / `export {} from` / `const x = require` / 行首判定）。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/application/refactor/edit/remove_dead_imports.ts",
+              "must": [
+                "start_index"
+              ],
+              "why": "★ 必须真的用 span（现在该文件里 start_index 出现 0 次）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/refactor/edit/remove_dead_imports.ts",
+              "must": [
+                "\\r?\\n"
+              ],
+              "why": "★ end_index 不含结尾换行 ⇒ 删整句必须自己吃掉一个 \\r?\\n（子代理实测）"
+            }
+          ],
+          "rationale": "今天把 `imports` 的 span 补全到 100%（`.ts` 1731/1731）。子代理实测三条约束：① 偏移是 **UTF-16 码元**，JS `slice` 直接可用（29 条逐条验证零不符）；② **`end_index` 不含结尾换行** ⇒ 删整句要自己吃掉一个 `\\r?\\n`；③ **准入判据按文件**（污染是按文件全有/全无，mixed=0）：该文件所有 import 行都有 span 才用，否则退回文本判据。★ 这是今天第二次「体检修正」的落点：`find_references` / `field_refs` 本来就是「正则定位 + AST 分类」，只有这一个文件是**真·纯正则**。",
+          "consequences": "① 删 import 不再需要 8 种形态的正则（一个 `[si, ei)` 切全吃）；② 必须保留**文本兜底**（没有 span 的文件）；③ ★ 这是**改代码**的工具，风险最高 —— 任何删除都要有「删了什么」的回执（路径 + 行号 + 原句）。",
+          "acceptance": "对至少 3 个真实文件跑一遍：删掉的 import 与旧实现**完全一致**（逐条对比 `source` + 行号）；没有 span 的文件走兜底且不报错；删完的文件能被 `npx tsc` 解析（语法没坏）。",
+          "status": "active",
+          "updated_at": "2026-10-20T01:55:37.846Z",
+          "author": "llm",
+          "agent": "workbuddy"
+        },
+        "task": {
+          "id": "file_src_application_refactor_edit_remove_dead_imports_ts",
+          "summary": "删死 import 的**定位**改用 `cache.db` 的 `imports.start_index / end_index`（整句 span），不再用 9 条正则去猜 8 种 import 形态（`import {}` / `import type {}` / `import X` / `import \"x\"` / `export * from` / `export {} from` / `const x = require` / 行首判定）。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/application/refactor/edit/remove_dead_imports.ts",
+              "must": [
+                "start_index"
+              ],
+              "why": "★ 必须真的用 span（现在该文件里 start_index 出现 0 次）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/refactor/edit/remove_dead_imports.ts",
+              "must": [
+                "\\r?\\n"
+              ],
+              "why": "★ end_index 不含结尾换行 ⇒ 删整句必须自己吃掉一个 \\r?\\n（子代理实测）"
+            }
+          ],
+          "state": "done",
+          "owner": "workbuddy",
+          "claimed_at": "2026-10-20T01:55:40.316Z",
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-20T02:15:50.912Z",
+              "by": "llm",
+              "agent": "workbuddy",
+              "verdict": "pass"
+            }
+          ]
+        },
+        "status": "done"
       },
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
@@ -80876,7 +80939,8 @@
           }
         ],
         "lines": 452,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
@@ -95201,11 +95265,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T01:31:41.660Z",
+    "saved_at": "2026-10-20T02:15:50.939Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792459889291,
-    "age": 12369
+    "scanRev": 1792462297750,
+    "age": 253189
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -97029,5 +97093,5 @@
       ]
     }
   ],
-  "_dsl_rev": 538
+  "_dsl_rev": 540
 }

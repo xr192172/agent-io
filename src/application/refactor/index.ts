@@ -914,8 +914,13 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '从对应文件里删掉对应的 import/require/re-export 语句。Go 与 TS/JS 各形态都支持：' +
       '单行 import、块 import（删空块壳 `import (...) `）、别名/空导入 `_`/点导入 `.`、' +
       '具名/默认/命名空间/type/副作用 import、export * / export {...} from、CommonJS require。' +
+      '定位方式：TS/JS 优先按 cache.db 里 imports 的**整句 span**（start_index/end_index）直接切；' +
+      '该文件库里没有 span（未索引 / 旧库 / 内容与索引不一致 / 用了 require）时**退回正则兜底**，' +
+      '`removal_reports[].via` 标明每个文件走的是哪条路。' +
       '保守规则：只删整条 import 语句；识别不出的形态不动；动态 import("x") 等使用点绝不碰。' +
       '原子性：预读全部待改文件，任一读取失败 → 整批中止、一个都不写。' +
+      '★ 回执：`removed_statements[]` 逐条给出 {file, line, source, text}（text = 被删的原句），' +
+      '没有回执就等于悄悄删了东西。' +
       'dead 参数可直接传 dead_deps 工具返回结果里的 dead 数组。' +
       'verify=true（推荐）：启用改前/改后验证闭环——改写前先跑 build+test 基线，' +
       '改写后再跑同一批验证；基线失败则一个都不改，改后回归则自动回滚原位。' +
@@ -958,7 +963,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       const project_dir = requireStr(a, 'project_dir');
       const { dead, verify } = a;
       if (!Array.isArray(dead) || dead.length === 0) {
-        return { message: '无可删除的死 import（dead 列表为空）', data: { removal_reports: [], files_changed: 0, statements_removed: 0, verification: { enabled: Boolean(verify), outcome: 'no_change', baseline: null, after: null } } };
+        return { message: '无可删除的死 import（dead 列表为空）', data: { removal_reports: [], files_changed: 0, statements_removed: 0, removed_statements: [], verification: { enabled: Boolean(verify), outcome: 'no_change', baseline: null, after: null } } };
       }
       const r = removeDeadImportsWithVerify({
         project_dir,
