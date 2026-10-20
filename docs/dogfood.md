@@ -131,3 +131,45 @@
 - `TERMINAL_TASK_STATES = ['void']`（`task_schema.ts:55`，**零消费者**）
 - `isTerminalTaskState` 仍把 `done` 当终态（`:67-75`），patrol 用的正是后者
 - `DESIGN.md` C2 已记，仍未合并
+
+---
+
+## 2026-10-20 追加（堵 reopen 白洞时，子代理报的 8 条）
+
+**21. 任务描述里的行号是错的** — `待处理（约定）`
+- 我给的行号 `727-732` 实际是 `completeTask`；`reopenTask` 在 `797-826`
+- 子代理只能靠"代码形状"（`{...card, state:'claimed'...}`）反查
+- ⇒ **引用代码时带符号名，别只给行号**
+
+**22. `TaskEvidenceRecord.at` 的注释说"何时"，实际是"收口时刻"** — `待处理`
+- `task_ops.ts:723` 是 `complete` 自己 `new Date()`，**不是输入 evidence 的 at**
+- ⇒ 这条歧义直接导致一个候选方案（比对时间戳）看起来可行、**实际自毁**
+- 建议：字段注释加一句"★ 不是输入 evidence 的 at"
+
+**23. `complete` 的校验链跨三层，找不到"插哪"** — `待处理（设计建议）`
+- `task_ops:701` → `task_machine:340 isSatisfied` → `task_machine:192 cardStanding` → `overlay:validateProgressEvidence`
+- `completeTask` 本身 120+ 行、3 个 level 分支 ⇒ 为了回答"插前还是插后"读了 4 个文件 500 行
+- ⇒ **建议把 `complete` 的闸做成有序表**（像 `RED_DISPOSITION` 那样 `Record<guard, fn>`），
+  加一道闸就是加一行
+
+**24. 没有可复用的 task-op 测试脚手架** — `待处理`
+- `impl-fixture` 只测 domain 纯函数；测 `edit_dsl` 的 task op 要手抄 `t350` 的 40 行
+- 第一次直接 `ENOENT`：**`saveDSL` 不会创建 `<home>/.agent-io/design/`**
+- ⇒ 一个 `makeFixtureHome()` helper 能省掉每个新证的一次试错
+
+**25. `edit_dsl` 回执首行是 wrapper，而注释说"只透出首行"** — `待处理`
+- 首行是「已对 feature … 应用 1 个操作」，逐 op 消息在第 2 行起
+- 而 `task_ops.ts` 里反复写着"回执只透出首行" ⇒ 子代理按注释压首行，**假红一次**
+- **实测：handler 返回的 `text` 含全文** ⇒ 那条注释要么过时、要么指另一层
+
+**26. L3 的 reason 闸会拦住夹具** — `观察中`
+- 我必须把真路径写进 `reason` 才过（写"夹具"不行）；给 `todo.add` 时 id 还不存在
+- ⇒ 夹具场景下的 reason 应该有个可接受的形状
+
+**27. `TaskSpec` 与 `schema/design_dsl.schema.json` 是两份字段清单** — `观察中`
+- 加字段必须自己决定"要不要同步 schema"，**没有一处会提醒**
+- （与 A 类 #1/#2 同族：又是两份判据）
+
+**28. `complete` 的 doc guard 仍写 `claimed → done`** — `待处理`
+- OQ1 之后新增了 `candidate → done`，但文档首句没提
+- 子代理按文档写 `publish → claim → complete`，夹具直接红
