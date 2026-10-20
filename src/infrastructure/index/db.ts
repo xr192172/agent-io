@@ -63,7 +63,7 @@ export function endBatch(db: Database, rollback = false): void {
   txDepth.set(key, d - 1);
 }
 
-export const SCHEMA_VERSION = 11; // v11：identifiers 表（标识符位置）—— 旧库无此表，清库重解析 // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
+export const SCHEMA_VERSION = 12; // v12：imports.start_index/end_index（整句 span）—— 旧库无此列，清库重解析 // v11：identifiers 表（标识符位置）—— 旧库无此表，清库重解析 // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
 
 /** 默认 db 文件路径：<dataHome>/.agent-io/cache.db */
 export function getDbFile(): string {
@@ -187,6 +187,9 @@ export function openDb(dbFile: string = getDbFile()): Database {
     'ALTER TABLE nodes ADD COLUMN members TEXT',
     // ★ v9：imports.bindings（该 import 绑定的本地名）—— 让跨文件引用能判 external
     'ALTER TABLE imports ADD COLUMN bindings TEXT',
+    // ★ v12：imports 整句 span（删整句用）
+    'ALTER TABLE imports ADD COLUMN start_index INTEGER',
+    'ALTER TABLE imports ADD COLUMN end_index INTEGER',
   ]) {
     try {
       db.exec(ddl);

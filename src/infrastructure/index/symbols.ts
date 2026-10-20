@@ -508,7 +508,7 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
     //    import_project 缓存路径靠它重建依赖边——edges 表只有已解析的相对导入，
     //    Go 包路径 / Python 点分模块的原始 source 串只存在这里
     db.prepare('DELETE FROM imports WHERE file_path = $p').run({ p: rel });
-    const insImport = db.prepare('INSERT INTO imports(file_path, line, source, kind, type_only, bindings) VALUES ($fp, $ln, $src, $kind, $typeOnly, $bindings)');
+    const insImport = db.prepare('INSERT INTO imports(file_path, line, source, kind, type_only, bindings, start_index, end_index) VALUES ($fp, $ln, $src, $kind, $typeOnly, $bindings, $si, $ei)');
     for (const imp of parsed.imports) {
       insImport.run({
         fp: rel,
@@ -518,6 +518,9 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
         typeOnly: imp.type_only ? 1 : 0,
         // ★ v9：本地绑定名（JSON 数组）；无绑定存 NULL（不是 '[]'——"没有"与"空数组"在语义上要能区分）
         bindings: imp.bindings && imp.bindings.length > 0 ? JSON.stringify(imp.bindings) : null,
+        // ★ 2026-10-20：整句 span（解析器没给就读 NULL —— 不猜）
+        si: imp.start_index ?? null,
+        ei: imp.end_index ?? null,
       });
     }
 

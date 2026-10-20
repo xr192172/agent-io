@@ -59,6 +59,14 @@ export interface ParsedSymbol {
 export interface ParsedImport {
   /** 原始 import 路径（如 './foo/bar'、'myproject/internal/x'、'os.path'；Python 相对导入保留前导点如 '..pkg'） */
   source: string;
+  /**
+   * ★ 2026-10-20：**整条 import 语句的字符 span**（`remove_dead_imports` 删整句要用）。
+   *   ★ 已知限度：一个 node 内有多个 source（如 Go 的 `import (...)` 块）时，
+   *     每个 source 记的都是**同一整块**的 span —— 消费者删之前要看 sources 有几条。
+   *   ★ 解析器没给偏移时**省略**（不猜）。
+   */
+  start_index?: number;
+  end_index?: number;
   /** relative = 相对路径（./ ../ 或 Python 前导点）；package = 包路径 */
   kind: 'relative' | 'package';
   line: number;
@@ -1700,6 +1708,10 @@ function traverseAndExtractImports(
         source: src,
         kind: src.startsWith('.') ? 'relative' : 'package',
         line: node.startPosition.row + 1,
+        // ★ 2026-10-20：整句 span（见 ParsedImport.start_index 的说明）
+        ...(node.startIndex !== undefined && node.endIndex !== undefined
+          ? { start_index: node.startIndex, end_index: node.endIndex }
+          : {}),
         ...(typeOnly ? { type_only: true } : {}),
         ...(bindings.length > 0 ? { bindings } : {}),
       });

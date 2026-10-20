@@ -116,7 +116,10 @@ CREATE TABLE IF NOT EXISTS imports (
     --   用途：给定使用点裸名（readdirSync）判断它来自哪个模块
     --   ⇒ resolveCrossFileCalls 能把它判 external 而不是 failed
     --   ★ NULL = v9 之前写的旧行（版本升级清库重建时一并填上）
-    bindings TEXT不算边
+    bindings TEXT,
+    -- ★ 2026-10-20（v12）：整条 import 语句的字符 span（删整句用；NULL = 解析器没给偏移）
+    start_index INTEGER,
+    end_index INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_imports_file ON imports(file_path);
 
