@@ -10,7 +10,7 @@
 | `src/infrastructure/` | 外面的事：`parse/`(TS/Go 解析) `index/`(`cache.db` 符号表) `storage/`(DSL/overlay 读写) `graph/`(`import_project` 扫描) |
 | `src/application/` | 用例：`design/`(设计侧读写 + `design_line`) `refactor/`(改名/移动/编辑) `write_gate`(写闸) `patrol/`(漂移巡检) |
 | `src/presentation/` | MCP server + CLI |
-| `.agent-io/design/` | 设计侧：`*.dsl.json`(图) `*.overlay.json`(进度) |
+| `.agent-io/design/` | 设计侧：`*.dsl.json`（图 + 决策 + 卡 + todo，都在这一份里） |
 | `.agent-io/live/` | 实际侧快照（`import_project` 重扫产出，可覆盖） |
 | `.agent-io/cache.db` | 索引：符号 / import span / 调用。**不入库** |
 | `design-db/` | 344 份 `.calls.json`：设计 DB（从 DSL 派生，`gen-db` 全量重写） |
@@ -37,7 +37,7 @@
 | 功能 | 干什么 | 状态 |
 |---|---|---|
 | 任务卡 | 节点上挂卡：`candidate`→`claimed`→`done`，判据在 `decision.expectations` | ✅ |
-| 判据 8 kind | `file-exists` `symbol-exists` `source-has` `call-exists` `edge-exists` `contract` `run` `expectations` | ✅ |
+| 判据 8 kind | `file-exists` `symbol-exists` `signature-matches` `edge-exists` `edge-absent` `call-exists` `source-has` `run` | ✅ |
 | 写闸 | 改源码须有 claimed 卡；`gate:'exempt'` 的节点免闸 | ✅ 已真拦 |
 | A7 | `owner ≠ actor` ⇒ 拒 | ⚠️ 见 §四 |
 | 重写 | `design_line rewrite`：只把源码签名拉回设计签名 | ✅ 不生成实现 |
@@ -53,9 +53,9 @@
 | L1 建构卡收不了口（`publish` 只能立 L1，`complete` 要求建构完整） | `task_ops.ts` |
 | `satisfied` 的卡锁死文件（`claim` 拒"没活干"，写闸只认 claimed） | `task_ops.ts` |
 | `edit_code` 接受空操作（`old_text == new_text` 也回 ✓） | `edit_code.ts` |
-| 3 个脚本仍 import `dist`（tsx 已装未用） | `scripts/gen-contracts|contract-calls|dep.mjs` |
+| 4 个脚本仍 import `dist`（tsx 已装未用） | `scripts/` |
 | `hook-task-gate.mjs` 是死闸（读不存在的文件 + 按 `path` 匹配而节点无 `path`） | `scripts/` |
-| `docs/gate-principle.md` 不存在但被 9~21 处引用 | 引用点 |
+| `docs/gate-principle.md` 不存在，却仍被多处引用（grep 便知） | 引用点 |
 | 12~25 个节点指向盘上不存在的路径 | `.agent-io/design/` |
 | `t337` 前提已破（两个 writer 写同一文件） | `certs/` |
 | 写闸只拦 MCP 工具面，`bash` 直写不拦；`.githooks/pre-commit` 只跑 `gen_agents` | 覆盖面 |
@@ -69,11 +69,11 @@
 | `GOAL.md` | 为什么做这个 |
 | `VISION.md` | 用户对每个功能的描述（原话） |
 | `DESIGN.md` | 缺陷台账（A/C/D 节） |
-| `GUIDE-GATE.md` | 判据与门的原则 |
-| `GUIDE-USAGE.md` | 工具怎么用 |
+| `GUIDE-GATE.md` | 门的清单（verify 6 道门 / 证的四态 / 判据 8 kind） |
+| `GUIDE-USAGE.md` | 工具与流程（工具表 / 典型流程 / 派子代理） |
 | `dogfood.md` | 用本仓工具时的体验（表） |
 | `DISCUSSION.md` | 讨论日志（**只读，不是权威**） |
-| `todo.md` / `certs-4-ways.md` / `subagent-template.md` / `llm-rewrite-flow.md` / `PITFALLS.md` / `HANDOFF.md` / `MERGE.md` / `ARBITRATION.md` | 见其自身第一行 |
+| `todo.md` / `certs-4-ways.md` / `PITFALLS.md` / `HANDOFF.md` / `MERGE.md` / `ARBITRATION.md` | 见其自身第一行 |
 
 ## 六、规矩
 

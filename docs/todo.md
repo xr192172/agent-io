@@ -1,125 +1,83 @@
-# 待办（只放还没做的）
+# 待办
 
-> ★★★ 2026-10-17 重写：**只保留「编号 + 一句话」**；详细正文在 git 里（`git log --follow docs/todo.md`）。
-> ★ 理由：原文件 3232 行 / 370KB，105 条里 26 条已完成、79 条未做 —— **一条条展开会淹没"现在该做什么"**。
-> ★★ **完成的条目不要再往这里加** —— 收进本节末尾的"最近做完的"一段，或直接写进 `DESIGN.md` 的欠账表。
+> 只有未做的。做完的删掉；标题只剩半句的，正文在 git。
 
-## 还没做的（81 条）
+## 一、任务系统
 
-### 任务系统（11）
+| 编号 | 待办 | 在哪 | 状态 |
+|---|---|---|---|
+| T331 | `acceptance` 没翻成 `expectations` 就永远不会被做；普查其余 acceptance | `src/application/meta/explore/query_feature.ts` | 未做（该文件无 decision；`board/pool.ts` 卡只有 4 条结构判据） |
+| T329 | 决策卡加 `scope` 引用 | `geometry.nodes[].decision` | 未做（50 张 0 张有 scope） |
+| T118 | 决策卡记「是谁提的」 | `geometry.nodes[].decision` | 部分（12 张有 `author`，49 张有 `agent`） |
+| T287 | `edit_code replace_text` 回执说「未找到」而实际写入 | `src/application/refactor/edit/edit_code.ts` | 未复核（与 T288「误判」冲突） |
+| T175b | `edit_dsl` 描述太长、关键段靠后 | `src/application/design/index.ts` | 未做 |
+| T127 | 一致性闸门的「谁会信它」 | `src/application/design/intent/consistency.ts` | 未做 |
+| T153 | DSL 走查结果 | — | 未做 |
+| T148 | 「卡几次」随数得细不细而变，不是精确尺 | — | 方法论 |
+| T146 | 给常见任务各编一条链 | — | 未做 |
+| T237 | `.inspect/` 一个目录干两件事（语法采集 + 摆证残留） | `.inspect/` | 未做 |
+| T43 | 通用多语言组件框架 | — | 研究 |
 
-- [ ] T175b ★★【由 T175 引出的真问题】`edit_dsl` 的描述【太长，且关键段靠后】
-- [ ] T153 ★★★★ DSL 走查的结果：
-- [ ] T148 ★★★ 【方法论】「卡几次」不是一把精确的尺 —— 它随"数得细不细"而变
-- [ ] T146 ★★ 【编链】给常见任务各编一条链 —— ★ 先更正一处过期读数（账上说 3 条，实测 4 条）
-- [ ] T237 ★★ `.inspect/`：一个目录干两件事（语法采集 + 摆证残留），★ 且残留违反本仓已立的规矩（§10「实验产物写仓外」）
-- [ ] T43 ★★ 前沿研究：通用多语言组件框架（若重开 ⇒ 先做三个"最小可证伪实验"）
-- [ ] T118 ★★★ 决策卡要记「是谁提的」—— 像 git 的 author 账号
-- [ ] T127 ★★★ 「谁会信它」—— 一致性闸门的
-- [ ] T287 ★★★★ 【工具自己撒谎】`edit_code` 的 `op=replace_text` 回执说「未找到 old_text」，而实际【写入了】
-- [ ] T329 ★★★ 【增补】范围型决策：给决策卡加 `scope` 引用（补上用户原话"这一范围"缺的那个字段）
-- [ ] T331 ★★★★ 【判据】`acceptance` 里的话**没被翻成 `expectations` 就永远不会被做** —— 实证：`board/pool.ts` 落地一天**不可达**（`acceptance` 写着"能经 `get_dsl` 触达"，而 `expectations` 只有 file-exists + 3×symbol-exists；`task_plan.work_rule` 只把 verdict=fail 的当活）⇒ 2026-10-19 已手工接线（`query=pool`）；★ 待做：给这条补一条 `call-exists`（path=`src/application/meta/explore/query_feature.ts` · symbol=`queryFeature` · target=`listPool`，★ 注意它读索引里的调用边 ⇒ 索引 stale 会判 unsupported）**并普查其余 `acceptance` 有没有对应的可判期望**
+## 二、工具面
 
-### 其他方向（70）
+| 编号 | 待办 | 在哪 | 状态 |
+|---|---|---|---|
+| T162 | `edit_code` 是否进 refactor 的 `direct` 名单 | `src/presentation/mcp/server_registry.ts` | 未决 |
+| T259 | 判据够不着接口成员 / 对象键 | `src/application/design/intent/expectations.ts` | 未做 |
+| T261 | `edge-absent` 当「不许合并」的代理，间接且脆 | 同上 | 未做 |
+| T262 | `type-only import` 不建边，相关断言不可表达 | `src/infrastructure/index/` | 设计边界 |
+| T240 | `apply_literals` 不在工具 schema | `src/application/refactor/rename/rename_symbols.ts` | 未做（只有 `report_literals`） |
+| T245 | 两条写路仍是两份实现 | `src/application/write_gate.ts` · `apply_writes.ts` | 待查 |
+| T231 | 注释 / 字样一并改的默认要不要出声 | `rename_symbols` | 未决 |
+| T152 | 注释算不算引用 | `rename_symbols report_literals` | 未决 |
+| T150 | `apply_refactor_plan` 的 `symbol_diff` 读数不一致 | `src/application/refactor/pipeline/refactor_plan.ts` | 待查 |
+| T151 | 没有「跑本仓唯一总门」的工具 | `scripts/verify.mjs` | 未做 |
+| T126 | `Touched` 是否加「类型」锚点 | — | 未决 |
+| T125 | 「备菜」+ `mode=field` 缺「所属」限定 | `src/application/refactor/` | 未做 |
+| T119 | 统一的「这次处理哪些」入参 | — | 未做 |
+| T15 | CLI-only 能力注册为 MCP 工具 | `server_registry.ts` | 未做 |
+| T107 | 意图 / 搬运 / 关联三层判据 | — | 未做 |
+| T156/T158/T159/T168/T163/T236/T121/T124/T123/T120/T113/T112/T106/T54/T19/T63/T139/T134/T64/T96/T69/T70/T71/T108/T327/T326 | 标题只剩半句，正文见 git | — | 无法判断 |
 
-- [ ] T168 ★★★★【盘点】工具面的现状读数 —— ★ 用户问"有哪些工具 / 链路顺吗"，本笔的真读数
-- [ ] T163 ★★★★★ 用户裁定层级：
-- [ ] T162 ★ 【面的判断】`edit_code`（代码侧"整块重写"原语）该不该进 refactor 线的 `direct` 名单
-- [ ] T156 ★★★★★ 试点查出的【本质问题】：
-- [ ] T158 ★★★★ 第一条【真·设计侧过期】样本 —— ★ 由刚修好的 T157 比对产出
-- [ ] T159 ★★★【能力缺口】`I1` 的「工具集快照等价」这一半
-- [ ] T154 ★★★★★ 【补记一笔我漏掉的欠账】把现有 37 篇文档
-- [ ] T151 ★★★ 「跑本仓唯一总门」没有工具 —— ★ 链的末段【永远跑不了】
-- [ ] T152 ★★ 「注释算不算引用」—— 它是 (乙)/(丙) 的分界（★ 口径问题，不是实现问题）
-- [ ] T149 ★★ 索引候选序【非确定性】—— ★ 它会让"对照"这件事本身失效
-- [ ] T150 ★ `apply_refactor_plan` 的 `symbol_diff` 读数不一致（存疑，未深挖）
-- [ ] T236 ★★★★ 【扫实】`plan` 的"未动项"里有
-- [ ] T235 ★ 【口径收尾·低优先】`docs/*.md` 的「目录分组」口径 + 2 处「功能线 thread」待查清
-- [ ] T240 ★★ `apply_literals` 没进任何工具 schema ⇒ 「注释也一并改」对工具用户
-- [ ] T242 ★★★ T49 + T66 合并后的真身：索引"保鲜/完整性"的判据收口（含三件未完）
-- [ ] T245 ★★ 两条写路仍在"同一件事两份实现"上分叉
-- [ ] T231 ★★★ 「注释/字样一并改」【机制已存在】—— 只差一个【默认要不要出声】的取舍
-- [ ] T54 ★★★ 补「管道」—— 让「接力键」在
-- [ ] T19 ★★★ 数据流水账 → 工序模型（Stage）：剔除重复 + 抽出"每份数据的加工工序"作为真接口
-- [ ] T15 ★★ 把 CLI-only 的能力注册为 MCP 工具 ⇒ 「CLI-only」这个类别应当
-- [ ] T64 ⚠ 「搬迁时过一遍活文档」这条纪律仍缺（T50 的后继，2026-10-06 由 T50 落地时立）
-- [ ] T66 ⚠ 「入口保鲜」与「陈旧告警」
-- [ ] T49 ★ 「写用户源码」没有单一可检查通道（2026-10-05 逐文件扫描发现，待拍板）
-- [ ] T63 ★★ 新前端接入：走 daemon 串行队列，别再开直写路（2026-10-06 用户告知旧前端待退役）
-- [ ] T108 ★★★ LLM 上游 / key 池：
-- [ ] T139 ★★ 「连着用」实测出的缺口 —— ★ 2026-10-13 逐处定性：
-- [ ] T134 ★★ key 迁入 Gateway 后的两处残留
-- [ ] T132 ★★ 索引读数 `429/424`（索引数 > 磁盘数）—— `FileKindCounts` 没有"文档"桶
-- [ ] T126 ★★ 要不要给 `Touched` 加「类型」锚点？（实现者交回给我的契约变更决定）
-- [ ] T125 ★★★ 「备菜」原则 + `mode=field` 缺「所属」限定（已派实现）
-- [ ] T124 ★★★ T121 工具面验收查出的问题（B 组：`design` 线 / 漂移）—— 且
-- [ ] T123 ★★★ T121 工具面验收查出的问题（A 组：`meta` + `refactor` 线）—— 逐条
-- [ ] T122 ★★ `comment_files` 已删，但
-- [ ] T121 ★★★ 大验收：
-- [ ] T120 ★★ `data.author` / `data.agent` 的
-- [ ] T119 ★★ 「能被拆」：一个统一的「这次处理哪些」入参
-- [ ] T113 ★★ 「正则 vs AST」审计：
-- [ ] T112 ★★★ 代理的「接力式层级」设想 —— 无限递归分派 · 有限并存 ·
-- [ ] T109 ★★★ 「抽奖」机制没被兑现：`votes` 全 = 1/3 ——
-- [ ] T107 ★★★ 「意图 / 搬运 / 关联」三层判据 —— 用它审一遍"号称能推断意义"的老组件，判定
-- [ ] T106 ★★★ 自查验收（拿本仓当用户使一遍：「把项目文档翻译成决策记录」）⇒
-- [ ] T98 ★ `checkStatus` 是孤儿 —— 定义了、却没有任何入口（无 import / 无注册 / 无 CLI）
-- [ ] T94 ★★ `glossary.md` 已落后两轮，且
-- [ ] T96 ★★ 量具的判据认文本不认代码 —— ★ 已【如实标注口径】，但判据【仍未满足】
-- [ ] T69 ★★ 合并形态 S3：上限预算 —— 把 L1 扩成双边 + 配额单点
-- [ ] T70 ★ 合并形态 S4：认知丢失探针（"LLM 忘了读过"）
-- [ ] T71 ★★ 合并形态 S5：面上锁 —— 把 `facesOf()` 的输出记进快照
-- [ ] T259 ★★★★ 【能力边界·成员级】`symbol-exists` / `signature-matches` 够不着【接口成员 / 对象键】—— T258 只解了「kind 级」
-- [ ] T261 ★★ 【边界·脆代理】`edge-absent` 当「不许合并」的代理是【间接且脆】的
-- [ ] T262 ★★ 【边界】`type-only import` 按设计【不建边】⇒ 「X 是 Y 的输入、而链接是类型引用」的断言结构上不可表达
-- [ ] T282 ★★ 【撞名】TS：class 的 getter/setter 同名探针
-- [ ] T284 ★★ 【覆盖缺口】TS：class 的静态块 / 字段初始化器未插桩
-- [ ] T285 ★ 【还原残留·Go】`uninstrument` 后留一个【空】的 `internal/` 目录
-- [ ] T305 ★★ 【量具盲区·同族】`lint` 对"打断宿主"类问题
-- [ ] T308 ★★ 【T307 的后半】查 Go 侧【别的】区间替换场景会不会踩到重叠
-- [ ] T309 ★★ 【文案误导】插桩报告把「0 探针文件」也算进「已含探针跳过」
-- [ ] T310 ★★ 【判据不对称】Go 侧 ledger 无 `functions` 计数 ⇒ 判据③ 对 Go
-- [ ] T311 ★★ 【对称性】给 Go 侧补同一份骨架验收（④ sink 契约 + ⑤ 错误传播）
-- [ ] T312 ★★ 【缺口·Python 侧】scope 模式（try/finally 调用树）与 deep 模式【未实现】
-- [ ] T313 ★★ 【缺口·量具】没给 Python 侧加 certs 脚本（只跑了既有 TS 侧那份）
-- [ ] T314 ★★★ 【已修·真缺陷】TS/JS 插桩往 `.js/.mjs/.cjs/.jsx` 里注
-- [ ] T315 ★★ 【已修·同族】被测项目与 agent-io
-- [ ] T318 ★ 【环境】`npm run certs` 全量在 WorkBuddy 环境下会被
-- [ ] T319 ★★ 【已修·同族】Go 侧
-- [ ] T320 ★ 【缺口】探针运行时【不会】自动拷进被测工程
-- [ ] T326 ★★★ 【读数】工具面
-- [ ] T327 ★★★ 【缺口】LLM 手里的
-- [ ] T328 ★★★ 【收归】进度轴：新权威（`progress`@overlay）已立，
-- [ ] T332 ★★★★★ 【证据基础崩了】证夹具**没跟上 10-18「设计侧统一到 `.agent-io/design/`」那次搬家** —— 2026-10-19 全量实测 **65 张 · 崩 28 · 有红 16 · 真证书全绿 21**（上一份 10-17 的读数是 64/3崩/2红/59，★ 说明是那次搬家之后哑的）。★ 机理：`t182` 等证 `FEATURE="run82"` ⇒ `getDSL("run82")` 返 **null**，因为 `.agent-io/design/` 里**没有 `run82.dsl.json`**（老家 `.agent-io/features/run82.json` 还在）⇒ ★★ 而 **`verify` 的 4 道门完全覆盖不到这类"数据侧搬家"** ⇒ 「门全绿」与「套件全红」可以同时成立。★ 待做：(a) 给证夹具补 `.agent-io/design/run82.dsl.json`（或让 `t185-reset` 一并还原到新家）；(b) 或让证走 `getDSLByView` 的**正确视图**；(c) ★ 加一条门/判据：「设计侧目录变了 ⇒ 证夹具清单必须跟着变」（否则还会再哑一次）
-- [ ] T333 ★★★★ 【设计与实际的界线】**`fork` 没工具化** ⇒ 设计侧可能建在**过期底座**上，而没人拦 —— 实证：`_forked_from`（设计侧里那个"设计=实际在 at 时刻的副本"字段）**没有任何 TS 源在写**（手工脚本一次性）；`live/run82` 停在 **10-13**、此后 `src` **116 个提交**，而 `_sync.saved_at` 只是"保存时刻"、**不是"扫的是哪一版"**（`task-system-plan` 有 `scanRev`，`run82` 连这个都没有）。★ 待做：把 fork 做成工具 `fork_from_actual(feature,{requireFresh})` —— 写 `_forked_from` **必须带 `scanRev`**；`requireFresh` ⇒ 索引 stale **拒 fork**；★ **拒覆盖已有 `design/`**（除非 force 且打印"将丢掉 N 条设计改动"）；★ 并**区分夹具与设计**（夹具来自 git，如 `certs/t185-base/`，**不许占 `design/`**）
+## 三、索引与数据
 
-## 最近做完的（26 条，只记标题）
+| 编号 | 待办 | 在哪 | 状态 |
+|---|---|---|---|
+| T149 | 索引候选序非确定性 | `src/infrastructure/index/` | 未做 |
+| T132 | 索引读数 429/424（索引数 > 磁盘数），缺「文档」桶 | `src/infrastructure/index/` | 未做 |
+| T242 | 索引「保鲜 / 完整性」判据收口 | `src/infrastructure/index/index_freshness.ts` | 未做 |
+| T66 | 入口保鲜与陈旧告警 | 同上 | 未做 |
+| T49 | 写用户源码没有单一可检查通道 | `src/application/refactor/edit/apply_writes.ts` | 未做 |
+| T333 | `fork` 没工具化；`_forked_from` 无 TS 源写入 | `package.json` · `.agent-io/design/` | 未做（`npm run fork` 指向的脚本不存在） |
+| T328 | 进度轴收归到 `progress`@overlay | `src/infrastructure/storage_overlay.ts` | 未做 |
 
-> ★ 详细回执与判据读数见 git 提交（每条标题里带 T 编号，可 `git log --grep=T编号`）。
+## 四、证与探针
 
-- ~~T252 ★★ 全量证在~~
-- ~~T253 ★★ 那份「量具清单」的自检用~~
-- ~~T99 ★★★ 聚类的判决：~~
-- ~~T136 ★★★ `unused_export` 的两处盲区 —— ★ 而这条账【早就被记过，却住在别处】~~
-- ~~T131 ★ `env` 要不要"永远兜底"？（`gateway_provider` 的语义决定）~~
-- ~~【已做】`observe_instrument` 加 `action=lint` —— 插桩体检（清单对比的第一道筛）~~
-- ~~【已做·结构性修复】把「按原文偏移逐次应用」重写成「分段拼接」—— T264 / T272 / T281 三条同族账一次结清~~
-- ~~【已销·未复现】T288 `edit_code op=replace_text` 的「写了却说未找到」—— ★ 是我误判，工具行为正常~~
-- ~~【已做】T296 —— `uninstrument` 后不再残留空 `internal/` 目录~~
-- ~~【已做·第 3 轮 Go 实测的 P0】`select` 无 `default` 且各 case 都 return ⇒ 兜底 exit 插在 select 后 ⇒ `missing return`~~
-- ~~【已做】T298 + T299 —— 闭包名补【文件】维度（不再跨文件撞名）；`lint` 回执明说能力边界~~
-- ~~【已做】T300 —— 临时变量名补【列号】（同一行多个 return 不再撞名 ⇒ 不再 `SyntaxError`）~~
-- ~~【已做】T306 —— TS 侧 `captureProbe` 不再静默吞掉 sink 错误（⑤「错误可见」对齐 Go）~~
-- ~~【已做·第 1 步】把「③ 应用模型」抽成一件 —— Go 侧 `applySites` 与 TS 侧 `applyInsertions` 现在【同源】~~
-- ~~【已做】T301–T304 四条一次结清（子代理修 + 主代理核验）~~
-- ~~【已做·第 2 步】骨架「④ sink 契约 + ⑤ 错误传播」有了【可执行验收】—— `certs/observe-skeleton-cert.mjs`~~
-- ~~【已做·第 3 步】observe 加了第 3 门语言（Python）—— 骨架抽出来了；★ 核心判据「≤200 行」【未达成】（如实记）~~
-- ~~【已修·骨架级】`applyInsertions` 在【空区间替换】（`removeTo === index`）时死循环 + 字符串无限增长~~
-- ~~T316 ★★ 【已做】落一张「observe 语言包出生证」`certs/t316-observe-pack-cert.mjs`（14/14 通过）~~
-- ~~T317 ★★ 【已做】把骨架契约写进 DSL（新 feature `observe-skeleton`，4 张决策卡）~~
-- ~~T311 ★★ 【已做】给 Go 侧补同一份骨架验收（④ sink 契约 + ⑤ 错误传播）—— `observe-lang-go/probe/skeleton_cert_test.go`~~
-- ~~T321 ★★ 【已修·设计升级】Java 只支持【默认包】文件 —— 打包项目插不了~~
-- ~~T322 ★★★ 【已修·真缺陷】Java 插桩 return 改写三连崩 —— 出生证第一次跑抓到 5 个 FAIL~~
-- ~~T323 ★★★ 【已修·事故】仓内 `observe-lang-java/Camprobe.java` 被插桩后【从未还原】~~
-- ~~T324 ★★ 【已修·latent】TS 侧 `isBracelessGuardReturn` 的"有块子节点⇒安全"扫描会误判~~
-- ~~T325 ★★★ 【已修·框架】new-observe-lang 填空题模板 v2 重写：同步修复 + 新增第 ⑦ 格「引用方式」~~
+| 编号 | 待办 | 在哪 | 状态 |
+|---|---|---|---|
+| T332 | 证夹具没跟上设计侧搬家（`run82` 取不到 DSL） | `certs/` · `.agent-io/design/` | 未修（`run82.dsl.json` 不存在） |
+| T285 | Go `uninstrument` 后残留空 `internal/` | `observe-lang-go` | 未做 |
+| T305 | `lint` 对「打断宿主」类问题 | `observe-lang-*` | 未做 |
+| T308 | Go 侧区间替换重叠 | `observe-lang-go` | 未做 |
+| T309 | 插桩报告把「0 探针文件」算进「已跳过」 | `observe-lang-*` | 未做 |
+| T310 | Go ledger 无 `functions` 计数 | `observe-lang-go` | 未做 |
+| T312 | Python scope / deep 模式未实现 | `observe-lang-py` | 未做 |
+| T313 | Python 侧没有 certs | `observe-lang-py` · `certs/` | 未做 |
+| T318 | `npm run certs` 全量在 WorkBuddy 环境 | `certs/run-all-certs.mjs` | 未做 |
+| T320 | 探针运行时不会自动拷进被测工程 | `observe-lang-*` | 未做 |
+| T282 | class getter/setter 同名探针 | `observe-lang-*` | 未做 |
+| T284 | class 静态块 / 字段初始化器未插桩 | `observe-lang-*` | 未做 |
+
+## 五、文档
+
+| 编号 | 待办 | 在哪 | 状态 |
+|---|---|---|---|
+| T235 | `docs/*.md` 的目录分组口径 + 2 处功能线 thread | `docs/` | 未做 |
+
+## 六、前提已变（别再按原文做）
+
+| 编号 | 原文说的 | 现状 |
+|---|---|---|
+| T154 | 把现有 37 篇文档… | `docs/` 13 份 md |
+| T94 | `glossary.md` 落后 | 文件不存在 |
+| T109 | `votes` 全 = 1/3 | 50 张决策 0 张有 votes |
