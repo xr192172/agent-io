@@ -2191,3 +2191,46 @@ task_machine.ts: L39 1887/1993 · L40 1994/2116 · L41 2117/2195
 
 `remove_dead_imports` 从「9 条正则猜 8 种形态」变成「按 `[si, ei)` 切」，
 **而且顺手暴露了旧实现的两个真 bug**。9 条正则没删（Go 和异常文件还要它）。
+
+---
+
+## 2026-10-20 早（三九）· publish 原地换判据：5 步 → 3 步（`c4ba54db`）
+
+### 1. 成了
+
+```
+改 done 卡：
+  原来  reopen → release → 改 decision → publish → claim     （5 个动作，后两个纯形式）
+  现在  reopen → 改 decision → publish{reason}               （3 个）
+        其中 publish 只换 summary + expectations，evidence 逐字保留
+```
+
+### 2. ★★ 子代理纠正了我两个前提（都是实测）
+
+**① "写闸只认 claimed" 已失效**
+`write_gate` 读 `<home>/.agent-io/features/*.json`，而 `saveDSL` 自 2026-10-18 起**只写 `design/`**
+⇒ `features/` 只剩 `.overlay.json` ⇒ 闸给 `basis=no-feature-for-root`、**0 条 feature、恒放行**。
+
+⇒ **五步里的 release / claim 对闸而言本来就是多余的** —— 真约束只有 publish 的 candidate-only。
+⇒ 而这同时意味着：**写闸现在什么都没挡住**（这是一个比五步更严重的事）。
+
+**② 既有 cert 一张都跑不了**
+· `t349/t350` 读 `docs/task-system-plan.dsl.json` —— 但 `docs/*` 被 ignore（文件不在库里）
+· 其余在全新 HOME 上 seed 崩 `ENOENT .../xxx.tmp`（`saveDesignSheet` 会 mkdir，`saveDSL` 不会）
+
+### 3. 三个待决定（子代理留的，我没动）
+
+| | 内容 | 现在安全吗 |
+|---|---|---|
+| a | 换判据后旧 evidence 仍挂 `verdict:'pass'`，而它证的是**旧判据** | 安全（无读端）；board 建成会误读 |
+| b | 换判据的"为什么"没落盘（`TaskSpec` 无历史字段） | 情报缺失，不致命 |
+| c | **`reopen` 有白洞**：重开后**直接 complete** 就能再 done 一次，什么都没做 | ★ **不安全**（可以假装完成） |
+
+### 4. 今天这一长串的教训
+
+**"我以为"和"实测"之间的差距，三次都是子代理看出来的**：
+1. imports span 39% —— 我以为代码问题，实际是旧进程写库
+2. `pruneDeletedFiles` —— 我以为判据对，实际没有 `existsSync`
+3. 写闸 —— 我以为它挡着，实际**恒放行**
+
+★ 每次我都"读代码读得很认真"，但**读代码不等于跑一次**。
