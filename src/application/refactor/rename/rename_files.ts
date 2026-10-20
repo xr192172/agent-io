@@ -45,6 +45,12 @@ export interface RenameFilesInput {
    *   ② 逐条转发给 `renameFile`（它自己那层也有一道闸 —— 不能"外层知道、内层不知道"）。
    */
   actor?: string;
+  /**
+   * ★★★ T356（2026-10-20）：**按 run 授权**（一个 scope 一次授权一批文件）—— 逐字交给写闸。
+   * ★ 与 `actor` **同一处理方式**：① 批量闸；② 逐条转发给 `renameFile`（内层闸也要看到，否则
+   *   外层放行、内层逐文件拒 ⇒ 一次调用里两套判据）。
+   */
+  authorize?: string;
 }
 
 export interface RenameFilesResult {
@@ -122,7 +128,7 @@ async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResu
   for (let i = 0; i < renames.length; i++) {
     const item = renames[i];
     // ★ 2026-10-20：预览（dry_run）也转发 actor —— 本层不丢身份，内层将来加闸/加读数的口径才是同一把尺。
-    const result = await renameFile({ project_dir: projectDir, from: item.from, to: item.to, dry_run: true, actor: input.actor });
+    const result = await renameFile({ project_dir: projectDir, from: item.from, to: item.to, dry_run: true, actor: input.actor, authorize: input.authorize });
     previews.push({ index: i, from: item.from, to: item.to, ok: result.ok, blocked: result.ok ? undefined : result.blocked, result });
     if (!result.ok) allOk = false;
   }
@@ -157,7 +163,7 @@ async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResu
     // ★★★ 2026-10-20：返回值**不许再丢**（闸判了什么、豁免了谁，要随回执出去）。
     // ★★★ 2026-10-20（A7 闭合 · 4 条写路的第 2 条）：`actor` **显式入参** —— 之前这里是 `resolveActor()`（无参），
     //   只有 env 兜底 ⇒ 「谁在写」恒 null ⇒ A7 只走"提醒 + 放行"。与 `edit_code` 同一把尺（`args.actor`）。
-    gate = assertSourceWriteRegisteredFor(projectDir, [...touched], resolveActor(input.actor));
+    gate = assertSourceWriteRegisteredFor(projectDir, [...touched], resolveActor(input.actor), input.authorize);
     // ★ T214 续8：**接住快照**（★ 否则失败时无从回滚 ✓ —— 原来这里把返回值丢了 ✗）
     snap = snapshotBeforeWrite(projectDir, `rename_files:${renames.length} 条`, [...touched]);
   }
@@ -166,7 +172,7 @@ async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResu
   for (let i = 0; i < renames.length; i++) {
     const item = renames[i];
     // ★ 2026-10-20：真落盘也转发 actor（内层 renameFile 自己有闸 —— 身份必须一路到底）。
-    const result = await renameFile({ project_dir: projectDir, from: item.from, to: item.to, dry_run: false, actor: input.actor });
+    const result = await renameFile({ project_dir: projectDir, from: item.from, to: item.to, dry_run: false, actor: input.actor, authorize: input.authorize });
     if (!result.ok) {
       // ★★★ T214 续8：**不再直接 return** —— ★ 先记住"在第几条失败"，★ 出循环后**用它回滚整批** ✓
       //   ★★ 原来这里 `return { …, applied, blocked: [… 已应用 N 条 …] }` ⇒ **已落盘的【保留】** ✗

@@ -208,6 +208,8 @@ export interface RenameSymbolsInput {
    * ★ 之前 `writeSourceFiles` 只认 env，而生产面（stdio）没有 env ⇒ 闸对“谁在写”恒不设防。
    */
   actor?: string;
+  /** ★★★ T356：按 run 授权（一个 scope 一次授权一批文件）—— 逐字交给 `writeSourceFiles` 里那道闸 */
+  authorize?: string;
 }
 
 /** 入口：按「作用域」路由。这是 [C] 唯一要认识的 [B] 符号。 */
@@ -484,6 +486,8 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
     label: `rename_symbols: ${renames.length} 条`,
     // ★★★ 2026-10-20（A7 逐调用自报）：显式入参 → 闸（判据仍只在 write_gate 一处）
     actor: input.actor,
+    // ★★★ T356：按 run 授权（与 actor 同一行写法 —— 只交上去，不在这里解释 scope）
+    authorize: input.authorize,
   });
 
   // ★★★ T214（2026-10-13）：**真兑现"整批原子"** —— ★ 这是外部评测指出的**头号缺口** ✓

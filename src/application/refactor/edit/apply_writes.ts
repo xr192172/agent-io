@@ -76,7 +76,7 @@ export interface WriteReceipt {
 async function applyWritesCore(
   projectRoot: string,
   items: readonly WriteItem[],
-  opts: { dryRun?: boolean; note?: string; actor?: string | null } = {},
+  opts: { dryRun?: boolean; note?: string; actor?: string | null; authorize?: string | null } = {},
 ): Promise<WriteReceipt> {
   const root = path.resolve(projectRoot);
   const note = opts.note ?? 'apply_writes';
@@ -110,7 +110,8 @@ async function applyWritesCore(
       return written;
     },
     // ★★ 2026-10-20（A7 逐调用自报）：`actor` **只往下传、不在这里判** —— 判据仍只在 `write_gate` 一处。
-    { label: note, actor: opts.actor, onFile: (rel, status) => updatedByRel.set(rel, status === 'updated') },
+    // ★★★ T356：`authorize` 同理（同一行写法）—— 本适配层不解释 scope。
+    { label: note, actor: opts.actor, authorize: opts.authorize, onFile: (rel, status) => updatedByRel.set(rel, status === 'updated') },
   );
 
   return attachGateNote(
@@ -159,7 +160,7 @@ function touchedOf(projectRoot: string, r: WriteReceipt): Touched {
 export async function applyWrites(
   projectRoot: string,
   items: readonly WriteItem[],
-  opts: { dryRun?: boolean; note?: string; actor?: string | null } = {},
+  opts: { dryRun?: boolean; note?: string; actor?: string | null; authorize?: string | null } = {},
 ): Promise<TouchedProduct<WriteReceipt>> {
   const r = await applyWritesCore(projectRoot, items, opts);
   return withTouched(r, touchedOf(projectRoot, r));

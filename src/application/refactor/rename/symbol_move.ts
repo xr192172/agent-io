@@ -71,6 +71,8 @@ export interface MoveSymbolInput {
    * 不传 ⇒ 落回 `AGENT_IO_ACTOR` ⇒ 都没有就"提醒 + 放行"（解析口径唯一在 `write_gate#resolveActor`）。
    */
   actor?: string;
+  /** ★★★ T356：按 run 授权（一个 scope 一次授权一批文件）—— 逐字交给写闸，本层不解释它 */
+  authorize?: string;
 }
 
 export interface MoveRedirect {
@@ -503,7 +505,7 @@ async function moveSymbolCore(input: MoveSymbolInput): Promise<MoveSymbolResult>
     // ★★★ 2026-10-20：返回值**不许再丢**（闸判了什么、豁免了谁，要随回执出去）。
     // ★★★ 2026-10-20（A7 闭合 · 4 条写路的第 3 条）：`actor` **显式入参** —— 之前这里是 `resolveActor()`（无参），
     //   只有 env 兜底 ⇒ 「谁在写」恒 null ⇒ A7 只走"提醒 + 放行"。与 `edit_code` 同一把尺（`args.actor`）。
-    gate = assertSourceWriteRegisteredFor(resolvedRoot, affectedFiles, resolveActor(input.actor));
+    gate = assertSourceWriteRegisteredFor(resolvedRoot, affectedFiles, resolveActor(input.actor), input.authorize);
     snapshotBeforeWrite(
       resolvedRoot,
       `move_symbol:${input.symbol}→${path.basename(toAbs)}`,

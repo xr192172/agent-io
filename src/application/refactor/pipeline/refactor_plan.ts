@@ -234,6 +234,8 @@ export async function applyRefactorPlan(args: {
    * 但既然闸在 `editCode` 里，身份就必须**在这里往下传**，否则那条闸永远只看得见 env。
    */
   actor?: string;
+  /** ★★★ T356：按 run 授权 —— 同上，**一路传到 `editCode`**（闸在那里，不传就等于没接） */
+  authorize?: string;
 }): Promise<ApplyPlanResult> {
   const projectRoot = path.resolve(args.project_dir);
   const plan = args.plan;
@@ -327,6 +329,8 @@ export async function applyRefactorPlan(args: {
       atomic,
       // ★★★ 2026-10-20（A7 闭合）：身份一路往下传 —— 闸在 `editCode` 里，不传就等于没接（只有 env 兜底）。
       actor: args.actor,
+      // ★★★ T356：按 run 授权（同一行写法）—— 判据仍在写闸一处
+      authorize: args.authorize,
     });
     landed = r.data.items ?? [];
     wrote = r.data.written === true;

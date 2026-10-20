@@ -282,6 +282,10 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         })),
         dry_run: a.dry_run === true,
         report_literals: a.report_literals === true,
+        // ★★★ T356（2026-10-20）：本入口**原本一个人身份维度都没传**（`rename_symbols` 的 `actor`
+        //   形参自 A7 加起就没人给 ⇒ 那条写路的 A7 永远走"提醒 + 放行"）—— 这一笔把两个都带上。
+        actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
+        authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
       });
       /**
        * ★ 去重后的「跳过的文件」清单 —— **一处实现、两处消费**（① 显著警告文本 ② `bounds.skipped`）。
@@ -491,6 +495,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         //   ★ `actor` 是**跨工具保留键**（`server_registry#CALL_ACTOR_FIELD` 注入 schema），本工具不必再声明一次；
         //     这里只做"把入参交给 [B]"，不在这里解释身份。
         actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
+        // ★★★ T356：按 run 授权（与 actor 同一行写法 —— 只交上去，不在入口解释 scope）
+        authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
       });
       const fmt = (p: { from: string; to: string }, res?: { references: Array<{ file: string; fromSource: string; toSource: string }> }): string => {
         const lines = [`  - ${p.from} → ${p.to}`];
@@ -607,6 +613,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         dry_run: a.dry_run === true,
         // ★★★ 2026-10-20（A7 闭合）：同上 —— 逐调用 `actor` 交 [B]，不要在入口解释身份。
         actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
+        // ★★★ T356：按 run 授权（同一行写法）—— 同样不在入口解释 scope
+        authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
       });
       // ★ 2026-10-20：闸读数的人读侧（pre-gate 阻断时为空，不加噪声）
       const gateLine = gateHumanLines(r.task_gate);
@@ -926,6 +934,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         dry_run: a.dry_run !== false,
         remove_file: a.remove_file === true,
         verify: typeof a.verify === 'boolean' ? a.verify : undefined,
+        // ★★★ T356：本工具的写路（removeDeadImportsWithVerify）**此前也没接身份** —— 两个一起补上
+        actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
+        authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
       });
       // ★ 人读 `message` 与机器载荷**分开**：`data` 里**不含 message** —— 否则同一段长文本进两份、白吃上下文。
       //   `touched` 随 `...rest` 一起进 data（`machinePayload` 的规则：data 是普通对象时把顶层 touched 并进去）。
@@ -999,6 +1010,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         // ★★★ 2026-10-20（A7 闭合 · 补漏口）：身份一路传给 `snapshotAndRecordSelfWrite`。
         //   此前这里**没有这个字段**，而那条路连形参都没有 ⇒ 闸只能"提醒 + 放行"。
         actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
+        // ★★★ T356：按 run 授权（同一行写法）
+        authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
       });
       const parts = [
         `移除死 import 完成：改写 ${r.files_changed} 个文件，删除 ${r.statements_removed} 条 import 语句。`,
@@ -1792,6 +1805,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         atomic: a.atomic === true,
         // ★★★ 2026-10-20（A7 闭合 · 第 4 条写路）：身份交给 [B]，再由它传给唯一落盘的 `editCode`。
         actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
+        // ★★★ T356：授权同样交给 [B]（它一路传到 `editCode` 的写闸）
+        authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
       });
       const lines: string[] = [];
       lines.push(

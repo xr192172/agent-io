@@ -710,9 +710,48 @@ const CALL_ACTOR_FIELD = {
         '★ 不传 ⇒ 落回 AGENT_IO_ACTOR ⇒ 都没有就「提醒 + 放行」（要改拒绝：AGENT_IO_ACTOR_STRICT=1）。',
     ),
 };
-const CALL_ACTOR_KEYS = Object.keys(CALL_ACTOR_FIELD);
-/** 任何工具的 schema → 同一个（含 `actor` 的）schema。★ 一处拼装，别在调用点各写一遍。 */
-const withCallActor = (shape: Record<string, unknown>): Record<string, unknown> => ({ ...shape, ...CALL_ACTOR_FIELD });
+
+/**
+ * ★★★ T356（2026-10-20）：**跨工具的保留入参 `authorize`（按 run 授权）** —— 与 `actor` 同一处注入。
+ *
+ * ## 它是什么
+ * 一次 run（= 一个子代理的一轮活）常常要改十几个文件，而它手上只有**一张**卡 —— 逐文件判就拒 12 次
+ * （"改个字段要 12 张卡"），于是大家会去找绕过口。`authorize` 把"领活"与"圈范围"拆开：
+ *   **卡证明「这块是我的」，scope 证明「这批文件都在这块里」**。
+ * 值用 `domain/scope.ts` 的**现成文法**（`files:` / `nodes:` / `subtree:` / `layer:` / `swimlane:` / `arch_layer:`）。
+ *
+ * ## ★ 为什么放在**入口**而不是加进 DSL（写在这里，别再被别人推翻重来）
+ *  ① feature 级太粗：一个 feature 是 200~516 个文件 ⇒ 授权整个 feature ≈ 关闸；
+ *  ② 节点级**结构上不成立**：两册都没有 `parent`、`edges` 为空 ⇒ 节点无法「包含」一批文件
+ *     （`node.path` 只有8 个，也只是次要理由）；
+ *  ③ 做成 DSL 字段 = 新增**第三份路径事实**（`semantic.files` 515 + `node.description` 508 + 新 scope 清单）
+ *     —— 本仓最贵的病就是「第二份判据」；
+ *  ④ `scope` 这个词**已被占用**（`NodeDecision.scope`，T329）⇒ 用 `authorize`。
+ *
+ * ## 边界（重要）
+ *  · 只有**写工具**认它（它们自己把它传给写闸）；只读工具忽略它。
+ *  · 它**不放宽 A7**：scope 里必须有一张 **你领的** claimed 卡（判据只在 `write_gate#evaluateRunAuthorize`）。
+ *  · `authorize:'all'` **明令拒绝**（等于关闸）；解不出来的 scope 也**当场报错**，不静默降级。
+ */
+const CALL_AUTHORIZE_FIELD = {
+  authorize: z
+    .string()
+    .optional()
+    .describe(
+      '★ 本次 run 的**授权范围**（按 run 授权）：一个 scope 一次授权一批文件 —— 给 `domain/scope.ts` 的文法，' +
+        '如 `files:src/application/refactor/`、`nodes:<id>,<id>`、`subtree:<模块节点>`、`layer:main`。' +
+        '判据 = 本批要写的文件**全部**落在该 scope 内 ∧ 该 scope 的节点里有**你领的** claimed 卡（A7 不放宽）。' +
+        '★ 只有写工具认它；`authorize:\'all\'` 会被**拒**（等于关闸）。不传 ⇒ 落回逐文件判定（老行为）。',
+    ),
+};
+/** 保留键全集（参数纠错要把它们当"已知键"，否则 `actor`/`authorize` 会被当成拼错的参数）。 */
+const CALL_RESERVED_KEYS = [...Object.keys(CALL_ACTOR_FIELD), ...Object.keys(CALL_AUTHORIZE_FIELD)];
+/** 任何工具的 schema → 同一个（含 `actor` / `authorize` 的）schema。★ 一处拼装，别在调用点各写一遍。 */
+const withCallActor = (shape: Record<string, unknown>): Record<string, unknown> => ({
+  ...shape,
+  ...CALL_ACTOR_FIELD,
+  ...CALL_AUTHORIZE_FIELD,
+});
 
 /** 每个 `def` 只构造一次 validator（SDK 那边也是注册时构造一次，这里对齐）。 */
 const _argValidators = new WeakMap<ToolDef, ArgValidator>();
@@ -818,7 +857,7 @@ export async function invokeTool(
   // 这里对"够像"的未知键给一条建议；只提示不阻断，不够像则静默（避免噪音）。
   // ★★ 2026-10-20：已知键里**永远算上保留键**（否则 `actor` 会被当成拼错的参数，
   //   回一句"你是不是想找 action" —— 而它其实是 A7 的正规入参）。
-  const knownArgs = [...Object.keys(def.inputSchema ?? {}), ...CALL_ACTOR_KEYS];
+  const knownArgs = [...Object.keys(def.inputSchema ?? {}), ...CALL_RESERVED_KEYS];
   const argHints = renderArgHints(unknownArgHints(a, knownArgs), knownArgs);
   // 狗食正式统计：记录每次工具调用的成败与子动作（失败静默，不阻断主流程）
   const t0 = Date.now();

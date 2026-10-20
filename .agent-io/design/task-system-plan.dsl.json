@@ -18793,7 +18793,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_refactor_deprecate_offline_deprecate_offline_ts",
+          "summary": "【L1 待建构】核心层 · src/application/refactor/deprecate_offline — 11 个 API（导入自 8 个模块）（src/application/refactor/deprecate_offline/deprecate_offline.ts） ← 节点 file_src_application_refactor_deprecate_offline_deprecate_offline_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_deprecate_offline_deprecate_offline_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "T356 已改完（补上此前完全缺失的身份/授权透传）；卡留在 candidate 供后续领",
+          "released_by": "t356-authorize",
+          "released_at": "2026-10-20T13:29:37.356Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_diff_views_diff_views_ts",
@@ -18995,9 +19010,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "子代理已结束，释放占用的卡",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T10:49:13.308Z"
+          "release_reason": "T356 已改完（writeSourceFiles 透传）",
+          "released_by": "t356-authorize",
+          "released_at": "2026-10-20T13:29:36.902Z"
         },
         "status": "draft"
       },
@@ -19026,9 +19041,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "子代理完成，释放",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T11:31:04.249Z"
+          "release_reason": "T356 已改完（两处闸透传）",
+          "released_by": "t356-authorize",
+          "released_at": "2026-10-20T13:29:36.737Z"
         },
         "status": "draft"
       },
@@ -19109,9 +19124,9 @@
             }
           ],
           "reopened_at": "2026-10-20T11:16:04.268Z",
-          "release_reason": "P0 修完（闸前移 + 四条验收通过），释放",
-          "released_by": "codebuddy",
-          "released_at": "2026-10-20T13:09:15.782Z"
+          "release_reason": "T356 已改完（两处 snapshot 透传）",
+          "released_by": "t356-authorize",
+          "released_at": "2026-10-20T13:29:36.821Z"
         },
         "status": "draft"
       },
@@ -19220,9 +19235,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "子代理完成，释放",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T11:31:04.407Z"
+          "release_reason": "T356 已改完（handler 透传）",
+          "released_by": "t356-authorize",
+          "released_at": "2026-10-20T13:29:36.658Z"
         },
         "status": "draft"
       },
@@ -19299,9 +19314,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "子代理完成，释放",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T11:31:04.484Z"
+          "release_reason": "T356 已改完（applyRefactorPlan 透传）",
+          "released_by": "t356-authorize",
+          "released_at": "2026-10-20T13:29:36.977Z"
         },
         "status": "draft"
       },
@@ -19346,9 +19361,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "子代理完成，释放",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T11:02:22.231Z"
+          "release_reason": "T356 已改完（内层闸透传）",
+          "released_by": "t356-authorize",
+          "released_at": "2026-10-20T13:29:37.139Z"
         },
         "status": "draft"
       },
@@ -19377,9 +19392,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "子代理完成，释放",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T11:02:22.310Z"
+          "release_reason": "T356 已改完（批量闸 + 内层转发）",
+          "released_by": "t356-authorize",
+          "released_at": "2026-10-20T13:29:37.060Z"
         },
         "status": "draft"
       },
@@ -19439,9 +19454,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "子代理已结束，释放占用的卡",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T10:49:13.680Z"
+          "release_reason": "T356 已改完（writeSourceFiles 透传）",
+          "released_by": "t356-authorize",
+          "released_at": "2026-10-20T13:29:37.285Z"
         },
         "status": "draft"
       },
@@ -19470,9 +19485,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "子代理完成，释放",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T11:02:22.392Z"
+          "release_reason": "T356 已改完（闸透传）",
+          "released_by": "t356-authorize",
+          "released_at": "2026-10-20T13:29:37.212Z"
         },
         "status": "draft"
       },
@@ -20020,9 +20035,9 @@
             }
           ],
           "reopened_at": "2026-10-20T11:15:57.812Z",
-          "release_reason": "子代理完成，释放",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T11:31:04.557Z"
+          "release_reason": "T356 已改完（authorize 分支 + 证）",
+          "released_by": "t356-authorize",
+          "released_at": "2026-10-20T13:29:36.471Z"
         },
         "decision_history": [
           {
@@ -51591,9 +51606,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "子代理已结束，释放占用的卡",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T10:49:14.085Z"
+          "release_reason": "T356 已改完（CALL_AUTHORIZE_FIELD）",
+          "released_by": "t356-authorize",
+          "released_at": "2026-10-20T13:29:36.559Z"
         },
         "status": "draft"
       },
@@ -84182,7 +84197,8 @@
           }
         ],
         "lines": 505,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_diff_views_diff_views_ts",
@@ -98769,11 +98785,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T13:09:15.809Z",
+    "saved_at": "2026-10-20T13:29:37.382Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792501319151,
-    "age": 436658
+    "scanRev": 1792502934697,
+    "age": 42685
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

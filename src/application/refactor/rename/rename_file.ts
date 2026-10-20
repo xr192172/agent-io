@@ -79,6 +79,8 @@ export interface RenameFileInput {
    *   就永远是"谁在写 = null"。
    */
   actor?: string;
+  /** ★★★ T356：按 run 授权（一个 scope 一次授权一批文件）—— 逐字交给写闸，本层不解释它 */
+  authorize?: string;
 }
 
 export interface RenameFileResult {
@@ -541,7 +543,7 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
   //   ★ 形状照抄 `edit_code`：机器侧 `task_gate`，人读侧由 `refactor/index.ts` 追加 `gateHumanLines`。
   // ★★★ 2026-10-20（A7 闭合 · 4 条写路的第 1 条）：`actor` **显式入参** —— 之前这里是 `resolveActor()`（无参），
   //   只有 env 兜底 ⇒ 「谁在写」恒 null ⇒ A7 只走"提醒 + 放行"。与 `edit_code` 同一把尺（`args.actor`）。
-  const gate = assertSourceWriteRegisteredFor(projectRoot, [fromAbs, toAbs, ...[...byImporter.values()].map((i) => i.importerAbs)], resolveActor(input.actor));
+  const gate = assertSourceWriteRegisteredFor(projectRoot, [fromAbs, toAbs, ...[...byImporter.values()].map((i) => i.importerAbs)], resolveActor(input.actor), input.authorize);
 
   // 3) 原子化执行——先复制，再改写引用，最后删除原文件。
   //    原实现是先 renameSync 再改引用，中途任何一步（文件改写/索引写入）失败

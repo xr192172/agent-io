@@ -531,6 +531,8 @@ function removeDeadImportsCore(opts: {
    * ★ 不传 ⇒ 闸只能读 env，而生产面（stdio MCP）env 是空的 ⇒ 闸永远"提醒 + 放行"。
    */
   actor?: string;
+  /** ★★★ T356：按 run 授权（一个 scope 一次授权一批文件）—— 逐字交给写闸，本层不解释它 */
+  authorize?: string;
 }): RemoveDeadImportResult {
   const { absToNew, result } = computeChanges(opts);
   if (absToNew.size === 0) return result;
@@ -545,6 +547,8 @@ function removeDeadImportsCore(opts: {
     label: `remove_dead_imports: ${absToNew.size} 文件`,
     // ★★★ 2026-10-20（A7 闭合）：身份往下传 —— 本函数是同步签名，闸就在上面那个函数里。
     actor: opts.actor,
+    // ★★★ T356：授权也逐字往下传（**与 actor 同一行写法** —— 两个都只是"交上去"，不在这里解释）
+    authorize: opts.authorize,
   });
   for (const [abs, newSrc] of absToNew) fs.writeFileSync(abs, newSrc, 'utf-8');
   const idxSync = syncSelfWritesSync(opts.project_dir, files);
@@ -600,6 +604,8 @@ export function removeDeadImports(opts: {
   dead: DeadDepCandidate[];
   /** ★ 2026-10-20（A7）：本次写入者身份（与 claim 时 `data.owner` 同一个值），直通 `removeDeadImportsCore` */
   actor?: string;
+  /** ★★★ T356：按 run 授权 —— 直通 `removeDeadImportsCore`（判据仍只住写闸） */
+  authorize?: string;
 }): TouchedProduct<RemoveDeadImportResult> {
   const r = removeDeadImportsCore(opts);
   return withTouched(r, touchedOf(opts, r));
@@ -628,6 +634,8 @@ export interface RemoveDeadImportsVerifyOptions {
    * `snapshotAndRecordSelfWrite`（验证闭环那条也在内），不传就是“闸只看得见 env”。
    */
   actor?: string;
+  /** ★★★ T356：按 run 授权（验证闭环那条也是真落盘 ⇒ 同一把尺） */
+  authorize?: string;
   /** false/缺省 = 只执行不验证；true = 自动探测命令；{commands} = 自定义验证命令组 */
   verify?: boolean | { commands?: VerifyCommand[] };
   /** 单测注入的验证执行器（默认跑真命令） */
@@ -667,6 +675,8 @@ export function removeDeadImportsWithVerify(opts: RemoveDeadImportsVerifyOptions
     label: 'remove_dead_imports: 验证闭环',
     // ★★★ 2026-10-20（A7 闭合）：验证闭环这条同样要报身份（它也是真落盘）。
     actor: opts.actor,
+    // ★★★ T356：授权同上（同一行写法）
+    authorize: opts.authorize,
   });
 
   const ver = applyWithVerify({

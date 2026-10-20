@@ -103,6 +103,13 @@ export interface EditCodeArgs {
    * ★ 它是 `server_registry#invokeTool` 的**保留键**（不写在这里的工具 schema 也能传 —— 那是 loose object）。
    */
   actor?: string;
+  /**
+   * ★★★ T356（2026-10-20）：「**按 run 授权**」（`authorize`）—— 一个 scope 一次授权一批文件。
+   * ★ 与 `actor` 一样是 `server_registry#invokeTool` 的**保留键**（本工具 schema 不声明它也能传）。
+   * ★ 判据**只住一处**：`write_gate#evaluateRunAuthorize`（本层只做透传，**不在这里解读 scope**）。
+   * ★★ 批量路径（`targets[]`）与单文件路径**同一个闸、同一个传法** —— 不允许"批量认、单文件不认"。
+   */
+  authorize?: string;
 }
 
 /** ★ P-B：批量模式**逐项**回报（`targets[]` 专用；一项一条） */
@@ -523,7 +530,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     // ★★★ 2026-10-20（A7 闭合）：`actor` **显式入参** —— 之前这里写的是 `resolveActor()`（无参）
     //   ⇒ 只可能读到 env，而生产面（stdio MCP）里 env 是空的 ⇒ 闸永远只能"提醒 + 放行"。
     //   （这就是"判据在、代码在、入口没接"那一类的具体形状：一个空括号。）
-    const g = assertSourceWriteRegisteredFor(projectRoot, [relPath], resolveActor(args.actor));
+    const g = assertSourceWriteRegisteredFor(projectRoot, [relPath], resolveActor(args.actor), args.authorize);
     if (gateOut) {
       gateOut.note = g.note;
       gateOut.exempted = g.exempted;
@@ -1017,7 +1024,7 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     //     否则会印一句“没有落在项目根内的文件”去描述一件根本没发生的事）。
     const writeRels = [...new Set(plans.filter((p) => p.ok && !p.noop).map((p) => p.file))];
     const gate = writeRels.length
-      ? assertSourceWriteRegisteredFor(projectRoot, writeRels, resolveActor(args.actor))
+      ? assertSourceWriteRegisteredFor(projectRoot, writeRels, resolveActor(args.actor), args.authorize)
       : null;
     gateNote = gate?.note;
     gateExempted = gate?.exempted ?? [];

@@ -68,6 +68,13 @@ import type { Annotation } from '../domain/annotation.js';
 // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：豁免判据的**取值域**住 `domain/geometry.ts`，
 //   本文件**只读**它（`nodes[].gate`）—— **不按路径前缀判**（路径前缀 = 本仓头号病根）。
 import type { NodeGate } from '../domain/geometry.js';
+// ★★★ T356（2026-10-20）：「按 run 授权」（`authorize`）的**文法不新造** —— 直接用 `domain/scope.ts`
+//   那一对（`parseScope` / `resolveScope`，与 `get_dsl` 的 `scope` 参数、`design_diff` 的圈定**同一份**）。
+//   ★★ 但 **scope → 文件** 这一步**不许**用 `resolveScope().paths` —— 那是 `semantic.files` 口径，
+//     实测会漏掉「只有节点 `path`、不在 `semantic.files` 里」的文件（本仓 `src/application/design/board/pool.ts`
+//     就是这种）⇒ 必须**反查闸自己的 `byPath`**（`collectGateCoverage` 建的那张，`nodeFilePath` 的
+//     「`path` 优先、回落 `description`」口径）。★ 判据只有一份，别再造第二个读端。
+import { formatScope, parseScope, resolveScope, type Scope } from '../domain/scope.js';
 // ★★★ 2026-10-17（OQ10 裁定）：闸的判据从「overlay 的 progress 是否登记过」改成
 //   「**该节点上是否有 state=claimed 的 task**」—— 任务格是唯一权威（`task_plan.task_home`），
 //   progress 对它只是派生值（`progressOf`）。
@@ -528,6 +535,7 @@ export type TaskGateBasis =
   | 'files-not-in-design' // 有 feature 指到根，但这批文件不在任何一条里（新建 / 未纳入设计）
   | 'unaddressable' // ★ 2026-10-17：有文件节点**收集失败**（缺 path/description）⇒ 放行 + 留痕（不再抛错）
   | 'exempt' // ★ 2026-10-20：**设计侧声明豁免**（指向它的节点全部 gate='exempt'）⇒ 放行 + 点名
+  | 'authorized' // ★★★ T356（2026-10-20）：**按 run 授权**（`authorize`）—— 本批**全部**落在该 scope 内 ∧ scope 里有你的 claimed 卡
   | 'covered'; // 有覆盖 feature，已逐个判过任务卡
 
 /** 一条 covering feature 的 `path → node_id` 表 + 任务格 */
@@ -878,18 +886,135 @@ export function actorStrict(): boolean {
  * ★ 旧入口 `assertSourceWriteRegistered(root, files)` 保留 —— 不关心身份的调用方不受影响
  *   （它等价于 `actor = null` ⇒ 走"提醒 + 放行"那一格，**行为不变**）。
  */
+/**
+ * ★★★ T356（2026-10-20）：「**按 run 授权**」的判定内核 —— **唯一一处**（`assertSourceWriteRegistered` 里那一个分支调它）。
+ *
+ * ## 它回答什么
+ * 「本次这一批文件，能不能靠**一个 scope** 一次授权完？」
+ *   本批 rels **全部 ⊆ scope 反查出来的可写路径** ∧ **该 scope 的节点里至少有一张卡是你领的** ⇒ 放行（basis=`authorized`）。
+ *   否则 ⇒ 返回理由，由调用处**落回原来的逐文件判定**（并把这些理由拼进拒绝信息 —— 不许静默降级）。
+ *
+ * ## ★★ `authorize` 为什么**不加在 DSL 里**（写在这里，别再被别人推翻重来）
+ *   ① **feature 级太粗**：一个 feature 是 200~516 个文件 ⇒ 授权整个 feature ≈ 关闸；
+ *   ② **节点级结构上不成立**：两册都没有 `parent`、`edges` 为空 ⇒ 节点无法「包含」一批文件
+ *      （`node.path` 只有 8 个，也只是次要理由）；
+ *   ③ 做成 DSL 字段 = **新增第三份路径事实**（`semantic.files` 515 + `node.description` 508 + 新 scope 清单）
+ *      —— 本仓最贵的病就是「第二份判据」；
+ *   ④ `scope` 这个词已被占用（`NodeDecision.scope`，T329）⇒ 用 `authorize`。
+ *   ⇒ 它只是一个**跨工具的保留入参**（`presentation/mcp/server_registry.ts#CALL_AUTHORIZE_FIELD`，与 `actor` 同一处注入），
+ *     **只影响这一次调用**，不落任何库。
+ *
+ * ## ★★ 判据的「一个不能少」
+ *   · **文件集反查 `byPath`** —— 不是 `resolveScope().paths`。后者是 `semantic.files` 口径，实测会漏
+ *     只有节点 `path` 的文件（`src/application/design/board/pool.ts`）；`byPath` 才是闸自己认的那张表。
+ *   · **A7 不放宽** —— 授权只换「要不要逐文件找卡」，**没有**换「卡是不是你的」：
+ *     scope 里必须有一张 `state==='claimed'` ∧ `owner===actor` 的卡，否则一律不放行。
+ *   · **一条都不许漏** —— 本批只要有一个文件不在 scope 内，就**不授权**（并点名那一个）。
+ */
+function evaluateRunAuthorize(args: {
+  scope: Scope;
+  rels: readonly string[];
+  covering: readonly GateCoverageFeature[];
+  actor: WriteActor | null;
+}):
+  | { ok: true; feature: string; scopeText: string; nodeCount: number; allowedCount: number; anchor: { nodeId: string; owner: string } }
+  | { ok: false; reason: string } {
+  const { scope, rels, covering, actor } = args;
+  if (!covering.length) {
+    return {
+      ok: false,
+      reason: '本项目根上没有任何**可寻址**的 covering feature（`byPath` 全空）⇒ scope 无从解析。',
+    };
+  }
+  /** 每条 covering feature 上试过的理由（失败时逐条给出来，不许只说"不行"） */
+  const tried: string[] = [];
+  for (const c of covering) {
+    let dsl: ReturnType<typeof getDSL> = null;
+    try {
+      dsl = getDSL(c.feature);
+    } catch (e) {
+      tried.push(`${c.feature}：读设计 DSL 抛错（${(e as Error).message}）`);
+      continue;
+    }
+    if (!dsl) {
+      tried.push(`${c.feature}：设计 DSL 读不到（feature ${c.feature} 没有落盘）`);
+      continue;
+    }
+    let res: ReturnType<typeof resolveScope>;
+    try {
+      res = resolveScope(dsl, scope);
+    } catch (e) {
+      tried.push(`${c.feature}：${(e as Error).message}`);
+      continue;
+    }
+    const nodeIds = new Set(res.node_ids);
+    // ★★ scope → 文件：**反查闸自己的 `byPath`**（左=仓库相对路径，右=node_id）—— 不是 `res.paths`
+    const allowed = new Set<string>();
+    for (const [rel, id] of c.byPath) if (nodeIds.has(id)) allowed.add(rel);
+    const missing = rels.filter((rel) => !allowed.has(rel));
+    // ★ A7：scope 的节点里**至少一张卡是你领的**（claimed ∧ owner === actor）
+    const anchors: Array<{ nodeId: string; owner: string }> = [];
+    const others: string[] = [];
+    for (const id of res.node_ids) {
+      const t = c.taskById.get(id);
+      if (!t || t.state !== 'claimed' || !t.owner) continue;
+      if (actor && t.owner === actor) anchors.push({ nodeId: id, owner: t.owner });
+      else others.push(`${id}（owner=${t.owner}）`);
+    }
+    if (missing.length) {
+      tried.push(
+        `${c.feature}：scope \`${formatScope(scope)}\` 命中 ${res.node_ids.length} 个节点、反查 \`byPath\` 得 ${allowed.size} 条可写路径，` +
+          `但本批有 ${missing.length} 个**不在 scope 内**：${missing.join(', ')}` +
+          (res.notes.length ? `（scope 附注：${res.notes.join('；')}）` : ''),
+      );
+      continue;
+    }
+    if (!anchors.length) {
+      tried.push(
+        `${c.feature}：scope 覆盖了本批全部 ${rels.length} 个文件，但该 scope 的节点上**没有一张 owner=${actor ?? '（本次未传 actor）'} 的 claimed 卡**` +
+          (others.length ? `（scope 里被别人领着的：${others.join(', ')}）` : '（scope 里没有任何 claimed 卡）') +
+          '—— ★ 授权**不放宽 A7**：卡必须是你的。',
+      );
+      continue;
+    }
+    return {
+      ok: true,
+      feature: c.feature,
+      scopeText: formatScope(scope),
+      nodeCount: res.node_ids.length,
+      allowedCount: allowed.size,
+      anchor: anchors[0],
+    };
+  }
+  return { ok: false, reason: tried.map((t) => `  · ${t}`).join('\n') };
+}
+
+/**
+ * ★★ **按 actor 判定的入口**（A7 的正式写法）。
+ * ★ 旧入口 `assertSourceWriteRegistered(root, files)` 保留 —— 不关心身份的调用方不受影响
+ *   （它等价于 `actor = null` ⇒ 走"提醒 + 放行"那一格，**行为不变**）。
+ * ★★★ T356：`authorize`（按 run 授权）也走这一个入口 —— 第 4 个形参。
+ *   ★ 为什么一起放这里：**判据只许一处**。若另开一个 `assertSourceWriteRegisteredByScope()`，
+ *     那两条路迟早会对同一批文件给出两个答案（本仓头号病）。
+ */
 export function assertSourceWriteRegisteredFor(
   projectRoot: string,
   files: readonly string[],
   actor?: WriteActor | null,
+  authorize?: string | null,
 ): TaskGateOutcome {
-  return assertSourceWriteRegistered(projectRoot, files, { actor: resolveActor(actor) });
+  return assertSourceWriteRegistered(projectRoot, files, { actor: resolveActor(actor), authorize });
 }
 
 export function assertSourceWriteRegistered(
   projectRoot: string,
   files: readonly string[],
-  opts?: { actor?: WriteActor | null },
+  /**
+   * ★★★ T356：`authorize` = **按 run 授权**（一个 scope 一次授权一批文件）——
+   * 值 = `domain/scope.ts` 的**现成文法**（`files:` / `nodes:` / `subtree:` / `layer:` / `swimlane:` / `arch_layer:`）。
+   * ★ 它**只影响本次调用**：不写库、不新增路径事实（理由见 `evaluateRunAuthorize` 的注释）。
+   */
+  opts?: { actor?: WriteActor | null; authorize?: string | null },
 ): TaskGateOutcome {
   const root = path.resolve(projectRoot);
   const rels = [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
@@ -1042,6 +1167,62 @@ export function assertSourceWriteRegistered(
   }
 
   const actor = resolveActor(opts?.actor);
+
+  // ★★★ T356（2026-10-20）：「**按 run 授权**」（`authorize`）—— **一个分支**，位置在 `cov` 收集之后、
+  //   逐文件 `unclaimed` 判定**之前**（前置闸 T332 已在上面跑过，**不被跳过**：授权不换"能不能开工"）。
+  //
+  // ## 判据（三条同时成立才放行；否则**落回原逐文件判定**并把理由拼进拒绝信息）
+  //   ① 本批 rels **全部 ⊆** scope 反查出来的可写路径（反查的是**闸自己的 `byPath`**，不是 `resolveScope().paths`）；
+  //   ② 该 scope 的节点里**至少一张卡的 `owner === actor`**（且 `state==='claimed'`）—— **A7 不因授权放宽**；
+  //   ③ `authorize` 不许是 `all`（那等于关闸，明令不支持），也不许是解不出来的 scope（当场报错，**不静默降级**）。
+  //
+  // ## 为什么值得有它
+  //   一次 run（= 一个子代理的一轮活）往往要改十几个文件，而它手上只有**一张**卡 ——
+  //   逐文件判就会拒 12 次（"改个字段要 12 张卡"），于是大家会去寻绕过口。
+  //   授权把"领活"与"圈范围"拆开：**卡证明'这块是我的'，scope 证明'这批文件都在这块里'**。
+  const authRaw = typeof opts?.authorize === 'string' ? opts.authorize.trim() : '';
+  /** 授权没生效时的理由（拼进后面**每一条拒绝**；空串 = 本次没带 authorize） */
+  let authorizeMiss = '';
+  if (authRaw) {
+    let scope: Scope;
+    try {
+      scope = parseScope(authRaw);
+    } catch (e) {
+      throw new Error(
+        `拒绝落盘（按 run 授权）：\`authorize\` 不是合法 scope —— ${(e as Error).message}\n` +
+          `★ 文法（唯一住处 = \`src/domain/scope.ts\` 头部）：all / layer:<main|error|detail> / swimlane:<id> / ` +
+          `arch_layer:<id> / subtree:<node_id>[!] / nodes:<id>,… / files:<p1>,<p2>,…（以 / 结尾按前缀匹配）。\n` +
+          `★ 为什么不静默降级成逐文件判定：那样拼错一个字母就会得到一份"授权没生效但没人说"的回执（本仓最忌的静默）。`,
+      );
+    }
+    if (scope.kind === 'all') {
+      throw new Error(
+        `拒绝落盘（按 run 授权）：\`authorize:'all'\` **明令不支持** —— 把整份 DSL 都授权出去 = **关闸**，` +
+          `而写闸的全部价值就是"不领任务不许悄悄改"。\n` +
+          `★ 要圈一大片请写出**那个片**（如 \`files:src/application/refactor/\` 或 \`subtree:<模块节点>\`）——` +
+          `宽度要你负责，不许用一个词把责任推掉。`,
+      );
+    }
+    const verdict = evaluateRunAuthorize({ scope, rels, covering, actor });
+    if (verdict.ok) {
+      return {
+        applicable: true,
+        basis: 'authorized',
+        note:
+          `按 run 授权放行（\`authorize='${verdict.scopeText}'\`，feature=${verdict.feature}）：` +
+          `本批 ${rels.length} 个文件**全部**落在该 scope 内（scope 命中 ${verdict.nodeCount} 个节点、` +
+          `反查写闸自己的 \`byPath\` 得 ${verdict.allowedCount} 条可写路径）；` +
+          `anchor 卡 = 节点 ${verdict.anchor.nodeId}（state=claimed，owner=${verdict.anchor.owner}）。\n` +
+          `  ★ 授权**不放宽 A7**：那张卡必须是你的（本次在 scope 的节点里核对了 owner===actor）。\n` +
+          `  ★ 反查的是**闸自己的 \`byPath\`**（\`path\` 优先、回落 \`description\`），**不是** \`semantic.files\` 口径 ——` +
+          `后者会漏掉只有 \`path\` 的节点。`,
+        warnings,
+        exempted,
+      };
+    }
+    authorizeMiss = `\n★ 本次带了 \`authorize='${authRaw}'\`，但**没能覆盖本批**（已落回逐文件判定）：\n${verdict.reason}`;
+  }
+
   const unclaimed: Array<{ rel: string; cands: Array<{ feature: string; nodeId: string; state: string | undefined }> }> = [];
   /** ★ A7：有 claimed 卡，但 **owner 不是本次写入者** ⇒ 阻断（会覆盖别人的工作） */
   const foreignClaim: Array<{ rel: string; feature: string; nodeId: string; owner: string; actor: string }> = [];
@@ -1118,7 +1299,10 @@ export function assertSourceWriteRegistered(
         missingActor.map((x) => `  · ${x.rel} → 节点 ${x.nodeId} 的卡 owner=${x.owner ?? '（空）'}`).join('\n') +
         `\n★ 怎么办（二选一）：\n` +
         `  ① 写调用带身份：在同一个入参里加 \`actor: '<你的身份>'\`（与 claim 时 \`data.owner\` **一致**）；\n` +
-        `  ② 临时关掉严格模式：\`AGENT_IO_ACTOR_STRICT=0\`（或去掉该环境变量）⇒ 回到"提醒 + 放行"。`,
+        `  ② 临时关掉严格模式：\`AGENT_IO_ACTOR_STRICT=0\`（或去掉该环境变量）⇒ 回到"提醒 + 放行"。` +
+        // ★ T356：带了 authorize 但没生效时，拒绝信息里**必须**带出理由（否则调用方只看得到逐文件拒绝，
+        //   会以为是"卡没领"，而真相可能是"scope 圈错了"或"anchor 卡不是你的"）。
+        authorizeMiss,
     );
   }
 
@@ -1189,7 +1373,8 @@ export function assertSourceWriteRegistered(
         `\n★ 为什么拦：改别人的活**会**覆盖对方的工作 ⇒ 那是**真损坏**，不是"没在账上"（后者按 G2 只提醒）。\n` +
         `★ 怎么办（二选一）：\n` +
         `  ① 对方已放弃 ⇒ 先 \`release\` 那张卡，再 claim 一张自己的；\n` +
-        `  ② 对方还在做 ⇒ 别动这个文件（你改了会和它对撞）。`,
+        `  ② 对方还在做 ⇒ 别动这个文件（你改了会和它对撞）。` +
+        authorizeMiss,
     );
   }
 
@@ -1269,7 +1454,9 @@ export function assertSourceWriteRegistered(
       `  { feature: '<覆盖它的 feature>', reason: '把 <路径> 标为量具（豁免写闸）', agent: '<你>',\n` +
       `    operations: [{ type:'node', op:'update', id:'<该路径在该 feature 里的节点 id>', data:{ gate:'exempt' } }] }\n` +
       `  · ★ 多份 feature 指向同一文件时**每一份都要标**（AND；漏一份 = 仍受闸，本回执会点名是哪一侧没标）。\n` +
-      (warnings.length ? `\n★ 另：本批有 ${cov.unaddressable.length} 个节点**收集失败**（已按"放行 + 留痕"处理）：\n${warnings.join('\n')}` : ''),
+      (warnings.length ? `\n★ 另：本批有 ${cov.unaddressable.length} 个节点**收集失败**（已按"放行 + 留痕"处理）：\n${warnings.join('\n')}` : '') +
+      // ★ T356：带了 authorize 而它没生效 ⇒ 拒绝信息里点名理由（"没生效"不许看不出来）
+      authorizeMiss,
   );
 }
 
@@ -1348,6 +1535,13 @@ export async function writeSourceFiles<T>(
      *   ⇒ 闸只能"提醒 + 放行"。它与 `edit_code` 自己调闸那两处用**同一个** `resolveActor`。
      */
     actor?: WriteActor | null;
+    /**
+     * ★★★ T356（2026-10-20）：**按 run 授权**（一个 scope 一次授权一批文件）——逐字交给写闸，**本层不解释它**。
+     * ★ 为什么必须在**这里**也有：本函数是 `rename_symbols` / `apply_refactor_plan` / `refactor_pipeline`
+     *   这些批量写路共用的那一道闸。只在 `edit_code` 接、这里不接 ⇒ **批量工具认 authorize、单文件工具也认、
+     *   但走 `writeSourceFiles` 的那几条全都不认** = 第三套口径（本仓头号病）。
+     */
+    authorize?: string | null;
   } = {},
 ): Promise<{ value: T; report: SourceWriteReport }> {
   const root = path.resolve(projectRoot);
@@ -1356,7 +1550,7 @@ export async function writeSourceFiles<T>(
 
   // ★★★ T328 步 6：**未登记不许落盘** —— 闸在快照/真写**之前**（拒绝就是拒绝，绝不偷偷写一半）。
   //   ★ 它抛 ⇒ 本次一个字节都不落盘（`mutate` 不会被调用），调用方按普通错误上抛即可。
-  const taskGate = assertSourceWriteRegistered(root, files, { actor: resolveActor(opts.actor) });
+  const taskGate = assertSourceWriteRegistered(root, files, { actor: resolveActor(opts.actor), authorize: opts.authorize });
 
   // ① 写前快照（失败绝不阻断：可撤回是增强，不是前提）
   //    用"写前可见的列表" —— 有些改动集合只有跑完才知道，那时再补快照已经晚了。
@@ -1407,14 +1601,14 @@ export async function writeSourceFiles<T>(
 export function snapshotAndRecordSelfWrite(
   projectRoot: string,
   files: readonly string[],
-  opts: { label?: string; snapshot?: boolean; actor?: WriteActor | null } = {},
+  opts: { label?: string; snapshot?: boolean; actor?: WriteActor | null; authorize?: string | null } = {},
 ): WriteThroughOutcome {
   const root = path.resolve(projectRoot);
   const rels = [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
   // ★★★ T328 步 6：**未登记不许落盘** —— 同步签名的工具（remove_dead_imports / scaffold）走这条。
   //   ★ 闸在快照 + 自写登记**之前**（拒绝就是拒绝；否则"登记了自写却没落盘"会留下假账）。
   //   ★★★ 2026-10-20：`actor` 必须**往下传** —— 不传就等于把 A7 关掉（本函数此前正是如此）。
-  assertSourceWriteRegistered(root, files, { actor: resolveActor(opts.actor) });
+  assertSourceWriteRegistered(root, files, { actor: resolveActor(opts.actor), authorize: opts.authorize });
   const hasIndex = hasLiveIndex(root);
   if (opts.snapshot !== false) snapshotBeforeWrite(root, opts.label ?? 'source write', rels);
   if (!hasIndex) return { ok: false, mode: 'skipped', note: '该项目还没有索引 ⇒ 只真写，未登记' };

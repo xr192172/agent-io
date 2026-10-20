@@ -71,6 +71,13 @@ export interface DeprecateOfflineOptions {
   remove_file?: boolean;
   /** 编译级验收；默认 = !dry_run */
   verify?: boolean;
+  /**
+   * ★★★ T356（2026-10-20）：**本次写入者身份 / 按 run 授权** —— 两个都只是**透传**给
+   * `removeDeadImportsWithVerify`（本工具的真落盘就是那一步；闸在 `snapshotAndRecordSelfWrite` 里）。
+   * ★ 此前本接口**一个身份维度都没有** ⇒ A7/授权在这条路上无从生效（= 一条"闸在、但调用方根本没带身份"的写路）。
+   */
+  actor?: string;
+  authorize?: string;
 }
 
 export type DeprecateOutcome =
@@ -371,7 +378,7 @@ async function deprecateOfflineCore(opts: DeprecateOfflineOptions, sink: Depreca
   // ── apply：只把"自研候选源"的死 import 交给复用执行器（改前/改后编译验收 + 回滚） ──
   const targeted = detect.dead.filter((d) => projectSources.has(d.source) && want.has(d.source));
   const verify = opts.verify ?? true;
-  const rem = removeDeadImportsWithVerify({ project_dir: proj, dead: targeted, verify });
+  const rem = removeDeadImportsWithVerify({ project_dir: proj, dead: targeted, verify, actor: opts.actor, authorize: opts.authorize });
   const v = rem.verification;
   // ★ 2026-10-06（注册为 MCP 工具）：**在知道结局的地方记账**。
   //   ★ 取数用 `writtenFilesOf` —— 那是"这次真改了哪些文件"的**唯一判据**（从
