@@ -96333,11 +96333,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T07:24:41.805Z",
+    "saved_at": "2026-10-20T07:33:04.344Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792479555817,
-    "age": 1525988
+    "scanRev": 1792481293697,
+    "age": 290647
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -98234,6 +98234,69 @@
     {
       "id": "todo_侦察-实现-给-src-application-write-gate-ts-加-",
       "summary": "【侦察→实现】给 src/application/write_gate.ts 加「量具豁免」：certs/（证）与 scripts/（运维脚本）不受任务闸。★ 现象（2026-10-20 实测）：写闸全仓受闸后，改一张坏证也要先 publish + claim；而「证坏了」往往正是「闸/契约坏了」，会成死循环（要修证 → 先立卡 → 立卡要先保证闸对 → 而闸对不对要靠证）。★ 设计要点：① 这是**放宽判据**，必须只放宽到「量具」，不许放宽到产品代码；② 豁免的判据只能住一处（），别在闸里散落路径字符串（本仓头号病根＝同一判据住两处）；③ 豁免必须**显式可查**（回执里说「本次写入被豁免为量具」，不许静默放行）；④ 反面对照：豁免生效后，改 src/ 下任一文件仍必须受闸。★ 边界： 是【Design DB】不是证 —— 它是派生物，但**不是量具**，要不要豁免单独判（VISION 冲突3 已裁「DSL 浅 · DB 在 certs/」）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_a7-在生产面不可达-侦察-实现-a7-在正常-mcp-面-永远不触发-vsco",
+      "summary": "【★ A7 在生产面不可达】【侦察→实现】★★ A7 在正常 MCP 面【永远不触发】：.vscode/mcp.json 与 ~/.workbuddy/mcp.json 都没设 AGENT_IO_ACTOR ⇒ resolveActor() 恒 null ⇒ 写闸永远走「提醒+放行」，永远看不到拒绝。子代理原话：「这是产品面与验收面的裂缝」。★ 这正是用户 2026-10-20 说的「设计好了但不会用」。修法要落到【运行时入口】：① MCP server 启动时设 actor（会话级；install_mcp.mjs:338-340 已明确不该在安装时写死）；② 或 claim 时显式传且校验 owner===actor；③ 至少要 cli doctor 打印 pid/谁拉起的/当前 dist build 时间/env 里的 actor。★ 验收：不设 env 时 A7 必须无法冒充（要么抛要么拒），不许静默放行。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_tsx-改造-3-个脚本恢复零构建可跑-实现-tsx-已装-4-23-15-但-",
+      "summary": "【tsx 改造：3 个脚本恢复零构建可跑】【实现】tsx 已装（^4.23.15），但【还没用上】—— scripts/gen-contracts.mjs / contract-calls.mjs / dep.mjs 仍在 import dist 产物（因为 .mjs 不能 import .ts，而之前没有 tsx）。现在可以改回 import ../src/.../*.ts + package.json 的 scripts 用 tsx 跑。★ 验收：删掉 dist/ 后这 3 个脚本仍能跑。★ 注意：改了要重跑它们各自的产出，确认逐字相同。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_void-4-张降级卡-实现-gate-豁免让-4-张卡失去对象-文件已-exe",
+      "summary": "【void 4 张降级卡】【实现】gate 豁免让 4 张卡失去对象（文件已 exempt）：design-canvas 3 张 claimed（scripts/contract-calls.mjs、dep.mjs、gen-contracts.mjs）+ task-system-plan 1 张 done（scripts/impl-mutate.mjs）。★ 处置：void 掉 task，【保留 decision】（判据仍是设计）。★ 先确认 t_void 的 from 允不允许从 claimed/done 走；不允许就先 reopen/relaunch。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_另-3-处没接线的回执-实现-子代理报的-超出它那三条写路范围-rename-s",
+      "summary": "【另 3 处没接线的回执】【实现】子代理报的（超出它那三条写路范围）：rename_symbols.ts:469、apply_writes.ts:97、code_workbench.ts:286/704 —— 都拿到 SourceWriteReport.task_gate 但丢了。★ 正解：从 SourceWriteReport.task_gate 统一带出（判据一处），别再各接一遍。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_④-修活-hook-task-gate-mjs-实现-scripts-hook-",
+      "summary": "【④ 修活 hook-task-gate.mjs】【实现】scripts/hook-task-gate.mjs 现在是死的第二闸：读 docs/task-system-plan.dsl.json（不存在）⇒ 静默 return（空）；按 x.path 匹配而 geometry 里 0 个 path ⇒ 恒 0 命中。★ 要改成调 collectGateCoverage（判据只住一处），做「量具区账外改动」的会话级提醒。★ 不许自己判。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_⑤-gate-principle-md-悬空引用收口-实现-docs-gate-",
+      "summary": "【⑤ gate-principle.md 悬空引用收口】【实现】docs/gate-principle.md 【不存在】，却被 9~21 处引用（write_gate.ts / task_ops.ts / geometry.ts / overlay.ts / t352 / t353 / hook-task-gate.mjs 全悬空）。★ 做法：把「闸是提醒还是关卡」的原则写进 docs/GUIDE-GATE.md（它自称唯一来源），所有引用改指它。【不要再造 gate-principle.md】—— 文件越少，判据越可能只有一处。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_文档-4-条-实现-①-index-md-加-docs-certs-4-ways",
+      "summary": "【文档 4 条】【实现】① INDEX.md 加 docs/certs-4-ways.md 一行；② GUIDE-USAGE.md 加「3 个 scripts 现在必须 build」（tsx 改造后改成「用 tsx 跑」）；③ certs/README.md 已加 design-db 搬走的说明（已完成）；④ t337-design-sheet-cert 的前提已破（10-18 后 saveDSL 与 saveDesignSheet 写同一文件），它是既有红（9/5），要单独修判据。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_假门-check-true-的门主张要删-实现-src-application-",
+      "summary": "【假门：check=true 的门主张要删】【实现】src/application/design/db/gen_design_db.ts 的 check=true 不是 verify 的门（verify.mjs 的 5 道门里没有它），但它的输出被当成门用。★ 它结构上【不可能绿】：同一文件被 design-canvas 与 task-system-plan 各持一个节点，而只有一份投影 ⇒ 第二个节点永远对不上（实测：搬家前后逐条相同 52 条；全新鲜产物仍 23 条红）。★ 做两件事：① 注释/文档删掉「它能当门」的主张，保留它作为诊断（报「哪些 DB 文件对不上」）；② 要么修根因（同文件两节点不再算冲突），要么明写「它只报读数，不判红」。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_⑥-清幽灵节点-实现-设计侧有-12-25-个节点指向盘上不存在的路径-含-ce",
+      "summary": "【⑥ 清幽灵节点】【实现】设计侧有 12~25 个节点指向盘上不存在的路径（含 certs/design-contracts/*.contract.ts 已迁到 design-db/、3 个 .tmp-*.mjs 垃圾）。★ 危害：闸的覆盖面里混着幽灵；collectGateCoverage 不会报「节点指向不存在的文件」。★ 做法：删节点 or 标 void，并加一条读数（多少节点指向不存在的文件）。",
       "expectations": [],
       "state": "candidate",
       "owner": null
