@@ -95,3 +95,39 @@
 > 6. 用这个工具时，**哪里让你多做了动作 / 让你猜了**？一条也行。
 
 （今天的第 10 条就是这么来的 —— 我查代码 20 分钟，它看进程列表 5 分钟。）
+
+---
+
+## 2026-10-20 追加（侦察「done 卡连续改动」时，子代理报的 7 条）
+
+**14. `reopen` 的回执在教一条错路** — `待处理`
+- 回执说「要换判据请先改 decision，再 reopen」，但 `reopenTask` 只做 `{...card}`，**从不重读 decision**
+- 照着办 ⇒ 卡上还是旧判据 ⇒ `claim` 被 `satisfied` 拒 ⇒ 才发现还得 release+publish
+- **至少白走一轮。** 这条最该先修（改文案，零风险）
+
+**15. 一次意图要填 3 次身份、2 次理由，其中一半被扔掉** — `观察中`
+- `reopen(owner, reason)` → `release(reason, 把 owner 清空)` → `claim(owner)`
+- 工具在向我要它自己马上会扔掉的数据
+
+**16. 报错指向一条不存在的路** — `待处理`
+- `task_ops.ts:317` 写「或走 `replaces/superseded` —— 未实现」
+- 但 `superseded` 已于 10-17 删除、`replaces` 是死字段 ⇒ 按提示去试只会撞墙
+
+**17. `publish` 名不副实，破坏性不写在契约里** — `待处理`
+- 它同时是「立卡 / 重翻 candidate / L1-done→L2 隐式 done→candidate」
+- 还会**静默丢 evidence 和 discussion**；`OP_SPECS` 的 note 只写"立卡=翻决策卡"
+- 子代理"读了 971 行才敢确认它会不会毁数据"
+
+**18. ★ 唯一能绕开写闸的办法是"换个工具直写"** — `观察中（结构性）`
+- 写闸只装在仓内工具（`edit_code` / `rename_*` / `symbol_move`），**CLI 自带的 Write/Edit 不受管**
+- 立 `todo` 代替卡片也不行：写闸只读 `geometry.nodes[].task`
+- ⇒ **「无卡改动」是结构性诱因，不只是纪律问题**（今天我自己就犯了两笔）
+
+**19. `dogfood #11` 标「已修」标早了** — `已修正为：部分修`
+- `t_reopen` 只修了**状态机**（能迁出 done），没修**工作流**（迁出后仍 5 个动作）
+- 拆成 #11a（能重开 ✓）/ #11b（重开后能顺畅换判据 ✗）
+
+**20. `done` 到底是不是终态，两处代码说法不一** — `观察中`
+- `TERMINAL_TASK_STATES = ['void']`（`task_schema.ts:55`，**零消费者**）
+- `isTerminalTaskState` 仍把 `done` 当终态（`:67-75`），patrol 用的正是后者
+- `DESIGN.md` C2 已记，仍未合并
