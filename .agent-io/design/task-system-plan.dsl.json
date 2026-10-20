@@ -13233,7 +13233,7 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "done",
+          "state": "candidate",
           "evidence": [
             {
               "kind": "attestation",
@@ -13260,11 +13260,16 @@
               "verdict": "pass"
             }
           ],
-          "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-20T10:06:17.808Z",
-          "reopened_at": "2026-10-20T10:06:17.808Z"
+          "owner": null,
+          "claimed_at": null,
+          "reopened_at": "2026-10-20T10:47:41.583Z",
+          "reopen_reason": "清注释里的用户原话",
+          "reopened_from": "deepseek-v4.1-flash",
+          "release_reason": "edit_code 批量格式未查清，未改",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:48:13.696Z"
         },
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -17229,7 +17234,7 @@
               "why": "★ T20 正式化：新建文件的依据是同一批声明的 file-exists 期望（这一条只有真做了才会绿）"
             }
           ],
-          "state": "claimed",
+          "state": "candidate",
           "evidence": [
             {
               "kind": "expectations",
@@ -17251,14 +17256,14 @@
               "verdict": "pass"
             }
           ],
-          "owner": "comment-cleanup-bot",
-          "claimed_at": "2026-10-20T09:35:33.814Z",
-          "release_reason": "验证 fromCandidate 收口路径",
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "子代理已结束，释放占用的卡",
           "released_by": "workbuddy",
-          "released_at": "2026-10-19T23:21:10.605Z",
+          "released_at": "2026-10-20T10:49:13.144Z",
           "reopened_at": "2026-10-20T09:35:33.814Z"
         },
-        "status": "in_progress",
+        "status": "draft",
         "decision_history": [
           {
             "at": "2026-10-19T15:13:00.755Z",
@@ -18876,9 +18881,9 @@
               "why": "不同维度各自改要有独立的分类（不是 conflict）"
             }
           ],
-          "state": "claimed",
-          "owner": "comment-cleanup-bot",
-          "claimed_at": "2026-10-20T09:35:33.956Z",
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
           "evidence": [
             {
               "kind": "expectations",
@@ -18886,9 +18891,12 @@
               "verdict": "pass"
             }
           ],
-          "reopened_at": "2026-10-20T09:35:33.956Z"
+          "reopened_at": "2026-10-20T09:35:33.956Z",
+          "release_reason": "子代理已结束，释放占用的卡",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:49:13.227Z"
         },
-        "status": "in_progress",
+        "status": "draft",
         "decision_history": [
           {
             "at": "2026-10-19T12:52:08.190Z",
@@ -18981,14 +18989,17 @@
           "id": "file_src_application_refactor_edit_apply_writes_ts",
           "summary": "【L1 待建构】核心层 · src/application/refactor/edit — 3 个 API（导入自 5 个模块）（src/application/refactor/edit/apply_writes.ts） ← 节点 file_src_application_refactor_edit_apply_writes_ts",
           "expectations": [],
-          "state": "claimed",
+          "state": "candidate",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_apply_writes_ts\"].responsibility"
           },
-          "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-20T08:21:58.056Z"
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "子代理已结束，释放占用的卡",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:49:13.308Z"
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_edit_edit_code_ts",
@@ -19009,14 +19020,17 @@
           "id": "file_src_application_refactor_edit_edit_code_ts",
           "summary": "【L1 待建构】核心层 · src/application/refactor/edit — 21 个 API（导入自 11 个模块）（src/application/refactor/edit/edit_code.ts） ← 节点 file_src_application_refactor_edit_edit_code_ts",
           "expectations": [],
-          "state": "claimed",
+          "state": "candidate",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_edit_code_ts\"].responsibility"
           },
-          "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-20T06:46:50.622Z"
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "子代理已结束，释放占用的卡",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:49:13.382Z"
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_edit_remove_dead_imports_ts",
@@ -19196,14 +19210,17 @@
           "id": "file_src_application_refactor_index_ts",
           "summary": "【L1 待建构】入口层 · src/application/refactor — 1 个 API（导入自 34 个模块）（src/application/refactor/index.ts） ← 节点 file_src_application_refactor_index_ts",
           "expectations": [],
-          "state": "claimed",
+          "state": "candidate",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_index_ts\"].responsibility"
           },
-          "owner": "codebuddy-deepseek",
-          "claimed_at": "2026-10-20T07:24:41.779Z"
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "子代理已结束，释放占用的卡",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:49:13.458Z"
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_parse_capability_parse_capability_ts",
@@ -19304,14 +19321,17 @@
           "id": "file_src_application_refactor_rename_rename_file_ts",
           "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 14 个 API（导入自 11 个模块）（src/application/refactor/rename/rename_file.ts） ← 节点 file_src_application_refactor_rename_rename_file_ts",
           "expectations": [],
-          "state": "claimed",
+          "state": "candidate",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_file_ts\"].responsibility"
           },
-          "owner": "codebuddy-deepseek",
-          "claimed_at": "2026-10-20T07:24:41.370Z"
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "子代理已结束，释放占用的卡",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:49:13.531Z"
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_rename_rename_files_ts",
@@ -19332,14 +19352,17 @@
           "id": "file_src_application_refactor_rename_rename_files_ts",
           "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 3 个 API（导入自 7 个模块）（src/application/refactor/rename/rename_files.ts） ← 节点 file_src_application_refactor_rename_rename_files_ts",
           "expectations": [],
-          "state": "claimed",
+          "state": "candidate",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_files_ts\"].responsibility"
           },
-          "owner": "codebuddy-deepseek",
-          "claimed_at": "2026-10-20T07:24:41.504Z"
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "子代理已结束，释放占用的卡",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:49:13.607Z"
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_rename_rename_local_ts",
@@ -19391,14 +19414,17 @@
           "id": "file_src_application_refactor_rename_rename_symbols_ts",
           "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 14 个 API（导入自 12 个模块）（src/application/refactor/rename/rename_symbols.ts） ← 节点 file_src_application_refactor_rename_rename_symbols_ts",
           "expectations": [],
-          "state": "claimed",
+          "state": "candidate",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_symbols_ts\"].responsibility"
           },
-          "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-20T08:21:59.282Z"
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "子代理已结束，释放占用的卡",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:49:13.680Z"
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_rename_symbol_move_ts",
@@ -19419,14 +19445,17 @@
           "id": "file_src_application_refactor_rename_symbol_move_ts",
           "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 11 个 API（导入自 13 个模块）（src/application/refactor/rename/symbol_move.ts） ← 节点 file_src_application_refactor_rename_symbol_move_ts",
           "expectations": [],
-          "state": "claimed",
+          "state": "candidate",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_symbol_move_ts\"].responsibility"
           },
-          "owner": "codebuddy-deepseek",
-          "claimed_at": "2026-10-20T07:24:41.637Z"
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "子代理已结束，释放占用的卡",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:49:13.758Z"
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_rule_library_rule_apply_ts",
@@ -19944,9 +19973,9 @@
               "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
             }
           ],
-          "state": "claimed",
-          "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-20T06:46:50.691Z",
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
           "evidence": [
             {
               "kind": "attestation",
@@ -19963,7 +19992,10 @@
               "verdict": "pass"
             }
           ],
-          "reopened_at": "2026-10-20T06:46:50.691Z"
+          "reopened_at": "2026-10-20T06:46:50.691Z",
+          "release_reason": "子代理已结束，释放占用的卡",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:49:13.840Z"
         },
         "decision_history": [
           {
@@ -23287,7 +23319,7 @@
             "note": "file_src_application_write_gate_ts：覆盖率采集必须读设计侧 design/，否则闸看不见任何 feature"
           }
         ],
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_domain_animation_ts",
@@ -34467,11 +34499,14 @@
               "why": "写闸的豁免判据必须住设计侧：Node 上要有 gate 字段（'gated' | 'exempt'），闸只读它、不按路径前缀判"
             }
           ],
-          "state": "claimed",
-          "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-20T06:46:50.341Z"
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "子代理已结束，释放占用的卡",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:49:13.921Z"
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_domain_mindmap_ts",
@@ -44404,7 +44439,7 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "done",
+          "state": "candidate",
           "evidence": [
             {
               "kind": "attestation",
@@ -44447,13 +44482,16 @@
               "verdict": "pass"
             }
           ],
-          "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-20T10:44:22.787Z",
-          "reopened_at": "2026-10-20T10:44:22.787Z",
-          "reopen_reason": "清 src/domain/task_machine.ts 的注释字样（上一笔剩的第 7 处），不动实现",
-          "reopened_from": "deepseek-v4.1-flash"
+          "owner": null,
+          "claimed_at": null,
+          "reopened_at": "2026-10-20T10:47:42.904Z",
+          "reopen_reason": "清注释里的用户原话",
+          "reopened_from": "deepseek-v4.1-flash",
+          "release_reason": "edit_code 批量格式未查清，未改",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:48:15.016Z"
         },
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_domain_task_schema_ts",
@@ -49994,14 +50032,17 @@
           "id": "file_src_infrastructure_graph_import_project_ts",
           "summary": "【L1 待建构】核心层 · src/infrastructure/graph — 12 个 API（导入自 16 个模块）（src/infrastructure/graph/import_project.ts） ← 节点 file_src_infrastructure_graph_import_project_ts",
           "expectations": [],
-          "state": "claimed",
+          "state": "candidate",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_import_project_ts\"].responsibility"
           },
-          "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-20T06:46:50.481Z"
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "子代理已结束，释放占用的卡",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:49:14.006Z"
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_index_db_ts",
@@ -51517,14 +51558,17 @@
           "id": "file_src_presentation_mcp_server_registry_ts",
           "summary": "【L1 待建构】核心层 · src/presentation/mcp — 25 个 API（导入自 26 个模块）（src/presentation/mcp/server_registry.ts） ← 节点 file_src_presentation_mcp_server_registry_ts",
           "expectations": [],
-          "state": "claimed",
+          "state": "candidate",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_registry_ts\"].responsibility"
           },
-          "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-20T08:20:59.940Z"
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "子代理已结束，释放占用的卡",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:49:14.085Z"
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_presentation_mcp_tool_warnings_ts",
@@ -52221,9 +52265,9 @@
               "why": "★ 必含符号清单（LLM 写实现的输入）"
             }
           ],
-          "state": "claimed",
-          "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-20T06:28:37.710Z",
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
           "evidence": [
             {
               "kind": "expectations",
@@ -52238,9 +52282,12 @@
               "verdict": "pass"
             }
           ],
-          "reopened_at": "2026-10-20T06:28:37.710Z"
+          "reopened_at": "2026-10-20T06:28:37.710Z",
+          "release_reason": "子代理已结束，释放占用的卡",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:49:14.165Z"
         },
-        "status": "in_progress",
+        "status": "draft",
         "decision_history": [
           {
             "at": "2026-10-20T03:31:18.887Z",
@@ -52356,9 +52403,9 @@
               "why": "必须真的把 members 拷进副本（只有做了才会绿）"
             }
           ],
-          "state": "claimed",
-          "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-20T06:28:37.635Z",
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
           "evidence": [
             {
               "kind": "expectations",
@@ -52368,9 +52415,12 @@
               "verdict": "pass"
             }
           ],
-          "reopened_at": "2026-10-20T06:28:37.635Z"
+          "reopened_at": "2026-10-20T06:28:37.635Z",
+          "release_reason": "子代理已结束，释放占用的卡",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:49:14.240Z"
         },
-        "status": "in_progress",
+        "status": "draft",
         "decision_history": [
           {
             "at": "2026-10-20T00:08:42.765Z",
@@ -52468,9 +52518,9 @@
               "why": "取源码路径的判据必须单独一个函数（优先 path 字段，退回注释）"
             }
           ],
-          "state": "claimed",
-          "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-20T06:28:37.849Z",
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
           "evidence": [
             {
               "kind": "expectations",
@@ -52478,9 +52528,12 @@
               "verdict": "pass"
             }
           ],
-          "reopened_at": "2026-10-20T06:28:37.849Z"
+          "reopened_at": "2026-10-20T06:28:37.849Z",
+          "release_reason": "子代理已结束，释放占用的卡",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:49:14.312Z"
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_rewrite_rewrite_ts",
@@ -52575,9 +52628,9 @@
               "why": "★ 至少一个具体 reason（区分\"没覆盖\"与\"路径错\"）"
             }
           ],
-          "state": "claimed",
-          "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-20T06:28:37.778Z",
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
           "evidence": [
             {
               "kind": "expectations",
@@ -52592,9 +52645,12 @@
               "verdict": "pass"
             }
           ],
-          "reopened_at": "2026-10-20T06:28:37.778Z"
+          "reopened_at": "2026-10-20T06:28:37.778Z",
+          "release_reason": "子代理已结束，释放占用的卡",
+          "released_by": "workbuddy",
+          "released_at": "2026-10-20T10:49:14.388Z"
         },
-        "status": "in_progress",
+        "status": "draft",
         "decision_history": [
           {
             "at": "2026-10-20T03:31:17.643Z",
@@ -80925,7 +80981,7 @@
         ],
         "lines": 670,
         "layer": "core",
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -81021,7 +81077,7 @@
         ],
         "lines": 685,
         "layer": "api",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_index_ts",
@@ -84186,7 +84242,7 @@
         ],
         "lines": 991,
         "layer": "core",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_edit_apply_writes_ts",
@@ -84210,7 +84266,7 @@
         ],
         "lines": 153,
         "layer": "core",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_edit_edit_code_ts",
@@ -84269,7 +84325,7 @@
         ],
         "lines": 1070,
         "layer": "core",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_edit_remove_dead_imports_ts",
@@ -84607,7 +84663,7 @@
         ],
         "lines": 1772,
         "layer": "entry",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_parse_capability_parse_capability_ts",
@@ -84900,7 +84956,7 @@
         ],
         "lines": 607,
         "layer": "core",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_rename_rename_files_ts",
@@ -84931,7 +84987,7 @@
         ],
         "lines": 222,
         "layer": "core",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_rename_rename_local_ts",
@@ -85028,7 +85084,7 @@
         ],
         "lines": 806,
         "layer": "core",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_rename_symbol_move_ts",
@@ -85080,7 +85136,7 @@
         ],
         "lines": 559,
         "layer": "core",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_rule_library_rule_apply_ts",
@@ -85531,7 +85587,7 @@
         ],
         "lines": 1210,
         "layer": "core",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_domain_animation_ts",
@@ -86246,7 +86302,7 @@
         ],
         "lines": 431,
         "layer": "service",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_domain_mindmap_ts",
@@ -86790,7 +86846,7 @@
         ],
         "lines": 535,
         "layer": "service",
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_domain_task_schema_ts",
@@ -92824,7 +92880,7 @@
         ],
         "lines": 1479,
         "layer": "core",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_index_db_ts",
@@ -96157,7 +96213,7 @@
         ],
         "lines": 988,
         "layer": "core",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_presentation_mcp_tool_warnings_ts",
@@ -98586,25 +98642,25 @@
         "id": "file_src_application_design_line_design_line_ts",
         "path": "src/application/design/line/design_line.ts",
         "responsibility": "设计链六步读数（工具 design_line 的 report action）",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_db_gen_design_db_ts",
         "path": "src/application/design/db/gen_design_db.ts",
         "responsibility": "设计 DSL → 设计 DB（全量、与实际 DB 同构）",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_rewrite_symbol_diff_ts",
         "path": "src/application/design/rewrite/symbol_diff.ts",
         "responsibility": "设计 DB vs 源码的符号级判据（⑥ 的地基，全仓唯一一份）",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_rewrite_rewrite_ts",
         "path": "src/application/design/rewrite/rewrite.ts",
         "responsibility": "⑥ 设计 DB → 源码的编排（清单 → 语法门 → 落盘 → 复核）",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_line_design_diff_ts",
@@ -98685,11 +98741,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T10:47:08.872Z",
+    "saved_at": "2026-10-20T10:49:14.416Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792493100887,
-    "age": 127985
+    "age": 253529
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
