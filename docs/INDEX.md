@@ -47,19 +47,21 @@
 
 | 什么 | 在哪 |
 |---|---|
-| A7 在 4 条写路没接 `actor`（`rename_file`/`rename_files`/`symbol_move`/`apply_refactor_plan`） | 那三个文件被 `codebuddy-deepseek` claim 着，先 release |
+| ~~A7 在 4 条写路没接 `actor`~~ 已修：`rename_file`/`rename_files`/`symbol_move`/`apply_refactor_plan` 全接 | ✅ |
 | A7 默认仍是"提醒+放行"（`AGENT_IO_ACTOR_STRICT=1` 才拦） | `write_gate.ts` |
 | 自报拦不住冒充（stdio 拿不到可信身份） | 架构限制，非缺陷 |
 | L1 建构卡收不了口（`publish` 只能立 L1，`complete` 要求建构完整） | `task_ops.ts` |
-| ~~`satisfied` 锁死文件~~ 已修：`claim` 加 `intent=work|modify` | ✅ |
-| `edit_code` 接受空操作（`old_text == new_text` 也回 ✓） | `edit_code.ts` |
+| ~~`satisfied` / `done` 锁死文件~~ 已修：`claim` 加 `intent=work\|modify`（done 走 t_reopen+t_claim 一步，须给 reason，evidence 保留） | ✅ |
+| ~~`edit_code` 接受空操作~~ 已修：判据是"替换后内容是否变了"，报"空操作"且不重建索引 | ✅ |
+| ~~`refactor_pipeline` 不走闸~~ 已修（`t357` 23/0）；`diagnose` / `upgrade apply` 仍未过闸（分层障碍：`infrastructure → application`，要注入 `beforeWrite` 而非 import） | 见 §六 |
+| `deprecate_offline` 的物理删除（`fs.rmSync`）仍不过闸 | `deprecate_offline.ts` |
 | 4 个脚本仍 import `dist`（tsx 已装未用） | `scripts/` |
 | `hook-task-gate.mjs` 是死闸（读不存在的文件 + 按 `path` 匹配而节点无 `path`） | `scripts/` |
 | `docs/gate-principle.md` 不存在，却仍被多处引用（grep 便知） | 引用点 |
 | 12~25 个节点指向盘上不存在的路径 | `.agent-io/design/` |
 | `t337` 前提已破（两个 writer 写同一文件） | `certs/` |
 | 写闸只拦 MCP 工具面，`bash` 直写不拦；`.githooks/pre-commit` 只跑 `gen_agents` | 覆盖面 |
-| 93% 的 `src/` 文件不在任何 feature 的节点里 ⇒ 改它们走"无任务可挂、放行" | `.agent-io/design/` |
+| 覆盖是 **98%**（337/344 个 `src/` 文件在设计侧），但**有 claimed 卡的只有 4/367 ≈ 1%** ⇒ 闸一开，改任何已纳设计的文件都会被拒，除非领卡或 `authorize` | `.agent-io/design/` |
 
 ## 五、文档
 
