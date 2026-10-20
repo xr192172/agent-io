@@ -1720,3 +1720,51 @@ task_machine.ts · 19 个可变异点
 - `extractMutants` 只认 TS 的 `binary_expression`；其他语言要各自节点表
 - 只变异比较运算符（`&&` / 常量 / 返回值是后续算子）
 - **没挂 `complete`**（改闸风险大，下一步）
+
+---
+
+## 2026-10-20 早（二九）· 补 `nodes.members` —— 以及「判据绿了但数据是空的」
+
+### 1. 补了什么
+
+`type`/`interface` 的 `signature` 一直是 `Name()`（成员全丢），而 `parse/type_members.ts`
+**早就能提取** —— `kernel` 抽 symbols 时**没调它**。⇒ 接上，落 `nodes.members`（JSON）。
+
+### 2. ★ 两个坑（都不是代码 bug，是默认值）
+
+| 坑 | 表现 | 正解 |
+|---|---|---|
+| `import_project` 的 `max_files` **默认 200** | 清库后只回填 200 个文件，`task_machine.ts` 不在里面 | 传 `max_files=10000` |
+| `SCHEMA_VERSION` 升了**不一定清库** | 第一次跑已把 10 写进 `schema_versions` ⇒ 再跑 `v < V` 不成立 ⇒ 523 个文件命中旧缓存 | **直接 `DELETE FROM nodes/files/...`** |
+
+★ 这条值得记：**"升版本号"不等于"重建索引"** —— 它只在**版本真的变大**那一次生效。
+
+### 3. ★★ 一个判据教训（比功能本身重要）
+
+那一刻 3 条判据**全绿**：
+
+```
+pass  source-has  typeMembersOf
+pass  source-has  members TEXT
+pass  source-has  ADD COLUMN members
+```
+
+而**数据是空的**（`task_machine.ts` 0/20）。
+
+> `source-has` 只能证明"**代码里调了这个函数**"，证明不了"**数据真的落库**"。
+
+这类验收**判据表达不了**（`judgeExpectations` 的求值域里没有 SQL）⇒ 只能人/LLM 验。
+
+**我没有因为判据绿了就 complete** —— 直到全量重建、确认 `1038 / 1017` 才收口。
+
+### 4. 结果
+
+```
+全量重建：命中 0 / 重解析 525
+有 members 的节点：1038 ／ interface 总数 1017（100%，多的是 class/type）
+StandingNode: [{"name":"id","type":": string"},{"name":"path","type":": string","optional":true}]
+```
+
+### 5. 没做
+
+`gen_design_db` 把 members 拷进设计 DB —— 它的卡已 `done`，要 reopen 才能改。
