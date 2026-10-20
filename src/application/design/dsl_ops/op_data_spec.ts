@@ -228,9 +228,13 @@ export const OP_SPECS: readonly OpSpec[] = [
       'state/owner/evidence 全保留）· ' +
       'claim:`data.owner`（L2 须可领＝cardStanding，L1 看建构缺口）· ' +
       '★ 可选 `data.intent`：`work`（缺省，来补红）/ `modify`（判据可以全过，来改文件取**写权** —— 已完成 / 已满足的文件仍要能被下一个任务承载；回执写明"本次是修改不是补红"）· ' +
+      '★★ **`state=done` 的卡也能 claim**（2026-10-20）：内部 = `t_reopen` + `t_claim`（一步对外，两步对内）—— ' +
+      '① `data.reason` **必填**（为什么又开）；② `intent=modify` 不判判据（取写权），`intent=work` 仍判（没红可修 ⇒ 拒）；' +
+      '③ owner **换手**，原 owner 记进 `reopened_from`、理由记进 `reopen_reason`；④ `evidence[]` 逐条保留（上一轮干过什么）。' +
+      '★ `state=void` 不走 claim（判据已作废）⇒ 先 `relaunch` → `publish`（判据重给）→ claim · ' +
       'release:`data.reason`（by 走顶层 `agent`）· ' +
       'complete:`data.evidence`（同一把证据尺；L2 须 isSatisfied，L1 须建构完整）· ' +
-      'reopen:`data.owner`+`data.reason`（done→claimed「接手」，**判据不变**，原卡继续）· ' +
+      'reopen:`data.owner`+`data.reason`（done→claimed「接手」，**判据不变**，原卡继续；落 `reopen_reason` / `reopened_from`）· ' +
       'relaunch:`data.reason`（void→candidate「重新立卡」，★ **清空 expectations**、保留 summary/evidence；判据要再用 publish 从 decision 重给 —— 与 reopen 不是一回事）。',
   },
 ];
@@ -278,7 +282,7 @@ export const NODE_DATA_KEYS = [
   'path',
   // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：**写闸的豁免判据 `gate`**（`'gated' | 'exempt'`）。
   //   ★ 不加这一个键 ⇒ `data` 里写 `gate` 会被「不被认的键」拒 ⇒ **设计侧声明不了豁免**
-  //     ⇒ 豁免只剩「写回闸的代码」那一条路（= 用户裁定禁止的路径前缀）。
+  //     ⇒ 豁免只剩「写回闸的代码」那一条路（= 禁止的路径前缀）。
   //   ★ 取值域 / 缺省口径的唯一住处 = `domain/geometry.ts#NODE_GATES`（本清单只声明"认这个键"）。
   'gate',
   'decision',

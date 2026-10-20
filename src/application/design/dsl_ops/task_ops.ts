@@ -589,8 +589,20 @@ export function publishTask(input: TaskOpInput): EditResult {
  *          ★ 放行的是**写权**，不是"这张卡又有活了"：回执逐字写"本次是【修改】不是【补红】"。
  *     ★ 为什么不能只靠 reopen：`t_reopen` 只从 `done` 起跳；`candidate` + `satisfied` 既领不了、
  *        也没有 reopen 可走 ⇒ 那张卡指向的文件**谁也改不了**（2026-10-20 实测：改一行注释都不行）。
- *  ② CAS：`state === 'candidate'` ∧ `owner` 为空 —— 否则**拒**（不覆盖别人的领）；
+ *  ② CAS：`state === 'candidate'` ∧ `owner` 为空 ⇒ 就地写；`state === 'done'` ⇒ 走**重开**（见下节）；
+ *     `claimed`（别人的在办活）/ `void`（判据已作废）⇒ **拒**（不覆盖别人的领，也不复活废掉的卡）；
  *  ③ 写 `owner` + `claimed_at`（`releaseIfExpired` 的 TTL 靠它）。
+ *
+ * ## ★★★ `done` 卡：重开式领取（2026-10-20 · 第二笔）
+ * `done` 的卡不是「不能用」，而是「上一轮已结账」。判据（用户原话）：
+ * *「一个任务已完结之后为什么会直接锁文件，而不是持续让它像没有下过任务的文件一样，
+ * 让它能够继续被下一个任务承载。」*
+ * ⇒ `state === done` 时 `claim` = **`t_reopen` + `t_claim`**（一步对外，两步对内）：
+ *   · **不新造状态迁移**：`done → claimed` 本来就只有 `t_reopen` 一条，复用它；
+ *   · `reason` 必填（`t_reopen` 的 guard 第 4 条）；
+ *   · `intent=modify` 不判判据（重开不改判据）；`intent=work` 仍判（没红可修 ⇒ 拒；退化了 ⇒ 放行）；
+ *   · owner 换手 + `reopened_from` / `reopen_reason` 记账，`evidence[]` 原样保留。
+ * ★ `void` **不走这条路**（见 `relaunchTask`）：void 的判据已作废，写权应当从「重新立卡 → publish」来。
  *
  * ## ★★★ L1 建构卡为什么不走 `cardStanding`（2026-10-17）
  * L1 卡 `expectations: []` ⇒ `cardStanding` 必给 **`unknowable`**（空集不按全过算）⇒ 若照②拒，
@@ -644,12 +656,46 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   }
   const intent: ClaimIntent = rawIntent;
 
+  /**
+   * ★★★ 2026-10-20（第二笔）：`done` 卡的**重开式领取** = `t_reopen` + `t_claim`。
+   *
+   * ## 为什么要它（判据：用户原话）
+   * *「一个任务已完结之后为什么会直接锁文件，而不是持续让它像没有下过任务的文件一样，
+   * 让它能够继续被下一个任务承载。」*
+   * 上一笔只放开了 `candidate + satisfied`（`intent=modify`）；`done` 卡在**更外层的 CAS** 就被拦下，
+   * `intent` 根本没被读到 ⇒ 那 4 个文件的注释仍然改不了。
+   *
+   * ## 形态（★ 不新造状态迁移）
+   * `done → claimed` 本来就只有 `t_reopen` 一条 ⇒ 这里**复用它**：guard 照旧（`reason` 必填），
+   * 只是把「重开」与「领取」并成**一次对外**的调用。
+   * ★ 审计一分不丢：`evidence[]` 逐条保留（上一轮干过什么）、`reopened_from` 记原 owner、
+   *   `reopen_reason` 记为什么又开、`reopened_at` 记账本借方（`reopenGate` 仍要求新证据）。
+   */
+  const reopening = card.state === 'done';
+  const reopenReason = (input.reason ?? '').trim();
+  if (reopening && !reopenReason) {
+    throw new Error(
+      `claim 被拒（重开缺理由）：节点 "${node_id}" 的任务格已是 state=done（上一轮 owner=${card.owner ?? '（空）'}）` +
+        ` ⇒ 领取它 = **重开**（t_reopen + t_claim 一步完成），必须带 \`data.reason\`（为什么又开）。\n` +
+        `★ 这是有意的一条闸：无理由的重开等于把「完成」当摆设（t_reopen 的 guard 第 4 条）。\n` +
+        `★ 上一轮的 evidence（${(card.evidence ?? []).length} 条）会原样保留；新账另起（reopened_at / reopen_reason / reopened_from）。\n` +
+        `★ 只是要改这个文件（改判据 / 重构 / 改注释）⇒ \`data:{ owner:'<你>', reason:'…', intent:'modify' }\`。`,
+    );
+  }
+
   // ── L1 建构卡：可领性看「DSL 建构完整吗」，不看对拍 ───────────────────────────
   const level = taskLevel(card);
   let levelNote: string;
   /** L2 的站位读数（L1 没有它 —— 不伪造成 `work`：那是把"判不了"读成"有活"） */
   let claimStanding: CardStanding | undefined;
-  if (level === 'L1') {
+  if (reopening && intent === 'modify') {
+    // ★ 不判判据：与 t_reopen 一致（重开不改判据，也不拿判据决定能不能重开）。
+    //   ★ 若这里再判一次，节点后来退化成 blocked / unknowable 就会把文件重新锁上 —— 那正是本条要拆的锁。
+    //   ★ 安全不靠它：`reopened_at` 已记账本借方 ⇒ 想再 done 必须给**新**证据或真换判据（`reopenGate`）。
+    levelNote =
+      `站位=未判（done 卡重开）；★ 本次是【修改】不是【补红】—— 上一轮已完成（evidence ${(card.evidence ?? []).length} 条保留），` +
+      `这一步 = t_reopen + t_claim：取的是**写权**（改判据 / 重构 / 改注释），不是「又有活干了」；收口仍走 complete 的 isSatisfied`;
+  } else if (level === 'L1') {
     const c = constructionVerdict(dsl, node_id);
     if (c.complete) {
       throw new Error(
@@ -687,10 +733,14 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   }
 
   // ★ CAS（单写者队列下等价于"读到的还是那张 candidate 卡"）：不满足 ⇒ 拒，不抢别人的领。
-  if (card.state !== 'candidate' || card.owner) {
+  //   ★ 2026-10-20：`done` 走的是**重开**（`t_reopen`），不是"抢别人的在办活"——
+  //     上一轮的 owner 只记进 `reopened_from`，而 `claimed` 仍被这句 CAS 拦死（在办活不可夺）。
+  const casOk = reopening || (card.state === 'candidate' && !card.owner);
+  if (!casOk) {
     throw new Error(
       `claim 被拒（CAS）：节点 "${node_id}" 的任务格已是 state=${card.state} / owner=${JSON.stringify(card.owner ?? null)} —— ` +
-        `只在 state=candidate ∧ owner 为空时才写。`,
+        `只在 state=candidate ∧ owner 为空时就地写；state=done 走【重开】（带 reason）；` +
+        `state=claimed 是别人的在办活（先 release，或等它 done）；state=void 先 relaunch。`,
     );
   }
 
@@ -700,6 +750,15 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     state: 'claimed',
     owner,
     claimed_at: claimedAt,
+    // ★★ 2026-10-20：`done` 卡的**新账另起** —— 只写这一轮的「从谁手里、为什么开」；
+    //   上一轮的 `evidence[]` / `summary` / `expectations` 由 `...card` **逐条原样带过来**（不重建卡）。
+    ...(reopening
+      ? {
+          reopened_at: claimedAt,
+          reopen_reason: reopenReason,
+          reopened_from: card.owner ?? null,
+        }
+      : {}),
     // 新的一次领 ⇒ 上一次的释放痕迹不再是"当前状态"（保留原因会让"为什么现在有人领"读起来自相矛盾）
     release_reason: undefined,
     released_by: undefined,
@@ -711,10 +770,14 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       // ★ 首行自足（回执只透出首行）
       `已领取任务 "${node_id}"（owner=${owner}，claimed_at=${claimedAt}）—— ${levelNote}` +
       `\n★ 进度是**派生值**：task.state=claimed ⇒ progress=in_progress（不落第二份）。` +
-      (level === 'L1'
-        ? `\n★ L1 收口判据 = **DSL 建构完整**（给该节点写 decision.summary + 至少一条 phase=post 的 expectation），` +
-          `\`complete\` 也是用这同一把尺判。`
-        : ''),
+      (reopening
+        ? `\n★ 这是**重开**（done → claimed = t_reopen + t_claim）：上一轮 owner=${JSON.stringify(card.owner ?? null)} 记进 \`reopened_from\`；` +
+          `\`reopened_at\`=${claimedAt}、\`reopen_reason\` 已记；上一轮 evidence ${(card.evidence ?? []).length} 条**逐条保留**。` +
+          `\n★ 收口时 \`reopened_at\` 已在账 ⇒ 要么真换判据（\`publish\` 带 reason），要么给一条 at ≥ ${claimedAt} 的 \`reading\` / \`attestation\`。`
+        : level === 'L1'
+          ? `\n★ L1 收口判据 = **DSL 建构完整**（给该节点写 decision.summary + 至少一条 phase=post 的 expectation），` +
+            `\`complete\` 也是用这同一把尺判。`
+          : ''),
     feature,
     data: {
       node_id,
@@ -724,6 +787,10 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       claimed_at: claimedAt,
       intent,
       ...(claimStanding ? { standing: claimStanding } : {}),
+      // ★ 重开这一轮的可对拍读数（不必再读卡就知道「从谁手里、为什么开」）
+      ...(reopening
+        ? { reopened: true, reopened_from: card.owner ?? null, reopened_at: claimedAt, reopen_reason: reopenReason }
+        : {}),
       progress: progressOf({ state: 'claimed' }),
     },
   };
@@ -925,7 +992,7 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
 /**
  * ★★★ 2026-10-19：**重开已完成的任务**（`done → claimed`）。
  *
- * ## 为什么要有它（用户裁定，且有真实成本）
+ * ## 为什么要有它（有真实成本）
  * `done` 是终态时，同一节点的**第二个工作项无处安放**：
  *   `publish` 拒（"覆盖它等于把已完成的判据换掉"）· `release` 只能 `claimed → candidate`。
  * 而"一个文件会被反复改"是常态 —— 2026-10-19 晚上就有一笔改动（T20 正式化）
@@ -936,7 +1003,7 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
  * ② `reason` 必填（为什么重开）—— ★ 无理由的重开等于把"完成"当摆设
  * ③ CAS：`state === done` 才写（`assertTransition` 从迁移表读，不另写一把尺）
  *
- * ★ **重开不改判据**：本函数只 `{ ...card, state:'claimed', owner, claimed_at, reopened_at }` —— 它**不重读 decision**，
+ * ★ **重开不改判据**：本函数只 `{ ...card, state:'claimed', owner, claimed_at, reopened_at, reopen_reason, reopened_from }` —— 它**不重读 decision**，
  *   卡上的 `expectations` 原样留着（`evidence` 也原样留着）。⇒ 要换判据必须**再走一步 `publish`**：
  *   `reopen` → 改 `decision` → `publish`（state 已是 claimed，带 `data.reason` ⇒ 原地换判据，evidence 逐条保留）。
  *   ★ 只改 decision 不 publish ⇒ 卡上仍是**旧判据**（判据不跟着 decision 自动变）。
@@ -962,6 +1029,10 @@ export async function reopenTask(input: TaskOpInput): Promise<EditResult> {
     owner: input.owner,
     claimed_at: now,
     reopened_at: now,
+    // ★★ 2026-10-20：重开要**留痕** —— 为什么又开（`reopen_reason`）、从谁手里接的（`reopened_from`）。
+    //   原先理由只活在回执里；回执会丢，账不会。`evidence[]` 由 `...card` 原样保留（上一轮干过什么）。
+    reopen_reason: input.reason,
+    reopened_from: card.owner ?? null,
   };
   writeTask(feature, node_id, next);
   return {
@@ -979,7 +1050,7 @@ export async function reopenTask(input: TaskOpInput): Promise<EditResult> {
 }
 
 /**
- * ★★★ 2026-10-20（用户裁定：「加 t_relaunch（void→candidate，理由必填）」）：
+ * ★★★ 2026-10-20（新增「t_relaunch：void→candidate，理由必填」）：
  * **重新立卡**（`void → candidate`）。
  *
  * ## 与 `reopen` 的分界（★ 必须写在代码里，否则两个词会互相吃掉）
@@ -1189,7 +1260,7 @@ export function applyTodoOp(
   op: { op: string; id?: string; data?: Record<string, unknown> },
   agent?: string,
 ): EditResult {
-  // ★★★ 2026-10-18（用户校准）：**promote = 只填 node_id（指向）**，不建卡、不改节点。
+  // ★★★ 2026-10-18：**promote = 只填 node_id（指向）**，不建卡、不改节点。
   //   预决策（todos[]）**只挂「决策 + 现象」**；**落地人**看 node_id 去读那里的设计 DSL、
   //   **重新设计**（改 decision / 加判据），改完再 `publish` 挂载 —— **建卡是 publish 的事**。
   //   ★ 早先版本会"从 decision 翻判据、建卡、todo 标 done" ⇒ **越权**（做了落地人 + publish 的活）；

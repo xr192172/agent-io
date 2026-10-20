@@ -39613,9 +39613,9 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "done",
-          "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-20T10:01:41.341Z",
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
           "evidence": [
             {
               "kind": "attestation",
@@ -39624,10 +39624,31 @@
               "why": "本次只改了 src/domain/overlay.ts 的文件头注释（import_project 重建那一句）；30 条后态判据仍全过",
               "agent": "deepseek-v4.1-flash",
               "verdict": "pass"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T10:39:06.380Z",
+              "by": "llm",
+              "why": "本轮仅改 src/domain/overlay.ts 的两处注释（去掉「用户裁定」字样），未动实现；证据在上一轮 1 条之上追加",
+              "agent": "deepseek-v4.1-flash",
+              "verdict": "pass"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-20T10:42:04.364Z",
+              "by": "llm",
+              "agent": "deepseek-v4.1-flash",
+              "verdict": "pass"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-20T10:47:07.536Z",
+          "reopen_reason": "清注释残留（核验用）",
+          "reopened_from": "deepseek-v4.1-flash",
+          "release_reason": "核验完毕",
+          "released_by": "verify-bot",
+          "released_at": "2026-10-20T10:47:08.845Z"
         },
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_domain_reasoning_ts",
@@ -44408,11 +44429,29 @@
               "why": "isClaimable 加 ClaimIntent(work/modify) + 写权与活跃度分家的设计说明；23 条判据全过，verify 6 门全绿，t332/t349/t351/t353 全绿",
               "agent": "deepseek-v4.1-flash",
               "verdict": "pass"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T10:41:25.520Z",
+              "by": "llm",
+              "why": "本轮改 src/domain/task_machine.ts：文件头说明 done 卡的 claim 语义 + t_claim/t_reopen 的 guard 条款；未改任何判定函数体",
+              "agent": "deepseek-v4.1-flash",
+              "verdict": "pass"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-10-20T10:45:09.555Z",
+              "by": "llm",
+              "why": "第二轮只改 src/domain/task_machine.ts L574 注释字样（用户裁定→OQ1），23 条判据仍全过",
+              "agent": "deepseek-v4.1-flash",
+              "verdict": "pass"
             }
           ],
           "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-20T10:06:33.080Z",
-          "reopened_at": "2026-10-20T10:06:33.080Z"
+          "claimed_at": "2026-10-20T10:44:22.787Z",
+          "reopened_at": "2026-10-20T10:44:22.787Z",
+          "reopen_reason": "清 src/domain/task_machine.ts 的注释字样（上一笔剩的第 7 处），不动实现",
+          "reopened_from": "deepseek-v4.1-flash"
         },
         "status": "done"
       },
@@ -44977,9 +45016,9 @@
           "state": "candidate",
           "owner": null,
           "claimed_at": null,
-          "release_reason": "注释清理已完成，交回候选池",
+          "release_reason": "改完（TaskSpec 加 reopened_from / reopen_reason），但卡上的旧判据 TERMINAL_TASK_STATES / isTerminalTaskState 已随 2026-10-20 改名失效（2 条红）⇒ 本笔不冒充收口，放回 candidate 等判据更新",
           "released_by": "deepseek-v4.1-flash",
-          "released_at": "2026-10-20T10:26:40.716Z"
+          "released_at": "2026-10-20T10:42:12.340Z"
         },
         "status": "draft"
       },
@@ -86389,7 +86428,7 @@
         ],
         "lines": 984,
         "layer": "service",
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_domain_reasoning_ts",
@@ -98646,11 +98685,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T10:26:40.743Z",
+    "saved_at": "2026-10-20T10:47:08.872Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792491979769,
-    "age": 20974
+    "scanRev": 1792493100887,
+    "age": 127985
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -100643,5 +100682,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 691
+  "_dsl_rev": 695
 }

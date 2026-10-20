@@ -542,7 +542,7 @@ export function applyOverlay(base: DesignDSL, overlay: DesignOverlay): DesignDSL
     const merged = a
       ? ({
           ...n,
-          // ★★★ 2026-10-19（用户裁定"设计只住一处"）：**不再投 decision / decision_history**。
+          // ★★★ 2026-10-19（设计只住一处）：**不再投 decision / decision_history**。
           //   它们只住 `design/<f>.dsl.json`（DESIGN.md:300 的"唯一权威"）。
           //   此处原先回填 ⇒ 造成"同一份 decision 在 design/ 和 overlay 各一份"（37×2，实测一致但因镜像而会漂移）。
           ...(a.attributes ? { attributes: a.attributes } : {}),
@@ -684,7 +684,7 @@ export function seedOverlayFromDsl(dsl: DesignDSL | null): DesignOverlay {
     //   会被 `continue` 跳过 ⇒ 首次迁移就漏掉它。
     if (!n.attributes && !anns?.length && !lc && !pg) continue;
     const a: OverlayAnchor = { path: nodePath(n), kind: nodePathKind(n) };
-    // ★★★ 2026-10-19（用户裁定「设计只住一处」）：**不再 seed decision**。
+    // ★★★ 2026-10-19（设计只住一处）：**不再 seed decision**。
     //   decision / decision_history 只住 design/<f>.dsl.json（DESIGN.md:300 的「唯一权威」）；
     //   applyOverlay 也不再回填。overlay 从此只持有【运行时】：status / progress / evidence / attributes。
     //   ★ 需要「决策历史」去 git（design/ 进 git，overlay 不进）。

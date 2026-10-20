@@ -79,8 +79,15 @@ import { isTaskState, type TaskSpec, type TaskState } from './task_schema.js';
  *   · `modify`    = **判据已全过**，仍要改文件（改判据 / 重构 / 改注释）—— 取的是**写权**，不是补红；
  *   ⇒ 「文件可写」只要求"有人声明了要写它"，不再要求"这张卡还有红"。
  * ★ `blocked` / `unknowable` **连 modify 也拒**：那不是"卡不活跃"，是"改了也改不动 / 判不了"（依赖未做 / 判不了）。
- * ★ `done` / `void` 的卡**仍不走 claim** —— 它们有专门的回头路（`t_reopen` / `t_relaunch`）：
- *   那是**状态迁移**问题（卡已了结），与本条（卡没活干但文件要改）不是一件事。
+ * ★★ `done` 卡**走** claim，但只在**重开语义**下（2026-10-20 · 第二笔）：
+ *   `state === done` ⇒ `claim` 内部 = `t_reopen` + `t_claim`（**一步对外，两步对内**）——
+ *   ① `reason` 必填（`t_reopen` 第 4 条：无理由的重开等于把「完成」当摆设）；
+ *   ② `intent=modify` 不判判据（与 `t_reopen` 一致：重开不改判据，也不拿判据决定能不能重开）；
+ *      `intent=work` 仍按 `isClaimable` 判（判据全过 ⇒ 没红可修 ⇒ 拒；节点后来退化了 ⇒ 放行）；
+ *   ③ owner **换手**（上一轮的 owner 记进 `reopened_from`），否则 A7 会让新接手人写不了自己领的文件；
+ *   ④ 原 `evidence[]` **逐条保留**（上一轮干过什么），新账另起（`reopened_at` / `reopen_reason`）。
+ * ★ `void` 卡**仍不走 claim**：它只有 `t_relaunch`（void → candidate，判据由 publish 重给）——
+ *   `void` 的判据已**作废**，`modify` 若放行 = 拿作废的判据去写文件（且 complete 会把它当「干完了」）。
  */
 export type CardStanding = 'work' | 'violated' | 'blocked' | 'satisfied' | 'unknowable';
 
@@ -485,7 +492,9 @@ export const TRANSITIONS: readonly TaskTransition[] = [
         '★ 按期望自带的 phase 分区（phase=post 供满足度，phase=pre 供违约轴）后：work = 后态有本节点的红；violated = 后态全过 ∧ 前态有红',
         '★ satisfied 默认不可领（没活干）；★ 但 data.intent=modify 可领 —— 已完成 / 已满足的文件仍要能被下一个任务承载（改判据 / 重构 / 改注释），**写权不该由卡的活跃度决定**（2026-10-20）；blocked / unknowable 连 modify 也拒（依赖未做 / 判不了）',
         'target 在 DB 存在（不存在则走 t_void）',
-        'CAS：state=candidate ∧ owner IS NULL 时才写 owner（changes === 1）',
+        '★ state=candidate ⇒ CAS：owner IS NULL 时才写 owner（changes === 1）',
+        '★★ state=done ⇒ 本迁移不直接执行：先走 t_reopen（reason 必填、owner 换手、reopened_at / reopen_reason / reopened_from 记账、evidence 保留），再写 owner —— 一步对外（claim intent=modify）两步对内；intent=work 时仍要 isClaimable 放行（判据后来退化了才有活）',
+        '★ state=void 不走这里（t_relaunch → candidate → publish → claim）',
       ],
     },
   },
@@ -535,6 +544,8 @@ export const TRANSITIONS: readonly TaskTransition[] = [
         'owner 必填（谁来重开 = 谁接手）',
         'reason 必填（为什么重开）—— ★ 无理由的重开等于把"完成"当摆设',
         '★ 重开不改判据（expectations 仍来自 decision）；要换判据请走 reopen → 改 decision → publish{reason}（先改再 reopen 会被 A6 闸拒）',
+        '★ 同一件事有两个入口：`reopen`（显式两步）与 `claim intent=modify`（一步对外，内部 = 本迁移 + t_claim）',
+        '★ 落 `reopened_from`（上一轮 owner）与 `reopen_reason`（为什么又开）—— 换手要留痕，理由不能只活在回执里',
         'CAS：state=done 时才写（防并发）',
       ],
     },
@@ -560,7 +571,7 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     id: 't_done_from_candidate',
     from: 'candidate',
     to: 'done',
-    // ★★★ 2026-10-20 用户裁定（OQ1）：**显式收口**，不是"自动收口"
+    // ★★★ 2026-10-20（OQ1）：**显式收口**，不是"自动收口"
     //   —— 一张卡若一出生就 satisfied，则"领"没有意义（claim 会拒它）；
     //     但必须留一条"不领也能收口"的路，否则它永远停在 candidate（实测死锁）。
     state: { kind: 'ready' },
