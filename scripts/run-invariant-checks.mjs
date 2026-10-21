@@ -41,7 +41,9 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const DSL_PATH = process.argv[2] ?? path.join(ROOT, 'docs/task-system-plan.dsl.json');
+// ★ 2026-10-21：DSL 已从 docs/ 搬去 .agent-io/design/。旧默认路径是尸体 ⇒ 每次 exit=2 ENOENT
+//   （它好在会喊，不是静默绿灯；但"能跑"和"在守东西"是两件事，见下方 cmd 处理）。
+const DSL_PATH = process.argv[2] ?? path.join(ROOT, '.agent-io/design/task-system-plan.dsl.json');
 
 // ★★ 判据必须能被"读出来"：解析失败也退 2（不许把它当成 0 条 = 全绿）
 let doc;

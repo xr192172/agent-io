@@ -171,7 +171,15 @@ function run(g) {
   // ★ 逐门可覆盖 `shell`：默认在 Windows 上开（`go`/`npx` 是 `.cmd`，不带 shell 找不到），
   //   但含空格的绝对路径（如 `process.execPath`）必须 `shell:false`，否则被 cmd 截断 —— 见 `tsGate`。
   const shell = g.shell ?? process.platform === 'win32';
-  const r = spawnSync(g.cmd, g.args, { cwd, encoding: 'utf8', shell, maxBuffer: 32 * 1024 * 1024 });
+  // ★ 2026-10-21：告诉子门「你是总门发起的」—— 目前只有 `scripts/mcp/mcp_scan.mjs` 读它
+  //   （把那一遍扫射记成 `via:'gate'` 而不是随手扫的 `'sweep'`）。其余门忽略这个变量。
+  const r = spawnSync(g.cmd, g.args, {
+    cwd,
+    encoding: 'utf8',
+    shell,
+    maxBuffer: 32 * 1024 * 1024,
+    env: { ...process.env, AGENT_IO_DOGFOOD_VIA: 'gate' },
+  });
   const out = `${r.stdout ?? ''}${r.stderr ?? ''}`.trim();
   if (r.error) return { state: 'FAIL', why: r.error.message, out };
   if (r.status !== 0) return { state: 'FAIL', why: `退出码 ${r.status}`, out };

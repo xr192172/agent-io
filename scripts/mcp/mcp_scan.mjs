@@ -45,6 +45,24 @@
  * ★ 会给本进程设 `AGENT_IO_HOME=<cwd>/.inspect/_scan_home`，避免"传 `{}` 的空调用"污染真实数据目录。
  * ★ 坏签名 > 0 即非零退出（可被 CI / 脚本消费）。
  *
+ * ## ★★ 2026-10-21：**这一遍扫射要入账**
+ * ★ 此前它**完全不在狗食账本里**：它直接调 `def.handler({})`（理由见上一段），绕过 `invokeTool`，
+ *   而 `recordDogfoodUsage` 只挂在 `invokeTool` 上（`server_registry.ts:817 / :878`）。
+ *   ⇒ 后果实测：账本里 `canvas_notes` 的 7 次成功**全在 4 个扫射日**（09-14/09-27/09-28/10-04，
+ *     每天 49~66 个工具、相邻只隔 10ms~1.2s）—— 那些**不是** mcp_scan 记的（它一条都没记），
+ *     是「agent 自己一个个撞」撞出来的；两边都分不清，因为账本没有 `via`。
+ * ★ **为什么不改成走 `invokeTool`**：本门**故意绕过 zod**（见上一段）。`invokeTool` 第一件事就是
+ *   `validateToolArgs` ⇒ 走它的话所有 `{}` 都会先被 schema 拦下，**又变回「测 zod、不测 handler 守卫」的假绿**。
+ *   ⇒ 所以这里**自己记一条**：验什么、怎么验**一个字不改**。
+ * ★ 落点：默认写**真实**账本。隔离（`AGENT_IO_HOME` → `.inspect/_scan_home`）的本意是
+ *   「别让 `{}` 空调用污染数据目录」，**不是**「把读数藏进沙箱」。真实数据目录必须在覆写 HOME **之前**取到。
+ * ★ `via` 取值：`AGENT_IO_DOGFOOD_VIA` 环境变量，缺省 `'sweep'`；`npm run verify` 会传 `'gate'`
+ *   （同一份扫射，但「总门发起的」与「随手扫一遍」是两件事）。
+ * ★★ **口径差异（必须知道）**：`via='sweep'|'gate'` 的行里，`ok` = **零坏签名**（本门的判据），
+ *   而 `via='mcp'|'cli'|'cert'` 的 `ok` = handler 真的返回成功。两者**不是同一把尺** ⇒
+ *   看成功率时先按 `via` 分组，别混在一起算。
+ * ★ 需要先 `npm run build`（本门本来就要求 dist —— 见下面的存在性检查）。
+ *
  * 用法： node scripts/mcp/mcp_scan.mjs [dist 根] [cwd]
  */
 import fs from 'node:fs';
@@ -60,12 +78,25 @@ if (!fs.existsSync(registry)) {
   process.exit(2);
 }
 
+// ★★ 2026-10-21：**真实**数据目录必须在覆写 `AGENT_IO_HOME` 之前取（此后取到的都是沙箱）。
+const realDataHome =
+  process.env.AGENT_IO_HOME ??
+  (await import(pathToFileURL(path.join(distRoot, 'src/infrastructure/storage.js')).href)).getDataHome();
+
 // ★ 隔离：先设 HOME 再 import —— 那些模块在**加载期**就可能解析数据目录。
 process.env.AGENT_IO_HOME = path.join(cwd, '.inspect/_scan_home');
 fs.mkdirSync(process.env.AGENT_IO_HOME, { recursive: true });
+// ★ 账本落点**显式**指回真实目录（`AGENT_IO_DOGFOOD_FILE`，见 `dogfood_stats.ts` 的 `logFile()`）——
+//   否则这一遍的记录只会落在沙箱里、真实账本上仍然看不见（= 修了等于没修）。
+process.env.AGENT_IO_DOGFOOD_FILE ??= path.join(realDataHome, '.agent-io/dogfood/usage.jsonl');
 
 // ★ Windows：动态 import 绝对路径必须是 file:// URL（否则 ES 加载器报 ERR_UNSUPPORTED_ESM_URL_SCHEME）
 const { TOOL_DEFS } = await import(pathToFileURL(registry).href);
+// ★ 入账走**同一个写端**（不在这儿自己拼 JSON —— 一条字段改了、两处写法就会漂）。
+const { recordDogfoodUsage } = await import(
+  pathToFileURL(path.join(distRoot, 'src/infrastructure/dogfood_stats.js')).href
+);
+const VIA = process.env.AGENT_IO_DOGFOOD_VIA ?? 'sweep';
 
 /** 「坏签名」的六条模式 —— 全是 Node 原始异常或被工具泄漏出去的外部命令报错。 */
 const BAD = [
@@ -85,6 +116,7 @@ const rows = [];
 for (const def of TOOL_DEFS) {
   let out = '';
   let threw = null;
+  const t0 = Date.now();
   try {
     const r = await def.handler({});
     out = typeof r?.text === 'string' ? r.text : JSON.stringify(r ?? null);
@@ -94,6 +126,16 @@ for (const def of TOOL_DEFS) {
     out = threw;
   }
   const hits = BAD.filter((re) => re.test(out)).map((re) => re.source);
+  // ★★ 2026-10-21：入账（`via` 见文件头）。★ `ok` 在这里的口径是**本门的判据**（零坏签名），
+  //   不是「handler 返回成功」—— `{}` 空调用本来就该被守卫拒掉，那不算失败。别拿它算采纳率。
+  recordDogfoodUsage({
+    ts: new Date().toISOString(),
+    tool: def.name,
+    via: VIA,
+    ok: hits.length === 0,
+    ms: Date.now() - t0,
+    err: threw ?? (hits.length ? `坏签名[${hits.join(' | ')}]` : undefined),
+  });
   const first = (out.trim().split('\n')[0] ?? '').slice(0, 110);
   rows.push({ name: def.name, bad_signature: hits, first_line: first, threw });
   console.log(

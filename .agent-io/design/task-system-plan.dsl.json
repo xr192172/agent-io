@@ -46081,7 +46081,7 @@
           "acceptance": "validateDSL(dsl) 能点名每条错（code + 位置）；errors 与 keys 一一对应（★ 重命名\"被指向的名字\"不改键 ⇒ 不误报\"新增错\"）；validateDSLJson 在 JSON 层就拒掉非对象/语法错。；★ 读数快照（task_plan.plan_to_work.reading_now / block_readings）存在 ⇒ validateDSL 必须点名。",
           "updated_at": "2026-10-19T10:39:23.467Z",
           "agent": "verify",
-          "rationale": "★ 2026-10-19 加第三项（读数快照）—— 实证不是假想：`task_plan.plan_to_work.reading_now` 停在 2026-10-16（checked 25 / passed 12 / failed 12），而 2026-10-19 实跑 judgeExpectations 是 checked 516 / failed 0 ⇒ **快照说\"还有 12 条红\"，实际 0 条**；且它引用的复跑入口 `certs/.work/probe-plan-detail.mjs` 读的是**已删除**的 `docs/task-system-plan.dsl.json` ⇒ 连\"怎么复跑\"都断了。读数是**派生量**，落盘 = 第二份真相 = 会过期 = 会骗人。",
+          "rationale": "★ 2026-10-19 加第三项（读数快照）—— 实证不是假想：`task_plan.plan_to_work.reading_now` 停在 2026-10-16（checked 25 / passed 12 / failed 12），而 2026-10-19 实跑 judgeExpectations 是 checked 516 / failed 0 ⇒ **快照说\"还有 12 条红\"，实际 0 条**；且它引用的复跑入口 `certs/.work/probe-plan-detail.mjs` 读的是**已删除**的 `.agent-io/design/task-system-plan.dsl.json` ⇒ 连\"怎么复跑\"都断了。读数是**派生量**，落盘 = 第二份真相 = 会过期 = 会骗人。",
           "consequences": "读者必须**现算**（跑 judgeExpectations / 对应 probe），成本从\"写者一次\"变成\"每次读\"。换来的是：不会再有人读到过期读数。★ 边界：`layers[].count` 同为读数，但它是 `ArchLayer` 的**必填类型字段**（types.ts:149）⇒ 删它要连带改类型与构造处，另记一笔，不在本闸范围。"
         },
         "task": {
@@ -75424,7 +75424,7 @@
             "kind": "type",
             "line": 47,
             "end_line": 47,
-            "signature": "const dslPath = path.join(root, 'docs/task-system-plan.dsl.json')"
+            "signature": "const dslPath = path.join(root, '.agent-io/design/task-system-plan.dsl.json')"
           },
           {
             "name": "d",
@@ -77152,7 +77152,7 @@
             "kind": "type",
             "line": 28,
             "end_line": 28,
-            "signature": "const PLAN = 'docs/task-system-plan.dsl.json'"
+            "signature": "const PLAN = '.agent-io/design/task-system-plan.dsl.json'"
           },
           {
             "name": "LEDGER",
@@ -79774,7 +79774,7 @@
             "kind": "type",
             "line": 57,
             "end_line": 57,
-            "signature": "const PLAN = `${ROOT}/docs/task-system-plan.dsl.json`"
+            "signature": "const PLAN = `${ROOT}/.agent-io/design/task-system-plan.dsl.json`"
           },
           {
             "name": "CERTS",
@@ -80242,7 +80242,7 @@
             "kind": "type",
             "line": 28,
             "end_line": 28,
-            "signature": "const PLAN = 'docs/task-system-plan.dsl.json'"
+            "signature": "const PLAN = '.agent-io/design/task-system-plan.dsl.json'"
           },
           {
             "name": "SCHEMA",
@@ -99107,13 +99107,13 @@
       {
         "invariant": "设计侧不复制事实（能由 DB 现算的字段不许落盘）",
         "check": "task 格里不得出现 line/loc/hash/sha1/reads/call_count 等可由 DB 现算的键",
-        "cmd": "node -e \"const fs=require('fs');const d=JSON.parse(fs.readFileSync('docs/task-system-plan.dsl.json','utf8'));const bad=['line','lines','loc','hash','sha1','reads','call_count'];const s=JSON.stringify(d.geometry.nodes);process.exit(bad.some(k=>s.includes('\\\"'+k+'\\\"'))?1:0)\"",
+        "cmd": "node -e \"const fs=require('fs');const d=JSON.parse(fs.readFileSync('.agent-io/design/task-system-plan.dsl.json','utf8'));const bad=['line','lines','loc','hash','sha1','reads','call_count'];const s=JSON.stringify(d.geometry.nodes);process.exit(bad.some(k=>s.includes('\\\"'+k+'\\\"'))?1:0)\"",
         "red_when": "exit!=0 ⇒ task 格落了快照、复制了事实"
       },
       {
         "invariant": "★ 被未决项挡住的迁移：state.kind=\"blocked\" 必须命中未结题的 OQ（否则该状态是一句没人读的字符串）",
         "check": "收集所有 transition.state.kind===\"blocked\" 的 by 取值；每条都要在 task_plan.open_questions 里找到编号前缀相同的一条。★ 代码侧同形：TransitionState（task_machine.ts）—— 声明 blocked 必须带 by，且 applicableTransitions 只认 ready。",
-        "cmd": "node -e \"const fs=require('fs');const d=JSON.parse(fs.readFileSync('docs/task-system-plan.dsl.json','utf8'));const oqs=(d.task_plan.open_questions||[]).map(s=>(String(s).match(/^OQ[0-9]+/)||[''])[0]).filter(Boolean);const bl=(d.task_plan.state_machine.transitions||[]).map(t=>t.state&&t.state.kind==='blocked'?t.state.by:null).filter(Boolean);console.log('OQ='+JSON.stringify(oqs),'blocked='+JSON.stringify(bl));process.exit(bl.every(x=>oqs.includes(x))?0:1)\"",
+        "cmd": "node -e \"const fs=require('fs');const d=JSON.parse(fs.readFileSync('.agent-io/design/task-system-plan.dsl.json','utf8'));const oqs=(d.task_plan.open_questions||[]).map(s=>(String(s).match(/^OQ[0-9]+/)||[''])[0]).filter(Boolean);const bl=(d.task_plan.state_machine.transitions||[]).map(t=>t.state&&t.state.kind==='blocked'?t.state.by:null).filter(Boolean);console.log('OQ='+JSON.stringify(oqs),'blocked='+JSON.stringify(bl));process.exit(bl.every(x=>oqs.includes(x))?0:1)\"",
         "red_when": "exit!=0 ⇒ 某条迁移声称被 X 挡住，但 X 不在 open_questions 里（悬空引用）；或 blocked 却没写 by"
       },
       {
@@ -100873,7 +100873,7 @@
     },
     {
       "id": "todo_④-修活-hook-task-gate-mjs-实现-scripts-hook-",
-      "summary": "【④ 修活 hook-task-gate.mjs】【实现】scripts/hook-task-gate.mjs 现在是死的第二闸：读 docs/task-system-plan.dsl.json（不存在）⇒ 静默 return（空）；按 x.path 匹配而 geometry 里 0 个 path ⇒ 恒 0 命中。★ 要改成调 collectGateCoverage（判据只住一处），做「量具区账外改动」的会话级提醒。★ 不许自己判。",
+      "summary": "【④ 修活 hook-task-gate.mjs】【实现】scripts/hook-task-gate.mjs 现在是死的第二闸：读 .agent-io/design/task-system-plan.dsl.json（不存在）⇒ 静默 return（空）；按 x.path 匹配而 geometry 里 0 个 path ⇒ 恒 0 命中。★ 要改成调 collectGateCoverage（判据只住一处），做「量具区账外改动」的会话级提醒。★ 不许自己判。",
       "expectations": [],
       "state": "candidate",
       "owner": null
@@ -101027,7 +101027,7 @@
     },
     {
       "id": "todo_门腐坏-npm-run-invariants-默认入口硬编码-docs-task",
-      "summary": "【门腐坏】`npm run invariants` 默认入口硬编码 `docs/task-system-plan.dsl.json`（该文件已搬去 `.agent-io/design/`）⇒ 每次 exit=2 ENOENT；手动喂现存路径后 4 条里 2 条 FAIL，两条 cmd 是内嵌 `node -e` 字符串、里面也是同一条死路径。⇒ \"设计侧不复制事实\"这条 invariant 今天【没有任何约束力】。要做的：cmd 里的路径改成从 runner 传入（或读 `.agent-io/design/`）；修完必须能 4/4 PASS。★ 别只改默认路径 —— 那只是让它\"能跑\"，两条 cmd 仍然查不了东西。",
+      "summary": "【门腐坏】`npm run invariants` 默认入口硬编码 `.agent-io/design/task-system-plan.dsl.json`（该文件已搬去 `.agent-io/design/`）⇒ 每次 exit=2 ENOENT；手动喂现存路径后 4 条里 2 条 FAIL，两条 cmd 是内嵌 `node -e` 字符串、里面也是同一条死路径。⇒ \"设计侧不复制事实\"这条 invariant 今天【没有任何约束力】。要做的：cmd 里的路径改成从 runner 传入（或读 `.agent-io/design/`）；修完必须能 4/4 PASS。★ 别只改默认路径 —— 那只是让它\"能跑\"，两条 cmd 仍然查不了东西。",
       "expectations": [],
       "state": "candidate",
       "owner": null
