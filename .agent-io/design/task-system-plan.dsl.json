@@ -106144,6 +106144,13 @@
       "summary": "写闸物理上没有落点：链 E 环3 的产物在仓外，task_gate 原文「0 条 feature 的 source_root 指到 … ⇒ 任务闸不适用（放行）」；翻译册在仓内但「不在任何 covering feature 里 ⇒ 无任务可挂」⇒ 一次 claim 都没被要求，owner/reason 从未被校验。判据：对「仓外产物目录」与「.agent-io/design/*.translate.json」各有一条可查的授权路径（要么落一个 feature 的 source_root，要么写闸显式写明这两类路径的处置），不靠人肉记忆。★ 机器判不了：这是闸的覆盖范围问题，不是某个符号/文件的存在性。",
       "state": "candidate",
       "owner": null
+    },
+    {
+      "id": "todo_api-overview-只读接口会写盘-清空96张任务卡",
+      "type": "todo",
+      "state": "candidate",
+      "summary": "★ /api/overview 是只读接口但会调 tryDeriveFeatureTree ⇒ saveDSL 重写整份设计 DSL ⇒ 2026-10-22 实测把 96 张任务卡整片清空（5.03MB→2.16MB）。判据：① GET /api/overview 前后设计册字节完全相同；② 或把它拆成「只读的 judge/derive」+「显式写入的 refresh」两个入口，GET 侧不许落盘。★ 恢复只能 git checkout，会丢 HEAD 之后的卡。",
+      "created_at": "2026-10-21T20:31:23.912Z"
     }
   ],
   "_dsl_rev": 1249
