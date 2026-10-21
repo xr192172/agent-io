@@ -207,9 +207,13 @@ export const OP_SPECS: readonly OpSpec[] = [
     //   **任务格的唯一写端**。`id` = 任务格所在的**节点 id**（任务与节点同居）——
     //   ★ 不是顶层 `tasks[]`，也不是 overlay 锚点。
     type: 'todo',
-    ops: ['add', 'link', 'update', 'retire', 'delete'],
+    // ★★★ 2026-10-21：加 `follows`（**跑环继任链**：把这张卡接到另一张卡下面 / 摘成链根）。
+    //   ★ 为什么是独立 op 而不是塞进 `update`：update 回答「这张卡**要做什么**变了吗」（旧值压 history），
+    //     follows 回答「它在**哪条链**上」—— 内容变更与结构变更是两件事。
+    //   ★ 也是**唯一能造出环**的入口（add 只加叶子）⇒ 「链必须无环」那条判据真正被考到的地方。
+    ops: ['add', 'link', 'update', 'follows', 'retire', 'delete'],
     idRequired: false,
-    opsRequiringId: ['link', 'update', 'retire', 'delete'],
+    opsRequiringId: ['link', 'update', 'follows', 'retire', 'delete'],
     // ★★★ 2026-10-21：**三个新 op 的必填键**（用户裁决：「说了多少次了要配好所有的增删改查操作」）。
     //   · update：summary（改成什么）+ reason（**为什么改** —— 无理由 = 悄悄改判据）
     //   · retire：reason（为什么作废；★ 必须点名**被谁取代**，否则考古不了）
@@ -219,6 +223,11 @@ export const OP_SPECS: readonly OpSpec[] = [
       add: ['summary'],
       link: ['node_id'],
       update: ['summary', 'reason'],
+      // ★ 2026-10-21：`follows` 只把 **reason** 钉成必填 —— `data.follows` 本身**不进 required**，
+      //   因为它的合法值里有一个 `null`（= 摘成链根），而 required 的判据把 null 当"缺"。
+      //   ⇒ 「给了这个键吗」由 handler 判（`'follows' in data`）：**没给键**与**给了 null** 是两种意图，
+      //     不能混（前者是忘记填，后者是明确摘链）。
+      follows: ['reason'],
       retire: ['reason'],
       delete: ['reason'],
     },
@@ -237,7 +246,16 @@ export const OP_SPECS: readonly OpSpec[] = [
            ⇒ 出册 + 落墓碑（<feature>.journal.jsonl，含被删卡全文）⇒ 可追溯，不是无声消失。
       ★ **retire 还是 delete？**（判据是机器判的，不是自觉）：retire = 这条**曾经有效**、被新的取代了（历史有价值）；
            delete = 这条**从未生效**、纯粹误操作 ⇒ delete 只放行「candidate 且从未被 claim 过、一条证据都没有」的卡，
-           其余一律**拒**并指路 retire（★ 别用 delete 清历史）。`,
+           其余一律**拒**并指路 retire（★ 别用 delete 清历史）。
+      ★★ **follows = 跑环继任链**（2026-10-21）：完成一环、发现还有新的 ⇒ **在它下面登记下一环**。
+           {op:"add", data:{summary:"二环：…", follows:"todo_一环"}} —— follows = **上一环的 todo id**，形成 一环→二环→三环。
+           · **一条链**（单指针）：上一环唯一 ⇒ 「第几环」唯一；★ 但一个父**可以**有多个子环（"做完一环发现两个新问题"），
+             展示时「**主链 = 每一环取册上最早登记的子环**」，其余标「支环」（派生值，不落盘）；
+           · 接错了 ⇒ {op:"follows", id:"todo_x", data:{follows:"todo_y", reason:"为什么重接"}}；
+             data.follows=null = **摘成链根**（自己当第一环）—— ★ 给空串不算摘，那是忘记填；
+           · ★ **拒**：自指 / 悬挂（父 id 不在册上）/ 接在**作废（void）**的卡下面 / **成环**（A→B→C→A 会让「第几环」永远算不出来）；
+           · ★ **不级联作废**：上一环 retire 后子环**仍在册、仍然有效**，只在展示里标「上一环已作废」；
+           · 看链：get_dsl query=todo（每张卡带「环 2/3」）· query=todo chain=true（按链分组）· state=all（连已了结的一起看）。`,
   },
   {
     type: 'task',
@@ -451,7 +469,12 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
   //   （update=为什么改 · retire=为什么作废 · delete=为什么物理删）。★ 不补 ⇒ 传了会被「不被认的键」拒。
   //   ★ `history` / `retire_reason` / `retired_at` **不在这里**：它们由写端**自己落**（append 到卡上），
   //     不是「data 里可以随便给的字段」—— 让调用方直接塞 history 就能伪造修订史。
-  todo: ['summary', 'decision', 'owner', 'id', 'node_id', 'reason'],
+  // ★★★ 2026-10-21（跑环继任链）：补 `follows` —— `todo.add` / `todo.follows` 都读它。
+  //   ★ 不补会怎样：传了会被「不被认的键」拒 ⇒ 调用方**没法表达"第二张是第一张的下一步"**，
+  //     只能回到在 summary 里手写「取代 xxx」（那正是 2026-10-21 立出三张矛盾卡的原因）。
+  //   ★ `depth` / `children` / `total` **不在这里**：它们是**现算**的（`domain/todo_chain.ts`），
+  //     让调用方塞 = 手写一份"我在第几环"，必与链的实际情况打架。
+  todo: ['summary', 'decision', 'owner', 'id', 'node_id', 'reason', 'follows'],
 };
 /** ★★ 断言：`TYPE_KNOWN_KEYS` 的键集**必须恰好覆盖 `OP_SPECS` 的全部 type**（多 / 少都红）。 */
 export type KnownKeysMissingTypes = Exclude<(typeof OP_SPECS)[number]['type'], keyof typeof TYPE_KNOWN_KEYS>;

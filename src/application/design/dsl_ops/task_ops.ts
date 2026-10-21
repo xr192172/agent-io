@@ -73,6 +73,10 @@ import {
 } from '../../../domain/task_schema.js';
 // ★ 2026-10-21：`todo.delete` 的**墓碑**（物理删是唯一让卡真的从册上消失的操作 ⇒ 必须有卡外留痕）。
 import { appendTodoTombstone, todoJournalFile } from '../board/todo_journal.js';
+// ★★★ 2026-10-21（跑环继任链）：链的**位置**（depth / total / children / broken）与**入口校验**
+//   （自指 / 悬挂 / 接作废卡 / 成环）**唯一住处** = `domain/todo_chain.ts` ——
+//   ★ 本文件只调它：读端（complete 的提示）与写端（add / follows）共读同一把尺，不各算一遍。
+import { assertFollowsTarget, buildTodoChains, chainBadge } from '../../../domain/todo_chain.js';
 import { contentHash } from '../../../infrastructure/index/symbols.js';
 // ★★★ 2026-10-21（并发控制·账户）：**规范唯一定义处**（`domain/actor_spec.ts`）。
 //   ★ 这里只用它做两件事：① 写入的 `data.owner` 过关（新值必须合规）② 与顶层 `agent` 比"是不是同一个人"。
@@ -1183,6 +1187,19 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
     ],
   });
 
+  // ★★★ 2026-10-21（跑环继任链）：**收口的这一刻正是"还有没有下一环"该被问的时候**——
+  //   用户原话「做完了之后发现还有新的，那就直接再在这个下面登记第二步」。
+  //   ★ 但**只是提示**：不许阻塞。提示一阻塞，就会有人为了过闸乱填一张（那比没有链更坏）。
+  //   ★ 必须在 writeTask **之后**算：这里要读的是「收口之后」的链（本卡已经是 done）。
+  //   ★ 入参要按**收口后**的样子算（`dsl` 是写盘前读的那一份，本卡还停在 claimed）——
+  //     否则"上一环 done 了没 / 整条链走完没"会看着像还没走完。
+  const chainNote = isTodo
+    ? todoChainNote(
+        (dsl.todos ?? []).map((t) => (t.id === node_id ? { ...t, state: 'done' as TaskState } : t)),
+        node_id,
+      )
+    : { head: '', detail: '' };
+
   // ★ 交接期：仍调既有状态入口（设计期望 `completeTask → updateStatus`），让 overlay 的 progress
   //   有一份与派生值一致的投影（★ 权威仍是 task.state；第 ④ 步退役 overlay 后这一行随之下线）。
   // ★★★ 2026-10-18（Q5）：**todo 没有"节点 status"可投影**（它不在 geometry/semantic）⇒ 跳过。
@@ -1204,7 +1221,8 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
 
   return {
     message:
-      `已完成任务 "${node_id}"（owner=${card.owner}，级别=${level}）—— ${closeNote}、证据 kind=${evidence!.kind}。` +
+      `已完成任务 "${node_id}"（owner=${card.owner}，级别=${level}）—— ${closeNote}、证据 kind=${evidence!.kind}。${chainNote.head}` +
+      chainNote.detail +
       (legacy ? `\n${legacy.message.split('\n')[0]}` : '\n★ todo：无节点 status 可投影（不在 geometry）⇒ 跳过 updateStatus') +
       (level === 'L1' ? `\n★ 下一步：\`publish\` 会把这个节点翻成 **L2 实现卡**（旧 L1 卡的证据会带过去）。` : ''),
     feature,
@@ -1607,7 +1625,7 @@ function updateTodoCard(feature: string, id: string, data: Record<string, unknow
 function retireTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult {
   assertNoIdentityChange('retire', data);
   const reason = String(data.reason ?? '').trim();
-  const { card } = findTodoCard(feature, 'retire', id);
+  const { dsl, card } = findTodoCard(feature, 'retire', id);
 
   if (isClosedTaskState(card.state)) {
     throw new Error(
@@ -1637,12 +1655,22 @@ function retireTodoCard(feature: string, id: string, data: Record<string, unknow
     ...(agent ? { retired_by: agent } : {}),
   });
 
+  // ★★★ 2026-10-21（跑环继任链）：作废一环时**只报、不改别人的卡** ——
+  //   后面的环**不会**被级联作废（那会杀掉可能仍然有效的活；用户 2026-10-21 明确否掉）。
+  const kids = (dsl.todos ?? []).filter((t) => t.follows === id);
+
   return {
     message:
-      `已作废 todo "${id}"（★ 卡**留在册里**，只是不再进待办）：\n` +
+      `已作废 todo "${id}"（★ 卡**留在册里**，只是不再进待办）` +
+      `${kids.length ? ` · 下挂 ${kids.length} 个下一环（★ 不级联作废）` : ''}：\n` +
       `  为什么：${reason}\n` +
       `  state=void · retired_at=${at}${agent ? ` · retired_by=${agent}` : ''}\n` +
-      `★ 之后：get_dsl query=todo **不再列它**；get_dsl query=todo state=void 仍能查到（含 retire_reason）。`,
+      `★ 之后：get_dsl query=todo **不再列它**；get_dsl query=todo state=void 仍能查到（含 retire_reason）。` +
+      (kids.length
+        ? `\n★ 它下面还挂着 ${kids.length} 个下一环（${kids.map((t) => t.id).join(' / ')}）—— **不会**被自动作废\n` +
+          `  （级联会杀掉可能仍然有效的活）；它们在 query=todo 里会标「上一环已作废」。\n` +
+          `  ★ 真要一起废 ⇒ 逐张 retire（每张留自己的理由）；确实是新开一条 ⇒ 用 todo.follows 把它们摘下来/重接。`
+        : ''),
     feature,
     data: { todo_id: id, state: 'void' as TaskState, retire_reason: reason, retired_at: at },
   };
@@ -1665,6 +1693,19 @@ function deleteTodoCard(feature: string, id: string, data: Record<string, unknow
   assertNoIdentityChange('delete', data);
   const reason = String(data.reason ?? '').trim();
   const { dsl, card } = findTodoCard(feature, 'delete', id);
+
+  // ★★★ 2026-10-21（跑环继任链）：**有下一环就不许物理删** —— 删掉后它们的 `follows`
+  //   就指向册上没有的 id（正是写端入口要拒的"悬挂引用"，G）。
+  //   留一条"删完才发现链断了"的路，比当场拦住坏得多。
+  const kids = (dsl.todos ?? []).filter((t) => t.follows === id);
+  if (kids.length > 0) {
+    throw new Error(
+      `todo.delete 被拒：${id} 下面还挂着 ${kids.length} 个下一环（${kids.map((t) => t.id).join(' / ')}）—— 删了它们就成孤儿（follows 指向不存在的 id）。\n` +
+        `★ 三条路：① 先把这几张的 follows 摘掉 / 重接（todo.follows，data.follows=null 或另一环的 id）；\n` +
+        `  ② 这条链确实废了 ⇒ todo.retire（卡**留在册里**，子环仍能查到"上一环已作废"）；\n` +
+        `  ③ 它们本来就是误建 ⇒ 先把子环 delete 掉，再删这一张。`,
+    );
+  }
 
   const evidenceCount = card.evidence?.length ?? 0;
   const tookEffect = card.state !== 'candidate' || !!card.claimed_at || evidenceCount > 0;
@@ -1704,7 +1745,78 @@ function deleteTodoCard(feature: string, id: string, data: Record<string, unknow
   };
 }
 
-/** 三个「改/作废/删」op 的分发（id 的存在由 `OP_SPECS` 的 `opsRequiringId` 保证）。 */
+/**
+ * `todo.follows` —— **把一张卡接到另一张卡下面**（或摘下来成为链根）。
+ *
+ * ## 为什么不是 `update`
+ * `update` 回答的是「这张卡**要做什么**变了吗」（旧值压 `history[]`）；`follows` 回答的是
+ * 「它在**哪条链**上」。内容变更与结构变更是两件事 —— 混进一个 op，迟早有人以为改 `summary`
+ * 会带着链一起走（或者反过来：改链时会顺手把 history 写脏）。
+ *
+ * ## 为什么必须有这个 op（而不是只在 add 时给 follows）
+ * ① 接错链要能改：否则只能 `retire` 重立一张，把证据一起丢掉；
+ * ② ★ 它是**唯一能造出环**的入口（`add` 只加叶子）⇒ 无环判据（H）真正被考到的地方在这里，
+ *   若没有它，「链必须无环」这条门就只是一句注解。
+ *
+ * ## 判据
+ * · **活卡才能改链**（`done` / `void` 是了结的卡 —— 与 `update` 同一条纪律）；
+ * · `data.follows` = 上一环 id，或字面 `null` = 摘下来（成链根）；
+ *   ★ 给空串**不算**「摘」：那是忘记填。两种意图必须能被区分，工具不替调用方猜；
+ * · 校验 = `assertFollowsTarget`（自指 / 悬挂 / 接作废卡 / 成环）—— **唯一一处**。
+ */
+function followTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult {
+  assertNoIdentityChange('follows', data);
+  const reason = String(data.reason ?? '').trim();
+  const { dsl, card } = findTodoCard(feature, 'follows', id);
+
+  if (isClosedTaskState(card.state)) {
+    throw new Error(
+      `todo.follows 被拒：${id} 已经是 ${card.state}（了结的卡不改链的位置 —— 改了就是改写它和上一环的关系）。\n` +
+        `★ 要在旧结论之上开新活 ⇒ 新 add 一张并给 data.follows="${id}"（那就是**下一环**，不是改这一环）。`,
+    );
+  }
+  if (!('follows' in data)) {
+    throw new Error(
+      `todo.follows 需要 data.follows：上一环的 todo id，或字面 null（= 摘下来，成为链根）。\n` +
+        `★ 不传这个键与传 null **不是一回事**：前者是"忘记填"，后者是"明确摘链" —— 工具不替调用方猜。`,
+    );
+  }
+  const raw = data.follows;
+  if (raw !== null && typeof raw !== 'string') {
+    throw new Error(`todo.follows 被拒：data.follows 要么是上一环的 todo id（字符串），要么是字面 null —— 收到 ${typeof raw}。`);
+  }
+  const target = raw === null ? null : raw.trim();
+  if (target === '') {
+    throw new Error(
+      `todo.follows 被拒：data.follows 是空串 —— 要接谁就写谁的 id；要**摘下来**（成为链根）请给字面 null。`,
+    );
+  }
+
+  const todos = [...(dsl.todos ?? [])];
+  if (target) assertFollowsTarget(todos, id, target);
+
+  const next: TaskSpec = { ...card };
+  // ★★★ 摘链必须写 `undefined`，**不能** `delete next.follows`：
+  //   `writeTask` 是 `{...旧卡, ...新卡}` 合并 ⇒ 新卡上"没有这个键"合并出来仍是**旧值**（实测踩过）。
+  //   写 undefined ⇒ 合并后是 undefined ⇒ 落盘时 JSON 丢掉这个键（正是「摘下来」的语义）。
+  next.follows = target ?? undefined;
+  writeTask(feature, id, next);
+
+  const idx = buildTodoChains(todos.map((t) => (t.id === id ? next : t)));
+  const place = idx.places.get(id)!;
+  return {
+    message:
+      (target
+        ? `已把 todo "${id}" 接到 "${target}" 下面（${chainBadge(place)}）。\n`
+        : `已把 todo "${id}" **摘下来**（它现在是链根：${chainBadge(place)}）。\n`) +
+      `  为什么改：${reason}${agent ? ` · 谁：${agent}` : ''}\n` +
+      `★ 环次是**现算**的（不落盘）：改它之前的下一环、之前的上一环，展示会立刻跟着变。`,
+    feature,
+    data: { todo_id: id, follows: target, chain: place },
+  };
+}
+
+/** 四个「改/作废/删/接链」op 的分发（id 的存在由 `OP_SPECS` 的 `opsRequiringId` 保证）。 */
 function applyTodoMutation(
   feature: string,
   op: { op: string; id?: string; data?: Record<string, unknown> },
@@ -1715,13 +1827,98 @@ function applyTodoMutation(
   switch (op.op) {
     case 'update':
       return updateTodoCard(feature, id, data, agent);
+    case 'follows':
+      return followTodoCard(feature, id, data, agent);
     case 'retire':
       return retireTodoCard(feature, id, data, agent);
     case 'delete':
       return deleteTodoCard(feature, id, data, agent);
     default:
-      throw new Error(`todo 不支持操作: ${op.op}（改/作废/删分别是 update / retire / delete）`);
+      throw new Error(`todo 不支持操作: ${op.op}（改/接链/作废/删分别是 update / follows / retire / delete）`);
   }
+}
+
+/**
+ * `complete` 的**链提示**（★ 只出文本，**不阻塞**）。
+ *
+ * ## 为什么返回两段（`head` / `detail`）
+ * `edit_dsl` 的批量回执**只保证被看见的是首行**（`update_feature.ts`：「摘要 = 首行 ⇒ op 的首行必须自足」）
+ * ⇒ 提示写在第 3 行等于没写。所以：
+ * · `head` = **接在首行末尾**的一句（链位置 + 三种形态之一）；
+ * · `detail` = 展开说明（挂在后面，完整文本里仍能看到）。
+ *
+ * ## 三种形态（这一张卡刚收口之后）
+ * 1. **没有下一环** ⇒ 「链到头了」+ 明确给出登记下一环的那一行调用；
+ * 2. **有下一环、还没走完** ⇒ 点名还开着的是哪几环（state + owner）；
+ * 3. **下面的环都了结** ⇒ 「整条链走完了」。
+ *
+ * ★ 为什么只提示不拦（用户 2026-10-21 的纪律）：「**提示阻塞就会有人为了过而乱填**」——
+ *   链的价值在**如实**，不在**齐全**：确实收尾的活就该允许它到头。
+ *
+ * ★ 断链也在这里说一句（上面某一环 `void`）：本环仍成立，只是链在上面断了 —— 不级联作废。
+ */
+function todoChainNote(cards: readonly TaskSpec[], id: string): { head: string; detail: string } {
+  const idx = buildTodoChains(cards);
+  const place = idx.places.get(id);
+  if (!place) return { head: '', detail: '' };
+  const byId = new Map(cards.map((t) => [t.id, t]));
+  const parent = place.parent ? byId.get(place.parent) : undefined;
+  const pos = place.branch ? `链第 ${place.depth} 环（支环）` : `链 ${place.depth}/${place.total}`;
+
+  // 下一环（含支环）里还有谁开着 —— BFS 走 children，不假设一条直线
+  const open: string[] = [];
+  const queue = [...place.children];
+  const seen = new Set<string>();
+  while (queue.length) {
+    const x = queue.shift()!;
+    if (seen.has(x)) continue;
+    seen.add(x);
+    const c = byId.get(x);
+    if (!c) continue;
+    if (!isClosedTaskState(c.state)) open.push(x);
+    queue.push(...(idx.places.get(x)?.children ?? []));
+  }
+
+  const lines: string[] = [
+    `★ 链位置：${chainBadge(place)}` + (parent ? ` · 上一环 ${parent.id}（${parent.state}）` : '（链根）'),
+  ];
+  let head = ` · ${pos}`;
+  if (place.broken) {
+    head += ` · ⚠ 上一环已作废(${place.broken.id})`;
+    lines.push(
+      `★ 链在上面断了：${place.broken.id} 已作废（void` +
+        (place.broken.reason ? `：${place.broken.reason}` : '') +
+        `）—— **本环仍然成立**，也没有任何卡被级联作废。`,
+    );
+  }
+
+  if (place.children.length === 0) {
+    head += ` · 链到头了（有下一环就 add data.follows="${id}"）`;
+    lines.push(
+      `★ 这条链**到头了**（本卡是第 ${place.depth} 环${place.branch ? '，支环' : `/${place.total}`}）—— ` +
+        `收尾就到此为止；若「做完发现还有新的」⇒ 在**这张卡**下面登记下一环：\n` +
+        `    edit_dsl { type:'todo', op:'add', data:{ summary:'…', follows:'${id}' } }\n` +
+        `  ★ 只是提示：链可以在这里结束，不必为了凑环数硬填。`,
+    );
+  } else if (open.length === 0) {
+    head += ` · 整条链走完了`;
+    lines.push(
+      `★ **整条链走完了**（本卡是第 ${place.depth} 环，下面的环已全部了结）。` +
+        `\n  ★ 新的一环该接在**最后一个环**下面（不是接在本卡上，否则环次会错）。`,
+    );
+  } else {
+    head +=
+      ` · 下一环还没走完：` +
+      open.map((x) => `${x}（${byId.get(x)?.state}）`).join(' / ');
+    lines.push(
+      `★ 下一环还没走完：` +
+        open
+          .map((x) => `${x}（${byId.get(x)?.state}${byId.get(x)?.owner ? `，owner=${byId.get(x)!.owner}` : ''}）`)
+          .join(' / ') +
+        `\n  ★ 要再加一环 ⇒ 接在**最后一个活环**下面（follows 指向它，不要指向本卡）。`,
+    );
+  }
+  return { head, detail: '\n' + lines.join('\n') };
 }
 
 export function applyTodoOp(
@@ -1774,11 +1971,14 @@ export function applyTodoOp(
 
   // ★★★ 2026-10-21：**改 / 作废 / 物理删** 三个 op 走同一处分发。
   //   ★ 它们的 id 由 `OP_SPECS` 的 `opsRequiringId` 保证（不是这里判的 —— 一处判据）。
-  if (op.op === 'update' || op.op === 'retire' || op.op === 'delete') {
+  // ★ 2026-10-21：`follows`（跑环继任链：接链 / 摘链）走同一处分发 —— 它也是「按 id 动一张卡」的 op。
+  if (op.op === 'update' || op.op === 'follows' || op.op === 'retire' || op.op === 'delete') {
     return applyTodoMutation(feature, op, agent);
   }
 
-  if (op.op !== 'add') throw new Error(`todo 仅支持 add / link / update / retire / delete（收到 ${op.op}）`);
+  if (op.op !== 'add') {
+    throw new Error(`todo 仅支持 add / link / update / follows / retire / delete（收到 ${op.op}）`);
+  }
   const data = op.data ?? {};
   // ★ 2026-10-21：`todo.add 需要 data.summary` **不在这里判** —— 判据只有一处 = `OP_SPECS.required.add`
   //   （`checkOpSpec` 在 `applyOperation` 入口跑，空串/全空白也算缺）。这里只做取值。
@@ -1804,12 +2004,28 @@ export function applyTodoOp(
     id = `todo_${slug}-${k++}`;
   }
 
+  // ★★★ 2026-10-21（跑环继任链）：`data.follows` = **上一环的 todo id**（用户原话：「做完了之后
+  //   发现还有新的，那就直接再在这个下面登记第二步、第三步」）。
+  //   ★ 校验只有一处 = `assertFollowsTarget`（自指 / 悬挂 / 接作废卡 / 成环）；
+  //   ★ 它拒就**整张卡不建** —— 绝不留半条链（先建了再拒，册上就多一张解释不了的卡）。
+  const rawFollows = data.follows;
+  if (rawFollows !== undefined && typeof rawFollows !== 'string') {
+    throw new Error(
+      `todo.add 被拒：data.follows 必须是**上一环的 todo id**（字符串）—— 收到 ${typeof rawFollows}。\n` +
+        `★ 第一环（链根）**不传** follows；要接在谁下面就写谁的 id。`,
+    );
+  }
+  const follows = rawFollows === undefined ? '' : rawFollows.trim();
+  if (follows) assertFollowsTarget(todos, id, follows);
+
   const card: TaskSpec = {
     id,
     summary,
     expectations: [], // ★ todo 没有判据（不是代码，判不了）
     state: 'candidate',
     owner: null,
+    // ★ 缺省 = 链根（不落 `follows: undefined`，让册上少一个空键）
+    ...(follows ? { follows } : {}),
   };
   todos.push(card);
   next.todos = todos;
@@ -1817,12 +2033,18 @@ export function applyTodoOp(
   const ov = loadOverlay(feature) ?? seedOverlayFromDsl(next);
   saveDesignSheet(applyOverlay(next, ov));
 
+  // ★ 链位置进**首行**（批量回执只保证首行被看见 —— `update_feature.ts` 的「摘要 = 首行」）
+  const place = buildTodoChains(todos).places.get(id)!;
   return {
     message:
-      `已新建 todo "${id}"：state=candidate（★ 无节点任务，挂在顶层 todos[]）。\n` +
+      `已新建 todo "${id}"：state=candidate（★ 无节点任务，挂在顶层 todos[]）· ${chainBadge(place)}` +
+      `${follows ? `（接在 ${follows} 下面）` : '（链根）'}。\n` +
       `★ 要做什么：${summary}\n` +
       `★ 它和节点任务**同一套规矩**：\`claim\`（要 owner）→ \`complete\`（要 evidence，只有 attestation）→ 或 \`void\`（要 reason）。\n` +
       `★ 而它**没有判据**（不是代码）⇒ 巡检不会对它喊"漏收口"，只会在它 claimed 超期时报 expired。\n` +
+      (follows
+        ? `★ 链：上一环 ${follows}；**本环**做完若还有新的 ⇒ 再 add 一张并给 data.follows="${id}"。\n`
+        : `★ 链：它是**链根**（第一环）。做完发现还有新的 ⇒ 再 add 一张并给 data.follows="${id}"。\n`) +
       (agent ? `★ 发起者：${agent}\n` : ''),
     feature,
     data: { todo_id: id, state: 'candidate' as TaskState, summary },

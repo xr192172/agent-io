@@ -10969,7 +10969,7 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "done",
+          "state": "candidate",
           "evidence": [
             {
               "kind": "attestation",
@@ -11012,13 +11012,185 @@
               "verdict": "pass"
             }
           ],
-          "owner": "deepseek-v4.1-flash",
-          "claimed_at": "2026-10-21T08:19:56.662Z",
-          "reopened_at": "2026-10-21T08:01:54.838Z",
-          "reopen_reason": "deepseek-v4.1-flash 重开这张 done 卡：给 todo 的 OP_SPECS 加 update/retire/delete 三个 op 与必填键",
-          "reopened_from": "deepseek-v4.1-flash"
+          "owner": null,
+          "claimed_at": null,
+          "reopened_at": "2026-10-21T13:17:32.641Z",
+          "reopen_reason": "todo 跑环继任链：op_data_spec.ts 的 TYPE_KNOWN_KEYS.todo 要加 follows，OP_SPECS.todo 要加 follows op（否则 data.follows 会被『不被认的键』拒）",
+          "reopened_from": "deepseek-v4.1-flash",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "BY_TYPE",
+                "fp": "d4c32e3a249699bc23de730197a0ef9e7d130cda"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "CheckedOperation",
+                "fp": "598fc2ecaaf0e1b30c672062732f8b64a02b10d3"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "EDGE_DATA_KEYS",
+                "fp": "2d91941a8584caaad7880f7593b5b951e8a3c6fb"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "EdgeKeysExtra",
+                "fp": "aa6be5490e306d112a1c7545ffa64943be73f228"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "EdgeKeysMissing",
+                "fp": "1a333b4e17370735dca7b112bd2510e84aa8e1fc"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "EdgeOwnedKeys",
+                "fp": "1b9b578756a3eda0b3bba38f178a7b599761ff6d"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "FILE_DATA_KEYS",
+                "fp": "ceb2a33c9e4a78a28bf0b1eb536d27572f773652"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "FeatureOperationLike",
+                "fp": "3d96a0b3a54f11f1c68a91c58766fb2d2b3ebd58"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "FileKeysExtra",
+                "fp": "b4e563205de5275b592ae5700d9ed934234cbdce"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "FileKeysMissing",
+                "fp": "78f7027a641e9dadc273331bfe812d1dad2f266a"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "FileOwnedKeys",
+                "fp": "14293984e3c9922cccee49f271ed7e96cd4bc3cd"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "KnownKeysExtraTypes",
+                "fp": "121efb3b7c0a210f33cdfd86f7016d1ec08c85ca"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "KnownKeysMissingTypes",
+                "fp": "153dec3f1317a1fddb80f0c839182243c13536a3"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "NODE_DATA_KEYS",
+                "fp": "4b1e054cbc9f6e1c2b3d5f3e66f8f293986b001d"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "NodeKeysExtraInList",
+                "fp": "408112f0daba3d8b79a774b59d9c6614b81e02d3"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "NodeKeysMissingFromList",
+                "fp": "fd3868b162ae814ee3267cc45d55df2502f83db5"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "NodeNonDataKeys",
+                "fp": "9efb58647bc966db2cce7c006b18d4483b966a29"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "NodeOwnedKeys",
+                "fp": "8a1b9dc18712a5964965afca71f06faa70ef0f13"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "OP_SPECS",
+                "fp": "d688b5357e728c9c28681a808f10263db2b872c9"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "OpSpec",
+                "fp": "5039769e742dc01a02e77f202b24eb4feb94a771"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "TYPE_KNOWN_KEYS",
+                "fp": "d093866f6d94e77e7f20a34e2ec6a77ca792f246"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "_assertEdgeNoExtra",
+                "fp": "bfe0575f7db203138c655dac82f45c123e583c87"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "_assertEdgeNoMissing",
+                "fp": "8fed76ca06159d1f6b31e5143d4fc32332d4fe27"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "_assertFileNoExtra",
+                "fp": "67ea25a8520cfefb81d97dd0b486b44b82b4a82e"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "_assertFileNoMissing",
+                "fp": "724682e23bb22df80209605779b183754ab92035"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "_assertKnownKeysCoverAll",
+                "fp": "664434e9d5121f6503fb33f6a64b3a1a97fc32f0"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "_assertKnownKeysNoExtraType",
+                "fp": "931e1bc7ab36618c043b9dc07f6abb3ad1e8cb80"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "_assertNodeKeysNoExtra",
+                "fp": "e9f86fb898dd1d68d141c7c43b52eb8bcbb0353f"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "_assertNodeKeysNoMissing",
+                "fp": "6898856caebd3ebb06442dc906da076b345bd953"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "checkOpSpec",
+                "fp": "9cb9530778326278ece43bdaf5275484a2edf354"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "renderOpSpecs",
+                "fp": "43d7b2f7f96b1c1dfc7eedb9e3178b0f2cdda334"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/dsl_ops/op_data_spec.ts",
+                "content_hash": "d325c84a9d4ca392d51af71159b90f819874f6fb"
+              }
+            ],
+            "computed_at": "2026-10-21T13:17:32.605Z",
+            "basis": [
+              "expectations"
+            ]
+          },
+          "release_reason": "src/application/design/dsl_ops/op_data_spec.ts 的 follows 键与 op 已登记，交回候选",
+          "released_by": "subagent:follows-chain",
+          "released_at": "2026-10-21T13:37:59.690Z"
         },
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_dsl_ops_status_tools_ts",
@@ -13232,7 +13404,7 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "claimed",
+          "state": "candidate",
           "evidence": [
             {
               "kind": "attestation",
@@ -13259,13 +13431,116 @@
               "verdict": "pass"
             }
           ],
-          "owner": "subagent:claimreadset",
-          "claimed_at": "2026-10-21T10:35:22.200Z",
+          "owner": null,
+          "claimed_at": null,
           "reopened_at": "2026-10-20T10:47:41.583Z",
           "reopen_reason": "清注释里的用户原话",
-          "reopened_from": "deepseek-v4.1-flash"
+          "reopened_from": "deepseek-v4.1-flash",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "ConstructBasis",
+                "fp": "45109a62e016d5c79fe03f152146c7872073d6ca"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "Loaded",
+                "fp": "032b69f7b08dc4e4bdd530b9f35b3e650f516921"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "TaskOpInput",
+                "fp": "b44a899c55dffae536a4df79118c7f6bc6f39dc3"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "TaskOpRequest",
+                "fp": "394ad342a661c9e2d22d52ce96be93c042ce599e"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "applyTaskOp",
+                "fp": "0c940d5eb23cac4fafe0a81d2cf8ad8db2b3904a"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "assertTransition",
+                "fp": "4dbf771e75b8f450390d338f83c4ce271cdc5de1"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "claimTask",
+                "fp": "32d56c7643812edbb9a526192d1d6d8e52fc0bb4"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "completeTask",
+                "fp": "bf2b756bf608cb62dea2d537c187a26ed80ab2d6"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "constructBasis",
+                "fp": "047ff1b15a28c6bb7de138586ae856ccff89a859"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "constructionVerdict",
+                "fp": "1765e9552b8fa231b89235410ce7783f9f0f1d34"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "loadTask",
+                "fp": "5cc6c0bd0f621f09a576a9b3c9eaca52a295fc52"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "publishFromDiff",
+                "fp": "8d01ffcb95e5df791c652c1432ed0782f03c7d26"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "publishTask",
+                "fp": "d2825df9f02be48fdef3d84332dc4298145e7965"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "releaseTask",
+                "fp": "f250e0301ecee2ba438275155aa40da71f25cc22"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "requireRoot",
+                "fp": "b25abe2dfa5a3890a81b979212f489ae2acf5d04"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "voidTask",
+                "fp": "f801fe2d68e5037567763d684410b5bde53e7254"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "writeTask",
+                "fp": "10fa637a7277a83a52829cde44aa79fb90e81c6e"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/dsl_ops/task_ops.ts",
+                "content_hash": "58dfe86eba15e086b4bb6213128e1f9191936286"
+              }
+            ],
+            "computed_at": "2026-10-21T13:17:22.865Z",
+            "basis": [
+              "expectations"
+            ],
+            "note": "1 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
+          },
+          "release_reason": "src/application/design/dsl_ops/task_ops.ts 的 add/follows/complete 提示已落地，交回候选",
+          "released_by": "subagent:follows-chain",
+          "released_at": "2026-10-21T13:37:59.613Z"
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -17320,9 +17595,22 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "get_dsl 的 todo 查询与 state 参数已注册，交回候选等验收",
-          "released_by": "deepseek-v4.1-flash",
-          "released_at": "2026-10-21T08:19:40.922Z"
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/design/index.ts",
+                "content_hash": "01bab1e2778424c5137ce281bc4b0f4e788aa851"
+              }
+            ],
+            "computed_at": "2026-10-21T13:17:50.797Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "release_reason": "src/application/design/index.ts 的 get_dsl chain 参数已登记，交回候选",
+          "released_by": "subagent:follows-chain",
+          "released_at": "2026-10-21T13:37:59.843Z"
         },
         "status": "draft"
       },
@@ -17808,9 +18096,22 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "注释错位已修，tsc 0 error，交回候选等验收",
-          "released_by": "deepseek-v4.1-flash",
-          "released_at": "2026-10-21T08:23:33.524Z"
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/meta/explore/query_feature.ts",
+                "content_hash": "581c83cf5d15f8d1836819dd204effb654783e12"
+              }
+            ],
+            "computed_at": "2026-10-21T13:17:50.681Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "release_reason": "src/application/meta/explore/query_feature.ts 的链展示已落地，交回候选",
+          "released_by": "subagent:follows-chain",
+          "released_at": "2026-10-21T13:37:59.763Z"
         },
         "status": "draft"
       },
@@ -45292,11 +45593,79 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "claimed",
-          "owner": "subagent:claimreadset",
-          "claimed_at": "2026-10-21T10:35:44.725Z"
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/task_schema.ts",
+                "name": "TASK_STATES",
+                "fp": "24e0ef2f4963787cc32d1dba56eba96aaa6a1945"
+              },
+              {
+                "file": "src/domain/task_schema.ts",
+                "name": "TERMINAL_TASK_STATES",
+                "fp": ""
+              },
+              {
+                "file": "src/domain/task_schema.ts",
+                "name": "TaskDiscussion",
+                "fp": "00f948b42f82f95cfc2de10e2de43e1c39c22ac6"
+              },
+              {
+                "file": "src/domain/task_schema.ts",
+                "name": "TaskEvidenceRecord",
+                "fp": "134f600de3c6dc629b6f2489f1b4832d7460307d"
+              },
+              {
+                "file": "src/domain/task_schema.ts",
+                "name": "TaskSpec",
+                "fp": "fababbe6d03012f446c48b763695cec6a191560a"
+              },
+              {
+                "file": "src/domain/task_schema.ts",
+                "name": "TaskState",
+                "fp": "7a5b375c1cfb9eb9e904070d482a8e39edc45d31"
+              },
+              {
+                "file": "src/domain/task_schema.ts",
+                "name": "isTaskState",
+                "fp": "a19cc23f9386659220bca833a4a59ee3f54cec3b"
+              },
+              {
+                "file": "src/domain/task_schema.ts",
+                "name": "isTerminalTaskState",
+                "fp": ""
+              },
+              {
+                "file": "src/domain/task_schema.ts",
+                "name": "progressOf",
+                "fp": "7033eb83cd07812eefbdced779b71db32a99fad0"
+              },
+              {
+                "file": "src/domain/task_schema.ts",
+                "name": "taskLevel",
+                "fp": "b7aebf0a540eb0103b11fea75586a9a467f44490"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/task_schema.ts",
+                "content_hash": "e3acc9ae34a79d7892ca25f27a6a0eae15029daa"
+              }
+            ],
+            "computed_at": "2026-10-21T13:17:19.843Z",
+            "basis": [
+              "expectations"
+            ],
+            "note": "2 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/domain/task_schema.ts#TERMINAL_TASK_STATES / src/domain/task_schema.ts#isTerminalTaskState"
+          },
+          "release_reason": "src/domain/task_schema.ts 的 follows 字段已落地（tsc 0 error），交回候选",
+          "released_by": "subagent:follows-chain",
+          "released_at": "2026-10-21T13:37:59.538Z"
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_domain_types_ts",
@@ -81214,7 +81583,7 @@
         ],
         "lines": 482,
         "layer": "core",
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_dsl_ops_status_tools_ts",
@@ -81275,7 +81644,7 @@
         ],
         "lines": 670,
         "layer": "core",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -87200,7 +87569,7 @@
         ],
         "lines": 202,
         "layer": "service",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_domain_types_ts",
@@ -99053,11 +99422,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T12:42:26.075Z",
+    "saved_at": "2026-10-21T13:37:59.871Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 3023264,
+    "age": 6357060,
     "dbSchemaVersion": 16
   },
   "_forked_from": {

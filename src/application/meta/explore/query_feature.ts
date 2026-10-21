@@ -47,7 +47,10 @@
 import { getDSL, getDSLByView, listFeatures as listStoredFeatures } from '../../../infrastructure/storage.js';
 // ★ 2026-10-21：todo 的**状态判据**（`isClosedTaskState` = 唯一那把尺）与**墓碑**（物理删的留痕）。
 //   ★ 前者不在这里重写（done/void 两个名字只住 `task_schema.ts`）；后者不在这里重读（读端也只有一处）。
-import { TASK_STATES, isClosedTaskState, type TaskState } from '../../../domain/task_schema.js';
+import { TASK_STATES, isClosedTaskState, type TaskSpec, type TaskState } from '../../../domain/task_schema.js';
+// ★★★ 2026-10-21（跑环继任链）：链的**位置**（上一环 / 下一环 / 第几环 / 断没断）与徽标措辞的
+//   唯一住处 = `domain/todo_chain.ts` —— ★ 读端只调它，不自己走一遍父指针（两处实现迟早对不上）。
+import { buildTodoChains, chainBadge, type ChainPlace } from '../../../domain/todo_chain.js';
 import { readTodoTombstones } from '../../design/board/todo_journal.js';
 // ★★★ T330：欠账视图（`query=pending`）**直读 overlay 权威** —— `progress_evidence` 不被
 //   `applyOverlay` 投影回 base（`overlay.ts:481/500`）⇒ 要 evidence 只能读 overlay 本体。
@@ -119,6 +122,15 @@ export interface QueryFeatureInput {
    * ★ 值域 = `task_schema.ts#TASK_STATES`（不在这里抄一份字面量）。
    */
   state?: TaskState | 'all';
+  /**
+   * ★★ todo（2026-10-21）：**按继任链分组展示**。
+   *
+   * `true` ⇒ 不再平铺，而是「每条链一块」：主链逐环一行（`✔ 1/3 done` / `▶ 2/3 claimed` …），
+   * 支环缩进在它分出来的那一环下面（`└ 环 2（支环）`），未接链的卡最后单列（只给 id）。
+   * ★ 缺省（不给）= 平铺列表 + 每张卡一行链徽标（`环 2/3 · 上一环 todo_a`）。
+   * ★ 两种形态读的是**同一个** `buildTodoChains` 结果 —— 不是两套算法。
+   */
+  chain?: boolean;
   /** node：节点 ID */
   node_id?: string;
   /**
@@ -297,6 +309,98 @@ function contractHint(c: BrickContract): string {
   if (emits.length) parts.push(`emits=${compactList(emits)}`);
   if (config.length) parts.push(`config=${compactList(config)}`);
   return `契约(${parts.join(', ')})`;
+}
+
+/**
+ * `query=todo chain=true` 的**按链分组**渲染（★ 纯渲染，不判任何东西 —— 位置全来自 `todo_chain.ts`）。
+ *
+ * ## 为什么要有它（平铺列表答不了"这张卡在哪条链的第几环"）
+ * 平铺列表里三张同一条链上的卡是**散开**的：读的人得自己在脑子里连边。
+ * 分组后一眼看到：
+ *
+ * ```
+ * ── 链 1 · 根 todo_a · 3 环（走完 1 · 在办 1 · 没动 1）
+ *    ✔ 1/3 done      [todo_a] 一环：查 X 为什么坏
+ *    ▶ 2/3 claimed   [todo_b] 二环：既然 A 查出是 Y，那就修 Y · owner=subagent:x
+ *    ○ 3/3 candidate [todo_c] 三环：Y 修完发现 Z 也要改 ⚠ 上一环已作废(todo_b)
+ * ```
+ *
+ * ★ 「主链」= 每一环取**册上最早登记**的子环（`buildTodoChains` 一处定义），
+ *   其余子环缩进一行以 `└ 支环` 开头 —— ★ 支环**不隐藏**（它们是真活），只是不占主线位置。
+ */
+function renderTodoChains(
+  cards: readonly TaskSpec[],
+  idx: ReturnType<typeof buildTodoChains>,
+  picked: readonly TaskSpec[],
+): string[] {
+  const shown = new Set(picked.map((t) => t.id));
+  const byId = new Map(cards.map((t) => [t.id, t]));
+  const sym = (s: string): string => (s === 'done' ? '✔' : s === 'claimed' ? '▶' : s === 'void' ? '✖' : '○');
+
+  const line = (id: string, indent: string): string => {
+    const card = byId.get(id);
+    const place = idx.places.get(id);
+    if (!card || !place) return `${indent}· [${id}]（不在册上）`;
+    const owner = card.owner ? ` · owner=${card.owner}` : '';
+    const where = place.branch ? `环 ${place.depth}（支环）` : `环 ${place.depth}/${place.total}`;
+    const mark = place.broken ? ` ⚠ 上一环已作废(${place.broken.id})` : '';
+    return `${indent}${sym(card.state)} ${where} ${card.state} [${id}] ${card.summary}${owner}${mark}`;
+  };
+
+  const out: string[] = [];
+  const seen = new Set<string>();
+  /** 支环 + 它下面的整棵子树（缩进一层；★ 主链上的那一支不在这里重复） */
+  const branchTree = (id: string, indent: string, mainTrail: ReadonlySet<string>): void => {
+    if (mainTrail.has(id) || seen.has(id)) return;
+    seen.add(id);
+    out.push(line(id, indent));
+    const place = idx.places.get(id);
+    for (const kid of place?.children ?? []) branchTree(kid, `${indent}     `, mainTrail);
+  };
+
+  let n = 0;
+  for (const [root, ids] of idx.chains) {
+    const rings = ids.filter((id) => shown.has(id));
+    if (rings.length === 0) continue;
+    const states = rings.map((id) => byId.get(id)!.state);
+    const tally =
+      `走完 ${states.filter((s) => s === 'done').length}` +
+      ` · 在办 ${states.filter((s) => s === 'claimed').length}` +
+      ` · 没动 ${states.filter((s) => s === 'candidate').length}` +
+      (states.some((s) => s === 'void') ? ` · 作废 ${states.filter((s) => s === 'void').length}` : '');
+    const total = idx.places.get(root)?.total ?? rings.length;
+    out.push('', `  ── 链 ${++n} · 根 ${root} · ${total} 环（本次列出 ${rings.length} 环：${tally}）`);
+    // ★ 只有一张卡的「链」= 孤立卡 ⇒ 不占链号，统一放到最后的「未接链」段（否则同一张卡会出现两次）
+    if (ids.length === 1) continue;
+    // 主链：从根沿 children[0] 走；每一站的支环就地以 └ 展开
+    const trail = new Set<string>();
+    let cur: string | undefined = root;
+    while (cur && !trail.has(cur)) {
+      trail.add(cur);
+      seen.add(cur);
+      out.push(line(cur, '   '));
+      const here: ChainPlace = idx.places.get(cur)!;
+      for (const b of here.children.slice(1)) branchTree(b, '      └ ', trail);
+      cur = here.children[0];
+    }
+    // 环上/悬挂等异常：主链走不到的，如实补在最后（★ 不静默丢卡）
+    for (const id of ids) {
+      if (!shown.has(id) || seen.has(id)) continue;
+      seen.add(id);
+      out.push(line(id, '   '));
+    }
+  }
+
+  // 没接链的卡（孤立的一环）：单列一段，逐张给一行（★ 也是「链」的一种：只有它自己）
+  const lonely = picked.filter((t) => {
+    const p = idx.places.get(t.id);
+    return !p || (!p.parent && p.children.length === 0);
+  });
+  if (lonely.length > 0) {
+    out.push('', `  ── 未接链（${lonely.length} 张，各自是独立的一环 —— 有下一环就 todo.add data.follows=<id>）`);
+    for (const t of lonely) out.push(line(t.id, '   '));
+  }
+  return out;
 }
 
 export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
@@ -1344,6 +1448,10 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
 
       const cards = dsl.todos ?? [];
       const want = input.state;
+      // ★★★ 2026-10-21（跑环继任链）：链的**位置**（depth / total / children / broken / 环次）
+      //   只算一次，平铺列表与分组视图共用 —— ★ 判据唯一住处 = `domain/todo_chain.ts`，
+      //   这里不自己再走一遍父指针（否则两处实现迟早对不上）。
+      const chains = buildTodoChains(cards);
       // ★ 默认 = **待办**（活卡）；`all` = 全部；给了具体 state = 按 state 过滤。
       const picked =
         want === 'all'
@@ -1373,14 +1481,39 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           ` · 完成 ${byState.done ?? 0} · 作废 ${byState.void ?? 0}），本次列出 ${picked.length} 张`,
       ];
 
+      // ★ 有链才提链（没链时不提：免得读者以为漏了什么）
+      const multi = [...chains.chains.values()].filter((ids) => ids.length > 1).length;
+      if (multi > 0) {
+        lines.push(
+          `  ★ 链：${multi} 条（≥2 环）—— 每张卡下面标「环 n/m」（**现算、不落盘**）；` +
+            `按链分组看 ⇒ chain=true；链上有作废的会标「上一环已作废」（★ 不级联作废，后面的环仍有效）。`,
+        );
+      }
+      if (chains.dangling.length > 0 || chains.cycles.length > 0) {
+        lines.push(
+          `  ⚠ 链数据异常：悬挂 ${chains.dangling.length} 处（follows 指向册上没有的 id）· 成环 ${chains.cycles.length} 处` +
+            `（★ 写端 assertFollowsTarget 会拒，这里只可能是手改 JSON）：` +
+            [...chains.dangling.map((d) => `${d.id} → ${d.follows}`), ...chains.cycles.map((c) => c.join(' → '))].join(' / '),
+        );
+      }
+
       if (picked.length === 0) {
         lines.push('', '  （这一类里没有卡）');
+      } else if (input.chain === true) {
+        // ★ 按链分组：形态见 renderTodoChains 的文件注释（主链在前，支环以 └ 缩进，未接链的最后单列）
+        lines.push(...renderTodoChains(cards, chains, picked));
       } else {
         picked.forEach((t, i) => {
           const owner = t.owner ? `owner=${t.owner}` : 'owner=（没人领）';
           const linked = t.node_id ? ` · node=${t.node_id}` : '';
           lines.push('', `  ${i + 1}. [${t.id}] ${t.state} · ${owner}${linked}`);
           lines.push(`     ${t.summary}`);
+          const place = chains.places.get(t.id);
+          if (place && (place.parent || place.children.length > 0)) {
+            // ★ 断链时徽标里已经点名了「上一环已作废(todo_x)」⇒ 不再重复一次上一环的 id
+            const tail = !place.parent ? '（链根）' : place.broken ? '' : ` · 上一环 ${place.parent}`;
+            lines.push(`     ${chainBadge(place)}${tail}`);
+          }
           if (t.retire_reason) {
             lines.push(`     ★ 作废理由：${t.retire_reason}${t.retired_at ? `（${t.retired_at}）` : ''}`);
           }
@@ -1412,6 +1545,27 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           by_state: byState,
           items: picked,
           deleted: tombstones,
+          // ★★★ 2026-10-21（跑环继任链）：链的**机器可读**形态 —— 每个环一格，四问逐格回答：
+          //   ① follows（上一环）② children（下一环）③ depth / total（第几环 · 共几环）
+          //   ④ broken（最近的作废祖先；null = 链没断）。★ 全是**现算**，落盘里只有 follows 一个键。
+          chains: [...chains.chains.entries()]
+            .filter(([, ids]) => ids.length > 1)
+            .map(([root, ids]) => ({
+              root,
+              total: chains.places.get(root)?.total ?? ids.length,
+              rings: ids.map((id) => {
+                const p = chains.places.get(id)!;
+                return {
+                  id,
+                  state: cards.find((c) => c.id === id)?.state,
+                  depth: p.depth,
+                  follows: p.parent ?? null,
+                  children: p.children,
+                  branch: p.branch,
+                  broken: p.broken ?? null,
+                };
+              }),
+            })),
         },
       };
     }
