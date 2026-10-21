@@ -46,6 +46,7 @@ import {
   walkFiles,
   layoutGroup,
   IMPORT_LAYOUT,
+  parsedKindToSymbolKind,
 } from '../graph/import_project.js';
 import type { FileEntry, GoModule, LayoutItem } from '../graph/import_project.js';
 import { findCacheDb } from './db.js';
@@ -74,19 +75,14 @@ const sanitize = (s: string): string => s.replace(/[^a-zA-Z0-9_-]/g, '_');
 const fileNodeId = (rel: string): string => `file_${sanitize(rel)}`;
 const dirNodeId = (rel: string): string => `dir_${sanitize(rel)}`;
 
-/** 与内核 `parsedKindToSymbolKind` 同口径（非 class/interface/type 一律记 `type`）。 */
-function kindOf(kind: string): Symbol['kind'] {
-  switch (kind) {
-    case 'class':
-      return 'class';
-    case 'interface':
-      return 'interface';
-    case 'type':
-      return 'type';
-    default:
-      return 'type';
-  }
-}
+/**
+ * ★★★ 2026-10-21（kind 保真）：这里原有一份**本地 `kindOf`**（把 `function`/`method`/`const` 一律折成
+ *   `type`），与 `import_project.ts#parsedKindToSymbolKind` 是**同一处判据的第二份拷贝**。
+ *   实测后果（DB 现渲染这一路）：两份设计册里 `symbols[].kind` 的 const 全被折成 type
+ *   —— 与设计册同一批失真（const 2719 条 / 3555 条中招）。
+ * ⇒ 删掉本地那份，**直接复用内核那一个导出**（`import_project.ts` 末尾 `export { parsedKindToSymbolKind }`）：
+ *   判据只住一处，设计册与 live 现渲染两个写端不会再各自漂移。
+ */
 
 interface ParsedFact {
   /** 函数/方法数（只用于文件节点 label 的 `N APIs` 与职责句 —— 与写端同口径）。 */
@@ -158,7 +154,7 @@ export function renderLiveFromDb(feature: string): DesignDSL | null {
           }
           symbols.push({
             name: s.name,
-            kind: kindOf(s.kind),
+            kind: parsedKindToSymbolKind(s.kind),
             line: s.start_line,
             end_line: s.end_line,
             signature: s.signature ?? undefined,
@@ -427,7 +423,7 @@ export function renderLiveFromDb(feature: string): DesignDSL | null {
 
   // `_sync`：★ 与 `saveLiveFeature` 同形状，但 `source` 标成 `live_render`（**如实说明"这份是现渲染、不是冻结文件"**）。
   const now = Date.now();
-  const { rev } = scanRevOf({ feature, sourceRoot: root });
+  const { rev, schemaVersion } = scanRevOf({ feature, sourceRoot: root });
   return {
     ...layered,
     _sync: {
@@ -436,6 +432,9 @@ export function renderLiveFromDb(feature: string): DesignDSL | null {
       feature,
       scanRev: rev,
       age: rev == null ? null : Math.max(0, now - rev),
+      // ★ 2026-10-21（与 `storage.ts#syncMeta` **同形状、同来源**）：这份现渲染是照着"哪一刻的 DB"画的
+      //   —— `scanRev` 是 indexed_at，`dbSchemaVersion` 是 schema 版本（同时从 `scanRevOf` 一次读出）。
+      dbSchemaVersion: schemaVersion,
     },
   } as DesignDSL;
 }

@@ -47,7 +47,21 @@ export function hasAnchorPayload(a: OverlayAnchor): boolean {
   );
 }
 
-/** 一个极简不可变 sha1 指纹，用于判断「接口签名变化」（过期的信号） */
+/** ★ 文件指纹的**格式版本**（见 `computeFileSignature`）。v1 = 无前缀（当年 kind 被归一那一版）。 */
+const SIG_PREFIX = 'v2:';
+
+/**
+ * 一个极简不可变 sha1 指纹，用于判断「接口签名变化」（过期的信号）。
+ *
+ * ★★★ 2026-10-21（`kind:name` 撞车 —— 是**错认**，不是"不够准"）：
+ *   入参 `nonFuncSymbols` 的 `kind` 此前被上游归一（`import_project.ts#parsedKindToSymbolKind` 把
+ *   `const` 折成 `type`，`live_render.ts#kindOf` 同款）⇒ `const Foo` 与 `interface Foo` 拼出**同一个**
+ *   `type:Foo`。两个文件只要同符号名 + 同行数 ⇒ **指纹相同** ⇒ `reconcileOverlay` 的 `bySig`
+ *   （路径漂移时按指纹认亲）会把 A 文件的锚点迁到 B 文件上 —— 迁错对象比"没认出来"贵得多。
+ *   ⇒ 真正的修复在上游（kind 保真，判据只住一处）；本函数这边**加一道格式版本**，让"老指纹"与
+ *      "新指纹"不可能相等：否则老基线（folded）与新指纹一比必然"变了" ⇒ 全仓锚点误标 stale（假红）。
+ *   ★ 老基线怎么处理：见 `reconcileOverlay` 的 `baseline` —— 当"没有基线"重取，不迁移、不标过期。
+ */
 export function computeFileSignature(
   apis: ExpectedApi[],
   nonFuncSymbols: Symbol[],
@@ -58,7 +72,7 @@ export function computeFileSignature(
     ...(nonFuncSymbols ?? []).map((s) => `${s.kind}:${s.name}`).sort(),
     String(lineCount ?? 0),
   ].join('\n');
-  return createHash('sha1').update(parts).digest('hex').slice(0, 12);
+  return SIG_PREFIX + createHash('sha1').update(parts).digest('hex').slice(0, 12);
 }
 
 /**
@@ -447,12 +461,20 @@ export function reconcileOverlay(
 
     let target: AnchorCandidate | undefined;
 
+    // ★★★ 2026-10-21（指纹换代，与 `computeFileSignature` 的 `SIG_PREFIX` 是**同一处判据**）：
+    //   老指纹（无前缀）是"kind 被归一"那一版算出来的 —— `const Foo` 与 `interface Foo` 算出来一样。
+    //   ① 拿它和新指纹比 ⇒ 必然"不等" ⇒ 已落盘的老锚点会被**全部**误标 stale（假红，比无门更坏）；
+    //   ② 拿它去 `bySig` 认亲 ⇒ 真会把 A 文件认成 B 文件（用户点的"函数被当类型认"）。
+    //   ⇒ 只认**本代**指纹当基线；老指纹按"没有基线"处理：本轮重取基线（见下面三个分支的
+    //     `target.signature ?? baseline`），**不迁移、不标过期**。
+    const baseline = a.signature && a.signature.startsWith(SIG_PREFIX) ? a.signature : undefined;
+
     const byPathHit = a.path ? byPath.get(a.path) : undefined;
     if (byPathHit) {
       target = byPathHit;
-    } else if (a.signature) {
+    } else if (baseline) {
       // 路径漂移 → 尝试按接口签名认亲（改名检测）
-      target = bySig.get(a.signature)?.[0];
+      target = bySig.get(baseline)?.[0];
     }
 
     if (!target) {
@@ -463,11 +485,11 @@ export function reconcileOverlay(
     }
 
     const migrated = target.id !== oldKey;
-    const sigChanged = !!(a.signature && target.signature && a.signature !== target.signature);
+    const sigChanged = !!(baseline && target.signature && baseline !== target.signature);
     let na: OverlayAnchor;
     if (migrated) {
       // 改名/换 id：以新身份重新挂靠，签名随新路径取（stale 视为新起点，清掉旧标记）
-      na = { ...a, path: target.path, kind: target.kind, signature: target.signature ?? a.signature };
+      na = { ...a, path: target.path, kind: target.kind, signature: target.signature ?? baseline };
       delete na.orphaned;
       delete na.stale;
       na._migratedFrom = oldKey;
@@ -477,13 +499,13 @@ export function reconcileOverlay(
       na = { ...a, path: target.path, kind: target.kind };
       delete na.orphaned;
       delete na._migratedFrom;
-      na.signature = a.signature; // 保留基线（设计校验时的那份接口指纹）
+      na.signature = baseline; // 保留基线（设计校验时的那份接口指纹）
       na.stale = true;
       stats.stale++;
       stats.retained++; // 设计被保留（仅标过期待复核），计入保留数
     } else {
       // 锚点一致/无基线：采用当前签名作为新基线，清除过期与迁移标记
-      na = { ...a, path: target.path, kind: target.kind, signature: target.signature ?? a.signature };
+      na = { ...a, path: target.path, kind: target.kind, signature: target.signature ?? baseline };
       delete na.orphaned;
       delete na.stale;
       delete na._migratedFrom;

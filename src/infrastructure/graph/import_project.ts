@@ -722,12 +722,29 @@ export function layoutGroup(items: LayoutItem[], deps: Array<[string, string]>):
 // 主流程
 // ─────────────────────────────────────────────────────────────
 
-/** ParsedSymbol.kind 到 Symbol.kind 的映射（仅非函数类） */
+/**
+ * ParsedSymbol.kind 到 Symbol.kind 的映射（★ **保真，不归一**）。
+ *
+ * ★★★ 2026-10-21（kind 失真）：此前这里 `default: return 'type'` 把 **`const` 折成 `type`**
+ *   ⇒ 实测两份设计册的 `symbols[]` 里 6276/7613 条共有符号的 kind 与 `cache.db#nodes.kind` 不符
+ *   （2720/2840 + 3556/4773，**全部是 const→type**，另 2 条 method 漏进来也是 type）。
+ * ★ 连带（不是"不够准"，是**错认**）：`overlay.ts#computeFileSignature` 用 `kind:name` 当文件指纹
+ *   ⇒ `const Foo` 与 `interface Foo` 折完同名同 kind ⇒ **两个文件的指纹相同** ⇒ rename 对账
+ *   （`reconcileOverlay` 的 `bySig`）会把 A 文件的锚点认到 B 文件上。
+ * ⇒ 现在：`Symbol['kind']` 已有的 8 个值**原样透传**，只有解析器给出域外值时才兜底 `type`。
+ * ★ 函数/方法在这里**到不了**（调用方 `ingest` 已按 kind 把它们分到 `expected_apis`）——
+ *   但映射本身**不再假设**这一点：它只做"字符串 → 同名字符串"，不替上游做取舍。
+ */
 function parsedKindToSymbolKind(kind: string): Symbol['kind'] {
   switch (kind) {
-    case 'class': return 'class';
-    case 'interface': return 'interface';
+    case 'const': return 'const';
+    case 'var': return 'var';
     case 'type': return 'type';
+    case 'struct': return 'struct';
+    case 'interface': return 'interface';
+    case 'class': return 'class';
+    case 'function': return 'function';
+    case 'method': return 'method';
     default: return 'type';
   }
 }
