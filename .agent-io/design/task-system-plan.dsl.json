@@ -99012,11 +99012,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T08:23:33.554Z",
+    "saved_at": "2026-10-21T08:25:15.930Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792570992510,
-    "age": 21044
+    "age": 123420
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -101176,8 +101176,11 @@
       "id": "todo_翻译-前提-dsl-摘掉-symbols-实测-200-个文件里-191-个有它",
       "summary": "【翻译·前提】DSL 摘掉 `symbols[]`（实测 200 个文件里 191 个有它）—— 这是\"DSL 语言无关、可直接复用\"这条成立的前提。它装的是\"这个文件有哪些符号\"的名字清单（`live_render.ts:76 kindOf` 还把 function/method/const 一律折成 `type`），本质是代码事实的镜像，**换一门语言后完全无意义**（它列的是 TS 的函数名）。实测陈旧读数：DSL 3021 条 vs 库 8674 条 · 383 条 DSL 独有 · 2558/2649 条 kind 与库不同 · 20 个文件行数过期 · 27-30 个 DSL 文件盘上已不存在。★ 摘掉之后 DSL 剩下的才是真正语言无关的东西：gates（实测 149/226 个节点有）+ 意图/决策。机制已建好：`storage.ts:723 factsExternalized`（`_sync.facts=db`）+ `renderLiveFromDb` 现渲染补齐；现在 `_sync` 里没有 `facts` 键，所以还在册。★ 前置：先修 `overlay.ts:58 computeFileSignature` —— 它靠 `kind:name` 做 rename 认亲，而有损 kind 让\"函数\"和\"类型\"指纹相同（这本身是个 bug）。",
       "expectations": [],
-      "state": "candidate",
-      "owner": null
+      "state": "void",
+      "owner": null,
+      "retire_reason": "方向错误：用户裁定 DSL 是缩略版 DB、symbols[] 用于导航且是复制基线，不该摘；由最终判据卡取代",
+      "retired_at": "2026-10-21T08:25:15.846Z",
+      "retired_by": "workbuddy"
     },
     {
       "id": "todo_翻译-工作台-翻译册-feature-translate-json-它是-可以改",
@@ -101211,6 +101214,13 @@
       "retire_reason": "被 todo_verify_keep_symbols 取代（不摘 symbols，改修质量）",
       "retired_at": "2026-10-21T08:16:24.896Z",
       "retired_by": "deepseek-v4.1-flash"
+    },
+    {
+      "id": "todo_dsl-符号表-最终判据-保留-symbols-只修它的失真与幽灵-方向判据-用",
+      "summary": "【DSL 符号表·最终判据】**保留 `symbols[]`，只修它的失真与幽灵**。\n\n★ 方向判据（用户 2026-10-21 两次纠正后定死）：\n  「设计册本身它不就是要在原 DB 上改嘛，原 DB 已经有了，所以它直接**复制**过去，然后**它改的是它的事**，\n   它要的是**实际去追上设计**。你不要老是想让设计册去靠实际册。」\n  ⇒ **DSL = 复制基线 → 独立演化 → 差值即待办**；**实际追设计，不是设计追实际**。\n\n★ 所以此前两种说法都作废：\n  ① 「摘掉 symbols[]」                      ← 错：它是缩略图/目录，是 `facts` 的**导航入口**（没它 LLM 不知道该查哪个名字）\n  ② 「检测 DSL 是否陈旧、与 DB 同步」        ← 错：这是\"设计靠实际\"的方向；DSL 比 DB 新是**正常**的，那是待办\n\n要修三件（**只修这三件，别扩**）：\n  （a）**kind 保真**：`src/application/design/live_render.ts:76 kindOf` 把 function/method/const 一律折成 type ⇒\n       实测 2558/2649 条符号 kind 与 `nodes` 表不一致；\n       连带 `src/application/design/overlay.ts:58 computeFileSignature` 靠 `kind:name` 认亲 ⇒ 函数与类型指纹相同（rename 会误认）。\n  （b）**幽灵清理**：27-30 个 DSL 里还记着、但盘上已不存在的文件 —— 这是**唯一真正的错**（设计册里写了不该存在的东西）。\n  （c）**基线可追溯**：DSL 记下它复制自哪一刻的 DB（`_sync` 里带上索引时刻），这样\"设计比实际新 / 实际比设计新\"**可判**，\n       但**绝不因此自动改写设计册**。\n\n★ 翻译场景：**源侧 DSL 保留 symbols[]**；复制到译文侧时**脱掉**（目标符号还不存在，带了就是假目录）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
     }
   ],
   "_dsl_rev": 697
