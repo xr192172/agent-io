@@ -3967,17 +3967,33 @@
         "task": {
           "id": "file_src_application_cross_index_ts",
           "summary": "【L1 待建构】入口层 · src/application/cross — 0 个 API（导入自 9 个模块）（src/application/cross/index.ts） ← 节点 file_src_application_cross_index_ts",
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_cross_index_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "释放 file_src_application_cross_index_ts：本轮活已由子代理完成，build + verify 已验收通过",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-21T02:42:50.587Z"
+          "owner": "subagent:chain-e",
+          "claimed_at": "2026-10-21T19:26:16.287Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/cross/index.ts",
+                "name": "CROSS_TOOLS",
+                "fp": "4dc9bc97e23093432cf5e4ec0eb5b1af617e6892"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/cross/index.ts",
+                "content_hash": "59615484606bfbd7e0b3b53399a54373997bdff1"
+              }
+            ],
+            "computed_at": "2026-10-21T19:26:16.248Z",
+            "basis": [
+              "declared"
+            ]
+          }
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_api_signature_ts",
@@ -54575,7 +54591,47 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_authoring_translate_book_ts",
+          "summary": "【L1 待建构】book —— 翻译册的生成器（从 cache.db 派生 symbols / shapes，types / atoms 是人写的，不覆盖）（src/infrastructure/authoring/translate/book.ts） ← 节点 file_src_infrastructure_authoring_translate_book_ts",
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_translate_book_ts\"].responsibility"
+          },
+          "owner": "subagent:chain-e",
+          "claimed_at": "2026-10-21T19:26:35.312Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/authoring/translate/book.ts",
+                "name": "generateBook",
+                "fp": "6ada88a7b09a6bdaef49020d811a2f151225f74d"
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/book.ts",
+                "name": "rebuildBook",
+                "fp": "a9bb2aaad6b82265fe3a0ac72b5bbee2ca9931ff"
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/book.ts",
+                "name": "unmappedTypes",
+                "fp": "b5d8bb72a3582f0e01cb05481ed56efc7901ee4d"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/authoring/translate/book.ts",
+                "content_hash": "e85d50cf4583743ee009307a9721c3f1cc1d8b96"
+              }
+            ],
+            "computed_at": "2026-10-21T19:26:35.276Z",
+            "basis": [
+              "declared"
+            ]
+          }
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_go_tests_ts",
@@ -81825,7 +81881,7 @@
         ],
         "lines": 167,
         "layer": "entry",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_api_signature_ts",
@@ -103328,7 +103384,8 @@
           }
         ],
         "lines": 552,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_go_tests_ts",
@@ -103639,11 +103696,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T19:20:54.036Z",
+    "saved_at": "2026-10-21T19:26:35.344Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 26931225,
+    "age": 27272533,
     "dbSchemaVersion": 16
   },
   "_forked_from": {

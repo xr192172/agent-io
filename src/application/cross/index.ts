@@ -1,5 +1,5 @@
 /**
- * cross 线（4 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ * cross 线（5 个工具）—— ★ **本文件即该线归属的唯一来源**。
  *
  * ★ P1b（2026-09-28）：按当时 `capability_map.LANE_OF` 的归属从 `TOOL_DEFS` 切分而来，
  *   条目**逐字搬移**，只加了 `export const CROSS_TOOLS` 外壳 —— 归属自此由文件路径表达。
@@ -17,7 +17,9 @@ import { compareProjects } from '../../infrastructure/analysis/cross_repo/index.
 import { analyzeHealth } from '../../infrastructure/analysis/health/index.js';
 import { detectReachableRoots } from '../../infrastructure/analysis/project_root/index.js';
 import { extractGoFromFile } from '../../infrastructure/authoring/translate/go_extractor.js';
+import { rebuildBook } from '../../infrastructure/authoring/translate/book.js';
 import { translateGoTsHandler } from '../../infrastructure/authoring/translate/tool.js';
+import { getDesignSheetFile } from '../../infrastructure/storage.js';
 import type { ToolDef } from '../types.js';
 
 export const CROSS_TOOLS: ToolDef[] = [
@@ -166,6 +168,72 @@ export const CROSS_TOOLS: ToolDef[] = [
         for (const c of r.complexity) lines.push(`  ${c.complexity}  ${c.file}:${c.line}  ${c.symbol}`);
       }
       return { message: lines.join('\n'), data: r };
+    }),
+  },
+
+  {
+    name: 'translate_book',
+    title: '重建翻译册（TS→目标语言的全量符号账：pending / blocked / unknowns 一次算清）',
+    description:
+      '把 `(project_dir, feature)` 的翻译册 `.agent-io/design/<feature>.translate.json` **从事实库重算并写回**：' +
+      '人写的 `types`（术语表）/ `atoms` / 人写的 `unknowns` 原样保留，`symbols` / `shapes` / `[auto]` unknowns 按 `cache.db` 现取重算。' +
+      '★ 术语表**参与**覆盖判定（2026-10-22 前它从不参与 ⇒ 补术语不解锁，是空话）：补一条 `types` 后重跑，引用它的符号自动从 blocked 转 pending；' +
+      '`to:null` 的术语（真没有对应）**不算覆盖** —— 那一条仍 blocked，但计数单列 `blockedByTermNull`，理由换成「已定但无目标」。' +
+      '★ 人的进度不倒退（translated / verified / diff / stubbed 与人工 blocked 原样保留）。' +
+      '★ `dry_run=true` 只算不写（回执 `size` = 若写回会是多大），先看读数再决定落盘。' +
+      '★ 失败**抛**（册子不存在 / `cache.db` 不存在 / 目标语言与册子不符），绝不返回一份空账。',
+    inputSchema: {
+      project_dir: z
+        .string()
+        .describe('被翻译项目的根：事实库 `.agent-io/cache.db` 与册子 `.agent-io/design/` 都在它下面（只读事实库）'),
+      feature: z.string().describe('册子名 = `<feature>.translate.json` 的前缀（如 `task-system-plan`）'),
+      target_language: z
+        .string()
+        .optional()
+        .describe('目标语言（如 `go`）：给了就**必须**与册子 `meta.target_language` 一致，否则抛 —— 换语言要另起一份册子，不是改一个字段'),
+      dry_run: z.boolean().optional().describe('true = 只算不写（预览 blocked/unknowns 读数；回执 size 是「若写回多大」）'),
+    },
+    handler: wrapData(async (a) => {
+      const root = requireStr(a, 'project_dir');
+      const feature = requireStr(a, 'feature');
+      const dryRun = a.dry_run === true;
+      // ★ 目录与 feature 名**都走 storage 的唯一约定**（`getDesignSheetFile` 就是 `.agent-io/design/<f>.dsl.json`）
+      //   —— 不在这里另拼一份 `.agent-io/design` 字面量（那会长出第二处路径约定）。
+      const bookPath = path.join(path.dirname(getDesignSheetFile(feature, root)), `${feature}.translate.json`);
+      const r = rebuildBook({
+        projectDir: root,
+        bookPath,
+        dryRun,
+        expectTargetLanguage: a.target_language == null ? undefined : String(a.target_language),
+      });
+      const s = r.stats;
+      // ★ 每一项都能对上总数：人工 blocked（如 lookahead 那类）不在自动三档里，所以单列，别让读者自己猜差额。
+      const manual = s.blocked - (s.blockedByTerm + s.blockedByTermNull + s.blockedByCollision + s.blockedByStatic);
+      const lines = [
+        // ★ 三个数必须能对上：`pending` / `blocked` 只数**源侧**符号，`added`（目标侧新增）单列
+        //   —— 而 `symbols` 是两者之和（meta.origin_rule：两类要分开报）。写法上直接给出拆分，别让读者自己减。
+        `翻译册重建 · ${feature}（TS→${r.targetLanguage ?? '?'}）· ` +
+          `${s.symbols} 符号（源侧 ${s.symbols - s.added} + added ${s.added}）/ pending ${s.pending} / blocked ${s.blocked} / unknowns ${r.unknowns} · ` +
+          `${dryRun ? 'dry_run：未写盘' : '已写回'} ${path.relative(root, bookPath)}（${Math.round(r.size / 1024)} KB）`,
+        `blocked ${s.blocked} = 未覆盖术语 ${s.blockedByTerm} + 已定无目标 ${s.blockedByTermNull} + 同包撞名 ${s.blockedByCollision}` +
+          ` + static ${s.blockedByStatic} + 人工 ${manual}`,
+        `shapes ${s.shapes} 处 · 事实基线 scanRev=${s.scanRev ?? '（无）'} / schema v${s.dbSchemaVersion ?? '?'} / ${s.srcFiles} 个 ts 文件` +
+          (dryRun ? ' · ★ 本次**没有**改动册子' : ''),
+      ];
+      return {
+        message: lines.join('\n'),
+        data: {
+          symbols: s.symbols,
+          pending: s.pending,
+          blocked: s.blocked,
+          // ★ 单列：`pending + blocked = symbols - added`（added 是目标侧新增，不计入这两个态）
+          added: s.added,
+          unknowns: r.unknowns,
+          book_path: bookPath,
+          size: r.size,
+          dry_run: dryRun,
+        },
+      };
     }),
   },
 ];

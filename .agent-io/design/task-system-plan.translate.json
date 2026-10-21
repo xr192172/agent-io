@@ -14,14 +14,14 @@
     "types_exceptions_rule": "一条源词对多个目标时，`to` 写默认目标，`exceptions[]` 逐条写「何时换目标」（when / to / note）。exceptions 是**规则**，不是待办；它必须能被下一个人按 when 直接执行。",
     "baseline": {
       "db": ".agent-io/cache.db",
-      "scanRev": 1792591232403,
-      "scanRevIso": "2026-10-21T14:00:32.403Z",
+      "scanRev": 1792611328101,
+      "scanRevIso": "2026-10-21T19:35:28.101Z",
       "dbSchemaVersion": 16,
       "dbBytes": 67330048,
       "dslRev": 702,
       "dslRecordedScanRev": 1792583522811,
       "note": "★ 由生成器每轮重算（scanRev = max(files.indexed_at)，schema = max(schema_versions.version)）：这是「这份账反映哪一代事实」的唯一读数。types/atoms 的决定时间不在这里（它们是人写的）。",
-      "srcFiles": 351
+      "srcFiles": 353
     },
     "seed": {
       "tool": "D:/project_develop/_design-canvas-labs/translate_stats.mjs",
@@ -121,18 +121,20 @@
     },
     "book_gen": {
       "generator": "src/infrastructure/authoring/translate/book.ts#generateBook",
-      "run_at": "2026-10-21T14:00:33.747Z",
+      "run_at": "2026-10-21T19:35:37.039Z",
       "rules": [
         "入账面 = exported（modifiers 含 export）+ exported class 的方法（按 file_path+parent 关联；方法自己不带 export）",
         "to = 目标路径（src/ → internal/）+ Go 标识符（Pascal；初值缩略词全大写，见 GO_INITIALISMS）",
         "method 形态：constructor → New<Class>（包级函数）；private → 首字母小写（包级私有）",
         "kind 从 nodes.kind 现取；state 由「术语覆盖 + 同包撞名」决定，人的进度不被倒退（translated/verified/diff/stubbed 与人工 blocked 保留）",
+        "术语覆盖 = 仓内声明的类型名 ∪ 人写 types 的源词（to:null 的源词**不算覆盖**，仍 blocked 但理由不同）",
         "shapes 按类型表达式分类聚合（结构无身份，不逐条造 id）",
         "unknowns 里 [auto] 开头的每次重算，其余（人写的）原样保留"
       ],
       "stats": {
-        "symbols": 2696,
-        "blockedByTerm": 3,
+        "symbols": 2706,
+        "blockedByTerm": 0,
+        "blockedByTermNull": 2,
         "blockedByCollision": 32,
         "blockedByStatic": 3,
         "added": 1
@@ -326,6 +328,24 @@
       "to": "*string",
       "origin": "source",
       "note": "样例 · :75 :77。★ 与上一条落到**同一个** Go 类型（两源一目标）⇒ 账上必须留两条，否则「哪一处原本是 undefined」这件事就丢了。"
+    },
+    {
+      "from": "ZodType",
+      "to": null,
+      "origin": "source",
+      "note": "★ 判据（实测）：zod 在本仓**只做入参校验** —— 10 个文件 import zod / `z.object(` 33 处 / `.safeParse(` 3 处（调用点 presentation/mcp/server_registry.ts 的 argValidatorOf）。`z.ZodType` 本身只落在 2 个类型位：application/types.ts:22 `inputSchema: Record<string, z.ZodType>`（工具定义的「字段 → schema」表）、presentation/http/contract.ts:103 `satisfies Record<string, z.ZodType>`（契约表的同形约束）—— **没有一处是借用别人的类型**，它就是本仓自己的形状表元素。★ Go 没有 zod：这个位置要承载的是「一个字段怎么校验」，惯用解是 struct + `Validate() error`，或 `func(any) error`（added 类型）。⇒ to:null 不是懒，是**类型名这一层没有对应物**；改结构才是正解，见 unknowns「术语已定但无 Go 目标 · ZodType」。"
+    },
+    {
+      "from": "RegExpMatchArray",
+      "to": "[]string",
+      "origin": "source",
+      "note": "★ 判据（实测 5 处，全是同一个角色）：它只出现在 `String.prototype.match() / exec()` 的返回值上 —— `let m: RegExpMatchArray | null` 3 处（application/refactor/deprecate_offline/deprecate_offline.ts:269、infrastructure/analysis/deadcode/detect_dead_imports.ts:472、infrastructure/analysis/health/index.ts:662）+ 形参 `m: RegExpMatchArray` 2 处（infrastructure/analysis/contract_gate/parts.ts:75、detect_dead_imports.ts:466）。全仓 `.match(` 151 处，只有这 5 处显式写了类型名。Go 对应物 = `re.FindStringSubmatch(s)` 返回 `[]string`：**没匹配返回 nil** ⇒ 与源侧 `| null` 天然同义（`m == nil` 判空）；`m[1]` ↔ `m[1]`（下标 0 是全匹配，与 TS 一致）。★ 别翻成 `[2]string`：捕获组个数随模式变，源侧也没有按定长写。"
+    },
+    {
+      "from": "McpServer",
+      "to": null,
+      "origin": "source",
+      "note": "★ 判据（实测 5 处，全在 presentation/mcp）：`new McpServer(...)` 1 处（presentation/mcp/server.ts:31）、形参 2 处（server_registry.ts:1079 registerAtomicEntry、:1123 registerAllTools）、import 2 处（server.ts:15、server_registry.ts:15）。角色 = **协议服务器外壳**（把 TOOL_DEFS 挂上去 + 接 transport），不含任何本仓语义。★ 它**在**翻译面里（册里已有 internal/presentation/mcp/server_registry.go#RegisterAllTools），所以不能拿「只翻核心库」当免死金牌。★ Go 侧无官方 MCP SDK，observe-lang-go 里 mcp 代码 0 文件（实测）；第三方 mark3labs/mcp-go 的 `*server.MCPServer` 方法名与生命周期都不同（AddTool vs registerTool、Start 自起 transport）⇒ 不是类型名替换，是**换 SDK 后重写这 5 处**。⇒ to:null + unknowns。"
     }
   ],
   "symbols": [
@@ -1562,14 +1582,6 @@
       "note": ""
     },
     {
-      "from": "src/application/design/dsl_ops/task_ops.ts#sameCriteria",
-      "to": "internal/application/design/dsl_ops/task_ops.go#SameCriteria",
-      "kind": "function",
-      "origin": "source",
-      "state": "pending",
-      "note": ""
-    },
-    {
       "from": "src/application/design/dsl_ops/task_ops.ts#TaskOpInput",
       "to": "internal/application/design/dsl_ops/task_ops.go#TaskOpInput",
       "kind": "interface",
@@ -1834,30 +1846,6 @@
       "note": ""
     },
     {
-      "from": "src/application/design/intent/expectations.ts#ExpectationConflict",
-      "to": "internal/application/design/intent/expectations.go#ExpectationConflict",
-      "kind": "interface",
-      "origin": "source",
-      "state": "pending",
-      "note": ""
-    },
-    {
-      "from": "src/application/design/intent/expectations.ts#ExpectationItem",
-      "to": "internal/application/design/intent/expectations.go#ExpectationItem",
-      "kind": "interface",
-      "origin": "source",
-      "state": "pending",
-      "note": ""
-    },
-    {
-      "from": "src/application/design/intent/expectations.ts#ExpectationsReport",
-      "to": "internal/application/design/intent/expectations.go#ExpectationsReport",
-      "kind": "interface",
-      "origin": "source",
-      "state": "pending",
-      "note": ""
-    },
-    {
       "from": "src/application/design/intent/expectations.ts#findExpectationConflicts",
       "to": "internal/application/design/intent/expectations.go#FindExpectationConflicts",
       "kind": "function",
@@ -1869,14 +1857,6 @@
       "from": "src/application/design/intent/expectations.ts#judgeExpectations",
       "to": "internal/application/design/intent/expectations.go#JudgeExpectations",
       "kind": "function",
-      "origin": "source",
-      "state": "pending",
-      "note": ""
-    },
-    {
-      "from": "src/application/design/intent/expectations.ts#Verdict",
-      "to": "internal/application/design/intent/expectations.go#Verdict",
-      "kind": "type",
       "origin": "source",
       "state": "pending",
       "note": ""
@@ -7074,6 +7054,54 @@
       "note": ""
     },
     {
+      "from": "src/application/source_writer.ts#openSourceWrite",
+      "to": "internal/application/source_writer.go#OpenSourceWrite",
+      "kind": "function",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
+      "from": "src/application/source_writer.ts#SourceWriteCtx",
+      "to": "internal/application/source_writer.go#SourceWriteCtx",
+      "kind": "interface",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
+      "from": "src/application/source_writer.ts#SourceWriteReceipt",
+      "to": "internal/application/source_writer.go#SourceWriteReceipt",
+      "kind": "interface",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
+      "from": "src/application/source_writer.ts#SourceWriteTxn",
+      "to": "internal/application/source_writer.go#SourceWriteTxn",
+      "kind": "interface",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
+      "from": "src/application/source_writer.ts#writeSourceBatch",
+      "to": "internal/application/source_writer.go#WriteSourceBatch",
+      "kind": "function",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
+      "from": "src/application/source_writer.ts#writeSourceFile",
+      "to": "internal/application/source_writer.go#WriteSourceFile",
+      "kind": "function",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
       "from": "src/application/stage_registry.ts#assertAcyclic",
       "to": "internal/application/stage_registry.go#AssertAcyclic",
       "kind": "function",
@@ -7239,7 +7267,7 @@
       "kind": "interface",
       "origin": "source",
       "state": "blocked",
-      "note": "[auto] 术语表未覆盖：ZodType ⇒ 先补 types（或判它 `added`），再翻 internal/application/types.go#ToolDef。"
+      "note": "[auto] 术语已定但无 Go 目标：ZodType ⇒ 要改的是**结构**（字段/参数由什么承载），不是换个类型名；见 unknowns。"
     },
     {
       "from": "src/application/write_gate.ts#actorStrict",
@@ -7354,22 +7382,6 @@
       "note": ""
     },
     {
-      "from": "src/application/write_gate.ts#snapshotAndRecordSelfWrite",
-      "to": "internal/application/write_gate.go#SnapshotAndRecordSelfWrite",
-      "kind": "function",
-      "origin": "source",
-      "state": "pending",
-      "note": ""
-    },
-    {
-      "from": "src/application/write_gate.ts#SourceWriteReport",
-      "to": "internal/application/write_gate.go#SourceWriteReport",
-      "kind": "interface",
-      "origin": "source",
-      "state": "pending",
-      "note": ""
-    },
-    {
       "from": "src/application/write_gate.ts#syncSelfWrites",
       "to": "internal/application/write_gate.go#SyncSelfWrites",
       "kind": "function",
@@ -7405,14 +7417,6 @@
       "from": "src/application/write_gate.ts#WriteActor",
       "to": "internal/application/write_gate.go#WriteActor",
       "kind": "type",
-      "origin": "source",
-      "state": "pending",
-      "note": ""
-    },
-    {
-      "from": "src/application/write_gate.ts#writeSourceFiles",
-      "to": "internal/application/write_gate.go#WriteSourceFiles",
-      "kind": "function",
       "origin": "source",
       "state": "pending",
       "note": ""
@@ -8530,6 +8534,54 @@
       "note": ""
     },
     {
+      "from": "src/domain/judge_port.ts#ExpectationConflict",
+      "to": "internal/domain/judge_port.go#ExpectationConflict",
+      "kind": "interface",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
+      "from": "src/domain/judge_port.ts#ExpectationItem",
+      "to": "internal/domain/judge_port.go#ExpectationItem",
+      "kind": "interface",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
+      "from": "src/domain/judge_port.ts#ExpectationsReport",
+      "to": "internal/domain/judge_port.go#ExpectationsReport",
+      "kind": "interface",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
+      "from": "src/domain/judge_port.ts#Judge",
+      "to": "internal/domain/judge_port.go#Judge",
+      "kind": "type",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
+      "from": "src/domain/judge_port.ts#JudgeItem",
+      "to": "internal/domain/judge_port.go#JudgeItem",
+      "kind": "interface",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
+      "from": "src/domain/judge_port.ts#Verdict",
+      "to": "internal/domain/judge_port.go#Verdict",
+      "kind": "type",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
       "from": "src/domain/mindmap.ts#FeatureDep",
       "to": "internal/domain/mindmap.go#FeatureDep",
       "kind": "interface",
@@ -9266,6 +9318,14 @@
       "note": ""
     },
     {
+      "from": "src/domain/task_schema.ts#CriteriaHome",
+      "to": "internal/domain/task_schema.go#CriteriaHome",
+      "kind": "interface",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
       "from": "src/domain/task_schema.ts#evidenceFreshness",
       "to": "internal/domain/task_schema.go#EvidenceFreshness",
       "kind": "function",
@@ -9280,6 +9340,14 @@
       "origin": "source",
       "state": "blocked",
       "note": "[auto] 同包撞名：2 个源符号都映射到 internal/domain/task_schema.go#EvidenceFreshness ⇒ 需人工改名（Go 同包不允重名）。"
+    },
+    {
+      "from": "src/domain/task_schema.ts#expectationsOf",
+      "to": "internal/domain/task_schema.go#ExpectationsOf",
+      "kind": "function",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
     },
     {
       "from": "src/domain/task_schema.ts#fingerprintOf",
@@ -10006,8 +10074,8 @@
       "to": "internal/infrastructure/analysis/contract_gate/parts.go#AddDeclared",
       "kind": "function",
       "origin": "source",
-      "state": "blocked",
-      "note": "[auto] 术语表未覆盖：RegExpMatchArray ⇒ 先补 types（或判它 `added`），再翻 internal/infrastructure/analysis/contract_gate/parts.go#AddDeclared。"
+      "state": "pending",
+      "note": ""
     },
     {
       "from": "src/infrastructure/analysis/contract_gate/parts.ts#CgLangPackage",
@@ -14946,6 +15014,14 @@
       "note": ""
     },
     {
+      "from": "src/infrastructure/authoring/translate/book.ts#BookRebuildResult",
+      "to": "internal/infrastructure/authoring/translate/book.go#BookRebuildResult",
+      "kind": "interface",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
       "from": "src/infrastructure/authoring/translate/book.ts#BookShape",
       "to": "internal/infrastructure/authoring/translate/book.go#BookShape",
       "kind": "interface",
@@ -14997,6 +15073,30 @@
       "from": "src/infrastructure/authoring/translate/book.ts#rebuildBook",
       "to": "internal/infrastructure/authoring/translate/book.go#RebuildBook",
       "kind": "function",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#serializeBook",
+      "to": "internal/infrastructure/authoring/translate/book.go#SerializeBook",
+      "kind": "function",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#termCoverage",
+      "to": "internal/infrastructure/authoring/translate/book.go#TermCoverage",
+      "kind": "function",
+      "origin": "source",
+      "state": "pending",
+      "note": ""
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#TermTable",
+      "to": "internal/infrastructure/authoring/translate/book.go#TermTable",
+      "kind": "interface",
       "origin": "source",
       "state": "pending",
       "note": ""
@@ -21775,7 +21875,7 @@
       "kind": "function",
       "origin": "source",
       "state": "blocked",
-      "note": "[auto] 术语表未覆盖：McpServer ⇒ 先补 types（或判它 `added`），再翻 internal/presentation/mcp/server_registry.go#RegisterAllTools。"
+      "note": "[auto] 术语已定但无 Go 目标：McpServer ⇒ 要改的是**结构**（字段/参数由什么承载），不是换个类型名；见 unknowns。"
     },
     {
       "from": "src/presentation/mcp/server_registry.ts#resetStaleIndexWarningCache",
@@ -21925,13 +22025,13 @@
       },
       "to": null,
       "origin": "source",
-      "count": 425,
+      "count": 422,
       "samples": [
-        "src/application/claim_conflict.ts:80 DeclaredReadSet ⇒ : Array<{ file?: string; name?: string }>",
-        "src/application/claim_conflict.ts:134 ClaimReadSetInput ⇒ : { id: string; type?: string; description?: string; path?: string }",
-        "src/application/claim_conflict.ts:313 ClaimConflictHit ⇒ : Array<{ file: string; name: string; fp_mine: string; fp_theirs: string }>",
-        "src/application/claim_conflict.ts:341 collectActiveClaims ⇒ { claims: ActiveClaim[]; unchecked: UncheckedClaim[]; features: string[] }",
-        "src/application/claim_conflict.ts:341 collectActiveClaims ⇒ { feature: string; id: string }"
+        "src/application/claim_conflict.ts:81 DeclaredReadSet ⇒ : Array<{ file?: string; name?: string }>",
+        "src/application/claim_conflict.ts:135 ClaimReadSetInput ⇒ : { id: string; type?: string; description?: string; path?: string; decision?: { expectations?: Expectation[] }; }",
+        "src/application/claim_conflict.ts:321 ClaimConflictHit ⇒ : Array<{ file: string; name: string; fp_mine: string; fp_theirs: string }>",
+        "src/application/claim_conflict.ts:349 collectActiveClaims ⇒ { claims: ActiveClaim[]; unchecked: UncheckedClaim[]; features: string[] }",
+        "src/application/claim_conflict.ts:349 collectActiveClaims ⇒ { feature: string; id: string }"
       ],
       "note": "实测 661 个类型位置。★ 结构**没有稳定身份** ⇒ 天然做不到一一对应：Go 必须给它命名，命出来的名字就是 symbols 里 origin=added 的那些。允许 to:null —— 别硬凑一个假名字。样本：src/application/claim_conflict.ts:134 `{ id: string; type?: string; description?: string; path?: string }`。"
     },
@@ -21948,7 +22048,7 @@
         "src/application/design/derive/opl.ts:34 OplDeclFile ⇒ : | | |",
         "src/application/design/dsl_ops/annotation_tools.ts:23 ListAnnotationsInput ⇒ : | |",
         "src/application/design/dsl_ops/annotation_tools.ts:138 AddAnnotationInput ⇒ : | | | |",
-        "src/application/design/dsl_ops/node_ops.ts:124 AddNodeInput ⇒ : Record<string, string | number | boolean>"
+        "src/application/design/dsl_ops/node_ops.ts:121 AddNodeInput ⇒ : Record<string, string | number | boolean>"
       ],
       "note": "实测 279 个类型位置（另有 726 个 `T | null/undefined` 属可空性，已由 types 的 null/undefined 行覆盖，不在此计）。★ Go 没有 sum type：三选一 —— interface + type switch / 带标签字段的 struct / 拆成多个函数。每条都要人工定，故 to:null。"
     }
@@ -22089,19 +22189,14 @@
       "why": "名字由谁定、按什么风格、要不要每个都落账 —— 本轮只落了样例那一个（AdmissionOptions）。★ 如果后续每个都落一条 added，symbols 会从 2620 条涨到 3281 条左右；不落则「新增」这一类就看不见 ⇒ 需要一条批量命名+落账的规则，人工定。"
     },
     {
-      "where": "[auto] 术语表未覆盖 · ZodType",
-      "what": "ZodType 没有对应术语 ⇒ 引用它的 1 个符号全部 blocked",
-      "why": "补一条 types（源词 → Go 类型）后重跑生成器即可自动解锁；或判它 `origin=added`（目标侧新建）。\n  涉及：src/application/types.ts#ToolDef"
+      "where": "[auto] 术语已定但无 Go 目标 · ZodType",
+      "what": "types 条目「ZodType」标了 `to:null`（真没有对应）⇒ 引用它的 1 个符号**仍 blocked**（这不是「术语表欠一条」）",
+      "why": "先定「这一层由什么承载」（结构问题：字段/参数换成结构体、函数还是 `added` 类型？），再谈这个符号的名字。已给定的判据（types 原文首句）：★ 判据（实测）：zod 在本仓**只做入参校验** —— 10 个文件 import zod / `z.object(` 33 处 / `.safeParse(` 3 处（调用点 presentation/mcp/server_registry.ts 的 argValidatorOf）。`z.ZodType` 本身只落在 2 个类型位：application/types.ts:22 `inputSchema: Record<string, z.ZodType>`（工具定义的…（★ 已截断，全文见 types 里该条）\n  涉及：src/application/types.ts#ToolDef"
     },
     {
-      "where": "[auto] 术语表未覆盖 · RegExpMatchArray",
-      "what": "RegExpMatchArray 没有对应术语 ⇒ 引用它的 1 个符号全部 blocked",
-      "why": "补一条 types（源词 → Go 类型）后重跑生成器即可自动解锁；或判它 `origin=added`（目标侧新建）。\n  涉及：src/infrastructure/analysis/contract_gate/parts.ts#addDeclared"
-    },
-    {
-      "where": "[auto] 术语表未覆盖 · McpServer",
-      "what": "McpServer 没有对应术语 ⇒ 引用它的 1 个符号全部 blocked",
-      "why": "补一条 types（源词 → Go 类型）后重跑生成器即可自动解锁；或判它 `origin=added`（目标侧新建）。\n  涉及：src/presentation/mcp/server_registry.ts#registerAllTools"
+      "where": "[auto] 术语已定但无 Go 目标 · McpServer",
+      "what": "types 条目「McpServer」标了 `to:null`（真没有对应）⇒ 引用它的 1 个符号**仍 blocked**（这不是「术语表欠一条」）",
+      "why": "先定「这一层由什么承载」（结构问题：字段/参数换成结构体、函数还是 `added` 类型？），再谈这个符号的名字。已给定的判据（types 原文首句）：★ 判据（实测 5 处，全在 presentation/mcp）：`new McpServer(...)` 1 处（presentation/mcp/server.ts:31）、形参 2 处（server_registry.ts:1079 registerAtomicEntry、:1123 registerAllTools）、import 2 处（server.ts:15、server_registry.ts:15）。角色 = **协议服务器外壳**（把 TOOL_DEFS …（★ 已截断，全文见 types 里该条）\n  涉及：src/presentation/mcp/server_registry.ts#registerAllTools"
     },
     {
       "where": "[auto] static 方法 · 3 个（Go 没有静态方法）",

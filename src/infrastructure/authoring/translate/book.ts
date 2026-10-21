@@ -16,7 +16,11 @@
  *
  * ## 覆盖判据（⑤「还差哪几条术语」的唯一来源）
  * 一个符号被判 `blocked` 当且仅当它的类型面里出现了**术语表覆盖不到的名字**：
- * 不是内建、不是容器泛型、不是泛型参数、也不是仓内声明的类型（interface/type/class）。
+ * 不是内建、不是容器泛型、不是泛型参数、不是仓内声明的类型（interface/type/class）、
+ * **也不是 `types` 里登记过且 `to` 有具体目标的源词**（★ 2026-10-22 补：此前只认「仓内声明」，
+ * 人写的 `types` 从不参与 ⇒ 「补术语即解锁」是空话，见 `unmappedTypes` 头注）。
+ * ★ `types` 里 `to:null` 的源词**不算覆盖**：那是「定完了、结论是翻不了」⇒ 仍 blocked，
+ *   但计数单列 `blockedByTermNull`，理由换成「已定但无目标」（两种病不混一个数）。
  * ⇒ blocked 的条数就是「术语表还差几条」的真实读数；`unknowns` 里逐条点名。
  *
  * ## 诚实边界
@@ -77,6 +81,10 @@ export interface BookGenOptions {
   targetPrefix?: string;
   /** 生成时刻（可注入，便于测试确定性） */
   now?: string;
+  /** 只算不写（`rebuildBook` 的 dry_run）：返回的 size 是「若写回会是多大」 */
+  dryRun?: boolean;
+  /** 调用方声明的目标语言（如 `go`）：与册子 `meta.target_language` 不符 ⇒ 抛（不就地改语义） */
+  expectTargetLanguage?: string;
 }
 
 export interface BookGenStats {
@@ -85,6 +93,8 @@ export interface BookGenStats {
   blocked: number;
   added: number;
   blockedByTerm: number;
+  /** ★ 术语已定但 `to:null`（真没有对应）⇒ 仍 blocked，但**不是**「术语表欠一条」 */
+  blockedByTermNull: number;
   blockedByCollision: number;
   /** static 方法（Go 没有静态方法）⇒ 目标形态待人工定 */
   blockedByStatic: number;
@@ -200,8 +210,16 @@ function genericNames(row: NodeRow): Set<string> {
 /**
  * 找出**术语表覆盖不到**的类型名（blocked 的唯一判据）。
  * ★ 只看大写开头的标识符（小写裸名是属性键或限定名前缀）；跳过泛型参数与单字母。
+ * ★★ 2026-10-22：「术语表覆盖不到」原先**只**拿 `declared`（仓内声明的类型名）当覆盖 —— 而
+ *   `book.types`（人写的术语表）**根本没参与** ⇒ 本文件与自动 note 里那句
+ *   「补一条 types 后重跑即可自动解锁」是**空话**（实测：补 3 条术语后 blocked 仍是 40）。
+ *   ⇒ 现在把 `terms.covered` 也当覆盖（唯一消费点见 {@link termCoverage}）。
  */
-export function unmappedTypes(row: NodeRow, declared: ReadonlySet<string>): string[] {
+export function unmappedTypes(
+  row: NodeRow,
+  declared: ReadonlySet<string>,
+  covered?: ReadonlySet<string>,
+): string[] {
   const generics = genericNames(row);
   const bad = new Set<string>();
   for (const expr of typeExpressions(row)) {
@@ -209,12 +227,50 @@ export function unmappedTypes(row: NodeRow, declared: ReadonlySet<string>): stri
     for (const m of text.matchAll(/[A-Za-z_$][\w$]*/g)) {
       const w = m[0];
       if (NOMINAL.has(w) || CONTAINER.has(w) || NULLISH.has(w)) continue;
-      if (declared.has(w) || generics.has(w)) continue;
+      if (declared.has(w) || covered?.has(w) || generics.has(w)) continue;
       if (/^[A-Z][0-9]?$/.test(w)) continue; // 泛型实参（T / K / V）
       if (/^[A-Z]/.test(w)) bad.add(w);
     }
   }
   return [...bad].sort();
+}
+
+/** 术语表 → 「哪些源词算覆盖」的读数（生成器**唯一**的术语消费点）。 */
+export interface TermTable {
+  /** `types[].to` 有具体目标 ⇒ 覆盖即解锁（该符号转 pending） */
+  covered: Set<string>;
+  /** `types[].to === null`（真没有对应）⇒ **仍 blocked**，但理由换成「已定但无目标」 */
+  nullTarget: Map<string, { from: string; note: string }>;
+}
+
+/**
+ * 把**人写的** `book.types` 折成两个 Set/Map（见 {@link TermTable}）。
+ *
+ * ★ 名字刻意避开 `TermCoverage`：那会和本函数 `termCoverage` 撞成同一个 Go 标识符
+ *   （`goName` 只做 Pascal 化）—— ★ 本文件自己就是被翻译的对象，别给账上添一组同包撞名（实测会 +2 blocked）。
+ *
+ * ★ 为什么两档（别合并成一个 Set）：`to:null` 是本册承认的**第三种答案**（「真没有对应」），
+ *   它的语义是「待人工改结构」—— 与 `meta.state_machine.blocked` 的定义（「翻不了…待人工定」）同义，
+ *   与「术语表还欠一条」**不是**同一件事。合并了就会把「没人定」和「定完了、结论是翻不了」混成一个数。
+ *
+ * ★ 源词怎么拆：`types[].from` 是人写的一句话（`Map<K,V>` / `null / undefined` / `v is string（类型谓词）`）
+ *   ⇒ 只取其中**大写开头且长度 > 1** 的词（与 {@link unmappedTypes} 同一把尺：小写裸名在那里本就不算类型名）。
+ */
+export function termCoverage(types: ReadonlyArray<Record<string, unknown>>): TermTable {
+  const covered = new Set<string>();
+  const nullTarget = new Map<string, { from: string; note: string }>();
+  for (const t of types) {
+    const from = typeof t.from === 'string' ? t.from : '';
+    const note = typeof t.note === 'string' ? t.note : '';
+    const isNull = t.to === null || t.to === undefined;
+    for (const m of from.matchAll(/[A-Za-z_$][\w$]*/g)) {
+      const w = m[0];
+      if (!/^[A-Z]/.test(w) || w.length < 2) continue;
+      if (isNull) nullTarget.set(w, { from, note });
+      else covered.add(w);
+    }
+  }
+  return { covered, nullTarget };
 }
 
 // ── shapes 分类 ─────────────────────────────────────────────────────────
@@ -291,6 +347,13 @@ function readSymbolRows(db: DatabaseSync): { rows: NodeRow[]; srcFiles: number }
 
 // ── 生成 ────────────────────────────────────────────────────────────────
 
+/** 把一段人写的 note 压成「首句（+ 截断标记）」—— ★ 截断必须标注：没标注的截断会被读成「全文就这么长」。 */
+function briefNote(note: string | undefined, max = 240): string {
+  if (!note) return '（types 里没写 note —— 这是缺的，补上）';
+  const first = note.split('\n')[0];
+  return first.length > max ? `${first.slice(0, max)}…（★ 已截断，全文见 types 里该条）` : first;
+}
+
 function autoNote(row: NodeRow, bad: string[], target: string): string {
   if (bad.length) return `${AUTO_TAG} 术语表未覆盖：${bad.join(', ')} ⇒ 先补 types（或判它 \`added\`），再翻 ${target}。`;
   return ''; // ★ pending 不写逐行样板话（2695 行同一句 = 噪音；「pending 是什么」住 meta.state_machine）
@@ -353,6 +416,8 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
 
     const before = new Map(book.symbols.filter((s) => s.from).map((s) => [s.from as string, s]));
     const kept: BookSymbol[] = book.symbols.filter((s) => !s.from); // origin=added 的原样保留
+    // ★ 人写的术语表**参与**覆盖判定（此前从不读 ⇒ 「补 types 后重跑即解锁」是空话，见 unmappedTypes 头注）
+    const terms = termCoverage(book.types);
 
     // 先算 to（撞名要按 target 分组，得先全算完）
     const mapped = rows.map((row) => {
@@ -360,28 +425,35 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
       // ★ static 方法：Go 没有静态方法 ⇒ 目标形态未定（包级函数 XxxYyy / 独立函数）⇒ to=null，人工定
       const isStatic = row.kind === 'method' && (row.modifiers ?? '').includes('"static"');
       const to = isStatic ? null : `${target}#${goSymbolName(row)}`;
-      const bad = unmappedTypes(row, declared);
-      return { row, to, target, bad, isStatic };
+      const bad = unmappedTypes(row, declared, terms.covered);
+      // ★ 同一个 bad 里混着两种病：真正「没人定」vs「定完了、结论是翻不了（to:null）」⇒ 分开
+      const uncovered = bad.filter((n) => !terms.nullTarget.has(n));
+      const nullTerms = bad.filter((n) => terms.nullTarget.has(n));
+      return { row, to, target, bad, uncovered, nullTerms, isStatic };
     });
     const byTarget = new Map<string, number>();
     for (const m of mapped) if (m.to) byTarget.set(m.to, (byTarget.get(m.to) ?? 0) + 1);
 
     const symbols: BookSymbol[] = [];
     let blockedByTerm = 0;
+    let blockedByTermNull = 0;
     let blockedByCollision = 0;
     let blockedByStatic = 0;
-    for (const { row, to, target, bad, isStatic } of mapped) {
+    for (const { row, to, target, bad, uncovered, nullTerms, isStatic } of mapped) {
       const prev = before.get(row.id);
       const collision = !!to && (byTarget.get(to) ?? 0) > 1;
-      const kind: 'term' | 'collision' | 'static' | null = bad.length
+      const kind: 'term' | 'term_null' | 'collision' | 'static' | null = uncovered.length
         ? 'term'
-        : collision
-          ? 'collision'
-          : isStatic
-            ? 'static'
-            : null;
+        : nullTerms.length
+          ? 'term_null'
+          : collision
+            ? 'collision'
+            : isStatic
+              ? 'static'
+              : null;
       let state = kind ? 'blocked' : 'pending';
       if (kind === 'term') blockedByTerm++;
+      if (kind === 'term_null') blockedByTermNull++;
       if (kind === 'collision') blockedByCollision++;
       if (kind === 'static') blockedByStatic++;
 
@@ -391,11 +463,13 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
       if (sticky) state = prev.state;
 
       const auto =
-        kind === 'collision'
-          ? `${AUTO_TAG} 同包撞名：${byTarget.get(to as string)} 个源符号都映射到 ${to} ⇒ 需人工改名（Go 同包不允重名）。`
-          : kind === 'static'
-            ? `${AUTO_TAG} static 方法：Go 没有静态方法 ⇒ 目标形态未定（包级函数 ${goSymbolName(row).replace('.', '')} / 独立函数），故 to=null。`
-            : autoNote(row, bad, to ?? target);
+        kind === 'term_null'
+          ? `${AUTO_TAG} 术语已定但无 Go 目标：${nullTerms.join(', ')} ⇒ 要改的是**结构**（字段/参数由什么承载），不是换个类型名；见 unknowns。`
+          : kind === 'collision'
+            ? `${AUTO_TAG} 同包撞名：${byTarget.get(to as string)} 个源符号都映射到 ${to} ⇒ 需人工改名（Go 同包不允重名）。`
+            : kind === 'static'
+              ? `${AUTO_TAG} static 方法：Go 没有静态方法 ⇒ 目标形态未定（包级函数 ${goSymbolName(row).replace('.', '')} / 独立函数），故 to=null。`
+              : autoNote(row, uncovered.length ? uncovered : bad, to ?? target);
 
       symbols.push({
         from: row.id,
@@ -437,6 +511,17 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
         termHit.set(t, arr);
       }
     }
+    // ★ 已定但 to:null 的术语：**照样进 unknowns**（它们是「真翻不了」，理由从 types 的 note 取）
+    const nullTermHit = new Map<string, string[]>();
+    for (const s of symbols) {
+      if (s.state !== 'blocked' || !String(s.note).includes('术语已定但无 Go 目标')) continue;
+      const m = String(s.note).match(/术语已定但无 Go 目标：([^⇒]+)⇒/);
+      for (const t of (m?.[1] ?? '').split(',').map((x) => x.trim()).filter(Boolean)) {
+        const arr = nullTermHit.get(t) ?? [];
+        arr.push(s.from as string);
+        nullTermHit.set(t, arr);
+      }
+    }
     const collisionGroups = new Map<string, string[]>();
     for (const s of symbols) {
       if (s.state !== 'blocked' || !String(s.note).includes('同包撞名')) continue;
@@ -451,6 +536,16 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
         what: `${t} 没有对应术语 ⇒ 引用它的 ${hits.length} 个符号全部 blocked`,
         why:
           `补一条 types（源词 → Go 类型）后重跑生成器即可自动解锁；或判它 \`origin=added\`（目标侧新建）。` +
+          `\n  涉及：${hits.slice(0, 5).join(' · ')}${hits.length > 5 ? ` …共 ${hits.length} 个` : ''}`,
+      })),
+      ...[...nullTermHit.entries()].map(([t, hits]) => ({
+        where: `[auto] 术语已定但无 Go 目标 · ${t}`,
+        what:
+          `types 条目「${terms.nullTarget.get(t)?.from ?? t}」标了 \`to:null\`（真没有对应）` +
+          `⇒ 引用它的 ${hits.length} 个符号**仍 blocked**（这不是「术语表欠一条」）`,
+        why:
+          `先定「这一层由什么承载」（结构问题：字段/参数换成结构体、函数还是 \`added\` 类型？），再谈这个符号的名字。` +
+          `已给定的判据（types 原文首句）：${briefNote(terms.nullTarget.get(t)?.note)}` +
           `\n  涉及：${hits.slice(0, 5).join(' · ')}${hits.length > 5 ? ` …共 ${hits.length} 个` : ''}`,
       })),
       ...(staticRows.length
@@ -511,10 +606,11 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
             'to = 目标路径（src/ → internal/）+ Go 标识符（Pascal；初值缩略词全大写，见 GO_INITIALISMS）',
             'method 形态：constructor → New<Class>（包级函数）；private → 首字母小写（包级私有）',
             'kind 从 nodes.kind 现取；state 由「术语覆盖 + 同包撞名」决定，人的进度不被倒退（translated/verified/diff/stubbed 与人工 blocked 保留）',
+            '术语覆盖 = 仓内声明的类型名 ∪ 人写 types 的源词（to:null 的源词**不算覆盖**，仍 blocked 但理由不同）',
             'shapes 按类型表达式分类聚合（结构无身份，不逐条造 id）',
             'unknowns 里 [auto] 开头的每次重算，其余（人写的）原样保留',
           ],
-          stats: { symbols: symbols.length + kept.length, blockedByTerm, blockedByCollision, blockedByStatic, added: kept.length },
+          stats: { symbols: symbols.length + kept.length, blockedByTerm, blockedByTermNull, blockedByCollision, blockedByStatic, added: kept.length },
         },
       },
     };
@@ -524,6 +620,7 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
       blocked: symbols.filter((s) => s.state === 'blocked').length,
       added: kept.length,
       blockedByTerm,
+      blockedByTermNull,
       blockedByCollision,
       blockedByStatic,
       shapes: shapes.reduce((a, s) => a + (s.count ?? 0), 0),
@@ -537,16 +634,66 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
   }
 }
 
-/** 写册子（唯一落盘点；缩进 2 便于人读 — 设计侧是人可读可改的）。 */
-export function writeBook(bookPath: string, book: TranslateBook): void {
-  fs.mkdirSync(path.dirname(bookPath), { recursive: true });
-  fs.writeFileSync(bookPath, JSON.stringify(book, null, 2) + '\n', 'utf8');
+/** 册子的**唯一序列化**（缩进 2 便于人读 — 设计侧是可读可改的）。
+ *  ★ `rebuildBook` 报的 size 也走这里 ⇒ 「写出去多大」与「报多大」不可能分叉。 */
+export function serializeBook(book: TranslateBook): string {
+  return JSON.stringify(book, null, 2) + '\n';
 }
 
-/** 便捷入口：读册子 → 重建 → 写回。返回本次读数。 */
-export function rebuildBook(opts: BookGenOptions): BookGenStats {
+/** 写册子（唯一落盘点）。 */
+export function writeBook(bookPath: string, book: TranslateBook): void {
+  fs.mkdirSync(path.dirname(bookPath), { recursive: true });
+  fs.writeFileSync(bookPath, serializeBook(book), 'utf8');
+}
+
+/** `rebuildBook` 的回执（结构化读数，不是一句话）。 */
+export interface BookRebuildResult {
+  stats: BookGenStats;
+  /** 本册 unknowns 条数（人写的 + `[auto]` 的合计） */
+  unknowns: number;
+  /** 册子字节数（`dryRun` 时 = **若写回**会是多大） */
+  size: number;
+  /** false = dryRun（没写盘） */
+  wrote: boolean;
+  bookPath: string;
+  /** 册子声明的目标语言（`meta.target_language`；没有就是 null —— 不猜） */
+  targetLanguage: string | null;
+}
+
+/**
+ * 便捷入口：读册子 → 重建 → 写回（`dryRun` 只算不写）。
+ *
+ * ★ **失败一律抛**（本仓纪律：不许 `catch{return []}`）—— 三种失败各有自己的话：
+ *   ① 册子不存在 ⇒ 说明「底册是人写的 types/atoms，没有它就没有可重建的账」；
+ *   ② 事实库不存在 ⇒ `generateBook` 已抛（口径在 `openBookDb`）；
+ *   ③ 声明了 `expectTargetLanguage` 但与册子不符 ⇒ 拒绝就地改语义（换语言 = 另起一份册子）。
+ */
+export function rebuildBook(opts: BookGenOptions): BookRebuildResult {
+  if (!fs.existsSync(opts.bookPath)) {
+    throw new Error(
+      `翻译册不存在：${opts.bookPath}\n` +
+        `★ 册子 = **人写的** types / atoms / unknowns + **生成器重算的** symbols / shapes ⇒ 没有底册就没有可重建的账。\n` +
+        `★ 先放一份底册（至少要有 \`types\` 与 \`unknowns\` 两个块），再来重建；本工具**不替你凭空造一份**。`,
+    );
+  }
   const book = JSON.parse(fs.readFileSync(opts.bookPath, 'utf8')) as TranslateBook;
+  const want = opts.expectTargetLanguage;
+  const has = typeof book.meta?.target_language === 'string' ? book.meta.target_language : null;
+  if (want && want !== has) {
+    throw new Error(
+      `目标语言不符：调用方声明 \`${want}\`，而 ${opts.bookPath} 的 meta.target_language = \`${has ?? '（未写）'}\`。\n` +
+        `★ 拒绝就地改语义：一份册子的 \`to\` / \`types\` 都是按某个目标语言定的，换语言必须**另起一份册子**（不是改一个字段）。`,
+    );
+  }
   const { book: next, stats } = generateBook(book, opts);
-  writeBook(opts.bookPath, next);
-  return stats;
+  const body = serializeBook(next);
+  if (!opts.dryRun) writeBook(opts.bookPath, next);
+  return {
+    stats,
+    unknowns: next.unknowns.length,
+    size: Buffer.byteLength(body, 'utf8'),
+    wrote: !opts.dryRun,
+    bookPath: opts.bookPath,
+    targetLanguage: has,
+  };
 }
