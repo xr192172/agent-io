@@ -13293,8 +13293,8 @@
               "verdict": "pass"
             }
           ],
-          "owner": "subagent:account",
-          "claimed_at": "2026-10-21T09:59:10.675Z",
+          "owner": "subagent:claimreadset",
+          "claimed_at": "2026-10-21T10:35:22.200Z",
           "reopened_at": "2026-10-20T10:47:41.583Z",
           "reopen_reason": "清注释里的用户原话",
           "reopened_from": "deepseek-v4.1-flash"
@@ -45177,14 +45177,11 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate",
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "活已落下（tsc 0 error），旧判据未重扫 ⇒ 交回候选，等统一验收",
-          "released_by": "deepseek-v4.1-flash",
-          "released_at": "2026-10-21T08:19:40.688Z"
+          "state": "claimed",
+          "owner": "subagent:claimreadset",
+          "claimed_at": "2026-10-21T10:35:44.725Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_domain_types_ts",
@@ -87151,7 +87148,7 @@
         ],
         "lines": 202,
         "layer": "service",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_domain_types_ts",
@@ -99002,11 +98999,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T10:10:27.265Z",
+    "saved_at": "2026-10-21T10:35:44.767Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792577373394,
-    "age": 53871
+    "scanRev": 1792577731298,
+    "age": 1213469
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

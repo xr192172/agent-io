@@ -3684,17 +3684,14 @@
           "id": "file_src_application_design_dsl_ops_op_data_spec_ts",
           "summary": "【L1 待建构】核心层 · src/application/design/dsl_ops — 2 个 API（导入自 4 个模块）（src/application/design/dsl_ops/op_data_spec.ts） ← 节点 file_src_application_design_dsl_ops_op_data_spec_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_op_data_spec_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "释放 file_src_application_design_dsl_ops_op_data_spec_ts：本轮活已由子代理完成，build + verify 已验收通过",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-21T02:42:49.263Z"
+          "owner": "subagent:claimreadset",
+          "claimed_at": "2026-10-21T10:35:49.623Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_dsl_ops_status_tools_ts",
@@ -28037,7 +28034,7 @@
         ],
         "lines": 495,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_dsl_ops_status_tools_ts",
@@ -28414,10 +28411,10 @@
   "annotations": [],
   "_dsl_rev": 150,
   "_sync": {
-    "saved_at": "2026-10-21T03:37:01.654Z",
+    "saved_at": "2026-10-21T10:35:49.629Z",
     "source": "design_sheet",
     "feature": "design-canvas",
-    "scanRev": 1792552014434,
-    "age": 1807220
+    "scanRev": 1792577731298,
+    "age": 1218331
   }
 }

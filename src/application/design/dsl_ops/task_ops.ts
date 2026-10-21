@@ -67,6 +67,7 @@ import {
   type TaskDiscussion,
   type TaskEvidenceFingerprint,
   type TaskHistoryEntry,
+  type TaskReadSet,
   type TaskSpec,
   type TaskState,
 } from '../../../domain/task_schema.js';
@@ -78,6 +79,19 @@ import { contentHash } from '../../../infrastructure/index/symbols.js';
 //   ★ 也读**同一个**严格开关（`actorStrictMode`），不自己再读一次 env。
 import { admitActor, actorStrictMode, sameActor } from '../../../domain/actor_spec.js';
 import { updateStatus } from './status_tools.js';
+// ★★★ 2026-10-21（并发控制·读集比对）：claim 时把「这张卡要碰什么」与其他活跃卡比交 —— **相交即拒领**。
+//   ★ 判据/取舍（含“为什么不用 imports 兜底”的实测读数）全在 `application/claim_conflict.ts` 文件头。
+//   ★ 与写前的 `assumption_check`（`application/read_set.ts`，**只报**）**不是一套**：两个时机、两种强度。
+import {
+  claimConflictLine,
+  claimConflictMessage,
+  collectActiveClaims,
+  computeClaimReadSet,
+  detectClaimConflicts,
+  parseDeclaredReadSet,
+  type ClaimConflictReport,
+  type DeclaredReadSet,
+} from '../../claim_conflict.js';
 
 /** 本文件接受的 op（**结构类型**，不 import `update_feature` —— 那是反向依赖，会成环）。 */
 export interface TaskOpRequest {
@@ -105,6 +119,14 @@ export interface TaskOpInput {
   evidence?: ProgressEvidence;
   /** 发起者身份（写进 `released_by` / 回执；★ 工具不伪造） */
   agent?: string;
+  /**
+   * ★★★ 2026-10-21（并发控制·读集比对）：claim 时**显式声明**「我要碰这些符号/文件」（`data.read_set`）。
+   *
+   * 这是读集的**第一判据** —— 最准，因为「这张卡要做什么」只存在于领卡人的意图里；
+   * 缺省 ⇒ 从卡上判据点名的符号 + 节点自己的文件兜底（见 `claim_conflict.ts` 文件头）。
+   * ★ 形状校验唯一住处 = `claim_conflict.ts#parseDeclaredReadSet`（本接口只声明类型）。
+   */
+  read_set?: DeclaredReadSet;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -751,6 +773,25 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     );
   }
   const { dsl, card } = loadTask(feature, node_id);
+  // ★★★ 2026-10-21：`state=claimed` 单独立一条报文（默认的“没有 claimed→claimed 迁移”不指路）。
+  //   ★ 判据：**重复 claim 不幂等**。claim 是一次**事件**（写 `claimed_at`）—— 放过重领就等于
+  //     悄悄**重置租约**：TTL 回收再也看不见“这个人其实已经停了”，`releaseIfExpired` 变成装饰。
+  //   ★ 要换读集（这一轮要碰的东西变了）⇒ 先 `release` 再 `claim`：读集**覆盖**重算（不是追加）。
+  if (card.state === 'claimed') {
+    const alreadyMine = !!card.owner && sameActor(card.owner, owner);
+    throw new Error(
+      `claim 被拒（这张卡**已经在办**）：节点 "${node_id}" 的 state=claimed，` +
+        `owner=${card.owner ?? '（空）'}，claimed_at=${card.claimed_at ?? '（无）'}。\n` +
+        (alreadyMine
+          ? '★ 它**已经在你自己手上** —— 重复 claim **不幂等**：放过它就等于**重置租约**' +
+            '（`claimed_at` 会被刷新，TTL 回收再也看不见真正的停工）。\n' +
+            '★ 怎么办：① 直接干活；② 这一轮**要碰的东西变了**（读集要换）⇒ 先 `release` 再 `claim`，' +
+            '读集会被**重算并覆盖**（不是追加）。\n'
+          : '★ 这是**别人的在办活**（A7：卡不是你的）⇒ 只能等它 `release` / `complete`；' +
+            '抢领会覆盖对方的工作。\n') +
+        '★ 另：`claimed → claimed` 本来就不在迁移表里（唯一住处 `domain/task_machine.ts#TRANSITIONS`）。',
+    );
+  }
   assertTransition(card.state, 'claimed', 'claim');
 
   // ★★ 领取**意图**（2026-10-20）：缺省 `work` ⇒ **老调用方的行为逐字不变**。
@@ -851,12 +892,57 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     );
   }
 
+  // ── ★★★ 读集比对（2026-10-21 · 并发控制）：**claim 时**现算 + 与其他活跃卡对照，相交即**拒领** ──
+  //
+  // 判据（唯一住处 = `application/claim_conflict.ts` 文件头）：
+  //   · 读集怎么算：`data.read_set` 显式声明（最准）→ 卡上判据点名的符号 → 节点自己的文件（兜底）；
+  //   · 与谁比：**同一 `source_root`** 的所有 feature 里 `state=claimed` 的卡（排除自己）；
+  //     符号交集或文件交集 ⇒ 拒。
+  // ★ 为什么拦在这里是安全的：**还没开工**，拒了没有任何工作被丢掉 —— 这正是它与写前
+  //   `assumption_check`（**只报**）强度不同的原因（成本不对称，不是风格差异）。
+  // ★ 每一次 claim 都**重算一遍**并**覆盖**落卡（用户 2026-10-21：「读集只取最后一次」）。
+  const sourceRoot = String(dsl.source_root ?? '').trim();
+  let readSet: TaskReadSet | undefined;
+  let claimConflict: ClaimConflictReport | undefined;
+  let conflictNote: string;
+  if (!sourceRoot) {
+    conflictNote =
+      '★ 该 feature 没有 `source_root` ⇒ 读集算不出来，也**没有可对照的项目** ⇒ 本次**不做**读集冲突检测' +
+      '（这是“没比”，不是“不冲突”）。';
+  } else {
+    const computed = computeClaimReadSet({
+      root: sourceRoot,
+      cardId: node_id,
+      card,
+      node: (dsl.geometry?.nodes ?? []).find((n) => n.id === node_id),
+      declared: input.read_set,
+    });
+    readSet = computed.readSet;
+    const active = collectActiveClaims(sourceRoot, { feature, id: node_id });
+    claimConflict = detectClaimConflicts(readSet, active.claims, active);
+    if (claimConflict.conflicts.length) {
+      // ★ **强制**，不降级成“提醒 + 放行”：那等于把并发控制关掉。
+      throw new Error(claimConflictMessage(claimConflict, readSet));
+    }
+    conflictNote = claimConflictLine(claimConflict, readSet);
+  }
+
+  // ★ 首行自足：`edit_dsl` 的批量回执**只印 `message` 的第一行**（`update_feature.ts`）⇒
+  //   “比了几张卡 / 读集多大 / 有没有没比的卡”必须挤进首行，否则读回执的人看不见（= 假绿灯）。
+  const readHead = readSet
+    ? `；读集 ${readSet.symbols.length} 符号 / ${readSet.files.length} 文件` +
+      `（依据 ${readSet.basis.join('+') || '空'}），与 ${claimConflict?.checked ?? 0} 张活跃卡对照**无相交**` +
+      (claimConflict?.unchecked.length ? `（另 ${claimConflict.unchecked.length} 张活跃卡没读集、这次没比）` : '')
+    : '；★ 读集**未算**（该 feature 没有 source_root）';
+
   const claimedAt = new Date().toISOString();
   writeTask(feature, node_id, {
     ...card,
     state: 'claimed',
     owner,
     claimed_at: claimedAt,
+    // ★ 读集**覆盖**写回（不是 append）；`undefined` ⇒ 不留下一次 claim 的幽灵占位
+    read_set: readSet,
     // ★★ 2026-10-20：`done` 卡的**新账另起** —— 只写这一轮的「从谁手里、为什么开」；
     //   上一轮的 `evidence[]` / `summary` / `expectations` 由 `...card` **逐条原样带过来**（不重建卡）。
     ...(reopening
@@ -879,7 +965,7 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       //   调用方没被告知"（正是本仓禁的静默兜底）。
       `已领取任务 "${node_id}"（owner=${owner}` +
       (ownerAdm.normalizedFrom ? `，★ 已归一化自 \`${ownerAdm.normalizedFrom}\`` : '') +
-      `，claimed_at=${claimedAt}）—— ${levelNote}` +
+      `，claimed_at=${claimedAt}）—— ${levelNote}${readHead}` +
       // ★ 2026-10-21：归一化**必须留痕**（不许悄悄改身份）—— 只有真改写时才多这一行。
       (ownerAdm.normalizedFrom
         ? `\n★ \`data.owner\` 已归一化：\`${ownerAdm.normalizedFrom}\` → \`${owner}\`（缺类前缀 ⇒ 按「常驻 agent 默认」补 \`agent:\`；` +
@@ -893,7 +979,9 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
         : level === 'L1'
           ? `\n★ L1 收口判据 = **DSL 建构完整**（给该节点写 decision.summary + 至少一条 phase=post 的 expectation），` +
             `\`complete\` 也是用这同一把尺判。`
-          : ''),
+          : '') +
+      // ★★ 读集读数**必须在首行之后**出现：它回答「这次有没有真的比过」（比了 0 张 ≠ 谁都不冲突）
+      `\n${conflictNote}`,
     feature,
     data: {
       node_id,
@@ -908,6 +996,24 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
         ? { reopened: true, reopened_from: card.owner ?? null, reopened_at: claimedAt, reopen_reason: reopenReason }
         : {}),
       progress: progressOf({ state: 'claimed' }),
+      // ★★★ 2026-10-21（并发控制·读集比对）：**独立字段**，别与写前的 `assumption_check` 混。
+      //   `assumption_check` = 「我读的东西变了吗」（写前，只报）；`claim_conflict` = 「我要碰的东西被占了吗」（领卡，阻塞）。
+      claim_conflict: {
+        checked: claimConflict?.checked ?? 0,
+        unchecked: claimConflict?.unchecked ?? [],
+        features: claimConflict?.features ?? [],
+        ...(readSet
+          ? {
+              read_set: {
+                symbols: readSet.symbols.length,
+                files: readSet.files.length,
+                basis: readSet.basis,
+                computed_at: readSet.computed_at,
+                ...(readSet.note ? { note: readSet.note } : {}),
+              },
+            }
+          : { skipped: 'no-source-root' }),
+      },
     },
   };
 }
@@ -945,7 +1051,13 @@ export async function releaseTask(input: TaskOpInput): Promise<EditResult> {
   return {
     message:
       `已释放任务 "${node_id}"（candidate；by=${by ?? '未署名'}，reason=${reason}）。` +
-      `\n★ 进度派生：task.state=candidate ⇒ progress=draft。`,
+      `\n★ 进度派生：task.state=candidate ⇒ progress=draft。` +
+      // ★ 2026-10-21（读集比对）：**不清**读集（它仍是“最后一次领的时候占过什么”这个事实），
+      //   但比对只读 `state==='claimed'` 的卡 ⇒ 释放即**不再占位**（下一次 claim 重算并覆盖）。
+      (card.read_set
+        ? `\n★ 读集（${card.read_set.symbols.length} 符号 / ${card.read_set.files.length} 文件，算于 ${card.read_set.computed_at}）**留在卡上**，` +
+          `但 state=candidate ⇒ **不再占位**；下一次 claim 会重算并**覆盖**它。`
+        : ''),
     feature,
     data: { node_id, state: 'candidate' as TaskState, released_by: by, released_at: releasedAt, progress: progressOf({ state: 'candidate' }) },
   };
@@ -1252,6 +1364,9 @@ export async function applyTaskOp(
     intent: typeof data.intent === 'string' ? (data.intent as ClaimIntent) : undefined,
     reason: typeof data.reason === 'string' ? data.reason : undefined,
     evidence: data.evidence as ProgressEvidence | undefined,
+    // ★★★ 2026-10-21（读集比对）：claim 的读集声明 —— 形状校验（唯一住处）在 `parseDeclaredReadSet`，
+    //   不合规就**当场抛**（不静默忽略：静默忽略 = 你以为声明生效了，其实闸用的是兜底）。
+    read_set: parseDeclaredReadSet(data.read_set),
     agent,
   };
   switch (op.op) {

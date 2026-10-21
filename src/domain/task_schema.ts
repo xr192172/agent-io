@@ -292,6 +292,77 @@ export interface TaskHistoryEntry {
   by?: string;
 }
 
+/**
+ * ★★★ **卡上的读集**（2026-10-21 · 并发控制·读集比对）—— 这张卡**这一次**要碰什么。
+ *
+ * ## 它回答的问题（与 `assumption_check` 是**两个**问题，别合并）
+ * | 时机 | 问题 | 强度 | 字段 |
+ * |---|---|---|---|
+ * | `claim`（还没开工） | **我要碰的东西，是不是已经被别的卡占了？** | **阻塞**（拒领） | `read_set` + 回执 `claim_conflict` |
+ * | 写前（已经干了一半） | 我**读**的东西，是不是在这之后变了？ | **只报**（照常落盘） | `read_set.ts` 的 `assumption_check` |
+ *
+ * ★ 两种强度不是风格差异，是**成本不对称**：领卡时拒了没损失（换个卡/等一等）；写前拦住会丢掉
+ *   已经做完的那一半。⇒ 判据各住一处，**不许**把两者合成一个“冲突检查”。
+ *
+ * ## ★★★ 为什么【覆盖】，不是压栈（这一点写在这里，因为它约束的是存储语义）
+ * 用户 2026-10-21 原话：「**读集只取最后一次**，就像我们的角色卡的 history 一样」——
+ * 而 `TaskSpec.history` 是**压栈**（那是“同一句话被改过几次”的账）。两者的差别不是笔误：
+ *   · 读集回答的是「**这张卡现在要碰什么**」⇒ 天然是**最新值**；
+ *   · 若 append，它回答的就变成「**这张卡历史上碰过什么**」⇒ 两件不同的事被塞进同一个字段：
+ *     ① 一张改过三轮的卡会永远占着第一轮碰过、后来根本不再碰的符号（幽灵占位 ⇒ 误拒别人）；
+ *     ② 体积随领取次数单调增长（下面有读数）；③ 释放再领（`release → claim`）会变成 `A∪B`，
+ *     而它的语义应当是「**这一轮**占的就是 B」。
+ *   ⇒ 唯一写时机 = **claim**；写法 = **整体替换**。`release` **不清**它（它仍是“最后一次领的时候
+ *     占过什么”这个事实），但比对**只读 `state==='claimed'`** 的卡 ⇒ 释放即不再占位。
+ *
+ * ## 为什么允许把指纹落在卡上（与文件头铁律 1 的边界）
+ * 铁律 1 禁的是**能由 `cache.db` 现算的当前值**（`line` / `loc` / 当前 `hash`）。
+ * 这里落的 `fp` / `content_hash` 是**那一刻**的样子 —— 索引只存“此刻”，**永远算不出“当时”**
+ * ⇒ 它和 `TaskEvidenceRecord.fingerprint` 同族：是**事件**（“领这张卡时我认定的是这一版”），不是事实的副本。
+ * ★ 读它的地方：冲突报文（两边同一符号但指纹不同 ⇒ 说明中间已经有改动落地了）。
+ *
+ * ## ★ 体积（实测读数，见本笔回执）
+ * 一条符号 ≈ 80~110 字节（全量 40 位 sha1）；一张 23 条判据的卡 ≈ 1.8 KB。
+ * ⇒ 上限 `MAX_CARD_SYMBOLS=200` / `MAX_CARD_FILES=100`（`application/claim_conflict.ts`）：
+ *   超限**拒 claim 并让人缩小声明或拆卡**，不静默截断 —— 截断的读集 = 漏掉的冲突。
+ */
+export interface TaskReadSetSymbol {
+  /** 仓库相对 posix 路径（索引键口径） */
+  file: string;
+  /** `qualified_name` 优先；调用方显式声明时也可给短名 */
+  name: string;
+  /** `sym_hash`（全量 sha1）；`''` = 此刻还不存在（这张卡要**新建**它） */
+  fp: string;
+}
+
+/** 读集里的一个文件（`content_hash`：`''` = 此刻还不存在） */
+export interface TaskReadSetFile {
+  path: string;
+  /** `contentHash`（全量 sha1）；`''` = 文件此刻还不存在 */
+  content_hash: string;
+}
+
+/**
+ * 读集的**判据出处**（★ 落盘，别让读端猜“这个读集可信吗”）。
+ * · `declared`   = 调用方在 claim 时显式声明的（最准：它就是要干活的那个人）；
+ * · `expectations` = 从卡上判据里点名的 `symbol-exists` / `signature-matches` / `call-exists`（机械可算）；
+ * · `node-path` = 节点自己的文件（最粗的兜底，只有到文件级）。
+ * ★ 优先序 = 上面这个顺序；可以**同时存在**（显式声明为主，其余补齐）。
+ */
+export type TaskReadSetBasis = 'declared' | 'expectations' | 'node-path';
+
+/** 一张卡**上一次 claim** 时算出的读集（形状与语义见 `TaskReadSetSymbol` 上方那段） */
+export interface TaskReadSet {
+  symbols: TaskReadSetSymbol[];
+  files: TaskReadSetFile[];
+  /** 算的时刻（ISO 8601） */
+  computed_at: string;
+  /** 判据出处（见 {@link TaskReadSetBasis}）—— 读端据此判断这份占位有多可信 */
+  basis: TaskReadSetBasis[];
+  /** 退化/截断说明（没有索引、符号此刻不存在、L1 卡且节点没有路径 …）—— **不许静默** */
+  note?: string;
+}
+
 export interface TaskSpec {
   /** 任务 id（= 它挂的那个节点的 id） */
   id: string;
@@ -409,6 +480,17 @@ export interface TaskSpec {
   evidence?: TaskEvidenceRecord[];
   /** 讨论登记格（默认只渲染 `micro`） */
   discussion?: TaskDiscussion;
+  /**
+   * ★★★ **上一次 `claim` 时算出的读集**（形状/语义/为什么不累积见 {@link TaskReadSet} 上方那段）。
+   *
+   * · 唯一写时机 = `claim`（**整体覆盖**）⇒ 它回答「这张卡**这一轮**要碰什么」；
+   * · 读它判定占位的场合只有一个：**别的卡 claim 时**拿它与自己的读集比交 —— 相交即**拒领**；
+   * · `release` **不清**它：它仍是“最后一次领的时候占过什么”这个事实；但比对只读 `state==='claimed'`
+   *   ⇒ 释放后**不再占位**（下一次 claim 重算并覆盖）。
+   * ★ 缺省（老卡）= 没有读集 ⇒ 冲突检测把它记为“**没比**”（回执里 `claim_conflict.unchecked` 点名），
+   *   不假装它“不冲突”。
+   */
+  read_set?: TaskReadSet;
 }
 
 /**

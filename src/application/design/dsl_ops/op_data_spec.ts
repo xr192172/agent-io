@@ -260,6 +260,10 @@ export const OP_SPECS: readonly OpSpec[] = [
       '★不收 data（**唯一例外**：`state=claimed` 的卡带 `data.reason` ⇒ **原地换判据**：只换 summary+expectations，' +
       'state/owner/evidence 全保留）· ' +
       'claim:`data.owner`（L2 须可领＝cardStanding，L1 看建构缺口）· ' +
+      '★★ **`data.read_set`**（claim 可选，但**强烈建议**）：`{symbols:[{file,name}],files:[path]}` = ' +
+      '「这张卡这一轮**要碰**的符号/文件」。claim 时会**现算读集**并与其它 `state=claimed` 的卡比交，' +
+      '相交（符号或文件）⇒ **拒领**（★ 强制，不是提醒；报文点名“和哪张卡、撞在哪个符号”）· ' +
+      '不声明 ⇒ 兜底 = 卡上判据点名的符号（symbol-exists / signature-matches / call-exists）+ 节点自己的文件 · ' +
       '★ 可选 `data.intent`：`work`（缺省，来补红）/ `modify`（判据可以全过，来改文件取**写权** —— 已完成 / 已满足的文件仍要能被下一个任务承载；回执写明"本次是修改不是补红"）· ' +
       '★★ **`state=done` 的卡也能 claim**（2026-10-20）：内部 = `t_reopen` + `t_claim`（一步对外，两步对内）—— ' +
       '① `data.reason` **必填**（为什么又开）；② `intent=modify` 不判判据（取写权），`intent=work` 仍判（没红可修 ⇒ 拒）；' +
@@ -437,7 +441,12 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
   // ★★★ 2026-10-20：补 `intent`（claim 的**意图**：work=补红（缺省）/ modify=判据可全过、来改文件取写权）。
   //   ★ 为什么不是新 op：`claim` 仍是那一步状态迁移（candidate→claimed），只是**来意**多了一维 ——
   //     没有它，`satisfied` 卡永远领不到 ⇒ 写闸不认 ⇒ **文件永久只读**（结构性错误，见 task_machine.ts 文件头）。
-  task: ['owner', 'reason', 'evidence', 'intent'],
+  // ★★★ 2026-10-21（并发控制·读集比对）：补 `read_set` —— claim 时**显式声明**「我要碰这些符号/文件」。
+  //   ★ 它是读集的**第一判据**（最准：要干活的那个人说的）；缺省 ⇒ 从卡上判据点名 + 节点文件兜底。
+  //   ★ 不补会怎样：传了被「不被认的键」拒 ⇒ 调用方**没法把“我确实不碰那个符号”说清楚**
+  //     ⇒ 只剩兜底，而兜底要么粗（L1 卡只有文件级）要么空（无节点无判据）。
+  //   ★ 形状校验**唯一住处** = `application/claim_conflict.ts#parseDeclaredReadSet`（本表只声明“认这个键”）。
+  task: ['owner', 'reason', 'evidence', 'intent', 'read_set'],
   // ★★★ 2026-10-21：补 `reason` —— `todo.update` / `retire` / `delete` 三个新 op 都读它
   //   （update=为什么改 · retire=为什么作废 · delete=为什么物理删）。★ 不补 ⇒ 传了会被「不被认的键」拒。
   //   ★ `history` / `retire_reason` / `retired_at` **不在这里**：它们由写端**自己落**（append 到卡上），

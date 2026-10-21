@@ -13,6 +13,23 @@
  * ⇒ 本模块**只产出读数**，判据与 `task_gate`（A7 谁在写）**完全分开**：A7 管身份，这里管假设。
  *
  * ## ★ 读集存在进程内存里（按 project × actor 分桶）—— 理由写在 `STORE` 上
+ *
+ * ## ★★★ 两个「读集」—— **来源不同，别混**（2026-10-21 · 并发控制·读集比对）
+ * | | 本文件（回执字段 `assumption_check`） | 卡上的 `TaskSpec.read_set`（`application/claim_conflict.ts`） |
+ * |---|---|---|
+ * | 存在哪 | **进程内存**，按 (项目根, actor) 分桶 | **任务卡上**（设计 DSL 的节点），按卡存 |
+ * | 何时写 | 每次 `read` / `facts` 调用后**累加**（同 actor 同文件后者覆盖） | **每次 `claim` 重算一次、整体覆盖** |
+ * | 回答什么 | 「**我这一轮读过什么**」 | 「**这张卡这一轮要碰什么**」 |
+ * | 何时用 | **写前**：我读过的东西变了吗 ⇒ **只报**（不拦） | **领卡时**：我要碰的东西被别人占了吗 ⇒ **阻塞**（拒领） |
+ * | 拿谁和谁比 | 本次**写集** ∩ 本项目**所有人**的读集 | 本卡读集 ∩ 其他 `state==='claimed'` 卡的读集 |
+ *
+ * ⇒ ★ **写前的读集 = 内存里这一轮的；claim 的读集 = 卡上存的那一份。**
+ *   为什么 claim 那份**不能**用本文件的分桶：CLI 每次调用都是**独立进程**（见下面「边界」），
+ *   领卡的进程与随后写码的进程根本不是同一个 ⇒ 内存里那份到了写手那边**是空的**。
+ *   而“这张卡占了什么”必须让**别的进程**（别人的 claim）看见 ⇒ 只能落盘在卡上。
+ * ⇒ 所以本文件的分桶**原样保留**：它在写前那个时机仍然唯一能回答「我这一轮读过什么」。
+ *   ★ 两者**不共用一个字段**：`assumption_check`（假设过期）vs `claim_conflict`（领卡冲突），
+ *     两个判据、两个字段、两种强度（理由 = 成本不对称：领卡时拒了没损失，写前拦住会丢已经做完的一半）。
  * ## ★ 粒度
  * · 符号级：`sym_hash`（= `symbolSpanHash`，去注释/空白后的 sha1）—— 与索引的符号 diff **同一个函数**，
  *   所以"改注释/格式化"不会虚报；
@@ -166,7 +183,13 @@ function pruneBucket(bucket: Map<string, ReadSetEntry>): void {
 // 指纹读取：**一个文件的符号 + fp**（优先索引，索引不同源就现解析）
 // ─────────────────────────────────────────────────────────────
 
-interface FileFacts {
+/**
+ * 一个文件的「符号 + 指纹」读数。
+ * ★ 2026-10-21 导出：`application/claim_conflict.ts`（claim 时的读集）要用**同一把尺**算符号指纹 ——
+ *   在那边另写一套 `symbolSpanHash` 就是本仓头号病（同一判据两处），所以这里只是**开放读取**，
+ *   不新增语义。
+ */
+export interface FileFacts {
   file: string;
   /** `contentHash(当前源码)`；文件不存在时为空串 */
   file_fp: string;
@@ -177,7 +200,8 @@ interface FileFacts {
 }
 
 /** 同一文件在**一次** record/check 里只读一次（跨调用不缓存：缓存 = 判据读到旧世界） */
-type FactsCache = Map<string, FileFacts>;
+/** 一次 record/check 内的文件事实缓存（键 = 仓库相对路径）。★ 导出给 `claim_conflict.ts` 复用同一次解析。 */
+export type FactsCache = Map<string, FileFacts>;
 
 function extOf(rel: string): string {
   return path.extname(rel).slice(1).toLowerCase();
@@ -220,7 +244,7 @@ function factsFromDisk(root: string, rel: string, content: string): FileFacts {
  *   绝不把旧索引的 fp 当成"读者看到的那一版"（那会制造假 stale）。
  * ★ 没有任何索引也**不建**（`projectCacheDbPath` 存在性先判 ⇒ 不给只读路径造库副作用）。
  */
-function loadFileFacts(root: string, rel: string, cache: FactsCache): FileFacts {
+export function loadFileFacts(root: string, rel: string, cache: FactsCache): FileFacts {
   const hit = cache.get(rel);
   if (hit) return hit;
   const abs = path.join(root, ...rel.split('/'));
