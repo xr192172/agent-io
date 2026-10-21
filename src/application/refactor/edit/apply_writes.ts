@@ -32,6 +32,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { writeSourceFiles, type WriteThroughOutcome } from '../../write_gate.js';
+// ★ 2026-10-21（读集比对）：假设检定读数（结构化字段，与 `task_gate` 分开）
+import type { AssumptionCheck } from '../../read_set.js';
 // ★ 2026-10-20：闸的读数**唯一带出口**（`writeSourceFiles` 把 `note` 逐字放在 `report.task_gate` 里，别在这里重新拼豁免文案）
 import { attachGateNote } from '../gate_note.js';
 import { toIndexKey } from '../../../infrastructure/index/symbols.js';
@@ -63,6 +65,8 @@ export interface WriteReceipt {
    * ★ `dryRun` / 根外拒写 / 无可写项：闸**压根没跑** ⇒ 不给这个字段（不凭空造一句）。
    */
   task_gate?: string;
+  /** ★ 2026-10-21（读集比对）：写前假设检定读数（`stale` 非空也**照常落盘**）—— 来源 `SourceWriteReport.assumption_check` */
+  assumption_check?: AssumptionCheck;
 }
 
 /**
@@ -127,6 +131,7 @@ async function applyWritesCore(
         report.index?.mode === 'synced'
           ? written.map((rel) => ({ file: rel, updated: updatedByRel.get(rel) === true }))
           : [],
+      ...(report.assumption_check ? { assumption_check: report.assumption_check } : {}),
     },
     // ★ 闸的读数：`writeSourceFiles` 已经把 `note`（含豁免点名）放在这里了，本适配层只负责**带出去**。
     report.task_gate,

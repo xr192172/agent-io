@@ -50,6 +50,9 @@ import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/text/line_utils.js';
 import { snapshotBeforeWrite } from '../snapshot/file_snapshot.js';
 import { assertSourceWriteRegistered, reopenAndResolveAfterWrite, reopenNote, assertSourceWriteRegisteredFor, resolveActor, exemptionLines, type GateExemption } from '../../write_gate.js';
+// ★★★ 2026-10-21（并发控制·读集比对）：回执里的**假设检定**（与 `task_gate` 两件事）。
+//   ★ 判定在写闸（`write_gate` 是唯一判据处），这里只**带出**读数 + 写后刷新写者自己的基线。
+import { assumptionLines, refreshAfterOwnWrite, type AssumptionCheck } from '../../read_set.js';
 import { toIndexKey } from '../../../infrastructure/index/symbols.js';
 import { locateReplaceText, realignNewTextTo, FUZZY_LEVEL_LABEL } from '../../../infrastructure/parse/fuzzy_match.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
@@ -391,6 +394,12 @@ export interface EditReceipt {
    *   ⇒ 而“豁免必须可查，不许静默”正靠这一行落地（`write_gate.ts#exemptionLines`）。
    */
   task_gate?: string;
+  /**
+   * ★★★ 2026-10-21（并发控制·读集比对）：**写前假设检定** —— 「我/别人读过的符号，现在是哪一版」。
+   * ★ 与 `task_gate` **两个字段、两条判据**：`task_gate` 管身份（A7），本字段管假设是否过期。
+   * ★ **不阻塞**：`stale` 非空也照常落盘（只报，不拦）。人读侧见消息末尾的「★ 假设过期」段。
+   */
+  assumption_check?: AssumptionCheck;
 }
 
 /** ★ P-B：`replace_text` 的**纯规划结果**（不写盘、不碰索引）—— 单文件路径与 targets[] 批量共用同一份实现。
@@ -490,6 +499,8 @@ export async function planReplaceText(
 interface GateReceipt {
   note?: string;
   exempted?: GateExemption[];
+  /** ★ 2026-10-21：假设检定读数（**与 `note` 分开**；`stale` 非空也照样落盘） */
+  assumption?: AssumptionCheck;
 }
 
 async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise<{ message: string; data?: unknown }> {
@@ -530,10 +541,19 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     // ★★★ 2026-10-20（A7 闭合）：`actor` **显式入参** —— 之前这里写的是 `resolveActor()`（无参）
     //   ⇒ 只可能读到 env，而生产面（stdio MCP）里 env 是空的 ⇒ 闸永远只能"提醒 + 放行"。
     //   （这就是"判据在、代码在、入口没接"那一类的具体形状：一个空括号。）
-    const g = assertSourceWriteRegisteredFor(projectRoot, [relPath], resolveActor(args.actor), args.authorize);
+    // ★★★ 2026-10-21（读集比对）：**把"我要改哪个符号"交给闸** —— 只有 replace / delete 会动符号本体
+    //   （insert 是加新符号、replace_text 是文本级 ⇒ 都退到文件粒度；**粒度由事实决定，不假装**）。
+    const g = assertSourceWriteRegisteredFor(
+      projectRoot,
+      [relPath],
+      resolveActor(args.actor),
+      args.authorize,
+      op === 'replace' || op === 'delete' ? [{ file: relPath, symbol: args.symbol! }] : undefined,
+    );
     if (gateOut) {
       gateOut.note = g.note;
       gateOut.exempted = g.exempted;
+      gateOut.assumption = g.assumption_check;
     }
     snapshotBeforeWrite(projectRoot, `edit_code:${op}:${relPath}`, [relPath]);
   }
@@ -1015,6 +1035,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   /** ★ 2026-10-20：闸的放行读数（干跑 / 被原子性拦下时没有 —— 那时闸根本没跑） */
   let gateNote: string | undefined;
   let gateExempted: GateExemption[] = [];
+  /** ★ 2026-10-21：假设检定读数（批量是 `replace_text` ⇒ **文件级**，`symbol:null`） */
+  let gateAssumption: AssumptionCheck | undefined;
   if (!dry && !blockedByAtomic) {
     // ★★★ T328 步 6：**未登记不许落盘** —— 整批先过一次闸（一次判定，失败 ⇒ 一个文件都不写）。
     // ★★ 2026-10-20：返回值**不许再丢**（豁免要在回执里点名）。
@@ -1028,6 +1050,7 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       : null;
     gateNote = gate?.note;
     gateExempted = gate?.exempted ?? [];
+    gateAssumption = gate?.assumption_check;
     for (const absPath of [...new Set(plans.filter((p) => p.ok && !p.noop).map((p) => p.absPath))]) {
       const rel = path.relative(projectRoot, absPath).split(path.sep).join('/');
       // 逐文件一份快照（**不是**"一份含全部文件"）。粒度这条**证不出必要性**（见文件头「落盘形态」块），
@@ -1046,6 +1069,13 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       indexStatusByFile.set(absPath, `${sync.status}${reopenNote(_rw)}`);
       writtenFiles.add(absPath);
     }
+    // ★★★ 2026-10-21（读集比对）：**写后刷新写者自己的基线**（与单文件那条同一把尺）——
+    //   否则同一 actor 第二次写同一文件，会拿"自己上一次写之前"的指纹来比 ⇒ 假 stale。
+    refreshAfterOwnWrite(
+      projectRoot,
+      resolveActor(args.actor),
+      [...writtenFiles].map((abs) => path.relative(projectRoot, abs).split(path.sep).join('/')),
+    );
   }
 
   const items: EditBatchItem[] = plans.map((p) => ({
@@ -1097,6 +1127,9 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   if (previews.length > 0) lines.push('', ...previews);
   // ★★★ 2026-10-20：批量也要点名豁免（与单文件那条**同一句话**，来自 `exemptionLines`）
   if (gateExempted.length) lines.push('', exemptionLines(gateExempted));
+  // ★ 2026-10-21：假设过期只在非空时加行（空不刷屏）；机器读数在 `data.assumption_check`。
+  const assumptionText = assumptionLines(gateAssumption);
+  if (assumptionText.length) lines.push('', ...assumptionText);
 
   return {
     message: lines.join('\n'),
@@ -1112,6 +1145,7 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       failed,
       atomic,
       ...(gateNote ? { task_gate: gateNote } : {}),
+      ...(gateAssumption ? { assumption_check: gateAssumption } : {}),
     },
   };
 }
@@ -1135,12 +1169,19 @@ async function editCodeCore(args: EditCodeArgs): Promise<{ message: string; data
   // ★★★ 2026-10-20（`docs/certs-4-ways.md` ③）：**豁免必须点名，不许静默** ——
   //   点名写在**人读消息**里（不只埋在 `---DATA---` 里：没人会去析 JSON 看自己是不是被豁免了）。
   const exemptNote = gateOut.exempted?.length ? `\n${exemptionLines(gateOut.exempted)}` : '';
+  // ★★★ 2026-10-21（读集比对）：**写后刷新写者自己的基线** —— 否则同一 actor 第二次写会拿
+  //   "自己上一次写之前"的指纹来比 ⇒ 报一条假 stale（"每次都报警" = 没人看）。
+  //   ★ 只刷**本 actor**（别人的读集不动：他们确实需要知道这里变了）。
+  if (base.written) refreshAfterOwnWrite(path.resolve(args.project_dir), resolveActor(args.actor), [args.file]);
+  // ★ 假设过期**只在非空时**加行（空不刷屏）；机器读数恒在 `data.assumption_check`。
+  const assumptionText = assumptionLines(gateOut.assumption);
   return {
-    message: r.message + exemptNote,
+    message: r.message + exemptNote + (assumptionText.length ? `\n${assumptionText.join('\n')}` : ''),
     data: {
       ...base,
       ...((r.data as Partial<EditReceipt>) ?? {}),
       ...(gateOut.note ? { task_gate: gateOut.note } : {}),
+      ...(gateOut.assumption ? { assumption_check: gateOut.assumption } : {}),
     },
   };
 }

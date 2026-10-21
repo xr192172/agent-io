@@ -19,7 +19,12 @@ import { ensureProjectIndex, detectStaleIndex } from '../../infrastructure/index
 import { ensureStage } from '../../application/stage_registry.js';
 // ★ T190：读 infrastructure 记下的"活态 DSL 回退"事实（告警在**本层**现拼 ⇒ 不需要注入）。
 import { getLiveFallback, isLiveDslParseable } from '../../infrastructure/storage.js';
-import { hasLiveIndex } from '../../application/write_gate.js';
+import { hasLiveIndex, resolveActor } from '../../application/write_gate.js';
+// ★★★ 2026-10-21（并发控制·读集比对）：**读集记录的唯一调用点**。
+//   为什么在这一层（`invokeTool`）：它是 MCP 面与 CLI 面的**唯一入口** ⇒ 两个面自动同口径；
+//   而且『谁在读』（`actor`）只有这一层有（`read` / `facts` 的 args 里没有身份维度）。
+//   形状解析（`rel_path` / `symbols` / `start` / `end`）全在 `read_set` 里，本文件只递回执。
+import { recordReadFromInvocation } from '../../application/read_set.js';
 import { scheduleBackfill, backfillState, isBackfillRunning } from '../../infrastructure/index/index_backfill.js';
 import { unknownArgHints, renderArgHints } from '../../infrastructure/text/arg_suggest.js';
 import { collectPendingAlertText, dispatchDslEdit } from '../../application/dispatch.js';
@@ -875,6 +880,28 @@ export async function invokeTool(
   // 狗食正式统计：记录每次工具调用的成败与子动作（失败静默，不阻断主流程）
   const t0 = Date.now();
   const r = await def.handler(a);
+  // ★★★ 2026-10-21（并发控制·读集比对）：**read / facts 读完就记读集**（写前比对的另一半）。
+  //   位置：handler **之后**（拿得到产物）、任何包装/告警注入**之前**（取的是原始 `---DATA---`）。
+  //   ★ 只有成功才记（失败的回执没有"读到了什么"）；★ 非 explore_code 的工具本函数直接返回。
+  //   ★ 失败**不静默**：加一行说明（但不改变成败 —— 记读集是增强，绝不是读的前提）。
+  let readSetNote = '';
+  // ★ 只对 read / facts 解 `---DATA---`（其它 action 的产物可能很大，不白解一次 JSON）。
+  if (!r.isError && def.name === 'explore_code' && (a.action === 'read' || a.action === 'facts')) {
+    try {
+      const rec = recordReadFromInvocation({
+        tool: def.name,
+        action: typeof a.action === 'string' ? a.action : '',
+        actor: resolveActor(typeof a.actor === 'string' ? a.actor : undefined),
+        root: rootArg,
+        data: parseDataBlock(r.text),
+      });
+      if (!rec.recorded && rec.note) readSetNote = `
+★ 读集未记录：${rec.note}`;
+    } catch (e) {
+      readSetNote = `
+★ 读集未记录：${(e as Error).message}`;
+    }
+  }
   recordDogfoodUsage({
     ts: new Date().toISOString(),
     tool: def.name,
@@ -940,7 +967,8 @@ export async function invokeTool(
     firstContactNote === NO_PROJECT_ROOT_NOTE && emission.text.includes(NO_PROJECT_ROOT_NOTE)
       ? ''
       : firstContactNote;
-  return { text: withNext + argHints + emission.text + firstContactText + trustNote + alertNote + emission.block, isError: r.isError };
+  // ★ 2026-10-21：读集记录失败的那一行挂在最末（**在 `---WARNINGS---` 之前**：机器块必须留在最后）。
+  return { text: withNext + argHints + emission.text + firstContactText + trustNote + alertNote + readSetNote + emission.block, isError: r.isError };
 }
 
 /**

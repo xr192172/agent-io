@@ -19073,17 +19073,14 @@
           "id": "file_src_application_refactor_edit_apply_writes_ts",
           "summary": "【L1 待建构】核心层 · src/application/refactor/edit — 3 个 API（导入自 5 个模块）（src/application/refactor/edit/apply_writes.ts） ← 节点 file_src_application_refactor_edit_apply_writes_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_apply_writes_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "T356 已改完（writeSourceFiles 透传）",
-          "released_by": "t356-authorize",
-          "released_at": "2026-10-20T13:29:36.902Z"
+          "owner": "agent-readset",
+          "claimed_at": "2026-10-21T09:27:35.206Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_edit_edit_code_ts",
@@ -19104,17 +19101,14 @@
           "id": "file_src_application_refactor_edit_edit_code_ts",
           "summary": "【L1 待建构】核心层 · src/application/refactor/edit — 21 个 API（导入自 11 个模块）（src/application/refactor/edit/edit_code.ts） ← 节点 file_src_application_refactor_edit_edit_code_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_edit_code_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "T356 已改完（两处闸透传）",
-          "released_by": "t356-authorize",
-          "released_at": "2026-10-20T13:29:36.737Z"
+          "owner": "agent-readset",
+          "claimed_at": "2026-10-21T09:27:35.134Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_edit_remove_dead_imports_ts",
@@ -20103,9 +20097,9 @@
               "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
             }
           ],
-          "state": "candidate",
-          "owner": null,
-          "claimed_at": null,
+          "state": "claimed",
+          "owner": "agent-readset",
+          "claimed_at": "2026-10-21T09:27:35.045Z",
           "evidence": [
             {
               "kind": "attestation",
@@ -20130,10 +20124,7 @@
               "verdict": "pass"
             }
           ],
-          "reopened_at": "2026-10-20T11:15:57.812Z",
-          "release_reason": "A7 回执闭合已完成（WriteThroughOutcome.task_gate + snapshotAndRecordSelfWrite 接住闸的 note，tsc 0 error / 实测 A-E 全过）；本卡判据描述的是上一轮 actor 形参之事，不再硬 complete",
-          "released_by": "agent-a7",
-          "released_at": "2026-10-21T08:54:45.514Z"
+          "reopened_at": "2026-10-20T11:15:57.812Z"
         },
         "decision_history": [
           {
@@ -23457,7 +23448,7 @@
             "note": "file_src_application_write_gate_ts：覆盖率采集必须读设计侧 design/，否则闸看不见任何 feature"
           }
         ],
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_domain_animation_ts",
@@ -51820,16 +51811,14 @@
           "id": "file_src_presentation_mcp_server_registry_ts",
           "summary": "【L1 待建构】核心层 · src/presentation/mcp — 25 个 API（导入自 26 个模块）（src/presentation/mcp/server_registry.ts） ← 节点 file_src_presentation_mcp_server_registry_ts",
           "expectations": [],
-          "state": "void",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_registry_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "invokeTool 第三参 via + 两条狗食记录带 via 已交付；先 release 才能 void",
-          "released_by": "general-purpose-3",
-          "released_at": "2026-10-20T16:43:29.010Z"
-        }
+          "owner": "agent-readset",
+          "claimed_at": "2026-10-21T09:27:51.099Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_presentation_mcp_tool_warnings_ts",
@@ -84530,7 +84519,7 @@
         ],
         "lines": 153,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_edit_edit_code_ts",
@@ -84589,7 +84578,7 @@
         ],
         "lines": 1070,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_edit_remove_dead_imports_ts",
@@ -85854,7 +85843,7 @@
         ],
         "lines": 1210,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_domain_animation_ts",
@@ -96487,7 +96476,8 @@
           }
         ],
         "lines": 988,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_presentation_mcp_tool_warnings_ts",
@@ -99015,11 +99005,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T08:58:52.940Z",
+    "saved_at": "2026-10-21T09:27:51.131Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792573023388,
-    "age": 109552
+    "age": 1847743
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -101235,6 +101225,16 @@
     {
       "id": "todo_并发控制-闭包冲突-任务冲突按-可达闭包-算-两个任务要改的符号-其影响面-传递",
       "summary": "【并发控制·闭包冲突】任务冲突按**可达闭包**算：两个任务要改的符号，其影响面（传递闭包）如果重叠 ⇒ 串行。\n★ 这是\"比文件级准\"的判据：改 `kernel.ts` 的 `parseFileFull` 会影响所有调用方，但文件级写闸只看到\"kernel.ts 被占了\"。\n\n做法（用已有的 `edges`）：\n· 任务闭包 = 该任务 claim 的节点所含符号 + 沿 `edges(kind IN ('call','type_ref'))` 的**反向传递闭包**（谁依赖我）。\n· 重叠判据 = 两个闭包的交集非空。\n\n★ 三个必须处理的坑：\n① **`import` 边必须排除** —— 它会让全仓近乎连通（一个 util 被 import 就全相关），冲突率会爆炸。只用 `call` / `type_ref`。\n② **成本**：13k+ 边算传递闭包，每次 claim 都算不可接受 ⇒ 缓存（按 `symbols.sym_hash` 失效）。\n③ **死锁**：A 等 B、B 等 A ⇒ 必须**按任务 id 字典序**固定加锁顺序，否则会互等。\n\n★ 形态建议：**claim 时报冲突，不自动排队**。\n   理由：自动排队 = 分布式锁（要持有、要超时、要防孤儿），单机场景成本远大于收益；\n   报冲突 + 让人决定（换任务 / 等 / 显式认领冲突）已经够用，而且**不引入新的隐蔽状态**。\n★ 不许\"自动降级为并行\" —— 冲突就是冲突，静默并行比排队更坏。",
+      "expectations": [],
+      "state": "void",
+      "owner": null,
+      "retire_reason": "被\"读集比对\"取代：可达闭包成本高（13k 边每次 claim 算）且精度低（import 边会全连通），而 STORM 证明\"读集 ∩ 写集\"既便宜又可精确判定",
+      "retired_at": "2026-10-21T09:17:17.509Z",
+      "retired_by": "workbuddy"
+    },
+    {
+      "id": "todo_并发控制-读集比对-取代-可达闭包-方案-那个方案已作废-成本高-精度低-依据-",
+      "summary": "【并发控制·读集比对】取代\"可达闭包\"方案（那个方案已作废：成本高、精度低）。\n\n★ 依据（业界同题工作，已查证）：\n· **STORM**（arXiv 2605.20563《Multi-agent Collaboration with State Management》）：把问题当**状态管理**，\n  核心判据是「**agent 的推理依赖它读过的那些文件；只有这些文件没变，这次编辑才安全**」。\n  比 git-worktree 隔离 +18.7（Commit0-Lite），因为把冲突检测从**合并时**挪到了**写入时**。\n· **Aura 的 collision detection** 三层：File（噪声大）/ Symbol（真重叠）/ **Dependency（改了别人依赖的东西）**。\n  它举的例子就是本仓场景：「一个 agent 改了 `parseConfig` 签名，另一个按旧签名写了三处调用 —— git 干净合并、build 断」。\n\n★ 判据（用户 2026-10-21 定：\"不用太精确，LLM 自己会适配，减少不良后果即可\"）：\n```\n读集 R = 本会话 read / facts 过的文件 + 符号 + 它们的指纹（signature / sym_hash）\n写前比对：别人要写的符号 ∩ R ≠ ∅  ⇒ 报「你读的 X 变了（指纹 h1→h2）」，让 agent 自己重读适配\n```\n\n★ **这是\"可精确判定\"的**（比 hash 就行），而\"影响面/传递闭包\"是**不可判定的**（等价于判程序行为等价）。\n  ⇒ 用户说\"不用太精确\"，反而让我们用上了**更准**的方法：**精确的读集比对 > 近似的影响面估算**。\n\n★ 本仓的额外优势：`edges` / `identifiers` 已有 ⇒ 读集可以不止\"我读的文件\"，还能含\"我读的文件**依赖的符号**\"\n  ⇒ 这才做到 Aura 说的 Dependency 层。\n\n★ 明确**不做**的三件（照 STORM 的做法）：\n  ① 不做传递闭包（贵且不准）② 不做自动排队/分布式锁（引入隐蔽状态）③ 不在合并时补救（太晚）\n\n落地要点：\n· 读集记录挂在会话/任务上（`read` / `facts` 已经能知道读了什么 —— 现成的两个入口）\n· 写闸（`write_gate`）在落盘前比对，命中就在回执里点名\"哪条假设可能过期\"，**不阻塞**（用户要的是\"减少不良后果\"，不是\"拦住所有\"）\n· 与 A7（谁在写）是两件事：A7 管**身份**，读集管**假设是否过期**，别混进一个判据",
       "expectations": [],
       "state": "candidate",
       "owner": null

@@ -79,6 +79,11 @@ import { formatScope, parseScope, resolveScope, type Scope } from '../domain/sco
 //   「**该节点上是否有 state=claimed 的 task**」—— 任务格是唯一权威（`task_plan.task_home`），
 //   progress 对它只是派生值（`progressOf`）。
 import { progressOf, type TaskSpec } from '../domain/task_schema.js';
+// ★★★ 2026-10-21（并发控制·读集比对）：**假设检定**（「我读过的东西是不是被别人改了」）。
+//   ★ 与 A7（谁在写）**两个字段、两条判据**：A7 管身份，这一条管"假设是否过期" ⇒ 别混。
+//   ★ 这里只 import **判定内核 + 类型**：记录端在 `invokeTool`（读集从 read/facts 的产物里来），
+//     本文件**不**去读工具回执（那是 presentation 的事）。
+import { checkAssumptions, refreshAfterOwnWrite, type AssumptionCheck, type AssumptionTarget } from './read_set.js';
 
 // ─────────────────────────────────────────────────────────────
 // 索引写穿的结果类型（一个类型 + 可选字段：调用方统一渲染，不用分三种形状）
@@ -123,6 +128,8 @@ export interface WriteThroughOutcome {
    * ★ 被拒时不会走到这里（闸直接抛）。
    */
   task_gate?: string;
+  /** ★ 2026-10-21（读集比对）：假设检定读数 —— 与 `task_gate` **两件事**，见 `TaskGateOutcome.assumption_check` */
+  assumption_check?: AssumptionCheck;
 }
 
 export interface SourceWriteReport {
@@ -138,6 +145,8 @@ export interface SourceWriteReport {
    * ★ 被拒时**不会**走到这里（`assertSourceWriteRegistered` 直接抛）。
    */
   task_gate?: string;
+  /** ★ 2026-10-21（读集比对）：假设检定读数（与 `task_gate` 分开；`stale` 非空也**照常落盘**） */
+  assumption_check?: AssumptionCheck;
 }
 
 const EMPTY_CROSS = { total: 0, resolved: 0, external: 0, failed: 0 };
@@ -537,6 +546,17 @@ export interface TaskGateOutcome {
    * ★ 空数组 = 本次没有任何豁免（不是“没算”——没算就跑不到这里）。
    */
   exempted: GateExemption[];
+  /**
+   * ★★★ 2026-10-21（并发控制·读集比对）：**假设检定** —— 「本次要写的符号，是不是已经和某人的读集不一样了」。
+   *
+   * ★ **独立字段，别混进 `task_gate`**：`task_gate` 回答「这次写有没有挂到任务上 / 卡是不是你的」（A7 身份），
+   *   本字段回答「你/别人**读到的那个版本**还是不是现在这一版」（假设是否过期）。
+   *   混进一个判据 = 判据分叉（本仓头号病）。
+   * ★ **不阻塞**：`stale` 非空也照常落盘（用户 2026-10-21：「只报，不拦」）。
+   * ★ 恒有值（`checked:0` 也是读数：读集里没有与本次写集相交的东西）；唯一例外是检定自身抛错，
+   *   那时 `error` 字段如实说明（**不是**"没查"）。
+   */
+  assumption_check?: AssumptionCheck;
 }
 
 /** 任务闸放行的依据分类（★ 唯一取值处；`applicable:false` 只许前两格） */
@@ -1007,16 +1027,29 @@ function evaluateRunAuthorize(args: {
  * ★★★ T356：`authorize`（按 run 授权）也走这一个入口 —— 第 4 个形参。
  *   ★ 为什么一起放这里：**判据只许一处**。若另开一个 `assertSourceWriteRegisteredByScope()`，
  *     那两条路迟早会对同一批文件给出两个答案（本仓头号病）。
+ * ★★★ 2026-10-21（读集比对）：第 5 个形参 `symbols` = 本次要写的**符号**（可选）。
+ *   给了 ⇒ 假设检定到符号级；不给 ⇒ 退到文件级（`replace_text` 这类文本级写只能如此）。
  */
 export function assertSourceWriteRegisteredFor(
   projectRoot: string,
   files: readonly string[],
   actor?: WriteActor | null,
   authorize?: string | null,
+  symbols?: readonly AssumptionTarget[],
 ): TaskGateOutcome {
-  return assertSourceWriteRegistered(projectRoot, files, { actor: resolveActor(actor), authorize });
+  return assertSourceWriteRegistered(projectRoot, files, { actor: resolveActor(actor), authorize, symbols });
 }
 
+/**
+ * ★★★ **写闸的唯一入口**（判据仍住下面那个 `evaluateTaskGate`）。
+ *
+ * 为什么要在外面包一层：任务闸有 **6 个 return + 4 个 throw**，逐个 return 去挂 `assumption_check`
+ * 迟早漏一个（本仓已发生过"算出来了但回执里丢掉"：A7 的 `task_gate` 就是这样丢了两轮）。
+ * ⇒ **先算、后合并**：检定的读数**无条件**挂到任何一条放行回执上；被拒（throw）时本来就没落盘，
+ *   也就没有"基于旧假设继续写"的风险（拒绝信息里不需要这一段）。
+ *
+ * ★ 检定**绝不阻塞**：`checkAssumptions` 自己吞掉内部异常并回 `error`（写进读数，不写进判据）。
+ */
 export function assertSourceWriteRegistered(
   projectRoot: string,
   files: readonly string[],
@@ -1024,8 +1057,29 @@ export function assertSourceWriteRegistered(
    * ★★★ T356：`authorize` = **按 run 授权**（一个 scope 一次授权一批文件）——
    * 值 = `domain/scope.ts` 的**现成文法**（`files:` / `nodes:` / `subtree:` / `layer:` / `swimlane:` / `arch_layer:`）。
    * ★ 它**只影响本次调用**：不写库、不新增路径事实（理由见 `evaluateRunAuthorize` 的注释）。
+   * ★ 2026-10-21：`symbols` = 本次要写的符号（假设检定的符号级粒度；不给 ⇒ 文件级）。
    */
-  opts?: { actor?: WriteActor | null; authorize?: string | null },
+  opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[] },
+): TaskGateOutcome {
+  const out = evaluateTaskGate(projectRoot, files, opts);
+  let ac: AssumptionCheck;
+  try {
+    ac = checkAssumptions({
+      projectRoot,
+      files,
+      targets: opts?.symbols,
+    });
+  } catch (e) {
+    // ★ 检定是增强，不许把写入拖下水；但也**不许静默** ⇒ 读数里带 error。
+    ac = { checked: 0, stale: [], readers: 0, error: (e as Error).message };
+  }
+  return { ...out, assumption_check: ac };
+}
+
+function evaluateTaskGate(
+  projectRoot: string,
+  files: readonly string[],
+  opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[] },
 ): TaskGateOutcome {
   const root = path.resolve(projectRoot);
   const rels = [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
@@ -1553,6 +1607,12 @@ export async function writeSourceFiles<T>(
      *   但走 `writeSourceFiles` 的那几条全都不认** = 第三套口径（本仓头号病）。
      */
     authorize?: string | null;
+    /**
+     * ★ 2026-10-21（读集比对）：本次要写的**符号**（`{file, symbol}`）—— 交给闸做符号级假设检定。
+     * ★ 不给 ⇒ 文件级（`rename_*` 这类整文件改写本来就自带符号表，但逐符号列举成本高；
+     *   先按文件粒度报，**不假装**是符号级）。
+     */
+    symbols?: readonly AssumptionTarget[];
   } = {},
 ): Promise<{ value: T; report: SourceWriteReport }> {
   const root = path.resolve(projectRoot);
@@ -1561,7 +1621,11 @@ export async function writeSourceFiles<T>(
 
   // ★★★ T328 步 6：**未登记不许落盘** —— 闸在快照/真写**之前**（拒绝就是拒绝，绝不偷偷写一半）。
   //   ★ 它抛 ⇒ 本次一个字节都不落盘（`mutate` 不会被调用），调用方按普通错误上抛即可。
-  const taskGate = assertSourceWriteRegistered(root, files, { actor: resolveActor(opts.actor), authorize: opts.authorize });
+  const taskGate = assertSourceWriteRegistered(root, files, {
+    actor: resolveActor(opts.actor),
+    authorize: opts.authorize,
+    symbols: opts.symbols,
+  });
 
   // ① 写前快照（失败绝不阻断：可撤回是增强，不是前提）
   //    用"写前可见的列表" —— 有些改动集合只有跑完才知道，那时再补快照已经晚了。
@@ -1594,7 +1658,21 @@ export async function writeSourceFiles<T>(
     };
   }
 
-  return { value, report: { touched: rels, snapshot, index, task_gate: taskGate.note } };
+  // ④ ★ 2026-10-21（读集比对）：**写者自己的基线刷到写后** —— 不刷的话，同一个 actor 第二次写
+  //   会拿"自己上一次写之前"的指纹来比 ⇒ 必然报一条假 stale（那正是"每次都报警 ⇒ 没人看"）。
+  //   只刷**本 actor**；别人的读集不动（他们确实需要知道这里变了）。
+  refreshAfterOwnWrite(root, resolveActor(opts.actor), rels);
+
+  return {
+    value,
+    report: {
+      touched: rels,
+      snapshot,
+      index,
+      task_gate: taskGate.note,
+      ...(taskGate.assumption_check ? { assumption_check: taskGate.assumption_check } : {}),
+    },
+  };
 }
 
 /**
@@ -1626,7 +1704,13 @@ export function snapshotAndRecordSelfWrite(
   const hasIndex = hasLiveIndex(root);
   if (opts.snapshot !== false) snapshotBeforeWrite(root, opts.label ?? 'source write', rels);
   if (!hasIndex) {
-    return { ok: false, mode: 'skipped', note: '该项目还没有索引 ⇒ 只真写，未登记', task_gate: gate.note };
+    return {
+      ok: false,
+      mode: 'skipped',
+      note: '该项目还没有索引 ⇒ 只真写，未登记',
+      task_gate: gate.note,
+      ...(gate.assumption_check ? { assumption_check: gate.assumption_check } : {}),
+    };
   }
   const n = recordSelfWrite(root, rels, opts.label);
   return {
@@ -1634,6 +1718,7 @@ export function snapshotAndRecordSelfWrite(
     mode: 'deferred',
     note: `已登记 ${n} 个文件的改动，读路径会优先同步（本工具是同步签名）`,
     task_gate: gate.note,
+    ...(gate.assumption_check ? { assumption_check: gate.assumption_check } : {}),
   };
 }
 
