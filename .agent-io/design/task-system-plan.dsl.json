@@ -43125,13 +43125,6 @@
               "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
             },
             {
-              "kind": "call-exists",
-              "path": "src/domain/task_machine.ts",
-              "symbol": "cardStanding",
-              "target": "judgeExpectations",
-              "why": "★ 五值读数 = 对着代码判 expectations（复用现成判定器，不新造第二把尺）"
-            },
-            {
               "kind": "symbol-exists",
               "path": "src/domain/expectation.ts",
               "symbol": "expectationPhase",
@@ -43249,10 +43242,35 @@
               "path": "src/domain/task_machine.ts",
               "symbol": "isClaimable",
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "file-exists",
+              "path": "src/domain/judge_port.ts",
+              "why": "★ D-judge-port（2026-10-21）：判定器的**端口**必须存在 —— 这是取代 call-exists(cardStanding→judgeExpectations) 的结构判据（那一条在端口化后必然红：`opts.judge(...)` 不产调用边）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/judge_port.ts",
+              "symbol": "Judge",
+              "why": "★ 端口必须是**类型**而不是一句口号：`Judge = (root, items) => Promise<ExpectationsReport>`，且四值原样穿过（不许 Promise<boolean>）"
+            },
+            {
+              "kind": "edge-absent",
+              "from": "src/domain/task_machine.ts",
+              "to": "src/application/design/intent/expectations.ts",
+              "why": "★★ 「不许向上」的机器判据：domain 不再依赖 application（2026-10-21 前这里是全仓唯一一条倒挂）；与 file-exists/symbol-exists 合起来 = 端口在 ∧ 倒挂没回来"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/domain/task_machine.ts",
+              "must": [
+                "opts.judge("
+              ],
+              "why": "★ 接线那一句：端口摆着不用也算“绿” ⇒ 这一条只验“它确实问的是注入的 judge”。★ 故意只匹配最短前缀 `opts.judge(`（不写参数）：换行、改参数名、改 `root` 写法都不会失效"
             }
           ],
-          "updated_at": "2026-10-19T01:47:35.871Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-21T14:48:04.975Z",
+          "agent": "subagent:judge-port"
         },
         "decision_history": [
           {
@@ -44836,6 +44854,2209 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-21T14:45:09.874Z",
+            "decision": {
+              "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "cardStanding",
+                  "why": "★ 讨论 2 · P30：『这张卡此刻处在哪种处境』要有**一个具名读数**（work/violated/blocked/satisfied/unknowable），否则接取闸与收口闸只能共用一条布尔（= 一处判据两用）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isSatisfied",
+                  "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "cardStanding",
+                  "target": "judgeExpectations",
+                  "why": "★ 五值读数 = 对着代码判 expectations（复用现成判定器，不新造第二把尺）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "★ T10 收归：前态判据（edge-absent 等）的分类由「期望自带的 phase」决定，不再由状态机里的一份清单（NEGATIVE_KINDS，已删）决定 ⇒ 否则任务还没领就被误收口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "releaseIfExpired",
+                  "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "why": "★ 其余 4 个节点都对自己的 path 有 file-exists，唯此节点漏了 ⇒ 补上（做不到时 file-exists 判 fail = 红）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/task_schema.ts",
+                  "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "CardStanding",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "LeaseReleaseEvent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RED_DISPOSITION",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedAttribution",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedDisposition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingNode",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TRANSITIONS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TaskTransition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TransitionState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "ViolationCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "applicableTransitions",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isClaimable",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "updated_at": "2026-10-19T01:47:35.871Z",
+              "agent": "all-externalize"
+            },
+            "note": "file_src_domain_task_machine_ts 的第 3 条判据 call-exists(cardStanding→judgeExpectations) 已因 D-judge-port 必然红（cardStanding 改调 opts.judge），换成 src/domain/judge_port.ts 上的 3 条结构判据：file-exists + symbol-exists(Judge) + edge-absent(task_machine→application 的倒挂不许回来) + source-has(opts.judge( 接线)",
+            "agent": "subagent:judge-port"
+          },
+          {
+            "at": "2026-10-21T14:45:09.950Z",
+            "decision": {
+              "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "cardStanding",
+                  "why": "★ 讨论 2 · P30：『这张卡此刻处在哪种处境』要有**一个具名读数**（work/violated/blocked/satisfied/unknowable），否则接取闸与收口闸只能共用一条布尔（= 一处判据两用）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isSatisfied",
+                  "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "★ T10 收归：前态判据（edge-absent 等）的分类由「期望自带的 phase」决定，不再由状态机里的一份清单（NEGATIVE_KINDS，已删）决定 ⇒ 否则任务还没领就被误收口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "releaseIfExpired",
+                  "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "why": "★ 其余 4 个节点都对自己的 path 有 file-exists，唯此节点漏了 ⇒ 补上（做不到时 file-exists 判 fail = 红）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/task_schema.ts",
+                  "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "CardStanding",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "LeaseReleaseEvent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RED_DISPOSITION",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedAttribution",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedDisposition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingNode",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TRANSITIONS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TaskTransition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TransitionState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "ViolationCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "applicableTransitions",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isClaimable",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "updated_at": "2026-10-21T14:45:09.874Z",
+              "agent": "subagent:judge-port"
+            },
+            "note": "file_src_domain_task_machine_ts 的第 3 条判据 call-exists(cardStanding→judgeExpectations) 已因 D-judge-port 必然红（cardStanding 改调 opts.judge），换成 src/domain/judge_port.ts 上的 3 条结构判据：file-exists + symbol-exists(Judge) + edge-absent(task_machine→application 的倒挂不许回来) + source-has(opts.judge( 接线)",
+            "agent": "subagent:judge-port"
+          },
+          {
+            "at": "2026-10-21T14:45:10.031Z",
+            "decision": {
+              "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "cardStanding",
+                  "why": "★ 讨论 2 · P30：『这张卡此刻处在哪种处境』要有**一个具名读数**（work/violated/blocked/satisfied/unknowable），否则接取闸与收口闸只能共用一条布尔（= 一处判据两用）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isSatisfied",
+                  "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "★ T10 收归：前态判据（edge-absent 等）的分类由「期望自带的 phase」决定，不再由状态机里的一份清单（NEGATIVE_KINDS，已删）决定 ⇒ 否则任务还没领就被误收口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "releaseIfExpired",
+                  "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "why": "★ 其余 4 个节点都对自己的 path 有 file-exists，唯此节点漏了 ⇒ 补上（做不到时 file-exists 判 fail = 红）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/task_schema.ts",
+                  "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "CardStanding",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "LeaseReleaseEvent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RED_DISPOSITION",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedAttribution",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedDisposition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingNode",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TRANSITIONS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TaskTransition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TransitionState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "ViolationCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "applicableTransitions",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isClaimable",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "why": "★ D-judge-port（2026-10-21）：判定器的**端口**必须存在 —— 这是取代 call-exists(cardStanding→judgeExpectations) 的结构判据（那一条在端口化后必然红：`opts.judge(...)` 不产调用边）"
+                }
+              ],
+              "updated_at": "2026-10-21T14:45:09.950Z",
+              "agent": "subagent:judge-port"
+            },
+            "note": "file_src_domain_task_machine_ts 的第 3 条判据 call-exists(cardStanding→judgeExpectations) 已因 D-judge-port 必然红（cardStanding 改调 opts.judge），换成 src/domain/judge_port.ts 上的 3 条结构判据：file-exists + symbol-exists(Judge) + edge-absent(task_machine→application 的倒挂不许回来) + source-has(opts.judge( 接线)",
+            "agent": "subagent:judge-port"
+          },
+          {
+            "at": "2026-10-21T14:45:10.112Z",
+            "decision": {
+              "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "cardStanding",
+                  "why": "★ 讨论 2 · P30：『这张卡此刻处在哪种处境』要有**一个具名读数**（work/violated/blocked/satisfied/unknowable），否则接取闸与收口闸只能共用一条布尔（= 一处判据两用）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isSatisfied",
+                  "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "★ T10 收归：前态判据（edge-absent 等）的分类由「期望自带的 phase」决定，不再由状态机里的一份清单（NEGATIVE_KINDS，已删）决定 ⇒ 否则任务还没领就被误收口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "releaseIfExpired",
+                  "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "why": "★ 其余 4 个节点都对自己的 path 有 file-exists，唯此节点漏了 ⇒ 补上（做不到时 file-exists 判 fail = 红）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/task_schema.ts",
+                  "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "CardStanding",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "LeaseReleaseEvent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RED_DISPOSITION",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedAttribution",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedDisposition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingNode",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TRANSITIONS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TaskTransition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TransitionState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "ViolationCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "applicableTransitions",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isClaimable",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "why": "★ D-judge-port（2026-10-21）：判定器的**端口**必须存在 —— 这是取代 call-exists(cardStanding→judgeExpectations) 的结构判据（那一条在端口化后必然红：`opts.judge(...)` 不产调用边）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "symbol": "Judge",
+                  "why": "★ 端口必须是**类型**而不是一句口号：`Judge = (root, items) => Promise<ExpectationsReport>`，且四值原样穿过（不许 Promise<boolean>）"
+                }
+              ],
+              "updated_at": "2026-10-21T14:45:10.031Z",
+              "agent": "subagent:judge-port"
+            },
+            "note": "file_src_domain_task_machine_ts 的第 3 条判据 call-exists(cardStanding→judgeExpectations) 已因 D-judge-port 必然红（cardStanding 改调 opts.judge），换成 src/domain/judge_port.ts 上的 3 条结构判据：file-exists + symbol-exists(Judge) + edge-absent(task_machine→application 的倒挂不许回来) + source-has(opts.judge( 接线)",
+            "agent": "subagent:judge-port"
+          },
+          {
+            "at": "2026-10-21T14:45:10.189Z",
+            "decision": {
+              "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "cardStanding",
+                  "why": "★ 讨论 2 · P30：『这张卡此刻处在哪种处境』要有**一个具名读数**（work/violated/blocked/satisfied/unknowable），否则接取闸与收口闸只能共用一条布尔（= 一处判据两用）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isSatisfied",
+                  "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "★ T10 收归：前态判据（edge-absent 等）的分类由「期望自带的 phase」决定，不再由状态机里的一份清单（NEGATIVE_KINDS，已删）决定 ⇒ 否则任务还没领就被误收口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "releaseIfExpired",
+                  "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "why": "★ 其余 4 个节点都对自己的 path 有 file-exists，唯此节点漏了 ⇒ 补上（做不到时 file-exists 判 fail = 红）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/task_schema.ts",
+                  "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "CardStanding",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "LeaseReleaseEvent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RED_DISPOSITION",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedAttribution",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedDisposition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingNode",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TRANSITIONS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TaskTransition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TransitionState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "ViolationCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "applicableTransitions",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isClaimable",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "why": "★ D-judge-port（2026-10-21）：判定器的**端口**必须存在 —— 这是取代 call-exists(cardStanding→judgeExpectations) 的结构判据（那一条在端口化后必然红：`opts.judge(...)` 不产调用边）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "symbol": "Judge",
+                  "why": "★ 端口必须是**类型**而不是一句口号：`Judge = (root, items) => Promise<ExpectationsReport>`，且四值原样穿过（不许 Promise<boolean>）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/application/design/intent/expectations.ts",
+                  "why": "★★ 「不许向上」的机器判据：domain 不再依赖 application（2026-10-21 前这里是全仓唯一一条倒挂）；与 file-exists/symbol-exists 合起来 = 端口在 ∧ 倒挂没回来"
+                }
+              ],
+              "updated_at": "2026-10-21T14:45:10.112Z",
+              "agent": "subagent:judge-port"
+            },
+            "note": "file_src_domain_task_machine_ts 的第 3 条判据 call-exists(cardStanding→judgeExpectations) 已因 D-judge-port 必然红（cardStanding 改调 opts.judge），换成 src/domain/judge_port.ts 上的 3 条结构判据：file-exists + symbol-exists(Judge) + edge-absent(task_machine→application 的倒挂不许回来) + source-has(opts.judge( 接线)",
+            "agent": "subagent:judge-port"
+          },
+          {
+            "at": "2026-10-21T14:47:53.929Z",
+            "decision": {
+              "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "cardStanding",
+                  "why": "★ 讨论 2 · P30：『这张卡此刻处在哪种处境』要有**一个具名读数**（work/violated/blocked/satisfied/unknowable），否则接取闸与收口闸只能共用一条布尔（= 一处判据两用）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isSatisfied",
+                  "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "★ T10 收归：前态判据（edge-absent 等）的分类由「期望自带的 phase」决定，不再由状态机里的一份清单（NEGATIVE_KINDS，已删）决定 ⇒ 否则任务还没领就被误收口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "releaseIfExpired",
+                  "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "why": "★ 其余 4 个节点都对自己的 path 有 file-exists，唯此节点漏了 ⇒ 补上（做不到时 file-exists 判 fail = 红）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/task_schema.ts",
+                  "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "CardStanding",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "LeaseReleaseEvent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RED_DISPOSITION",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedAttribution",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedDisposition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingNode",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TRANSITIONS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TaskTransition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TransitionState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "ViolationCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "applicableTransitions",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isClaimable",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "why": "★ D-judge-port（2026-10-21）：判定器的**端口**必须存在 —— 这是取代 call-exists(cardStanding→judgeExpectations) 的结构判据（那一条在端口化后必然红：`opts.judge(...)` 不产调用边）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "symbol": "Judge",
+                  "why": "★ 端口必须是**类型**而不是一句口号：`Judge = (root, items) => Promise<ExpectationsReport>`，且四值原样穿过（不许 Promise<boolean>）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/application/design/intent/expectations.ts",
+                  "why": "★★ 「不许向上」的机器判据：domain 不再依赖 application（2026-10-21 前这里是全仓唯一一条倒挂）；与 file-exists/symbol-exists 合起来 = 端口在 ∧ 倒挂没回来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/domain/task_machine.ts",
+                  "must": [
+                    "opts.judge("
+                  ],
+                  "why": "★ 接线那一句：端口摆着不用也算“绿” ⇒ 这一条只验“它确实问的是注入的 judge”。★ 故意只匹配最短前缀 `opts.judge(`（不写参数）：换行、改参数名、改 `root` 写法都不会失效"
+                }
+              ],
+              "updated_at": "2026-10-21T14:45:10.189Z",
+              "agent": "subagent:judge-port"
+            },
+            "note": "消融自证（临时）：给 file_src_domain_task_machine_ts 加 4 条故意写错的判据（指向 judge_port_ABLATION.ts / JudgeABLATION / 真实存在的 src/domain/expectation.ts 依赖 / opts.judgeABLATION(）—— 跑完立即删除并还原",
+            "agent": "subagent:judge-port"
+          },
+          {
+            "at": "2026-10-21T14:47:54.021Z",
+            "decision": {
+              "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "cardStanding",
+                  "why": "★ 讨论 2 · P30：『这张卡此刻处在哪种处境』要有**一个具名读数**（work/violated/blocked/satisfied/unknowable），否则接取闸与收口闸只能共用一条布尔（= 一处判据两用）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isSatisfied",
+                  "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "★ T10 收归：前态判据（edge-absent 等）的分类由「期望自带的 phase」决定，不再由状态机里的一份清单（NEGATIVE_KINDS，已删）决定 ⇒ 否则任务还没领就被误收口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "releaseIfExpired",
+                  "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "why": "★ 其余 4 个节点都对自己的 path 有 file-exists，唯此节点漏了 ⇒ 补上（做不到时 file-exists 判 fail = 红）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/task_schema.ts",
+                  "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "CardStanding",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "LeaseReleaseEvent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RED_DISPOSITION",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedAttribution",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedDisposition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingNode",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TRANSITIONS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TaskTransition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TransitionState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "ViolationCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "applicableTransitions",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isClaimable",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "why": "★ D-judge-port（2026-10-21）：判定器的**端口**必须存在 —— 这是取代 call-exists(cardStanding→judgeExpectations) 的结构判据（那一条在端口化后必然红：`opts.judge(...)` 不产调用边）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "symbol": "Judge",
+                  "why": "★ 端口必须是**类型**而不是一句口号：`Judge = (root, items) => Promise<ExpectationsReport>`，且四值原样穿过（不许 Promise<boolean>）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/application/design/intent/expectations.ts",
+                  "why": "★★ 「不许向上」的机器判据：domain 不再依赖 application（2026-10-21 前这里是全仓唯一一条倒挂）；与 file-exists/symbol-exists 合起来 = 端口在 ∧ 倒挂没回来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/domain/task_machine.ts",
+                  "must": [
+                    "opts.judge("
+                  ],
+                  "why": "★ 接线那一句：端口摆着不用也算“绿” ⇒ 这一条只验“它确实问的是注入的 judge”。★ 故意只匹配最短前缀 `opts.judge(`（不写参数）：换行、改参数名、改 `root` 写法都不会失效"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port_ABLATION.ts",
+                  "why": "★ 消融临时项（A1）：故意指向不存在的文件"
+                }
+              ],
+              "updated_at": "2026-10-21T14:47:53.929Z",
+              "agent": "subagent:judge-port"
+            },
+            "note": "消融自证（临时）：给 file_src_domain_task_machine_ts 加 4 条故意写错的判据（指向 judge_port_ABLATION.ts / JudgeABLATION / 真实存在的 src/domain/expectation.ts 依赖 / opts.judgeABLATION(）—— 跑完立即删除并还原",
+            "agent": "subagent:judge-port"
+          },
+          {
+            "at": "2026-10-21T14:47:54.096Z",
+            "decision": {
+              "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "cardStanding",
+                  "why": "★ 讨论 2 · P30：『这张卡此刻处在哪种处境』要有**一个具名读数**（work/violated/blocked/satisfied/unknowable），否则接取闸与收口闸只能共用一条布尔（= 一处判据两用）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isSatisfied",
+                  "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "★ T10 收归：前态判据（edge-absent 等）的分类由「期望自带的 phase」决定，不再由状态机里的一份清单（NEGATIVE_KINDS，已删）决定 ⇒ 否则任务还没领就被误收口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "releaseIfExpired",
+                  "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "why": "★ 其余 4 个节点都对自己的 path 有 file-exists，唯此节点漏了 ⇒ 补上（做不到时 file-exists 判 fail = 红）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/task_schema.ts",
+                  "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "CardStanding",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "LeaseReleaseEvent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RED_DISPOSITION",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedAttribution",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedDisposition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingNode",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TRANSITIONS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TaskTransition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TransitionState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "ViolationCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "applicableTransitions",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isClaimable",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "why": "★ D-judge-port（2026-10-21）：判定器的**端口**必须存在 —— 这是取代 call-exists(cardStanding→judgeExpectations) 的结构判据（那一条在端口化后必然红：`opts.judge(...)` 不产调用边）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "symbol": "Judge",
+                  "why": "★ 端口必须是**类型**而不是一句口号：`Judge = (root, items) => Promise<ExpectationsReport>`，且四值原样穿过（不许 Promise<boolean>）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/application/design/intent/expectations.ts",
+                  "why": "★★ 「不许向上」的机器判据：domain 不再依赖 application（2026-10-21 前这里是全仓唯一一条倒挂）；与 file-exists/symbol-exists 合起来 = 端口在 ∧ 倒挂没回来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/domain/task_machine.ts",
+                  "must": [
+                    "opts.judge("
+                  ],
+                  "why": "★ 接线那一句：端口摆着不用也算“绿” ⇒ 这一条只验“它确实问的是注入的 judge”。★ 故意只匹配最短前缀 `opts.judge(`（不写参数）：换行、改参数名、改 `root` 写法都不会失效"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port_ABLATION.ts",
+                  "why": "★ 消融临时项（A1）：故意指向不存在的文件"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "symbol": "JudgeABLATION",
+                  "why": "★ 消融临时项（A2）：故意指向不存在的符号"
+                }
+              ],
+              "updated_at": "2026-10-21T14:47:54.021Z",
+              "agent": "subagent:judge-port"
+            },
+            "note": "消融自证（临时）：给 file_src_domain_task_machine_ts 加 4 条故意写错的判据（指向 judge_port_ABLATION.ts / JudgeABLATION / 真实存在的 src/domain/expectation.ts 依赖 / opts.judgeABLATION(）—— 跑完立即删除并还原",
+            "agent": "subagent:judge-port"
+          },
+          {
+            "at": "2026-10-21T14:47:54.186Z",
+            "decision": {
+              "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "cardStanding",
+                  "why": "★ 讨论 2 · P30：『这张卡此刻处在哪种处境』要有**一个具名读数**（work/violated/blocked/satisfied/unknowable），否则接取闸与收口闸只能共用一条布尔（= 一处判据两用）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isSatisfied",
+                  "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "★ T10 收归：前态判据（edge-absent 等）的分类由「期望自带的 phase」决定，不再由状态机里的一份清单（NEGATIVE_KINDS，已删）决定 ⇒ 否则任务还没领就被误收口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "releaseIfExpired",
+                  "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "why": "★ 其余 4 个节点都对自己的 path 有 file-exists，唯此节点漏了 ⇒ 补上（做不到时 file-exists 判 fail = 红）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/task_schema.ts",
+                  "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "CardStanding",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "LeaseReleaseEvent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RED_DISPOSITION",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedAttribution",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedDisposition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingNode",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TRANSITIONS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TaskTransition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TransitionState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "ViolationCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "applicableTransitions",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isClaimable",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "why": "★ D-judge-port（2026-10-21）：判定器的**端口**必须存在 —— 这是取代 call-exists(cardStanding→judgeExpectations) 的结构判据（那一条在端口化后必然红：`opts.judge(...)` 不产调用边）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "symbol": "Judge",
+                  "why": "★ 端口必须是**类型**而不是一句口号：`Judge = (root, items) => Promise<ExpectationsReport>`，且四值原样穿过（不许 Promise<boolean>）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/application/design/intent/expectations.ts",
+                  "why": "★★ 「不许向上」的机器判据：domain 不再依赖 application（2026-10-21 前这里是全仓唯一一条倒挂）；与 file-exists/symbol-exists 合起来 = 端口在 ∧ 倒挂没回来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/domain/task_machine.ts",
+                  "must": [
+                    "opts.judge("
+                  ],
+                  "why": "★ 接线那一句：端口摆着不用也算“绿” ⇒ 这一条只验“它确实问的是注入的 judge”。★ 故意只匹配最短前缀 `opts.judge(`（不写参数）：换行、改参数名、改 `root` 写法都不会失效"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port_ABLATION.ts",
+                  "why": "★ 消融临时项（A1）：故意指向不存在的文件"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "symbol": "JudgeABLATION",
+                  "why": "★ 消融临时项（A2）：故意指向不存在的符号"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/expectation.ts",
+                  "why": "★ 消融临时项（A3）：故意指向一条**真实存在**的依赖 ⇒ edge-absent 应变 red"
+                }
+              ],
+              "updated_at": "2026-10-21T14:47:54.096Z",
+              "agent": "subagent:judge-port"
+            },
+            "note": "消融自证（临时）：给 file_src_domain_task_machine_ts 加 4 条故意写错的判据（指向 judge_port_ABLATION.ts / JudgeABLATION / 真实存在的 src/domain/expectation.ts 依赖 / opts.judgeABLATION(）—— 跑完立即删除并还原",
+            "agent": "subagent:judge-port"
+          },
+          {
+            "at": "2026-10-21T14:48:04.722Z",
+            "decision": {
+              "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "cardStanding",
+                  "why": "★ 讨论 2 · P30：『这张卡此刻处在哪种处境』要有**一个具名读数**（work/violated/blocked/satisfied/unknowable），否则接取闸与收口闸只能共用一条布尔（= 一处判据两用）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isSatisfied",
+                  "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "★ T10 收归：前态判据（edge-absent 等）的分类由「期望自带的 phase」决定，不再由状态机里的一份清单（NEGATIVE_KINDS，已删）决定 ⇒ 否则任务还没领就被误收口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "releaseIfExpired",
+                  "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "why": "★ 其余 4 个节点都对自己的 path 有 file-exists，唯此节点漏了 ⇒ 补上（做不到时 file-exists 判 fail = 红）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/task_schema.ts",
+                  "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "CardStanding",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "LeaseReleaseEvent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RED_DISPOSITION",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedAttribution",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedDisposition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingNode",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TRANSITIONS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TaskTransition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TransitionState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "ViolationCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "applicableTransitions",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isClaimable",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "why": "★ D-judge-port（2026-10-21）：判定器的**端口**必须存在 —— 这是取代 call-exists(cardStanding→judgeExpectations) 的结构判据（那一条在端口化后必然红：`opts.judge(...)` 不产调用边）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "symbol": "Judge",
+                  "why": "★ 端口必须是**类型**而不是一句口号：`Judge = (root, items) => Promise<ExpectationsReport>`，且四值原样穿过（不许 Promise<boolean>）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/application/design/intent/expectations.ts",
+                  "why": "★★ 「不许向上」的机器判据：domain 不再依赖 application（2026-10-21 前这里是全仓唯一一条倒挂）；与 file-exists/symbol-exists 合起来 = 端口在 ∧ 倒挂没回来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/domain/task_machine.ts",
+                  "must": [
+                    "opts.judge("
+                  ],
+                  "why": "★ 接线那一句：端口摆着不用也算“绿” ⇒ 这一条只验“它确实问的是注入的 judge”。★ 故意只匹配最短前缀 `opts.judge(`（不写参数）：换行、改参数名、改 `root` 写法都不会失效"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port_ABLATION.ts",
+                  "why": "★ 消融临时项（A1）：故意指向不存在的文件"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "symbol": "JudgeABLATION",
+                  "why": "★ 消融临时项（A2）：故意指向不存在的符号"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/expectation.ts",
+                  "why": "★ 消融临时项（A3）：故意指向一条**真实存在**的依赖 ⇒ edge-absent 应变 red"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/domain/task_machine.ts",
+                  "must": [
+                    "opts.judgeABLATION("
+                  ],
+                  "why": "★ 消融临时项（A4）：故意要求一个不存在的子串"
+                }
+              ],
+              "updated_at": "2026-10-21T14:47:54.186Z",
+              "agent": "subagent:judge-port"
+            },
+            "note": "消融还原：把 file_src_domain_task_machine_ts 上 4 条**故意写错**的临时判据（judge_port_ABLATION.ts / JudgeABLATION / 真实存在的 expectation.ts 依赖 / opts.judgeABLATION(，即 index 26~29）逐条删掉，回到 26 条真实判据",
+            "agent": "subagent:judge-port"
+          },
+          {
+            "at": "2026-10-21T14:48:04.816Z",
+            "decision": {
+              "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "cardStanding",
+                  "why": "★ 讨论 2 · P30：『这张卡此刻处在哪种处境』要有**一个具名读数**（work/violated/blocked/satisfied/unknowable），否则接取闸与收口闸只能共用一条布尔（= 一处判据两用）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isSatisfied",
+                  "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "★ T10 收归：前态判据（edge-absent 等）的分类由「期望自带的 phase」决定，不再由状态机里的一份清单（NEGATIVE_KINDS，已删）决定 ⇒ 否则任务还没领就被误收口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "releaseIfExpired",
+                  "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "why": "★ 其余 4 个节点都对自己的 path 有 file-exists，唯此节点漏了 ⇒ 补上（做不到时 file-exists 判 fail = 红）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/task_schema.ts",
+                  "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "CardStanding",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "LeaseReleaseEvent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RED_DISPOSITION",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedAttribution",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedDisposition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingNode",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TRANSITIONS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TaskTransition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TransitionState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "ViolationCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "applicableTransitions",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isClaimable",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "why": "★ D-judge-port（2026-10-21）：判定器的**端口**必须存在 —— 这是取代 call-exists(cardStanding→judgeExpectations) 的结构判据（那一条在端口化后必然红：`opts.judge(...)` 不产调用边）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "symbol": "Judge",
+                  "why": "★ 端口必须是**类型**而不是一句口号：`Judge = (root, items) => Promise<ExpectationsReport>`，且四值原样穿过（不许 Promise<boolean>）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/application/design/intent/expectations.ts",
+                  "why": "★★ 「不许向上」的机器判据：domain 不再依赖 application（2026-10-21 前这里是全仓唯一一条倒挂）；与 file-exists/symbol-exists 合起来 = 端口在 ∧ 倒挂没回来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/domain/task_machine.ts",
+                  "must": [
+                    "opts.judge("
+                  ],
+                  "why": "★ 接线那一句：端口摆着不用也算“绿” ⇒ 这一条只验“它确实问的是注入的 judge”。★ 故意只匹配最短前缀 `opts.judge(`（不写参数）：换行、改参数名、改 `root` 写法都不会失效"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port_ABLATION.ts",
+                  "why": "★ 消融临时项（A1）：故意指向不存在的文件"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "symbol": "JudgeABLATION",
+                  "why": "★ 消融临时项（A2）：故意指向不存在的符号"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/expectation.ts",
+                  "why": "★ 消融临时项（A3）：故意指向一条**真实存在**的依赖 ⇒ edge-absent 应变 red"
+                }
+              ],
+              "updated_at": "2026-10-21T14:48:04.722Z",
+              "agent": "subagent:judge-port"
+            },
+            "note": "消融还原：把 file_src_domain_task_machine_ts 上 4 条**故意写错**的临时判据（judge_port_ABLATION.ts / JudgeABLATION / 真实存在的 expectation.ts 依赖 / opts.judgeABLATION(，即 index 26~29）逐条删掉，回到 26 条真实判据",
+            "agent": "subagent:judge-port"
+          },
+          {
+            "at": "2026-10-21T14:48:04.891Z",
+            "decision": {
+              "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "cardStanding",
+                  "why": "★ 讨论 2 · P30：『这张卡此刻处在哪种处境』要有**一个具名读数**（work/violated/blocked/satisfied/unknowable），否则接取闸与收口闸只能共用一条布尔（= 一处判据两用）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isSatisfied",
+                  "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "★ T10 收归：前态判据（edge-absent 等）的分类由「期望自带的 phase」决定，不再由状态机里的一份清单（NEGATIVE_KINDS，已删）决定 ⇒ 否则任务还没领就被误收口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "releaseIfExpired",
+                  "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "why": "★ 其余 4 个节点都对自己的 path 有 file-exists，唯此节点漏了 ⇒ 补上（做不到时 file-exists 判 fail = 红）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/task_schema.ts",
+                  "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "CardStanding",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "LeaseReleaseEvent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RED_DISPOSITION",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedAttribution",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedDisposition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingNode",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TRANSITIONS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TaskTransition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TransitionState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "ViolationCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "applicableTransitions",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isClaimable",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "why": "★ D-judge-port（2026-10-21）：判定器的**端口**必须存在 —— 这是取代 call-exists(cardStanding→judgeExpectations) 的结构判据（那一条在端口化后必然红：`opts.judge(...)` 不产调用边）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "symbol": "Judge",
+                  "why": "★ 端口必须是**类型**而不是一句口号：`Judge = (root, items) => Promise<ExpectationsReport>`，且四值原样穿过（不许 Promise<boolean>）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/application/design/intent/expectations.ts",
+                  "why": "★★ 「不许向上」的机器判据：domain 不再依赖 application（2026-10-21 前这里是全仓唯一一条倒挂）；与 file-exists/symbol-exists 合起来 = 端口在 ∧ 倒挂没回来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/domain/task_machine.ts",
+                  "must": [
+                    "opts.judge("
+                  ],
+                  "why": "★ 接线那一句：端口摆着不用也算“绿” ⇒ 这一条只验“它确实问的是注入的 judge”。★ 故意只匹配最短前缀 `opts.judge(`（不写参数）：换行、改参数名、改 `root` 写法都不会失效"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port_ABLATION.ts",
+                  "why": "★ 消融临时项（A1）：故意指向不存在的文件"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "symbol": "JudgeABLATION",
+                  "why": "★ 消融临时项（A2）：故意指向不存在的符号"
+                }
+              ],
+              "updated_at": "2026-10-21T14:48:04.816Z",
+              "agent": "subagent:judge-port"
+            },
+            "note": "消融还原：把 file_src_domain_task_machine_ts 上 4 条**故意写错**的临时判据（judge_port_ABLATION.ts / JudgeABLATION / 真实存在的 expectation.ts 依赖 / opts.judgeABLATION(，即 index 26~29）逐条删掉，回到 26 条真实判据",
+            "agent": "subagent:judge-port"
+          },
+          {
+            "at": "2026-10-21T14:48:04.975Z",
+            "decision": {
+              "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "cardStanding",
+                  "why": "★ 讨论 2 · P30：『这张卡此刻处在哪种处境』要有**一个具名读数**（work/violated/blocked/satisfied/unknowable），否则接取闸与收口闸只能共用一条布尔（= 一处判据两用）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isSatisfied",
+                  "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "★ T10 收归：前态判据（edge-absent 等）的分类由「期望自带的 phase」决定，不再由状态机里的一份清单（NEGATIVE_KINDS，已删）决定 ⇒ 否则任务还没领就被误收口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "releaseIfExpired",
+                  "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "why": "★ 其余 4 个节点都对自己的 path 有 file-exists，唯此节点漏了 ⇒ 补上（做不到时 file-exists 判 fail = 红）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/task_schema.ts",
+                  "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "CardStanding",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "LeaseReleaseEvent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RED_DISPOSITION",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedAttribution",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "RedDisposition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "SatisfactionVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingNode",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "StandingVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TRANSITIONS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TaskTransition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "TransitionState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "ViolationCounts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "applicableTransitions",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_machine.ts",
+                  "symbol": "isClaimable",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "why": "★ D-judge-port（2026-10-21）：判定器的**端口**必须存在 —— 这是取代 call-exists(cardStanding→judgeExpectations) 的结构判据（那一条在端口化后必然红：`opts.judge(...)` 不产调用边）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/judge_port.ts",
+                  "symbol": "Judge",
+                  "why": "★ 端口必须是**类型**而不是一句口号：`Judge = (root, items) => Promise<ExpectationsReport>`，且四值原样穿过（不许 Promise<boolean>）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/application/design/intent/expectations.ts",
+                  "why": "★★ 「不许向上」的机器判据：domain 不再依赖 application（2026-10-21 前这里是全仓唯一一条倒挂）；与 file-exists/symbol-exists 合起来 = 端口在 ∧ 倒挂没回来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/domain/task_machine.ts",
+                  "must": [
+                    "opts.judge("
+                  ],
+                  "why": "★ 接线那一句：端口摆着不用也算“绿” ⇒ 这一条只验“它确实问的是注入的 judge”。★ 故意只匹配最短前缀 `opts.judge(`（不写参数）：换行、改参数名、改 `root` 写法都不会失效"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/judge_port_ABLATION.ts",
+                  "why": "★ 消融临时项（A1）：故意指向不存在的文件"
+                }
+              ],
+              "updated_at": "2026-10-21T14:48:04.891Z",
+              "agent": "subagent:judge-port"
+            },
+            "note": "消融还原：把 file_src_domain_task_machine_ts 上 4 条**故意写错**的临时判据（judge_port_ABLATION.ts / JudgeABLATION / 真实存在的 expectation.ts 依赖 / opts.judgeABLATION(，即 index 26~29）逐条删掉，回到 26 条真实判据",
+            "agent": "subagent:judge-port"
           }
         ],
         "task": {
@@ -44853,13 +47074,6 @@
               "path": "src/domain/task_machine.ts",
               "symbol": "isSatisfied",
               "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
-            },
-            {
-              "kind": "call-exists",
-              "path": "src/domain/task_machine.ts",
-              "symbol": "cardStanding",
-              "target": "judgeExpectations",
-              "why": "★ 五值读数 = 对着代码判 expectations（复用现成判定器，不新造第二把尺）"
             },
             {
               "kind": "symbol-exists",
@@ -44979,9 +47193,34 @@
               "path": "src/domain/task_machine.ts",
               "symbol": "isClaimable",
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "file-exists",
+              "path": "src/domain/judge_port.ts",
+              "why": "★ D-judge-port（2026-10-21）：判定器的**端口**必须存在 —— 这是取代 call-exists(cardStanding→judgeExpectations) 的结构判据（那一条在端口化后必然红：`opts.judge(...)` 不产调用边）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/judge_port.ts",
+              "symbol": "Judge",
+              "why": "★ 端口必须是**类型**而不是一句口号：`Judge = (root, items) => Promise<ExpectationsReport>`，且四值原样穿过（不许 Promise<boolean>）"
+            },
+            {
+              "kind": "edge-absent",
+              "from": "src/domain/task_machine.ts",
+              "to": "src/application/design/intent/expectations.ts",
+              "why": "★★ 「不许向上」的机器判据：domain 不再依赖 application（2026-10-21 前这里是全仓唯一一条倒挂）；与 file-exists/symbol-exists 合起来 = 端口在 ∧ 倒挂没回来"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/domain/task_machine.ts",
+              "must": [
+                "opts.judge("
+              ],
+              "why": "★ 接线那一句：端口摆着不用也算“绿” ⇒ 这一条只验“它确实问的是注入的 judge”。★ 故意只匹配最短前缀 `opts.judge(`（不写参数）：换行、改参数名、改 `root` 写法都不会失效"
             }
           ],
-          "state": "claimed",
+          "state": "done",
           "evidence": [
             {
               "kind": "attestation",
@@ -45022,11 +47261,30 @@
               "why": "第二轮只改 src/domain/task_machine.ts L574 注释字样（用户裁定→OQ1），23 条判据仍全过",
               "agent": "deepseek-v4.1-flash",
               "verdict": "pass"
+            },
+            {
+              "kind": "expectations",
+              "at": "2026-10-21T14:51:14.486Z",
+              "by": "llm",
+              "agent": "subagent:judge-port",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_domain_task_machine_ts（26 条判据）",
+                "input": "ab606ec9561cd616085d3e191ac68ad5b238637b",
+                "code": "8a0860be92247f02b328fd9de2043c91eac00b44",
+                "covers": [
+                  "src/application/design/intent/expectations.ts",
+                  "src/domain/expectation.ts",
+                  "src/domain/judge_port.ts",
+                  "src/domain/task_machine.ts",
+                  "src/domain/task_schema.ts"
+                ]
+              },
+              "verdict": "pass"
             }
           ],
           "owner": "subagent:judge-port",
           "claimed_at": "2026-10-21T14:34:09.868Z",
-          "reopened_at": "2026-10-20T10:47:42.904Z",
+          "reopened_at": null,
           "reopen_reason": "清注释里的用户原话",
           "reopened_from": "deepseek-v4.1-flash",
           "read_set": {
@@ -45149,7 +47407,7 @@
             "note": "1 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
           }
         },
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_domain_task_schema_ts",
@@ -87697,7 +89955,7 @@
         ],
         "lines": 535,
         "layer": "service",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_domain_task_schema_ts",
@@ -99602,11 +101860,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T14:41:38.243Z",
+    "saved_at": "2026-10-21T14:51:14.614Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 10175432,
+    "age": 10751803,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -101894,5 +104152,5 @@
       "follows": "todo_D-judge-port"
     }
   ],
-  "_dsl_rev": 702
+  "_dsl_rev": 716
 }

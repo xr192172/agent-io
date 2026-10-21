@@ -2,7 +2,7 @@
 /**
  * ★★★ cert T350 —— **`publish`（立卡 = 翻决策卡）**（2026-10-17 · T12 · `docs/board.md`）。
  *
- * 语义来源：`docs/task-system-plan.dsl.json` 的 `task_plan.task_home`（谁写）
+ * 语义来源：`.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.task_home`（谁写）
  *   + `task_plan.board.flow[0]`（"从设计 DSL 抽出这一块 ⇒ 形成任务 ⇒ 发布到榜单"）
  *   + `task_plan.provenance.chain`（④ 决策卡 vs DSL 现状 = 红 ⇒ ⑤ 红 = 任务 ⇒ **publish**）。
  *
@@ -11,7 +11,7 @@
  *   `decision.summary` + `decision.expectations` ⇒ `TaskSpec{summary, expectations, state:'candidate'}`。
  *
  * ## 判据（每条亲手跑，读数见 stdout）
- *   ① **工具层立卡**：对**真决策卡**（`docs/task-system-plan.dsl.json` 的节点，decision 逐字搬进夹具）
+ *   ① **工具层立卡**：对**真决策卡**（`.agent-io/design/task-system-plan.dsl.json` 的节点，decision 逐字搬进夹具）
  *      调 publish ⇒ 读回 `state=candidate` / `summary` / `expectations`；
  *   ② **内容来自 decision（不是手写）**：`summary` **逐字等于** `decision.summary`、`expectations` 深等；
  *      ★ 且**改掉 decision 再重翻** ⇒ 卡跟着变（不是常量、不是我编的）；
@@ -70,10 +70,12 @@ const { assertSourceWriteRegistered } = await import('../dist/src/application/wr
 const { progressOf } = await import('../dist/src/domain/task_schema.js');
 
 // ── 夹具：把**真决策卡**从设计 DSL 逐字搬进来（不是我手写的） ──
-const PLAN = JSON.parse(fs.readFileSync(path.join(REPO, 'docs/task-system-plan.dsl.json'), 'utf-8'));
+// ★ 2026-10-21：设计册已从 `docs/` 搬进 `.agent-io/design/` —— 旧路径会让本证在**第一行就 ENOENT**
+//   （那不是“判据红了”，是“证根本没跑”，比假绿更难察）。
+const PLAN = JSON.parse(fs.readFileSync(path.join(REPO, '.agent-io/design/task-system-plan.dsl.json'), 'utf-8'));
 const REAL = PLAN.geometry.nodes.find((n) => n.id === 'file_src_domain_task_schema_ts');
 if (!REAL?.decision) {
-  console.error('✗ 夹具前置不成立：docs/task-system-plan.dsl.json 里找不到带 decision 的 task_schema 节点');
+  console.error('✗ 夹具前置不成立：.agent-io/design/task-system-plan.dsl.json 里找不到带 decision 的 task_schema 节点');
   process.exit(1);
 }
 const NODEC = 'file_src_application_design_dsl_ops_task_ops_ts'; // 第二张真卡（用来演示"改 decision ⇒ 卡跟着变"）

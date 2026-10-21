@@ -226,7 +226,11 @@ console.log('\n════ ④ 走工具层：edit_dsl {type:task}（claim / co
   const r = await edit([{ type: 'task', op: 'claim', id: A, data: { owner: 'agent-t349' } }], 'T349：领取任务 file_src_a_ts（owner=agent-t349）');
   chk(r.isError !== true, '④b claim 经 edit_dsl 成功', String(r.text ?? '').split('\n')[1] ?? '');
   const a = nodeOf(A);
-  chk(a.task.state === 'claimed' && a.task.owner === 'agent-t349' && !!a.task.claimed_at, '④b′ 读回：state=claimed · owner=agent-t349 · claimed_at 非空', JSON.stringify({ state: a.task.state, owner: a.task.owner, claimed_at: a.task.claimed_at }));
+  // ★ 2026-10-21（A7 身份规范化）：`task.owner` 的**新写入**过 `domain/actor_spec.ts#admitActor`
+  //   （三分 human/agent/subagent；“归一化**只补前缀**，不猜别的”且**必须留痕**）
+  //   ⇒ 无前缀的 `agent-t349` 落盘为 `agent:agent-t349`（claim 回执会明说“已归一化自 agent-t349”）。
+  //   ★ 过时的是**这条断言**，不是代码：归一化是对的（同一文件里 `sameActor` 让老值继续可用）。
+  chk(a.task.state === 'claimed' && a.task.owner === 'agent:agent-t349' && !!a.task.claimed_at, '④b′ 读回：state=claimed · owner=agent:agent-t349（归一化后的规范格式）· claimed_at 非空', JSON.stringify({ state: a.task.state, owner: a.task.owner, claimed_at: a.task.claimed_at }));
   chk(a.status === 'in_progress', "④b″ 端到端投影：node.status='in_progress'（claimed 的派生值已落成读结果）", `实取 = ${JSON.stringify(a.status)}`);
 
   // (c) 闸放行（claimed）

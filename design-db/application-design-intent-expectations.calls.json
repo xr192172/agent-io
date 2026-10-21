@@ -5,142 +5,28 @@
   "path": "src/application/design/intent/expectations.ts",
   "symbols": [
     {
-      "name": "Verdict",
-      "kind": "type",
-      "line": 43,
-      "signature": "Verdict()"
-    },
-    {
-      "name": "ExpectationItem",
-      "kind": "interface",
-      "line": 45,
-      "signature": "ExpectationItem()",
-      "members": [
-        {
-          "name": "node_id",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "node_label",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "expectation",
-          "type": ": Expectation",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "verdict",
-          "type": ": Verdict",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "detail",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        }
-      ]
-    },
-    {
-      "name": "ExpectationsReport",
-      "kind": "interface",
-      "line": 54,
-      "signature": "ExpectationsReport()",
-      "members": [
-        {
-          "name": "checked",
-          "type": ": number",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "passed",
-          "type": ": number",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "failed",
-          "type": ": number",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "unsupported",
-          "type": ": number",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "items",
-          "type": ": ExpectationItem[]",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "notes",
-          "type": ": string[]",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "conflicts",
-          "type": ": ExpectationConflict[]",
-          "optional": false,
-          "member_kind": "property"
-        }
-      ]
-    },
-    {
-      "name": "ExpectationConflict",
-      "kind": "interface",
-      "line": 70,
-      "signature": "ExpectationConflict()",
-      "members": [
-        {
-          "name": "subject",
-          "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "sides",
-          "type": ": Array<{ node_id: string; kind: string; text: string }>",
-          "optional": false,
-          "member_kind": "property"
-        }
-      ]
-    },
-    {
       "name": "findExpectationConflicts",
       "kind": "function",
-      "line": 90,
-      "signature": "findExpectationConflicts(items: ReadonlyArray<{ node_id: string; node_label: string; expectation: Expectation }>,): ExpectationConflict[]"
+      "line": 63,
+      "signature": "findExpectationConflicts(items: readonly JudgeItem[],): ExpectationConflict[]"
     },
     {
       "name": "indexStaleFor",
       "kind": "function",
-      "line": 147,
+      "line": 120,
       "signature": "indexStaleFor(root: string, rels: readonly string[]): string | null"
     },
     {
       "name": "depFactsIncomplete",
       "kind": "function",
-      "line": 172,
+      "line": 145,
       "signature": "depFactsIncomplete(root: string, relPath: string): string | null"
     },
     {
       "name": "judgeExpectations",
       "kind": "function",
-      "line": 204,
-      "signature": "judgeExpectations(root: string,\n  items: ReadonlyArray<{ node_id: string; node_label: string; expectation: Expectation }>,): Promise<ExpectationsReport>"
+      "line": 177,
+      "signature": "judgeExpectations(root: string,\n  items: readonly JudgeItem[],): Promise<ExpectationsReport>"
     }
   ],
   "imports": [
@@ -175,6 +61,11 @@
     {
       "source": "../../../domain/expectation.js",
       "kind": "relative"
+    },
+    {
+      "source": "../../../domain/judge_port.js",
+      "kind": "relative",
+      "type_only": true
     },
     {
       "source": "../../../infrastructure/parse/source_exts.js",
