@@ -1426,7 +1426,12 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     const apiCount = apis.length;
     nodes.push({
       id: fileNodeId(f.rel),
-      label: `${path.posix.basename(f.rel)} · ${apiCount} APIs`,
+      // ★ 2026-10-22（链 E 环4）：**label 不再带计数**。原文是 `${apiCount} APIs`，而 apiCount 数的是
+      //   **函数**（含私有，`ingest` 只把 kind=function/method 收进 apis）：实测 src/domain/actor_spec.ts
+      //   = 12，而它导出 17 个符号、23 个节点 ⇒ 「APIs」与它数的东西不是一回事；更要紧的是这个数字
+      //   会**冻结在 DSL 里**（文件后来加了导出，节点仍是 12，且没有任何东西会去核它）。
+      //   计数是**事实**：要它就从 `semantic.files[].expected_apis` / `symbols` / cache.db 现取。
+      label: path.posix.basename(f.rel),
       x: Math.round(item.x),
       y: Math.round(item.y),
       width: FILE_W,
@@ -1443,7 +1448,8 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     semanticFiles.push({
       id: fileNodeId(f.rel),
       path: f.rel,
-      responsibility: `${f.dir === '.' ? '根目录' : f.dir} — ${apiCount} 个 API（导入自 ${(p?.imports.length || 0)} 个模块）`,
+      // ★ 同上：把「个 API」改成「个函数」—— 数字本来就是函数数，改的是**名字**，不是数字。
+      responsibility: `${f.dir === '.' ? '根目录' : f.dir} — ${apiCount} 个函数（导入自 ${(p?.imports.length || 0)} 个模块）`,
       // ★★★ 2026-10-15（进度轴收归，T328）：**扫描侧不再写文件级 `status: 'done'`** —— 与上面
       //   doc 级那处（本文件 `finalizeDsl`）同一条口径：`'done'` 曾把"实现进度"当存储用，
       //   而它**扫描算出来的**、没有来源署名 ⇒ 降为读侧默认，**不再落库**。

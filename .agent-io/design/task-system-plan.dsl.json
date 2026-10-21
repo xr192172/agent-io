@@ -1538,7 +1538,7 @@
       },
       {
         "id": "file_certs_observe-skeleton-cert_mjs",
-        "label": "observe-skeleton-cert.mjs · 2 APIs",
+        "label": "observe-skeleton-cert.mjs",
         "x": 80,
         "y": 110,
         "width": 240,
@@ -1555,7 +1555,7 @@
       },
       {
         "id": "file_certs_run-all-certs_mjs",
-        "label": "run-all-certs.mjs · 0 APIs",
+        "label": "run-all-certs.mjs",
         "x": 430,
         "y": 110,
         "width": 240,
@@ -1572,7 +1572,7 @@
       },
       {
         "id": "file_certs_t136-unused-export-cert_mjs",
-        "label": "t136-unused-export-cert.mjs · 1 APIs",
+        "label": "t136-unused-export-cert.mjs",
         "x": 780,
         "y": 110,
         "width": 240,
@@ -1589,7 +1589,7 @@
       },
       {
         "id": "file_certs_t181-cert_sh",
-        "label": "t181-cert.sh · 3 APIs",
+        "label": "t181-cert.sh",
         "x": 1130,
         "y": 110,
         "width": 240,
@@ -1606,7 +1606,7 @@
       },
       {
         "id": "file_certs_t181-reset_mjs",
-        "label": "t181-reset.mjs · 0 APIs",
+        "label": "t181-reset.mjs",
         "x": 1480,
         "y": 110,
         "width": 240,
@@ -1623,7 +1623,7 @@
       },
       {
         "id": "file_certs_t182-cert_mjs",
-        "label": "t182-cert.mjs · 0 APIs",
+        "label": "t182-cert.mjs",
         "x": 1830,
         "y": 110,
         "width": 240,
@@ -1640,7 +1640,7 @@
       },
       {
         "id": "file_certs_t182b-cert_sh",
-        "label": "t182b-cert.sh · 4 APIs",
+        "label": "t182b-cert.sh",
         "x": 80,
         "y": 214,
         "width": 240,
@@ -1657,7 +1657,7 @@
       },
       {
         "id": "file_certs_t182b-tombstone-cert_mjs",
-        "label": "t182b-tombstone-cert.mjs · 0 APIs",
+        "label": "t182b-tombstone-cert.mjs",
         "x": 430,
         "y": 214,
         "width": 240,
@@ -1674,7 +1674,7 @@
       },
       {
         "id": "file_certs_t183-cert_mjs",
-        "label": "t183-cert.mjs · 0 APIs",
+        "label": "t183-cert.mjs",
         "x": 780,
         "y": 214,
         "width": 240,
@@ -1691,7 +1691,7 @@
       },
       {
         "id": "file_certs_t184-cert_mjs",
-        "label": "t184-cert.mjs · 2 APIs",
+        "label": "t184-cert.mjs",
         "x": 1130,
         "y": 214,
         "width": 240,
@@ -1708,7 +1708,7 @@
       },
       {
         "id": "file_certs_t184b-cert_mjs",
-        "label": "t184b-cert.mjs · 0 APIs",
+        "label": "t184b-cert.mjs",
         "x": 1480,
         "y": 214,
         "width": 240,
@@ -1725,7 +1725,7 @@
       },
       {
         "id": "file_certs_t184b-probe_mjs",
-        "label": "t184b-probe.mjs · 0 APIs",
+        "label": "t184b-probe.mjs",
         "x": 1830,
         "y": 214,
         "width": 240,
@@ -1742,7 +1742,7 @@
       },
       {
         "id": "file_certs_t185-cert_mjs",
-        "label": "t185-cert.mjs · 0 APIs",
+        "label": "t185-cert.mjs",
         "x": 80,
         "y": 318,
         "width": 240,
@@ -1759,7 +1759,7 @@
       },
       {
         "id": "file_certs_t185-reset_mjs",
-        "label": "t185-reset.mjs · 0 APIs",
+        "label": "t185-reset.mjs",
         "x": 430,
         "y": 318,
         "width": 240,
@@ -1776,7 +1776,7 @@
       },
       {
         "id": "file_certs_t186-cert_mjs",
-        "label": "t186-cert.mjs · 0 APIs",
+        "label": "t186-cert.mjs",
         "x": 780,
         "y": 318,
         "width": 240,
@@ -1793,7 +1793,7 @@
       },
       {
         "id": "file_certs_t186b-cert_mjs",
-        "label": "t186b-cert.mjs · 0 APIs",
+        "label": "t186b-cert.mjs",
         "x": 1130,
         "y": 318,
         "width": 240,
@@ -1810,7 +1810,7 @@
       },
       {
         "id": "file_certs_t187-probe_mjs",
-        "label": "t187-probe.mjs · 0 APIs",
+        "label": "t187-probe.mjs",
         "x": 1480,
         "y": 318,
         "width": 240,
@@ -1827,7 +1827,7 @@
       },
       {
         "id": "file_certs_t188-cert_mjs",
-        "label": "t188-cert.mjs · 0 APIs",
+        "label": "t188-cert.mjs",
         "x": 1830,
         "y": 318,
         "width": 240,
@@ -1844,7 +1844,7 @@
       },
       {
         "id": "file_certs_t189-measure_mjs",
-        "label": "t189-measure.mjs · 0 APIs",
+        "label": "t189-measure.mjs",
         "x": 80,
         "y": 422,
         "width": 240,
@@ -1861,7 +1861,7 @@
       },
       {
         "id": "file_certs_t189-sweep_mjs",
-        "label": "t189-sweep.mjs · 0 APIs",
+        "label": "t189-sweep.mjs",
         "x": 430,
         "y": 422,
         "width": 240,
@@ -1878,7 +1878,7 @@
       },
       {
         "id": "file_certs_t190-cert_mjs",
-        "label": "t190-cert.mjs · 0 APIs",
+        "label": "t190-cert.mjs",
         "x": 780,
         "y": 422,
         "width": 240,
@@ -1895,7 +1895,7 @@
       },
       {
         "id": "file_certs_t191-cert_mjs",
-        "label": "t191-cert.mjs · 0 APIs",
+        "label": "t191-cert.mjs",
         "x": 1130,
         "y": 422,
         "width": 240,
@@ -1912,7 +1912,7 @@
       },
       {
         "id": "file_certs_t192-flow_mjs",
-        "label": "t192-flow.mjs · 0 APIs",
+        "label": "t192-flow.mjs",
         "x": 1480,
         "y": 422,
         "width": 240,
@@ -1929,7 +1929,7 @@
       },
       {
         "id": "file_certs_t192-phantom_mjs",
-        "label": "t192-phantom.mjs · 0 APIs",
+        "label": "t192-phantom.mjs",
         "x": 1830,
         "y": 422,
         "width": 240,
@@ -1946,7 +1946,7 @@
       },
       {
         "id": "file_certs_t192-pointer-sweep_mjs",
-        "label": "t192-pointer-sweep.mjs · 0 APIs",
+        "label": "t192-pointer-sweep.mjs",
         "x": 80,
         "y": 526,
         "width": 240,
@@ -1963,7 +1963,7 @@
       },
       {
         "id": "file_certs_t193-card_mjs",
-        "label": "t193-card.mjs · 0 APIs",
+        "label": "t193-card.mjs",
         "x": 430,
         "y": 526,
         "width": 240,
@@ -1980,7 +1980,7 @@
       },
       {
         "id": "file_certs_t194-flat_mjs",
-        "label": "t194-flat.mjs · 0 APIs",
+        "label": "t194-flat.mjs",
         "x": 780,
         "y": 526,
         "width": 240,
@@ -1997,7 +1997,7 @@
       },
       {
         "id": "file_certs_t195-gate-removal_mjs",
-        "label": "t195-gate-removal.mjs · 0 APIs",
+        "label": "t195-gate-removal.mjs",
         "x": 1130,
         "y": 526,
         "width": 240,
@@ -2014,7 +2014,7 @@
       },
       {
         "id": "file_certs_t196-pointers_mjs",
-        "label": "t196-pointers.mjs · 0 APIs",
+        "label": "t196-pointers.mjs",
         "x": 1480,
         "y": 526,
         "width": 240,
@@ -2031,7 +2031,7 @@
       },
       {
         "id": "file_certs_t197-args_mjs",
-        "label": "t197-args.mjs · 0 APIs",
+        "label": "t197-args.mjs",
         "x": 1830,
         "y": 526,
         "width": 240,
@@ -2048,7 +2048,7 @@
       },
       {
         "id": "file_certs_t197c-approvals-cert_mjs",
-        "label": "t197c-approvals-cert.mjs · 0 APIs",
+        "label": "t197c-approvals-cert.mjs",
         "x": 80,
         "y": 630,
         "width": 240,
@@ -2065,7 +2065,7 @@
       },
       {
         "id": "file_certs_t197sub-approval_mjs",
-        "label": "t197sub-approval.mjs · 0 APIs",
+        "label": "t197sub-approval.mjs",
         "x": 430,
         "y": 630,
         "width": 240,
@@ -2082,7 +2082,7 @@
       },
       {
         "id": "file_certs_t197sub-flow-cert_mjs",
-        "label": "t197sub-flow-cert.mjs · 0 APIs",
+        "label": "t197sub-flow-cert.mjs",
         "x": 780,
         "y": 630,
         "width": 240,
@@ -2099,7 +2099,7 @@
       },
       {
         "id": "file_certs_t198-status_mjs",
-        "label": "t198-status.mjs · 0 APIs",
+        "label": "t198-status.mjs",
         "x": 1130,
         "y": 630,
         "width": 240,
@@ -2116,7 +2116,7 @@
       },
       {
         "id": "file_certs_t198sub-approval-cert_mjs",
-        "label": "t198sub-approval-cert.mjs · 0 APIs",
+        "label": "t198sub-approval-cert.mjs",
         "x": 1480,
         "y": 630,
         "width": 240,
@@ -2133,7 +2133,7 @@
       },
       {
         "id": "file_certs_t200-goals_mjs",
-        "label": "t200-goals.mjs · 0 APIs",
+        "label": "t200-goals.mjs",
         "x": 1830,
         "y": 630,
         "width": 240,
@@ -2150,7 +2150,7 @@
       },
       {
         "id": "file_certs_t201-decoy_mjs",
-        "label": "t201-decoy.mjs · 0 APIs",
+        "label": "t201-decoy.mjs",
         "x": 80,
         "y": 734,
         "width": 240,
@@ -2167,7 +2167,7 @@
       },
       {
         "id": "file_certs_t202-diagnose-loop_mjs",
-        "label": "t202-diagnose-loop.mjs · 0 APIs",
+        "label": "t202-diagnose-loop.mjs",
         "x": 430,
         "y": 734,
         "width": 240,
@@ -2184,7 +2184,7 @@
       },
       {
         "id": "file_certs_t203-touched-audit_mjs",
-        "label": "t203-touched-audit.mjs · 0 APIs",
+        "label": "t203-touched-audit.mjs",
         "x": 780,
         "y": 734,
         "width": 240,
@@ -2201,7 +2201,7 @@
       },
       {
         "id": "file_certs_t203b-declared_mjs",
-        "label": "t203b-declared.mjs · 0 APIs",
+        "label": "t203b-declared.mjs",
         "x": 1130,
         "y": 734,
         "width": 240,
@@ -2218,7 +2218,7 @@
       },
       {
         "id": "file_certs_t205-splitchain_mjs",
-        "label": "t205-splitchain.mjs · 0 APIs",
+        "label": "t205-splitchain.mjs",
         "x": 1480,
         "y": 734,
         "width": 240,
@@ -2235,7 +2235,7 @@
       },
       {
         "id": "file_certs_t212-regex-vs-ast_mjs",
-        "label": "t212-regex-vs-ast.mjs · 0 APIs",
+        "label": "t212-regex-vs-ast.mjs",
         "x": 1830,
         "y": 734,
         "width": 240,
@@ -2252,7 +2252,7 @@
       },
       {
         "id": "file_certs_t213-must-export_mjs",
-        "label": "t213-must-export.mjs · 0 APIs",
+        "label": "t213-must-export.mjs",
         "x": 80,
         "y": 838,
         "width": 240,
@@ -2269,7 +2269,7 @@
       },
       {
         "id": "file_certs_t238-freshness-cert_mjs",
-        "label": "t238-freshness-cert.mjs · 0 APIs",
+        "label": "t238-freshness-cert.mjs",
         "x": 430,
         "y": 838,
         "width": 240,
@@ -2286,7 +2286,7 @@
       },
       {
         "id": "file_certs_t245-index-key-cert_mjs",
-        "label": "t245-index-key-cert.mjs · 0 APIs",
+        "label": "t245-index-key-cert.mjs",
         "x": 780,
         "y": 838,
         "width": 240,
@@ -2303,7 +2303,7 @@
       },
       {
         "id": "file_certs_t246-partial-cert_mjs",
-        "label": "t246-partial-cert.mjs · 0 APIs",
+        "label": "t246-partial-cert.mjs",
         "x": 1130,
         "y": 838,
         "width": 240,
@@ -2320,7 +2320,7 @@
       },
       {
         "id": "file_certs_t247-coverage-cert_mjs",
-        "label": "t247-coverage-cert.mjs · 0 APIs",
+        "label": "t247-coverage-cert.mjs",
         "x": 1480,
         "y": 838,
         "width": 240,
@@ -2337,7 +2337,7 @@
       },
       {
         "id": "file_certs_t251-data-parser-cert_mjs",
-        "label": "t251-data-parser-cert.mjs · 0 APIs",
+        "label": "t251-data-parser-cert.mjs",
         "x": 1830,
         "y": 838,
         "width": 240,
@@ -2354,7 +2354,7 @@
       },
       {
         "id": "file_certs_t316-observe-pack-cert_mjs",
-        "label": "t316-observe-pack-cert.mjs · 0 APIs",
+        "label": "t316-observe-pack-cert.mjs",
         "x": 80,
         "y": 942,
         "width": 240,
@@ -2371,7 +2371,7 @@
       },
       {
         "id": "file_certs_t326-tool-surface-cost-cert_mjs",
-        "label": "t326-tool-surface-cost-cert.mjs · 0 APIs",
+        "label": "t326-tool-surface-cost-cert.mjs",
         "x": 430,
         "y": 942,
         "width": 240,
@@ -2388,7 +2388,7 @@
       },
       {
         "id": "file_certs_t328-progress-authority-cert_mjs",
-        "label": "t328-progress-authority-cert.mjs · 0 APIs",
+        "label": "t328-progress-authority-cert.mjs",
         "x": 780,
         "y": 942,
         "width": 240,
@@ -2405,7 +2405,7 @@
       },
       {
         "id": "file_certs_t329-scope-decision-cert_mjs",
-        "label": "t329-scope-decision-cert.mjs · 0 APIs",
+        "label": "t329-scope-decision-cert.mjs",
         "x": 1130,
         "y": 942,
         "width": 240,
@@ -2422,7 +2422,7 @@
       },
       {
         "id": "file_certs_t330-pending-view-cert_mjs",
-        "label": "t330-pending-view-cert.mjs · 0 APIs",
+        "label": "t330-pending-view-cert.mjs",
         "x": 1480,
         "y": 942,
         "width": 240,
@@ -2439,7 +2439,7 @@
       },
       {
         "id": "file_certs_t331-entry-size-cert_mjs",
-        "label": "t331-entry-size-cert.mjs · 0 APIs",
+        "label": "t331-entry-size-cert.mjs",
         "x": 1830,
         "y": 942,
         "width": 240,
@@ -2456,7 +2456,7 @@
       },
       {
         "id": "file_certs_t332-requires-gate-cert_mjs",
-        "label": "t332-requires-gate-cert.mjs · 2 APIs",
+        "label": "t332-requires-gate-cert.mjs",
         "x": 80,
         "y": 1046,
         "width": 240,
@@ -2473,7 +2473,7 @@
       },
       {
         "id": "file_certs_t333-attestation-binding-cert_mjs",
-        "label": "t333-attestation-binding-cert.mjs · 0 APIs",
+        "label": "t333-attestation-binding-cert.mjs",
         "x": 430,
         "y": 1046,
         "width": 240,
@@ -2490,7 +2490,7 @@
       },
       {
         "id": "file_certs_t334-mcp-evidence-path-cert_mjs",
-        "label": "t334-mcp-evidence-path-cert.mjs · 0 APIs",
+        "label": "t334-mcp-evidence-path-cert.mjs",
         "x": 780,
         "y": 1046,
         "width": 240,
@@ -2507,7 +2507,7 @@
       },
       {
         "id": "file_certs_t335-expectation-from-acceptance-cert_mjs",
-        "label": "t335-expectation-from-acceptance-cert.mjs · 0 APIs",
+        "label": "t335-expectation-from-acceptance-cert.mjs",
         "x": 1130,
         "y": 1046,
         "width": 240,
@@ -2524,7 +2524,7 @@
       },
       {
         "id": "file_certs_t336-design-to-diffblocks-cert_mjs",
-        "label": "t336-design-to-diffblocks-cert.mjs · 0 APIs",
+        "label": "t336-design-to-diffblocks-cert.mjs",
         "x": 1480,
         "y": 1046,
         "width": 240,
@@ -2541,7 +2541,7 @@
       },
       {
         "id": "file_certs_t337-design-sheet-cert_mjs",
-        "label": "t337-design-sheet-cert.mjs · 0 APIs",
+        "label": "t337-design-sheet-cert.mjs",
         "x": 1830,
         "y": 1046,
         "width": 240,
@@ -2558,7 +2558,7 @@
       },
       {
         "id": "file_certs_t338-design-sheet-ref-cert_mjs",
-        "label": "t338-design-sheet-ref-cert.mjs · 0 APIs",
+        "label": "t338-design-sheet-ref-cert.mjs",
         "x": 80,
         "y": 1150,
         "width": 240,
@@ -2575,7 +2575,7 @@
       },
       {
         "id": "file_certs_t339-design-sheet-pending-home-cert_mjs",
-        "label": "t339-design-sheet-pending-home-cert.mjs · 0 APIs",
+        "label": "t339-design-sheet-pending-home-cert.mjs",
         "x": 430,
         "y": 1150,
         "width": 240,
@@ -2592,7 +2592,7 @@
       },
       {
         "id": "file_certs_t340-edit-dsl-validate-gate-cert_mjs",
-        "label": "t340-edit-dsl-validate-gate-cert.mjs · 0 APIs",
+        "label": "t340-edit-dsl-validate-gate-cert.mjs",
         "x": 780,
         "y": 1150,
         "width": 240,
@@ -2609,7 +2609,7 @@
       },
       {
         "id": "file_certs_t341-error-key-gate-cert_mjs",
-        "label": "t341-error-key-gate-cert.mjs · 0 APIs",
+        "label": "t341-error-key-gate-cert.mjs",
         "x": 1130,
         "y": 1150,
         "width": 240,
@@ -2626,7 +2626,7 @@
       },
       {
         "id": "file_certs_t342-anchor-broken-repair-cert_mjs",
-        "label": "t342-anchor-broken-repair-cert.mjs · 0 APIs",
+        "label": "t342-anchor-broken-repair-cert.mjs",
         "x": 1480,
         "y": 1150,
         "width": 240,
@@ -2643,7 +2643,7 @@
       },
       {
         "id": "file_certs_t343-contract-not-from-code-and-attestation-applies-cert_mjs",
-        "label": "t343-contract-not-from-code-and-attestation-applies-cert.mjs · 0 APIs",
+        "label": "t343-contract-not-from-code-and-attestation-applies-cert.mjs",
         "x": 1830,
         "y": 1150,
         "width": 240,
@@ -2660,7 +2660,7 @@
       },
       {
         "id": "file_certs_t344-design-sheet-resolved-cert_mjs",
-        "label": "t344-design-sheet-resolved-cert.mjs · 0 APIs",
+        "label": "t344-design-sheet-resolved-cert.mjs",
         "x": 80,
         "y": 1254,
         "width": 240,
@@ -2677,7 +2677,7 @@
       },
       {
         "id": "file_certs_t345-read-side-facts-backfill-cert_mjs",
-        "label": "t345-read-side-facts-backfill-cert.mjs · 0 APIs",
+        "label": "t345-read-side-facts-backfill-cert.mjs",
         "x": 430,
         "y": 1254,
         "width": 240,
@@ -2694,7 +2694,7 @@
       },
       {
         "id": "file_certs_t346-type-only-edge-verdict-cert_mjs",
-        "label": "t346-type-only-edge-verdict-cert.mjs · 0 APIs",
+        "label": "t346-type-only-edge-verdict-cert.mjs",
         "x": 780,
         "y": 1254,
         "width": 240,
@@ -2711,7 +2711,7 @@
       },
       {
         "id": "file_certs_t347-receipt-completeness-cert_mjs",
-        "label": "t347-receipt-completeness-cert.mjs · 0 APIs",
+        "label": "t347-receipt-completeness-cert.mjs",
         "x": 1130,
         "y": 1254,
         "width": 240,
@@ -2728,7 +2728,7 @@
       },
       {
         "id": "file_certs_t348-phase-classification-cert_mjs",
-        "label": "t348-phase-classification-cert.mjs · 0 APIs",
+        "label": "t348-phase-classification-cert.mjs",
         "x": 1480,
         "y": 1254,
         "width": 240,
@@ -2745,7 +2745,7 @@
       },
       {
         "id": "file_certs_t349-task-home-cert_mjs",
-        "label": "t349-task-home-cert.mjs · 0 APIs",
+        "label": "t349-task-home-cert.mjs",
         "x": 1830,
         "y": 1254,
         "width": 240,
@@ -2762,7 +2762,7 @@
       },
       {
         "id": "file_certs_t350-publish-task-cert_mjs",
-        "label": "t350-publish-task-cert.mjs · 0 APIs",
+        "label": "t350-publish-task-cert.mjs",
         "x": 80,
         "y": 1358,
         "width": 240,
@@ -2779,7 +2779,7 @@
       },
       {
         "id": "file_certs_t351-card-standing-cert_mjs",
-        "label": "t351-card-standing-cert.mjs · 0 APIs",
+        "label": "t351-card-standing-cert.mjs",
         "x": 430,
         "y": 1358,
         "width": 240,
@@ -2796,7 +2796,7 @@
       },
       {
         "id": "file_certs_t352-write-gate-coverage-cert_mjs",
-        "label": "t352-write-gate-coverage-cert.mjs · 0 APIs",
+        "label": "t352-write-gate-coverage-cert.mjs",
         "x": 780,
         "y": 1358,
         "width": 240,
@@ -2813,7 +2813,7 @@
       },
       {
         "id": "file_certs_t353-gate-principle-unblock-cert_mjs",
-        "label": "t353-gate-principle-unblock-cert.mjs · 0 APIs",
+        "label": "t353-gate-principle-unblock-cert.mjs",
         "x": 1130,
         "y": 1358,
         "width": 240,
@@ -2830,7 +2830,7 @@
       },
       {
         "id": "file_certs_t354-incremental-verify-cert_mjs",
-        "label": "t354-incremental-verify-cert.mjs · 1 APIs",
+        "label": "t354-incremental-verify-cert.mjs",
         "x": 1480,
         "y": 1358,
         "width": 240,
@@ -2847,7 +2847,7 @@
       },
       {
         "id": "file_dogfood_build_cache_mjs",
-        "label": "build_cache.mjs · 1 APIs",
+        "label": "build_cache.mjs",
         "x": 80,
         "y": 5388,
         "width": 240,
@@ -2863,7 +2863,7 @@
       },
       {
         "id": "file_dogfood_check_cache_mjs",
-        "label": "check_cache.mjs · 0 APIs",
+        "label": "check_cache.mjs",
         "x": 80,
         "y": 5700,
         "width": 240,
@@ -2879,7 +2879,7 @@
       },
       {
         "id": "file_dogfood_verify_space_bug_mjs",
-        "label": "verify_space_bug.mjs · 0 APIs",
+        "label": "verify_space_bug.mjs",
         "x": 80,
         "y": 5492,
         "width": 240,
@@ -2895,7 +2895,7 @@
       },
       {
         "id": "file_dogfood_verify_spec_form_mjs",
-        "label": "verify_spec_form.mjs · 1 APIs",
+        "label": "verify_spec_form.mjs",
         "x": 80,
         "y": 5596,
         "width": 240,
@@ -2911,7 +2911,7 @@
       },
       {
         "id": "file_observe-lang-go_cmd_instrument_main_go",
-        "label": "main.go · 3 APIs",
+        "label": "main.go",
         "x": 120,
         "y": 4272,
         "width": 240,
@@ -2927,7 +2927,7 @@
       },
       {
         "id": "file_observe-lang-go_cmd_observev2-demo_main_go",
-        "label": "main.go · 13 APIs",
+        "label": "main.go",
         "x": 120,
         "y": 4446,
         "width": 240,
@@ -2943,7 +2943,7 @@
       },
       {
         "id": "file_observe-lang-go_cmd_observev2-record_main_go",
-        "label": "main.go · 5 APIs",
+        "label": "main.go",
         "x": 120,
         "y": 4620,
         "width": 240,
@@ -2959,7 +2959,7 @@
       },
       {
         "id": "file_observe-lang-go_internal_instrument_contract_go",
-        "label": "contract.go · 4 APIs",
+        "label": "contract.go",
         "x": 550,
         "y": 5174,
         "width": 240,
@@ -2975,7 +2975,7 @@
       },
       {
         "id": "file_observe-lang-go_internal_instrument_effects_go",
-        "label": "effects.go · 9 APIs",
+        "label": "effects.go",
         "x": 550,
         "y": 5070,
         "width": 240,
@@ -2991,7 +2991,7 @@
       },
       {
         "id": "file_observe-lang-go_internal_instrument_instrument_go",
-        "label": "instrument.go · 33 APIs",
+        "label": "instrument.go",
         "x": 550,
         "y": 4966,
         "width": 240,
@@ -3007,7 +3007,7 @@
       },
       {
         "id": "file_observe-lang-go_probe_export_go",
-        "label": "export.go · 8 APIs",
+        "label": "export.go",
         "x": 530,
         "y": 4430,
         "width": 240,
@@ -3023,7 +3023,7 @@
       },
       {
         "id": "file_observe-lang-go_probe_global_go",
-        "label": "global.go · 6 APIs",
+        "label": "global.go",
         "x": 530,
         "y": 4638,
         "width": 240,
@@ -3039,7 +3039,7 @@
       },
       {
         "id": "file_observe-lang-go_probe_probe_go",
-        "label": "probe.go · 15 APIs",
+        "label": "probe.go",
         "x": 530,
         "y": 4326,
         "width": 240,
@@ -3055,7 +3055,7 @@
       },
       {
         "id": "file_observe-lang-go_probe_run_recorder_go",
-        "label": "run_recorder.go · 3 APIs",
+        "label": "run_recorder.go",
         "x": 530,
         "y": 4742,
         "width": 240,
@@ -3071,7 +3071,7 @@
       },
       {
         "id": "file_observe-lang-go_probe_tiered_go",
-        "label": "tiered.go · 21 APIs",
+        "label": "tiered.go",
         "x": 530,
         "y": 4222,
         "width": 240,
@@ -3087,7 +3087,7 @@
       },
       {
         "id": "file_observe-lang-go_probe_trace_go",
-        "label": "trace.go · 6 APIs",
+        "label": "trace.go",
         "x": 530,
         "y": 4534,
         "width": 240,
@@ -3103,7 +3103,7 @@
       },
       {
         "id": "file_observe-lang-java_observe_probe_Camprobe_java",
-        "label": "Camprobe.java · 8 APIs",
+        "label": "Camprobe.java",
         "x": 120,
         "y": 5974,
         "width": 240,
@@ -3119,7 +3119,7 @@
       },
       {
         "id": "file_observe-lang-py_camprobe_py",
-        "label": "camprobe.py · 10 APIs",
+        "label": "camprobe.py",
         "x": 80,
         "y": 6188,
         "width": 240,
@@ -3135,7 +3135,7 @@
       },
       {
         "id": "file_scripts_check-receipt_mjs",
-        "label": "check-receipt.mjs · 1 APIs",
+        "label": "check-receipt.mjs",
         "x": 470,
         "y": 1532,
         "width": 240,
@@ -3152,7 +3152,7 @@
       },
       {
         "id": "file_scripts_clean_dist_mjs",
-        "label": "clean_dist.mjs · 3 APIs",
+        "label": "clean_dist.mjs",
         "x": 820,
         "y": 1532,
         "width": 240,
@@ -3169,7 +3169,7 @@
       },
       {
         "id": "file_scripts_demo_mjs",
-        "label": "demo.mjs · 6 APIs",
+        "label": "demo.mjs",
         "x": 1170,
         "y": 1532,
         "width": 240,
@@ -3186,7 +3186,7 @@
       },
       {
         "id": "file_scripts_dev_mjs",
-        "label": "dev.mjs · 4 APIs",
+        "label": "dev.mjs",
         "x": 80,
         "y": 1914,
         "width": 240,
@@ -3203,7 +3203,7 @@
       },
       {
         "id": "file_scripts_diff_language_rosters_py",
-        "label": "diff_language_rosters.py · 2 APIs",
+        "label": "diff_language_rosters.py",
         "x": 430,
         "y": 1914,
         "width": 240,
@@ -3220,7 +3220,7 @@
       },
       {
         "id": "file_scripts_freeze_grammar_sources_py",
-        "label": "freeze_grammar_sources.py · 5 APIs",
+        "label": "freeze_grammar_sources.py",
         "x": 780,
         "y": 1914,
         "width": 240,
@@ -3237,7 +3237,7 @@
       },
       {
         "id": "file_scripts_gen_agents_mjs",
-        "label": "gen_agents.mjs · 2 APIs",
+        "label": "gen_agents.mjs",
         "x": 1130,
         "y": 1914,
         "width": 240,
@@ -3254,7 +3254,7 @@
       },
       {
         "id": "file_scripts_gen_cognition_mjs",
-        "label": "gen_cognition.mjs · 6 APIs",
+        "label": "gen_cognition.mjs",
         "x": 1480,
         "y": 1914,
         "width": 240,
@@ -3271,7 +3271,7 @@
       },
       {
         "id": "file_scripts_gen_endpoints_schema_mjs",
-        "label": "gen_endpoints_schema.mjs · 0 APIs",
+        "label": "gen_endpoints_schema.mjs",
         "x": 80,
         "y": 2018,
         "width": 240,
@@ -3288,7 +3288,7 @@
       },
       {
         "id": "file_scripts_gen_manifest_mjs",
-        "label": "gen_manifest.mjs · 2 APIs",
+        "label": "gen_manifest.mjs",
         "x": 430,
         "y": 2018,
         "width": 240,
@@ -3305,7 +3305,7 @@
       },
       {
         "id": "file_scripts_gen_teach_cjs",
-        "label": "gen_teach.cjs · 0 APIs",
+        "label": "gen_teach.cjs",
         "x": 780,
         "y": 2018,
         "width": 240,
@@ -3322,7 +3322,7 @@
       },
       {
         "id": "file_scripts_grammar_shim_mjs",
-        "label": "grammar_shim.mjs · 5 APIs",
+        "label": "grammar_shim.mjs",
         "x": 1130,
         "y": 2018,
         "width": 240,
@@ -3339,7 +3339,7 @@
       },
       {
         "id": "file_scripts_hook-task-gate_mjs",
-        "label": "hook-task-gate.mjs · 2 APIs",
+        "label": "hook-task-gate.mjs",
         "x": 1480,
         "y": 2018,
         "width": 240,
@@ -3356,7 +3356,7 @@
       },
       {
         "id": "file_scripts_hub_mjs",
-        "label": "hub.mjs · 4 APIs",
+        "label": "hub.mjs",
         "x": 80,
         "y": 2122,
         "width": 240,
@@ -3373,7 +3373,7 @@
       },
       {
         "id": "file_scripts_install_global_skill_mjs",
-        "label": "install_global_skill.mjs · 0 APIs",
+        "label": "install_global_skill.mjs",
         "x": 430,
         "y": 2122,
         "width": 240,
@@ -3390,7 +3390,7 @@
       },
       {
         "id": "file_scripts_install_mcp_mjs",
-        "label": "install_mcp.mjs · 24 APIs",
+        "label": "install_mcp.mjs",
         "x": 780,
         "y": 2122,
         "width": 240,
@@ -3407,7 +3407,7 @@
       },
       {
         "id": "file_scripts_mcp_mcp_call_mjs",
-        "label": "mcp_call.mjs · 1 APIs",
+        "label": "mcp_call.mjs",
         "x": 100,
         "y": 1582,
         "width": 240,
@@ -3424,7 +3424,7 @@
       },
       {
         "id": "file_scripts_mcp_mcp_scan_mjs",
-        "label": "mcp_scan.mjs · 0 APIs",
+        "label": "mcp_scan.mjs",
         "x": 100,
         "y": 1686,
         "width": 240,
@@ -3441,7 +3441,7 @@
       },
       {
         "id": "file_scripts_mcp_mcp_smoke_mjs",
-        "label": "mcp_smoke.mjs · 0 APIs",
+        "label": "mcp_smoke.mjs",
         "x": 100,
         "y": 1790,
         "width": 240,
@@ -3458,7 +3458,7 @@
       },
       {
         "id": "file_scripts_measure_b_contract_mjs",
-        "label": "measure_b_contract.mjs · 4 APIs",
+        "label": "measure_b_contract.mjs",
         "x": 1130,
         "y": 2122,
         "width": 240,
@@ -3475,7 +3475,7 @@
       },
       {
         "id": "file_scripts_merge_language_roster_py",
-        "label": "merge_language_roster.py · 2 APIs",
+        "label": "merge_language_roster.py",
         "x": 1480,
         "y": 2122,
         "width": 240,
@@ -3492,7 +3492,7 @@
       },
       {
         "id": "file_scripts_net_probe_mjs",
-        "label": "net_probe.mjs · 0 APIs",
+        "label": "net_probe.mjs",
         "x": 80,
         "y": 2226,
         "width": 240,
@@ -3509,7 +3509,7 @@
       },
       {
         "id": "file_scripts_new-observe-lang_mjs",
-        "label": "new-observe-lang.mjs · 0 APIs",
+        "label": "new-observe-lang.mjs",
         "x": 430,
         "y": 2226,
         "width": 240,
@@ -3526,7 +3526,7 @@
       },
       {
         "id": "file_scripts_plan-assertions_mjs",
-        "label": "plan-assertions.mjs · 4 APIs",
+        "label": "plan-assertions.mjs",
         "x": 780,
         "y": 2226,
         "width": 240,
@@ -3543,7 +3543,7 @@
       },
       {
         "id": "file_scripts_probe_cc_equiv_mjs",
-        "label": "probe_cc_equiv.mjs · 1 APIs",
+        "label": "probe_cc_equiv.mjs",
         "x": 1130,
         "y": 2226,
         "width": 240,
@@ -3560,7 +3560,7 @@
       },
       {
         "id": "file_scripts_probe_closure_multi_mjs",
-        "label": "probe_closure_multi.mjs · 1 APIs",
+        "label": "probe_closure_multi.mjs",
         "x": 1480,
         "y": 2226,
         "width": 240,
@@ -3577,7 +3577,7 @@
       },
       {
         "id": "file_scripts_probe_demand_side_mjs",
-        "label": "probe_demand_side.mjs · 0 APIs",
+        "label": "probe_demand_side.mjs",
         "x": 80,
         "y": 2330,
         "width": 240,
@@ -3594,7 +3594,7 @@
       },
       {
         "id": "file_scripts_probe_edge_diff_mjs",
-        "label": "probe_edge_diff.mjs · 1 APIs",
+        "label": "probe_edge_diff.mjs",
         "x": 430,
         "y": 2330,
         "width": 240,
@@ -3611,7 +3611,7 @@
       },
       {
         "id": "file_scripts_probe_extract_hard_mjs",
-        "label": "probe_extract_hard.mjs · 0 APIs",
+        "label": "probe_extract_hard.mjs",
         "x": 780,
         "y": 2330,
         "width": 240,
@@ -3628,7 +3628,7 @@
       },
       {
         "id": "file_scripts_probe_extract_quality_mjs",
-        "label": "probe_extract_quality.mjs · 0 APIs",
+        "label": "probe_extract_quality.mjs",
         "x": 1130,
         "y": 2330,
         "width": 240,
@@ -3645,7 +3645,7 @@
       },
       {
         "id": "file_scripts_probe_impact_reverse_mjs",
-        "label": "probe_impact_reverse.mjs · 0 APIs",
+        "label": "probe_impact_reverse.mjs",
         "x": 1480,
         "y": 2330,
         "width": 240,
@@ -3662,7 +3662,7 @@
       },
       {
         "id": "file_scripts_probe_tool_smells_mjs",
-        "label": "probe_tool_smells.mjs · 0 APIs",
+        "label": "probe_tool_smells.mjs",
         "x": 80,
         "y": 2434,
         "width": 240,
@@ -3679,7 +3679,7 @@
       },
       {
         "id": "file_scripts_probe_tool_surface_mjs",
-        "label": "probe_tool_surface.mjs · 0 APIs",
+        "label": "probe_tool_surface.mjs",
         "x": 430,
         "y": 2434,
         "width": 240,
@@ -3696,7 +3696,7 @@
       },
       {
         "id": "file_scripts_probe_verdict_grid_mjs",
-        "label": "probe_verdict_grid.mjs · 0 APIs",
+        "label": "probe_verdict_grid.mjs",
         "x": 780,
         "y": 2434,
         "width": 240,
@@ -3713,7 +3713,7 @@
       },
       {
         "id": "file_scripts_probe_xfile_resolve_mjs",
-        "label": "probe_xfile_resolve.mjs · 0 APIs",
+        "label": "probe_xfile_resolve.mjs",
         "x": 1130,
         "y": 2434,
         "width": 240,
@@ -3730,7 +3730,7 @@
       },
       {
         "id": "file_scripts_promote_agent_io_mcp_mjs",
-        "label": "promote_agent_io_mcp.mjs · 0 APIs",
+        "label": "promote_agent_io_mcp.mjs",
         "x": 1480,
         "y": 2434,
         "width": 240,
@@ -3747,7 +3747,7 @@
       },
       {
         "id": "file_scripts_rebuild_feature_mjs",
-        "label": "rebuild_feature.mjs · 0 APIs",
+        "label": "rebuild_feature.mjs",
         "x": 80,
         "y": 2538,
         "width": 240,
@@ -3764,7 +3764,7 @@
       },
       {
         "id": "file_scripts_rebuild_teach_cjs",
-        "label": "rebuild_teach.cjs · 0 APIs",
+        "label": "rebuild_teach.cjs",
         "x": 430,
         "y": 2538,
         "width": 240,
@@ -3781,7 +3781,7 @@
       },
       {
         "id": "file_scripts_relink_specifiers_mjs",
-        "label": "relink_specifiers.mjs · 3 APIs",
+        "label": "relink_specifiers.mjs",
         "x": 780,
         "y": 2538,
         "width": 240,
@@ -3798,7 +3798,7 @@
       },
       {
         "id": "file_scripts_run-invariant-checks_mjs",
-        "label": "run-invariant-checks.mjs · 0 APIs",
+        "label": "run-invariant-checks.mjs",
         "x": 1130,
         "y": 2538,
         "width": 240,
@@ -3815,7 +3815,7 @@
       },
       {
         "id": "file_scripts_scan_canvas_ts",
-        "label": "scan_canvas.ts · 3 APIs",
+        "label": "scan_canvas.ts",
         "x": 1480,
         "y": 2538,
         "width": 240,
@@ -3832,7 +3832,7 @@
       },
       {
         "id": "file_scripts_setup_mjs",
-        "label": "setup.mjs · 7 APIs",
+        "label": "setup.mjs",
         "x": 80,
         "y": 2642,
         "width": 240,
@@ -3849,7 +3849,7 @@
       },
       {
         "id": "file_scripts_task-system-static_mjs",
-        "label": "task-system-static.mjs · 1 APIs",
+        "label": "task-system-static.mjs",
         "x": 1130,
         "y": 2642,
         "width": 240,
@@ -3866,7 +3866,7 @@
       },
       {
         "id": "file_scripts_ts_kernel_probe_mjs",
-        "label": "ts_kernel_probe.mjs · 1 APIs",
+        "label": "ts_kernel_probe.mjs",
         "x": 1480,
         "y": 2642,
         "width": 240,
@@ -3883,7 +3883,7 @@
       },
       {
         "id": "file_scripts_verify-changed_mjs",
-        "label": "verify-changed.mjs · 7 APIs",
+        "label": "verify-changed.mjs",
         "x": 80,
         "y": 2746,
         "width": 240,
@@ -3900,7 +3900,7 @@
       },
       {
         "id": "file_scripts_verify_mjs",
-        "label": "verify.mjs · 3 APIs",
+        "label": "verify.mjs",
         "x": 780,
         "y": 2746,
         "width": 240,
@@ -3917,7 +3917,7 @@
       },
       {
         "id": "file_scripts_verify_grammar_rebuild_mjs",
-        "label": "verify_grammar_rebuild.mjs · 0 APIs",
+        "label": "verify_grammar_rebuild.mjs",
         "x": 430,
         "y": 2746,
         "width": 240,
@@ -3934,7 +3934,7 @@
       },
       {
         "id": "file_scripts_vocabulary_mjs",
-        "label": "vocabulary.mjs · 0 APIs",
+        "label": "vocabulary.mjs",
         "x": 1130,
         "y": 2746,
         "width": 240,
@@ -3951,7 +3951,7 @@
       },
       {
         "id": "file_src_application_cross_index_ts",
-        "label": "index.ts · 0 APIs",
+        "label": "index.ts",
         "x": 6860,
         "y": 14032,
         "width": 240,
@@ -3997,7 +3997,7 @@
       },
       {
         "id": "file_src_application_design_api_signature_ts",
-        "label": "api_signature.ts · 1 APIs",
+        "label": "api_signature.ts",
         "x": 14180,
         "y": 11320,
         "width": 240,
@@ -4013,7 +4013,7 @@
       },
       {
         "id": "file_src_application_design_derive_derive_algorithm_ts",
-        "label": "derive_algorithm.ts · 3 APIs",
+        "label": "derive_algorithm.ts",
         "x": 14550,
         "y": 10884,
         "width": 240,
@@ -4029,7 +4029,7 @@
       },
       {
         "id": "file_src_application_design_derive_derive_chain_ts",
-        "label": "derive_chain.ts · 15 APIs",
+        "label": "derive_chain.ts",
         "x": 14200,
         "y": 10988,
         "width": 240,
@@ -4045,7 +4045,7 @@
       },
       {
         "id": "file_src_application_design_derive_derive_split_ts",
-        "label": "derive_split.ts · 30 APIs",
+        "label": "derive_split.ts",
         "x": 14200,
         "y": 10884,
         "width": 240,
@@ -4075,7 +4075,7 @@
       },
       {
         "id": "file_src_application_design_derive_opl_ts",
-        "label": "opl.ts · 22 APIs",
+        "label": "opl.ts",
         "x": 14200,
         "y": 11092,
         "width": 240,
@@ -4091,7 +4091,7 @@
       },
       {
         "id": "file_src_application_design_dsl_ops_annotation_tools_ts",
-        "label": "annotation_tools.ts · 3 APIs",
+        "label": "annotation_tools.ts",
         "x": 13110,
         "y": 11196,
         "width": 240,
@@ -4450,7 +4450,7 @@
       },
       {
         "id": "file_src_application_design_dsl_ops_api_ops_ts",
-        "label": "api_ops.ts · 5 APIs",
+        "label": "api_ops.ts",
         "x": 13110,
         "y": 11092,
         "width": 240,
@@ -5051,7 +5051,7 @@
       },
       {
         "id": "file_src_application_design_dsl_ops_edge_ops_ts",
-        "label": "edge_ops.ts · 2 APIs",
+        "label": "edge_ops.ts",
         "x": 13460,
         "y": 11092,
         "width": 240,
@@ -5419,7 +5419,7 @@
       },
       {
         "id": "file_src_application_design_dsl_ops_edit_result_ts",
-        "label": "edit_result.ts · 0 APIs",
+        "label": "edit_result.ts",
         "x": 13810,
         "y": 10988,
         "width": 240,
@@ -5498,7 +5498,7 @@
       },
       {
         "id": "file_src_application_design_dsl_ops_feature_ops_ts",
-        "label": "feature_ops.ts · 2 APIs",
+        "label": "feature_ops.ts",
         "x": 12760,
         "y": 10988,
         "width": 240,
@@ -5780,7 +5780,7 @@
       },
       {
         "id": "file_src_application_design_dsl_ops_file_ops_ts",
-        "label": "file_ops.ts · 3 APIs",
+        "label": "file_ops.ts",
         "x": 13460,
         "y": 10988,
         "width": 240,
@@ -10854,7 +10854,7 @@
       },
       {
         "id": "file_src_application_design_dsl_ops_status_tools_ts",
-        "label": "status_tools.ts · 2 APIs",
+        "label": "status_tools.ts",
         "x": 13810,
         "y": 10884,
         "width": 240,
@@ -13074,7 +13074,7 @@
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
-        "label": "update_feature.ts · 22 APIs",
+        "label": "update_feature.ts",
         "x": 12760,
         "y": 10884,
         "width": 240,
@@ -16961,7 +16961,7 @@
       },
       {
         "id": "file_src_application_design_handlers_ts",
-        "label": "handlers.ts · 2 APIs",
+        "label": "handlers.ts",
         "x": 11300,
         "y": 11598,
         "width": 240,
@@ -17078,7 +17078,7 @@
       },
       {
         "id": "file_src_application_design_index_ts",
-        "label": "index.ts · 0 APIs",
+        "label": "index.ts",
         "x": 10950,
         "y": 10834,
         "width": 240,
@@ -17121,7 +17121,7 @@
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
-        "label": "consistency.ts · 14 APIs",
+        "label": "consistency.ts",
         "x": 13110,
         "y": 12064,
         "width": 240,
@@ -17148,7 +17148,7 @@
       },
       {
         "id": "file_src_application_design_intent_detect_drift_ts",
-        "label": "detect_drift.ts · 6 APIs",
+        "label": "detect_drift.ts",
         "x": 12760,
         "y": 12168,
         "width": 240,
@@ -17164,7 +17164,7 @@
       },
       {
         "id": "file_src_application_design_intent_expectations_ts",
-        "label": "expectations.ts · 4 APIs",
+        "label": "expectations.ts",
         "x": 12760,
         "y": 12064,
         "width": 240,
@@ -17180,7 +17180,7 @@
       },
       {
         "id": "file_src_application_design_intent_set_design_intent_ts",
-        "label": "set_design_intent.ts · 3 APIs",
+        "label": "set_design_intent.ts",
         "x": 12760,
         "y": 12272,
         "width": 240,
@@ -17196,7 +17196,7 @@
       },
       {
         "id": "file_src_application_design_lifecycle_simulation_ts",
-        "label": "simulation.ts · 5 APIs",
+        "label": "simulation.ts",
         "x": 12760,
         "y": 11682,
         "width": 240,
@@ -17212,7 +17212,7 @@
       },
       {
         "id": "file_src_application_design_lifecycle_snapshot_ts",
-        "label": "snapshot.ts · 10 APIs",
+        "label": "snapshot.ts",
         "x": 12760,
         "y": 11474,
         "width": 240,
@@ -17228,7 +17228,7 @@
       },
       {
         "id": "file_src_application_design_no_file_entries_ts",
-        "label": "no_file_entries.ts · 1 APIs",
+        "label": "no_file_entries.ts",
         "x": 14180,
         "y": 11216,
         "width": 240,
@@ -17244,7 +17244,7 @@
       },
       {
         "id": "file_src_application_design_workbench_code_workbench_ts",
-        "label": "code_workbench.ts · 30 APIs",
+        "label": "code_workbench.ts",
         "x": 11320,
         "y": 11266,
         "width": 240,
@@ -17274,7 +17274,7 @@
       },
       {
         "id": "file_src_application_design_workbench_dag_layout_ts",
-        "label": "dag_layout.ts · 10 APIs",
+        "label": "dag_layout.ts",
         "x": 11320,
         "y": 11370,
         "width": 240,
@@ -17290,7 +17290,7 @@
       },
       {
         "id": "file_src_application_dispatch_ts",
-        "label": "dispatch.ts · 6 APIs",
+        "label": "dispatch.ts",
         "x": 14940,
         "y": 10784,
         "width": 240,
@@ -17306,7 +17306,7 @@
       },
       {
         "id": "file_src_application_harvest_extract_contracts_ts",
-        "label": "extract_contracts.ts · 15 APIs",
+        "label": "extract_contracts.ts",
         "x": 7210,
         "y": 13650,
         "width": 240,
@@ -17322,7 +17322,7 @@
       },
       {
         "id": "file_src_application_harvest_handlers_ts",
-        "label": "handlers.ts · 0 APIs",
+        "label": "handlers.ts",
         "x": 7210,
         "y": 13858,
         "width": 240,
@@ -17338,7 +17338,7 @@
       },
       {
         "id": "file_src_application_harvest_harvest_closure_ts",
-        "label": "harvest_closure.ts · 5 APIs",
+        "label": "harvest_closure.ts",
         "x": 7210,
         "y": 13754,
         "width": 240,
@@ -17365,7 +17365,7 @@
       },
       {
         "id": "file_src_application_harvest_harvest_decisions_ts",
-        "label": "harvest_decisions.ts · 32 APIs",
+        "label": "harvest_decisions.ts",
         "x": 7560,
         "y": 13650,
         "width": 240,
@@ -17395,7 +17395,7 @@
       },
       {
         "id": "file_src_application_harvest_index_ts",
-        "label": "index.ts · 0 APIs",
+        "label": "index.ts",
         "x": 6860,
         "y": 13650,
         "width": 240,
@@ -17425,7 +17425,7 @@
       },
       {
         "id": "file_src_application_meta_diagnosis_diagnose_loop_ts",
-        "label": "diagnose_loop.ts · 2 APIs",
+        "label": "diagnose_loop.ts",
         "x": 7270,
         "y": 11058,
         "width": 240,
@@ -17441,7 +17441,7 @@
       },
       {
         "id": "file_src_application_meta_docs_project_docs_ts",
-        "label": "project_docs.ts · 11 APIs",
+        "label": "project_docs.ts",
         "x": 9840,
         "y": 11162,
         "width": 240,
@@ -17457,7 +17457,7 @@
       },
       {
         "id": "file_src_application_meta_explore_contract_page_ts",
-        "label": "contract_page.ts · 7 APIs",
+        "label": "contract_page.ts",
         "x": 7660,
         "y": 11196,
         "width": 240,
@@ -17484,7 +17484,7 @@
       },
       {
         "id": "file_src_application_meta_explore_explore_arg_spec_ts",
-        "label": "explore_arg_spec.ts · 3 APIs",
+        "label": "explore_arg_spec.ts",
         "x": 8010,
         "y": 10988,
         "width": 240,
@@ -17511,7 +17511,7 @@
       },
       {
         "id": "file_src_application_meta_explore_explore_code_ts",
-        "label": "explore_code.ts · 4 APIs",
+        "label": "explore_code.ts",
         "x": 7660,
         "y": 10988,
         "width": 240,
@@ -17538,7 +17538,7 @@
       },
       {
         "id": "file_src_application_meta_explore_first_hop_args_ts",
-        "label": "first_hop_args.ts · 8 APIs",
+        "label": "first_hop_args.ts",
         "x": 7660,
         "y": 11092,
         "width": 240,
@@ -17554,7 +17554,7 @@
       },
       {
         "id": "file_src_application_meta_explore_next_hop_args_ts",
-        "label": "next_hop_args.ts · 6 APIs",
+        "label": "next_hop_args.ts",
         "x": 8010,
         "y": 10884,
         "width": 240,
@@ -17570,7 +17570,7 @@
       },
       {
         "id": "file_src_application_meta_explore_query_feature_ts",
-        "label": "query_feature.ts · 9 APIs",
+        "label": "query_feature.ts",
         "x": 7660,
         "y": 10884,
         "width": 240,
@@ -17613,7 +17613,7 @@
       },
       {
         "id": "file_src_application_meta_handlers_ts",
-        "label": "handlers.ts · 1 APIs",
+        "label": "handlers.ts",
         "x": 7250,
         "y": 11356,
         "width": 240,
@@ -17640,7 +17640,7 @@
       },
       {
         "id": "file_src_application_meta_impact_impact_report_ts",
-        "label": "impact_report.ts · 8 APIs",
+        "label": "impact_report.ts",
         "x": 6880,
         "y": 10884,
         "width": 240,
@@ -17656,7 +17656,7 @@
       },
       {
         "id": "file_src_application_meta_index_ts",
-        "label": "index.ts · 2 APIs",
+        "label": "index.ts",
         "x": 6860,
         "y": 11008,
         "width": 240,
@@ -17683,7 +17683,7 @@
       },
       {
         "id": "file_src_application_meta_integrity_index_integrity_ts",
-        "label": "index_integrity.ts · 7 APIs",
+        "label": "index_integrity.ts",
         "x": 7270,
         "y": 10884,
         "width": 240,
@@ -17699,7 +17699,7 @@
       },
       {
         "id": "file_src_application_meta_llm_llm_decider_ts",
-        "label": "llm_decider.ts · 12 APIs",
+        "label": "llm_decider.ts",
         "x": 8400,
         "y": 11266,
         "width": 240,
@@ -17715,7 +17715,7 @@
       },
       {
         "id": "file_src_application_meta_llm_semantic_search_ts",
-        "label": "semantic_search.ts · 13 APIs",
+        "label": "semantic_search.ts",
         "x": 8400,
         "y": 11162,
         "width": 240,
@@ -17731,7 +17731,7 @@
       },
       {
         "id": "file_src_application_meta_registry_capability_map_ts",
-        "label": "capability_map.ts · 26 APIs",
+        "label": "capability_map.ts",
         "x": 8750,
         "y": 10884,
         "width": 240,
@@ -17761,7 +17761,7 @@
       },
       {
         "id": "file_src_application_meta_registry_cli_extract_ts",
-        "label": "cli_extract.ts · 1 APIs",
+        "label": "cli_extract.ts",
         "x": 9100,
         "y": 10988,
         "width": 240,
@@ -17777,7 +17777,7 @@
       },
       {
         "id": "file_src_application_meta_registry_collect_functions_ts",
-        "label": "collect_functions.ts · 1 APIs",
+        "label": "collect_functions.ts",
         "x": 8750,
         "y": 10988,
         "width": 240,
@@ -17793,7 +17793,7 @@
       },
       {
         "id": "file_src_application_meta_registry_registry_extract_ts",
-        "label": "registry_extract.ts · 4 APIs",
+        "label": "registry_extract.ts",
         "x": 9100,
         "y": 10884,
         "width": 240,
@@ -17809,7 +17809,7 @@
       },
       {
         "id": "file_src_application_meta_registry_sync_contracts_ts",
-        "label": "sync_contracts.ts · 7 APIs",
+        "label": "sync_contracts.ts",
         "x": 8400,
         "y": 10988,
         "width": 240,
@@ -17825,7 +17825,7 @@
       },
       {
         "id": "file_src_application_meta_registry_tool_faces_ts",
-        "label": "tool_faces.ts · 3 APIs",
+        "label": "tool_faces.ts",
         "x": 9450,
         "y": 10884,
         "width": 240,
@@ -17855,7 +17855,7 @@
       },
       {
         "id": "file_src_application_meta_upgrade_upgrade_ts",
-        "label": "upgrade.ts · 14 APIs",
+        "label": "upgrade.ts",
         "x": 7270,
         "y": 11232,
         "width": 240,
@@ -17871,7 +17871,7 @@
       },
       {
         "id": "file_src_application_meta_view_derive_anim_flow_ts",
-        "label": "derive_anim_flow.ts · 10 APIs",
+        "label": "derive_anim_flow.ts",
         "x": 9840,
         "y": 10884,
         "width": 240,
@@ -17887,7 +17887,7 @@
       },
       {
         "id": "file_src_application_meta_view_derive_mind_map_ts",
-        "label": "derive_mind_map.ts · 50 APIs",
+        "label": "derive_mind_map.ts",
         "x": 10190,
         "y": 10884,
         "width": 240,
@@ -17914,7 +17914,7 @@
       },
       {
         "id": "file_src_application_meta_view_explain_gen_ts",
-        "label": "explain_gen.ts · 5 APIs",
+        "label": "explain_gen.ts",
         "x": 10540,
         "y": 10884,
         "width": 240,
@@ -17930,7 +17930,7 @@
       },
       {
         "id": "file_src_application_meta_view_overview_ts",
-        "label": "overview.ts · 11 APIs",
+        "label": "overview.ts",
         "x": 9840,
         "y": 10988,
         "width": 240,
@@ -17946,7 +17946,7 @@
       },
       {
         "id": "file_src_application_observe_capture_feature_line_ts",
-        "label": "feature_line.ts · 4 APIs",
+        "label": "feature_line.ts",
         "x": 7620,
         "y": 13456,
         "width": 240,
@@ -17962,7 +17962,7 @@
       },
       {
         "id": "file_src_application_observe_capture_memory_observe_ts",
-        "label": "memory_observe.ts · 10 APIs",
+        "label": "memory_observe.ts",
         "x": 7620,
         "y": 13144,
         "width": 240,
@@ -17978,7 +17978,7 @@
       },
       {
         "id": "file_src_application_observe_capture_narrate_step_ts",
-        "label": "narrate_step.ts · 6 APIs",
+        "label": "narrate_step.ts",
         "x": 7620,
         "y": 13352,
         "width": 240,
@@ -17994,7 +17994,7 @@
       },
       {
         "id": "file_src_application_observe_capture_observe_points_ts",
-        "label": "observe_points.ts · 7 APIs",
+        "label": "observe_points.ts",
         "x": 7620,
         "y": 13040,
         "width": 240,
@@ -18010,7 +18010,7 @@
       },
       {
         "id": "file_src_application_observe_capture_observe_trace_ts",
-        "label": "observe_trace.ts · 7 APIs",
+        "label": "observe_trace.ts",
         "x": 7970,
         "y": 13040,
         "width": 240,
@@ -18026,7 +18026,7 @@
       },
       {
         "id": "file_src_application_observe_capture_trace_evidence_ts",
-        "label": "trace_evidence.ts · 6 APIs",
+        "label": "trace_evidence.ts",
         "x": 7620,
         "y": 13248,
         "width": 240,
@@ -18056,7 +18056,7 @@
       },
       {
         "id": "file_src_application_observe_handlers_ts",
-        "label": "handlers.ts · 1 APIs",
+        "label": "handlers.ts",
         "x": 7210,
         "y": 13372,
         "width": 240,
@@ -18072,7 +18072,7 @@
       },
       {
         "id": "file_src_application_observe_index_ts",
-        "label": "index.ts · 0 APIs",
+        "label": "index.ts",
         "x": 6860,
         "y": 12990,
         "width": 240,
@@ -18088,7 +18088,7 @@
       },
       {
         "id": "file_src_application_observe_reconcile_approval_ts",
-        "label": "approval.ts · 8 APIs",
+        "label": "approval.ts",
         "x": 8360,
         "y": 13248,
         "width": 240,
@@ -18104,7 +18104,7 @@
       },
       {
         "id": "file_src_application_observe_reconcile_reason_validator_ts",
-        "label": "reason_validator.ts · 3 APIs",
+        "label": "reason_validator.ts",
         "x": 8360,
         "y": 13352,
         "width": 240,
@@ -18120,7 +18120,7 @@
       },
       {
         "id": "file_src_application_observe_reconcile_reconcile_chain_ts",
-        "label": "reconcile_chain.ts · 9 APIs",
+        "label": "reconcile_chain.ts",
         "x": 8360,
         "y": 13144,
         "width": 240,
@@ -18136,7 +18136,7 @@
       },
       {
         "id": "file_src_application_observe_reconcile_reconcile_effects_ts",
-        "label": "reconcile_effects.ts · 8 APIs",
+        "label": "reconcile_effects.ts",
         "x": 8360,
         "y": 13040,
         "width": 240,
@@ -18152,7 +18152,7 @@
       },
       {
         "id": "file_src_application_observe_runtime_run_tests_ts",
-        "label": "run_tests.ts · 4 APIs",
+        "label": "run_tests.ts",
         "x": 7230,
         "y": 13144,
         "width": 240,
@@ -18168,7 +18168,7 @@
       },
       {
         "id": "file_src_application_observe_runtime_stale_check_ts",
-        "label": "stale_check.ts · 5 APIs",
+        "label": "stale_check.ts",
         "x": 7230,
         "y": 13248,
         "width": 240,
@@ -18184,7 +18184,7 @@
       },
       {
         "id": "file_src_application_observe_runtime_watch_project_tool_ts",
-        "label": "watch_project_tool.ts · 21 APIs",
+        "label": "watch_project_tool.ts",
         "x": 7230,
         "y": 13040,
         "width": 240,
@@ -18557,7 +18557,7 @@
       },
       {
         "id": "file_src_application_plumbing_ts",
-        "label": "plumbing.ts · 13 APIs",
+        "label": "plumbing.ts",
         "x": 10930,
         "y": 12416,
         "width": 240,
@@ -18587,7 +18587,7 @@
       },
       {
         "id": "file_src_application_refactor_annotate_function_annotation_ts",
-        "label": "function_annotation.ts · 12 APIs",
+        "label": "function_annotation.ts",
         "x": 7970,
         "y": 11962,
         "width": 240,
@@ -18603,7 +18603,7 @@
       },
       {
         "id": "file_src_application_refactor_deprecate_offline_deprecate_offline_ts",
-        "label": "deprecate_offline.ts · 11 APIs",
+        "label": "deprecate_offline.ts",
         "x": 7230,
         "y": 12518,
         "width": 240,
@@ -18633,7 +18633,7 @@
       },
       {
         "id": "file_src_application_refactor_diff_views_diff_views_ts",
-        "label": "diff_views.ts · 14 APIs",
+        "label": "diff_views.ts",
         "x": 7970,
         "y": 12136,
         "width": 240,
@@ -18786,7 +18786,7 @@
       },
       {
         "id": "file_src_application_refactor_edit_apply_writes_ts",
-        "label": "apply_writes.ts · 3 APIs",
+        "label": "apply_writes.ts",
         "x": 9060,
         "y": 11788,
         "width": 240,
@@ -18813,7 +18813,7 @@
       },
       {
         "id": "file_src_application_refactor_edit_edit_code_ts",
-        "label": "edit_code.ts · 21 APIs",
+        "label": "edit_code.ts",
         "x": 9060,
         "y": 11580,
         "width": 240,
@@ -18840,7 +18840,7 @@
       },
       {
         "id": "file_src_application_refactor_edit_remove_dead_imports_ts",
-        "label": "remove_dead_imports.ts · 11 APIs",
+        "label": "remove_dead_imports.ts",
         "x": 9060,
         "y": 11684,
         "width": 240,
@@ -18905,7 +18905,7 @@
       },
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
-        "label": "ast_suggest.ts · 7 APIs",
+        "label": "ast_suggest.ts",
         "x": 7230,
         "y": 11788,
         "width": 240,
@@ -18921,7 +18921,7 @@
       },
       {
         "id": "file_src_application_refactor_find_field_refs_ts",
-        "label": "field_refs.ts · 14 APIs",
+        "label": "field_refs.ts",
         "x": 7580,
         "y": 11580,
         "width": 240,
@@ -18948,7 +18948,7 @@
       },
       {
         "id": "file_src_application_refactor_find_find_references_ts",
-        "label": "find_references.ts · 7 APIs",
+        "label": "find_references.ts",
         "x": 7230,
         "y": 11580,
         "width": 240,
@@ -18964,7 +18964,7 @@
       },
       {
         "id": "file_src_application_refactor_find_similar_names_ts",
-        "label": "similar_names.ts · 13 APIs",
+        "label": "similar_names.ts",
         "x": 7230,
         "y": 11684,
         "width": 240,
@@ -18980,7 +18980,7 @@
       },
       {
         "id": "file_src_application_refactor_handlers_ts",
-        "label": "handlers.ts · 0 APIs",
+        "label": "handlers.ts",
         "x": 7210,
         "y": 12816,
         "width": 240,
@@ -18996,7 +18996,7 @@
       },
       {
         "id": "file_src_application_refactor_index_ts",
-        "label": "index.ts · 1 APIs",
+        "label": "index.ts",
         "x": 6860,
         "y": 11530,
         "width": 240,
@@ -19026,7 +19026,7 @@
       },
       {
         "id": "file_src_application_refactor_parse_capability_parse_capability_ts",
-        "label": "parse_capability.ts · 5 APIs",
+        "label": "parse_capability.ts",
         "x": 7230,
         "y": 12692,
         "width": 240,
@@ -19042,7 +19042,7 @@
       },
       {
         "id": "file_src_application_refactor_pipeline_refactor_judge_ts",
-        "label": "refactor_judge.ts · 3 APIs",
+        "label": "refactor_judge.ts",
         "x": 7580,
         "y": 11962,
         "width": 240,
@@ -19058,7 +19058,7 @@
       },
       {
         "id": "file_src_application_refactor_pipeline_refactor_pipeline_ts",
-        "label": "refactor_pipeline.ts · 11 APIs",
+        "label": "refactor_pipeline.ts",
         "x": 7230,
         "y": 11962,
         "width": 240,
@@ -19088,7 +19088,7 @@
       },
       {
         "id": "file_src_application_refactor_pipeline_refactor_plan_ts",
-        "label": "refactor_plan.ts · 5 APIs",
+        "label": "refactor_plan.ts",
         "x": 7230,
         "y": 12066,
         "width": 240,
@@ -19118,7 +19118,7 @@
       },
       {
         "id": "file_src_application_refactor_rename_move_domain_ts",
-        "label": "move_domain.ts · 2 APIs",
+        "label": "move_domain.ts",
         "x": 7970,
         "y": 11580,
         "width": 240,
@@ -19134,7 +19134,7 @@
       },
       {
         "id": "file_src_application_refactor_rename_rename_file_ts",
-        "label": "rename_file.ts · 14 APIs",
+        "label": "rename_file.ts",
         "x": 8670,
         "y": 11580,
         "width": 240,
@@ -19164,7 +19164,7 @@
       },
       {
         "id": "file_src_application_refactor_rename_rename_files_ts",
-        "label": "rename_files.ts · 3 APIs",
+        "label": "rename_files.ts",
         "x": 8320,
         "y": 11684,
         "width": 240,
@@ -19194,7 +19194,7 @@
       },
       {
         "id": "file_src_application_refactor_rename_rename_local_ts",
-        "label": "rename_local.ts · 1 APIs",
+        "label": "rename_local.ts",
         "x": 8320,
         "y": 11580,
         "width": 240,
@@ -19224,7 +19224,7 @@
       },
       {
         "id": "file_src_application_refactor_rename_rename_symbols_ts",
-        "label": "rename_symbols.ts · 14 APIs",
+        "label": "rename_symbols.ts",
         "x": 7970,
         "y": 11684,
         "width": 240,
@@ -19254,7 +19254,7 @@
       },
       {
         "id": "file_src_application_refactor_rename_symbol_move_ts",
-        "label": "symbol_move.ts · 11 APIs",
+        "label": "symbol_move.ts",
         "x": 7970,
         "y": 11788,
         "width": 240,
@@ -19284,7 +19284,7 @@
       },
       {
         "id": "file_src_application_refactor_rule_library_rule_apply_ts",
-        "label": "rule_apply.ts · 10 APIs",
+        "label": "rule_apply.ts",
         "x": 7230,
         "y": 12344,
         "width": 240,
@@ -19300,7 +19300,7 @@
       },
       {
         "id": "file_src_application_refactor_rule_library_rule_extract_ts",
-        "label": "rule_extract.ts · 7 APIs",
+        "label": "rule_extract.ts",
         "x": 7230,
         "y": 12240,
         "width": 240,
@@ -19316,7 +19316,7 @@
       },
       {
         "id": "file_src_application_refactor_rule_library_rule_library_ts",
-        "label": "rule_library.ts · 14 APIs",
+        "label": "rule_library.ts",
         "x": 7580,
         "y": 12240,
         "width": 240,
@@ -19332,7 +19332,7 @@
       },
       {
         "id": "file_src_application_refactor_snapshot_file_snapshot_ts",
-        "label": "file_snapshot.ts · 9 APIs",
+        "label": "file_snapshot.ts",
         "x": 9450,
         "y": 11580,
         "width": 240,
@@ -19348,7 +19348,7 @@
       },
       {
         "id": "file_src_application_stage_registry_ts",
-        "label": "stage_registry.ts · 11 APIs",
+        "label": "stage_registry.ts",
         "x": 6450,
         "y": 10958,
         "width": 240,
@@ -19364,7 +19364,7 @@
       },
       {
         "id": "file_src_application_tool_registry_ts",
-        "label": "tool_registry.ts · 1 APIs",
+        "label": "tool_registry.ts",
         "x": 6450,
         "y": 11062,
         "width": 240,
@@ -19380,7 +19380,7 @@
       },
       {
         "id": "file_src_application_types_ts",
-        "label": "types.ts · 0 APIs",
+        "label": "types.ts",
         "x": 10930,
         "y": 12520,
         "width": 240,
@@ -23119,7 +23119,7 @@
       },
       {
         "id": "file_src_domain_animation_ts",
-        "label": "animation.ts · 0 APIs",
+        "label": "animation.ts",
         "x": 7500,
         "y": 160,
         "width": 240,
@@ -24179,7 +24179,7 @@
       },
       {
         "id": "file_src_domain_annotation_ts",
-        "label": "annotation.ts · 0 APIs",
+        "label": "annotation.ts",
         "x": 7500,
         "y": 784,
         "width": 240,
@@ -24531,7 +24531,7 @@
       },
       {
         "id": "file_src_domain_b_terms_ts",
-        "label": "b_terms.ts · 1 APIs",
+        "label": "b_terms.ts",
         "x": 6800,
         "y": 264,
         "width": 240,
@@ -25261,7 +25261,7 @@
       },
       {
         "id": "file_src_domain_canvas_note_ts",
-        "label": "canvas_note.ts · 0 APIs",
+        "label": "canvas_note.ts",
         "x": 7500,
         "y": 888,
         "width": 240,
@@ -25387,7 +25387,7 @@
       },
       {
         "id": "file_src_domain_chain_wiring_ts",
-        "label": "chain_wiring.ts · 13 APIs",
+        "label": "chain_wiring.ts",
         "x": 6450,
         "y": 160,
         "width": 240,
@@ -28432,7 +28432,7 @@
       },
       {
         "id": "file_src_domain_contract_ts",
-        "label": "contract.ts · 0 APIs",
+        "label": "contract.ts",
         "x": 7500,
         "y": 472,
         "width": 240,
@@ -28847,7 +28847,7 @@
       },
       {
         "id": "file_src_domain_design_sheet_ts",
-        "label": "design_sheet.ts · 10 APIs",
+        "label": "design_sheet.ts",
         "x": 6450,
         "y": 368,
         "width": 240,
@@ -30332,7 +30332,7 @@
       },
       {
         "id": "file_src_domain_diff_blocks_ts",
-        "label": "diff_blocks.ts · 2 APIs",
+        "label": "diff_blocks.ts",
         "x": 6450,
         "y": 576,
         "width": 240,
@@ -31359,7 +31359,7 @@
       },
       {
         "id": "file_src_domain_dsl_removal_ts",
-        "label": "dsl_removal.ts · 1 APIs",
+        "label": "dsl_removal.ts",
         "x": 6450,
         "y": 784,
         "width": 240,
@@ -33707,7 +33707,7 @@
       },
       {
         "id": "file_src_domain_mindmap_ts",
-        "label": "mindmap.ts · 0 APIs",
+        "label": "mindmap.ts",
         "x": 7500,
         "y": 264,
         "width": 240,
@@ -34462,7 +34462,7 @@
       },
       {
         "id": "file_src_domain_narration_ts",
-        "label": "narration.ts · 2 APIs",
+        "label": "narration.ts",
         "x": 7500,
         "y": 680,
         "width": 240,
@@ -34813,7 +34813,7 @@
       },
       {
         "id": "file_src_domain_overlay_ts",
-        "label": "overlay.ts · 19 APIs",
+        "label": "overlay.ts",
         "x": 6800,
         "y": 160,
         "width": 240,
@@ -38839,7 +38839,7 @@
       },
       {
         "id": "file_src_domain_reasoning_ts",
-        "label": "reasoning.ts · 0 APIs",
+        "label": "reasoning.ts",
         "x": 7500,
         "y": 576,
         "width": 240,
@@ -39309,7 +39309,7 @@
       },
       {
         "id": "file_src_domain_scope_ts",
-        "label": "scope.ts · 6 APIs",
+        "label": "scope.ts",
         "x": 6800,
         "y": 472,
         "width": 240,
@@ -39971,7 +39971,7 @@
       },
       {
         "id": "file_src_domain_semantic_ts",
-        "label": "semantic.ts · 2 APIs",
+        "label": "semantic.ts",
         "x": 6800,
         "y": 368,
         "width": 240,
@@ -41226,7 +41226,7 @@
       },
       {
         "id": "file_src_domain_simulation_ts",
-        "label": "simulation.ts · 0 APIs",
+        "label": "simulation.ts",
         "x": 7500,
         "y": 368,
         "width": 240,
@@ -46379,7 +46379,7 @@
       },
       {
         "id": "file_src_domain_types_ts",
-        "label": "types.ts · 0 APIs",
+        "label": "types.ts",
         "x": 7150,
         "y": 264,
         "width": 240,
@@ -47138,7 +47138,7 @@
       },
       {
         "id": "file_src_domain_validator_ts",
-        "label": "validator.ts · 6 APIs",
+        "label": "validator.ts",
         "x": 6450,
         "y": 472,
         "width": 240,
@@ -48916,7 +48916,7 @@
       },
       {
         "id": "file_src_infrastructure_alert_inbox_ts",
-        "label": "alert_inbox.ts · 7 APIs",
+        "label": "alert_inbox.ts",
         "x": 6450,
         "y": 2104,
         "width": 240,
@@ -48932,7 +48932,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_capability_capability_matrix_ts",
-        "label": "capability_matrix.ts · 11 APIs",
+        "label": "capability_matrix.ts",
         "x": 8280,
         "y": 7272,
         "width": 240,
@@ -48948,7 +48948,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_capability_language_concepts_ts",
-        "label": "language_concepts.ts · 3 APIs",
+        "label": "language_concepts.ts",
         "x": 7930,
         "y": 7376,
         "width": 240,
@@ -48964,7 +48964,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_capability_register_capabilities_ts",
-        "label": "register_capabilities.ts · 0 APIs",
+        "label": "register_capabilities.ts",
         "x": 7930,
         "y": 7272,
         "width": 240,
@@ -48980,7 +48980,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_core_ts",
-        "label": "core.ts · 10 APIs",
+        "label": "core.ts",
         "x": 8280,
         "y": 4216,
         "width": 240,
@@ -49010,7 +49010,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_index_ts",
-        "label": "index.ts · 0 APIs",
+        "label": "index.ts",
         "x": 7930,
         "y": 4216,
         "width": 240,
@@ -49026,7 +49026,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_c_ts",
-        "label": "c.ts · 0 APIs",
+        "label": "c.ts",
         "x": 9000,
         "y": 4786,
         "width": 240,
@@ -49042,7 +49042,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_cs_ts",
-        "label": "cs.ts · 0 APIs",
+        "label": "cs.ts",
         "x": 9000,
         "y": 4474,
         "width": 240,
@@ -49058,7 +49058,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_go_ts",
-        "label": "go.ts · 0 APIs",
+        "label": "go.ts",
         "x": 9000,
         "y": 4682,
         "width": 240,
@@ -49074,7 +49074,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_java_ts",
-        "label": "java.ts · 0 APIs",
+        "label": "java.ts",
         "x": 9000,
         "y": 4578,
         "width": 240,
@@ -49090,7 +49090,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_py_ts",
-        "label": "py.ts · 0 APIs",
+        "label": "py.ts",
         "x": 9000,
         "y": 4370,
         "width": 240,
@@ -49106,7 +49106,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_registry_ts",
-        "label": "registry.ts · 2 APIs",
+        "label": "registry.ts",
         "x": 8650,
         "y": 4266,
         "width": 240,
@@ -49122,7 +49122,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_ts_ts",
-        "label": "ts.ts · 0 APIs",
+        "label": "ts.ts",
         "x": 9000,
         "y": 4266,
         "width": 240,
@@ -49152,7 +49152,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_parts_ts",
-        "label": "parts.ts · 2 APIs",
+        "label": "parts.ts",
         "x": 9370,
         "y": 4216,
         "width": 240,
@@ -49168,7 +49168,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_cross_repo_index_ts",
-        "label": "index.ts · 5 APIs",
+        "label": "index.ts",
         "x": 7930,
         "y": 5432,
         "width": 240,
@@ -49184,7 +49184,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_deadcode_dead_statements_ts",
-        "label": "dead_statements.ts · 11 APIs",
+        "label": "dead_statements.ts",
         "x": 10420,
         "y": 4010,
         "width": 240,
@@ -49200,7 +49200,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_deadcode_detect_dead_imports_ts",
-        "label": "detect_dead_imports.ts · 10 APIs",
+        "label": "detect_dead_imports.ts",
         "x": 10420,
         "y": 3906,
         "width": 240,
@@ -49216,7 +49216,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_candidate_locator_ts",
-        "label": "candidate_locator.ts · 5 APIs",
+        "label": "candidate_locator.ts",
         "x": 8280,
         "y": 5988,
         "width": 240,
@@ -49232,7 +49232,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_chain_tracer_ts",
-        "label": "chain_tracer.ts · 1 APIs",
+        "label": "chain_tracer.ts",
         "x": 8280,
         "y": 6092,
         "width": 240,
@@ -49248,7 +49248,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_contract_ts",
-        "label": "contract.ts · 0 APIs",
+        "label": "contract.ts",
         "x": 8630,
         "y": 5780,
         "width": 240,
@@ -49264,7 +49264,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_diagnose_ts",
-        "label": "diagnose.ts · 3 APIs",
+        "label": "diagnose.ts",
         "x": 7930,
         "y": 5884,
         "width": 240,
@@ -49280,7 +49280,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_impact_analyzer_ts",
-        "label": "impact_analyzer.ts · 1 APIs",
+        "label": "impact_analyzer.ts",
         "x": 8280,
         "y": 6300,
         "width": 240,
@@ -49296,7 +49296,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_repair_ts",
-        "label": "repair.ts · 9 APIs",
+        "label": "repair.ts",
         "x": 7930,
         "y": 5780,
         "width": 240,
@@ -49312,7 +49312,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_root_cause_aggregator_ts",
-        "label": "root_cause_aggregator.ts · 8 APIs",
+        "label": "root_cause_aggregator.ts",
         "x": 8280,
         "y": 5780,
         "width": 240,
@@ -49328,7 +49328,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_symptom_parser_ts",
-        "label": "symptom_parser.ts · 8 APIs",
+        "label": "symptom_parser.ts",
         "x": 8280,
         "y": 5884,
         "width": 240,
@@ -49344,7 +49344,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_verifier_ts",
-        "label": "verifier.ts · 2 APIs",
+        "label": "verifier.ts",
         "x": 8280,
         "y": 6196,
         "width": 240,
@@ -49360,7 +49360,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_health_health_cache_ts",
-        "label": "health_cache.ts · 7 APIs",
+        "label": "health_cache.ts",
         "x": 11590,
         "y": 2654,
         "width": 240,
@@ -49376,7 +49376,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_health_index_ts",
-        "label": "index.ts · 21 APIs",
+        "label": "index.ts",
         "x": 11590,
         "y": 2550,
         "width": 240,
@@ -49406,7 +49406,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_impact_diff_ts",
-        "label": "diff.ts · 1 APIs",
+        "label": "diff.ts",
         "x": 10420,
         "y": 2758,
         "width": 240,
@@ -49422,7 +49422,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_impact_diff_impact_ts",
-        "label": "diff_impact.ts · 4 APIs",
+        "label": "diff_impact.ts",
         "x": 10420,
         "y": 2654,
         "width": 240,
@@ -49449,7 +49449,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_impact_impact_ledger_store_ts",
-        "label": "impact_ledger_store.ts · 9 APIs",
+        "label": "impact_ledger_store.ts",
         "x": 10420,
         "y": 2862,
         "width": 240,
@@ -49465,7 +49465,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_impact_index_ts",
-        "label": "index.ts · 7 APIs",
+        "label": "index.ts",
         "x": 10420,
         "y": 2550,
         "width": 240,
@@ -49481,7 +49481,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_approve_gated_ts",
-        "label": "approve_gated.ts · 2 APIs",
+        "label": "approve_gated.ts",
         "x": 7930,
         "y": 2966,
         "width": 240,
@@ -49511,7 +49511,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_chain_ts",
-        "label": "chain.ts · 5 APIs",
+        "label": "chain.ts",
         "x": 10030,
         "y": 2550,
         "width": 240,
@@ -49527,7 +49527,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_contract_ts",
-        "label": "contract.ts · 4 APIs",
+        "label": "contract.ts",
         "x": 9680,
         "y": 2550,
         "width": 240,
@@ -49543,7 +49543,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_decl_review_ts",
-        "label": "decl_review.ts · 2 APIs",
+        "label": "decl_review.ts",
         "x": 8280,
         "y": 3070,
         "width": 240,
@@ -49573,7 +49573,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_dsl_store_ts",
-        "label": "dsl_store.ts · 16 APIs",
+        "label": "dsl_store.ts",
         "x": 9330,
         "y": 2550,
         "width": 240,
@@ -49589,7 +49589,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_go_instrument_ts",
-        "label": "go_instrument.ts · 13 APIs",
+        "label": "go_instrument.ts",
         "x": 8280,
         "y": 2654,
         "width": 240,
@@ -49605,7 +49605,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_index_ts",
-        "label": "index.ts · 0 APIs",
+        "label": "index.ts",
         "x": 7930,
         "y": 2550,
         "width": 240,
@@ -49621,7 +49621,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_instrument_ts",
-        "label": "instrument.ts · 41 APIs",
+        "label": "instrument.ts",
         "x": 8630,
         "y": 2550,
         "width": 240,
@@ -49637,7 +49637,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_instrument_java_ts",
-        "label": "instrument_java.ts · 20 APIs",
+        "label": "instrument_java.ts",
         "x": 8280,
         "y": 2550,
         "width": 240,
@@ -49653,7 +49653,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_instrument_py_ts",
-        "label": "instrument_py.ts · 16 APIs",
+        "label": "instrument_py.ts",
         "x": 8280,
         "y": 2758,
         "width": 240,
@@ -49669,7 +49669,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_instrument_skeleton_ts",
-        "label": "instrument_skeleton.ts · 13 APIs",
+        "label": "instrument_skeleton.ts",
         "x": 8630,
         "y": 2654,
         "width": 240,
@@ -49685,7 +49685,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_judge_ts",
-        "label": "judge.ts · 5 APIs",
+        "label": "judge.ts",
         "x": 8980,
         "y": 2550,
         "width": 240,
@@ -49715,7 +49715,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_judge_guard_ts",
-        "label": "judge_guard.ts · 2 APIs",
+        "label": "judge_guard.ts",
         "x": 7930,
         "y": 3278,
         "width": 240,
@@ -49731,7 +49731,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_judge_service_ts",
-        "label": "judge_service.ts · 5 APIs",
+        "label": "judge_service.ts",
         "x": 8280,
         "y": 2862,
         "width": 240,
@@ -49747,7 +49747,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_ledger_fold_ts",
-        "label": "ledger_fold.ts · 8 APIs",
+        "label": "ledger_fold.ts",
         "x": 9330,
         "y": 2654,
         "width": 240,
@@ -49763,7 +49763,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_log_query_ts",
-        "label": "log_query.ts · 3 APIs",
+        "label": "log_query.ts",
         "x": 7930,
         "y": 3070,
         "width": 240,
@@ -49779,7 +49779,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_observe_langs_ts",
-        "label": "observe_langs.ts · 6 APIs",
+        "label": "observe_langs.ts",
         "x": 7930,
         "y": 2758,
         "width": 240,
@@ -49795,7 +49795,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_probe_ts",
-        "label": "probe.ts · 20 APIs",
+        "label": "probe.ts",
         "x": 8630,
         "y": 2758,
         "width": 240,
@@ -49811,7 +49811,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_proposal_store_ts",
-        "label": "proposal_store.ts · 13 APIs",
+        "label": "proposal_store.ts",
         "x": 8980,
         "y": 2654,
         "width": 240,
@@ -49827,7 +49827,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_run_loop_ts",
-        "label": "run_loop.ts · 2 APIs",
+        "label": "run_loop.ts",
         "x": 7930,
         "y": 2862,
         "width": 240,
@@ -49843,7 +49843,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_run_sentinel_ts",
-        "label": "run_sentinel.ts · 1 APIs",
+        "label": "run_sentinel.ts",
         "x": 8280,
         "y": 3174,
         "width": 240,
@@ -49859,7 +49859,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_run_trace_replay_ts",
-        "label": "run_trace_replay.ts · 3 APIs",
+        "label": "run_trace_replay.ts",
         "x": 8280,
         "y": 2966,
         "width": 240,
@@ -49875,7 +49875,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_snapshot_needle_ts",
-        "label": "snapshot_needle.ts · 3 APIs",
+        "label": "snapshot_needle.ts",
         "x": 7930,
         "y": 3174,
         "width": 240,
@@ -49891,7 +49891,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_trace_exec_ts",
-        "label": "trace_exec.ts · 22 APIs",
+        "label": "trace_exec.ts",
         "x": 7930,
         "y": 2654,
         "width": 240,
@@ -49918,7 +49918,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_observe_verify_gate_ts",
-        "label": "verify_gate.ts · 9 APIs",
+        "label": "verify_gate.ts",
         "x": 8630,
         "y": 2862,
         "width": 240,
@@ -49948,7 +49948,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_core_ts",
-        "label": "core.ts · 2 APIs",
+        "label": "core.ts",
         "x": 8280,
         "y": 4980,
         "width": 240,
@@ -49964,7 +49964,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_index_ts",
-        "label": "index.ts · 0 APIs",
+        "label": "index.ts",
         "x": 7930,
         "y": 4980,
         "width": 240,
@@ -49980,7 +49980,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_languages_go_ts",
-        "label": "go.ts · 3 APIs",
+        "label": "go.ts",
         "x": 9000,
         "y": 5238,
         "width": 240,
@@ -49996,7 +49996,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_languages_py_ts",
-        "label": "py.ts · 5 APIs",
+        "label": "py.ts",
         "x": 9000,
         "y": 5030,
         "width": 240,
@@ -50012,7 +50012,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_languages_registry_ts",
-        "label": "registry.ts · 1 APIs",
+        "label": "registry.ts",
         "x": 8650,
         "y": 5030,
         "width": 240,
@@ -50028,7 +50028,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_languages_ts_ts",
-        "label": "ts.ts · 3 APIs",
+        "label": "ts.ts",
         "x": 9000,
         "y": 5134,
         "width": 240,
@@ -50044,7 +50044,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_parts_ts",
-        "label": "parts.ts · 8 APIs",
+        "label": "parts.ts",
         "x": 9370,
         "y": 4980,
         "width": 240,
@@ -50060,7 +50060,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_project_root_index_ts",
-        "label": "index.ts · 38 APIs",
+        "label": "index.ts",
         "x": 10420,
         "y": 3036,
         "width": 240,
@@ -50090,7 +50090,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_java_executor_ts",
-        "label": "executor.ts · 4 APIs",
+        "label": "executor.ts",
         "x": 10460,
         "y": 3588,
         "width": 240,
@@ -50106,7 +50106,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_java_layering_ts",
-        "label": "layering.ts · 20 APIs",
+        "label": "layering.ts",
         "x": 10810,
         "y": 3588,
         "width": 240,
@@ -50122,7 +50122,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_python_dead_imports_ts",
-        "label": "dead_imports.ts · 6 APIs",
+        "label": "dead_imports.ts",
         "x": 10810,
         "y": 3310,
         "width": 240,
@@ -50138,7 +50138,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_python_index_ts",
-        "label": "index.ts · 1 APIs",
+        "label": "index.ts",
         "x": 10460,
         "y": 3310,
         "width": 240,
@@ -50154,7 +50154,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_python_verify_commands_ts",
-        "label": "verify_commands.ts · 1 APIs",
+        "label": "verify_commands.ts",
         "x": 10810,
         "y": 3414,
         "width": 240,
@@ -50170,7 +50170,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_protect_ts",
-        "label": "protect.ts · 3 APIs",
+        "label": "protect.ts",
         "x": 10420,
         "y": 3732,
         "width": 240,
@@ -50186,7 +50186,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_refactor_langs_ts",
-        "label": "refactor_langs.ts · 6 APIs",
+        "label": "refactor_langs.ts",
         "x": 11200,
         "y": 3210,
         "width": 240,
@@ -50202,7 +50202,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_core_ts",
-        "label": "core.ts · 3 APIs",
+        "label": "core.ts",
         "x": 8280,
         "y": 3452,
         "width": 240,
@@ -50218,7 +50218,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_index_ts",
-        "label": "index.ts · 0 APIs",
+        "label": "index.ts",
         "x": 7930,
         "y": 3452,
         "width": 240,
@@ -50234,7 +50234,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_c_ts",
-        "label": "c.ts · 2 APIs",
+        "label": "c.ts",
         "x": 9000,
         "y": 3710,
         "width": 240,
@@ -50250,7 +50250,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_cs_ts",
-        "label": "cs.ts · 0 APIs",
+        "label": "cs.ts",
         "x": 9000,
         "y": 3918,
         "width": 240,
@@ -50266,7 +50266,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_go_ts",
-        "label": "go.ts · 2 APIs",
+        "label": "go.ts",
         "x": 9000,
         "y": 3502,
         "width": 240,
@@ -50282,7 +50282,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_java_ts",
-        "label": "java.ts · 0 APIs",
+        "label": "java.ts",
         "x": 9000,
         "y": 4022,
         "width": 240,
@@ -50298,7 +50298,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_py_ts",
-        "label": "py.ts · 2 APIs",
+        "label": "py.ts",
         "x": 9000,
         "y": 3606,
         "width": 240,
@@ -50314,7 +50314,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_registry_ts",
-        "label": "registry.ts · 1 APIs",
+        "label": "registry.ts",
         "x": 8650,
         "y": 3502,
         "width": 240,
@@ -50330,7 +50330,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_ts_ts",
-        "label": "ts.ts · 1 APIs",
+        "label": "ts.ts",
         "x": 9000,
         "y": 3814,
         "width": 240,
@@ -50346,7 +50346,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_namespace_family_ts",
-        "label": "namespace_family.ts · 2 APIs",
+        "label": "namespace_family.ts",
         "x": 9370,
         "y": 3452,
         "width": 240,
@@ -50362,7 +50362,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_parts_ts",
-        "label": "parts.ts · 6 APIs",
+        "label": "parts.ts",
         "x": 9720,
         "y": 3452,
         "width": 240,
@@ -50378,7 +50378,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_structure_analyze_monolith_ts",
-        "label": "analyze_monolith.ts · 11 APIs",
+        "label": "analyze_monolith.ts",
         "x": 8280,
         "y": 6474,
         "width": 240,
@@ -50408,7 +50408,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_structure_arch_layer_ts",
-        "label": "arch_layer.ts · 6 APIs",
+        "label": "arch_layer.ts",
         "x": 7930,
         "y": 6994,
         "width": 240,
@@ -50424,7 +50424,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_structure_cfg_ts",
-        "label": "cfg.ts · 14 APIs",
+        "label": "cfg.ts",
         "x": 7930,
         "y": 6578,
         "width": 240,
@@ -50440,7 +50440,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_structure_derive_feature_tree_ts",
-        "label": "derive_feature_tree.ts · 12 APIs",
+        "label": "derive_feature_tree.ts",
         "x": 7930,
         "y": 6786,
         "width": 240,
@@ -50456,7 +50456,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_structure_feature_map_ts",
-        "label": "feature_map.ts · 8 APIs",
+        "label": "feature_map.ts",
         "x": 7930,
         "y": 6890,
         "width": 240,
@@ -50472,7 +50472,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_structure_layer_detect_ts",
-        "label": "layer_detect.ts · 5 APIs",
+        "label": "layer_detect.ts",
         "x": 8280,
         "y": 6578,
         "width": 240,
@@ -50488,7 +50488,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_structure_monolith_ts",
-        "label": "monolith.ts · 13 APIs",
+        "label": "monolith.ts",
         "x": 7930,
         "y": 6474,
         "width": 240,
@@ -50504,7 +50504,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_structure_role_title_ts",
-        "label": "role_title.ts · 3 APIs",
+        "label": "role_title.ts",
         "x": 7930,
         "y": 7098,
         "width": 240,
@@ -50520,7 +50520,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_structure_structure_gap_ts",
-        "label": "structure_gap.ts · 9 APIs",
+        "label": "structure_gap.ts",
         "x": 7930,
         "y": 6682,
         "width": 240,
@@ -50536,7 +50536,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_submit_gate_index_ts",
-        "label": "index.ts · 4 APIs",
+        "label": "index.ts",
         "x": 7930,
         "y": 5606,
         "width": 240,
@@ -50552,7 +50552,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_behavior_index_ts",
-        "label": "index.ts · 28 APIs",
+        "label": "index.ts",
         "x": 10110,
         "y": 7620,
         "width": 240,
@@ -50579,7 +50579,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_const_eval_ts",
-        "label": "const_eval.ts · 12 APIs",
+        "label": "const_eval.ts",
         "x": 9330,
         "y": 7620,
         "width": 240,
@@ -50595,7 +50595,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_fill_ts",
-        "label": "fill.ts · 11 APIs",
+        "label": "fill.ts",
         "x": 8980,
         "y": 7828,
         "width": 240,
@@ -50611,7 +50611,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_fixers_ts",
-        "label": "fixers.ts · 3 APIs",
+        "label": "fixers.ts",
         "x": 8630,
         "y": 7828,
         "width": 240,
@@ -50627,7 +50627,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_go_extractor_ts",
-        "label": "go_extractor.ts · 21 APIs",
+        "label": "go_extractor.ts",
         "x": 8980,
         "y": 7620,
         "width": 240,
@@ -50643,7 +50643,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_llm_ts",
-        "label": "llm.ts · 4 APIs",
+        "label": "llm.ts",
         "x": 8630,
         "y": 7724,
         "width": 240,
@@ -50659,7 +50659,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_pairs_ts",
-        "label": "pairs.ts · 2 APIs",
+        "label": "pairs.ts",
         "x": 8630,
         "y": 7620,
         "width": 240,
@@ -50675,7 +50675,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_project_ts",
-        "label": "project.ts · 14 APIs",
+        "label": "project.ts",
         "x": 8280,
         "y": 7620,
         "width": 240,
@@ -50705,7 +50705,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_prompts_ts",
-        "label": "prompts.ts · 3 APIs",
+        "label": "prompts.ts",
         "x": 9330,
         "y": 7828,
         "width": 240,
@@ -50721,7 +50721,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_referenced_ts",
-        "label": "referenced.ts · 3 APIs",
+        "label": "referenced.ts",
         "x": 8630,
         "y": 7932,
         "width": 240,
@@ -50737,7 +50737,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_tool_ts",
-        "label": "tool.ts · 2 APIs",
+        "label": "tool.ts",
         "x": 7930,
         "y": 7620,
         "width": 240,
@@ -50764,7 +50764,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_ts_codegen_ts",
-        "label": "ts_codegen.ts · 11 APIs",
+        "label": "ts_codegen.ts",
         "x": 8980,
         "y": 7724,
         "width": 240,
@@ -50780,7 +50780,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_unit_ts",
-        "label": "unit.ts · 1 APIs",
+        "label": "unit.ts",
         "x": 9680,
         "y": 7620,
         "width": 240,
@@ -50796,7 +50796,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_verify_ts",
-        "label": "verify.ts · 5 APIs",
+        "label": "verify.ts",
         "x": 9330,
         "y": 7724,
         "width": 240,
@@ -50812,7 +50812,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_verify_behavior_ts",
-        "label": "verify_behavior.ts · 4 APIs",
+        "label": "verify_behavior.ts",
         "x": 8280,
         "y": 7724,
         "width": 240,
@@ -50828,7 +50828,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_c_ts",
-        "label": "c.ts · 1 APIs",
+        "label": "c.ts",
         "x": 9350,
         "y": 8676,
         "width": 240,
@@ -50844,7 +50844,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_csharp_ts",
-        "label": "csharp.ts · 2 APIs",
+        "label": "csharp.ts",
         "x": 9350,
         "y": 8468,
         "width": 240,
@@ -50860,7 +50860,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_go_ts",
-        "label": "go.ts · 1 APIs",
+        "label": "go.ts",
         "x": 9350,
         "y": 8572,
         "width": 240,
@@ -50876,7 +50876,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_java_ts",
-        "label": "java.ts · 8 APIs",
+        "label": "java.ts",
         "x": 9350,
         "y": 8156,
         "width": 240,
@@ -50892,7 +50892,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_node_ts",
-        "label": "node.ts · 3 APIs",
+        "label": "node.ts",
         "x": 9350,
         "y": 8364,
         "width": 240,
@@ -50908,7 +50908,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_python_ts",
-        "label": "python.ts · 4 APIs",
+        "label": "python.ts",
         "x": 9350,
         "y": 8260,
         "width": 240,
@@ -50924,7 +50924,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_registry_ts",
-        "label": "registry.ts · 4 APIs",
+        "label": "registry.ts",
         "x": 9000,
         "y": 8156,
         "width": 240,
@@ -50940,7 +50940,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_types_ts",
-        "label": "types.ts · 0 APIs",
+        "label": "types.ts",
         "x": 9700,
         "y": 8156,
         "width": 240,
@@ -50956,7 +50956,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_detect_ts",
-        "label": "detect.ts · 6 APIs",
+        "label": "detect.ts",
         "x": 8280,
         "y": 8106,
         "width": 240,
@@ -50972,7 +50972,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_features_ts",
-        "label": "features.ts · 3 APIs",
+        "label": "features.ts",
         "x": 8630,
         "y": 8314,
         "width": 240,
@@ -50988,7 +50988,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_gate_ts",
-        "label": "gate.ts · 2 APIs",
+        "label": "gate.ts",
         "x": 7930,
         "y": 8210,
         "width": 240,
@@ -51004,7 +51004,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_removed_ts",
-        "label": "removed.ts · 3 APIs",
+        "label": "removed.ts",
         "x": 8630,
         "y": 8210,
         "width": 240,
@@ -51020,7 +51020,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_rewrite_ts",
-        "label": "rewrite.ts · 3 APIs",
+        "label": "rewrite.ts",
         "x": 7930,
         "y": 8106,
         "width": 240,
@@ -51036,7 +51036,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_toolchain_ts",
-        "label": "toolchain.ts · 9 APIs",
+        "label": "toolchain.ts",
         "x": 8630,
         "y": 8106,
         "width": 240,
@@ -51052,7 +51052,7 @@
       },
       {
         "id": "file_src_infrastructure_daemon_client_ts",
-        "label": "client.ts · 6 APIs",
+        "label": "client.ts",
         "x": 6470,
         "y": 1772,
         "width": 240,
@@ -51068,7 +51068,7 @@
       },
       {
         "id": "file_src_infrastructure_data_dir_ts",
-        "label": "data_dir.ts · 0 APIs",
+        "label": "data_dir.ts",
         "x": 7540,
         "y": 1166,
         "width": 240,
@@ -51098,7 +51098,7 @@
       },
       {
         "id": "file_src_infrastructure_dictionary_ts",
-        "label": "dictionary.ts · 14 APIs",
+        "label": "dictionary.ts",
         "x": 6450,
         "y": 1896,
         "width": 240,
@@ -51114,7 +51114,7 @@
       },
       {
         "id": "file_src_infrastructure_dogfood_coverage_ts",
-        "label": "dogfood_coverage.ts · 3 APIs",
+        "label": "dogfood_coverage.ts",
         "x": 6450,
         "y": 2000,
         "width": 240,
@@ -51144,7 +51144,7 @@
       },
       {
         "id": "file_src_infrastructure_dogfood_stats_ts",
-        "label": "dogfood_stats.ts · 8 APIs",
+        "label": "dogfood_stats.ts",
         "x": 7190,
         "y": 1062,
         "width": 240,
@@ -51174,7 +51174,7 @@
       },
       {
         "id": "file_src_infrastructure_exec_guard_ts",
-        "label": "exec_guard.ts · 5 APIs",
+        "label": "exec_guard.ts",
         "x": 7890,
         "y": 10402,
         "width": 240,
@@ -51190,7 +51190,7 @@
       },
       {
         "id": "file_src_infrastructure_git_ts",
-        "label": "git.ts · 7 APIs",
+        "label": "git.ts",
         "x": 6450,
         "y": 2208,
         "width": 240,
@@ -51206,7 +51206,7 @@
       },
       {
         "id": "file_src_infrastructure_graph_dead_deps_ts",
-        "label": "dead_deps.ts · 9 APIs",
+        "label": "dead_deps.ts",
         "x": 7910,
         "y": 8890,
         "width": 240,
@@ -51233,7 +51233,7 @@
       },
       {
         "id": "file_src_infrastructure_graph_import_graph_ts",
-        "label": "import_graph.ts · 1 APIs",
+        "label": "import_graph.ts",
         "x": 7910,
         "y": 8994,
         "width": 240,
@@ -51260,7 +51260,7 @@
       },
       {
         "id": "file_src_infrastructure_graph_import_project_ts",
-        "label": "import_project.ts · 12 APIs",
+        "label": "import_project.ts",
         "x": 8260,
         "y": 8890,
         "width": 240,
@@ -51287,23 +51287,23 @@
             "files": [
               {
                 "path": "src/infrastructure/graph/import_project.ts",
-                "content_hash": "962d4acbc5247da051244433acfd756a03da3844"
+                "content_hash": "c23120a031be55010d92a0b3f59623b42faa3af7"
               }
             ],
-            "computed_at": "2026-10-21T11:52:12.896Z",
+            "computed_at": "2026-10-21T19:58:53.155Z",
             "basis": [
-              "node-path"
+              "declared"
             ]
           },
-          "release_reason": "saveDSL(designDsl) 已传 refreshScanRev=true（导入/fork 才算复制），释放写权待验收",
-          "released_by": "subagent:dsl-symbols-fixer",
-          "released_at": "2026-10-21T11:54:03.960Z"
+          "release_reason": "label 改完：`${basename} · ${apiCount} APIs` → `${basename}`（见 import_project.ts:1434）；本轮不再改这个文件。",
+          "released_by": "subagent:chain-e",
+          "released_at": "2026-10-21T20:07:07.021Z"
         },
         "status": "draft"
       },
       {
         "id": "file_src_infrastructure_index_db_ts",
-        "label": "db.ts · 12 APIs",
+        "label": "db.ts",
         "x": 8960,
         "y": 1702,
         "width": 240,
@@ -51330,7 +51330,7 @@
       },
       {
         "id": "file_src_infrastructure_index_file_facts_ts",
-        "label": "file_facts.ts · 6 APIs",
+        "label": "file_facts.ts",
         "x": 7910,
         "y": 2118,
         "width": 240,
@@ -51357,7 +51357,7 @@
       },
       {
         "id": "file_src_infrastructure_index_function_outline_ts",
-        "label": "function_outline.ts · 11 APIs",
+        "label": "function_outline.ts",
         "x": 7910,
         "y": 1910,
         "width": 240,
@@ -51373,7 +51373,7 @@
       },
       {
         "id": "file_src_infrastructure_index_guided_tour_ts",
-        "label": "guided_tour.ts · 1 APIs",
+        "label": "guided_tour.ts",
         "x": 7910,
         "y": 2222,
         "width": 240,
@@ -51389,7 +51389,7 @@
       },
       {
         "id": "file_src_infrastructure_index_index_backfill_ts",
-        "label": "index_backfill.ts · 6 APIs",
+        "label": "index_backfill.ts",
         "x": 7910,
         "y": 2014,
         "width": 240,
@@ -51405,7 +51405,7 @@
       },
       {
         "id": "file_src_infrastructure_index_index_freshness_ts",
-        "label": "index_freshness.ts · 11 APIs",
+        "label": "index_freshness.ts",
         "x": 8260,
         "y": 1702,
         "width": 240,
@@ -51421,7 +51421,7 @@
       },
       {
         "id": "file_src_infrastructure_index_live_render_ts",
-        "label": "live_render.ts · 2 APIs",
+        "label": "live_render.ts",
         "x": 7910,
         "y": 1806,
         "width": 240,
@@ -51448,23 +51448,23 @@
             "files": [
               {
                 "path": "src/infrastructure/index/live_render.ts",
-                "content_hash": "e4ab5eb2c2fff7bec0279840282496ad1fe0a65d"
+                "content_hash": "55d51f52800092254dffa19ee9103aa413f79b4b"
               }
             ],
-            "computed_at": "2026-10-21T11:52:12.768Z",
+            "computed_at": "2026-10-21T19:58:53.295Z",
             "basis": [
-              "node-path"
+              "declared"
             ]
           },
-          "release_reason": "refreshScanRev=true 已落盘（现渲染就是从库复制），释放写权待验收",
-          "released_by": "subagent:dsl-symbols-fixer",
-          "released_at": "2026-10-21T11:54:03.892Z"
+          "release_reason": "label 改完：`${basename} · ${funcCount} APIs` → `${basename}`（见 live_render.ts:328）；本轮不再改这个文件。",
+          "released_by": "subagent:chain-e",
+          "released_at": "2026-10-21T20:07:07.100Z"
         },
         "status": "draft"
       },
       {
         "id": "file_src_infrastructure_index_registry_ts",
-        "label": "registry.ts · 9 APIs",
+        "label": "registry.ts",
         "x": 7910,
         "y": 2326,
         "width": 240,
@@ -51480,7 +51480,7 @@
       },
       {
         "id": "file_src_infrastructure_index_scan_rev_ts",
-        "label": "scan_rev.ts · 1 APIs",
+        "label": "scan_rev.ts",
         "x": 8260,
         "y": 1806,
         "width": 240,
@@ -51523,7 +51523,7 @@
       },
       {
         "id": "file_src_infrastructure_index_schema_ts",
-        "label": "schema.ts · 0 APIs",
+        "label": "schema.ts",
         "x": 9310,
         "y": 1702,
         "width": 240,
@@ -51639,7 +51639,7 @@
       },
       {
         "id": "file_src_infrastructure_index_self_writes_ts",
-        "label": "self_writes.ts · 3 APIs",
+        "label": "self_writes.ts",
         "x": 8610,
         "y": 1806,
         "width": 240,
@@ -51655,7 +51655,7 @@
       },
       {
         "id": "file_src_infrastructure_index_symbols_ts",
-        "label": "symbols.ts · 29 APIs",
+        "label": "symbols.ts",
         "x": 8610,
         "y": 1702,
         "width": 240,
@@ -51716,7 +51716,7 @@
       },
       {
         "id": "file_src_infrastructure_index_watch_project_ts",
-        "label": "watch_project.ts · 9 APIs",
+        "label": "watch_project.ts",
         "x": 7910,
         "y": 1702,
         "width": 240,
@@ -51732,7 +51732,7 @@
       },
       {
         "id": "file_src_infrastructure_llm_agnes_ts",
-        "label": "llm_agnes.ts · 7 APIs",
+        "label": "llm_agnes.ts",
         "x": 7890,
         "y": 10298,
         "width": 240,
@@ -51762,7 +51762,7 @@
       },
       {
         "id": "file_src_infrastructure_llm_focus_ts",
-        "label": "llm_focus.ts · 9 APIs",
+        "label": "llm_focus.ts",
         "x": 7890,
         "y": 9882,
         "width": 240,
@@ -51792,7 +51792,7 @@
       },
       {
         "id": "file_src_infrastructure_llm_gateway_ts",
-        "label": "llm_gateway.ts · 27 APIs",
+        "label": "llm_gateway.ts",
         "x": 7890,
         "y": 9778,
         "width": 240,
@@ -51822,7 +51822,7 @@
       },
       {
         "id": "file_src_infrastructure_llm_pool_ts",
-        "label": "llm_pool.ts · 6 APIs",
+        "label": "llm_pool.ts",
         "x": 7890,
         "y": 10610,
         "width": 240,
@@ -51852,7 +51852,7 @@
       },
       {
         "id": "file_src_infrastructure_packages_package_pins_ts",
-        "label": "package_pins.ts · 0 APIs",
+        "label": "package_pins.ts",
         "x": 7910,
         "y": 9654,
         "width": 240,
@@ -51868,7 +51868,7 @@
       },
       {
         "id": "file_src_infrastructure_packages_template_compat_ts",
-        "label": "template_compat.ts · 6 APIs",
+        "label": "template_compat.ts",
         "x": 7910,
         "y": 9550,
         "width": 240,
@@ -51884,7 +51884,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_ast_node_ts",
-        "label": "ast_node.ts · 2 APIs",
+        "label": "ast_node.ts",
         "x": 8260,
         "y": 1216,
         "width": 240,
@@ -51900,7 +51900,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_ast_parser_ts",
-        "label": "ast_parser.ts · 2 APIs",
+        "label": "ast_parser.ts",
         "x": 7910,
         "y": 1528,
         "width": 240,
@@ -51916,7 +51916,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_ast_rename_ts",
-        "label": "ast_rename.ts · 20 APIs",
+        "label": "ast_rename.ts",
         "x": 7910,
         "y": 1112,
         "width": 240,
@@ -51932,7 +51932,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_comments_ts",
-        "label": "comments.ts · 2 APIs",
+        "label": "comments.ts",
         "x": 7910,
         "y": 1424,
         "width": 240,
@@ -51962,7 +51962,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_fuzzy_match_ts",
-        "label": "fuzzy_match.ts · 8 APIs",
+        "label": "fuzzy_match.ts",
         "x": 7910,
         "y": 1320,
         "width": 240,
@@ -51978,7 +51978,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_import_resolve_ts",
-        "label": "import_resolve.ts · 8 APIs",
+        "label": "import_resolve.ts",
         "x": 8610,
         "y": 1216,
         "width": 240,
@@ -51994,7 +51994,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_import_text_ts",
-        "label": "import_text.ts · 1 APIs",
+        "label": "import_text.ts",
         "x": 8610,
         "y": 1424,
         "width": 240,
@@ -52010,7 +52010,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_index_ts",
-        "label": "index.ts · 0 APIs",
+        "label": "index.ts",
         "x": 8260,
         "y": 1112,
         "width": 240,
@@ -52026,7 +52026,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_kernel_ts",
-        "label": "kernel.ts · 43 APIs",
+        "label": "kernel.ts",
         "x": 8960,
         "y": 1112,
         "width": 240,
@@ -52119,7 +52119,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_lang_hint_ts",
-        "label": "lang_hint.ts · 4 APIs",
+        "label": "lang_hint.ts",
         "x": 9310,
         "y": 1112,
         "width": 240,
@@ -52135,7 +52135,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_languages_ts",
-        "label": "languages.ts · 3 APIs",
+        "label": "languages.ts",
         "x": 10010,
         "y": 1112,
         "width": 240,
@@ -52151,7 +52151,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_loader_ts",
-        "label": "loader.ts · 4 APIs",
+        "label": "loader.ts",
         "x": 9310,
         "y": 1216,
         "width": 240,
@@ -52167,7 +52167,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_module_analysis_ts",
-        "label": "module_analysis.ts · 4 APIs",
+        "label": "module_analysis.ts",
         "x": 7910,
         "y": 1216,
         "width": 240,
@@ -52183,7 +52183,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_probe_ts",
-        "label": "probe.ts · 12 APIs",
+        "label": "probe.ts",
         "x": 9660,
         "y": 1112,
         "width": 240,
@@ -52199,7 +52199,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_source_exts_ts",
-        "label": "source_exts.ts · 18 APIs",
+        "label": "source_exts.ts",
         "x": 8610,
         "y": 1112,
         "width": 240,
@@ -52215,7 +52215,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_type_members_ts",
-        "label": "type_members.ts · 9 APIs",
+        "label": "type_members.ts",
         "x": 8610,
         "y": 1320,
         "width": 240,
@@ -52231,7 +52231,7 @@
       },
       {
         "id": "file_src_infrastructure_project_view_ts",
-        "label": "project_view.ts · 4 APIs",
+        "label": "project_view.ts",
         "x": 7890,
         "y": 10506,
         "width": 240,
@@ -52247,7 +52247,7 @@
       },
       {
         "id": "file_src_infrastructure_render_anim_core_ts",
-        "label": "anim_core.ts · 18 APIs",
+        "label": "anim_core.ts",
         "x": 6820,
         "y": 1112,
         "width": 240,
@@ -52263,7 +52263,7 @@
       },
       {
         "id": "file_src_infrastructure_render_dataflow_core_ts",
-        "label": "dataflow_core.ts · 9 APIs",
+        "label": "dataflow_core.ts",
         "x": 6470,
         "y": 1112,
         "width": 240,
@@ -52279,7 +52279,7 @@
       },
       {
         "id": "file_src_infrastructure_render_export_ts",
-        "label": "export.ts · 7 APIs",
+        "label": "export.ts",
         "x": 6470,
         "y": 1320,
         "width": 240,
@@ -52295,7 +52295,7 @@
       },
       {
         "id": "file_src_infrastructure_render_inject_replay_ts",
-        "label": "inject_replay.ts · 3 APIs",
+        "label": "inject_replay.ts",
         "x": 6470,
         "y": 1424,
         "width": 240,
@@ -52311,7 +52311,7 @@
       },
       {
         "id": "file_src_infrastructure_render_simulation_engine_ts",
-        "label": "simulation_engine.ts · 16 APIs",
+        "label": "simulation_engine.ts",
         "x": 6470,
         "y": 1216,
         "width": 240,
@@ -52327,7 +52327,7 @@
       },
       {
         "id": "file_src_infrastructure_rules_rule_match_ts",
-        "label": "rule_match.ts · 10 APIs",
+        "label": "rule_match.ts",
         "x": 6470,
         "y": 1598,
         "width": 240,
@@ -52343,7 +52343,7 @@
       },
       {
         "id": "file_src_infrastructure_rules_rule_tokens_ts",
-        "label": "rule_tokens.ts · 5 APIs",
+        "label": "rule_tokens.ts",
         "x": 6820,
         "y": 1598,
         "width": 240,
@@ -52359,7 +52359,7 @@
       },
       {
         "id": "file_src_infrastructure_scan_bounds_ts",
-        "label": "scan_bounds.ts · 1 APIs",
+        "label": "scan_bounds.ts",
         "x": 7890,
         "y": 10194,
         "width": 240,
@@ -52375,7 +52375,7 @@
       },
       {
         "id": "file_src_infrastructure_storage_ts",
-        "label": "storage.ts · 50 APIs",
+        "label": "storage.ts",
         "x": 7540,
         "y": 1062,
         "width": 240,
@@ -52471,7 +52471,7 @@
       },
       {
         "id": "file_src_infrastructure_storage_overlay_ts",
-        "label": "storage_overlay.ts · 8 APIs",
+        "label": "storage_overlay.ts",
         "x": 7890,
         "y": 9986,
         "width": 240,
@@ -52487,7 +52487,7 @@
       },
       {
         "id": "file_src_infrastructure_text_arg_suggest_ts",
-        "label": "arg_suggest.ts · 5 APIs",
+        "label": "arg_suggest.ts",
         "x": 7910,
         "y": 9272,
         "width": 240,
@@ -52503,7 +52503,7 @@
       },
       {
         "id": "file_src_infrastructure_text_line_utils_ts",
-        "label": "line_utils.ts · 3 APIs",
+        "label": "line_utils.ts",
         "x": 7910,
         "y": 9376,
         "width": 240,
@@ -52519,7 +52519,7 @@
       },
       {
         "id": "file_src_infrastructure_text_refs_text_ts",
-        "label": "refs_text.ts · 6 APIs",
+        "label": "refs_text.ts",
         "x": 7910,
         "y": 9168,
         "width": 240,
@@ -52535,7 +52535,7 @@
       },
       {
         "id": "file_src_infrastructure_verify_refactor_ts",
-        "label": "verify_refactor.ts · 3 APIs",
+        "label": "verify_refactor.ts",
         "x": 7890,
         "y": 10090,
         "width": 240,
@@ -52551,7 +52551,7 @@
       },
       {
         "id": "file_src_presentation_cli_cli_ts",
-        "label": "cli.ts · 4 APIs",
+        "label": "cli.ts",
         "x": 3510,
         "y": 592,
         "width": 240,
@@ -52580,7 +52580,7 @@
       },
       {
         "id": "file_src_presentation_cli_diagnose_loop_cli_ts",
-        "label": "diagnose_loop_cli.ts · 4 APIs",
+        "label": "diagnose_loop_cli.ts",
         "x": 3510,
         "y": 800,
         "width": 240,
@@ -52596,7 +52596,7 @@
       },
       {
         "id": "file_src_presentation_cli_install_package_cli_ts",
-        "label": "install_package_cli.ts · 19 APIs",
+        "label": "install_package_cli.ts",
         "x": 3510,
         "y": 488,
         "width": 240,
@@ -52612,7 +52612,7 @@
       },
       {
         "id": "file_src_presentation_daemon_daemon_ts",
-        "label": "daemon.ts · 9 APIs",
+        "label": "daemon.ts",
         "x": 3510,
         "y": 210,
         "width": 240,
@@ -52628,7 +52628,7 @@
       },
       {
         "id": "file_src_presentation_daemon_memory_watch_ts",
-        "label": "memory_watch.ts · 2 APIs",
+        "label": "memory_watch.ts",
         "x": 3860,
         "y": 314,
         "width": 240,
@@ -52644,7 +52644,7 @@
       },
       {
         "id": "file_src_presentation_daemon_server_ts",
-        "label": "server.ts · 3 APIs",
+        "label": "server.ts",
         "x": 3860,
         "y": 210,
         "width": 240,
@@ -52660,7 +52660,7 @@
       },
       {
         "id": "file_src_presentation_http_archify_archify_mappers_ts",
-        "label": "archify_mappers.ts · 13 APIs",
+        "label": "archify_mappers.ts",
         "x": 4230,
         "y": 1406,
         "width": 240,
@@ -52676,7 +52676,7 @@
       },
       {
         "id": "file_src_presentation_http_archify_archify_pipeline_ts",
-        "label": "archify_pipeline.ts · 4 APIs",
+        "label": "archify_pipeline.ts",
         "x": 3880,
         "y": 1510,
         "width": 240,
@@ -52692,7 +52692,7 @@
       },
       {
         "id": "file_src_presentation_http_archify_archify_project_ts",
-        "label": "archify_project.ts · 3 APIs",
+        "label": "archify_project.ts",
         "x": 4930,
         "y": 1406,
         "width": 240,
@@ -52708,7 +52708,7 @@
       },
       {
         "id": "file_src_presentation_http_archify_archify_runner_ts",
-        "label": "archify_runner.ts · 8 APIs",
+        "label": "archify_runner.ts",
         "x": 4230,
         "y": 1510,
         "width": 240,
@@ -52724,7 +52724,7 @@
       },
       {
         "id": "file_src_presentation_http_archify_archify_semantics_ts",
-        "label": "archify_semantics.ts · 13 APIs",
+        "label": "archify_semantics.ts",
         "x": 4580,
         "y": 1406,
         "width": 240,
@@ -52740,7 +52740,7 @@
       },
       {
         "id": "file_src_presentation_http_archify_view_inputs_ts",
-        "label": "view_inputs.ts · 3 APIs",
+        "label": "view_inputs.ts",
         "x": 3880,
         "y": 1406,
         "width": 240,
@@ -52756,7 +52756,7 @@
       },
       {
         "id": "file_src_presentation_http_contract_ts",
-        "label": "contract.ts · 0 APIs",
+        "label": "contract.ts",
         "x": 3860,
         "y": 1738,
         "width": 240,
@@ -52772,7 +52772,7 @@
       },
       {
         "id": "file_src_presentation_http_dict_gen_ts",
-        "label": "dict_gen.ts · 4 APIs",
+        "label": "dict_gen.ts",
         "x": 3860,
         "y": 1634,
         "width": 240,
@@ -52788,7 +52788,7 @@
       },
       {
         "id": "file_src_presentation_http_serve_ts",
-        "label": "serve.ts · 50 APIs",
+        "label": "serve.ts",
         "x": 3510,
         "y": 1356,
         "width": 240,
@@ -52815,7 +52815,7 @@
       },
       {
         "id": "file_src_presentation_mcp_lifecycle_ts",
-        "label": "lifecycle.ts · 3 APIs",
+        "label": "lifecycle.ts",
         "x": 5690,
         "y": 314,
         "width": 240,
@@ -52831,7 +52831,7 @@
       },
       {
         "id": "file_src_presentation_mcp_server_ts",
-        "label": "server.ts · 4 APIs",
+        "label": "server.ts",
         "x": 5340,
         "y": 210,
         "width": 240,
@@ -52858,7 +52858,7 @@
       },
       {
         "id": "file_src_presentation_mcp_server_registry_ts",
-        "label": "server_registry.ts · 25 APIs",
+        "label": "server_registry.ts",
         "x": 5690,
         "y": 210,
         "width": 240,
@@ -52885,7 +52885,7 @@
       },
       {
         "id": "file_src_presentation_mcp_tool_warnings_ts",
-        "label": "tool_warnings.ts · 7 APIs",
+        "label": "tool_warnings.ts",
         "x": 6040,
         "y": 210,
         "width": 240,
@@ -52901,7 +52901,7 @@
       },
       {
         "id": "file_third_party_archify_delta_architecture-delta_mjs",
-        "label": "architecture-delta.mjs · 50 APIs",
+        "label": "architecture-delta.mjs",
         "x": 120,
         "y": 3610,
         "width": 240,
@@ -52917,7 +52917,7 @@
       },
       {
         "id": "file_third_party_archify_migrations_workflow-v2_mjs",
-        "label": "workflow-v2.mjs · 10 APIs",
+        "label": "workflow-v2.mjs",
         "x": 120,
         "y": 3784,
         "width": 240,
@@ -52933,7 +52933,7 @@
       },
       {
         "id": "file_third_party_archify_recipes_scenarios_mjs",
-        "label": "scenarios.mjs · 10 APIs",
+        "label": "scenarios.mjs",
         "x": 120,
         "y": 3958,
         "width": 240,
@@ -52949,7 +52949,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_architecture_grid_mjs",
-        "label": "grid.mjs · 3 APIs",
+        "label": "grid.mjs",
         "x": 1230,
         "y": 3244,
         "width": 240,
@@ -52965,7 +52965,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_architecture_render-architecture_mjs",
-        "label": "render-architecture.mjs · 32 APIs",
+        "label": "render-architecture.mjs",
         "x": 880,
         "y": 3244,
         "width": 240,
@@ -52981,7 +52981,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_dataflow_render-dataflow_mjs",
-        "label": "render-dataflow.mjs · 14 APIs",
+        "label": "render-dataflow.mjs",
         "x": 880,
         "y": 3418,
         "width": 240,
@@ -52997,7 +52997,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_lifecycle_render-lifecycle_mjs",
-        "label": "render-lifecycle.mjs · 16 APIs",
+        "label": "render-lifecycle.mjs",
         "x": 880,
         "y": 3592,
         "width": 240,
@@ -53013,7 +53013,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_sequence_render-sequence_mjs",
-        "label": "render-sequence.mjs · 15 APIs",
+        "label": "render-sequence.mjs",
         "x": 880,
         "y": 3766,
         "width": 240,
@@ -53029,7 +53029,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_shared_brand-marks_mjs",
-        "label": "brand-marks.mjs · 31 APIs",
+        "label": "brand-marks.mjs",
         "x": 2320,
         "y": 3174,
         "width": 240,
@@ -53045,7 +53045,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_shared_cli_mjs",
-        "label": "cli.mjs · 11 APIs",
+        "label": "cli.mjs",
         "x": 1970,
         "y": 3070,
         "width": 240,
@@ -53061,7 +53061,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_shared_desktop-readability_mjs",
-        "label": "desktop-readability.mjs · 2 APIs",
+        "label": "desktop-readability.mjs",
         "x": 1970,
         "y": 3486,
         "width": 240,
@@ -53077,7 +53077,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_shared_diagnostics_mjs",
-        "label": "diagnostics.mjs · 9 APIs",
+        "label": "diagnostics.mjs",
         "x": 2670,
         "y": 3278,
         "width": 240,
@@ -53093,7 +53093,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_shared_engineering-profiles_mjs",
-        "label": "engineering-profiles.mjs · 4 APIs",
+        "label": "engineering-profiles.mjs",
         "x": 2320,
         "y": 3486,
         "width": 240,
@@ -53109,7 +53109,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_shared_generated-brand-marks_mjs",
-        "label": "generated-brand-marks.mjs · 0 APIs",
+        "label": "generated-brand-marks.mjs",
         "x": 2670,
         "y": 3070,
         "width": 240,
@@ -53125,7 +53125,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_shared_generated-validators_mjs",
-        "label": "generated-validators.mjs · 11 APIs",
+        "label": "generated-validators.mjs",
         "x": 2670,
         "y": 3382,
         "width": 240,
@@ -53141,7 +53141,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_shared_geometry_mjs",
-        "label": "geometry.mjs · 50 APIs",
+        "label": "geometry.mjs",
         "x": 2320,
         "y": 3070,
         "width": 240,
@@ -53157,7 +53157,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_shared_i18n_mjs",
-        "label": "i18n.mjs · 8 APIs",
+        "label": "i18n.mjs",
         "x": 3020,
         "y": 3070,
         "width": 240,
@@ -53173,7 +53173,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_shared_layout-report_mjs",
-        "label": "layout-report.mjs · 3 APIs",
+        "label": "layout-report.mjs",
         "x": 1970,
         "y": 3382,
         "width": 240,
@@ -53189,7 +53189,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_shared_legend_mjs",
-        "label": "legend.mjs · 6 APIs",
+        "label": "legend.mjs",
         "x": 1970,
         "y": 3174,
         "width": 240,
@@ -53205,7 +53205,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_shared_output-path_mjs",
-        "label": "output-path.mjs · 15 APIs",
+        "label": "output-path.mjs",
         "x": 2320,
         "y": 3278,
         "width": 240,
@@ -53221,7 +53221,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_shared_repository-evidence_mjs",
-        "label": "repository-evidence.mjs · 9 APIs",
+        "label": "repository-evidence.mjs",
         "x": 2320,
         "y": 3382,
         "width": 240,
@@ -53237,7 +53237,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_shared_text-fit_mjs",
-        "label": "text-fit.mjs · 3 APIs",
+        "label": "text-fit.mjs",
         "x": 1970,
         "y": 3278,
         "width": 240,
@@ -53253,7 +53253,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_shared_utils_mjs",
-        "label": "utils.mjs · 6 APIs",
+        "label": "utils.mjs",
         "x": 2670,
         "y": 3174,
         "width": 240,
@@ -53269,7 +53269,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_shared_validator_mjs",
-        "label": "validator.mjs · 4 APIs",
+        "label": "validator.mjs",
         "x": 2320,
         "y": 3590,
         "width": 240,
@@ -53285,7 +53285,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_workflow_render-workflow_mjs",
-        "label": "render-workflow.mjs · 0 APIs",
+        "label": "render-workflow.mjs",
         "x": 880,
         "y": 3070,
         "width": 240,
@@ -53301,7 +53301,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_workflow_workflow-compiler_mjs",
-        "label": "workflow-compiler.mjs · 21 APIs",
+        "label": "workflow-compiler.mjs",
         "x": 1230,
         "y": 3070,
         "width": 240,
@@ -53317,7 +53317,7 @@
       },
       {
         "id": "file_third_party_archify_renderers_workflow_workflow-migration-geometry_mjs",
-        "label": "workflow-migration-geometry.mjs · 7 APIs",
+        "label": "workflow-migration-geometry.mjs",
         "x": 1580,
         "y": 3070,
         "width": 240,
@@ -53333,7 +53333,7 @@
       },
       {
         "id": "file_third_party_archify_scripts_check-render-output_mjs",
-        "label": "check-render-output.mjs · 36 APIs",
+        "label": "check-render-output.mjs",
         "x": 120,
         "y": 3124,
         "width": 240,
@@ -53349,7 +53349,7 @@
       },
       {
         "id": "file_third_party_archify_scripts_check-update_mjs",
-        "label": "check-update.mjs · 50 APIs",
+        "label": "check-update.mjs",
         "x": 120,
         "y": 3020,
         "width": 240,
@@ -53365,7 +53365,7 @@
       },
       {
         "id": "file_third_party_archify_scripts_generate-brand-marks_mjs",
-        "label": "generate-brand-marks.mjs · 3 APIs",
+        "label": "generate-brand-marks.mjs",
         "x": 120,
         "y": 3228,
         "width": 240,
@@ -53381,7 +53381,7 @@
       },
       {
         "id": "file_third_party_archify_scripts_generate-validators_mjs",
-        "label": "generate-validators.mjs · 0 APIs",
+        "label": "generate-validators.mjs",
         "x": 120,
         "y": 3332,
         "width": 240,
@@ -53397,7 +53397,7 @@
       },
       {
         "id": "file_third_party_archify_scripts_render-examples_mjs",
-        "label": "render-examples.mjs · 0 APIs",
+        "label": "render-examples.mjs",
         "x": 120,
         "y": 3436,
         "width": 240,
@@ -53413,7 +53413,7 @@
       },
       {
         "id": "file_third_party_archify_scripts_update-contract_mjs",
-        "label": "update-contract.mjs · 13 APIs",
+        "label": "update-contract.mjs",
         "x": 470,
         "y": 3020,
         "width": 240,
@@ -54183,7 +54183,7 @@
       },
       {
         "id": "file_certs_t353-judge-port-cert_mjs",
-        "label": "t353-judge-port-cert.mjs · 0 APIs",
+        "label": "t353-judge-port-cert.mjs",
         "x": 60,
         "y": 14320,
         "width": 240,
@@ -54200,7 +54200,7 @@
       },
       {
         "id": "file_certs_t355-gate-exemption-cert_mjs",
-        "label": "t355-gate-exemption-cert.mjs · 0 APIs",
+        "label": "t355-gate-exemption-cert.mjs",
         "x": 340,
         "y": 14320,
         "width": 240,
@@ -54216,7 +54216,7 @@
       },
       {
         "id": "file_certs_t356-authorize-cert_mjs",
-        "label": "t356-authorize-cert.mjs · 0 APIs",
+        "label": "t356-authorize-cert.mjs",
         "x": 620,
         "y": 14320,
         "width": 240,
@@ -54232,7 +54232,7 @@
       },
       {
         "id": "file_certs_t357-pipeline-gate-cert_mjs",
-        "label": "t357-pipeline-gate-cert.mjs · 2 APIs",
+        "label": "t357-pipeline-gate-cert.mjs",
         "x": 900,
         "y": 14320,
         "width": 240,
@@ -54248,7 +54248,7 @@
       },
       {
         "id": "file_certs_t358-domain-five-values-cert_mjs",
-        "label": "t358-domain-five-values-cert.mjs · 1 APIs",
+        "label": "t358-domain-five-values-cert.mjs",
         "x": 1180,
         "y": 14320,
         "width": 240,
@@ -54265,7 +54265,7 @@
       },
       {
         "id": "file_scripts_clean-dead-functions_mjs",
-        "label": "clean-dead-functions.mjs · 0 APIs",
+        "label": "clean-dead-functions.mjs",
         "x": 60,
         "y": 14410,
         "width": 240,
@@ -54281,7 +54281,7 @@
       },
       {
         "id": "file_scripts_contract-calls_mjs",
-        "label": "contract-calls.mjs · 3 APIs",
+        "label": "contract-calls.mjs",
         "x": 340,
         "y": 14410,
         "width": 240,
@@ -54297,7 +54297,7 @@
       },
       {
         "id": "file_scripts_coverage_mjs",
-        "label": "coverage.mjs · 0 APIs",
+        "label": "coverage.mjs",
         "x": 620,
         "y": 14410,
         "width": 240,
@@ -54313,7 +54313,7 @@
       },
       {
         "id": "file_scripts_dep_mjs",
-        "label": "dep.mjs · 0 APIs",
+        "label": "dep.mjs",
         "x": 900,
         "y": 14410,
         "width": 240,
@@ -54329,7 +54329,7 @@
       },
       {
         "id": "file_scripts_design-check_mjs",
-        "label": "design-check.mjs · 0 APIs",
+        "label": "design-check.mjs",
         "x": 1180,
         "y": 14410,
         "width": 240,
@@ -54345,7 +54345,7 @@
       },
       {
         "id": "file_scripts_gen-contracts_mjs",
-        "label": "gen-contracts.mjs · 0 APIs",
+        "label": "gen-contracts.mjs",
         "x": 60,
         "y": 14500,
         "width": 240,
@@ -54361,7 +54361,7 @@
       },
       {
         "id": "file_scripts_gen-db-check_mjs",
-        "label": "gen-db-check.mjs · 0 APIs",
+        "label": "gen-db-check.mjs",
         "x": 340,
         "y": 14500,
         "width": 240,
@@ -54377,7 +54377,7 @@
       },
       {
         "id": "file_scripts_impl-fixture_mjs",
-        "label": "impl-fixture.mjs · 0 APIs",
+        "label": "impl-fixture.mjs",
         "x": 620,
         "y": 14500,
         "width": 240,
@@ -54420,7 +54420,7 @@
       },
       {
         "id": "file_scripts_mutate_mjs",
-        "label": "mutate.mjs · 5 APIs",
+        "label": "mutate.mjs",
         "x": 900,
         "y": 14500,
         "width": 240,
@@ -54436,7 +54436,7 @@
       },
       {
         "id": "file_scripts_patrol_mjs",
-        "label": "patrol.mjs · 0 APIs",
+        "label": "patrol.mjs",
         "x": 1180,
         "y": 14500,
         "width": 240,
@@ -54452,7 +54452,7 @@
       },
       {
         "id": "file_src_application_claim_conflict_ts",
-        "label": "claim_conflict.ts · 6 APIs",
+        "label": "claim_conflict.ts",
         "x": 60,
         "y": 14590,
         "width": 240,
@@ -54468,7 +54468,7 @@
       },
       {
         "id": "file_src_application_design_board_todo_journal_ts",
-        "label": "todo_journal.ts · 3 APIs",
+        "label": "todo_journal.ts",
         "x": 340,
         "y": 14590,
         "width": 240,
@@ -54483,7 +54483,7 @@
       },
       {
         "id": "file_src_application_read_set_ts",
-        "label": "read_set.ts · 13 APIs",
+        "label": "read_set.ts",
         "x": 620,
         "y": 14590,
         "width": 240,
@@ -54499,7 +54499,7 @@
       },
       {
         "id": "file_src_application_refactor_gate_note_ts",
-        "label": "gate_note.ts · 2 APIs",
+        "label": "gate_note.ts",
         "x": 900,
         "y": 14590,
         "width": 240,
@@ -54515,7 +54515,7 @@
       },
       {
         "id": "file_src_application_source_writer_ts",
-        "label": "source_writer.ts · 4 APIs",
+        "label": "source_writer.ts",
         "x": 1180,
         "y": 14590,
         "width": 240,
@@ -54531,7 +54531,7 @@
       },
       {
         "id": "file_src_domain_actor_spec_ts",
-        "label": "actor_spec.ts · 12 APIs",
+        "label": "actor_spec.ts",
         "x": 60,
         "y": 14680,
         "width": 240,
@@ -54547,7 +54547,7 @@
       },
       {
         "id": "file_src_domain_judge_port_ts",
-        "label": "judge_port.ts · 0 APIs",
+        "label": "judge_port.ts",
         "x": 340,
         "y": 14680,
         "width": 240,
@@ -54563,7 +54563,7 @@
       },
       {
         "id": "file_src_domain_todo_chain_ts",
-        "label": "todo_chain.ts · 3 APIs",
+        "label": "todo_chain.ts",
         "x": 620,
         "y": 14680,
         "width": 240,
@@ -54579,7 +54579,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_book_ts",
-        "label": "book.ts · 15 APIs",
+        "label": "book.ts",
         "x": 900,
         "y": 14680,
         "width": 240,
@@ -54635,7 +54635,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_go_tests_ts",
-        "label": "go_tests.ts · 11 APIs",
+        "label": "go_tests.ts",
         "x": 1180,
         "y": 14680,
         "width": 240,
@@ -54651,7 +54651,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_receipt_ts",
-        "label": "receipt.ts · 12 APIs",
+        "label": "receipt.ts",
         "x": 60,
         "y": 14770,
         "width": 240,
@@ -54667,7 +54667,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_symbol_docstring_ts",
-        "label": "symbol_docstring.ts · 7 APIs",
+        "label": "symbol_docstring.ts",
         "x": 340,
         "y": 14770,
         "width": 240,
@@ -54683,7 +54683,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_symbol_params_ts",
-        "label": "symbol_params.ts · 10 APIs",
+        "label": "symbol_params.ts",
         "x": 620,
         "y": 14770,
         "width": 240,
@@ -54699,7 +54699,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_symbol_shape_ts",
-        "label": "symbol_shape.ts · 10 APIs",
+        "label": "symbol_shape.ts",
         "x": 900,
         "y": 14770,
         "width": 240,
@@ -103696,11 +103696,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T19:26:35.344Z",
+    "saved_at": "2026-10-21T20:07:07.126Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 27272533,
+    "age": 29704315,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -106041,7 +106041,25 @@
       "summary": "【L1/L2 交接缺口】级别是派生值 ⇒ L1 卡一旦补上 post 判据就当场变 L2，「L1 done → publish 升 L2」两步流不存在（2026-10-22 裁决 A 接受现状，但流程要定下来）。判据（二选一，选完落进 design 并改 docs/INDEX.md §四）：① 要么让「L1（写 decision）→ done → 再 publish L2（写实现）」这条流真能跑通（例如把「出生级别」做成一个事件字段，并同步改 task_schema.ts 里「level 不落盘」那条注）；② 要么钉死「L1 只是 decision 还没写 post 判据的临时态，交接走 release → 下一个 claim 时已是 L2」并把回执/文档写到能照做。",
       "state": "candidate",
       "owner": null
+    },
+    {
+      "id": "todo_go-索引不认-const-var-账上-const-符号在目标侧永远无法用索引",
+      "summary": "Go 索引不认 const/var ⇒ 账上 const 符号在目标侧永远无法用索引验证（实测：译文库 nodes.kind 只有 file/function/type，const 0 条；账上 6 条 const 只有翻译册记着）。判据：对一个含 const 的 Go 文件重建索引后，nodes 里出现 kind='const' 的节点且条数与源文件 const 声明一致。★ 机器判不了：expectations 的 symbol-exists/signature-matches 只走 TS/JS 解析器（Go 路径返回 unsupported），const 也不在判据类型里。",
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_对拍基准没有保鲜-册上没有-译文对拍基准是哪一版源码-拿-dist-当基准会出假",
+      "summary": "对拍基准没有保鲜：册上没有「译文对拍基准是哪一版源码」，拿 dist/ 当基准会出假差异（实测 2 处：dist 落后 src 一个下划线）。判据：册 meta 里有 parity_baseline{基准版本, 内容指纹, measured_at}，且对拍工具在基准与当前源不一致时拒绝写 verified。★ 机器判不了：verified 的写入方还不存在（TS→Go 方向没有对拍器），没有观察点。",
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_写闸物理上没有落点-链-e-环3-的产物在仓外-task-gate-原文-0-条",
+      "summary": "写闸物理上没有落点：链 E 环3 的产物在仓外，task_gate 原文「0 条 feature 的 source_root 指到 … ⇒ 任务闸不适用（放行）」；翻译册在仓内但「不在任何 covering feature 里 ⇒ 无任务可挂」⇒ 一次 claim 都没被要求，owner/reason 从未被校验。判据：对「仓外产物目录」与「.agent-io/design/*.translate.json」各有一条可查的授权路径（要么落一个 feature 的 source_root，要么写闸显式写明这两类路径的处置），不靠人肉记忆。★ 机器判不了：这是闸的覆盖范围问题，不是某个符号/文件的存在性。",
+      "state": "candidate",
+      "owner": null
     }
   ],
-  "_dsl_rev": 724
+  "_dsl_rev": 1249
 }

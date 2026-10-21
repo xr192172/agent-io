@@ -23,9 +23,13 @@
  *   但计数单列 `blockedByTermNull`，理由换成「已定但无目标」（两种病不混一个数）。
  * ⇒ blocked 的条数就是「术语表还差几条」的真实读数；`unknowns` 里逐条点名。
  *
- * ## 诚实边界
- *   · 只收 **export**（+ exported class 的方法）。非导出符号（约 1300 个函数）**不进账** ——
- *     它们跨文件不可见，翻译时跟着所在文件走；要进账得先定「内部符号怎么记」。
+ * ## 入账面的两档（★ 2026-10-22 链 E 环4：补 `scope`）
+ *   · `exported` —— 源侧 export（+ exported class 的方法），**全仓都进账**。
+ *   · `internal` —— 未导出符号，**只收「已经有进度」的文件**（该文件里至少一条导出符号 ∈
+ *     {stubbed, translated, verified, diff}）。判据是「**这个模块翻完了吗**」：实测 `src/domain/actor_spec.ts`
+ *     的 `invalidError`（35 行，承载全部拒绝报文）/ `suggestLine` / `legacyStrictError` 三条私有函数
+ *     原来**不在账上** ⇒「函数齐全但报错文案缺失」在账上看不出来。
+ *   · ★ 不做全仓私有符号普查：约 1306 个，全灌进来会把 pending 从 2667 抬到 ~4000，读数失真。
  *   · `to` 只是**机械可算的目标名**（包路径 + 标识符），不代表函数体翻好了。
  *   · 结构型类型（匿名对象 / 真联合 / 函数类型）没有身份 ⇒ 进 `shapes` 按类聚合，不逐条造 id。
  */
@@ -40,6 +44,15 @@ export interface BookSymbol {
   from: string | null;
   to: string | null;
   kind: string;
+  /**
+   * ★ 2026-10-22（链 E 环4）：入账面的**两档**。
+   *   · `exported` —— 源侧导出（含导出类的方法）；
+   *   · `internal` —— **未导出**符号，只在「它所在文件已经有进度」时才进账（判据见 {@link readSymbolRows}）。
+   * ★ 为什么要它：账要能回答「这个模块翻完了吗」。只收 export 时，`actor_spec.ts` 的
+   *   `invalidError`/`suggestLine`/`legacyStrictError`（全部拒绝报文都在这里）根本不在账上 ⇒
+   *   「16/18 translated」看起来像翻完了，实际报错文案一条都没有。
+   */
+  scope: 'exported' | 'internal';
   origin: 'source' | 'added';
   state: string;
   note?: string;
@@ -89,6 +102,8 @@ export interface BookGenOptions {
 
 export interface BookGenStats {
   symbols: number;
+  /** ★ 其中 scope='internal' 的条数（只统计「已动过文件」的未导出符号） */
+  internalSymbols: number;
   pending: number;
   blocked: number;
   added: number;
@@ -324,11 +339,19 @@ function openBookDb(projectDir: string): DatabaseSync {
 }
 
 /**
- * 取「该进账的符号」：所有 exported 节点 + **exported class 的方法**。
+ * 取「该进账的符号」：所有 exported 节点 + **exported class 的方法** + **已动过文件的未导出节点**。
  * ★ 方法节点自己不带 `export`（导出的是 class）⇒ 只按 export 取会漏掉整个类的方法面。
  * ★ 关联靠 `(file_path, parent=类名)`：`nodes.parent` 存的是**名字**不是 id（实测），所以两列一起用。
+ *
+ * ★★ 2026-10-22（链 E 环4）：第三类（`internalRows`）**只取 activeFiles**。
+ *   判据 = 「这个文件已经有导出符号被人推进过」（state ∈ STICKY_STATES，由调用方算好传进来）。
+ *   ★ 为什么不在本函数里读册子：状态是册子的事实，读库的函数只该读库（判据与数据各归其位）。
+ *   ★ 为什么不是全仓：1306 个私有符号会把 pending 抬到 ~4000，而「模块」这个词指的是**动过的文件**。
  */
-function readSymbolRows(db: DatabaseSync): { rows: NodeRow[]; srcFiles: number } {
+function readSymbolRows(
+  db: DatabaseSync,
+  activeFiles: ReadonlySet<string>,
+): { rows: NodeRow[]; internalRows: NodeRow[]; srcFiles: number } {
   const cols = `id, kind, name, file_path, start_line, parent, return_type, params, members, type_params, modifiers`;
   const where = `language='ts' AND file_path LIKE 'src/%' AND file_path NOT LIKE '%.d.ts'`;
   const direct = db
@@ -341,8 +364,21 @@ function readSymbolRows(db: DatabaseSync): { rows: NodeRow[]; srcFiles: number }
   const methods = (
     db.prepare(`SELECT ${cols} FROM nodes WHERE ${where} AND kind='method' ORDER BY file_path, start_line`).all() as unknown as NodeRow[]
   ).filter((m) => m.parent && classes.has(`${m.file_path}#${m.parent}`));
+  // ★ 未导出：`modifiers` 可能是 NULL（实测私有函数就是 NULL）⇒ 不能只写 NOT LIKE（NULL 会被过滤掉）。
+  const files = [...activeFiles];
+  const internalRows = files.length
+    ? (db
+        .prepare(
+          `SELECT ${cols} FROM nodes WHERE language='ts' AND file_path IN (${files.map(() => '?').join(',')})` +
+            ` AND kind IN ('function','const','interface','type','class')` +
+            ` AND (modifiers IS NULL OR modifiers NOT LIKE '%"export"%') ORDER BY file_path, start_line`,
+        )
+        .all(...files) as unknown as NodeRow[])
+    : [];
   const srcFiles = (db.prepare(`SELECT count(*) AS c FROM files WHERE language='ts' AND path LIKE 'src/%' AND path NOT LIKE '%.d.ts'`).get() as { c: number }).c;
-  return { rows: [...direct, ...methods].sort((a, b) => (a.file_path === b.file_path ? a.start_line - b.start_line : a.file_path < b.file_path ? -1 : 1)), srcFiles };
+  const byPos = (a: NodeRow, b: NodeRow): number =>
+    a.file_path === b.file_path ? a.start_line - b.start_line : a.file_path < b.file_path ? -1 : 1;
+  return { rows: [...direct, ...methods].sort(byPos), internalRows: internalRows.sort(byPos), srcFiles };
 }
 
 // ── 生成 ────────────────────────────────────────────────────────────────
@@ -374,6 +410,16 @@ export function goSymbolName(row: NodeRow): string {
   return goName(row.name);
 }
 
+/**
+ * 未导出符号的 Go 名：`goName`（Pascal）→ **首字母小写**。
+ * ★ 与 private method 同一条规则（Go 的导出由首字母决定 ⇒ 小写 = 包级私有）。
+ * ★ 它**不是** "把 TS 的 private 照搬"：TS private 是类级，Go 小写是包级 ⇒ 这是**放宽**（atoms 里记着）。
+ */
+export function goInternalName(row: NodeRow): string {
+  const n = goName(row.name);
+  return n.charAt(0).toLowerCase() + n.slice(1);
+}
+
 function shapeStats(rows: readonly NodeRow[]): Map<string, { count: number; samples: string[]; distinct: Set<string> }> {
   const out = new Map<string, { count: number; samples: string[]; distinct: Set<string> }>();
   for (const r of rows) {
@@ -402,7 +448,12 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
   const targetPrefix = opts.targetPrefix ?? 'internal/';
   const db = openBookDb(opts.projectDir);
   try {
-    const { rows, srcFiles } = readSymbolRows(db);
+    // ★ 2026-10-22：**已动过的文件** = 册上至少一条导出符号处于「人的进度」态。
+    //   判据只用册上已有的 state（不新造「模块完成度」这份第二事实）。
+    const activeFiles = new Set(
+      book.symbols.filter((s) => s.from && STICKY_STATES.has(s.state)).map((s) => String(s.from).split('#')[0]),
+    );
+    const { rows, internalRows, srcFiles } = readSymbolRows(db, activeFiles);
     const declared = new Set(
       (db.prepare(`SELECT DISTINCT name FROM nodes WHERE language='ts' AND kind IN ('interface','type','class')`).all() as Array<{ name: string }>).map((r) => r.name),
     );
@@ -415,21 +466,27 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
     }
 
     const before = new Map(book.symbols.filter((s) => s.from).map((s) => [s.from as string, s]));
-    const kept: BookSymbol[] = book.symbols.filter((s) => !s.from); // origin=added 的原样保留
+    // origin=added 的原样保留；只补一个缺省 scope（老册子没有这个键）。★ 内容不重算。
+    const kept: BookSymbol[] = book.symbols.filter((s) => !s.from).map((s) => ({ ...s, scope: s.scope ?? ('exported' as const) }));
     // ★ 人写的术语表**参与**覆盖判定（此前从不读 ⇒ 「补 types 后重跑即解锁」是空话，见 unmappedTypes 头注）
     const terms = termCoverage(book.types);
 
     // 先算 to（撞名要按 target 分组，得先全算完）
-    const mapped = rows.map((row) => {
+    // ★ 两档走**同一段**逻辑：scope 只决定「目标名怎么取」（internal 首字母小写），
+    //   状态机/术语覆盖/撞名判据一个字都不分叉 —— 否则就是「同一判据住两处」。
+    const mapped = [
+      ...rows.map((row) => ({ row, scope: 'exported' as const })),
+      ...internalRows.map((row) => ({ row, scope: 'internal' as const })),
+    ].map(({ row, scope }) => {
       const target = goPath(row.file_path, srcPrefix, targetPrefix);
       // ★ static 方法：Go 没有静态方法 ⇒ 目标形态未定（包级函数 XxxYyy / 独立函数）⇒ to=null，人工定
       const isStatic = row.kind === 'method' && (row.modifiers ?? '').includes('"static"');
-      const to = isStatic ? null : `${target}#${goSymbolName(row)}`;
+      const to = isStatic ? null : `${target}#${scope === 'exported' ? goSymbolName(row) : goInternalName(row)}`;
       const bad = unmappedTypes(row, declared, terms.covered);
-      // ★ 同一个 bad 里混着两种病：真正「没人定」vs「定完了、结论是翻不了（to:null）」⇒ 分开
+      // ★ 同一个 bad 里混着两种病：真正「没人定」vs 「定完了、结论是翻不了（to:null）」⇒ 分开
       const uncovered = bad.filter((n) => !terms.nullTarget.has(n));
       const nullTerms = bad.filter((n) => terms.nullTarget.has(n));
-      return { row, to, target, bad, uncovered, nullTerms, isStatic };
+      return { row, scope, to, target, bad, uncovered, nullTerms, isStatic };
     });
     const byTarget = new Map<string, number>();
     for (const m of mapped) if (m.to) byTarget.set(m.to, (byTarget.get(m.to) ?? 0) + 1);
@@ -439,7 +496,7 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
     let blockedByTermNull = 0;
     let blockedByCollision = 0;
     let blockedByStatic = 0;
-    for (const { row, to, target, bad, uncovered, nullTerms, isStatic } of mapped) {
+    for (const { row, scope, to, target, bad, uncovered, nullTerms, isStatic } of mapped) {
       const prev = before.get(row.id);
       const collision = !!to && (byTarget.get(to) ?? 0) > 1;
       const kind: 'term' | 'term_null' | 'collision' | 'static' | null = uncovered.length
@@ -475,6 +532,7 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
         from: row.id,
         to,
         kind: row.kind, // ★ 从 nodes.kind 现取，不手写
+        scope, // ★ 2026-10-22：入账面两档，见 BookSymbol.scope
         origin: 'source',
         state,
         // ★ note 优先级：人写的（有且非 [auto]）> 本次自动。有 note 但不 sticky 时也保留人的说明。
@@ -603,6 +661,7 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
           run_at: opts.now ?? new Date().toISOString(),
           rules: [
             '入账面 = exported（modifiers 含 export）+ exported class 的方法（按 file_path+parent 关联；方法自己不带 export）',
+            '★ scope：exported = 上面那一档；internal = **未导出**节点，只收「已有进度（stubbed/translated/verified/diff）」的文件 —— 判据是「这个模块翻完了吗」，不是全仓私有符号普查',
             'to = 目标路径（src/ → internal/）+ Go 标识符（Pascal；初值缩略词全大写，见 GO_INITIALISMS）',
             'method 形态：constructor → New<Class>（包级函数）；private → 首字母小写（包级私有）',
             'kind 从 nodes.kind 现取；state 由「术语覆盖 + 同包撞名」决定，人的进度不被倒退（translated/verified/diff/stubbed 与人工 blocked 保留）',
@@ -610,12 +669,13 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
             'shapes 按类型表达式分类聚合（结构无身份，不逐条造 id）',
             'unknowns 里 [auto] 开头的每次重算，其余（人写的）原样保留',
           ],
-          stats: { symbols: symbols.length + kept.length, blockedByTerm, blockedByTermNull, blockedByCollision, blockedByStatic, added: kept.length },
+          stats: { symbols: symbols.length + kept.length, internalSymbols: internalRows.length, blockedByTerm, blockedByTermNull, blockedByCollision, blockedByStatic, added: kept.length },
         },
       },
     };
     const stat: BookGenStats = {
       symbols: symbols.length + kept.length,
+      internalSymbols: internalRows.length,
       pending: symbols.filter((s) => s.state === 'pending').length,
       blocked: symbols.filter((s) => s.state === 'blocked').length,
       added: kept.length,

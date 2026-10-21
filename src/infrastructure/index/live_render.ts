@@ -323,7 +323,9 @@ export function renderLiveFromDb(feature: string): DesignDSL | null {
     const colors = LANG_COLORS[langKey] || DEFAULT_FILE_COLOR;
     nodes.push({
       id: fileNodeId(f.rel),
-      label: `${path.posix.basename(f.rel)} · ${p.funcCount} APIs`,
+      // ★ 2026-10-22（链 E 环4）：与写端 `import_project.ts` 同步 —— label 不带计数。
+      //   （两处必须一起改：live 是"从库现渲染"，它与落盘的 label 不一致会被 `design_diff` 判成 `~`。）
+      label: path.posix.basename(f.rel),
       x: Math.round(item.x),
       y: Math.round(item.y),
       width: FILE_W,
@@ -338,7 +340,8 @@ export function renderLiveFromDb(feature: string): DesignDSL | null {
     semanticFiles.push({
       id: fileNodeId(f.rel),
       path: f.rel,
-      responsibility: `${f.dir === '.' ? '根目录' : f.dir} — ${p.funcCount} 个 API（导入自 ${p.imports.length} 个模块）`,
+      // ★ 与写端同一处措辞：「个 API」→「个函数」（funcCount 数的是函数/方法，不是导出面）。
+      responsibility: `${f.dir === '.' ? '根目录' : f.dir} — ${p.funcCount} 个函数（导入自 ${p.imports.length} 个模块）`,
       symbols: p.symbols.length > 0 ? p.symbols : undefined,
       lines: lineCounts.get(f.rel) ?? 0,
     });
