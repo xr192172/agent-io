@@ -98953,11 +98953,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T04:07:25.634Z",
+    "saved_at": "2026-10-21T04:36:19.162Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792555606848,
-    "age": 38786
+    "scanRev": 1792557378812,
+    "age": 350
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -101088,6 +101088,27 @@
     {
       "id": "todo_清理-3-个孤儿文件-render-inject-replay-ts-meta-",
       "summary": "【清理】3 个孤儿文件：`render/inject_replay.ts` / `meta/view/derive_anim_flow.ts` / `design/derive/derive_split.ts` （唯一 import 已被删 action 拿走）。删前要核 `comments.ts` 里对 derive_split 的引用。★ 顺带：`impact/diff_impact.ts` 的模块与函数【保留】（watch 的 Impact Ledger 与多处诊断仍在用），只删 action 不删实现。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_db-补全-逻辑-函数体落库-nodes-没有-body-db-现在知道-这个函",
+      "summary": "【DB 补全·逻辑】函数体落库：`nodes` 没有 body —— DB 现在知道\"这个函数长什么样\"（签名/形参/返回类型/修饰符/成员），但【不知道它做了什么】⇒ 重写时仍必须打开源文件。实测体量：3470 个函数/方法，行数合计 90,942（平均 26 行，最长 3565）≈ 3-4MB，存得下。要做的：`nodes` 加 `body_text`（原文）+ `body_hash`（同源校验），由 kernel 从 AST 的 body 节点取 `text`。★ 血的教训照抄：`imports.start_index/end_index` 那次立了\"四道准入\"（库里有行/字段齐全/库与源码同源/取出的文本能对上），body 更必须照做 —— 否则读到的可能是过期代码（而这是\"重写用错源码\"的直接来源）。★ 边界：`body_text` 是【唯一一份】还是【副本】？源文件才是权威 ⇒ 读的时候必须用 `files.content_hash` 校验，不一致就报\"索引过期\"，不许静默返回旧 body。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_db-补全-调用边-先把-没成边-分成三类-再决定补哪些-实测-unresolv",
+      "summary": "【DB 补全·调用边】先把\"没成边\"分成三类，再决定补哪些：实测 `unresolved_refs` 里 call external 24,263 / resolved 2,299 / failed 1,595。样本 reference_name：`console.log` / `path.join` / `JSON.stringify` / `results.push` / `fs.writeFileSync`⇒ 【大部分 external 是对的】：目标本来就不在仓内，不该有边。要做的（顺序不能反）：① 先按\"接收者是否能在仓内解析\"分类，量化\"仓内限定调用被误判成 external\"有多少；② 再只补这一类（`symbols.ts:946` 的 `expr.includes('.')` 一律当 external 是根因）；③ 顺带 Go 同包互调（`relImportsByFile` 只装 `kind='relative'`，Go 是 `package`）。★ 不许\"把所有 unresolved 都建成边\"—— 那会把 `console.log` 建成边，比没有更坏。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_db-补全-边元数据-edges-metadata-是个空壳-实测只有-cros",
+      "summary": "【DB 补全·边元数据】`edges.metadata` 是个空壳：实测只有 `{\"cross\":true}` 一个布尔，8 列里这列等于没用。★ 这条【先别填】—— 因为现在没有任何消费方，填了就是又造一个\"建好了没人读\"（`nodes.params` 昨天刚犯过）。要先回答的问题：谁会读 metadata？候选消费方与它需要的东西：① `impact_analysis` 要\"这次调用是不是跨进程/跨语言\" ② `translate` 要\"这个调用的接收者是什么类型\" ③ `reconcile_effects` 要\"这次调用是不是 IO\"。⇒ 本卡的动作是【定消费方】，定了再填；没定就先让它空着，别自欺。",
       "expectations": [],
       "state": "candidate",
       "owner": null
