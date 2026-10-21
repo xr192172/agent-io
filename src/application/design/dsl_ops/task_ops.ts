@@ -73,6 +73,10 @@ import {
 // ★ 2026-10-21：`todo.delete` 的**墓碑**（物理删是唯一让卡真的从册上消失的操作 ⇒ 必须有卡外留痕）。
 import { appendTodoTombstone, todoJournalFile } from '../board/todo_journal.js';
 import { contentHash } from '../../../infrastructure/index/symbols.js';
+// ★★★ 2026-10-21（并发控制·账户）：**规范唯一定义处**（`domain/actor_spec.ts`）。
+//   ★ 这里只用它做两件事：① 写入的 `data.owner` 过关（新值必须合规）② 与顶层 `agent` 比"是不是同一个人"。
+//   ★ 也读**同一个**严格开关（`actorStrictMode`），不自己再读一次 env。
+import { admitActor, actorStrictMode, sameActor } from '../../../domain/actor_spec.js';
 import { updateStatus } from './status_tools.js';
 
 /** 本文件接受的 op（**结构类型**，不 import `update_feature` —— 那是反向依赖，会成环）。 */
@@ -696,13 +700,26 @@ export function publishTask(input: TaskOpInput): EditResult {
  */
 export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   const { feature, node_id } = input;
-  const owner = (input.owner ?? '').trim();
-  if (!owner) {
+  const ownerRaw = (input.owner ?? '').trim();
+  if (!ownerRaw) {
     throw new Error(
       'claim 需要 `data.owner`（领取者身份）—— CAS 写的就是它；★ 工具**不替你编一个身份**（那是伪造）。' +
         (input.agent ? `\n★ 你本次已经传了顶层 \`agent: '${input.agent}'\` ⇒ 把它原样填进 \`data.owner\` 即可。` : ''),
     );
   }
+  // ★★★ 2026-10-21（并发控制·账户）：**写进卡里的新值也过同一套规范** ——
+  //   「历史不追改，新值必须合规」：老卡上的 owner 原样留着（写闸比对时按等价折算，见 `write_gate`），
+  //   但从**这一刻起**写进去的 owner 一律是 `<kind>:<name>`。
+  //   ★ 归一化留痕：`data.owner='workbuddy'` ⇒ 落盘 `agent:workbuddy`，并在回执里明说（下面 message 那段）。
+  //   ★ STRICT 下老格式**不猜**、直接拒（`admitActor` 给正确写法）。
+  const ownerAdm = admitActor(ownerRaw, null, { strict: actorStrictMode() });
+  if (!ownerAdm.ok || !ownerAdm.actor) {
+    throw new Error(
+      `${ownerAdm.error ?? `✗ claim 被拒：\`data.owner\` 不合法（收到 ${JSON.stringify(ownerRaw)}）`}` +
+        `\n★ 这套规范同样管 \`data.owner\` —— claim 写进去的就是它，写闸之后拿它和本次 \`actor\` 比。`,
+    );
+  }
+  const owner = ownerAdm.actor;
   // ★★★ 2026-10-20（A7 闭环 · c）：**actor 与 owner 必须一致**。
   //
   // ## 补的是什么洞
@@ -717,8 +734,15 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   //   就只能“提醒 + 放行”）—— ★ 一刀切会把现有工作流全卡死。
   // · 只给 agent、不给 owner：**不派生**（`data.owner` 仍是必填，见 `op_data_spec` 的
   //   `required.claim`）；派生的代价是改那份契约，收益只是少写一个键。
-  const actor = (input.agent ?? '').trim();
-  if (actor && actor !== owner) {
+  // ★ 2026-10-21：顶层 `agent` 与 `data.owner` 用**同一套规范**再过一遍（两边归一化之后才比）。
+  //   ★ 比用的是 `sameActor`（等价），不是逐字 —— `agent='workbuddy'` + `owner='agent:workbuddy'`
+  //     描述的是同一个人，不该在这里被判成"替别人领卡"。
+  const actorAdm = admitActor(input.agent ?? '', null, { strict: actorStrictMode() });
+  if (!actorAdm.ok) {
+    throw new Error(`${actorAdm.error}\n★ 顶层 \`agent\` 与 \`data.owner\` 是**同一套规范**（两者会被拿来互相核对）。`);
+  }
+  const actor = actorAdm.actor ?? '';
+  if (actor && !sameActor(actor, owner)) {
     throw new Error(
       `claim 被拒（A7）：本次调用的身份 \`actor\`（顶层 agent）= **${actor}**，` +
         `而你要写进去的 \`data.owner\` = **${owner}** —— 两者不一致。\n` +
@@ -850,8 +874,17 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
 
   return {
     message:
-      // ★ 首行自足（回执只透出首行）
-      `已领取任务 "${node_id}"（owner=${owner}，claimed_at=${claimedAt}）—— ${levelNote}` +
+      // ★ 首行自足（回执只透出首行）—— ★★ 2026-10-21：`edit_dsl` 的批量回执只印 `result.message` 的第一行
+      //   （见 `update_feature.ts`）⇒ "已归一化"这件事必须落在**首行**，否则就是"库里悄悄改了、
+      //   调用方没被告知"（正是本仓禁的静默兜底）。
+      `已领取任务 "${node_id}"（owner=${owner}` +
+      (ownerAdm.normalizedFrom ? `，★ 已归一化自 \`${ownerAdm.normalizedFrom}\`` : '') +
+      `，claimed_at=${claimedAt}）—— ${levelNote}` +
+      // ★ 2026-10-21：归一化**必须留痕**（不许悄悄改身份）—— 只有真改写时才多这一行。
+      (ownerAdm.normalizedFrom
+        ? `\n★ \`data.owner\` 已归一化：\`${ownerAdm.normalizedFrom}\` → \`${owner}\`（缺类前缀 ⇒ 按「常驻 agent 默认」补 \`agent:\`；` +
+          `规则唯一定义在 \`domain/actor_spec.ts\`。要它变拒绝：\`AGENT_IO_ACTOR_STRICT=1\`）`
+        : '') +
       `\n★ 进度是**派生值**：task.state=claimed ⇒ progress=in_progress（不落第二份）。` +
       (reopening
         ? `\n★ 这是**重开**（done → claimed = t_reopen + t_claim）：上一轮 owner=${JSON.stringify(card.owner ?? null)} 记进 \`reopened_from\`；` +

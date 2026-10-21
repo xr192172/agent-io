@@ -25,6 +25,11 @@ import { hasLiveIndex, resolveActor } from '../../application/write_gate.js';
 //   而且『谁在读』（`actor`）只有这一层有（`read` / `facts` 的 args 里没有身份维度）。
 //   形状解析（`rel_path` / `symbols` / `start` / `end`）全在 `read_set` 里，本文件只递回执。
 import { recordReadFromInvocation } from '../../application/read_set.js';
+// ★★★ 2026-10-21（并发控制·账户）：**身份规范 / 校验 / 归一化的唯一落点**就在下面的 `invokeTool`。
+//   ★ 为什么在这一层：它是 MCP 面与 CLI 面的**唯一入口** ⇒ 一处生效、以后加工具不用记得；
+//     而且读集的分桶键取的就是这层解析出来的 `actor`（`read_set` 从这儿拿）⇒ **校验与使用同源**。
+//   ★ 规范本身住在 `domain/actor_spec.ts`（唯一处），本文件只调它，不判第二遍。
+import { admitActor, normalizedActorNote } from '../../domain/actor_spec.js';
 import { scheduleBackfill, backfillState, isBackfillRunning } from '../../infrastructure/index/index_backfill.js';
 import { unknownArgHints, renderArgHints } from '../../infrastructure/text/arg_suggest.js';
 import { collectPendingAlertText, dispatchDslEdit } from '../../application/dispatch.js';
@@ -711,7 +716,10 @@ const CALL_ACTOR_FIELD = {
     .optional()
     .describe(
       '★ 本次调用的**身份**（A7 写闸用）：与 claim 时 `data.owner` **同一个值**。' +
-        '写工具（edit_code / rename_symbols 等）靠它判「这张卡是不是你领的」；只读工具忽略它。' +
+        '写工具（edit_code / rename_symbols 等）靠它判「这张卡是不是你领的」；只读工具用它给读集分桶。' +
+        '★ 规范：`<kind>:<name>`，kind ∈ {human, agent, subagent}；name 只许小写字母/数字/-/_，长度 1..40 —— ' +
+        '例 `human:admin` / `agent:workbuddy` / `subagent:a7`（唯一定义：`domain/actor_spec.ts`）。' +
+        '★ 无前缀的老格式（`workbuddy`）⇒ **归一化为 `agent:workbuddy` 并在回执里明说**；含空格/中文/大写/超长的**直接拒**。' +
         '★ 不传 ⇒ 落回 AGENT_IO_ACTOR ⇒ 都没有就「提醒 + 放行」（要改拒绝：AGENT_IO_ACTOR_STRICT=1）。',
     ),
 };
@@ -813,7 +821,10 @@ export async function invokeTool(
   args: Record<string, unknown> | undefined,
   via: DogfoodVia = 'mcp',
 ): Promise<{ text: string; isError?: boolean }> {
-  const a = (args ?? {}) as Record<string, unknown>;
+  // ★ 2026-10-21：**浅拷贝** —— 下面会把 `actor` 换成规范化后的值，不许改调用方手里那个对象
+  //   （`atomic_call` / 证脚本会把同一份 args 复用；副作用留在本函数内）。
+  const a = { ...(args ?? {}) } as Record<string, unknown>;
+
   // ★★★ 2026-10-10：**先**判"调用失败" —— 入参不过 schema 就到此为止（不再建索引 / 保鲜 / 注入告警）。
   //   为什么最前置：一次**用错了**的调用不该有任何副作用（不该起后台建索引、不该读旧索引算告警）。
   //   为什么仍记狗食：失败也要被记（"漏参数"的频率本身就是"该怎么收敛/该补哪个文档"的原料）。
@@ -824,6 +835,26 @@ export async function invokeTool(
     recordDogfoodUsage({ ts: new Date().toISOString(), tool: def.name, via, ok: false, ms: 0, err: argError.slice(0, 200) });
     return { text: argError, isError: true };
   }
+  // ★★★ 2026-10-21（并发控制·账户）：**身份先过关** —— 位置在保鲜 / 首触建索引**之前**：
+  //   一次用错身份的调用不该有任何副作用（与"入参不过 schema 就到此为止"同一条理由）。
+  //   三种情况三种处置（实现只有 `domain/actor_spec#admitActor` 一处）：
+  //     ① 合法（有前缀且合规）⇒ 通过；
+  //     ② 老格式（无前缀，如 `workbuddy`）⇒ 非 STRICT **归一化**为 `agent:workbuddy` 且**回执明说**；
+  //        STRICT ⇒ **拒**（报文给正确写法）；
+  //     ③ 完全非法（空格 / 中文 / 超长 / 大写）⇒ **两种模式都拒**。
+  //   ★ 只在**这一处**做：下游（write_gate / read_set / task.owner）只见规范化后的值。
+  //   ★ 拿不到 actor（没传、env 也没有）⇒ 保持 `null`，**不造默认身份**
+  //     （造了 = 所有人都是同一个人 ⇒ 读集把两个人合并，比没有更坏）。
+  const actorAdm = admitActor(typeof a.actor === 'string' ? a.actor : undefined, process.env.AGENT_IO_ACTOR);
+  if (!actorAdm.ok) {
+    const msg = actorAdm.error ?? '✗ 拒绝调用：`actor` 不是合法身份。';
+    recordDogfoodUsage({ ts: new Date().toISOString(), tool: def.name, via, ok: false, ms: 0, err: msg.slice(0, 200) });
+    return { text: msg, isError: true };
+  }
+  // 显式入参 ⇒ 把归一化值**写回**往下传；env 来源 ⇒ 只在回执里留痕（不伪造"调用方传过"）。
+  if (actorAdm.actor && actorAdm.source === 'explicit') a.actor = actorAdm.actor;
+  const actorNote = normalizedActorNote(actorAdm);
+
   // ★ 首次接触 ⇒ 后台建索引（2026-09-15）：带 project_root 的调用若该项目还没有索引，
   //   顺手起后台续建（不阻塞本次调用）——把建索引的起点从"第一次读"提前到"第一次任何调用"。
   //   起了就诚实标注"本轮结果可能不全"（空缺型不全，staleIndexWarning 覆盖不了）。
@@ -968,7 +999,9 @@ export async function invokeTool(
       ? ''
       : firstContactNote;
   // ★ 2026-10-21：读集记录失败的那一行挂在最末（**在 `---WARNINGS---` 之前**：机器块必须留在最后）。
-  return { text: withNext + argHints + emission.text + firstContactText + trustNote + alertNote + readSetNote + emission.block, isError: r.isError };
+  // ★ 2026-10-21：`actorNote`（归一化留痕）跟在参数纠错之后、告警之前 —— 它是**关于这次调用**的说明，
+  //   不是"世界不好"；机器块（`emission.block`）仍然留在最末。
+  return { text: withNext + argHints + actorNote + emission.text + firstContactText + trustNote + alertNote + readSetNote + emission.block, isError: r.isError };
 }
 
 /**

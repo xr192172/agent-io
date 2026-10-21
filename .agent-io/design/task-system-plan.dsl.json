@@ -13266,7 +13266,7 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate",
+          "state": "claimed",
           "evidence": [
             {
               "kind": "attestation",
@@ -13293,16 +13293,13 @@
               "verdict": "pass"
             }
           ],
-          "owner": null,
-          "claimed_at": null,
+          "owner": "subagent:account",
+          "claimed_at": "2026-10-21T09:59:10.675Z",
           "reopened_at": "2026-10-20T10:47:41.583Z",
           "reopen_reason": "清注释里的用户原话",
-          "reopened_from": "deepseek-v4.1-flash",
-          "release_reason": "retire 的 claimed 提示已落下（tsc 0 error），交回候选等统一验收",
-          "released_by": "deepseek-v4.1-flash",
-          "released_at": "2026-10-21T08:22:03.834Z"
+          "reopened_from": "deepseek-v4.1-flash"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -20098,8 +20095,8 @@
             }
           ],
           "state": "claimed",
-          "owner": "agent-readset",
-          "claimed_at": "2026-10-21T09:27:35.045Z",
+          "owner": "subagent:account",
+          "claimed_at": "2026-10-21T09:59:05.196Z",
           "evidence": [
             {
               "kind": "attestation",
@@ -25675,9 +25672,9 @@
           "state": "candidate",
           "owner": null,
           "claimed_at": null,
-          "release_reason": "注释清理已完成，交回候选池",
-          "released_by": "deepseek-v4.1-flash",
-          "released_at": "2026-10-20T10:26:34.530Z"
+          "release_reason": "侧试验完，交还候选态",
+          "released_by": "subagent:account",
+          "released_at": "2026-10-21T10:10:27.238Z"
         },
         "status": "draft"
       },
@@ -51815,8 +51812,8 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_registry_ts\"].responsibility"
           },
-          "owner": "agent-readset",
-          "claimed_at": "2026-10-21T09:27:51.099Z"
+          "owner": "subagent:account",
+          "claimed_at": "2026-10-21T09:59:06.544Z"
         },
         "status": "in_progress"
       },
@@ -81229,7 +81226,7 @@
         ],
         "lines": 670,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -99005,11 +99002,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T09:27:51.131Z",
+    "saved_at": "2026-10-21T10:10:27.265Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792573023388,
-    "age": 1847743
+    "scanRev": 1792577373394,
+    "age": 53871
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

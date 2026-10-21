@@ -75,6 +75,10 @@ import type { NodeGate } from '../domain/geometry.js';
 //     就是这种）⇒ 必须**反查闸自己的 `byPath`**（`collectGateCoverage` 建的那张，`nodeFilePath` 的
 //     「`path` 优先、回落 `description`」口径）。★ 判据只有一份，别再造第二个读端。
 import { formatScope, parseScope, resolveScope, type Scope } from '../domain/scope.js';
+// ★★★ 2026-10-21（并发控制·账户）：**"什么算合法身份"的定义住 `domain/actor_spec.ts`**（唯一处）。
+//   本文件只**消费**它（解析 / 比对 / 开关）—— 不在这里写第二套正则：否则 read_set 的分桶与
+//   写闸的判定会各判一套，"同一个人"在两边含义不同（本仓头号病：第二份判据）。
+import { admitActor, actorStrictMode, sameActor } from '../domain/actor_spec.js';
 // ★★★ 2026-10-17（OQ10 裁定）：闸的判据从「overlay 的 progress 是否登记过」改成
 //   「**该节点上是否有 state=claimed 的 task**」—— 任务格是唯一权威（`task_plan.task_home`），
 //   progress 对它只是派生值（`progressOf`）。
@@ -892,9 +896,16 @@ export type WriteActor = string;
  *   ⇒ A7 能买到的是**协作防撞**（两个人不会静默改同一处），**不是防冒充**。
  */
 export function resolveActor(explicit?: WriteActor | null): WriteActor | null {
-  if (explicit && explicit.trim()) return explicit.trim();
-  const env = process.env.AGENT_IO_ACTOR;
-  return env && env.trim() ? env.trim() : null;
+  // ★★★ 2026-10-21（并发控制·账户）：解析 / 校验 / 归一化**只有一份实现**（`domain/actor_spec#admitActor`），
+  //   本函数是它的**薄壳** —— 否则 read_set 的分桶键与写闸的判定会各判一套。
+  //   ★ 不合法 ⇒ `null`（= "没自报" ⇒ 闸走"提醒 + 放行"；STRICT 下由 `missingActor` 那一支拒）。
+  //     ★ 为什么**不**原样透传：透传会让 `actor='my agent!'` 去和卡上 owner 逐字比 ⇒ 判成
+  //     **"改别人的活"** —— 把一次**格式错**说成**越权**，既误导人，还把活堵住。
+  //   ★ 显式给了但不合法 ⇒ **不回落**到 env：回落是静默兜底，会掩盖调用方的错。
+  //   ★ STRICT 的那道"老格式也拒"在 `invokeTool`（唯一入口，回执挂得上）；侧门（不经 invokeTool
+  //     的内部调用）走的是同一条归一化规则，但**没有回执可挂** —— 这一点如实写在这里，不假装有。
+  const adm = admitActor(explicit, process.env.AGENT_IO_ACTOR, { strict: false });
+  return adm.ok ? adm.actor : null;
 }
 
 /**
@@ -909,7 +920,10 @@ export function resolveActor(explicit?: WriteActor | null): WriteActor | null {
  * ★ 关着的时候**也不是静默**：那条提醒会进闸的 `note`（进而进写工具回执），见 `assertSourceWriteRegistered`。
  */
 export function actorStrict(): boolean {
-  return process.env.AGENT_IO_ACTOR_STRICT === '1';
+  // ★ 2026-10-21：开关的**唯一读点**搬到 `domain/actor_spec#actorStrictMode` ——
+  //   `task_ops#claimTask`（写入 owner 时）与 `invokeTool`（校验 actor 时）读的是**同一处**；
+  //   若各读一次 env，就是两份判据（改一处漏一处）。
+  return actorStrictMode();
 }
 
 /**
@@ -989,7 +1003,9 @@ function evaluateRunAuthorize(args: {
     for (const id of res.node_ids) {
       const t = c.taskById.get(id);
       if (!t || t.state !== 'claimed' || !t.owner) continue;
-      if (actor && t.owner === actor) anchors.push({ nodeId: id, owner: t.owner });
+      // ★ 2026-10-21：`sameActor`（同一规范下的**等价**）而不是逐字相等 —— 历史 owner 是老格式，
+      //   逐字比会让"我自己领的卡"在规范化 actor 下变成"别人的卡"（详见 `domain/actor_spec#actorKey`）。
+      if (actor && sameActor(t.owner, actor)) anchors.push({ nodeId: id, owner: t.owner });
       else others.push(`${id}（owner=${t.owner}）`);
     }
     if (missing.length) {
@@ -1295,6 +1311,12 @@ function evaluateTaskGate(
   const actorWarnings: string[] = [];
   /** ★★ 2026-10-20：同一批事实的**结构化读数**（给 `AGENT_IO_ACTOR_STRICT=1` 的拒绝用；不许再从 `actorWarnings` 反推） */
   const missingActor: Array<{ rel: string; nodeId: string; owner: string | null }> = [];
+  /**
+   * ★★ 2026-10-21（并发控制·账户）：owner 是**老格式**、靠 `sameActor` 折算才匹配上的（放行但**留痕**）。
+   * ★ 为什么必须留痕：等价放行**不改历史数据**，如果不记一条，读回执的人会以为"库里就是规范格式"，
+   *   下一次审计又会对不上 —— 这正是本仓禁的"静默兜底"的另一种形状。
+   */
+  const legacyOwner: string[] = [];
   /** ★ 这批文件里**不在任何 covering feature 里**的（新建文件 / 未纳入设计）—— 放行，但**逐个点名** */
   const unmapped: string[] = [];
   let checked = 0;
@@ -1346,12 +1368,23 @@ function evaluateTaskGate(
       missingActor.push({ rel, nodeId: claimed.nodeId, owner });
       continue;
     }
+    // ★★★ 2026-10-21（并发控制·账户）：比对用 `sameActor`（**同一规范下的等价**），不是逐字相等。
+    //   ★ 为什么：历史 `task.owner` 全是老格式（实测 12 种取值、无一有前缀）。逐字比会把
+    //     `owner=workbuddy` 的卡在 `actor=agent:workbuddy` 下判成"改别人的活" ⇒ **自己的卡把自己的文件锁死**。
+    //   ★ 这是**判"是不是你"**，不是读时归一化：库里一个字节都没动（见 `domain/actor_spec#actorKey`）。
+    //   ★ 但**不静默**：折算才相等的情况记一条进 `legacyOwner`（进 warnings / 进 note）。
     if (owner && owner !== actor) {
-      // ★ G2 的"阻断"那一支：改别人的活会覆盖别人的工作 ⇒ 真损坏
-      foreignClaim.push({ rel, feature: claimed.feature, nodeId: claimed.nodeId, owner, actor });
-      continue;
+      if (!sameActor(owner, actor)) {
+        // ★ G2 的"阻断"那一支：改别人的活会覆盖别人的工作 ⇒ 真损坏
+        foreignClaim.push({ rel, feature: claimed.feature, nodeId: claimed.nodeId, owner, actor });
+        continue;
+      }
+      legacyOwner.push(
+        `${rel}：卡上 owner=\`${owner}\` 是**老格式**（无类前缀），与本次 actor=\`${actor}\` 按同一规范**等价** ⇒ 放行；` +
+          `★ 历史值不追改（下次在这张卡上 claim / reopen 时写入的 owner 才是规范格式）`,
+      );
     }
-    // owner 匹配，或卡上没有 owner（无法比对）⇒ 放行
+    // owner 匹配（或按规范等价），或卡上没有 owner（无法比对）⇒ 放行
   }
   // ★★★ 2026-10-20（A7 **渐进开关**）：有 claimed 卡却拿不到 actor ⇒ `AGENT_IO_ACTOR_STRICT=1` 时**拒绝**。
   //   ★ 位置在"整批都豁免"之前：豁免是**设计侧**的权力（`gate='exempt'`），与"谁在写"无关；
@@ -1445,6 +1478,8 @@ function evaluateTaskGate(
 
   // ★ A7：拿不到 actor 的那些 ⇒ 提醒（放行，但要留痕 —— 否则"不知道是谁"从此无人知晓）
   if (actorWarnings.length) warnings.push(...actorWarnings);
+  // ★ 2026-10-21：老格式 owner 等价匹配的那些也进 warnings（放行，但"这次是折算出来的"必须说）
+  if (legacyOwner.length) warnings.push(...legacyOwner);
 
   if (!unclaimed.length) {
     return {
@@ -1462,6 +1497,10 @@ function evaluateTaskGate(
           : '') +
         (actorWarnings.length
           ? `\n★ A7「谁在写」**未核对**：${actorWarnings.length} 个文件有 claimed 卡，但本次调用没自报身份（已提醒 + 放行）：\n${actorWarnings.join('\n')}`
+          : '') +
+        // ★ 2026-10-21：**折算才相等**的那一档单独说（不许混进"逐字相等"里 —— 那不是同一件事）
+        (legacyOwner.length
+          ? `\n★ A7「谁在写」按规范**等价**放行 ${legacyOwner.length} 处（历史 owner 未改写）：\n${legacyOwner.join('\n')}`
           : ''),
       warnings,
       exempted,
