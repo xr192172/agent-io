@@ -188,10 +188,10 @@ function identifiersFor(db: DatabaseSync, rel: string, src: string, field: strin
     | { content_hash: string }
     | undefined;
   if (!file || file.content_hash !== contentHash(src)) return null; // ③
-  const cov = db.prepare('SELECT COUNT(*) n FROM identifiers WHERE file_path = $p').get({ p: rel }) as { n: number } | undefined;
+  const cov = db.prepare('SELECT COUNT(*) n FROM v_identifiers WHERE file_path = $p').get({ p: rel }) as { n: number } | undefined;
   if (!cov || cov.n <= 0) return null; // ①
   const rows = db
-    .prepare('SELECT name, kind, start_index si, end_index ei FROM identifiers WHERE file_path = $p AND name = $n')
+    .prepare('SELECT name, kind, start_index si, end_index ei FROM v_identifiers WHERE file_path = $p AND name = $n')
     .all({ p: rel, n: field }) as Array<{ name: string; kind: string; si: number | null; ei: number | null }>;
   const out: IdentRow[] = [];
   for (const r of rows) {

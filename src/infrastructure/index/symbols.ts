@@ -344,7 +344,7 @@ type PreludeResult = { ok: true; pre: SyncPrelude } | { ok: false; early: SyncFi
  */
 function hasLegacyImportRows(db: Database, rel: string): boolean {
   const row = db
-    .prepare('SELECT COUNT(*) n, COUNT(start_index) si FROM imports WHERE file_path = $p')
+    .prepare('SELECT COUNT(*) n, COUNT(start_index) si FROM v_imports WHERE file_path = $p')
     .get({ p: rel }) as { n: number; si: number };
   return row.n > 0 && row.si === 0;
 }
@@ -449,7 +449,7 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
     let from = existing.content_hash;
     let normFrom = existing.norm_hash ?? ''; // null（v4 前的旧行）= 未知 → 保守视为已变
     const stored = db
-      .prepare('SELECT from_hash, to_hash, added, removed, changed, norm_from, norm_to FROM symbol_diffs WHERE file_path = $p')
+      .prepare('SELECT from_hash, to_hash, added, removed, changed, norm_from, norm_to FROM v_symbol_diffs WHERE file_path = $p')
       .get({ p: rel }) as
       | { from_hash: string; to_hash: string; added: string; removed: string; changed: string; norm_from: string; norm_to: string }
       | undefined;
@@ -476,6 +476,29 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
   const ownTx = !inTransaction(db);
   if (ownTx) db.exec('BEGIN');
   try {
+    // 0. files 行**最先写**（v16）：identifiers / imports / unresolved_refs / symbol_diffs 都要 file_id，
+    //    而**首次索引**时 files 行还不存在 ⇒ 必须先 UPSERT 拿到 id，再往下写。
+    //    ★ 原来这一步在第 5 步、且用 INSERT OR REPLACE（= DELETE+INSERT）——
+    //      有了 ON DELETE CASCADE，那一下会把刚写进去的 identifiers / imports 一起带走。
+    //    ★ ON CONFLICT DO UPDATE 而不是 REPLACE：同一个 path 的行**原地更新**，id 不变。
+    const fileId = (
+      db
+        .prepare(
+          `INSERT INTO files(path, content_hash, language, size, modified_at, indexed_at, node_count, errors, norm_hash)
+           VALUES ($path, $hash, $lang, $size, $mtime, $ts, $nc, NULL, $nh)
+           ON CONFLICT(path) DO UPDATE SET
+             content_hash = excluded.content_hash, language = excluded.language,
+             size = excluded.size, modified_at = excluded.modified_at,
+             indexed_at = excluded.indexed_at, node_count = excluded.node_count,
+             errors = NULL, norm_hash = excluded.norm_hash
+           RETURNING id`,
+        )
+        .get({
+          path: rel, hash, lang: ext, size: stat.size, mtime: Math.round(stat.mtimeMs),
+          ts: now, nc: parsed.symbols.length, nh: normHash,
+        }) as { id: number }
+    ).id;
+
     // 1. 文件节点：UPSERT 不删除（保护指向它的 import 边不被级联带走）
     db.prepare(
       `INSERT INTO nodes(id, kind, name, qualified_name, file_path, language, start_line, end_line, parent, signature, docstring, updated_at)
@@ -496,12 +519,12 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
       .all({ tp: `${rel}#%`, sp: `${rel}#%` }) as Array<{ source: string; target: string; kind: string; line: number; col: number | null; metadata: string | null }>;
     db.prepare("DELETE FROM nodes WHERE file_path = $p AND kind != 'file'").run({ p: rel });
     // ★ 2026-10-20：标识符位置表（全删全插；它跟着文件内容走）
-    db.prepare('DELETE FROM identifiers WHERE file_path = $p').run({ p: rel });
+    db.prepare('DELETE FROM identifiers WHERE file_id = $fid').run({ fid: fileId });
     const insIdent = db.prepare(
-      'INSERT OR REPLACE INTO identifiers(file_path, name, kind, line, col, start_index, end_index) VALUES ($fp, $nm, $k, $ln, $col, $si, $ei)',
+      'INSERT OR REPLACE INTO identifiers(file_id, name, kind, line, col, start_index, end_index) VALUES ($fid, $nm, $k, $ln, $col, $si, $ei)',
     );
     for (const idn of parsed.identifiers ?? []) {
-      insIdent.run({ fp: rel, nm: idn.name, k: idn.kind, ln: idn.line, col: idn.col, si: idn.start_index, ei: idn.end_index });
+      insIdent.run({ fid: fileId, nm: idn.name, k: idn.kind, ln: idn.line, col: idn.col, si: idn.start_index, ei: idn.end_index });
     }
     const insNode = db.prepare(
       `INSERT INTO nodes(id, kind, name, qualified_name, file_path, language, start_line, end_line, parent, signature, docstring, sym_hash, is_closure, members, params, return_type, type_params, modifiers, body_text, body_hash, updated_at)
@@ -539,10 +562,14 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
     // 2.1 符号级 diff 落库（v3）：diffImpact 的波及源数据。首次导入 symbolDiff=undefined 不写
     if (symbolDiff) {
       db.prepare(
-        `INSERT OR REPLACE INTO symbol_diffs(file_path, from_hash, to_hash, added, removed, changed, norm_from, norm_to, updated_at)
-         VALUES ($fp, $from, $to, $added, $removed, $changed, $nf, $nt, $ts)`,
+        `INSERT INTO symbol_diffs(file_id, from_hash, to_hash, added, removed, changed, norm_from, norm_to, updated_at)
+         VALUES ($fid, $from, $to, $added, $removed, $changed, $nf, $nt, $ts)
+         ON CONFLICT(file_id) DO UPDATE SET
+           from_hash = excluded.from_hash, to_hash = excluded.to_hash,
+           added = excluded.added, removed = excluded.removed, changed = excluded.changed,
+           norm_from = excluded.norm_from, norm_to = excluded.norm_to, updated_at = excluded.updated_at`,
       ).run({
-        fp: rel, from: symbolDiff.from, to: hash,
+        fid: fileId, from: symbolDiff.from, to: hash,
         added: JSON.stringify(symbolDiff.added), removed: JSON.stringify(symbolDiff.removed), changed: JSON.stringify(symbolDiff.changed),
         nf: symbolDiff.normFrom, nt: symbolDiff.normTo,
         ts: now,
@@ -599,8 +626,8 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
       'INSERT OR IGNORE INTO edges(source, target, kind, line, col, metadata) VALUES ($src, $tgt, \'call\', $ln, NULL, NULL)',
     );
     const insUnresolved = db.prepare(
-      `INSERT OR IGNORE INTO unresolved_refs(from_node_id, reference_name, reference_kind, line, col, file_path, language, status, name_tail)
-       VALUES ($from, $rn, 'call', $ln, 0, $fp, $lang, 'pending', $nt)`,
+      `INSERT OR IGNORE INTO unresolved_refs(from_node_id, reference_name, reference_kind, line, col, file_id, language, status, name_tail)
+       VALUES ($from, $rn, 'call', $ln, 0, $fid, $lang, 'pending', $nt)`,
     );
     let callCount = 0;
     for (const c of parsed.calls) {
@@ -610,7 +637,7 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
         insCall.run({ src: srcId, tgt: idOf(c.callee_qn), ln: c.line });
         callCount++;
       } else {
-        insUnresolved.run({ from: srcId, rn: c.callee_expr, ln: c.line, fp: rel, lang: ext, nt: c.callee });
+        insUnresolved.run({ from: srcId, rn: c.callee_expr, ln: c.line, fid: fileId, lang: ext, nt: c.callee });
       }
     }
 
@@ -625,8 +652,8 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
       "INSERT OR IGNORE INTO edges(source, target, kind, line, col, metadata) VALUES ($src, $tgt, 'type_ref', $ln, NULL, NULL)",
     );
     const insUnresolvedType = db.prepare(
-      `INSERT OR IGNORE INTO unresolved_refs(from_node_id, reference_name, reference_kind, line, col, file_path, language, status, name_tail)
-       VALUES ($from, $rn, 'type_ref', $ln, 0, $fp, $lang, 'pending', $nt)`,
+      `INSERT OR IGNORE INTO unresolved_refs(from_node_id, reference_name, reference_kind, line, col, file_id, language, status, name_tail)
+       VALUES ($from, $rn, 'type_ref', $ln, 0, $fid, $lang, 'pending', $nt)`,
     );
     for (const t of parsed.type_refs) {
       const srcId = idOf(t.referrer);
@@ -634,18 +661,18 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
       if (t.resolved && t.target_qn && nodeIdSet.has(idOf(t.target_qn))) {
         insTypeRef.run({ src: srcId, tgt: idOf(t.target_qn), ln: t.line });
       } else {
-        insUnresolvedType.run({ from: srcId, rn: t.type_name, ln: t.line, fp: rel, lang: ext, nt: t.type_name });
+        insUnresolvedType.run({ from: srcId, rn: t.type_name, ln: t.line, fid: fileId, lang: ext, nt: t.type_name });
       }
     }
 
     // 4. 原始 import 记录（全量种类：relative + package）
     //    import_project 缓存路径靠它重建依赖边——edges 表只有已解析的相对导入，
     //    Go 包路径 / Python 点分模块的原始 source 串只存在这里
-    db.prepare('DELETE FROM imports WHERE file_path = $p').run({ p: rel });
-    const insImport = db.prepare('INSERT INTO imports(file_path, line, source, kind, type_only, bindings, start_index, end_index) VALUES ($fp, $ln, $src, $kind, $typeOnly, $bindings, $si, $ei)');
+    db.prepare('DELETE FROM imports WHERE file_id = $fid').run({ fid: fileId });
+    const insImport = db.prepare('INSERT INTO imports(file_id, line, source, kind, type_only, bindings, start_index, end_index) VALUES ($fid, $ln, $src, $kind, $typeOnly, $bindings, $si, $ei)');
     for (const imp of parsed.imports) {
       insImport.run({
-        fp: rel,
+        fid: fileId,
         ln: imp.line,
         src: imp.source,
         kind: imp.kind,
@@ -658,11 +685,8 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
       });
     }
 
-    // 5. files 行
-    db.prepare(
-      `INSERT OR REPLACE INTO files(path, content_hash, language, size, modified_at, indexed_at, node_count, errors, norm_hash)
-       VALUES ($path, $hash, $lang, $size, $mtime, $ts, $nc, NULL, $nh)`,
-    ).run({ path: rel, hash, lang: ext, size: stat.size, mtime: Math.round(stat.mtimeMs), ts: now, nc: parsed.symbols.length, nh: normHash });
+    // 5. files 行：**已经移到第 0 步**（必须先拿到 fileId）—— 原来这里那条 INSERT OR REPLACE
+    //    会在事务末尾把 files 行删了重插，v16 起会经 ON DELETE CASCADE 清掉本文件所有子行。
 
     if (ownTx) db.exec('COMMIT');
     return {
@@ -783,7 +807,7 @@ export function reopenRefsTo(db: Database, names: readonly string[]): ReopenRefs
  */
 export function changedSymbolNames(db: Database, rel: string): string[] {
   try {
-    const row = db.prepare('SELECT added, removed, changed FROM symbol_diffs WHERE file_path = $p').get({ p: rel }) as
+    const row = db.prepare('SELECT added, removed, changed FROM v_symbol_diffs WHERE file_path = $p').get({ p: rel }) as
       | { added: string; removed: string; changed: string }
       | undefined;
     if (!row) return [];
@@ -839,8 +863,12 @@ export async function syncProject(
 /** 按相对路径删除一个文件的全部缓存行（nodes 级联清边与 FTS） */
 function removeFileRel(db: Database, rel: string): void {
   db.prepare('DELETE FROM nodes WHERE file_path = $p').run({ p: rel });
+  // ★ v16：identifiers / imports / unresolved_refs / symbol_diffs 都挂在 files(id) 的 ON DELETE CASCADE 上
+  //   ⇒ 删 files 行这一条就够，**不能再按 file_path 删**（那几列已经不存在）。
+  //   ★ 旧代码在这里**漏了 identifiers**（当时它没有外键，删了 files 行也带不走）—— 实测在本库留下
+  //     201 条残行：scripts/check_lang_pkgs.mjs 157 行、src/infrastructure/analysis/diagnosis/test_contract.ts 44 行，
+  //     正是 v16 迁移必须丢掉的那批。这段注释就是防止有人把 CASCADE 换回手写 DELETE 时再漏表。
   db.prepare('DELETE FROM files WHERE path = $p').run({ p: rel });
-  db.prepare('DELETE FROM imports WHERE file_path = $p').run({ p: rel });
 }
 
 /** 文件从项目删除时调用：清节点（级联清边与 FTS）+ files 行 + 原始 import 记录 */
@@ -953,7 +981,7 @@ export function resolveCrossFileCalls(
   }
   // 预加载：文件 → relative imports
   const relImportsByFile = new Map<string, Array<{ source: string; line: number }>>();
-  for (const i of db.prepare("SELECT file_path, source, line FROM imports WHERE kind='relative'").all() as Array<{ file_path: string; source: string; line: number }>) {
+  for (const i of db.prepare("SELECT file_path, source, line FROM v_imports WHERE kind='relative'").all() as Array<{ file_path: string; source: string; line: number }>) {
     let arr = relImportsByFile.get(i.file_path);
     if (!arr) {
       arr = [];
@@ -975,7 +1003,7 @@ export function resolveCrossFileCalls(
    */
   const packageBindingsByFile = new Map<string, Map<string, string>>();
   for (const row of db
-    .prepare("SELECT file_path, source, bindings FROM imports WHERE kind='package' AND bindings IS NOT NULL")
+    .prepare("SELECT file_path, source, bindings FROM v_imports WHERE kind='package' AND bindings IS NOT NULL")
     .all() as Array<{ file_path: string; source: string; bindings: string }>) {
     let m = packageBindingsByFile.get(row.file_path);
     if (!m) {
@@ -1221,7 +1249,7 @@ export function getFileParse(db: Database, relPath: string): CachedFileParse | n
     )
     .all({ p: relPath }) as unknown as CachedSymbol[];
   const imports = db
-    .prepare('SELECT line, source, kind FROM imports WHERE file_path = $p ORDER BY line, source')
+    .prepare('SELECT line, source, kind FROM v_imports WHERE file_path = $p ORDER BY line, source')
     .all({ p: relPath }) as unknown as CachedImport[];
   return { line_count: fileNode.end_line, symbols, imports };
 }
@@ -1302,7 +1330,7 @@ export function getRawImportsOfFile(
   relPath: string,
 ): Array<{ source: string; kind: 'relative' | 'package'; type_only: boolean; line: number }> {
   const rows = db
-    .prepare('SELECT source, kind, type_only, line FROM imports WHERE file_path = $p ORDER BY line')
+    .prepare('SELECT source, kind, type_only, line FROM v_imports WHERE file_path = $p ORDER BY line')
     .all({ p: relPath });
   return (rows as Array<{ source: string; kind: 'relative' | 'package'; type_only: number; line: number }>)
     .map((r) => ({ source: r.source, kind: r.kind, type_only: r.type_only === 1, line: r.line }));
@@ -1324,7 +1352,7 @@ export function getRawImportsOfFile(
 export function findFilesImportingAnySource(db: Database, sources: string[]): string[] {
   if (sources.length === 0) return [];
   const placeholders = sources.map((_, i) => `$${i}`).join(',');
-  const stmt = db.prepare(`SELECT DISTINCT file_path FROM imports WHERE source IN (${placeholders})`);
+  const stmt = db.prepare(`SELECT DISTINCT file_path FROM v_imports WHERE source IN (${placeholders})`);
   const bind = Object.fromEntries(sources.map((s, i) => [String(i), s]));
   const rows = stmt.all(bind);
   return (rows as Array<{ file_path: string }>).map((r) => r.file_path);

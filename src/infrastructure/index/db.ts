@@ -63,7 +63,7 @@ export function endBatch(db: Database, rollback = false): void {
   txDepth.set(key, d - 1);
 }
 
-export const SCHEMA_VERSION = 15; // v15：nodes.body_text / body_hash（函数体原文 + sha1）—— 旧库无此列，清库重解析 // v14：nodes.return_type / type_params / modifiers（返回类型 / 泛型 / 修饰符）—— 旧库无此列，清库重解析 // v13：nodes.params（函数/方法形参 JSON）—— 旧库无此列，清库重解析 // v12：imports.start_index/end_index（整句 span）—— 旧库无此列，清库重解析 // v11：identifiers 表（标识符位置）—— 旧库无此表，清库重解析 // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
+export const SCHEMA_VERSION = 16; // v16：file_path → files.id 外键（identifiers/imports/unresolved_refs/symbol_diffs；nodes 保留 file_path）—— 保留式迁移，行数即证据（见 migrateV15ToV16） // v15：nodes.body_text / body_hash（函数体原文 + sha1） // v14：nodes.return_type / type_params / modifiers（返回类型 / 泛型 / 修饰符）—— 旧库无此列，清库重解析 // v13：nodes.params（函数/方法形参 JSON）—— 旧库无此列，清库重解析 // v12：imports.start_index/end_index（整句 span）—— 旧库无此列，清库重解析 // v11：identifiers 表（标识符位置）—— 旧库无此表，清库重解析 // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
 
 /** 默认 db 文件路径：<dataHome>/.agent-io/cache.db */
 export function getDbFile(): string {
@@ -149,20 +149,173 @@ export function nearestCacheDb(dir: string): string | null {
   return null;
 }
 
+
+// ─────────────────────────────────────────────────────────────
+// v16 迁移（file_path → files.id 外键）
+//
+// ★ 为什么**不**逐表写死一份 DDL：迁移只做「形状换轨」，表结构仍由 SCHEMA_SQL 一处定义。
+//   做法 = 旧表改名腾出名字 → 跑 SCHEMA_SQL 建出 v16 新表/新索引/视图 → INSERT ... SELECT 回填 → 丢旧表。
+//   这样 SCHEMA_SQL 改一列，迁移自动跟上，不会出现「迁移里那份 DDL 与 schema.ts 漂移」。
+//   ★ 唯一的耦合点：旧索引名必须显式 DROP —— 索引跟着表改名走，名字还占着时
+//     SCHEMA_SQL 的 CREATE INDEX IF NOT EXISTS 会跳过，新表就没有索引了。
+// ─────────────────────────────────────────────────────────────
+
+function tableExists(db: Database, name: string): boolean {
+  return db.prepare("SELECT 1 AS x FROM sqlite_master WHERE type = 'table' AND name = $n").get({ n: name }) !== undefined;
+}
+
+function hasColumn(db: Database, table: string, column: string): boolean {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as unknown as Array<{ name: string }>;
+  return cols.some((c) => c.name === column);
+}
+
+/** 已应用的最高 schema 版本；null = 没有 schema_versions 表（更旧的库 / 全新库）。 */
+function readSchemaVersion(db: Database): number | null {
+  if (!tableExists(db, 'schema_versions')) return null;
+  const row = db.prepare('SELECT MAX(version) AS v FROM schema_versions').get() as { v: number | null } | undefined;
+  return row?.v ?? null;
+}
+
+/** v16 迁移会动的 5 张表（顺序 = 改名/删除顺序：先子后父） */
+const V16_TABLES = ['identifiers', 'imports', 'unresolved_refs', 'symbol_diffs', 'files'] as const;
+
+/** 这 5 张表上 v15 的索引名（索引跟随表改名 ⇒ 必须显式删，否则新表建不出同名索引） */
+const V16_INDEXES = [
+  'idx_identifiers_name',
+  'idx_imports_file',
+  'idx_unresolved_from_node',
+  'idx_unresolved_name',
+  'idx_unresolved_status',
+  'idx_unresolved_failed_tail',
+  'idx_files_language',
+  'idx_files_modified_at',
+] as const;
+
+/**
+ * v15 → v16 的**保留式**迁移：files 加整数主键，identifiers/imports/unresolved_refs/symbol_diffs
+ * 的 file_path 换成 file_id。返回一句话回执（写进 schema_versions.description 当证据）。
+ *
+ * ★ 行数就是正确性证据：回填走 `JOIN files ON f.path = i.file_path`，
+ *   **对不上 files 的行会被丢掉**——这是有意的：那些行的「文件」在 files 里根本不存在，
+ *   挂外键只能二选一（丢行 / 伪造 files 行），而伪造会让 files 不再等于「被索引过的文件」。
+ *   实测本库丢了 201 条 identifiers：scripts/check_lang_pkgs.mjs 157 行、
+ *   src/infrastructure/analysis/diagnosis/test_contract.ts 44 行 —— 根因是旧 removeFileRel
+ *   没删 identifiers（它当时没有 FK，删了 files 行也带不走），v16 起由 ON DELETE CASCADE 兜住。
+ */
+function migrateV15ToV16(db: Database): string {
+  const count = (t: string): number => (db.prepare(`SELECT COUNT(*) AS c FROM ${t}`).get() as { c: number }).c;
+  const before = {
+    identifiers: count('identifiers'),
+    imports: count('imports'),
+    unresolved_refs: count('unresolved_refs'),
+    symbol_diffs: count('symbol_diffs'),
+  };
+  // 先记下「哪些文件不在 files 里」（回填会丢它们）—— 回执里唯一需要点名的那种行
+  const orphans = db
+    .prepare(
+      // ★ 用 NOT EXISTS 而不是 LEFT JOIN ... f.id IS NULL：**此刻 files 还没有 id 列**
+      //   （重建 files 是下一步的事）—— 这条查询跑在 BEGIN 之前，跟的是 v15 的形状。
+      `SELECT i.file_path AS p, COUNT(*) AS c FROM identifiers i
+       WHERE NOT EXISTS (SELECT 1 FROM files f WHERE f.path = i.file_path)
+       GROUP BY i.file_path ORDER BY c DESC`,
+    )
+    .all() as unknown as Array<{ p: string; c: number }>;
+  const orphanRows = orphans.reduce((n, o) => n + o.c, 0);
+
+  db.exec('BEGIN');
+  try {
+    // ① 腾名字（先子后父：files 是父）
+    for (const t of V16_TABLES) db.exec(`ALTER TABLE ${t} RENAME TO ${t}_v15`);
+    // ② 旧索引跟着表走了、名字还占着 ⇒ 显式删（见文件头注释的最后一句）
+    for (const ix of V16_INDEXES) db.exec(`DROP INDEX IF EXISTS ${ix}`);
+    // ③ 建 v16 形状（表 + 索引 + 视图都由 SCHEMA_SQL 一处定义）
+    db.exec(SCHEMA_SQL);
+    // ④ 回填
+    db.exec(`INSERT INTO files(path, content_hash, language, size, modified_at, indexed_at, node_count, errors, norm_hash)
+             SELECT path, content_hash, language, size, modified_at, indexed_at, node_count, errors, norm_hash
+             FROM files_v15 ORDER BY path`);
+    db.exec(`INSERT INTO identifiers(file_id, name, kind, line, col, start_index, end_index)
+             SELECT f.id, i.name, i.kind, i.line, i.col, i.start_index, i.end_index
+             FROM identifiers_v15 i JOIN files f ON f.path = i.file_path`);
+    db.exec(`INSERT INTO imports(file_id, line, source, kind, type_only, bindings, start_index, end_index)
+             SELECT f.id, i.line, i.source, i.kind, i.type_only, i.bindings, i.start_index, i.end_index
+             FROM imports_v15 i JOIN files f ON f.path = i.file_path`);
+    db.exec(`INSERT INTO unresolved_refs(id, from_node_id, reference_name, reference_kind, line, col, candidates, file_id, language, status, name_tail)
+             SELECT u.id, u.from_node_id, u.reference_name, u.reference_kind, u.line, u.col, u.candidates, f.id, u.language, u.status, u.name_tail
+             FROM unresolved_refs_v15 u JOIN files f ON f.path = u.file_path`);
+    db.exec(`INSERT INTO symbol_diffs(file_id, from_hash, to_hash, added, removed, changed, norm_from, norm_to, updated_at)
+             SELECT f.id, s.from_hash, s.to_hash, s.added, s.removed, s.changed, s.norm_from, s.norm_to, s.updated_at
+             FROM symbol_diffs_v15 s JOIN files f ON f.path = s.file_path`);
+    // ⑤ 丢旧表（子先父后）
+    for (const t of V16_TABLES) db.exec(`DROP TABLE ${t}_v15`);
+    // ⑥ 外键校验：有任何孤儿 ⇒ 整笔回滚，绝不落半套
+    const bad = db.prepare('PRAGMA foreign_key_check').all();
+    if (bad.length > 0) throw new Error(`v16 迁移后 foreign_key_check 有 ${bad.length} 行孤儿，已回滚`);
+    db.exec('COMMIT');
+  } catch (e) {
+    db.exec('ROLLBACK');
+    throw e;
+  }
+
+  const after = {
+    identifiers: count('identifiers'),
+    imports: count('imports'),
+    unresolved_refs: count('unresolved_refs'),
+    symbol_diffs: count('symbol_diffs'),
+  };
+  const named = orphans
+    .slice(0, 3)
+    .map((o) => `${o.p} ${o.c} 行`)
+    .join(' / ');
+  return (
+    `；迁移行数 identifiers ${before.identifiers}→${after.identifiers}` +
+    (orphanRows > 0 ? `（丢弃 ${orphanRows} 条孤儿行：${named}；根因旧 removeFileRel 未删 identifiers）` : '') +
+    `，imports ${before.imports}→${after.imports}，unresolved_refs ${before.unresolved_refs}→${after.unresolved_refs}，` +
+    `symbol_diffs ${before.symbol_diffs}→${after.symbol_diffs}；foreign_key_check 0 行`
+  );
+}
+
+/**
+ * 打开库时的形状对齐。返回写进 schema_versions.description 的回执（空串 = 没迁移）。
+ *
+ * ★ 判据是**形状**（files 有没有 id），不是版本号：上次迁移若在 COMMIT 前崩了，
+ *   事务已回滚 ⇒ 形状仍是 v15、版本仍是 15，下次打开会重跑（幂等）。
+ * ★ 全新库（连 files 表都没有）⇒ 什么都不做，SCHEMA_SQL 直接建 v16。
+ */
+function migrateCacheIfNeeded(db: Database): string {
+  if (!tableExists(db, 'files')) return '';
+  if (hasColumn(db, 'files', 'id')) return '';
+  const prev = readSchemaVersion(db);
+  if (prev !== null && prev >= 15) return migrateV15ToV16(db);
+  // v15 之前的库：**不搬迁**（沿用「缓存是派生物」的老策略），只把形状换成 v16。
+  // 顺序：先子后父；nodes_fts 是 external-content 虚表，跟着 nodes 一起拆（否则重建后索引残留）。
+  for (const t of ['edges', 'unresolved_refs', 'identifiers', 'imports', 'symbol_diffs', 'nodes_fts', 'nodes', 'files']) {
+    db.exec(`DROP TABLE IF EXISTS ${t}`);
+  }
+  return `；v${prev ?? '?'}→v16 旧库不搬迁（缓存是派生物），已清空重建`;
+}
+
 /**
  * 打开（必要时创建）cache.db 并应用 schema。
  * schema 全部 IF NOT EXISTS，重复打开幂等。
  *
- * 迁移策略：缓存是派生物，不做保留式迁移——版本落后即清空业务表，
- * 下次 sync 全量重建。（v1→v2 新增 imports 表：旧 files 行没有原始
- * import 数据，留着会让 import_project 缓存路径静默丢包导入依赖边，
- * 必须失效重建。）
+ * 迁移策略（v16 起分两档，**判据是库的实际形状，不是版本号**）：
+ *   - **v15 → v16：保留式迁移**（旧表改名 → SCHEMA_SQL 建新表 → 回填 → 丢旧表），
+ *     因为这一版只是把 file_path 换成 file_id，**事实一条没变**，丢掉重解析纯属浪费。
+ *     正确性证据 = 行数：identifiers 316,446 → 316,245（差的 201 条是 files 里根本没有的路径，
+ *     见 migrateV15ToV16 的说明），imports / unresolved_refs / symbol_diffs 逐表相等；
+ *     收尾必跑 PRAGMA foreign_key_check（有孤儿就整笔回滚，不写半套）。
+ *   - **更旧的库：仍清空重建**（缓存是派生物）。v1→v2 加 imports 表时留下的教训：
+ *     旧 files 行没有原始 import 数据，留着会让 import_project 缓存路径静默丢包导入依赖边。
  */
 export function openDb(dbFile: string = getDbFile()): Database {
   fs.mkdirSync(path.dirname(dbFile), { recursive: true });
   const db = new DatabaseSync(dbFile);
   db.exec('PRAGMA journal_mode = WAL');
   db.exec('PRAGMA foreign_keys = ON');
+  // ★ v16：**先对齐形状再跑 SCHEMA_SQL** —— 旧库的 identifiers 还没有 file_id 列，
+  //   而 SCHEMA_SQL 里有 CREATE INDEX ... ON identifiers(name, file_id) ⇒ 会直接 no such column。
+  const migrationNote = migrateCacheIfNeeded(db);
   db.exec(SCHEMA_SQL);
   // v3 增列：旧库的 nodes 表已存在，CREATE TABLE IF NOT EXISTS 不会补 sym_hash 列，
   // 显式 ALTER（新库建表已含该列，重复加列报错吞掉）
@@ -212,15 +365,27 @@ export function openDb(dbFile: string = getDbFile()): Database {
       /* 列已存在 */
     }
   }
-  const v = db.prepare('SELECT MAX(version) v FROM schema_versions').get() as { v: number | null };
-  if (v.v !== null && v.v < SCHEMA_VERSION) {
-    // imports 一并清（v5 前的旧行没有 type_only 语义，且此前清库遗漏 imports 表——
-    // 删除的文件会在 imports 留残行；缓存是派生物，全清重建）
-    db.exec('DELETE FROM files; DELETE FROM nodes; DELETE FROM edges; DELETE FROM unresolved_refs; DELETE FROM symbol_diffs; DELETE FROM imports;');
-  }
   db.prepare(
     'INSERT OR IGNORE INTO schema_versions(version, applied_at, description) VALUES (?, ?, ?)',
-  ).run(SCHEMA_VERSION, Date.now(), 'v15: nodes.body_text/body_hash（函数体原文 + sha1）—— 此前 DB 只知道函数长什么样、不知道它做了什么 ⇒ 重写必须打开源文件；旧库无此列 ⇒ 清库重解析');
+  ).run(
+    SCHEMA_VERSION,
+    Date.now(),
+    // ★ 这一行就是**迁移证据**：哪几张表、每张表前后多少行、丢了几条孤儿行（并点名到文件）。
+    //   查法：SELECT description FROM schema_versions WHERE version = 16;
+    `v16: file_path → files.id 外键（identifiers/imports/unresolved_refs/symbol_diffs；nodes 保留 file_path）${migrationNote}`,
+  );
+  // ★ v16：迁移把 31.6 万行的长路径换成整数，**腾出的页只进 freelist、不还给磁盘**
+  //   ⇒ 实测 80.56 MB 的库迁移后仍是 80.56 MB，直到 VACUUM 才变成 53.13 MB。
+  //   条件：只在真迁移过、且空闲页够多（>1000 页 ≈ 4 MB）时做一次；VACUUM 失败不影响正确性
+  //   （磁盘不够 / 有并发读者），下一轮打开会重试。
+  if (migrationNote) {
+    try {
+      const free = (db.prepare('PRAGMA freelist_count').get() as { freelist_count: number }).freelist_count;
+      if (free > 1000) db.exec('VACUUM');
+    } catch {
+      /* 腾不出空间不算错：库本身已经是一致的 */
+    }
+  }
   return db;
 }
 

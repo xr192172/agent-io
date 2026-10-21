@@ -67,7 +67,7 @@ export function buildImportGraph(db: Database, root: string): ImportGraph {
   const index = buildIndex(files);
   const goModules = readGoModules(root);
   const packageResolved = new Map<string, boolean>();
-  const stmt = db.prepare('SELECT source, line, kind, type_only FROM imports WHERE file_path = ?');
+  const stmt = db.prepare('SELECT source, line, kind, type_only FROM v_imports WHERE file_path = ?');
   for (const f of files) {
     const rows = stmt.all(f.rel) as Array<{ source: string; line: number; kind: string; type_only: number }>;
     for (const r of rows) {

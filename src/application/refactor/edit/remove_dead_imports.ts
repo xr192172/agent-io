@@ -299,7 +299,7 @@ function spansForFile(
   if (!rel) return null;
 
   const cov = db
-    .prepare('SELECT COUNT(*) n, COUNT(start_index) si FROM imports WHERE file_path = $p')
+    .prepare('SELECT COUNT(*) n, COUNT(start_index) si FROM v_imports WHERE file_path = $p')
     .get({ p: rel }) as { n: number; si: number } | undefined;
   // ① 无行 / 混合（部分行没 span）⇒ 不按 span 切（口径按文件，不按行）
   if (!cov || !(cov.n > 0 && cov.si === cov.n)) return null;
@@ -314,7 +314,7 @@ function spansForFile(
   for (const s of wanted) if (hasRequireOf(src, s)) return null; // ④
 
   const rows = db
-    .prepare('SELECT line, source, start_index si, end_index ei FROM imports WHERE file_path = $p ORDER BY start_index')
+    .prepare('SELECT line, source, start_index si, end_index ei FROM v_imports WHERE file_path = $p ORDER BY start_index')
     .all({ p: rel }) as Array<{ line: number; source: string; si: number | null; ei: number | null }>;
 
   const spans: ImportSpan[] = [];

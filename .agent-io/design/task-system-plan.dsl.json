@@ -17578,7 +17578,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_harvest_harvest_closure_ts",
+          "summary": "【L1 待建构】核心层 · src/application/harvest — 5 个 API（导入自 6 个模块）（src/application/harvest/harvest_closure.ts） ← 节点 file_src_application_harvest_harvest_closure_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_harvest_harvest_closure_ts\"].responsibility"
+          },
+          "owner": "agent-v16",
+          "claimed_at": "2026-10-21T06:09:05.287Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_harvest_harvest_decisions_ts",
@@ -19147,9 +19159,9 @@
               "why": "★ end_index 不含结尾换行 ⇒ 删整句必须自己吃掉一个 \\r?\\n（子代理实测）"
             }
           ],
-          "state": "candidate",
-          "owner": null,
-          "claimed_at": null,
+          "state": "claimed",
+          "owner": "agent-v16",
+          "claimed_at": "2026-10-21T06:09:05.019Z",
           "evidence": [
             {
               "kind": "expectations",
@@ -19159,12 +19171,9 @@
               "verdict": "pass"
             }
           ],
-          "reopened_at": "2026-10-20T11:16:04.268Z",
-          "release_reason": "T356 已改完（两处 snapshot 透传）",
-          "released_by": "t356-authorize",
-          "released_at": "2026-10-20T13:29:36.821Z"
+          "reopened_at": "2026-10-20T11:16:04.268Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
@@ -19196,7 +19205,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_refactor_find_field_refs_ts",
+          "summary": "【L1 待建构】核心层 · src/application/refactor/find — 14 个 API（导入自 4 个模块）（src/application/refactor/find/field_refs.ts） ← 节点 file_src_application_refactor_find_field_refs_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_find_field_refs_ts\"].responsibility"
+          },
+          "owner": "agent-v16",
+          "claimed_at": "2026-10-21T06:09:04.941Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_find_find_references_ts",
@@ -48373,17 +48394,14 @@
           "id": "file_src_infrastructure_analysis_impact_diff_impact_ts",
           "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/impact — 4 个 API（导入自 4 个模块）（src/infrastructure/analysis/impact/diff_impact.ts） ← 节点 file_src_infrastructure_analysis_impact_diff_impact_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_impact_diff_impact_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "释放 file_src_infrastructure_analysis_impact_diff_impact_ts：本轮活已由子代理完成，build + verify 已验收通过",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-21T02:42:51.317Z"
+          "owner": "agent-v16",
+          "claimed_at": "2026-10-21T06:09:05.525Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_impact_ledger_store_ts",
@@ -50174,17 +50192,14 @@
           "id": "file_src_infrastructure_graph_dead_deps_ts",
           "summary": "【L1 待建构】核心层 · src/infrastructure/graph — 9 个 API（导入自 5 个模块）（src/infrastructure/graph/dead_deps.ts） ← 节点 file_src_infrastructure_graph_dead_deps_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_dead_deps_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "释放 file_src_infrastructure_graph_dead_deps_ts：本轮活已由子代理完成，build + verify 已验收通过",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-21T02:42:51.705Z"
+          "owner": "agent-v16",
+          "claimed_at": "2026-10-21T06:09:05.368Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_graph_import_graph_ts",
@@ -50200,7 +50215,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_graph_import_graph_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure/graph — 1 个 API（导入自 4 个模块）（src/infrastructure/graph/import_graph.ts） ← 节点 file_src_infrastructure_graph_import_graph_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_import_graph_ts\"].responsibility"
+          },
+          "owner": "agent-v16",
+          "claimed_at": "2026-10-21T06:09:05.444Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_graph_import_project_ts",
@@ -50256,8 +50283,8 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_db_ts\"].responsibility"
           },
-          "owner": "agent-body-v15",
-          "claimed_at": "2026-10-21T04:48:13.572Z"
+          "owner": "agent-v16",
+          "claimed_at": "2026-10-21T06:09:04.785Z"
         },
         "status": "in_progress"
       },
@@ -50491,8 +50518,8 @@
               "verdict": "pass"
             }
           ],
-          "owner": "agent-body-v15",
-          "claimed_at": "2026-10-21T04:47:42.741Z",
+          "owner": "agent-v16",
+          "claimed_at": "2026-10-21T06:09:04.705Z",
           "reopened_at": "2026-10-20T15:14:17.828Z",
           "reopen_reason": "schema v13 增加 nodes.params 列",
           "reopened_from": null
@@ -50582,8 +50609,8 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_symbols_ts\"].responsibility"
           },
-          "owner": "agent-body-v15",
-          "claimed_at": "2026-10-21T04:48:13.768Z"
+          "owner": "agent-v16",
+          "claimed_at": "2026-10-21T06:09:04.868Z"
         },
         "status": "in_progress"
       },
@@ -52613,9 +52640,9 @@
               "why": "必须真的把 members 拷进副本（只有做了才会绿）"
             }
           ],
-          "state": "candidate",
-          "owner": null,
-          "claimed_at": null,
+          "state": "claimed",
+          "owner": "agent-v16",
+          "claimed_at": "2026-10-21T06:09:05.206Z",
           "evidence": [
             {
               "kind": "expectations",
@@ -52625,12 +52652,9 @@
               "verdict": "pass"
             }
           ],
-          "reopened_at": "2026-10-20T06:28:37.635Z",
-          "release_reason": "子代理已结束，释放占用的卡",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T10:49:14.240Z"
+          "reopened_at": "2026-10-20T06:28:37.635Z"
         },
-        "status": "draft",
+        "status": "in_progress",
         "decision_history": [
           {
             "at": "2026-10-20T00:08:42.765Z",
@@ -81996,7 +82020,8 @@
           }
         ],
         "lines": 474,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_harvest_harvest_decisions_ts",
@@ -84591,7 +84616,7 @@
         ],
         "lines": 452,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
@@ -84714,7 +84739,8 @@
           }
         ],
         "lines": 476,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_find_find_references_ts",
@@ -88607,7 +88633,7 @@
         ],
         "lines": 626,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_impact_ledger_store_ts",
@@ -92915,7 +92941,7 @@
         ],
         "lines": 654,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_graph_import_graph_ts",
@@ -92931,7 +92957,8 @@
           }
         ],
         "lines": 91,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_graph_import_project_ts",
@@ -98870,7 +98897,7 @@
         "id": "file_src_application_design_db_gen_design_db_ts",
         "path": "src/application/design/db/gen_design_db.ts",
         "responsibility": "设计 DSL → 设计 DB（全量、与实际 DB 同构）",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_rewrite_symbol_diff_ts",
@@ -98963,11 +98990,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T06:05:05.459Z",
+    "saved_at": "2026-10-21T06:09:05.551Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792562551646,
-    "age": 153813
+    "scanRev": 1792562707661,
+    "age": 237890
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

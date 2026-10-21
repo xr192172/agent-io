@@ -264,7 +264,7 @@ export function diffImpact(input: DiffImpactInput): DiffImpactResult {
   };
   for (const { rel, cachePath } of changedSemantic) {
     const diffRow = db
-      .prepare('SELECT from_hash, to_hash, added, removed, changed, norm_from, norm_to FROM symbol_diffs WHERE file_path = ?')
+      .prepare('SELECT from_hash, to_hash, added, removed, changed, norm_from, norm_to FROM v_symbol_diffs WHERE file_path = ?')
       .get(cachePath) as
       | { from_hash: string; to_hash: string; added: string; removed: string; changed: string; norm_from: string; norm_to: string }
       | undefined;

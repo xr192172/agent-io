@@ -377,7 +377,7 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
     // ★ 2026-10-20：带上 members（type/interface 的定义；function 恒为 NULL）
     "SELECT name, kind, start_line, signature, members FROM nodes WHERE file_path = ? AND parent IS NULL AND kind != 'file' ORDER BY start_line",
   );
-  const qImports = db.prepare('SELECT source, kind, type_only FROM imports WHERE file_path = ? ORDER BY line');
+  const qImports = db.prepare('SELECT source, kind, type_only FROM v_imports WHERE file_path = ? ORDER BY line');
   const qCallsOut = db.prepare("SELECT source, target FROM edges WHERE kind = 'call' AND source LIKE ? ORDER BY target");
   const qHome = db.prepare(
     'SELECT file_path FROM nodes WHERE name = ? AND parent IS NULL ORDER BY (file_path = ?) DESC LIMIT 1',

@@ -408,7 +408,7 @@ export function analyzeDeadThirdParty(opts: {
   }
   const importRowsByFile = new Map<string, ImportBindingRow[]>();
   for (const r of db
-    .prepare('SELECT file_path, source, kind, type_only, bindings FROM imports')
+    .prepare('SELECT file_path, source, kind, type_only, bindings FROM v_imports')
     .all() as unknown as Array<ImportBindingRow & { file_path: string }>) {
     let arr = importRowsByFile.get(r.file_path);
     if (!arr) importRowsByFile.set(r.file_path, (arr = []));
@@ -496,7 +496,7 @@ export function analyzeDeadThirdParty(opts: {
     const index = buildIndex(fileEntries);
     const goModules = readGoModules(projectDir);
     const stmtGoImports = db.prepare(
-      'SELECT source, line, kind, type_only FROM imports WHERE file_path = ?',
+      'SELECT source, line, kind, type_only FROM v_imports WHERE file_path = ?',
     );
     const symbolsByNameByFile = new Map<string, Map<string, SymbolRow[]>>();
     for (const f of goClosureFiles) {
@@ -664,7 +664,7 @@ export function analyzeDeadThirdParty(opts: {
   for (const e of thirdParty) agg.set(e.source, { files: new Set(), liveHit: false, symbolHit: false });
 
   const stmtImports = db.prepare(
-    'SELECT source, line, kind, type_only FROM imports WHERE file_path = ?',
+    'SELECT source, line, kind, type_only FROM v_imports WHERE file_path = ?',
   );
   /** ★ v13 回执：限定符来源计数（判定粒度 = 一条 package import） */
   const bindingVia = { db: 0, regex: 0 };

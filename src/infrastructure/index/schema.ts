@@ -23,6 +23,18 @@
  *     v14 之前 DB 知道「这个函数长什么样」（签名/形参/返回类型/修饰符/成员），**不知道它做了什么** ⇒
  *     重写时仍必须打开源文件（那正是"看着 DB 重写不安全"的来源）。判据：**要不要打开源文件**
  *     —— 打不开就说明 DB 不全。★ `NULL` 的语义与 `files.content_hash` 的用法**写死在列注释里**（见下）
+ *   - v16（2026-10-21）：**file_path → files.id 外键**（这是**规范化**，不是压缩）。
+ *     `identifiers` 316,446 行里，每行都重抄一遍完整路径：`file_path` 合计 **13.33 MB**（平均 44 字节），
+ *     连带 `sqlite_autoindex_identifiers_1`（主键含 file_path）一起膨胀到 **17.25 MB**。
+ *     ⇒ 病根不是"存太多信息"，是**同一事实在 31.6 万行里各存一份**。
+ *     v16：`files.id INTEGER PRIMARY KEY`，identifiers / imports / unresolved_refs / symbol_diffs 改存 `file_id`；
+ *     读方走 `v_*` 视图（列名仍是 `file_path`）。★ 视图被 SQLite flatten 成与 JOIN **完全相同的计划**
+ *     （实测：`SEARCH f USING COVERING INDEX autoindex_files_1 (path=?) → SEARCH i USING INDEX …`），
+ *     且耗时与 JOIN 一致 ⇒ 视图不是"多一层"。
+ *     ★ `idx_identifiers_name` **必须**跟着改成 `(name, file_id)`：只按 name 建索引时
+ *     `WHERE file_id=? AND name=?` 用不上 file 维度 ⇒ 先扫该文件全部行再过滤，实测 0.095 ms → 1.362 ms（14 倍）；
+ *       带上 file_id 后 0.006 ms（比 v15 快 15 倍）。
+ *     ★ `nodes.file_path` **不换**（理由写在 nodes 表的列注释里，别重新解释）。
  *
  * 节点 id 约定：
  *   - 文件节点：id = 相对项目根的 posix 路径（如 "src/tools/serve.ts"），kind='file'
@@ -49,23 +61,41 @@ CREATE TABLE IF NOT EXISTS schema_versions (
 --   消费者：find_references / field_refs / rename_symbols / remove_dead_imports。
 --   它们现在都用正则扫源码 —— 会漏（别名/解构/动态访问）也会误报（注释/字符串）。
 --   ★ 只记【出现位置】，不记语义：同名多义、作用域遮蔽，要靠调用方结合 nodes 自己判。
+-- ★ v16（2026-10-21）：file_path TEXT → file_id INTEGER（files.id 外键）。
+--   316,446 行 × 平均 44 字节的完整路径 = 13.33 MB，全是**同一份事实的各行副本** ⇒ 规范化。
+--   读方走 v_identifiers（列名仍叫 file_path，读方一行不用改）；写入直接写本表的 file_id。
 CREATE TABLE IF NOT EXISTS identifiers (
-    file_path   TEXT NOT NULL,
+    file_id     INTEGER NOT NULL,
     name        TEXT NOT NULL,
     kind        TEXT NOT NULL,   -- identifier / property / type / shorthand
     line        INTEGER NOT NULL,
     col         INTEGER NOT NULL,
     start_index INTEGER NOT NULL,
     end_index   INTEGER NOT NULL,
-    PRIMARY KEY (file_path, start_index)
+    PRIMARY KEY (file_id, start_index),
+    FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
 );
-CREATE INDEX IF NOT EXISTS idx_identifiers_name ON identifiers(name);
+-- ★ 索引列序是 (name, file_id)，**不是** (name)：
+--   field_refs 的主查询是 WHERE file_id = ? AND name = ?。只按 name 建索引时
+--   SQLite 用不上 file 维度 ⇒ 先取该文件全部行再过滤（实测 24,055 行的文件：0.095 ms → 1.362 ms，14 倍）；
+--   带上 file_id 后两列都是等值 ⇒ 0.006 ms。**别改回去。**
+CREATE INDEX IF NOT EXISTS idx_identifiers_name ON identifiers(name, file_id);
 
 CREATE TABLE IF NOT EXISTS nodes (
     id TEXT PRIMARY KEY,
     kind TEXT NOT NULL,
     name TEXT NOT NULL,
     qualified_name TEXT NOT NULL,
+    -- ★★ v16 决定：**nodes.file_path 保持 TEXT，不换 file_id**。理由（写死，别重新解释）：
+    --   ① 它是**符号 id 的一部分**（id = relPath 或 relPath#qn），换列不换 id 就是两套身份并存；
+    --   ② 本表要为"**import 目标但还没索引**的文件"建**桩节点**（symbols.ts 的 ensureStub）——
+    --      这些路径**不在 files 表里**（实测本库 22 行，全是 dist/*.js）。挂 FK 就得给它们
+    --      **伪造 files 行**（编 content_hash/size），而 files 是"哪些文件被索引过"的**唯一权威**，
+    --      伪造会让 index_integrity 把没索引的文件算成已索引 —— 比省 0.9 MB 严重得多；
+    --   ③ 收益只有 0.35 MB（+ 两个索引约 0.9 MB），消费方（function_outline / derive_mind_map /
+    --      candidate_locator / semantic_search）全在本列上做 LIKE 与前缀分组。
+    --   ⇒ 边界：**file 归属的事实表**（identifiers/imports/unresolved_refs/symbol_diffs）用 file_id；
+    --      nodes 是"符号 id 里带路径"的图结构，路径属于 id，不参与这条规范化。
     file_path TEXT NOT NULL,
     language TEXT NOT NULL,
     start_line INTEGER NOT NULL,
@@ -134,8 +164,16 @@ CREATE TABLE IF NOT EXISTS edges (
 );
 
 -- 文件：索引状态与内容 hash（增量跳过的依据）
+-- ★ v16：加 id INTEGER PRIMARY KEY，其余表用它当外键 ⇒ 完整路径只在这一张表里存一份。
+--   path 仍是**唯一业务键**（所有调用方按路径找人，不改），UNIQUE 保证 1:1。
+--   ★ 写入必须用 ON CONFLICT(path) DO UPDATE（UPSERT）：
+--     原来的 INSERT OR REPLACE = DELETE+INSERT，会让 ON DELETE CASCADE 把该文件的
+--     identifiers / imports / symbol_diffs / unresolved_refs 一起带走（静默清空）。
+--   ★ AUTOINCREMENT 是为了 id 永不复用——文件删了再加回来是**新 id**，
+--     任何跨删除缓存的 file_id 只会失效、不会指到别的文件。
 CREATE TABLE IF NOT EXISTS files (
-    path TEXT PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    path TEXT NOT NULL UNIQUE,
     content_hash TEXT NOT NULL,
     language TEXT NOT NULL,
     size INTEGER NOT NULL,
@@ -149,11 +187,13 @@ CREATE TABLE IF NOT EXISTS files (
 -- 原始 import 记录（v2）：import_project 缓存读取路径的数据源。
 -- edges 表只存【已解析的相对导入】边；Go 包路径 / Python 点分模块的原始
 -- source 串只留在这里，缺了它缓存路径会静默丢包导入依赖边。
--- 生命周期：随 syncFile 按 file_path 整批重插；removeFile 时清除。
--- 故意不挂 FK：files 行用 INSERT OR REPLACE 重写（REPLACE = DELETE+INSERT），
--- ON DELETE CASCADE 会在同事务内把刚写入的 imports 带走。
+-- 生命周期：随 syncFile 按 file_id 整批重插；removeFile 时随 files 行 CASCADE 清除。
+-- ★ v16 起挂 FK（file_id → files.id ON DELETE CASCADE）。
+--   v16 前"故意不挂 FK"的唯一理由是：files 行用 INSERT OR REPLACE 重写（REPLACE = DELETE+INSERT），
+--   ON DELETE CASCADE 会在同事务内把刚写入的 imports 带走 —— 该理由已随 files 改写为
+--   ON CONFLICT(path) DO UPDATE（不删行）而失效。
 CREATE TABLE IF NOT EXISTS imports (
-    file_path TEXT NOT NULL,
+    file_id INTEGER NOT NULL,
     line INTEGER NOT NULL,
     source TEXT NOT NULL,
     kind TEXT NOT NULL,      -- 'relative' | 'package'（与 ts_kernel ParsedImport.kind 一致）
@@ -165,9 +205,10 @@ CREATE TABLE IF NOT EXISTS imports (
     bindings TEXT,
     -- ★ 2026-10-20（v12）：整条 import 语句的字符 span（删整句用；NULL = 解析器没给偏移）
     start_index INTEGER,
-    end_index INTEGER
+    end_index INTEGER,
+    FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
 );
-CREATE INDEX IF NOT EXISTS idx_imports_file ON imports(file_path);
+CREATE INDEX IF NOT EXISTS idx_imports_file ON imports(file_id);
 
 -- 向量缓存（持久层）：model:sha256(文本) → 向量。跨进程重启存活，
 -- 符号文本+模型不变直接查表，重启后首个语义查询不再全量 embed。
@@ -184,8 +225,11 @@ CREATE TABLE IF NOT EXISTS embedding_cache (
 -- 编辑未消费时累积成 vA→vNow 的净差异）。diffImpact 据此把波及源从"整文件所有
 -- 符号"收敛到"真正改动的符号"，改注释/格式不再虚报波及。
 -- 首次导入不写行（无旧版可比），diffImpact 对该文件回退文件级。
+-- ★ v16：file_path TEXT PRIMARY KEY → file_id INTEGER PRIMARY KEY（files.id）。
+--   本表只有 0 行且同为"按文件"的事实表 —— 不换就是"一半用 id、一半用路径"，
+--   下次谁都得重新判一次该用哪套；统一到 file_id 后判据只有一条：file 归属 ⇒ file_id。
 CREATE TABLE IF NOT EXISTS symbol_diffs (
-    file_path TEXT PRIMARY KEY,
+    file_id INTEGER PRIMARY KEY,
     from_hash TEXT NOT NULL,       -- 对比起点文件 content_hash
     to_hash TEXT NOT NULL,         -- 对比终点文件 content_hash（= 当前 files.content_hash）
     added TEXT NOT NULL,           -- JSON array：新增符号 qualified_name
@@ -193,7 +237,8 @@ CREATE TABLE IF NOT EXISTS symbol_diffs (
     changed TEXT NOT NULL,         -- JSON array：实质变更符号 qualified_name（span hash 变）
     norm_from TEXT NOT NULL DEFAULT '',  -- v4：起点全文归一化 hash（''=未知，保守视为已变）
     norm_to TEXT NOT NULL DEFAULT '',    -- v4：终点全文归一化 hash；norm_from≠norm_to = 符号外实质变更
-    updated_at INTEGER NOT NULL
+    updated_at INTEGER NOT NULL,
+    FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
 );
 
 -- 未决引用：序号 3 调用边提取的解析暂存（先占位，生命周期见 CodeGraph 同名表注释）
@@ -205,11 +250,15 @@ CREATE TABLE IF NOT EXISTS unresolved_refs (
     line INTEGER NOT NULL,
     col INTEGER NOT NULL,
     candidates TEXT,
-    file_path TEXT NOT NULL DEFAULT '',
+    -- ★ v16：file_path TEXT NOT NULL DEFAULT '' → file_id INTEGER NOT NULL（1.43 MB 的路径副本）。
+    --   NOT NULL：本表每一行都是某个已索引文件解析出来的引用，没有"无主"行
+    --   （迁移实测 32,932 行全部能对上 files.path，孤儿 0）。
+    file_id INTEGER NOT NULL,
     language TEXT NOT NULL DEFAULT 'unknown',
     status TEXT NOT NULL DEFAULT 'pending',
     name_tail TEXT NOT NULL DEFAULT '',
-    FOREIGN KEY (from_node_id) REFERENCES nodes(id) ON DELETE CASCADE
+    FOREIGN KEY (from_node_id) REFERENCES nodes(id) ON DELETE CASCADE,
+    FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_nodes_kind ON nodes(kind);
@@ -264,4 +313,34 @@ CREATE INDEX IF NOT EXISTS idx_unresolved_from_node ON unresolved_refs(from_node
 CREATE INDEX IF NOT EXISTS idx_unresolved_name ON unresolved_refs(reference_name);
 CREATE INDEX IF NOT EXISTS idx_unresolved_status ON unresolved_refs(status);
 CREATE INDEX IF NOT EXISTS idx_unresolved_failed_tail ON unresolved_refs(name_tail) WHERE status = 'failed';
+
+-- ─────────────────────────────────────────────────────────────
+-- v16 读方出口：**视图把 file_id 还原成 path，列名仍是 file_path**
+--
+-- 为什么是视图而不是"每个读方自己写 JOIN"：读方 SQL 一个字都不用改结构
+-- （只把 FROM identifiers 换成 FROM v_identifiers），"路径在哪张表"这件事只有一个出处。
+-- ★ 代价已实测（2026-10-21，31.6 万行真实库）：视图被 SQLite **flatten**，计划与手写 JOIN
+--   逐字相同 —— SEARCH f USING COVERING INDEX autoindex_files_1 (path=?) → SEARCH i USING INDEX …；
+--   耗时同一水平（identifiers 按文件计数 0.602 ms → 0.405 ms；imports 按文件取 0.044 → 0.034 ms）。
+--   唯一变慢的是 imports DISTINCT by source（0.189 → 0.295 ms，2445 行规模，不值得为它加索引）。
+-- ★ 视图**只读**：INSERT/UPDATE/DELETE 必须写基表（视图没有 INSTEAD OF 触发器，
+--   写视图会报 "cannot modify … because it is a view"，这是**故意的**：写路径必须显式给 file_id，
+--   免得有人在视图上写路径、再让某个触发器去猜 id）。
+CREATE VIEW IF NOT EXISTS v_identifiers AS
+SELECT f.path AS file_path, i.name, i.kind, i.line, i.col, i.start_index, i.end_index
+FROM identifiers i JOIN files f ON f.id = i.file_id;
+
+CREATE VIEW IF NOT EXISTS v_imports AS
+SELECT f.path AS file_path, i.line, i.source, i.kind, i.type_only, i.bindings, i.start_index, i.end_index
+FROM imports i JOIN files f ON f.id = i.file_id;
+
+CREATE VIEW IF NOT EXISTS v_unresolved_refs AS
+SELECT u.id, u.from_node_id, u.reference_name, u.reference_kind, u.line, u.col, u.candidates,
+       f.path AS file_path, u.language, u.status, u.name_tail
+FROM unresolved_refs u JOIN files f ON f.id = u.file_id;
+
+CREATE VIEW IF NOT EXISTS v_symbol_diffs AS
+SELECT f.path AS file_path, s.from_hash, s.to_hash, s.added, s.removed, s.changed,
+       s.norm_from, s.norm_to, s.updated_at
+FROM symbol_diffs s JOIN files f ON f.id = s.file_id;
 `;

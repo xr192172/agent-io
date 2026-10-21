@@ -348,7 +348,7 @@ function harvestClosureCore(input: HarvestClosureInput): HarvestClosureResult {
   }
 
   // ── 原始 import 语句：闭包全体文件的 package 级依赖 + 内部文件的带入证据 ──
-  const stmtImports = db.prepare('SELECT source, line, kind, type_only FROM imports WHERE file_path = ?');
+  const stmtImports = db.prepare('SELECT source, line, kind, type_only FROM v_imports WHERE file_path = ?');
   // 内部文件带入证据：imported_by + 该 import 行的原始 source 串
   const evidenceSource = new Map<string, Map<number, string>>(); // file → line → source
   const externalAgg = new Map<string, ExternalDep>();
