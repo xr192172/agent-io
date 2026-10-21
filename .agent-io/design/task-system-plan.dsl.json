@@ -49496,17 +49496,14 @@
           "id": "file_src_infrastructure_authoring_behavior_index_ts",
           "summary": "【L1 待建构】入口层 · src/infrastructure/authoring/behavior — 28 个 API（导入自 9 个模块）（src/infrastructure/authoring/behavior/index.ts） ← 节点 file_src_infrastructure_authoring_behavior_index_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_behavior_index_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "释放 file_src_infrastructure_authoring_behavior_index_ts：本轮活已由子代理完成，build + verify 已验收通过",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-21T02:42:51.472Z"
+          "owner": "codebuddy-r4",
+          "claimed_at": "2026-10-21T03:00:28.608Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_const_eval_ts",
@@ -49686,17 +49683,14 @@
           "id": "file_src_infrastructure_authoring_translate_tool_ts",
           "summary": "【L1 待建构】工具层 · src/infrastructure/authoring/translate — 2 个 API（导入自 7 个模块）（src/infrastructure/authoring/translate/tool.ts） ← 节点 file_src_infrastructure_authoring_translate_tool_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_translate_tool_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "释放 file_src_infrastructure_authoring_translate_tool_ts：本轮活已由子代理完成，build + verify 已验收通过",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-21T02:42:51.625Z"
+          "owner": "codebuddy-r4",
+          "claimed_at": "2026-10-21T03:00:28.476Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_ts_codegen_ts",
@@ -91704,7 +91698,7 @@
         ],
         "lines": 1150,
         "layer": "entry",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_const_eval_ts",
@@ -92032,7 +92026,7 @@
         ],
         "lines": 160,
         "layer": "utility",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_ts_codegen_ts",
@@ -98938,11 +98932,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T02:43:32.686Z",
+    "saved_at": "2026-10-21T03:00:52.432Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792550503669,
-    "age": 109017
+    "scanRev": 1792550690692,
+    "age": 961740
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -101001,22 +100995,25 @@
       "id": "todo_静默失效-翻译线-runparityonfilled-恒空转-slice-0-5",
       "summary": "【静默失效·翻译线】`runParityOnFilled` 恒空转 + `slice(0,5)` 静默截断：前者的过滤条件 `!u.bodyHole` 在 fill 之后恒为 true（fill 会把 bodyHole 留在 units 上），所以\"可对拍单元\"永远是空集，而且它比的是未填的空壳；后者让 20 个单元只测 5 个却不报。要做的：删掉那条过滤（用\"是否有可执行体\"判，不是 `bodyHole`）；slice 改成显式分页 + 回执写\"已测 N/M\"。判据：造 10 个单元的夹具，回执里必须出现 10 条（或明写\"分页 5/10\"），且不是\"无可对拍\"。",
       "expectations": [],
-      "state": "candidate",
-      "owner": null
+      "state": "claimed",
+      "owner": "codebuddy-r4",
+      "claimed_at": "2026-10-21T03:00:52.119Z"
     },
     {
       "id": "todo_静默失效-behavior-node-runner-用裸名-require-ta",
       "summary": "【静默失效·behavior】node runner 用裸名 `require('target.cjs')` ⇒ 必报 Cannot find module，还被 catch 伪装成\"跨文件 import 边界\"⇒ node 侧对拍【从来没跑通过】。要做的：require 走绝对路径（path.resolve）；catch 里不许再把\"模块找不到\"解释成别的语义 —— 报错就是报错，缺什么写什么。判据：造一个 node 夹具，对拍必须真跑出 same/diff，而不是\"边界跳过\"。",
       "expectations": [],
-      "state": "candidate",
-      "owner": null
+      "state": "claimed",
+      "owner": "codebuddy-r4",
+      "claimed_at": "2026-10-21T03:00:52.257Z"
     },
     {
       "id": "todo_静默失效-项目模式-verify-文档说-等于-tsc-但-handler-只读",
       "summary": "【静默失效·项目模式】`verify` 文档说\"等于 tsc\"，但 handler 只读隐藏的 `tscVerify` ⇒ `verify=true` 恒不生效。要做的：统一成一个入口（`verify`），文档与实现对齐；如果两个字段都有意义，写清各自语义并在回执里分开报。判据：`verify=true` 时必须真的产出 tsc 读数，且回执能看出是哪一个字段生效的。",
       "expectations": [],
-      "state": "candidate",
-      "owner": null
+      "state": "claimed",
+      "owner": "codebuddy-r4",
+      "claimed_at": "2026-10-21T03:00:52.381Z"
     },
     {
       "id": "todo_静默失效-health-java-分支先-replace-s-import-s-",

@@ -80,6 +80,8 @@ export interface UnitVerification {
   source: CaseSource;
   cases_total: number;
   cases_matched: number;
+  /** 该单元**可用**样例数（> cases_total ⇒ 被 maxCases 截断，差额没跑） */
+  cases_available?: number;
   /** 未验证/有差异的具体原因（人话） */
   reason?: string;
   cases?: CaseResult[];
@@ -289,16 +291,22 @@ function summarize(units: UnitVerification[], funcCount: number, nonFunc: number
   const verified = units.filter((u) => u.status === 'verified').length;
   const diff = units.filter((u) => u.status === 'diff');
   const unverified = units.filter((u) => u.status === 'unverified');
+  // ★ 只跑了部分样例就不能说「全部一致」：把「已测/共」直接写进结论。
+  const truncated = units.filter((u) => (u.cases_available ?? 0) > u.cases_total);
+  const unrun = truncated.reduce((s, u) => s + ((u.cases_available ?? 0) - u.cases_total), 0);
+  const truncNote = truncated.length
+    ? `；★ 样例未跑全：${truncated.length} 个单元共 ${unrun} 条未测（${truncated.map((u) => `${u.unit} ${u.cases_total}/${u.cases_available}`).join('、')}）`
+    : '';
   if (diff.length) {
     const changed = diff.reduce((s, u) => s + (u.cases_total - u.cases_matched), 0);
     return `对照测试有差异：${diff.length} 个函数 / ${changed} 条输入输出不一致（${diff.map((d) => d.unit).join(', ')}）`;
   }
   if (verified && !unverified.length) {
     const cases = units.reduce((s, u) => s + u.cases_total, 0);
-    return `对照测试通过：${verified} 个函数 / ${cases} 条输入全部一致${nonFunc ? `（另有 ${nonFunc} 个 type/const 单元无运行时可对拍）` : ''}`;
+    return `对照测试通过：${verified} 个函数 / ${cases} 条输入全部一致${truncNote}${nonFunc ? `（另有 ${nonFunc} 个 type/const 单元无运行时可对拍）` : ''}`;
   }
   if (verified) {
-    return `部分验证：${verified}/${funcCount} 个函数有对照测试且全部一致；其余 ${unverified.length} 个未验证（${unverified.map((u) => u.unit).join(', ')}）`;
+    return `部分验证：${verified}/${funcCount} 个函数有对照测试且全部一致${truncNote}；其余 ${unverified.length} 个未验证（${unverified.map((u) => u.unit).join(', ')}）`;
   }
   if (funcCount === 0 && nonFunc > 0) {
     return `未验证：${nonFunc} 个 type/const 单元只做了机械映射，没有任何行为对拍（这类单元没有可执行语义）`;
@@ -446,7 +454,15 @@ export function verifyTranslation(inputs: VerifyUnitInput[], opts: VerifyOptions
       source = 'smoke';
     }
     const cap = opts.maxCases ?? 200;
-    if (cases.length > cap) cases = cases.slice(0, cap);
+    // ★ 截断必须进回执：否则「跑了 200/250」会被读成「250 条全一致」（假绿）。
+    const casesAvailable = cases.length;
+    if (casesAvailable > cap) {
+      cases = cases.slice(0, cap);
+      notes.add(`${u.id}：样例 ${casesAvailable} 条，只跑了 ${cases.length} 条（maxCases=${cap}），其余 ${casesAvailable - cases.length} 条未测`);
+    }
+    const truncated = casesAvailable > cases.length ? { cases_available: casesAvailable } : {};
+    // 后面每条 push 都展开 ...base ⇒ 截断读数对 verified/diff/unverified 一视同仁
+    Object.assign(base, truncated);
 
     if (!cases.length) {
       units.push({ ...base, status: 'unverified', source: 'none', reason: `${u.id}：没有可用输入（仓库无测试，参数类型也生成不出样例）` });

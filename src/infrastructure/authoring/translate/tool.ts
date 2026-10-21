@@ -33,10 +33,9 @@ export interface TranslateGoTsArgs {
   outDir?: string;
   /** 用 AGNES key 池 LLM 逐孔填函数体 */
   fill?: boolean;
-  /** 单文件模式：对已填函数跑 Go↔TS 对照测试（需 go 工具链）；项目模式：全工程 tsc 门禁 */
+  /** 单文件模式：对已填函数跑 Go↔TS 对照测试（需 go 工具链）；项目模式：全工程 tsc 门禁（内存模块树跑 TS preEmit，错误入诊断）
+   *  ★ 项目模式**只有这一个入口**（原隐藏的 `tscVerify` 已删：zod schema 里没有它 ⇒ MCP 面根本传不进来）。 */
   verify?: boolean;
-  /** 项目模式全工程 tsc 门禁：对内存模块树跑 TS preEmit，错误入诊断（纯项目应 0 错） */
-  tscVerify?: boolean;
   /** 项目内一批函数一次 LLM 调用（内置 key 池走批量）。默认 5 */
   batchSize?: number;
   /** LLM 纠错重试次数，默认 2 */
@@ -48,7 +47,6 @@ export interface TranslateGoTsArgs {
 export async function translateGoTsHandler(args: Record<string, unknown>): Promise<{ message: string; data?: unknown }> {
   const fill = args.fill === true;
   const verify = args.verify === true;
-  const tscVerify = args.tscVerify === true;
   const maxRetries = typeof args.maxRetries === 'number' ? args.maxRetries : 2;
   const batchSize = typeof args.batchSize === 'number' ? args.batchSize : undefined;
   // ★ 2026-10-06（T15 第 4 项）：这两个原先**只在 `translate_cli` 的 argv 里**
@@ -63,10 +61,11 @@ export async function translateGoTsHandler(args: Record<string, unknown>): Promi
     const root = path.resolve(projectDir);
     if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) return { message: `Go 项目目录不存在：${root}` };
     const outDir = args.outDir ? path.resolve(String(args.outDir)) : undefined;
-    // ★ 项目模式下 verify 的公开语义就是「全工程 tsc 门禁」（见 cross 的 zod 描述）；
-    //   原先只读隐藏的 tscVerify ⇒ 文档说的 verify=true 在项目模式里**恒不生效**（能力被藏起来）。
-    const r = await translateGoProject(root, { outDir, fill, maxRetries, verify: tscVerify || verify, batchSize });
-    const receipt = projectReceipt(r, fill);
+    // ★ 项目模式下 verify 的公开语义就是「全工程 tsc 门禁」（见 cross 的 zod 描述）。
+    //   入口只有一个：verify。原先还有一条隐藏的 tscVerify ⇒ 文档说 verify、实现只认 tscVerify；
+    //   那条已删（zod 里没有 tscVerify ⇒ MCP 面传不进来），回执里明写这次是谁触发的。
+    const r = await translateGoProject(root, { outDir, fill, maxRetries, verify, batchSize });
+    const receipt = projectReceipt(r, fill, verify);
     const lines = [`Go 项目翻译：${r.modules.length} 个模块`];
     for (const m of r.modules) {
       lines.push(`  ${m.tsRel}  (${m.units.length} 单元${m.imports.length ? `; import ${m.imports.length} 处` : ''})`);
@@ -87,6 +86,8 @@ export async function translateGoTsHandler(args: Record<string, unknown>): Promi
         report: r.report,
         typesMap: r.typesMap,
         conflicts: r.conflicts,
+        // ★ tsc 读数单独给机器读（ran/passed/clusters 三档）—— verify=true 时必须真的有它。
+        ...(r.tsc ? { tsc: r.tsc } : {}),
         receipt,
       },
     };
@@ -204,6 +205,11 @@ export async function translateGoTsHandler(args: Record<string, unknown>): Promi
 function appendReceipt(lines: string[], receipt: Receipt): void {
   const v = receipt.verification;
   lines.push('', `── 验证：${v.status} ──`, `  ${v.summary}`);
+  if (v.units.length) {
+    const n = (s: string): number => v.units.filter((u) => u.status === s).length;
+    const measured = n('verified') + n('diff');
+    lines.push(`  逐条结论：已测 ${measured}/${v.units.length} 个函数单元（verified ${n('verified')} · diff ${n('diff')}）· 未测 ${n('unverified')}（原因逐条见下）`);
+  }
   for (const u of v.units.filter((x) => x.status === 'diff')) {
     lines.push(`  · ${u.unit} 有差异：${u.cases_matched}/${u.cases_total} 一致（${u.source}）`);
   }
@@ -222,7 +228,7 @@ function appendReceipt(lines: string[], receipt: Receipt): void {
 }
 
 /** 项目模式回执：编译门禁的读数如实记，但**不许**当成"功能达成" */
-function projectReceipt(r: ProjectResult, fillRequested: boolean): Receipt {
+function projectReceipt(r: ProjectResult, fillRequested: boolean, verifyRequested: boolean): Receipt {
   const known: KnownFact[] = [];
   const filled = new Map<string, string>();
   const fillFailures = new Map<string, string>();
@@ -240,7 +246,12 @@ function projectReceipt(r: ProjectResult, fillRequested: boolean): Receipt {
   const unknowns = buildUnknowns({ units, filled, fillFailures, skipped, diagnostics: r.diagnostics });
   const funcCount = units.filter((u) => u.kind === 'func').length;
   const tsc = r.tsc;
-  const tscNote = tsc?.ran ? (tsc.passed ? 'tsc 通过' : `tsc 未通过（${tsc.clusters.length} 类错误）`) : 'tsc 未运行';
+  // ★ 读数要能追到「哪个入参让它跑」：verify=false 明写未请求；verify=true 明写由它触发。
+  const tscNote = tsc?.ran
+    ? `${tsc.passed ? 'tsc 通过' : `tsc 未通过（${tsc.clusters.length} 类错误）`}（由 verify=true 触发）`
+    : verifyRequested
+      ? 'tsc 未运行（verify=true，但工程里没有可编译的模块）'
+      : 'tsc 未运行（verify=false，未请求）';
   const verification = unverifiedReceipt(
     `项目模式只做了编译/结构门禁（${tscNote}），没有逐函数对照测试 —— 编译通过 ≠ 功能达成`,
     funcCount,

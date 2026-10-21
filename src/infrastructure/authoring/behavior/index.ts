@@ -307,9 +307,10 @@ try {
     loadStdout = _capEnd();
   }
 } catch (e) {
+  // ★ 加载失败就报加载失败：不再把 /Cannot find module/ 改写成「跨文件 import 边界」。
+  //   缺哪个模块、node 原话是什么，逐字带出 —— 报错就是报错，缺什么写什么。
   const msg = String((e && e.message) || e);
-  const boundary = /Cannot find module|Cannot use import statement|require is not defined|ERR_UNKNOWN_FILE_EXTENSION/.test(msg);
-  process.stdout.write(JSON.stringify({ error: (boundary ? '跨文件 import / 模块解析失败（v1 边界：目标文件须自包含）: ' : '目标文件加载失败: ') + msg }));
+  process.stdout.write(JSON.stringify({ error: '目标文件加载失败: ' + msg }));
   process.exit(1);
 }
 
