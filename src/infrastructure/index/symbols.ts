@@ -1149,6 +1149,8 @@ export async function syncProject(
       resolved: cross.resolved,
       external: cross.external,
       failed: cross.failed,
+      // ★ 2026-10-22：跳过多少必须跟连上多少一起报（这张就是 sync 回执）—— 不许只报 resolved
+      reexportSkipped: cross.reexportSkipped,
     },
   };
 }
@@ -1227,36 +1229,134 @@ function findGoSamePackageTarget(
   return hits.length === 1 ? hits[0] : null;
 }
 
-/** barrel 的转发表：导出名 → 来源模块；`export * from` 单独记 */
+/**
+ * barrel 的一条转发：来源模块 + **来源模块里的真名**。
+ *
+ * ★ 为什么必须记真名（2026-10-22）：`import { escapeHtml as esc } from './x'; export { esc }`
+ *   导出的名字（esc）在 `./x` 里**不是节点** —— 只有 `escapeHtml` 是。旧表只记「导出名 → 模块」，
+ *   解析时拿 esc 去 `./x` 查 ⇒ 永远查不到（别名再导出整族都落在这）。
+ */
+interface ReexportSource {
+  /** import/export 的 source 字面量（未解析） */
+  source: string;
+  /** 源模块里那个符号的真名（`A as B` ⇒ A；无别名 ⇒ 导出名本身） */
+  imported: string;
+  /** from = `export … from './x'`；alias = 本地 import 别名后再 `export { 本地名 }` */
+  form: 'from' | 'alias';
+}
+
+/** re-export 没建边的原因（★ 出口而不是丢弃：跳过多少必须能和连上多少一起报） */
+interface ReexportMiss {
+  why: string;
+  detail?: string;
+}
+
+/** barrel 的转发表：导出名 → 来源；`export * from` 单独记 */
 interface ReexportIndex {
-  named: Map<string, string[]>;
+  named: Map<string, ReexportSource[]>;
   stars: string[];
+  /** 认得但**不能连**的导出名 → 原因（resolve 时原样回传成 failed 的 why，不静默） */
+  skipped: Map<string, string>;
 }
 const reexportCache = new Map<string, { mtimeMs: number; idx: ReexportIndex }>();
+
+/**
+ * 抽 import/export 前先**去掉注释**。
+ *
+ * ★ 2026-10-22 实测踩到：本文件的文档注释里写了 `import { A as B } ... export { B }`
+ *   三种形态作示例 ⇒ 按原文正则会把**注释**当成真转发（symbols.ts 里凭空多出
+ *   esc / B / C 三条来源 `./x` 的转发，且 B/C 这种单字母名会把全仓同名调用误连过去）。
+ * ★ 只处理 `//` 与块注释；字符串里的 `//`（`http://`）用 `(?<!:)` 放过 —— 误伤只会「少识别」，
+ *   不会凭空造出一条转发（方向与「宁漏不错」一致）。
+ */
+function stripComments(text: string): string {
+  return text.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(?<!:)\/\/[^\n]*/g, '');
+}
+
 function reexportsOf(projectRoot: string, rel: string): ReexportIndex {
   const key = `${projectRoot}|${rel}`;
   const abs = path.join(projectRoot, rel);
   const st = fs.statSync(abs);
   const hit = reexportCache.get(key);
   if (hit && hit.mtimeMs === st.mtimeMs) return hit.idx;
-  const text = fs.readFileSync(abs, 'utf8');
-  const named = new Map<string, string[]>();
+  const text = stripComments(fs.readFileSync(abs, 'utf8'));
+  const named = new Map<string, ReexportSource[]>();
   const stars: string[] = [];
+  const skipped = new Map<string, string>();
+  const IDENT = /^[A-Za-z_$][\w$]*$/;
+  const push = (exported: string, src: ReexportSource): void => {
+    const arr = named.get(exported) ?? [];
+    arr.push(src);
+    named.set(exported, arr);
+  };
+  /** `A as B` ⇒ [A, B]；无别名 ⇒ [x, x] */
+  const splitAlias = (item: string): [string, string] => {
+    const parts = item.split(/\s+as\s+/);
+    return parts.length === 2 ? [parts[0].trim(), parts[1].trim()] : [item, item];
+  };
+
+  // ① `export { A as B } from './x'` / `export { A } from './x'`
   for (const m of text.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]/g)) {
     for (const raw of m[1].split(',')) {
-      const item = raw.trim();
+      const item = raw.trim().replace(/^type\s+/, '');
       if (!item) continue;
-      const alias = item.match(/\bas\s+([A-Za-z_$][\w$]*)$/);
-      const exported = alias ? alias[1] : item.split(/\s+/)[0];
-      if (!exported || !/^[A-Za-z_$][\w$]*$/.test(exported)) continue;
-      const arr = named.get(exported) ?? [];
-      arr.push(m[2]);
-      named.set(exported, arr);
+      const [imported, exported] = splitAlias(item);
+      if (!IDENT.test(exported) || !IDENT.test(imported)) continue;
+      // ★ `default` 不是 nodes 里的名字（匿名 default 根本没有节点）⇒ 不猜，标 skip
+      if (imported === 'default') {
+        skipped.set(exported, 'default-export');
+        continue;
+      }
+      push(exported, { source: m[2], imported, form: 'from' });
     }
   }
-  // ★ 只认 `export * from`：`export * as ns from` 不导出单个名字（只暴露 `ns.foo`），跟着连会连错
+
+  // 本地绑定：`import { A as B } from './x'` / `import * as ns from './x'`
+  const localImports = new Map<string, { source: string; imported: string }>();
+  const nsImports = new Map<string, string>();
+  for (const m of text.matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]/g)) {
+    for (const raw of m[1].split(',')) {
+      const item = raw.trim().replace(/^type\s+/, '');
+      if (!item) continue;
+      const [imported, local] = splitAlias(item);
+      if (IDENT.test(local) && IDENT.test(imported)) localImports.set(local, { source: m[2], imported });
+    }
+  }
+  for (const m of text.matchAll(/import\s+(?:type\s+)?\*\s*as\s+([A-Za-z_$][\w$]*)\s*from\s*['"]([^'"]+)['"]/g)) {
+    nsImports.set(m[1], m[2]);
+  }
+
+  // ② ★★ 别名再导出（本轮新增）：`export { B }` / `export { B as C }`（**没有 from**）
+  //   判据 = 「B 在本文件是 import 绑定」—— 查 `localImports` 这张表，不是猜同名。
+  //   `import { A as B } from './x'; export { B }` ⇒ B（或 C）在仓外的真名是 **A**。
+  for (const m of text.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}(?!\s*from\b)/g)) {
+    for (const raw of m[1].split(',')) {
+      const item = raw.trim().replace(/^type\s+/, '');
+      if (!item) continue;
+      const [local, exported] = splitAlias(item);
+      if (!IDENT.test(exported)) continue;
+      const bound = localImports.get(local);
+      if (bound) {
+        push(exported, { source: bound.source, imported: bound.imported, form: 'alias' });
+        continue;
+      }
+      if (nsImports.has(local)) {
+        // `import * as ns; export { ns }` = 导出**模块对象**，`ns` 不是符号 ⇒ 接不上单个节点
+        skipped.set(exported, 'namespace-object');
+      }
+      // 本地声明再导出（`const X` / `function X`）不是「再导出」：X 在本文件有节点，
+      // consumer 侧由「目标文件直接命中」那条路解决 —— 不记 named，也不标 skip。
+    }
+  }
+
+  // ★ `export * as ns from './x'`：只暴露 `ns.foo`，不导出单个名字（跟着连会连错）
+  for (const m of text.matchAll(/export\s*\*\s*as\s+([A-Za-z_$][\w$]*)\s*from\s*['"]([^'"]+)['"]/g)) {
+    skipped.set(m[1], 'namespace-object');
+  }
+  // ★ 只认 `export * from`
   for (const m of text.matchAll(/export\s*\*\s*from\s*['"]([^'"]+)['"]/g)) stars.push(m[1]);
-  const idx = { named, stars };
+
+  const idx: ReexportIndex = { named, stars, skipped };
   reexportCache.set(key, { mtimeMs: st.mtimeMs, idx });
   return idx;
 }
@@ -1264,8 +1364,13 @@ function reexportsOf(projectRoot: string, rel: string): ReexportIndex {
 /**
  * 沿 barrel 的 re-export 找符号（最多两跳：`index.ts → sub/index.ts → kernel.ts`）。
  *
- * ★ 歧义判据（**不猜**）：候选文件去重后必须**恰好 1 个**；0 个 = 没找到，>1 个 = barrel 里同名冲突
- *   （`export { x } from './a'` + `export { x } from './b'`）⇒ 返回 null，调用方保持 failed。
+ * ★ 别名形态（2026-10-22）：`import { A as B } from './x'; export { B }` —— 导出名 B 在 `./x`
+ *   里**没有节点**，真名是 A。判据落在 `ReexportSource.imported` 上：去来源文件查的是 **A**；
+ *   查不到就标 skip（**绝不拿 B 去猜**）。`export { B as C }` 同理：C 对外叫 C，仓内真名仍是 A。
+ * ★ 歧义判据（**不猜**）：候选（`file#qn`）去重后必须**恰好 1 个**；0 个 = 没找到，>1 个 = barrel 里
+ *   同名冲突（`export { x } from './a'` + `export { x } from './b'`）⇒ 返回 null，调用方保持 failed。
+ * ★ `miss` 是**出口**：每条没建边的原因（歧义 / 目标不在仓内 / 目标未索引 / 符号不存在 / skip 标签）
+ *   都往里投 —— 「跳过多少」必须能和「连上多少」一起报，不许静默。
  */
 function resolveReexportTarget(
   db: Database,
@@ -1276,30 +1381,71 @@ function resolveReexportTarget(
   kinds?: readonly string[],
   depth: number = 0,
   seen: Set<string> = new Set(),
+  miss?: ReexportMiss[],
+  indexedFiles?: ReadonlySet<string>,
 ): { file: string; qn: string } | null {
   if (depth > 2 || seen.has(barrelRel)) return null;
   seen.add(barrelRel);
   const idx = reexportsOf(projectRoot, barrelRel);
-  const sources = new Set<string>();
-  for (const s of idx.named.get(name) ?? []) sources.add(s);
-  for (const s of idx.stars) sources.add(s);
-  const hits = new Set<string>();
-  for (const source of sources) {
-    const target = resolveImportTarget(projectRoot, barrelRel, source);
-    if (!target || target === barrelRel) continue;
-    if (namesByFile.get(target)?.has(name)) {
-      hits.add(target);
+  const sources: ReexportSource[] = [
+    ...(idx.named.get(name) ?? []),
+    ...idx.stars.map((s) => ({ source: s, imported: name, form: 'from' as const })),
+  ];
+  if (sources.length === 0) {
+    const why = idx.skipped.get(name);
+    if (why) miss?.push({ why: `reexport-${why}`, detail: barrelRel });
+    return null;
+  }
+  const found = new Map<string, { file: string; qn: string }>();
+  for (const src of sources) {
+    // 包名 / 根外路径：目标在仓外 —— 这是 external 的语义，不是漏连
+    if (!src.source.startsWith('.')) {
+      miss?.push({ why: 'reexport-target-outside-repo', detail: `${barrelRel} → ${src.source}` });
       continue;
     }
-    const nested = resolveReexportTarget(db, projectRoot, target, name, namesByFile, kinds, depth + 1, seen);
-    if (nested) hits.add(nested.file);
+    const target = resolveImportTarget(projectRoot, barrelRel, src.source);
+    if (!target || target === barrelRel) {
+      miss?.push({ why: 'reexport-target-not-found', detail: `${barrelRel} → ${src.source}` });
+      continue;
+    }
+    // ★ 盘上有、索引里没有（`../dist/...` 这类）：与「符号不存在」分开报
+    if (indexedFiles && !indexedFiles.has(target)) {
+      miss?.push({ why: 'reexport-target-not-indexed', detail: `${barrelRel} → ${target}` });
+      continue;
+    }
+    if (namesByFile.get(target)?.has(src.imported)) {
+      const q = db
+        .prepare('SELECT kind, qualified_name FROM nodes WHERE file_path = $tp AND name = $n LIMIT 1')
+        .get({ tp: target, n: src.imported }) as { kind: string; qualified_name: string } | undefined;
+      if (!q) {
+        miss?.push({ why: 'reexport-source-lookup-missed', detail: `${target}#${src.imported}` });
+      } else if (kinds && !kinds.includes(q.kind)) {
+        miss?.push({ why: 'reexport-kind-mismatch', detail: `${target}#${src.imported}(${q.kind})` });
+      } else {
+        found.set(`${target}#${q.qualified_name}`, { file: target, qn: q.qualified_name });
+      }
+      continue;
+    }
+    const before = miss?.length ?? 0;
+    const nested = resolveReexportTarget(
+      db, projectRoot, target, src.imported, namesByFile, kinds, depth + 1, seen, miss, indexedFiles,
+    );
+    if (nested) {
+      found.set(`${nested.file}#${nested.qn}`, nested);
+    } else if (miss && miss.length === before) {
+      // 下一层没给原因（超深 / 成环）—— 本层补上，不漏账
+      miss.push({ why: 'reexport-chain-unresolved', detail: `${target}#${src.imported}` });
+    }
   }
-  if (hits.size !== 1) return null;
-  const file = [...hits][0];
-  const q = db
-    .prepare('SELECT kind, qualified_name FROM nodes WHERE file_path = $tp AND name = $n LIMIT 1')
-    .get({ tp: file, n: name }) as { kind: string; qualified_name: string } | undefined;
-  return q && (!kinds || kinds.includes(q.kind)) ? { file, qn: q.qualified_name } : null;
+  if (found.size === 0) return null;
+  if (found.size > 1) {
+    miss?.push({
+      why: 'reexport-ambiguous',
+      detail: [...found.values()].map((v) => `${v.file}#${v.qn}`).join(' | '),
+    });
+    return null;
+  }
+  return [...found.values()][0];
 }
 
 /**
@@ -1416,6 +1562,12 @@ export interface CrossFileResolveStats {
   external: number;
   /** 未匹配到目标符号，标 status='failed'（不再重试） */
   failed: number;
+  /**
+   * ★ 2026-10-22：re-export 没建边的**原因分布**（why → 条数）。
+   * 为什么开这一栏：任务卡判据要求「连上多少 / 跳过多少」必须一起报 ——
+   * 只回一个 resolved，跳过的那批就是**静默少报**。
+   */
+  reexportSkipped?: Record<string, number>;
 }
 
 /**
@@ -1543,6 +1695,11 @@ export function resolveCrossFileCalls(
     goFilesByDir.set(dir, arr);
   }
 
+  // ★ 2026-10-22：已建索引的文件集 —— 用来把「目标文件不在索引里」与「目标文件里没这个符号」分开报。
+  //   （`../dist/...` 这类：盘上有、索引里没有 ⇒ 不是漏连，是没扫到。）
+  const indexedFiles = new Set(
+    (db.prepare('SELECT path FROM files').all() as Array<{ path: string }>).map((row) => row.path),
+  );
   const updResolved = db.prepare("UPDATE unresolved_refs SET status='resolved' WHERE id = $i");
   // ★ 2026-10-21：状态与**原因标签**一起写（candidates 列）——「没建边」不许静默：
   //   external = 目标在仓外（不是漏连）· failed = 证不出来（suspect/unknown），要能查到为什么。
@@ -1553,14 +1710,19 @@ export function resolveCrossFileCalls(
   );
   const CROSS_META = JSON.stringify({ cross: true });
 
-  const stats: CrossFileResolveStats = { total: rows.length, resolved: 0, external: 0, failed: 0 };
+  const stats: CrossFileResolveStats = { total: rows.length, resolved: 0, external: 0, failed: 0, reexportSkipped: {} };
   // ★ 索引**不完整**阶段（后台续建途中）不要急着判 failed：目标符号可能只是还没索引到。
   //   一旦标 failed 就永不重试 ⇒ 最终索引会永久缺跨文件边。此时留 pending，等补完再一次性定论。
   const keepPending = opts.keepUnresolvedPending === true;
-  const markUnresolved = (id: number, why = 'cross-target-not-found'): void => {
+  const markUnresolved = (id: number, why = 'cross-target-not-found', detail?: string): void => {
     if (keepPending) return;
-    updFailed.run({ i: id, cd: JSON.stringify({ verdict: 'suspect', why }) });
+    updFailed.run({
+      i: id,
+      cd: JSON.stringify(detail ? { verdict: 'suspect', why, detail } : { verdict: 'suspect', why }),
+    });
     stats.failed++;
+    // ★ 2026-10-22：re-export 类的跳过**进账**（回执要和 resolved 一起报，不许只报成功数）
+    if (why.startsWith('reexport-')) stats.reexportSkipped![why] = (stats.reexportSkipped![why] ?? 0) + 1;
   };
   // ★★ 事务包裹（2026-09-14 实测的关键修正）：本函数要写大量 edges / unresolved_refs 行。
   //   不包事务 = 每条语句各自 autocommit ⇒ **每条一次 fsync** ⇒ 实测 20 文件规模的一批要 1.7s
@@ -1572,6 +1734,8 @@ export function resolveCrossFileCalls(
     const rel = r.from_node_id.split('#')[0];
     const expr = r.reference_name;
     const kind = r.reference_kind as 'call' | 'type_ref';
+    // ★ 2026-10-22：本条引用的「没建边原因」暂存器（一行一个，不复用：上一条的原因不能写进下一条）
+    const miss: ReexportMiss[] = [];
 
     if (kind === 'type_ref') {
       if (BUILTIN_TYPES.has(expr)) {
@@ -1580,14 +1744,15 @@ export function resolveCrossFileCalls(
         continue;
       }
       const t =
-        findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, typeNamesByFile, ['interface', 'type', 'class'])
+        findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, typeNamesByFile, ['interface', 'type', 'class'], miss, indexedFiles)
         ?? findGoSamePackageTarget(db, rel, expr, ['interface', 'type', 'class'], goFilesByDir);
       if (t) {
         insEdge.run({ src: r.from_node_id, tgt: `${t.file}#${t.qn}`, k: 'type_ref', ln: r.line, md: CROSS_META });
         updResolved.run({ i: r.id });
         stats.resolved++;
       } else {
-        markUnresolved(r.id);
+        // ★ 2026-10-22：把 re-export 那条路「为什么没建边」写进 failed 的 why（不再是笼统的 not-found）
+        markUnresolved(r.id, miss[0]?.why ?? 'cross-target-not-found', miss[0]?.detail);
       }
       continue;
     }
@@ -1632,7 +1797,7 @@ export function resolveCrossFileCalls(
     // 无点调用：沿 relative imports 定位目标文件（目标必须是**可调用**符号）
     const target =
       (boundByName
-        ? findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, symbolsByFile, ['function', 'const'])
+        ? findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, symbolsByFile, ['function', 'const'], miss, indexedFiles)
         : null)
       ?? findGoSamePackageTarget(db, rel, expr, ['function'], goFilesByDir);
     if (target) {
@@ -1640,7 +1805,8 @@ export function resolveCrossFileCalls(
       updResolved.run({ i: r.id });
       stats.resolved++;
     } else {
-      markUnresolved(r.id);
+      // ★ 2026-10-22：别名再导出没接上时，failed 的 why 要说清楚是哪一种（歧义/仓外/未索引/符号不在）
+      markUnresolved(r.id, miss[0]?.why ?? 'cross-target-not-found', miss[0]?.detail);
     }
   }
   if (ownTx) db.exec('COMMIT');
@@ -1671,6 +1837,10 @@ function findCrossFileTarget(
   namesByFile: Map<string, Set<string>>,
   /** 目标必须是的符号 kind（call → function/const；type_ref → interface/type/class）；缺省不限 */
   kinds?: readonly string[],
+  /** 没建边的原因出口（re-export 那一段会往里投「为什么跳过」） */
+  miss?: ReexportMiss[],
+  /** 已建索引的文件集：区分「目标不在索引里」与「目标里没这个符号」 */
+  indexedFiles?: ReadonlySet<string>,
 ): { file: string; qn: string } | null {
   const imports = relImportsByFile.get(fromRel);
   if (!imports) return null;
@@ -1688,8 +1858,10 @@ function findCrossFileTarget(
       if (q && (!kinds || kinds.includes(q.kind))) return { file: target, qn: q.qualified_name };
     }
     // ★ 2026-10-21：barrel re-export —— 目标文件只是 `export { x } from './kernel.js'`，符号在下一层。
-    //   判据见 resolveReexportTarget：候选文件必须**唯一**，同 barrel 里同名冲突 ⇒ 不猜（保持 failed）。
-    const viaBarrel = resolveReexportTarget(db, projectRoot, target, name, namesByFile, kinds);
+    // ★ 2026-10-22：别名再导出同样走这里（`import { A as B }; export { B }`）——
+    //   resolveReexportTarget 拿**来源真名 A** 去查，不是拿 B 猜。
+    //   判据见 resolveReexportTarget：候选必须**唯一**，同 barrel 里同名冲突 ⇒ 不猜（保持 failed 并记 why）。
+    const viaBarrel = resolveReexportTarget(db, projectRoot, target, name, namesByFile, kinds, 0, new Set(), miss, indexedFiles);
     if (viaBarrel) return viaBarrel;
   }
   return null;

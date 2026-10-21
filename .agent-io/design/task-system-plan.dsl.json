@@ -53722,19 +53722,40 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_symbols_ts\"].responsibility"
           },
-          "owner": "subagent:call-edges",
-          "claimed_at": "2026-10-21T12:18:19.767Z",
+          "owner": "subagent:t360-alias",
+          "claimed_at": "2026-10-21T18:05:16.103Z",
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/infrastructure/index/symbols.ts",
+                "name": "findCrossFileTarget",
+                "fp": "3ef2e2a6e366fac60ccb83054ab2c656fe89c280"
+              },
+              {
+                "file": "src/infrastructure/index/symbols.ts",
+                "name": "reexportsOf",
+                "fp": "b72d4b2ba1485c8c17410009b43d565d4d81fbfd"
+              },
+              {
+                "file": "src/infrastructure/index/symbols.ts",
+                "name": "resolveCrossFileCalls",
+                "fp": "31db45f022d13498fa390c0d9e063bbef285f513"
+              },
+              {
+                "file": "src/infrastructure/index/symbols.ts",
+                "name": "resolveReexportTarget",
+                "fp": "c2705b0af3082a3798e7f49d07a932c2f7ba642e"
+              }
+            ],
             "files": [
               {
                 "path": "src/infrastructure/index/symbols.ts",
-                "content_hash": "53cd6e60554f2a5808e418c77338b1003ada735d"
+                "content_hash": "aafaf89349a6f09d908ccdcdee3cb18f6d635348"
               }
             ],
-            "computed_at": "2026-10-21T12:18:19.728Z",
+            "computed_at": "2026-10-21T18:05:16.070Z",
             "basis": [
-              "node-path"
+              "declared"
             ]
           }
         },
@@ -102037,11 +102058,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T17:52:51.507Z",
+    "saved_at": "2026-10-21T18:05:16.132Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 21648696,
+    "age": 22393321,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
