@@ -456,6 +456,11 @@ async function deprecateOfflineCore(opts: DeprecateOfflineOptions, sink: Depreca
         // ★ 物理删除**留住**了才记（另一支是"删后编译回归 ⇒ 已恢复源文件" ⇒ 不记）。
         sink.written = [...(sink.written ?? []), ...trulyRemovable];
       } else {
+        // ★★★ 2026-10-22：**这是本轮唯一保留的裸写（没收进写原语），理由不是懒**：
+        //   它发生在「文件已经 `rmSync` 删掉、编译回归 ⇒ 必须把内容放回去」这一刻 —— 是**回滚**，不是改源码。
+        //   若把它塞进写原语，闸的拒绝（`owner !== actor` 那种）会落在一个"文件此刻已不在盘上"的时刻：
+        //   拒一次 = 源码永久丢失。★ 回滚不具备"换个写法重试"的余地，它的正确性优先于闸的仪式。
+        //   ⇒ 记在这里等"回滚要不要过闸"这条口径定下来再动（见 todo 卡：写闸覆盖面 · 剩余 8 处）。
         for (const [f, src] of backups) fs.writeFileSync(path.join(proj, f), src, 'utf-8');
         for (const it of items)
           if (trulyRemovable.has(it.module_file!)) {

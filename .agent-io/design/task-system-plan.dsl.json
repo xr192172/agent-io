@@ -20362,8 +20362,8 @@
             }
           ],
           "state": "claimed",
-          "owner": "subagent:account",
-          "claimed_at": "2026-10-21T09:59:05.196Z",
+          "owner": "subagent:write-primitive",
+          "claimed_at": "2026-10-21T17:15:08.267Z",
           "evidence": [
             {
               "kind": "attestation",
@@ -20388,7 +20388,156 @@
               "verdict": "pass"
             }
           ],
-          "reopened_at": "2026-10-20T11:15:57.812Z"
+          "reopened_at": "2026-10-20T11:15:57.812Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "EMPTY_CROSS",
+                "fp": "c2eb393eb4bf503fa247c302859144e205a41e60"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "GateCoverage",
+                "fp": "b6f05c3c3d7c2c1c21c8412e4319f07ac9bbcf29"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "GateCoverageFeature",
+                "fp": "83892fc762bcffe4abdda43eb1992b3ae2f3045c"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "SELF_WRITE_MAX",
+                "fp": "154b9afddffb207d432b38a9981cb90f050dd6eb"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "SourceWriteReport",
+                "fp": "cb91756208e86999d5a06cda9cfe2eff715c9f33"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "TaskGateBasis",
+                "fp": "728e55d0fe34c94befbe592eb8443069e0132281"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "TaskGateOutcome",
+                "fp": "043531777bcd8599c8b42c63e8076b7c6605ee30"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "WriteActor",
+                "fp": "98a20e995c6922fdfd17d96a7222f8b7bb0614d2"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "WriteThroughOutcome",
+                "fp": "7c8080295e42d08d63a854eb33a168cfe188f507"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "assertSourceWriteRegistered",
+                "fp": "11ec39971d77fd134b10e6935d6b45318266c96d"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "assertSourceWriteRegisteredFor",
+                "fp": "1e41ffa2b981fe77e2f43792d4dac47c3da186bd"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "collectGateCoverage",
+                "fp": "a38cd69bd7e75df0ba44b0696bb3ecdcb8195d15"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "finishWriteThrough",
+                "fp": "b697b864fad80e142bfa403bc491946484dcf9e5"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "hasLiveIndex",
+                "fp": "af5b17d9c1746f2040add471d01c00aa2aaa1b76"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "nodeFilePath",
+                "fp": "250b4ba76cd468d328859e6c74edb83a3e689600"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "recordSelfWrite",
+                "fp": "ab2092939c99bf42e864c33172fb3e0943f631ce"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "recordUnaddressableWarnings",
+                "fp": "38f7bf5f3cfc9d9d222851d8c76d7646701c7018"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "reopenAndResolveAfterWrite",
+                "fp": "50b0f59743943fb76f885006e016c6acdbb38385"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "reopenNote",
+                "fp": "b28196a3066653141efd133405bc4358d08f535e"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "resolveActor",
+                "fp": "c65d7010777ef948e87eefbe392afd99d2357aac"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "resolveRefsAfterWrite",
+                "fp": "892b6e63282b82fda0ec0800d4c86b5968c675d8"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "snapshotAndRecordSelfWrite",
+                "fp": "b1f44122758fcc2b3b7e8e13de6d0cb7ab93b806"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "syncSelfWrites",
+                "fp": "e18c2e2f5842a2db0b5738b0f9aa2473c328112f"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "syncSelfWritesSync",
+                "fp": "e7ee2a06c0d242ef5d15a3f7312901ebc4a2ca04"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "writeSelfWrites",
+                "fp": "8af7e322ec0665854bdf1924223c07bcb508c794"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "writeSourceFiles",
+                "fp": "43683febb1916084e1044c7d771b3e00bda9eff1"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "writeThroughLine",
+                "fp": "ee17ee419198d63654ef000a2732a05ad8796e73"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/write_gate.ts",
+                "content_hash": "f5f8af3057296cf9d759176936a2fd64aad0a30e"
+              }
+            ],
+            "computed_at": "2026-10-21T17:15:08.218Z",
+            "basis": [
+              "expectations"
+            ]
+          }
         },
         "decision_history": [
           {
@@ -101888,11 +102037,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T15:13:13.412Z",
+    "saved_at": "2026-10-21T17:43:17.922Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 12070601,
+    "age": 21075111,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -104272,6 +104421,27 @@
     {
       "id": "todo_reopen-evidence-deadlock",
       "summary": "【重开后的收口死锁】done 卡走 claim intent=modify（内部 t_reopen，落 reopened_at）后，若判据没换：\n· 用 attestation（at ≥ reopened_at）收口 ⇒ 被 src/application/design/dsl_ops/status_tools.ts:93 拒：「节点已有机器判据（progress_evidence.kind='expectations'）⇒ 不许用口供覆盖」；\n· 改用 expectations{all_green:true,unsupported:0} 收口 ⇒ 被 src/application/design/dsl_ops/task_ops.ts#reopenGate 拒：「重开未结清时 expectations 没有时间戳，就是旧判据再跑一遍」；\n⇒ 两条闸单独都对，合起来把「重开后判据未变」这一类卡钉死。★ 实测只有 reading（command/observed/at）能同时过两闸——而两处报错的「二选一」都没提这条路。\n判据：二选一——① status_tools 在「本次 complete 带来的新证据」场景放行 attestation（只写入 task.evidence，不覆盖 anchor 的历史 expectations 权威）；或 ② reopenGate 承认「带 at ≥ reopened_at 且带代码指纹/covers 的 expectations」。并配一条证：done → claim(intent=modify) → complete(attestation) 必须能收口；同时零工作量（判据未变且无新证据）仍必须拒——两条都要实测。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_10-处-无闸源码写-无法直接塞进写原语-需先定它们的身份与授权口径-清单-实测",
+      "summary": "10 处**无闸源码写**无法直接塞进写原语 —— 需先定它们的身份与授权口径。清单（实测）：`src/application/design/derive/derive_split.ts:1021,1022,1030,1045`、`src/infrastructure/analysis/diagnosis/repair.ts:236,246`、`src/infrastructure/analysis/observe/instrument_skeleton.ts:395`、`instrument.ts:187`、`go_instrument.ts:345`、`authoring/version_upgrade/rewrite.ts:133`。这 6 个工具（split_stage / diagnose_loop apply / observe instrument / uninstrument / go.mod 修补 / upgrade apply）**从来没有 actor、没有卡的概念**：塞进 `source_writer` 等于给它们**新增**一道闸（= 行为变更，在有卡的仓里会被拒），而且它们的签名里没有 ctx 可传。★ 先决定「给不给它们闸」，再决定「怎么给」；判据两条：① 有无 owner 可自报；② 这些工具的写是不是「改用户源码」（derive_split 是、instrument 是、repair 是）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_覆盖写还剩-8-处没进原语-6-个语言包各-1-处-writefilesync-",
+      "summary": "覆盖写还剩 8 处没进原语：6 个语言包各 1 处 `writeFileSync`（`src/infrastructure/analysis/rename_symbol/languages/ts.ts:172,179`、`c.ts:185`、`go.ts:277`、`py.ts:251`、`namespace_family.ts:350`）+ `src/application/refactor/rename/rename_symbols.ts:854`（applyLiteralPlan）+ `src/application/refactor/deprecate_offline/deprecate_offline.ts:464`（删后回滚 restore）。★ 前 7 处的根因不是懒：`infrastructure/` **不能 import** `application/source_writer`（会造基础设施→应用层倒挂，本仓刚在 bea663df 拆掉唯一一处 domain→application 倒挂）。两条路：① 给 `renameSymbol` 注入 `write(abs, content)`（动 `parts.ts` + 5 个包 + `core.ts` + `rename_symbols`，约 8 个文件）；② 让引擎「返回待写内容」，由 application 层用 `writeSourceBatch` 落盘。★ 附带：`EditReceipt.task_gate` 已是必填（tsc 能报出漏接，实测报 2 条），但 `RenameFileResult` / `RenameFilesResult` / `SymbolMoveResult` 还有 **23 处构造点**（rename_file 6 / rename_files 6 / symbol_move 11，tsc 实测）没补 —— 补齐后才允许删掉那 4 处历史注释里剩下的 3 条。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_写闸的判据只覆盖-覆盖写-移动-删除-追加-57-处仍是裸调-实测-fs-ren",
+      "summary": "写闸的判据只覆盖「覆盖写」：**移动/删除/追加** 57 处仍是裸调（实测 `fs.renameSync|copyFileSync|unlinkSync|rmSync` 50 处 + `appendFileSync` 7 处），而且多数**改的是用户源码** —— `rename_file` 的 `copyFileSync(fromAbs, toAbs)` + `unlinkSync(fromAbs)`、`refactor_pipeline` 的 `fs.renameSync(m.from, m.to)`（文件搬移）、`deprecate_offline` 的 `fs.rmSync(..., {force:true})`（物理删模块文件）。★ 判据红线：**不许**写「`writeFileSync` = 0 ⇒ 收口」那种判据（那是假绿 —— 移动/删除仍在闸外，源码会静默消失）。要做的是把原语的判据扩成「写·移·删·追加」四类，或明确「移动/删除走另一条通道」并给出那条通道的闸。",
       "expectations": [],
       "state": "candidate",
       "owner": null

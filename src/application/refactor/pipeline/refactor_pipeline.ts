@@ -47,7 +47,9 @@ import type { JudgeIssue } from './refactor_judge.js';
 import { scanContracts, diffContracts, type ContractSnapshot, type ScanContractsOptions, type UndefinedRef } from '../../../infrastructure/analysis/contract_gate/index.js';
 import { checkEmbedSubmissions, type SubmitCheckResult } from '../../../infrastructure/analysis/submit_gate/index.js';
 import { planFunctionAnnotation } from '../annotate/function_annotation.js';
-import { syncSelfWrites, recordSelfWrite, writeThroughLine, assertSourceWriteRegisteredFor, resolveActor } from '../../write_gate.js';
+import { syncSelfWrites, recordSelfWrite, writeThroughLine } from '../../write_gate.js';
+// ★★ 2026-10-22：落盘改走**唯一写原语**（事务：一次判闸 + 一份写前快照 + 逐文件 commit + close 收尾）。
+import { openSourceWrite } from '../../source_writer.js';
 
 // re-export 契约类型（向后兼容：外部可从本模块取用）
 export type {
@@ -640,7 +642,14 @@ export async function runRefactorPipeline(opts: PipelineOptions): Promise<Pipeli
       ...plan.absToNew.keys(),
       ...moves.flatMap((m) => [m.from, m.to]),
     ];
-    const gate = assertSourceWriteRegisteredFor(proj, gateFiles, resolveActor(opts.actor), opts.authorize);
+    // ★★★ 2026-10-22：闸 + 写前快照收进**唯一写原语**（事务形态）。
+    //   本步的落盘是「先移动、再写内容、失败要回滚」 ⇒ 内容边算边落，必须用事务：
+    //   一次判闸 + 一份写前快照，`commit` 只许落 `gateFiles` 里的路径。
+    const txn = openSourceWrite(proj, gateFiles, {
+      label: `refactor_pipeline:${id}#${index}`,
+      actor: opts.actor,
+      authorize: opts.authorize,
+    });
 
     // ── 落盘（基于当前盘上内容——上一步已绿）──
     // 1) 先移动文件（先移动，absToNew 里移动后文件的 key 是其 to 路径，随后写覆盖）
@@ -656,7 +665,7 @@ export async function runRefactorPipeline(opts: PipelineOptions): Promise<Pipeli
     for (const abs of plan.absToNew.keys()) {
       const dir = path.dirname(abs);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(abs, plan.absToNew.get(abs)!, 'utf-8');
+      txn.commit(abs, plan.absToNew.get(abs)!);
     }
     const units = plan.units ?? (id === 'dead_statements' ? plan.absToNew.size : 0);
 
@@ -677,7 +686,7 @@ export async function runRefactorPipeline(opts: PipelineOptions): Promise<Pipeli
           fs.renameSync(m.to, m.from);
         }
       }
-      for (const [abs, orig] of plan.originals) fs.writeFileSync(abs, orig, 'utf-8');
+      for (const [abs, orig] of plan.originals) txn.commit(abs, orig);
       r.total_files_changed -= Math.max(plan.absToNew.size, moves.length);
       r.total_units_removed -= units;
       r.ok = false;
@@ -697,8 +706,12 @@ export async function runRefactorPipeline(opts: PipelineOptions): Promise<Pipeli
     // 与 L4 reconcile 兜底；这比收编前"整步不同步"严格更好。
     const finalize = async (stage: StageResult): Promise<void> => {
       // ★ 闸的放行读数**逐字**上回执（A7 那条 / 授权 scope / 豁免名单）—— 判了不说 = 白判。
-      stage.task_gate = gate.note;
+      stage.task_gate = txn.task_gate;
       try {
+        // ★ 2026-10-22：写穿仍走 **async 版**（实测差异，别改成 `txn.close()`）：
+        //   本步含"移动"（`renameSync`），同步写穿在 `v2/thing.go` 已挪走的那一步会抛
+        //   `reference re-resolve failed: ENOENT`（t357 ⑤d 实测），而 async 版按存在性移除后重开引用不抛。
+        //   ⇒ 原语只管「判 → 拍 → 写」；索引写穿仍是调用方的事（原语里的 `close()` 是给同步写路的替代品）。
         const out = await syncSelfWrites(proj, gateFiles);
         if (out) stage.index_note = writeThroughLine(out);
         // out 为 null = 该项目没有索引 ⇒ 只真写、不写穿、绝不凭空建索引

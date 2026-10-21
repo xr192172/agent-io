@@ -49,7 +49,11 @@ import { syncFile } from '../../../infrastructure/index/symbols.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/text/line_utils.js';
 import { snapshotBeforeWrite } from '../snapshot/file_snapshot.js';
-import { assertSourceWriteRegistered, reopenAndResolveAfterWrite, reopenNote, assertSourceWriteRegisteredFor, resolveActor, exemptionLines, type GateExemption } from '../../write_gate.js';
+import { assertSourceWriteRegistered, reopenAndResolveAfterWrite, reopenNote, resolveActor, exemptionLines, type GateExemption } from '../../write_gate.js';
+// ★★ 2026-10-22：落盘改走**唯一写原语**（`openSourceWrite` 事务：整批判一次闸 + 一份写前快照 + 逐文件 commit）。
+//   ★ 本工具**不调 `close()`**：它的索引写穿走自己的 `syncFile`（要 `symbol_diff` 读数）+ `reopenAndResolveAfterWrite`；
+//     `close()` 里的『登记自写 + 写穿 + 基线刷新』是给没有 async 索引通道的同步写路的替代品。
+import { openSourceWrite, type SourceWriteTxn } from '../../source_writer.js';
 // ★★★ 2026-10-21（并发控制·读集比对）：回执里的**假设检定**（与 `task_gate` 两件事）。
 //   ★ 判定在写闸（`write_gate` 是唯一判据处），这里只**带出**读数 + 写后刷新写者自己的基线。
 import { assumptionLines, refreshAfterOwnWrite, type AssumptionCheck } from '../../read_set.js';
@@ -393,7 +397,7 @@ export interface EditReceipt {
    *   ⇒ 闸写了几百行的“凭什么放行”与“豁免了谁”，**从未进过任何回执**（只拦不说）。
    *   ⇒ 而“豁免必须可查，不许静默”正靠这一行落地（`write_gate.ts#exemptionLines`）。
    */
-  task_gate?: string;
+  task_gate: string;
   /**
    * ★★★ 2026-10-21（并发控制·读集比对）：**写前假设检定** —— 「我/别人读过的符号，现在是哪一版」。
    * ★ 与 `task_gate` **两个字段、两条判据**：`task_gate` 管身份（A7），本字段管假设是否过期。
@@ -524,6 +528,8 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
   }
 
   const fileExists = fs.existsSync(absPath);
+  /** ★ 2026-10-22：本工具一次调用只改一个文件 ⇒ 一个事务；`dry_run` 时**不建**（不判闸、不拍空快照）。 */
+  let txn: SourceWriteTxn | undefined;
   if (!fileExists && op !== 'insert') {
     throw new Error(`文件不存在: ${absPath}（insert 可创建新文件，replace/delete 不行）`);
   }
@@ -543,19 +549,21 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     //   （这就是"判据在、代码在、入口没接"那一类的具体形状：一个空括号。）
     // ★★★ 2026-10-21（读集比对）：**把"我要改哪个符号"交给闸** —— 只有 replace / delete 会动符号本体
     //   （insert 是加新符号、replace_text 是文本级 ⇒ 都退到文件粒度；**粒度由事实决定，不假装**）。
-    const g = assertSourceWriteRegisteredFor(
-      projectRoot,
-      [relPath],
-      resolveActor(args.actor),
-      args.authorize,
-      op === 'replace' || op === 'delete' ? [{ file: relPath, symbol: args.symbol! }] : undefined,
-    );
+    // ★★★ 2026-10-22：闸 + 写前快照收进**唯一写原语**（事务形态）。
+    //   改前：这里判闸、拍快照，然后 6 个分支各自 `fs.writeFileSync` —— 闸与落盘点隔着几十行，
+    //   任何一条分支忘了判就是一个静默撒谎点（本仓 25 处裸写里的头一份）。
+    //   ★ 读集检定仍到**符号级**：只有 replace / delete 动符号本体（insert / replace_text 退到文件级）。
+    txn = openSourceWrite(projectRoot, [relPath], {
+      label: `edit_code:${op}:${relPath}`,
+      actor: args.actor,
+      authorize: args.authorize,
+      ...(op === 'replace' || op === 'delete' ? { symbols: [{ file: relPath, symbol: args.symbol! }] } : {}),
+    });
     if (gateOut) {
-      gateOut.note = g.note;
-      gateOut.exempted = g.exempted;
-      gateOut.assumption = g.assumption_check;
+      gateOut.note = txn.task_gate;
+      gateOut.exempted = txn.exemptions;
+      gateOut.assumption = txn.assumption_check;
     }
-    snapshotBeforeWrite(projectRoot, `edit_code:${op}:${relPath}`, [relPath]);
   }
 
   // ── insert 新文件：直接写入 + 索引 ──
@@ -575,7 +583,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
       };
     }
     fs.mkdirSync(path.dirname(absPath), { recursive: true });
-    fs.writeFileSync(absPath, content, 'utf8');
+    txn!.commit(absPath, content);
     const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
     const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
     return {
@@ -640,7 +648,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
           `[干跑] replace ${relPath} 的 ${args.symbol} body（L${body.startLine}-${body.endLine}），语法门通过，未写盘:\n${preview}`,
       };
     }
-    fs.writeFileSync(absPath, newContent, 'utf8');
+    txn!.commit(absPath, newContent);
     const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
     const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
     const diffNote = sync.symbol_diff
@@ -700,7 +708,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
       };
     }
 
-    fs.writeFileSync(absPath, newContent, 'utf8');
+    txn!.commit(absPath, newContent);
     const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
     const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
     const diffNote = sync.symbol_diff
@@ -746,7 +754,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
         },
       };
     }
-    fs.writeFileSync(absPath, plan.newContent, 'utf8');
+    txn!.commit(absPath, plan.newContent);
     const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
     const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
     const diffNote = sync.symbol_diff
@@ -904,7 +912,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
   }
 
   // ── 写盘 + 索引重建（新鲜度闭环） ──
-  fs.writeFileSync(absPath, newContent, 'utf8');
+  txn!.commit(absPath, newContent);
   const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
   const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
 
@@ -1037,6 +1045,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   let gateExempted: GateExemption[] = [];
   /** ★ 2026-10-21：假设检定读数（批量是 `replace_text` ⇒ **文件级**，`symbol:null`） */
   let gateAssumption: AssumptionCheck | undefined;
+  /** ★ 2026-10-22：批量路的事务（整批一次判闸 + 一份写前快照）；干跑/被原子性拦下时**不建** */
+  let batchTxn: SourceWriteTxn | undefined;
   if (!dry && !blockedByAtomic) {
     // ★★★ T328 步 6：**未登记不许落盘** —— 整批先过一次闸（一次判定，失败 ⇒ 一个文件都不写）。
     // ★★ 2026-10-20：返回值**不许再丢**（豁免要在回执里点名）。
@@ -1045,19 +1055,25 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     //   ★ 全批都是空操作 ⇒ 一个文件都不写 ⇒ **闸根本不跑**（那时回执也不该凭空多一个 `task_gate`，
     //     否则会印一句“没有落在项目根内的文件”去描述一件根本没发生的事）。
     const writeRels = [...new Set(plans.filter((p) => p.ok && !p.noop).map((p) => p.file))];
-    const gate = writeRels.length
-      ? assertSourceWriteRegisteredFor(projectRoot, writeRels, resolveActor(args.actor), args.authorize)
-      : null;
-    gateNote = gate?.note;
-    gateExempted = gate?.exempted ?? [];
-    gateAssumption = gate?.assumption_check;
+    // ★★★ 2026-10-22：整批开一次闸 + **一份**写前快照（唯一写原语的事务形态）。
+    //   ★ 与改前的**有意**差别：快照粒度从"逐文件一份"变成"整批一份" —— 同一次调用本来就是一个撤回点。
+    //     它可观察（`snapshot(action="list")` 的条目数、`rollback latest` 的语义），故在此明写。
+    batchTxn = writeRels.length
+      ? openSourceWrite(projectRoot, writeRels, {
+          label: `edit_code:batch:${writeRels.length} 文件`,
+          actor: args.actor,
+          authorize: args.authorize,
+        })
+      : undefined;
+    gateNote = batchTxn?.task_gate;
+    gateExempted = batchTxn?.exemptions ?? [];
+    gateAssumption = batchTxn?.assumption_check;
     for (const absPath of [...new Set(plans.filter((p) => p.ok && !p.noop).map((p) => p.absPath))]) {
       const rel = path.relative(projectRoot, absPath).split(path.sep).join('/');
       // 逐文件一份快照（**不是**"一份含全部文件"）。粒度这条**证不出必要性**（见文件头「落盘形态」块），
       // 但本笔**不动它**：改粒度 = 改**可观察**行为（`snapshot(action="list")` 条目数、`rollback latest` 的语义），
       // 那是另一笔"行为变更"，与本笔的"同一件事有没有多份实现"无关。
-      snapshotBeforeWrite(projectRoot, `edit_code:batch:${rel}`, [rel]);
-      fs.writeFileSync(absPath, virtual.get(absPath)!, 'utf8');
+      batchTxn!.commit(absPath, virtual.get(absPath)!);
       const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
       // ★★★ T245（2026-10-13）：**别把算出来的东西扔掉** —— 原来是 `const _rw = await …; void _rw;`，
       //   而**同一件事**在**内联四件套**那条路上是**报出来的**（`reopenNote(_rw)` 进了回执，
@@ -1139,6 +1155,9 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       file: `${plans.length} files`,
       dry_run: dry,
       written: !dry && !blockedByAtomic && writtenFiles.size > 0,
+      // ★ 2026-10-22：`task_gate` 在 `EditReceipt` 里已是**必填** ⇒ 闸没跑的那两种处境必须**说出来**
+      //   （`dry_run` 不落盘 / 被 `atomic` 拦下），而不是留空字段让它看起来"没判也没事"。
+      task_gate: gateNote ?? '（未判闸：dry_run 或 被 atomic 拦下 ⇒ 本批一个字节都没落盘）',
       items,
       total: plans.length,
       succeeded,
@@ -1165,6 +1184,8 @@ async function editCodeCore(args: EditCodeArgs): Promise<{ message: string; data
     file: String(args.file),
     dry_run: args.dry_run === true,
     written: args.dry_run !== true,
+    // ★ 2026-10-22：`EditReceipt.task_gate` 是**必填** ⇒ 干跑也要给读数（干跑不判闸、不快照、不写盘）。
+    task_gate: gateOut.note ?? '（未判闸：dry_run ⇒ 不快照、不写盘）',
   };
   // ★★★ 2026-10-20（`docs/certs-4-ways.md` ③）：**豁免必须点名，不许静默** ——
   //   点名写在**人读消息**里（不只埋在 `---DATA---` 里：没人会去析 JSON 看自己是不是被豁免了）。

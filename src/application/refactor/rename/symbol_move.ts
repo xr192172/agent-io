@@ -44,7 +44,9 @@ import { attachGateNote } from '../gate_note.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/text/line_utils.js';
 import { snapshotBeforeWrite } from '../snapshot/file_snapshot.js';
-import { reopenAndResolveAfterWrite, assertSourceWriteRegisteredFor, resolveActor } from '../../write_gate.js';
+import { reopenAndResolveAfterWrite } from '../../write_gate.js';
+// ★★ 2026-10-22：落盘改走**唯一写原语**（`openSourceWrite` 事务：一次判闸 + 一份写前快照 + 逐文件 commit）。
+import { openSourceWrite, type SourceWriteTxn } from '../../source_writer.js';
 // ★ T336（2026-10-16）：接上唯一写盘闸 —— 未登记不许落盘（同族：`rename_files` / `rename_file` / `edit_code`）
 import { assertSourceWriteRegistered } from '../../write_gate.js';
 import type { ScanBounds } from '../../../infrastructure/scan_bounds.js';
@@ -295,7 +297,8 @@ async function moveSymbolCore(input: MoveSymbolInput): Promise<MoveSymbolResult>
   const blocked: string[] = [];
   const dryRun = input.dry_run === true;
   /** ★ 2026-10-20：闸的放行读数（干跑不跑闸 ⇒ 保持 undefined，回执不凭空多字段） */
-  let gate: ReturnType<typeof assertSourceWriteRegisteredFor> | undefined;
+  /** ★ 2026-10-22：真正落盘那一层的事务（开闸 + 写前快照在 `if (!dryRun)` 里建） */
+  let txn: SourceWriteTxn | undefined;
 
   // 0. 路径/根/alias 解析
   const effectiveRoot = input.project_dir ? path.resolve(String(input.project_dir)) : undefined;
@@ -505,12 +508,14 @@ async function moveSymbolCore(input: MoveSymbolInput): Promise<MoveSymbolResult>
     // ★★★ 2026-10-20：返回值**不许再丢**（闸判了什么、豁免了谁，要随回执出去）。
     // ★★★ 2026-10-20（A7 闭合 · 4 条写路的第 3 条）：`actor` **显式入参** —— 之前这里是 `resolveActor()`（无参），
     //   只有 env 兜底 ⇒ 「谁在写」恒 null ⇒ A7 只走"提醒 + 放行"。与 `edit_code` 同一把尺（`args.actor`）。
-    gate = assertSourceWriteRegisteredFor(resolvedRoot, affectedFiles, resolveActor(input.actor), input.authorize);
-    snapshotBeforeWrite(
-      resolvedRoot,
-      `move_symbol:${input.symbol}→${path.basename(toAbs)}`,
-      affectedFiles.map((f) => (path.relative(resolvedRoot, f) || f).replace(/\\/g, '/')),
-    );
+    // ★★★ 2026-10-22：闸 + 写前快照收进**唯一写原语**（事务形态）。
+    //   改前是「`assertSourceWriteRegisteredFor` 判」+「`snapshotBeforeWrite` 拍」两行并列 ——
+    //   两行之间没有任何结构约束（谁漏了第二行没人知道），落盘还在几十行之外。
+    txn = openSourceWrite(resolvedRoot, affectedFiles, {
+      label: `move_symbol:${input.symbol}→${path.basename(toAbs)}`,
+      actor: input.actor,
+      authorize: input.authorize,
+    });
   }
 
   // 7. dry_run / 落盘
@@ -532,12 +537,12 @@ async function moveSymbolCore(input: MoveSymbolInput): Promise<MoveSymbolResult>
   }
 
   // 落盘：源删除 → 目标插入 → importer source 重定向
-  fs.writeFileSync(sourceAbs, finalSource, 'utf-8');
-  if (created) fs.mkdirSync(path.dirname(toAbs), { recursive: true });
-  fs.writeFileSync(toAbs, targetText, 'utf-8');
+  // ★★★ 2026-10-22：三处裸写收进唯一写原语；`commit` 只接受开闸时声明过的路径（= `affectedFiles`）。
+  txn!.commit(sourceAbs, finalSource);
+  txn!.commit(toAbs, targetText);
   for (const [fAbs, entry] of importerEdits) {
     const out = applyEdits(entry.src, entry.edits);
-    if (out !== entry.src) fs.writeFileSync(fAbs, out, 'utf-8');
+    if (out !== entry.src) txn!.commit(fAbs, out);
   }
 
   // 索引重建（新鲜度闭环）
@@ -576,5 +581,5 @@ async function moveSymbolCore(input: MoveSymbolInput): Promise<MoveSymbolResult>
     externalRefs,
     bounds,
     ...(toSymbolDeferred ? { toSymbolDeferred: true } : {}),
-  }, gate);
+  }, txn?.task_gate ?? '');
 }

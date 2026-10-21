@@ -136,22 +136,12 @@ export interface WriteThroughOutcome {
   assumption_check?: AssumptionCheck;
 }
 
-export interface SourceWriteReport {
-  /** 本次被改动的文件（相对项目根，posix 分隔） */
-  touched: string[];
-  /** 写前快照（可撤回；null = 没建，如文件不存在或快照失败） */
-  snapshot?: FileSnapshotMeta | null;
-  /** 索引写穿结果 */
-  index: WriteThroughOutcome | null;
-  /**
-   * ★★★ **任务闸的一句话留痕**（T328 步 6）—— "这次写入有没有挂到任务/进度登记上"。
-   * ★ **非空即已报**（不静默）：要么"已登记"，要么"闸不适用 + 依据"。
-   * ★ 被拒时**不会**走到这里（`assertSourceWriteRegistered` 直接抛）。
-   */
-  task_gate?: string;
-  /** ★ 2026-10-21（读集比对）：假设检定读数（与 `task_gate` 分开；`stale` 非空也**照常落盘**） */
-  assumption_check?: AssumptionCheck;
-}
+// ─────────────────────────────────────────────────────────────
+// 写源码的**回执类型**已搬到 `application/source_writer.ts#SourceWriteReceipt`
+// ─────────────────────────────────────────────────────────────
+// 为什么搬：回执只有写入器才产出；本文件不再有写入器 ⇒ 也不该再持有"写入回执"的形状
+// （否则调用方会以为"从闸里能拿到写入回执"，而闸只给判据）。
+// ★ `task_gate` 在新回执里是**必填**（这里原先是 `task_gate?: string`）—— 见 source_writer 的说明。
 
 const EMPTY_CROSS = { total: 0, resolved: 0, external: 0, failed: 0 };
 
@@ -422,7 +412,15 @@ function finishWriteThrough(
 export function syncSelfWritesSync(
   projectRoot: string,
   files: readonly string[],
-  opts: { syncIndex?: boolean } = {},
+  opts: {
+    syncIndex?: boolean;
+    /**
+     * 逐文件回报索引同步结果（`SyncStatus`）—— 与 async 版的 `onFile` **同名同义**。
+     * ★ 2026-10-22：给 `source_writer` 的调用方用（`apply_writes` 的 `index_synced` 要逐文件 `updated`）。
+     *   它只是**读数**，不改判据、不改写盘顺序 —— 不是绕过口。
+     */
+    onFile?: (rel: string, status: SyncStatus) => void;
+  } = {},
 ): WriteThroughOutcome | null {
   const root = path.resolve(projectRoot);
   if (opts.syncIndex === false) return null;
@@ -484,6 +482,7 @@ export function syncSelfWritesSync(
           continue;
         }
         const r = syncFileSync(db, root, abs);
+        opts.onFile?.(rel, r.status);
         if (r.status === 'updated') out.synced = (out.synced ?? 0) + 1;
         else if (r.status === 'skipped') out.skippedFiles = (out.skippedFiles ?? 0) + 1;
         else if (r.status === 'failed') out.failed = (out.failed ?? 0) + 1;
@@ -1614,156 +1613,19 @@ export function reopenNote(r: { refsReopened: number; error?: string }): string 
   return r.refsReopened > 0 ? `｜引用方重算 ${r.refsReopened} 条` : '';
 }
 
-/**
- * ★ **统一写入闸**：`快照 → 真写 → 索引写穿`（async 版）。
- *
- * 所有"会改源码"的工具都应走这里（或同步版走 `记录自写`），而不是各自 `fs.writeFileSync` ——
- * 这是"我们自己改的我们自己登记"能成立的**结构保证**：漏接一个工具就等于多一个静默撒谎点。
- *
- * @param files  将要改动的文件（绝对或相对项目根均可）。**按引用读**：
- *               算不全时可以在 `mutate` 里继续 `push` 实际写到的文件 ——
- *               快照用"写前可见的"，写穿用"写后的全集"。
- */
-export async function writeSourceFiles<T>(
-  projectRoot: string,
-  files: readonly string[],
-  mutate: () => T | Promise<T>,
-  opts: {
-    label?: string;
-    snapshot?: boolean;
-    syncIndex?: boolean;
-    before?: () => void;
-    /** 逐文件回报索引同步结果（`SyncStatus`）—— 供需要逐文件回执的调用方（如 `applyWrites`）用 */
-    onFile?: (rel: string, status: SyncStatus) => void;
-    /**
-     * ★★★ 2026-10-20（A7 逐调用自报）：本次写入的**身份**。
-     * ★ 之前这里**根本没有这个字段** —— 于是所有走 `writeSourceFiles` 的写路（`rename_symbols` /
-     *   `apply_refactor_plan` / `refactor_pipeline` …）都只能读 env，而 env 在生产面上是空的
-     *   ⇒ 闸只能"提醒 + 放行"。它与 `edit_code` 自己调闸那两处用**同一个** `resolveActor`。
-     */
-    actor?: WriteActor | null;
-    /**
-     * ★★★ T356（2026-10-20）：**按 run 授权**（一个 scope 一次授权一批文件）——逐字交给写闸，**本层不解释它**。
-     * ★ 为什么必须在**这里**也有：本函数是 `rename_symbols` / `apply_refactor_plan` / `refactor_pipeline`
-     *   这些批量写路共用的那一道闸。只在 `edit_code` 接、这里不接 ⇒ **批量工具认 authorize、单文件工具也认、
-     *   但走 `writeSourceFiles` 的那几条全都不认** = 第三套口径（本仓头号病）。
-     */
-    authorize?: string | null;
-    /**
-     * ★ 2026-10-21（读集比对）：本次要写的**符号**（`{file, symbol}`）—— 交给闸做符号级假设检定。
-     * ★ 不给 ⇒ 文件级（`rename_*` 这类整文件改写本来就自带符号表，但逐符号列举成本高；
-     *   先按文件粒度报，**不假装**是符号级）。
-     */
-    symbols?: readonly AssumptionTarget[];
-  } = {},
-): Promise<{ value: T; report: SourceWriteReport }> {
-  const root = path.resolve(projectRoot);
-  const norm = (): string[] =>
-    [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
-
-  // ★★★ T328 步 6：**未登记不许落盘** —— 闸在快照/真写**之前**（拒绝就是拒绝，绝不偷偷写一半）。
-  //   ★ 它抛 ⇒ 本次一个字节都不落盘（`mutate` 不会被调用），调用方按普通错误上抛即可。
-  const taskGate = assertSourceWriteRegistered(root, files, {
-    actor: resolveActor(opts.actor),
-    authorize: opts.authorize,
-    symbols: opts.symbols,
-  });
-
-  // ① 写前快照（失败绝不阻断：可撤回是增强，不是前提）
-  //    用"写前可见的列表" —— 有些改动集合只有跑完才知道，那时再补快照已经晚了。
-  const snapshot = opts.snapshot === false ? null : snapshotBeforeWrite(root, opts.label ?? 'source write', norm());
-
-  // ② 真写
-  //    ★ T229：目标目录可能**尚不存在**（写"新目录下的新文件"）——
-  //    与 `edit_code.ts:501`「insert 建新文件」**同一做法**：先建目录再落盘，否则 `ENOENT`。
-  //    （此前 `applyWrites` 写陌生目录必 `ENOENT`；只补这一处目录创建，不动写入/快照/索引/根外任何政策。）
-  for (const f of files) {
-    const abs = path.isAbsolute(f) ? path.resolve(f) : path.resolve(root, f);
-    fs.mkdirSync(path.dirname(abs), { recursive: true });
-  }
-  opts.before?.();
-  const value = await mutate();
-
-  // ③ 索引写穿，用"写后的列表"（mutate 期间可能 push 过新发现的目标文件）
-  const rels = norm();
-  let index: WriteThroughOutcome | null = null;
-  try {
-    index = await syncSelfWrites(root, rels, { syncIndex: opts.syncIndex, onFile: opts.onFile });
-    if (!index) index = { ok: false, mode: 'skipped', note: '该项目还没有索引 ⇒ 只真写，未写穿' };
-  } catch (e) {
-    // 写穿崩了也不能静默：登记自写，让读路径去兜（L1b → L3）
-    const n = recordSelfWrite(root, rels, 'write-through failed');
-    index = {
-      ok: false,
-      mode: 'deferred',
-      note: `写穿异常（已登记 ${n} 个文件，读路径会优先同步）：${(e as Error).message}`,
-    };
-  }
-
-  // ④ ★ 2026-10-21（读集比对）：**写者自己的基线刷到写后** —— 不刷的话，同一个 actor 第二次写
-  //   会拿"自己上一次写之前"的指纹来比 ⇒ 必然报一条假 stale（那正是"每次都报警 ⇒ 没人看"）。
-  //   只刷**本 actor**；别人的读集不动（他们确实需要知道这里变了）。
-  refreshAfterOwnWrite(root, resolveActor(opts.actor), rels);
-
-  return {
-    value,
-    report: {
-      touched: rels,
-      snapshot,
-      index,
-      task_gate: taskGate.note,
-      ...(taskGate.assumption_check ? { assumption_check: taskGate.assumption_check } : {}),
-    },
-  };
-}
-
-/**
- * 同步工具用：只做**快照 + 自写登记**（不做写穿 —— `syncFile` 是异步的，同步调用者 await 不了）。
- * 索引一致性由读路径（`ensureFreshIndex` 优先消费自写登记）保证。
- *
- * ★★★ 2026-10-20（A7 闭合 · 补最后一个漏口）：**本函数原先连 `actor` 参数都没有**。
- *
- * 实测病灶：`remove_dead_imports` 走这条路，传 `actor=me` 去改 `owner=alice` 的文件**照样落盘成功**，
- * 回执里连 `task_gate` 都没有 —— 因为它调的是 `assertSourceWriteRegistered(root, files)`（无 actor 形参）
- * ⇒ 闸只能落进"拿不到 actor ⇒ 提醒 + 放行"那一格。
- * ★ 修法与 `writeSourceFiles` **同一把尺**：形参收 `actor`，在本函数内 `resolveActor` **一次**
- *   （判据仍住在 `assertSourceWriteRegistered` 一处，调用处不再包一层判断）。
- */
-export function snapshotAndRecordSelfWrite(
-  projectRoot: string,
-  files: readonly string[],
-  opts: { label?: string; snapshot?: boolean; actor?: WriteActor | null; authorize?: string | null } = {},
-): WriteThroughOutcome {
-  const root = path.resolve(projectRoot);
-  const rels = [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
-  // ★★★ T328 步 6：**未登记不许落盘** —— 同步签名的工具（remove_dead_imports / scaffold）走这条。
-  //   ★ 闸在快照 + 自写登记**之前**（拒绝就是拒绝；否则"登记了自写却没落盘"会留下假账）。
-  //   ★★★ 2026-10-20：`actor` 必须**往下传** —— 不传就等于把 A7 关掉（本函数此前正是如此）。
-  // ★★★ 2026-10-21：**返回值必须接住** —— 此前这一行 `assertSourceWriteRegistered(...)` 调完就丢，
-  //   于是闸判了、豁免点名了，回执里一个字都没有（实测：`remove_dead_imports` 的 `data` 里**连 `task_gate` 字段都没有**）。
-  //   ★ 判据**仍只住闸里**：这里只做「接住 + 逐字带出」，不重算一遍（第二份判据 = 本仓头号病）。
-  const gate = assertSourceWriteRegistered(root, files, { actor: resolveActor(opts.actor), authorize: opts.authorize });
-  const hasIndex = hasLiveIndex(root);
-  if (opts.snapshot !== false) snapshotBeforeWrite(root, opts.label ?? 'source write', rels);
-  if (!hasIndex) {
-    return {
-      ok: false,
-      mode: 'skipped',
-      note: '该项目还没有索引 ⇒ 只真写，未登记',
-      task_gate: gate.note,
-      ...(gate.assumption_check ? { assumption_check: gate.assumption_check } : {}),
-    };
-  }
-  const n = recordSelfWrite(root, rels, opts.label);
-  return {
-    ok: false,
-    mode: 'deferred',
-    note: `已登记 ${n} 个文件的改动，读路径会优先同步（本工具是同步签名）`,
-    task_gate: gate.note,
-    ...(gate.assumption_check ? { assumption_check: gate.assumption_check } : {}),
-  };
-}
-
+// ─────────────────────────────────────────────────────────────
+// 写入**已搬走**：`application/source_writer.ts`
+// ─────────────────────────────────────────────────────────────
+// 本文件从此只留三件事：**判据**（`assertSourceWriteRegistered` / `evaluateTaskGate`）、
+// **自写登记**（`recordSelfWrite`）、**索引写穿**（`syncSelfWrites*`）。
+//
+// 原先这里还有两个"写入器"：
+//   · `writeSourceFiles(root, files, mutate)` —— 收的是 `mutate` 回调，**它自己不写** ⇒ 闸与落盘隔着调用方；
+//   · `snapshotAndRecordSelfWrite(root, files)` —— 同步版，同样只判不写。
+// 实测后果：全仓 25 处对用户源码的覆盖写是**裸 `fs.writeFileSync`**，闸判了、写在别处；
+// 4 处工具还把闸的返回值丢了（回执里一个字没有）。
+// ⇒ 现在两者合并成**一个原语** `source_writer`（`openSourceWrite` / `writeSourceFile` / `writeSourceBatch`）：
+//   闸、快照、落盘、登记在**同一处**，`commit` 只接受开闸时声明过的路径（没有绕过口）。
 /** 人读一行（供工具结果附注：让 LLM 知道"索引眼下可信不可信"） */
 export function writeThroughLine(index: WriteThroughOutcome | null): string {
   if (!index) return '索引写穿：未执行';

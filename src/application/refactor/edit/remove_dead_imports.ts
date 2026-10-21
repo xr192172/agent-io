@@ -37,7 +37,9 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import type { DeadDepCandidate } from '../../../infrastructure/graph/dead_deps.js';
 import { applyWithVerify, defaultVerifyCommands, runVerification, type VerifyCommand, type VerificationOutcome, type VerifyOutcomeKind } from '../../../infrastructure/verify_refactor.js';
-import { snapshotAndRecordSelfWrite, syncSelfWritesSync, type WriteThroughOutcome } from '../../write_gate.js';
+// ★★ 2026-10-22：落盘改走**唯一写原语**（`openSourceWrite` 事务形态 / `writeSourceBatch` 一次写完）。
+import { openSourceWrite, writeSourceBatch } from '../../source_writer.js';
+import type { WriteThroughOutcome } from '../../write_gate.js';
 import { findCacheDb } from '../../../infrastructure/index/db.js';
 import { contentHash, toIndexKey } from '../../../infrastructure/index/symbols.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
@@ -553,20 +555,21 @@ function removeDeadImportsCore(opts: {
   //   ⑤ 同步写穿（2026-09-15）：写完再尝试 `syncSelfWritesSync` —— 解析器已预热
   //   （进程启动 prewarmKernel）则**当场直连 L1a**，优先取同步结果；未预热则预热闸
   //   整批落回 L1b（idxPre 已登记，登记项按内容 hash 幂等，重复消费无害）。
-  const idxPre = snapshotAndRecordSelfWrite(opts.project_dir, files, {
+  // ★★★ 2026-10-22：闸 + 快照 + 落盘 + 自写登记合成**一次调用**（唯一写原语）。
+  //   改前是「`snapshotAndRecordSelfWrite` 判/拍 + 本文件 for 循环裸写 + `syncSelfWritesSync` 写穿」三段，
+  //   中间那段没有任何结构约束 —— 全仓 25 处裸写就是这么长出来的。
+  const receipts = writeSourceBatch(opts.project_dir, [...absToNew.entries()], {
     label: `remove_dead_imports: ${absToNew.size} 文件`,
-    // ★★★ 2026-10-20（A7 闭合）：身份往下传 —— 本函数是同步签名，闸就在上面那个函数里。
+    // ★★★ 2026-10-20（A7 闭合）：身份往下传 —— 判据仍只在闸里。
     actor: opts.actor,
-    // ★★★ T356：授权也逐字往下传（**与 actor 同一行写法** —— 两个都只是"交上去"，不在这里解释）
+    // ★★★ T356：授权也逐字往下传（与 actor 同一行写法：两个都只是交上去，本层不解释）
     authorize: opts.authorize,
   });
-  for (const [abs, newSrc] of absToNew) fs.writeFileSync(abs, newSrc, 'utf-8');
-  const idxSync = syncSelfWritesSync(opts.project_dir, files);
-  // ★★★ 2026-10-21（A7 回执闭合）：闸的读数**必须从 `idxPre` 带出** —— `idxSync` 是写穿结果，它**没跑闸**
-  //   （闸在 `snapshotAndRecordSelfWrite` 里跑，读数存在它的返回值上）⇒ 原来 `idxSync ?? idxPre` 在有索引时
-  //   恒取 `idxSync`，把 `task_gate` 吃掉（回执里一个字都没有）。★ 判据仍只住闸里，这里只**带出**同一句话。
-  const gateNote = idxPre.task_gate;
-  const idx = { ...(idxSync ?? idxPre), ...(gateNote ? { task_gate: gateNote } : {}) };
+  const idxSync = receipts[0]?.index ?? null;
+  // ★★★ 2026-10-21（A7 回执闭合）：闸的读数**必须从原语回执带出** —— 写穿结果里没有闸的话。
+  //   ★ 判据仍只住闸里，这里只**带出**同一句话（原语已把它做成必填字段）。
+  const gateNote = receipts[0]?.task_gate ?? '';
+  const idx = { ...(idxSync ?? { ok: false, mode: 'skipped' as const, note: '本批未落盘 ⇒ 没有索引写穿' }), ...(gateNote ? { task_gate: gateNote } : {}) };
   return { ...result, indexWriteThrough: idx, ...(gateNote ? { task_gate: gateNote } : {}) };
 }
 
@@ -686,7 +689,10 @@ export function removeDeadImportsWithVerify(opts: RemoveDeadImportsVerifyOptions
   //     `snapshotAndRecordSelfWrite` 内部那一处 `assertSourceWriteRegistered`（本层不自判第二次）。
   //   ★ 与「写后再验」不冲突：闸是**权限**判定（与盘态无关），验证闭环仍是「写了再验、回归即回滚」。
   //   ★ 顺带修好快照时点：旧顺序拍的是**写后**（或回滚后）的盘态，现在才是真的「写前」。
-  const idxPre = snapshotAndRecordSelfWrite(cwd, files, {
+  // ★★★ 2026-10-22：**事务形态**（open → 写/验/回滚 → close）—— 这正是「整批判一次闸 + 一份快照，
+  //   内容边算边落」的那类写路（验证闭环要「写了再验、回归即回滚」，内容不可能预先算全）。
+  //   ★ `commit` 只接受 open 时声明过的路径 ⇒ 事务不是绕过口；`close` 才登记自写 + 写穿。
+  const txn = openSourceWrite(cwd, files, {
     label: 'remove_dead_imports: 验证闭环',
     // ★★★ 2026-10-20（A7 闭合）：验证闭环这条同样要报身份（它也是真落盘）。
     actor: opts.actor,
@@ -700,20 +706,19 @@ export function removeDeadImportsWithVerify(opts: RemoveDeadImportsVerifyOptions
     verify: run,
     apply: () => {
       if (c.absToNew.size === 0) return false;
-      for (const [abs, newSrc] of c.absToNew) fs.writeFileSync(abs, newSrc, 'utf-8');
+      for (const [abs, newSrc] of c.absToNew) txn.commit(abs, newSrc);
       return true;
     },
     rollback: () => {
-      for (const [abs, orig] of c.originals) fs.writeFileSync(abs, orig, 'utf-8');
+      for (const [abs, orig] of c.originals) txn.commit(abs, orig);
     },
   });
 
-  // ⑤ 同步写穿（2026-09-15）：写完再试 `syncSelfWritesSync` —— 解析器已预热则当场直连 L1a，
-  //   优先取同步结果（`syncFile` 按内容 hash 判定，"写完又回滚回原样"自然落成 skipped，不会假报改动）。
-  const idxSync = syncSelfWritesSync(cwd, files);
-  // ★★★ 2026-10-21（A7 回执闭合）：同 core —— 闸读数从 `idxPre` 带出（`idxSync` 没跑闸，会把它覆盖掉）。
-  const gateNote = idxPre.task_gate;
-  const idx = { ...(idxSync ?? idxPre), ...(gateNote ? { task_gate: gateNote } : {}) };
+  // ⑤ 写穿/登记由 `close` 一次性做完：解析器已预热则当场直连 L1a；未预热则整批落回 L1b（登记 + deferred）。
+  const idxSync = txn.close();
+  // ★★★ 2026-10-21（A7 回执闭合）：闸读数从事务带出（写穿结果里没有闸的话）。
+  const gateNote = txn.task_gate;
+  const idx = { ...(idxSync ?? { ok: false, mode: 'skipped' as const, note: '本批未落盘 ⇒ 没有索引写穿' }), ...(gateNote ? { task_gate: gateNote } : {}) };
 
   if (ver.outcome === 'baseline_fail') {
     // 地基黄：一个都不写（★ 闸跑过、判过，读数照报 —— 不许因为"没写"就不说）

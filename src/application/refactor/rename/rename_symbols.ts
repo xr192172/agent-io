@@ -46,7 +46,8 @@ import { renameLocals, type LocalRenameOutcome } from './rename_local.js';
 import { renameFile } from './rename_file.js';
 import { resolveProjectRoot } from '../../../infrastructure/analysis/project_root/index.js';
 import { createProtectGuard } from '../../../infrastructure/analysis/refactor/protect.js';
-import { writeSourceFiles, type WriteThroughOutcome } from '../../write_gate.js';
+import { openSourceWrite } from '../../source_writer.js';
+import type { WriteThroughOutcome } from '../../write_gate.js';
 // ★ 2026-10-20：闸的读数**唯一带出口**（`writeSourceFiles` 把它逐字存在 `report.task_gate` 里，别在这里重新拼豁免文案）
 import { attachGateNote } from '../gate_note.js';
 // ★ T214：兑现"整批原子"要用它 —— ★ 用**写前那份快照**回滚整批（★ 零件现成，不造新轮子 ✓）
@@ -482,13 +483,29 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
     return { ...value, indexWriteThrough: { ok: false, mode: 'skipped', note: '未定位到项目根 ⇒ 跳过快照与索引写穿' } };
   }
 
-  const gated = await writeSourceFiles(gateRoot, touched, doWrite, {
+  // ★★★ 2026-10-22：闸 + 写前快照 + 自写登记收进**唯一写原语**（事务形态）。
+  //   ★ 为什么是事务而不是 `writeSourceBatch`：本工具的内容**边算边落** —— 第 2 条改名要看
+  //     第 1 条落盘之后的盘面，预先算不出一张「路径 → 内容」表。
+  //   ★ 为什么闸/快照仍必须在**逐条落盘之前**：T214「整批原子」靠的就是这一份写前快照
+  //     （失败时 `rollbackFileSnapshot` 用它回滚整批）⇒ 拆成逐文件就碎成 N 个撤回点。
+  const txn = openSourceWrite(gateRoot, touched, {
     label: `rename_symbols: ${renames.length} 条`,
     // ★★★ 2026-10-20（A7 逐调用自报）：显式入参 → 闸（判据仍只在 write_gate 一处）
     actor: input.actor,
     // ★★★ T356：按 run 授权（与 actor 同一行写法 —— 只交上去，不在这里解释 scope）
     authorize: input.authorize,
   });
+  // ★ `doWrite` 里逐条落盘（内容边算边落）—— 此时闸已判、写前快照已拍；`close` 才登记自写 + 写穿。
+  const value = await doWrite();
+  const gated = {
+    value,
+    report: {
+      index: txn.close(),
+      snapshot: txn.snapshot ?? null,
+      task_gate: txn.task_gate,
+      ...(txn.assumption_check ? { assumption_check: txn.assumption_check } : {}),
+    },
+  };
 
   // ★★★ T214（2026-10-13）：**真兑现"整批原子"** —— ★ 这是外部评测指出的**头号缺口** ✓
   //

@@ -316,7 +316,9 @@ console.log(`${NL}════ ⑤ 正常路径：卡 + authorize ⇒ 能写、�
   const callSites = lines.map((l, i) => ({ l, i: i + 1 })).filter((x) => /await syncSelfWrites\(/.test(x.l));
   const finalizeLine = lines.findIndex((l) => /const finalize = async/.test(l)) + 1;
   const firstWrite = lines.findIndex((l) => /fs\.renameSync\(m\.from, m\.to\)/.test(l)) + 1;
-  const gateLine = lines.findIndex((l) => /assertSourceWriteRegisteredFor\(proj/.test(l)) + 1;
+  // ★ 2026-10-22：闸的调用收进了唯一写原语（`source_writer#openSourceWrite` 内部判）——
+  //   形状变了、**语义没变**：这条断言守的是「闸在第一次 rename 之前」，不是「某个函数名出现过」。
+  const gateLine = lines.findIndex((l) => /(?:assertSourceWriteRegisteredFor|openSourceWrite)\(proj, gateFiles/.test(l)) + 1;
   chk(
     callSites.length === 1 && callSites[0].i > finalizeLine && finalizeLine > firstWrite,
     '⑤e `syncSelfWrites` **只有 1 处**，且在 `finalize`（终态）内、finalize 在写之后',

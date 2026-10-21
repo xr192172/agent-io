@@ -31,7 +31,11 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { writeSourceFiles, type WriteThroughOutcome } from '../../write_gate.js';
+// ★★ 2026-10-22：落盘改走**唯一写原语**（application/source_writer.ts）。
+//   ★ 为什么不再从 write_gate 拿写入器：那边的 `writeSourceFiles` 收的是 `mutate` 回调、**它自己不写**
+//   ⇒ 闸判了、写在别处 —— 全仓 25 处裸 `fs.writeFileSync` 正是这么来的。
+import { writeSourceBatch } from '../../source_writer.js';
+import type { WriteThroughOutcome } from '../../write_gate.js';
 // ★ 2026-10-21（读集比对）：假设检定读数（结构化字段，与 `task_gate` 分开）
 import type { AssumptionCheck } from '../../read_set.js';
 // ★ 2026-10-20：闸的读数**唯一带出口**（`writeSourceFiles` 把 `note` 逐字放在 `report.task_gate` 里，别在这里重新拼豁免文案）
@@ -105,18 +109,24 @@ async function applyWritesCore(
   const written = [...byRel.keys()];
   const updatedByRel = new Map<string, boolean>();
 
-  // ① 快照（一次，含全部文件）+ ② 逐文件写 + ③ 逐文件 syncFile/引用方重算 —— 全在闸里，别在这重写
-  const { report } = await writeSourceFiles(
-    root,
-    written,
-    () => {
-      for (const [rel, content] of byRel) fs.writeFileSync(path.join(root, rel), content, 'utf8');
-      return written;
-    },
-    // ★★ 2026-10-20（A7 逐调用自报）：`actor` **只往下传、不在这里判** —— 判据仍只在 `write_gate` 一处。
-    // ★★★ T356：`authorize` 同理（同一行写法）—— 本适配层不解释 scope。
-    { label: note, actor: opts.actor, authorize: opts.authorize, onFile: (rel, status) => updatedByRel.set(rel, status === 'updated') },
-  );
+  // ① 整批判闸 + 一份写前快照 + ② 逐文件落盘 + ③ 索引写穿/引用方重算 —— 全在**唯一写原语**里。
+  //   ★ 2026-10-22：原先是 `write_gate.writeSourceFiles`（收 `mutate` 回调、**它自己不写**）
+  //   ⇒ 落盘点在本文件的 for 循环里，闸与写隔着一层调用方。现在落盘也归原语
+  //   （`source_writer#writeSourceBatch`），本适配层只剩「对上入参形态 + 归一回执」两件事。
+  const receipts = writeSourceBatch(root, [...byRel.entries()], {
+    label: note,
+    actor: opts.actor,
+    authorize: opts.authorize,
+    onFile: (rel, status) => updatedByRel.set(rel, status === 'updated'),
+  });
+  // ★ 整批一份闸读数 / 一份快照 ⇒ 取批内第一条即可（原语的 `commit` 逐条带的是**同一句**原话）
+  const first = receipts[0];
+  const report = {
+    ...(first?.snapshot ? { snapshot: first.snapshot } : {}),
+    index: first?.index ?? null,
+    task_gate: first?.task_gate ?? '',
+    ...(first?.assumption_check ? { assumption_check: first.assumption_check } : {}),
+  };
 
   return attachGateNote(
     {

@@ -23,7 +23,9 @@ import { TS_JS_EXTS } from '../../../infrastructure/parse/index.js';
 import { resolveImportTarget, syncFile, removeFile } from '../../../infrastructure/index/symbols.js';
 import { getProjectCacheDb, closeProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { createProtectGuard } from '../../../infrastructure/analysis/refactor/protect.js';
-import { reopenAndResolveAfterWrite, assertSourceWriteRegisteredFor, resolveActor } from '../../write_gate.js';
+import { reopenAndResolveAfterWrite } from '../../write_gate.js';
+// ★★ 2026-10-22：落盘改走**唯一写原语**（一次判闸 + 一份写前快照 + 逐文件 commit）。
+import { openSourceWrite } from '../../source_writer.js';
 // ★ T336（2026-10-16）：接上唯一写盘闸 —— 未登记不许落盘（同族：`rename_files` / `edit_code` / `write_gate` 是唯一权威）
 import { assertSourceWriteRegistered } from '../../write_gate.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
@@ -543,7 +545,15 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
   //   ★ 形状照抄 `edit_code`：机器侧 `task_gate`，人读侧由 `refactor/index.ts` 追加 `gateHumanLines`。
   // ★★★ 2026-10-20（A7 闭合 · 4 条写路的第 1 条）：`actor` **显式入参** —— 之前这里是 `resolveActor()`（无参），
   //   只有 env 兜底 ⇒ 「谁在写」恒 null ⇒ A7 只走"提醒 + 放行"。与 `edit_code` 同一把尺（`args.actor`）。
-  const gate = assertSourceWriteRegisteredFor(projectRoot, [fromAbs, toAbs, ...[...byImporter.values()].map((i) => i.importerAbs)], resolveActor(input.actor), input.authorize);
+  // ★★★ 2026-10-22：闸 + 写前快照收进**唯一写原语**。
+  //   改前这一行只判闸、**没有快照**（同族 `rename_files` / `symbol_move` 都有），落盘在几十行之外 ——
+  //   闸与写不在一处，正是"判了但不一定有得撤回"的来源。原语把「判 → 拍 → 写」钉成一个顺序。
+  //   ★ 闸的对象不变 = 源（删）+ 目标（建/写）+ 各被改写引用的 importer，复用既有集合，不另立清单。
+  const txn = openSourceWrite(projectRoot, [fromAbs, toAbs, ...[...byImporter.values()].map((i) => i.importerAbs)], {
+    label: `rename_file:${path.basename(fromAbs)}→${path.basename(toAbs)}`,
+    actor: input.actor,
+    authorize: input.authorize,
+  });
 
   // 3) 原子化执行——先复制，再改写引用，最后删除原文件。
   //    原实现是先 renameSync 再改引用，中途任何一步（文件改写/索引写入）失败
@@ -563,7 +573,7 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
       const sorted = [...items].sort((a, b) => b.pos - a.pos);
       let out = content;
       for (const it of sorted) out = out.slice(0, it.pos) + it.quote + it.toSource + it.quote + out.slice(it.pos + it.len);
-      fs.writeFileSync(importer.importerAbs, out, 'utf8');
+      txn.commit(importer.importerAbs, out);
       await syncFile(db, projectRoot, importer.importerAbs);
     }
 
@@ -573,7 +583,7 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
       const sorted = [...ownEdits].sort((a, b) => b.pos - a.pos);
       let out = content;
       for (const it of sorted) out = out.slice(0, it.pos) + it.quote + it.toSource + it.quote + out.slice(it.pos + it.len);
-      fs.writeFileSync(toAbs, out, 'utf8');
+      txn.commit(toAbs, out);
     }
 
     // 6) 全部改写成功后才删除原文件 + 重索引
@@ -599,7 +609,7 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
         ok: false, dryRun, fromRel, toRel, moved: false, references, editCount, pending,
         blocked: [`rename_file 中途失败（已回滚拷贝）：${(e as Error).message}`],
       },
-      gate,
+      txn.task_gate,
     );
   } finally {
     // 保险：如果失败回滚路径上有任何遗留，务必清掉 toAbs
@@ -612,7 +622,7 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
   }
 
   // ★ 2026-10-20：任务闸的放行读数（note / 豁免点名）随回执带出 —— 不再“做了不说”。
-  return attachGateNote({ ok: true, dryRun, fromRel, toRel, moved: true, references, editCount, pending }, gate);
+  return attachGateNote({ ok: true, dryRun, fromRel, toRel, moved: true, references, editCount, pending }, txn.task_gate);
 }
 
 /** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */
