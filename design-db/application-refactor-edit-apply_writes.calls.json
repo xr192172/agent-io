@@ -7,7 +7,7 @@
     {
       "name": "WriteItem",
       "kind": "interface",
-      "line": 43,
+      "line": 47,
       "signature": "WriteItem()",
       "members": [
         {
@@ -27,7 +27,7 @@
     {
       "name": "WriteReceipt",
       "kind": "interface",
-      "line": 48,
+      "line": 52,
       "signature": "WriteReceipt()",
       "members": [
         {
@@ -83,19 +83,19 @@
     {
       "name": "applyWritesCore",
       "kind": "function",
-      "line": 80,
+      "line": 84,
       "signature": "applyWritesCore(projectRoot: string,\n  items: readonly WriteItem[],\n  opts: { dryRun?: boolean; note?: string; actor?: string | null; authorize?: string | null } = {},): Promise<WriteReceipt>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 159,
+      "line": 169,
       "signature": "touchedOf(projectRoot: string, r: WriteReceipt): Touched"
     },
     {
       "name": "applyWrites",
       "kind": "function",
-      "line": 165,
+      "line": 175,
       "signature": "applyWrites(projectRoot: string,\n  items: readonly WriteItem[],\n  opts: { dryRun?: boolean; note?: string; actor?: string | null; authorize?: string | null } = {},): Promise<TouchedProduct<WriteReceipt>>"
     }
   ],
@@ -109,8 +109,13 @@
       "kind": "package"
     },
     {
-      "source": "../../write_gate.js",
+      "source": "../../source_writer.js",
       "kind": "relative"
+    },
+    {
+      "source": "../../write_gate.js",
+      "kind": "relative",
+      "type_only": true
     },
     {
       "source": "../../read_set.js",
@@ -145,7 +150,7 @@
     },
     {
       "from": "src/application/refactor/edit/apply_writes.ts#applyWritesCore",
-      "to": "src/application/write_gate.ts#writeSourceFiles"
+      "to": "src/application/source_writer.ts#writeSourceBatch"
     },
     {
       "from": "src/application/refactor/edit/apply_writes.ts#applyWrites",

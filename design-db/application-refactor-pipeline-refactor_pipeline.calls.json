@@ -7,19 +7,19 @@
     {
       "name": "StageId",
       "kind": "type",
-      "line": 64,
+      "line": 66,
       "signature": "StageId()"
     },
     {
       "name": "StageOutcome",
       "kind": "type",
-      "line": 66,
+      "line": 68,
       "signature": "StageOutcome()"
     },
     {
       "name": "StageResult",
       "kind": "interface",
-      "line": 74,
+      "line": 76,
       "signature": "StageResult()",
       "members": [
         {
@@ -99,7 +99,7 @@
     {
       "name": "PipelineOptions",
       "kind": "interface",
-      "line": 97,
+      "line": 99,
       "signature": "PipelineOptions()",
       "members": [
         {
@@ -173,7 +173,7 @@
     {
       "name": "PipelineResult",
       "kind": "interface",
-      "line": 149,
+      "line": 151,
       "signature": "PipelineResult()",
       "members": [
         {
@@ -235,37 +235,37 @@
     {
       "name": "computeDeadStatementsPlan",
       "kind": "function",
-      "line": 170,
+      "line": 172,
       "signature": "computeDeadStatementsPlan(proj: string,\n  files: string[] | undefined,\n  langFilter?: 'go' | 'ts',): Promise<RunningChangePlan>"
     },
     {
       "name": "computeDeadImportsPlan",
       "kind": "function",
-      "line": 202,
+      "line": 204,
       "signature": "computeDeadImportsPlan(proj: string,\n  dead: Array<{ source: string; files: string[] }>,\n  langFilter?: 'go' | 'ts',): RunningChangePlan"
     },
     {
       "name": "buildDefaultLangs",
       "kind": "function",
-      "line": 278,
+      "line": 280,
       "signature": "buildDefaultLangs(): RefactorLangRegistry"
     },
     {
       "name": "DEFAULT_LANGS",
       "kind": "const",
-      "line": 391,
+      "line": 393,
       "signature": "const DEFAULT_LANGS = buildDefaultLangs()"
     },
     {
       "name": "registerRefactorLanguage",
       "kind": "function",
-      "line": 395,
+      "line": 397,
       "signature": "registerRefactorLanguage(ex: LanguageRefactorExecutor): void"
     },
     {
       "name": "ScheduledStep",
       "kind": "interface",
-      "line": 403,
+      "line": 405,
       "signature": "ScheduledStep()",
       "members": [
         {
@@ -309,49 +309,49 @@
     {
       "name": "collectSteps",
       "kind": "function",
-      "line": 417,
+      "line": 419,
       "signature": "collectSteps(executors: LanguageRefactorExecutor[],\n  steps: RefactorStepsCfg,): ScheduledStep[]"
     },
     {
       "name": "dominantExecutor",
       "kind": "function",
-      "line": 457,
+      "line": 459,
       "signature": "dominantExecutor(executors: LanguageRefactorExecutor[],\n  cwd: string,): LanguageRefactorExecutor | undefined"
     },
     {
       "name": "dominantVerifyCommands",
       "kind": "function",
-      "line": 467,
+      "line": 469,
       "signature": "dominantVerifyCommands(executors: LanguageRefactorExecutor[],\n  cwd: string,): VerifyCommand[]"
     },
     {
       "name": "mergeVerifyCommands",
       "kind": "function",
-      "line": 477,
+      "line": 479,
       "signature": "mergeVerifyCommands(executors: LanguageRefactorExecutor[], cwd: string): VerifyCommand[]"
     },
     {
       "name": "runRefactorPipeline",
       "kind": "function",
-      "line": 494,
+      "line": 496,
       "signature": "runRefactorPipeline(opts: PipelineOptions): Promise<PipelineResult>"
     },
     {
       "name": "staticRevalidate",
       "kind": "function",
-      "line": 760,
+      "line": 773,
       "signature": "staticRevalidate(absToNew: Map<string, string>, proj: string): Promise<string | null>"
     },
     {
       "name": "countPlanned",
       "kind": "function",
-      "line": 769,
+      "line": 782,
       "signature": "countPlanned(opts: PipelineOptions): number"
     },
     {
       "name": "buildStepCount",
       "kind": "const",
-      "line": 778,
+      "line": 791,
       "signature": "const buildStepCount = countPlanned"
     }
   ],
@@ -422,6 +422,10 @@
       "kind": "relative"
     },
     {
+      "source": "../../source_writer.js",
+      "kind": "relative"
+    },
+    {
       "source": "../../../infrastructure/analysis/refactor/refactor_langs.js",
       "kind": "relative",
       "type_only": true
@@ -431,10 +435,6 @@
     {
       "from": "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
       "to": "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation"
-    },
-    {
-      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#computeDeadImportsPlan",
-      "to": "src/application/refactor/edit/remove_dead_imports.ts#langOfFile"
     },
     {
       "from": "src/application/refactor/pipeline/refactor_pipeline.ts#computeDeadImportsPlan",
@@ -478,15 +478,11 @@
     },
     {
       "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline.runStage",
-      "to": "src/application/write_gate.ts#assertSourceWriteRegisteredFor"
+      "to": "src/application/source_writer.ts#openSourceWrite"
     },
     {
       "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline.runStage",
       "to": "src/application/write_gate.ts#recordSelfWrite"
-    },
-    {
-      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline.runStage",
-      "to": "src/application/write_gate.ts#resolveActor"
     },
     {
       "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline.runStage",
@@ -509,6 +505,10 @@
       "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#detectDeadImports"
     },
     {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
+      "to": "src/infrastructure/analysis/package_migration/core.ts#computeMigrationPlan"
+    },
+    {
       "from": "src/application/refactor/pipeline/refactor_pipeline.ts#dominantExecutor",
       "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#manifestPresent"
     },
@@ -519,6 +519,10 @@
     {
       "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline",
       "to": "src/infrastructure/analysis/submit_gate/index.ts#checkEmbedSubmissions"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#staticRevalidate",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     },
     {
       "from": "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",

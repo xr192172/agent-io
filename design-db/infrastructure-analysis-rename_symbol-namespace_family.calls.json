@@ -217,6 +217,10 @@
     },
     {
       "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#makeNamespaceAnalyzer",
+      "to": "src/infrastructure/parse/ast_node.ts#nameInfo"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#makeNamespaceAnalyzer",
       "to": "src/infrastructure/parse/kernel.ts#parseContent"
     },
     {

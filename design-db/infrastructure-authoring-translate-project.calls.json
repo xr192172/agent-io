@@ -576,6 +576,10 @@
     {
       "from": "src/infrastructure/authoring/translate/project.ts#assembleModule",
       "to": "src/infrastructure/authoring/translate/ts_codegen.ts#channelShimSource"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#collectCallRefs",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
     }
   ]
 }

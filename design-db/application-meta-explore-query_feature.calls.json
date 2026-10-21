@@ -7,7 +7,7 @@
     {
       "name": "QueryFeatureInput",
       "kind": "interface",
-      "line": 83,
+      "line": 86,
       "signature": "QueryFeatureInput()",
       "members": [
         {
@@ -25,6 +25,12 @@
         {
           "name": "state",
           "type": ": TaskState | 'all'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "chain",
+          "type": ": boolean",
           "optional": true,
           "member_kind": "property"
         },
@@ -159,7 +165,7 @@
     {
       "name": "QueryFeatureResult",
       "kind": "interface",
-      "line": 177,
+      "line": 189,
       "signature": "QueryFeatureResult()",
       "members": [
         {
@@ -179,7 +185,7 @@
     {
       "name": "DSLWithMeta",
       "kind": "interface",
-      "line": 184,
+      "line": 196,
       "signature": "DSLWithMeta()",
       "members": [
         {
@@ -193,55 +199,61 @@
     {
       "name": "requireFeature",
       "kind": "function",
-      "line": 188,
+      "line": 200,
       "signature": "requireFeature(input: QueryFeatureInput): string"
     },
     {
       "name": "loadDSL",
       "kind": "function",
-      "line": 195,
+      "line": 207,
       "signature": "loadDSL(input: QueryFeatureInput)"
     },
     {
       "name": "queryFileCalls",
       "kind": "function",
-      "line": 214,
+      "line": 226,
       "signature": "queryFileCalls(db: Database, relPath: string): { incoming: Array<{ caller: string; callee: string; line: number; cross: boolean }>; outgoing: Array<{ caller: string; callee: string; line: number; cross: boolean }> }"
     },
     {
       "name": "symbolNameFromId",
       "kind": "function",
-      "line": 253,
+      "line": 265,
       "signature": "symbolNameFromId(nodeId: string): string"
     },
     {
       "name": "filePathFromId",
       "kind": "function",
-      "line": 259,
+      "line": 271,
       "signature": "filePathFromId(nodeId: string): string"
     },
     {
       "name": "dedupePreserve",
       "kind": "function",
-      "line": 271,
+      "line": 283,
       "signature": "dedupePreserve(xs: string[]): string[]"
     },
     {
       "name": "compactList",
       "kind": "function",
-      "line": 283,
+      "line": 295,
       "signature": "compactList(xs: string[], cap = 5): string"
     },
     {
       "name": "contractHint",
       "kind": "function",
-      "line": 288,
+      "line": 300,
       "signature": "contractHint(c: BrickContract): string"
+    },
+    {
+      "name": "renderTodoChains",
+      "kind": "function",
+      "line": 331,
+      "signature": "renderTodoChains(cards: readonly TaskSpec[],\n  idx: ReturnType<typeof buildTodoChains>,\n  picked: readonly TaskSpec[],): string[]"
     },
     {
       "name": "queryFeature",
       "kind": "function",
-      "line": 302,
+      "line": 406,
       "signature": "queryFeature(input: QueryFeatureInput): QueryFeatureResult"
     }
   ],
@@ -252,6 +264,10 @@
     },
     {
       "source": "../../../domain/task_schema.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/todo_chain.js",
       "kind": "relative"
     },
     {
@@ -451,6 +467,10 @@
       "to": "src/application/meta/explore/query_feature.ts#queryFileCalls"
     },
     {
+      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
+      "to": "src/application/meta/explore/query_feature.ts#renderTodoChains"
+    },
+    {
       "from": "src/application/meta/explore/query_feature.ts#loadDSL",
       "to": "src/application/meta/explore/query_feature.ts#requireFeature"
     },
@@ -553,6 +573,14 @@
     {
       "from": "src/application/meta/explore/query_feature.ts#queryFeature",
       "to": "src/domain/task_schema.ts#isClosedTaskState"
+    },
+    {
+      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
+      "to": "src/domain/todo_chain.ts#buildTodoChains"
+    },
+    {
+      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
+      "to": "src/domain/todo_chain.ts#chainBadge"
     },
     {
       "from": "src/application/meta/explore/query_feature.ts#queryFeature",

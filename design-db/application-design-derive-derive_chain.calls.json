@@ -459,6 +459,18 @@
     },
     {
       "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/infrastructure/parse/kernel.ts#isSupported"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
       "to": "src/infrastructure/storage.ts#getDSL"
     },
     {

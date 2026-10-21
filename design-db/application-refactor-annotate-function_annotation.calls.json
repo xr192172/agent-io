@@ -351,6 +351,10 @@
     {
       "from": "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
       "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#scanFileAnnotations",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
     }
   ]
 }

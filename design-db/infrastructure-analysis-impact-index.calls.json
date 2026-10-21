@@ -357,6 +357,18 @@
       "to": "src/infrastructure/authoring/version_upgrade/detect.ts#collectSourceFiles"
     },
     {
+      "from": "src/infrastructure/analysis/impact/index.ts#resolveImportTarget",
+      "to": "src/infrastructure/parse/import_resolve.ts#resolveProjectImport"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/index.ts#buildImpactGraph",
+      "to": "src/infrastructure/parse/kernel.ts#listSupportedExtensions"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/index.ts#buildImpactGraph",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
       "from": "src/infrastructure/analysis/impact/index.ts#buildImpactGraph",
       "to": "src/infrastructure/parse/source_exts.ts#codeSourceExts"
     },

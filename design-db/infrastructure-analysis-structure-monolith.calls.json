@@ -491,6 +491,10 @@
       "to": "src/infrastructure/analysis/structure/monolith.ts#symmetrize"
     },
     {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#analyzeFileContent",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
       "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
       "to": "src/infrastructure/project_view.ts#getProjectView"
     },

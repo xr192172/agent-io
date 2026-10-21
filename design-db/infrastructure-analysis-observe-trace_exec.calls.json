@@ -459,6 +459,10 @@
     {
       "from": "src/infrastructure/analysis/observe/trace_exec.ts#traceExecChain",
       "to": "src/infrastructure/analysis/observe/trace_exec.ts#toArgs"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/trace_exec.ts#traceExecChain",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
     }
   ]
 }

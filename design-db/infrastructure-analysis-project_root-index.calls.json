@@ -835,6 +835,26 @@
       "to": "src/infrastructure/index/symbols.ts#toRelPath"
     },
     {
+      "from": "src/infrastructure/analysis/project_root/index.ts#resolveToFile",
+      "to": "src/infrastructure/parse/import_resolve.ts#resolveExistingPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/project_root/index.ts#expandOneFileOnTheFly",
+      "to": "src/infrastructure/parse/kernel.ts#isSupported"
+    },
+    {
+      "from": "src/infrastructure/analysis/project_root/index.ts#expandClosureDetailed",
+      "to": "src/infrastructure/parse/kernel.ts#isSupported"
+    },
+    {
+      "from": "src/infrastructure/analysis/project_root/index.ts#expandOneFileOnTheFly",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
+      "from": "src/infrastructure/analysis/project_root/index.ts#expandClosureDetailed",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
       "from": "src/infrastructure/analysis/project_root/index.ts#importsTargetFile",
       "to": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource"
     },

@@ -626,6 +626,14 @@
       "to": "src/infrastructure/index/symbols.ts#syncProject"
     },
     {
+      "from": "src/infrastructure/graph/import_project.ts#resolveImport",
+      "to": "src/infrastructure/parse/import_resolve.ts#resolveProjectImport"
+    },
+    {
+      "from": "src/infrastructure/graph/import_project.ts#walkFiles",
+      "to": "src/infrastructure/parse/kernel.ts#listSupportedExtensions"
+    },
+    {
       "from": "src/infrastructure/graph/import_project.ts#walkFiles",
       "to": "src/infrastructure/parse/source_exts.ts#codeSourceExtSet"
     },

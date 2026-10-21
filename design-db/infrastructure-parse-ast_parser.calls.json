@@ -32,5 +32,14 @@
       "kind": "relative"
     }
   ],
-  "calls": []
+  "calls": [
+    {
+      "from": "src/infrastructure/parse/ast_parser.ts#isSupportedFile",
+      "to": "src/infrastructure/parse/kernel.ts#isSupported"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_parser.ts#parseFileSymbols",
+      "to": "src/infrastructure/parse/kernel.ts#parseFile"
+    }
+  ]
 }

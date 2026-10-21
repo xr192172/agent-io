@@ -5,9 +5,21 @@
   "path": "src/application/design/dsl_ops/task_ops.ts",
   "symbols": [
     {
+      "name": "signTaskActor",
+      "kind": "function",
+      "line": 126,
+      "signature": "signTaskActor(raw: string | undefined | null,\n  field: string,): { actor: string | null; adm: ActorAdmission }"
+    },
+    {
+      "name": "normalizedInline",
+      "kind": "function",
+      "line": 144,
+      "signature": "normalizedInline(adm: ActorAdmission): string"
+    },
+    {
       "name": "TaskOpRequest",
       "kind": "interface",
-      "line": 104,
+      "line": 149,
       "signature": "TaskOpRequest()",
       "members": [
         {
@@ -39,7 +51,7 @@
     {
       "name": "TaskOpInput",
       "kind": "interface",
-      "line": 111,
+      "line": 156,
       "signature": "TaskOpInput()",
       "members": [
         {
@@ -95,7 +107,7 @@
     {
       "name": "Loaded",
       "kind": "interface",
-      "line": 143,
+      "line": 188,
       "signature": "Loaded()",
       "members": [
         {
@@ -121,61 +133,61 @@
     {
       "name": "loadTask",
       "kind": "function",
-      "line": 149,
+      "line": 194,
       "signature": "loadTask(feature: string, nodeId: string): Loaded"
     },
     {
       "name": "requireRoot",
       "kind": "function",
-      "line": 178,
+      "line": 223,
       "signature": "requireRoot(dsl: { source_root?: string }): string"
     },
     {
       "name": "assertTransition",
       "kind": "function",
-      "line": 190,
+      "line": 235,
       "signature": "assertTransition(from: TaskState, to: TaskState, action: string): void"
     },
     {
       "name": "writeTask",
       "kind": "function",
-      "line": 206,
+      "line": 251,
       "signature": "writeTask(feature: string, nodeId: string, next: TaskSpec): void"
     },
     {
       "name": "sameCriteria",
       "kind": "function",
-      "line": 225,
+      "line": 270,
       "signature": "sameCriteria(card: TaskSpec, summary: string, expectations: readonly unknown[]): boolean"
     },
     {
       "name": "canonCriteria",
       "kind": "function",
-      "line": 235,
+      "line": 280,
       "signature": "canonCriteria(xs: readonly unknown[]): string"
     },
     {
       "name": "codeFingerprintAt",
       "kind": "function",
-      "line": 255,
+      "line": 300,
       "signature": "codeFingerprintAt(root: string, rels: readonly string[]): { code: string; covers: string[] }"
     },
     {
       "name": "fingerprintEvidence",
       "kind": "function",
-      "line": 280,
+      "line": 325,
       "signature": "fingerprintEvidence(card: Pick<TaskSpec, 'expectations'>,\n  sourceRoot: string | undefined,\n  nodeId: string,\n  ev: ProgressEvidence,): TaskEvidenceFingerprint"
     },
     {
       "name": "reopenGate",
       "kind": "function",
-      "line": 316,
+      "line": 361,
       "signature": "reopenGate(card: TaskSpec,\n  evidence: ProgressEvidence | undefined,): { ok: true } | { ok: false; reason: string }"
     },
     {
       "name": "ConstructBasis",
       "kind": "interface",
-      "line": 385,
+      "line": 430,
       "signature": "ConstructBasis()",
       "members": [
         {
@@ -201,73 +213,73 @@
     {
       "name": "constructBasis",
       "kind": "function",
-      "line": 395,
+      "line": 440,
       "signature": "constructBasis(dsl: NonNullable<ReturnType<typeof getDesignSheet>>,\n  node: { id: string; type?: string; label?: string; title?: string; description?: string; path?: string },): ConstructBasis"
     },
     {
       "name": "constructionVerdict",
       "kind": "function",
-      "line": 438,
+      "line": 483,
       "signature": "constructionVerdict(dsl: NonNullable<ReturnType<typeof getDesignSheet>>,\n  nodeId: string,): { complete: boolean; missing: string[]; post: number }"
     },
     {
       "name": "publishTask",
       "kind": "function",
-      "line": 457,
+      "line": 502,
       "signature": "publishTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "claimTask",
       "kind": "function",
-      "line": 730,
+      "line": 775,
       "signature": "claimTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "releaseTask",
       "kind": "function",
-      "line": 1038,
+      "line": 1081,
       "signature": "releaseTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "completeTask",
       "kind": "function",
-      "line": 1090,
+      "line": 1140,
       "signature": "completeTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "reopenTask",
       "kind": "function",
-      "line": 1270,
+      "line": 1323,
       "signature": "reopenTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "relaunchTask",
       "kind": "function",
-      "line": 1334,
+      "line": 1394,
       "signature": "relaunchTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "applyTaskOp",
       "kind": "function",
-      "line": 1373,
+      "line": 1433,
       "signature": "applyTaskOp(feature: string,\n  op: TaskOpRequest,\n  agent?: string,): Promise<EditResult>"
     },
     {
       "name": "publishFromDiff",
       "kind": "function",
-      "line": 1440,
+      "line": 1500,
       "signature": "publishFromDiff(feature: string, nodeId: string): EditResult"
     },
     {
       "name": "voidTask",
       "kind": "function",
-      "line": 1475,
+      "line": 1535,
       "signature": "voidTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "TodoHit",
       "kind": "interface",
-      "line": 1529,
+      "line": 1589,
       "signature": "TodoHit()",
       "members": [
         {
@@ -293,55 +305,55 @@
     {
       "name": "findTodoCard",
       "kind": "function",
-      "line": 1539,
+      "line": 1599,
       "signature": "findTodoCard(feature: string, action: string, id: string): TodoHit"
     },
     {
       "name": "assertNoIdentityChange",
       "kind": "function",
-      "line": 1557,
+      "line": 1617,
       "signature": "assertNoIdentityChange(action: string, data: Record<string, unknown>): void"
     },
     {
       "name": "updateTodoCard",
       "kind": "function",
-      "line": 1578,
+      "line": 1638,
       "signature": "updateTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "retireTodoCard",
       "kind": "function",
-      "line": 1628,
+      "line": 1688,
       "signature": "retireTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "deleteTodoCard",
       "kind": "function",
-      "line": 1695,
+      "line": 1758,
       "signature": "deleteTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "followTodoCard",
       "kind": "function",
-      "line": 1770,
+      "line": 1833,
       "signature": "followTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "applyTodoMutation",
       "kind": "function",
-      "line": 1823,
+      "line": 1886,
       "signature": "applyTodoMutation(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
     },
     {
       "name": "todoChainNote",
       "kind": "function",
-      "line": 1863,
+      "line": 1926,
       "signature": "todoChainNote(cards: readonly TaskSpec[], id: string): { head: string; detail: string }"
     },
     {
       "name": "applyTodoOp",
       "kind": "function",
-      "line": 1927,
+      "line": 1990,
       "signature": "applyTodoOp(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
     }
   ],
@@ -586,6 +598,22 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#releaseTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#normalizedInline"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#normalizedInline"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#reopenTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#normalizedInline"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#retireTodoCard",
+      "to": "src/application/design/dsl_ops/task_ops.ts#normalizedInline"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
       "to": "src/application/design/dsl_ops/task_ops.ts#publishTask"
     },
@@ -624,6 +652,22 @@
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
       "to": "src/application/design/dsl_ops/task_ops.ts#sameCriteria"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#releaseTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#signTaskActor"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#signTaskActor"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#reopenTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#signTaskActor"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#retireTodoCard",
+      "to": "src/application/design/dsl_ops/task_ops.ts#signTaskActor"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
@@ -686,7 +730,7 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
     },
     {
-      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "from": "src/application/design/dsl_ops/task_ops.ts#signTaskActor",
       "to": "src/domain/actor_spec.ts#actorStrictMode"
     },
     {
@@ -695,11 +739,39 @@
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/actor_spec.ts#actorStrictMode"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#signTaskActor",
       "to": "src/domain/actor_spec.ts#admitActor"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
       "to": "src/domain/actor_spec.ts#admitActor"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/actor_spec.ts#admitActor"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/actor_spec.ts#normalizedActorNote"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#releaseTask",
+      "to": "src/domain/actor_spec.ts#normalizedActorNote"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/domain/actor_spec.ts#normalizedActorNote"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#reopenTask",
+      "to": "src/domain/actor_spec.ts#normalizedActorNote"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#retireTodoCard",
+      "to": "src/domain/actor_spec.ts#normalizedActorNote"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",

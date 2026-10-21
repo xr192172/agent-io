@@ -60,6 +60,10 @@
     {
       "from": "src/infrastructure/analysis/package_migration/languages/ts.ts#collectTsBinds",
       "to": "src/infrastructure/analysis/package_migration/parts.ts#stripQuotes"
+    },
+    {
+      "from": "src/infrastructure/analysis/package_migration/languages/ts.ts#tsAliasEdits",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
   ]
 }

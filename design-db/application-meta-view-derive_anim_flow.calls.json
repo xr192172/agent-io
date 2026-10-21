@@ -288,6 +288,10 @@
     },
     {
       "from": "src/application/meta/view/derive_anim_flow.ts#deriveAnimFlowCore",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
+      "from": "src/application/meta/view/derive_anim_flow.ts#deriveAnimFlowCore",
       "to": "src/infrastructure/storage.ts#getDSL"
     },
     {

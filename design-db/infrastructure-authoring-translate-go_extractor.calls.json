@@ -459,6 +459,10 @@
     {
       "from": "src/infrastructure/authoring/translate/go_extractor.ts#collect",
       "to": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromTypeSpec"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#extractGo",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
   ]
 }

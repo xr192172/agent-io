@@ -108,6 +108,10 @@
     {
       "from": "src/infrastructure/authoring/translate/verify.ts#verifySkeletons",
       "to": "src/infrastructure/authoring/translate/verify.ts#structureCheck"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/verify.ts#verifySkeletons",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
   ]
 }

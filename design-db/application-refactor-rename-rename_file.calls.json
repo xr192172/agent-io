@@ -7,19 +7,19 @@
     {
       "name": "SOURCE_EXTS",
       "kind": "const",
-      "line": 36,
+      "line": 38,
       "signature": "const SOURCE_EXTS = new Set<string>([...TS_JS_EXTS, '.py'])"
     },
     {
       "name": "walkProjectFiles",
       "kind": "function",
-      "line": 38,
+      "line": 40,
       "signature": "walkProjectFiles(dir: string, out: string[]): void"
     },
     {
       "name": "RefEdit",
       "kind": "interface",
-      "line": 57,
+      "line": 59,
       "signature": "RefEdit()",
       "members": [
         {
@@ -69,7 +69,7 @@
     {
       "name": "RenameFileInput",
       "kind": "interface",
-      "line": 67,
+      "line": 69,
       "signature": "RenameFileInput()",
       "members": [
         {
@@ -113,7 +113,7 @@
     {
       "name": "RenameFileResult",
       "kind": "interface",
-      "line": 86,
+      "line": 88,
       "signature": "RenameFileResult()",
       "members": [
         {
@@ -181,85 +181,85 @@
     {
       "name": "toPosix",
       "kind": "function",
-      "line": 106,
+      "line": 108,
       "signature": "toPosix(p: string): string"
     },
     {
       "name": "newSpecifier",
       "kind": "function",
-      "line": 111,
+      "line": 113,
       "signature": "newSpecifier(importerRel: string, oldSource: string, newRelNoExt: string): string"
     },
     {
       "name": "resolvePythonTarget",
       "kind": "function",
-      "line": 130,
+      "line": 132,
       "signature": "resolvePythonTarget(projectRoot: string, fromRel: string, source: string): string | null"
     },
     {
       "name": "newPySpecifier",
       "kind": "function",
-      "line": 161,
+      "line": 163,
       "signature": "newPySpecifier(importerRel: string, newRelNoExt: string): string"
     },
     {
       "name": "SPECIFIER_APIS",
       "kind": "const",
-      "line": 192,
+      "line": 194,
       "signature": "const SPECIFIER_APIS = new Set<string>([ // ── 语言级：CommonJS / dynamic import（`im…"
     },
     {
       "name": "calleeName",
       "kind": "function",
-      "line": 224,
+      "line": 226,
       "signature": "calleeName(fn: SyntaxNodeLike | null): string | null"
     },
     {
       "name": "literalOfSpecifierArg",
       "kind": "function",
-      "line": 266,
+      "line": 268,
       "signature": "literalOfSpecifierArg(node: SyntaxNodeLike | null,\n  depth = 0,): { startIndex: number; text: string; inner: string } | null"
     },
     {
       "name": "importSourceLiteral",
       "kind": "function",
-      "line": 290,
+      "line": 292,
       "signature": "importSourceLiteral(node: SyntaxNodeLike): { startIndex: number; text: string; inner: string } | null"
     },
     {
       "name": "stringLiteral",
       "kind": "function",
-      "line": 336,
+      "line": 338,
       "signature": "stringLiteral(s: SyntaxNodeLike | null): { startIndex: number; text: string; inner: string } | null"
     },
     {
       "name": "collectImportLiterals",
       "kind": "function",
-      "line": 348,
+      "line": 350,
       "signature": "collectImportLiterals(node: SyntaxNodeLike, out: Array<{ node: SyntaxNodeLike; lit: { startIndex: number; text: string; inner: string } | null }>, depth = 0): void"
     },
     {
       "name": "collectPythonImportLiterals",
       "kind": "function",
-      "line": 369,
+      "line": 371,
       "signature": "collectPythonImportLiterals(node: SyntaxNodeLike, out: Array<{ node: SyntaxNodeLike; lit: { startIndex: number; text: string; inner: string } | null }>, depth = 0): void"
     },
     {
       "name": "renameFileCore",
       "kind": "function",
-      "line": 400,
+      "line": 402,
       "signature": "renameFileCore(input: RenameFileInput): Promise<RenameFileResult>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 619,
+      "line": 629,
       "signature": "touchedOf(input: RenameFileInput, r: RenameFileResult): Touched"
     },
     {
       "name": "renameFile",
       "kind": "function",
-      "line": 629,
+      "line": 639,
       "signature": "renameFile(input: RenameFileInput): Promise<TouchedProduct<RenameFileResult>>"
     }
   ],
@@ -298,6 +298,10 @@
     },
     {
       "source": "../../write_gate.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../source_writer.js",
       "kind": "relative"
     },
     {
@@ -424,15 +428,11 @@
     },
     {
       "from": "src/application/refactor/rename/rename_file.ts#renameFileCore",
-      "to": "src/application/write_gate.ts#assertSourceWriteRegisteredFor"
+      "to": "src/application/source_writer.ts#openSourceWrite"
     },
     {
       "from": "src/application/refactor/rename/rename_file.ts#renameFileCore",
       "to": "src/application/write_gate.ts#reopenAndResolveAfterWrite"
-    },
-    {
-      "from": "src/application/refactor/rename/rename_file.ts#renameFileCore",
-      "to": "src/application/write_gate.ts#resolveActor"
     },
     {
       "from": "src/application/refactor/rename/rename_file.ts#renameFile",

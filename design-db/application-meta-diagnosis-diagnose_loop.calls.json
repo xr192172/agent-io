@@ -172,6 +172,10 @@
     },
     {
       "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/test_contract.ts#readTestContract"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
       "to": "src/infrastructure/analysis/diagnosis/verifier.ts#detectKind"
     },
     {

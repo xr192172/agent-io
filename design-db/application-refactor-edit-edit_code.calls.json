@@ -7,13 +7,13 @@
     {
       "name": "EditCodeOp",
       "kind": "type",
-      "line": 60,
+      "line": 64,
       "signature": "EditCodeOp()"
     },
     {
       "name": "EditCodeArgs",
       "kind": "interface",
-      "line": 62,
+      "line": 66,
       "signature": "EditCodeArgs()",
       "members": [
         {
@@ -123,7 +123,7 @@
     {
       "name": "EditBatchItem",
       "kind": "interface",
-      "line": 119,
+      "line": 123,
       "signature": "EditBatchItem()",
       "members": [
         {
@@ -179,7 +179,7 @@
     {
       "name": "LineOp",
       "kind": "interface",
-      "line": 138,
+      "line": 142,
       "signature": "LineOp()",
       "members": [
         {
@@ -205,103 +205,103 @@
     {
       "name": "normalizeCode",
       "kind": "function",
-      "line": 146,
+      "line": 150,
       "signature": "normalizeCode(code: string, eol: string): string[]"
     },
     {
       "name": "hasSyntaxError",
       "kind": "function",
-      "line": 158,
+      "line": 162,
       "signature": "hasSyntaxError(filePath: string, content: string): Promise<boolean>"
     },
     {
       "name": "matchSymbols",
       "kind": "function",
-      "line": 164,
+      "line": 168,
       "signature": "matchSymbols(symbols: ParsedSymbol[], symbol: string, parent?: string): {\n  qnHits: ParsedSymbol[];\n  nameHits: ParsedSymbol[];\n}"
     },
     {
       "name": "describeSymbol",
       "kind": "function",
-      "line": 177,
+      "line": 181,
       "signature": "describeSymbol(s: ParsedSymbol): string"
     },
     {
       "name": "squeezeBlankRuns",
       "kind": "function",
-      "line": 182,
+      "line": 186,
       "signature": "squeezeBlankRuns(lines: string[]): string[]"
     },
     {
       "name": "buildRangePreview",
       "kind": "function",
-      "line": 192,
+      "line": 196,
       "signature": "buildRangePreview(start: number,\n  end: number,\n  total: number,\n  removed: string[],\n  added: string[],\n  overlapped: ParsedSymbol[],\n  quiet?: boolean,): string"
     },
     {
       "name": "buildGenericDiff",
       "kind": "function",
-      "line": 226,
+      "line": 230,
       "signature": "buildGenericDiff(header: string, removed: string[], added: string[]): string"
     },
     {
       "name": "findBodyRange",
       "kind": "function",
-      "line": 242,
+      "line": 246,
       "signature": "findBodyRange(absPath: string,\n  content: string,\n  symbol: string,\n  parent?: string,): Promise<{ startIndex: number; endIndex: number; startLine: number; endLine: number } | null>"
     },
     {
       "name": "leadingSpaces",
       "kind": "function",
-      "line": 285,
+      "line": 289,
       "signature": "leadingSpaces(line: string): number"
     },
     {
       "name": "leadingWhitespaceOfLine",
       "kind": "function",
-      "line": 291,
+      "line": 295,
       "signature": "leadingWhitespaceOfLine(content: string, line: number): string"
     },
     {
       "name": "realignCode",
       "kind": "function",
-      "line": 304,
+      "line": 308,
       "signature": "realignCode(lines: string[], refIndent: string): string[]"
     },
     {
       "name": "DECL_PREFIXES",
       "kind": "const",
-      "line": 312,
+      "line": 316,
       "signature": "const DECL_PREFIXES = [ 'function ', 'class ', 'interface ', 'enum ', 'type ', …"
     },
     {
       "name": "looksLikeBareBody",
       "kind": "function",
-      "line": 318,
+      "line": 322,
       "signature": "looksLikeBareBody(code: string): boolean"
     },
     {
       "name": "subBodyHint",
       "kind": "function",
-      "line": 326,
+      "line": 330,
       "signature": "subBodyHint(targetKind: string | undefined): string"
     },
     {
       "name": "describeSymbolCtx",
       "kind": "function",
-      "line": 335,
+      "line": 339,
       "signature": "describeSymbolCtx(s: ParsedSymbol, lines: string[]): string"
     },
     {
       "name": "buildAmbiguityError",
       "kind": "function",
-      "line": 345,
+      "line": 349,
       "signature": "buildAmbiguityError(hits: ParsedSymbol[], symbol: string, lines: string[]): string"
     },
     {
       "name": "EditReceipt",
       "kind": "interface",
-      "line": 362,
+      "line": 366,
       "signature": "EditReceipt()",
       "members": [
         {
@@ -391,7 +391,7 @@
         {
           "name": "task_gate",
           "type": ": string",
-          "optional": true,
+          "optional": false,
           "member_kind": "property"
         },
         {
@@ -405,7 +405,7 @@
     {
       "name": "ReplaceTextPlan",
       "kind": "interface",
-      "line": 407,
+      "line": 411,
       "signature": "ReplaceTextPlan()",
       "members": [
         {
@@ -449,13 +449,13 @@
     {
       "name": "planReplaceText",
       "kind": "function",
-      "line": 434,
+      "line": 438,
       "signature": "planReplaceText(absPath: string,\n  content: string,\n  eol: string,\n  oldText: string,\n  newText: string,): Promise<ReplaceTextPlan>"
     },
     {
       "name": "GateReceipt",
       "kind": "interface",
-      "line": 499,
+      "line": 503,
       "signature": "GateReceipt()",
       "members": [
         {
@@ -481,31 +481,31 @@
     {
       "name": "editCodeInner",
       "kind": "function",
-      "line": 506,
+      "line": 510,
       "signature": "editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise<{ message: string; data?: unknown }>"
     },
     {
       "name": "editCodeBatch",
       "kind": "function",
-      "line": 965,
+      "line": 973,
       "signature": "editCodeBatch(args: EditCodeArgs): Promise<{ message: string; data: EditReceipt }>"
     },
     {
       "name": "editCodeCore",
       "kind": "function",
-      "line": 1158,
+      "line": 1177,
       "signature": "editCodeCore(args: EditCodeArgs): Promise<{ message: string; data: EditReceipt }>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 1198,
+      "line": 1219,
       "signature": "touchedOf(args: EditCodeArgs, r: { message: string; data: EditReceipt }): Touched"
     },
     {
       "name": "editCode",
       "kind": "function",
-      "line": 1225,
+      "line": 1246,
       "signature": "editCode(args: EditCodeArgs): Promise<TouchedProduct<{ message: string; data: EditReceipt }>>"
     }
   ],
@@ -540,6 +540,10 @@
     },
     {
       "source": "../../write_gate.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../source_writer.js",
       "kind": "relative"
     },
     {
@@ -766,19 +770,11 @@
     },
     {
       "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
-      "to": "src/application/refactor/snapshot/file_snapshot.ts#snapshotBeforeWrite"
+      "to": "src/application/source_writer.ts#openSourceWrite"
     },
     {
       "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
-      "to": "src/application/refactor/snapshot/file_snapshot.ts#snapshotBeforeWrite"
-    },
-    {
-      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
-      "to": "src/application/write_gate.ts#assertSourceWriteRegisteredFor"
-    },
-    {
-      "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
-      "to": "src/application/write_gate.ts#assertSourceWriteRegisteredFor"
+      "to": "src/application/source_writer.ts#openSourceWrite"
     },
     {
       "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
@@ -843,14 +839,6 @@
     {
       "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
       "to": "src/application/write_gate.ts#reopenNote"
-    },
-    {
-      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
-      "to": "src/application/write_gate.ts#resolveActor"
-    },
-    {
-      "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
-      "to": "src/application/write_gate.ts#resolveActor"
     },
     {
       "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
@@ -923,6 +911,38 @@
     {
       "from": "src/application/refactor/edit/edit_code.ts#planReplaceText",
       "to": "src/infrastructure/parse/fuzzy_match.ts#realignNewTextTo"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#hasSyntaxError",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#findBodyRange",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#planReplaceText",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
     },
     {
       "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",

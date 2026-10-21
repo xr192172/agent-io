@@ -1228,6 +1228,10 @@
       "to": "src/infrastructure/llm_gateway.ts#upsertProvider"
     },
     {
+      "from": "src/presentation/http/serve.ts#handleApiFunctionExample",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
       "from": "src/presentation/http/serve.ts#handleApiSave",
       "to": "src/infrastructure/storage.ts#getDSL"
     },

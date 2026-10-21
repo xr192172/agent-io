@@ -355,6 +355,12 @@
           "member_kind": "property"
         },
         {
+          "name": "follows",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
           "name": "owner",
           "type": ": string | null",
           "optional": true,
@@ -455,7 +461,7 @@
     {
       "name": "taskLevel",
       "kind": "function",
-      "line": 515,
+      "line": 543,
       "signature": "taskLevel(card: Pick<TaskSpec, 'expectations'>): 'L1' | 'L2'"
     }
   ],

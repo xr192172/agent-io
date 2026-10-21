@@ -543,6 +543,10 @@
       "to": "src/infrastructure/index/index_freshness.ts#detectStaleIndex"
     },
     {
+      "from": "src/presentation/mcp/server_registry.ts#ensureKernelPrewarmed",
+      "to": "src/infrastructure/parse/kernel.ts#prewarmKernel"
+    },
+    {
       "from": "src/presentation/mcp/server_registry.ts#liveDslFallbackWarning",
       "to": "src/infrastructure/storage.ts#getLiveFallback"
     },

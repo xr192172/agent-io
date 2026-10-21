@@ -7,7 +7,7 @@
     {
       "name": "MoveSymbolInput",
       "kind": "interface",
-      "line": 56,
+      "line": 58,
       "signature": "MoveSymbolInput()",
       "members": [
         {
@@ -63,7 +63,7 @@
     {
       "name": "MoveRedirect",
       "kind": "interface",
-      "line": 78,
+      "line": 80,
       "signature": "MoveRedirect()",
       "members": [
         {
@@ -95,7 +95,7 @@
     {
       "name": "MoveSymbolResult",
       "kind": "interface",
-      "line": 89,
+      "line": 91,
       "signature": "MoveSymbolResult()",
       "members": [
         {
@@ -193,13 +193,13 @@
     {
       "name": "TS_EXTS",
       "kind": "const",
-      "line": 133,
+      "line": 135,
       "signature": "const TS_EXTS = new Set<string>(TS_JS_EXTS)"
     },
     {
       "name": "Edit",
       "kind": "interface",
-      "line": 135,
+      "line": 137,
       "signature": "Edit()",
       "members": [
         {
@@ -225,73 +225,73 @@
     {
       "name": "stripQuotes",
       "kind": "function",
-      "line": 141,
+      "line": 143,
       "signature": "stripQuotes(s: string): string"
     },
     {
       "name": "applyEdits",
       "kind": "function",
-      "line": 148,
+      "line": 150,
       "signature": "applyEdits(src: string, edits: Edit[]): string"
     },
     {
       "name": "squeezeBlankRuns",
       "kind": "function",
-      "line": 157,
+      "line": 159,
       "signature": "squeezeBlankRuns(lines: string[]): string[]"
     },
     {
       "name": "relImportPath",
       "kind": "function",
-      "line": 167,
+      "line": 169,
       "signature": "relImportPath(fromAbs: string, toAbs: string): string"
     },
     {
       "name": "IDENT_LIKE",
       "kind": "const",
-      "line": 174,
+      "line": 176,
       "signature": "const IDENT_LIKE = new Set(['identifier', 'type_identifier', 'property_ident…"
     },
     {
       "name": "isDeclNodeType",
       "kind": "function",
-      "line": 176,
+      "line": 178,
       "signature": "isDeclNodeType(t: string): boolean"
     },
     {
       "name": "declName",
       "kind": "function",
-      "line": 191,
+      "line": 193,
       "signature": "declName(node: { type: string; childForFieldName(f: string): unknown }): string | null"
     },
     {
       "name": "findNamedDeclInExport",
       "kind": "function",
-      "line": 207,
+      "line": 209,
       "signature": "findNamedDeclInExport(stmt: { type: string; childCount: number; child(i: number): unknown }, symbol: string): unknown | null"
     },
     {
       "name": "findTopLevelDeclRange",
       "kind": "function",
-      "line": 228,
+      "line": 230,
       "signature": "findTopLevelDeclRange(src: string,\n  filePath: string,\n  symbol: string,): Promise<{ startIndex: number; endIndex: number } | null>"
     },
     {
       "name": "moveSymbol",
       "kind": "function",
-      "line": 269,
+      "line": 271,
       "signature": "moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResult>"
     },
     {
       "name": "touchedOfMove",
       "kind": "function",
-      "line": 284,
+      "line": 286,
       "signature": "touchedOfMove(input: MoveSymbolInput, r: MoveSymbolResult): Touched"
     },
     {
       "name": "moveSymbolCore",
       "kind": "function",
-      "line": 294,
+      "line": 296,
       "signature": "moveSymbolCore(input: MoveSymbolInput): Promise<MoveSymbolResult>"
     }
   ],
@@ -343,6 +343,10 @@
     },
     {
       "source": "../../write_gate.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../source_writer.js",
       "kind": "relative"
     },
     {
@@ -410,19 +414,11 @@
     },
     {
       "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
-      "to": "src/application/refactor/snapshot/file_snapshot.ts#snapshotBeforeWrite"
-    },
-    {
-      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
-      "to": "src/application/write_gate.ts#assertSourceWriteRegisteredFor"
+      "to": "src/application/source_writer.ts#openSourceWrite"
     },
     {
       "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
       "to": "src/application/write_gate.ts#reopenAndResolveAfterWrite"
-    },
-    {
-      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
-      "to": "src/application/write_gate.ts#resolveActor"
     },
     {
       "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
@@ -446,11 +442,39 @@
     },
     {
       "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/analysis/rename_symbol/parts.ts#buildNoExt"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/analysis/rename_symbol/parts.ts#resolveRel"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
       "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
     },
     {
       "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
       "to": "src/infrastructure/index/symbols.ts#syncFile"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#findTopLevelDeclRange",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource"
     },
     {
       "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",

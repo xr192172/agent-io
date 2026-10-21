@@ -552,6 +552,22 @@
     {
       "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
       "to": "src/infrastructure/index/symbols.ts#readSymbolBody"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
+      "to": "src/infrastructure/parse/type_members.ts#findTypeDeclByName"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
+      "to": "src/infrastructure/parse/type_members.ts#memberNamesOf"
     }
   ]
 }

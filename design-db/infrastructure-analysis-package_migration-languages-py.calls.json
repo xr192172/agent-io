@@ -77,6 +77,10 @@
     {
       "from": "src/infrastructure/analysis/package_migration/languages/py.ts#collectPyBinds",
       "to": "src/infrastructure/analysis/package_migration/languages/py.ts#pyImportSource"
+    },
+    {
+      "from": "src/infrastructure/analysis/package_migration/languages/py.ts#pyAliasEdits",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
   ]
 }

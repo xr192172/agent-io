@@ -632,6 +632,38 @@
       "to": "src/infrastructure/parse/ast_parser.ts#parseFileSymbols"
     },
     {
+      "from": "src/application/design/intent/consistency.ts#expectedParamsOf",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#expectedParamsOf",
+      "to": "src/infrastructure/parse/symbol_params.ts#paramsOf"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/infrastructure/parse/type_members.ts#findTypeDeclByName"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#compareTypeContractMembers",
+      "to": "src/infrastructure/parse/type_members.ts#normalizeMemberType"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#compareTypeContractMembers",
+      "to": "src/infrastructure/parse/type_members.ts#normalizeMemberType"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/infrastructure/parse/type_members.ts#typeDeclFromSignature"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/infrastructure/parse/type_members.ts#typeMembersOf"
+    },
+    {
       "from": "src/application/design/intent/consistency.ts#checkBaselineDrift",
       "to": "src/infrastructure/storage.ts#getBaselineFacts"
     },

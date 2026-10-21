@@ -455,6 +455,14 @@
     {
       "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#analyzeJavaRefs",
       "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#typeNameFrom"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#planSpringLayering",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#rewriteJavaFile",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
   ]
 }

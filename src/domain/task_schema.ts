@@ -28,7 +28,7 @@ import type { ProgressEvidence } from './overlay.js';
 import type { DiagramStatus } from './geometry.js';
 
 /**
- * 五态（★ 要**显式类型**，不许散落字符串）。
+ * 四态（★ 要**显式类型**，不许散落字符串）。
  *
  * | 态 | 含义 |
  * |---|---|
@@ -37,7 +37,7 @@ import type { DiagramStatus } from './geometry.js';
  * | `done` | 已完成 |
  * | `void` | 失效（target 在 DB 已查不到 —— ★ 与 `done` 是**两种不同结局**） |
  *
- * ★ 五态与 `.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.state_machine.states` **逐字一致**；
+ * ★ 四态与 `.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.state_machine.states` **逐字一致**（2026-10-22 更正：DSL 的 `states` 与 `TASK_STATES` 都是 4 值；原句写「五态」时两头都不成立）；
  *   这里是**唯一住处**，别处不许再抄一份字面量。
  */
 export const TASK_STATES = ['candidate', 'claimed', 'done', 'void'] as const;
@@ -63,7 +63,7 @@ export const CLOSED_TASK_STATES = ['done', 'void'] as const;
 /**
  * 运行期形状守卫：`unknown` ⇒ `TaskState`。
  * ★ 为什么需要它（不是形式主义）：任务格会被**读回**（JSON 反序列化 / 设计 DSL 落盘再读），
- *   那时值的静态类型已经**不再有保证** ⇒ 需要一个"此刻这个字符串是不是五态之一"的**真判据**。
+ *   那时值的静态类型已经**不再有保证** ⇒ 需要一个"此刻这个字符串是不是四态之一"的**真判据**。
  */
 export function isTaskState(v: unknown): v is TaskState {
   return typeof v === 'string' && (TASK_STATES as readonly string[]).includes(v);
@@ -82,7 +82,7 @@ export function isClosedTaskState(s: TaskState): boolean {
 
 /**
  * ★★★ **两轴消歧的唯一映射**（2026-10-17 · `task_plan.task_home.axis_dedup`）：
- * 任务态（五值）⇒ 进度（三值 `DiagramStatus`）的**派生值**。
+ * 任务态（四值）⇒ 进度（三值 `DiagramStatus`）的**派生值**。
  *
  * ## 为什么是派生，而不是落盘
  * 收归前：`progress`（三轴）与 `task.state`（五轴）**并存且无映射** ⇒ 同一件事两处权威。
@@ -370,7 +370,7 @@ export interface TaskSpec {
   summary: string;
   /** 判据（六类，对着 DB 判） */
   expectations: Expectation[];
-  /** 五态之一 */
+  /** 四态之一 */
   state: TaskState;
   /**
    * ★★★ **仅 todo 用**：这张预决策归哪个节点（`file_xxx`）。
@@ -461,7 +461,7 @@ export interface TaskSpec {
   /**
    * ★ **未实现**（2026-10-18 标）：原设计是「新卡带 replaces ⇒ 旧卡转 superseded」，
    * 而 superseded 状态已于 2026-10-17 删除 ⇒ **本字段目前无状态可转、无读取方** ⇒ 死字段。
-   * ★ 要复活它，先回答「取代后旧卡变成什么」（目前只有 done / void 两个终态）。
+   * ★ 要复活它，先回答「取代后旧卡变成什么」（done / void 是**两种结局**，且各自可经 t_reopen / t_relaunch 回头 ⇒ 本仓已没有「终态」这回事）。
    */
   replaces?: string;
   /**

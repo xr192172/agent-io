@@ -7,19 +7,19 @@
     {
       "name": "LiteralMatchKind",
       "kind": "type",
-      "line": 59,
+      "line": 60,
       "signature": "LiteralMatchKind()"
     },
     {
       "name": "LiteralDecision",
       "kind": "type",
-      "line": 62,
+      "line": 63,
       "signature": "LiteralDecision()"
     },
     {
       "name": "RawLiteralMatch",
       "kind": "interface",
-      "line": 65,
+      "line": 66,
       "signature": "RawLiteralMatch()",
       "members": [
         {
@@ -63,7 +63,7 @@
     {
       "name": "LiteralMatch",
       "kind": "interface",
-      "line": 77,
+      "line": 78,
       "signature": "LiteralMatch()",
       "members": [
         {
@@ -89,7 +89,7 @@
     {
       "name": "RenameSymbolsItem",
       "kind": "interface",
-      "line": 85,
+      "line": 86,
       "signature": "RenameSymbolsItem()",
       "members": [
         {
@@ -127,13 +127,13 @@
     {
       "name": "ModuleSymbolRenameResult",
       "kind": "type",
-      "line": 118,
+      "line": 119,
       "signature": "ModuleSymbolRenameResult()"
     },
     {
       "name": "RenameSymbolsResult",
       "kind": "interface",
-      "line": 125,
+      "line": 126,
       "signature": "RenameSymbolsResult()",
       "members": [
         {
@@ -231,7 +231,7 @@
     {
       "name": "RenameSymbolsInput",
       "kind": "interface",
-      "line": 194,
+      "line": 195,
       "signature": "RenameSymbolsInput()",
       "members": [
         {
@@ -287,85 +287,85 @@
     {
       "name": "renameSymbolsCore",
       "kind": "function",
-      "line": 216,
+      "line": 217,
       "signature": "renameSymbolsCore(input: RenameSymbolsInput): Promise<RenameSymbolsResult>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 224,
+      "line": 225,
       "signature": "touchedOf(input: RenameSymbolsInput, r: RenameSymbolsResult): Touched"
     },
     {
       "name": "renameSymbols",
       "kind": "function",
-      "line": 291,
+      "line": 292,
       "signature": "renameSymbols(input: RenameSymbolsInput): Promise<TouchedProduct<RenameSymbolsResult>>"
     },
     {
       "name": "planLinkedFileRename",
       "kind": "function",
-      "line": 307,
+      "line": 308,
       "signature": "planLinkedFileRename(item: RenameSymbolsItem,\n  res: RenameSymbolResult,\n  fallbackRoot: string | undefined,): { root: string; fromAbs: string; toAbs: string; relNew: string } | null"
     },
     {
       "name": "renameSymbolsModule",
       "kind": "function",
-      "line": 327,
+      "line": 328,
       "signature": "renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Promise<Omit<RenameSymbolsResult, 'scope'>>"
     },
     {
       "name": "localItemResult",
       "kind": "function",
-      "line": 544,
+      "line": 561,
       "signature": "localItemResult(it: LocalRenameOutcome, dryRun: boolean): RenameSymbolResult"
     },
     {
       "name": "renameSymbolsLocal",
       "kind": "function",
-      "line": 570,
+      "line": 587,
       "signature": "renameSymbolsLocal(input: RenameSymbolsInput): Promise<RenameSymbolsResult>"
     },
     {
       "name": "camelToSnake",
       "kind": "function",
-      "line": 656,
+      "line": 673,
       "signature": "camelToSnake(str: string): string"
     },
     {
       "name": "classifyLiteral",
       "kind": "function",
-      "line": 661,
+      "line": 678,
       "signature": "classifyLiteral(file: string, lineText: string, needle: string): LiteralMatchKind"
     },
     {
       "name": "gitIgnoredTopDirs",
       "kind": "function",
-      "line": 675,
+      "line": 692,
       "signature": "gitIgnoredTopDirs(root: string): Set<string>"
     },
     {
       "name": "scanLiteralOccurrences",
       "kind": "function",
-      "line": 692,
+      "line": 709,
       "signature": "scanLiteralOccurrences(projectDir: string,\n  needles: string[],): Array<{ needle: string; matches: RawLiteralMatch[] }>"
     },
     {
       "name": "decideLiteral",
       "kind": "function",
-      "line": 762,
+      "line": 779,
       "signature": "decideLiteral(kind: LiteralMatchKind, frozen: boolean, isGenerated: boolean): LiteralDecision"
     },
     {
       "name": "buildLiteralPlan",
       "kind": "function",
-      "line": 774,
+      "line": 791,
       "signature": "buildLiteralPlan(rootDir: string,\n  renames: RenameSymbolsItem[],\n  guard?: { isFrozen(absFile: string, src: string, pos: number): boolean; isGeneratedFile(absFile: string): boolean } | null,): RenameSymbolsResult['literals']"
     },
     {
       "name": "applyLiteralPlan",
       "kind": "function",
-      "line": 808,
+      "line": 825,
       "signature": "applyLiteralPlan(plan: RenameSymbolsResult['literals']): { filesWritten: number; files: string[] }"
     }
   ],
@@ -399,8 +399,13 @@
       "kind": "relative"
     },
     {
-      "source": "../../write_gate.js",
+      "source": "../../source_writer.js",
       "kind": "relative"
+    },
+    {
+      "source": "../../write_gate.js",
+      "kind": "relative",
+      "type_only": true
     },
     {
       "source": "../gate_note.js",
@@ -523,7 +528,7 @@
     },
     {
       "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
-      "to": "src/application/write_gate.ts#writeSourceFiles"
+      "to": "src/application/source_writer.ts#openSourceWrite"
     },
     {
       "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbols",
@@ -544,6 +549,14 @@
     {
       "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
       "to": "src/infrastructure/analysis/refactor/protect.ts#createProtectGuard"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+      "to": "src/infrastructure/analysis/rename_symbol/core.ts#renameSymbol"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+      "to": "src/infrastructure/analysis/rename_symbol/core.ts#renameSymbol"
     },
     {
       "from": "src/application/refactor/rename/rename_symbols.ts#scanLiteralOccurrences",

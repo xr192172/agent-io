@@ -438,6 +438,14 @@
       "to": "src/infrastructure/analysis/project_root/index.ts#resolveProjectRoot"
     },
     {
+      "from": "src/application/refactor/find/find_references.ts#findReferencesCore",
+      "to": "src/infrastructure/analysis/rename_symbol/parts.ts#buildNoExt"
+    },
+    {
+      "from": "src/application/refactor/find/find_references.ts#findReferencesCore",
+      "to": "src/infrastructure/analysis/rename_symbol/parts.ts#resolveRel"
+    },
+    {
       "from": "src/application/refactor/find/find_references.ts#indexCandidateFiles",
       "to": "src/infrastructure/graph/import_graph.ts#buildImportGraph"
     },
@@ -448,6 +456,22 @@
     {
       "from": "src/application/refactor/find/find_references.ts#findReferencesCore",
       "to": "src/infrastructure/index/index_freshness.ts#ensureProjectIndex"
+    },
+    {
+      "from": "src/application/refactor/find/find_references.ts#findReferencesCore",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
+      "from": "src/application/refactor/find/find_references.ts#findReferencesCore",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
+      "from": "src/application/refactor/find/find_references.ts#findReferencesCore",
+      "to": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource"
+    },
+    {
+      "from": "src/application/refactor/find/find_references.ts#findReferencesCore",
+      "to": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource"
     },
     {
       "from": "src/application/refactor/find/find_references.ts#indexCandidateFiles",

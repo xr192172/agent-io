@@ -43244,7 +43244,7 @@
       },
       {
         "id": "file_src_domain_task_machine_ts",
-        "label": "状态机（五态 + 迁移判据）",
+        "label": "状态机（四态 + 迁移判据）",
         "x": 6450,
         "y": 264,
         "width": 240,
@@ -43258,7 +43258,7 @@
         },
         "arch_layer": "service",
         "decision": {
-          "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+          "summary": "四态：候选 → 已领 → 已完成；另有 失效（target 没了）（★ 被取代 superseded 已于 2026-10-17 删除；void 可经 t_relaunch 重新立卡）",
           "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
           "expectations": [
             {
@@ -47210,7 +47210,7 @@
         ],
         "task": {
           "id": "file_src_domain_task_machine_ts",
-          "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+          "summary": "四态：候选 → 已领 → 已完成；另有 失效（target 没了）（★ 被取代 superseded 已于 2026-10-17 删除；void 可经 t_relaunch 重新立卡）",
           "expectations": [
             {
               "kind": "symbol-exists",
@@ -47614,7 +47614,7 @@
               "kind": "symbol-exists",
               "path": "src/domain/task_schema.ts",
               "symbol": "TaskState",
-              "why": "五态要是显式类型，不许散落字符串"
+              "why": "四态要是显式类型，不许散落字符串"
             },
             {
               "kind": "symbol-exists",
@@ -47631,7 +47631,7 @@
             {
               "kind": "symbol-exists",
               "path": "src/domain/task_schema.ts",
-              "symbol": "TERMINAL_TASK_STATES",
+              "symbol": "CLOSED_TASK_STATES",
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             },
             {
@@ -47655,7 +47655,7 @@
             {
               "kind": "symbol-exists",
               "path": "src/domain/task_schema.ts",
-              "symbol": "isTerminalTaskState",
+              "symbol": "isClosedTaskState",
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             },
             {
@@ -48087,7 +48087,7 @@
               "kind": "symbol-exists",
               "path": "src/domain/task_schema.ts",
               "symbol": "TaskState",
-              "why": "五态要是显式类型，不许散落字符串"
+              "why": "四态要是显式类型，不许散落字符串"
             },
             {
               "kind": "symbol-exists",
@@ -48104,7 +48104,7 @@
             {
               "kind": "symbol-exists",
               "path": "src/domain/task_schema.ts",
-              "symbol": "TERMINAL_TASK_STATES",
+              "symbol": "CLOSED_TASK_STATES",
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             },
             {
@@ -48128,7 +48128,7 @@
             {
               "kind": "symbol-exists",
               "path": "src/domain/task_schema.ts",
-              "symbol": "isTerminalTaskState",
+              "symbol": "isClosedTaskState",
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             },
             {
@@ -48172,7 +48172,7 @@
               {
                 "file": "src/domain/task_schema.ts",
                 "name": "TaskSpec",
-                "fp": "fababbe6d03012f446c48b763695cec6a191560a"
+                "fp": "09bf53ef4223a593f67ea6dd79a87fda653760ac"
               },
               {
                 "file": "src/domain/task_schema.ts",
@@ -48203,18 +48203,18 @@
             "files": [
               {
                 "path": "src/domain/task_schema.ts",
-                "content_hash": "e3acc9ae34a79d7892ca25f27a6a0eae15029daa"
+                "content_hash": "2cca7bc11da0e594ca50c1a40215d1beb76c7aee"
               }
             ],
-            "computed_at": "2026-10-21T13:17:19.843Z",
+            "computed_at": "2026-10-21T18:22:41.934Z",
             "basis": [
               "expectations"
             ],
             "note": "2 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/domain/task_schema.ts#TERMINAL_TASK_STATES / src/domain/task_schema.ts#isTerminalTaskState"
           },
-          "release_reason": "src/domain/task_schema.ts 的 follows 字段已落地（tsc 0 error），交回候选",
-          "released_by": "subagent:follows-chain",
-          "released_at": "2026-10-21T13:37:59.538Z"
+          "release_reason": "链 D 两项改动已落盘（src/domain/task_schema.ts 的『五态』现状描述改四态；DSL 补 t_relaunch）⇒ 交回池子，不占着 src/domain/task_schema.ts 的写权",
+          "released_by": "subagent:chain-d",
+          "released_at": "2026-10-21T18:29:29.995Z"
         },
         "status": "draft"
       },
@@ -102058,11 +102058,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T18:05:16.132Z",
+    "saved_at": "2026-10-21T18:29:30.025Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 22393321,
+    "age": 23847214,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -102263,22 +102263,25 @@
           "guard": {
             "clauses": [
               "isClaimable(cardStanding(card)) === true —— ★ 五值读数里的 work / violated 两格（有活干、或有违约要拆）",
-              "★ 分区口径：phase=post 供满足度，phase=pre 供违约轴；satisfied **不在可领之列**（没活干不许领）；blocked / unknowable 都拒（依赖未做 / 判不了，拒因分别点名）",
-              "★ 集齐判据要用**全部设计节点**（blocked 的归属 = 红的主体 path 落在谁头上、那个节点做没做完）",
+              "★ 分区口径：phase=post 供满足度，phase=pre 供违约轴；satisfied **不在可领之列**（没活干不许领）；blocked / unknowable 都拒（依赖未做 / 判不了，拒因分别点名）（★ 2026-10-20 起补一档：`satisfied` ∧ `data.intent=modify` 可领 —— 取的是写权，不是「又有活干了」；`blocked` / `unknowable` 连 modify 也拒）",
               "target 在 DB 存在（不存在则走 t_void）",
               "CAS: UPDATE tasks SET owner=?,state='claimed' WHERE id=? AND state='candidate' AND owner IS NULL 的 changes === 1",
-              "★★★ 归属判据（2026-10-17 重写，判据只住 RED_DISPOSITION 一处）：每条红先分类成 own / orphan / dep-pending / dep-done；own 与 orphan = 本卡能改（claim），dep-pending 与 dep-done = 改不动（wait）。blocked ⟺ 没有一条能改；否则 work。★ dep-done 也算 wait：闸只认该节点的 claimed 卡，本卡改不动已 done 节点的文件，处置是重开那张卡"
+              "★★★ 归属判据（2026-10-17 重写，判据只住 RED_DISPOSITION 一处）：每条红先分类成 own / orphan / dep-pending / dep-done；own 与 orphan = 本卡能改（claim），dep-pending 与 dep-done = 改不动（wait）。blocked ⟺ 没有一条能改；否则 work。★ dep-done 也算 wait：闸只认该节点的 claimed 卡，本卡改不动已 done 节点的文件，处置是重开那张卡",
+              "★★ state=done ⇒ 本迁移不直接执行：先走 t_reopen（reason 必填、owner 换手、reopened_at / reopen_reason / reopened_from 记账、evidence 保留），再写 owner —— 一步对外（claim intent=modify）两步对内；intent=work 时仍要 isClaimable 放行（判据后来退化了才有活）",
+              "★ state=void 不走这里（先 t_relaunch → candidate → publish 重给判据 → claim）"
             ],
             "read": "cardStanding 的 standing 值 + CAS 的 changes 行数",
             "clause_coverage": {
-              "0": "isClaimable(cardStanding) —— task_machine.ts:320",
-              "1": "同 0（phase 分区在 cardStanding 内，task_machine.ts:153-154）",
-              "2": "同 0（satisfied 不可领 / blocked / unknowable 都拒）",
-              "3": "★★ 无执行者：全仓 0 处「target 在 DB 存在」检查（`existsTarget` 0 命中）—— debt: D-target-exists",
-              "4": "CAS 在 task_ops.ts:462 —— ★ 但它是 check-then-act（见 A3），不是真 CAS",
-              "5": "RED_DISPOSITION（task_machine.ts:153-170 的归属⇒处置表）—— ★ 2026-10-17 补挂（N2：原来 6 条 clause 只挂 5 条，漏的正是这条最重的）"
+              "0": "isClaimable(cardStanding) —— task_machine.ts:402",
+              "1": "同 0（phase 分区在 cardStanding 内，task_machine.ts:153-154）；intent=modify 分支 task_machine.ts:404，调用点 task_ops.ts:914",
+              "2": "★★ 无执行者：全仓 0 处「target 在 DB 存在」检查（`existsTarget` 0 命中）—— debt: D-target-exists",
+              "3": "CAS 在 task_ops.ts:938（`casOk = reopening || (state==='candidate' && !owner)`）—— ★ 是 check-then-act（A3），不是 SQL 级 CAS",
+              "4": "RED_DISPOSITION（task_machine.ts:153-170 的归属⇒处置表；表本体 task_machine.ts:214）",
+              "5": "claimTask 的 reopening 分支 —— task_ops.ts:874-884（done 卡缺 reason 即拒）/ :891（intent=modify 不判判据）",
+              "6": "assertTransition(card.state, 'claimed', 'claim') —— task_ops.ts:847，判据读迁移表（void 没有到 claimed 的可用边）"
             },
-            "clause_note": "★ 每条 clause 必须挂归属（执行者 | debt）；clause 共 6 条，coverage 已覆盖 0..5。★★ 2026-10-17（N2）：原来只挂 0..4，漏了 clause[5]（RED_DISPOSITION 那条），且修复记录还写成\"5 条\"——已更正。"
+            "clause_note": "★ 每条 clause 必须挂归属（执行者 | debt）；clause 共 7 条，coverage 已覆盖 0..6。★★ 2026-10-22（链 D）：6 → 7 —— 代码 `TRANSITIONS` 的 t_claim 已是 7 条（state=done 先走 t_reopen / state=void 走 t_relaunch 这两条是 2026-10-20 后加的），设计侧补上这两条；原先多出的一条「集齐判据要用全部设计节点」不占 clause 位，移入 `note`（代码里它由 cardStanding 承载，没有对应文字 clause）。★★ 2026-10-17（N2）：原来只挂 0..4，漏了 clause[5]（RED_DISPOSITION 那条），且修复记录还写成\"5 条\"——已更正。",
+            "note": "★ 设计侧独有的一条（2026-10-22 从 clauses 移到这里，因为代码没有对应文字 clause，它由 cardStanding 的实现承载，见 clause_coverage \"1\"）：★ 集齐判据要用**全部设计节点**（blocked 的归属 = 红的主体 path 落在谁头上、那个节点做没做完）"
           },
           "state": {
             "kind": "ready"
@@ -102359,6 +102362,26 @@
           "executor": "reopenTask"
         },
         {
+          "id": "t_relaunch",
+          "from": "void",
+          "to": "candidate",
+          "state": {
+            "kind": "ready"
+          },
+          "guard": {
+            "clauses": [
+              "★ 用户 2026-10-20 裁定：「void 是『这事不做了』，不是『这事不存在过』」⇒ 必须能重新立卡，而不是另开节点",
+              "★★ 与 t_reopen 的分界（同一个词的两种活）：t_reopen = done → claimed「接手」（判据不变，原卡继续）；t_relaunch = void → candidate「重新立卡」（判据要重给，卡回到没人领）",
+              "reason 必填（为什么重新立卡）—— ★ 无理由的复活等于把「作废」当摆设",
+              "★ 清空 expectations：candidate 的含义是「没人领、判据待 publish 重给」；保留旧判据会让 claim 立刻 satisfied（没活可干）⇒ 与「重新立卡」自相矛盾",
+              "★ 判据不在这里重给：relaunch 只把卡放回 candidate，重给判据的唯一入口仍是 publish（从 decision 翻）",
+              "★ summary / evidence 保留（「这活存在过」的历史不删）；owner / claimed_at 必须为空（void 只能从 candidate 来，而 candidate 不持 owner）",
+              "CAS：state=void 时才写（防并发）"
+            ]
+          },
+          "executor": "relaunchTask"
+        },
+        {
           "id": "t_done_from_candidate",
           "from": "candidate",
           "to": "done",
@@ -102376,9 +102399,7 @@
           "executor": "completeTask"
         }
       ],
-      "terminal_states": [
-        "void"
-      ],
+      "terminal_states": [],
       "removed_2026_10_17": [
         {
           "id": "t_supersede",
@@ -102391,7 +102412,7 @@
           "note": "★ 这两条源码改动等\"设计全部写完、子代理也看不出毛病\"之后再动；现在只记在这里，不动代码"
         }
       ],
-      "states_note": "★ 2026-10-17：删 `superseded`（t_supersede 已删 ⇒ 它零条入边 = 死状态）。★★ 源码待跟：`task_schema.ts` 的 `TASK_STATES` 也要删（否则类型里还留着，下一个人以为能用）—— 已并进 `removed_2026_10_17.source_pending`。 ★ 2026-10-19：done 移出 terminal_states（加 t_reopen）。理由是它有真实成本：T20 正式化那笔改动因为「无处立卡」只能无卡提交。"
+      "states_note": "★ 2026-10-17：删 `superseded`（t_supersede 已删 ⇒ 它零条入边 = 死状态）。★★ 源码待跟：`task_schema.ts` 的 `TASK_STATES` 也要删（否则类型里还留着，下一个人以为能用）—— 已并进 `removed_2026_10_17.source_pending`。 ★ 2026-10-19：done 移出 terminal_states（加 t_reopen）。理由是它有真实成本：T20 正式化那笔改动因为「无处立卡」只能无卡提交。 ★ 2026-10-20：`void` 移出 terminal_states（同日新增 `t_relaunch`：void → candidate）—— 与 2026-10-19 把 `done` 移出的理由同一条：有可用出边的态不是终态。⇒ 四态各自都有出边，`terminal_states` 为空；「已了结」是另一个概念（`CLOSED_TASK_STATES` = done | void，只回答「还要不要巡」）。"
     },
     "patrols": [
       {
@@ -102639,18 +102660,17 @@
       "where": "geometry.nodes[].task —— ★ 任务与节点同居（设计侧）",
       "why_not_top_level": "★ 独立顶层 tasks[] 会让'任务'与'节点'分居 ⇒ 判据对着节点判、状态却去别处找 ⇒ 又是一次'同一判据住两处'（本仓头号病）",
       "writer": "★ 唯一写端 = edit_dsl {type:'task'}（action: publish | claim | release | complete）—— 四个都是它的 action，★ 不许别处直接改 state",
-      "why_single_writer": "★ 今天实测的病：状态变更散落 ⇒ 一事实两权威（progress 三轴 vs TASK_STATES 五轴，两轴无映射）",
+      "why_single_writer": "★ 今天实测的病：状态变更散落 ⇒ 一事实两权威（progress 三轴 vs TASK_STATES 四轴，两轴无映射）（★ superseded 已于 2026-10-17 删除 ⇒ 四轴）",
       "axis_dedup": {
-        "problem": "progress（draft|in_progress|done，三轴）与 task.state（candidate|claimed|done|void|superseded，五轴）并存 ⇒ 两轴无映射 = 一事实两权威",
+        "problem": "progress（draft|in_progress|done，三轴）与 task.state（candidate|claimed|done|void，四轴）并存 ⇒ 两轴无映射 = 一事实两权威（★ superseded 已于 2026-10-17 删除 ⇒ 此处为四轴）",
         "ruling": "★ 单一权威 = task.state；★ progress 改为【派生】（读时由 task.state 现算），不再落盘",
         "derived_map": {
           "candidate": "draft",
           "claimed": "in_progress",
           "done": "done",
-          "void": "<不适用>",
-          "superseded": "<不适用>"
+          "void": "<不适用>"
         },
-        "note": "★ void/superseded 不映射进三轴 ⇒ 由 progressOf(task) 返回 undefined，★ 而不是硬塞一个值（硬塞就是新的补丁）"
+        "note": "★ void 不映射进三轴 ⇒ 由 progressOf(task) 返回 undefined，★ 而不是硬塞一个值（硬塞就是新的补丁）（★ superseded 已于 2026-10-17 删除）"
       },
       "gate": "assertSourceWriteRegistered 的判据从'节点是否登记过（edit_dsl status）'改为'该节点上是否有 state=claimed 的 task'（OQ10 裁定）",
       "migration_order": [
@@ -102673,7 +102693,7 @@
         ],
         "readings": {
           "task_ops_block": "5红/0绿 → 0红/5绿（同一入口 certs/.work/probe-plan-detail.mjs；临时目录 + 独立 AGENT_IO_HOME 重算：checked 25 · passed 12→17 · failed 12→7 · unsupported 1（恒定，且那一条是 discussion_log 的 type-only 边，与本块无关））。其他块逐字不变：task 0/3 · 状态机 0/6 · task_drift 7/0 · discussion 0/4。",
-          "axis_map": "candidate⇒draft · claimed⇒in_progress · done⇒done · void/superseded⇒undefined（★ 不硬塞；认不出的态亦 undefined）",
+          "axis_map": "candidate⇒draft · claimed⇒in_progress · done⇒done · void⇒undefined（★ 不硬塞；认不出的态亦 undefined）（★ superseded 已于 2026-10-17 删除）",
           "writer": "src/application/design/dsl_ops/task_ops.ts（claimTask / releaseTask / completeTask）；入口 edit_dsl {type:'task'}；op 家族四处同改（index.ts 的 op/type enum · update_feature.ts 的联合 + applyOperation case · op_data_spec.ts 的 OP_SPECS + TYPE_KNOWN_KEYS），且编译器断言把表与实现钉死。",
           "gate": "write_gate.ts#assertSourceWriteRegistered：判据 = 该节点上有 state='claimed' 的 task（无 task ⇒ 拒；claimed ⇒ 放行；★ 已播种 overlay.progress 的旧路径**不再**放行 —— 那正是 OQ10）。",
           "cert": "certs/t349-task-home-cert.mjs = PASS=34 FAIL=0（含能自己坏的对照：播种 progress 而无 task ⇒ 仍拒）"
@@ -102850,7 +102870,7 @@
     "service_flow": {
       "note": "★★★ 用户 2026-10-17 的比喻：「就像你去窗口办事，要先填注册表，注册完了才能把任务交过去…… 你要做什么功能，就先填决策表、填 DSL，系统帮你把决策上架到任务里，然后有人去接。」⇒ ★ 本段把它落成七步服务流程。",
       "why": "★ 用户原话：\"你可以把它安排成像一条服务流程…… 这语义什么的你自己随便自理呀，我只是随意的表述，你要自己去整理它\"",
-      "states": "★ 整理（用户已确认『接取』与『进行中』是同一个状态）：待接取(candidate) → 已接取进行中(claimed) → 完成(done)；旁支：失效(void) / 被取代(superseded)",
+      "states": "★ 整理（用户已确认『接取』与『进行中』是同一个状态）：待接取(candidate) → 已接取进行中(claimed) → 完成(done)；旁支：失效(void)（★ 被取代 superseded 已于 2026-10-17 删除）；void 可经 t_relaunch 重新立卡",
       "steps": [
         {
           "n": 1,
@@ -104468,5 +104488,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 717
+  "_dsl_rev": 718
 }

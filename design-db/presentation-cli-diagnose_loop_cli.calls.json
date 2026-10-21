@@ -133,6 +133,10 @@
     },
     {
       "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/analysis/diagnosis/test_contract.ts#readTestContract"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
       "to": "src/infrastructure/analysis/diagnosis/verifier.ts#detectKind"
     },
     {

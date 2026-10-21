@@ -801,6 +801,34 @@
     {
       "from": "src/application/design/derive/derive_split.ts#referNames",
       "to": "src/infrastructure/parse/comments.ts#stripCommentsSync"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#collectImportRanges",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#collectGoImportSpecs",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#pruneGoImports",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#prunePythonImports",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
     }
   ]
 }

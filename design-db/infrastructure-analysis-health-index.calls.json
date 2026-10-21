@@ -605,6 +605,34 @@
       "to": "src/infrastructure/authoring/version_upgrade/detect.ts#collectSourceFiles"
     },
     {
+      "from": "src/infrastructure/analysis/health/index.ts#resolveImportFile",
+      "to": "src/infrastructure/parse/import_resolve.ts#resolveProjectImport"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/parse/kernel.ts#listSupportedExtensions"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#estimateComplexity",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#extractNamedImports",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#unusedImportsIn",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#importBindingFactsSync",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRootSync"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
       "from": "src/infrastructure/analysis/health/index.ts#unreadWhy",
       "to": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint"
     },

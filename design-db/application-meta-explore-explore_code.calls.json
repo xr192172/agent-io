@@ -878,6 +878,10 @@
       "to": "src/infrastructure/index/symbols.ts#toIndexKey"
     },
     {
+      "from": "src/application/meta/explore/explore_code.ts#readCode",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
       "from": "src/application/meta/explore/explore_code.ts#factsFieldsOf",
       "to": "src/infrastructure/text/arg_suggest.ts#suggestNames"
     },

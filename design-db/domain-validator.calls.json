@@ -101,19 +101,19 @@
     {
       "name": "validateNoReadingSnapshots",
       "kind": "function",
-      "line": 234,
+      "line": 235,
       "signature": "validateNoReadingSnapshots(dsl: DesignDSL): ValidationErrorItem[]"
     },
     {
       "name": "validateDSL",
       "kind": "function",
-      "line": 262,
+      "line": 263,
       "signature": "validateDSL(dsl: unknown): ValidationResult"
     },
     {
       "name": "validateDSLJson",
       "kind": "function",
-      "line": 290,
+      "line": 291,
       "signature": "validateDSLJson(json: string): ValidationResult & { dsl?: DesignDSL }"
     }
   ],

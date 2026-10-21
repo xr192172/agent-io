@@ -7,7 +7,7 @@
     {
       "name": "RemovedStatement",
       "kind": "interface",
-      "line": 52,
+      "line": 54,
       "signature": "RemovedStatement()",
       "members": [
         {
@@ -39,7 +39,7 @@
     {
       "name": "RemoveImportsResult",
       "kind": "interface",
-      "line": 61,
+      "line": 63,
       "signature": "RemoveImportsResult()",
       "members": [
         {
@@ -71,13 +71,13 @@
     {
       "name": "escRe",
       "kind": "function",
-      "line": 72,
+      "line": 74,
       "signature": "escRe(s: string): string"
     },
     {
       "name": "Cut",
       "kind": "interface",
-      "line": 77,
+      "line": 79,
       "signature": "Cut()",
       "members": [
         {
@@ -109,43 +109,43 @@
     {
       "name": "lineAt",
       "kind": "function",
-      "line": 84,
+      "line": 86,
       "signature": "lineAt(src: string, index: number): number"
     },
     {
       "name": "applyCuts",
       "kind": "function",
-      "line": 98,
+      "line": 100,
       "signature": "applyCuts(src: string, cuts: Cut[]): RemoveImportsResult"
     },
     {
       "name": "removeGoImports",
       "kind": "function",
-      "line": 127,
+      "line": 129,
       "signature": "removeGoImports(src: string, target: string): RemoveImportsResult"
     },
     {
       "name": "tsImportRanges",
       "kind": "function",
-      "line": 209,
+      "line": 211,
       "signature": "tsImportRanges(src: string, target: string): Array<[number, number]>"
     },
     {
       "name": "removeTsImports",
       "kind": "function",
-      "line": 241,
+      "line": 243,
       "signature": "removeTsImports(src: string, target: string): RemoveImportsResult"
     },
     {
       "name": "removeImportsFromSource",
       "kind": "function",
-      "line": 251,
+      "line": 253,
       "signature": "removeImportsFromSource(src: string, target: string, lang: 'go' | 'ts'): RemoveImportsResult"
     },
     {
       "name": "ImportSpan",
       "kind": "interface",
-      "line": 259,
+      "line": 261,
       "signature": "ImportSpan()",
       "members": [
         {
@@ -177,31 +177,31 @@
     {
       "name": "openIndexDb",
       "kind": "function",
-      "line": 267,
+      "line": 269,
       "signature": "openIndexDb(projectDir: string): DatabaseSync | null"
     },
     {
       "name": "hasRequireOf",
       "kind": "function",
-      "line": 278,
+      "line": 280,
       "signature": "hasRequireOf(src: string, source: string): boolean"
     },
     {
       "name": "spansForFile",
       "kind": "function",
-      "line": 291,
+      "line": 293,
       "signature": "spansForFile(db: DatabaseSync,\n  projectDir: string,\n  absPath: string,\n  src: string,\n  sources: string[],): ImportSpan[] | null"
     },
     {
       "name": "removeImportsBySpans",
       "kind": "function",
-      "line": 338,
+      "line": 340,
       "signature": "removeImportsBySpans(src: string, spans: ImportSpan[]): RemoveImportsResult | null"
     },
     {
       "name": "DeadImportRemoval",
       "kind": "interface",
-      "line": 355,
+      "line": 357,
       "signature": "DeadImportRemoval()",
       "members": [
         {
@@ -227,7 +227,7 @@
     {
       "name": "FileRemoval",
       "kind": "interface",
-      "line": 361,
+      "line": 363,
       "signature": "FileRemoval()",
       "members": [
         {
@@ -265,7 +265,7 @@
     {
       "name": "RemovedStatementReceipt",
       "kind": "interface",
-      "line": 371,
+      "line": 373,
       "signature": "RemovedStatementReceipt()",
       "members": [
         {
@@ -279,7 +279,7 @@
     {
       "name": "RemoveDeadImportResult",
       "kind": "interface",
-      "line": 375,
+      "line": 377,
       "signature": "RemoveDeadImportResult()",
       "members": [
         {
@@ -323,49 +323,49 @@
     {
       "name": "langOfFile",
       "kind": "function",
-      "line": 399,
+      "line": 401,
       "signature": "langOfFile(rel: string): 'go' | 'ts' | null"
     },
     {
       "name": "countBySource",
       "kind": "function",
-      "line": 406,
+      "line": 408,
       "signature": "countBySource(statements: RemovedStatement[]): Map<string, number>"
     },
     {
       "name": "computeChanges",
       "kind": "function",
-      "line": 414,
+      "line": 416,
       "signature": "computeChanges(opts: {\n  project_dir: string;\n  dead: DeadDepCandidate[];\n}): {\n  absToNew: Map<string, string>;\n  originals: Map<string, string>;\n  result: RemoveDeadImportResult;\n}"
     },
     {
       "name": "removeDeadImportsCore",
       "kind": "function",
-      "line": 536,
+      "line": 538,
       "signature": "removeDeadImportsCore(opts: {\n  project_dir: string;\n  dead: DeadDepCandidate[];\n  /**\n   * ★★★ 2026-10-20（A7 闭合）：**本次写入者身份** —— 一路交到 `snapshotAndRecordSelfWrite`。\n   * ★ 不传 ⇒ 闸只能读 env，而生产面（stdio MCP）env 是空的 ⇒ 闸永远\"提醒 + 放行\"。\n   */\n  actor?: string;\n  /** ★★★ T356：按 run 授权（一个 scope 一次授权一批文件）—— 逐字交给写闸，本层不解释它 */\n  authorize?: string;\n}): RemoveDeadImportResult"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 588,
+      "line": 591,
       "signature": "touchedOf(opts: { project_dir: string }, r: RemoveDeadImportResult): Touched"
     },
     {
       "name": "writtenFilesOf",
       "kind": "function",
-      "line": 606,
+      "line": 609,
       "signature": "writtenFilesOf(projectDir: string, r: RemoveDeadImportResult): string[]"
     },
     {
       "name": "removeDeadImports",
       "kind": "function",
-      "line": 617,
+      "line": 620,
       "signature": "removeDeadImports(opts: {\n  project_dir: string;\n  dead: DeadDepCandidate[];\n  /** ★ 2026-10-20（A7）：本次写入者身份（与 claim 时 `data.owner` 同一个值），直通 `removeDeadImportsCore` */\n  actor?: string;\n  /** ★★★ T356：按 run 授权 —— 直通 `removeDeadImportsCore`（判据仍只住写闸） */\n  authorize?: string;\n}): TouchedProduct<RemoveDeadImportResult>"
     },
     {
       "name": "RemoveDeadImportsVerifyResult",
       "kind": "interface",
-      "line": 632,
+      "line": 635,
       "signature": "RemoveDeadImportsVerifyResult()",
       "members": [
         {
@@ -379,7 +379,7 @@
     {
       "name": "RemoveDeadImportsVerifyOptions",
       "kind": "interface",
-      "line": 644,
+      "line": 647,
       "signature": "RemoveDeadImportsVerifyOptions()",
       "members": [
         {
@@ -423,7 +423,7 @@
     {
       "name": "removeDeadImportsWithVerify",
       "kind": "function",
-      "line": 660,
+      "line": 663,
       "signature": "removeDeadImportsWithVerify(opts: RemoveDeadImportsVerifyOptions): RemoveDeadImportsVerifyResult"
     }
   ],
@@ -450,8 +450,13 @@
       "kind": "relative"
     },
     {
-      "source": "../../write_gate.js",
+      "source": "../../source_writer.js",
       "kind": "relative"
+    },
+    {
+      "source": "../../write_gate.js",
+      "kind": "relative",
+      "type_only": true
     },
     {
       "source": "../../../infrastructure/index/db.js",
@@ -572,20 +577,12 @@
       "to": "src/application/refactor/edit/remove_dead_imports.ts#writtenFilesOf"
     },
     {
-      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsCore",
-      "to": "src/application/write_gate.ts#snapshotAndRecordSelfWrite"
-    },
-    {
       "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsWithVerify",
-      "to": "src/application/write_gate.ts#snapshotAndRecordSelfWrite"
+      "to": "src/application/source_writer.ts#openSourceWrite"
     },
     {
       "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsCore",
-      "to": "src/application/write_gate.ts#syncSelfWritesSync"
-    },
-    {
-      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsWithVerify",
-      "to": "src/application/write_gate.ts#syncSelfWritesSync"
+      "to": "src/application/source_writer.ts#writeSourceBatch"
     },
     {
       "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImports",

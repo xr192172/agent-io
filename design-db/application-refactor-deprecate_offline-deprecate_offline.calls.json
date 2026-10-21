@@ -245,13 +245,13 @@
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 496,
+      "line": 501,
       "signature": "touchedOf(opts: DeprecateOfflineOptions, r: DeprecateOfflineResult, sink: DeprecateSink): Touched"
     },
     {
       "name": "deprecateOffline",
       "kind": "function",
-      "line": 508,
+      "line": 513,
       "signature": "deprecateOffline(opts: DeprecateOfflineOptions): Promise<TouchedProduct<DeprecateOfflineResult>>"
     }
   ],
