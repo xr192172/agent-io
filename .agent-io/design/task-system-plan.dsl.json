@@ -17512,9 +17512,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:08.143Z"
+          "release_reason": "approveChange 三条委托写路已传 c.submitter，且 split_plan/edit_code 两条回执补回 task_gate；L1 卡无后证，release 不硬 complete",
+          "released_by": "agent-a7",
+          "released_at": "2026-10-21T08:54:45.884Z"
         },
         "status": "draft"
       },
@@ -19180,9 +19180,9 @@
               "why": "★ end_index 不含结尾换行 ⇒ 删整句必须自己吃掉一个 \\r?\\n（子代理实测）"
             }
           ],
-          "state": "claimed",
-          "owner": "agent-v16",
-          "claimed_at": "2026-10-21T06:09:05.019Z",
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
           "evidence": [
             {
               "kind": "expectations",
@@ -19192,9 +19192,12 @@
               "verdict": "pass"
             }
           ],
-          "reopened_at": "2026-10-20T11:16:04.268Z"
+          "reopened_at": "2026-10-20T11:16:04.268Z",
+          "release_reason": "task_gate 已从 idxPre 带出（core + verify 四条 return），实测 indexWriteThrough.task_gate 与顶层 task_gate 均在；本卡为 L1 无后证，release 不硬 complete",
+          "released_by": "agent-a7",
+          "released_at": "2026-10-21T08:54:45.594Z"
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
@@ -19313,9 +19316,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "同上：refactor/index.ts 的 actor/authorize 透传已落盘，交回写权",
-          "released_by": "codebuddy-dogfood",
-          "released_at": "2026-10-20T13:56:27.203Z"
+          "release_reason": "annotate_functions / rules apply 的 actor 与 task_gate 均已在 index.ts 落定（tsc 0 error）；L1 卡无后证，release 不硬 complete",
+          "released_by": "agent-a7",
+          "released_at": "2026-10-21T08:57:36.672Z"
         },
         "status": "draft"
       },
@@ -19516,9 +19519,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "仅用于 A7 正路验收，本笔不改 rename_local.ts",
-          "released_by": "deepseek-v4.1-flash",
-          "released_at": "2026-10-20T08:27:11.156Z"
+          "release_reason": "renameLocals 入参已加 actor/authorize 并交给 applyWrites（rename_symbols scope=local 实测由放行变为拒绝）；L1 卡无后证，release 不硬 complete",
+          "released_by": "agent-a7",
+          "released_at": "2026-10-21T08:54:45.738Z"
         },
         "status": "draft"
       },
@@ -19547,9 +19550,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "T356 已改完（writeSourceFiles 透传）",
-          "released_by": "t356-authorize",
-          "released_at": "2026-10-20T13:29:37.285Z"
+          "release_reason": "scope=local 支已把 input.actor/authorize 传给 renameLocals；L1 卡无后证，release 不硬 complete",
+          "released_by": "agent-a7",
+          "released_at": "2026-10-21T08:54:45.814Z"
         },
         "status": "draft"
       },
@@ -20128,9 +20131,9 @@
             }
           ],
           "reopened_at": "2026-10-20T11:15:57.812Z",
-          "release_reason": "T356 已改完（authorize 分支 + 证）",
-          "released_by": "t356-authorize",
-          "released_at": "2026-10-20T13:29:36.471Z"
+          "release_reason": "A7 回执闭合已完成（WriteThroughOutcome.task_gate + snapshotAndRecordSelfWrite 接住闸的 note，tsc 0 error / 实测 A-E 全过）；本卡判据描述的是上一轮 actor 形参之事，不再硬 complete",
+          "released_by": "agent-a7",
+          "released_at": "2026-10-21T08:54:45.514Z"
         },
         "decision_history": [
           {
@@ -84638,7 +84641,7 @@
         ],
         "lines": 452,
         "layer": "core",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
@@ -99012,11 +99015,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T08:25:15.930Z",
+    "saved_at": "2026-10-21T08:57:36.703Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792570992510,
-    "age": 123420
+    "scanRev": 1792573023388,
+    "age": 33315
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

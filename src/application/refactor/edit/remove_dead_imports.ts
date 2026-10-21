@@ -384,6 +384,16 @@ export interface RemoveDeadImportResult {
    * 不返回这个，LLM 就无从知道"我下一步查引用会不会读到旧图"。
    */
   indexWriteThrough?: WriteThroughOutcome;
+  /**
+   * ★★★ 2026-10-21（A7 回执闭合）：**闸的一句话留痕**（`assertSourceWriteRegistered` 的 `note` 逐字）。
+   *
+   * ★ 为什么在**顶层**：本仓所有写路都按这个位置报（`SourceWriteReport.task_gate` / `EditReceipt.task_gate` /
+   *   `WriteReceipt.task_gate` / `RenameFileResult.task_gate`）—— 它是回执契约，不是写穿块的一部分。
+   * ★ 为什么还往 `indexWriteThrough` 里塞一份：那条字段会被 `syncSelfWritesSync` 的结果覆盖
+   *   （`idxSync ?? idxPre`），而写穿结果**没跑闸** ⇒ 不显式并进去，有索引时这句读数就没了。
+   * ★ 判据仍只住写闸一处：两处只是**同一个字符串**的两个携带位，不重算。
+   */
+  task_gate?: string;
 }
 
 function langOfFile(rel: string): 'go' | 'ts' | null {
@@ -552,7 +562,12 @@ function removeDeadImportsCore(opts: {
   });
   for (const [abs, newSrc] of absToNew) fs.writeFileSync(abs, newSrc, 'utf-8');
   const idxSync = syncSelfWritesSync(opts.project_dir, files);
-  return { ...result, indexWriteThrough: idxSync ?? idxPre };
+  // ★★★ 2026-10-21（A7 回执闭合）：闸的读数**必须从 `idxPre` 带出** —— `idxSync` 是写穿结果，它**没跑闸**
+  //   （闸在 `snapshotAndRecordSelfWrite` 里跑，读数存在它的返回值上）⇒ 原来 `idxSync ?? idxPre` 在有索引时
+  //   恒取 `idxSync`，把 `task_gate` 吃掉（回执里一个字都没有）。★ 判据仍只住闸里，这里只**带出**同一句话。
+  const gateNote = idxPre.task_gate;
+  const idx = { ...(idxSync ?? idxPre), ...(gateNote ? { task_gate: gateNote } : {}) };
+  return { ...result, indexWriteThrough: idx, ...(gateNote ? { task_gate: gateNote } : {}) };
 }
 
 /**
@@ -696,25 +711,29 @@ export function removeDeadImportsWithVerify(opts: RemoveDeadImportsVerifyOptions
   // ⑤ 同步写穿（2026-09-15）：写完再试 `syncSelfWritesSync` —— 解析器已预热则当场直连 L1a，
   //   优先取同步结果（`syncFile` 按内容 hash 判定，"写完又回滚回原样"自然落成 skipped，不会假报改动）。
   const idxSync = syncSelfWritesSync(cwd, files);
-  const idx = idxSync ?? idxPre;
+  // ★★★ 2026-10-21（A7 回执闭合）：同 core —— 闸读数从 `idxPre` 带出（`idxSync` 没跑闸，会把它覆盖掉）。
+  const gateNote = idxPre.task_gate;
+  const idx = { ...(idxSync ?? idxPre), ...(gateNote ? { task_gate: gateNote } : {}) };
 
   if (ver.outcome === 'baseline_fail') {
-    // 地基黄：一个都不写
+    // 地基黄：一个都不写（★ 闸跑过、判过，读数照报 —— 不许因为"没写"就不说）
     return {
       removal_reports: [], files_changed: 0, statements_removed: 0, removed_statements: [],
       verification: { enabled: true, outcome: 'baseline_fail', baseline: ver.baseline, after: null, detail: ver.baseline?.detail },
       indexWriteThrough: idx,
+      ...(gateNote ? { task_gate: gateNote } : {}),
     };
   }
   if (ver.outcome === 'no_change') {
-    return { ...c.result, verification: { enabled: true, outcome: 'no_change', baseline: ver.baseline, after: ver.after }, indexWriteThrough: idx };
+    return { ...c.result, verification: { enabled: true, outcome: 'no_change', baseline: ver.baseline, after: ver.after }, indexWriteThrough: idx, ...(gateNote ? { task_gate: gateNote } : {}) };
   }
   if (ver.outcome === 'regression_rolled_back') {
     return {
       ...c.result,
       verification: { enabled: true, outcome: 'regression_rolled_back', baseline: ver.baseline, after: ver.after, rolled_back: true, detail: ver.after?.detail },
       indexWriteThrough: idx,
+      ...(gateNote ? { task_gate: gateNote } : {}),
     };
   }
-  return { ...c.result, verification: { enabled: true, outcome: 'applied_verified', baseline: ver.baseline, after: ver.after }, indexWriteThrough: idx };
+  return { ...c.result, verification: { enabled: true, outcome: 'applied_verified', baseline: ver.baseline, after: ver.after }, indexWriteThrough: idx, ...(gateNote ? { task_gate: gateNote } : {}) };
 }

@@ -113,11 +113,18 @@ export interface LocalRenameBatchResult {
  * @param input.root     已解析的项目根（快照与索引的归属；调用方保证非空）
  * @param input.renames  条目（可跨多个文件；`root` 外的文件会被拒）
  * @param input.dry_run  true=只算不落盘（同构回执，`filesWritten=0`）
+ * @param input.actor    ★★★ 2026-10-21（A7 闭合）：本次写入者身份（与 claim 时 `data.owner` 同一个值）。
+ *   本层**不解释**它，只逐字交给 `applyWrites` —— 判据只住 `write_gate#assertSourceWriteRegistered` 一处。
+ *   ★ 此前这里**没有这个字段** ⇒ `rename_symbols(scope=local)` 落盘时闸只看得见 env（生产面 stdio 无 env）
+ *     ⇒ A7 对这条写路恒不设防。
+ * @param input.authorize ★★★ T356：按 run 授权（同一把尺，本层同样只交上去）
  */
 export async function renameLocals(input: {
   root: string;
   renames: LocalRenameTarget[];
   dry_run?: boolean;
+  actor?: string;
+  authorize?: string | null;
 }): Promise<LocalRenameBatchResult> {
   const root = path.resolve(input.root);
   const dryRun = input.dry_run === true;
@@ -207,7 +214,12 @@ export async function renameLocals(input: {
   const receipt = await applyWrites(
     root,
     changedFiles.map((f) => ({ file: f, content: pending.get(f)! })),
-    { note: `rename_symbols(scope=local): ${items.filter((x) => x.ok).length} 项 / ${changedFiles.length} 文件` },
+    {
+      note: `rename_symbols(scope=local): ${items.filter((x) => x.ok).length} 项 / ${changedFiles.length} 文件`,
+      // ★★★ 2026-10-21（A7 闭合）：身份 / 授权**只往下传**，本层不判 —— 判据仍只在写闸一处。
+      actor: input.actor,
+      authorize: input.authorize,
+    },
   );
 
   if (receipt.blocked?.length) {

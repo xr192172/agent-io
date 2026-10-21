@@ -112,6 +112,17 @@ export interface WriteThroughOutcome {
   ms?: number;
   /** 过程中的异常（**不吞**；主流程仍成功） */
   error?: string;
+  /**
+   * ★★★ 2026-10-21（A7 回执闭合）：**闸的一句话留痕** —— 与 `SourceWriteReport.task_gate` **同名同义**。
+   *
+   * ## 补的是什么
+   * `snapshotAndRecordSelfWrite` 一直调 `assertSourceWriteRegistered`（判据跑了），但**把返回值丢了**
+   * ⇒ `remove_dead_imports` / `deprecate_offline` 走这条同步写路时，闸判了、豁免点名了，回执里一个字都没有
+   * （实测：`data` 里连 `task_gate` 字段都没有）。
+   * ⇒ 判据仍只住 `assertSourceWriteRegistered` **一处**，本字段只是把它的 `note` **逐字**带出来。
+   * ★ 被拒时不会走到这里（闸直接抛）。
+   */
+  task_gate?: string;
 }
 
 export interface SourceWriteReport {
@@ -1608,12 +1619,22 @@ export function snapshotAndRecordSelfWrite(
   // ★★★ T328 步 6：**未登记不许落盘** —— 同步签名的工具（remove_dead_imports / scaffold）走这条。
   //   ★ 闸在快照 + 自写登记**之前**（拒绝就是拒绝；否则"登记了自写却没落盘"会留下假账）。
   //   ★★★ 2026-10-20：`actor` 必须**往下传** —— 不传就等于把 A7 关掉（本函数此前正是如此）。
-  assertSourceWriteRegistered(root, files, { actor: resolveActor(opts.actor), authorize: opts.authorize });
+  // ★★★ 2026-10-21：**返回值必须接住** —— 此前这一行 `assertSourceWriteRegistered(...)` 调完就丢，
+  //   于是闸判了、豁免点名了，回执里一个字都没有（实测：`remove_dead_imports` 的 `data` 里**连 `task_gate` 字段都没有**）。
+  //   ★ 判据**仍只住闸里**：这里只做「接住 + 逐字带出」，不重算一遍（第二份判据 = 本仓头号病）。
+  const gate = assertSourceWriteRegistered(root, files, { actor: resolveActor(opts.actor), authorize: opts.authorize });
   const hasIndex = hasLiveIndex(root);
   if (opts.snapshot !== false) snapshotBeforeWrite(root, opts.label ?? 'source write', rels);
-  if (!hasIndex) return { ok: false, mode: 'skipped', note: '该项目还没有索引 ⇒ 只真写，未登记' };
+  if (!hasIndex) {
+    return { ok: false, mode: 'skipped', note: '该项目还没有索引 ⇒ 只真写，未登记', task_gate: gate.note };
+  }
   const n = recordSelfWrite(root, rels, opts.label);
-  return { ok: false, mode: 'deferred', note: `已登记 ${n} 个文件的改动，读路径会优先同步（本工具是同步签名）` };
+  return {
+    ok: false,
+    mode: 'deferred',
+    note: `已登记 ${n} 个文件的改动，读路径会优先同步（本工具是同步签名）`,
+    task_gate: gate.note,
+  };
 }
 
 /** 人读一行（供工具结果附注：让 LLM 知道"索引眼下可信不可信"） */

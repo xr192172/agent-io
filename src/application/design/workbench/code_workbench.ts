@@ -680,6 +680,14 @@ function pushReview(c: PendingChange, reviewer: string, verdict: ChangeReview['v
  * dsl_rename/dsl_intent 只改设计画布 store（.agent-io 下的 DSL/提案 JSON，非源码，
  * 索引不覆盖）。⇒ 索引保鲜由被委托方保证，这里不需要（也不得重复）写穿。
  */
+/**
+ * ★★★ 2026-10-21（A7「谁在写」）：
+ *   `approveChange` 带的是 **`submitter`（提案人 = 代码作者）**，**不是** `who`（拍板人）。
+ *   理由：A7 问的是"改这张卡的人手里有卡吗"，那是**作者维度**；
+ *        "谁批准"是另一个维度，不该塞进 A7（混进来就是**判据分叉**）。
+ *   ★ 行为变化：以前一律放行（闸拿不到 actor），现在会拒"提案人没卡"的情况 —— 这正是要的效果。
+ *   ★ 三条委托写路（rename_file / split_plan / edit_code range）都按这一条传，别各写一套。
+ */
 export async function approveChange(project_dir: string, id: string, reviewer: string): Promise<ApproveResult> {
   project_dir = path.resolve(project_dir);
   const c0 = loadChanges(project_dir).find((x) => x.id === id);
@@ -703,7 +711,8 @@ export async function approveChange(project_dir: string, id: string, reviewer: s
 
   try {
     if (c.kind === 'rename_file') {
-      const r = await renameFile({ project_dir: c.project_dir, from: c.op.from!, to: c.op.to! });
+      // ★ 身份 = 提案人（见函数头注释）：A7 判的是"改这段代码的人手里有没有那张卡"。
+      const r = await renameFile({ project_dir: c.project_dir, from: c.op.from!, to: c.op.to!, actor: c.submitter });
       const rblocked = r.blocked ?? [];
       if (!r.ok && rblocked.length) {
         findAndUpdate(project_dir, id, (x) => {
@@ -769,15 +778,21 @@ export async function approveChange(project_dir: string, id: string, reviewer: s
         start: 1,
         end: 1,
         code,
+        // ★ 身份 = 提案人（见函数头注释）
+        actor: c.submitter,
       } as EditCodeArgs);
+      // ★★★ 2026-10-21：同下面 edit_code 分支 —— `EditReceipt.task_gate` 不许在这一层丢。
+      const gateLine = gateHumanLines(res.data.task_gate);
+      const resultMsg = gateLine ? `${res.message}
+${gateLine}` : res.message;
       findAndUpdate(project_dir, id, (x) => {
-        x.result = res.message;
+        x.result = resultMsg;
         x.lastError = undefined;
         x.status = 'executed';
         x.decided_at = nowIso();
         x.reviewed_by = who;
       });
-      return { ...warn, ok: true, status: 'executed', result: res.message };
+      return { ...warn, ok: true, status: 'executed', result: resultMsg };
     }
 
     // edit_code range
@@ -788,15 +803,22 @@ export async function approveChange(project_dir: string, id: string, reviewer: s
       start: c.op.start!,
       end: c.op.end!,
       code: c.op.code!,
+      // ★ 身份 = 提案人（见函数头注释）
+      actor: c.submitter,
     } as EditCodeArgs);
+    // ★★★ 2026-10-21：`EditReceipt.task_gate` **此前在这里被丢**（只存了 `res.message`）——
+    //   闸判了、豁免点名了，台账里一个字都没有。★ 只搬闸给的那句话，不在本层重判（判据只住写闸）。
+    const gateLine = gateHumanLines(res.data.task_gate);
+    const resultMsg = gateLine ? `${res.message}
+${gateLine}` : res.message;
     findAndUpdate(project_dir, id, (x) => {
-      x.result = res.message;
+      x.result = resultMsg;
       x.lastError = undefined;
       x.status = 'executed';
       x.decided_at = nowIso();
       x.reviewed_by = who;
     });
-    return { ...warn, ok: true, status: 'executed', result: res.message };
+    return { ...warn, ok: true, status: 'executed', result: resultMsg };
   } catch (e) {
     findAndUpdate(project_dir, id, (x) => {
       x.lastError = (e as Error).message;

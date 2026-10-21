@@ -1032,6 +1032,10 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         const detail = f.removals.filter((x) => x.changed).map((x) => `${x.source}×${x.removed}`).join('、') || '无变更';
         parts.push(`\t- ${f.file}（${f.lang}）：${detail}`);
       }
+      // ★★★ 2026-10-21（A7 回执闭合）：闸的读数**人读那一份**。机器侧 `data.task_gate` 由
+      //   `RemoveDeadImportsVerifyResult` 顶层带出（判据只住写闸，本层不重判，只搬话）。
+      const gateLine = gateHumanLines(r.task_gate);
+      if (gateLine) parts.push(gateLine);
       return { message: parts.join('\n'), data: r };
     }),
   },
@@ -1072,7 +1076,14 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         const receipt = await applyWrites(
           project_dir,
           [...r.absToNew].map(([abs, content]) => ({ file: abs, content })),
-          { note: 'annotate_functions' },
+          {
+            note: 'annotate_functions',
+            // ★★★ 2026-10-21（A7 闭合 · 补漏口）：本工具是**真落盘的 MCP 工具**，`actor` 却在入口断了 ——
+            //   `applyWrites` 早就有 `actor` 形参，这里**没传** ⇒ 闸只能读 env（stdio 面恒空）⇒ A7 恒放行。
+            //   ★ 只交上去，不在这里判：判据仍只在 `write_gate#assertSourceWriteRegistered` 一处。
+            actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
+            authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
+          },
         );
         const written = receipt.written_files.length;
         const parts = [
@@ -1093,7 +1104,12 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         // ★ 2026-10-20：闸的放行读数/豁免点名（`applyWrites` 回执已带上，这里只往人读消息里搬）
         const gateLine = gateHumanLines(receipt.task_gate);
         if (gateLine) parts.push(gateLine);
-        return { message: parts.join('\n'), data: { summary: s, files_changed: written, note: r.note } };
+        // ★★★ 2026-10-21（A7 回执闭合）：闸读数**机器侧也要有**（此前只进了上面的 message）——
+        //   来源就是 `applyWrites` 回执的 `task_gate`，本层不重判。
+        return {
+          message: parts.join('\n'),
+          data: { summary: s, files_changed: written, note: r.note, ...(receipt.task_gate ? { task_gate: receipt.task_gate } : {}) },
+        };
       }
       if (mode === 'dry_run') {
         const preview = [...r.absToNew.keys()].map((abs) => {
@@ -1652,6 +1668,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         }
         if (errors.length) lines.push(``, `⚠️ 规则读取失败 ${errors.length} 条：${errors.map((e) => e.file).join(', ')}`);
 
+        /** ★ 闸的读数（dry_run 时闸没跑 ⇒ 保持 undefined，不凭空造字段） */
+        let gateNote: string | undefined;
         if (!dry) {
           const writes = summary.outcomes.filter(
             (o) => (o.state === 'applied' || o.state === 'todo') && o.after !== undefined && o.before !== o.after,
@@ -1662,10 +1680,18 @@ export const REFACTOR_TOOLS: ToolDef[] = [
           const receipt = await applyWrites(
             root,
             writes.map((o) => ({ file: o.file, content: o.after as string })),
-            { note: `rules(apply:${use.map((r) => r.id).join(',')})` },
+            {
+              note: `rules(apply:${use.map((r) => r.id).join(',')})`,
+              // ★★★ 2026-10-21（A7 闭合 · 补漏口）：同 `annotate_functions` —— 真落盘却把 `actor` 丢在入口。
+              //   ★ 只交上去，不在这里判（判据只住写闸一处）。
+              actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
+              authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
+            },
           );
           lines.push(``, `已写盘 ${receipt.written_files.length} 个文件（走写闸：写前快照 + 索引写穿保鲜）。`);
-          // ★ 2026-10-20：闸的放行读数/豁免点名（`applyWrites` 回执已带上，这里只往人读消息里搬）
+          // ★ 闸读数先接住（下面人读/机器两侧共用同一个值，不各取一遍）
+          gateNote = receipt.task_gate;
+          lines.push(``, `已写盘 ${receipt.written_files.length} 个文件（走写闸：写前快照 + 索引写穿保鲜）。`);
           {
             const gateLine = gateHumanLines(receipt.task_gate);
             if (gateLine) lines.push(gateLine);
@@ -1673,7 +1699,10 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         } else {
           lines.push(``, `（dry_run：未写盘。确认后传 dry_run=false 落盘）`);
         }
-        return { message: lines.join('\n'), data: { ...summary, dryRun: dry, badFixtures } };
+        return {
+          message: lines.join('\n'),
+          data: { ...summary, dryRun: dry, badFixtures, ...(gateNote ? { task_gate: gateNote } : {}) },
+        };
       }
 
       // ── check ──

@@ -609,6 +609,12 @@ async function renameSymbolsLocal(input: RenameSymbolsInput): Promise<RenameSymb
       rename_file_if_matching: x.rename_file_if_matching === true,
     })),
     dry_run: input.dry_run === true,
+    // ★★★ 2026-10-21（A7 闭合 · 补漏口）：`scope='local'` 这条写路**此前把身份丢在这里** ——
+    //   它经 `renameLocals → applyWrites → writeSourceFiles` 落盘，而 `renameLocals` 的入参里
+    //   **根本没有 `actor`** ⇒ 闸只能读 env（生产面 stdio 无 env）⇒ A7 对 scope=local 恒不设防。
+    //   ★ 只交上去，不在这里判：判据仍只住 `write_gate#assertSourceWriteRegistered` 一处。
+    actor: input.actor,
+    authorize: input.authorize,
   });
 
   const previews: RenameSymbolsResult['previews'] = r.items.map((it) => ({
