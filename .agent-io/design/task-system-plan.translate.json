@@ -1,0 +1,303 @@
+{
+  "id": "task-system-plan.translate",
+  "kind": "translate_book",
+  "version": 2,
+  "feature": "task-system-plan",
+  "meta": {
+    "source_feature": "task-system-plan",
+    "source_root": "D:/project_develop/design-canvas",
+    "target_language": "go",
+    "target_root": null,
+    "created_at": "2026-10-21T12:45:00.000Z",
+    "revised_at": "2026-10-21T13:05:00.000Z",
+    "baseline": {
+      "db": ".agent-io/cache.db",
+      "scanRev": 1792585939208,
+      "scanRevIso": "2026-10-21T12:32:19.208Z",
+      "dbSchemaVersion": 16,
+      "dbBytes": 67330048,
+      "dslRev": 702,
+      "dslRecordedScanRev": 1792583522811,
+      "note": "基线 = 本轮实测打开的那个 cache.db（rev=1792585939208 / schema=16）。★ DSL 自己 _sync 里记的 scanRev 是 1792583522811，比实测库旧约 40 分钟 ⇒ 本册以库为准；设计侧没有因为本册而重算 DSL 快照（那是另一件事，别混）。"
+    },
+    "seed": {
+      "tool": "D:/project_develop/_design-canvas-labs/translate_stats.mjs",
+      "output": "D:/project_develop/_design-canvas-labs/translate_stats.json",
+      "measured_at": "2026-10-21T12:34:00.000Z",
+      "scope": "src/**/*.ts（349 文件 / 4710 节点 / 12668 个类型位置）",
+      "note": "频次与 Top N 的**唯一住处**是这份 json；本册不抄第二份读数（读数会腐，决定不会）。"
+    },
+    "state_machine": {
+      "order": ["pending", "generating", "stubbed", "translated", "verified", "diff", "blocked"],
+      "states": {
+        "pending": { "writer": "author", "available": true, "meaning": "已在账上（源侧有这条符号），译文还没写" },
+        "generating": { "writer": "tool:generator", "available": false, "meaning": "正在生成骨架", "why": "生成器还没接（本轮只做册，不做生成）" },
+        "stubbed": { "writer": "tool:stub_writer", "available": false, "meaning": "译文文件里已有同名桩（可被索引，但不做事）", "why": "桩写入器还没接。形态先例：src/infrastructure/index/symbols.ts:718 ensureStub —— 目标还没同步时先建一个桩节点，让边有落点（★ 那是**节点级**桩，不是源码级桩；但正是「先让索引成立、再谈实现」这条道理的反向用法）" },
+        "translated": { "writer": "author", "available": true, "meaning": "函数体已按译文写出，**未经对拍**" },
+        "verified": { "writer": "translate_go_ts（仅 Go→TS）", "available": false, "direction": "Go → TS", "meaning": "对拍全一致（**实测结论，不许手写**）", "why": "唯一的写入方是 translate_go_ts：实现 src/infrastructure/authoring/translate/receipt.ts:374（单元状态取值见同文件 77-88 行），调用点 src/infrastructure/authoring/translate/tool.ts:153。它拿 Go 源 + TS 译文对拍 ⇒ 写的是 Go→TS 方向。本册是 TS→Go，镜像**不存在** ⇒ 这个态在本册里不可达。" },
+        "diff": { "writer": "translate_go_ts（仅 Go→TS）", "available": false, "direction": "Go → TS", "meaning": "对拍有差异（**实测结论，不许手写**）", "why": "同上：没有 TS→Go 的对拍器，就没有人能合法写这个态。" },
+        "blocked": { "writer": "author", "available": true, "meaning": "翻不了（缺库 / 缺惯用法 / 待人工定），**理由必须同时进 unknowns**" }
+      },
+      "rule": "verified / diff 只由对拍工具回填，且必须写明方向。本轮两者 available=false（唯一写入方 translate_go_ts 只做 Go→TS）⇒ 册里不允许出现这两个态；出现了就是伪造。"
+    },
+    "unverified_shapes": [
+      "Type#method（无 class 样例）",
+      "泛型实参（样本过小）"
+    ],
+    "notes": [
+      "类型名统计必须先剥注释：47 条类型表达式内嵌 JSDoc，不剥会数出只存在于注释里的类型名（实测假名：RESOLVE_EXTS / T356 / Lib / Use —— 第一版读数就把它们当成了外部类型）。",
+      "members[].type 带前导 `': '`（实测 5689 条），params[].type 不带 ⇒ 同一份 JSON 两处格式不一致，消费方必须先剥前缀。",
+      "带默认值的形参没有 type 键（实测全库 paramsNoType=115）⇒ 类型覆盖率天生缺一块，Top N 天然偏低。",
+      "kind='type' 的类型别名只有 12/203 带 members ⇒ 「并集的成员」不在 DB 里，类型层要枚举字面量必须回源码读。",
+      "结构型类型位置占 1609/12668=12.7%（内联对象 661 / 含 null|undefined 的联合 726 / 真联合 279 / 函数类型 92，四类有重叠）⇒ types 只覆盖名字，结构归 shapes。"
+    ],
+    "origin_rule": "三条账（types / symbols / shapes）每条都显式写 origin；source=源侧本来就有，added=源侧不存在、为目标新增（其 from 允许为 null）。汇总必须分开报数，不许把两类加成一个总数。",
+    "progress": {
+      "measure": "译文 DB 对源 DB 的覆盖度（扫出来的，不记账）",
+      "measured_at": null,
+      "value": null,
+      "why_null": "译文侧 DB 还不存在（target_root 未定）⇒ 写 0 会被读成「翻了个零」，与「还没开始」不是一件事。"
+    },
+    "no_code": "本册只记关系与决定，不存代码（代码在译文源码里，读写它要过写闸）。",
+    "fingerprint": {
+      "source": "nodes.sym_hash",
+      "key": "nodes.id（形如 `src/domain/actor_spec.ts#admitActor`）",
+      "note": "账上的 `from` 与 nodes.id 逐字同形 ⇒ 指纹现取，不落第二份。「下一个翻谁」= 本册 state=pending ∧ nodes.sym_hash 与上次记录不一致。"
+    }
+  },
+
+  "types": [
+    {
+      "from": "string",
+      "to": "string",
+      "origin": "source",
+      "note": "全局 · 最高频（src/ ts 类型位置 7139 次 / 12668）。Go string 不可变、UTF-8，与 TS 同语义；唯一差异是 TS 的 string 可 null 时写作 `string | null`，那是下面那条。"
+    },
+    {
+      "from": "boolean",
+      "to": "bool",
+      "origin": "source",
+      "note": "全局 · 771 次。"
+    },
+    {
+      "from": "number",
+      "to": null,
+      "origin": "source",
+      "note": "★ 必须人工：1760 次。三选一 —— 行号/计数 ⇒ int / int64；来自 JSON 或算术 ⇒ float64；时间戳 ⇒ time.Time 或 int64(ms)。一个源词对三个目标词，**不是一一对应**。"
+    },
+    {
+      "from": "void",
+      "to": "（无返回值）",
+      "origin": "source",
+      "note": "全局 · 302 次。Go 里就是函数没有结果位；★ 不等于「返回 error」—— 本册不对它做错误处理约定（那属函数层判据）。"
+    },
+    {
+      "from": "unknown",
+      "to": "any",
+      "origin": "source",
+      "note": "全局 · 301 次。★ 类型安全降级：Go 没有 unknown，只能 any + 断言。这是**接受损失**，不是等价（源侧编译期就禁止的用法，译文要运行期才炸）。"
+    },
+    {
+      "from": "Promise<T>",
+      "to": null,
+      "origin": "source",
+      "note": "★ 必须人工：382 次。三选一 —— 同步返回 `(T, error)` / goroutine+chan / context 取消。本仓大量 await 的**顺序语义**（写闸、事务、索引写穿）改成并发会变行为 ⇒ 默认必须同步，改并发要单独立决策。"
+    },
+    {
+      "from": "T[] / Array<T>",
+      "to": "[]T",
+      "origin": "source",
+      "note": "全局 · 191 次。空数组 vs nil 的差异在 JSON 序列化时才显形（`[]` vs `null`）⇒ 对拍比 JSON 文本时会 diff，需在函数层定「永远初始化为空切片」。"
+    },
+    {
+      "from": "Record<K,V>",
+      "to": "map[K]V",
+      "origin": "source",
+      "note": "全局 · 191 次。★ 键序丢失：JS 对象保插入序、Go map 不保 ⇒ 序列化后文本可能 diff。依赖顺序的场合必须另立 ordered 结构（那是一条新决定，不是这条的默认）。"
+    },
+    {
+      "from": "Map<K,V>",
+      "to": "map[K]V",
+      "origin": "source",
+      "note": "全局 · 122 次。同上：Map 在 TS 里也保插入序，Go map 不保。"
+    },
+    {
+      "from": "Set<T>",
+      "to": "map[T]struct{}",
+      "origin": "source",
+      "note": "全局 · 67 次。`_, ok := m[x]` 取代 has()；遍历顺序同样不保。"
+    },
+    {
+      "from": "null / undefined",
+      "to": "nil / *T",
+      "origin": "source",
+      "note": "全局 · 586 + 180 次。★ 两源一目标（有损）：TS 区分「字段缺失」与「字段为 null」，Go 的 *T 只能表达「是 nil」。本仓 DSL/JSON 里两者语义不同（`normalizedFrom?` 缺失 vs `actor: string|null` 显式无）⇒ 见 unknowns。"
+    },
+    {
+      "from": "RegExp",
+      "to": "*regexp.Regexp",
+      "origin": "source",
+      "note": "全局。★ 包一层差异：JS 正则的 lookahead/lookbehind 在 Go RE2 **不存在** ⇒ 含 `(?=` 的模式不能机械翻（样例里真撞上了，见 unknowns 第 1 条）。"
+    },
+    {
+      "from": "Error",
+      "to": "error",
+      "origin": "source",
+      "note": "全局。本仓多数地方不用 throw，而是返回 `{ok:false, error}` 结构 ⇒ 真正要翻的是那个结构，不是 Error 类。"
+    },
+    {
+      "from": "ReadonlyArray<T> / readonly T[]",
+      "to": "[]T",
+      "origin": "source",
+      "note": "全局。不可变约束丢失（Go 无对应物，只能靠不导出/不改的约定）。"
+    },
+    {
+      "from": "ServerResponse / IncomingMessage",
+      "to": null,
+      "origin": "source",
+      "note": "★ 必须人工：第三方（node:http）66 + 61 次，是本仓**唯一的**大块第三方类型面。对应 net/http 的 ResponseWriter / *http.Request，但方法形状不同（`res.end` / `req.on('data')`）⇒ 不是类型名替换，是整段函数改写。"
+    },
+
+    {
+      "from": "ActorKind = 'human' | 'agent' | 'subagent'",
+      "to": "type ActorKind string + Human/Agent/Subagent 三个 const",
+      "origin": "source",
+      "note": "样例 · src/domain/actor_spec.ts:50。★ 字面量并集 → string 派生类型；★ 成员**不在 DB 里**（nodes.kind='type' 的 members 只覆盖 12/203）⇒ 本条依据源码，不依据 DB。"
+    },
+    {
+      "from": "ActorSource = 'explicit' | 'env' | 'none'",
+      "to": "type ActorSource string + Explicit/Env/SourceNone 三个 const",
+      "origin": "source",
+      "note": "样例 · :66。★ 注意 `none` 与零值 \"\" 不同 —— Go 零值是空串，必须保证不会有「零值被当成合法源」的路径，否则 status 字段会静默变成 none。"
+    },
+    {
+      "from": "ActorAdmission（interface）",
+      "to": "type ActorAdmission struct",
+      "origin": "source",
+      "note": "样例 · :69。字段一一对应：ok→Ok bool、actor→Actor *string、source→Source ActorSource、normalizedFrom→NormalizedFrom *string、error→Err *string（★ `error` 是 Go 预声明标识符，字段名必须让位）。"
+    },
+    {
+      "from": "v is string（类型谓词）",
+      "to": "bool",
+      "origin": "source",
+      "note": "样例 · :86 :91。★ 窄化能力丢失：Go 的调用点拿到 bool 之后无法把 any 收窄成 string，必须显式断言 ⇒ 断在**调用方**，不在被调方。"
+    },
+    {
+      "from": "string | null",
+      "to": "*string",
+      "origin": "source",
+      "note": "样例 · 多处。可空性原子，见 atoms。"
+    },
+    {
+      "from": "string | undefined（形参/可选字段）",
+      "to": "*string",
+      "origin": "source",
+      "note": "样例 · :75 :77。★ 与上一条落到**同一个** Go 类型（两源一目标）⇒ 账上必须留两条，否则「哪一处原本是 undefined」这件事就丢了。"
+    }
+  ],
+
+  "symbols": [
+    { "from": "src/domain/actor_spec.ts#ActorKind", "to": "internal/domain/actor_spec.go#ActorKind", "kind": "type", "origin": "source", "state": "pending", "note": "实质映射见 types 里那一条，本行只记「源有这个符号 / 译文有对应符号」。" },
+    { "from": "src/domain/actor_spec.ts#ACTOR_KINDS", "to": "internal/domain/actor_spec.go#ActorKinds", "kind": "const", "origin": "source", "state": "pending", "note": "`as const` 元组 → `[]ActorKind` 切片；★ 元组的「穷尽性」丢失（Go 切片可被追加）⇒ 若要保，得写成三个 const + 一个只读函数。" },
+    { "from": "src/domain/actor_spec.ts#ACTOR_NAME_MAX", "to": "internal/domain/actor_spec.go#ActorNameMax", "kind": "const", "origin": "source", "state": "pending" },
+    { "from": "src/domain/actor_spec.ts#ACTOR_NAME_RE", "to": "internal/domain/actor_spec.go#ActorNameRE", "kind": "const", "origin": "source", "state": "blocked", "note": "★ 源用 lookahead `(?=.*[a-z0-9])`，Go RE2 不支持 ⇒ 见 unknowns 第 1 条（要拆成两条判断，或引入非标准库）。" },
+    { "from": "src/domain/actor_spec.ts#ACTOR_RE", "to": "internal/domain/actor_spec.go#ActorRE", "kind": "const", "origin": "source", "state": "blocked", "note": "同上，:60。" },
+    { "from": "src/domain/actor_spec.ts#LEGACY_ACTOR_KIND", "to": "internal/domain/actor_spec.go#LegacyActorKind", "kind": "const", "origin": "source", "state": "pending", "note": "源是 `const x: ActorKind = 'agent'`（类型收窄），Go 的 const 无收窄语义 ⇒ 只能 `var LegacyActorKind = Agent` 或 `const LegacyActorKind ActorKind = \"agent\"`。" },
+    { "from": "src/domain/actor_spec.ts#ActorSource", "to": "internal/domain/actor_spec.go#ActorSource", "kind": "type", "origin": "source", "state": "pending" },
+    { "from": "src/domain/actor_spec.ts#ActorAdmission", "to": "internal/domain/actor_spec.go#ActorAdmission", "kind": "interface", "origin": "source", "state": "pending" },
+    { "from": "src/domain/actor_spec.ts#actorStrictMode", "to": "internal/domain/actor_spec.go#ActorStrictMode", "kind": "function", "origin": "source", "state": "pending", "note": "读 env：os.Getenv 取代 process.env；★「读到空串」与「未设置」在两侧都是同一个结果，行为等价。" },
+    { "from": "src/domain/actor_spec.ts#isCanonicalActor", "to": "internal/domain/actor_spec.go#IsCanonicalActor", "kind": "function", "origin": "source", "state": "pending", "note": "返回 bool；类型谓词的窄化丢失（见 types）。" },
+    { "from": "src/domain/actor_spec.ts#isLegacyActorName", "to": "internal/domain/actor_spec.go#IsLegacyActorName", "kind": "function", "origin": "source", "state": "pending" },
+    { "from": "src/domain/actor_spec.ts#actorKindOf", "to": "internal/domain/actor_spec.go#ActorKindOf", "kind": "function", "origin": "source", "state": "pending", "note": "返回 `ActorKind | null` → `*ActorKind`（Go 没有可选返回值，用指针表达「认不出」）。" },
+    { "from": "src/domain/actor_spec.ts#actorKey", "to": "internal/domain/actor_spec.go#ActorKey", "kind": "function", "origin": "source", "state": "pending", "note": "返回 `string | null` → `*string`；★ 空串与 null 在源里是两件事（'' ⇒ null），译文必须同样区分。" },
+    { "from": "src/domain/actor_spec.ts#sameActor", "to": "internal/domain/actor_spec.go#SameActor", "kind": "function", "origin": "source", "state": "pending", "note": "入参是 unknown ⇒ any；★ Go 侧 a/b 通常本来就是 string，接受 any 会让每个调用点都要断言 —— 是否把签名收窄成 `any` vs `string` 是**一处人工决定**（收窄=改契约）。" },
+    { "from": "src/domain/actor_spec.ts#suggestActorName", "to": "internal/domain/actor_spec.go#SuggestActorName", "kind": "function", "origin": "source", "state": "pending" },
+    { "from": "src/domain/actor_spec.ts#admitActor", "to": "internal/domain/actor_spec.go#AdmitActor", "kind": "function", "origin": "source", "state": "pending", "note": "三个可选参数 + 默认值 ⇒ 见 unknowns 第 2、3 条；返回结构体按值返回（不是指针）—— 这条选择要写进译文，否则 nil 检查会各写一套。" },
+    { "from": "src/domain/actor_spec.ts#normalizedActorNote", "to": "internal/domain/actor_spec.go#NormalizedActorNote", "kind": "function", "origin": "source", "state": "pending", "note": "★ 返回的是**给人看的中文回执文案**：原样保留，不翻译（见 atoms.text）。" },
+    { "from": null, "to": "internal/domain/actor_spec.go#AdmissionOptions", "kind": "type", "origin": "added", "state": "pending", "note": "★ 源侧**没有这个名字**：`admitActor` 第三参是匿名结构 `{ strict?: boolean }`（:203），Go 必须给它一个类型名 ⇒ 这是**新增**，不是翻译。读账的人不能把它当成「有源」。结构侧记在 shapes 里。" }
+  ],
+
+  "shapes": [
+    {
+      "from": { "shape": "{ ... }（内联对象类型 / 匿名结构）" },
+      "to": null,
+      "origin": "source",
+      "note": "实测 661 个类型位置。★ 结构**没有稳定身份** ⇒ 天然做不到一一对应：Go 必须给它命名，命出来的名字就是 symbols 里 origin=added 的那些。允许 to:null —— 别硬凑一个假名字。样本：src/application/claim_conflict.ts:134 `{ id: string; type?: string; description?: string; path?: string }`。"
+    },
+    {
+      "from": { "shape": "A | B（真联合，不含 null/undefined）" },
+      "to": null,
+      "origin": "source",
+      "note": "实测 279 个类型位置（另有 726 个 `T | null/undefined` 属可空性，已由 types 的 null/undefined 行覆盖，不在此计）。★ Go 没有 sum type：三选一 —— interface + type switch / 带标签字段的 struct / 拆成多个函数。每条都要人工定，故 to:null。"
+    },
+    {
+      "from": { "shape": "(p: T) => U（函数类型）" },
+      "to": { "shape": "func(T) U" },
+      "origin": "source",
+      "note": "实测 92 个类型位置。这一条是**真的可机械**：Go 的函数类型词法不同但结构同构。样本：src/application/design/handlers.ts:634 `(p: string) => boolean` → `func(string) bool`。"
+    }
+  ],
+
+  "atoms": [
+    { "from": "camelCase（导出函数/类型）", "to": "PascalCase", "scope": "exports", "note": "Go 的导出由首字母大小写决定 ⇒ 这一步是**强制**的，不是风格偏好。实测 src/ 导出函数 1256 条、接口 965 条、类型 161 条、const 230 条。" },
+    { "from": "camelCase（未导出函数/局部）", "to": "camelCase", "scope": "unexported", "note": "同名同形，零改写。" },
+    { "from": "PascalCase（类型名）", "to": "PascalCase", "scope": "types", "note": "实测 identifiers.kind='type' 的 9411/9418 条是 PascalCase（99.93%）⇒ 这一层几乎不用动。" },
+    { "from": "UPPER_SNAKE（常量）", "to": "PascalCase（导出）/ camelCase（未导出）", "scope": "constants", "note": "Go 没有 UPPER_SNAKE 惯例。★ 但**不要**顺手把 UPPER_SNAKE 全改掉：`ACTOR_NAME_MAX` 这类是「真常量」，而 snake_case 的**字段名**是 wire 契约，两者处置不同（见下一条）。" },
+    { "from": "snake_case（JSON 键 / DB 列 / DSL 字段）", "to": "snake_case（不动）", "scope": "wire", "note": "★ 判据：这些名字是**数据契约**，不是代码标识符。改了 ⇒ 与源 DB 的列名、既有 .agent-io/*.json 文件全部对不上。Go 侧用 `json:\"project_dir\"` tag 保留。实测 property 里 snake_case 6801 条（占 75415 条属性名的 9.0%，占全仓 snake_case 的 87.9%），样本 project_dir / start_line / qualified_name / task_gate。" },
+    { "from": "?. / undefined（可选）", "to": "*T + nil 判断", "scope": "nullability", "note": "★ 两态变三态：TS 的「缺失 / undefined / null」在 Go 里塌成「nil」⇒ 有损，见 unknowns。" },
+    { "from": "| null", "to": "*T", "scope": "nullability", "note": "高频（586 次）；与上一条同形，但语义不同（显式空 vs 未给）⇒ 账上留两条。" },
+    { "from": "'human' | 'agent' | 'subagent'（字面量并集）", "to": "三个 const + 一个 string 派生类型", "scope": "literals", "note": "样例。★ 字面量本身**不翻译**（'human' 还是 \"human\"）—— 它们是 wire 值，与 JSON/DSL 里已落盘的数据同源。" },
+    { "from": "错误/回执文案（模板串、中文提示）", "to": "原样保留（不翻译）", "scope": "text", "note": "★ 行为对拍比的是文本；翻文案 ⇒ diff 是假的。语言无关的只是**结构**，不是字符串。" },
+    { "from": "src/<layer>/<sub>/（模块组织）", "to": "internal/<layer>/<sub>/（Go 包 = 目录）", "scope": "module", "note": "判据源 = structure.domains.json 的 domains[].dir（★ 不另抄一份名单）。实测：src/ 349 个 ts 文件落在 **78 个目录** ⇒ Go 侧 78 个包，最大的包 25 文件 / 382 节点（infrastructure/analysis/observe），19 个包只有 1 个文件。★ 包数**不算多**，不需要为了 Go 去合并目录。" },
+    { "from": "文件 = 模块（TS 每文件独立命名空间）", "to": "文件 = 包内一文件（同包共享命名空间）", "scope": "module", "note": "★ 这是模块层唯一的**真冲突源**。实测：按「目录 = 包」折叠后，同包跨文件重名导出只有 3 处（src/infrastructure/parse#TS_EXTS、analysis/impact#ImpactedFile、authoring/version_upgrade#SourceFile）⇒ 可枚举，不必造规则。" },
+    { "from": "import { x } from './y.js'", "to": "同包直接引用 / 跨包 import \"module/path\"", "scope": "module", "note": "TS 的相对导入在 Go 里**同包=无 import**、跨包=绝对路径 ⇒ 每个 import 都要判一次同包/跨包（这一条属模块层，不属函数层）。" }
+  ],
+
+  "unknowns": [
+    {
+      "where": "src/domain/actor_spec.ts:57 ACTOR_NAME_RE / :60 ACTOR_RE",
+      "what": "JS 正则的 lookahead `(?=.*[a-z0-9])` 在 Go 的 regexp（RE2）里**不存在**",
+      "why": "不是一一对应：① 拆成两条判断（长度+字符集 正则 ∧ 至少一个字母数字 的循环/其他正则）；② 或引第三方 regexp2（非标准库，多一个依赖）。两条都会让「ACTOR_RE 是一个正则」这条形状变掉 ⇒ 必须人工定，故那两个符号 state=blocked。"
+    },
+    {
+      "where": "src/domain/actor_spec.ts:200 admitActor(explicit?, env?)",
+      "what": "`explicit?: string | null` 的三态（未传 / null / 空串）在 Go 里只有两态（*string=nil / &\"\"）",
+      "why": "源码里 `null` 与「未传」都落到 raw=''（`const raw = e || v`）⇒ **行为**等价，但**契约形状**变了：译文侧的调用方无法表达「我显式传了 null」。要保三态就得上 Option 包装（多一个类型），不保就接受有损 —— 人工定。"
+    },
+    {
+      "where": "src/domain/actor_spec.ts:203 opts: { strict?: boolean } = {}",
+      "what": "默认参数 + 匿名对象类型",
+      "why": "Go 没有默认参数：要么多一个 AdmissionOptions 结构体（零值 false 与默认值 false 等价，但「没传」不可见），要么拆成 AdmitActor / AdmitActorStrict 两个函数（名字与调用点都变）。两条都不是机械替换。★ 这里已经选了「新建 AdmissionOptions」 ⇒ 账上记为 symbols 里 origin=added 的那一条（源侧没有这个名字）。"
+    },
+    {
+      "where": "src/domain/actor_spec.ts:50 ActorKind / :66 ActorSource",
+      "what": "并集的**成员**在 DB 里查不到（只有名字）",
+      "why": "nodes.kind='type' 的 members 只覆盖 12/203 ⇒ 「字面量枚举」这一层事实不在 DB 里。★ 这不是翻译问题，是 DB 缺口：类型层要做「并集 → Go const」，必须回源码读。要么补 DB（members 覆盖 type alias），要么承认类型层永远要读源码。"
+    },
+    {
+      "where": "src/domain/actor_spec.ts:157 invalidError(raw, extra = '')",
+      "what": "带默认值的形参在 DB 的 params 里**没有 type 键**",
+      "why": "量具读不到它的类型（实测全库 paramsNoType=115）⇒ 按 DB 统计的类型覆盖率天生少一块。★ 这是 DB 形状问题（default 影响了类型提取），不是翻译问题；写进这里是为了不让「类型 Top N」看起来比实际更全。"
+    },
+    {
+      "where": "src/domain/actor_spec.ts:69 ActorAdmission（members[].type）",
+      "what": "members[].type 带前导 `': '`（实测 5689 条），而 params[].type 没有",
+      "why": "同一个 JSON 的两处字段格式不一致 ⇒ 任何消费方（包括本轮的统计量具）都必须先剥前缀，否则类型名永远匹配不上。★ 这也是「从 DB 统计」必须先做的清洗，不做就会得到一张对不上的表。"
+    },
+    {
+      "where": "全局 · 382 次 Promise<T> / 全仓 async 函数 342 条（其中带 export 的 183 条）",
+      "what": "返回值与并发模型",
+      "why": "同步 `(T,error)` / goroutine+chan / context 三选一 —— 这不是术语问题，是并发模型问题。本仓的 await 顺序是**语义**（写闸先写后同步索引、事务提交顺序）⇒ 默认必须同步；改成并发要单独立决策 + 对拍，不能算「翻」。"
+    },
+    {
+      "where": "shapes[1] · 279 个真联合（如 src/application/design/derive/derive_chain.ts:42 DeriveChainResult 的返回）",
+      "what": "Go 没有 sum type，真联合到不了「结构到结构」",
+      "why": "三选一（interface+type switch / 标签结构体 / 拆函数）都会改变调用点形状 ⇒ shapes 里统一 to:null，逐个进本清单人工定。★ 这 279 条是「shapes 天然做不到一一对应」的主要来源，别指望它自己收敛。"
+    },
+    {
+      "where": "shapes[0] · 661 个内联对象",
+      "what": "每个内联对象在 Go 侧都要一个新名字（= symbols 里 origin=added）",
+      "why": "名字由谁定、按什么风格、要不要每个都落账 —— 本轮只落了样例那一个（AdmissionOptions）。★ 如果后续每个都落一条 added，symbols 会从 2620 条涨到 3281 条左右；不落则「新增」这一类就看不见 ⇒ 需要一条批量命名+落账的规则，人工定。"
+    }
+  ]
+}

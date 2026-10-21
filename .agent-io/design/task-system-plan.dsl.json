@@ -99053,11 +99053,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T12:18:19.795Z",
+    "saved_at": "2026-10-21T12:42:26.075Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1576984,
+    "age": 3023264,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -101228,8 +101228,16 @@
       "id": "todo_翻译-工作台-翻译册-feature-translate-json-它是-可以改",
       "summary": "【翻译·工作台】翻译册（`<feature>.translate.json`）：它是\"可以改的地方\" —— 源 DB 不能改（只读事实）、源码不能直接改（要先有指导），所以翻译决策必须落在中间层。★ 关键判据（用户 2026-10-21 定）：**DSL 层语言无关 ⇒ 直接复用不翻**；**DB 层往下逐层翻**，因为各层\"术语不一样\"。三层映射（从粗到细，每层都可先桩后实）：① 类型/术语层：`int ↔ number`、`[]T ↔ T[]`、`error ↔ throws/Result`、包/模块结构；② 函数层：签名形变（默认参数/多返回值/重载/可变参数）、惯用法（错误处理、迭代、并发）；③ 原子层：标识符风格（`snake_case ↔ camelCase`）、关键字（`if`/`for`/`defer`/`using`）、字面量。状态机：`pending → generating → stubbed → translated → verified → diff | blocked`。★ **\"一一对应\"在账上，不在文件上**：文件是最小可索引单位 ⇒ 未翻的符号先写桩（`throw new Error(\"TODO: not translated\")`），文件才可索引；本仓 `symbols.ts:568 ensureStub` 已是这个模式的先例，换个方向用。★ **翻译侧 DB 不\"翻译\"，是索引产生的**：目标源码写完跑一次 import_project 就有了 —— 若从源 DB 逐对翻，它和源码的行号/偏移必然对不上，会变成一个\"看起来像 DB 的假 DB\"（比没有更坏）。★ \"下一个翻谁\" = 查 `state=pending` 且指纹变了的那行 ⇒ 这个查询驱动整个循环（这就是\"工具主导\"的含义）。",
       "expectations": [],
-      "state": "candidate",
-      "owner": null
+      "state": "claimed",
+      "owner": "subagent:translate-book",
+      "claimed_at": "2026-10-21T12:42:26.048Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-21T12:42:26.002Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      }
     },
     {
       "id": "todo_更正-取代-dsl-摘-symbols-那条-不摘-symbols-改为-修它的",
