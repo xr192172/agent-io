@@ -51736,7 +51736,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "task": {
+          "id": "file_src_presentation_mcp_server_ts",
+          "summary": "【L1 待建构】入口层 · src/presentation/mcp — 4 个 API（导入自 12 个模块）（src/presentation/mcp/server.ts） ← 节点 file_src_presentation_mcp_server_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_ts\"].responsibility"
+          },
+          "owner": "workbuddy",
+          "claimed_at": "2026-10-21T06:05:05.430Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_presentation_mcp_server_registry_ts",
@@ -96322,7 +96334,8 @@
           }
         ],
         "lines": 253,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "in_progress"
       },
       {
         "id": "file_src_presentation_mcp_server_registry_ts",
@@ -98950,11 +98963,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T04:48:14.106Z",
+    "saved_at": "2026-10-21T06:05:05.459Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792557378812,
-    "age": 715294
+    "scanRev": 1792562551646,
+    "age": 153813
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

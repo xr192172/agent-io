@@ -255,7 +255,16 @@ async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error(`[${SERVER_NAME} v${SERVER_VERSION}] MCP server started (stdio)`);
-  await runAutoWatchHook();
+  // ★★★ 2026-10-21：auto-watch 不许阻塞 initialize。
+  //   实测：带 AGENT_IO_AUTO_WATCH=1 时，客户端发 initialize 后 **60s 无任何响应**
+  //   （全量导入 535 文件期间 event loop 被占死，stdio 的响应写不出去）
+  //   ⇒ 客户端判超时 ⇒ 整个 MCP 显示 "Not connected"（今天撞了两次，两次都误判成 server 挂了；
+  //   手工起 server 不带这个 env 时 849ms 就回 —— 差别就在这一行）。
+  //   修法：① 延后 1.5s 起 hook（让 initialize / tools/list 先回包）② 不 await（不拖住 main）。
+  //   ★ 遗留：导入窗口内 tools/call 仍可能慢，治本要让 importProject 分批 `await setImmediate` 让出。
+  setTimeout(() => {
+    void runAutoWatchHook().catch((e) => console.error(`[auto-watch] ${String((e as Error)?.message ?? e)}`));
+  }, 1500);
 }
 
 main().catch((e) => {
