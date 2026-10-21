@@ -453,52 +453,185 @@ export function declaredReceiverTypes(content: string): Map<string, ReceiverType
   for (const m of content.matchAll(new RegExp(`[(,]\\s*${id}\\s*\\??\\s*:\\s*([A-Za-z_$][\\w$.]*(?:<[^;\\n)]{0,60}>)?(?:\\[\\])?)`, 'g'))) add(m[1], m[2]);
   for (const m of content.matchAll(new RegExp(`\\b${id}\\s*:=\\s*&?([A-Za-z_][\\w.]*)\\s*\\{`, 'g'))) add(m[1], m[2]);
   for (const m of content.matchAll(new RegExp(`\\b${id}\\s*=\\s*([A-Za-z_][\\w]*)\\s*\\(`, 'g'))) add(m[1], m[2]);
+  // ★ Go 方法接收者 `func (t *Tiered) Emit()`：t 的类型就是 Tiered。
+  //   为什么必须有：Go 里绝大多数 `x.Foo()` 的 x 就是接收者，漏了这条会把整片方法调用降级成 suspect。
+  for (const m of content.matchAll(/func\s*\(\s*([A-Za-z_]\w*)\s+\*?([A-Za-z_][\w.]*)\s*\)/g)) add(m[1], m[2]);
+  // ★ Java 形参 / 字段 / 局部变量 `Sink s` / `Tiered t = ...`（Java 没有 `:`，用「大写类型 + 空格 + 小写名」）
+  for (const m of content.matchAll(/[(,]\s*([A-Z]\w*(?:<[^;)]{0,40}>)?)\s+([a-z_]\w*)\s*[,)]/g)) add(m[2], m[1]);
+  for (const m of content.matchAll(/\b([A-Z]\w*)\s+([a-z_]\w*)\s*=/g)) add(m[2], m[1]);
   const out = new Map<string, ReceiverType | null>();
   for (const [name, m] of acc) out.set(name, m.size === 1 ? [...m.values()][0] : null);
   return out;
 }
 
 /**
- * 调用边接收者守卫：**接收者类型可解析时**，只允许连到该类型的成员。
+ * 一次调用的建边判定。
  *
- * ★ 为什么需要（实测 2026-10-21，仓内 7,673 条 call 边全量审计）：33 条错连里 **24 条**同源 ——
- *   kernel 的 `symbols.find(s => s.name === c.name)`（kernel.ts:1757）只按**尾部名**匹配、不看接收者，
- *   于是 `TS_EXT_SET.has()`（Set 原型）连到同文件的 `SkipDirSetImpl.has`，
- *   `outEdges.get()`（Map 原型）连到同文件的嵌套函数 `evaluateCond.get`。
- * 判据：类型能读出来 ⇒ 目标必须是该类型的成员；读不出来（无注解的变量 / 动态派发 / 链式属性 /
- *   同名多处声明）⇒ **保持原行为**（实测那一档是「无法判定」，不是「已知错」，不扩大打击面）。
- * 拦下的调用不建边、按 **external** 记账 —— 目标确实不在仓内，这正是 external 的语义。
+ * ★★ 总判据（用户 2026-10-21 定）：**错连比漏连坏** —— 错连会污染下游（影响面/读集/翻译册），
+ *   漏连只是缺一条边、且能在 unresolved_refs 里查到原因。所以同文件 call 边的建边条件
+ *   从「名字匹配」改成「**必须能证明**」；证不出来的一律不建边，落 unresolved_refs 并带标签。
+ *
+ * ★ 错在哪一层（先说清，别再往 AST 上想）：tree-sitter 产出的 AST 几乎不会错；错在**名字解析**——
+ *   `TS_EXT_SET.has()` 与 `SkipDirSetImpl.has()` 名字对上了，接收者类型毫无关系。
+ *   实测 2026-10-21：7,740 条 call 边里 33 条错连全属这一层。
  */
-export function callReceiverGuard(args: {
+export type CallVerdict =
+  /** 四类可证的调用之一，带 `proof` 说明凭什么 */
+  | { kind: 'certain'; targetQn: string; proof: string }
+  /** 需要类型信息才能判（不建边，标 suspect） */
+  | { kind: 'suspect'; why: string }
+  /** 动态派发（不建边，标 unknown） */
+  | { kind: 'unknown'; why: string }
+  /** 接收者类型明确是仓外类型（原型方法等）：**没有仓内目标**，不是漏连 */
+  | { kind: 'external'; why: string }
+  /** 本文件根本没有这个符号 ⇒ 不归本文件管（交给跨文件解析） */
+  | { kind: 'none' };
+
+/**
+ * 裸名调用的可见性：只有**作用域链上**的符号才可能被裸名调到。
+ *
+ * 判据（可证）：
+ *   · 顶层符号（qn 不含 `.`）→ 全文件可见；
+ *   · 嵌套函数 `outer.inner` → 只有 `outer` 本身或其后代作用域里的调用能看见它；
+ *   · 同类/外层类的成员（`Class.method` 从 `Class.other` 调）→ 隐式 this（Java 内部类/静态嵌套类同理）。
+ *   ★ 反例（实测踩过）：`resolveRequestTarget` 里的裸名 `lookup()` 被连到 `requestPinned.lookup`，
+ *     两者不在同一作用域链上 —— 旧逻辑只看名字，连错了。
+ */
+function visibleToCaller(callerQn: string, sym: ParsedSymbol): boolean {
+  const qn = sym.qualified_name;
+  if (!qn.includes('.')) return true;
+  const parentQn = qn.slice(0, qn.lastIndexOf('.'));
+  return callerQn === parentQn || callerQn.startsWith(`${parentQn}.`);
+}
+
+/**
+ * 符号的所属类型是不是 `typeName`。
+ * ★ parent 可能是**限定名**（Java 嵌套类 `Camprobe.Sink`、TS 的 `Outer.Inner`）⇒ 比尾段。
+ *   踩过：只比 `parent === typeName` 会漏掉嵌套类型的所有成员。
+ */
+function ownerIs(sym: ParsedSymbol, typeName: string): boolean {
+  const p = sym.parent;
+  if (!p) return false;
+  return p === typeName || p.split('.').pop() === typeName;
+}
+
+/** 调用者最近的类祖先（`Class.method` / `Class.method.inner` → Class） */
+function enclosingClassOf(callerQn: string, symbols: readonly ParsedSymbol[]): ParsedSymbol | null {
+  const parts = callerQn.split('.');
+  for (let i = parts.length - 1; i >= 1; i--) {
+    const qn = parts.slice(0, i).join('.');
+    const hit = symbols.find((s) => s.qualified_name === qn && (s.kind === 'class' || s.kind === 'type'));
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/** 同文件基类链（只看 `class A extends B` 的 B，最多 6 跳）；跨文件父类看不见 ⇒ 返回空 */
+function baseChainOf(content: string, symbols: readonly ParsedSymbol[], cls: ParsedSymbol): string[] {
+  const lines = content.split('\n');
+  const chain: string[] = [];
+  let cur: string | null = cls.name;
+  for (let hop = 0; hop < 6 && cur; hop++) {
+    const node = symbols.find((s) => s.name === cur && (s.kind === 'class' || s.kind === 'type'));
+    if (!node) break;
+    const decl = lines.slice(Math.max(0, node.start_line - 1), node.start_line + 1).join('\n');
+    const m = decl.match(/\bextends\s+([A-Za-z_$][\w$.]*)/);
+    if (!m) break;
+    const base = m[1].split('.').pop() as string;
+    if (chain.includes(base)) break;
+    chain.push(base);
+    cur = base;
+  }
+  return chain;
+}
+
+/**
+ * 三档判定（+ external / none）。
+ *
+ * 【确定】四类，每类都给出**可证依据**（proof 字符串会写进回执与测试）：
+ *   1. `bare-visible` 裸名 foo()：本文件顶层，或调用者作用域链上的嵌套函数，且**恰好 1 个**候选。
+ *      可证：JS/TS 的裸名解析就是沿作用域链查词法绑定，作用域链在 AST 上是确定的。
+ *   2. `this-member`   this.foo()：foo 是**当前类**的成员（同文件 method 节点）。
+ *      可证：`this` 的静态类型就是当前类，成员表是声明出来的事实。
+ *   3. `this-base-member` this.foo()：foo 在当前类的**同文件基类**链上。
+ *      可证：同链 2，只是多走一跳 `extends`；跨文件父类看不见 ⇒ 不证（落 suspect）。
+ *   4. `typed-member`  x.foo()：x 的声明行能直接读出类型 T（注解 / new T / 形参标注 / Go `:=T{}`），
+ *      且 T 是**本文件**的 class/interface/type，foo 是 T 的成员。
+ *      可证：声明行是源码里的字面事实，T 的成员表是节点事实，两者都有据可查。
+ *
+ * 【疑似】suspect（不建边）：接收者类型读不出 / 链式 `a.b.c()` / 返回值上的属性 / 同名多候选 /
+ *   裸名候选不在作用域链上 / `this` 成员不在本类与同文件基类里。
+ * 【未知】unknown（不建边）：`obj[expr]()` 等动态派发。
+ * 【仓外】external（不建边）：接收者类型明确是内置/容器/仓外类型（`Set`/`Map`/`T[]`/`Database`…），
+ *   或有同名符号但**不属于该类型** —— 这时仓内根本没有目标，不是漏连。
+ */
+export function classifyCall(args: {
+  content: string;
   symbols: readonly ParsedSymbol[];
   /** declaredReceiverTypes() 的结果（每个文件建一次） */
   receiverTypes: ReadonlyMap<string, ReceiverType | null>;
+  /** 本文件的 import 列表（判「接收者是不是导入名」——那种 `X.foo()` 归跨文件解析） */
+  imports: ReadonlyArray<{ bindings?: string[] }>;
+  callerQn: string;
+  callee: string;
   calleeExpr: string;
-  /** kernel 给的已解析目标 qualified_name */
-  targetQn: string;
-}): { allow: boolean; why: string } {
+}): CallVerdict {
+  const named = args.symbols.filter((s) => s.name === args.callee);
   const dot = lastReceiverDot(args.calleeExpr);
-  if (dot < 0) return { allow: true, why: 'bare-call' };
+
+  // ── 裸名 ──
+  if (dot < 0) {
+    if (named.length === 0) return { kind: 'none' }; // 本文件没有 ⇒ 交给跨文件
+    const visible = named.filter((s) => visibleToCaller(args.callerQn, s));
+    if (visible.length === 1) return { kind: 'certain', targetQn: visible[0].qualified_name, proof: 'bare-visible' };
+    if (visible.length === 0) return { kind: 'suspect', why: 'bare-not-in-scope' };
+    return { kind: 'suspect', why: 'bare-ambiguous' };
+  }
+
   const receiver = args.calleeExpr.slice(0, dot).trim();
-  if (receiver === 'this' || receiver === 'self') return { allow: true, why: 'this-or-self' };
-  if (!/^[A-Za-z_$][\w$]*$/.test(receiver)) return { allow: true, why: 'receiver-not-simple-ident' };
-  const target = args.symbols.find((s) => s.qualified_name === args.targetQn);
-  if (!target) return { allow: true, why: 'target-symbol-missing' };
-  // 接收者本身是**仓内类型名**（`Foo.bar()` 静态访问）⇒ 类型就是它自己
-  const asType = args.symbols.find(
-    (s) => s.name === receiver && (s.kind === 'class' || s.kind === 'interface' || s.kind === 'type'),
-  );
-  const declared = args.receiverTypes.get(receiver) ?? null;
-  const typeName = declared?.base ?? asType?.name ?? null;
-  if (!typeName) return { allow: true, why: 'receiver-type-unknown' };
-  // ★ 只对「确实是类型」的名字收紧（内置表 / 仓内 class·interface·type / 大写开头的外部类型）
-  const knownType = !!asType || CALL_GUARD_BUILTIN_TYPES.has(typeName) || /^[A-Z]/.test(typeName);
-  if (!knownType) return { allow: true, why: `not-a-known-type:${typeName}` };
-  if (declared?.array === true) return { allow: false, why: `container(${typeName}[])->${target.name}` };
-  const owner = target.parent ?? null;
-  if (!owner) return { allow: false, why: `typed(${typeName})->file-level:${target.name}` };
-  if (owner === typeName) return { allow: true, why: `member-of:${owner}` };
-  return { allow: false, why: `member-of:${owner}!=${typeName}` };
+
+  // ── this / self ──
+  if (receiver === 'this' || receiver === 'self') {
+    const cls = enclosingClassOf(args.callerQn, args.symbols);
+    if (!cls) return { kind: 'unknown', why: 'this-without-class' };
+    const own = named.filter((s) => ownerIs(s, cls.name));
+    if (own.length === 1) return { kind: 'certain', targetQn: own[0].qualified_name, proof: 'this-member' };
+    if (own.length > 1) return { kind: 'suspect', why: 'this-member-ambiguous' };
+    for (const base of baseChainOf(args.content, args.symbols, cls)) {
+      const hit = named.filter((s) => ownerIs(s, base));
+      if (hit.length === 1) return { kind: 'certain', targetQn: hit[0].qualified_name, proof: 'this-base-member' };
+    }
+    return { kind: 'suspect', why: 'this-member-not-in-class-chain' };
+  }
+
+  // ── 简单标识符接收者 ──
+  if (/^[A-Za-z_$][\w$]*$/.test(receiver)) {
+    // 导入名（`import * as X` / 具名导入）上的成员 ⇒ 属于跨文件，本文件不建边
+    const imported = args.imports.some((im) => (im.bindings ?? []).includes(receiver));
+    if (imported) return { kind: 'none' };
+    const asType = args.symbols.find(
+      (s) => s.name === receiver && (s.kind === 'class' || s.kind === 'interface' || s.kind === 'type'),
+    );
+    const declared = args.receiverTypes.get(receiver) ?? null;
+    if (declared === null && !asType) return { kind: 'suspect', why: 'receiver-type-unknown' };
+    const typeName = (declared?.base ?? asType?.name) as string;
+    if (declared?.array === true) return { kind: 'external', why: `container-receiver:${typeName}[]` };
+    const isRepoType = args.symbols.some(
+      (s) => s.name === typeName && (s.kind === 'class' || s.kind === 'interface' || s.kind === 'type'),
+    );
+    if (!isRepoType) return { kind: 'external', why: `receiver-type-external:${typeName}` };
+    const members = named.filter((s) => ownerIs(s, typeName));
+    if (members.length === 1) return { kind: 'certain', targetQn: members[0].qualified_name, proof: 'typed-member' };
+    if (members.length > 1) return { kind: 'suspect', why: `typed-member-ambiguous:${typeName}` };
+    return { kind: 'external', why: `member-not-of:${typeName}` };
+  }
+
+  // ── 其它接收者形态 ──
+  if (receiver.includes('[')) return { kind: 'unknown', why: 'dynamic-index' };
+  if (receiver.includes('(') || receiver.includes(')')) return { kind: 'suspect', why: 'call-result-receiver' };
+  if (/^[0-9]|^['"`]|^\//.test(receiver)) return { kind: 'external', why: 'literal-receiver' };
+  if (receiver.includes('.')) return { kind: 'suspect', why: 'chain-receiver' };
+  return { kind: 'unknown', why: 'unclassified-receiver' };
 }
 
 /** 最后一个「顶层」点号（跳过括号/引号内部；没有返回 -1） */
@@ -752,34 +885,53 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
       `INSERT OR IGNORE INTO unresolved_refs(from_node_id, reference_name, reference_kind, line, col, file_id, language, status, name_tail)
        VALUES ($from, $rn, 'call', $ln, 0, $fid, $lang, 'pending', $nt)`,
     );
-    // ★ 2026-10-21：被接收者守卫拦下的调用不建边，按 external 记账（目标确实不在仓内）
-    const insUnresolvedExternal = db.prepare(
-      `INSERT OR IGNORE INTO unresolved_refs(from_node_id, reference_name, reference_kind, line, col, file_id, language, status, name_tail)
-       VALUES ($from, $rn, 'call', $ln, 0, $fid, $lang, 'external', $nt)`,
+    // ★ 2026-10-21 三档判定（判据见 classifyCall）：**建边必须能证明**；证不出的一律不建边，
+    //   落 unresolved_refs 并把原因写进 candidates 列（`{verdict,why}`）——漏连不许静默消失。
+    //   status：external = 目标在仓外（原型方法等，不是漏连）· failed = suspect/unknown（不重试）。
+    const insUnresolvedTagged = db.prepare(
+      `INSERT OR IGNORE INTO unresolved_refs(from_node_id, reference_name, reference_kind, line, col, file_id, language, status, name_tail, candidates)
+       VALUES ($from, $rn, 'call', $ln, 0, $fid, $lang, $st, $nt, $cd)`,
     );
-    // 本文件的「局部名 → 声明类型」表：一次扫描，供守卫逐调用查
+    // 本文件的「局部名 → 声明类型」表：一次扫描，供判定逐调用查
     const receiverTypes = declaredReceiverTypes(content);
     let callCount = 0;
     for (const c of parsed.calls) {
       const srcId = idOf(c.caller);
       if (!nodeIdSet.has(srcId)) continue; // qn 漂移坏边：跳过不炸事务
-      if (c.resolved && c.callee_qn && nodeIdSet.has(idOf(c.callee_qn))) {
-        // ★ 接收者守卫（见 callReceiverGuard 注释：实测 24 条错连是 Map/Set 原型方法撞同名成员）
-        const verdict = callReceiverGuard({
-          symbols: parsed.symbols,
-          receiverTypes,
-          calleeExpr: c.callee_expr,
-          targetQn: c.callee_qn,
-        });
-        if (!verdict.allow) {
-          insUnresolvedExternal.run({ from: srcId, rn: c.callee_expr, ln: c.line, fid: fileId, lang: ext, nt: c.callee });
-          continue;
+      const verdict = classifyCall({
+        content,
+        symbols: parsed.symbols,
+        receiverTypes,
+        imports: parsed.imports,
+        callerQn: c.caller,
+        callee: c.callee,
+        calleeExpr: c.callee_expr,
+      });
+      if (verdict.kind === 'certain') {
+        if (nodeIdSet.has(idOf(verdict.targetQn))) {
+          insCall.run({ src: srcId, tgt: idOf(verdict.targetQn), ln: c.line });
+          callCount++;
+        } else {
+          // 证明成立但目标节点不在本次写入集（qn 漂移）⇒ 留 pending，让跨文件那轮再试
+          insUnresolved.run({ from: srcId, rn: c.callee_expr, ln: c.line, fid: fileId, lang: ext, nt: c.callee });
         }
-        insCall.run({ src: srcId, tgt: idOf(c.callee_qn), ln: c.line });
-        callCount++;
-      } else {
-        insUnresolved.run({ from: srcId, rn: c.callee_expr, ln: c.line, fid: fileId, lang: ext, nt: c.callee });
+        continue;
       }
+      if (verdict.kind === 'none') {
+        // 本文件没这个符号 ⇒ 交给跨文件解析（pending 是它的入口）
+        insUnresolved.run({ from: srcId, rn: c.callee_expr, ln: c.line, fid: fileId, lang: ext, nt: c.callee });
+        continue;
+      }
+      insUnresolvedTagged.run({
+        from: srcId,
+        rn: c.callee_expr,
+        ln: c.line,
+        fid: fileId,
+        lang: ext,
+        nt: c.callee,
+        st: verdict.kind === 'external' ? 'external' : 'failed',
+        cd: JSON.stringify({ verdict: verdict.kind, why: verdict.why }),
+      });
     }
 
     // 3.6 类型引用边（kind='type_ref'：引用者函数/类 → 被引用 interface/type/class 符号）。
@@ -1121,6 +1273,7 @@ function resolveReexportTarget(
   barrelRel: string,
   name: string,
   namesByFile: Map<string, Set<string>>,
+  kinds?: readonly string[],
   depth: number = 0,
   seen: Set<string> = new Set(),
 ): { file: string; qn: string } | null {
@@ -1138,15 +1291,93 @@ function resolveReexportTarget(
       hits.add(target);
       continue;
     }
-    const nested = resolveReexportTarget(db, projectRoot, target, name, namesByFile, depth + 1, seen);
+    const nested = resolveReexportTarget(db, projectRoot, target, name, namesByFile, kinds, depth + 1, seen);
     if (nested) hits.add(nested.file);
   }
   if (hits.size !== 1) return null;
   const file = [...hits][0];
   const q = db
-    .prepare('SELECT qualified_name FROM nodes WHERE file_path = $tp AND name = $n LIMIT 1')
-    .get({ tp: file, n: name }) as { qualified_name: string } | undefined;
-  return q ? { file, qn: q.qualified_name } : null;
+    .prepare('SELECT kind, qualified_name FROM nodes WHERE file_path = $tp AND name = $n LIMIT 1')
+    .get({ tp: file, n: name }) as { kind: string; qualified_name: string } | undefined;
+  return q && (!kinds || kinds.includes(q.kind)) ? { file, qn: q.qualified_name } : null;
+}
+
+/**
+ * 文件内「命名空间导入」：本地名 → 来源模块（只认 `import * as X from './y'`）。
+ * ★ 为什么它可证：`X.foo()` 里 X 的静态类型就是模块对象，成员表就是该模块的导出表 ——
+ *   两样都是声明出来的事实。`export * as ns from` 不算（那是再导出，不是本地绑定）。
+ */
+const nsImportCache = new Map<string, { mtimeMs: number; map: Map<string, string[]> }>();
+function namespaceImportsOf(projectRoot: string, rel: string): Map<string, string[]> {
+  const key = `${projectRoot}|${rel}`;
+  const abs = path.join(projectRoot, rel);
+  const st = fs.statSync(abs);
+  const hit = nsImportCache.get(key);
+  if (hit && hit.mtimeMs === st.mtimeMs) return hit.map;
+  const text = fs.readFileSync(abs, 'utf8');
+  const map = new Map<string, string[]>();
+  for (const m of text.matchAll(/import\s*\*\s*as\s+([A-Za-z_$][\w$]*)\s+from\s*['"]([^'"]+)['"]/g)) {
+    const arr = map.get(m[1]) ?? [];
+    arr.push(m[2]);
+    map.set(m[1], arr);
+  }
+  nsImportCache.set(key, { mtimeMs: st.mtimeMs, map });
+  return map;
+}
+
+/**
+ * 文件内「动态 import 解构」：本地名 → 来源（`const { a, b } = await import('./x')`）。
+ * ★ 为什么需要：这类名字不在静态 import 表里，但**来源是写死在源码里的** ⇒ 照样可证。
+ */
+const dynImportCache = new Map<string, { mtimeMs: number; map: Map<string, string[]> }>();
+function dynamicImportsOf(projectRoot: string, rel: string): Map<string, string[]> {
+  const key = `${projectRoot}|${rel}`;
+  const abs = path.join(projectRoot, rel);
+  const st = fs.statSync(abs);
+  const hit = dynImportCache.get(key);
+  if (hit && hit.mtimeMs === st.mtimeMs) return hit.map;
+  const text = fs.readFileSync(abs, 'utf8');
+  const map = new Map<string, string[]>();
+  for (const m of text.matchAll(/(?:const|let|var)\s*\{([^}]*)\}\s*=\s*await\s+import\(\s*['"]([^'"]+)['"]/g)) {
+    for (const raw of m[1].split(',')) {
+      const nm = raw.split(':').pop()?.trim();
+      if (!nm || !/^[A-Za-z_$][\w$]*$/.test(nm)) continue;
+      const arr = map.get(nm) ?? [];
+      arr.push(m[2]);
+      map.set(nm, arr);
+    }
+  }
+  dynImportCache.set(key, { mtimeMs: st.mtimeMs, map });
+  return map;
+}
+
+/**
+ * `X.foo()` 且 X 是 `import * as X` ⇒ 目标模块里的**可调用**符号（唯一才建边）。
+ * ★ 限度：若同名符号有多个、或模块里没有 ⇒ 不建边（留 external，宁漏不错）。
+ */
+function findNamespaceMemberTarget(
+  db: Database,
+  projectRoot: string,
+  fromRel: string,
+  expr: string,
+): { file: string; qn: string } | null {
+  const dot = lastReceiverDot(expr);
+  if (dot < 0) return null;
+  const head = expr.slice(0, dot).trim();
+  if (!/^[A-Za-z_$][\w$]*$/.test(head)) return null;
+  const sources = namespaceImportsOf(projectRoot, fromRel).get(head);
+  if (!sources) return null;
+  const member = expr.slice(dot + 1).replace(/\(.*$/, '');
+  const hits: Array<{ file: string; qn: string }> = [];
+  for (const s of sources) {
+    const target = resolveImportTarget(projectRoot, fromRel, s);
+    if (!target) continue;
+    const row = db
+      .prepare("SELECT qualified_name FROM nodes WHERE file_path = $f AND name = $n AND kind IN ('function','const') LIMIT 1")
+      .get({ f: target, n: member }) as { qualified_name: string } | undefined;
+    if (row) hits.push({ file: target, qn: row.qualified_name });
+  }
+  return hits.length === 1 ? hits[0] : null;
 }
 
 /** 有点调用前缀：内置对象 / 内置模块 / 全局对象（外部，非项目符号） */
@@ -1259,6 +1490,18 @@ export function resolveCrossFileCalls(
     arr.push(i);
   }
 
+  /** 文件 → 相对导入绑定的本地名（判「这个裸名到底是从哪个相对模块 import 进来的」） */
+  const relBindingsByFile = new Map<string, Set<string>>();
+  for (const i of db.prepare("SELECT file_path, bindings FROM v_imports WHERE kind='relative' AND bindings IS NOT NULL").all() as Array<{ file_path: string; bindings: string }>) {
+    let set = relBindingsByFile.get(i.file_path);
+    if (!set) relBindingsByFile.set(i.file_path, (set = new Set()));
+    try {
+      for (const nm of JSON.parse(i.bindings) as string[]) set.add(nm);
+    } catch {
+      /* 坏 JSON 跳过（与 packageBindingsByFile 同口径；坏了也不能让整个解析挂掉） */
+    }
+  }
+
   /**
    * ★★★ 2026-10-19（v9 · 结构性修复）：**文件 → (本地绑定名 → 来源模块)**
    *
@@ -1301,8 +1544,10 @@ export function resolveCrossFileCalls(
   }
 
   const updResolved = db.prepare("UPDATE unresolved_refs SET status='resolved' WHERE id = $i");
-  const updExternal = db.prepare("UPDATE unresolved_refs SET status='external' WHERE id = $i");
-  const updFailed = db.prepare("UPDATE unresolved_refs SET status='failed' WHERE id = $i");
+  // ★ 2026-10-21：状态与**原因标签**一起写（candidates 列）——「没建边」不许静默：
+  //   external = 目标在仓外（不是漏连）· failed = 证不出来（suspect/unknown），要能查到为什么。
+  const updExternal = db.prepare("UPDATE unresolved_refs SET status='external', candidates=$cd WHERE id = $i");
+  const updFailed = db.prepare("UPDATE unresolved_refs SET status='failed', candidates=$cd WHERE id = $i");
   const insEdge = db.prepare(
     'INSERT OR IGNORE INTO edges(source, target, kind, line, col, metadata) VALUES ($src, $tgt, $k, $ln, NULL, $md)',
   );
@@ -1312,9 +1557,9 @@ export function resolveCrossFileCalls(
   // ★ 索引**不完整**阶段（后台续建途中）不要急着判 failed：目标符号可能只是还没索引到。
   //   一旦标 failed 就永不重试 ⇒ 最终索引会永久缺跨文件边。此时留 pending，等补完再一次性定论。
   const keepPending = opts.keepUnresolvedPending === true;
-  const markUnresolved = (id: number): void => {
+  const markUnresolved = (id: number, why = 'cross-target-not-found'): void => {
     if (keepPending) return;
-    updFailed.run({ i: id });
+    updFailed.run({ i: id, cd: JSON.stringify({ verdict: 'suspect', why }) });
     stats.failed++;
   };
   // ★★ 事务包裹（2026-09-14 实测的关键修正）：本函数要写大量 edges / unresolved_refs 行。
@@ -1330,12 +1575,12 @@ export function resolveCrossFileCalls(
 
     if (kind === 'type_ref') {
       if (BUILTIN_TYPES.has(expr)) {
-        updExternal.run({ i: r.id });
+        updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'builtin-type' }) });
         stats.external++;
         continue;
       }
       const t =
-        findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, typeNamesByFile)
+        findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, typeNamesByFile, ['interface', 'type', 'class'])
         ?? findGoSamePackageTarget(db, rel, expr, ['interface', 'type', 'class'], goFilesByDir);
       if (t) {
         insEdge.run({ src: r.from_node_id, tgt: `${t.file}#${t.qn}`, k: 'type_ref', ln: r.line, md: CROSS_META });
@@ -1348,14 +1593,22 @@ export function resolveCrossFileCalls(
     }
 
     if (expr.includes('.')) {
-      // 有点调用：内置前缀 external；其余（局部变量/Go 包调用）保守 external
-      updExternal.run({ i: r.id });
-      stats.external++;
+      // ★ 2026-10-21：带点调用里**唯一可证**的是 `import * as X` 的命名空间成员（X.foo 且 X 是命名空间导入）。
+      //   其余（局部变量 / 链式 / 返回值 / Go 包调用）一律 external —— 仓内没有可证目标，宁漏不错。
+      const nsTarget = findNamespaceMemberTarget(db, projectRoot, rel, expr);
+      if (nsTarget) {
+        insEdge.run({ src: r.from_node_id, tgt: `${nsTarget.file}#${nsTarget.qn}`, k: 'call', ln: r.line, md: CROSS_META });
+        updResolved.run({ i: r.id });
+        stats.resolved++;
+      } else {
+        updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'dotted-unprovable' }) });
+        stats.external++;
+      }
       continue;
     }
 
     if (BUILTIN_CALLEES.has(expr)) {
-      updExternal.run({ i: r.id });
+      updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'builtin-callee' }) });
       stats.external++;
       continue;
     }
@@ -1366,14 +1619,21 @@ export function resolveCrossFileCalls(
     //   ★ 放在 relative 查找【之前】：package 绑定是更强的证据（它是声明出来的）。
     const pkgSrc = packageBindingsByFile.get(rel)?.get(expr);
     if (pkgSrc) {
-      updExternal.run({ i: r.id });
+      updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'package-import' }) });
       stats.external++;
       continue;
     }
 
-    // 无点调用：沿 relative imports 定位目标文件，符号表命中即解析
+    // ★ 2026-10-21：跨文件建边也要**能证明来源** —— 这个裸名必须真的从某个相对导入绑定进来
+    //   （静态 `import { x }` 或动态 `const { x } = await import()`）。只靠「目标文件里恰好有同名符号」
+    //   会把本地闭包/形参连到别的文件（实测 3 条：sanitize / reject / langOfFile）。
+    const boundByImport = relBindingsByFile.get(rel)?.has(expr) ?? false;
+    const boundByName = boundByImport || (dynamicImportsOf(projectRoot, rel).get(expr)?.length ?? 0) > 0;
+    // 无点调用：沿 relative imports 定位目标文件（目标必须是**可调用**符号）
     const target =
-      findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, symbolsByFile)
+      (boundByName
+        ? findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, symbolsByFile, ['function', 'const'])
+        : null)
       ?? findGoSamePackageTarget(db, rel, expr, ['function'], goFilesByDir);
     if (target) {
       insEdge.run({ src: r.from_node_id, tgt: `${target.file}#${target.qn}`, k: 'call', ln: r.line, md: CROSS_META });
@@ -1409,6 +1669,8 @@ function findCrossFileTarget(
   fromRel: string,
   name: string,
   namesByFile: Map<string, Set<string>>,
+  /** 目标必须是的符号 kind（call → function/const；type_ref → interface/type/class）；缺省不限 */
+  kinds?: readonly string[],
 ): { file: string; qn: string } | null {
   const imports = relImportsByFile.get(fromRel);
   if (!imports) return null;
@@ -1421,13 +1683,13 @@ function findCrossFileTarget(
     if (syms && syms.has(name)) {
       // 目标文件确有该符号 → 取 qualified_name（重名取首个，v1 近似）
       const q = db
-        .prepare('SELECT qualified_name FROM nodes WHERE file_path = $tp AND name = $n LIMIT 1')
-        .get({ tp: target, n: name }) as { qualified_name: string } | undefined;
-      if (q) return { file: target, qn: q.qualified_name };
+        .prepare('SELECT kind, qualified_name FROM nodes WHERE file_path = $tp AND name = $n LIMIT 1')
+        .get({ tp: target, n: name }) as { kind: string; qualified_name: string } | undefined;
+      if (q && (!kinds || kinds.includes(q.kind))) return { file: target, qn: q.qualified_name };
     }
     // ★ 2026-10-21：barrel re-export —— 目标文件只是 `export { x } from './kernel.js'`，符号在下一层。
     //   判据见 resolveReexportTarget：候选文件必须**唯一**，同 barrel 里同名冲突 ⇒ 不猜（保持 failed）。
-    const viaBarrel = resolveReexportTarget(db, projectRoot, target, name, namesByFile);
+    const viaBarrel = resolveReexportTarget(db, projectRoot, target, name, namesByFile, kinds);
     if (viaBarrel) return viaBarrel;
   }
   return null;
