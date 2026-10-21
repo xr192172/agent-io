@@ -1,0 +1,656 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/translate/book.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/infrastructure/authoring/translate/book.ts",
+  "symbols": [
+    {
+      "name": "BookSymbol",
+      "kind": "interface",
+      "line": 35,
+      "signature": "BookSymbol()",
+      "members": [
+        {
+          "name": "from",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "origin",
+          "type": ": 'source' | 'added'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "state",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "BookShape",
+      "kind": "interface",
+      "line": 44,
+      "signature": "BookShape()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": { shape: string }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": { shape: string } | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "origin",
+          "type": ": 'source' | 'added'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "count",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "samples",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "TranslateBook",
+      "kind": "interface",
+      "line": 56,
+      "signature": "TranslateBook()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "version",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "meta",
+          "type": ": Record<string, unknown>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "types",
+          "type": ": Array<Record<string, unknown>>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbols",
+          "type": ": BookSymbol[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "shapes",
+          "type": ": BookShape[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "atoms",
+          "type": ": Array<Record<string, unknown>>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unknowns",
+          "type": ": Array<Record<string, unknown>>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "BookGenOptions",
+      "kind": "interface",
+      "line": 70,
+      "signature": "BookGenOptions()",
+      "members": [
+        {
+          "name": "projectDir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "bookPath",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "srcPrefix",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "targetPrefix",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "now",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "BookGenStats",
+      "kind": "interface",
+      "line": 82,
+      "signature": "BookGenStats()",
+      "members": [
+        {
+          "name": "symbols",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pending",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "blocked",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "added",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "blockedByTerm",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "blockedByCollision",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "blockedByStatic",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "shapes",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "scanRev",
+          "type": ": number | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dbSchemaVersion",
+          "type": ": number | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "srcFiles",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "NodeRow",
+      "kind": "interface",
+      "line": 98,
+      "signature": "NodeRow()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start_line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parent",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "return_type",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "params",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "members",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "type_params",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "modifiers",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "GO_INITIALISMS",
+      "kind": "const",
+      "line": 115,
+      "signature": "const GO_INITIALISMS = new Set([ 'dsl', 'api', 'url', 'uri', 'http', 'https', 'j…"
+    },
+    {
+      "name": "NOMINAL",
+      "kind": "const",
+      "line": 122,
+      "signature": "const NOMINAL = new Set(['string', 'number', 'boolean', 'any', 'unknown',…"
+    },
+    {
+      "name": "CONTAINER",
+      "kind": "const",
+      "line": 124,
+      "signature": "const CONTAINER = new Set([ 'Promise', 'Array', 'ReadonlyArray', 'Record', …"
+    },
+    {
+      "name": "NULLISH",
+      "kind": "const",
+      "line": 131,
+      "signature": "const NULLISH = new Set(['null', 'undefined', 'void', 'never', 'true', 'f…"
+    },
+    {
+      "name": "AUTO_TAG",
+      "kind": "const",
+      "line": 134,
+      "signature": "const AUTO_TAG = '[auto]'"
+    },
+    {
+      "name": "STICKY_STATES",
+      "kind": "const",
+      "line": 136,
+      "signature": "const STICKY_STATES = new Set(['translated', 'verified', 'diff', 'stubbed'])"
+    },
+    {
+      "name": "goName",
+      "kind": "function",
+      "line": 141,
+      "signature": "goName(tsName: string): string"
+    },
+    {
+      "name": "goPath",
+      "kind": "function",
+      "line": 161,
+      "signature": "goPath(filePath: string, srcPrefix = 'src/', targetPrefix = 'internal/'): string"
+    },
+    {
+      "name": "stripComments",
+      "kind": "const",
+      "line": 168,
+      "signature": "const stripComments = (s: string): string => s.replace(/\\/\\*[\\s\\S]*?\\*\\//g, ' '…"
+    },
+    {
+      "name": "stripLiterals",
+      "kind": "const",
+      "line": 170,
+      "signature": "const stripLiterals = (s: string): string => s.replace(/'[^']*'|\"[^\"]*\"|`[^`]*`…"
+    },
+    {
+      "name": "typeExpressions",
+      "kind": "function",
+      "line": 173,
+      "signature": "typeExpressions(row: NodeRow): string[]"
+    },
+    {
+      "name": "parseJson",
+      "kind": "function",
+      "line": 181,
+      "signature": "parseJson(raw: string | null, fallback: T): T"
+    },
+    {
+      "name": "genericNames",
+      "kind": "function",
+      "line": 191,
+      "signature": "genericNames(row: NodeRow): Set<string>"
+    },
+    {
+      "name": "unmappedTypes",
+      "kind": "function",
+      "line": 204,
+      "signature": "unmappedTypes(row: NodeRow, declared: ReadonlySet<string>): string[]"
+    },
+    {
+      "name": "ShapeCat",
+      "kind": "interface",
+      "line": 222,
+      "signature": "ShapeCat()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": { shape: string } | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "match",
+          "type": ": (s: string) => boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "SHAPE_CATS",
+      "kind": "const",
+      "line": 229,
+      "signature": "const SHAPE_CATS = [ { id: 'func', label: '(p: T) => U（函数类型）', to: { shape: …"
+    },
+    {
+      "name": "classifyShape",
+      "kind": "function",
+      "line": 250,
+      "signature": "classifyShape(expr: string): ShapeCat | null"
+    },
+    {
+      "name": "openBookDb",
+      "kind": "function",
+      "line": 259,
+      "signature": "openBookDb(projectDir: string): DatabaseSync"
+    },
+    {
+      "name": "readSymbolRows",
+      "kind": "function",
+      "line": 275,
+      "signature": "readSymbolRows(db: DatabaseSync): { rows: NodeRow[]; srcFiles: number }"
+    },
+    {
+      "name": "autoNote",
+      "kind": "function",
+      "line": 294,
+      "signature": "autoNote(row: NodeRow, bad: string[], target: string): string"
+    },
+    {
+      "name": "goSymbolName",
+      "kind": "function",
+      "line": 304,
+      "signature": "goSymbolName(row: NodeRow): string"
+    },
+    {
+      "name": "shapeStats",
+      "kind": "function",
+      "line": 314,
+      "signature": "shapeStats(rows: readonly NodeRow[]): Map<string, { count: number; samples: string[]; distinct: Set<string> }>"
+    },
+    {
+      "name": "generateBook",
+      "kind": "function",
+      "line": 337,
+      "signature": "generateBook(book: TranslateBook, opts: BookGenOptions): { book: TranslateBook; stats: BookGenStats }"
+    },
+    {
+      "name": "writeBook",
+      "kind": "function",
+      "line": 541,
+      "signature": "writeBook(bookPath: string, book: TranslateBook): void"
+    },
+    {
+      "name": "rebuildBook",
+      "kind": "function",
+      "line": 547,
+      "signature": "rebuildBook(opts: BookGenOptions): BookGenStats"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:sqlite",
+      "kind": "package"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
+      "to": "src/infrastructure/authoring/translate/book.ts#autoNote"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#shapeStats",
+      "to": "src/infrastructure/authoring/translate/book.ts#classifyShape"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#rebuildBook",
+      "to": "src/infrastructure/authoring/translate/book.ts#generateBook"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#unmappedTypes",
+      "to": "src/infrastructure/authoring/translate/book.ts#genericNames"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#goSymbolName",
+      "to": "src/infrastructure/authoring/translate/book.ts#goName"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#goSymbolName",
+      "to": "src/infrastructure/authoring/translate/book.ts#goName"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#goSymbolName",
+      "to": "src/infrastructure/authoring/translate/book.ts#goName"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#goSymbolName",
+      "to": "src/infrastructure/authoring/translate/book.ts#goName"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
+      "to": "src/infrastructure/authoring/translate/book.ts#goPath"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
+      "to": "src/infrastructure/authoring/translate/book.ts#goSymbolName"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
+      "to": "src/infrastructure/authoring/translate/book.ts#goSymbolName"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
+      "to": "src/infrastructure/authoring/translate/book.ts#openBookDb"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#typeExpressions",
+      "to": "src/infrastructure/authoring/translate/book.ts#parseJson"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#typeExpressions",
+      "to": "src/infrastructure/authoring/translate/book.ts#parseJson"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#genericNames",
+      "to": "src/infrastructure/authoring/translate/book.ts#parseJson"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
+      "to": "src/infrastructure/authoring/translate/book.ts#readSymbolRows"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
+      "to": "src/infrastructure/authoring/translate/book.ts#shapeStats"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#unmappedTypes",
+      "to": "src/infrastructure/authoring/translate/book.ts#stripComments"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#classifyShape",
+      "to": "src/infrastructure/authoring/translate/book.ts#stripComments"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#shapeStats",
+      "to": "src/infrastructure/authoring/translate/book.ts#stripComments"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#unmappedTypes",
+      "to": "src/infrastructure/authoring/translate/book.ts#stripLiterals"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#classifyShape",
+      "to": "src/infrastructure/authoring/translate/book.ts#stripLiterals"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#shapeStats",
+      "to": "src/infrastructure/authoring/translate/book.ts#stripLiterals"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#unmappedTypes",
+      "to": "src/infrastructure/authoring/translate/book.ts#typeExpressions"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#shapeStats",
+      "to": "src/infrastructure/authoring/translate/book.ts#typeExpressions"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
+      "to": "src/infrastructure/authoring/translate/book.ts#unmappedTypes"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#rebuildBook",
+      "to": "src/infrastructure/authoring/translate/book.ts#writeBook"
+    }
+  ]
+}

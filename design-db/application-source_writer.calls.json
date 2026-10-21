@@ -1,0 +1,252 @@
+{
+  "//": "Design DB —— src/application/source_writer.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/application/source_writer.ts",
+  "symbols": [
+    {
+      "name": "SourceWriteCtx",
+      "kind": "interface",
+      "line": 61,
+      "signature": "SourceWriteCtx()",
+      "members": [
+        {
+          "name": "label",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "actor",
+          "type": ": WriteActor | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "authorize",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "onFile",
+          "type": ": (rel: string, status: SyncStatus) => void",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbols",
+          "type": ": readonly AssumptionTarget[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "SourceWriteReceipt",
+      "kind": "interface",
+      "line": 84,
+      "signature": "SourceWriteReceipt()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "task_gate",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "exemptions",
+          "type": ": GateExemption[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "warnings",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "assumption_check",
+          "type": ": AssumptionCheck",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "snapshot",
+          "type": ": FileSnapshotMeta",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "index",
+          "type": ": WriteThroughOutcome",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "SourceWriteTxn",
+      "kind": "interface",
+      "line": 104,
+      "signature": "SourceWriteTxn()",
+      "members": [
+        {
+          "name": "paths",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "task_gate",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "exemptions",
+          "type": ": GateExemption[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "warnings",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "assumption_check",
+          "type": ": AssumptionCheck",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "snapshot",
+          "type": ": FileSnapshotMeta",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "commit",
+          "type": ": SourceWriteReceipt",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "close",
+          "type": ": WriteThroughOutcome | null",
+          "optional": false,
+          "member_kind": "method"
+        }
+      ]
+    },
+    {
+      "name": "relOf",
+      "kind": "function",
+      "line": 121,
+      "signature": "relOf(root: string, file: string): string | null"
+    },
+    {
+      "name": "openSourceWrite",
+      "kind": "function",
+      "line": 130,
+      "signature": "openSourceWrite(rootArg: string, files: readonly string[], ctx: SourceWriteCtx): SourceWriteTxn"
+    },
+    {
+      "name": "writeSourceFile",
+      "kind": "function",
+      "line": 201,
+      "signature": "writeSourceFile(root: string,\n  file: string,\n  content: string,\n  ctx: SourceWriteCtx,): SourceWriteReceipt"
+    },
+    {
+      "name": "writeSourceBatch",
+      "kind": "function",
+      "line": 219,
+      "signature": "writeSourceBatch(root: string,\n  entries: ReadonlyArray<readonly [string, string]>,\n  ctx: SourceWriteCtx,): SourceWriteReceipt[]"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "./write_gate.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./refactor/snapshot/file_snapshot.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./read_set.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../infrastructure/index/symbols.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/source_writer.ts#openSourceWrite.close",
+      "to": "src/application/read_set.ts#refreshAfterOwnWrite"
+    },
+    {
+      "from": "src/application/source_writer.ts#openSourceWrite",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#snapshotBeforeWrite"
+    },
+    {
+      "from": "src/application/source_writer.ts#writeSourceFile",
+      "to": "src/application/source_writer.ts#openSourceWrite"
+    },
+    {
+      "from": "src/application/source_writer.ts#writeSourceBatch",
+      "to": "src/application/source_writer.ts#openSourceWrite"
+    },
+    {
+      "from": "src/application/source_writer.ts#openSourceWrite",
+      "to": "src/application/source_writer.ts#relOf"
+    },
+    {
+      "from": "src/application/source_writer.ts#openSourceWrite.commit",
+      "to": "src/application/source_writer.ts#relOf"
+    },
+    {
+      "from": "src/application/source_writer.ts#openSourceWrite",
+      "to": "src/application/write_gate.ts#assertSourceWriteRegistered"
+    },
+    {
+      "from": "src/application/source_writer.ts#openSourceWrite.close",
+      "to": "src/application/write_gate.ts#recordSelfWrite"
+    },
+    {
+      "from": "src/application/source_writer.ts#openSourceWrite",
+      "to": "src/application/write_gate.ts#resolveActor"
+    },
+    {
+      "from": "src/application/source_writer.ts#openSourceWrite.close",
+      "to": "src/application/write_gate.ts#resolveActor"
+    },
+    {
+      "from": "src/application/source_writer.ts#openSourceWrite.close",
+      "to": "src/application/write_gate.ts#syncSelfWritesSync"
+    },
+    {
+      "from": "src/application/source_writer.ts#relOf",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+{
+  "//": "Design DB —— src/infrastructure/parse/symbol_docstring.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/infrastructure/parse/symbol_docstring.ts",
+  "symbols": [
+    {
+      "name": "DocSpec",
+      "kind": "interface",
+      "line": 48,
+      "signature": "DocSpec()",
+      "members": [
+        {
+          "name": "bodyDoc",
+          "type": ": {\n    /** 体所在字段名（python `body`） */\n    bodyFields: string[];\n    /** 无字段语法的体节点类型（老版 python 是 `suite`） */\n    bodyNodeTypes?: string[];\n    /** 包在字符串外层的语句节点（python `expression_statement`） */\n    wrapperNodes?: string[];\n    /** 字符串字面量节点类型（python `string`） */\n    stringNodes: string[];\n  }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "leadingComment",
+          "type": ": { nodeTypes: string[]; mustStartWith?: string[] }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "docAttribute",
+          "type": ": { nodeTypes: string[]; pattern: RegExp }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "climbParents",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "DOCSTRING_SPECS",
+      "kind": "const",
+      "line": 84,
+      "signature": "const DOCSTRING_SPECS = { // ── Python ──────────────────────────────────────────…"
+    },
+    {
+      "name": "trimOrUndef",
+      "kind": "function",
+      "line": 153,
+      "signature": "trimOrUndef(s: string | undefined): string | undefined"
+    },
+    {
+      "name": "lastContentRow",
+      "kind": "function",
+      "line": 164,
+      "signature": "lastContentRow(n: SyntaxNodeLike): number"
+    },
+    {
+      "name": "indexInParent",
+      "kind": "function",
+      "line": 173,
+      "signature": "indexInParent(node: SyntaxNodeLike): number"
+    },
+    {
+      "name": "firstNamedChild",
+      "kind": "function",
+      "line": 186,
+      "signature": "firstNamedChild(node: SyntaxNodeLike): SyntaxNodeLike | null"
+    },
+    {
+      "name": "bodyDocOf",
+      "kind": "function",
+      "line": 195,
+      "signature": "bodyDocOf(node: SyntaxNodeLike, spec: NonNullable<DocSpec['bodyDoc']>): string | undefined"
+    },
+    {
+      "name": "leadingDocOf",
+      "kind": "function",
+      "line": 238,
+      "signature": "leadingDocOf(node: SyntaxNodeLike, spec: DocSpec): string | undefined"
+    },
+    {
+      "name": "docstringOf",
+      "kind": "function",
+      "line": 288,
+      "signature": "docstringOf(node: SyntaxNodeLike, langName: string): string | undefined"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./kernel.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/parse/symbol_docstring.ts#docstringOf",
+      "to": "src/infrastructure/parse/symbol_docstring.ts#bodyDocOf"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_docstring.ts#bodyDocOf",
+      "to": "src/infrastructure/parse/symbol_docstring.ts#firstNamedChild"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_docstring.ts#bodyDocOf",
+      "to": "src/infrastructure/parse/symbol_docstring.ts#firstNamedChild"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_docstring.ts#leadingDocOf",
+      "to": "src/infrastructure/parse/symbol_docstring.ts#indexInParent"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_docstring.ts#leadingDocOf",
+      "to": "src/infrastructure/parse/symbol_docstring.ts#lastContentRow"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_docstring.ts#docstringOf",
+      "to": "src/infrastructure/parse/symbol_docstring.ts#leadingDocOf"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_docstring.ts#bodyDocOf",
+      "to": "src/infrastructure/parse/symbol_docstring.ts#trimOrUndef"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_docstring.ts#bodyDocOf",
+      "to": "src/infrastructure/parse/symbol_docstring.ts#trimOrUndef"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_docstring.ts#leadingDocOf",
+      "to": "src/infrastructure/parse/symbol_docstring.ts#trimOrUndef"
+    }
+  ]
+}

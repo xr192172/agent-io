@@ -1,0 +1,605 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/translate/receipt.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/infrastructure/authoring/translate/receipt.ts",
+  "symbols": [
+    {
+      "name": "KnownKind",
+      "kind": "type",
+      "line": 25,
+      "signature": "KnownKind()"
+    },
+    {
+      "name": "KnownFact",
+      "kind": "interface",
+      "line": 27,
+      "signature": "KnownFact()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": KnownKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "UnknownKind",
+      "kind": "type",
+      "line": 41,
+      "signature": "UnknownKind()"
+    },
+    {
+      "name": "UnknownBasis",
+      "kind": "type",
+      "line": 44,
+      "signature": "UnknownBasis()"
+    },
+    {
+      "name": "UnknownItem",
+      "kind": "interface",
+      "line": 46,
+      "signature": "UnknownItem()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": UnknownKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "why",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "basis",
+          "type": ": UnknownBasis",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "suggested",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "VerifyStatus",
+      "kind": "type",
+      "line": 63,
+      "signature": "VerifyStatus()"
+    },
+    {
+      "name": "CaseSource",
+      "kind": "type",
+      "line": 66,
+      "signature": "CaseSource()"
+    },
+    {
+      "name": "CaseResult",
+      "kind": "interface",
+      "line": 68,
+      "signature": "CaseResult()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'same' | 'changed'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "go",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "ts",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "go_error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "ts_error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "UnitVerification",
+      "kind": "interface",
+      "line": 77,
+      "signature": "UnitVerification()",
+      "members": [
+        {
+          "name": "unit",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": 'verified' | 'diff' | 'unverified'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": CaseSource",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cases_total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cases_matched",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cases_available",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "cases",
+          "type": ": CaseResult[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "VerificationReceipt",
+      "kind": "interface",
+      "line": 90,
+      "signature": "VerificationReceipt()",
+      "members": [
+        {
+          "name": "status",
+          "type": ": VerifyStatus",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "summary",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "units",
+          "type": ": UnitVerification[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "repo_tests",
+          "type": ": GoTestRef[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "notes",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "Receipt",
+      "kind": "interface",
+      "line": 100,
+      "signature": "Receipt()",
+      "members": [
+        {
+          "name": "known",
+          "type": ": KnownFact[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "unknowns",
+          "type": ": UnknownItem[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "verification",
+          "type": ": VerificationReceipt",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "signatureOf",
+      "kind": "function",
+      "line": 110,
+      "signature": "signatureOf(u: TransUnit): string"
+    },
+    {
+      "name": "buildKnown",
+      "kind": "function",
+      "line": 117,
+      "signature": "buildKnown(units: TransUnit[], filled?: Map<string, string>): KnownFact[]"
+    },
+    {
+      "name": "DISCIPLINE",
+      "kind": "const",
+      "line": 143,
+      "signature": "const DISCIPLINE = new Set(DEFAULT_CONSTRAINTS)"
+    },
+    {
+      "name": "Hint",
+      "kind": "interface",
+      "line": 145,
+      "signature": "Hint()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": UnknownKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "why",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "basis",
+          "type": ": UnknownBasis",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "suggested",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "hintFor",
+      "kind": "function",
+      "line": 153,
+      "signature": "hintFor(text: string): Hint | null"
+    },
+    {
+      "name": "typeUnknowns",
+      "kind": "function",
+      "line": 165,
+      "signature": "typeUnknowns(u: TransUnit, noteTexts: Set<string>): UnknownItem[]"
+    },
+    {
+      "name": "UnknownsInput",
+      "kind": "interface",
+      "line": 192,
+      "signature": "UnknownsInput()",
+      "members": [
+        {
+          "name": "units",
+          "type": ": TransUnit[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "filled",
+          "type": ": Map<string, string>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fillFailures",
+          "type": ": Map<string, string>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "skipped",
+          "type": ": SkippedDecl[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "externalImports",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "diagnostics",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "buildUnknowns",
+      "kind": "function",
+      "line": 207,
+      "signature": "buildUnknowns(input: UnknownsInput): UnknownItem[]"
+    },
+    {
+      "name": "VerifyUnitInput",
+      "kind": "interface",
+      "line": 259,
+      "signature": "VerifyUnitInput()",
+      "members": [
+        {
+          "name": "unit",
+          "type": ": TransUnit",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "tsCode",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "VerifyOptions",
+      "kind": "interface",
+      "line": 265,
+      "signature": "VerifyOptions()",
+      "members": [
+        {
+          "name": "goSource",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "harvested",
+          "type": ": Map<string, { cases: BehaviorCase[]; tests: GoTestRef[]; notes: string[] }>",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "supplied",
+          "type": ": BehaviorCase[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "maxCases",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "runHarnessImpl",
+          "type": ": ParityOptions['runHarnessImpl']",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "caseResultsOf",
+      "kind": "function",
+      "line": 278,
+      "signature": "caseResultsOf(diff: { details: { case: string; status: 'same' | 'changed'; before?: string; after?: string; before_error?: string; after_error?: string }[] }): CaseResult[]"
+    },
+    {
+      "name": "summarize",
+      "kind": "function",
+      "line": 290,
+      "signature": "summarize(units: UnitVerification[], funcCount: number, nonFunc: number): string"
+    },
+    {
+      "name": "MethodInfo",
+      "kind": "interface",
+      "line": 319,
+      "signature": "MethodInfo()",
+      "members": [
+        {
+          "name": "recvName",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "recvType",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "method",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "methodInfo",
+      "kind": "function",
+      "line": 327,
+      "signature": "methodInfo(u: TransUnit): MethodInfo | null"
+    },
+    {
+      "name": "methodWrapper",
+      "kind": "function",
+      "line": 343,
+      "signature": "methodWrapper(u: TransUnit): { name: string; code: string } | null"
+    },
+    {
+      "name": "receiverKind",
+      "kind": "function",
+      "line": 364,
+      "signature": "receiverKind(goSource: string, recvType: string): 'scalar' | 'struct' | 'unknown'"
+    },
+    {
+      "name": "verifyTranslation",
+      "kind": "function",
+      "line": 374,
+      "signature": "verifyTranslation(inputs: VerifyUnitInput[], opts: VerifyOptions): VerificationReceipt"
+    },
+    {
+      "name": "unverifiedReceipt",
+      "kind": "function",
+      "line": 514,
+      "signature": "unverifiedReceipt(reason: string, funcCount = 0, nonFunc = 0): VerificationReceipt"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./ts_codegen.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./unit.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./go_extractor.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../behavior/index.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./verify_behavior.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./go_tests.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/translate/receipt.ts#verifyTranslation",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#caseResultsOf"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/receipt.ts#buildUnknowns",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#hintFor"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/receipt.ts#methodWrapper",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#methodInfo"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/receipt.ts#verifyTranslation",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#methodInfo"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/receipt.ts#verifyTranslation",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#methodWrapper"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/receipt.ts#verifyTranslation",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#receiverKind"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/receipt.ts#buildKnown",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#signatureOf"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/receipt.ts#verifyTranslation",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#summarize"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/receipt.ts#buildUnknowns",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#typeUnknowns"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/receipt.ts#typeUnknowns",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/receipt.ts#verifyTranslation",
+      "to": "src/infrastructure/authoring/translate/verify_behavior.ts#checkTranslationParity"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/receipt.ts#verifyTranslation",
+      "to": "src/infrastructure/authoring/translate/verify_behavior.ts#generateCasesFor"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/receipt.ts#verifyTranslation",
+      "to": "src/infrastructure/authoring/translate/verify_behavior.ts#typeSamples"
+    }
+  ]
+}

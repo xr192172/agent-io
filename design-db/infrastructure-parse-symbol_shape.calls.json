@@ -1,0 +1,393 @@
+{
+  "//": "Design DB —— src/infrastructure/parse/symbol_shape.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/infrastructure/parse/symbol_shape.ts",
+  "symbols": [
+    {
+      "name": "ParsedTypeParam",
+      "kind": "interface",
+      "line": 36,
+      "signature": "ParsedTypeParam()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "constraint",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "default",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "SymbolShape",
+      "kind": "interface",
+      "line": 46,
+      "signature": "SymbolShape()",
+      "members": [
+        {
+          "name": "returnType",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeParams",
+          "type": ": ParsedTypeParam[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "modifiers",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "ShapeSpec",
+      "kind": "interface",
+      "line": 56,
+      "signature": "ShapeSpec()",
+      "members": [
+        {
+          "name": "returnTypeField",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "returnTypeAfterNode",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "returnTypeDenyNodes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeParamsField",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeParamsChild",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeParamItemNodes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeParamNameFields",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeParamConstraintFields",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeParamConstraintNodes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeParamDefaultFields",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeParamConstraintClause",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "typeParamTextRule",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "modifierContainer",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "modifierNodeTypes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "modifierTokens",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "abstractNodeTypes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "exportFromParents",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "decoratorNodeTypes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "decoratorFromParents",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "decoratorFromSiblings",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "decoratorSiblingTypes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "SHAPE_SPECS",
+      "kind": "const",
+      "line": 99,
+      "signature": "const SHAPE_SPECS = { // ── TS / TSX ────────────────────────────────────────…"
+    },
+    {
+      "name": "norm",
+      "kind": "function",
+      "line": 240,
+      "signature": "norm(s: string | undefined): string | undefined"
+    },
+    {
+      "name": "firstChildOfType",
+      "kind": "function",
+      "line": 247,
+      "signature": "firstChildOfType(node: SyntaxNodeLike, t: string): SyntaxNodeLike | null"
+    },
+    {
+      "name": "topLevelIndex",
+      "kind": "function",
+      "line": 256,
+      "signature": "topLevelIndex(text: string, ch: string): number"
+    },
+    {
+      "name": "parseTypeParamText",
+      "kind": "function",
+      "line": 284,
+      "signature": "parseTypeParamText(raw: string): ParsedTypeParam | undefined"
+    },
+    {
+      "name": "typeParamFromNode",
+      "kind": "function",
+      "line": 309,
+      "signature": "typeParamFromNode(item: SyntaxNodeLike, spec: ShapeSpec): ParsedTypeParam | undefined"
+    },
+    {
+      "name": "typeParamsOf",
+      "kind": "function",
+      "line": 362,
+      "signature": "typeParamsOf(node: SyntaxNodeLike, spec: ShapeSpec): ParsedTypeParam[]"
+    },
+    {
+      "name": "returnTypeOfNode",
+      "kind": "function",
+      "line": 395,
+      "signature": "returnTypeOfNode(node: SyntaxNodeLike, spec: ShapeSpec): string | undefined"
+    },
+    {
+      "name": "indexInParent",
+      "kind": "function",
+      "line": 418,
+      "signature": "indexInParent(node: SyntaxNodeLike): number"
+    },
+    {
+      "name": "modifiersOf",
+      "kind": "function",
+      "line": 431,
+      "signature": "modifiersOf(node: SyntaxNodeLike, spec: ShapeSpec): string[] | undefined"
+    },
+    {
+      "name": "shapeOf",
+      "kind": "function",
+      "line": 518,
+      "signature": "shapeOf(node: SyntaxNodeLike, langName: string): SymbolShape"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./kernel.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#typeParamFromNode",
+      "to": "src/infrastructure/parse/symbol_shape.ts#firstChildOfType"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#typeParamsOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#firstChildOfType"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#modifiersOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#indexInParent"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#shapeOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#modifiersOf"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#parseTypeParamText",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#parseTypeParamText",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#parseTypeParamText",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#parseTypeParamText",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#typeParamFromNode",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#typeParamFromNode",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#typeParamFromNode",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#typeParamFromNode",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#typeParamFromNode",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#typeParamsOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#typeParamsOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#typeParamsOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#returnTypeOfNode",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#returnTypeOfNode",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#modifiersOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#modifiersOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#modifiersOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#modifiersOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#modifiersOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#modifiersOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#typeParamsOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#parseTypeParamText"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#shapeOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#returnTypeOfNode"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#parseTypeParamText",
+      "to": "src/infrastructure/parse/symbol_shape.ts#topLevelIndex"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#parseTypeParamText",
+      "to": "src/infrastructure/parse/symbol_shape.ts#topLevelIndex"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#typeParamsOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#topLevelIndex"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#typeParamsOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#typeParamFromNode"
+    },
+    {
+      "from": "src/infrastructure/parse/symbol_shape.ts#shapeOf",
+      "to": "src/infrastructure/parse/symbol_shape.ts#typeParamsOf"
+    }
+  ]
+}

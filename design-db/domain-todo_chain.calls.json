@@ -1,0 +1,140 @@
+{
+  "//": "Design DB —— src/domain/todo_chain.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/domain/todo_chain.ts",
+  "symbols": [
+    {
+      "name": "ChainCard",
+      "kind": "type",
+      "line": 40,
+      "signature": "ChainCard()"
+    },
+    {
+      "name": "ChainPlace",
+      "kind": "interface",
+      "line": 47,
+      "signature": "ChainPlace()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "parent",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "children",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "depth",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "root",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "branch",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "broken",
+          "type": ": { id: string; hops: number; reason?: string }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "dangling",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "cycle",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "TodoChains",
+      "kind": "interface",
+      "line": 70,
+      "signature": "TodoChains()",
+      "members": [
+        {
+          "name": "places",
+          "type": ": Map<string, ChainPlace>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "chains",
+          "type": ": Map<string, string[]>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "cycles",
+          "type": ": string[][]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "dangling",
+          "type": ": Array<{ id: string; follows: string }>",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "buildTodoChains",
+      "kind": "function",
+      "line": 88,
+      "signature": "buildTodoChains(cards: readonly ChainCard[]): TodoChains"
+    },
+    {
+      "name": "chainBadge",
+      "kind": "function",
+      "line": 229,
+      "signature": "chainBadge(place: ChainPlace): string"
+    },
+    {
+      "name": "assertFollowsTarget",
+      "kind": "function",
+      "line": 249,
+      "signature": "assertFollowsTarget(cards: readonly ChainCard[],\n  childId: string,\n  parentId: string,): void"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./task_schema.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": []
+}

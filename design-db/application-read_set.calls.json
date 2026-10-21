@@ -1,0 +1,664 @@
+{
+  "//": "Design DB —— src/application/read_set.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/application/read_set.ts",
+  "symbols": [
+    {
+      "name": "ReadSymbolFp",
+      "kind": "interface",
+      "line": 52,
+      "signature": "ReadSymbolFp()",
+      "members": [
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fp",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "start",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "end",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "ReadSetEntry",
+      "kind": "interface",
+      "line": 62,
+      "signature": "ReadSetEntry()",
+      "members": [
+        {
+          "name": "project",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "actor",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'read' | 'facts'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "at",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_fp",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbols",
+          "type": ": ReadSymbolFp[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "deps",
+          "type": ": Array<ReadSymbolFp & { via: string; file: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "StaleAssumption",
+      "kind": "interface",
+      "line": 86,
+      "signature": "StaleAssumption()",
+      "members": [
+        {
+          "name": "symbol",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reader",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "read_fp",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "now_fp",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "read_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "via",
+          "type": ": 'dependency'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "via_symbol",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "AssumptionCheck",
+      "kind": "interface",
+      "line": 105,
+      "signature": "AssumptionCheck()",
+      "members": [
+        {
+          "name": "checked",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stale",
+          "type": ": StaleAssumption[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "readers",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stale_truncated",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "error",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "AssumptionTarget",
+      "kind": "interface",
+      "line": 118,
+      "signature": "AssumptionTarget()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "STORE",
+      "kind": "const",
+      "line": 146,
+      "signature": "const STORE = new Map<string, Map<string, ReadSetEntry>>()"
+    },
+    {
+      "name": "ANONYMOUS_ACTOR",
+      "kind": "const",
+      "line": 149,
+      "signature": "const ANONYMOUS_ACTOR = '(anonymous)'"
+    },
+    {
+      "name": "MAX_FILES_PER_BUCKET",
+      "kind": "const",
+      "line": 152,
+      "signature": "const MAX_FILES_PER_BUCKET = 200"
+    },
+    {
+      "name": "READ_SET_TTL_MS",
+      "kind": "const",
+      "line": 155,
+      "signature": "const READ_SET_TTL_MS = 2 * 60 * 60 * 1000"
+    },
+    {
+      "name": "MAX_DEPS_PER_READ",
+      "kind": "const",
+      "line": 158,
+      "signature": "const MAX_DEPS_PER_READ = 40"
+    },
+    {
+      "name": "MAX_STALE_REPORTED",
+      "kind": "const",
+      "line": 161,
+      "signature": "const MAX_STALE_REPORTED = 20"
+    },
+    {
+      "name": "bucketKey",
+      "kind": "const",
+      "line": 163,
+      "signature": "const bucketKey = (project: string, actor: string): string => `${project}\\u…"
+    },
+    {
+      "name": "pruneBucket",
+      "kind": "function",
+      "line": 165,
+      "signature": "pruneBucket(bucket: Map<string, ReadSetEntry>): void"
+    },
+    {
+      "name": "FileFacts",
+      "kind": "interface",
+      "line": 192,
+      "signature": "FileFacts()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_fp",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbols",
+          "type": ": ReadSymbolFp[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": 'db' | 'disk' | 'none'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "FactsCache",
+      "kind": "type",
+      "line": 204,
+      "signature": "FactsCache()"
+    },
+    {
+      "name": "extOf",
+      "kind": "function",
+      "line": 206,
+      "signature": "extOf(rel: string): string"
+    },
+    {
+      "name": "factsFromDisk",
+      "kind": "function",
+      "line": 211,
+      "signature": "factsFromDisk(root: string, rel: string, content: string): FileFacts"
+    },
+    {
+      "name": "loadFileFacts",
+      "kind": "function",
+      "line": 247,
+      "signature": "loadFileFacts(root: string, rel: string, cache: FactsCache): FileFacts"
+    },
+    {
+      "name": "fpsOf",
+      "kind": "function",
+      "line": 307,
+      "signature": "fpsOf(facts: FileFacts, symbol: string): ReadSymbolFp[]"
+    },
+    {
+      "name": "oneHopDeps",
+      "kind": "function",
+      "line": 317,
+      "signature": "oneHopDeps(root: string,\n  file: string,\n  symbols: ReadSymbolFp[],\n  cache: FactsCache,): { deps: Array<ReadSymbolFp & { via: string; file: string }>; note?: string }"
+    },
+    {
+      "name": "RecordReadInput",
+      "kind": "interface",
+      "line": 377,
+      "signature": "RecordReadInput()",
+      "members": [
+        {
+          "name": "projectRoot",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "actor",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": 'read' | 'facts'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "range",
+          "type": ": { start: number; end: number }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbols",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "RecordReadResult",
+      "kind": "interface",
+      "line": 390,
+      "signature": "RecordReadResult()",
+      "members": [
+        {
+          "name": "recorded",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbols",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "deps",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "recordRead",
+      "kind": "function",
+      "line": 406,
+      "signature": "recordRead(input: RecordReadInput): RecordReadResult"
+    },
+    {
+      "name": "recordReadFromInvocation",
+      "kind": "function",
+      "line": 479,
+      "signature": "recordReadFromInvocation(input: {\n  tool: string;\n  action: string;\n  actor: string | null;\n  root: string | null;\n  data: unknown;\n}): RecordReadResult"
+    },
+    {
+      "name": "shortFp",
+      "kind": "const",
+      "line": 532,
+      "signature": "const shortFp = (fp: string): string => fp.slice(0, 12)"
+    },
+    {
+      "name": "ageText",
+      "kind": "function",
+      "line": 534,
+      "signature": "ageText(at: number): string"
+    },
+    {
+      "name": "entriesOfProject",
+      "kind": "function",
+      "line": 541,
+      "signature": "entriesOfProject(project: string): ReadSetEntry[]"
+    },
+    {
+      "name": "checkAssumptions",
+      "kind": "function",
+      "line": 564,
+      "signature": "checkAssumptions(input: {\n  projectRoot: string;\n  files: readonly string[];\n  targets?: readonly AssumptionTarget[];\n}): AssumptionCheck"
+    },
+    {
+      "name": "refreshAfterOwnWrite",
+      "kind": "function",
+      "line": 684,
+      "signature": "refreshAfterOwnWrite(projectRoot: string, actor: string | null, files: readonly string[]): number"
+    },
+    {
+      "name": "assumptionLines",
+      "kind": "function",
+      "line": 733,
+      "signature": "assumptionLines(check: AssumptionCheck | undefined): string[]"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../infrastructure/index/symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../infrastructure/parse/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../infrastructure/text/line_utils.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/read_set.ts#assumptionLines",
+      "to": "src/application/read_set.ts#ageText"
+    },
+    {
+      "from": "src/application/read_set.ts#recordRead",
+      "to": "src/application/read_set.ts#bucketKey"
+    },
+    {
+      "from": "src/application/read_set.ts#refreshAfterOwnWrite",
+      "to": "src/application/read_set.ts#bucketKey"
+    },
+    {
+      "from": "src/application/read_set.ts#checkAssumptions",
+      "to": "src/application/read_set.ts#entriesOfProject"
+    },
+    {
+      "from": "src/application/read_set.ts#factsFromDisk",
+      "to": "src/application/read_set.ts#extOf"
+    },
+    {
+      "from": "src/application/read_set.ts#loadFileFacts",
+      "to": "src/application/read_set.ts#factsFromDisk"
+    },
+    {
+      "from": "src/application/read_set.ts#oneHopDeps",
+      "to": "src/application/read_set.ts#fpsOf"
+    },
+    {
+      "from": "src/application/read_set.ts#checkAssumptions",
+      "to": "src/application/read_set.ts#fpsOf"
+    },
+    {
+      "from": "src/application/read_set.ts#checkAssumptions",
+      "to": "src/application/read_set.ts#fpsOf"
+    },
+    {
+      "from": "src/application/read_set.ts#refreshAfterOwnWrite",
+      "to": "src/application/read_set.ts#fpsOf"
+    },
+    {
+      "from": "src/application/read_set.ts#refreshAfterOwnWrite",
+      "to": "src/application/read_set.ts#fpsOf"
+    },
+    {
+      "from": "src/application/read_set.ts#oneHopDeps",
+      "to": "src/application/read_set.ts#loadFileFacts"
+    },
+    {
+      "from": "src/application/read_set.ts#recordRead",
+      "to": "src/application/read_set.ts#loadFileFacts"
+    },
+    {
+      "from": "src/application/read_set.ts#checkAssumptions",
+      "to": "src/application/read_set.ts#loadFileFacts"
+    },
+    {
+      "from": "src/application/read_set.ts#checkAssumptions",
+      "to": "src/application/read_set.ts#loadFileFacts"
+    },
+    {
+      "from": "src/application/read_set.ts#refreshAfterOwnWrite",
+      "to": "src/application/read_set.ts#loadFileFacts"
+    },
+    {
+      "from": "src/application/read_set.ts#recordRead",
+      "to": "src/application/read_set.ts#oneHopDeps"
+    },
+    {
+      "from": "src/application/read_set.ts#recordRead",
+      "to": "src/application/read_set.ts#pruneBucket"
+    },
+    {
+      "from": "src/application/read_set.ts#recordReadFromInvocation",
+      "to": "src/application/read_set.ts#recordRead"
+    },
+    {
+      "from": "src/application/read_set.ts#recordReadFromInvocation",
+      "to": "src/application/read_set.ts#recordRead"
+    },
+    {
+      "from": "src/application/read_set.ts#checkAssumptions",
+      "to": "src/application/read_set.ts#shortFp"
+    },
+    {
+      "from": "src/application/read_set.ts#checkAssumptions",
+      "to": "src/application/read_set.ts#shortFp"
+    },
+    {
+      "from": "src/application/read_set.ts#checkAssumptions",
+      "to": "src/application/read_set.ts#shortFp"
+    },
+    {
+      "from": "src/application/read_set.ts#checkAssumptions",
+      "to": "src/application/read_set.ts#shortFp"
+    },
+    {
+      "from": "src/application/read_set.ts#checkAssumptions",
+      "to": "src/application/read_set.ts#shortFp"
+    },
+    {
+      "from": "src/application/read_set.ts#checkAssumptions",
+      "to": "src/application/read_set.ts#shortFp"
+    },
+    {
+      "from": "src/application/read_set.ts#checkAssumptions",
+      "to": "src/application/read_set.ts#shortFp"
+    },
+    {
+      "from": "src/application/read_set.ts#loadFileFacts",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/read_set.ts#oneHopDeps",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/read_set.ts#recordReadFromInvocation",
+      "to": "src/infrastructure/index/db.ts#nearestCacheDb"
+    },
+    {
+      "from": "src/application/read_set.ts#loadFileFacts",
+      "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
+    },
+    {
+      "from": "src/application/read_set.ts#oneHopDeps",
+      "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
+    },
+    {
+      "from": "src/application/read_set.ts#factsFromDisk",
+      "to": "src/infrastructure/index/symbols.ts#contentHash"
+    },
+    {
+      "from": "src/application/read_set.ts#factsFromDisk",
+      "to": "src/infrastructure/index/symbols.ts#contentHash"
+    },
+    {
+      "from": "src/application/read_set.ts#loadFileFacts",
+      "to": "src/infrastructure/index/symbols.ts#contentHash"
+    },
+    {
+      "from": "src/application/read_set.ts#factsFromDisk",
+      "to": "src/infrastructure/index/symbols.ts#symbolSpanHash"
+    },
+    {
+      "from": "src/application/read_set.ts#recordRead",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/application/read_set.ts#checkAssumptions",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/application/read_set.ts#checkAssumptions",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/application/read_set.ts#refreshAfterOwnWrite",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/application/read_set.ts#factsFromDisk",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFullSync"
+    },
+    {
+      "from": "src/application/read_set.ts#factsFromDisk",
+      "to": "src/infrastructure/text/line_utils.ts#splitKeepEnds"
+    }
+  ]
+}

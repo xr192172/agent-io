@@ -1,0 +1,103 @@
+{
+  "//": "Design DB —— src/application/design/board/todo_journal.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/application/design/board/todo_journal.ts",
+  "symbols": [
+    {
+      "name": "LF",
+      "kind": "const",
+      "line": 34,
+      "signature": "const LF = String.fromCharCode(10)"
+    },
+    {
+      "name": "TodoTombstone",
+      "kind": "interface",
+      "line": 42,
+      "signature": "TodoTombstone()",
+      "members": [
+        {
+          "name": "kind",
+          "type": ": 'todo.delete'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "by",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "card",
+          "type": ": TaskSpec",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "todoJournalFile",
+      "kind": "function",
+      "line": 60,
+      "signature": "todoJournalFile(feature: string): string"
+    },
+    {
+      "name": "appendTodoTombstone",
+      "kind": "function",
+      "line": 65,
+      "signature": "appendTodoTombstone(feature: string, t: TodoTombstone): string"
+    },
+    {
+      "name": "readTodoTombstones",
+      "kind": "function",
+      "line": 79,
+      "signature": "readTodoTombstones(feature: string): { entries: TodoTombstone[]; bad_lines: number }"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/task_schema.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/board/todo_journal.ts#appendTodoTombstone",
+      "to": "src/application/design/board/todo_journal.ts#todoJournalFile"
+    },
+    {
+      "from": "src/application/design/board/todo_journal.ts#readTodoTombstones",
+      "to": "src/application/design/board/todo_journal.ts#todoJournalFile"
+    },
+    {
+      "from": "src/application/design/board/todo_journal.ts#todoJournalFile",
+      "to": "src/infrastructure/storage.ts#getDesignSheetFile"
+    }
+  ]
+}

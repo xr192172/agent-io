@@ -56490,6 +56490,469 @@
         "status": "done",
         "gate": "exempt",
         "style": {}
+      },
+      {
+        "id": "file_certs_t353-judge-port-cert_mjs",
+        "label": "t353-judge-port-cert.mjs · 0 APIs",
+        "x": 60,
+        "y": 14320,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "certs/t353-judge-port-cert.mjs",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_certs_t355-gate-exemption-cert_mjs",
+        "label": "t355-gate-exemption-cert.mjs · 0 APIs",
+        "x": 340,
+        "y": 14320,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "certs/t355-gate-exemption-cert.mjs",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_certs_t356-authorize-cert_mjs",
+        "label": "t356-authorize-cert.mjs · 0 APIs",
+        "x": 620,
+        "y": 14320,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "certs/t356-authorize-cert.mjs",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_certs_t357-pipeline-gate-cert_mjs",
+        "label": "t357-pipeline-gate-cert.mjs · 2 APIs",
+        "x": 900,
+        "y": 14320,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "certs/t357-pipeline-gate-cert.mjs",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_certs_t358-domain-five-values-cert_mjs",
+        "label": "t358-domain-five-values-cert.mjs · 1 APIs",
+        "x": 1180,
+        "y": 14320,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "certs/t358-domain-five-values-cert.mjs",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_scripts_clean-dead-functions_mjs",
+        "label": "clean-dead-functions.mjs · 0 APIs",
+        "x": 60,
+        "y": 14410,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "scripts/clean-dead-functions.mjs",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_scripts_contract-calls_mjs",
+        "label": "contract-calls.mjs · 3 APIs",
+        "x": 340,
+        "y": 14410,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "scripts/contract-calls.mjs",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_scripts_coverage_mjs",
+        "label": "coverage.mjs · 0 APIs",
+        "x": 620,
+        "y": 14410,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "scripts/coverage.mjs",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_scripts_dep_mjs",
+        "label": "dep.mjs · 0 APIs",
+        "x": 900,
+        "y": 14410,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "scripts/dep.mjs",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_scripts_design-check_mjs",
+        "label": "design-check.mjs · 0 APIs",
+        "x": 1180,
+        "y": 14410,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "scripts/design-check.mjs",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_scripts_gen-contracts_mjs",
+        "label": "gen-contracts.mjs · 0 APIs",
+        "x": 60,
+        "y": 14500,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "scripts/gen-contracts.mjs",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_scripts_gen-db-check_mjs",
+        "label": "gen-db-check.mjs · 0 APIs",
+        "x": 340,
+        "y": 14500,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "scripts/gen-db-check.mjs",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_scripts_impl-fixture_mjs",
+        "label": "impl-fixture.mjs · 0 APIs",
+        "x": 620,
+        "y": 14500,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "scripts/impl-fixture.mjs",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_scripts_mutate_mjs",
+        "label": "mutate.mjs · 5 APIs",
+        "x": 900,
+        "y": 14500,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "scripts/mutate.mjs",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_scripts_patrol_mjs",
+        "label": "patrol.mjs · 0 APIs",
+        "x": 1180,
+        "y": 14500,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "scripts/patrol.mjs",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_src_application_claim_conflict_ts",
+        "label": "claim_conflict.ts · 6 APIs",
+        "x": 60,
+        "y": 14590,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/application/claim_conflict.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_src_application_design_board_todo_journal_ts",
+        "label": "todo_journal.ts · 3 APIs",
+        "x": 340,
+        "y": 14590,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/application/design/board/todo_journal.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        }
+      },
+      {
+        "id": "file_src_application_read_set_ts",
+        "label": "read_set.ts · 13 APIs",
+        "x": 620,
+        "y": 14590,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/application/read_set.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_src_application_refactor_gate_note_ts",
+        "label": "gate_note.ts · 2 APIs",
+        "x": 900,
+        "y": 14590,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/application/refactor/gate_note.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "api"
+      },
+      {
+        "id": "file_src_application_source_writer_ts",
+        "label": "source_writer.ts · 4 APIs",
+        "x": 1180,
+        "y": 14590,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/application/source_writer.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_src_domain_actor_spec_ts",
+        "label": "actor_spec.ts · 12 APIs",
+        "x": 60,
+        "y": 14680,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/domain/actor_spec.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "service"
+      },
+      {
+        "id": "file_src_domain_judge_port_ts",
+        "label": "judge_port.ts · 0 APIs",
+        "x": 340,
+        "y": 14680,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/domain/judge_port.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "service"
+      },
+      {
+        "id": "file_src_domain_todo_chain_ts",
+        "label": "todo_chain.ts · 3 APIs",
+        "x": 620,
+        "y": 14680,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/domain/todo_chain.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "service"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_book_ts",
+        "label": "book.ts · 15 APIs",
+        "x": 900,
+        "y": 14680,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/infrastructure/authoring/translate/book.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_go_tests_ts",
+        "label": "go_tests.ts · 11 APIs",
+        "x": 1180,
+        "y": 14680,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/infrastructure/authoring/translate/go_tests.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_receipt_ts",
+        "label": "receipt.ts · 12 APIs",
+        "x": 60,
+        "y": 14770,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/infrastructure/authoring/translate/receipt.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_src_infrastructure_parse_symbol_docstring_ts",
+        "label": "symbol_docstring.ts · 7 APIs",
+        "x": 340,
+        "y": 14770,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/infrastructure/parse/symbol_docstring.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_src_infrastructure_parse_symbol_params_ts",
+        "label": "symbol_params.ts · 10 APIs",
+        "x": 620,
+        "y": 14770,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/infrastructure/parse/symbol_params.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_src_infrastructure_parse_symbol_shape_ts",
+        "label": "symbol_shape.ts · 10 APIs",
+        "x": 900,
+        "y": 14770,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/infrastructure/parse/symbol_shape.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
       }
     ],
     "edges": [
@@ -63930,6 +64393,174 @@
         "to": "file_src_domain_task_schema_ts",
         "label": "imports",
         "type": "solid"
+      },
+      {
+        "id": "contains_certs_certs_t353-judge-port-cert_mjs",
+        "from": "dir_certs",
+        "to": "file_certs_t353-judge-port-cert_mjs",
+        "label": "contains"
+      },
+      {
+        "id": "contains_certs_certs_t355-gate-exemption-cert_mjs",
+        "from": "dir_certs",
+        "to": "file_certs_t355-gate-exemption-cert_mjs",
+        "label": "contains"
+      },
+      {
+        "id": "contains_certs_certs_t356-authorize-cert_mjs",
+        "from": "dir_certs",
+        "to": "file_certs_t356-authorize-cert_mjs",
+        "label": "contains"
+      },
+      {
+        "id": "contains_certs_certs_t357-pipeline-gate-cert_mjs",
+        "from": "dir_certs",
+        "to": "file_certs_t357-pipeline-gate-cert_mjs",
+        "label": "contains"
+      },
+      {
+        "id": "contains_certs_certs_t358-domain-five-values-cert_mjs",
+        "from": "dir_certs",
+        "to": "file_certs_t358-domain-five-values-cert_mjs",
+        "label": "contains"
+      },
+      {
+        "id": "contains_scripts_scripts_clean-dead-functions_mjs",
+        "from": "dir_scripts",
+        "to": "file_scripts_clean-dead-functions_mjs",
+        "label": "contains"
+      },
+      {
+        "id": "contains_scripts_scripts_contract-calls_mjs",
+        "from": "dir_scripts",
+        "to": "file_scripts_contract-calls_mjs",
+        "label": "contains"
+      },
+      {
+        "id": "contains_scripts_scripts_coverage_mjs",
+        "from": "dir_scripts",
+        "to": "file_scripts_coverage_mjs",
+        "label": "contains"
+      },
+      {
+        "id": "contains_scripts_scripts_dep_mjs",
+        "from": "dir_scripts",
+        "to": "file_scripts_dep_mjs",
+        "label": "contains"
+      },
+      {
+        "id": "contains_scripts_scripts_design-check_mjs",
+        "from": "dir_scripts",
+        "to": "file_scripts_design-check_mjs",
+        "label": "contains"
+      },
+      {
+        "id": "contains_scripts_scripts_gen-contracts_mjs",
+        "from": "dir_scripts",
+        "to": "file_scripts_gen-contracts_mjs",
+        "label": "contains"
+      },
+      {
+        "id": "contains_scripts_scripts_gen-db-check_mjs",
+        "from": "dir_scripts",
+        "to": "file_scripts_gen-db-check_mjs",
+        "label": "contains"
+      },
+      {
+        "id": "contains_scripts_scripts_impl-fixture_mjs",
+        "from": "dir_scripts",
+        "to": "file_scripts_impl-fixture_mjs",
+        "label": "contains"
+      },
+      {
+        "id": "contains_scripts_scripts_mutate_mjs",
+        "from": "dir_scripts",
+        "to": "file_scripts_mutate_mjs",
+        "label": "contains"
+      },
+      {
+        "id": "contains_scripts_scripts_patrol_mjs",
+        "from": "dir_scripts",
+        "to": "file_scripts_patrol_mjs",
+        "label": "contains"
+      },
+      {
+        "id": "contains_src_application_src_application_claim_conflict_ts",
+        "from": "dir_src_application",
+        "to": "file_src_application_claim_conflict_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_src_application_src_application_read_set_ts",
+        "from": "dir_src_application",
+        "to": "file_src_application_read_set_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_src_application_refactor_src_application_refactor_gate_note_ts",
+        "from": "dir_src_application_refactor",
+        "to": "file_src_application_refactor_gate_note_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_src_application_src_application_source_writer_ts",
+        "from": "dir_src_application",
+        "to": "file_src_application_source_writer_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_src_domain_src_domain_actor_spec_ts",
+        "from": "dir_src_domain",
+        "to": "file_src_domain_actor_spec_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_src_domain_src_domain_judge_port_ts",
+        "from": "dir_src_domain",
+        "to": "file_src_domain_judge_port_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_src_domain_src_domain_todo_chain_ts",
+        "from": "dir_src_domain",
+        "to": "file_src_domain_todo_chain_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_src_infrastructure_authoring_translate_src_infrastructure_authoring_translate_book_ts",
+        "from": "dir_src_infrastructure_authoring_translate",
+        "to": "file_src_infrastructure_authoring_translate_book_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_src_infrastructure_authoring_translate_src_infrastructure_authoring_translate_go_tests_ts",
+        "from": "dir_src_infrastructure_authoring_translate",
+        "to": "file_src_infrastructure_authoring_translate_go_tests_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_src_infrastructure_authoring_translate_src_infrastructure_authoring_translate_receipt_ts",
+        "from": "dir_src_infrastructure_authoring_translate",
+        "to": "file_src_infrastructure_authoring_translate_receipt_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_src_infrastructure_parse_src_infrastructure_parse_symbol_docstring_ts",
+        "from": "dir_src_infrastructure_parse",
+        "to": "file_src_infrastructure_parse_symbol_docstring_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_src_infrastructure_parse_src_infrastructure_parse_symbol_params_ts",
+        "from": "dir_src_infrastructure_parse",
+        "to": "file_src_infrastructure_parse_symbol_params_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_src_infrastructure_parse_src_infrastructure_parse_symbol_shape_ts",
+        "from": "dir_src_infrastructure_parse",
+        "to": "file_src_infrastructure_parse_symbol_shape_ts",
+        "label": "contains"
       }
     ]
   },
@@ -101996,6 +102627,3251 @@
         "path": "scripts/impl-mutate.mjs",
         "responsibility": "实现层变异器（变异→编译→跑夹具→还原）",
         "status": "done"
+      },
+      {
+        "id": "file_certs_t353-judge-port-cert_mjs",
+        "path": "certs/t353-judge-port-cert.mjs",
+        "responsibility": "cert T353 —— 判定器端口纯度 + 残缺报告守卫（2026-10-21 · D-judge-port）。",
+        "symbols": [
+          {
+            "name": "HERE",
+            "kind": "const",
+            "line": 35,
+            "end_line": 35,
+            "signature": "const HERE = path.dirname(fileURLToPath(import.meta.url))"
+          },
+          {
+            "name": "REPO",
+            "kind": "const",
+            "line": 36,
+            "end_line": 36,
+            "signature": "const REPO = path.resolve(HERE, '..')"
+          },
+          {
+            "name": "TMP",
+            "kind": "const",
+            "line": 38,
+            "end_line": 38,
+            "signature": "const TMP = fs.mkdtempSync(path.join(HERE, '.work/tmp353-'))"
+          },
+          {
+            "name": "HOME",
+            "kind": "const",
+            "line": 39,
+            "end_line": 39,
+            "signature": "const HOME = path.join(TMP, 'home')"
+          },
+          {
+            "name": "ROOT",
+            "kind": "const",
+            "line": 40,
+            "end_line": 40,
+            "signature": "const ROOT = path.join(TMP, 'root')"
+          },
+          {
+            "name": "P",
+            "kind": "const",
+            "line": 51,
+            "end_line": 51,
+            "signature": "const P = 0"
+          },
+          {
+            "name": "F",
+            "kind": "const",
+            "line": 52,
+            "end_line": 52,
+            "signature": "const F = 0"
+          },
+          {
+            "name": "chk",
+            "kind": "const",
+            "line": 53,
+            "end_line": 56,
+            "signature": "const chk = (ok, label, extra = '') => { console.log(`${ok ? '✓' : '✗…"
+          },
+          {
+            "name": "POST_OK",
+            "kind": "const",
+            "line": 58,
+            "end_line": 58,
+            "signature": "const POST_OK = { kind: 'file-exists', path: 'src/ok.ts', why: 'T353 夹具：已…"
+          },
+          {
+            "name": "POST_MISSING",
+            "kind": "const",
+            "line": 59,
+            "end_line": 59,
+            "signature": "const POST_MISSING = { kind: 'file-exists', path: 'src/nope.ts', why: 'T353 夹具…"
+          },
+          {
+            "name": "PRE_EDGE",
+            "kind": "const",
+            "line": 61,
+            "end_line": 61,
+            "signature": "const PRE_EDGE = { kind: 'edge-absent', from: 'src/ok.ts', to: 'src/zzz.ts…"
+          },
+          {
+            "name": "card",
+            "kind": "const",
+            "line": 62,
+            "end_line": 62,
+            "signature": "const card = (id, expectations) => ({ id, summary: `T353 ${id}`, expec…"
+          },
+          {
+            "name": "opts",
+            "kind": "const",
+            "line": 63,
+            "end_line": 63,
+            "signature": "const opts = (judge, nodes = []) => ({ root: ROOT, nodes, judge })"
+          },
+          {
+            "name": "EMPTY",
+            "kind": "const",
+            "line": 66,
+            "end_line": 66,
+            "signature": "const EMPTY = () => ({ checked: 0, passed: 0, failed: 0, unsupported: 0…"
+          },
+          {
+            "name": "blindJudge",
+            "kind": "const",
+            "line": 68,
+            "end_line": 68,
+            "signature": "const blindJudge = async () => EMPTY()"
+          },
+          {
+            "name": "postOnlyJudge",
+            "kind": "const",
+            "line": 70,
+            "end_line": 71,
+            "signature": "const postOnlyJudge = async (root, items) => items.length && items.every((i) =>…"
+          },
+          {
+            "name": "walk",
+            "kind": "const",
+            "line": 76,
+            "end_line": 84,
+            "signature": "const walk = (dir) => { const out = []; for (const e of fs.readdirSync…"
+          },
+          {
+            "name": "DOMAIN",
+            "kind": "const",
+            "line": 85,
+            "end_line": 85,
+            "signature": "const DOMAIN = path.join(REPO, 'src/domain')"
+          },
+          {
+            "name": "files",
+            "kind": "const",
+            "line": 86,
+            "end_line": 86,
+            "signature": "const files = walk(DOMAIN)"
+          },
+          {
+            "name": "UP",
+            "kind": "const",
+            "line": 87,
+            "end_line": 87,
+            "signature": "const UP = /from\\s+['\"][^'\"]*\\.\\.\\/(application|infrastructure|prese…"
+          },
+          {
+            "name": "hits",
+            "kind": "const",
+            "line": 88,
+            "end_line": 88,
+            "signature": "const hits = []"
+          },
+          {
+            "name": "src",
+            "kind": "const",
+            "line": 90,
+            "end_line": 90,
+            "signature": "const src = fs.readFileSync(f, 'utf-8')"
+          },
+          {
+            "name": "rel",
+            "kind": "const",
+            "line": 91,
+            "end_line": 91,
+            "signature": "const rel = path.relative(REPO, f).replace(/\\\\/g, '/')"
+          },
+          {
+            "name": "appFiles",
+            "kind": "const",
+            "line": 98,
+            "end_line": 98,
+            "signature": "const appFiles = walk(path.join(REPO, 'src/application'))"
+          },
+          {
+            "name": "down",
+            "kind": "const",
+            "line": 99,
+            "end_line": 99,
+            "signature": "const down = 0"
+          },
+          {
+            "name": "c",
+            "kind": "const",
+            "line": 107,
+            "end_line": 107,
+            "signature": "const c = card('blind', [POST_OK])"
+          },
+          {
+            "name": "v",
+            "kind": "const",
+            "line": 108,
+            "end_line": 108,
+            "signature": "const v = await cardStanding(c, opts(blindJudge))"
+          },
+          {
+            "name": "c",
+            "kind": "const",
+            "line": 117,
+            "end_line": 117,
+            "signature": "const c = card('real-ok', [POST_OK])"
+          },
+          {
+            "name": "v",
+            "kind": "const",
+            "line": 118,
+            "end_line": 118,
+            "signature": "const v = await cardStanding(c, opts(judgeExpectations))"
+          },
+          {
+            "name": "red",
+            "kind": "const",
+            "line": 122,
+            "end_line": 122,
+            "signature": "const red = await cardStanding(card('real-red', [POST_MISSING]), opts…"
+          },
+          {
+            "name": "items",
+            "kind": "const",
+            "line": 129,
+            "end_line": 132,
+            "signature": "const items = [ { node_id: 'n', node_label: 'n', expectation: POST_OK }…"
+          },
+          {
+            "name": "rep",
+            "kind": "const",
+            "line": 133,
+            "end_line": 133,
+            "signature": "const rep = await judgeExpectations(ROOT, items)"
+          },
+          {
+            "name": "v",
+            "kind": "const",
+            "line": 135,
+            "end_line": 135,
+            "signature": "const v = await cardStanding(card('real-mixed', [POST_OK, POST_MISS…"
+          },
+          {
+            "name": "c",
+            "kind": "const",
+            "line": 142,
+            "end_line": 142,
+            "signature": "const c = card('pre-half', [POST_OK, PRE_EDGE])"
+          },
+          {
+            "name": "v",
+            "kind": "const",
+            "line": 143,
+            "end_line": 143,
+            "signature": "const v = await cardStanding(c, opts(postOnlyJudge))"
+          }
+        ],
+        "lines": 149,
+        "layer": "core"
+      },
+      {
+        "id": "file_certs_t355-gate-exemption-cert_mjs",
+        "path": "certs/t355-gate-exemption-cert.mjs",
+        "responsibility": "cert T355 —— 写闸的「按设计侧声明的豁免」（2026-10-20 · docs/certs-4-ways.md 裁决 ③）",
+        "symbols": [
+          {
+            "name": "HERE",
+            "kind": "const",
+            "line": 31,
+            "end_line": 31,
+            "signature": "const HERE = path.dirname(fileURLToPath(import.meta.url))"
+          },
+          {
+            "name": "TMP",
+            "kind": "const",
+            "line": 34,
+            "end_line": 34,
+            "signature": "const TMP = fs.mkdtempSync(path.join(HERE, '.work/tmp355gate-'))"
+          },
+          {
+            "name": "HOME",
+            "kind": "const",
+            "line": 35,
+            "end_line": 35,
+            "signature": "const HOME = path.join(TMP, 'home')"
+          },
+          {
+            "name": "ROOT",
+            "kind": "const",
+            "line": 36,
+            "end_line": 36,
+            "signature": "const ROOT = path.join(TMP, 'root')"
+          },
+          {
+            "name": "P",
+            "kind": "const",
+            "line": 45,
+            "end_line": 45,
+            "signature": "const P = 0"
+          },
+          {
+            "name": "F",
+            "kind": "const",
+            "line": 46,
+            "end_line": 46,
+            "signature": "const F = 0"
+          },
+          {
+            "name": "chk",
+            "kind": "const",
+            "line": 47,
+            "end_line": 50,
+            "signature": "const chk = (ok, label, extra = '') => { console.log(`${ok ? '✓' : '✗…"
+          },
+          {
+            "name": "dump",
+            "kind": "const",
+            "line": 51,
+            "end_line": 51,
+            "signature": "const dump = (label, text) => console.log(` · ${label}: ${text}`)"
+          },
+          {
+            "name": "FEAT",
+            "kind": "const",
+            "line": 60,
+            "end_line": 60,
+            "signature": "const FEAT = 't355gate'"
+          },
+          {
+            "name": "FEAT2",
+            "kind": "const",
+            "line": 61,
+            "end_line": 61,
+            "signature": "const FEAT2 = 't355gate2'"
+          },
+          {
+            "name": "seed",
+            "kind": "const",
+            "line": 62,
+            "end_line": 74,
+            "signature": "const seed = (feature, nodes, { root = ROOT } = {}) => saveDSL({ id: `…"
+          },
+          {
+            "name": "gate",
+            "kind": "const",
+            "line": 77,
+            "end_line": 83,
+            "signature": "const gate = (rel) => { try { return { threw: false, out: assertSource…"
+          },
+          {
+            "name": "cov",
+            "kind": "const",
+            "line": 89,
+            "end_line": 89,
+            "signature": "const cov = collectGateCoverage(ROOT)"
+          },
+          {
+            "name": "r",
+            "kind": "const",
+            "line": 90,
+            "end_line": 90,
+            "signature": "const r = gate('certs/a.mjs')"
+          },
+          {
+            "name": "before",
+            "kind": "const",
+            "line": 113,
+            "end_line": 113,
+            "signature": "const before = fs.readFileSync(path.join(ROOT, 'certs/a.mjs'), 'utf-8')"
+          },
+          {
+            "name": "w",
+            "kind": "const",
+            "line": 114,
+            "end_line": 120,
+            "signature": "const w = await editCode({ project_dir: ROOT, file: 'certs/a.mjs', …"
+          },
+          {
+            "name": "after",
+            "kind": "const",
+            "line": 121,
+            "end_line": 121,
+            "signature": "const after = fs.readFileSync(path.join(ROOT, 'certs/a.mjs'), 'utf-8')"
+          },
+          {
+            "name": "r",
+            "kind": "const",
+            "line": 141,
+            "end_line": 141,
+            "signature": "const r = gate('src/a.ts')"
+          },
+          {
+            "name": "before",
+            "kind": "const",
+            "line": 148,
+            "end_line": 148,
+            "signature": "const before = fs.readFileSync(path.join(ROOT, 'src/a.ts'), 'utf-8')"
+          },
+          {
+            "name": "threw",
+            "kind": "const",
+            "line": 149,
+            "end_line": 149,
+            "signature": "const threw = false"
+          },
+          {
+            "name": "rb",
+            "kind": "const",
+            "line": 168,
+            "end_line": 168,
+            "signature": "const rb = gate('certs/b.mjs')"
+          },
+          {
+            "name": "claimedByOther",
+            "kind": "const",
+            "line": 179,
+            "end_line": 186,
+            "signature": "const claimedByOther = { id: 'file_src_b_ts', summary: 't355 夹具：别人领着的卡', expecta…"
+          },
+          {
+            "name": "msg",
+            "kind": "const",
+            "line": 188,
+            "end_line": 188,
+            "signature": "const msg = ''"
+          },
+          {
+            "name": "okSelf",
+            "kind": "const",
+            "line": 195,
+            "end_line": 201,
+            "signature": "const okSelf = (() => { try { return { threw: false, out: assertSourceWr…"
+          },
+          {
+            "name": "r",
+            "kind": "const",
+            "line": 210,
+            "end_line": 210,
+            "signature": "const r = gate('certs/b.mjs')"
+          },
+          {
+            "name": "r2",
+            "kind": "const",
+            "line": 218,
+            "end_line": 218,
+            "signature": "const r2 = gate('certs/b.mjs')"
+          },
+          {
+            "name": "PROJ",
+            "kind": "const",
+            "line": 231,
+            "end_line": 231,
+            "signature": "const PROJ = path.join(TMP, 'proj')"
+          },
+          {
+            "name": "F3",
+            "kind": "const",
+            "line": 235,
+            "end_line": 235,
+            "signature": "const F3 = 't355rebuild'"
+          },
+          {
+            "name": "d0",
+            "kind": "const",
+            "line": 237,
+            "end_line": 237,
+            "signature": "const d0 = getDSL(F3)"
+          },
+          {
+            "name": "fileNode",
+            "kind": "const",
+            "line": 238,
+            "end_line": 238,
+            "signature": "const fileNode = (d0?.geometry?.nodes ?? []).find((n) => n.type === 'file')"
+          },
+          {
+            "name": "marked",
+            "kind": "const",
+            "line": 247,
+            "end_line": 247,
+            "signature": "const marked = (getDSL(F3)?.geometry?.nodes ?? []).find((n) => n.id === …"
+          },
+          {
+            "name": "kept",
+            "kind": "const",
+            "line": 251,
+            "end_line": 251,
+            "signature": "const kept = (getDSL(F3)?.geometry?.nodes ?? []).find((n) => n.id === …"
+          },
+          {
+            "name": "c",
+            "kind": "const",
+            "line": 257,
+            "end_line": 257,
+            "signature": "const c = collectGateCoverage(PROJ)"
+          },
+          {
+            "name": "lines",
+            "kind": "const",
+            "line": 268,
+            "end_line": 268,
+            "signature": "const lines = exemptionLines([{ path: 'certs/z.mjs', by: [{ feature: 'f…"
+          }
+        ],
+        "lines": 279,
+        "layer": "core"
+      },
+      {
+        "id": "file_certs_t356-authorize-cert_mjs",
+        "path": "certs/t356-authorize-cert.mjs",
+        "responsibility": "cert T356 —— 按 run 授权（authorize，2026-10-20）",
+        "symbols": [
+          {
+            "name": "HERE",
+            "kind": "const",
+            "line": 34,
+            "end_line": 34,
+            "signature": "const HERE = path.dirname(fileURLToPath(import.meta.url))"
+          },
+          {
+            "name": "TMP",
+            "kind": "const",
+            "line": 36,
+            "end_line": 36,
+            "signature": "const TMP = fs.mkdtempSync(path.join(HERE, '.work/tmp356auth-'))"
+          },
+          {
+            "name": "HOME",
+            "kind": "const",
+            "line": 37,
+            "end_line": 37,
+            "signature": "const HOME = path.join(TMP, 'home')"
+          },
+          {
+            "name": "ROOT",
+            "kind": "const",
+            "line": 38,
+            "end_line": 38,
+            "signature": "const ROOT = path.join(TMP, 'root')"
+          },
+          {
+            "name": "P",
+            "kind": "const",
+            "line": 47,
+            "end_line": 47,
+            "signature": "const P = 0"
+          },
+          {
+            "name": "F",
+            "kind": "const",
+            "line": 48,
+            "end_line": 48,
+            "signature": "const F = 0"
+          },
+          {
+            "name": "chk",
+            "kind": "const",
+            "line": 49,
+            "end_line": 52,
+            "signature": "const chk = (ok, label, extra = '') => { console.log(`${ok ? '✓' : '✗…"
+          },
+          {
+            "name": "FEAT",
+            "kind": "const",
+            "line": 60,
+            "end_line": 60,
+            "signature": "const FEAT = 't356auth'"
+          },
+          {
+            "name": "card",
+            "kind": "const",
+            "line": 62,
+            "end_line": 69,
+            "signature": "const card = (owner) => ({ id: 'card_t356', summary: `t356 夹具：${owner}…"
+          },
+          {
+            "name": "gate",
+            "kind": "const",
+            "line": 98,
+            "end_line": 104,
+            "signature": "const gate = (rels, actor, authorize) => { try { return { threw: false…"
+          },
+          {
+            "name": "firstLine",
+            "kind": "const",
+            "line": 105,
+            "end_line": 105,
+            "signature": "const firstLine = (m) => String(m).split('\\n')[0]"
+          },
+          {
+            "name": "scopeText",
+            "kind": "const",
+            "line": 110,
+            "end_line": 110,
+            "signature": "const scopeText = 'nodes:n_a,n_b'"
+          },
+          {
+            "name": "cov",
+            "kind": "const",
+            "line": 111,
+            "end_line": 111,
+            "signature": "const cov = collectGateCoverage(ROOT)"
+          },
+          {
+            "name": "r",
+            "kind": "const",
+            "line": 117,
+            "end_line": 117,
+            "signature": "const r = gate(['src/a.ts', 'src/b.ts'], 'me', scopeText)"
+          },
+          {
+            "name": "dsl",
+            "kind": "const",
+            "line": 130,
+            "end_line": 130,
+            "signature": "const dsl = getDSL(FEAT)"
+          },
+          {
+            "name": "res",
+            "kind": "const",
+            "line": 131,
+            "end_line": 131,
+            "signature": "const res = resolveScope(dsl, parseScope(scopeText))"
+          },
+          {
+            "name": "before",
+            "kind": "const",
+            "line": 139,
+            "end_line": 142,
+            "signature": "const before = { a: fs.readFileSync(path.join(ROOT, 'src/a.ts'), 'utf-8'…"
+          },
+          {
+            "name": "w",
+            "kind": "const",
+            "line": 143,
+            "end_line": 151,
+            "signature": "const w = await editCode({ project_dir: ROOT, actor: 'me', authoriz…"
+          },
+          {
+            "name": "after",
+            "kind": "const",
+            "line": 152,
+            "end_line": 155,
+            "signature": "const after = { a: fs.readFileSync(path.join(ROOT, 'src/a.ts'), 'utf-8'…"
+          },
+          {
+            "name": "w2",
+            "kind": "const",
+            "line": 168,
+            "end_line": 176,
+            "signature": "const w2 = await editCode({ project_dir: ROOT, file: 'src/b.ts', op:…"
+          },
+          {
+            "name": "r",
+            "kind": "const",
+            "line": 187,
+            "end_line": 187,
+            "signature": "const r = gate(['src/a.ts', 'src/d.ts'], 'me', 'nodes:n_a')"
+          },
+          {
+            "name": "r",
+            "kind": "const",
+            "line": 208,
+            "end_line": 208,
+            "signature": "const r = gate(['src/a.ts'], 'me', 'all')"
+          },
+          {
+            "name": "r2",
+            "kind": "const",
+            "line": 214,
+            "end_line": 214,
+            "signature": "const r2 = gate(['src/a.ts'], 'me', 'nonsense:zzz')"
+          },
+          {
+            "name": "r",
+            "kind": "const",
+            "line": 225,
+            "end_line": 225,
+            "signature": "const r = gate(['src/c.ts'], 'me', 'nodes:n_c')"
+          },
+          {
+            "name": "r",
+            "kind": "const",
+            "line": 241,
+            "end_line": 241,
+            "signature": "const r = gate(['src/b.ts'], 'me', 'files:src/b.ts')"
+          },
+          {
+            "name": "r",
+            "kind": "const",
+            "line": 258,
+            "end_line": 262,
+            "signature": "const r = await applyWrites( ROOT, [{ file: 'src/b.ts', content: 'e…"
+          },
+          {
+            "name": "threw",
+            "kind": "const",
+            "line": 268,
+            "end_line": 268,
+            "signature": "const threw = false"
+          }
+        ],
+        "lines": 278,
+        "layer": "core"
+      },
+      {
+        "id": "file_certs_t357-pipeline-gate-cert_mjs",
+        "path": "certs/t357-pipeline-gate-cert.mjs",
+        "responsibility": "t357 验收（临时夹具，不进仓）：refactor_pipeline 落盘前的写闸",
+        "symbols": [
+          {
+            "name": "REPO",
+            "kind": "const",
+            "line": 21,
+            "end_line": 21,
+            "signature": "const REPO = 'D:/project_develop/design-canvas'"
+          },
+          {
+            "name": "CLI",
+            "kind": "const",
+            "line": 22,
+            "end_line": 22,
+            "signature": "const CLI = path.join(REPO, 'dist/src/presentation/cli/cli.js')"
+          },
+          {
+            "name": "LABS",
+            "kind": "const",
+            "line": 23,
+            "end_line": 23,
+            "signature": "const LABS = 'D:/project_develop/_design-canvas-labs'"
+          },
+          {
+            "name": "TMP",
+            "kind": "const",
+            "line": 24,
+            "end_line": 24,
+            "signature": "const TMP = fs.mkdtempSync(path.join(LABS, '.tmp-t357-'))"
+          },
+          {
+            "name": "P",
+            "kind": "const",
+            "line": 28,
+            "end_line": 28,
+            "signature": "const P = 0"
+          },
+          {
+            "name": "F",
+            "kind": "const",
+            "line": 29,
+            "end_line": 29,
+            "signature": "const F = 0"
+          },
+          {
+            "name": "chk",
+            "kind": "const",
+            "line": 30,
+            "end_line": 33,
+            "signature": "const chk = (ok, label, extra = '') => { console.log(`${ok ? '✓' : '✗…"
+          },
+          {
+            "name": "NL",
+            "kind": "const",
+            "line": 34,
+            "end_line": 34,
+            "signature": "const NL = String.fromCharCode(10)"
+          },
+          {
+            "name": "SRC",
+            "kind": "const",
+            "line": 37,
+            "end_line": 46,
+            "signature": "const SRC = { 'package.json': '{\\n \"name\": \"t357fixture\",\\n \"version\"…"
+          },
+          {
+            "name": "card",
+            "kind": "const",
+            "line": 48,
+            "end_line": 55,
+            "signature": "const card = (owner) => ({ id: `card_${owner}`, summary: `t357 夹具：${ow…"
+          },
+          {
+            "name": "md5",
+            "kind": "const",
+            "line": 94,
+            "end_line": 94,
+            "signature": "const md5 = (p) => crypto.createHash('md5').update(fs.readFileSync(p)…"
+          },
+          {
+            "name": "md5Of",
+            "kind": "const",
+            "line": 95,
+            "end_line": 96,
+            "signature": "const md5Of = (root, rels) => Object.fromEntries(rels.map((r) => [r, fs…"
+          },
+          {
+            "name": "activeStage",
+            "kind": "const",
+            "line": 122,
+            "end_line": 122,
+            "signature": "const activeStage = (r) => r.data?.stages?.filter((s) => s.outcome !== 'skipp…"
+          },
+          {
+            "name": "MIGRATE",
+            "kind": "const",
+            "line": 124,
+            "end_line": 130,
+            "signature": "const MIGRATE = { enabled: true, moduleBase: 'example.com/fix', prefix: '…"
+          },
+          {
+            "name": "DEAD_IMPORTS",
+            "kind": "const",
+            "line": 131,
+            "end_line": 131,
+            "signature": "const DEAD_IMPORTS = { enabled: true, dead: [{ source: './x', files: ['src/a.t…"
+          },
+          {
+            "name": "VERIFY",
+            "kind": "const",
+            "line": 134,
+            "end_line": 134,
+            "signature": "const VERIFY = { commands: [{ label: 'noop', cmd: process.execPath, args…"
+          },
+          {
+            "name": "MOVED",
+            "kind": "const",
+            "line": 135,
+            "end_line": 135,
+            "signature": "const MOVED = ['internal/use/use.go', 'internal/hub/thing.go', 'interna…"
+          },
+          {
+            "name": "c",
+            "kind": "const",
+            "line": 140,
+            "end_line": 147,
+            "signature": "const c = makeCase( 'case1', [ { id: 'n_use', type: 'file', label: …"
+          },
+          {
+            "name": "before",
+            "kind": "const",
+            "line": 148,
+            "end_line": 148,
+            "signature": "const before = md5Of(c.root, MOVED)"
+          },
+          {
+            "name": "r",
+            "kind": "const",
+            "line": 149,
+            "end_line": 149,
+            "signature": "const r = runPipeline(c.root, c.home, { steps: { package_migration:…"
+          },
+          {
+            "name": "after",
+            "kind": "const",
+            "line": 150,
+            "end_line": 150,
+            "signature": "const after = md5Of(c.root, MOVED)"
+          },
+          {
+            "name": "c",
+            "kind": "const",
+            "line": 175,
+            "end_line": 183,
+            "signature": "const c = makeCase( 'case2', [ { id: 'n_use', type: 'file', label: …"
+          },
+          {
+            "name": "scope",
+            "kind": "const",
+            "line": 184,
+            "end_line": 184,
+            "signature": "const scope = 'nodes:n_old,n_new,n_use'"
+          },
+          {
+            "name": "r",
+            "kind": "const",
+            "line": 185,
+            "end_line": 190,
+            "signature": "const r = runPipeline(c.root, c.home, { steps: { package_migration:…"
+          },
+          {
+            "name": "stage",
+            "kind": "const",
+            "line": 191,
+            "end_line": 191,
+            "signature": "const stage = activeStage(r)"
+          },
+          {
+            "name": "c",
+            "kind": "const",
+            "line": 213,
+            "end_line": 223,
+            "signature": "const c = makeCase( 'case3', [ { id: 'n_a', type: 'file', label: 'a…"
+          },
+          {
+            "name": "before",
+            "kind": "const",
+            "line": 224,
+            "end_line": 224,
+            "signature": "const before = md5Of(c.root, ['src/a.ts', 'src/b.ts'])"
+          },
+          {
+            "name": "r",
+            "kind": "const",
+            "line": 225,
+            "end_line": 225,
+            "signature": "const r = runPipeline(c.root, c.home, { steps: { dead_imports: DEAD…"
+          },
+          {
+            "name": "after",
+            "kind": "const",
+            "line": 226,
+            "end_line": 226,
+            "signature": "const after = md5Of(c.root, ['src/a.ts', 'src/b.ts'])"
+          },
+          {
+            "name": "named",
+            "kind": "const",
+            "line": 233,
+            "end_line": 233,
+            "signature": "const named = (r.out.match(/^ {2}· (\\S+)\\s+⇒/gim) ?? []).map((s) => s.t…"
+          },
+          {
+            "name": "c",
+            "kind": "const",
+            "line": 241,
+            "end_line": 253,
+            "signature": "const c = makeCase( 'case4', [ { id: 'n_old', type: 'file', label: …"
+          },
+          {
+            "name": "r",
+            "kind": "const",
+            "line": 254,
+            "end_line": 254,
+            "signature": "const r = runPipeline(c.root, c.home, { steps: { package_migration:…"
+          },
+          {
+            "name": "pointed",
+            "kind": "const",
+            "line": 261,
+            "end_line": 261,
+            "signature": "const pointed = (r.out.match(/^ {2}· (\\S+)\\s+⇒/gim) ?? []).map((s) => s.t…"
+          },
+          {
+            "name": "c",
+            "kind": "const",
+            "line": 275,
+            "end_line": 288,
+            "signature": "const c = makeCase( 'case5', [ { id: 'n_old', type: 'file', label: …"
+          },
+          {
+            "name": "r",
+            "kind": "const",
+            "line": 289,
+            "end_line": 294,
+            "signature": "const r = runPipeline(c.root, c.home, { steps: { package_migration:…"
+          },
+          {
+            "name": "stage",
+            "kind": "const",
+            "line": 295,
+            "end_line": 295,
+            "signature": "const stage = activeStage(r)"
+          },
+          {
+            "name": "useGo",
+            "kind": "const",
+            "line": 301,
+            "end_line": 301,
+            "signature": "const useGo = fs.readFileSync(path.join(c.root, 'internal/use/use.go'),…"
+          },
+          {
+            "name": "thingGo",
+            "kind": "const",
+            "line": 302,
+            "end_line": 302,
+            "signature": "const thingGo = fs.readFileSync(path.join(c.root, 'internal/hub/thing.go'…"
+          },
+          {
+            "name": "lines",
+            "kind": "const",
+            "line": 315,
+            "end_line": 315,
+            "signature": "const lines = fs.readFileSync(path.join(REPO, 'src/application/refactor…"
+          },
+          {
+            "name": "callSites",
+            "kind": "const",
+            "line": 316,
+            "end_line": 316,
+            "signature": "const callSites = lines.map((l, i) => ({ l, i: i + 1 })).filter((x) => /awa…"
+          },
+          {
+            "name": "finalizeLine",
+            "kind": "const",
+            "line": 317,
+            "end_line": 317,
+            "signature": "const finalizeLine = lines.findIndex((l) => /const finalize = async/.test(l)) + 1"
+          },
+          {
+            "name": "firstWrite",
+            "kind": "const",
+            "line": 318,
+            "end_line": 318,
+            "signature": "const firstWrite = lines.findIndex((l) => /fs\\.renameSync\\(m\\.from, m\\.to\\)/…"
+          },
+          {
+            "name": "gateLine",
+            "kind": "const",
+            "line": 321,
+            "end_line": 321,
+            "signature": "const gateLine = lines.findIndex((l) => /(?:assertSourceWriteRegisteredFor…"
+          }
+        ],
+        "lines": 332,
+        "layer": "core"
+      },
+      {
+        "id": "file_certs_t358-domain-five-values-cert_mjs",
+        "path": "certs/t358-domain-five-values-cert.mjs",
+        "responsibility": "cert T358 —— domain 五值单测（假 Judge，不碰 fs / cache.db / 真实项目根）。",
+        "symbols": [
+          {
+            "name": "P",
+            "kind": "const",
+            "line": 39,
+            "end_line": 39,
+            "signature": "const P = 0"
+          },
+          {
+            "name": "F",
+            "kind": "const",
+            "line": 40,
+            "end_line": 40,
+            "signature": "const F = 0"
+          },
+          {
+            "name": "chk",
+            "kind": "const",
+            "line": 41,
+            "end_line": 44,
+            "signature": "const chk = (ok, label, extra = '') => { console.log(`${ok ? '✓' : '✗…"
+          },
+          {
+            "name": "ROOT",
+            "kind": "const",
+            "line": 49,
+            "end_line": 49,
+            "signature": "const ROOT = 'fake-root:never-exists'"
+          },
+          {
+            "name": "POST_OK",
+            "kind": "const",
+            "line": 51,
+            "end_line": 51,
+            "signature": "const POST_OK = { kind: 'file-exists', path: 'src/ok.ts', why: 'T358 夹具：后…"
+          },
+          {
+            "name": "RED_OWN",
+            "kind": "const",
+            "line": 52,
+            "end_line": 52,
+            "signature": "const RED_OWN = { kind: 'file-exists', path: 'src/mine.ts', why: 'T358 夹具…"
+          },
+          {
+            "name": "RED_ORPHAN",
+            "kind": "const",
+            "line": 53,
+            "end_line": 53,
+            "signature": "const RED_ORPHAN = { kind: 'run', expect: 'true', why: 'T358 夹具：run 没有主体文件 ⇒…"
+          },
+          {
+            "name": "RED_DEP",
+            "kind": "const",
+            "line": 54,
+            "end_line": 54,
+            "signature": "const RED_DEP = { kind: 'file-exists', path: 'src/dep.ts', why: 'T358 夹具：…"
+          },
+          {
+            "name": "RED_DONE",
+            "kind": "const",
+            "line": 55,
+            "end_line": 55,
+            "signature": "const RED_DONE = { kind: 'file-exists', path: 'src/done.ts', why: 'T358 夹具…"
+          },
+          {
+            "name": "PRE_RED",
+            "kind": "const",
+            "line": 56,
+            "end_line": 56,
+            "signature": "const PRE_RED = { kind: 'edge-absent', from: 'src/a.ts', to: 'src/b.ts', …"
+          },
+          {
+            "name": "PRE_GREEN",
+            "kind": "const",
+            "line": 57,
+            "end_line": 57,
+            "signature": "const PRE_GREEN = { kind: 'edge-absent', from: 'src/a.ts', to: 'src/c.ts', …"
+          },
+          {
+            "name": "PRE_UNSUP",
+            "kind": "const",
+            "line": 58,
+            "end_line": 58,
+            "signature": "const PRE_UNSUP = { kind: 'edge-absent', from: 'src/a.ts', to: 'src/u.ts', …"
+          },
+          {
+            "name": "POST_UNSUP",
+            "kind": "const",
+            "line": 59,
+            "end_line": 59,
+            "signature": "const POST_UNSUP = { kind: 'symbol-exists', path: 'src/x.ts', symbol: 'X', w…"
+          },
+          {
+            "name": "POST_PENDING",
+            "kind": "const",
+            "line": 60,
+            "end_line": 60,
+            "signature": "const POST_PENDING = { kind: 'run', expect: 'true', blocked_by: '等 X', why: 'T…"
+          },
+          {
+            "name": "baseVerdict",
+            "kind": "const",
+            "line": 63,
+            "end_line": 73,
+            "signature": "const baseVerdict = (e) => { if (e.kind === 'edge-absent') { if (e.to === 'sr…"
+          },
+          {
+            "name": "NODES",
+            "kind": "const",
+            "line": 99,
+            "end_line": 112,
+            "signature": "const NODES = [ { id: 'card_satisfied', path: 'src/ok.ts' }, { id: 'car…"
+          },
+          {
+            "name": "card",
+            "kind": "const",
+            "line": 114,
+            "end_line": 114,
+            "signature": "const card = (id, expectations) => ({ id, summary: `T358 ${id}`, expec…"
+          },
+          {
+            "name": "opts",
+            "kind": "const",
+            "line": 115,
+            "end_line": 115,
+            "signature": "const opts = (judge = makeJudge()) => ({ root: ROOT, nodes: NODES, jud…"
+          },
+          {
+            "name": "brief",
+            "kind": "const",
+            "line": 116,
+            "end_line": 117,
+            "signature": "const brief = (v) => `standing=${v.standing} · sat=${JSON.stringify(v.s…"
+          },
+          {
+            "name": "t0",
+            "kind": "const",
+            "line": 120,
+            "end_line": 120,
+            "signature": "const t0 = performance.now()"
+          },
+          {
+            "name": "j",
+            "kind": "const",
+            "line": 125,
+            "end_line": 125,
+            "signature": "const j = makeJudge()"
+          },
+          {
+            "name": "v",
+            "kind": "const",
+            "line": 126,
+            "end_line": 126,
+            "signature": "const v = await cardStanding(card('card_work', [RED_OWN]), opts(j))"
+          },
+          {
+            "name": "v2",
+            "kind": "const",
+            "line": 132,
+            "end_line": 132,
+            "signature": "const v2 = await cardStanding(card('card_orphan', [RED_ORPHAN]), opt…"
+          },
+          {
+            "name": "v",
+            "kind": "const",
+            "line": 140,
+            "end_line": 140,
+            "signature": "const v = await cardStanding(card('card_violated', [POST_OK, PRE_RE…"
+          },
+          {
+            "name": "b1",
+            "kind": "const",
+            "line": 151,
+            "end_line": 151,
+            "signature": "const b1 = await cardStanding(card('card_blocked', [RED_DEP]), opts())"
+          },
+          {
+            "name": "b2",
+            "kind": "const",
+            "line": 156,
+            "end_line": 156,
+            "signature": "const b2 = await cardStanding(card('card_blocked', [RED_DONE]), opts())"
+          },
+          {
+            "name": "v",
+            "kind": "const",
+            "line": 164,
+            "end_line": 164,
+            "signature": "const v = await cardStanding(card('card_satisfied', [POST_OK, PRE_G…"
+          },
+          {
+            "name": "j",
+            "kind": "const",
+            "line": 175,
+            "end_line": 175,
+            "signature": "const j = makeJudge()"
+          },
+          {
+            "name": "e1",
+            "kind": "const",
+            "line": 176,
+            "end_line": 176,
+            "signature": "const e1 = await cardStanding(card('card_empty', [PRE_RED]), opts(j))"
+          },
+          {
+            "name": "e2",
+            "kind": "const",
+            "line": 181,
+            "end_line": 181,
+            "signature": "const e2 = await cardStanding(card('card_unsupported', [POST_UNSUP])…"
+          },
+          {
+            "name": "e3",
+            "kind": "const",
+            "line": 185,
+            "end_line": 185,
+            "signature": "const e3 = await cardStanding(card('card_residual', [RED_OWN]), opts…"
+          },
+          {
+            "name": "e4",
+            "kind": "const",
+            "line": 189,
+            "end_line": 189,
+            "signature": "const e4 = await cardStanding(card('card_pre_unsup', [POST_OK, PRE_U…"
+          },
+          {
+            "name": "v",
+            "kind": "const",
+            "line": 197,
+            "end_line": 197,
+            "signature": "const v = await cardStanding(card('card_pending', [POST_PENDING]), …"
+          },
+          {
+            "name": "v",
+            "kind": "const",
+            "line": 208,
+            "end_line": 208,
+            "signature": "const v = await cardStanding(card('card_unsupported', [POST_UNSUP, …"
+          },
+          {
+            "name": "judges",
+            "kind": "const",
+            "line": 216,
+            "end_line": 216,
+            "signature": "const judges = []"
+          },
+          {
+            "name": "j",
+            "kind": "const",
+            "line": 218,
+            "end_line": 218,
+            "signature": "const j = makeJudge()"
+          },
+          {
+            "name": "allCalls",
+            "kind": "const",
+            "line": 222,
+            "end_line": 222,
+            "signature": "const allCalls = judges.flatMap((j) => j.calls)"
+          },
+          {
+            "name": "elapsed",
+            "kind": "const",
+            "line": 225,
+            "end_line": 225,
+            "signature": "const elapsed = performance.now() - t0"
+          }
+        ],
+        "lines": 230,
+        "layer": "core"
+      },
+      {
+        "id": "file_scripts_clean-dead-functions_mjs",
+        "path": "scripts/clean-dead-functions.mjs",
+        "responsibility": "clean-dead-functions.mjs —— 用 edit_code 删【文件内私有 + 零调用】的死函数",
+        "symbols": [
+          {
+            "name": "ROOT",
+            "kind": "const",
+            "line": 29,
+            "end_line": 29,
+            "signature": "const ROOT = process.cwd()"
+          },
+          {
+            "name": "APPLY",
+            "kind": "const",
+            "line": 30,
+            "end_line": 30,
+            "signature": "const APPLY = process.argv.includes('--apply')"
+          },
+          {
+            "name": "BS",
+            "kind": "const",
+            "line": 31,
+            "end_line": 31,
+            "signature": "const BS = String.fromCharCode(92)"
+          },
+          {
+            "name": "norm",
+            "kind": "const",
+            "line": 32,
+            "end_line": 32,
+            "signature": "const norm = (s) => String(s ?? '').split(BS).join('/')"
+          },
+          {
+            "name": "db",
+            "kind": "const",
+            "line": 35,
+            "end_line": 35,
+            "signature": "const db = new DatabaseSync(path.join(ROOT, '.agent-io', 'cache.db')…"
+          },
+          {
+            "name": "rows",
+            "kind": "const",
+            "line": 36,
+            "end_line": 42,
+            "signature": "const rows = db.prepare(` SELECT DISTINCT n.name, n.file_path, n.start…"
+          },
+          {
+            "name": "candidates",
+            "kind": "const",
+            "line": 46,
+            "end_line": 46,
+            "signature": "const candidates = []"
+          },
+          {
+            "name": "file",
+            "kind": "const",
+            "line": 48,
+            "end_line": 48,
+            "signature": "const file = norm(r.file_path)"
+          },
+          {
+            "name": "abs",
+            "kind": "const",
+            "line": 49,
+            "end_line": 49,
+            "signature": "const abs = path.join(ROOT, file)"
+          },
+          {
+            "name": "text",
+            "kind": "const",
+            "line": 51,
+            "end_line": 51,
+            "signature": "const text = fs.readFileSync(abs, 'utf8')"
+          },
+          {
+            "name": "isExported",
+            "kind": "const",
+            "line": 52,
+            "end_line": 52,
+            "signature": "const isExported = new RegExp(`export\\\\s+(async\\\\s+)?(function|const)\\\\s+${r…"
+          },
+          {
+            "name": "okCount",
+            "kind": "const",
+            "line": 62,
+            "end_line": 62,
+            "signature": "const okCount = 0"
+          },
+          {
+            "name": "fail",
+            "kind": "const",
+            "line": 63,
+            "end_line": 63,
+            "signature": "const fail = []"
+          },
+          {
+            "name": "r",
+            "kind": "const",
+            "line": 66,
+            "end_line": 72,
+            "signature": "const r = await editCode({ project_dir: ROOT, file: c.file, op: 'de…"
+          },
+          {
+            "name": "msg",
+            "kind": "const",
+            "line": 73,
+            "end_line": 73,
+            "signature": "const msg = String(r.message ?? '')"
+          }
+        ],
+        "lines": 91,
+        "layer": "core"
+      },
+      {
+        "id": "file_scripts_contract-calls_mjs",
+        "path": "scripts/contract-calls.mjs",
+        "responsibility": "contract-calls —— 设计侧契约（结构级·调用）：设计 × 实际的对拍器。",
+        "symbols": [
+          {
+            "name": "DIR",
+            "kind": "const",
+            "line": 37,
+            "end_line": 37,
+            "signature": "const DIR = designDbDir('.')"
+          },
+          {
+            "name": "DB",
+            "kind": "const",
+            "line": 38,
+            "end_line": 38,
+            "signature": "const DB = path.join('.agent-io', 'cache.db')"
+          },
+          {
+            "name": "norm",
+            "kind": "const",
+            "line": 40,
+            "end_line": 40,
+            "signature": "const norm = (s) => String(s).replace(/\\\\/g, '/')"
+          },
+          {
+            "name": "short",
+            "kind": "const",
+            "line": 41,
+            "end_line": 41,
+            "signature": "const short = (s) => String(s).replace(/^src\\//, '').replace(/\\.ts#/, '#')"
+          },
+          {
+            "name": "has",
+            "kind": "const",
+            "line": 69,
+            "end_line": 69,
+            "signature": "const has = (set, c) => set.has(`${norm(c.from)}|${norm(c.to)}`)"
+          }
+        ],
+        "lines": 175,
+        "layer": "core"
+      },
+      {
+        "id": "file_scripts_coverage_mjs",
+        "path": "scripts/coverage.mjs",
+        "responsibility": "coverage —— 设计覆盖度：拿 cache.db 的实际导出，比 decision.expectations 声明了什么。",
+        "symbols": [
+          {
+            "name": "DESIGN",
+            "kind": "const",
+            "line": 21,
+            "end_line": 21,
+            "signature": "const DESIGN = '.agent-io/design/task-system-plan.dsl.json'"
+          },
+          {
+            "name": "DB",
+            "kind": "const",
+            "line": 22,
+            "end_line": 22,
+            "signature": "const DB = path.join('.agent-io', 'cache.db')"
+          },
+          {
+            "name": "dsl",
+            "kind": "const",
+            "line": 24,
+            "end_line": 24,
+            "signature": "const dsl = JSON.parse(fs.readFileSync(DESIGN, 'utf8'))"
+          },
+          {
+            "name": "designed",
+            "kind": "const",
+            "line": 25,
+            "end_line": 25,
+            "signature": "const designed = (dsl.geometry?.nodes ?? []).filter((n) => n.decision)"
+          },
+          {
+            "name": "db",
+            "kind": "const",
+            "line": 27,
+            "end_line": 27,
+            "signature": "const db = new DatabaseSync(DB, { readOnly: true })"
+          },
+          {
+            "name": "q",
+            "kind": "const",
+            "line": 28,
+            "end_line": 30,
+            "signature": "const q = db.prepare( `SELECT name, kind FROM nodes WHERE file_path…"
+          },
+          {
+            "name": "totalExp",
+            "kind": "const",
+            "line": 32,
+            "end_line": 32,
+            "signature": "const totalExp = 0"
+          },
+          {
+            "name": "totalExport",
+            "kind": "const",
+            "line": 33,
+            "end_line": 33,
+            "signature": "const totalExport = 0"
+          },
+          {
+            "name": "totalMissing",
+            "kind": "const",
+            "line": 34,
+            "end_line": 34,
+            "signature": "const totalMissing = 0"
+          },
+          {
+            "name": "rows",
+            "kind": "const",
+            "line": 35,
+            "end_line": 35,
+            "signature": "const rows = []"
+          },
+          {
+            "name": "file",
+            "kind": "const",
+            "line": 38,
+            "end_line": 38,
+            "signature": "const file = String(n.description ?? '').replace(/\\\\/g, '/')"
+          },
+          {
+            "name": "exports",
+            "kind": "const",
+            "line": 40,
+            "end_line": 40,
+            "signature": "const exports = q.all(file)"
+          },
+          {
+            "name": "designedSyms",
+            "kind": "const",
+            "line": 41,
+            "end_line": 41,
+            "signature": "const designedSyms = new Set((n.decision.expectations ?? []).filter((e) => e.s…"
+          },
+          {
+            "name": "missing",
+            "kind": "const",
+            "line": 42,
+            "end_line": 42,
+            "signature": "const missing = exports.filter((e) => !designedSyms.has(e.name))"
+          },
+          {
+            "name": "pct",
+            "kind": "const",
+            "line": 52,
+            "end_line": 52,
+            "signature": "const pct = r.exports ? Math.round(((r.exports - r.missing.length) / …"
+          },
+          {
+            "name": "names",
+            "kind": "const",
+            "line": 56,
+            "end_line": 56,
+            "signature": "const names = r.missing.map((m) => `${m.name}(${m.kind[0]})`).join(' ')"
+          }
+        ],
+        "lines": 64,
+        "layer": "core"
+      },
+      {
+        "id": "file_scripts_dep_mjs",
+        "path": "scripts/dep.mjs",
+        "responsibility": "dep —— ★ 第③层：依赖（设计侧加/删调用关系）。",
+        "symbols": [
+          {
+            "name": "DIR",
+            "kind": "const",
+            "line": 34,
+            "end_line": 34,
+            "signature": "const DIR = designDbDir('.')"
+          },
+          {
+            "name": "argv",
+            "kind": "const",
+            "line": 35,
+            "end_line": 35,
+            "signature": "const argv = process.argv.slice(2)"
+          },
+          {
+            "name": "arg",
+            "kind": "const",
+            "line": 36,
+            "end_line": 36,
+            "signature": "const arg = (n) => { const i = argv.indexOf(`--${n}`); return i >= 0 …"
+          },
+          {
+            "name": "has",
+            "kind": "const",
+            "line": 37,
+            "end_line": 37,
+            "signature": "const has = (n) => argv.includes(`--${n}`)"
+          },
+          {
+            "name": "from",
+            "kind": "const",
+            "line": 39,
+            "end_line": 39,
+            "signature": "const from = arg('from')"
+          },
+          {
+            "name": "to",
+            "kind": "const",
+            "line": 40,
+            "end_line": 40,
+            "signature": "const to = arg('to')"
+          },
+          {
+            "name": "why",
+            "kind": "const",
+            "line": 41,
+            "end_line": 41,
+            "signature": "const why = arg('why') ?? ''"
+          },
+          {
+            "name": "remove",
+            "kind": "const",
+            "line": 42,
+            "end_line": 42,
+            "signature": "const remove = has('remove')"
+          },
+          {
+            "name": "srcFile",
+            "kind": "const",
+            "line": 49,
+            "end_line": 49,
+            "signature": "const srcFile = from.split('#')[0].replace(/\\\\/g, '/')"
+          },
+          {
+            "name": "slug",
+            "kind": "const",
+            "line": 50,
+            "end_line": 50,
+            "signature": "const slug = (p) => p.replace(/^src\\//, '').replace(/\\.ts$/, '').repla…"
+          },
+          {
+            "name": "file",
+            "kind": "const",
+            "line": 51,
+            "end_line": 51,
+            "signature": "const file = path.join(DIR, `${slug(srcFile)}.calls.json`)"
+          },
+          {
+            "name": "j",
+            "kind": "const",
+            "line": 59,
+            "end_line": 59,
+            "signature": "const j = JSON.parse(fs.readFileSync(file, 'utf8'))"
+          },
+          {
+            "name": "key",
+            "kind": "const",
+            "line": 63,
+            "end_line": 63,
+            "signature": "const key = (c) => `${c.from}|${c.to}`"
+          },
+          {
+            "name": "target",
+            "kind": "const",
+            "line": 64,
+            "end_line": 64,
+            "signature": "const target = { from: from.replace(/\\\\/g, '/'), to: to.replace(/\\\\/g, '…"
+          },
+          {
+            "name": "i",
+            "kind": "const",
+            "line": 67,
+            "end_line": 67,
+            "signature": "const i = j.calls.findIndex((c) => key(c) === key(target))"
+          }
+        ],
+        "lines": 89,
+        "layer": "core"
+      },
+      {
+        "id": "file_scripts_design-check_mjs",
+        "path": "scripts/design-check.mjs",
+        "responsibility": "design:check —— 【项目级】契约的执行器（★ judgeExpectations 的项目级版）",
+        "symbols": [
+          {
+            "name": "args",
+            "kind": "const",
+            "line": 28,
+            "end_line": 28,
+            "signature": "const args = process.argv.slice(2)"
+          },
+          {
+            "name": "argOf",
+            "kind": "const",
+            "line": 29,
+            "end_line": 32,
+            "signature": "const argOf = (n) => { const i = args.indexOf(n); return i >= 0 && i + …"
+          },
+          {
+            "name": "FEATURE",
+            "kind": "const",
+            "line": 33,
+            "end_line": 33,
+            "signature": "const FEATURE = argOf('--feature') ?? 'task-system-plan'"
+          },
+          {
+            "name": "JSON_OUT",
+            "kind": "const",
+            "line": 34,
+            "end_line": 34,
+            "signature": "const JSON_OUT = args.includes('--json')"
+          },
+          {
+            "name": "ROOT",
+            "kind": "const",
+            "line": 35,
+            "end_line": 35,
+            "signature": "const ROOT = process.cwd()"
+          },
+          {
+            "name": "FILE",
+            "kind": "const",
+            "line": 36,
+            "end_line": 36,
+            "signature": "const FILE = path.join(ROOT, '.agent-io', 'design', `${FEATURE}.dsl.js…"
+          },
+          {
+            "name": "dsl",
+            "kind": "const",
+            "line": 42,
+            "end_line": 42,
+            "signature": "const dsl = JSON.parse(fs.readFileSync(FILE, 'utf8'))"
+          },
+          {
+            "name": "criteria",
+            "kind": "const",
+            "line": 43,
+            "end_line": 43,
+            "signature": "const criteria = dsl?.task_plan?.design_completeness?.criteria ?? []"
+          },
+          {
+            "name": "nodes",
+            "kind": "const",
+            "line": 44,
+            "end_line": 44,
+            "signature": "const nodes = dsl?.geometry?.nodes ?? []"
+          },
+          {
+            "name": "paths",
+            "kind": "const",
+            "line": 45,
+            "end_line": 45,
+            "signature": "const paths = nodes.map((n) => String(n.description ?? '').replace(/\\\\/…"
+          },
+          {
+            "name": "results",
+            "kind": "const",
+            "line": 52,
+            "end_line": 52,
+            "signature": "const results = []"
+          },
+          {
+            "name": "callReport",
+            "kind": "const",
+            "line": 57,
+            "end_line": 57,
+            "signature": "const callReport = null"
+          },
+          {
+            "name": "callItems",
+            "kind": "const",
+            "line": 59,
+            "end_line": 59,
+            "signature": "const callItems = []"
+          },
+          {
+            "name": "je",
+            "kind": "const",
+            "line": 67,
+            "end_line": 67,
+            "signature": "const je = await import(pathToFileURL(path.join(ROOT, 'dist/src/appl…"
+          },
+          {
+            "name": "rep",
+            "kind": "const",
+            "line": 68,
+            "end_line": 68,
+            "signature": "const rep = await je.judgeExpectations(ROOT, callItems)"
+          },
+          {
+            "name": "needsMutate",
+            "kind": "const",
+            "line": 85,
+            "end_line": 85,
+            "signature": "const needsMutate = criteria.some((c) => typeof c.expect === 'string' && c.ex…"
+          },
+          {
+            "name": "mutateReport",
+            "kind": "const",
+            "line": 86,
+            "end_line": 86,
+            "signature": "const mutateReport = null"
+          },
+          {
+            "name": "id",
+            "kind": "const",
+            "line": 97,
+            "end_line": 97,
+            "signature": "const id = c.id ?? '?'"
+          },
+          {
+            "name": "name",
+            "kind": "const",
+            "line": 98,
+            "end_line": 98,
+            "signature": "const name = c.name ?? ''"
+          },
+          {
+            "name": "fn",
+            "kind": "const",
+            "line": 109,
+            "end_line": 109,
+            "signature": "const fn = new Function('dsl', 'nodes', 'paths', 'fs', 'path', 'root…"
+          },
+          {
+            "name": "ok",
+            "kind": "const",
+            "line": 110,
+            "end_line": 110,
+            "signature": "const ok = Boolean(fn(dsl, nodes, paths, fs, path, ROOT, mutateRepor…"
+          },
+          {
+            "name": "count",
+            "kind": "const",
+            "line": 117,
+            "end_line": 117,
+            "signature": "const count = (v) => results.filter((r) => r.verdict === v).length"
+          },
+          {
+            "name": "mark",
+            "kind": "const",
+            "line": 124,
+            "end_line": 124,
+            "signature": "const mark = r.verdict === 'pass' ? '✓' : r.verdict === 'fail' ? '✗' :…"
+          }
+        ],
+        "lines": 132,
+        "layer": "core"
+      },
+      {
+        "id": "file_scripts_gen-contracts_mjs",
+        "path": "scripts/gen-contracts.mjs",
+        "responsibility": "gen-contracts —— 从设计侧的 decision.expectations 生成符号级契约。",
+        "symbols": [
+          {
+            "name": "DESIGN",
+            "kind": "const",
+            "line": 34,
+            "end_line": 34,
+            "signature": "const DESIGN = '.agent-io/design/task-system-plan.dsl.json'"
+          },
+          {
+            "name": "OUT_DIR",
+            "kind": "const",
+            "line": 36,
+            "end_line": 36,
+            "signature": "const OUT_DIR = designDbDir('.')"
+          },
+          {
+            "name": "DB",
+            "kind": "const",
+            "line": 37,
+            "end_line": 37,
+            "signature": "const DB = path.join('.agent-io', 'cache.db')"
+          },
+          {
+            "name": "dry",
+            "kind": "const",
+            "line": 38,
+            "end_line": 38,
+            "signature": "const dry = process.argv.includes('--dry')"
+          },
+          {
+            "name": "design",
+            "kind": "const",
+            "line": 40,
+            "end_line": 40,
+            "signature": "const design = JSON.parse(fs.readFileSync(DESIGN, 'utf8'))"
+          },
+          {
+            "name": "nodes",
+            "kind": "const",
+            "line": 41,
+            "end_line": 41,
+            "signature": "const nodes = design.geometry?.nodes ?? []"
+          },
+          {
+            "name": "db",
+            "kind": "const",
+            "line": 44,
+            "end_line": 44,
+            "signature": "const db = new DatabaseSync(DB, { readOnly: true })"
+          },
+          {
+            "name": "kindOf",
+            "kind": "const",
+            "line": 45,
+            "end_line": 48,
+            "signature": "const kindOf = (filePath, symbol) => { const r = db.prepare('SELECT kind…"
+          },
+          {
+            "name": "TYPE_KINDS",
+            "kind": "const",
+            "line": 50,
+            "end_line": 50,
+            "signature": "const TYPE_KINDS = new Set(['interface', 'type', 'enum', 'class'])"
+          },
+          {
+            "name": "rel",
+            "kind": "const",
+            "line": 52,
+            "end_line": 52,
+            "signature": "const rel = (p) => '../../' + p.replace(/^src\\//, 'src/').replace(/\\.…"
+          },
+          {
+            "name": "slug",
+            "kind": "const",
+            "line": 53,
+            "end_line": 53,
+            "signature": "const slug = (id) => id.replace(/^file_src_/, '').replace(/\\.ts$/, '')…"
+          },
+          {
+            "name": "written",
+            "kind": "const",
+            "line": 57,
+            "end_line": 57,
+            "signature": "const written = 0"
+          },
+          {
+            "name": "symbols",
+            "kind": "const",
+            "line": 58,
+            "end_line": 58,
+            "signature": "const symbols = 0"
+          },
+          {
+            "name": "unknownKind",
+            "kind": "const",
+            "line": 59,
+            "end_line": 59,
+            "signature": "const unknownKind = 0"
+          },
+          {
+            "name": "exps",
+            "kind": "const",
+            "line": 62,
+            "end_line": 62,
+            "signature": "const exps = (n.decision?.expectations ?? []).filter((e) => e.kind ===…"
+          },
+          {
+            "name": "lines",
+            "kind": "const",
+            "line": 65,
+            "end_line": 76,
+            "signature": "const lines = [ '/**', ` * ★★★ 符号级契约（**自动生成**，勿手改）—— ${n.id}`, ' *', ` …"
+          },
+          {
+            "name": "k",
+            "kind": "const",
+            "line": 79,
+            "end_line": 79,
+            "signature": "const k = kindOf(e.path, e.symbol)"
+          },
+          {
+            "name": "useTypeof",
+            "kind": "const",
+            "line": 81,
+            "end_line": 81,
+            "signature": "const useTypeof = !(k && TYPE_KINDS.has(k))"
+          },
+          {
+            "name": "f",
+            "kind": "const",
+            "line": 90,
+            "end_line": 90,
+            "signature": "const f = path.join(OUT_DIR, `${slug(n.id)}.contract.ts`)"
+          }
+        ],
+        "lines": 97,
+        "layer": "core"
+      },
+      {
+        "id": "file_scripts_gen-db-check_mjs",
+        "path": "scripts/gen-db-check.mjs",
+        "responsibility": "gen-db-check —— 「设计要求进没进设计 DB」的门（第 6 逆门）。",
+        "symbols": [
+          {
+            "name": "r",
+            "kind": "const",
+            "line": 24,
+            "end_line": 24,
+            "signature": "const r = checkDesignDbStructure('.')"
+          },
+          {
+            "name": "bad",
+            "kind": "const",
+            "line": 25,
+            "end_line": 25,
+            "signature": "const bad = r.problems.length + r.conflicts.length + r.stale.length +…"
+          }
+        ],
+        "lines": 43,
+        "layer": "core"
+      },
+      {
+        "id": "file_scripts_impl-fixture_mjs",
+        "path": "scripts/impl-fixture.mjs",
+        "responsibility": "impl-fixture —— cardStanding 等判据实现的行为夹具（实现层变异的先决条件）",
+        "symbols": [
+          {
+            "name": "ROOT",
+            "kind": "const",
+            "line": 27,
+            "end_line": 27,
+            "signature": "const ROOT = process.cwd()"
+          },
+          {
+            "name": "mod",
+            "kind": "const",
+            "line": 28,
+            "end_line": 28,
+            "signature": "const mod = await import(pathToFileURL(path.join(ROOT, 'dist/src/doma…"
+          },
+          {
+            "name": "dsl",
+            "kind": "const",
+            "line": 36,
+            "end_line": 36,
+            "signature": "const dsl = JSON.parse(fs.readFileSync(path.join(ROOT, '.agent-io/des…"
+          },
+          {
+            "name": "nodes",
+            "kind": "const",
+            "line": 37,
+            "end_line": 37,
+            "signature": "const nodes = dsl.geometry.nodes"
+          },
+          {
+            "name": "HANDLERS",
+            "kind": "const",
+            "line": 38,
+            "end_line": 38,
+            "signature": "const HANDLERS = 'src/application/design/handlers.ts'"
+          },
+          {
+            "name": "realDep",
+            "kind": "const",
+            "line": 47,
+            "end_line": 47,
+            "signature": "const realDep = fileFacts(ROOT, HANDLERS).deps[0]"
+          },
+          {
+            "name": "card",
+            "kind": "const",
+            "line": 49,
+            "end_line": 54,
+            "signature": "const card = (exps, id = 'file_src_application_design_handlers_ts') =>…"
+          },
+          {
+            "name": "SELF",
+            "kind": "const",
+            "line": 57,
+            "end_line": 57,
+            "signature": "const SELF = 'src/self_probe.ts'"
+          },
+          {
+            "name": "DEP_DONE",
+            "kind": "const",
+            "line": 58,
+            "end_line": 58,
+            "signature": "const DEP_DONE = 'src/dep_done_probe.ts'"
+          },
+          {
+            "name": "DEP_PENDING",
+            "kind": "const",
+            "line": 59,
+            "end_line": 59,
+            "signature": "const DEP_PENDING = 'src/dep_pending_probe.ts'"
+          },
+          {
+            "name": "stageNodes",
+            "kind": "const",
+            "line": 60,
+            "end_line": 64,
+            "signature": "const stageNodes = [ { id: 'file_self_probe', path: SELF, task: { state: 'cl…"
+          },
+          {
+            "name": "redCard",
+            "kind": "const",
+            "line": 65,
+            "end_line": 65,
+            "signature": "const redCard = (targetPath) => card([{ kind: 'file-exists', path: target…"
+          },
+          {
+            "name": "CASES",
+            "kind": "const",
+            "line": 67,
+            "end_line": 85,
+            "signature": "const CASES = [ { name: 'F1 后态全过 + 前态无红', card: card([{ kind: 'file-exi…"
+          },
+          {
+            "name": "pass",
+            "kind": "const",
+            "line": 87,
+            "end_line": 87,
+            "signature": "const pass = 0"
+          },
+          {
+            "name": "fails",
+            "kind": "const",
+            "line": 88,
+            "end_line": 88,
+            "signature": "const fails = []"
+          },
+          {
+            "name": "v",
+            "kind": "const",
+            "line": 90,
+            "end_line": 90,
+            "signature": "const v = await cardStanding(c.card, { root: ROOT, nodes: c.nodes ?…"
+          },
+          {
+            "name": "ok",
+            "kind": "const",
+            "line": 91,
+            "end_line": 91,
+            "signature": "const ok = v.standing === c.expect"
+          },
+          {
+            "name": "claimableCases",
+            "kind": "const",
+            "line": 98,
+            "end_line": 104,
+            "signature": "const claimableCases = [ ['work', true], ['violated', true], ['satisfied', false…"
+          },
+          {
+            "name": "got",
+            "kind": "const",
+            "line": 106,
+            "end_line": 106,
+            "signature": "const got = isClaimable(standing)"
+          },
+          {
+            "name": "ok",
+            "kind": "const",
+            "line": 107,
+            "end_line": 107,
+            "signature": "const ok = got === expect"
+          },
+          {
+            "name": "transCases",
+            "kind": "const",
+            "line": 114,
+            "end_line": 118,
+            "signature": "const transCases = [ ['done', ['t_reopen']], ['void', ['t_relaunch']], ['can…"
+          },
+          {
+            "name": "got",
+            "kind": "const",
+            "line": 120,
+            "end_line": 120,
+            "signature": "const got = applicableTransitions(from).map((t) => t.id).sort()"
+          },
+          {
+            "name": "ok",
+            "kind": "const",
+            "line": 121,
+            "end_line": 121,
+            "signature": "const ok = JSON.stringify(got) === JSON.stringify([...expectIds].sor…"
+          },
+          {
+            "name": "NOW",
+            "kind": "const",
+            "line": 128,
+            "end_line": 128,
+            "signature": "const NOW = Date.parse('2026-10-20T08:00:00.000Z')"
+          },
+          {
+            "name": "TTL",
+            "kind": "const",
+            "line": 129,
+            "end_line": 129,
+            "signature": "const TTL = 60_000"
+          },
+          {
+            "name": "lease",
+            "kind": "const",
+            "line": 130,
+            "end_line": 130,
+            "signature": "const lease = (state, claimedAt) => ({ id: 'file_x', summary: '夹具', exp…"
+          },
+          {
+            "name": "old",
+            "kind": "const",
+            "line": 131,
+            "end_line": 131,
+            "signature": "const old = new Date(NOW - 5 * 60_000).toISOString()"
+          },
+          {
+            "name": "fresh",
+            "kind": "const",
+            "line": 132,
+            "end_line": 132,
+            "signature": "const fresh = new Date(NOW - 10_000).toISOString()"
+          },
+          {
+            "name": "leaseCases",
+            "kind": "const",
+            "line": 133,
+            "end_line": 140,
+            "signature": "const leaseCases = [ ['claimed + 超时 ⇒ 释放', [lease('claimed', old)], 1], ['cl…"
+          },
+          {
+            "name": "got",
+            "kind": "const",
+            "line": 142,
+            "end_line": 142,
+            "signature": "const got = releaseIfExpired(cards, NOW, TTL).length"
+          },
+          {
+            "name": "ok",
+            "kind": "const",
+            "line": 143,
+            "end_line": 143,
+            "signature": "const ok = got === expect"
+          },
+          {
+            "name": "satCases",
+            "kind": "const",
+            "line": 150,
+            "end_line": 153,
+            "signature": "const satCases = [ ['后态全过 ⇒ satisfied:true', card([{ kind: 'file-exists', …"
+          },
+          {
+            "name": "v",
+            "kind": "const",
+            "line": 155,
+            "end_line": 155,
+            "signature": "const v = await isSatisfied(c, { root: ROOT, nodes, judge: judgeExp…"
+          },
+          {
+            "name": "ok",
+            "kind": "const",
+            "line": 156,
+            "end_line": 156,
+            "signature": "const ok = v.satisfied === expect"
+          },
+          {
+            "name": "total",
+            "kind": "const",
+            "line": 162,
+            "end_line": 162,
+            "signature": "const total = CASES.length + claimableCases.length + transCases.length …"
+          }
+        ],
+        "lines": 168,
+        "layer": "core"
+      },
+      {
+        "id": "file_scripts_mutate_mjs",
+        "path": "scripts/mutate.mjs",
+        "responsibility": "mutate.mjs —— 对「契约」做自动突变（★ 用户 2026-10-19：\"自动做突变测试\"）",
+        "symbols": [
+          {
+            "name": "label",
+            "kind": "const",
+            "line": 36,
+            "end_line": 43,
+            "signature": "const label = (v) => { try { const s = JSON.stringify(v); return s === …"
+          },
+          {
+            "name": "isCli",
+            "kind": "const",
+            "line": 218,
+            "end_line": 224,
+            "signature": "const isCli = (() => { try { return process.argv[1] && pathToFileURL(pr…"
+          },
+          {
+            "name": "args",
+            "kind": "const",
+            "line": 227,
+            "end_line": 227,
+            "signature": "const args = process.argv.slice(2)"
+          },
+          {
+            "name": "argOf",
+            "kind": "const",
+            "line": 228,
+            "end_line": 231,
+            "signature": "const argOf = (n) => { const i = args.indexOf(n); return i >= 0 && i + …"
+          },
+          {
+            "name": "FEATURE",
+            "kind": "const",
+            "line": 232,
+            "end_line": 232,
+            "signature": "const FEATURE = argOf('--feature') ?? 'task-system-plan'"
+          },
+          {
+            "name": "JSON_OUT",
+            "kind": "const",
+            "line": 233,
+            "end_line": 233,
+            "signature": "const JSON_OUT = args.includes('--json')"
+          },
+          {
+            "name": "rep",
+            "kind": "const",
+            "line": 234,
+            "end_line": 234,
+            "signature": "const rep = await runMutate(FEATURE)"
+          }
+        ],
+        "lines": 257,
+        "layer": "core"
+      },
+      {
+        "id": "file_scripts_patrol_mjs",
+        "path": "scripts/patrol.mjs",
+        "responsibility": "patrol —— 巡检的运行时入口（A1 的接法）。",
+        "symbols": [
+          {
+            "name": "argv",
+            "kind": "const",
+            "line": 28,
+            "end_line": 28,
+            "signature": "const argv = process.argv.slice(2)"
+          },
+          {
+            "name": "arg",
+            "kind": "const",
+            "line": 29,
+            "end_line": 32,
+            "signature": "const arg = (name, dflt) => { const i = argv.indexOf(`--${name}`); re…"
+          },
+          {
+            "name": "feature",
+            "kind": "const",
+            "line": 33,
+            "end_line": 33,
+            "signature": "const feature = arg('feature', 'task-system-plan')"
+          },
+          {
+            "name": "ttlHours",
+            "kind": "const",
+            "line": 34,
+            "end_line": 34,
+            "signature": "const ttlHours = Number(arg('ttl-hours', '24'))"
+          },
+          {
+            "name": "asJson",
+            "kind": "const",
+            "line": 35,
+            "end_line": 35,
+            "signature": "const asJson = argv.includes('--json')"
+          },
+          {
+            "name": "root",
+            "kind": "const",
+            "line": 36,
+            "end_line": 36,
+            "signature": "const root = process.cwd()"
+          },
+          {
+            "name": "target",
+            "kind": "const",
+            "line": 39,
+            "end_line": 39,
+            "signature": "const target = path.join(root, 'dist', 'src', 'application', 'patrol', '…"
+          },
+          {
+            "name": "report",
+            "kind": "const",
+            "line": 42,
+            "end_line": 46,
+            "signature": "const report = await patrolDrift(feature, { root, now_ms: Date.now(), tt…"
+          },
+          {
+            "name": "unavailable",
+            "kind": "const",
+            "line": 55,
+            "end_line": 55,
+            "signature": "const unavailable = report.state === 'unavailable' || report.unavailable"
+          },
+          {
+            "name": "keys",
+            "kind": "const",
+            "line": 62,
+            "end_line": 62,
+            "signature": "const keys = Object.keys(report).filter((k) => k !== 'feature' && k !=…"
+          },
+          {
+            "name": "v",
+            "kind": "const",
+            "line": 67,
+            "end_line": 67,
+            "signature": "const v = report[k]"
+          }
+        ],
+        "lines": 72,
+        "layer": "core"
+      },
+      {
+        "id": "file_src_application_claim_conflict_ts",
+        "path": "src/application/claim_conflict.ts",
+        "responsibility": "claim_conflict.ts —— 「我要碰的东西，是不是已经被别的卡占了」：领卡时的冲突检测。",
+        "symbols": [
+          {
+            "name": "MAX_CARD_SYMBOLS",
+            "kind": "const",
+            "line": 74,
+            "end_line": 74,
+            "signature": "const MAX_CARD_SYMBOLS = 200"
+          },
+          {
+            "name": "MAX_CARD_FILES",
+            "kind": "const",
+            "line": 77,
+            "end_line": 77,
+            "signature": "const MAX_CARD_FILES = 100"
+          },
+          {
+            "name": "DeclaredReadSet",
+            "kind": "interface",
+            "line": 80,
+            "end_line": 85,
+            "signature": "DeclaredReadSet()"
+          },
+          {
+            "name": "ClaimReadSetInput",
+            "kind": "interface",
+            "line": 134,
+            "end_line": 145,
+            "signature": "ClaimReadSetInput()"
+          },
+          {
+            "name": "ClaimReadSetResult",
+            "kind": "interface",
+            "line": 147,
+            "end_line": 151,
+            "signature": "ClaimReadSetResult()"
+          },
+          {
+            "name": "ActiveClaim",
+            "kind": "interface",
+            "line": 301,
+            "end_line": 305,
+            "signature": "ActiveClaim()"
+          },
+          {
+            "name": "UncheckedClaim",
+            "kind": "interface",
+            "line": 308,
+            "end_line": 311,
+            "signature": "UncheckedClaim()"
+          },
+          {
+            "name": "ClaimConflictHit",
+            "kind": "interface",
+            "line": 313,
+            "end_line": 320,
+            "signature": "ClaimConflictHit()"
+          },
+          {
+            "name": "ClaimConflictReport",
+            "kind": "interface",
+            "line": 322,
+            "end_line": 331,
+            "signature": "ClaimConflictReport()"
+          },
+          {
+            "name": "shortFp",
+            "kind": "const",
+            "line": 410,
+            "end_line": 410,
+            "signature": "const shortFp = (fp: string): string => (fp ? fp.slice(0, 12) : '（此刻不存在）')"
+          }
+        ],
+        "lines": 471,
+        "layer": "core"
+      },
+      {
+        "id": "file_src_application_design_board_pool_ts",
+        "path": "src/application/design/board/pool.ts",
+        "responsibility": "pool.ts —— 任务池的读端（board_pool 节点）。",
+        "symbols": [
+          {
+            "name": "ALL_STATES",
+            "kind": "const",
+            "line": 24,
+            "end_line": 24,
+            "signature": "const ALL_STATES = ['candidate', 'claimed', 'done', 'void']"
+          },
+          {
+            "name": "BoardView",
+            "kind": "interface",
+            "line": 31,
+            "end_line": 55,
+            "signature": "BoardView()"
+          }
+        ],
+        "lines": 84,
+        "layer": "core"
+      },
+      {
+        "id": "file_src_application_design_board_todo_journal_ts",
+        "path": "src/application/design/board/todo_journal.ts",
+        "responsibility": "todo_journal.ts —— todo 物理删除的墓碑日志（<feature>.journal.jsonl，append-only）。",
+        "symbols": [
+          {
+            "name": "LF",
+            "kind": "const",
+            "line": 34,
+            "end_line": 34,
+            "signature": "const LF = String.fromCharCode(10)"
+          },
+          {
+            "name": "TodoTombstone",
+            "kind": "interface",
+            "line": 42,
+            "end_line": 53,
+            "signature": "TodoTombstone()"
+          }
+        ],
+        "lines": 96,
+        "layer": "core"
+      },
+      {
+        "id": "file_src_application_read_set_ts",
+        "path": "src/application/read_set.ts",
+        "responsibility": "read_set —— 「我读过的东西，是不是已经被别人改了」：写前假设检定（★ 只报，不拦）",
+        "symbols": [
+          {
+            "name": "ReadSymbolFp",
+            "kind": "interface",
+            "line": 52,
+            "end_line": 59,
+            "signature": "ReadSymbolFp()"
+          },
+          {
+            "name": "ReadSetEntry",
+            "kind": "interface",
+            "line": 62,
+            "end_line": 83,
+            "signature": "ReadSetEntry()"
+          },
+          {
+            "name": "StaleAssumption",
+            "kind": "interface",
+            "line": 86,
+            "end_line": 102,
+            "signature": "StaleAssumption()"
+          },
+          {
+            "name": "AssumptionCheck",
+            "kind": "interface",
+            "line": 105,
+            "end_line": 115,
+            "signature": "AssumptionCheck()"
+          },
+          {
+            "name": "AssumptionTarget",
+            "kind": "interface",
+            "line": 118,
+            "end_line": 121,
+            "signature": "AssumptionTarget()"
+          },
+          {
+            "name": "STORE",
+            "kind": "const",
+            "line": 146,
+            "end_line": 146,
+            "signature": "const STORE = new Map<string, Map<string, ReadSetEntry>>()"
+          },
+          {
+            "name": "ANONYMOUS_ACTOR",
+            "kind": "const",
+            "line": 149,
+            "end_line": 149,
+            "signature": "const ANONYMOUS_ACTOR = '(anonymous)'"
+          },
+          {
+            "name": "MAX_FILES_PER_BUCKET",
+            "kind": "const",
+            "line": 152,
+            "end_line": 152,
+            "signature": "const MAX_FILES_PER_BUCKET = 200"
+          },
+          {
+            "name": "READ_SET_TTL_MS",
+            "kind": "const",
+            "line": 155,
+            "end_line": 155,
+            "signature": "const READ_SET_TTL_MS = 2 * 60 * 60 * 1000"
+          },
+          {
+            "name": "MAX_DEPS_PER_READ",
+            "kind": "const",
+            "line": 158,
+            "end_line": 158,
+            "signature": "const MAX_DEPS_PER_READ = 40"
+          },
+          {
+            "name": "MAX_STALE_REPORTED",
+            "kind": "const",
+            "line": 161,
+            "end_line": 161,
+            "signature": "const MAX_STALE_REPORTED = 20"
+          },
+          {
+            "name": "bucketKey",
+            "kind": "const",
+            "line": 163,
+            "end_line": 163,
+            "signature": "const bucketKey = (project: string, actor: string): string => `${project}\\u…"
+          },
+          {
+            "name": "FileFacts",
+            "kind": "interface",
+            "line": 192,
+            "end_line": 200,
+            "signature": "FileFacts()"
+          },
+          {
+            "name": "FactsCache",
+            "kind": "type",
+            "line": 204,
+            "end_line": 204,
+            "signature": "FactsCache()"
+          },
+          {
+            "name": "RecordReadInput",
+            "kind": "interface",
+            "line": 377,
+            "end_line": 388,
+            "signature": "RecordReadInput()"
+          },
+          {
+            "name": "RecordReadResult",
+            "kind": "interface",
+            "line": 390,
+            "end_line": 395,
+            "signature": "RecordReadResult()"
+          },
+          {
+            "name": "shortFp",
+            "kind": "const",
+            "line": 532,
+            "end_line": 532,
+            "signature": "const shortFp = (fp: string): string => fp.slice(0, 12)"
+          }
+        ],
+        "lines": 754,
+        "layer": "core"
+      },
+      {
+        "id": "file_src_application_refactor_gate_note_ts",
+        "path": "src/application/refactor/gate_note.ts",
+        "responsibility": "gate_note —— 任务闸放行读数的唯一带出口（2026-10-20）。",
+        "symbols": [
+          {
+            "name": "GateNoteCarrier",
+            "kind": "interface",
+            "line": 23,
+            "end_line": 26,
+            "signature": "GateNoteCarrier()"
+          },
+          {
+            "name": "GateNoteSource",
+            "kind": "type",
+            "line": 34,
+            "end_line": 34,
+            "signature": "GateNoteSource()"
+          }
+        ],
+        "lines": 63,
+        "layer": "api"
+      },
+      {
+        "id": "file_src_application_source_writer_ts",
+        "path": "src/application/source_writer.ts",
+        "responsibility": "source_writer —— 改用户源码的唯一原语（写闸 / 快照 / 自写登记的唯一组合点）",
+        "symbols": [
+          {
+            "name": "SourceWriteCtx",
+            "kind": "interface",
+            "line": 61,
+            "end_line": 76,
+            "signature": "SourceWriteCtx()"
+          },
+          {
+            "name": "SourceWriteReceipt",
+            "kind": "interface",
+            "line": 84,
+            "end_line": 99,
+            "signature": "SourceWriteReceipt()"
+          },
+          {
+            "name": "SourceWriteTxn",
+            "kind": "interface",
+            "line": 104,
+            "end_line": 118,
+            "signature": "SourceWriteTxn()"
+          }
+        ],
+        "lines": 229,
+        "layer": "core"
+      },
+      {
+        "id": "file_src_domain_actor_spec_ts",
+        "path": "src/domain/actor_spec.ts",
+        "responsibility": "actor_spec —— 什么算一个合法身份（唯一定义处）",
+        "symbols": [
+          {
+            "name": "ActorKind",
+            "kind": "type",
+            "line": 50,
+            "end_line": 50,
+            "signature": "ActorKind()"
+          },
+          {
+            "name": "ACTOR_KINDS",
+            "kind": "const",
+            "line": 51,
+            "end_line": 51,
+            "signature": "const ACTOR_KINDS = ['human', 'agent', 'subagent'] as const"
+          },
+          {
+            "name": "ACTOR_NAME_MAX",
+            "kind": "const",
+            "line": 54,
+            "end_line": 54,
+            "signature": "const ACTOR_NAME_MAX = 40"
+          },
+          {
+            "name": "ACTOR_NAME_RE",
+            "kind": "const",
+            "line": 57,
+            "end_line": 57,
+            "signature": "const ACTOR_NAME_RE = /^(?=.*[a-z0-9])[a-z0-9_-]{1,40}$/"
+          },
+          {
+            "name": "ACTOR_RE",
+            "kind": "const",
+            "line": 60,
+            "end_line": 60,
+            "signature": "const ACTOR_RE = /^(human|agent|subagent):(?=.*[a-z0-9])[a-z0-9_-]{1,40}$/"
+          },
+          {
+            "name": "LEGACY_ACTOR_KIND",
+            "kind": "const",
+            "line": 63,
+            "end_line": 63,
+            "signature": "const LEGACY_ACTOR_KIND = 'agent'"
+          },
+          {
+            "name": "ActorSource",
+            "kind": "type",
+            "line": 66,
+            "end_line": 66,
+            "signature": "ActorSource()"
+          },
+          {
+            "name": "ActorAdmission",
+            "kind": "interface",
+            "line": 69,
+            "end_line": 78,
+            "signature": "ActorAdmission()"
+          },
+          {
+            "name": "KIND_LIST",
+            "kind": "const",
+            "line": 146,
+            "end_line": 146,
+            "signature": "const KIND_LIST = ACTOR_KINDS.join(' / ')"
+          },
+          {
+            "name": "SAMPLES",
+            "kind": "const",
+            "line": 149,
+            "end_line": 149,
+            "signature": "const SAMPLES = `human:admin · agent:workbuddy · subagent:a7`"
+          }
+        ],
+        "lines": 227,
+        "layer": "service"
+      },
+      {
+        "id": "file_src_domain_judge_port_ts",
+        "path": "src/domain/judge_port.ts",
+        "responsibility": "judge_port.ts —— 「判定器」的端口（domain 侧唯一的一份契约，2026-10-21 · D-judge-port）。",
+        "symbols": [
+          {
+            "name": "Verdict",
+            "kind": "type",
+            "line": 42,
+            "end_line": 42,
+            "signature": "Verdict()"
+          },
+          {
+            "name": "JudgeItem",
+            "kind": "interface",
+            "line": 45,
+            "end_line": 49,
+            "signature": "JudgeItem()"
+          },
+          {
+            "name": "ExpectationItem",
+            "kind": "interface",
+            "line": 52,
+            "end_line": 56,
+            "signature": "ExpectationItem()"
+          },
+          {
+            "name": "ExpectationConflict",
+            "kind": "interface",
+            "line": 63,
+            "end_line": 68,
+            "signature": "ExpectationConflict()"
+          },
+          {
+            "name": "ExpectationsReport",
+            "kind": "interface",
+            "line": 78,
+            "end_line": 87,
+            "signature": "ExpectationsReport()"
+          },
+          {
+            "name": "Judge",
+            "kind": "type",
+            "line": 100,
+            "end_line": 100,
+            "signature": "Judge()"
+          }
+        ],
+        "lines": 100,
+        "layer": "service"
+      },
+      {
+        "id": "file_src_domain_todo_chain_ts",
+        "path": "src/domain/todo_chain.ts",
+        "responsibility": "todo_chain.ts —— 跑环继任链（todo 的 follows）：怎么读、怎么判、怎么显示。",
+        "symbols": [
+          {
+            "name": "ChainCard",
+            "kind": "type",
+            "line": 40,
+            "end_line": 41,
+            "signature": "ChainCard()"
+          },
+          {
+            "name": "ChainPlace",
+            "kind": "interface",
+            "line": 47,
+            "end_line": 67,
+            "signature": "ChainPlace()"
+          },
+          {
+            "name": "TodoChains",
+            "kind": "interface",
+            "line": 70,
+            "end_line": 79,
+            "signature": "TodoChains()"
+          }
+        ],
+        "lines": 296,
+        "layer": "service"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_book_ts",
+        "path": "src/infrastructure/authoring/translate/book.ts",
+        "responsibility": "book —— 翻译册的生成器（从 cache.db 派生 symbols / shapes，types / atoms 是人写的，不覆盖）",
+        "symbols": [
+          {
+            "name": "BookSymbol",
+            "kind": "interface",
+            "line": 35,
+            "end_line": 42,
+            "signature": "BookSymbol()"
+          },
+          {
+            "name": "BookShape",
+            "kind": "interface",
+            "line": 44,
+            "end_line": 53,
+            "signature": "BookShape()"
+          },
+          {
+            "name": "TranslateBook",
+            "kind": "interface",
+            "line": 56,
+            "end_line": 68,
+            "signature": "TranslateBook()"
+          },
+          {
+            "name": "BookGenOptions",
+            "kind": "interface",
+            "line": 70,
+            "end_line": 80,
+            "signature": "BookGenOptions()"
+          },
+          {
+            "name": "BookGenStats",
+            "kind": "interface",
+            "line": 82,
+            "end_line": 95,
+            "signature": "BookGenStats()"
+          },
+          {
+            "name": "NodeRow",
+            "kind": "interface",
+            "line": 98,
+            "end_line": 110,
+            "signature": "NodeRow()"
+          },
+          {
+            "name": "GO_INITIALISMS",
+            "kind": "const",
+            "line": 115,
+            "end_line": 119,
+            "signature": "const GO_INITIALISMS = new Set([ 'dsl', 'api', 'url', 'uri', 'http', 'https', 'j…"
+          },
+          {
+            "name": "NOMINAL",
+            "kind": "const",
+            "line": 122,
+            "end_line": 122,
+            "signature": "const NOMINAL = new Set(['string', 'number', 'boolean', 'any', 'unknown',…"
+          },
+          {
+            "name": "CONTAINER",
+            "kind": "const",
+            "line": 124,
+            "end_line": 129,
+            "signature": "const CONTAINER = new Set([ 'Promise', 'Array', 'ReadonlyArray', 'Record', …"
+          },
+          {
+            "name": "NULLISH",
+            "kind": "const",
+            "line": 131,
+            "end_line": 131,
+            "signature": "const NULLISH = new Set(['null', 'undefined', 'void', 'never', 'true', 'f…"
+          },
+          {
+            "name": "AUTO_TAG",
+            "kind": "const",
+            "line": 134,
+            "end_line": 134,
+            "signature": "const AUTO_TAG = '[auto]'"
+          },
+          {
+            "name": "STICKY_STATES",
+            "kind": "const",
+            "line": 136,
+            "end_line": 136,
+            "signature": "const STICKY_STATES = new Set(['translated', 'verified', 'diff', 'stubbed'])"
+          },
+          {
+            "name": "stripComments",
+            "kind": "const",
+            "line": 168,
+            "end_line": 169,
+            "signature": "const stripComments = (s: string): string => s.replace(/\\/\\*[\\s\\S]*?\\*\\//g, ' '…"
+          },
+          {
+            "name": "stripLiterals",
+            "kind": "const",
+            "line": 170,
+            "end_line": 170,
+            "signature": "const stripLiterals = (s: string): string => s.replace(/'[^']*'|\"[^\"]*\"|`[^`]*`…"
+          },
+          {
+            "name": "ShapeCat",
+            "kind": "interface",
+            "line": 222,
+            "end_line": 227,
+            "signature": "ShapeCat()"
+          },
+          {
+            "name": "SHAPE_CATS",
+            "kind": "const",
+            "line": 229,
+            "end_line": 248,
+            "signature": "const SHAPE_CATS = [ { id: 'func', label: '(p: T) => U（函数类型）', to: { shape: …"
+          }
+        ],
+        "lines": 552,
+        "layer": "core"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_go_tests_ts",
+        "path": "src/infrastructure/authoring/translate/go_tests.ts",
+        "responsibility": "go_tests —— 仓库自带 Go 测试的发现与表驱动用例抽取（\"有测试 ⇒ 跑同一批输入\"的输入端）",
+        "symbols": [
+          {
+            "name": "MAX_CASES",
+            "kind": "const",
+            "line": 21,
+            "end_line": 21,
+            "signature": "const MAX_CASES = 50"
+          },
+          {
+            "name": "GoTestRef",
+            "kind": "interface",
+            "line": 24,
+            "end_line": 30,
+            "signature": "GoTestRef()"
+          },
+          {
+            "name": "HarvestResult",
+            "kind": "interface",
+            "line": 32,
+            "end_line": 36,
+            "signature": "HarvestResult()"
+          }
+        ],
+        "lines": 304,
+        "layer": "core"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_receipt_ts",
+        "path": "src/infrastructure/authoring/translate/receipt.ts",
+        "responsibility": "receipt —— translate_go_ts 的回执：已知 / 未知 / 验证 三分，互不混淆",
+        "symbols": [
+          {
+            "name": "KnownKind",
+            "kind": "type",
+            "line": 25,
+            "end_line": 25,
+            "signature": "KnownKind()"
+          },
+          {
+            "name": "KnownFact",
+            "kind": "interface",
+            "line": 27,
+            "end_line": 35,
+            "signature": "KnownFact()"
+          },
+          {
+            "name": "UnknownKind",
+            "kind": "type",
+            "line": 41,
+            "end_line": 41,
+            "signature": "UnknownKind()"
+          },
+          {
+            "name": "UnknownBasis",
+            "kind": "type",
+            "line": 44,
+            "end_line": 44,
+            "signature": "UnknownBasis()"
+          },
+          {
+            "name": "UnknownItem",
+            "kind": "interface",
+            "line": 46,
+            "end_line": 57,
+            "signature": "UnknownItem()"
+          },
+          {
+            "name": "VerifyStatus",
+            "kind": "type",
+            "line": 63,
+            "end_line": 63,
+            "signature": "VerifyStatus()"
+          },
+          {
+            "name": "CaseSource",
+            "kind": "type",
+            "line": 66,
+            "end_line": 66,
+            "signature": "CaseSource()"
+          },
+          {
+            "name": "CaseResult",
+            "kind": "interface",
+            "line": 68,
+            "end_line": 75,
+            "signature": "CaseResult()"
+          },
+          {
+            "name": "UnitVerification",
+            "kind": "interface",
+            "line": 77,
+            "end_line": 88,
+            "signature": "UnitVerification()"
+          },
+          {
+            "name": "VerificationReceipt",
+            "kind": "interface",
+            "line": 90,
+            "end_line": 98,
+            "signature": "VerificationReceipt()"
+          },
+          {
+            "name": "Receipt",
+            "kind": "interface",
+            "line": 100,
+            "end_line": 104,
+            "signature": "Receipt()"
+          },
+          {
+            "name": "DISCIPLINE",
+            "kind": "const",
+            "line": 143,
+            "end_line": 143,
+            "signature": "const DISCIPLINE = new Set(DEFAULT_CONSTRAINTS)"
+          },
+          {
+            "name": "Hint",
+            "kind": "interface",
+            "line": 145,
+            "end_line": 150,
+            "signature": "Hint()"
+          },
+          {
+            "name": "UnknownsInput",
+            "kind": "interface",
+            "line": 192,
+            "end_line": 204,
+            "signature": "UnknownsInput()"
+          },
+          {
+            "name": "VerifyUnitInput",
+            "kind": "interface",
+            "line": 259,
+            "end_line": 263,
+            "signature": "VerifyUnitInput()"
+          },
+          {
+            "name": "VerifyOptions",
+            "kind": "interface",
+            "line": 265,
+            "end_line": 276,
+            "signature": "VerifyOptions()"
+          },
+          {
+            "name": "MethodInfo",
+            "kind": "interface",
+            "line": 319,
+            "end_line": 324,
+            "signature": "MethodInfo()"
+          }
+        ],
+        "lines": 516,
+        "layer": "core"
+      },
+      {
+        "id": "file_src_infrastructure_parse_symbol_docstring_ts",
+        "path": "src/infrastructure/parse/symbol_docstring.ts",
+        "responsibility": "symbol_docstring —— 「文档注释」的 AST 提取（nodes.docstring）",
+        "symbols": [
+          {
+            "name": "DocSpec",
+            "kind": "interface",
+            "line": 48,
+            "end_line": 81,
+            "signature": "DocSpec()"
+          },
+          {
+            "name": "DOCSTRING_SPECS",
+            "kind": "const",
+            "line": 84,
+            "end_line": 145,
+            "signature": "const DOCSTRING_SPECS = { // ── Python ──────────────────────────────────────────…"
+          }
+        ],
+        "lines": 297,
+        "layer": "core"
+      },
+      {
+        "id": "file_src_infrastructure_parse_symbol_params_ts",
+        "path": "src/infrastructure/parse/symbol_params.ts",
+        "responsibility": "symbol_params —— 函数 / 方法形参表的提取（内核 AST 事实的唯一住处）",
+        "symbols": [
+          {
+            "name": "ParsedParam",
+            "kind": "interface",
+            "line": 35,
+            "end_line": 44,
+            "signature": "ParsedParam()"
+          },
+          {
+            "name": "OPEN",
+            "kind": "const",
+            "line": 46,
+            "end_line": 46,
+            "signature": "const OPEN = '([{<'"
+          },
+          {
+            "name": "CLOSE",
+            "kind": "const",
+            "line": 47,
+            "end_line": 47,
+            "signature": "const CLOSE = ')]}>'"
+          }
+        ],
+        "lines": 287,
+        "layer": "core"
+      },
+      {
+        "id": "file_src_infrastructure_parse_symbol_shape_ts",
+        "path": "src/infrastructure/parse/symbol_shape.ts",
+        "responsibility": "symbol_shape —— 「返回类型 / 泛型参数 / 修饰符」的 AST 提取（schema v14）",
+        "symbols": [
+          {
+            "name": "ParsedTypeParam",
+            "kind": "interface",
+            "line": 36,
+            "end_line": 43,
+            "signature": "ParsedTypeParam()"
+          },
+          {
+            "name": "SymbolShape",
+            "kind": "interface",
+            "line": 46,
+            "end_line": 50,
+            "signature": "SymbolShape()"
+          },
+          {
+            "name": "ShapeSpec",
+            "kind": "interface",
+            "line": 56,
+            "end_line": 96,
+            "signature": "ShapeSpec()"
+          },
+          {
+            "name": "SHAPE_SPECS",
+            "kind": "const",
+            "line": 99,
+            "end_line": 232,
+            "signature": "const SHAPE_SPECS = { // ── TS / TSX ────────────────────────────────────────…"
+          }
+        ],
+        "lines": 528,
+        "layer": "core"
       }
     ]
   },
@@ -102058,11 +105934,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T18:29:30.025Z",
+    "saved_at": "2026-10-21T18:45:12.929Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 23847214,
+    "age": 24790118,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -104432,8 +108308,16 @@
       "id": "todo_17-newer-than-dsl",
       "summary": "【17 条盘比 DSL 新】盘上有 17 个源文件/能力在设计册里没有对应节点：claim_conflict.ts / read_set.ts / actor_spec.ts / todo_journal.ts / symbol_docstring.ts 等（以最新盘比读数清单为准）。\n判据：17 条逐条收进 .agent-io/design/*.dsl.json（每条有 path + 职责 + 决策卡）；收完后「盘上有、册上没有」的读数归零（certs/ 与 scripts/ 除外）；每条都能按 path 被写闸覆盖（不是只登记名字）。",
       "expectations": [],
-      "state": "candidate",
-      "owner": null
+      "state": "claimed",
+      "owner": "subagent:design-book-integrator",
+      "claimed_at": "2026-10-21T18:44:57.772Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-21T18:44:57.735Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      }
     },
     {
       "id": "todo_five-state-cleanup",
@@ -104488,5 +108372,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 718
+  "_dsl_rev": 719
 }
