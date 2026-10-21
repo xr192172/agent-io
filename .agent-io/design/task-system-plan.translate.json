@@ -1,7 +1,7 @@
 {
   "id": "task-system-plan.translate",
   "kind": "translate_book",
-  "version": 3,
+  "version": 4,
   "feature": "task-system-plan",
   "meta": {
     "source_feature": "task-system-plan",
@@ -9,8 +9,9 @@
     "target_language": "go",
     "target_root": null,
     "created_at": "2026-10-21T12:45:00.000Z",
-    "revised_at": "2026-10-21T13:22:00.000Z",
+    "revised_at": "2026-10-21T13:52:00.000Z",
     "types_rule": "types 只收【目标侧写法与源侧不同】的；同名映射（如 ActorKind→ActorKind）不进 types，按恒等处理，实质内容记在 symbols 那一行。⇒ 所以「某类型不在 types 里」= 它按同名恒等翻，不是漏了。",
+    "types_exceptions_rule": "一条源词对多个目标时，`to` 写默认目标，`exceptions[]` 逐条写「何时换目标」（when / to / note）。exceptions 是**规则**，不是待办；它必须能被下一个人按 when 直接执行。",
     "baseline": {
       "db": ".agent-io/cache.db",
       "scanRev": 1792585939208,
@@ -26,6 +27,12 @@
       "output": "D:/project_develop/_design-canvas-labs/translate_stats.json",
       "measured_at": "2026-10-21T12:34:00.000Z",
       "scope": "src/**/*.ts（349 文件 / 4710 节点 / 12668 个类型位置）",
+      "terms_evidence": {
+        "tool": "D:/project_develop/_design-canvas-labs/translate_term_evidence.mjs(+ map_iter_split.mjs)",
+        "output": "D:/project_develop/_design-canvas-labs/translate_term_evidence.json",
+        "measured_at": "2026-10-21T13:40:00.000Z",
+        "note": "四条「人工定」术语的判据读数都在这里；types 的 note 只引结论与样本，不抄整表。★ 复跑校验：期间另一个 agent 在写源码（13:36-13:37 有 6 个文件重索引），scope 的 ts 文件数 349→350；四条读数复跑后**逐项不变**（number 1495 / Promise 352 / Map 遍历 187 / 字段 null 140:4）。"
+      },
       "note": "频次与 Top N 的**唯一住处**是这份 json；本册不抄第二份读数（读数会腐，决定不会）。"
     },
     "state_machine": {
@@ -80,9 +87,16 @@
     },
     {
       "from": "number",
-      "to": null,
+      "to": "int（默认）／ float64（坐标·比例）／ int64（时间戳）",
       "origin": "source",
-      "note": "★ 必须人工：1760 次。三选一 —— 行号/计数 ⇒ int / int64；来自 JSON 或算术 ⇒ float64；时间戳 ⇒ time.Time 或 int64(ms)。一个源词对三个目标词，**不是一一对应**。"
+      "note": "★ 判据（实测 1495 个 number 类型位置：member 1069 / param 236 / return 190）：① 名字可判定的 874 处里 **819 是整型语义**（计数/索引/行号/排名/字节数），只有 **55** 是浮点；② 另有 682 处名字不在词表，抽样最高频的 25 个（skipped / col / ranges / compared / iterations / consumers / w / h / cursor / dropped …）全是计数或坐标，无一处是小数度量；③ 全仓的小数运算只出现在力导向布局。⇒ **默认 int**，**不采用「默认 float64」**（理由见 exceptions 最后一条与回报）。",
+      "exceptions": [
+        { "when": "坐标 / 尺寸（x, y, width, height）· 计算侧", "to": "float64", "note": "dag_layout 力导向会算出小数：:323 `(n.x + n.width/2)` 求中点，stiffness 0.1 / damping 0.85。" },
+        { "when": "已落盘的 geometry 坐标（DSL / DB 列）", "to": "int", "note": "实测 .agent-io/design/*.dsl.json 的 x/y/width/height 全是整数（4520 / 110 / 1330）⇒ 存储侧用 int 才和既有文件逐字对上。" },
+        { "when": "比例 / 分数 / 相似度 / 透明度 / 圆角", "to": "float64", "note": "实测 55 处：score(3) · match_score · min_score · opacity(2) · borderRadius(2) · cosineSimilarity · signatureScore · weight 等。这些天生带小数。" },
+        { "when": "时间戳 / 时长（epoch ms）", "to": "int64", "note": "实测 `Date.now()` 89 处、`*_at: number` 命名（checked_at / modified_at / indexed_at / scanned_at / created_at）。用 int64 而不是 time.Time：它们要落 JSON/DB 并参与减法；只有真正的日期运算才转 time.Time。" },
+        { "when": "判不出来（名字不在任何词表）", "to": "int", "note": "按 93.7%（819/874）的实测先验取整型，译文该处留 `// TODO(type): 源侧 number 按 int 取；若实测有小数改 float64`。★ 这是有依据的默认，不是偏好。" }
+      ]
     },
     {
       "from": "void",
@@ -98,9 +112,14 @@
     },
     {
       "from": "Promise<T>",
-      "to": null,
+      "to": "(T, error) —— 仅当函数体可能 reject；否则就是 T",
       "origin": "source",
-      "note": "★ 必须人工：382 次。三选一 —— 同步返回 `(T, error)` / goroutine+chan / context 取消。本仓大量 await 的**顺序语义**（写闸、事务、索引写穿）改成并发会变行为 ⇒ 默认必须同步，改并发要单独立决策。"
+      "note": "★ 判据（实测 352 个 Promise<T> 返回 / 343 个 async 节点 / 675 次 await）：**只有 73 个 body 里有 throw（20.7%）**，其余 279 个只是 await 后返回值。⇒ 只给这 73 个加 error。给 279 个永远返回 nil error 的函数加 `error` 是 Go 反模式（每个调用点都要 `if err != nil` 且永远为假）。Go 没有 Promise，惯用法是直接返回值 + error（Effective Go：\"Go's multivalue return makes it easy to return a detailed error description alongside the normal return value.\"，https://go.dev/doc/effective_go#errors）。**不要用 chan**：chan 是并发通信，不是异步值；把每处 await 变成 select 是错的。",
+      "exceptions": [
+        { "when": "Promise<void>", "to": "error（能 reject）／ 无返回值", "note": "实测 58 处，其中只有 4 处 body 有 throw ⇒ 其余直接无返回值。" },
+        { "when": "真并发：Promise.all / allSettled / race / any", "to": "errgroup.Group 或 sync.WaitGroup + chan", "note": "实测只有 **10 处**（all 8 / allSettled 1 / race 1 / any 0）⇒ 逐条特判，不设默认。样本：derive_mind_map.ts:857 `await Promise.all(chunks.map(fetchChunk))`、cross_repo/index.ts:117 并行建两个索引、serve.ts:2045 并行取三种 git 状态。" },
+        { "when": "await 一个 Promise", "to": "直接调用 + 立刻判 error", "note": "不引入 Future / chan 包装（仓内 675 次 await 全是这种用法）。" }
+      ]
     },
     {
       "from": "T[] / Array<T>",
@@ -112,13 +131,20 @@
       "from": "Record<K,V>",
       "to": "map[K]V",
       "origin": "source",
-      "note": "全局 · 191 次。★ 键序丢失：JS 对象保插入序、Go map 不保 ⇒ 序列化后文本可能 diff。依赖顺序的场合必须另立 ordered 结构（那是一条新决定，不是这条的默认）。"
+      "note": "191 次。★ 键序的依据（Go 官方）：\"When iterating over a map with a range loop, the iteration order is not specified and is not guaranteed to be the same from one iteration to the next.\"（https://go.dev/blog/maps#iteration-order）。另：`encoding/json` 序列化 map 时**按 key 排序** ⇒ 输出确定，但与 JS 的插入序不同 ⇒ 对拍比文本会 diff（那是假 diff，需在函数层定排序）。",
+      "exceptions": [
+        { "when": "键的遍历结果写进文件 / 拼进回执文本", "to": "先 sort 再遍历（sort.Strings(keys)）", "note": "官方给的解法就是维护一个独立的、定义顺序的键切片（同上链接的 Iteration order 段）。" }
+      ]
     },
     {
       "from": "Map<K,V>",
-      "to": "map[K]V",
+      "to": "map[K]V（默认，不保证遍历顺序）",
       "origin": "source",
-      "note": "全局 · 122 次。同上：Map 在 TS 里也保插入序，Go map 不保。"
+      "note": "122 次。★ 与 Record 的**关键差别**：TS 的 Map **保证插入序**，代码可能隐式依赖。实测仓内 `for (const [k,v] of X)` 共 **187 处**，其中 **96 处遍历的是同文件里声明的 Map** ⇒ 这个面不是「少数例外」，必须按下面的例外规则逐条看。",
+      "exceptions": [
+        { "when": "遍历顺序影响输出（写文件 / 拼回执文本 / 生成 DSL、DB）或取「第一个」", "to": "[]struct{ K K; V V } 有序切片（另配一个 map 做索引）", "note": "已确认 **7 处**顺序泄漏：1 处语义依赖 —— deprecate_offline.ts:217 `hits.values().next().value`（谁先谁赢）；6 处顺序进入回执文本 —— opl.ts:575 / design/index.ts:492 / sync_contracts.ts:56 / refactor/index.ts:342 / refactor_pipeline.ts:525 / translate/tool.ts:125。其余约 89 处遍历未逐条审计 ⇒ 翻到该符号时再判，默认 map。" },
+        { "when": "只做查找 / 去重 / 计数（不遍历或遍历结果与顺序无关）", "to": "map[K]V", "note": "绝大多数 —— 实测 `new Map(` 636 处，主要是索引表。" }
+      ]
     },
     {
       "from": "Set<T>",
@@ -128,9 +154,15 @@
     },
     {
       "from": "null / undefined",
-      "to": "nil / *T",
+      "to": "字段·参数 → *T；返回值 → (T, bool)；能 throw 的 → (T, error)",
       "origin": "source",
-      "note": "全局 · 586 + 180 次。★ 两源一目标（有损）：TS 区分「字段缺失」与「字段为 null」，Go 的 *T 只能表达「是 nil」。本仓 DSL/JSON 里两者语义不同（`normalizedFrom?` 缺失 vs `actor: string|null` 显式无）⇒ 见 unknowns。"
+      "note": "★ 判据（实测按位置）：**字段** null 140 / undefined 4（另有 `?:` 可选成员 **1847** 处）；**参数** null 106 / undefined 72；**返回值** null 304 / undefined 75。★ 返回值的决定性证据：304 个 `| null` 返回里**只有 9 个 body 有 throw**（3%），且 122 个是查找类名字（find/get/detect/parse/read/load/try/pick/resolve）⇒ 那是「没找到」，不是「出错」⇒ 用 Go 的 `(T, bool)`（官方：\"This return value may be an error, or a boolean when no explanation is needed. It should be the final return value.\"，https://go.dev/wiki/CodeReviewComments#in-band-errors）。★ `undefined` 与 `null` 落同一个目标，但**账上留两条**（丢掉「这处本来是 undefined」这个信息就再也查不回来了）。★ 本仓在**声明**侧压倒性用 null（字段 140:4、返回 304:75），但**代码判空**两种写法几乎一样多（`=== null` 101 / `=== undefined` 104）⇒ 不要按「本仓偏好」去删其中一种，两种都要能读；`??` 2245 次、`?.` 1126 次 ⇒ 空值合并是主流写法，翻译时一律变成显式 `if x == nil`。",
+      "exceptions": [
+        { "when": "返回值，语义 = 「没找到」", "to": "(T, bool)", "note": "实测 304 处里 122 处是查找类；按官方 In-Band Errors 的口径，用额外的 bool 而不是 `nil`/零值当哨兵。" },
+        { "when": "返回值，语义 = 「可能失败」", "to": "(T, error)", "note": "实测只有 15 处（null 9 + undefined 6）body 里有 throw。" },
+        { "when": "字段（含 `?:` 可选字段）", "to": "*T", "note": "Go 没有「字段缺失」这个概念，指针兼表 missing 与 null 两种；1847 个可选字段都走这条。" },
+        { "when": "参数", "to": "*T", "note": "实测 106 null + 72 undefined + 27 两者都有；用指针才能区分「没传」。★ 注意 `*string` 的零值 nil 与 `&\"\"` 不同，源侧 `null` 与 `\"\"` 也是两件事，别在边界上合并。" }
+      ]
     },
     {
       "from": "RegExp",
@@ -278,9 +310,9 @@
       "why": "同一个 JSON 的两处字段格式不一致 ⇒ 任何消费方（包括本轮的统计量具）都必须先剥前缀，否则类型名永远匹配不上。★ 这也是「从 DB 统计」必须先做的清洗，不做就会得到一张对不上的表。"
     },
     {
-      "where": "全局 · 382 次 Promise<T> / 全仓 async 函数 342 条（其中带 export 的 183 条）",
-      "what": "返回值与并发模型",
-      "why": "同步 `(T,error)` / goroutine+chan / context 三选一 —— 这不是术语问题，是并发模型问题。本仓的 await 顺序是**语义**（写闸先写后同步索引、事务提交顺序）⇒ 默认必须同步；改成并发要单独立决策 + 对拍，不能算「翻」。"
+      "where": "全局 · 352 个 Promise<T> 返回中的那 10 处真并发（all 8 / allSettled 1 / race 1）",
+      "what": "并发怎么落：errgroup.Group / sync.WaitGroup + chan / 保持串行",
+      "why": "★ 「Promise 怎么翻」已经定了（types：能 reject 才加 error，否则直接返回值），**剩下这一条只关于真并发那 10 处**：每处的失败传播与取消语义都不同，要逐条看（例：cross_repo/index.ts:117 并行建两个索引 —— 一边失败另一边要不要继续？serve.ts:2045 并行取三种 git 状态 —— 部分失败能不能降级？）。本仓 await 的顺序本身是语义（写闸先写后同步索引、事务提交顺序）⇒ 没有证据的并行化一律不做。"
     },
     {
       "where": "shapes[1] · 279 个真联合（如 src/application/design/derive/derive_chain.ts:42 DeriveChainResult 的返回）",
@@ -296,6 +328,11 @@
       "where": "class 的字段（src/infrastructure/analysis/observe/dsl_store.ts:152 `private readonly dir: string`）",
       "what": "字段在账上**没有行**：nodes 里没有字段节点，只有 class.members 里一条 {name:'dir', type:': string', member_kind:'property'}",
       "why": "symbols 的 `from` 必须能在 nodes.id 里查到（指纹与状态都按它索引），而字段没有 id ⇒ 硬造一个 `file#Class.dir` 会变成「账上有行、库里查不到」的假账。★ 而且 members[].type 不带可见性/readonly：`private readonly` 这两件事在 DB 里都丢了。⇒ 本轮**字段不进账**（Go 侧跟着 struct 走），要给它立账得先有字段级 id —— schema 缺口，先报不改。"
+    },
+    {
+      "where": "全局 · 682 处 number 的名字不在词表（判不出是整型还是浮点）",
+      "what": "按 int 默认，逐处可能是误判",
+      "why": "抽样最高频的 25 个名字（skipped / col / ranges / compared / iterations / consumers / w / h / cursor / dropped / excluded / resolved / open / indexed / events / input …）全是计数或坐标，**但这是抽样不是全量**。⇒ 翻到具体符号时看它是否参与除法/小数运算：参与了就改 float64 并在该行 note 里记一条。★ 不预先把它们全标成 unknown，否则 unknowns 会被 682 条噪声淹掉，真正翻不了的 15 条反而看不见。"
     },
     {
       "where": "shapes[0] · 661 个内联对象",
