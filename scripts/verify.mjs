@@ -133,6 +133,22 @@ const GATES = [
       '契约门只看结构、design:mutate 只看判据 ⇒ **“实现逻辑被改坏”平时没人抓**，这一门补那一格。' +
       '★ 只覆盖 cardStanding 的一个分支条件（如实声明，不吹）；但它是第一道能抓实现回归的门。',
   },
+  // ★★★ 2026-10-21（第七道）：**domain 五值 × 前后态**。
+  //   为什么它算门、而「实现夹具」不够：`impl-fixture` 只覆盖 cardStanding 的 **1 个**分支条件，
+  //   而五值 × 前后态有 5×2 组合。2026-10-21 拆了 domain → application 倒挂（judge 走端口注入）
+  //   ⇒ cardStanding 现在**能喂假 Judge、不碰 fs**，这是它第一次可以毫秒级全分支验证。
+  //   它挡的事故：把 `unsupported > 0 ⇒ unknowable` 改成 `⇒ satisfied`（判不了退化成通过）。
+  //   ★ 消融实测：改坏 task_machine L300 ⇒ 本门 PASS=36 FAIL=2 EXIT=1；还原 ⇒ 38/38 EXIT=0。
+  {
+    name: 'domain 五值',
+    kind: 'gate',
+    cmd: 'node',
+    args: ['certs/t358-domain-five-values-cert.mjs'],
+    why:
+      '★ cardStanding 五值（work / violated / blocked / satisfied / unknowable）× 前后态，38 条断言、2ms。' +
+      '喂假 Judge ⇒ 不碰 fs、不建库 ⇒ 这是拆端口换来的唯一收益，不挂进门它就只是摆设。' +
+      '★ 「pending」当前行为也在里面钉住（当前 = satisfied，环2 修好后该条必须变红）。',
+  },
   // ★★★ 2026-10-20（第六道）：**设计 DB 与设计 DSL 的结构一致性**。
   //   为什么它算门、而 `design_line action=gen-db check=true` 不算：
   //     `check=true` 比的是整份字节，含 `symbols/imports/calls` —— 它们来自 `cache.db`，

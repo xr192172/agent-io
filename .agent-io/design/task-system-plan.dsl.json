@@ -47280,19 +47280,43 @@
                 ]
               },
               "verdict": "pass"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-21T15:12:51.547Z",
+              "by": "llm",
+              "agent": "subagent:domain-five-values",
+              "fingerprint": {
+                "what": "node certs/t358-domain-five-values-cert.mjs; git diff --stat src/domain/task_machine.ts",
+                "input": "ab606ec9561cd616085d3e191ac68ad5b238637b",
+                "code": "8a0860be92247f02b328fd9de2043c91eac00b44",
+                "covers": [
+                  "src/application/design/intent/expectations.ts",
+                  "src/domain/expectation.ts",
+                  "src/domain/judge_port.ts",
+                  "src/domain/task_machine.ts",
+                  "src/domain/task_schema.ts"
+                ]
+              },
+              "verdict": "pass"
             }
           ],
-          "owner": "subagent:judge-port",
-          "claimed_at": "2026-10-21T14:34:09.868Z",
-          "reopened_at": null,
-          "reopen_reason": "清注释里的用户原话",
-          "reopened_from": "deepseek-v4.1-flash",
+          "owner": "subagent:domain-five-values",
+          "claimed_at": "2026-10-21T15:11:30.500Z",
+          "reopened_at": "2026-10-21T15:11:30.500Z",
+          "reopen_reason": "消融自证：临时改坏 src/domain/task_machine.ts:300 的 unsupported>0 分支，验 t358 会红后逐字还原，不保留任何代码改动",
+          "reopened_from": "subagent:judge-port",
           "read_set": {
             "symbols": [
               {
                 "file": "src/domain/expectation.ts",
                 "name": "expectationPhase",
                 "fp": "eb6b9ff9b27cb1776cf2842f6191bb24ef0ab8c2"
+              },
+              {
+                "file": "src/domain/judge_port.ts",
+                "name": "Judge",
+                "fp": "01492616678aaf9e53d22f4080a12732f6566758"
               },
               {
                 "file": "src/domain/task_machine.ts",
@@ -47332,7 +47356,7 @@
               {
                 "file": "src/domain/task_machine.ts",
                 "name": "StandingInput",
-                "fp": "05f46a1d2b119b4670ef022de1bcb593e1779e92"
+                "fp": "2d4292663f594d1bb282caa1fe4304b2645a4af9"
               },
               {
                 "file": "src/domain/task_machine.ts",
@@ -47372,7 +47396,7 @@
               {
                 "file": "src/domain/task_machine.ts",
                 "name": "cardStanding",
-                "fp": "ade6af07c46135c41313a99ac77303b59b80bd0c"
+                "fp": "51da520af7ba9508ac6441b9f7a2dd09c2616206"
               },
               {
                 "file": "src/domain/task_machine.ts",
@@ -47396,15 +47420,19 @@
                 "content_hash": "6dcaadde9b2d0ac818eeae7712286e151d4d402d"
               },
               {
+                "path": "src/domain/judge_port.ts",
+                "content_hash": "755e8df4d863aeec065004a5357b06d04dd5b271"
+              },
+              {
                 "path": "src/domain/task_machine.ts",
-                "content_hash": "ae3d031e3114ce183adc188013f475526ac95a02"
+                "content_hash": "7ad84573d755738245c00fa11af6162d4f7fd99b"
               }
             ],
-            "computed_at": "2026-10-21T14:34:09.835Z",
+            "computed_at": "2026-10-21T15:11:30.461Z",
             "basis": [
               "expectations"
             ],
-            "note": "1 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
+            "note": "2 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
           }
         },
         "status": "done"
@@ -101860,11 +101888,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T14:51:14.614Z",
+    "saved_at": "2026-10-21T15:13:13.412Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 10751803,
+    "age": 12070601,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -103873,10 +103901,19 @@
     },
     {
       "id": "todo_写闸覆盖面-6-个入口绕开或丢身份-子代理逐个实测-读码列出-2026-10-2",
-      "summary": "【★ 写闸覆盖面：6 个入口绕开或丢身份】子代理逐个实测/读码列出（2026-10-20）：① refactor_pipeline（pipeline/refactor_pipeline.ts:632/653）**直接 fs.writeFileSync，完全不走闸**；② code_workbench（design/workbench/code_workbench.ts:765/784）调 editCode 但不传 actor；③ design_line action=sync-signatures/rewrite（design/rewrite/rewrite.ts:160）调 applyRefactorPlan 不传 actor，且 task_gate 在这一层又丢；④ deprecate_offline（deprecate_offline/deprecate_offline.ts:374）调 removeDeadImportsWithVerify 不传 actor，且会物理删文件；⑤ diagnose / diagnose_loop（infrastructure/analysis/diagnosis/repair.ts:236）**直接 fs.writeFileSync**；⑥ upgrade apply（authoring/version_upgrade/rewrite.ts:133）**直接 fs.writeFileSync**。★ ①②③④ 属「同一条链的出口没接全」；⑤⑥ 与 refactor_pipeline 属**结构性绕过**（不走 writeSourceFiles / editCode，自己 fs.writeFileSync）。★ 正解不是逐个加 actor，而是问「为什么允许绕过」：要么让这三个走统一的落盘层，要么在 write_gate 里加一条「本仓所有落盘必须经 X」的读数（但那是普查，要谨慎）。",
+      "summary": "【写闸收口 · 写闸是每调用点自觉调，不是唯一通道】\n★ 结构判据：src/ 内对【用户源码路径】的 fs.writeFileSync 只剩 1 处（application/source_writer.ts）；写 .agent-io/ / dist/ / cache.db 的产物写走白名单（白名单本身只住一处）。\n★ 实测底数（2026-10-21）：fs.writeFileSync 97 处（另有 31 处非 fs. 前缀的 writeFileSync，合计 128）· 走 writeSourceFiles( 的只有 2 处（apply_writes.ts:109、rename_symbols.ts:485）· 各自调闸的写路至少 8 条。\n★ 同一 bug 在 4 个文件各修一遍（闸的返回值被丢 ⇒ 闸判了、豁免生效了、回执里一个字都没有）：edit_code.ts:392 / rename_file.ts:100 / rename_files.ts:93 / symbol_move.ts:122 —— 四段几乎相同的注释就是「判据不在唯一通道里」的证据。\n★ 已知 6 个入口（子代理逐个实测/读码，2026-10-20）：① refactor_pipeline（pipeline/refactor_pipeline.ts:632/653）直接 fs.writeFileSync，完全不走闸；② code_workbench（design/workbench/code_workbench.ts:765/784）调 editCode 但不传 actor；③ design_line action=sync-signatures/rewrite（design/rewrite/rewrite.ts:160）调 applyRefactorPlan 不传 actor，且 task_gate 在这一层又丢；④ deprecate_offline（deprecate_offline/deprecate_offline.ts:374）调 removeDeadImportsWithVerify 不传 actor，且会物理删文件；⑤ diagnose / diagnose_loop（infrastructure/analysis/diagnosis/repair.ts:236）直接 fs.writeFileSync；⑥ upgrade apply（authoring/version_upgrade/rewrite.ts:133）直接 fs.writeFileSync。\n★ 验收：① 上面 97 处里，目标路径落在用户源码的归零（只留 source_writer.ts 那一处）；② 产物写全部命中白名单，且白名单外的写被拒；③ 四条重复注释删掉三条（只剩 source_writer 里那一份）；④ 反向对照：新增一个绕过 source_writer 直接写 src/ 的调用，闸必须拒（不是只靠 grep）。",
       "expectations": [],
       "state": "candidate",
-      "owner": null
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-10-21T15:09:08.605Z",
+          "from": "【★ 写闸覆盖面：6 个入口绕开或丢身份】子代理逐个实测/读码列出（2026-10-20）：① refactor_pipeline（pipeline/refactor_pipeline.ts:632/653）**直接 fs.writeFileSync，完全不走闸**；② code_workbench（design/workbench/code_workbench.ts:765/784）调 editCode 但不传 actor；③ design_line action=sync-signatures/rewrite（design/rewrite/rewrite.ts:160）调 applyRefactorPlan 不传 actor，且 task_gate 在这一层又丢；④ deprecate_offline（deprecate_offline/deprecate_offline.ts:374）调 removeDeadImportsWithVerify 不传 actor，且会物理删文件；⑤ diagnose / diagnose_loop（infrastructure/analysis/diagnosis/repair.ts:236）**直接 fs.writeFileSync**；⑥ upgrade apply（authoring/version_upgrade/rewrite.ts:133）**直接 fs.writeFileSync**。★ ①②③④ 属「同一条链的出口没接全」；⑤⑥ 与 refactor_pipeline 属**结构性绕过**（不走 writeSourceFiles / editCode，自己 fs.writeFileSync）。★ 正解不是逐个加 actor，而是问「为什么允许绕过」：要么让这三个走统一的落盘层，要么在 write_gate 里加一条「本仓所有落盘必须经 X」的读数（但那是普查，要谨慎）。",
+          "to": "【写闸收口 · 写闸是每调用点自觉调，不是唯一通道】\n★ 结构判据：src/ 内对【用户源码路径】的 fs.writeFileSync 只剩 1 处（application/source_writer.ts）；写 .agent-io/ / dist/ / cache.db 的产物写走白名单（白名单本身只住一处）。\n★ 实测底数（2026-10-21）：fs.writeFileSync 97 处（另有 31 处非 fs. 前缀的 writeFileSync，合计 128）· 走 writeSourceFiles( 的只有 2 处（apply_writes.ts:109、rename_symbols.ts:485）· 各自调闸的写路至少 8 条。\n★ 同一 bug 在 4 个文件各修一遍（闸的返回值被丢 ⇒ 闸判了、豁免生效了、回执里一个字都没有）：edit_code.ts:392 / rename_file.ts:100 / rename_files.ts:93 / symbol_move.ts:122 —— 四段几乎相同的注释就是「判据不在唯一通道里」的证据。\n★ 已知 6 个入口（子代理逐个实测/读码，2026-10-20）：① refactor_pipeline（pipeline/refactor_pipeline.ts:632/653）直接 fs.writeFileSync，完全不走闸；② code_workbench（design/workbench/code_workbench.ts:765/784）调 editCode 但不传 actor；③ design_line action=sync-signatures/rewrite（design/rewrite/rewrite.ts:160）调 applyRefactorPlan 不传 actor，且 task_gate 在这一层又丢；④ deprecate_offline（deprecate_offline/deprecate_offline.ts:374）调 removeDeadImportsWithVerify 不传 actor，且会物理删文件；⑤ diagnose / diagnose_loop（infrastructure/analysis/diagnosis/repair.ts:236）直接 fs.writeFileSync；⑥ upgrade apply（authoring/version_upgrade/rewrite.ts:133）直接 fs.writeFileSync。\n★ 验收：① 上面 97 处里，目标路径落在用户源码的归零（只留 source_writer.ts 那一处）；② 产物写全部命中白名单，且白名单外的写被拒；③ 四条重复注释删掉三条（只剩 source_writer 里那一份）；④ 反向对照：新增一个绕过 source_writer 直接写 src/ 的调用，闸必须拒（不是只靠 grep）。",
+          "reason": "同主题合并：原卡只列 6 个入口，缺「唯一通道」这条结构判据与 97 处直写的底数；补进来后不另建第二张写闸卡",
+          "by": "subagent:card-scribe"
+        }
+      ]
     },
     {
       "id": "todo_p1-增量测试的地基-evidence-带代码指纹-用户裁定-2026-10-2",
@@ -104150,7 +104187,95 @@
       "state": "candidate",
       "owner": null,
       "follows": "todo_D-judge-port"
+    },
+    {
+      "id": "todo_domain-five-values",
+      "summary": "【链 A 环3 · domain 五值单测】cardStanding(card,{root,nodes,judge}) 已能注入假 Judge ⇒ 用假 Judge 覆盖 5 值 × 前后态组合，全程不碰 fs / cache.db / 真实项目根。\n覆盖矩阵：\n· work —— 后态有红且可修（own 或 orphan）/ 前态无红；\n· violated —— 前态 failed > 0（★ 最容易漏的一格）；\n· blocked —— 后态有红但全部落在别人未完成/已 done 的节点（不可修）；\n· satisfied —— 后态全过、前态无红；\n· unknowable —— ① post.length === 0 ② unsupported > 0 ③ 残报 checked !== post.length；\n· pending > 0 —— 现在【不实现】unknowable，测试只钉「当前行为 = satisfied」，为链 A 环2 留对照。\n判据：五值断言全绿；故意把 `unsupported > 0 ⇒ unknowable` 改成 `⇒ satisfied` 必须变红，还原后再绿；跑完 < 1s；证明不必读盘（假 Judge 收到几条就回几条）。\n落点：certs/t358-domain-five-values-cert.mjs（本仓无 *.test.ts 框架，沿用 79 个证的套路）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_pending-假绿-只有-pending-后态判据-run-blocked-b"
+    },
+    {
+      "id": "todo_identity-normalize",
+      "summary": "【身份归一化】release / void / complete 写进卡里的 by，必须与 claim 写 owner 走同一个 domain/actor_spec.ts#admitActor。\n现状（实测）：claim 已归一化（src/application/design/dsl_ops/task_ops.ts:744，`workbuddy` ⇒ `agent:workbuddy`）；release 没有（同文件:1054 `const by = input.agent ?? null` 原样落 released_by）⇒ 同一张卡上 owner 是规范格式、released_by 是老格式。\n判据：三条写路的 by 全部过 admitActor（STRICT 下老格式直接拒，非 STRICT 下归一化并在回执明说）；certs/t349-task-home-cert.mjs:271 那条 `released_by === 'agent-t349'` 改成断言规范格式（`agent:agent-t349`）后仍绿，t349 全证不红；void / complete 的署名同样有证覆盖。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_design-drift-transitions",
+      "summary": "【设计漂移 · 迁移表】代码 TRANSITIONS 7 条 vs 设计 DSL 6 条：src/domain/task_machine.ts:605 有 `t_relaunch`（void→candidate），而 .agent-io/design/task-system-plan.dsl.json 的 task_plan.state_machine.transitions 只有 t_claim / t_void / t_release / t_done_from_claimed / t_reopen / t_done_from_candidate。\n判据：DSL 的 transitions 补上 t_relaunch（from=void / to=candidate，guard 逐条对齐代码 :609-619），重跑设计一致性门后 7 = 7；★ 不许反向删代码那条（relaunch 是 void 的唯一回头路）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_translate-3-terms",
+      "summary": "【翻译册 · 3 条术语未覆盖】.agent-io/design/task-system-plan.translate.json 里 ZodType / RegExpMatchArray / McpServer 三条没有对应术语（unknowns 已点名三个源符号：src/application/types.ts#ToolDef、src/infrastructure/analysis/contract_gate/parts.ts#addDeclared、src/presentation/mcp/server_registry.ts#registerAllTools），各挂 1 个符号 blocked。\n判据：types 层给三条定死（源词 → Go 类型，或显式 origin=added）并写明理由；重跑翻译册生成后 blocked 从 40 降到 37，unknowns 里这三条消失，其余 37 条逐条仍在（不许顺手把别的也标绿）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_index-alias-reexport",
+      "summary": "【索引质量 · 别名再导出 92 条】`import {x as y}; export {y}` 这种形态解析不出边。实测 re-export 185 条里连上 86，剩 94 里 92 条是这个形态。\n判据：索引器能解析「本地别名再导出」并为它建边；回执必须同时报 连上多少 / 跳过多少（不许只报成功数）；重扫后该形态连上 ≥ 90/92，剩余 2 条逐条说明为什么跳（不许静默）。\n落点：src/infrastructure/index/symbols.ts 的 re-export 抽取。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_serve-split-orchestration",
+      "summary": "【presentation 拆编排】src/presentation/http/serve.ts 3,345 行、56 个 import（infrastructure/analysis/observe ×10 / infrastructure/index ×5 / application/meta/view ×6）是编排器 + 路由表 + 序列化三合一。\n判据：serve.ts < 500 行；每个工具的能力 = 一条 use case（application/<lane>/<use_case>.ts），presentation 只做「解析入参 → 调 use case → 序列化」；拆完 HTTP 面与 MCP 面调的是同一条 use case（同一能力不许两处各写一遍）；tsc 绿 + verify 门全过。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_task-expectations-single-source",
+      "summary": "【task.expectations 去副本】TaskSpec 不带 expectations 字段，一律按 decision_id 从 decision 现取。\n现状：task.expectations 是 decision.expectations 的副本，靠 A6 闸（src/application/design/dsl_ops/node_ops.ts:419）防漂移 ⇒ 违反「判据只住一处」。\n判据：TaskSpec 在类型层不再有 expectations 字段；cardStanding / claim / complete / patrol 全部经同一个 reader 按 decision_id 现取；A6 闸失去存在理由后删除或降级为读数；现网所有 claimed / done 卡的 standing 结论逐张不变（改前先存一份读数做对拍）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_17-newer-than-dsl",
+      "summary": "【17 条盘比 DSL 新】盘上有 17 个源文件/能力在设计册里没有对应节点：claim_conflict.ts / read_set.ts / actor_spec.ts / todo_journal.ts / symbol_docstring.ts 等（以最新盘比读数清单为准）。\n判据：17 条逐条收进 .agent-io/design/*.dsl.json（每条有 path + 职责 + 决策卡）；收完后「盘上有、册上没有」的读数归零（certs/ 与 scripts/ 除外）；每条都能按 path 被写闸覆盖（不是只登记名字）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_five-state-cleanup",
+      "summary": "【设计漂移 · 散文段】task_schema『五态』vs TASK_STATES 4 值：src/domain/task_schema.ts:43 只给 candidate / claimed / done / void 四值，文件里却 44 处写「五态」。\n★ 源头在设计册，不在 TS：.agent-io/design/task-system-plan.dsl.json 的 task_home.axis_dedup.problem 仍写「…|void|superseded，五轴」、derived_map 留着 superseded（全文 17 处）、task_plan.service_flow.states 写「旁支：失效(void)/被取代(superseded)」。\n判据：先清 DSL 的散文段（superseded 清零、五轴/五态改成四态），再改 task_schema.ts 里那几个「五」字；只改 TS 不算完（会把漂移藏起来）。改完 tsc 绿、DSL 校验绿、全册 grep superseded = 0。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_design-drift-transitions"
+    },
+    {
+      "id": "todo_translate-book-tool",
+      "summary": "【翻译册接成 translate_book 工具】rebuildBook 现在只能靠内部函数/脚本重跑，不是工具面入口。\n判据：包成 `translate_book` 工具（与 translate_go_ts 并排注册在 src/presentation/mcp/server_registry.ts），入参 feature + 可选 force，能复跑并回写 .agent-io/design/<feature>.translate.json；同一 feature 连跑两次结果逐字相同（幂等），回执报 symbols / types / shapes / atoms 各多少条与 blocked 数；漏传 feature 时报错而不是静默用默认值。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_translate-3-terms"
+    },
+    {
+      "id": "todo_translate-first-module",
+      "summary": "【真正翻第一个模块】挑 3-5 个函数的小文件，从 pending → stubbed → translated 走完一轮（源侧 DB 只读，目标源码写在仓库外或明确的译文目录，不碰源文件）。\n判据：目标文件的每个符号都有状态迁移留痕（pending→stubbed→translated，不许跳级）；译文能编译；★ 这一步要暴露「账上看不出的问题」——把遇到的（DB 缺字段 / 术语不够 / 签名形状对不上 / 默认参数丢失）逐条记进 unknowns 或新卡，不许只报「翻完了」。★ 完成后贴出该文件在翻译册里的状态前后对比（几个 pending → 几个 stubbed → 几个 translated）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_translate-book-tool"
+    },
+    {
+      "id": "todo_reopen-evidence-deadlock",
+      "summary": "【重开后的收口死锁】done 卡走 claim intent=modify（内部 t_reopen，落 reopened_at）后，若判据没换：\n· 用 attestation（at ≥ reopened_at）收口 ⇒ 被 src/application/design/dsl_ops/status_tools.ts:93 拒：「节点已有机器判据（progress_evidence.kind='expectations'）⇒ 不许用口供覆盖」；\n· 改用 expectations{all_green:true,unsupported:0} 收口 ⇒ 被 src/application/design/dsl_ops/task_ops.ts#reopenGate 拒：「重开未结清时 expectations 没有时间戳，就是旧判据再跑一遍」；\n⇒ 两条闸单独都对，合起来把「重开后判据未变」这一类卡钉死。★ 实测只有 reading（command/observed/at）能同时过两闸——而两处报错的「二选一」都没提这条路。\n判据：二选一——① status_tools 在「本次 complete 带来的新证据」场景放行 attestation（只写入 task.evidence，不覆盖 anchor 的历史 expectations 权威）；或 ② reopenGate 承认「带 at ≥ reopened_at 且带代码指纹/covers 的 expectations」。并配一条证：done → claim(intent=modify) → complete(attestation) 必须能收口；同时零工作量（判据未变且无新证据）仍必须拒——两条都要实测。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
     }
   ],
-  "_dsl_rev": 716
+  "_dsl_rev": 717
 }
