@@ -26314,13 +26314,13 @@
     }
   ],
   "annotations": [],
-  "_dsl_rev": 178,
+  "_dsl_rev": 180,
   "_sync": {
-    "saved_at": "2026-10-21T11:44:15.495Z",
+    "saved_at": "2026-10-21T11:53:41.314Z",
     "source": "design_sheet",
     "feature": "design-canvas",
     "scanRev": 1792582983534,
-    "age": 71961,
+    "age": 637780,
     "dbSchemaVersion": 16
   }
 }

@@ -50383,17 +50383,17 @@
             "files": [
               {
                 "path": "src/infrastructure/graph/import_project.ts",
-                "content_hash": "236057f35dff3bfcd6a9846b1dcdb9c0157d387c"
+                "content_hash": "962d4acbc5247da051244433acfd756a03da3844"
               }
             ],
-            "computed_at": "2026-10-21T11:24:05.488Z",
+            "computed_at": "2026-10-21T11:52:12.896Z",
             "basis": [
               "node-path"
             ]
           },
-          "release_reason": "parsedKindToSymbolKind 保真改动已落盘，释放写权",
+          "release_reason": "saveDSL(designDsl) 已传 refreshScanRev=true（导入/fork 才算复制），释放写权待验收",
           "released_by": "subagent:dsl-symbols-fixer",
-          "released_at": "2026-10-21T11:34:10.833Z"
+          "released_at": "2026-10-21T11:54:03.960Z"
         },
         "status": "draft"
       },
@@ -50547,17 +50547,17 @@
             "files": [
               {
                 "path": "src/infrastructure/index/live_render.ts",
-                "content_hash": "017da1ea4a8ab4a5cbab4c09c654378194d869ef"
+                "content_hash": "e4ab5eb2c2fff7bec0279840282496ad1fe0a65d"
               }
             ],
-            "computed_at": "2026-10-21T11:42:34.304Z",
+            "computed_at": "2026-10-21T11:52:12.768Z",
             "basis": [
               "node-path"
             ]
           },
-          "release_reason": "live_render 的 _sync 已收敛到 buildSyncMeta，写权还回池子待你验收",
+          "release_reason": "refreshScanRev=true 已落盘（现渲染就是从库复制），释放写权待验收",
           "released_by": "subagent:dsl-symbols-fixer",
-          "released_at": "2026-10-21T11:44:25.932Z"
+          "released_at": "2026-10-21T11:54:03.892Z"
         },
         "status": "draft"
       },
@@ -50610,14 +50610,14 @@
                 "content_hash": "255abf70ac846088018eb872b87f42c49ba03683"
               }
             ],
-            "computed_at": "2026-10-21T11:44:05.261Z",
+            "computed_at": "2026-10-21T11:53:40.026Z",
             "basis": [
               "node-path"
             ]
           },
-          "release_reason": "验收：证明 release 不会冲掉 _sync.dbSchemaVersion",
+          "release_reason": "B 组验收用的临时占位（claim 后已测 scanRev 不变），释放",
           "released_by": "subagent:dsl-symbols-fixer",
-          "released_at": "2026-10-21T11:44:05.404Z"
+          "released_at": "2026-10-21T11:54:04.026Z"
         },
         "status": "draft"
       },
@@ -51559,7 +51559,7 @@
           ],
           "state": "done",
           "owner": "subagent:dsl-symbols-fixer",
-          "claimed_at": "2026-10-21T11:39:47.325Z",
+          "claimed_at": "2026-10-21T11:49:44.497Z",
           "evidence": [
             {
               "kind": "attestation",
@@ -51589,11 +51589,26 @@
                 ]
               },
               "verdict": "pass"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-21T11:54:03.741Z",
+              "by": "llm",
+              "agent": "subagent:dsl-symbols-fixer",
+              "fingerprint": {
+                "what": "npx tsx .tmp-claim/fx/scanrev_verify.ts（A/B/C/E 真册 + D 隔离 AGENT_IO_HOME 的 import/fork）",
+                "input": "7d919a43fb1c90485279b15675f41c72d36ec89b",
+                "code": "4016ab3949456243e75eecececd359cf3cdddc93",
+                "covers": [
+                  "src/infrastructure/storage.ts"
+                ]
+              },
+              "verdict": "pass"
             }
           ],
-          "reopened_at": "2026-10-21T11:39:47.325Z",
-          "reopen_reason": "修 syncMeta 漏 dbSchemaVersion（每次 claim/publish/release 都整体重建 _sync ⇒ 把 live_render 写进去的字段冲掉）；原卡的 listDesignSheets / getDesignSheet 判据一条不改",
-          "reopened_from": "codebuddy"
+          "reopened_at": "2026-10-21T11:49:44.497Z",
+          "reopen_reason": "修 buildSyncMeta 的 scanRev 语义：加 refreshScanRev，只有 import/fork/首次才刷新库代，edit_dsl 与 claim/publish/release/complete 只前进 saved_at；原卡 3 条判据不改",
+          "reopened_from": "subagent:dsl-symbols-fixer"
         },
         "status": "done"
       },
@@ -99025,11 +99040,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T11:44:25.963Z",
+    "saved_at": "2026-10-21T11:54:04.050Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792582983534,
-    "age": 82429,
+    "scanRev": 1792583522811,
+    "age": 121239,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -101301,5 +101316,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 701
+  "_dsl_rev": 702
 }

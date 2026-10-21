@@ -1169,7 +1169,10 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       designAction = designExists
         ? '（★ 本次**按你的显式要求重建了设计 DSL**：结构来自扫描 —— 人手加的节点会丢，故受 `allow_design_drop` 把关）'
         : '（★ 设计**原本不存在** ⇒ 本次从"实际"**fork 了一份设计 DSL**；此后默认不再自动重建）';
-      saveDSL(designDsl);
+      // ★ 导入 / fork / 重建 = **从库复制一份设计册** ⇒ 显式刷新库代。
+      //   `scanRev` 只在"复制"这一刻取值；`edit_dsl` 与 task op 都不刷新，
+      //   否则 `scanRev` 恒等于 `max(files.indexed_at)` ⇒ 差值恒 0（判据见 `buildSyncMeta` 头）。
+      saveDSL(designDsl, 'mcp', undefined, { refreshScanRev: true });
       // 同时写入 live 代码快照：功能树聚类（derive_feature_tree）以 live 视图的
       // semantic.files 为语义基准做命中率闸门。手动导入的项目若只有设计 DSL 而无
       // live 快照，换项目后聚类会因语义基准为空被判"db 不相关"而拒生成 → 导图平铺。

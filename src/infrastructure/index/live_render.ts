@@ -426,6 +426,6 @@ export function renderLiveFromDb(feature: string): DesignDSL | null {
   //   / 本处现渲染）共用同一份形状；`source: 'live_render'` 仍如实说明"这份是现渲染、不是冻结文件"。
   return {
     ...layered,
-    _sync: buildSyncMeta({ feature, sourceRoot: root, source: 'live_render' }),
+    _sync: buildSyncMeta({ feature, sourceRoot: root, source: 'live_render', refreshScanRev: true }),
   } as DesignDSL;
 }
