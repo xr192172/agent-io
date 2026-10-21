@@ -50802,8 +50802,21 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_symbols_ts\"].responsibility"
           },
-          "owner": "agent-docstring",
-          "claimed_at": "2026-10-21T07:26:09.856Z"
+          "owner": "subagent:call-edges",
+          "claimed_at": "2026-10-21T12:18:19.767Z",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/infrastructure/index/symbols.ts",
+                "content_hash": "53cd6e60554f2a5808e418c77338b1003ada735d"
+              }
+            ],
+            "computed_at": "2026-10-21T12:18:19.728Z",
+            "basis": [
+              "node-path"
+            ]
+          }
         },
         "status": "in_progress"
       },
@@ -99040,11 +99053,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T11:54:04.050Z",
+    "saved_at": "2026-10-21T12:18:19.795Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 121239,
+    "age": 1576984,
     "dbSchemaVersion": 16
   },
   "_forked_from": {

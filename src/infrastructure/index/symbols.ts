@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import type { Database } from './db.js';
-import { parseFileFull, parseFileFullSync, resolveImportPath, type ParsedFile } from '../parse/index.js';
+import { parseFileFull, parseFileFullSync, resolveImportPath, type ParsedFile, type ParsedSymbol } from '../parse/index.js';
 // ★ 「什么算源码」走 L1 唯一**用法**（`source_exts.ts` 的 `codeSourceExtSet` = 可解析 ∩ 代码语言
 //   + 小写归一 + 进程内缓存）——本文件不再用 `isSupported`（那是"能不能解析"，不是"算不算源码"），
 //   也不再自拼 `new Set(...map(lower))` 那套用法。
@@ -401,6 +401,126 @@ function syncFilePrelude(db: Database, projectRoot: string, absPath: string): Pr
   };
 }
 
+// ─────────────────────────────────────────────────────────────
+// 接收者类型守卫（2026-10-21）
+// ─────────────────────────────────────────────────────────────
+
+/** 局部名 → 声明类型（`base` = 剥掉泛型/数组/命名空间后的类型名） */
+export interface ReceiverType {
+  base: string;
+  array: boolean;
+}
+
+/** 内置/容器类型名：接收者声明成这些，成员一定是原型方法（不在仓内） */
+const CALL_GUARD_BUILTIN_TYPES = new Set([
+  'Set', 'Map', 'WeakMap', 'WeakSet', 'ReadonlySet', 'ReadonlyMap', 'Array', 'ReadonlyArray',
+  'string', 'number', 'boolean', 'bigint', 'symbol', 'object', 'Function', 'Promise', 'Date',
+  'RegExp', 'Buffer', 'URL', 'URLSearchParams', 'Error', 'Uint8Array', 'ArrayBuffer',
+  'Database', 'DatabaseSync', 'StatementSync',
+]);
+
+/**
+ * 本文件的「局部名 → 声明类型」表：**一次扫描**，供 callReceiverGuard 逐调用查。
+ *
+ * 只认四种**声明**形态（都是可机器判定的事实，不是推测）：
+ *   `const|let|var x: T` / `const|let|var x = new T(` / 形参或字段 `x: T` /
+ *   Go `x := &T{}` / `x := T{` / Python `x = T(`
+ * ★ 同名有多处声明且类型不一致 ⇒ 记 null（歧义）。**歧义不收紧** —— 宁可漏拦，不可错拦。
+ */
+export function declaredReceiverTypes(content: string): Map<string, ReceiverType | null> {
+  const acc = new Map<string, Map<string, ReceiverType>>();
+  const add = (name: string, raw: string): void => {
+    const text = String(raw || '').trim();
+    if (!name || !text) return;
+    const array = /\[\s*\]/.test(text) || /^(Array|ReadonlyArray|Set|ReadonlySet|Map|ReadonlyMap|Iterable)\s*</.test(text);
+    const base = text
+      .replace(/[?*&!]/g, '')
+      .split(/[<\[|{(]/)[0]
+      .trim()
+      .split('.')
+      .pop();
+    if (!base || !/^[A-Za-z_$][\w$]*$/.test(base)) return;
+    // ★ 按**类型名**归并（不按「带不带泛型」）：`new Map(...)` 与 `x: Map<string, Y>` 是同一种类型，
+    //   否则同名的两处声明会被当成「类型不一致」⇒ 歧义 ⇒ 漏拦（实测：dataflow_core 的 8 条 Map 边）。
+    const bucket = acc.get(name) ?? new Map<string, ReceiverType>();
+    bucket.set(base, { base, array: (bucket.get(base)?.array ?? false) || array });
+    acc.set(name, bucket);
+  };
+  const id = '([A-Za-z_$][\\w$]*)';
+  const TYPE = '([A-Za-z_$][\\w$.<>\\[\\]|,\\s]{0,60}?)';
+  for (const m of content.matchAll(new RegExp(`(?:const|let|var)\\s+${id}\\s*:\\s*${TYPE}\\s*[=;,)]`, 'g'))) add(m[1], m[2]);
+  for (const m of content.matchAll(new RegExp(`(?:const|let|var)\\s+${id}\\s*=\\s*new\\s+([A-Za-z_$][\\w$.]*)`, 'g'))) add(m[1], m[2]);
+  for (const m of content.matchAll(new RegExp(`[(,]\\s*${id}\\s*\\??\\s*:\\s*([A-Za-z_$][\\w$.]*(?:<[^;\\n)]{0,60}>)?(?:\\[\\])?)`, 'g'))) add(m[1], m[2]);
+  for (const m of content.matchAll(new RegExp(`\\b${id}\\s*:=\\s*&?([A-Za-z_][\\w.]*)\\s*\\{`, 'g'))) add(m[1], m[2]);
+  for (const m of content.matchAll(new RegExp(`\\b${id}\\s*=\\s*([A-Za-z_][\\w]*)\\s*\\(`, 'g'))) add(m[1], m[2]);
+  const out = new Map<string, ReceiverType | null>();
+  for (const [name, m] of acc) out.set(name, m.size === 1 ? [...m.values()][0] : null);
+  return out;
+}
+
+/**
+ * 调用边接收者守卫：**接收者类型可解析时**，只允许连到该类型的成员。
+ *
+ * ★ 为什么需要（实测 2026-10-21，仓内 7,673 条 call 边全量审计）：33 条错连里 **24 条**同源 ——
+ *   kernel 的 `symbols.find(s => s.name === c.name)`（kernel.ts:1757）只按**尾部名**匹配、不看接收者，
+ *   于是 `TS_EXT_SET.has()`（Set 原型）连到同文件的 `SkipDirSetImpl.has`，
+ *   `outEdges.get()`（Map 原型）连到同文件的嵌套函数 `evaluateCond.get`。
+ * 判据：类型能读出来 ⇒ 目标必须是该类型的成员；读不出来（无注解的变量 / 动态派发 / 链式属性 /
+ *   同名多处声明）⇒ **保持原行为**（实测那一档是「无法判定」，不是「已知错」，不扩大打击面）。
+ * 拦下的调用不建边、按 **external** 记账 —— 目标确实不在仓内，这正是 external 的语义。
+ */
+export function callReceiverGuard(args: {
+  symbols: readonly ParsedSymbol[];
+  /** declaredReceiverTypes() 的结果（每个文件建一次） */
+  receiverTypes: ReadonlyMap<string, ReceiverType | null>;
+  calleeExpr: string;
+  /** kernel 给的已解析目标 qualified_name */
+  targetQn: string;
+}): { allow: boolean; why: string } {
+  const dot = lastReceiverDot(args.calleeExpr);
+  if (dot < 0) return { allow: true, why: 'bare-call' };
+  const receiver = args.calleeExpr.slice(0, dot).trim();
+  if (receiver === 'this' || receiver === 'self') return { allow: true, why: 'this-or-self' };
+  if (!/^[A-Za-z_$][\w$]*$/.test(receiver)) return { allow: true, why: 'receiver-not-simple-ident' };
+  const target = args.symbols.find((s) => s.qualified_name === args.targetQn);
+  if (!target) return { allow: true, why: 'target-symbol-missing' };
+  // 接收者本身是**仓内类型名**（`Foo.bar()` 静态访问）⇒ 类型就是它自己
+  const asType = args.symbols.find(
+    (s) => s.name === receiver && (s.kind === 'class' || s.kind === 'interface' || s.kind === 'type'),
+  );
+  const declared = args.receiverTypes.get(receiver) ?? null;
+  const typeName = declared?.base ?? asType?.name ?? null;
+  if (!typeName) return { allow: true, why: 'receiver-type-unknown' };
+  // ★ 只对「确实是类型」的名字收紧（内置表 / 仓内 class·interface·type / 大写开头的外部类型）
+  const knownType = !!asType || CALL_GUARD_BUILTIN_TYPES.has(typeName) || /^[A-Z]/.test(typeName);
+  if (!knownType) return { allow: true, why: `not-a-known-type:${typeName}` };
+  if (declared?.array === true) return { allow: false, why: `container(${typeName}[])->${target.name}` };
+  const owner = target.parent ?? null;
+  if (!owner) return { allow: false, why: `typed(${typeName})->file-level:${target.name}` };
+  if (owner === typeName) return { allow: true, why: `member-of:${owner}` };
+  return { allow: false, why: `member-of:${owner}!=${typeName}` };
+}
+
+/** 最后一个「顶层」点号（跳过括号/引号内部；没有返回 -1） */
+function lastReceiverDot(expr: string): number {
+  let depth = 0;
+  let quote = '';
+  let last = -1;
+  for (let i = 0; i < expr.length; i++) {
+    const ch = expr[i];
+    if (quote) {
+      if (ch === '\\') i++;
+      else if (ch === quote) quote = '';
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') quote = ch;
+    else if (ch === '(' || ch === '[' || ch === '{') depth++;
+    else if (ch === ')' || ch === ']' || ch === '}') depth--;
+    else if (ch === '.' && depth === 0) last = i;
+  }
+  return last;
+}
+
 /** 解析结果落库（体即原 syncFile 主体，逐行未动）；async / sync 两条路径共用 ⇒ 不会漂移 */
 function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude, parsed: ParsedFile): SyncFileResult {
   const { rel, fail, content, stat, hash, existing, ext } = pre;
@@ -632,11 +752,29 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
       `INSERT OR IGNORE INTO unresolved_refs(from_node_id, reference_name, reference_kind, line, col, file_id, language, status, name_tail)
        VALUES ($from, $rn, 'call', $ln, 0, $fid, $lang, 'pending', $nt)`,
     );
+    // ★ 2026-10-21：被接收者守卫拦下的调用不建边，按 external 记账（目标确实不在仓内）
+    const insUnresolvedExternal = db.prepare(
+      `INSERT OR IGNORE INTO unresolved_refs(from_node_id, reference_name, reference_kind, line, col, file_id, language, status, name_tail)
+       VALUES ($from, $rn, 'call', $ln, 0, $fid, $lang, 'external', $nt)`,
+    );
+    // 本文件的「局部名 → 声明类型」表：一次扫描，供守卫逐调用查
+    const receiverTypes = declaredReceiverTypes(content);
     let callCount = 0;
     for (const c of parsed.calls) {
       const srcId = idOf(c.caller);
       if (!nodeIdSet.has(srcId)) continue; // qn 漂移坏边：跳过不炸事务
       if (c.resolved && c.callee_qn && nodeIdSet.has(idOf(c.callee_qn))) {
+        // ★ 接收者守卫（见 callReceiverGuard 注释：实测 24 条错连是 Map/Set 原型方法撞同名成员）
+        const verdict = callReceiverGuard({
+          symbols: parsed.symbols,
+          receiverTypes,
+          calleeExpr: c.callee_expr,
+          targetQn: c.callee_qn,
+        });
+        if (!verdict.allow) {
+          insUnresolvedExternal.run({ from: srcId, rn: c.callee_expr, ln: c.line, fid: fileId, lang: ext, nt: c.callee });
+          continue;
+        }
         insCall.run({ src: srcId, tgt: idOf(c.callee_qn), ln: c.line });
         callCount++;
       } else {
@@ -883,6 +1021,134 @@ export function removeFile(db: Database, projectRoot: string, absPath: string): 
 // 跨文件调用解析（路线图序号 3 第二步）
 // ─────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────
+// Go 同包 · barrel re-export（2026-10-21）
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Go 文件的 package 子句（「同一个包」的判据 = **同目录 + package 子句同名**）。
+ *
+ * 为什么两半都要：Go 规定一个目录只能有一个包，但外部测试包 `foo_test` 会打破这个假设 ——
+ * 只看目录会把 `_test` 里的裸名连到主包的私有函数上（那是**误连**，比缺边更坏）。
+ * 按 mtime 缓存：每批解析都要判，31 个 Go 文件不值得每次全读。
+ */
+const goPackageCache = new Map<string, { mtimeMs: number; pkg: string | null }>();
+function goPackageName(projectRoot: string, rel: string): string | null {
+  const key = `${projectRoot}|${rel}`;
+  const abs = path.join(projectRoot, rel);
+  const st = fs.statSync(abs);
+  const hit = goPackageCache.get(key);
+  if (hit && hit.mtimeMs === st.mtimeMs) return hit.pkg;
+  const m = fs.readFileSync(abs, 'utf8').match(/^\s*package\s+([A-Za-z_]\w*)/m);
+  const pkg = m ? m[1] : null;
+  goPackageCache.set(key, { mtimeMs: st.mtimeMs, pkg });
+  return pkg;
+}
+
+/**
+ * Go 同包互调：裸名调用 → **同目录且 package 子句同名**的其它文件里的同名符号。
+ *
+ * ★ 成因（实测 2026-10-21）：`relImportsByFile` 只装 kind='relative'，而 Go 是 package 导入
+ *   ⇒ 同包其它文件的函数**结构上永远进不了** import 表 ⇒ 83 条同包互调全丢。
+ * ★ 命中数必须**恰好 1**：0 条 = 没有；>1 条 = 同包重名（Go 不允许，真出现就**不猜**）。
+ */
+function findGoSamePackageTarget(
+  db: Database,
+  fromRel: string,
+  name: string,
+  kinds: readonly string[],
+  goFilesByDir: ReadonlyMap<string, ReadonlyArray<{ file: string; pkg: string }>>,
+): { file: string; qn: string } | null {
+  if (!fromRel.endsWith('.go')) return null;
+  const group = goFilesByDir.get(path.posix.dirname(fromRel));
+  if (!group) return null;
+  const fromPkg = group.find((e) => e.file === fromRel)?.pkg ?? null;
+  if (!fromPkg) return null;
+  const hits: Array<{ file: string; qn: string }> = [];
+  for (const e of group) {
+    if (e.file === fromRel || e.pkg !== fromPkg) continue;
+    const row = db
+      .prepare('SELECT kind, qualified_name FROM nodes WHERE file_path = $f AND name = $n LIMIT 1')
+      .get({ f: e.file, n: name }) as { kind: string; qualified_name: string } | undefined;
+    if (row && kinds.includes(row.kind)) hits.push({ file: e.file, qn: row.qualified_name });
+  }
+  return hits.length === 1 ? hits[0] : null;
+}
+
+/** barrel 的转发表：导出名 → 来源模块；`export * from` 单独记 */
+interface ReexportIndex {
+  named: Map<string, string[]>;
+  stars: string[];
+}
+const reexportCache = new Map<string, { mtimeMs: number; idx: ReexportIndex }>();
+function reexportsOf(projectRoot: string, rel: string): ReexportIndex {
+  const key = `${projectRoot}|${rel}`;
+  const abs = path.join(projectRoot, rel);
+  const st = fs.statSync(abs);
+  const hit = reexportCache.get(key);
+  if (hit && hit.mtimeMs === st.mtimeMs) return hit.idx;
+  const text = fs.readFileSync(abs, 'utf8');
+  const named = new Map<string, string[]>();
+  const stars: string[] = [];
+  for (const m of text.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]/g)) {
+    for (const raw of m[1].split(',')) {
+      const item = raw.trim();
+      if (!item) continue;
+      const alias = item.match(/\bas\s+([A-Za-z_$][\w$]*)$/);
+      const exported = alias ? alias[1] : item.split(/\s+/)[0];
+      if (!exported || !/^[A-Za-z_$][\w$]*$/.test(exported)) continue;
+      const arr = named.get(exported) ?? [];
+      arr.push(m[2]);
+      named.set(exported, arr);
+    }
+  }
+  // ★ 只认 `export * from`：`export * as ns from` 不导出单个名字（只暴露 `ns.foo`），跟着连会连错
+  for (const m of text.matchAll(/export\s*\*\s*from\s*['"]([^'"]+)['"]/g)) stars.push(m[1]);
+  const idx = { named, stars };
+  reexportCache.set(key, { mtimeMs: st.mtimeMs, idx });
+  return idx;
+}
+
+/**
+ * 沿 barrel 的 re-export 找符号（最多两跳：`index.ts → sub/index.ts → kernel.ts`）。
+ *
+ * ★ 歧义判据（**不猜**）：候选文件去重后必须**恰好 1 个**；0 个 = 没找到，>1 个 = barrel 里同名冲突
+ *   （`export { x } from './a'` + `export { x } from './b'`）⇒ 返回 null，调用方保持 failed。
+ */
+function resolveReexportTarget(
+  db: Database,
+  projectRoot: string,
+  barrelRel: string,
+  name: string,
+  namesByFile: Map<string, Set<string>>,
+  depth: number = 0,
+  seen: Set<string> = new Set(),
+): { file: string; qn: string } | null {
+  if (depth > 2 || seen.has(barrelRel)) return null;
+  seen.add(barrelRel);
+  const idx = reexportsOf(projectRoot, barrelRel);
+  const sources = new Set<string>();
+  for (const s of idx.named.get(name) ?? []) sources.add(s);
+  for (const s of idx.stars) sources.add(s);
+  const hits = new Set<string>();
+  for (const source of sources) {
+    const target = resolveImportTarget(projectRoot, barrelRel, source);
+    if (!target || target === barrelRel) continue;
+    if (namesByFile.get(target)?.has(name)) {
+      hits.add(target);
+      continue;
+    }
+    const nested = resolveReexportTarget(db, projectRoot, target, name, namesByFile, depth + 1, seen);
+    if (nested) hits.add(nested.file);
+  }
+  if (hits.size !== 1) return null;
+  const file = [...hits][0];
+  const q = db
+    .prepare('SELECT qualified_name FROM nodes WHERE file_path = $tp AND name = $n LIMIT 1')
+    .get({ tp: file, n: name }) as { qualified_name: string } | undefined;
+  return q ? { file, qn: q.qualified_name } : null;
+}
+
 /** 有点调用前缀：内置对象 / 内置模块 / 全局对象（外部，非项目符号） */
 const BUILTIN_PREFIXES = new Set([
   'Math', 'JSON', 'Array', 'Object', 'String', 'Number', 'Boolean', 'Promise', 'console', 'Date',
@@ -1022,6 +1288,18 @@ export function resolveCrossFileCalls(
     }
   }
 
+  // ★ 2026-10-21：Go 同包索引（目录 → [{file, pkg}]）。判据 = 同目录 **且** package 子句同名，
+  //   见 findGoSamePackageTarget 的注释（`foo_test` 外部测试包会打破「一目录一包」）。
+  const goFilesByDir = new Map<string, Array<{ file: string; pkg: string }>>();
+  for (const row of db.prepare("SELECT path FROM files WHERE language = 'go'").all() as Array<{ path: string }>) {
+    const pkg = goPackageName(projectRoot, row.path);
+    if (!pkg) continue;
+    const dir = path.posix.dirname(row.path);
+    const arr = goFilesByDir.get(dir) ?? [];
+    arr.push({ file: row.path, pkg });
+    goFilesByDir.set(dir, arr);
+  }
+
   const updResolved = db.prepare("UPDATE unresolved_refs SET status='resolved' WHERE id = $i");
   const updExternal = db.prepare("UPDATE unresolved_refs SET status='external' WHERE id = $i");
   const updFailed = db.prepare("UPDATE unresolved_refs SET status='failed' WHERE id = $i");
@@ -1056,7 +1334,9 @@ export function resolveCrossFileCalls(
         stats.external++;
         continue;
       }
-      const t = findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, typeNamesByFile);
+      const t =
+        findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, typeNamesByFile)
+        ?? findGoSamePackageTarget(db, rel, expr, ['interface', 'type', 'class'], goFilesByDir);
       if (t) {
         insEdge.run({ src: r.from_node_id, tgt: `${t.file}#${t.qn}`, k: 'type_ref', ln: r.line, md: CROSS_META });
         updResolved.run({ i: r.id });
@@ -1092,7 +1372,9 @@ export function resolveCrossFileCalls(
     }
 
     // 无点调用：沿 relative imports 定位目标文件，符号表命中即解析
-    const target = findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, symbolsByFile);
+    const target =
+      findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, symbolsByFile)
+      ?? findGoSamePackageTarget(db, rel, expr, ['function'], goFilesByDir);
     if (target) {
       insEdge.run({ src: r.from_node_id, tgt: `${target.file}#${target.qn}`, k: 'call', ln: r.line, md: CROSS_META });
       updResolved.run({ i: r.id });
@@ -1143,6 +1425,10 @@ function findCrossFileTarget(
         .get({ tp: target, n: name }) as { qualified_name: string } | undefined;
       if (q) return { file: target, qn: q.qualified_name };
     }
+    // ★ 2026-10-21：barrel re-export —— 目标文件只是 `export { x } from './kernel.js'`，符号在下一层。
+    //   判据见 resolveReexportTarget：候选文件必须**唯一**，同 barrel 里同名冲突 ⇒ 不猜（保持 failed）。
+    const viaBarrel = resolveReexportTarget(db, projectRoot, target, name, namesByFile);
+    if (viaBarrel) return viaBarrel;
   }
   return null;
 }
