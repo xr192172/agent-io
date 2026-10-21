@@ -98994,11 +98994,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T07:26:10.064Z",
+    "saved_at": "2026-10-21T07:48:51.422Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792566909570,
-    "age": 660494
+    "scanRev": 1792568901929,
+    "age": 29493
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -101164,6 +101164,13 @@
     {
       "id": "todo_翻译-工作台-翻译册-feature-translate-json-它是-可以改",
       "summary": "【翻译·工作台】翻译册（`<feature>.translate.json`）：它是\"可以改的地方\" —— 源 DB 不能改（只读事实）、源码不能直接改（要先有指导），所以翻译决策必须落在中间层。★ 关键判据（用户 2026-10-21 定）：**DSL 层语言无关 ⇒ 直接复用不翻**；**DB 层往下逐层翻**，因为各层\"术语不一样\"。三层映射（从粗到细，每层都可先桩后实）：① 类型/术语层：`int ↔ number`、`[]T ↔ T[]`、`error ↔ throws/Result`、包/模块结构；② 函数层：签名形变（默认参数/多返回值/重载/可变参数）、惯用法（错误处理、迭代、并发）；③ 原子层：标识符风格（`snake_case ↔ camelCase`）、关键字（`if`/`for`/`defer`/`using`）、字面量。状态机：`pending → generating → stubbed → translated → verified → diff | blocked`。★ **\"一一对应\"在账上，不在文件上**：文件是最小可索引单位 ⇒ 未翻的符号先写桩（`throw new Error(\"TODO: not translated\")`），文件才可索引；本仓 `symbols.ts:568 ensureStub` 已是这个模式的先例，换个方向用。★ **翻译侧 DB 不\"翻译\"，是索引产生的**：目标源码写完跑一次 import_project 就有了 —— 若从源 DB 逐对翻，它和源码的行号/偏移必然对不上，会变成一个\"看起来像 DB 的假 DB\"（比没有更坏）。★ \"下一个翻谁\" = 查 `state=pending` 且指纹变了的那行 ⇒ 这个查询驱动整个循环（这就是\"工具主导\"的含义）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_更正-取代-dsl-摘-symbols-那条-不摘-symbols-改为-修它的",
+      "summary": "【更正·取代\"DSL 摘 symbols\"那条】**不摘 `symbols[]`**，改为**修它的质量**。\n★ 用户裁定（2026-10-21）：「DSL 是**预览版、缩略版的 DB** —— 直接全量读 DB 很难，而且让它选择性读，它也不知道要读什么。\n有这个缩略版才能**指引它读什么**，要更细的再去用工具读 DB。」⇒ **`symbols[]` 是导航/目录，不是\"代码事实的冗余副本\"**。\n（我上一条把它当副本，判断错了：书目录也抄章节名，但目录的价值在导航，不在重复正文。）\n\n**真正的病是\"有损\"和\"陈旧\"，不是\"存在\"**——实测：\n① 有损：`live_render.ts:76 kindOf` 把 function/method/const **一律折成 type** ⇒ 2649 条共有符号里 2558 条 kind 与库不同；\n   更糟的是 `overlay.ts:58 computeFileSignature` 靠 `kind:name` 认亲 ⇒ **函数与类型指纹相同**（rename 会误认）。\n② 陈旧：383 条 DSL 独有 · 20 个文件行数过期 · 27-30 个 DSL 文件盘上已不存在（DSL 比 DB 旧，但没人知道）。\n\n要修三件：\n（a）**kind 保真**：`kindOf` 不再归一，function/method/const/type/interface 保持原样；顺带修 `computeFileSignature`。\n（b）**陈旧可见**：DSL 带\"索引时刻 + 源 content_hash 摘要\"，让\"DSL 比 DB 旧\"能被查出来（不许静默用旧目录导航）。\n（c）**清幽灵**：27-30 个盘上已不存在的文件，从 DSL 里删掉（或标 `stale`）。\n\n★ 翻译场景**沿用用户的解法**：复制到译文侧时**只脱掉 `symbols[]`**（目标符号还不存在，带了就是假目录），\n源侧 DSL 保留它。⇒ 不需要为了翻译去动源侧 DSL 的形状。",
       "expectations": [],
       "state": "candidate",
       "owner": null
