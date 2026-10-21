@@ -29,6 +29,15 @@
       "type_only": true
     },
     {
+      "source": "./symbol_params.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./symbol_params.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
       "source": "./import_resolve.js",
       "kind": "relative"
     },

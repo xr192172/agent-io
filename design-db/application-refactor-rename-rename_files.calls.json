@@ -47,13 +47,25 @@
           "type": ": boolean",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "actor",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "authorize",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "RenameFilesResult",
       "kind": "interface",
-      "line": 44,
+      "line": 56,
       "signature": "RenameFilesResult()",
       "members": [
         {
@@ -115,19 +127,19 @@
     {
       "name": "renameFilesCore",
       "kind": "function",
-      "line": 87,
+      "line": 99,
       "signature": "renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResult>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 211,
+      "line": 227,
       "signature": "touchedOf(input: RenameFilesInput, r: RenameFilesResult): Touched"
     },
     {
       "name": "renameFiles",
       "kind": "function",
-      "line": 235,
+      "line": 251,
       "signature": "renameFiles(input: RenameFilesInput): Promise<TouchedProduct<RenameFilesResult>>"
     }
   ],

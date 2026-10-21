@@ -7,49 +7,49 @@
     {
       "name": "EXPLORE_ACTIONS",
       "kind": "const",
-      "line": 47,
-      "signature": "const EXPLORE_ACTIONS = [ 'search', 'read', 'diff_impact', 'arch_layer', 'guided_…"
+      "line": 57,
+      "signature": "const EXPLORE_ACTIONS = [ 'search', 'read', // ★ facts：**选择性读 DB**（索引事实），与 read（读…"
     },
     {
       "name": "ExploreAction",
       "kind": "type",
-      "line": 65,
+      "line": 71,
       "signature": "ExploreAction()"
     },
     {
       "name": "errMessage",
       "kind": "function",
-      "line": 69,
+      "line": 75,
       "signature": "errMessage(err: unknown): string"
     },
     {
       "name": "toResult",
       "kind": "function",
-      "line": 92,
+      "line": 97,
       "signature": "toResult(r: unknown, isAsync = false): { message: string; data: unknown }"
     },
     {
       "name": "exploreCode",
       "kind": "function",
-      "line": 99,
+      "line": 104,
       "signature": "exploreCode(params: { action: ExploreAction; args: Record<string, unknown> }): Promise<{ message: string; data: unknown }>"
     },
     {
       "name": "READ_PREVIEW_CAP",
       "kind": "const",
-      "line": 392,
+      "line": 324,
       "signature": "const READ_PREVIEW_CAP = 500"
     },
     {
       "name": "SYMBOL_TABLE_CAP",
       "kind": "const",
-      "line": 393,
+      "line": 325,
       "signature": "const SYMBOL_TABLE_CAP = 30"
     },
     {
       "name": "SymbolIndexItem",
       "kind": "type",
-      "line": 396,
+      "line": 328,
       "signature": "SymbolIndexItem()",
       "members": [
         {
@@ -99,7 +99,7 @@
     {
       "name": "ReadCodeOptions",
       "kind": "interface",
-      "line": 407,
+      "line": 339,
       "signature": "ReadCodeOptions()",
       "members": [
         {
@@ -149,7 +149,7 @@
     {
       "name": "ReadCodeData",
       "kind": "interface",
-      "line": 419,
+      "line": 351,
       "signature": "ReadCodeData()",
       "members": [
         {
@@ -217,8 +217,204 @@
     {
       "name": "readCode",
       "kind": "function",
-      "line": 434,
+      "line": 366,
       "signature": "readCode(root: string | undefined,\n  file: string,\n  opts: ReadCodeOptions = {},): Promise<{ message: string; data: ReadCodeData }>"
+    },
+    {
+      "name": "FACTS_COLUMNS",
+      "kind": "const",
+      "line": 552,
+      "signature": "const FACTS_COLUMNS = { kind: 'kind', signature: 'signature', params: 'params',…"
+    },
+    {
+      "name": "FactsField",
+      "kind": "type",
+      "line": 569,
+      "signature": "FactsField()"
+    },
+    {
+      "name": "FACTS_FIELDS",
+      "kind": "const",
+      "line": 571,
+      "signature": "const FACTS_FIELDS = Object.keys(FACTS_COLUMNS) as FactsField[]"
+    },
+    {
+      "name": "FACTS_DEFAULT_FIELDS",
+      "kind": "const",
+      "line": 574,
+      "signature": "const FACTS_DEFAULT_FIELDS = [ 'kind', 'signature', 'params', 'return_type', 'start_li…"
+    },
+    {
+      "name": "FACTS_DEFAULT_LIMIT",
+      "kind": "const",
+      "line": 579,
+      "signature": "const FACTS_DEFAULT_LIMIT = 50"
+    },
+    {
+      "name": "FACTS_JSON_FIELDS",
+      "kind": "const",
+      "line": 582,
+      "signature": "const FACTS_JSON_FIELDS = new Set<FactsField>(['params', 'type_params', 'modifiers'…"
+    },
+    {
+      "name": "factsAge",
+      "kind": "function",
+      "line": 585,
+      "signature": "factsAge(ms: number): string"
+    },
+    {
+      "name": "factsJsonOrRaw",
+      "kind": "function",
+      "line": 593,
+      "signature": "factsJsonOrRaw(v: unknown): unknown"
+    },
+    {
+      "name": "factsFieldsOf",
+      "kind": "function",
+      "line": 603,
+      "signature": "factsFieldsOf(raw: string[] | undefined): FactsField[]"
+    },
+    {
+      "name": "factsLimitOf",
+      "kind": "function",
+      "line": 637,
+      "signature": "factsLimitOf(raw: number | undefined): number"
+    },
+    {
+      "name": "FactsInput",
+      "kind": "interface",
+      "line": 645,
+      "signature": "FactsInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fields",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "limit",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "FactsData",
+      "kind": "interface",
+      "line": 658,
+      "signature": "FactsData()",
+      "members": [
+        {
+          "name": "action",
+          "type": ": 'facts'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": 'db'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stale",
+          "type": ": false",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "fields",
+          "type": ": FactsField[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "limit",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "total",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "returned",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "truncated",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "index",
+          "type": ": { content_hash: string; indexed_at: string; indexed_age: string }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbols",
+          "type": ": Array<Record<string, unknown>>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "body_rejected",
+          "type": ": Array<{ qualified_name: string; reason: string; detail: string }>",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "readFacts",
+      "kind": "function",
+      "line": 690,
+      "signature": "readFacts(input: FactsInput): { message: string; data: FactsData }"
     }
   ],
   "imports": [
@@ -239,11 +435,19 @@
       "kind": "relative"
     },
     {
-      "source": "../../../infrastructure/index/index_backfill.js",
+      "source": "../../../infrastructure/index/symbols.js",
       "kind": "relative"
     },
     {
-      "source": "../../../infrastructure/analysis/impact/diff_impact.js",
+      "source": "../../../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/text/arg_suggest.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/index_backfill.js",
       "kind": "relative"
     },
     {
@@ -264,31 +468,11 @@
       "kind": "relative"
     },
     {
-      "source": "../../../infrastructure/render/inject_replay.js",
-      "kind": "relative"
-    },
-    {
       "source": "../../design/lifecycle/simulation.js",
       "kind": "relative"
     },
     {
       "source": "../../dispatch.js",
-      "kind": "relative"
-    },
-    {
-      "source": "../../design/derive/derive_algorithm.js",
-      "kind": "relative"
-    },
-    {
-      "source": "../../design/derive/derive_chain.js",
-      "kind": "relative"
-    },
-    {
-      "source": "../../design/derive/derive_split.js",
-      "kind": "relative"
-    },
-    {
-      "source": "../view/derive_anim_flow.js",
       "kind": "relative"
     },
     {
@@ -319,18 +503,6 @@
   "calls": [
     {
       "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/design/derive/derive_algorithm.ts#deriveAlgorithm"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/design/derive/derive_chain.ts#deriveDetailChain"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/design/derive/derive_split.ts#deriveSplit"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
       "to": "src/application/design/lifecycle/simulation.ts#resetSimulation"
     },
     {
@@ -358,32 +530,44 @@
       "to": "src/application/meta/explore/explore_code.ts#errMessage"
     },
     {
+      "from": "src/application/meta/explore/explore_code.ts#readFacts",
+      "to": "src/application/meta/explore/explore_code.ts#factsAge"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#readFacts",
+      "to": "src/application/meta/explore/explore_code.ts#factsAge"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#readFacts",
+      "to": "src/application/meta/explore/explore_code.ts#factsAge"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#readFacts",
+      "to": "src/application/meta/explore/explore_code.ts#factsAge"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#readFacts",
+      "to": "src/application/meta/explore/explore_code.ts#factsAge"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#readFacts",
+      "to": "src/application/meta/explore/explore_code.ts#factsFieldsOf"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#readFacts",
+      "to": "src/application/meta/explore/explore_code.ts#factsJsonOrRaw"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#readFacts",
+      "to": "src/application/meta/explore/explore_code.ts#factsLimitOf"
+    },
+    {
       "from": "src/application/meta/explore/explore_code.ts#exploreCode",
       "to": "src/application/meta/explore/explore_code.ts#readCode"
     },
     {
       "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/meta/explore/explore_code.ts#toResult"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/meta/explore/explore_code.ts#toResult"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/meta/explore/explore_code.ts#toResult"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/meta/explore/explore_code.ts#toResult"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/meta/explore/explore_code.ts#toResult"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/meta/explore/explore_code.ts#toResult"
+      "to": "src/application/meta/explore/explore_code.ts#readFacts"
     },
     {
       "from": "src/application/meta/explore/explore_code.ts#exploreCode",
@@ -419,10 +603,6 @@
     },
     {
       "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/meta/view/derive_anim_flow.ts#deriveAnimFlow"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
       "to": "src/application/meta/view/derive_mind_map.ts#deriveMindMap"
     },
     {
@@ -439,10 +619,6 @@
     },
     {
       "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalArr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
       "to": "src/application/plumbing.ts#optionalBool"
     },
     {
@@ -491,22 +667,6 @@
     },
     {
       "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalBool"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalBool"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalBool"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalBool"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
       "to": "src/application/plumbing.ts#optionalNum"
     },
     {
@@ -559,30 +719,6 @@
     },
     {
       "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalNum"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalNum"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalNum"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalNum"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalNum"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalNum"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
       "to": "src/application/plumbing.ts#optionalStr"
     },
     {
@@ -644,86 +780,6 @@
     {
       "from": "src/application/meta/explore/explore_code.ts#exploreCode",
       "to": "src/application/plumbing.ts#optionalStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#optionalStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#requireStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#requireStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#requireStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#requireStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#requireStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#requireStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#requireStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#requireStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#requireStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#requireStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#requireStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#requireStr"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/application/plumbing.ts#requireStr"
     },
     {
       "from": "src/application/meta/explore/explore_code.ts#exploreCode",
@@ -779,15 +835,15 @@
     },
     {
       "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact"
-    },
-    {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
       "to": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer"
     },
     {
       "from": "src/application/meta/explore/explore_code.ts#exploreCode",
       "to": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#readFacts",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
     },
     {
       "from": "src/application/meta/explore/explore_code.ts#exploreCode",
@@ -810,12 +866,20 @@
       "to": "src/infrastructure/index/index_freshness.ts#ensureIndexAroundSeed"
     },
     {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/infrastructure/index/index_freshness.ts#ensureProjectIndex"
+      "from": "src/application/meta/explore/explore_code.ts#readFacts",
+      "to": "src/infrastructure/index/symbols.ts#contentHash"
     },
     {
-      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
-      "to": "src/infrastructure/render/inject_replay.ts#injectReplay"
+      "from": "src/application/meta/explore/explore_code.ts#readFacts",
+      "to": "src/infrastructure/index/symbols.ts#readSymbolBody"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#readFacts",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#factsFieldsOf",
+      "to": "src/infrastructure/text/arg_suggest.ts#suggestNames"
     },
     {
       "from": "src/application/meta/explore/explore_code.ts#readCode",

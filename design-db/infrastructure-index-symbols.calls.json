@@ -235,21 +235,39 @@
       "signature": "symbolSpanHash(lines: string[], startLine: number, endLine: number, lang: string): string"
     },
     {
+      "name": "SymbolBodyReject",
+      "kind": "type",
+      "line": 191,
+      "signature": "SymbolBodyReject()"
+    },
+    {
+      "name": "SymbolBodyRead",
+      "kind": "type",
+      "line": 203,
+      "signature": "SymbolBodyRead()"
+    },
+    {
+      "name": "readSymbolBody",
+      "kind": "function",
+      "line": 216,
+      "signature": "readSymbolBody(db: Database,\n  opts: { file: string; qualifiedName: string; startLine: number; src: string },): SymbolBodyRead"
+    },
+    {
       "name": "hashSetsOf",
       "kind": "function",
-      "line": 177,
+      "line": 272,
       "signature": "hashSetsOf(rows: Array<{ qualified_name: string; sym_hash: string | null }>): Map<string, Set<string>>"
     },
     {
       "name": "resolveImportTarget",
       "kind": "function",
-      "line": 207,
+      "line": 302,
       "signature": "resolveImportTarget(projectRoot: string,\n  fromRel: string,\n  source: string,\n  exts?: readonly string[],): string | null"
     },
     {
       "name": "SyncPrelude",
       "kind": "interface",
-      "line": 224,
+      "line": 319,
       "signature": "SyncPrelude()",
       "members": [
         {
@@ -299,43 +317,43 @@
     {
       "name": "PreludeResult",
       "kind": "type",
-      "line": 235,
+      "line": 330,
       "signature": "PreludeResult()"
     },
     {
       "name": "hasLegacyImportRows",
       "kind": "function",
-      "line": 250,
+      "line": 345,
       "signature": "hasLegacyImportRows(db: Database, rel: string): boolean"
     },
     {
       "name": "syncFilePrelude",
       "kind": "function",
-      "line": 265,
+      "line": 360,
       "signature": "syncFilePrelude(db: Database, projectRoot: string, absPath: string): PreludeResult"
     },
     {
       "name": "applyParsedToIndex",
       "kind": "function",
-      "line": 310,
+      "line": 405,
       "signature": "applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude, parsed: ParsedFile): SyncFileResult"
     },
     {
       "name": "syncFile",
       "kind": "function",
-      "line": 571,
+      "line": 708,
       "signature": "syncFile(db: Database, projectRoot: string, absPath: string): Promise<SyncFileResult>"
     },
     {
       "name": "syncFileSync",
       "kind": "function",
-      "line": 588,
+      "line": 725,
       "signature": "syncFileSync(db: Database, projectRoot: string, absPath: string): SyncFileResult"
     },
     {
       "name": "ReopenRefsResult",
       "kind": "interface",
-      "line": 616,
+      "line": 753,
       "signature": "ReopenRefsResult()",
       "members": [
         {
@@ -355,49 +373,49 @@
     {
       "name": "reopenRefsTo",
       "kind": "function",
-      "line": 628,
+      "line": 765,
       "signature": "reopenRefsTo(db: Database, names: readonly string[]): ReopenRefsResult"
     },
     {
       "name": "changedSymbolNames",
       "kind": "function",
-      "line": 674,
+      "line": 811,
       "signature": "changedSymbolNames(db: Database, rel: string): string[]"
     },
     {
       "name": "syncProject",
       "kind": "function",
-      "line": 699,
+      "line": 836,
       "signature": "syncProject(db: Database,\n  projectRoot: string,\n  absPaths: string[],): Promise<SyncProjectResult>"
     },
     {
       "name": "removeFileRel",
       "kind": "function",
-      "line": 730,
+      "line": 867,
       "signature": "removeFileRel(db: Database, rel: string): void"
     },
     {
       "name": "removeFile",
       "kind": "function",
-      "line": 737,
+      "line": 878,
       "signature": "removeFile(db: Database, projectRoot: string, absPath: string): void"
     },
     {
       "name": "BUILTIN_PREFIXES",
       "kind": "const",
-      "line": 746,
+      "line": 887,
       "signature": "const BUILTIN_PREFIXES = new Set([ 'Math', 'JSON', 'Array', 'Object', 'String', 'N…"
     },
     {
       "name": "BUILTIN_CALLEES",
       "kind": "const",
-      "line": 762,
+      "line": 903,
       "signature": "const BUILTIN_CALLEES = new Set([ 'String', 'Number', 'Boolean', 'Object', 'Array…"
     },
     {
       "name": "CrossFileResolveStats",
       "kind": "interface",
-      "line": 773,
+      "line": 914,
       "signature": "CrossFileResolveStats()",
       "members": [
         {
@@ -429,31 +447,31 @@
     {
       "name": "resolveCrossFileCalls",
       "kind": "function",
-      "line": 797,
+      "line": 938,
       "signature": "resolveCrossFileCalls(db: Database,\n  projectRoot: string,\n  opts: { scopeFiles?: readonly string[]; keepUnresolvedPending?: boolean } = {},): CrossFileResolveStats"
     },
     {
       "name": "BUILTIN_TYPES",
       "kind": "const",
-      "line": 972,
+      "line": 1113,
       "signature": "const BUILTIN_TYPES = new Set([ 'string', 'number', 'boolean', 'void', 'any', '…"
     },
     {
       "name": "findCrossFileTarget",
       "kind": "function",
-      "line": 982,
+      "line": 1123,
       "signature": "findCrossFileTarget(db: Database,\n  relImportsByFile: Map<string, Array<{ source: string; line: number }>>,\n  projectRoot: string,\n  fromRel: string,\n  name: string,\n  namesByFile: Map<string, Set<string>>,): { file: string; qn: string } | null"
     },
     {
       "name": "pruneDeletedFiles",
       "kind": "function",
-      "line": 1034,
+      "line": 1175,
       "signature": "pruneDeletedFiles(db: Database,\n  projectRoot: string,\n  absPaths: string[],\n  retainedOut?: string[],): string[]"
     },
     {
       "name": "CachedSymbol",
       "kind": "interface",
-      "line": 1071,
+      "line": 1212,
       "signature": "CachedSymbol()",
       "members": [
         {
@@ -503,7 +521,7 @@
     {
       "name": "CachedImport",
       "kind": "interface",
-      "line": 1082,
+      "line": 1223,
       "signature": "CachedImport()",
       "members": [
         {
@@ -529,7 +547,7 @@
     {
       "name": "CachedFileParse",
       "kind": "interface",
-      "line": 1088,
+      "line": 1229,
       "signature": "CachedFileParse()",
       "members": [
         {
@@ -555,55 +573,55 @@
     {
       "name": "getFileParse",
       "kind": "function",
-      "line": 1099,
+      "line": 1240,
       "signature": "getFileParse(db: Database, relPath: string): CachedFileParse | null"
     },
     {
       "name": "searchSymbols",
       "kind": "function",
-      "line": 1121,
+      "line": 1262,
       "signature": "searchSymbols(db: Database, query: string, limit = 20): SymbolHit[]"
     },
     {
       "name": "getIndexStats",
       "kind": "function",
-      "line": 1137,
+      "line": 1278,
       "signature": "getIndexStats(db: Database): IndexStats"
     },
     {
       "name": "hasAnyIndexedFiles",
       "kind": "function",
-      "line": 1150,
+      "line": 1291,
       "signature": "hasAnyIndexedFiles(db: Database): boolean"
     },
     {
       "name": "isFileIndexed",
       "kind": "function",
-      "line": 1156,
+      "line": 1297,
       "signature": "isFileIndexed(db: Database, relPath: string): boolean"
     },
     {
       "name": "getResolvedImportTargets",
       "kind": "function",
-      "line": 1166,
+      "line": 1307,
       "signature": "getResolvedImportTargets(db: Database, relPath: string): string[]"
     },
     {
       "name": "getResolvedImportSources",
       "kind": "function",
-      "line": 1178,
+      "line": 1319,
       "signature": "getResolvedImportSources(db: Database, relPath: string): string[]"
     },
     {
       "name": "getRawImportsOfFile",
       "kind": "function",
-      "line": 1190,
+      "line": 1331,
       "signature": "getRawImportsOfFile(db: Database,\n  relPath: string,): Array<{ source: string; kind: 'relative' | 'package'; type_only: boolean; line: number }>"
     },
     {
       "name": "findFilesImportingAnySource",
       "kind": "function",
-      "line": 1214,
+      "line": 1355,
       "signature": "findFilesImportingAnySource(db: Database, sources: string[]): string[]"
     }
   ],
@@ -668,7 +686,19 @@
       "to": "src/infrastructure/index/symbols.ts#applyParsedToIndex"
     },
     {
+      "from": "src/infrastructure/index/symbols.ts#readSymbolBody",
+      "to": "src/infrastructure/index/symbols.ts#contentHash"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#readSymbolBody",
+      "to": "src/infrastructure/index/symbols.ts#contentHash"
+    },
+    {
       "from": "src/infrastructure/index/symbols.ts#syncFilePrelude",
+      "to": "src/infrastructure/index/symbols.ts#contentHash"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
       "to": "src/infrastructure/index/symbols.ts#contentHash"
     },
     {

@@ -161,31 +161,31 @@
     {
       "name": "r",
       "kind": "const",
-      "line": 275,
-      "signature": "const r = await invokeTool(def, args)"
+      "line": 277,
+      "signature": "const r = await invokeTool(def, args, 'cli')"
     },
     {
       "name": "outText",
       "kind": "const",
-      "line": 280,
+      "line": 282,
       "signature": "const outText = r.text"
     },
     {
       "name": "miss",
       "kind": "const",
-      "line": 281,
+      "line": 283,
       "signature": "const miss = /缺参数\\s*\"([^\"]+)\"/.exec(outText)"
     },
     {
       "name": "schema",
       "kind": "const",
-      "line": 283,
+      "line": 285,
       "signature": "const schema = (def.inputSchema ?? {}) as Record<string, ZodFieldMeta>"
     },
     {
       "name": "keyList",
       "kind": "const",
-      "line": 284,
+      "line": 286,
       "signature": "const keyList = (wantReq: boolean) => Object.entries(schema) .filter(([, …"
     }
   ],

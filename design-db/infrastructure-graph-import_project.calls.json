@@ -439,13 +439,13 @@
     {
       "name": "parsedKindToSymbolKind",
       "kind": "function",
-      "line": 726,
+      "line": 738,
       "signature": "parsedKindToSymbolKind(kind: string): Symbol['kind']"
     },
     {
       "name": "importProject",
       "kind": "function",
-      "line": 735,
+      "line": 752,
       "signature": "importProject(input: ImportProjectInput): Promise<ImportProjectResult>"
     }
   ],

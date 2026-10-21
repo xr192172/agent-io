@@ -7,7 +7,7 @@
     {
       "name": "LocalRenameTarget",
       "kind": "interface",
-      "line": 50,
+      "line": 52,
       "signature": "LocalRenameTarget()",
       "members": [
         {
@@ -45,7 +45,7 @@
     {
       "name": "LocalRenameOutcome",
       "kind": "interface",
-      "line": 64,
+      "line": 66,
       "signature": "LocalRenameOutcome()",
       "members": [
         {
@@ -107,7 +107,7 @@
     {
       "name": "LocalRenameBatchResult",
       "kind": "interface",
-      "line": 85,
+      "line": 87,
       "signature": "LocalRenameBatchResult()",
       "members": [
         {
@@ -153,6 +153,12 @@
           "member_kind": "property"
         },
         {
+          "name": "task_gate",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
           "name": "blocked",
           "type": ": string[]",
           "optional": true,
@@ -163,8 +169,8 @@
     {
       "name": "renameLocals",
       "kind": "function",
-      "line": 109,
-      "signature": "renameLocals(input: {\n  root: string;\n  renames: LocalRenameTarget[];\n  dry_run?: boolean;\n}): Promise<LocalRenameBatchResult>"
+      "line": 122,
+      "signature": "renameLocals(input: {\n  root: string;\n  renames: LocalRenameTarget[];\n  dry_run?: boolean;\n  actor?: string;\n  authorize?: string | null;\n}): Promise<LocalRenameBatchResult>"
     }
   ],
   "imports": [
@@ -185,6 +191,10 @@
       "kind": "relative"
     },
     {
+      "source": "../gate_note.js",
+      "kind": "relative"
+    },
+    {
       "source": "../../../infrastructure/parse/languages.js",
       "kind": "relative"
     },
@@ -198,6 +208,10 @@
     {
       "from": "src/application/refactor/rename/rename_local.ts#renameLocals",
       "to": "src/application/refactor/edit/apply_writes.ts#applyWrites"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_local.ts#renameLocals",
+      "to": "src/application/refactor/gate_note.ts#attachGateNote"
     },
     {
       "from": "src/application/refactor/rename/rename_local.ts#renameLocals",

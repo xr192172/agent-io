@@ -311,27 +311,33 @@
       "signature": "isValidBindName(name: string): boolean"
     },
     {
+      "name": "firstNamedChildOfType",
+      "kind": "function",
+      "line": 393,
+      "signature": "firstNamedChildOfType(node: SyntaxNodeLike, type: string): SyntaxNodeLike | null"
+    },
+    {
       "name": "collectImportBinds",
       "kind": "function",
-      "line": 397,
+      "line": 410,
       "signature": "collectImportBinds(root: SyntaxNodeLike, lang: string): AstImportBind[]"
     },
     {
       "name": "nameNodeStart",
       "kind": "function",
-      "line": 514,
+      "line": 545,
       "signature": "nameNodeStart(node: SyntaxNodeLike, name: string): number"
     },
     {
       "name": "extractNamedImports",
       "kind": "function",
-      "line": 520,
+      "line": 551,
       "signature": "extractNamedImports(filePath: string, source: string): Promise<NamedImportRef[]>"
     },
     {
       "name": "ImportBindingFact",
       "kind": "interface",
-      "line": 558,
+      "line": 589,
       "signature": "ImportBindingFact()",
       "members": [
         {
@@ -363,91 +369,91 @@
     {
       "name": "importBindingFactsFromRoot",
       "kind": "function",
-      "line": 565,
+      "line": 596,
       "signature": "importBindingFactsFromRoot(root: SyntaxNodeLike, langName: string): ImportBindingFact[]"
     },
     {
       "name": "unusedRefOf",
       "kind": "function",
-      "line": 587,
+      "line": 618,
       "signature": "unusedRefOf(f: ImportBindingFact): NamedImportRef"
     },
     {
       "name": "unusedImportsIn",
       "kind": "function",
-      "line": 592,
+      "line": 623,
       "signature": "unusedImportsIn(filePath: string, source: string): Promise<NamedImportRef[]>"
     },
     {
       "name": "importBindingFactsSync",
       "kind": "function",
-      "line": 606,
+      "line": 637,
       "signature": "importBindingFactsSync(filePath: string, source: string): ImportBindingFact[] | null"
     },
     {
       "name": "extractNamedImportsRegex",
       "kind": "function",
-      "line": 617,
+      "line": 648,
       "signature": "extractNamedImportsRegex(source: string): NamedImportRef[]"
     },
     {
       "name": "unusedImportsInRegex",
       "kind": "function",
-      "line": 680,
+      "line": 711,
       "signature": "unusedImportsInRegex(source: string): NamedImportRef[]"
     },
     {
       "name": "TYPE_KINDS",
       "kind": "const",
-      "line": 693,
+      "line": 724,
       "signature": "const TYPE_KINDS = new Set<ParsedSymbol['kind']>(['interface', 'type', 'clas…"
     },
     {
       "name": "TYPE_ONLY_IMPORT_RE",
       "kind": "const",
-      "line": 711,
+      "line": 742,
       "signature": "const TYPE_ONLY_IMPORT_RE = /^\\s*import\\s+type\\b/"
     },
     {
       "name": "resolveImportFile",
       "kind": "function",
-      "line": 722,
+      "line": 753,
       "signature": "resolveImportFile(fromRel: string, source: string, rels: Set<string>, exts: string[]): string | null"
     },
     {
       "name": "unreadWhy",
       "kind": "function",
-      "line": 733,
+      "line": 764,
       "signature": "unreadWhy(u: UnmatchedExtFact & { count: number }): string"
     },
     {
       "name": "unreadMark",
       "kind": "function",
-      "line": 758,
+      "line": 789,
       "signature": "unreadMark(u: UnmatchedExtFact & { count: number }): string"
     },
     {
       "name": "analyzeHealth",
       "kind": "function",
-      "line": 772,
+      "line": 803,
       "signature": "analyzeHealth(root: string, options: HealthOptions = {}): Promise<HealthReport>"
     },
     {
       "name": "SCORE_SPEC",
       "kind": "const",
-      "line": 1264,
+      "line": 1295,
       "signature": "const SCORE_SPEC = { layer_violation: { w: 30, fullAt: 15 }, // ★ 2026-10-03…"
     },
     {
       "name": "SCORE_KEYS",
       "kind": "const",
-      "line": 1280,
+      "line": 1311,
       "signature": "const SCORE_KEYS = Object.keys(SCORE_SPEC) as HealthKind[]"
     },
     {
       "name": "computeScore",
       "kind": "function",
-      "line": 1290,
+      "line": 1321,
       "signature": "computeScore(counts: Record<HealthKind, number>,\n  fileCount: number,): { value: number; grade: HealthReport['grade']; contribution: Record<HealthKind, number> }"
     }
   ],
@@ -527,6 +533,14 @@
       "to": "src/infrastructure/analysis/health/index.ts#findCycles"
     },
     {
+      "from": "src/infrastructure/analysis/health/index.ts#collectImportBinds",
+      "to": "src/infrastructure/analysis/health/index.ts#firstNamedChildOfType"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#collectImportBinds",
+      "to": "src/infrastructure/analysis/health/index.ts#firstNamedChildOfType"
+    },
+    {
       "from": "src/infrastructure/analysis/health/index.ts#unusedImportsIn",
       "to": "src/infrastructure/analysis/health/index.ts#importBindingFactsFromRoot"
     },
@@ -547,8 +561,16 @@
       "to": "src/infrastructure/analysis/health/index.ts#isValidBindName"
     },
     {
+      "from": "src/infrastructure/analysis/health/index.ts#collectImportBinds",
+      "to": "src/infrastructure/analysis/health/index.ts#isValidBindName"
+    },
+    {
       "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
       "to": "src/infrastructure/analysis/health/index.ts#judgesDeadCode"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#collectImportBinds",
+      "to": "src/infrastructure/analysis/health/index.ts#nameNodeStart"
     },
     {
       "from": "src/infrastructure/analysis/health/index.ts#collectImportBinds",

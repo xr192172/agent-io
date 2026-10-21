@@ -7,7 +7,7 @@
     {
       "name": "TranslateGoTsArgs",
       "kind": "interface",
-      "line": 19,
+      "line": 28,
       "signature": "TranslateGoTsArgs()",
       "members": [
         {
@@ -41,12 +41,6 @@
           "member_kind": "property"
         },
         {
-          "name": "tscVerify",
-          "type": ": boolean",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
           "name": "batchSize",
           "type": ": number",
           "optional": true,
@@ -57,20 +51,44 @@
           "type": ": number",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "testCases",
+          "type": ": { name?: string; args: unknown[] }[]",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "translateGoTsHandler",
       "kind": "function",
-      "line": 37,
+      "line": 47,
       "signature": "translateGoTsHandler(args: Record<string, unknown>): Promise<{ message: string; data?: unknown }>"
     },
     {
-      "name": "runParityOnFilled",
+      "name": "appendReceipt",
       "kind": "function",
-      "line": 140,
-      "signature": "runParityOnFilled(units: Awaited<ReturnType<typeof translateGoToTs>>['units']): { message: string }"
+      "line": 205,
+      "signature": "appendReceipt(lines: string[], receipt: Receipt): void"
+    },
+    {
+      "name": "projectReceipt",
+      "kind": "function",
+      "line": 231,
+      "signature": "projectReceipt(r: ProjectResult, fillRequested: boolean, verifyRequested: boolean): Receipt"
+    },
+    {
+      "name": "parseSuppliedCases",
+      "kind": "function",
+      "line": 264,
+      "signature": "parseSuppliedCases(raw: unknown): BehaviorCase[]"
+    },
+    {
+      "name": "externalImportsOf",
+      "kind": "function",
+      "line": 277,
+      "signature": "externalImportsOf(source: string): string[]"
     }
   ],
   "imports": [
@@ -99,14 +117,41 @@
       "kind": "relative"
     },
     {
-      "source": "./verify_behavior.js",
+      "source": "./go_tests.js",
       "kind": "relative"
+    },
+    {
+      "source": "./receipt.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./go_extractor.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../behavior/index.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./unit.js",
+      "kind": "relative",
+      "type_only": true
     }
   ],
   "calls": [
     {
       "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
       "to": "src/infrastructure/authoring/translate/fill.ts#fillUnitsWithRetry"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
+      "to": "src/infrastructure/authoring/translate/go_tests.ts#findGoTestFiles"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
+      "to": "src/infrastructure/authoring/translate/go_tests.ts#harvestForUnits"
     },
     {
       "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
@@ -122,11 +167,55 @@
     },
     {
       "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
-      "to": "src/infrastructure/authoring/translate/tool.ts#runParityOnFilled"
+      "to": "src/infrastructure/authoring/translate/receipt.ts#buildKnown"
     },
     {
-      "from": "src/infrastructure/authoring/translate/tool.ts#runParityOnFilled",
-      "to": "src/infrastructure/authoring/translate/verify_behavior.ts#checkTranslationParity"
+      "from": "src/infrastructure/authoring/translate/tool.ts#projectReceipt",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#buildKnown"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#buildUnknowns"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#projectReceipt",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#buildUnknowns"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#methodInfo"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#unverifiedReceipt"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#projectReceipt",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#unverifiedReceipt"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#verifyTranslation"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
+      "to": "src/infrastructure/authoring/translate/tool.ts#appendReceipt"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
+      "to": "src/infrastructure/authoring/translate/tool.ts#appendReceipt"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
+      "to": "src/infrastructure/authoring/translate/tool.ts#externalImportsOf"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
+      "to": "src/infrastructure/authoring/translate/tool.ts#parseSuppliedCases"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
+      "to": "src/infrastructure/authoring/translate/tool.ts#projectReceipt"
     }
   ]
 }

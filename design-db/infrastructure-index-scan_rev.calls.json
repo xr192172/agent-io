@@ -21,19 +21,25 @@
           "type": ": string | null",
           "optional": false,
           "member_kind": "property"
+        },
+        {
+          "name": "schemaVersion",
+          "type": ": number | null",
+          "optional": false,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "NONE",
       "kind": "const",
-      "line": 31,
-      "signature": "const NONE = { rev: null, db: null }"
+      "line": 42,
+      "signature": "const NONE = { rev: null, db: null, schemaVersion: null }"
     },
     {
       "name": "scanRevOf",
       "kind": "function",
-      "line": 38,
+      "line": 49,
       "signature": "scanRevOf(opts: { feature?: string; sourceRoot?: string } = {}): ScanRev"
     }
   ],

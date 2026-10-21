@@ -87,13 +87,19 @@
           "type": ": string",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "task_gate",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "PipelineOptions",
       "kind": "interface",
-      "line": 93,
+      "line": 97,
       "signature": "PipelineOptions()",
       "members": [
         {
@@ -149,13 +155,25 @@
           "type": ": RefactorLangRegistry",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "actor",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "authorize",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "PipelineResult",
       "kind": "interface",
-      "line": 137,
+      "line": 149,
       "signature": "PipelineResult()",
       "members": [
         {
@@ -217,37 +235,37 @@
     {
       "name": "computeDeadStatementsPlan",
       "kind": "function",
-      "line": 158,
+      "line": 170,
       "signature": "computeDeadStatementsPlan(proj: string,\n  files: string[] | undefined,\n  langFilter?: 'go' | 'ts',): Promise<RunningChangePlan>"
     },
     {
       "name": "computeDeadImportsPlan",
       "kind": "function",
-      "line": 190,
+      "line": 202,
       "signature": "computeDeadImportsPlan(proj: string,\n  dead: Array<{ source: string; files: string[] }>,\n  langFilter?: 'go' | 'ts',): RunningChangePlan"
     },
     {
       "name": "buildDefaultLangs",
       "kind": "function",
-      "line": 266,
+      "line": 278,
       "signature": "buildDefaultLangs(): RefactorLangRegistry"
     },
     {
       "name": "DEFAULT_LANGS",
       "kind": "const",
-      "line": 379,
+      "line": 391,
       "signature": "const DEFAULT_LANGS = buildDefaultLangs()"
     },
     {
       "name": "registerRefactorLanguage",
       "kind": "function",
-      "line": 383,
+      "line": 395,
       "signature": "registerRefactorLanguage(ex: LanguageRefactorExecutor): void"
     },
     {
       "name": "ScheduledStep",
       "kind": "interface",
-      "line": 391,
+      "line": 403,
       "signature": "ScheduledStep()",
       "members": [
         {
@@ -291,49 +309,49 @@
     {
       "name": "collectSteps",
       "kind": "function",
-      "line": 405,
+      "line": 417,
       "signature": "collectSteps(executors: LanguageRefactorExecutor[],\n  steps: RefactorStepsCfg,): ScheduledStep[]"
     },
     {
       "name": "dominantExecutor",
       "kind": "function",
-      "line": 445,
+      "line": 457,
       "signature": "dominantExecutor(executors: LanguageRefactorExecutor[],\n  cwd: string,): LanguageRefactorExecutor | undefined"
     },
     {
       "name": "dominantVerifyCommands",
       "kind": "function",
-      "line": 455,
+      "line": 467,
       "signature": "dominantVerifyCommands(executors: LanguageRefactorExecutor[],\n  cwd: string,): VerifyCommand[]"
     },
     {
       "name": "mergeVerifyCommands",
       "kind": "function",
-      "line": 465,
+      "line": 477,
       "signature": "mergeVerifyCommands(executors: LanguageRefactorExecutor[], cwd: string): VerifyCommand[]"
     },
     {
       "name": "runRefactorPipeline",
       "kind": "function",
-      "line": 482,
+      "line": 494,
       "signature": "runRefactorPipeline(opts: PipelineOptions): Promise<PipelineResult>"
     },
     {
       "name": "staticRevalidate",
       "kind": "function",
-      "line": 735,
+      "line": 760,
       "signature": "staticRevalidate(absToNew: Map<string, string>, proj: string): Promise<string | null>"
     },
     {
       "name": "countPlanned",
       "kind": "function",
-      "line": 744,
+      "line": 769,
       "signature": "countPlanned(opts: PipelineOptions): number"
     },
     {
       "name": "buildStepCount",
       "kind": "const",
-      "line": 753,
+      "line": 778,
       "signature": "const buildStepCount = countPlanned"
     }
   ],
@@ -460,7 +478,15 @@
     },
     {
       "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline.runStage",
+      "to": "src/application/write_gate.ts#assertSourceWriteRegisteredFor"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline.runStage",
       "to": "src/application/write_gate.ts#recordSelfWrite"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline.runStage",
+      "to": "src/application/write_gate.ts#resolveActor"
     },
     {
       "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline.runStage",

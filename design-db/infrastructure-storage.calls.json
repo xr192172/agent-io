@@ -59,63 +59,69 @@
       "signature": "getLiveFeatureFile(feature: string, baseDir?: string): string"
     },
     {
+      "name": "buildSyncMeta",
+      "kind": "function",
+      "line": 179,
+      "signature": "buildSyncMeta(input: {\n  feature: string;\n  sourceRoot?: string;\n  source: string;\n  /** 上一份 `_sync`（只在需要保留 `facts` 这类调用方声明时传） */\n  prev?: Record<string, unknown>;\n}): Record<string, unknown>"
+    },
+    {
       "name": "syncMeta",
       "kind": "function",
-      "line": 161,
+      "line": 202,
       "signature": "syncMeta(dsl: DesignDSL, source: string): Record<string, unknown>"
     },
     {
       "name": "saveLiveFeature",
       "kind": "function",
-      "line": 183,
+      "line": 214,
       "signature": "saveLiveFeature(dsl: DesignDSL, baseDir?: string): string"
     },
     {
       "name": "getLiveFeature",
       "kind": "function",
-      "line": 196,
+      "line": 227,
       "signature": "getLiveFeature(feature: string, baseDir?: string): DesignDSL | null"
     },
     {
       "name": "getDesignDir",
       "kind": "function",
-      "line": 242,
+      "line": 273,
       "signature": "getDesignDir(baseDir?: string): string"
     },
     {
       "name": "getDesignSheetFile",
       "kind": "function",
-      "line": 247,
+      "line": 278,
       "signature": "getDesignSheetFile(feature: string, baseDir?: string): string"
     },
     {
       "name": "saveDesignSheet",
       "kind": "function",
-      "line": 255,
+      "line": 286,
       "signature": "saveDesignSheet(dsl: DesignDSL, baseDir?: string): string"
     },
     {
       "name": "getDesignSheet",
       "kind": "function",
-      "line": 268,
+      "line": 299,
       "signature": "getDesignSheet(feature: string, baseDir?: string): DesignDSL | null"
     },
     {
       "name": "getBaselineDir",
       "kind": "function",
-      "line": 291,
+      "line": 322,
       "signature": "getBaselineDir(baseDir?: string): string"
     },
     {
       "name": "getBaselineFeatureFile",
       "kind": "function",
-      "line": 298,
+      "line": 329,
       "signature": "getBaselineFeatureFile(feature: string, baseDir?: string): string"
     },
     {
       "name": "BaselineFactsFile",
       "kind": "interface",
-      "line": 328,
+      "line": 359,
       "signature": "BaselineFactsFile()",
       "members": [
         {
@@ -153,67 +159,67 @@
     {
       "name": "getBaselineFactsFile",
       "kind": "function",
-      "line": 339,
+      "line": 370,
       "signature": "getBaselineFactsFile(feature: string, baseDir?: string): string"
     },
     {
       "name": "getBaselineFacts",
       "kind": "function",
-      "line": 347,
+      "line": 378,
       "signature": "getBaselineFacts(feature: string, baseDir?: string): BaselineFactsFile | null"
     },
     {
       "name": "saveBaselineFactsIfAbsent",
       "kind": "function",
-      "line": 365,
+      "line": 396,
       "signature": "saveBaselineFactsIfAbsent(feature: string,\n  sourceRoot: string,\n  rels: readonly string[],\n  readFacts: (rel: string) => { apis: readonly string[]; deps: readonly string[] },\n  baseDir?: string,): { written: boolean; file: string; files: number }"
     },
     {
       "name": "saveBaselineFeature",
       "kind": "function",
-      "line": 393,
+      "line": 424,
       "signature": "saveBaselineFeature(dsl: DesignDSL, baseDir?: string): string"
     },
     {
       "name": "getBaselineFeature",
       "kind": "function",
-      "line": 406,
+      "line": 437,
       "signature": "getBaselineFeature(feature: string, baseDir?: string): DesignDSL | null"
     },
     {
       "name": "viewBaseDirCandidates",
       "kind": "function",
-      "line": 438,
+      "line": 469,
       "signature": "viewBaseDirCandidates(feature: string, explicit?: string): string[]"
     },
     {
       "name": "readViewAtCandidates",
       "kind": "function",
-      "line": 449,
+      "line": 480,
       "signature": "readViewAtCandidates(feature: string,\n  explicit: string | undefined,\n  fileAt: (base: string) => string,\n  readAt: (base: string) => T | null,): T | null"
     },
     {
       "name": "getLiveFeatureResolved",
       "kind": "function",
-      "line": 462,
+      "line": 493,
       "signature": "getLiveFeatureResolved(feature: string, explicit?: string): DesignDSL | null"
     },
     {
       "name": "getBaselineFeatureResolved",
       "kind": "function",
-      "line": 476,
+      "line": 507,
       "signature": "getBaselineFeatureResolved(feature: string, explicit?: string): DesignDSL | null"
     },
     {
       "name": "ensureBaseline",
       "kind": "function",
-      "line": 484,
+      "line": 515,
       "signature": "ensureBaseline(dsl: DesignDSL, baseDir?: string): void"
     },
     {
       "name": "ArchiveEntry",
       "kind": "interface",
-      "line": 500,
+      "line": 531,
       "signature": "ArchiveEntry()",
       "members": [
         {
@@ -263,175 +269,175 @@
     {
       "name": "getArchiveDir",
       "kind": "function",
-      "line": 518,
+      "line": 549,
       "signature": "getArchiveDir(feature: string, baseDir?: string): string"
     },
     {
       "name": "getArchiveEntryFile",
       "kind": "function",
-      "line": 525,
+      "line": 556,
       "signature": "getArchiveEntryFile(feature: string, entryId: string, baseDir?: string): string"
     },
     {
       "name": "sanitizeEntryId",
       "kind": "function",
-      "line": 536,
+      "line": 567,
       "signature": "sanitizeEntryId(p: string): string"
     },
     {
       "name": "saveArchiveEntry",
       "kind": "function",
-      "line": 542,
+      "line": 573,
       "signature": "saveArchiveEntry(entry: ArchiveEntry, baseDir?: string): string"
     },
     {
       "name": "listArchiveEntries",
       "kind": "function",
-      "line": 551,
+      "line": 582,
       "signature": "listArchiveEntries(feature: string, baseDir?: string): ArchiveEntry[]"
     },
     {
       "name": "getArchiveEntryByPath",
       "kind": "function",
-      "line": 567,
+      "line": 598,
       "signature": "getArchiveEntryByPath(feature: string, filePath: string, baseDir?: string): ArchiveEntry | null"
     },
     {
       "name": "clearArchiveEntries",
       "kind": "function",
-      "line": 572,
+      "line": 603,
       "signature": "clearArchiveEntries(feature: string, baseDir?: string): void"
     },
     {
       "name": "ensureFeaturesDir",
       "kind": "function",
-      "line": 578,
+      "line": 609,
       "signature": "ensureFeaturesDir(): void"
     },
     {
       "name": "DslChangeCallback",
       "kind": "type",
-      "line": 583,
+      "line": 614,
       "signature": "DslChangeCallback()"
     },
     {
       "name": "dslChangeCallback",
       "kind": "const",
-      "line": 584,
+      "line": 615,
       "signature": "const dslChangeCallback = null"
     },
     {
       "name": "onDslChange",
       "kind": "function",
-      "line": 587,
+      "line": 618,
       "signature": "onDslChange(cb: DslChangeCallback): void"
     },
     {
       "name": "saveDSL",
       "kind": "function",
-      "line": 598,
+      "line": 629,
       "signature": "saveDSL(dsl: DesignDSL, source: string = 'mcp', base_dsl_rev?: number): string"
     },
     {
       "name": "lastLiveFallback",
       "kind": "const",
-      "line": 658,
+      "line": 706,
       "signature": "const lastLiveFallback = null"
     },
     {
       "name": "liveFallbackWarned",
       "kind": "const",
-      "line": 659,
+      "line": 707,
       "signature": "const liveFallbackWarned = false"
     },
     {
       "name": "getLiveFallback",
       "kind": "function",
-      "line": 662,
+      "line": 710,
       "signature": "getLiveFallback(): { file: string; error: string; at: string } | null"
     },
     {
       "name": "isLiveDslParseable",
       "kind": "function",
-      "line": 680,
+      "line": 728,
       "signature": "isLiveDslParseable(): boolean"
     },
     {
       "name": "currentDslRev",
       "kind": "function",
-      "line": 692,
+      "line": 740,
       "signature": "currentDslRev(feature: string): number"
     },
     {
       "name": "readDSLRaw",
       "kind": "function",
-      "line": 698,
+      "line": 746,
       "signature": "readDSLRaw(feature: string): DesignDSL | null"
     },
     {
       "name": "factsExternalized",
       "kind": "function",
-      "line": 743,
+      "line": 791,
       "signature": "factsExternalized(dsl: DesignDSL | null): boolean"
     },
     {
       "name": "factsBackfillBusy",
       "kind": "const",
-      "line": 752,
+      "line": 800,
       "signature": "const factsBackfillBusy = false"
     },
     {
       "name": "mergeFacts",
       "kind": "function",
-      "line": 755,
+      "line": 803,
       "signature": "mergeFacts(dsl: DesignDSL, rendered: DesignDSL): DesignDSL"
     },
     {
       "name": "withFacts",
       "kind": "function",
-      "line": 776,
+      "line": 824,
       "signature": "withFacts(dsl: DesignDSL | null, feature: string): DesignDSL | null"
     },
     {
       "name": "getDSL",
       "kind": "function",
-      "line": 791,
+      "line": 839,
       "signature": "getDSL(feature: string): DesignDSL | null"
     },
     {
       "name": "DSLView",
       "kind": "type",
-      "line": 796,
+      "line": 844,
       "signature": "DSLView()"
     },
     {
       "name": "getDSLByView",
       "kind": "function",
-      "line": 803,
+      "line": 851,
       "signature": "getDSLByView(feature: string, view: DSLView = 'design'): DesignDSL | null"
     },
     {
       "name": "listFeatures",
       "kind": "function",
-      "line": 814,
+      "line": 862,
       "signature": "listFeatures(): DesignDSL[]"
     },
     {
       "name": "listDesignSheets",
       "kind": "function",
-      "line": 848,
+      "line": 896,
       "signature": "listDesignSheets(): DesignDSL[]"
     },
     {
       "name": "deleteFeature",
       "kind": "function",
-      "line": 872,
+      "line": 920,
       "signature": "deleteFeature(feature: string): void"
     },
     {
       "name": "clearAllFeatures",
       "kind": "function",
-      "line": 908,
+      "line": 956,
       "signature": "clearAllFeatures(): void"
     }
   ],
@@ -476,8 +482,16 @@
       "to": "src/infrastructure/index/live_render.ts#renderLiveFromDb"
     },
     {
-      "from": "src/infrastructure/storage.ts#syncMeta",
+      "from": "src/infrastructure/storage.ts#buildSyncMeta",
       "to": "src/infrastructure/index/scan_rev.ts#scanRevOf"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#syncMeta",
+      "to": "src/infrastructure/storage.ts#buildSyncMeta"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveDSL",
+      "to": "src/infrastructure/storage.ts#buildSyncMeta"
     },
     {
       "from": "src/infrastructure/storage.ts#deleteFeature",

@@ -7,13 +7,13 @@
     {
       "name": "ChangeKind",
       "kind": "type",
-      "line": 36,
+      "line": 38,
       "signature": "ChangeKind()"
     },
     {
       "name": "ChangeOp",
       "kind": "interface",
-      "line": 38,
+      "line": 40,
       "signature": "ChangeOp()",
       "members": [
         {
@@ -111,13 +111,13 @@
     {
       "name": "ChangeStatus",
       "kind": "type",
-      "line": 61,
+      "line": 63,
       "signature": "ChangeStatus()"
     },
     {
       "name": "ChangeDiff",
       "kind": "interface",
-      "line": 63,
+      "line": 65,
       "signature": "ChangeDiff()",
       "members": [
         {
@@ -155,7 +155,7 @@
     {
       "name": "ChangeReview",
       "kind": "interface",
-      "line": 87,
+      "line": 89,
       "signature": "ChangeReview()",
       "members": [
         {
@@ -187,7 +187,7 @@
     {
       "name": "PendingChange",
       "kind": "interface",
-      "line": 97,
+      "line": 99,
       "signature": "PendingChange()",
       "members": [
         {
@@ -291,7 +291,7 @@
     {
       "name": "ProposeInput",
       "kind": "interface",
-      "line": 125,
+      "line": 127,
       "signature": "ProposeInput()",
       "members": [
         {
@@ -323,97 +323,97 @@
     {
       "name": "safeName",
       "kind": "function",
-      "line": 137,
+      "line": 139,
       "signature": "safeName(project_dir: string): string"
     },
     {
       "name": "storeFile",
       "kind": "function",
-      "line": 142,
+      "line": 144,
       "signature": "storeFile(project_dir: string): string"
     },
     {
       "name": "loadChanges",
       "kind": "function",
-      "line": 148,
+      "line": 150,
       "signature": "loadChanges(project_dir: string): PendingChange[]"
     },
     {
       "name": "saveChanges",
       "kind": "function",
-      "line": 159,
+      "line": 161,
       "signature": "saveChanges(project_dir: string, changes: PendingChange[]): void"
     },
     {
       "name": "nowIso",
       "kind": "function",
-      "line": 163,
+      "line": 165,
       "signature": "nowIso(): string"
     },
     {
       "name": "uid",
       "kind": "function",
-      "line": 167,
+      "line": 169,
       "signature": "uid(): string"
     },
     {
       "name": "splitKeepEnds",
       "kind": "function",
-      "line": 175,
+      "line": 177,
       "signature": "splitKeepEnds(content: string): string[]"
     },
     {
       "name": "normalizeLines",
       "kind": "function",
-      "line": 181,
+      "line": 183,
       "signature": "normalizeLines(code: string, eol: string): string[]"
     },
     {
       "name": "detectEol",
       "kind": "function",
-      "line": 188,
+      "line": 190,
       "signature": "detectEol(content: string): string"
     },
     {
       "name": "absPath",
       "kind": "function",
-      "line": 192,
+      "line": 194,
       "signature": "absPath(project_dir: string, p: string): string"
     },
     {
       "name": "buildLabel",
       "kind": "function",
-      "line": 200,
+      "line": 202,
       "signature": "buildLabel(kind: ChangeKind, op: ChangeOp): string"
     },
     {
       "name": "previewEditRange",
       "kind": "function",
-      "line": 209,
+      "line": 211,
       "signature": "previewEditRange(project_dir: string, op: ChangeOp): Promise<{ diffs: ChangeDiff[]; preview: string }>"
     },
     {
       "name": "splitPlanMarker",
       "kind": "function",
-      "line": 252,
+      "line": 254,
       "signature": "splitPlanMarker(op: ChangeOp): string"
     },
     {
       "name": "previewSplitPlan",
       "kind": "function",
-      "line": 255,
+      "line": 257,
       "signature": "previewSplitPlan(project_dir: string, op: ChangeOp): Promise<{ diffs: ChangeDiff[]; preview: string }>"
     },
     {
       "name": "previewRename",
       "kind": "function",
-      "line": 283,
+      "line": 285,
       "signature": "previewRename(project_dir: string, op: ChangeOp): Promise<{ diffs: ChangeDiff[]; preview: string }>"
     },
     {
       "name": "DslRenameEdit",
       "kind": "interface",
-      "line": 323,
+      "line": 325,
       "signature": "DslRenameEdit()",
       "members": [
         {
@@ -451,67 +451,67 @@
     {
       "name": "collectDslRenameEdits",
       "kind": "function",
-      "line": 336,
+      "line": 338,
       "signature": "collectDslRenameEdits(dsl: DesignDSL, op: ChangeOp): DslRenameEdit[]"
     },
     {
       "name": "applyDslRenameEdits",
       "kind": "function",
-      "line": 360,
+      "line": 362,
       "signature": "applyDslRenameEdits(dsl: DesignDSL, edits: DslRenameEdit[]): number"
     },
     {
       "name": "previewDslRename",
       "kind": "function",
-      "line": 378,
+      "line": 380,
       "signature": "previewDslRename(project_dir: string, op: ChangeOp): Promise<{ diffs: ChangeDiff[]; preview: string }>"
     },
     {
       "name": "executeDslRename",
       "kind": "function",
-      "line": 410,
+      "line": 412,
       "signature": "executeDslRename(project_dir: string, op: ChangeOp): Promise<string>"
     },
     {
       "name": "previewDslIntent",
       "kind": "function",
-      "line": 424,
+      "line": 426,
       "signature": "previewDslIntent(project_dir: string, op: ChangeOp): Promise<{ diffs: ChangeDiff[]; preview: string }>"
     },
     {
       "name": "executeDslIntent",
       "kind": "function",
-      "line": 476,
+      "line": 478,
       "signature": "executeDslIntent(project_dir: string, op: ChangeOp): string"
     },
     {
       "name": "proposeChange",
       "kind": "function",
-      "line": 487,
+      "line": 489,
       "signature": "proposeChange(input: ProposeInput): Promise<{ change: PendingChange; ok: boolean; error?: string; duplicate?: boolean }>"
     },
     {
       "name": "listChanges",
       "kind": "function",
-      "line": 552,
+      "line": 554,
       "signature": "listChanges(project_dir: string): PendingChange[]"
     },
     {
       "name": "getChange",
       "kind": "function",
-      "line": 557,
+      "line": 559,
       "signature": "getChange(project_dir: string, id: string): PendingChange | undefined"
     },
     {
       "name": "findAndUpdate",
       "kind": "function",
-      "line": 561,
+      "line": 563,
       "signature": "findAndUpdate(project_dir: string, id: string, fn: (c: PendingChange) => void): PendingChange | undefined"
     },
     {
       "name": "ApproveResult",
       "kind": "interface",
-      "line": 570,
+      "line": 572,
       "signature": "ApproveResult()",
       "members": [
         {
@@ -549,31 +549,31 @@
     {
       "name": "checkReviewer",
       "kind": "function",
-      "line": 601,
+      "line": 603,
       "signature": "checkReviewer(c: Pick<PendingChange, 'submitter'>,\n  reviewer: string,): { ok: true; selfReviewUnjudged?: string } | { ok: false; error: string }"
     },
     {
       "name": "addReview",
       "kind": "function",
-      "line": 637,
+      "line": 639,
       "signature": "addReview(project_dir: string,\n  id: string,\n  review: { agent: string; verdict: ChangeReview['verdict']; note?: string },): { ok: boolean; error?: string; reviews: ChangeReview[] }"
     },
     {
       "name": "pushReview",
       "kind": "function",
-      "line": 670,
+      "line": 672,
       "signature": "pushReview(c: PendingChange, reviewer: string, verdict: ChangeReview['verdict'], note?: string): void"
     },
     {
       "name": "approveChange",
       "kind": "function",
-      "line": 681,
+      "line": 691,
       "signature": "approveChange(project_dir: string, id: string, reviewer: string): Promise<ApproveResult>"
     },
     {
       "name": "rejectChange",
       "kind": "function",
-      "line": 802,
+      "line": 831,
       "signature": "rejectChange(project_dir: string, id: string, reviewer: string): ApproveResult"
     }
   ],
@@ -608,6 +608,10 @@
     },
     {
       "source": "../../refactor/edit/edit_code.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../refactor/gate_note.js",
       "kind": "relative"
     },
     {
@@ -872,6 +876,18 @@
     {
       "from": "src/application/design/workbench/code_workbench.ts#approveChange",
       "to": "src/application/refactor/edit/edit_code.ts#editCode"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/refactor/gate_note.ts#gateHumanLines"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/refactor/gate_note.ts#gateHumanLines"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/refactor/gate_note.ts#gateHumanLines"
     },
     {
       "from": "src/application/design/workbench/code_workbench.ts#previewRename",

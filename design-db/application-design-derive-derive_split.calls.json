@@ -299,31 +299,31 @@
     {
       "name": "referNames",
       "kind": "function",
-      "line": 267,
+      "line": 266,
       "signature": "referNames(text: string, names: string[], filePath: string): string[]"
     },
     {
       "name": "escapeRe",
       "kind": "function",
-      "line": 282,
+      "line": 281,
       "signature": "escapeRe(s: string): string"
     },
     {
       "name": "goPackage",
       "kind": "function",
-      "line": 287,
+      "line": 286,
       "signature": "goPackage(content: string): string"
     },
     {
       "name": "isPythonPackage",
       "kind": "function",
-      "line": 293,
+      "line": 292,
       "signature": "isPythonPackage(projectRoot: string, fileRel: string): boolean"
     },
     {
       "name": "Wiring",
       "kind": "interface",
-      "line": 310,
+      "line": 309,
       "signature": "Wiring()",
       "members": [
         {
@@ -373,25 +373,25 @@
     {
       "name": "buildWiring",
       "kind": "function",
-      "line": 349,
+      "line": 348,
       "signature": "buildWiring(lang: LangId,\n  projectRoot: string,\n  targetRel: string,\n  newRel: string,\n  content: string,\n  extractedText: string,\n  remainingNames: string[],\n  extractedNames: string[],\n  /**\n   * ★★★ T211（2026-10-12）：**原文件抽走那些符号之后剩下的正文**。\n   *\n   * ## 为什么需要它（★ 实测踩到的真 bug）\n   * 原先 ts/js 分支写的是 *\"`import { 【全部被抽走的符号】 } from './新文件'`\"* ⇒ ★ **无脑全给** ✗\n   * 实测（真落盘，夹具 `mixed.ts`）：切完之后 `mixed.ts` **只用到 `toCsv`/`downloadCsv`**\n   * ⇒ ★ **它一个被抽走的符号都不需要** ⇒ 却被硬塞了\n   * `import { SECRET, signToken, verifyToken } from './fixture-session-token'` ⇒\n   * ★★ 而 `SECRET` 在原文件里是**模块私有的**（`const SECRET`，没 `export`）⇒\n   * ★★★ **TS2459：declares 'SECRET' locally, but it is not exported** ⇒ **切出来的代码【编不过】** ✓\n   *\n   * ⇒ ★ 判据（就是要它）：**只把\"残余正文里真的还引用到\"的那些接回来** ✓\n   *   ★ 而\"谁真的被引用\"已有现成助手 `referNames`（本文件已在用另一个方向 ✓）⇒ ★ **不再造第二把尺** ✓\n   */\n  remainingText: string,): Wiring"
     },
     {
       "name": "insertImport",
       "kind": "function",
-      "line": 448,
+      "line": 447,
       "signature": "insertImport(content: string, importLine: string): string"
     },
     {
       "name": "stripQuotesStr",
       "kind": "function",
-      "line": 468,
+      "line": 467,
       "signature": "stripQuotesStr(s: string): string"
     },
     {
       "name": "GoImportSpec",
       "kind": "interface",
-      "line": 474,
+      "line": 473,
       "signature": "GoImportSpec()",
       "members": [
         {
@@ -429,97 +429,97 @@
     {
       "name": "collectGoImportSpecs",
       "kind": "function",
-      "line": 483,
+      "line": 482,
       "signature": "collectGoImportSpecs(filePath: string, content: string): Promise<GoImportSpec[]>"
     },
     {
       "name": "pruneGoImports",
       "kind": "function",
-      "line": 510,
+      "line": 509,
       "signature": "pruneGoImports(content: string, filePath: string): Promise<string>"
     },
     {
       "name": "pythonBoundNames",
       "kind": "function",
-      "line": 595,
+      "line": 594,
       "signature": "pythonBoundNames(stmtText: string): string[]"
     },
     {
       "name": "prunePythonImports",
       "kind": "function",
-      "line": 619,
+      "line": 618,
       "signature": "prunePythonImports(content: string, filePath: string): Promise<string>"
     },
     {
       "name": "pruneUnusedImports",
       "kind": "function",
-      "line": 647,
+      "line": 646,
       "signature": "pruneUnusedImports(content: string,\n  filePath: string,\n  lang: LangId,): Promise<{ content: string; pruned: string[] }>"
     },
     {
       "name": "prunedDiffs",
       "kind": "function",
-      "line": 666,
+      "line": 665,
       "signature": "prunedDiffs(before: string, after: string, lang: LangId): string[]"
     },
     {
       "name": "shq",
       "kind": "function",
-      "line": 679,
+      "line": 678,
       "signature": "shq(p: string): string"
     },
     {
       "name": "runCompile",
       "kind": "function",
-      "line": 688,
+      "line": 687,
       "signature": "runCompile(lang: LangId,\n  projectDir: string,\n  targetRel: string,\n  newRel: string,): Promise<{ command: string; ok?: boolean; output: string; skipped?: string }>"
     },
     {
       "name": "runShell",
       "kind": "function",
-      "line": 747,
+      "line": 746,
       "signature": "runShell(command: string, cwd: string): Promise<{ ok: boolean; output: string }>"
     },
     {
       "name": "hasTestFiles",
       "kind": "function",
-      "line": 758,
+      "line": 757,
       "signature": "hasTestFiles(projectDir: string, re: RegExp): boolean"
     },
     {
       "name": "runTest",
       "kind": "function",
-      "line": 783,
+      "line": 782,
       "signature": "runTest(lang: LangId,\n  projectDir: string,\n  targetRel: string,\n  newRel: string,): Promise<{ command: string; ok?: boolean; output: string; skipped?: string }>"
     },
     {
       "name": "splitOnce",
       "kind": "function",
-      "line": 833,
+      "line": 832,
       "signature": "splitOnce(input: DeriveSplitInput): Promise<DeriveSplitResult>"
     },
     {
       "name": "runSubSplit",
       "kind": "function",
-      "line": 1155,
+      "line": 1154,
       "signature": "runSubSplit(input: DeriveSplitInput): Promise<DeriveSplitResult>"
     },
     {
       "name": "deriveSplitCore",
       "kind": "function",
-      "line": 1239,
+      "line": 1238,
       "signature": "deriveSplitCore(input: DeriveSplitInput): Promise<DeriveSplitResult>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 1247,
+      "line": 1246,
       "signature": "touchedOf(input: DeriveSplitInput, r: DeriveSplitResult): Touched"
     },
     {
       "name": "deriveSplit",
       "kind": "function",
-      "line": 1274,
+      "line": 1273,
       "signature": "deriveSplit(input: DeriveSplitInput): Promise<TouchedProduct<DeriveSplitResult>>"
     }
   ],

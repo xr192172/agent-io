@@ -193,6 +193,12 @@
           "member_kind": "property"
         },
         {
+          "name": "fieldVia",
+          "type": ": FieldRefVia",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
           "name": "typeMembers",
           "type": ": string[]",
           "optional": true,
@@ -233,37 +239,37 @@
     {
       "name": "lineOf",
       "kind": "function",
-      "line": 200,
+      "line": 202,
       "signature": "lineOf(src: string, offset: number): number"
     },
     {
       "name": "scanLiterals",
       "kind": "function",
-      "line": 205,
+      "line": 207,
       "signature": "scanLiterals(projectDir: string, symbol: string): Promise<Array<{ needle: string; matches: RawLiteralMatch[] }> | undefined>"
     },
     {
       "name": "FIELD_KIND_LABEL",
       "kind": "const",
-      "line": 213,
+      "line": 215,
       "signature": "const FIELD_KIND_LABEL = { 'field-read': '读', 'field-key': '构', 'field-destructure…"
     },
     {
       "name": "findReferencesCore",
       "kind": "function",
-      "line": 220,
+      "line": 222,
       "signature": "findReferencesCore(input: {\n  /** mode=symbol 必填：定义符号的文件（绝对路径；或相对 project_dir/cwd）。mode=field/type 可选（用于定 scope） */\n  file?: string;\n  /** mode=symbol 必填：符号名。mode=field 忽略 */\n  symbol?: string;\n  /** mode=field 必填：要查的字段名 */\n  field?: string;\n  /**\n   * ★ mode=field 可选：**所属类型名**（T125「备菜」）—— 把字段引用限定到该类型。\n   *   作用域收窄到该类型声明文件的 import 闭包（与 `mode=symbol` 的 `file` 锚点同源）；\n   *   同时丢弃**能确证不属于该类型**的声明点。★ 读/构/解 无法判定 ⇒ 如实保留（见 `FieldScopeReport`）。\n   */\n  of_type?: string;\n  /** symbol（默认，找符号的 importers/使用点）| field（字段读取/构造/解构/声明点）| type（形如某类型的对象字面量构造候选） */\n  mode?: 'symbol' | 'field' | 'type';\n  /** field/type 模式：closure（默认，给 file 时按 import 闭包）| all（全项目扫） */\n  scope?: 'closure' | 'all';\n  /** type 模式：与类型成员交叠 ≥ 该值才判为候选构造点（默认 2） */\n  min_hit?: number;\n  /** true=额外扫描符号 snake 变体（如 renderDsl→render_dsl）在项目文本里的字面量命中（文档/测试/契约/工具注册名），返回清单待核验，不改动 */\n  report_literals?: boolean;\n  project_dir?: string;\n}): Promise<FindReferencesResult>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 555,
+      "line": 558,
       "signature": "touchedOf(input: Parameters<typeof findReferencesCore>[0], r: FindReferencesResult): Touched"
     },
     {
       "name": "findReferences",
       "kind": "function",
-      "line": 590,
+      "line": 593,
       "signature": "findReferences(input: Parameters<typeof findReferencesCore>[0]): Promise<TouchedProduct<FindReferencesResult>>"
     }
   ],

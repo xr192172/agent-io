@@ -61,6 +61,12 @@
           "member_kind": "property"
         },
         {
+          "name": "via",
+          "type": ": 'db' | 'regex'",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
           "name": "notes",
           "type": ": string",
           "optional": true,
@@ -71,7 +77,7 @@
     {
       "name": "EffectTarget",
       "kind": "interface",
-      "line": 35,
+      "line": 41,
       "signature": "EffectTarget()",
       "members": [
         {
@@ -103,7 +109,7 @@
     {
       "name": "BrickRole",
       "kind": "interface",
-      "line": 50,
+      "line": 56,
       "signature": "BrickRole()",
       "members": [
         {
@@ -135,7 +141,7 @@
     {
       "name": "BrickContract",
       "kind": "interface",
-      "line": 61,
+      "line": 67,
       "signature": "BrickContract()",
       "members": [
         {

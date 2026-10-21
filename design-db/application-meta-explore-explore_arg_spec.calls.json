@@ -13,25 +13,25 @@
     {
       "name": "editDistance",
       "kind": "function",
-      "line": 63,
+      "line": 55,
       "signature": "editDistance(a: string, b: string): number"
     },
     {
       "name": "assertExploreArgKeys",
       "kind": "function",
-      "line": 83,
+      "line": 75,
       "signature": "assertExploreArgKeys(action: string, args: Record<string, unknown>): void"
     },
     {
       "name": "EXPLORE_REQUIRED",
       "kind": "const",
-      "line": 123,
-      "signature": "const EXPLORE_REQUIRED = { run_simulation: ['feature'], reset_simulation: ['featur…"
+      "line": 115,
+      "signature": "const EXPLORE_REQUIRED = { // ★ facts（2026-10-21）：描述里点名\"**硬必填 file**\" ⇒ 收进来（缺了在【入口…"
     },
     {
       "name": "assertExploreRequired",
       "kind": "function",
-      "line": 139,
+      "line": 131,
       "signature": "assertExploreRequired(action: string, args: Record<string, unknown>): void"
     }
   ],

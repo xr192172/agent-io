@@ -141,40 +141,71 @@ export function getLiveFeatureFile(feature: string, baseDir?: string): string {
 }
 
 /**
- * ★★ 构造 `_sync` 元数据（**唯一写端**；四个落盘口共用 ⇒ `_sync` 形状不会分叉）。
+ * ★★★ `_sync` 的**唯一构造点**（2026-10-21 收敛；`saveLiveFeature` / `saveDesignSheet` / `saveDSL` /
+ * `live_render` 现渲染 四个落盘口**都调它**）。
  *
- * 由 `dsl-keep-list §六`：「`_sync` 必须补"代"（否则用 DSL 无法自证新旧）」。
+ * ## 为什么必须收敛（★ 实测出来的出血点，别再各写一份）
+ * 原先 `_sync` 有**两个写端**：
+ * · 本文件的 `syncMeta`：`saveDesignSheet` 时把 `_sync` **整体重建**；
+ * · `live_render.ts`：现渲染时**手写一份** `_sync` 字面量。
+ * ⇒ 一个字段两个写端，其中一个**不知道另一个存在**：`live_render` 加了 `dbSchemaVersion`，
+ *   `syncMeta` 没有 ⇒ 任何 `claim / publish / release / complete`（都走 `saveDesignSheet`）
+ *   都把这个字段**整体冲掉**。实测：给 feature `task-system-plan` 写完 `dbSchemaVersion:16`，
+ *   跑一次 `release` 就没了 —— 基线白做。
  *
- * ## 字段
- * · `saved_at`（原有）：**写入时刻**（ISO 8601）。
- * · `source` / `feature`（原有）：身份。
- * · **`scanRev`（新）**：底层事实库的扫描代 = `cache.db` 的 `max(files.indexed_at)`（毫秒）。
- *   `null` = 无库 / 无 files 行 ⇒ ★ **本轮没有可自证的扫描代**（不是 0）。
- * · **`age`（新）**：写入时刻，**底层扫描已有多旧**（毫秒）= `now - scanRev`（钳到 ≥0）。
- *   `null` = `scanRev` 不可得。
+ * ## 字段与语义（形状只在这里定义一次）
+ * · `saved_at`：**本次落盘**时刻（ISO 8601）。
+ * · `source` / `feature`：身份。
+ * · `scanRev`：落盘那一刻**库的扫描代** = `cache.db#max(files.indexed_at)`（毫秒）。
+ *   `null` = 无库 / 无 files 行 ⇒ **本轮没有可自证的扫描代**（不是 0）。
+ * · `age`：`now - scanRev`（钳到 ≥0）。`null` = `scanRev` 不可得。
+ * · `dbSchemaVersion`：落盘那一刻**库的形状版本** = `cache.db#max(schema_versions.version)`。
+ *   `null` = 无库 / 无该表。★ `scanRev` 只说"扫到哪一刻"，这一格说"那些事实是**哪种形状**"
+ *   （v14/v15/v16 都在往 `nodes` 加列）—— 两者合起来才叫"哪一刻的 DB"。
+ * · `facts`：调用方声明的"事实外置"标记（`_sync.facts === 'db'`）。★ 只有调用方**真写过**才带上：
+ *   它会在整体重建时被**静默冲掉**，而它正是读取侧"要不要按需从 DB 补齐"的唯一开关（见 `withFacts`）。
  *
- * ## ★ 读端怎么用（写清，免得当成"越读越新的年龄"）
- * `age` 是**写入那一刻的快照**，不会自己增长。要判"**现在**这份 DSL 有多旧"：
- *   `现在年龄 = (现在 - saved_at) + age`，或等价地 `now - scanRev`。
- * ★ 并在读端规定：**age 超阈值 ⇒ 拒绝下结论**（不是"提示"，见 §六）。
+ * ## ★ 读端怎么判"谁新"（这是它存在的**唯一**目的，别读成"报警"）
+ * · 实际比设计新：`max(files.indexed_at) > dsl._sync.scanRev`
+ * · 设计比实际新：`dsl._sync.saved_at > max(files.indexed_at)`（且 `scanRev` 不领先于本次落盘）
+ * · 库形状换代：`dbSchemaVersion` ≠ 当下 `max(schema_versions.version)`
+ * ★ 三条**都只用于判断**：绝不据此自动改写设计册 —— 方向是"实际追设计"，不是"设计靠实际"。
+ *
+ * ## ★ 一次打开库，三个数同源
+ * `scanRev` / `dbSchemaVersion` 都由 `scanRevOf` 在**同一次只读打开**里取 ⇒ 不会出现
+ * "时刻是新的、版本是旧的"这种半真。实测单次 `scanRevOf` <1ms（两次索引查询），
+ * 与 4MB JSON 序列化相比可忽略（每次落盘多一次 open 的代价见 `saveDSL` 的注释）。
  */
-function syncMeta(dsl: DesignDSL, source: string): Record<string, unknown> {
+export function buildSyncMeta(input: {
+  feature: string;
+  sourceRoot?: string;
+  source: string;
+  /** 上一份 `_sync`（只在需要保留 `facts` 这类调用方声明时传） */
+  prev?: Record<string, unknown>;
+}): Record<string, unknown> {
   const now = Date.now();
-  const { rev } = scanRevOf({ feature: dsl.feature, sourceRoot: dsl.source_root });
-  // ★★ T345（第 2 步 (c) 前置）：**保留调用方声明的"事实外置"标记**（`_sync.facts === 'db'`）。
-  //   为什么必须在这里保留：`_sync` 是本函数**整体重建**的（下面那个字面量）⇒ 调用方在
-  //   `dsl._sync.facts` 上写的声明会被**静默冲掉**。而它正是读取侧"要不要按需从 DB 补齐"的**唯一开关**
-  //   （见 `withFacts`）⇒ 丢了它，(c) 摘字段后读侧就**不知道要补**。
-  //   ★ 只有调用方**真的写过**才带上（谁也不写 ⇒ 返回值与改前**逐字相同** ⇒ 零行为改变）。
-  const facts = (dsl as unknown as { _sync?: Record<string, unknown> })._sync?.facts;
+  const { rev, schemaVersion } = scanRevOf({ feature: input.feature, sourceRoot: input.sourceRoot });
+  const facts = input.prev?.facts;
   return {
     saved_at: new Date(now).toISOString(),
-    source,
-    feature: dsl.feature,
+    source: input.source,
+    feature: input.feature,
     scanRev: rev,
+    // ★ 保留"age 是写入那一刻的快照"这条既有语义（读端见本函数头）。
     age: rev == null ? null : Math.max(0, now - rev),
+    dbSchemaVersion: schemaVersion,
     ...(facts ? { facts } : {}),
   };
+}
+
+/** 既有调用点的薄适配：`_sync` 一律由 `buildSyncMeta` 构造（这里不再有自己的字面量）。 */
+function syncMeta(dsl: DesignDSL, source: string): Record<string, unknown> {
+  return buildSyncMeta({
+    feature: dsl.feature,
+    sourceRoot: dsl.source_root,
+    source,
+    prev: (dsl as unknown as { _sync?: Record<string, unknown> })._sync,
+  });
 }
 
 /** 保存实际 DSL（动态快照，带 _sync 标记；不触发 dslChangeCallback，避免打扰设计视图刷新）
@@ -614,6 +645,23 @@ export function saveDSL(dsl: DesignDSL, source: string = 'mcp', base_dsl_rev?: n
   // 自增 rev（权威写经此落盘）
   const nextRev = (base_dsl_rev ?? currentDslRev(dsl.feature)) + 1;
   dsl._dsl_rev = nextRev;
+  // ★★★ 2026-10-21（B：「元数据不跟着写走」这一族的第二个实例）：`saveDSL` 原先**只推进 `_dsl_rev`**，
+  //   `_sync` 一个字都不动 ⇒ 经 `edit_dsl` 改完的册，`_sync.saved_at` 还停在上一次 `saveDesignSheet` 的时刻
+  //   （实测 design-canvas：文件 19:33 被改，`_sync.saved_at` 停在 10:35）⇒ 读者拿 `saved_at` 判"谁新"会**判反**。
+  //   ⇒ 现在与另外三个落盘口（`saveLiveFeature` / `saveDesignSheet` / `live_render` 现渲染）**共用同一个构造点**
+  //     `buildSyncMeta`：形状只有一处，谁也不许再写第二份字面量。
+  //   ★ `source` 固定 `design_sheet`：`saveDSL` **只写设计侧**（`design/<f>.dsl.json`，见下面 `getDesignSheetFile`），
+  //     入参 `source` 是给 SSE 回调区分"谁触发的"用的，不是 `_sync` 的身份 —— 两者别混。
+  //   ★ 代价（如实说，实测过）：每次落盘多一次 `scanRevOf`（**只读**打开 cache.db + 两条索引查询）。
+  //     单次 <1ms；`edit_dsl` 是**一个 op 一次落盘**（25 op 批量 = 25 次），与 4MB JSON 序列化同量级，
+  //     不构成"每次写入都要打开库"的性能问题（实测一次 `edit_dsl` 全程仍在秒级）。
+  const prevSync = (dsl as unknown as { _sync?: Record<string, unknown> })._sync;
+  (dsl as unknown as { _sync?: Record<string, unknown> })._sync = buildSyncMeta({
+    feature: dsl.feature,
+    sourceRoot: dsl.source_root,
+    source: 'design_sheet',
+    prev: prevSync,
+  });
   // ★★★ 2026-10-18：写**设计侧**（唯一权威）；不再写 features/ 存档，也不写全局活态 agent-io.json
   // ★★ 这一改顺便修好了 import_project 的 fork：它此前调 saveDSL(designDsl) 想「fork 一份设计」，
   //   而 saveDSL 写的是 features/（派生）⇒ **设计侧从来没被真的 fork 过** ⇒ 那正是「rebuild_design 调了没生效」的根因。

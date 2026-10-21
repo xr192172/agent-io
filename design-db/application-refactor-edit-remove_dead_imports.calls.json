@@ -190,7 +190,7 @@
       "name": "spansForFile",
       "kind": "function",
       "line": 291,
-      "signature": "spansForFile(db: DatabaseSync,\r\n  projectDir: string,\r\n  absPath: string,\r\n  src: string,\r\n  sources: string[],): ImportSpan[] | null"
+      "signature": "spansForFile(db: DatabaseSync,\n  projectDir: string,\n  absPath: string,\n  src: string,\n  sources: string[],): ImportSpan[] | null"
     },
     {
       "name": "removeImportsBySpans",
@@ -311,60 +311,66 @@
           "type": ": WriteThroughOutcome",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "task_gate",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "langOfFile",
       "kind": "function",
-      "line": 389,
+      "line": 399,
       "signature": "langOfFile(rel: string): 'go' | 'ts' | null"
     },
     {
       "name": "countBySource",
       "kind": "function",
-      "line": 396,
+      "line": 406,
       "signature": "countBySource(statements: RemovedStatement[]): Map<string, number>"
     },
     {
       "name": "computeChanges",
       "kind": "function",
-      "line": 404,
-      "signature": "computeChanges(opts: {\r\n  project_dir: string;\r\n  dead: DeadDepCandidate[];\r\n}): {\r\n  absToNew: Map<string, string>;\r\n  originals: Map<string, string>;\r\n  result: RemoveDeadImportResult;\r\n}"
+      "line": 414,
+      "signature": "computeChanges(opts: {\n  project_dir: string;\n  dead: DeadDepCandidate[];\n}): {\n  absToNew: Map<string, string>;\n  originals: Map<string, string>;\n  result: RemoveDeadImportResult;\n}"
     },
     {
       "name": "removeDeadImportsCore",
       "kind": "function",
-      "line": 526,
-      "signature": "removeDeadImportsCore(opts: {\r\n  project_dir: string;\r\n  dead: DeadDepCandidate[];\r\n}): RemoveDeadImportResult"
+      "line": 536,
+      "signature": "removeDeadImportsCore(opts: {\n  project_dir: string;\n  dead: DeadDepCandidate[];\n  /**\n   * ★★★ 2026-10-20（A7 闭合）：**本次写入者身份** —— 一路交到 `snapshotAndRecordSelfWrite`。\n   * ★ 不传 ⇒ 闸只能读 env，而生产面（stdio MCP）env 是空的 ⇒ 闸永远\"提醒 + 放行\"。\n   */\n  actor?: string;\n  /** ★★★ T356：按 run 授权（一个 scope 一次授权一批文件）—— 逐字交给写闸，本层不解释它 */\n  authorize?: string;\n}): RemoveDeadImportResult"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 562,
+      "line": 588,
       "signature": "touchedOf(opts: { project_dir: string }, r: RemoveDeadImportResult): Touched"
     },
     {
       "name": "writtenFilesOf",
       "kind": "function",
-      "line": 580,
+      "line": 606,
       "signature": "writtenFilesOf(projectDir: string, r: RemoveDeadImportResult): string[]"
     },
     {
       "name": "removeDeadImports",
       "kind": "function",
-      "line": 591,
-      "signature": "removeDeadImports(opts: {\r\n  project_dir: string;\r\n  dead: DeadDepCandidate[];\r\n}): TouchedProduct<RemoveDeadImportResult>"
+      "line": 617,
+      "signature": "removeDeadImports(opts: {\n  project_dir: string;\n  dead: DeadDepCandidate[];\n  /** ★ 2026-10-20（A7）：本次写入者身份（与 claim 时 `data.owner` 同一个值），直通 `removeDeadImportsCore` */\n  actor?: string;\n  /** ★★★ T356：按 run 授权 —— 直通 `removeDeadImportsCore`（判据仍只住写闸） */\n  authorize?: string;\n}): TouchedProduct<RemoveDeadImportResult>"
     },
     {
       "name": "RemoveDeadImportsVerifyResult",
       "kind": "interface",
-      "line": 602,
+      "line": 632,
       "signature": "RemoveDeadImportsVerifyResult()",
       "members": [
         {
           "name": "verification",
-          "type": ": {\r\n    enabled: boolean;\r\n    outcome: VerifyOutcomeKind;\r\n    baseline: VerificationOutcome | null;\r\n    after: VerificationOutcome | null;\r\n    rolled_back?: boolean;\r\n    /** baseline_fail / regression_rolled_back 时的失败详情 */\r\n    detail?: string;\r\n  }",
+          "type": ": {\n    enabled: boolean;\n    outcome: VerifyOutcomeKind;\n    baseline: VerificationOutcome | null;\n    after: VerificationOutcome | null;\n    rolled_back?: boolean;\n    /** baseline_fail / regression_rolled_back 时的失败详情 */\n    detail?: string;\n  }",
           "optional": false,
           "member_kind": "property"
         }
@@ -373,7 +379,7 @@
     {
       "name": "RemoveDeadImportsVerifyOptions",
       "kind": "interface",
-      "line": 614,
+      "line": 644,
       "signature": "RemoveDeadImportsVerifyOptions()",
       "members": [
         {
@@ -386,6 +392,18 @@
           "name": "dead",
           "type": ": DeadDepCandidate[]",
           "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "actor",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "authorize",
+          "type": ": string",
+          "optional": true,
           "member_kind": "property"
         },
         {
@@ -405,7 +423,7 @@
     {
       "name": "removeDeadImportsWithVerify",
       "kind": "function",
-      "line": 623,
+      "line": 660,
       "signature": "removeDeadImportsWithVerify(opts: RemoveDeadImportsVerifyOptions): RemoveDeadImportsVerifyResult"
     }
   ],

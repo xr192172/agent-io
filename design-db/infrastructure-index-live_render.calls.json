@@ -53,15 +53,9 @@
       "signature": "const dirNodeId = (rel: string): string => `dir_${sanitize(rel)}`"
     },
     {
-      "name": "kindOf",
-      "kind": "function",
-      "line": 78,
-      "signature": "kindOf(kind: string): Symbol['kind']"
-    },
-    {
       "name": "ParsedFact",
       "kind": "interface",
-      "line": 91,
+      "line": 86,
       "signature": "ParsedFact()",
       "members": [
         {
@@ -87,7 +81,7 @@
     {
       "name": "renderLiveFromDb",
       "kind": "function",
-      "line": 104,
+      "line": 99,
       "signature": "renderLiveFromDb(feature: string): DesignDSL | null"
     }
   ],
@@ -133,10 +127,6 @@
     {
       "source": "./symbols.js",
       "kind": "relative"
-    },
-    {
-      "source": "./scan_rev.js",
-      "kind": "relative"
     }
   ],
   "calls": [
@@ -155,6 +145,10 @@
     {
       "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
       "to": "src/infrastructure/graph/import_project.ts#layoutGroup"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/graph/import_project.ts#parsedKindToSymbolKind"
     },
     {
       "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
@@ -242,10 +236,6 @@
     },
     {
       "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
-      "to": "src/infrastructure/index/live_render.ts#kindOf"
-    },
-    {
-      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
       "to": "src/infrastructure/index/live_render.ts#sanitize"
     },
     {
@@ -266,11 +256,11 @@
     },
     {
       "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
-      "to": "src/infrastructure/index/scan_rev.ts#scanRevOf"
+      "to": "src/infrastructure/index/symbols.ts#getFileParse"
     },
     {
       "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
-      "to": "src/infrastructure/index/symbols.ts#getFileParse"
+      "to": "src/infrastructure/storage.ts#buildSyncMeta"
     },
     {
       "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",

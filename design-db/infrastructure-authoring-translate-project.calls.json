@@ -223,6 +223,12 @@
           "member_kind": "property"
         },
         {
+          "name": "tsc",
+          "type": ": { ran: boolean; passed: boolean; clusters: TscCluster[] }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
           "name": "ok",
           "type": ": boolean",
           "optional": false,
@@ -233,7 +239,7 @@
     {
       "name": "ProjectOptions",
       "kind": "interface",
-      "line": 116,
+      "line": 118,
       "signature": "ProjectOptions()",
       "members": [
         {
@@ -277,25 +283,25 @@
     {
       "name": "toPosix",
       "kind": "function",
-      "line": 130,
+      "line": 132,
       "signature": "toPosix(abs: string): string"
     },
     {
       "name": "relImportPath",
       "kind": "function",
-      "line": 134,
+      "line": 136,
       "signature": "relImportPath(fromGoRel: string, toGoRel: string): string"
     },
     {
       "name": "collectCallRefs",
       "kind": "function",
-      "line": 149,
+      "line": 151,
       "signature": "collectCallRefs(fileAbs: string, src: string): Promise<string[]>"
     },
     {
       "name": "SymbolDef",
       "kind": "interface",
-      "line": 169,
+      "line": 171,
       "signature": "SymbolDef()",
       "members": [
         {
@@ -315,43 +321,43 @@
     {
       "name": "assembleModule",
       "kind": "function",
-      "line": 175,
+      "line": 177,
       "signature": "assembleModule(m: ProjectModule): void"
     },
     {
       "name": "buildReport",
       "kind": "function",
-      "line": 190,
+      "line": 192,
       "signature": "buildReport(modules: ProjectModule[], fillRequested: boolean): ReportEntry[]"
     },
     {
       "name": "writeReport",
       "kind": "function",
-      "line": 216,
+      "line": 218,
       "signature": "writeReport(outDir: string, report: ReportEntry[]): void"
     },
     {
       "name": "buildTypesMap",
       "kind": "function",
-      "line": 239,
+      "line": 241,
       "signature": "buildTypesMap(modules: ProjectModule[]): TypesMapEntry[]"
     },
     {
       "name": "detectConflicts",
       "kind": "function",
-      "line": 249,
+      "line": 251,
       "signature": "detectConflicts(modules: ProjectModule[]): ConflictEntry[]"
     },
     {
       "name": "writeTypesMap",
       "kind": "function",
-      "line": 269,
+      "line": 271,
       "signature": "writeTypesMap(outDir: string, map: TypesMapEntry[]): void"
     },
     {
       "name": "ProjectCallContext",
       "kind": "interface",
-      "line": 293,
+      "line": 295,
       "signature": "ProjectCallContext()",
       "members": [
         {
@@ -371,13 +377,13 @@
     {
       "name": "buildProjectCallNote",
       "kind": "function",
-      "line": 299,
+      "line": 301,
       "signature": "buildProjectCallNote(m: ProjectModule, defined: Map<string, SymbolDef>, ctx?: ProjectCallContext): string"
     },
     {
       "name": "TscCluster",
       "kind": "interface",
-      "line": 337,
+      "line": 339,
       "signature": "TscCluster()",
       "members": [
         {
@@ -403,25 +409,25 @@
     {
       "name": "TS_CODE_LABEL",
       "kind": "const",
-      "line": 344,
+      "line": 346,
       "signature": "const TS_CODE_LABEL = { 2304: '未定义的名字/类型', 2307: '找不到模块', 2503: '找不到命名空间', 2339…"
     },
     {
       "name": "clusterKeyFor",
       "kind": "function",
-      "line": 351,
+      "line": 353,
       "signature": "clusterKeyFor(code: number, msg: string): string"
     },
     {
       "name": "verifyProjectTree",
       "kind": "function",
-      "line": 363,
+      "line": 365,
       "signature": "verifyProjectTree(modules: ProjectModule[]): TscCluster[]"
     },
     {
       "name": "translateGoProject",
       "kind": "function",
-      "line": 409,
+      "line": 411,
       "signature": "translateGoProject(projectDir: string, opts: ProjectOptions = {}): Promise<ProjectResult>"
     }
   ],

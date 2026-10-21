@@ -5,9 +5,15 @@
   "path": "src/infrastructure/dogfood_stats.ts",
   "symbols": [
     {
+      "name": "DogfoodVia",
+      "kind": "type",
+      "line": 33,
+      "signature": "DogfoodVia()"
+    },
+    {
       "name": "DogfoodUsage",
       "kind": "interface",
-      "line": 25,
+      "line": 35,
       "signature": "DogfoodUsage()",
       "members": [
         {
@@ -20,6 +26,12 @@
           "name": "tool",
           "type": ": string",
           "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "via",
+          "type": ": DogfoodVia",
+          "optional": true,
           "member_kind": "property"
         },
         {
@@ -57,31 +69,31 @@
     {
       "name": "MAX_ERR_LEN",
       "kind": "const",
-      "line": 46,
+      "line": 66,
       "signature": "const MAX_ERR_LEN = 200"
     },
     {
       "name": "dogfoodLogDir",
       "kind": "function",
-      "line": 49,
+      "line": 69,
       "signature": "dogfoodLogDir(): string"
     },
     {
       "name": "logFile",
       "kind": "function",
-      "line": 52,
+      "line": 72,
       "signature": "logFile(): string"
     },
     {
       "name": "recordDogfoodUsage",
       "kind": "function",
-      "line": 57,
+      "line": 84,
       "signature": "recordDogfoodUsage(u: DogfoodUsage): void"
     },
     {
       "name": "DogfoodActionStat",
       "kind": "interface",
-      "line": 67,
+      "line": 96,
       "signature": "DogfoodActionStat()",
       "members": [
         {
@@ -107,7 +119,7 @@
     {
       "name": "DogfoodToolStat",
       "kind": "interface",
-      "line": 73,
+      "line": 102,
       "signature": "DogfoodToolStat()",
       "members": [
         {
@@ -149,9 +161,41 @@
       ]
     },
     {
+      "name": "DogfoodViaStat",
+      "kind": "interface",
+      "line": 114,
+      "signature": "DogfoodViaStat()",
+      "members": [
+        {
+          "name": "via",
+          "type": ": DogfoodVia | 'unknown'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "calls",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ok",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "failed",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
       "name": "DogfoodSnapshot",
       "kind": "interface",
-      "line": 84,
+      "line": 121,
       "signature": "DogfoodSnapshot()",
       "members": [
         {
@@ -167,6 +211,24 @@
           "member_kind": "property"
         },
         {
+          "name": "excluded",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "includeSweeps",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "by_via",
+          "type": ": DogfoodViaStat[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
           "name": "tools",
           "type": ": DogfoodToolStat[]",
           "optional": false,
@@ -177,37 +239,37 @@
     {
       "name": "emptyAction",
       "kind": "function",
-      "line": 91,
+      "line": 138,
       "signature": "emptyAction(): DogfoodActionStat"
     },
     {
       "name": "snapshotDogfoodStats",
       "kind": "function",
-      "line": 96,
-      "signature": "snapshotDogfoodStats(): DogfoodSnapshot"
+      "line": 159,
+      "signature": "snapshotDogfoodStats(opts: { includeSweeps?: boolean } = {}): DogfoodSnapshot"
     },
     {
       "name": "renderDogfoodSnapshot",
       "kind": "function",
-      "line": 148,
+      "line": 236,
       "signature": "renderDogfoodSnapshot(s: DogfoodSnapshot): string"
     },
     {
       "name": "renderDogfoodSummary",
       "kind": "function",
-      "line": 179,
+      "line": 292,
       "signature": "renderDogfoodSummary(s: DogfoodSnapshot): string"
     },
     {
       "name": "runDogfoodCLI",
       "kind": "function",
-      "line": 195,
+      "line": 312,
       "signature": "runDogfoodCLI(argv: string[]): void"
     },
     {
       "name": "isMain",
       "kind": "const",
-      "line": 202,
+      "line": 322,
       "signature": "const isMain = import.meta.url === pathToFileURL(path.resolve(process.ar…"
     }
   ],
@@ -239,12 +301,12 @@
       "to": "src/infrastructure/dogfood_stats.ts#dogfoodLogDir"
     },
     {
-      "from": "src/infrastructure/dogfood_stats.ts#recordDogfoodUsage",
-      "to": "src/infrastructure/dogfood_stats.ts#dogfoodLogDir"
-    },
-    {
       "from": "src/infrastructure/dogfood_stats.ts#snapshotDogfoodStats",
       "to": "src/infrastructure/dogfood_stats.ts#emptyAction"
+    },
+    {
+      "from": "src/infrastructure/dogfood_stats.ts#recordDogfoodUsage",
+      "to": "src/infrastructure/dogfood_stats.ts#logFile"
     },
     {
       "from": "src/infrastructure/dogfood_stats.ts#recordDogfoodUsage",

@@ -7,13 +7,13 @@
     {
       "name": "FieldRefKind",
       "kind": "type",
-      "line": 34,
+      "line": 38,
       "signature": "FieldRefKind()"
     },
     {
       "name": "FieldRefPoint",
       "kind": "interface",
-      "line": 36,
+      "line": 40,
       "signature": "FieldRefPoint()",
       "members": [
         {
@@ -51,13 +51,57 @@
           "type": ": string",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "via",
+          "type": ": 'db' | 'regex'",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "FieldRefVia",
+      "kind": "interface",
+      "line": 67,
+      "signature": "FieldRefVia()",
+      "members": [
+        {
+          "name": "db_points",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "regex_points",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "db_files",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "regex_files",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "regex_ratio",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "FieldRefFile",
       "kind": "interface",
-      "line": 56,
+      "line": 75,
       "signature": "FieldRefFile()",
       "members": [
         {
@@ -77,7 +121,7 @@
     {
       "name": "FieldScopeReport",
       "kind": "interface",
-      "line": 66,
+      "line": 85,
       "signature": "FieldScopeReport()",
       "members": [
         {
@@ -115,7 +159,7 @@
     {
       "name": "TypeConstructCandidate",
       "kind": "interface",
-      "line": 79,
+      "line": 98,
       "signature": "TypeConstructCandidate()",
       "members": [
         {
@@ -153,31 +197,81 @@
     {
       "name": "lineOf",
       "kind": "function",
-      "line": 88,
+      "line": 107,
       "signature": "lineOf(src: string, offset: number): number"
     },
     {
       "name": "lineText",
       "kind": "function",
-      "line": 94,
+      "line": 113,
       "signature": "lineText(src: string, offset: number): string"
     },
     {
       "name": "escapeRegex",
       "kind": "function",
-      "line": 100,
+      "line": 119,
       "signature": "escapeRegex(s: string): string"
     },
     {
       "name": "captureReads",
       "kind": "function",
-      "line": 105,
+      "line": 124,
       "signature": "captureReads(src: string, field: string): FieldRefPoint[]"
+    },
+    {
+      "name": "bracketReadOffsets",
+      "kind": "function",
+      "line": 147,
+      "signature": "bracketReadOffsets(src: string, field: string): number[]"
+    },
+    {
+      "name": "IdentRow",
+      "kind": "interface",
+      "line": 159,
+      "signature": "IdentRow()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "si",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "ei",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "openIdentDb",
+      "kind": "function",
+      "line": 167,
+      "signature": "openIdentDb(root: string): DatabaseSync | null"
+    },
+    {
+      "name": "identifiersFor",
+      "kind": "function",
+      "line": 186,
+      "signature": "identifiersFor(db: DatabaseSync, rel: string, src: string, field: string): IdentRow[] | null"
     },
     {
       "name": "ClassifiedFieldRef",
       "kind": "interface",
-      "line": 120,
+      "line": 208,
       "signature": "ClassifiedFieldRef()",
       "members": [
         {
@@ -191,73 +285,79 @@
           "type": ": string",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "via",
+          "type": ": 'db' | 'regex'",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "classifyKeyOffsets",
       "kind": "function",
-      "line": 126,
+      "line": 216,
       "signature": "classifyKeyOffsets(root: SyntaxNodeLike, src: string, field: string): Map<number, ClassifiedFieldRef>"
     },
     {
       "name": "enclosingTypeName",
       "kind": "function",
-      "line": 144,
+      "line": 234,
       "signature": "enclosingTypeName(path: SyntaxNodeLike[]): string | undefined"
     },
     {
       "name": "classifyOffset",
       "kind": "function",
-      "line": 160,
+      "line": 250,
       "signature": "classifyOffset(root: SyntaxNodeLike, offset: number, _field: string): ClassifiedFieldRef | null"
     },
     {
       "name": "STRING_LEAF_TYPES",
       "kind": "const",
-      "line": 193,
+      "line": 283,
       "signature": "const STRING_LEAF_TYPES = new Set(['string', 'string_fragment', 'template_string', …"
     },
     {
       "name": "ofTypeDeclFiles",
       "kind": "function",
-      "line": 201,
+      "line": 291,
       "signature": "ofTypeDeclFiles(root: string, candidates: string[], ofType: string): Promise<string[]>"
     },
     {
       "name": "hasTypeDeclNamed",
       "kind": "function",
-      "line": 219,
+      "line": 309,
       "signature": "hasTypeDeclNamed(root: SyntaxNodeLike, name: string): boolean"
     },
     {
       "name": "collectFieldRefs",
       "kind": "function",
-      "line": 256,
-      "signature": "collectFieldRefs(input: {\n  project_dir: string;\n  field: string;\n  /** 定义文件（可选）：提供时默认按闭包扫描 */\n  file?: string;\n  /** closure（默认，给 file 时按 import 闭包）| all（全项目扫） */\n  scope?: 'closure' | 'all';\n  /** ★ 所属类型名：把字段引用限定到该类型（见上方 of_type 说明）。 */\n  of_type?: string;\n}): Promise<{ files: FieldRefFile[]; scope?: FieldScopeReport }>"
+      "line": 346,
+      "signature": "collectFieldRefs(input: {\n  project_dir: string;\n  field: string;\n  /** 定义文件（可选）：提供时默认按闭包扫描 */\n  file?: string;\n  /** closure（默认，给 file 时按 import 闭包）| all（全项目扫） */\n  scope?: 'closure' | 'all';\n  /** ★ 所属类型名：把字段引用限定到该类型（见上方 of_type 说明）。 */\n  of_type?: string;\n}): Promise<{ files: FieldRefFile[]; scope?: FieldScopeReport; field_via: FieldRefVia }>"
     },
     {
       "name": "collectTypeConstructCandidates",
       "kind": "function",
-      "line": 360,
+      "line": 499,
       "signature": "collectTypeConstructCandidates(input: {\n  project_dir: string;\n  file: string;\n  symbol: string;\n  scope?: 'closure' | 'all';\n  /** 交叠成员数阈值，默认 2 */\n  min_hit?: number;\n}): Promise<{ members: string[]; candidates: TypeConstructCandidate[] }>"
     },
     {
       "name": "extractTypeMembers",
       "kind": "function",
-      "line": 417,
+      "line": 556,
       "signature": "extractTypeMembers(fileAbs: string, src: string, symbol: string): string[]"
     },
     {
       "name": "findNodesByType",
       "kind": "function",
-      "line": 445,
+      "line": 584,
       "signature": "findNodesByType(node: SyntaxNodeLike, types: Set<string>): SyntaxNodeLike[]"
     },
     {
       "name": "objectLiteralKeys",
       "kind": "function",
-      "line": 459,
+      "line": 598,
       "signature": "objectLiteralKeys(obj: SyntaxNodeLike): string[]"
     }
   ],
@@ -271,6 +371,18 @@
       "kind": "package"
     },
     {
+      "source": "node:sqlite",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/symbols.js",
+      "kind": "relative"
+    },
+    {
       "source": "../../../infrastructure/parse/kernel.js",
       "kind": "relative"
     },
@@ -280,6 +392,10 @@
     }
   ],
   "calls": [
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/application/refactor/find/field_refs.ts#bracketReadOffsets"
+    },
     {
       "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
       "to": "src/application/refactor/find/field_refs.ts#captureReads"
@@ -293,11 +409,23 @@
       "to": "src/application/refactor/find/field_refs.ts#classifyOffset"
     },
     {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/application/refactor/find/field_refs.ts#classifyOffset"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/application/refactor/find/field_refs.ts#classifyOffset"
+    },
+    {
       "from": "src/application/refactor/find/field_refs.ts#classifyOffset",
       "to": "src/application/refactor/find/field_refs.ts#enclosingTypeName"
     },
     {
       "from": "src/application/refactor/find/field_refs.ts#captureReads",
+      "to": "src/application/refactor/find/field_refs.ts#escapeRegex"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#bracketReadOffsets",
       "to": "src/application/refactor/find/field_refs.ts#escapeRegex"
     },
     {
@@ -329,6 +457,10 @@
       "to": "src/application/refactor/find/field_refs.ts#hasTypeDeclNamed"
     },
     {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/application/refactor/find/field_refs.ts#identifiersFor"
+    },
+    {
       "from": "src/application/refactor/find/field_refs.ts#lineText",
       "to": "src/application/refactor/find/field_refs.ts#lineOf"
     },
@@ -354,6 +486,10 @@
     },
     {
       "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/application/refactor/find/field_refs.ts#openIdentDb"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
       "to": "src/infrastructure/analysis/project_root/index.ts#expandClosure"
     },
     {
@@ -383,6 +519,14 @@
     {
       "from": "src/application/refactor/find/field_refs.ts#collectTypeConstructCandidates",
       "to": "src/infrastructure/analysis/project_root/index.ts#walkProjectFiles"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#openIdentDb",
+      "to": "src/infrastructure/index/db.ts#findCacheDb"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#identifiersFor",
+      "to": "src/infrastructure/index/symbols.ts#contentHash"
     },
     {
       "from": "src/application/refactor/find/field_refs.ts#ofTypeDeclFiles",

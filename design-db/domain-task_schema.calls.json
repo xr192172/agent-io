@@ -7,43 +7,43 @@
     {
       "name": "TASK_STATES",
       "kind": "const",
-      "line": 42,
+      "line": 43,
       "signature": "const TASK_STATES = ['candidate', 'claimed', 'done', 'void'] as const"
     },
     {
       "name": "TaskState",
       "kind": "type",
-      "line": 45,
+      "line": 46,
       "signature": "TaskState()"
     },
     {
       "name": "CLOSED_TASK_STATES",
       "kind": "const",
-      "line": 60,
+      "line": 61,
       "signature": "const CLOSED_TASK_STATES = ['done', 'void'] as const"
     },
     {
       "name": "isTaskState",
       "kind": "function",
-      "line": 67,
+      "line": 68,
       "signature": "isTaskState(v: unknown): v is TaskState"
     },
     {
       "name": "isClosedTaskState",
       "kind": "function",
-      "line": 78,
+      "line": 79,
       "signature": "isClosedTaskState(s: TaskState): boolean"
     },
     {
       "name": "progressOf",
       "kind": "function",
-      "line": 102,
+      "line": 103,
       "signature": "progressOf(task: Pick<TaskSpec, 'state'> | null | undefined): DiagramStatus | undefined"
     },
     {
       "name": "TaskDiscussion",
       "kind": "interface",
-      "line": 119,
+      "line": 120,
       "signature": "TaskDiscussion()",
       "members": [
         {
@@ -87,7 +87,7 @@
     {
       "name": "TaskEvidenceRecord",
       "kind": "interface",
-      "line": 141,
+      "line": 142,
       "signature": "TaskEvidenceRecord()",
       "members": [
         {
@@ -119,13 +119,209 @@
           "type": ": 'pass' | 'fail' | 'unsupported'",
           "optional": false,
           "member_kind": "property"
+        },
+        {
+          "name": "fingerprint",
+          "type": ": TaskEvidenceFingerprint | null",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "ABSENT_FILE_HASH",
+      "kind": "const",
+      "line": 168,
+      "signature": "const ABSENT_FILE_HASH = '<absent>'"
+    },
+    {
+      "name": "TaskEvidenceFingerprint",
+      "kind": "interface",
+      "line": 191,
+      "signature": "TaskEvidenceFingerprint()",
+      "members": [
+        {
+          "name": "what",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "input",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "code",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "covers",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "fingerprintOf",
+      "kind": "function",
+      "line": 211,
+      "signature": "fingerprintOf(parts: readonly string[]): string"
+    },
+    {
+      "name": "codeFingerprintOf",
+      "kind": "function",
+      "line": 219,
+      "signature": "codeFingerprintOf(entries: ReadonlyArray<{ path: string; hash: string }>,): { code: string; covers: string[] }"
+    },
+    {
+      "name": "EvidenceFreshness",
+      "kind": "type",
+      "line": 228,
+      "signature": "EvidenceFreshness()"
+    },
+    {
+      "name": "evidenceFreshness",
+      "kind": "function",
+      "line": 251,
+      "signature": "evidenceFreshness(rec: Pick<TaskEvidenceRecord, 'fingerprint'>,\n  current: { code: string; covers: readonly string[]; input?: string } | null | undefined,): EvidenceFreshness"
+    },
+    {
+      "name": "TaskHistoryEntry",
+      "kind": "interface",
+      "line": 282,
+      "signature": "TaskHistoryEntry()",
+      "members": [
+        {
+          "name": "at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "to",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "by",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "TaskReadSetSymbol",
+      "kind": "interface",
+      "line": 329,
+      "signature": "TaskReadSetSymbol()",
+      "members": [
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "fp",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "TaskReadSetFile",
+      "kind": "interface",
+      "line": 339,
+      "signature": "TaskReadSetFile()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "content_hash",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "TaskReadSetBasis",
+      "kind": "type",
+      "line": 352,
+      "signature": "TaskReadSetBasis()"
+    },
+    {
+      "name": "TaskReadSet",
+      "kind": "interface",
+      "line": 355,
+      "signature": "TaskReadSet()",
+      "members": [
+        {
+          "name": "symbols",
+          "type": ": TaskReadSetSymbol[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "files",
+          "type": ": TaskReadSetFile[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "computed_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "basis",
+          "type": ": TaskReadSetBasis[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "TaskSpec",
       "kind": "interface",
-      "line": 164,
+      "line": 366,
       "signature": "TaskSpec()",
       "members": [
         {
@@ -195,8 +391,44 @@
           "member_kind": "property"
         },
         {
+          "name": "reopened_from",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "reopen_reason",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
           "name": "replaces",
           "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "history",
+          "type": ": TaskHistoryEntry[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "retire_reason",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "retired_at",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "retired_by",
+          "type": ": string | null",
           "optional": true,
           "member_kind": "property"
         },
@@ -211,17 +443,27 @@
           "type": ": TaskDiscussion",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "read_set",
+          "type": ": TaskReadSet",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "taskLevel",
       "kind": "function",
-      "line": 246,
+      "line": 515,
       "signature": "taskLevel(card: Pick<TaskSpec, 'expectations'>): 'L1' | 'L2'"
     }
   ],
   "imports": [
+    {
+      "source": "node:crypto",
+      "kind": "package"
+    },
     {
       "source": "./expectation.js",
       "kind": "relative",
@@ -246,6 +488,10 @@
     {
       "from": "src/domain/task_schema.ts#taskLevel",
       "to": "src/domain/expectation.ts#postExpectations"
+    },
+    {
+      "from": "src/domain/task_schema.ts#codeFingerprintOf",
+      "to": "src/domain/task_schema.ts#fingerprintOf"
     },
     {
       "from": "src/domain/task_schema.ts#progressOf",

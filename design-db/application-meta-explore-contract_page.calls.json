@@ -7,13 +7,25 @@
     {
       "name": "MAX_SITES",
       "kind": "const",
-      "line": 47,
+      "line": 55,
       "signature": "const MAX_SITES = 40"
+    },
+    {
+      "name": "BODY_CAP",
+      "kind": "const",
+      "line": 62,
+      "signature": "const BODY_CAP = 6000"
+    },
+    {
+      "name": "BODY_BRACE_NOTE",
+      "kind": "const",
+      "line": 65,
+      "signature": "const BODY_BRACE_NOTE = '外层花括号**随语法树原样**：ts/js · go · java · kotlin · php · c# · …"
     },
     {
       "name": "ContractPageInput",
       "kind": "interface",
-      "line": 49,
+      "line": 69,
       "signature": "ContractPageInput()",
       "members": [
         {
@@ -45,13 +57,13 @@
     {
       "name": "ContractPageResolution",
       "kind": "type",
-      "line": 60,
+      "line": 80,
       "signature": "ContractPageResolution()"
     },
     {
       "name": "ContractDefinition",
       "kind": "interface",
-      "line": 62,
+      "line": 82,
       "signature": "ContractDefinition()",
       "members": [
         {
@@ -93,9 +105,59 @@
       ]
     },
     {
+      "name": "ContractImplementation",
+      "kind": "interface",
+      "line": 102,
+      "signature": "ContractImplementation()",
+      "members": [
+        {
+          "name": "body",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "body_hash",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "chars",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lines",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "truncated",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": 'db'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
       "name": "ContractSite",
       "kind": "interface",
-      "line": 76,
+      "line": 120,
       "signature": "ContractSite()",
       "members": [
         {
@@ -127,7 +189,7 @@
     {
       "name": "ContractEdge",
       "kind": "interface",
-      "line": 84,
+      "line": 128,
       "signature": "ContractEdge()",
       "members": [
         {
@@ -183,7 +245,7 @@
     {
       "name": "ContractTerm",
       "kind": "interface",
-      "line": 97,
+      "line": 141,
       "signature": "ContractTerm()",
       "members": [
         {
@@ -233,7 +295,7 @@
     {
       "name": "ContractPageResult",
       "kind": "interface",
-      "line": 109,
+      "line": 153,
       "signature": "ContractPageResult()",
       "members": [
         {
@@ -285,6 +347,18 @@
           "member_kind": "property"
         },
         {
+          "name": "implementation",
+          "type": ": ContractImplementation",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "implementation_absent",
+          "type": ": { reason: string; detail: string }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
           "name": "producers",
           "type": ": { source: string; count: number; sites: ContractSite[]; note: string }",
           "optional": true,
@@ -319,43 +393,43 @@
     {
       "name": "lookupTerm",
       "kind": "function",
-      "line": 139,
+      "line": 191,
       "signature": "lookupTerm(symbol: string): { key: string; term: ContractTerm } | null"
     },
     {
       "name": "relatedEdges",
       "kind": "function",
-      "line": 166,
+      "line": 218,
       "signature": "relatedEdges(symbol: string, members: readonly string[]): ContractEdge[]"
     },
     {
       "name": "sitesOfKind",
       "kind": "function",
-      "line": 181,
+      "line": 233,
       "signature": "sitesOfKind(fieldRefFiles: ReadonlyArray<{ file: string; refs: ReadonlyArray<{ line: number; kind: string; snippet?: string }> }>,\n  kinds: ReadonlySet<string>,): ContractSite[]"
     },
     {
       "name": "contractPageCore",
       "kind": "function",
-      "line": 200,
+      "line": 252,
       "signature": "contractPageCore(input: ContractPageInput): Promise<ContractPageResult>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 397,
+      "line": 502,
       "signature": "touchedOf(input: ContractPageInput, r: ContractPageResult): Touched"
     },
     {
       "name": "contractPage",
       "kind": "function",
-      "line": 410,
+      "line": 515,
       "signature": "contractPage(input: ContractPageInput): Promise<TouchedProduct<ContractPageResult>>"
     },
     {
       "name": "renderContractPage",
       "kind": "function",
-      "line": 416,
+      "line": 521,
       "signature": "renderContractPage(r: ContractPageResult): string"
     }
   ],
@@ -474,6 +548,10 @@
     {
       "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
       "to": "src/infrastructure/index/symbols.ts#hasAnyIndexedFiles"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
+      "to": "src/infrastructure/index/symbols.ts#readSymbolBody"
     }
   ]
 }

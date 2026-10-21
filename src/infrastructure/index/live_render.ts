@@ -36,7 +36,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import type { DesignDSL, Node, Edge, SemanticFile, Symbol } from '../../domain/types.js';
-import { getDSL } from '../storage.js';
+import { getDSL, buildSyncMeta } from '../storage.js';
 import { detectArchLayers } from '../analysis/structure/layer_detect.js';
 import {
   buildIndex,
@@ -51,7 +51,6 @@ import {
 import type { FileEntry, GoModule, LayoutItem } from '../graph/import_project.js';
 import { findCacheDb } from './db.js';
 import { getFileParse } from './symbols.js';
-import { scanRevOf } from './scan_rev.js';
 
 /** ★★★ 2026-10-19（用户：max_files 直接删掉）—— 与 `import_project` 的默认【不截断】保持一致。
  *  ★ 原为 200：注释说"与 import_project 的默认一致"，而那个默认已改 ⇒ 这个必须跟着改，
@@ -421,20 +420,12 @@ export function renderLiveFromDb(feature: string): DesignDSL | null {
   // 分层（与写端同一步；它会顺带把层名回填到 responsibility 前缀）
   const layered = detectArchLayers(base);
 
-  // `_sync`：★ 与 `saveLiveFeature` 同形状，但 `source` 标成 `live_render`（**如实说明"这份是现渲染、不是冻结文件"**）。
-  const now = Date.now();
-  const { rev, schemaVersion } = scanRevOf({ feature, sourceRoot: root });
+  // `_sync`：★ **不再手写一份字面量**（2026-10-21 收敛到唯一构造点 `storage.ts#buildSyncMeta`）。
+  //   原先这里有第二份 `_sync`，而 `syncMeta` 不知道 `dbSchemaVersion` 存在 ⇒ `saveDesignSheet` 一重建
+  //   就把它冲掉（实测：写完 16，跑一次 release 就没了）。现在四个落盘口（live / design sheet / saveDSL
+  //   / 本处现渲染）共用同一份形状；`source: 'live_render'` 仍如实说明"这份是现渲染、不是冻结文件"。
   return {
     ...layered,
-    _sync: {
-      saved_at: new Date(now).toISOString(),
-      source: 'live_render',
-      feature,
-      scanRev: rev,
-      age: rev == null ? null : Math.max(0, now - rev),
-      // ★ 2026-10-21（与 `storage.ts#syncMeta` **同形状、同来源**）：这份现渲染是照着"哪一刻的 DB"画的
-      //   —— `scanRev` 是 indexed_at，`dbSchemaVersion` 是 schema 版本（同时从 `scanRevOf` 一次读出）。
-      dbSchemaVersion: schemaVersion,
-    },
+    _sync: buildSyncMeta({ feature, sourceRoot: root, source: 'live_render' }),
   } as DesignDSL;
 }

@@ -7,7 +7,7 @@
     {
       "name": "WriteThroughOutcome",
       "kind": "interface",
-      "line": 80,
+      "line": 96,
       "signature": "WriteThroughOutcome()",
       "members": [
         {
@@ -81,13 +81,25 @@
           "type": ": string",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "task_gate",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "assumption_check",
+          "type": ": AssumptionCheck",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "SourceWriteReport",
       "kind": "interface",
-      "line": 110,
+      "line": 139,
       "signature": "SourceWriteReport()",
       "members": [
         {
@@ -113,67 +125,73 @@
           "type": ": string",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "assumption_check",
+          "type": ": AssumptionCheck",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "EMPTY_CROSS",
       "kind": "const",
-      "line": 125,
+      "line": 156,
       "signature": "const EMPTY_CROSS = { total: 0, resolved: 0, external: 0, failed: 0 }"
     },
     {
       "name": "hasLiveIndex",
       "kind": "function",
-      "line": 139,
+      "line": 170,
       "signature": "hasLiveIndex(projectRoot: string): boolean"
     },
     {
       "name": "SELF_WRITE_MAX",
       "kind": "const",
-      "line": 160,
+      "line": 191,
       "signature": "const SELF_WRITE_MAX = 500"
     },
     {
       "name": "writeSelfWrites",
       "kind": "function",
-      "line": 162,
+      "line": 193,
       "signature": "writeSelfWrites(root: string, list: SelfWriteEntry[]): void"
     },
     {
       "name": "recordSelfWrite",
       "kind": "function",
-      "line": 189,
+      "line": 220,
       "signature": "recordSelfWrite(projectRoot: string, files: readonly string[], note?: string): number"
     },
     {
       "name": "syncSelfWrites",
       "kind": "function",
-      "line": 220,
+      "line": 251,
       "signature": "syncSelfWrites(projectRoot: string,\n  files: readonly string[],\n  opts: { syncIndex?: boolean; onFile?: (rel: string, status: SyncStatus) => void } = {},): Promise<WriteThroughOutcome | null>"
     },
     {
       "name": "resolveRefsAfterWrite",
       "kind": "function",
-      "line": 308,
+      "line": 339,
       "signature": "resolveRefsAfterWrite(db: Database,\n  root: string,\n  rels: readonly string[],\n  keepPending: boolean,): { refsReopened: number; refsReopenedFiles: number; cross: CrossFileResolveStats }"
     },
     {
       "name": "finishWriteThrough",
       "kind": "function",
-      "line": 338,
+      "line": 369,
       "signature": "finishWriteThrough(db: Database,\n  root: string,\n  rels: readonly string[],\n  out: WriteThroughOutcome,\n  errors: string[],\n  keepPending: boolean,): void"
     },
     {
       "name": "syncSelfWritesSync",
       "kind": "function",
-      "line": 391,
+      "line": 422,
       "signature": "syncSelfWritesSync(projectRoot: string,\n  files: readonly string[],\n  opts: { syncIndex?: boolean } = {},): WriteThroughOutcome | null"
     },
     {
       "name": "TaskGateOutcome",
       "kind": "interface",
-      "line": 485,
+      "line": 516,
       "signature": "TaskGateOutcome()",
       "members": [
         {
@@ -205,19 +223,25 @@
           "type": ": GateExemption[]",
           "optional": false,
           "member_kind": "property"
+        },
+        {
+          "name": "assumption_check",
+          "type": ": AssumptionCheck",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "TaskGateBasis",
       "kind": "type",
-      "line": 525,
+      "line": 567,
       "signature": "TaskGateBasis()"
     },
     {
       "name": "GateCoverageFeature",
       "kind": "interface",
-      "line": 534,
+      "line": 577,
       "signature": "GateCoverageFeature()",
       "members": [
         {
@@ -249,7 +273,7 @@
     {
       "name": "GateExemption",
       "kind": "interface",
-      "line": 556,
+      "line": 599,
       "signature": "GateExemption()",
       "members": [
         {
@@ -269,7 +293,7 @@
     {
       "name": "GateCoverage",
       "kind": "interface",
-      "line": 572,
+      "line": 615,
       "signature": "GateCoverage()",
       "members": [
         {
@@ -301,79 +325,97 @@
     {
       "name": "nodeFilePath",
       "kind": "function",
-      "line": 596,
+      "line": 639,
       "signature": "nodeFilePath(n: { type?: string; description?: string } & { path?: string },\n  sep: string,): string | undefined"
     },
     {
       "name": "collectGateCoverage",
       "kind": "function",
-      "line": 628,
+      "line": 671,
       "signature": "collectGateCoverage(rootArg: string): GateCoverage"
     },
     {
       "name": "recordUnaddressableWarnings",
       "kind": "function",
-      "line": 704,
+      "line": 747,
       "signature": "recordUnaddressableWarnings(items: GateCoverage['unaddressable'],\n  rels: readonly string[],): string[]"
     },
     {
       "name": "exemptionLines",
       "kind": "function",
-      "line": 770,
+      "line": 813,
       "signature": "exemptionLines(exempted: readonly GateExemption[]): string"
     },
     {
       "name": "WriteActor",
       "kind": "type",
-      "line": 841,
+      "line": 884,
       "signature": "WriteActor()"
     },
     {
       "name": "resolveActor",
       "kind": "function",
-      "line": 844,
+      "line": 898,
       "signature": "resolveActor(explicit?: WriteActor | null): WriteActor | null"
+    },
+    {
+      "name": "actorStrict",
+      "kind": "function",
+      "line": 922,
+      "signature": "actorStrict(): boolean"
+    },
+    {
+      "name": "evaluateRunAuthorize",
+      "kind": "function",
+      "line": 959,
+      "signature": "evaluateRunAuthorize(args: {\n  scope: Scope;\n  rels: readonly string[];\n  covering: readonly GateCoverageFeature[];\n  actor: WriteActor | null;\n}): | { ok: true; feature: string; scopeText: string; nodeCount: number; allowedCount: number; anchor: { nodeId: string; owner: string } }\n  | { ok: false; reason: string }"
     },
     {
       "name": "assertSourceWriteRegisteredFor",
       "kind": "function",
-      "line": 855,
-      "signature": "assertSourceWriteRegisteredFor(projectRoot: string,\n  files: readonly string[],\n  actor?: WriteActor | null,): TaskGateOutcome"
+      "line": 1049,
+      "signature": "assertSourceWriteRegisteredFor(projectRoot: string,\n  files: readonly string[],\n  actor?: WriteActor | null,\n  authorize?: string | null,\n  symbols?: readonly AssumptionTarget[],): TaskGateOutcome"
     },
     {
       "name": "assertSourceWriteRegistered",
       "kind": "function",
-      "line": 863,
-      "signature": "assertSourceWriteRegistered(projectRoot: string,\n  files: readonly string[],\n  opts?: { actor?: WriteActor | null },): TaskGateOutcome"
+      "line": 1069,
+      "signature": "assertSourceWriteRegistered(projectRoot: string,\n  files: readonly string[],\n  /**\n   * ★★★ T356：`authorize` = **按 run 授权**（一个 scope 一次授权一批文件）——\n   * 值 = `domain/scope.ts` 的**现成文法**（`files:` / `nodes:` / `subtree:` / `layer:` / `swimlane:` / `arch_layer:`）。\n   * ★ 它**只影响本次调用**：不写库、不新增路径事实（理由见 `evaluateRunAuthorize` 的注释）。\n   * ★ 2026-10-21：`symbols` = 本次要写的符号（假设检定的符号级粒度；不给 ⇒ 文件级）。\n   */\n  opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[] },): TaskGateOutcome"
+    },
+    {
+      "name": "evaluateTaskGate",
+      "kind": "function",
+      "line": 1095,
+      "signature": "evaluateTaskGate(projectRoot: string,\n  files: readonly string[],\n  opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[] },): TaskGateOutcome"
     },
     {
       "name": "reopenAndResolveAfterWrite",
       "kind": "function",
-      "line": 1235,
+      "line": 1581,
       "signature": "reopenAndResolveAfterWrite(projectRoot: string,\n  files: readonly string[],): Promise<{\n  refsReopened: number;\n  refsReopenedFiles: number;\n  cross: { total: number; resolved: number; external: number; failed: number };\n  error?: string;\n}>"
     },
     {
       "name": "reopenNote",
       "kind": "function",
-      "line": 1263,
+      "line": 1609,
       "signature": "reopenNote(r: { refsReopened: number; error?: string }): string"
     },
     {
       "name": "writeSourceFiles",
       "kind": "function",
-      "line": 1278,
-      "signature": "writeSourceFiles(projectRoot: string,\n  files: readonly string[],\n  mutate: () => T | Promise<T>,\n  opts: {\n    label?: string;\n    snapshot?: boolean;\n    syncIndex?: boolean;\n    before?: () => void;\n    /** 逐文件回报索引同步结果（`SyncStatus`）—— 供需要逐文件回执的调用方（如 `applyWrites`）用 */\n    onFile?: (rel: string, status: SyncStatus) => void;\n  } = {},): Promise<{ value: T; report: SourceWriteReport }>"
+      "line": 1624,
+      "signature": "writeSourceFiles(projectRoot: string,\n  files: readonly string[],\n  mutate: () => T | Promise<T>,\n  opts: {\n    label?: string;\n    snapshot?: boolean;\n    syncIndex?: boolean;\n    before?: () => void;\n    /** 逐文件回报索引同步结果（`SyncStatus`）—— 供需要逐文件回执的调用方（如 `applyWrites`）用 */\n    onFile?: (rel: string, status: SyncStatus) => void;\n    /**\n     * ★★★ 2026-10-20（A7 逐调用自报）：本次写入的**身份**。\n     * ★ 之前这里**根本没有这个字段** —— 于是所有走 `writeSourceFiles` 的写路（`rename_symbols` /\n     *   `apply_refactor_plan` / `refactor_pipeline` …）都只能读 env，而 env 在生产面上是空的\n     *   ⇒ 闸只能\"提醒 + 放行\"。它与 `edit_code` 自己调闸那两处用**同一个** `resolveActor`。\n     */\n    actor?: WriteActor | null;\n    /**\n     * ★★★ T356（2026-10-20）：**按 run 授权**（一个 scope 一次授权一批文件）——逐字交给写闸，**本层不解释它**。\n     * ★ 为什么必须在**这里**也有：本函数是 `rename_symbols` / `apply_refactor_plan` / `refactor_pipeline`\n     *   这些批量写路共用的那一道闸。只在 `edit_code` 接、这里不接 ⇒ **批量工具认 authorize、单文件工具也认、\n     *   但走 `writeSourceFiles` 的那几条全都不认** = 第三套口径（本仓头号病）。\n     */\n    authorize?: string | null;\n    /**\n     * ★ 2026-10-21（读集比对）：本次要写的**符号**（`{file, symbol}`）—— 交给闸做符号级假设检定。\n     * ★ 不给 ⇒ 文件级（`rename_*` 这类整文件改写本来就自带符号表，但逐符号列举成本高；\n     *   先按文件粒度报，**不假装**是符号级）。\n     */\n    symbols?: readonly AssumptionTarget[];\n  } = {},): Promise<{ value: T; report: SourceWriteReport }>"
     },
     {
       "name": "snapshotAndRecordSelfWrite",
       "kind": "function",
-      "line": 1337,
-      "signature": "snapshotAndRecordSelfWrite(projectRoot: string,\n  files: readonly string[],\n  opts: { label?: string; snapshot?: boolean } = {},): WriteThroughOutcome"
+      "line": 1729,
+      "signature": "snapshotAndRecordSelfWrite(projectRoot: string,\n  files: readonly string[],\n  opts: { label?: string; snapshot?: boolean; actor?: WriteActor | null; authorize?: string | null } = {},): WriteThroughOutcome"
     },
     {
       "name": "writeThroughLine",
       "kind": "function",
-      "line": 1355,
+      "line": 1765,
       "signature": "writeThroughLine(index: WriteThroughOutcome | null): string"
     }
   ],
@@ -429,11 +471,31 @@
       "type_only": true
     },
     {
+      "source": "../domain/scope.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../domain/actor_spec.js",
+      "kind": "relative"
+    },
+    {
       "source": "../domain/task_schema.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./read_set.js",
       "kind": "relative"
     }
   ],
   "calls": [
+    {
+      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "to": "src/application/read_set.ts#checkAssumptions"
+    },
+    {
+      "from": "src/application/write_gate.ts#writeSourceFiles",
+      "to": "src/application/read_set.ts#refreshAfterOwnWrite"
+    },
     {
       "from": "src/application/write_gate.ts#writeSourceFiles",
       "to": "src/application/refactor/snapshot/file_snapshot.ts#snapshotBeforeWrite"
@@ -441,6 +503,10 @@
     {
       "from": "src/application/write_gate.ts#snapshotAndRecordSelfWrite",
       "to": "src/application/refactor/snapshot/file_snapshot.ts#snapshotBeforeWrite"
+    },
+    {
+      "from": "src/application/write_gate.ts#evaluateTaskGate",
+      "to": "src/application/write_gate.ts#actorStrict"
     },
     {
       "from": "src/application/write_gate.ts#assertSourceWriteRegisteredFor",
@@ -455,19 +521,27 @@
       "to": "src/application/write_gate.ts#assertSourceWriteRegistered"
     },
     {
-      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "from": "src/application/write_gate.ts#evaluateTaskGate",
       "to": "src/application/write_gate.ts#collectGateCoverage"
     },
     {
-      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
-      "to": "src/application/write_gate.ts#exemptionLines"
+      "from": "src/application/write_gate.ts#evaluateTaskGate",
+      "to": "src/application/write_gate.ts#evaluateRunAuthorize"
     },
     {
       "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "to": "src/application/write_gate.ts#evaluateTaskGate"
+    },
+    {
+      "from": "src/application/write_gate.ts#evaluateTaskGate",
       "to": "src/application/write_gate.ts#exemptionLines"
     },
     {
-      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "from": "src/application/write_gate.ts#evaluateTaskGate",
+      "to": "src/application/write_gate.ts#exemptionLines"
+    },
+    {
+      "from": "src/application/write_gate.ts#evaluateTaskGate",
       "to": "src/application/write_gate.ts#exemptionLines"
     },
     {
@@ -511,7 +585,7 @@
       "to": "src/application/write_gate.ts#recordSelfWrite"
     },
     {
-      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "from": "src/application/write_gate.ts#evaluateTaskGate",
       "to": "src/application/write_gate.ts#recordUnaddressableWarnings"
     },
     {
@@ -519,7 +593,19 @@
       "to": "src/application/write_gate.ts#resolveActor"
     },
     {
-      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "from": "src/application/write_gate.ts#evaluateTaskGate",
+      "to": "src/application/write_gate.ts#resolveActor"
+    },
+    {
+      "from": "src/application/write_gate.ts#writeSourceFiles",
+      "to": "src/application/write_gate.ts#resolveActor"
+    },
+    {
+      "from": "src/application/write_gate.ts#writeSourceFiles",
+      "to": "src/application/write_gate.ts#resolveActor"
+    },
+    {
+      "from": "src/application/write_gate.ts#snapshotAndRecordSelfWrite",
       "to": "src/application/write_gate.ts#resolveActor"
     },
     {
@@ -539,7 +625,39 @@
       "to": "src/application/write_gate.ts#writeSelfWrites"
     },
     {
-      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "from": "src/application/write_gate.ts#actorStrict",
+      "to": "src/domain/actor_spec.ts#actorStrictMode"
+    },
+    {
+      "from": "src/application/write_gate.ts#resolveActor",
+      "to": "src/domain/actor_spec.ts#admitActor"
+    },
+    {
+      "from": "src/application/write_gate.ts#evaluateRunAuthorize",
+      "to": "src/domain/actor_spec.ts#sameActor"
+    },
+    {
+      "from": "src/application/write_gate.ts#evaluateTaskGate",
+      "to": "src/domain/actor_spec.ts#sameActor"
+    },
+    {
+      "from": "src/application/write_gate.ts#evaluateRunAuthorize",
+      "to": "src/domain/scope.ts#formatScope"
+    },
+    {
+      "from": "src/application/write_gate.ts#evaluateRunAuthorize",
+      "to": "src/domain/scope.ts#formatScope"
+    },
+    {
+      "from": "src/application/write_gate.ts#evaluateTaskGate",
+      "to": "src/domain/scope.ts#parseScope"
+    },
+    {
+      "from": "src/application/write_gate.ts#evaluateRunAuthorize",
+      "to": "src/domain/scope.ts#resolveScope"
+    },
+    {
+      "from": "src/application/write_gate.ts#evaluateTaskGate",
       "to": "src/domain/task_schema.ts#progressOf"
     },
     {
@@ -639,7 +757,7 @@
       "to": "src/infrastructure/index/symbols.ts#toIndexKey"
     },
     {
-      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "from": "src/application/write_gate.ts#evaluateTaskGate",
       "to": "src/infrastructure/index/symbols.ts#toIndexKey"
     },
     {
@@ -659,6 +777,10 @@
       "to": "src/infrastructure/storage.ts#getDSL"
     },
     {
+      "from": "src/application/write_gate.ts#evaluateRunAuthorize",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
       "from": "src/application/write_gate.ts#collectGateCoverage",
       "to": "src/infrastructure/storage.ts#listDesignSheets"
     },
@@ -667,11 +789,11 @@
       "to": "src/infrastructure/storage.ts#saveDSL"
     },
     {
-      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "from": "src/application/write_gate.ts#evaluateTaskGate",
       "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
     },
     {
-      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "from": "src/application/write_gate.ts#evaluateTaskGate",
       "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
     }
   ]

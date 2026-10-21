@@ -20,7 +20,27 @@
       "name": "BindingFacts",
       "kind": "interface",
       "line": 71,
-      "signature": "BindingFacts()"
+      "signature": "BindingFacts()",
+      "members": [
+        {
+          "name": "usesNan",
+          "type": ": boolean | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "installScript",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "hasBuiltBinding",
+          "type": ": boolean | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "bindingGenerationOf",

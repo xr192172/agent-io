@@ -7,7 +7,7 @@
     {
       "name": "GatewayProvider",
       "kind": "interface",
-      "line": 46,
+      "line": 45,
       "signature": "GatewayProvider()",
       "members": [
         {
@@ -81,7 +81,7 @@
     {
       "name": "GatewayConfig",
       "kind": "interface",
-      "line": 69,
+      "line": 68,
       "signature": "GatewayConfig()",
       "members": [
         {
@@ -101,7 +101,7 @@
     {
       "name": "UsageStat",
       "kind": "interface",
-      "line": 75,
+      "line": 74,
       "signature": "UsageStat()",
       "members": [
         {
@@ -163,7 +163,7 @@
     {
       "name": "ChatResult",
       "kind": "interface",
-      "line": 88,
+      "line": 87,
       "signature": "ChatResult()",
       "members": [
         {
@@ -201,61 +201,61 @@
     {
       "name": "gatewayCfgPath",
       "kind": "function",
-      "line": 100,
+      "line": 99,
       "signature": "gatewayCfgPath(): string"
     },
     {
       "name": "gatewayStatsPath",
       "kind": "function",
-      "line": 103,
+      "line": 102,
       "signature": "gatewayStatsPath(): string"
     },
     {
       "name": "loadGatewayConfig",
       "kind": "function",
-      "line": 107,
+      "line": 106,
       "signature": "loadGatewayConfig(): GatewayConfig"
     },
     {
       "name": "saveGatewayConfig",
       "kind": "function",
-      "line": 117,
+      "line": 116,
       "signature": "saveGatewayConfig(cfg: GatewayConfig): void"
     },
     {
       "name": "providerFromEnv",
       "kind": "function",
-      "line": 136,
+      "line": 135,
       "signature": "providerFromEnv(): GatewayProvider | null"
     },
     {
       "name": "ensureSeededFromEnv",
       "kind": "function",
-      "line": 171,
+      "line": 170,
       "signature": "ensureSeededFromEnv(): boolean"
     },
     {
       "name": "effectiveProviders",
       "kind": "function",
-      "line": 186,
+      "line": 185,
       "signature": "effectiveProviders(): GatewayProvider[]"
     },
     {
       "name": "firstUsableProvider",
       "kind": "function",
-      "line": 194,
+      "line": 193,
       "signature": "firstUsableProvider(): GatewayProvider | undefined"
     },
     {
       "name": "maskKey",
       "kind": "function",
-      "line": 202,
+      "line": 201,
       "signature": "maskKey(key: string): string"
     },
     {
       "name": "ProviderView",
       "kind": "interface",
-      "line": 208,
+      "line": 207,
       "signature": "ProviderView()",
       "members": [
         {
@@ -335,13 +335,13 @@
     {
       "name": "listProvidersMasked",
       "kind": "function",
-      "line": 223,
+      "line": 222,
       "signature": "listProvidersMasked(): ProviderView[]"
     },
     {
       "name": "UpsertProviderInput",
       "kind": "interface",
-      "line": 242,
+      "line": 241,
       "signature": "UpsertProviderInput()",
       "members": [
         {
@@ -409,49 +409,49 @@
     {
       "name": "upsertProvider",
       "kind": "function",
-      "line": 255,
+      "line": 254,
       "signature": "upsertProvider(input: UpsertProviderInput): { ok: boolean; error?: string }"
     },
     {
       "name": "deleteProvider",
       "kind": "function",
-      "line": 296,
+      "line": 295,
       "signature": "deleteProvider(id: string): { ok: boolean; error?: string }"
     },
     {
       "name": "hasEnabledProvider",
       "kind": "function",
-      "line": 307,
+      "line": 306,
       "signature": "hasEnabledProvider(): boolean"
     },
     {
       "name": "keyFingerprint",
       "kind": "function",
-      "line": 316,
+      "line": 315,
       "signature": "keyFingerprint(key: string): string"
     },
     {
       "name": "loadStats",
       "kind": "function",
-      "line": 320,
+      "line": 319,
       "signature": "loadStats(): UsageStat[]"
     },
     {
       "name": "saveStats",
       "kind": "function",
-      "line": 330,
+      "line": 329,
       "signature": "saveStats(stats: UsageStat[]): void"
     },
     {
       "name": "recordUsage",
       "kind": "function",
-      "line": 335,
+      "line": 334,
       "signature": "recordUsage(providerId: string, key: string, u: { prompt: number; completion: number; cost: number; ok: boolean; ms: number }): void"
     },
     {
       "name": "StatsView",
       "kind": "interface",
-      "line": 363,
+      "line": 362,
       "signature": "StatsView()",
       "members": [
         {
@@ -471,43 +471,43 @@
     {
       "name": "getStats",
       "kind": "function",
-      "line": 374,
+      "line": 373,
       "signature": "getStats(): StatsView"
     },
     {
       "name": "resetStats",
       "kind": "function",
-      "line": 389,
+      "line": 388,
       "signature": "resetStats(): void"
     },
     {
       "name": "keyPools",
       "kind": "const",
-      "line": 401,
+      "line": 400,
       "signature": "const keyPools = new Map<string, { pool: KeyPool; keyId: string }>()"
     },
     {
       "name": "poolForProvider",
       "kind": "function",
-      "line": 402,
+      "line": 401,
       "signature": "poolForProvider(provider: GatewayProvider): KeyPool"
     },
     {
       "name": "providerCursor",
       "kind": "const",
-      "line": 413,
+      "line": 412,
       "signature": "const providerCursor = 0"
     },
     {
       "name": "_resetGatewayCursors",
       "kind": "function",
-      "line": 416,
+      "line": 415,
       "signature": "_resetGatewayCursors(): void"
     },
     {
       "name": "Endpoint",
       "kind": "interface",
-      "line": 421,
+      "line": 420,
       "signature": "Endpoint()",
       "members": [
         {
@@ -539,13 +539,13 @@
     {
       "name": "pickEndpoint",
       "kind": "function",
-      "line": 429,
+      "line": 428,
       "signature": "pickEndpoint(now: number): Endpoint"
     },
     {
       "name": "GatewayChatOptions",
       "kind": "interface",
-      "line": 456,
+      "line": 455,
       "signature": "GatewayChatOptions()",
       "members": [
         {
@@ -583,7 +583,7 @@
     {
       "name": "GatewayHttpError",
       "kind": "class",
-      "line": 468,
+      "line": 467,
       "signature": "GatewayHttpError()",
       "members": [
         {
@@ -596,25 +596,25 @@
     {
       "name": "callProvider",
       "kind": "function",
-      "line": 475,
+      "line": 474,
       "signature": "callProvider(provider: GatewayProvider,\n  key: string,\n  messages: Array<{ role: string; content: string }>,\n  opts: { temperature: number; timeoutMs: number; model?: string; jsonMode?: boolean; maxTokens?: number },): Promise<{ content: string; usage: { prompt_tokens: number; completion_tokens: number } }>"
     },
     {
       "name": "chatViaGateway",
       "kind": "function",
-      "line": 517,
+      "line": 516,
       "signature": "chatViaGateway(messages: Array<{ role: string; content: string }>,\n  opts: GatewayChatOptions = {},): Promise<ChatResult>"
     },
     {
       "name": "testProvider",
       "kind": "function",
-      "line": 568,
+      "line": 567,
       "signature": "testProvider(id: string): Promise<{ ok: boolean; ms: number; model: string; error?: string }>"
     },
     {
       "name": "OpenAICompatRequest",
       "kind": "interface",
-      "line": 587,
+      "line": 586,
       "signature": "OpenAICompatRequest()",
       "members": [
         {
@@ -652,7 +652,7 @@
     {
       "name": "handleOpenAICompatRequest",
       "kind": "function",
-      "line": 595,
+      "line": 594,
       "signature": "handleOpenAICompatRequest(body: OpenAICompatRequest): Promise<{\n  status: number;\n  body: unknown;\n}>"
     }
   ],

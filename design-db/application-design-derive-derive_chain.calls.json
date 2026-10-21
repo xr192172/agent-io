@@ -217,13 +217,13 @@
     {
       "name": "signatureToShapes",
       "kind": "function",
-      "line": 265,
-      "signature": "signatureToShapes(signature: string,\n  lang: Lang,): { in?: AnimationValueSchema; out?: AnimationValueSchema }"
+      "line": 277,
+      "signature": "signatureToShapes(signature: string,\n  lang: Lang,\n  params?: ParsedParam[] | null,): { in?: AnimationValueSchema; out?: AnimationValueSchema }"
     },
     {
       "name": "CallEdge",
       "kind": "interface",
-      "line": 309,
+      "line": 331,
       "signature": "CallEdge()",
       "members": [
         {
@@ -243,37 +243,37 @@
     {
       "name": "buildCallGraph",
       "kind": "function",
-      "line": 320,
+      "line": 342,
       "signature": "buildCallGraph(symbols: ParsedSymbol[],\n  calls: ParsedCall[],): Map<string, CallEdge[]>"
     },
     {
       "name": "pickEntry",
       "kind": "function",
-      "line": 343,
+      "line": 365,
       "signature": "pickEntry(symbols: ParsedSymbol[], graph: Map<string, CallEdge[]>): ParsedSymbol"
     },
     {
       "name": "walkChain",
       "kind": "function",
-      "line": 358,
+      "line": 380,
       "signature": "walkChain(entry: ParsedSymbol,\n  symbols: ParsedSymbol[],\n  graph: Map<string, CallEdge[]>,): ParsedSymbol[]"
     },
     {
       "name": "CIRCLED",
       "kind": "const",
-      "line": 383,
+      "line": 405,
       "signature": "const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫']"
     },
     {
       "name": "sanitize",
       "kind": "function",
-      "line": 385,
+      "line": 407,
       "signature": "sanitize(s: string): string"
     },
     {
       "name": "deriveDetailChain",
       "kind": "function",
-      "line": 393,
+      "line": 415,
       "signature": "deriveDetailChain(input: DeriveChainInput): Promise<DeriveChainResult>"
     }
   ],

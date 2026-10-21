@@ -7,12 +7,12 @@
     {
       "name": "FileFacts",
       "kind": "interface",
-      "line": 36,
+      "line": 37,
       "signature": "FileFacts()",
       "members": [
         {
           "name": "apis",
-          "type": ": Array<{\n    name: string;\n    qualified_name: string;\n    signature: string | null;\n    /** ★ 行区间（1-based）：原来 DSL 镜像的 `notes` 里带\"L12-34\"这类注记，读者需要它来复原 */\n    start_line: number;\n    end_line: number;\n  }>",
+          "type": ": Array<{\n    name: string;\n    qualified_name: string;\n    signature: string | null;\n    /**\n     * ★ schema v13：**结构化形参表**（`nodes.params` 的 JSON 文本已解析）。\n     * ★ 三态，**不要合并**：\n     *   · `null` = 该行**没写**这一列（历史行 / 非函数符号）—— **不是**“没有形参”；\n     *   · `[]`   = 真的**没有形参**（`()`）—— 这一条不该被当成“没抽到”去修；\n     *   · 非空  = 形参表（`name` / `type?` / `optional` / `variadic`，见 `symbol_params.ts`）。\n     * 消费方（`derive_mind_map.ts#projectSignature`）据此把“拆字符串”降为兜底。\n     */\n    params: ParsedParam[] | null;\n    /** ★ 行区间（1-based）：原来 DSL 镜像的 `notes` 里带\"L12-34\"这类注记，读者需要它来复原 */\n    start_line: number;\n    end_line: number;\n  }>",
           "optional": false,
           "member_kind": "property"
         },
@@ -39,43 +39,49 @@
     {
       "name": "EMPTY",
       "kind": "const",
-      "line": 54,
+      "line": 64,
       "signature": "const EMPTY = { apis: [], deps: [], source: null, matched_path: null }"
     },
     {
       "name": "pickDb",
       "kind": "function",
-      "line": 64,
+      "line": 74,
       "signature": "pickDb(root: string, dbPath: string): Database"
     },
     {
       "name": "resolveFilePath",
       "kind": "function",
-      "line": 81,
+      "line": 91,
       "signature": "resolveFilePath(db: Database, fileRel: string): string | null"
+    },
+    {
+      "name": "parseParamsCell",
+      "kind": "function",
+      "line": 109,
+      "signature": "parseParamsCell(raw: string | null, filePath: string, symbol: string): ParsedParam[] | null"
     },
     {
       "name": "fileFacts",
       "kind": "function",
-      "line": 91,
+      "line": 122,
       "signature": "fileFacts(root: string, fileRel: string, feature?: string): FileFacts"
     },
     {
       "name": "apiSignaturesOf",
       "kind": "function",
-      "line": 120,
+      "line": 168,
       "signature": "apiSignaturesOf(root: string, fileRel: string, feature?: string): string[]"
     },
     {
       "name": "diagnoseFactsOffset",
       "kind": "function",
-      "line": 171,
+      "line": 219,
       "signature": "diagnoseFactsOffset(dRoot: string | undefined, lRoot: string | undefined): string[]"
     },
     {
       "name": "mergedApis",
       "kind": "function",
-      "line": 188,
+      "line": 236,
       "signature": "mergedApis(root: string | undefined,\n  fileRel: string | undefined,\n  /** ★ 入参放宽到 `ExpectedApi` 形态（`name` 可选、`signature` 可能缺）—— 免得每个调用点都强转 */\n  expected: ReadonlyArray<{ name?: string; signature?: string }> | undefined,\n  feature?: string,\n  /** ★ 产物与 DSL 的 `ExpectedApi` **可赋值**（`signature` 必填）—— 这样它能直接喂 `diffApis(ExpectedApi[], ExpectedApi[])` */): Array<{ name?: string; signature: string }>"
     }
   ],
@@ -91,6 +97,11 @@
     {
       "source": "./db.js",
       "kind": "relative"
+    },
+    {
+      "source": "../parse/symbol_params.js",
+      "kind": "relative",
+      "type_only": true
     }
   ],
   "calls": [
@@ -121,6 +132,10 @@
     {
       "from": "src/infrastructure/index/file_facts.ts#mergedApis",
       "to": "src/infrastructure/index/file_facts.ts#fileFacts"
+    },
+    {
+      "from": "src/infrastructure/index/file_facts.ts#fileFacts",
+      "to": "src/infrastructure/index/file_facts.ts#parseParamsCell"
     },
     {
       "from": "src/infrastructure/index/file_facts.ts#fileFacts",

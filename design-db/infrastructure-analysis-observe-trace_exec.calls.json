@@ -129,19 +129,19 @@
     {
       "name": "paramNames",
       "kind": "function",
-      "line": 72,
-      "signature": "paramNames(lang: Lang, signature: string): string[]"
+      "line": 73,
+      "signature": "paramNames(lang: Lang, signature: string, params?: ParsedParam[] | null): string[]"
     },
     {
       "name": "parseReceiver",
       "kind": "function",
-      "line": 90,
+      "line": 98,
       "signature": "parseReceiver(signature: string): { varName: string; typeName: string } | null"
     },
     {
       "name": "GoField",
       "kind": "interface",
-      "line": 98,
+      "line": 106,
       "signature": "GoField()",
       "members": [
         {
@@ -161,31 +161,31 @@
     {
       "name": "findStruct",
       "kind": "function",
-      "line": 101,
+      "line": 109,
       "signature": "findStruct(content: string, typeName: string): GoField[] | null"
     },
     {
       "name": "goFieldZero",
       "kind": "function",
-      "line": 128,
+      "line": 136,
       "signature": "goFieldZero(t: string): string | null"
     },
     {
       "name": "netBraces",
       "kind": "function",
-      "line": 140,
+      "line": 148,
       "signature": "netBraces(line: string): number"
     },
     {
       "name": "goTopTypes",
       "kind": "function",
-      "line": 148,
+      "line": 156,
       "signature": "goTopTypes(content: string): string"
     },
     {
       "name": "ExampleParam",
       "kind": "interface",
-      "line": 182,
+      "line": 190,
       "signature": "ExampleParam()",
       "members": [
         {
@@ -211,49 +211,49 @@
     {
       "name": "extractParamList",
       "kind": "function",
-      "line": 190,
+      "line": 198,
       "signature": "extractParamList(signature: string): string"
     },
     {
       "name": "splitParams",
       "kind": "function",
-      "line": 206,
+      "line": 214,
       "signature": "splitParams(inner: string): string[]"
     },
     {
       "name": "exampleForType",
       "kind": "function",
-      "line": 221,
+      "line": 229,
       "signature": "exampleForType(t: string | undefined, name: string): unknown | undefined"
     },
     {
       "name": "exampleInputFor",
       "kind": "function",
-      "line": 235,
-      "signature": "exampleInputFor(signature: string, lang: string): { example: Record<string, unknown>; params: ExampleParam[]; preview: string }"
+      "line": 245,
+      "signature": "exampleInputFor(signature: string,\n  lang: string,\n  formal?: ParsedParam[] | null,): { example: Record<string, unknown>; params: ExampleParam[]; preview: string }"
     },
     {
       "name": "toArgs",
       "kind": "function",
-      "line": 266,
+      "line": 291,
       "signature": "toArgs(names: string[], input: unknown): unknown[]"
     },
     {
       "name": "BUILTIN_PREFIX",
       "kind": "const",
-      "line": 279,
+      "line": 304,
       "signature": "const BUILTIN_PREFIX = new Set([ 'Math', 'JSON', 'Object', 'Array', 'String', 'N…"
     },
     {
       "name": "isExternalCall",
       "kind": "function",
-      "line": 289,
+      "line": 314,
       "signature": "isExternalCall(expr: string, pkgNames: Set<string>): boolean"
     },
     {
       "name": "ResolvedFn",
       "kind": "interface",
-      "line": 296,
+      "line": 321,
       "signature": "ResolvedFn()",
       "members": [
         {
@@ -285,55 +285,55 @@
     {
       "name": "resolvePure",
       "kind": "function",
-      "line": 306,
+      "line": 331,
       "signature": "resolvePure(symbol: ParsedSymbol,\n  symbols: ParsedSymbol[],\n  calls: Array<{ caller: string; callee: string; callee_expr: string; resolved: boolean; callee_qn?: string }>,\n  content: string,\n  lang: Lang,\n  pkgNames: Set<string>,): { ok: true; fn: ResolvedFn } | { ok: false; reason: string }"
     },
     {
       "name": "extractBody",
       "kind": "function",
-      "line": 371,
+      "line": 396,
       "signature": "extractBody(content: string, symbol: ParsedSymbol): string"
     },
     {
       "name": "execTs",
       "kind": "function",
-      "line": 381,
+      "line": 406,
       "signature": "execTs(codeText: string, entryName: string, args: unknown[]): unknown"
     },
     {
       "name": "runSubprocess",
       "kind": "function",
-      "line": 389,
+      "line": 414,
       "signature": "runSubprocess(cmd: string, args: string[], stdin: string, timeoutMs = 10000): Promise<string>"
     },
     {
       "name": "execPy",
       "kind": "function",
-      "line": 424,
+      "line": 449,
       "signature": "execPy(codeText: string, entryName: string, kwargs: Record<string, unknown>): Promise<unknown>"
     },
     {
       "name": "goLit",
       "kind": "function",
-      "line": 431,
+      "line": 456,
       "signature": "goLit(v: unknown): string"
     },
     {
       "name": "execGo",
       "kind": "function",
-      "line": 443,
+      "line": 468,
       "signature": "execGo(codeText: string, entryName: string, args: unknown[], recv?: ResolvedFn['recv']): Promise<unknown>"
     },
     {
       "name": "traceExecChain",
       "kind": "function",
-      "line": 481,
+      "line": 506,
       "signature": "traceExecChain(input: TraceExecInput): Promise<TraceExecResult>"
     },
     {
       "name": "execByLang",
       "kind": "function",
-      "line": 582,
+      "line": 607,
       "signature": "execByLang(lang: Lang, fn: ResolvedFn, args: unknown[]): Promise<unknown>"
     }
   ],
@@ -364,6 +364,10 @@
     }
   ],
   "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/trace_exec.ts#exampleInputFor",
+      "to": "src/infrastructure/analysis/observe/trace_exec.ts#exampleForType"
+    },
     {
       "from": "src/infrastructure/analysis/observe/trace_exec.ts#exampleInputFor",
       "to": "src/infrastructure/analysis/observe/trace_exec.ts#exampleForType"

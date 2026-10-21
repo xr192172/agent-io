@@ -38,7 +38,7 @@
       "name": "SCHEMA_VERSION",
       "kind": "const",
       "line": 66,
-      "signature": "const SCHEMA_VERSION = 12"
+      "signature": "const SCHEMA_VERSION = 16"
     },
     {
       "name": "getDbFile",
@@ -71,33 +71,75 @@
       "signature": "nearestCacheDb(dir: string): string | null"
     },
     {
+      "name": "tableExists",
+      "kind": "function",
+      "line": 163,
+      "signature": "tableExists(db: Database, name: string): boolean"
+    },
+    {
+      "name": "hasColumn",
+      "kind": "function",
+      "line": 167,
+      "signature": "hasColumn(db: Database, table: string, column: string): boolean"
+    },
+    {
+      "name": "readSchemaVersion",
+      "kind": "function",
+      "line": 173,
+      "signature": "readSchemaVersion(db: Database): number | null"
+    },
+    {
+      "name": "V16_TABLES",
+      "kind": "const",
+      "line": 180,
+      "signature": "const V16_TABLES = ['identifiers', 'imports', 'unresolved_refs', 'symbol_dif…"
+    },
+    {
+      "name": "V16_INDEXES",
+      "kind": "const",
+      "line": 183,
+      "signature": "const V16_INDEXES = [ 'idx_identifiers_name', 'idx_imports_file', 'idx_unreso…"
+    },
+    {
+      "name": "migrateV15ToV16",
+      "kind": "function",
+      "line": 205,
+      "signature": "migrateV15ToV16(db: Database): string"
+    },
+    {
+      "name": "migrateCacheIfNeeded",
+      "kind": "function",
+      "line": 285,
+      "signature": "migrateCacheIfNeeded(db: Database): string"
+    },
+    {
       "name": "openDb",
       "kind": "function",
-      "line": 161,
+      "line": 311,
       "signature": "openDb(dbFile: string = getDbFile()): Database"
     },
     {
       "name": "projectCachePool",
       "kind": "const",
-      "line": 216,
+      "line": 396,
       "signature": "const projectCachePool = new Map<string, Database>()"
     },
     {
       "name": "getProjectCacheDb",
       "kind": "function",
-      "line": 225,
+      "line": 405,
       "signature": "getProjectCacheDb(projectRoot: string): Database"
     },
     {
       "name": "closeAllProjectCacheDbs",
       "kind": "function",
-      "line": 236,
+      "line": 416,
       "signature": "closeAllProjectCacheDbs(): void"
     },
     {
       "name": "closeProjectCacheDb",
       "kind": "function",
-      "line": 248,
+      "line": 428,
       "signature": "closeProjectCacheDb(projectRoot: string): void"
     }
   ],
@@ -133,6 +175,18 @@
       "to": "src/infrastructure/index/db.ts#featureCacheDbPath"
     },
     {
+      "from": "src/infrastructure/index/db.ts#migrateCacheIfNeeded",
+      "to": "src/infrastructure/index/db.ts#hasColumn"
+    },
+    {
+      "from": "src/infrastructure/index/db.ts#openDb",
+      "to": "src/infrastructure/index/db.ts#migrateCacheIfNeeded"
+    },
+    {
+      "from": "src/infrastructure/index/db.ts#migrateCacheIfNeeded",
+      "to": "src/infrastructure/index/db.ts#migrateV15ToV16"
+    },
+    {
       "from": "src/infrastructure/index/db.ts#getProjectCacheDb",
       "to": "src/infrastructure/index/db.ts#openDb"
     },
@@ -143,6 +197,18 @@
     {
       "from": "src/infrastructure/index/db.ts#getProjectCacheDb",
       "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
+    },
+    {
+      "from": "src/infrastructure/index/db.ts#migrateCacheIfNeeded",
+      "to": "src/infrastructure/index/db.ts#readSchemaVersion"
+    },
+    {
+      "from": "src/infrastructure/index/db.ts#readSchemaVersion",
+      "to": "src/infrastructure/index/db.ts#tableExists"
+    },
+    {
+      "from": "src/infrastructure/index/db.ts#migrateCacheIfNeeded",
+      "to": "src/infrastructure/index/db.ts#tableExists"
     },
     {
       "from": "src/infrastructure/index/db.ts#getDbFile",

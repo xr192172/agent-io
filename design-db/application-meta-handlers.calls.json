@@ -7,19 +7,19 @@
     {
       "name": "resolveExploreAction",
       "kind": "function",
-      "line": 18,
+      "line": 20,
       "signature": "resolveExploreAction(a: Record<string, unknown>, args: Record<string, unknown>): string"
     },
     {
       "name": "exploreCodeHandler",
       "kind": "const",
-      "line": 26,
+      "line": 30,
       "signature": "const exploreCodeHandler = wrapData(async (a) => { const hasNested = typeof a.args =…"
     },
     {
       "name": "syncContractsHandler",
       "kind": "const",
-      "line": 35,
+      "line": 39,
       "signature": "const syncContractsHandler = wrapData((a) => { const r = syncContracts({ feature: a.fe…"
     }
   ],

@@ -14,7 +14,57 @@
       "name": "LanguageEntry",
       "kind": "interface",
       "line": 46,
-      "signature": "LanguageEntry()"
+      "signature": "LanguageEntry()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pkg",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "pkgSpec",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "exts",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": LangKind",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "symbol_nodes",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "import_nodes",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "field_map",
+          "type": ": {\n    name: string;\n    parameters?: string;\n    body?: string;\n    return_type?: string;\n    receiver?: string;\n  }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
     },
     {
       "name": "LANGUAGES",

@@ -7,7 +7,7 @@
     {
       "name": "WriteItem",
       "kind": "interface",
-      "line": 39,
+      "line": 43,
       "signature": "WriteItem()",
       "members": [
         {
@@ -27,7 +27,7 @@
     {
       "name": "WriteReceipt",
       "kind": "interface",
-      "line": 44,
+      "line": 48,
       "signature": "WriteReceipt()",
       "members": [
         {
@@ -65,26 +65,38 @@
           "type": ": string[]",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "task_gate",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "assumption_check",
+          "type": ": AssumptionCheck",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "applyWritesCore",
       "kind": "function",
-      "line": 68,
-      "signature": "applyWritesCore(projectRoot: string,\r\n  items: readonly WriteItem[],\r\n  opts: { dryRun?: boolean; note?: string } = {},): Promise<WriteReceipt>"
+      "line": 80,
+      "signature": "applyWritesCore(projectRoot: string,\n  items: readonly WriteItem[],\n  opts: { dryRun?: boolean; note?: string; actor?: string | null; authorize?: string | null } = {},): Promise<WriteReceipt>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 140,
+      "line": 159,
       "signature": "touchedOf(projectRoot: string, r: WriteReceipt): Touched"
     },
     {
       "name": "applyWrites",
       "kind": "function",
-      "line": 146,
-      "signature": "applyWrites(projectRoot: string,\r\n  items: readonly WriteItem[],\r\n  opts: { dryRun?: boolean; note?: string } = {},): Promise<TouchedProduct<WriteReceipt>>"
+      "line": 165,
+      "signature": "applyWrites(projectRoot: string,\n  items: readonly WriteItem[],\n  opts: { dryRun?: boolean; note?: string; actor?: string | null; authorize?: string | null } = {},): Promise<TouchedProduct<WriteReceipt>>"
     }
   ],
   "imports": [
@@ -98,6 +110,15 @@
     },
     {
       "source": "../../write_gate.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../read_set.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../gate_note.js",
       "kind": "relative"
     },
     {
@@ -117,6 +138,10 @@
     {
       "from": "src/application/refactor/edit/apply_writes.ts#applyWrites",
       "to": "src/application/refactor/edit/apply_writes.ts#touchedOf"
+    },
+    {
+      "from": "src/application/refactor/edit/apply_writes.ts#applyWritesCore",
+      "to": "src/application/refactor/gate_note.ts#attachGateNote"
     },
     {
       "from": "src/application/refactor/edit/apply_writes.ts#applyWritesCore",
