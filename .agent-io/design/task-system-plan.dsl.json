@@ -18116,7 +18116,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "ui"
+        "arch_layer": "ui",
+        "task": {
+          "id": "file_src_application_meta_view_derive_mind_map_ts",
+          "summary": "【L1 待建构】UI 层 · src/application/meta/view — 50 个 API（导入自 14 个模块）（src/application/meta/view/derive_mind_map.ts） ← 节点 file_src_application_meta_view_derive_mind_map_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_view_derive_mind_map_ts\"].responsibility"
+          },
+          "owner": "codebuddy-params",
+          "claimed_at": "2026-10-21T03:38:10.687Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_view_explain_gen_ts",
@@ -48838,7 +48850,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_analysis_observe_trace_exec_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 22 个 API（导入自 6 个模块）（src/infrastructure/analysis/observe/trace_exec.ts） ← 节点 file_src_infrastructure_analysis_observe_trace_exec_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_trace_exec_ts\"].responsibility"
+          },
+          "owner": "codebuddy-params",
+          "claimed_at": "2026-10-21T03:38:10.762Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_verify_gate_ts",
@@ -50265,17 +50289,14 @@
           "id": "file_src_infrastructure_index_file_facts_ts",
           "summary": "【L1 待建构】入口层 · src/infrastructure/index — 6 个 API（导入自 3 个模块）（src/infrastructure/index/file_facts.ts） ← 节点 file_src_infrastructure_index_file_facts_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_file_facts_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:17.464Z"
+          "owner": "codebuddy-params",
+          "claimed_at": "2026-10-21T03:38:10.906Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_index_function_outline_ts",
@@ -51679,17 +51700,14 @@
           "id": "file_src_presentation_http_serve_ts",
           "summary": "【L1 待建构】核心层 · src/presentation/http — 50 个 API（导入自 57 个模块）（src/presentation/http/serve.ts） ← 节点 file_src_presentation_http_serve_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_http_serve_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:18.292Z"
+          "owner": "codebuddy-params",
+          "claimed_at": "2026-10-21T03:38:10.834Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_presentation_mcp_lifecycle_ts",
@@ -83372,7 +83390,8 @@
           }
         ],
         "lines": 2969,
-        "layer": "ui"
+        "layer": "ui",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_view_explain_gen_ts",
@@ -89916,7 +89935,8 @@
           }
         ],
         "lines": 601,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_verify_gate_ts",
@@ -93135,7 +93155,7 @@
         ],
         "lines": 203,
         "layer": "entry",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_index_function_outline_ts",
@@ -96174,7 +96194,7 @@
         ],
         "lines": 3360,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_presentation_mcp_lifecycle_ts",
@@ -98932,11 +98952,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T03:00:52.432Z",
+    "saved_at": "2026-10-21T03:38:10.930Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792550690692,
-    "age": 961740
+    "scanRev": 1792552014434,
+    "age": 1876496
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

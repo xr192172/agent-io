@@ -32,6 +32,7 @@ import { hasEnabledProvider, chatViaGateway } from '../../../infrastructure/llm_
 import { openDb, findCacheDb } from '../../../infrastructure/index/db.js';
 import type { Database } from '../../../infrastructure/index/db.js';
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
+import type { ParsedParam } from '../../../infrastructure/parse/symbol_params.js';
 import type { DesignDSL, FeatureNode, FeatureTree, SemanticFile, CanvasNote, Node } from '../../../domain/types.js';
 import type { MindMap, MindMapNode, TeachStep, TeachPin, TeachFlowEdge, TeachGap, ProposalFeature } from '../../../domain/mindmap.js';
 import { buildScenes } from '../../../domain/narration.js';
@@ -100,12 +101,21 @@ export interface FileInfo {
   layer?: string;
   /** 关键函数签名（**事实优先**：现取 cache.db；取不到退回 expected_apis。teach 模式喂给 LLM 的实现材料） */
   apis?: string[];
+  /**
+   * ★ v13：与 `apis` **同序同长**的结构化形参（`nodes.params`）。
+   *  `null` = 该行没写这一列；`[]` = 真的没形参；三态口径见 `file_facts.ts#FileFacts['apis']`。
+   *  用途只有一个：`projectSignature` 的主路 —— `apis`（字符串）仍保留，因为展示 / 喂 LLM 要的就是串。
+   */
+  apiParams?: Array<ParsedParam[] | null>;
   /** 实测依赖（★ 现取 cache.db 的 import 边；**不再**从 DSL 镜像回填）：本文件 import 的项目内文件相对路径 */
   actual_deps?: string[];
 }
 
 /** 文件索引：exact（path 精确）+ bySuffix（≥2 段后缀匹配），契约投影的输入 */
 export type FileIndex = { exact: Map<string, FileInfo>; bySuffix: Map<string, FileInfo> };
+
+// ★ 注意：`FileInfo.apiParams` 与 `FileInfo.apis` **同序同长**（构造处唯一：`buildFileIndex`）——
+//   因为结构化形参是按“哪条签名”对齐的，不能单独排序、不能单独过滤。
 
 /** 从语义层构建 文件路径 → FileInfo 索引，并保留 id（= geometry node id）。
  *  另建后缀索引（≥2 段）：功能树社区的 files 相对 cache.db 项目根，
@@ -119,8 +129,13 @@ export function buildFileIndex(dsl: DesignDSL): FileIndex {
     if (!f.path) continue;
     // 事实现取：facts.source 为 null = 一个候选库都不存在（本轮无索引）⇒ 退回意图（expected_apis）
     const facts = root ? fileFacts(root, f.path, dsl.feature) : null;
-    const factApis = facts?.source ? facts.apis.map((a) => a.signature ?? a.name).filter(Boolean) : null;
-    const factDeps = facts?.source ? facts.deps : null;
+    // ★ T20：DSL 里已无 `actual_apis` 镜像 ⇒ 事实取不到就**只用意图**（不再有"读镜像"这条路）
+    // ★ v13：签名与形参**成对**取（同序同长）—— 过滤 / 截断只在“对”这个层级做一次，
+    //   否则两个数组会错位（形参就跟错签名了）。
+    const pairs: Array<{ sig: string; params: ParsedParam[] | null }> = facts?.source
+      ? facts.apis.map((a) => ({ sig: a.signature ?? a.name, params: a.params }))
+      : (f.expected_apis ?? []).map((a) => ({ sig: a.signature, params: null }));
+    const kept = pairs.filter((p) => !!p.sig).slice(0, 24);
     const info: FileInfo = {
       id: f.id,
       path: f.path,
@@ -128,9 +143,9 @@ export function buildFileIndex(dsl: DesignDSL): FileIndex {
       lines: f.lines,
       status: f.status,
       layer: f.layer,
-      // ★ T20：DSL 里已无 `actual_apis` 镜像 ⇒ 事实取不到就**只用意图**（不再有"读镜像"这条路）
-      apis: (factApis ?? (f.expected_apis ?? []).map((a) => a.signature)).slice(0, 24),
-      actual_deps: factDeps ?? undefined, // 事实依赖：Archify 等据此建真实 import 边；取不到事实则不留
+      apis: kept.map((p) => p.sig),
+      apiParams: kept.map((p) => p.params),
+      actual_deps: facts?.source ? facts.deps : undefined, // 事实依赖：Archify 等据此建真实 import 边；取不到事实则不留
     };
     exact.set(f.path, info);
     const segs = f.path.split('/');
@@ -209,25 +224,106 @@ function humanizeType(t: string): string {
   return '';
 }
 
-/** 单条签名 → {参数入针脚, 返回值出针脚}；解析失败返回 null（调用方回落到顺序推导） */
-export function projectSignature(sig: string): { ins: TeachPin[]; outs: TeachPin[] } | null {
-  // 从签名里定位参数表与返回区：Go `f(a int) (b string, err error)`
-  // / TS `f(a: string): Event[]` / Python `def f(a, b: int) -> str`
-  const open = sig.indexOf('(');
-  if (open < 0) return null;
-  const depthScan = (() => {
-    let d = 0, end = -1;
-    for (let i = open; i < sig.length; i++) {
-      const c = sig[i];
-      if (c === '(') d++;
-      else if (c === ')') { d--; if (d === 0) { end = i; break; } }
+/* ── 契约投影 · 针脚来源（v13：先结构化，字符串降为兜底）─────────────────────
+ * 同一件事（形参 → 针脚）有两个来源：
+ *   · `params`    = `nodes.params`（kernel AST 抽出的结构化形参，`file_facts` 已解析成数组）
+ *   · `signature` = 对签名串二次拆解（老路）
+ * ⇒ **有结构化就不拆串**；没有才拆，并在返回值里用 `via` 标出来（不静默）。
+ */
+
+/** 针脚来源：`params` = 结构化形参（`nodes.params`）；`signature` = 从签名串拆（兜底） */
+export type PinSource = 'params' | 'signature';
+
+/** 一条签名的投影结果。★ `outs` **永远**来自签名 —— `nodes.params` 只有形参，没有返回类型。 */
+export interface ProjectedShape {
+  ins: TeachPin[];
+  outs: TeachPin[];
+  /** **入针脚**的取材来源（出针脚只可能是 `signature`） */
+  via: PinSource;
+}
+
+/** 按顶层逗号切分（跟踪 () [] {} <> 嵌套深度） */
+function splitTopCommas(src: string): string[] {
+  const out: string[] = [];
+  let d = 0;
+  let cur = '';
+  for (const ch of src) {
+    if (ch === '(' || ch === '[' || ch === '<' || ch === '{') d++;
+    else if (ch === ')' || ch === ']' || ch === '>' || ch === '}') d--;
+    if (ch === ',' && d === 0) { out.push(cur); cur = ''; } else cur += ch;
+  }
+  if (cur.trim()) out.push(cur);
+  return out.map((x) => x.trim()).filter(Boolean);
+}
+
+/** 从 `open` 处的 `(` 起配对，返回配对 `)` 的下标；不闭合 ⇒ -1 */
+function matchParenEnd(s: string, open: number): number {
+  let d = 0;
+  for (let i = open; i < s.length; i++) {
+    const c = s[i];
+    if (c === '(') d++;
+    else if (c === ')') { d--; if (d === 0) return i; }
+  }
+  return -1;
+}
+
+/** 类型 token → 简名（剥切片/指针前后缀、取包内简名；与字符串路同款清洗） */
+function cleanTypeToken(typeToken: string): string {
+  return typeToken.replace(/^\[\]\*?/, '').replace(/^\*/, '').replace(/\*$/, '').split('.').pop() || typeToken;
+}
+
+/** 控制类类型（ctx / context.Context / error）—— 不是业务数据形态，不投影成针脚 */
+function isControlType(t: string): boolean {
+  return /\bcontext\.Context\b|\bctx\b/i.test(t) || /\berror\b/i.test(t);
+}
+
+/** 入针脚 · **主路**：结构化形参（`nodes.params`）。
+ *  ★ 没类型就只给名字（`t:''`）—— 这是 JS / 无标注形参的**常态**，不是错误：
+ *    `t:''` ⇒ `pinIdentity` 返 null（**不参与跨步连线**），只作“这一步吃什么”的展示。
+ *  ★ 不猜类型：`nodes.params` 没给 `type` 就不编一个。 */
+function pinsFromParams(params: ParsedParam[]): TeachPin[] {
+  const ins: TeachPin[] = [];
+  for (const p of params) {
+    const rawType = p.type ?? '';
+    if (rawType && isControlType(rawType)) continue;
+    const ct = rawType ? cleanTypeToken(rawType) : '';
+    // ★ 只有“单一标识符”才是可信的参数名。解构 / 模式形参（`{ a, b }` / `[a]`）没有单一名字，
+    //   强行拆会从里面切出碎片（单行切出 `a` / `b`，多行还会切出 `}`）⇒ 不猜：有类型就按类型出一个针脚，没类型就不投影。
+    const nm = /^[A-Za-z_$][\w$]*$/.test(p.name) ? pinNameFromParam(p.name) : '';
+    if (!ct) {
+      if (nm) ins.push({ n: nm, t: '' });
+      continue;
     }
-    return end;
-  })();
-  const close = depthScan;
-  if (close < 0) return null;
-  const paramsRaw = sig.slice(open + 1, close);
-  const after = sig.slice(close + 1).trim();
+    if (!nm) { ins.push({ n: humanizeType(ct) || ct, t: ct }); continue; }
+    ins.push({ n: toHumanName(nm, ct), t: ct });
+  }
+  return ins;
+}
+
+/** 入针脚 · **兜底**：从签名里的参数段文字拆（老行为，逐字保留） */
+function pinsFromParamText(paramsRaw: string): TeachPin[] {
+  const ins: TeachPin[] = [];
+  for (const seg of splitTopCommas(paramsRaw)) {
+    // Go: `a, b int`（多参共享类型）→ 类型=最后一个词，名=前面所有；TS: `a: int`；Python: `a: int = 1`
+    if (/\bfunc\s*\(/i.test(seg)) continue; // 函数类型参数（回调/谓词/闭包）：内部数据流，不是可投影的数据形态
+    const colon = seg.lastIndexOf(':');
+    let typeToken = ''; let namesPart = '';
+    if (colon >= 0) { typeToken = seg.slice(colon + 1).replace(/=.*$/, '').trim(); namesPart = seg.slice(0, colon).trim(); }
+    else { const m = seg.match(/^(.*?)\s+(\S+)$/); if (m) { namesPart = m[1].trim(); typeToken = m[2].trim(); } else { namesPart = seg; } }
+    if (!typeToken) continue; // 无类型标注（罕见），跳过
+    if (/\bcontext\.Context\b|\bctx\b/i.test(typeToken)) continue;   // 控制上下文，非业务数据
+    if (/\berror\b/i.test(typeToken)) continue;                       // 错误不是数据形态
+    const cleanType = cleanTypeToken(typeToken);
+    // 多参数共享一个类型 `a, b int` → namesPart 有多个名字 → 展开为多条针脚
+    const names = namesPart ? namesPart.split(',').map((x) => pinNameFromParam(x)).filter(Boolean) : [];
+    if (names.length === 0) { ins.push({ n: humanizeType(cleanType) || cleanType, t: cleanType }); continue; }
+    for (const nm of names) ins.push({ n: toHumanName(nm, cleanType), t: cleanType });
+  }
+  return ins;
+}
+
+/** 出针脚：从签名里的返回段文字拆（`nodes.params` 没有返回类型，这条路**只有签名可走**） */
+function pinsFromReturn(after: string): TeachPin[] {
   // 返回区：Go `(a,b) error` / `T`（无括号单返回） / TS `: T` / Python `-> T`
   let retStr = '';
   const arrowAfter = after.match(/^->\s*(.*)$/);
@@ -240,48 +336,48 @@ export function projectSignature(sig: string): { ins: TeachPin[]; outs: TeachPin
     if (cut && !cut.startsWith('{')) retStr = cut; // 否则视为无返回值
   }
 
-  const splitTop = (src: string): string[] => {
-    const out: string[] = []; let d = 0, cur = '';
-    for (const ch of src) {
-      if (ch === '(' || ch === '[' || ch === '<' || ch === '{') d++;
-      else if (ch === ')' || ch === ']' || ch === '>' || ch === '}') d--;
-      if (ch === ',' && d === 0) { out.push(cur); cur = ''; } else cur += ch;
-    }
-    if (cur.trim()) out.push(cur);
-    return out.map((x) => x.trim()).filter(Boolean);
-  };
-
-  // ── 输入针脚：参数表分格，格内取"类型"（跳过控制/上下文）──
-  const ins: TeachPin[] = [];
-  for (const seg of splitTop(paramsRaw)) {
-    // Go: `a, b int`（多参共享类型）→ 类型=最后一个词，名=前面所有；TS: `a: int`；Python: `a: int = 1`
-    if (/\bfunc\s*\(/i.test(seg)) continue; // 函数类型参数（回调/谓词/闭包）：内部数据流，不是可投影的数据形态
-    const colon = seg.lastIndexOf(':');
-    let typeToken = ''; let namesPart = '';
-    if (colon >= 0) { typeToken = seg.slice(colon + 1).replace(/=.*$/, '').trim(); namesPart = seg.slice(0, colon).trim(); }
-    else { const m = seg.match(/^(.*?)\s+(\S+)$/); if (m) { namesPart = m[1].trim(); typeToken = m[2].trim(); } else { namesPart = seg; } }
-    if (!typeToken) continue; // 无类型标注（罕见），跳过
-    if (/\bcontext\.Context\b|\bctx\b/i.test(typeToken)) continue;   // 控制上下文，非业务数据
-    if (/\berror\b/i.test(typeToken)) continue;                       // 错误不是数据形态
-    const cleanType = typeToken.replace(/^\[\]\*?/, '').replace(/^\*/, '').replace(/\*$/, '').split('.').pop() || typeToken;
-    // 多参数共享一个类型 `a, b int` → namesPart 有多个名字 → 展开为多条针脚
-    const names = namesPart ? namesPart.split(',').map((x) => pinNameFromParam(x)).filter(Boolean) : [];
-    if (names.length === 0) { ins.push({ n: humanizeType(cleanType) || cleanType, t: cleanType }); continue; }
-    for (const nm of names) ins.push({ n: toHumanName(nm, cleanType), t: cleanType });
-  }
-
-  // ── 输出针脚：返回区格内取"类型"，控制类同剔除 ──
   const outs: TeachPin[] = [];
-  for (const seg of splitTop(retStr)) {
+  for (const seg of splitTopCommas(retStr)) {
     const ty = seg.trim().replace(/^[*.]/, '');
     if (!ty || /\berror\b/i.test(ty)) continue;
     if (/\bcontext\.Context\b|\bctx\b/i.test(ty)) continue;
-    const ct = ty.replace(/^\[\]\*?/, '').replace(/^\*/, '').replace(/\*$/, '').split('.').pop() || ty;
+    const ct = cleanTypeToken(ty);
     outs.push({ n: humanizeType(ct) || ct, t: ct });
   }
+  return outs;
+}
 
-  if (ins.length === 0 && outs.length === 0) return null;
-  return { ins, outs };
+/** 单条签名 → {参数入针脚, 返回值出针脚}；**两路都取不到东西时返 null**（调用方回落到顺序推导）。
+ *
+ * ★★ v13：形参有两个来源，**先结构化、后字符串**：
+ *   ① `params` 有货（`nodes.params` 抽到了形参）⇒ 入针脚**只认它**，签名串一个字符也不再拆；
+ *   ② `params` 为 `null` / `[]` ⇒ 拆签名串（老行为），并用 `via:'signature'` 标明是兜底。
+ * ★ 为什么兜底也要标出来：否则“又回去拆串了”没人看得见 —— 本仓那类“静默降级”的病。
+ * ★ 返回值仍可能为 null：形参与返回区**都没东西**（`report()` 这种真没参也没返）⇒ 不是 bug，不编针脚。
+ */
+export function projectSignature(
+  sig: string | null | undefined,
+  params?: ParsedParam[] | null,
+): ProjectedShape | null {
+  const text = sig ?? '';
+  // 从签名里定位参数表与返回区：Go `f(a int) (b string, err error)`
+  // / TS `f(a: string): Event[]` / Python `def f(a, b: int) -> str`
+  const open = text.indexOf('(');
+  const close = open < 0 ? -1 : matchParenEnd(text, open);
+  const after = close < 0 ? '' : text.slice(close + 1).trim();
+  // ★ 出针脚先算：它只可能来自签名（`nodes.params` 没有返回类型）
+  const outs = pinsFromReturn(after);
+
+  // ★★ 主路：结构化形参
+  if (params && params.length > 0) {
+    const ins = pinsFromParams(params);
+    return ins.length === 0 && outs.length === 0 ? null : { ins, outs, via: 'params' };
+  }
+
+  // ★ 兜底：该行没写形参（`null`）或确实没形参（`[]`）⇒ 老路，拆串
+  if (open < 0 || close < 0) return null;
+  const ins = pinsFromParamText(text.slice(open + 1, close));
+  return ins.length === 0 && outs.length === 0 ? null : { ins, outs, via: 'signature' };
 }
 
 /** 参数名优先：入针脚用人话名承载作者意图（root/args/sender 这种业务标签），
@@ -297,8 +393,8 @@ function toHumanName(param: string, typeToken: string): string {
  * 主函数强信号 = 返回复杂类型（非泛型/非 boolean/this/error）；纯辅助函数（返回基础类型
  * 且无业务入参）降权——否则投影出来全是 boolean/this 占位，跨步连线永远 0 条。
  */
-function signatureScore(sig: string): number {
-  const shape = projectSignature(sig);
+function signatureScore(sig: string, params?: ParsedParam[] | null): number {
+  const shape = projectSignature(sig, params);
   if (!shape) return -Infinity;
   const isGenericT = (t: string): boolean => {
     const c = cleanPinStr(t).replace(/\|.*$/, '').replace(/[\[\]*<>].*$/, '').split('.').pop()?.trim() ?? '';
@@ -322,17 +418,26 @@ export function projectStepDataShape(
   involves: string[] | undefined,
   fileIndex: FileIndex,
   cap = 6,
-): { inputs: TeachPin[]; outputs: TeachPin[] } | null {
+): { inputs: TeachPin[]; outputs: TeachPin[]; via: PinSource } | null {
   if (!involves || involves.length === 0) return null;
   const inCand: Array<{ p: TeachPin; score: number; meaningful: boolean }> = [];
   const outCand: Array<{ p: TeachPin; score: number; meaningful: boolean }> = [];
+  // ★ v13：本步的取材读数（`via` 的聚合口径：**只要有一条走了结构化形参就算 `params`**；
+  //   全是拆串才是 `signature`）—— 给“又回去拆串了”留一个可核的出口。
+  let viaParams = 0;
+  let viaSignature = 0;
   for (const rel of involves) {
     const info = lookupFile(fileIndex, rel);
     if (!info || !info.apis || info.apis.length === 0) continue;
-    for (const sig of info.apis) {
-      const shape = projectSignature(sig);
+    for (let k = 0; k < info.apis.length; k++) {
+      const sig = info.apis[k];
+      // ★ 与 `apis` **同序**的结构化形参（成对构造，见 `buildFileIndex`）
+      const apiParams = info.apiParams?.[k] ?? null;
+      const shape = projectSignature(sig, apiParams);
       if (!shape) continue;
-      const score = signatureScore(sig);
+      if (shape.via === 'params') viaParams++;
+      else viaSignature++;
+      const score = signatureScore(sig, apiParams);
       for (const p of shape.ins) inCand.push({ p, score, meaningful: pinIdentity(p) !== null });
       for (const p of shape.outs) outCand.push({ p, score, meaningful: pinIdentity(p) !== null });
     }
@@ -354,7 +459,7 @@ export function projectStepDataShape(
   const inputs = pick(inCand);
   const outputs = pick(outCand);
   if (inputs.length === 0 && outputs.length === 0) return null;
-  return { inputs, outputs };
+  return { inputs, outputs, via: viaParams > 0 ? 'params' : 'signature' };
 }
 
 /**
@@ -366,15 +471,22 @@ export function projectFileDataShape(
   file: string,
   fileIndex: FileIndex,
   cap = 3,
-): { inputs: TeachPin[]; outputs: TeachPin[] } | null {
+): { inputs: TeachPin[]; outputs: TeachPin[]; via: PinSource } | null {
   const info = lookupFile(fileIndex, file);
   if (!info || !info.apis || info.apis.length === 0) return null;
   const inCand: Array<{ p: TeachPin; score: number; meaningful: boolean }> = [];
   const outCand: Array<{ p: TeachPin; score: number; meaningful: boolean }> = [];
-  for (const sig of info.apis) {
-    const shape = projectSignature(sig);
+  let viaParams = 0;
+  let viaSignature = 0;
+  for (let k = 0; k < info.apis.length; k++) {
+    const sig = info.apis[k];
+    // ★ 与 `apis` **同序**的结构化形参（成对构造，见 `buildFileIndex`）
+    const apiParams = info.apiParams?.[k] ?? null;
+    const shape = projectSignature(sig, apiParams);
     if (!shape) continue;
-    const score = signatureScore(sig);
+    if (shape.via === 'params') viaParams++;
+    else viaSignature++;
+    const score = signatureScore(sig, apiParams);
     for (const p of shape.ins) inCand.push({ p, score, meaningful: pinIdentity(p) !== null });
     for (const p of shape.outs) outCand.push({ p, score, meaningful: pinIdentity(p) !== null });
   }
@@ -395,7 +507,7 @@ export function projectFileDataShape(
   const inputs = pick(inCand);
   const outputs = pick(outCand);
   if (inputs.length === 0 && outputs.length === 0) return null;
-  return { inputs, outputs };
+  return { inputs, outputs, via: viaParams > 0 ? 'params' : 'signature' };
 }
 
 /* ============================================================

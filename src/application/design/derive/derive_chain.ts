@@ -16,7 +16,7 @@ import path from 'node:path';
 import type { AnimationValueSchema, Edge, Node } from '../../../domain/types.js';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import { nearestCacheDb, type Database } from '../../../infrastructure/index/db.js';
-import { parseFileFull, isSupported, type ParsedCall, type ParsedSymbol } from '../../../infrastructure/parse/index.js';
+import { parseFileFull, isSupported, type ParsedCall, type ParsedParam, type ParsedSymbol } from '../../../infrastructure/parse/index.js';
 import { extractFunctionCfg } from '../../../infrastructure/analysis/structure/cfg.js';
 import { KIND_SHAPE } from './derive_algorithm.js';
 
@@ -261,15 +261,37 @@ function parseGoReturns(ret: string): Array<{ name?: string; schema: AnimationVa
   return out;
 }
 
-/** 函数签名 → shapes.in / shapes.out */
+/** 函数签名 → shapes.in / shapes.out
+ *  ★ v13：**入参优先用结构化形参**（`ParsedSymbol.params`，kernel 从 AST 抽的）；
+ *    该行没有形参表时才拆签名串（`parseParams`，老路）。
+ *  ★ 返回区**仍然只能拆签名**——`nodes.params` 只有形参、没有返回类型，这是数据本身的边界。
+ *  ★ 两路差异（已对撑实测，非静默）：
+ *  · TS 函数型形参 `cb: (x: number) => void, n: number`：老路的 `indexOf(':')` 会把**后一个形参吞进类型**
+ *    （label 变成 `(x: number) => void, n: number` 且丢掉 `n`）；结构化是两条，类型各自准确。
+ *  · Go 函数型形参 `probeName func(string) string`：老路按空白切，多产一条垃圾 properties 键 `func(string)`；
+ *    结构化是一条（`probeName` : `func(string) string`）。
+ *  · Go 无名形参 `(int, string)`：老路把**类型当名字**（键叫 `int` / `string`）；结构化是空名 ⇒ 直接不出针脚
+ *    （本库实测：0 行走到这条；`shapes.in` 丢失的行数为 0）。
+ *  · 解构形参 `{ a, b }: Opts`、Go 共享类型 `(a, b int)`、Go `...T`：两路输出**一致**（已实测）。
+ */
 function signatureToShapes(
   signature: string,
   lang: Lang,
+  params?: ParsedParam[] | null,
 ): { in?: AnimationValueSchema; out?: AnimationValueSchema } {
-  const { params, ret } = splitSignature(signature);
+  const { params: paramsText, ret } = splitSignature(signature);
   const shapes: { in?: AnimationValueSchema; out?: AnimationValueSchema } = {};
 
-  const parsed = parseParams(params, lang);
+  // ★ 两路只选一路：有结构化就不拆串
+  // ★ 可变参数（Go `...T`）的“数组”语义靠这里补：`nodes.params` 把它拆成 `variadic:true` + 裸类型 `T`
+  //   （老路是字面 `...T` 交给 mapGoType 包 array）—— 不补就会把 `...TieredOption` 错标成单个对象。
+  const parsed: Param[] =
+    params && params.length > 0
+      ? params
+          .filter((p) => !!p.name) // 无名形参不配当 properties 的键
+          .map((p) => ({ name: p.name, type: p.variadic && lang === 'go' && p.type ? '...' + p.type : (p.type ?? '') }))
+          .filter((p) => lang !== 'go' || p.type !== 'context.Context') // 与 parseParams 同口径：承载不是数据
+      : parseParams(paramsText, lang);
   if (parsed.length > 0) {
     const properties: Record<string, AnimationValueSchema> = {};
     for (const p of parsed) properties[p.name] = p.type ? mapType(p.type, lang) : ANY;
@@ -563,7 +585,7 @@ export async function deriveDetailChain(input: DeriveChainInput): Promise<Derive
     if (isBadName(s)) return;
     stepNum++;
     const id = `${nodePrefix}${stepNum}_${sanitize(s.qualified_name)}`;
-    const shapes = signatureToShapes(s.signature, lang);
+    const shapes = signatureToShapes(s.signature, lang, s.params);
     const node: Node = {
       id,
       x: hx + (stepNum - 1) * 240,
@@ -596,7 +618,7 @@ export async function deriveDetailChain(input: DeriveChainInput): Promise<Derive
     if (isBadName(fn)) return;
     const num = chainCount + bi + 1;
     const id = `${nodePrefix}${num}_${sanitize(fn.qualified_name)}`;
-    const shapes = signatureToShapes(fn.signature, lang);
+    const shapes = signatureToShapes(fn.signature, lang, fn.params);
     const node: Node = {
       id,
       x: hx + (num - 1) * 240,
@@ -690,7 +712,7 @@ export async function deriveDetailChain(input: DeriveChainInput): Promise<Derive
         xTotal++;
         const num = xStart + xNo;
         const xid = `${nodePrefix}x${xNo}_${sanitize(tfn)}`;
-        const tshapes = signatureToShapes(tsym.signature, tlang);
+        const tshapes = signatureToShapes(tsym.signature, tlang, tsym.params);
         const tfileName = tfile.split('/').pop() ?? tfile;
         const xnode: Node = {
           id: xid,

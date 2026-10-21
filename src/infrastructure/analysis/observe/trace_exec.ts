@@ -18,7 +18,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { spawn } from 'node:child_process';
 import ts from 'typescript';
-import { parseFileFull, type ParsedSymbol } from '../../parse/index.js';
+import { parseFileFull, type ParsedParam, type ParsedSymbol } from '../../parse/index.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型
@@ -68,8 +68,16 @@ function langOf(filePath: string): Lang {
 }
 
 /** 签名 → 参数名列表（ts/py: name: T；go: name T；忽略接收者/可变参数）。
- *  用"最后一个括号组"取参数——正确跳过 Go 方法接收者 `(r *X)`。 */
-function paramNames(lang: Lang, signature: string): string[] {
+ *  ★ v13：`params` 有货就**直接用结构化形参**（name 已剥掉 `?` / `...` / `*`，Go 接收者也不在内），
+ *    不再拆串；没有才走下面的“最后一个括号组”兜底（那个写法能跳过 Go 方法接收者 `(r *X)`）。 */
+function paramNames(lang: Lang, signature: string, params?: ParsedParam[] | null): string[] {
+  if (params && params.length > 0) {
+    return params
+      // ★ 口径对齐拆串路：TS/Py 的 rest（`...args`）不参与（老路是看到 `...` 就 skip）；
+      //   Go 的 `...T` 在拆串路里是“名字 + 类型”，不 skip —— 这里也不 skip。
+      .filter((p) => (!p.variadic || lang === 'go') && !p.name.startsWith('_') && /^[A-Za-z_$][\w$]*$/.test(p.name))
+      .map((p) => p.name);
+  }
   const inner = extractParamList(signature);
   const names: string[] = [];
   for (const chunk of splitParams(inner)) {
@@ -231,35 +239,52 @@ function exampleForType(t: string | undefined, name: string): unknown | undefine
   return '';
 }
 
-/** 由签名生成示例入参对象 + 逐参说明。两种语言命名约定：Go `n type`；TS `n: type`。 */
-export function exampleInputFor(signature: string, lang: string): { example: Record<string, unknown>; params: ExampleParam[]; preview: string } {
-  const params: ExampleParam[] = [];
+/** 由签名生成示例入参对象 + 逐参说明。两种语言命名约定：Go `n type`；TS `n: type`。
+ *  ★ v13：`formal`（结构化形参）有货就**直接用**（类型来自 AST，不用从文本里猜），
+ *    没有才拆签名串（老路）。两路的口径一致：可变参数 / `_` 丢弃参不参与示例。 */
+export function exampleInputFor(
+  signature: string,
+  lang: string,
+  formal?: ParsedParam[] | null,
+): { example: Record<string, unknown>; params: ExampleParam[]; preview: string } {
+  const list: ExampleParam[] = [];
   const example: Record<string, unknown> = {};
-  const inner = extractParamList(signature);
-  for (const chunk of splitParams(inner)) {
-    const c = chunk.trim().replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/, '').trim();
-    if (!c) continue;
-    if (c.startsWith('...') || c.startsWith('_')) continue; // 可变参数/丢弃参
-    let name = '';
-    let type: string | undefined;
-    const isGo = lang === 'go';
-    const mGo = isGo ? /^([A-Za-z_][\w]*)\s+(.+)$/.exec(c) : null;
-    const mTs = !isGo ? /^([A-Za-z_$][\w$]*)\s*:\s*(.+)$/.exec(c) : null;
-    if (mGo) { name = mGo[1]; type = mGo[2].trim(); }
-    else if (mTs) { name = mTs[1]; type = mTs[2].trim(); }
-    else {
-      // 无类型（仅名字）
-      const bare = /^([A-Za-z_$][\w$]*)$/.exec(c);
-      if (bare) name = bare[1];
-      else continue;
+
+  if (formal && formal.length > 0) {
+    for (const p of formal) {
+      if ((p.variadic && lang !== 'go') || !p.name || p.name.startsWith('_')) continue; // 可变参数（TS/Py rest）/ 丢弃参
+      const value = exampleForType(p.type, p.name);
+      list.push({ name: p.name, type: p.type, example: value });
+      if (value !== undefined) example[p.name] = value;
     }
-    const value = exampleForType(type, name);
-    params.push({ name, type, example: value });
-    if (value !== undefined) example[name] = value;
+  } else {
+    const inner = extractParamList(signature);
+    for (const chunk of splitParams(inner)) {
+      const c = chunk.trim().replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/, '').trim();
+      if (!c) continue;
+      if (c.startsWith('...') || c.startsWith('_')) continue; // 可变参数/丢弃参
+      let name = '';
+      let type: string | undefined;
+      const isGo = lang === 'go';
+      const mGo = isGo ? /^([A-Za-z_][\w]*)\s+(.+)$/.exec(c) : null;
+      const mTs = !isGo ? /^([A-Za-z_$][\w$]*)\s*:\s*(.+)$/.exec(c) : null;
+      if (mGo) { name = mGo[1]; type = mGo[2].trim(); }
+      else if (mTs) { name = mTs[1]; type = mTs[2].trim(); }
+      else {
+        // 无类型（仅名字）
+        const bare = /^([A-Za-z_$][\w$]*)$/.exec(c);
+        if (bare) name = bare[1];
+        else continue;
+      }
+      const value = exampleForType(type, name);
+      list.push({ name, type, example: value });
+      if (value !== undefined) example[name] = value;
+    }
   }
+
   let preview: string;
   try { preview = JSON.stringify(example, null, 2); } catch { preview = '{}'; }
-  return { example, params, preview };
+  return { example, params: list, preview };
 }
 
 /** 输入值 → 位置参数数组（对象按参数名取值；标量单参） */
@@ -361,7 +386,7 @@ function resolvePure(
       // TS/Python 依赖已随函数体提取，无需额外 type 上下文。
       codeText: (lang === 'go' ? goTopTypes(content) : '') + '\n\n' + depTexts.join('\n\n'),
       entryName: symbol.name,
-      names: paramNames(lang, symbol.signature),
+      names: paramNames(lang, symbol.signature, symbol.params),
       recv: methodRecv,
     },
   };

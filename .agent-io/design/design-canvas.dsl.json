@@ -3492,7 +3492,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_design_derive_derive_chain_ts",
+          "summary": "【L1 待建构】核心层 · src/application/design/derive — 15 个 API（导入自 8 个模块）（src/application/design/derive/derive_chain.ts） ← 节点 file_src_application_design_derive_derive_chain_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_derive_derive_chain_ts\"].responsibility"
+          },
+          "owner": "codebuddy-params",
+          "claimed_at": "2026-10-21T03:37:01.649Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_derive_derive_split_ts",
@@ -27407,7 +27419,8 @@
           }
         ],
         "lines": 805,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_derive_derive_split_ts",
@@ -28401,10 +28414,10 @@
   "annotations": [],
   "_dsl_rev": 150,
   "_sync": {
-    "saved_at": "2026-10-21T02:42:49.299Z",
+    "saved_at": "2026-10-21T03:37:01.654Z",
     "source": "design_sheet",
     "feature": "design-canvas",
-    "scanRev": 1792550503669,
-    "age": 65630
+    "scanRev": 1792552014434,
+    "age": 1807220
   }
 }

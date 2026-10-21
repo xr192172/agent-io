@@ -1046,7 +1046,7 @@ async function handleApiFunctionExample(req: http.IncomingMessage, res: http.Ser
       return;
     }
     const lang = /\.go$/.test(fileRel) ? 'go' : /\.py$/.test(fileRel) ? 'py' : 'ts';
-    const { example, params, preview } = exampleInputFor(sym.signature, lang);
+    const { example, params, preview } = exampleInputFor(sym.signature, lang, sym.params);
     sendJson(res, 200, { feature, node_id: nodeId, func_name: func, signature: sym.signature, lang, example, params, preview });
   } catch (e) {
     sendError(res, 500, (e as Error).message);

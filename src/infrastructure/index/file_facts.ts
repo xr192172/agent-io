@@ -31,6 +31,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb, openDb, findCacheDb, projectCacheDbPath, type Database } from './db.js';
+import type { ParsedParam } from '../parse/symbol_params.js';
 
 /** 一个文件的**事实**（从解析数据现取；不是 DSL 里的镜像） */
 export interface FileFacts {
@@ -39,6 +40,15 @@ export interface FileFacts {
     name: string;
     qualified_name: string;
     signature: string | null;
+    /**
+     * ★ schema v13：**结构化形参表**（`nodes.params` 的 JSON 文本已解析）。
+     * ★ 三态，**不要合并**：
+     *   · `null` = 该行**没写**这一列（历史行 / 非函数符号）—— **不是**“没有形参”；
+     *   · `[]`   = 真的**没有形参**（`()`）—— 这一条不该被当成“没抽到”去修；
+     *   · 非空  = 形参表（`name` / `type?` / `optional` / `variadic`，见 `symbol_params.ts`）。
+     * 消费方（`derive_mind_map.ts#projectSignature`）据此把“拆字符串”降为兜底。
+     */
+    params: ParsedParam[] | null;
     /** ★ 行区间（1-based）：原来 DSL 镜像的 `notes` 里带"L12-34"这类注记，读者需要它来复原 */
     start_line: number;
     end_line: number;
@@ -87,6 +97,27 @@ function resolveFilePath(db: Database, fileRel: string): string | null {
   return rows.length === 1 ? rows[0].file_path : null;
 }
 
+/**
+ * `nodes.params` 单元格（JSON 文本）→ 形参数组。
+ *
+ * ★ 三态（与 `FileFacts['apis'][n].params` 的注释同一口径）：
+ *   `null`/空串 = 这行没写；`[]` = 真的没有形参；非空 = 形参表。
+ * ★ 坏 JSON **抛**（不吞）：该列只由本仓 kernel `JSON.stringify` 写入
+ *   （`index/symbols.ts` 的 INSERT），坏值 = 库被外部改过 —— 静默当 `null` 会把它
+ *   伪装成“这行没抽到”，正是本模块开头明令禁止的静默失败。
+ */
+function parseParamsCell(raw: string | null, filePath: string, symbol: string): ParsedParam[] | null {
+  if (raw === null || raw === '') return null;
+  let v: unknown;
+  try {
+    v = JSON.parse(raw);
+  } catch (e) {
+    throw new Error(`nodes.params 不是合法 JSON（${filePath} · ${symbol}）：${(e as Error).message}`);
+  }
+  if (!Array.isArray(v)) throw new Error(`nodes.params 不是数组（${filePath} · ${symbol}）`);
+  return v as ParsedParam[];
+}
+
 /** 取某文件的事实。根 = 项目根（或 source_root） */
 export function fileFacts(root: string, fileRel: string, feature?: string): FileFacts {
   const dbPath = findCacheDb({ feature, sourceRoot: root }) ?? projectCacheDbPath(root);
@@ -99,13 +130,30 @@ export function fileFacts(root: string, fileRel: string, feature?: string): File
   const matched = resolveFilePath(db, fileRel);
   if (matched === null) return { ...EMPTY, source: dbPath };
 
-  const apis = db
+  // ★ v13：比原来多取一列 `params`（结构化形参）。教学图 / 形状推导的“入参”从这里来，
+  //   不再对 `signature` 二次拆串（主路在 `derive_mind_map.ts#projectSignature`）。
+  const rows = db
     .prepare(
-      `SELECT name, qualified_name, signature, start_line, end_line FROM nodes
+      `SELECT name, qualified_name, signature, params, start_line, end_line FROM nodes
        WHERE file_path = ? AND kind IN ('function','method') AND COALESCE(is_closure, 0) = 0
        ORDER BY start_line`,
     )
-    .all(matched) as FileFacts['apis'];
+    .all(matched) as Array<{
+    name: string;
+    qualified_name: string;
+    signature: string | null;
+    params: string | null;
+    start_line: number;
+    end_line: number;
+  }>;
+  const apis: FileFacts['apis'] = rows.map((r) => ({
+    name: r.name,
+    qualified_name: r.qualified_name,
+    signature: r.signature,
+    params: parseParamsCell(r.params, matched, r.qualified_name || r.name),
+    start_line: r.start_line,
+    end_line: r.end_line,
+  }));
 
   const deps = (
     db.prepare("SELECT DISTINCT target FROM edges WHERE kind = 'import' AND source = ?").all(matched) as Array<{
