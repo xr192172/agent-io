@@ -102,7 +102,12 @@ CREATE TABLE IF NOT EXISTS nodes (
     end_line INTEGER NOT NULL,
     parent TEXT,
     signature TEXT,
-    docstring TEXT,          -- 预留：kernel 暂未提取，列先占住
+    docstring TEXT,          -- ★ 2026-10-21：文档注释**原文**（列早已存在，这一天起才真写值）（含 /** */ 、/// 、Python 的三引号；不剥标记）。
+                             --   NULL 有两种，**都写 NULL 是对的**：
+                             --     ① 该符号**确实没有文档**（紧邻的 // 与 # 普通注释**不算**文档）；
+                             --     ② 该语言**没登记规则**（c / cpp / ruby / bash …）⇒ 「没抽」，不是「没有」。
+                             --   取法唯一出处 = parse/symbol_docstring.ts 的规则表（含「紧邻」判据）。
+                             --   ★ 不剥注释标记：剥了这段文本在源码里就搜不到（消费方没法回源核对）。
     members TEXT,            -- 2026-10-20：类型成员 JSON（name/type/optional）——
                              --   type/interface 的定义本来就没有地方落（signature 只有 Name()）
     params TEXT,             -- ★ v13（2026-10-20）：函数/方法形参 JSON（name/type/optional/variadic）——

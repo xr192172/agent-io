@@ -50521,8 +50521,8 @@
               "verdict": "pass"
             }
           ],
-          "owner": "agent-v16",
-          "claimed_at": "2026-10-21T06:09:04.705Z",
+          "owner": "agent-docstring",
+          "claimed_at": "2026-10-21T07:26:10.032Z",
           "reopened_at": "2026-10-20T15:14:17.828Z",
           "reopen_reason": "schema v13 增加 nodes.params 列",
           "reopened_from": null
@@ -50612,8 +50612,8 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_symbols_ts\"].responsibility"
           },
-          "owner": "agent-v16",
-          "claimed_at": "2026-10-21T06:09:04.868Z"
+          "owner": "agent-docstring",
+          "claimed_at": "2026-10-21T07:26:09.856Z"
         },
         "status": "in_progress"
       },
@@ -51034,8 +51034,8 @@
             }
           ],
           "state": "claimed",
-          "owner": "agent-body-v15",
-          "claimed_at": "2026-10-21T04:48:13.972Z",
+          "owner": "agent-docstring",
+          "claimed_at": "2026-10-21T07:26:09.704Z",
           "evidence": [
             {
               "kind": "expectations",
@@ -98994,11 +98994,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T07:08:34.661Z",
+    "saved_at": "2026-10-21T07:26:10.064Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792563917183,
-    "age": 2597478
+    "scanRev": 1792566909570,
+    "age": 660494
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

@@ -528,7 +528,7 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
     }
     const insNode = db.prepare(
       `INSERT INTO nodes(id, kind, name, qualified_name, file_path, language, start_line, end_line, parent, signature, docstring, sym_hash, is_closure, members, params, return_type, type_params, modifiers, body_text, body_hash, updated_at)
-       VALUES ($id, $k, $nm, $qn, $fp, $lang, $sl, $el, $par, $sig, NULL, $h, $isClos, $mem, $prms, $ret, $tps, $mods, $bdy, $bdyh, $ts)`,
+       VALUES ($id, $k, $nm, $qn, $fp, $lang, $sl, $el, $par, $sig, $doc, $h, $isClos, $mem, $prms, $ret, $tps, $mods, $bdy, $bdyh, $ts)`,
     );
     const seenIds = new Set<string>();
     parsed.symbols.forEach((s, i) => {
@@ -538,6 +538,9 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
       insNode.run({
         id: id, k: s.kind, nm: s.name, qn: s.qualified_name, fp: rel, lang: ext,
         sl: s.start_line, el: s.end_line, par: s.parent ?? null, sig: s.signature ?? null,
+        // ★ 2026-10-21：docstring 首次落值 —— 文档注释原文（`kernel` 的 `docstringOf` 取，规则表在 `parse/symbol_docstring.ts`）。
+        //   取不到 ⇒ null（**不是空串**）：该语言没登记规则 / 该符号确实没有文档，两种都写 NULL。
+        doc: s.docstring ?? null,
         h: symHashList[i], isClos: s.is_closure ? 1 : 0, ts: now,
         // ★ 2026-10-20：类型成员（JSON）—— 没有就存 NULL（function 永远没有）
         mem: s.members && s.members.length ? JSON.stringify(s.members) : null,

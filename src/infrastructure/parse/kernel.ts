@@ -31,6 +31,7 @@ import { missingLanguageHint } from './lang_hint.js';
 import { typeMembersOf, TYPE_DECL_NODES, type ParsedTypeMember } from './type_members.js';
 import { paramsOf, type ParsedParam } from './symbol_params.js';
 import { shapeOf, type ParsedTypeParam } from './symbol_shape.js';
+import { docstringOf } from './symbol_docstring.js';
 
 export interface ParsedSymbol {
   name: string;
@@ -95,6 +96,18 @@ export interface ParsedSymbol {
    *   （判据见 `schema.ts` 的列注释：NULL 的含义、是否含花括号、怎么用 `files.content_hash` 校验同源）。
    */
   bodyText?: string;
+  /**
+   * ★ 2026-10-21：**文档注释原文**（`nodes.docstring`；列早已存在，这一天起才真写值）—— 取法规则表见 `symbol_docstring.ts`。
+   *
+   * 为什么加：这一列建库时就在，但 kernel 从来没给过 ⇒ 实测 0 / 8726 全 NULL —— 读者会把它读成
+   * 「这个符号确实没有文档」，而真相是「我们从来没取过」。判据（用户）：**AST 里能解析什么就写进来**。
+   * ★ 规则表 = `DOCSTRING_SPECS`（含「前驱注释必须紧邻」这条判据，写在那个文件的头部）
+   *   ⇒ 内核里没有"按语言的 if"。
+   * ★ 省略 = 该语言没登记规则（c/cpp/ruby…）**或**确实没有文档（普通 `//`/`#` 注释不算文档）
+   *   ⇒ 落库 NULL；**空串禁用**（空串会被下游读成"文档确实是空的"）。
+   * ★ 原文照录：不剥 `/**` `///` 引号、不截第一行（剥了就在源码里搜不到，消费方没法回源核对）。
+   */
+  docstring?: string;
 }
 
 /** import 依赖（用于 import_project 的跨文件边推导） */
@@ -436,6 +449,9 @@ function traverseAndExtract(
         //   绑定的是普通值（`const X = 1`、`const h = wrap(...)` 的调用结果）⇒ 取不到体 ⇒ NULL。
         //   ★ 这不是按语言分支：字段名/节点类型的差异全在 LANG_ADAPTERS 的规则表里。
         const valueBody = valueNode ? bodyTextOf(valueNode, lang) : undefined;
+        // ★ 2026-10-21：const 绑定上的文档注释（实测 ts：JSDoc 挂在 `export_statement` 上，
+        //   由 DOCSTRING_SPECS 的 `climbParents` 上穿后再找前驱兄弟）。
+        const valueDoc = docstringOf(node, lang.name);
         const constMods =
           node.parent?.type === 'export_statement'
             ? ['export', ...(valueShape.modifiers ?? [])]
@@ -449,6 +465,7 @@ function traverseAndExtract(
           ...valueShape,
           ...(constMods ? { modifiers: [...new Set(constMods)] } : {}),
           ...(valueBody ? { bodyText: valueBody } : {}),
+          ...(valueDoc ? { docstring: valueDoc } : {}),
           signature: `const ${nameNode.text} = ${valueBrief}`,
           parent: undefined,
           is_closure: isClosureLit ? true : undefined,
@@ -476,6 +493,9 @@ function traverseAndExtract(
       // ★ v15：函数/方法从 **AST 的体节点**取原文（规则表 = LANG_ADAPTERS 的 bodyFields / bodyNodeTypes）。
       //   取不到（type/class 走不到这里；解析器没给体）⇒ undefined ⇒ 落库 NULL（不是空串）。
       const bodyOfSymbol = kind === 'function' || kind === 'method' ? bodyTextOf(node, lang) : undefined;
+      // ★ 2026-10-21：文档注释（`symbol_docstring.ts` 唯一出处）——对 function / method / class /
+      //   interface / type 一视同仁；取不到 ⇒ undefined ⇒ 落库 NULL（不是空串）。
+      const docOfSymbol = docstringOf(node, lang.name);
       // 局部闭包标记：当前 node 位于「函数作用域」内（上层是 function/method）→ 内部辅助函数，
       // 非设计契约。类型作用域（顶层/类内）不标——方法与顶层函数仍是契约。
       const isClosureSymbol = enclosingIsFunction;
@@ -498,6 +518,8 @@ function traverseAndExtract(
         // ★ 2026-10-21（v14）：**返回类型 / 泛型参数 / 修饰符**（`symbol_shape.ts` 唯一出处）。
         //   三样都是「抽不到就省略」⇒ 落库 NULL；抽得到但为空 ⇒ `[]`（见 schema 注释）。
         ...shapeOf(node, lang.name),
+        // ★ 2026-10-21：文档注释原文（规则表 / 紧邻判据见 symbol_docstring.ts）
+        ...(docOfSymbol ? { docstring: docOfSymbol } : {}),
         signature,
         parent: symbolParent,
         is_closure: isClosureSymbol ? true : undefined,
