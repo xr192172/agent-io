@@ -53,6 +53,9 @@ import {
   type CardStanding,
   type ClaimIntent,
 } from '../../../domain/task_machine.js';
+// ★ 2026-10-21（D-judge-port）：判定器的**实现**住 application，由这里**注入**给 domain 的状态机
+//   （`cardStanding` / `isSatisfied` 的 `opts.judge`）—— domain 不再向上 import application。
+import { judgeExpectations } from '../intent/expectations.js';
 import { expectationPaths, postExpectations } from '../../../domain/expectation.js';
 import {
   ABSENT_FILE_HASH,
@@ -862,7 +865,7 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   } else {
     const root = requireRoot(dsl as { source_root?: string });
     // ★★ 判据复用（不新造第二把尺）：`cardStanding` 按 phase 分区 + `judgeExpectations` 判 + 派生五值。
-    const standing = await cardStanding(card, { root, nodes: dsl.geometry?.nodes ?? [] });
+    const standing = await cardStanding(card, { root, nodes: dsl.geometry?.nodes ?? [], judge: judgeExpectations });
     if (!isClaimable(standing.standing, intent)) {
       throw new Error(
         `claim 被拒（可领性：${standing.standing}）：${standing.reason}\n` +
@@ -1139,7 +1142,7 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
     closeNote = `L1 建构完整（decision.summary + 后态判据 ${c.post} 条）—— ★ 判据是"DSL 建构完整"，不是代码跑通`;
   } else {
     const root = requireRoot(dsl as { source_root?: string });
-    const satisfied = await isSatisfied(card, { root, nodes: dsl.geometry?.nodes ?? [] });
+    const satisfied = await isSatisfied(card, { root, nodes: dsl.geometry?.nodes ?? [], judge: judgeExpectations });
     if (!satisfied.satisfied) {
       throw new Error(
         `complete 被拒（可收口性：${satisfied.standing}）：${satisfied.reason}\n` +

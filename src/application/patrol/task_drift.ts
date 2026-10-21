@@ -174,7 +174,10 @@ export async function patrolDrift(feature: string, opts: PatrolOptions): Promise
   }));
   for (const card of open) {
     const bucket = redBy.get(card.id) ?? { post: [], pre: [], unsupported: 0 };
-    const verdict = await isSatisfied(card, { root: opts.root, nodes: standingNodes });
+    // ★ 2026-10-21（D-judge-port）：判定器**注入**进状态机（domain 不再向上 import application）——
+    //   本文件已经 import 了同一个 `judgeExpectations`（上面那一次批量判定用的就是它），所以注入的
+    //   与批量判定**是同一把尺**（不是另起一个实现）。
+    const verdict = await isSatisfied(card, { root: opts.root, nodes: standingNodes, judge: judgeExpectations });
     report.cards.push({
       id: card.id,
       state: card.state,

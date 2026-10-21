@@ -63,6 +63,9 @@ fs.writeFileSync(path.join(ROOT, 'src/a.ts'), "import { b } from './b.js';\nexpo
 fs.writeFileSync(path.join(ROOT, 'src/fixture.weird'), 'package fixture\n\nfunc Keep() {}\n', 'utf-8');
 
 const { cardStanding, isClaimable, isSatisfied } = await import('../dist/src/domain/task_machine.js');
+// ★ 2026-10-21（D-judge-port）：判定器改成**注入**（`StandingInput.judge` 必填）—— 这里注入的就是生产那个
+//   `judgeExpectations`（不是为了夹具另写一个实现；本证验的仍是「五值在主表上的读数」）。
+const { judgeExpectations } = await import('../dist/src/application/design/intent/expectations.js');
 const { getProjectCacheDb, closeProjectCacheDb } = await import('../dist/src/infrastructure/index/db.js');
 const { syncFile } = await import('../dist/src/infrastructure/index/symbols.js');
 const { saveDSL, getDSL } = await import('../dist/src/infrastructure/storage.js');
@@ -91,7 +94,7 @@ const NODES = [
   { id: 'node_pre_green', path: 'src/a.ts' },
   { id: 'node_unknowable', path: 'src/fixture.weird' },
 ];
-const opts = { root: ROOT, nodes: NODES };
+const opts = { root: ROOT, nodes: NODES, judge: judgeExpectations };
 const show = (v) =>
   `standing=${v.standing} · satisfaction=${JSON.stringify(v.satisfaction)} · violation=${JSON.stringify(v.violation)} · redSeen=${v.redSeen}`;
 

@@ -27,52 +27,25 @@ import { getRawImportsOfFile, contentHash } from '../../../infrastructure/index/
 import { parseFileSymbols, isSupportedFile } from '../../../infrastructure/parse/ast_parser.js';
 // ★ T79：调用边读取**复用现成那一处**（别在这再写一份 SQL）
 import { queryFileCalls } from '../../meta/explore/query_feature.js';
-import { type Expectation, normPath, normSignature } from '../../../domain/expectation.js';
+import { normPath, normSignature } from '../../../domain/expectation.js';
+// ★ 2026-10-21（D-judge-port）：判定器的**形状**住 domain（端口 = `domain/judge_port.ts`），本文件只实现
+//   「怎么判」。★ 这不是第二把尺 —— 除了本文件，全仓没有第二个 `judgeExpectations`。
+import type {
+  ExpectationConflict,
+  ExpectationItem,
+  ExpectationsReport,
+  JudgeItem,
+  Verdict,
+} from '../../../domain/judge_port.js';
 // ★ T257：TS/JS 家族扩展名的**唯一判据**（`infrastructure/parse/source_exts.ts`）—— 不另写一把尺
 import { TS_JS_EXTS } from '../../../infrastructure/parse/source_exts.js';
 
-/**
- * ★★★ 2026-10-18（用户："让它报进行中"）：**三值，不是两值**。
- *
- * `pending` = **这条债现在判不了 / 修不了，但它是真的在等某件事**（等宿主 / 等外部 / 等前置）。
- *   ★ 为什么必须有它（而不是让它红着）：**永远红的契约 = 又一个被绕的门**
- *     —— 今天"4 道门被绕 7 次"就是这么来的。
- *   ★ 而它和 `unsupported` 的区别：`unsupported` = "这个判据我判不了"（工具/索引不够）；
- *     `pending` = "**这活还没干完，卡在某处**"（而"卡在哪"写在契约的 `blocked_by` 里）。
- */
-export type Verdict = 'pass' | 'fail' | 'unsupported' | 'pending';
-
-export interface ExpectationItem {
-  node_id: string;
-  node_label: string;
-  expectation: Expectation;
-  verdict: Verdict;
-  /** 人话说明（为什么过 / 为什么不过 / 为什么判不了） */
-  detail: string;
-}
-
-export interface ExpectationsReport {
-  checked: number;
-  passed: number;
-  failed: number;
-  unsupported: number;
-  items: ExpectationItem[];
-  notes: string[];
-  /**
-   * ★★★ T256 缺口②（2026-10-14）：**决策间冲突** —— 见 {@link findExpectationConflicts}。
-   * ★ 为什么要有它（实测）：造两条**相反**断言时，报告里**一个「冲突」字样都没有** ⇒
-   *   只能靠"同一对象上 verdict 互相打架"**间接**看出 ⇒ ★ 两条都 fail 时看起来只是"两处问题"。
-   */
-  conflicts: ExpectationConflict[];
-}
-
-/** 一条**决策间冲突**：同一对象上的两个互斥要求。 */
-export interface ExpectationConflict {
-  /** 冲突对象（人读）—— `a → b` 或 `path#symbol` */
-  subject: string;
-  /** 冲突的两个（或更多）要求，各带**来源节点**（谁提的） */
-  sides: Array<{ node_id: string; kind: string; text: string }>;
-}
+// ★★★ 2026-10-21（D-judge-port）：`Verdict` / `ExpectationItem` / `ExpectationsReport` /
+//   `ExpectationConflict` / `JudgeItem` 已搬到 `domain/judge_port.ts` —— **它们是 domain 的词汇表**：
+//   `cardStanding` 要读 `checked / passed / failed / unsupported` 与 `items[].verdict / items[].expectation`
+//   才能派生五值 ⇒ 「谁必须读懂它」的答案是 domain。
+//   ★ 本文件只留**实现**（怎么判）；形状由端口那一处声明 —— 同一事实不住两处。
+//   ★ 搬过去时逐字保留了原注释里的判据（四值语义 / 冲突只检可判定的互斥 / 为什么单列不进计数）。
 
 /**
  * ★★★ T256 缺口②（2026-10-14）：**决策间冲突**的检测 —— ★ **判据只住这一处**。
@@ -88,7 +61,7 @@ export interface ExpectationConflict {
  *   ⇒ 单列一段，不混进 pass/fail 计数。
  */
 export function findExpectationConflicts(
-  items: ReadonlyArray<{ node_id: string; node_label: string; expectation: Expectation }>,
+  items: readonly JudgeItem[],
 ): ExpectationConflict[] {
   const out: ExpectationConflict[] = [];
   const add = (
@@ -203,10 +176,10 @@ function depFactsIncomplete(root: string, relPath: string): string | null {
 /** 逐条判定（★ `async`：符号走**现解析**；不写盘） ★ 见文件头纪律 1 —— 不许用索引冒充代码 */
 export async function judgeExpectations(
   root: string,
-  items: ReadonlyArray<{ node_id: string; node_label: string; expectation: Expectation }>,
+  items: readonly JudgeItem[],
 ): Promise<ExpectationsReport> {
   const out: ExpectationItem[] = [];
-  const push = (it: { node_id: string; node_label: string; expectation: Expectation }, verdict: Verdict, detail: string): void => {
+  const push = (it: JudgeItem, verdict: Verdict, detail: string): void => {
     out.push({ ...it, verdict, detail });
   };
 

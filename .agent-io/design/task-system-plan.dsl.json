@@ -44981,7 +44981,7 @@
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             }
           ],
-          "state": "candidate",
+          "state": "claimed",
           "evidence": [
             {
               "kind": "attestation",
@@ -45024,8 +45024,8 @@
               "verdict": "pass"
             }
           ],
-          "owner": null,
-          "claimed_at": null,
+          "owner": "subagent:judge-port",
+          "claimed_at": "2026-10-21T14:34:09.868Z",
           "reopened_at": "2026-10-20T10:47:42.904Z",
           "reopen_reason": "清注释里的用户原话",
           "reopened_from": "deepseek-v4.1-flash",
@@ -45135,24 +45135,21 @@
             "files": [
               {
                 "path": "src/domain/expectation.ts",
-                "content_hash": "844799230da0874ef21817edba9555d87094c93c"
+                "content_hash": "6dcaadde9b2d0ac818eeae7712286e151d4d402d"
               },
               {
                 "path": "src/domain/task_machine.ts",
-                "content_hash": "7fdfc9e8802ffca7d2decc59b9ef761e45f05177"
+                "content_hash": "ae3d031e3114ce183adc188013f475526ac95a02"
               }
             ],
-            "computed_at": "2026-10-21T14:23:05.702Z",
+            "computed_at": "2026-10-21T14:34:09.835Z",
             "basis": [
               "expectations"
             ],
             "note": "1 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
-          },
-          "release_reason": "32 处失效文档引用已修完（注释级；tsc --noEmit 0 error）：task_machine.ts 4 处 / task_schema.ts 4 / write_gate.ts 7 等",
-          "released_by": "subagent:docref",
-          "released_at": "2026-10-21T14:27:00.097Z"
+          }
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_domain_task_schema_ts",
@@ -87700,7 +87697,7 @@
         ],
         "lines": 535,
         "layer": "service",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_domain_task_schema_ts",
@@ -99605,11 +99602,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T14:27:00.201Z",
+    "saved_at": "2026-10-21T14:41:38.243Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 9297390,
+    "age": 10175432,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -101887,6 +101884,14 @@
       "expectations": [],
       "state": "candidate",
       "owner": null
+    },
+    {
+      "id": "todo_pending-假绿-只有-pending-后态判据-run-blocked-b",
+      "summary": "pending 假绿：只有 `pending` 后态判据（`run.blocked_by`）的卡会被判 `satisfied` ⇒ 可收口。★ 病根：`Verdict` 四值里只有它没被 `src/domain/task_machine.ts#cardStanding` 计数（`checked` 收它，`passed/failed/unsupported` 都不收）⇒ `failed===0 ∧ unsupported===0` ⇒ satisfied。★ 判据：`pending > 0 ⇒ unknowable`，reason 必须带 `blocked_by` 原文（“卡在哪”要能读出）；配自己的夹具：① 一张卡一条 `run{blocked_by:'等 X'}` ⇒ 期望 unknowable 且 reason 含“等 X”；② 同卡去掉 `blocked_by` ⇒ satisfied（对照，证明夹具能分辨）。★ 修它会改现网卡结论（本来能收口的卡变不能收口）⇒ 不与 D-judge-port 合并。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_D-judge-port"
     }
   ],
   "_dsl_rev": 702

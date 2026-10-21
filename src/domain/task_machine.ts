@@ -31,9 +31,13 @@
  * 一处判据两用：要么"没活干也能领"，要么"有红也能收口"，二者必居其一。
  * ⇒ 现在：`cardStanding` 出**五值**，`isClaimable` 与 `isSatisfied` 各读一侧。
  *
- * ## 判定器复用（★ 不新造第二把尺）
- * 判据的判定一律走既有 `judgeExpectations`（`application/design/intent/expectations.ts`）——
- * 它已经会区分 `pass / fail / unsupported`，且 `unsupported` **不算通过**。
+ * ## 判定器复用（★ 不新造第二把尺；★★ 也不向上 import）
+ * 判据的判定一律走**注入的** `Judge`（端口 = `domain/judge_port.ts`；实现 = `application/design/intent/expectations.ts#judgeExpectations`）——
+ * 它已经会区分 `pass / fail / unsupported / pending`，且 `unsupported` **不算通过**。
+ * ★★★ 2026-10-21（D-judge-port）：本文件**曾经**直接 `import judgeExpectations` —— 那是全仓唯一一条
+ *   `domain → application`（向上）依赖。约束「domain 不许 import infrastructure」被满足了，「**不许向上**」被违反了
+ *   ⇒ **规则满足一半 = 没满足**。现在判定器是一个**端口**（`StandingInput.judge` 必填注入），
+ *   本文件的 import 全在同层 ⇒ 那条倒挂从「本该记得别写」变成「写不出来」。
  * 本文件**只**做四件事：① 按 phase 分区 ② 编排判定 ③ 派生五值 ④ 出迁移判据 / 租约回收。
  *
  * ## 迁移表（★ 逐条照设计 DSL）
@@ -42,7 +46,9 @@
  * ★ 因此**没有真正的终态**了：`done` 能 `t_reopen`、`void` 能 `t_relaunch`。
  *   "这个状态还开着吗"由 `task_schema.ts#isClosedTaskState` 回答（done / void 已了结，不再巡）。
  */
-import { judgeExpectations, type ExpectationsReport } from '../application/design/intent/expectations.js';
+// ★★★ 2026-10-21（D-judge-port）：**不再 import application** —— 判定器收成端口（`./judge_port.js`），
+//   由调用方注入。本文件现在的 import 全在同层：`./expectation.js` / `./judge_port.js` / `./task_schema.js`。
+import { type ExpectationsReport, type Judge } from './judge_port.js';
 import { expectationPhase, expectationSubjectPath, normPath, postExpectations, type Expectation } from './expectation.js';
 import { isTaskState, type TaskSpec, type TaskState } from './task_schema.js';
 
@@ -110,7 +116,7 @@ export interface StandingNode {
 }
 
 export interface StandingInput {
-  /** 被分析项目的根（`judgeExpectations` 要拿它去读代码 / 索引） */
+  /** 被分析项目的根 —— ★ 对 domain 是**不透明字符串**（只原样转交给 `judge`，本层不读盘、不拼路径） */
   root: string;
   /**
    * ★ **全部**设计节点（`geometry.nodes`）。
@@ -123,6 +129,18 @@ export interface StandingInput {
    *   （`Node.path`），但**没有再加一层"必须填 path"的校验** —— 那会变成第二处判据（校验住 A.3）。
    */
   nodes: readonly StandingNode[];
+  /**
+   * ★★★ **判定器端口**（2026-10-21 · D-judge-port）—— **必填，没有默认实现**。
+   *
+   * 为什么必填：给它一个默认值（`= judgeExpectations`）就等于本文件又回头 import application，
+   * 倒挂原地复活；而「可选 + 缺了判不了」会把漏接线变成**静默 unknowable**（也算一种不报错）。
+   * ⇒ 必填：`.ts` 调用方漏接 ⇒ `tsc` 逐点报错；`.mjs` 证书漏接 ⇒ 运行时 `TypeError`。两条都响亮。
+   *
+   * ★ 实现住 `application/design/intent/expectations.ts#judgeExpectations`，接线由 application 做
+   *   （`claim` / `complete` / patrol 三处）；本文件只把 `root` 原样转交给它 —— **不读盘、不拼路径**。
+   * ★ 端口契约（四值原样穿过 / `checked` 必须等于提交条数 / `pending` 在 domain 侧尚未处置）见 `judge_port.ts`。
+   */
+  judge: Judge;
 }
 
 /** 满足度（★ **只**由后态判据得出） */
@@ -205,11 +223,12 @@ export const RED_DISPOSITION: Record<RedAttribution['kind'], RedDisposition> = {
  *
  * ## 编排（★ 三件事，不造第二把尺）
  * 1. 按期望**自带的 `phase`** 分成两批（`postExpectations` + `phase==='pre'`，★ T10 的收归）；
- * 2. 两批各跑**同一个** `judgeExpectations`（`pass / fail / unsupported` 只有它一套）；
+ * 2. 两批各跑**同一个**注入的 `Judge`（`pass / fail / unsupported / pending` 只有它一套）；
  * 3. 由两份报告**派生**五值 + 归属（`own / foreign / orphan`，用既有 `expectationSubjectPath`）。
  *
- * ## 判定顺序（= 优先级；每一格都有夹具，见 `certs/t351-card-standing-cert.mjs`）
+ * ## 判定顺序（= 优先级；每一格都有夹具：t351 = 五值主表，t353 = 端口纯度 + 残报守卫）
  * ```
+ * 判定器只回了部分条目（report.checked ≠ items.length） ⇒ unknowable（★ 残报不算全过，2026-10-21）
  * 后态一条不剩              ⇒ unknowable（空集不按"全过"算）
  * 后态 unsupported > 0      ⇒ unknowable（判不了 ≠ 有活 ≠ 没活）
  * 后态 failed === 0 ∧ 前态 failed > 0   ⇒ violated
@@ -231,8 +250,9 @@ export async function cardStanding(card: TaskSpec, opts: StandingInput): Promise
     xs.map((expectation) => ({ node_id: card.id, node_label: card.summary, expectation }));
 
   // ★ 两批各判一次（空批也交判定器 ⇒ 计数口径仍只有一处）
-  const report = await judgeExpectations(opts.root, items(post));
-  const preReport = pre.length ? await judgeExpectations(opts.root, items(pre)) : undefined;
+  // ★★ 判定器由调用方**注入**（`opts.judge`）：本层不再 import application —— 端口见 `domain/judge_port.ts`
+  const report = await opts.judge(opts.root, items(post));
+  const preReport = pre.length ? await opts.judge(opts.root, items(pre)) : undefined;
 
   const satisfaction: SatisfactionCounts = {
     checked: report.checked,
@@ -247,6 +267,25 @@ export async function cardStanding(card: TaskSpec, opts: StandingInput): Promise
   };
   const redSeen = satisfaction.failed + violation.failed;
   const base = { satisfaction, violation, report, preReport, judged: { post, pre }, redSeen };
+
+  // ── ⓪ 判定器**没把提交的每一条都判回来** ⇒ 残报不许当「全过」（2026-10-21 · D-judge-port）
+  //   ★ 这是端口化**新开**的一条假绿通道：拆分前报告的唯一生产者是真 judge；拆分后任何人都可以注入一个
+  //     `() => ({checked:0, items:[]})` —— 而 `failed === 0 ∧ unsupported === 0` 会直接判 `satisfied`
+  //     ⇒ 「一条没判」被读成「全部通过」。（本仓最忌的就是这一类绿。）
+  //   ★ 对**真** judge **不可达**：`judgeExpectations` 对 8 个 kind 的每条路径都恰好 push 一次
+  //     ⇒ `checked === items.length` 恒成立 ⇒ 这条守卫**不改任何现有结论**，只封口子（夹具见 certs/t353）。
+  //   ★ 契约出处：`judge_port.ts` 第 2 条（「`checked` 必须 === 提交的 `items.length`」）——
+  //     边界上的承诺**要有人验**，否则端口只是一句口号。
+  if (report.checked !== post.length || (preReport && preReport.checked !== pre.length)) {
+    const got =
+      `后态 ${report.checked}/${post.length}` + (preReport ? `、前态 ${preReport.checked}/${pre.length}` : '');
+    return {
+      ...base,
+      standing: 'unknowable',
+      reason:
+        `判定器**只回了部分条目**（${got}）⇒ 残缺报告不算「全过」（★ 少判的那几条不是"没问题"）`,
+    };
+  }
 
   // ── ① 后态一条不剩：没有"施工后才可能成立"的判据 ⇒ 判不了（真空真会误收口，见 OQ5）
   if (post.length === 0) {

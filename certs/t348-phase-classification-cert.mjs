@@ -77,6 +77,10 @@ const EDGE_ABSENT = { kind: 'edge-absent', from: 'src/exists.ts', to: 'src/missi
 const POST_MISSING = { kind: 'file-exists', path: 'src/missing.ts', why: 'T348 夹具：不存在的后态判据' };
 const POST_OK = { kind: 'file-exists', path: 'src/exists.ts', why: 'T348 夹具：存在的后态判据' };
 const card = (id, expectations) => ({ id, summary: `T348 ${id}`, expectations, state: 'candidate' });
+// ★ 2026-10-21（D-judge-port）：判定器改成**注入**（`StandingInput.judge` 必填）—— 四段夹具共用这一份 opts
+//   （★ 必须放在 `ROOT` 定义**之后**：ESM 的 `const` 不是 hoisted 的，提前引用会 ReferenceError）。
+//   ★ 注入的仍是生产那个 `judgeExpectations`（本证验的是「phase 分区」，不是另写一个判定器）。
+const OPTS = { root: ROOT, nodes: [], judge: judgeExpectations };
 
 // ════════════════════════════════════════════════════════════════════
 console.log('════ ① 结构：phase 由 kind 自带（分类不再来自任何外部清单）════');
@@ -97,7 +101,7 @@ console.log('════ ① 结构：phase 由 kind 自带（分类不再来�
 // ════════════════════════════════════════════════════════════════════
 console.log('\n════ ② ★★ 反例对照：只有前态判据的【未领】卡，不许被判「已满足」════');
 {
-  const v = await cardStanding(card('only-pre', [EDGE_ABSENT]), { root: ROOT, nodes: [] });
+  const v = await cardStanding(card('only-pre', [EDGE_ABSENT]), OPTS);
   chk(v.standing === 'unknowable' && !isClaimable(v.standing), '②a standing=unknowable 且不可领（前态天然成立，但不许据此收口）', `reason = ${v.reason}`);
   chk(v.judged.post.length === 0, '②b judged.post 为空（前态不参与「满足度」判定）', `judged.post.length = ${v.judged.post.length}`);
   chk(/后态判据|phase/.test(v.reason), '②c 拒因**点名**是"后态判据一条不剩"（不是"剔前态后空集"这句补丁措辞）', v.reason);
@@ -112,7 +116,7 @@ console.log('\n════ ② ★★ 反例对照：只有前态判据的【�
 // ════════════════════════════════════════════════════════════════════
 console.log('\n════ ③ 正例对照：前态 edge-absent 不许"掩盖"一条未满足的后态判据 ════');
 {
-  const v = await cardStanding(card('pre+post-fail', [EDGE_ABSENT, POST_MISSING]), { root: ROOT, nodes: [] });
+  const v = await cardStanding(card('pre+post-fail', [EDGE_ABSENT, POST_MISSING]), OPTS);
   chk(v.standing === 'work' && isClaimable(v.standing), '③a standing=work（前态天然成立，但后态没满足 ⇒ 有活干）', `reason = ${v.reason}`);
   chk(v.satisfaction.failed === 1 && v.satisfaction.passed === 0, '③b satisfaction：failed=1 且 passed=0（判的是那条后态，不是前态）', JSON.stringify(v.satisfaction));
   chk(v.judged.post.length === 1 && v.judged.post[0].kind === 'file-exists', '③c judged.post 只含那 1 条后态判据');
@@ -121,10 +125,10 @@ console.log('\n════ ③ 正例对照：前态 edge-absent 不许"掩盖"
 // ════════════════════════════════════════════════════════════════════
 console.log('\n════ ④ 正例：后态判据满足 ⇒ standing=satisfied（只可收口），judged 按 phase 分区 ════');
 {
-  const v = await cardStanding(card('pre+post-ok', [EDGE_ABSENT, POST_OK]), { root: ROOT, nodes: [] });
+  const v = await cardStanding(card('pre+post-ok', [EDGE_ABSENT, POST_OK]), OPTS);
   chk(v.standing === 'satisfied', `④a standing === 'satisfied'`, `reason = ${v.reason}`);
   chk(v.judged.post.length === 1 && expectationPhase(v.judged.post[0]) === 'post', '④b judged.post 只含 1 条**后态**判据（前态已按 phase 排除出满足度）');
-  chk((await isSatisfied(card('pre+post-ok', [EDGE_ABSENT, POST_OK]), { root: ROOT, nodes: [] })).satisfied === true, '④c isSatisfied === true（独立调用；收口侧读这一条）');
+  chk((await isSatisfied(card('pre+post-ok', [EDGE_ABSENT, POST_OK]), OPTS)).satisfied === true, '④c isSatisfied === true（独立调用；收口侧读这一条）');
 }
 
 // ════════════════════════════════════════════════════════════════════

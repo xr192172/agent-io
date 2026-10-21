@@ -27,6 +27,11 @@ import { pathToFileURL } from 'node:url';
 const ROOT = process.cwd();
 const mod = await import(pathToFileURL(path.join(ROOT, 'dist/src/domain/task_machine.js')).href);
 const { cardStanding, isClaimable, applicableTransitions, releaseIfExpired, isSatisfied } = mod;
+// ★ 2026-10-21（D-judge-port）：判定器改成**注入**（`StandingInput.judge` 必填）—— 夹具注入的仍是
+//   生产那个 `judgeExpectations`（★ 不另写一个判定器：本夹具钉的只是 `cardStanding` 的行为）。
+const { judgeExpectations } = await import(
+  pathToFileURL(path.join(ROOT, 'dist/src/application/design/intent/expectations.js')).href,
+);
 
 const dsl = JSON.parse(fs.readFileSync(path.join(ROOT, '.agent-io/design/task-system-plan.dsl.json'), 'utf8'));
 const nodes = dsl.geometry.nodes;
@@ -82,7 +87,7 @@ const CASES = [
 let pass = 0;
 const fails = [];
 for (const c of CASES) {
-  const v = await cardStanding(c.card, { root: ROOT, nodes: c.nodes ?? nodes });
+  const v = await cardStanding(c.card, { root: ROOT, nodes: c.nodes ?? nodes, judge: judgeExpectations });
   const ok = v.standing === c.expect;
   if (ok) pass++;
   else fails.push(`${c.name}: 期望 ${c.expect}，实际 ${v.standing}`);
@@ -147,7 +152,7 @@ const satCases = [
   ['后态有红 ⇒ satisfied:false', card([{ kind: 'file-exists', path: 'src/__nope__.ts' }]), false],
 ];
 for (const [name, c, expect] of satCases) {
-  const v = await isSatisfied(c, { root: ROOT, nodes });
+  const v = await isSatisfied(c, { root: ROOT, nodes, judge: judgeExpectations });
   const ok = v.satisfied === expect;
   if (ok) pass++;
   else fails.push(`F9 ${name}: 期望 ${expect}，实际 ${v.satisfied}（standing=${v.standing}）`);
