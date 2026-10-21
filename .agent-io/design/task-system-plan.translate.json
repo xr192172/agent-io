@@ -354,8 +354,8 @@
       "to": "internal/domain/actor_spec.go#AdmissionOptions",
       "kind": "type",
       "origin": "added",
-      "state": "pending",
-      "note": "★ 源侧**没有这个名字**：`admitActor` 第三参是匿名结构 `{ strict?: boolean }`（:203），Go 必须给它一个类型名 ⇒ 这是**新增**，不是翻译。读账的人不能把它当成「有源」。结构侧记在 shapes 里。"
+      "state": "translated",
+      "note": "已翻：`type AdmissionOptions struct{ Strict *bool }`（go :86-88）。★ 取舍：字段用 *bool 而非 bool —— 册里 unknowns 第 2 条写「零值 false 与默认值 false 等价」，这条**不成立**：默认值是 `actorStrictMode()`（读 env），不是 false ⇒ 用 bool 会把「没传」与「显式 false」压成同一件事，`AGENT_IO_ACTOR_STRICT=1` 时行为直接翻错。"
     },
     {
       "from": "src/application/claim_conflict.ts#ActiveClaim",
@@ -7442,16 +7442,16 @@
       "to": "internal/domain/actor_spec.go#ActorKinds",
       "kind": "const",
       "origin": "source",
-      "state": "pending",
-      "note": "`as const` 元组 → `[]ActorKind` 切片；★ 元组的「穷尽性」丢失（Go 切片可被追加）⇒ 若要保，得写成三个 const + 一个只读函数。"
+      "state": "translated",
+      "note": "已翻：`var ActorKinds = []ActorKind{Human, Agent, Subagent}`（go :35）。★ kind 与账上写的 const **不一致**（Go 的 const 不能是切片）⇒ 编译期只读性丢失，谁都能 append。★ 附带发现：Go 侧索引不认 const/var（实测该库 kind 只有 file/function/type，const 0 条）⇒ 这条译文在索引里查不到，只有本册记着。"
     },
     {
       "from": "src/domain/actor_spec.ts#ACTOR_NAME_MAX",
       "to": "internal/domain/actor_spec.go#ActorNameMax",
       "kind": "const",
       "origin": "source",
-      "state": "pending",
-      "note": ""
+      "state": "translated",
+      "note": "已翻：`const ActorNameMax = 40`（go :39）。源侧同一个 40 也写死在正则 :57，此处**照抄两处**不合并（合并看着干净，但会改掉「两个独立的 40」这个事实）。"
     },
     {
       "from": "src/domain/actor_spec.ts#ACTOR_NAME_RE",
@@ -7459,7 +7459,7 @@
       "kind": "const",
       "origin": "source",
       "state": "blocked",
-      "note": "★ 源用 lookahead `(?=.*[a-z0-9])`，Go RE2 不支持 ⇒ 见 unknowns 第 1 条（要拆成两条判断，或引入非标准库）。"
+      "note": "★ 源用 lookahead `(?=.*[a-z0-9])`，Go RE2 不支持 ⇒ 见 unknowns 第 1 条（要拆成两条判断，或引入非标准库）。\n★ 2026-10-22（第一版译文，实测）：仍 blocked。实际落法是 `actorNameRE`(go :43) + `hasAlnumRE`(:48) + `actorNameValid`(:53) 两步判断；**导出的同名常量没有落地**。要解锁得先定「这个导出名字还算不算一个正则」。"
     },
     {
       "from": "src/domain/actor_spec.ts#ACTOR_RE",
@@ -7467,111 +7467,111 @@
       "kind": "const",
       "origin": "source",
       "state": "blocked",
-      "note": "同上，:60。"
+      "note": "同上，:60。\n★ 2026-10-22（第一版译文，实测）：仍 blocked。实际落法是 `splitCanonical`(go :107-120)（切 kind + 复用 actorNameValid），语义等价但不是「一条正则」。"
     },
     {
       "from": "src/domain/actor_spec.ts#ActorAdmission",
       "to": "internal/domain/actor_spec.go#ActorAdmission",
       "kind": "interface",
       "origin": "source",
-      "state": "pending",
-      "note": "★ 名字相同 ⇒ 不进 types；interface → struct 的字段映射记在这里：ok→Ok bool、actor→Actor *string、source→Source ActorSource、normalizedFrom→NormalizedFrom *string、error→Err *string（★ `error` 是 Go 预声明标识符，字段名必须让位）。"
+      "state": "translated",
+      "note": "已翻：`type ActorAdmission struct`，字段 ok→Ok bool / actor→Actor *string / source→Source ActorSource / normalizedFrom→NormalizedFrom *string / error→**Err** *string（go :73-79，`error` 是 Go 预声明标识符必须让位）。按值返回（无 nil 检查）。★ 跨模块注意：源侧 `if (adm.error)` 把空串当假，Go 的 `Err != nil` 对 &\"\" 为真。"
     },
     {
       "from": "src/domain/actor_spec.ts#actorKey",
       "to": "internal/domain/actor_spec.go#ActorKey",
       "kind": "function",
       "origin": "source",
-      "state": "pending",
-      "note": "返回 `string | null` → `*string`；★ 空串与 null 在源里是两件事（'' ⇒ null），译文必须同样区分。"
+      "state": "translated",
+      "note": "已翻：`func ActorKey(v any) *string`（go :175-192）。★ 与术语表冲突：术语表说「返回值 null → (T, bool)」，本条符号 note 说 *string ⇒ 按**符号级 note**（更具体）走 *string，冲突已在回报里点名。★ 新增**账外** helper `actorValue`（:163-171）：把 *string 也解开 —— 否则 Go 调用点（如 `sameActor(card.Owner, actor)`）传指针会恒 nil 且不报错。"
     },
     {
       "from": "src/domain/actor_spec.ts#ActorKind",
       "to": "internal/domain/actor_spec.go#ActorKind",
       "kind": "type",
       "origin": "source",
-      "state": "pending",
-      "note": "★ 名字相同（ActorKind→ActorKind）⇒ 按 types 的判据不进 types，实质映射记在这里：字面量并集 `'human'|'agent'|'subagent'` → `type ActorKind string` + Human/Agent/Subagent 三个 const。★ 成员**不在 DB 里**（kind='type' 的 members 只覆盖 12/203）⇒ 依据源码 :50。"
+      "state": "translated",
+      "note": "已翻：`type ActorKind string` + `Human/Agent/Subagent`（go :26-30）。★ 并集的成员不在 DB（unknowns 第 3 条），成员值是回源码 :50 读的。★ 三个是**裸名**：Go 包级只有一个命名空间，与同包其它符号撞名风险高（本轮照账上的名字落地，没改名）。"
     },
     {
       "from": "src/domain/actor_spec.ts#actorKindOf",
       "to": "internal/domain/actor_spec.go#ActorKindOf",
       "kind": "function",
       "origin": "source",
-      "state": "pending",
-      "note": "返回 `ActorKind | null` → `*ActorKind`（Go 没有可选返回值，用指针表达「认不出」）。"
+      "state": "translated",
+      "note": "已翻：`func ActorKindOf(v any) *ActorKind`（go :146-156）。★ 同 actorKey 的规则冲突：术语表要 (T,bool)，符号 note 要 *ActorKind ⇒ 按 note。"
     },
     {
       "from": "src/domain/actor_spec.ts#ActorSource",
       "to": "internal/domain/actor_spec.go#ActorSource",
       "kind": "type",
       "origin": "source",
-      "state": "pending",
-      "note": "★ 名字相同 ⇒ 不进 types；实质映射记在这里：`'explicit'|'env'|'none'` → `type ActorSource string` + Explicit/Env/SourceNone。★ 注意 `none` 与零值 \"\" 不同 —— Go 零值是空串，必须保证不会有「零值被当成合法源」的路径，否则 status 字段会静默变成 none。"
+      "state": "translated",
+      "note": "已翻：`type ActorSource string` + `SourceExplicit/SourceEnv/SourceNone`（go :62-68）。★ **与账上的名字不一致**：账上 note 给的是 `Explicit/Env/SourceNone`（两个裸名 + 一个带前缀），本轮统一成 Source 前缀 —— 理由是同包裸名撞名 + 同族命名一致；这属于「改账」级别的不一致，见回报 B。★ 零值 \"\" 不是合法源，所有构造点都显式赋值。"
     },
     {
       "from": "src/domain/actor_spec.ts#actorStrictMode",
       "to": "internal/domain/actor_spec.go#ActorStrictMode",
       "kind": "function",
       "origin": "source",
-      "state": "pending",
-      "note": "读 env：os.Getenv 取代 process.env；★「读到空串」与「未设置」在两侧都是同一个结果，行为等价。"
+      "state": "translated",
+      "note": "已翻：`os.Getenv(\"AGENT_IO_ACTOR_STRICT\") == \"1\"`（go :91-93）。未设置与空串在两侧同一个结果（行为等价）。"
     },
     {
       "from": "src/domain/actor_spec.ts#admitActor",
       "to": "internal/domain/actor_spec.go#AdmitActor",
       "kind": "function",
       "origin": "source",
-      "state": "pending",
-      "note": "三个可选参数 + 默认值 ⇒ 见 unknowns 第 2、3 条；返回结构体按值返回（不是指针）—— 这条选择要写进译文，否则 nil 检查会各写一套。"
+      "state": "translated",
+      "note": "已翻：`func AdmitActor(explicit, env *string, opts ...AdmissionOptions) ActorAdmission`（go :320-365）。三处取舍：① 第三参用**变参**保留「0 个」这一态（源侧可选，且不必每个调用点写 nil）；代价 = Go 不拦传 2 个，实现只取 opts[0]；② strict 只在**没给**时才读 env（对齐 `??` 的短路，别无条件摸环境变量）；③ `raw = e || v` 是**空串回落**不是 nullish ⇒ 显式传 \"\" 会回落到 env，已在注释里钉死。★ 不返回 Go error：源侧的 error 是**数据**（回执文案），不是控制流。"
     },
     {
       "from": "src/domain/actor_spec.ts#isCanonicalActor",
       "to": "internal/domain/actor_spec.go#IsCanonicalActor",
       "kind": "function",
       "origin": "source",
-      "state": "pending",
-      "note": "返回 bool；类型谓词的窄化丢失（见 types）。"
+      "state": "translated",
+      "note": "已翻：`func IsCanonicalActor(v any) bool`（go :124-131），判定交给 `splitCanonical`（:107-120）=「形状正则 + 含字母数字」两步，替代 RE2 不支持的 lookahead。类型谓词窄化丢失（术语表已有该条）。"
     },
     {
       "from": "src/domain/actor_spec.ts#isLegacyActorName",
       "to": "internal/domain/actor_spec.go#IsLegacyActorName",
       "kind": "function",
       "origin": "source",
-      "state": "pending",
-      "note": ""
+      "state": "translated",
+      "note": "已翻：`func IsLegacyActorName(v any) bool`（go :134-140）= `!strings.Contains(s, \":\")` ∧ actorNameValid。★ 与源一致地**不 trim**（trim 只发生在 admitActor 里，这点很容易「顺手」统一掉而改语义）。"
     },
     {
       "from": "src/domain/actor_spec.ts#LEGACY_ACTOR_KIND",
       "to": "internal/domain/actor_spec.go#LegacyActorKind",
       "kind": "const",
       "origin": "source",
-      "state": "pending",
-      "note": "源是 `const x: ActorKind = 'agent'`（类型收窄），Go 的 const 无收窄语义 ⇒ 只能 `var LegacyActorKind = Agent` 或 `const LegacyActorKind ActorKind = \"agent\"`。"
+      "state": "translated",
+      "note": "已翻：`const LegacyActorKind ActorKind = Agent`（go :60）。账上给了两个候选（var / 带字面量的 const），选后者：Agent 本身是 const，可在 const 表达式里引用 ⇒ 保住 const 语义。"
     },
     {
       "from": "src/domain/actor_spec.ts#normalizedActorNote",
       "to": "internal/domain/actor_spec.go#NormalizedActorNote",
       "kind": "function",
       "origin": "source",
-      "state": "pending",
-      "note": "★ 返回的是**给人看的中文回执文案**：原样保留，不翻译（见 atoms.text）。"
+      "state": "translated",
+      "note": "已翻：`func NormalizedActorNote(adm ActorAdmission) string`（go :368-375）。用 `+` 拼接而不是 fmt.Sprintf：文案里有多处反引号/花括号，且要避免未来出现的 `%` 被当格式符。文案一字未改（对拍靠它）。"
     },
     {
       "from": "src/domain/actor_spec.ts#sameActor",
       "to": "internal/domain/actor_spec.go#SameActor",
       "kind": "function",
       "origin": "source",
-      "state": "pending",
-      "note": "入参是 unknown ⇒ any；★ Go 侧 a/b 通常本来就是 string，接受 any 会让每个调用点都要断言 —— 是否把签名收窄成 `any` vs `string` 是**一处人工决定**（收窄=改契约）。"
+      "state": "translated",
+      "note": "已翻：`func SameActor(a, b any) bool`（go :195-199）。保留 any（术语表 unknown→any），内部经 actorValue 解 *string —— 这是**新增语义**：源侧 `string|null|undefined` 到 Go 会落成 *string，不解引用就恒 false（静默失效，不报错）。"
     },
     {
       "from": "src/domain/actor_spec.ts#suggestActorName",
       "to": "internal/domain/actor_spec.go#SuggestActorName",
       "kind": "function",
       "origin": "source",
-      "state": "pending",
-      "note": ""
+      "state": "translated",
+      "note": "已翻：`func SuggestActorName(raw string) *string`（go :214-227）。四条行内正则提到包级（:206-209）避免每次调用重编译。★ 截断用**字节**长度之所以等价：前面的替换已把非 ASCII 全抹成 `-`（顺序是语义：先替换再截断）；换顺序会切出半个字符。"
     },
     {
       "from": "src/domain/animation.ts#Animation",
