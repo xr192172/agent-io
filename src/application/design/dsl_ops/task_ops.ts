@@ -84,7 +84,13 @@ import { contentHash } from '../../../infrastructure/index/symbols.js';
 // ★★★ 2026-10-21（并发控制·账户）：**规范唯一定义处**（`domain/actor_spec.ts`）。
 //   ★ 这里只用它做两件事：① 写入的 `data.owner` 过关（新值必须合规）② 与顶层 `agent` 比"是不是同一个人"。
 //   ★ 也读**同一个**严格开关（`actorStrictMode`），不自己再读一次 env。
-import { admitActor, actorStrictMode, sameActor } from '../../../domain/actor_spec.js';
+import {
+  admitActor,
+  actorStrictMode,
+  normalizedActorNote,
+  sameActor,
+  type ActorAdmission,
+} from '../../../domain/actor_spec.js';
 import { updateStatus } from './status_tools.js';
 // ★★★ 2026-10-21（并发控制·读集比对）：claim 时把「这张卡要碰什么」与其他活跃卡比交 —— **相交即拒领**。
 //   ★ 判据/取舍（含“为什么不用 imports 兜底”的实测读数）全在 `application/claim_conflict.ts` 文件头。
@@ -99,6 +105,45 @@ import {
   type ClaimConflictReport,
   type DeclaredReadSet,
 } from '../../claim_conflict.js';
+
+/**
+ * ★★★ 2026-10-22（链 C · 身份归一化）：**卡上的「谁」只走一套规范**。
+ *
+ * ## 为什么要有它
+ * `claim` 写 `owner` 时过了 `admitActor`（`workbuddy` ⇒ `agent:workbuddy`），而 `release` 的
+ * `released_by` / `todo.retire` 的 `retired_by` / `complete` 的 `evidence[].agent` / `reopen` 的 `owner`
+ * 原先都是 `input.agent ?? null`（或 `input.owner`）**原样落盘** ⇒ **同一张卡上两处署名两种格式**。
+ * ★ 实测证据：`certs/t349-task-home-cert.mjs` 的 `released_by === 'agent-t349'` 至今是绿的，
+ *   而同一张卡的 `owner` 已是 `agent:agent-t349` —— 两种格式同住一张卡。
+ *
+ * ## 判据（与 `domain/actor_spec.ts` 文件头逐字同源，不另立）
+ * · 合法（`<kind>:<name>`）⇒ 原样；老格式（无前缀）⇒ 补 `agent:` 并在回执留痕（STRICT 下拒）；
+ * · 完全非法 ⇒ **抛**（`admitActor` 给正确写法 + 机械建议）；
+ * · 空 ⇒ `null`（= 没自报；纪律②「不造默认身份」）。
+ *
+ * ★ **不造第二种留痕**：回执统一用 `actor_spec.ts#normalizedActorNote`（`invokeTool` 用的就是它）。
+ */
+function signTaskActor(
+  raw: string | undefined | null,
+  field: string,
+): { actor: string | null; adm: ActorAdmission } {
+  const adm = admitActor(raw ?? '', null, { strict: actorStrictMode() });
+  if (!adm.ok) {
+    throw new Error(
+      `${adm.error}\n★ \`${field}\` 与 claim 的 \`data.owner\` 走**同一套规范**（唯一定义 = \`domain/actor_spec.ts#admitActor\`）` +
+        `—— 同一张卡上两处署名必须同格式，否则读端要按两套文法解释「谁」。`,
+    );
+  }
+  return { actor: adm.actor, adm };
+}
+
+/**
+ * 归一化留痕的**首行片段** —— `edit_dsl` 批量回执只印首行，所以「已归一化」必须挤进首行。
+ * ★ 措辞与 `normalizedActorNote` 的标题行同源（同一份留痕，不是第二份）。
+ */
+function normalizedInline(adm: ActorAdmission): string {
+  return adm.normalizedFrom ? `，★ 已归一化自 \`${adm.normalizedFrom}\`` : '';
+}
 
 /** 本文件接受的 op（**结构类型**，不 import `update_feature` —— 那是反向依赖，会成环）。 */
 export interface TaskOpRequest {
@@ -973,11 +1018,9 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       `已领取任务 "${node_id}"（owner=${owner}` +
       (ownerAdm.normalizedFrom ? `，★ 已归一化自 \`${ownerAdm.normalizedFrom}\`` : '') +
       `，claimed_at=${claimedAt}）—— ${levelNote}${readHead}` +
-      // ★ 2026-10-21：归一化**必须留痕**（不许悄悄改身份）—— 只有真改写时才多这一行。
-      (ownerAdm.normalizedFrom
-        ? `\n★ \`data.owner\` 已归一化：\`${ownerAdm.normalizedFrom}\` → \`${owner}\`（缺类前缀 ⇒ 按「常驻 agent 默认」补 \`agent:\`；` +
-          `规则唯一定义在 \`domain/actor_spec.ts\`。要它变拒绝：\`AGENT_IO_ACTOR_STRICT=1\`）`
-        : '') +
+      // ★★★ 2026-10-22（链 C）：留痕**只有一份实现** —— `actor_spec.ts#normalizedActorNote`（`invokeTool` 用的就是它）。
+      //   ★ 这里原先手抄了同一段文案 ⇒ 两处文案一改就漂（本仓最贵的病是「第二份判据/第二份留痕」）。
+      normalizedActorNote(ownerAdm) +
       `\n★ 进度是**派生值**：task.state=claimed ⇒ progress=in_progress（不落第二份）。` +
       (reopening
         ? `\n★ 这是**重开**（done → claimed = t_reopen + t_claim）：上一轮 owner=${JSON.stringify(card.owner ?? null)} 记进 \`reopened_from\`；` +
@@ -1043,7 +1086,12 @@ export async function releaseTask(input: TaskOpInput): Promise<EditResult> {
   const { card } = loadTask(feature, node_id);
   assertTransition(card.state, 'candidate', 'release');
   const releasedAt = new Date().toISOString();
-  const by = input.agent ?? null;
+  // ★★★ 2026-10-22（链 C · 身份归一化）：`by` 与 claim 的 `owner` 走**同一套规范**。
+  //   原先 `const by = input.agent ?? null` 原样落盘 ⇒ 同一张卡上 `owner=agent:agent-t349`、
+  //   `released_by=agent-t349`（两种格式同住一张卡；t349 的旧断言正是这个洞的绿灯）。
+  //   ★ 老格式补前缀 + 回执留痕；完全非法（及 STRICT 下的老格式）⇒ 当场拒。
+  const bySign = signTaskActor(input.agent, 'release 的署名（released_by / 回执 by）');
+  const by = bySign.actor;
 
   writeTask(feature, node_id, {
     ...card,
@@ -1057,7 +1105,9 @@ export async function releaseTask(input: TaskOpInput): Promise<EditResult> {
 
   return {
     message:
-      `已释放任务 "${node_id}"（candidate；by=${by ?? '未署名'}，reason=${reason}）。` +
+      `已释放任务 "${node_id}"（candidate；by=${by ?? '未署名'}${normalizedInline(bySign.adm)}，reason=${reason}）。` +
+      // ★ 首行自足：`edit_dsl` 批量回执只印首行 ⇒ 归一化必须在首行点名；下面这行给人话规则（同一份留痕实现）。
+      normalizedActorNote(bySign.adm) +
       `\n★ 进度派生：task.state=candidate ⇒ progress=draft。` +
       // ★ 2026-10-21（读集比对）：**不清**读集（它仍是“最后一次领的时候占过什么”这个事实），
       //   但比对只读 `state==='claimed'` 的卡 ⇒ 释放即**不再占位**（下一次 claim 重算并覆盖）。
@@ -1163,6 +1213,8 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   const reopenCheck = reopenGate(card, evidence);
   if (!reopenCheck.ok) throw new Error(`complete 被拒（重开账本）：${reopenCheck.reason}`);
 
+  // ★★★ 2026-10-22（链 C · 身份归一化）：`evidence[].agent` 是「谁宣布的」⇒ 与 claim 的 `owner` 同一套规范。
+  const signer = signTaskActor(input.agent, 'complete 的署名（evidence[].agent / 回执）');
   const at = new Date().toISOString();
   // ★★★ 2026-10-21：**证据带代码指纹**（`task_schema.ts#TaskEvidenceFingerprint`）—— 「增量测试」的地基：
   //   指纹没变 ⇒ 这条证据仍有效 ⇒ 不必重跑；变了 ⇒ 自动失效 ⇒ 只重跑这一处。
@@ -1182,7 +1234,7 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
         //   现在所有 kind 都记：`by` 分人/机器，`agent` 记具体是谁。
         by: evidence!.kind === 'attestation' ? evidence!.by : 'llm',
         ...(evidence!.kind === 'attestation' && evidence!.why ? { why: evidence!.why } : {}),
-        ...(input.agent ? { agent: input.agent } : {}),
+        ...(signer.actor ? { agent: signer.actor } : {}),
         // ★ 2026-10-21：这条证据的**代码指纹**（`what` / `input` / `code` / `covers`）—— 见上面那段。
         fingerprint,
         verdict: 'pass',
@@ -1224,8 +1276,9 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
 
   return {
     message:
-      `已完成任务 "${node_id}"（owner=${card.owner}，级别=${level}）—— ${closeNote}、证据 kind=${evidence!.kind}。${chainNote.head}` +
+      `已完成任务 "${node_id}"（owner=${card.owner}，级别=${level}${normalizedInline(signer.adm)}）—— ${closeNote}、证据 kind=${evidence!.kind}。${chainNote.head}` +
       chainNote.detail +
+      normalizedActorNote(signer.adm) +
       (legacy ? `\n${legacy.message.split('\n')[0]}` : '\n★ todo：无节点 status 可投影（不在 geometry）⇒ 跳过 updateStatus') +
       (level === 'L1' ? `\n★ 下一步：\`publish\` 会把这个节点翻成 **L2 实现卡**（旧 L1 卡的证据会带过去）。` : ''),
     feature,
@@ -1277,12 +1330,18 @@ export async function reopenTask(input: TaskOpInput): Promise<EditResult> {
   }
   const { card, dsl } = loadTask(feature, node_id);
   assertTransition(card.state, 'claimed', 'reopen');
+  // ★★★ 2026-10-22（链 C · 身份归一化）：`reopen` 写的也是 `owner` ⇒ 与 claim 同一套规范（老格式补前缀 + 留痕）。
+  const ownerSign = signTaskActor(input.owner, 'reopen 的署名（data.owner）');
+  if (!ownerSign.actor) {
+    throw new Error('reopen 被拒：`data.owner` 去掉空白后为空 —— 重开必须有接手人（t_reopen 第 3 条）。');
+  }
+  const owner = ownerSign.actor;
   // ★ 重开时刻 = 账本借方（`TaskSpec.reopened_at`）；`claimed_at` 与它同源，不取两次时钟。
   const now = new Date().toISOString();
   const next: TaskSpec = {
     ...card,
     state: 'claimed',
-    owner: input.owner,
+    owner,
     claimed_at: now,
     reopened_at: now,
     // ★★ 2026-10-20：重开要**留痕** —— 为什么又开（`reopen_reason`）、从谁手里接的（`reopened_from`）。
@@ -1294,13 +1353,14 @@ export async function reopenTask(input: TaskOpInput): Promise<EditResult> {
   return {
     message:
       // ★ 首行自足（`edit_dsl` 只透出每个 op 的**首行**）—— 所以"判据没变 + 账本已记 + 下一步"必须在首行。
-      `已重开任务 "${node_id}"（done → claimed，owner=${input.owner}）：判据仍是卡上那 ${(card.expectations ?? []).length} 条、` +
+      `已重开任务 "${node_id}"（done → claimed，owner=${owner}${normalizedInline(ownerSign.adm)}）：判据仍是卡上那 ${(card.expectations ?? []).length} 条、` +
       `**重开账已记（reopened_at=${now}）** —— 判据没换、又没有 at ≥ 该时刻的新证据，\`complete\` 会被拒。\n` +
       `  理由：${input.reason}\n` +
       `  ★ 两步：① \`edit_dsl { type:'decision', op:'update', id:'${node_id}', data:{ summary, expectations } }\`；` +
       `② \`{ type:'task', op:'publish', id:'${node_id}', data:{ reason:'…' } }\` ⇒ **原地换判据**` +
       `（state 仍 claimed，owner / claimed_at / evidence / discussion 全部保留 —— 不用 release，也不用 claim）。\n` +
-      `  ★ 进度派生：task.state=claimed ⇒ progress=in_progress。`,
+      `  ★ 进度派生：task.state=claimed ⇒ progress=in_progress。` +
+      normalizedActorNote(ownerSign.adm),
     feature,
   };
 }
@@ -1650,12 +1710,14 @@ function retireTodoCard(feature: string, id: string, data: Record<string, unknow
   assertTransition(card.state, 'void', 'todo.retire');
 
   const at = new Date().toISOString();
+  // ★★★ 2026-10-22（链 C · 身份归一化）：`retired_by` 与 claim 的 `owner` 同一套规范（老格式补前缀 + 留痕）。
+  const sign = signTaskActor(agent, 'todo.retire 的署名（retired_by）');
   writeTask(feature, id, {
     ...card,
     state: 'void',
     retire_reason: reason,
     retired_at: at,
-    ...(agent ? { retired_by: agent } : {}),
+    ...(sign.actor ? { retired_by: sign.actor } : {}),
   });
 
   // ★★★ 2026-10-21（跑环继任链）：作废一环时**只报、不改别人的卡** ——
@@ -1667,13 +1729,14 @@ function retireTodoCard(feature: string, id: string, data: Record<string, unknow
       `已作废 todo "${id}"（★ 卡**留在册里**，只是不再进待办）` +
       `${kids.length ? ` · 下挂 ${kids.length} 个下一环（★ 不级联作废）` : ''}：\n` +
       `  为什么：${reason}\n` +
-      `  state=void · retired_at=${at}${agent ? ` · retired_by=${agent}` : ''}\n` +
+      `  state=void · retired_at=${at}${sign.actor ? ` · retired_by=${sign.actor}${normalizedInline(sign.adm)}` : ''}\n` +
       `★ 之后：get_dsl query=todo **不再列它**；get_dsl query=todo state=void 仍能查到（含 retire_reason）。` +
       (kids.length
         ? `\n★ 它下面还挂着 ${kids.length} 个下一环（${kids.map((t) => t.id).join(' / ')}）—— **不会**被自动作废\n` +
           `  （级联会杀掉可能仍然有效的活）；它们在 query=todo 里会标「上一环已作废」。\n` +
           `  ★ 真要一起废 ⇒ 逐张 retire（每张留自己的理由）；确实是新开一条 ⇒ 用 todo.follows 把它们摘下来/重接。`
-        : ''),
+        : '') +
+      normalizedActorNote(sign.adm),
     feature,
     data: { todo_id: id, state: 'void' as TaskState, retire_reason: reason, retired_at: at },
   };

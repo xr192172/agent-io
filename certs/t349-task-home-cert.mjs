@@ -60,6 +60,8 @@ const { loadOverlay, saveOverlay } = await import('../dist/src/infrastructure/st
 const { editDslHandler } = await import('../dist/src/application/design/handlers.js');
 const { assertSourceWriteRegistered } = await import('../dist/src/application/write_gate.js');
 const { updateStatus } = await import('../dist/src/application/design/dsl_ops/status_tools.js');
+// ★ 2026-10-22（链 C · 身份归一化）：断言用**同一份文法**（`domain/actor_spec.ts`），不在这里另写正则。
+const { isCanonicalActor, isLegacyActorName, sameActor } = await import('../dist/src/domain/actor_spec.js');
 
 const FEAT = 't349';
 const A = 'file_src_a_ts'; // 有 task（可 claim / complete）
@@ -271,10 +273,42 @@ console.log('\n════ ④ 走工具层：edit_dsl {type:task}（claim / co
   const rel = await edit([{ type: 'task', op: 'release', id: C, data: { reason: 'T349 夹具：演示显式释放' } }], 'T349：释放 file_src_c_ts（显式 release 事件）');
   chk(rel.isError !== true, '④h release C 成功', String(rel.text ?? '').split('\n')[1] ?? '');
   const c = nodeOf(C);
+  // ★★★ 2026-10-22（链 C · 身份归一化）：`released_by` 现在与 claim 的 `owner` **同一套规范**
+  //   （`domain/actor_spec.ts#admitActor`：老格式 `agent-t349` ⇒ `agent:agent-t349`，回执里明说「已归一化」）。
+  //   ★ 前一版断言的是**归一化上线前**的落盘值 `released_by === 'agent-t349'` —— 它当时是绿的，
+  //     绿的原因恰恰是「release 这条写路没走归一化」（本笔要补的洞）⇒ 该值已不成立。
   chk(
-    c.task.state === 'candidate' && !c.task.owner && c.task.released_by === 'agent-t349' && !!c.task.released_at,
-    '④h′ 读回：state=candidate · owner 清空 · released_by/released_at 有值（t_release 要 by + reason）',
+    c.task.state === 'candidate' && !c.task.owner && c.task.released_by === 'agent:agent-t349' && !!c.task.released_at,
+    '④h′ 读回：state=candidate · owner 清空 · released_by=agent:agent-t349（规范化后的新写入）· released_at 有值（t_release 要 by + reason）',
     JSON.stringify({ state: c.task.state, owner: c.task.owner, by: c.task.released_by, at: c.task.released_at }),
+  );
+  // ★★★ 判据（不硬断言「必须带前缀」）：`sameActor` 允许历史老值（`workbuddy` 等）继续等价可用，
+  //   所以「任意 by 字段」只断言它**能被同一套文法解释**（规范值或等价老值）—— 老数据一个字不动；
+  //   而【新写入的】必须是规范格式（下面两条）。
+  chk(
+    isCanonicalActor(c.task.released_by) || isLegacyActorName(c.task.released_by),
+    '④h‴ released_by 形如 human:/agent:/subagent: 或等价老值（同一套文法可解释；不硬断言必须带前缀）',
+    `实取 = ${JSON.stringify(c.task.released_by)}`,
+  );
+  chk(
+    isCanonicalActor(a.task.owner) && isCanonicalActor(c.task.released_by),
+    '④h⁗ ★ 新写入的 owner / released_by **都是规范格式**（claim 与 release 同格式；老数据不追改）',
+    JSON.stringify({ claim_owner: a.task.owner, release_by: c.task.released_by }),
+  );
+  chk(
+    sameActor(a.task.owner, c.task.released_by),
+    '④h⁵ 两处署名按 `sameActor` 判定为**同一个人**（同一批身份、同一套文法）',
+    `sameActor(${JSON.stringify(a.task.owner)}, ${JSON.stringify(c.task.released_by)})`,
+  );
+  // ★ 「任意 by 字段」的总判据（即卡上所有「谁」）：能被同一套文法解释（规范值 **或** 等价老值）。
+  //   ★ 不写成「必须带前缀」：`sameActor` 允许 `workbuddy` 等 12 种历史老值继续可用 —— 老数据一个字不动。
+  const byFieldsOf = (t) =>
+    [t.owner, t.released_by, t.retired_by, ...(t.evidence ?? []).map((e) => e.agent)].filter((v) => v != null);
+  const allBy = [...byFieldsOf(a.task), ...byFieldsOf(c.task)];
+  chk(
+    allBy.length > 0 && allBy.every((v) => isCanonicalActor(v) || isLegacyActorName(v)),
+    '④h⁶ 任意 by 字段（owner / released_by / retired_by / evidence[].agent）形如 human:/agent:/subagent: 或等价老值',
+    JSON.stringify(allBy),
   );
   chk(c.status === 'draft', "④h″ 派生：candidate ⇒ status='draft'");
 

@@ -13466,17 +13466,17 @@
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "assertTransition",
-                "fp": "4dbf771e75b8f450390d338f83c4ce271cdc5de1"
+                "fp": "1bfdaffe38e904e51a56d6ba054da05a243cd189"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "claimTask",
-                "fp": "32d56c7643812edbb9a526192d1d6d8e52fc0bb4"
+                "fp": "84cad2e32c2794aa53e7de5eb84578cec16b8c21"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "completeTask",
-                "fp": "bf2b756bf608cb62dea2d537c187a26ed80ab2d6"
+                "fp": "3534ec9c5b982ed090d48352aabb563b959523f7"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -13527,18 +13527,18 @@
             "files": [
               {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "58dfe86eba15e086b4bb6213128e1f9191936286"
+                "content_hash": "35a7a2826018ebd2c628b2df71dd839115b14913"
               }
             ],
-            "computed_at": "2026-10-21T13:17:22.865Z",
+            "computed_at": "2026-10-21T17:50:32.309Z",
             "basis": [
               "expectations"
             ],
             "note": "1 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
           },
-          "release_reason": "src/application/design/dsl_ops/task_ops.ts 的 add/follows/complete 提示已落地，交回候选",
-          "released_by": "subagent:follows-chain",
-          "released_at": "2026-10-21T13:37:59.613Z"
+          "release_reason": "链 C 已完成：task_ops.ts 的 released_by / retired_by / evidence.agent / reopen owner 已统一过 admitActor，certs/t349-task-home-cert.mjs 旧断言已改为规范格式并全绿（PASS=37 FAIL=0）",
+          "released_by": "subagent:identity-norm",
+          "released_at": "2026-10-21T17:52:51.479Z"
         },
         "status": "draft"
       },
@@ -102037,11 +102037,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T17:43:17.922Z",
+    "saved_at": "2026-10-21T17:52:51.507Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 21075111,
+    "age": 21648696,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
