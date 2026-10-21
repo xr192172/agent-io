@@ -98938,11 +98938,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T02:42:51.888Z",
+    "saved_at": "2026-10-21T02:43:32.686Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792550503669,
-    "age": 68219
+    "age": 109017
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -100993,6 +100993,83 @@
     {
       "id": "todo_账本加-via-字段-分清-agent-用了-证书跑了-扫射跑了-现状-agen",
       "summary": "【账本加 via 字段：分清 agent 用了 / 证书跑了 / 扫射跑了】现状：.agent-io/dogfood/usage.jsonl（16,422 行）的 DogfoodUsage 只有 {ts,tool,action,ok,ms,nextHops,err}，没有 actor / via ⇒ 分不清\"agent 用了\"和\"证书/扫射跑了\"（canvas_notes 7 次成功全落在 4 个扫射日，无法判断有没有人真用）。★ 最小改动：recordDogfoodUsage 加 via: mcp|cli|cert|sweep|gate（一条字段就够）。★ 顺带：mcp_scan.mjs 直接 def.handler({}) 绕过 invokeTool ⇒ 不入账；verify 门跑的那一遍也不在账本里。★ 这条不做，\"哪些工具没用\"永远是猜的。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_静默失效-翻译线-runparityonfilled-恒空转-slice-0-5",
+      "summary": "【静默失效·翻译线】`runParityOnFilled` 恒空转 + `slice(0,5)` 静默截断：前者的过滤条件 `!u.bodyHole` 在 fill 之后恒为 true（fill 会把 bodyHole 留在 units 上），所以\"可对拍单元\"永远是空集，而且它比的是未填的空壳；后者让 20 个单元只测 5 个却不报。要做的：删掉那条过滤（用\"是否有可执行体\"判，不是 `bodyHole`）；slice 改成显式分页 + 回执写\"已测 N/M\"。判据：造 10 个单元的夹具，回执里必须出现 10 条（或明写\"分页 5/10\"），且不是\"无可对拍\"。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_静默失效-behavior-node-runner-用裸名-require-ta",
+      "summary": "【静默失效·behavior】node runner 用裸名 `require('target.cjs')` ⇒ 必报 Cannot find module，还被 catch 伪装成\"跨文件 import 边界\"⇒ node 侧对拍【从来没跑通过】。要做的：require 走绝对路径（path.resolve）；catch 里不许再把\"模块找不到\"解释成别的语义 —— 报错就是报错，缺什么写什么。判据：造一个 node 夹具，对拍必须真跑出 same/diff，而不是\"边界跳过\"。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_静默失效-项目模式-verify-文档说-等于-tsc-但-handler-只读",
+      "summary": "【静默失效·项目模式】`verify` 文档说\"等于 tsc\"，但 handler 只读隐藏的 `tscVerify` ⇒ `verify=true` 恒不生效。要做的：统一成一个入口（`verify`），文档与实现对齐；如果两个字段都有意义，写清各自语义并在回执里分开报。判据：`verify=true` 时必须真的产出 tsc 读数，且回执能看出是哪一个字段生效的。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_静默失效-health-java-分支先-replace-s-import-s-",
+      "summary": "【静默失效·health】java 分支先 `replace(/^\\s*import\\s+static\\s+/,'')` 再匹配 `/^\\s*import\\s+([\\w.]+)/`，剥完 static 之后字符串里已经没有 \"import\" 二字 ⇒ 恒匹配失败；`import java.util.*;` 的 `*` 也让正则断掉。⇒ static import 与通配 import 两类静默漏掉。要做的：走 AST 子节点（`scoped_identifier` / `identifier`），通配（`asterisk` 子节点）明确不产绑定。判据：`import static a.b.C.m;` 必须取到 `m`，通配必须不产绑定且回执可解释。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_门腐坏-npm-run-invariants-默认入口硬编码-docs-task",
+      "summary": "【门腐坏】`npm run invariants` 默认入口硬编码 `docs/task-system-plan.dsl.json`（该文件已搬去 `.agent-io/design/`）⇒ 每次 exit=2 ENOENT；手动喂现存路径后 4 条里 2 条 FAIL，两条 cmd 是内嵌 `node -e` 字符串、里面也是同一条死路径。⇒ \"设计侧不复制事实\"这条 invariant 今天【没有任何约束力】。要做的：cmd 里的路径改成从 runner 传入（或读 `.agent-io/design/`）；修完必须能 4/4 PASS。★ 别只改默认路径 —— 那只是让它\"能跑\"，两条 cmd 仍然查不了东西。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_状态机语义-void-是单向闸-不是收尾动作-transitions-里-t-v",
+      "summary": "【状态机语义】`void` 是单向闸，不是收尾动作：`TRANSITIONS` 里 `t_void: candidate→void`，claimed 不能直达；void 之后写闸锁死，改一次要 `relaunch → claim` 三步。⇒ 收尾该用 `done`（干完了）或 `release`（放回去），不该用 void（弃做）。要做的：① 写进 README/GUIDE，把三者的语义写死；② 检查有没有别处把 void 当\"完成\"。判据：文档里能一句话分清 done / release / void 的差别，且没有任何流程建议\"用 void 收尾\"。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_状态机结构-l1-卡挂在两把尺中间-cardstanding-对-expecta",
+      "summary": "【状态机结构】L1 卡挂在两把尺中间：`cardStanding` 对 `expectations: []` 必给 `unknowable`，而 `t_claim` 的 guard 逐字要 `isClaimable(cardStanding(card))` ⇒ L1 卡【绕开】它，改走 `isConstructionComplete`（task_ops.ts:762）。⇒ claim 用一把尺、状态判定用另一把；`complete` 侧读哪把【待验】（task_ops.ts:663 注释说\"两侧同源但不同谓词\"）。要做的：先取证 complete 侧到底读什么（运行时打点，别再靠注释），再定是\"统一成一把尺\"还是\"两把尺各自显式命名\"。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_结构性死锁-edit-code-的-先解析再编辑-是对的-防止在坏树上改-但解析",
+      "summary": "【结构性死锁】`edit_code` 的\"先解析再编辑\"是对的（防止在坏树上改），但解析失败时连\"修它\"这件事都做不了 ⇒ 死锁。实测：子代理改 kernel 时先落 helper、后落调用方，中间态语法错 ⇒ 所有对该文件的编辑被拒，只能用旧 dist 打垫片绕过。三条出路：a 加显式 escape 开关（开口子）/ b 用 ERROR 节点定位并局部替换（真解，要改编辑引擎）/ c 承认\"坏文件手改\"并写进文档。★ 倾向 b：它不绕过约束，而是让\"坏文件\"也变成可局部解析的。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_公共能力-harness-的-coerce-只认-int-uint-float-",
+      "summary": "【公共能力】harness 的 `coerce()` 只认 int/uint/float/string/bool ⇒ 结构体参数 / 结构体或指针 receiver 全部 \"unsupported param type\" ⇒ 方法单元约占真实 Go 语料 40%（实测 25%/41%/67%），其中结构体 receiver 那部分永远 unverified。要做的：给 coerce 补 JSON→struct 的反射构造（`reflect.New` + `FieldByName` + 递归）。★ 这是 `behavior/index.ts` 的公共能力，`behavior_baseline` 对 Go/C#/Java 同受益，不是 translate 私货。判据：`User.Greet(u *User)` 这类能对拍，且 nil receiver 仍被前挡（不许换来假 verified）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_增量测试-证据选择器-evidencefreshness-已能判-valid-s",
+      "summary": "【增量测试】证据选择器：`evidenceFreshness` 已能判 valid / stale / unverifiable，但零调用方 ⇒ 指纹目前只是数据。要做的：接在 `run_tests` 前面当计划器，输出 `{rerun[], skip[], unknown[]}`；每条 evidence 自带 `covers`，不需要变更集入口。★ 关键判据：`unverifiable` 必须进 `rerun` —— 否则历史证据（无指纹）会永远冒充通过。★ 不要改 `expectations.run`（它是纯读布尔表达式，每次判状态都求值，加跑命令会慢到不可用）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_清理-3-个孤儿文件-render-inject-replay-ts-meta-",
+      "summary": "【清理】3 个孤儿文件：`render/inject_replay.ts` / `meta/view/derive_anim_flow.ts` / `design/derive/derive_split.ts` （唯一 import 已被删 action 拿走）。删前要核 `comments.ts` 里对 derive_split 的引用。★ 顺带：`impact/diff_impact.ts` 的模块与函数【保留】（watch 的 Impact Ledger 与多处诊断仍在用），只删 action 不删实现。",
       "expectations": [],
       "state": "candidate",
       "owner": null
