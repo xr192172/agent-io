@@ -18068,7 +18068,42 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "task": {
+          "id": "file_src_application_observe_handlers_ts",
+          "summary": "【L1 待建构】API 层 · src/application/observe — 1 个 API（导入自 17 个模块）（src/application/observe/handlers.ts） ← 节点 file_src_application_observe_handlers_ts",
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_observe_handlers_ts\"].responsibility"
+          },
+          "owner": "subagent:serve-split",
+          "claimed_at": "2026-10-21T20:26:22.763Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/observe/handlers.ts",
+                "name": "observeJudgeHandler",
+                "fp": "e67b4d711ea2673d25027572932aa54db9d96b0c"
+              },
+              {
+                "file": "src/application/observe/handlers.ts",
+                "name": "observeLogHandler",
+                "fp": "8de2598b04fbba4b5abf47063eae5c9993d4a445"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/observe/handlers.ts",
+                "content_hash": "318c3bb69a478651fc679bb6d0038acfa70db75d"
+              }
+            ],
+            "computed_at": "2026-10-21T20:26:22.725Z",
+            "basis": [
+              "declared"
+            ]
+          }
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_observe_index_ts",
@@ -52808,8 +52843,57 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_http_serve_ts\"].responsibility"
           },
-          "owner": "codebuddy-params",
-          "claimed_at": "2026-10-21T03:38:10.834Z"
+          "owner": "subagent:serve-split",
+          "claimed_at": "2026-10-21T20:23:17.222Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/presentation/http/serve.ts",
+                "name": "handleApiFeatureLine",
+                "fp": "5d8fd2f7ebde56f0bdb61496e78311a171d574f4"
+              },
+              {
+                "file": "src/presentation/http/serve.ts",
+                "name": "handleApiObserveApprove",
+                "fp": "329d0ba6586fa14ddabcafb02df0703a4170e4fb"
+              },
+              {
+                "file": "src/presentation/http/serve.ts",
+                "name": "handleApiObserveJudge",
+                "fp": "38ee0a2150d0c783010a57840d44c692e56c32fe"
+              },
+              {
+                "file": "src/presentation/http/serve.ts",
+                "name": "handleApiObserveLog",
+                "fp": "6123598c19cd0dab000dd20ca7989820f442253f"
+              },
+              {
+                "file": "src/presentation/http/serve.ts",
+                "name": "handleApiObserveProposals",
+                "fp": "9f85e9aac7d7fb0234c8e6bf26bfc3f5df40f0b7"
+              },
+              {
+                "file": "src/presentation/http/serve.ts",
+                "name": "handleApiObserveReject",
+                "fp": "39235adfd1816ba7d62ca4be97121213a6240bd8"
+              },
+              {
+                "file": "src/presentation/http/serve.ts",
+                "name": "handleApiReconcileChain",
+                "fp": "b9469eaedd532f177025abfd6e5f2eb02afc6dff"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/presentation/http/serve.ts",
+                "content_hash": "a8cf0123cd1268ad45b986f3f6421aac05a53212"
+              }
+            ],
+            "computed_at": "2026-10-21T20:23:17.184Z",
+            "basis": [
+              "declared"
+            ]
+          }
         },
         "status": "in_progress"
       },
@@ -85291,7 +85375,8 @@
           }
         ],
         "lines": 521,
-        "layer": "api"
+        "layer": "api",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_observe_index_ts",
@@ -103696,11 +103781,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T20:07:07.126Z",
+    "saved_at": "2026-10-21T20:26:22.792Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 29704315,
+    "age": 30859981,
     "dbSchemaVersion": 16
   },
   "_forked_from": {

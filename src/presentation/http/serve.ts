@@ -20,12 +20,14 @@ import { spawn, exec } from 'node:child_process';
 import { saveDSL, getDSL, getDesignSheetFile, getLiveDslFile, getLiveFeature, onDslChange, getStorageRoot, getFeaturesDir } from '../../infrastructure/storage.js';
 import { enableObserveFromEnv } from '../../infrastructure/analysis/observe/run_sentinel.js';
 import { judgeEvent } from '../../infrastructure/analysis/observe/judge.js';
-import { queryObserveLog } from '../../infrastructure/analysis/observe/log_query.js';
-import { judgeEvents, judgeEventsWithLLM, normalizeEvents, renderJudgeReport } from '../../infrastructure/analysis/observe/judge_service.js';
 import { judgeGuardLog } from '../../infrastructure/analysis/observe/judge_guard.js';
-import { ProposalStore } from '../../infrastructure/analysis/observe/proposal_store.js';
-import { DesignDSLStore, defaultDSLDir } from '../../infrastructure/analysis/observe/dsl_store.js';
-import { approveGated } from '../../infrastructure/analysis/observe/approve_gated.js';
+// ★ 2026-10-22：observe 的查询 / 判定 / 提案审批已搬出本文件 ——
+//   HTTP 面与 MCP 面现在调**同一份** use case（`application/observe/{runtime,reconcile}/…`）。
+import { queryObserveLogUseCase } from '../../application/observe/runtime/observe_log_query.js';
+import { judgeObserveEvents } from '../../application/observe/runtime/judge_observe_events.js';
+import { listObserveProposals } from '../../application/observe/reconcile/proposal_list.js';
+import { approveObserveProposal } from '../../application/observe/reconcile/proposal_approve.js';
+import { rejectObserveProposal } from '../../application/observe/reconcile/proposal_reject.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';
 import { getProjectCacheDb, openDb, featureCacheDbPath } from '../../infrastructure/index/db.js';
 import { validateDSLJson } from '../../domain/validator.js';
@@ -324,7 +326,7 @@ function handleApiObserveLog(req: http.IncomingMessage, res: http.ServerResponse
     const url = new URL(req.url || '/', 'http://localhost');
     const files = url.searchParams.getAll('file').filter((f) => f.trim() !== '');
     const all = url.searchParams.get('all') === '1' || url.searchParams.get('all') === 'true';
-    const result = queryObserveLog(eventsPath, { files, all });
+    const result = queryObserveLogUseCase({ events_path: eventsPath, files, all });
     sendJson(res, 200, result);
   } catch (e) {
     sendError(res, 500, (e as Error).message);
@@ -344,20 +346,22 @@ async function handleApiObserveJudge(req: http.IncomingMessage, res: http.Server
       sendError(res, 400, '请求体需为合法 JSON：{ "events": [...] }');
       return;
     }
-    const raw = (parsed as { events?: unknown }).events;
-    const { events, error } = normalizeEvents(raw);
-    if (error) {
-      sendError(res, 400, error);
-      return;
-    }
     const url = new URL(req.url || '/', 'http://localhost');
-    const useLlm = url.searchParams.get('use_llm') === '1' || url.searchParams.get('use_llm') === 'true';
-    const result = useLlm ? await judgeEventsWithLLM(events, true) : judgeEvents(events);
-    if (url.searchParams.get('text') === '1') {
-      sendJson(res, 200, { text: renderJudgeReport(result), ...result });
+    const textMode = url.searchParams.get('text') === '1';
+    const r = await judgeObserveEvents({
+      events: (parsed as { events?: unknown }).events,
+      use_llm: url.searchParams.get('use_llm'),
+      text: textMode ? '1' : undefined,
+    });
+    if (!r.ok) {
+      sendError(res, 400, r.error);
       return;
     }
-    sendJson(res, 200, result);
+    if (textMode) {
+      sendJson(res, 200, { text: r.text, ...r.report });
+      return;
+    }
+    sendJson(res, 200, r.report);
   } catch (e) {
     sendError(res, 500, (e as Error).message);
   }
@@ -1757,25 +1761,6 @@ async function handleApiCodeReject(req: http.IncomingMessage, res: http.ServerRe
 //   参数缺失 / 路径越界 ⇒ **400**（客户端参数错）；状态机冲突（提案非 pending / 不存在）⇒ **409**；
 //   其余意外 ⇒ **500**。
 
-/** observe 提案仓库目录（复用 `defaultDSLDir`，不新造字面量 —— 它与 daemon 同源）。 */
-function observeDataDir(projectDir: string): string {
-  return defaultDSLDir(projectDir);
-}
-
-/** 取并校验 `project_dir`；不合法时已写好 400 响应并返回 null。 */
-function readObserveProjectDir(raw: string, context: string, res: http.ServerResponse): string | null {
-  if (!raw) {
-    sendError(res, 400, '缺少 project_dir');
-    return null;
-  }
-  try {
-    return validateProjectRoot(raw, context);
-  } catch (e) {
-    sendError(res, 400, (e as Error).message);
-    return null;
-  }
-}
-
 /** GET /api/observe/proposals?project_dir=…：列出提案（含审批证据 `verified_by` / `verification`）。
  *  ★ 这个出口是**补回来的**：Go 时代由 `dsl_cli list/show` 打印这些证据（`已验证: …` /
  *    `验证门证据: …`），CLI 在 `e9a31a7` 删除后该出口断了 —— 而 daemon 的提示还指着一个
@@ -1783,10 +1768,15 @@ function readObserveProjectDir(raw: string, context: string, res: http.ServerRes
 async function handleApiObserveProposals(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
   try {
     const url = new URL(req.url!, 'http://localhost');
-    const project_dir = readObserveProjectDir(url.searchParams.get('project_dir') || '', '/api/observe/proposals project_dir', res);
-    if (!project_dir) return;
-    const proposals = new ProposalStore(observeDataDir(project_dir)).list();
-    sendJson(res, 200, { success: true, project_dir, proposals });
+    const r = listObserveProposals(
+      url.searchParams.get('project_dir') || '',
+      '/api/observe/proposals project_dir',
+    );
+    if (!r.ok) {
+      sendError(res, 400, r.message);
+      return;
+    }
+    sendJson(res, 200, { success: true, project_dir: r.project_root, proposals: r.proposals });
   } catch (e) {
     sendError(res, 500, (e as Error).message);
   }
@@ -1799,34 +1789,19 @@ async function handleApiObserveApprove(req: http.IncomingMessage, res: http.Serv
   try {
     const body = await readBody(req);
     const params = JSON.parse(body.toString('utf-8'));
-    const id = String(params.id || '');
-    const reviewer = String(params.reviewer || '').trim();
-    const project_dir = readObserveProjectDir(String(params.project_dir || ''), '/api/observe/proposals/approve project_dir', res);
-    if (!project_dir) return;
-    if (!id) {
-      sendError(res, 400, '缺少 id');
+    const r = await approveObserveProposal({
+      project_dir: String(params.project_dir || ''),
+      id: String(params.id || ''),
+      reviewer: String(params.reviewer || '').trim(),
+      use_llm: params.use_llm === true,
+      context: '/api/observe/proposals/approve project_dir',
+    });
+    if (!r.ok) {
+      sendError(res, r.code === 'bad_request' ? 400 : 409, r.message);
       return;
     }
-    // ★ reviewer 必填：审批必须自报身份（第三方会话 / 系统名 / 用户名）—— 审计链不能有空。
-    if (!reviewer) {
-      sendError(
-        res,
-        400,
-        '缺少 reviewer：审批必须声明审批者身份（会话 id / 系统名 / 用户名）。' +
-          '★ 这是为"第三方会话审批"留的位 —— 换会话调用时只改这个值，接口形状不变。',
-      );
-      return;
-    }
-    const dataDir = observeDataDir(project_dir);
-    let r: Awaited<ReturnType<typeof approveGated>>;
-    try {
-      r = await approveGated(new ProposalStore(dataDir), new DesignDSLStore(dataDir), id, reviewer, params.use_llm === true);
-    } catch (e) {
-      // 状态机守卫（仅 pending 可审批）/ 提案不存在 ⇒ 业务冲突，不是 500
-      sendError(res, 409, `审批未通过：${(e as Error).message}`);
-      return;
-    }
-    sendJson(res, 200, { success: !r.frozen, frozen: r.frozen, version: r.version, reason: r.reason, proposal: r.proposal });
+    const { frozen, version, reason, proposal } = r.result;
+    sendJson(res, 200, { success: !frozen, frozen, version, reason, proposal });
   } catch (e) {
     sendError(res, 500, (e as Error).message);
   }
@@ -1839,28 +1814,17 @@ async function handleApiObserveReject(req: http.IncomingMessage, res: http.Serve
   try {
     const body = await readBody(req);
     const params = JSON.parse(body.toString('utf-8'));
-    const id = String(params.id || '');
-    const reviewer = String(params.reviewer || '').trim();
-    const project_dir = readObserveProjectDir(String(params.project_dir || ''), '/api/observe/proposals/reject project_dir', res);
-    if (!project_dir) return;
-    if (!id) {
-      sendError(res, 400, '缺少 id');
+    const r = rejectObserveProposal({
+      project_dir: String(params.project_dir || ''),
+      id: String(params.id || ''),
+      reviewer: String(params.reviewer || '').trim(),
+      context: '/api/observe/proposals/reject project_dir',
+    });
+    if (!r.ok) {
+      sendError(res, r.code === 'bad_request' ? 400 : 409, r.message);
       return;
     }
-    if (!reviewer) {
-      sendError(res, 400, '缺少 reviewer：驳回同样要记"谁驳的"（第三方会话 / 系统名 / 用户名）。');
-      return;
-    }
-    const ps = new ProposalStore(observeDataDir(project_dir));
-    let proposal;
-    try {
-      ps.reject(id, reviewer);
-      proposal = ps.get(id);
-    } catch (e) {
-      sendError(res, 409, `驳回未通过：${(e as Error).message}`);
-      return;
-    }
-    sendJson(res, 200, { success: true, proposal });
+    sendJson(res, 200, { success: true, proposal: r.proposal });
   } catch (e) {
     sendError(res, 500, (e as Error).message);
   }

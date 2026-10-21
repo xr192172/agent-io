@@ -14,7 +14,10 @@ import { wrap, wrapData } from '.././plumbing.js';
 import { rebuildChains } from '../../infrastructure/analysis/observe/chain.js';
 import { TSComparator, renderTSDiffReport } from '../../infrastructure/analysis/observe/contract.js';
 import type { TSDLDecl, TSDiffReport } from '../../infrastructure/analysis/observe/contract.js';
-import { judgeEvents, judgeEventsWithLLM, normalizeEvents, renderJudgeReport } from '../../infrastructure/analysis/observe/judge_service.js';
+import { renderJudgeReport } from '../../infrastructure/analysis/observe/judge_service.js';
+// ★ 2026-10-22：归一 + 判定下沉到 use case —— 与 HTTP 面（serve.ts 的 /api/observe/judge）**同一份**实现。
+import { judgeObserveEvents } from '.././observe/runtime/judge_observe_events.js';
+import { queryObserveLogUseCase } from '.././observe/runtime/observe_log_query.js';
 import type { ObserveRuleCtx } from '../../infrastructure/analysis/observe/judge.js';
 import { knownSpreadIndex } from '../../infrastructure/analysis/observe/ledger_fold.js';
 import {
@@ -25,7 +28,6 @@ import {
 // ★ 2026-10-06（T15）：探针台账的读取与摘要 —— 原先是 CLI-only 的 `instrument_cli --ledger`。
 import { loadProbeLedger, ledgerSummary } from '../../infrastructure/analysis/observe/instrument.js';
 import { DesignDSLStore, defaultDSLDir } from '../../infrastructure/analysis/observe/dsl_store.js';
-import { queryObserveLog } from '../../infrastructure/analysis/observe/log_query.js';
 import { getDSLByView, getLiveDir, requireProjectRoot } from '../../infrastructure/storage.js';
 import { observeTrace } from '.././observe/capture/observe_trace.js';
 import { reconcileChain } from '.././observe/reconcile/reconcile_chain.js';
@@ -375,9 +377,6 @@ export const observeJudgeHandler = wrap(async (a) => {
   if (!Array.isArray(events) || events.length === 0) {
     throw new Error('observe_judge 需要 events 参数：传要判定的事件数组（符合 TSEvent 形状）。');
   }
-  const { events: norm, error } = normalizeEvents(events);
-  if (error) throw new Error(error);
-  const useLlm = a.use_llm === true || a.use_llm === 'true' || a.use_llm === '1';
 
   // ★ 2026-10-06（P5）：**decls 的计算从"判定之后"上移到"判定之前"**。
   //   原因：逐事件判定现在要扣掉"已被设计承认的耦合"（known-spread 声明，见 `judge.ObserveRuleCtx`），
@@ -427,7 +426,12 @@ export const observeJudgeHandler = wrap(async (a) => {
     ? { acknowledgedSpreads: knownSpreadIndex(decls) }
     : undefined;
 
-  const report = useLlm ? await judgeEventsWithLLM(norm, true, judgeCtx) : judgeEvents(norm, judgeCtx);
+  // ★ 2026-10-22：归一 + 判定只住一处（`judgeObserveEvents`；HTTP 面的 /api/observe/judge 调的是同一个用例）。
+  //   ★ 本 handler 比用例多的那层（decls 设计对比 / 链路重建）仍留在门外 —— 那是 MCP 面独有的，不下去。
+  const judged = await judgeObserveEvents({ events, use_llm: a.use_llm, ctx: judgeCtx });
+  if (!judged.ok) throw new Error(judged.error);
+  const norm = judged.events;
+  const report = judged.report;
 
   // P2 链路契约：decls 可得时重建实测链 + Comparator 全量对比（探针级 + 链路级）
   let diff: TSDiffReport | undefined;
@@ -462,9 +466,8 @@ export const observeLogHandler = wrapData(async (a) => {
   if (!eventsFile) {
     throw new Error('observe_log 需要 events_file 参数：传 Observe 事件文件路径（events.jsonl）。');
   }
-  const files = Array.isArray(a.files) ? (a.files as string[]).filter(Boolean) : [];
-  const all = a.all === true || a.all === 'true' || a.all === '1';
-  const r = queryObserveLog(eventsFile, { files, all });
+  // ★ 2026-10-22：入参归一 + 查询**只住一处**（HTTP 面的 /api/observe/log 调的是同一个用例）
+  const r = queryObserveLogUseCase({ events_path: eventsFile, files: a.files, all: a.all });
   const lines = [
     `Observe 日志 [${r.eventsPath}]`,
     `  事件 ${r.total} · 偏差 ${r.anomalyCount} · 跳过 ${r.skipped} · 返回 ${r.entries.length} 条`,
