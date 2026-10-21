@@ -14,12 +14,16 @@ import { syncContracts } from '.././meta/registry/sync_contracts.js';
 
 /** explore_code：参数化代码理解（用 wrapData：data 不丢弃，杜绝「有结果却静默空输出」）
  * 兼容两种入参形态：`{ action, args:{...} }`（嵌套，规范）或平铺 `{ action, query, ... }`——
- * 缺 action 时从平铺参数反推（query→search / file→read），消除"习惯平铺传参 → -32602 invalid action"的摩擦。 */
+ * 缺 action 时从平铺参数反推（query→search / fields→facts / file→read），消除"习惯平铺传参 → -32602 invalid action"的摩擦。
+ * ★ 2026-10-21：加 `fields`→`facts` —— `fields` 是 **facts 独有**的键（read 不认识它）；
+ *   只用它反推，**不拿 `file` 去猜**（file 在 read / facts 上都是必填，猜错等于静默换语义）。 */
 function resolveExploreAction(a: Record<string, unknown>, args: Record<string, unknown>): string {
   if (typeof a['action'] === 'string') return a['action'] as string;
   if ('query' in args) return 'search';
+  // ★ facts 的**独有**键（read 不认识 `fields`）⇒ 只有它才能无歧义地反推出 facts。
+  if ('fields' in args) return 'facts';
   if ('file' in args) return 'read';
-  const msg = `explore_code 缺顶层 action。可用: ${EXPLORE_ACTIONS.join(' / ')}。search 传 {query, project_dir}，read 传 {file, project_dir}；其余路径请显式给 action[+args]。`;
+  const msg = `explore_code 缺顶层 action。可用: ${EXPLORE_ACTIONS.join(' / ')}。search 传 {query, project_dir}，read 传 {file, project_dir}，facts 传 {file, fields?, name?, limit?}（读索引事实；读源码用 read）；其余路径请显式给 action[+args]。`;
   throw new Error(msg);
 }
 

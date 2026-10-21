@@ -30,6 +30,9 @@
 export const EXPLORE_ARGS: Record<string, readonly string[]> = {
   search: ['min_score', 'project_dir', 'query', 'top_k'],
   read: ['context', 'end', 'file', 'parent', 'project_dir', 'start', 'symbol', 'symbols', 'symbols_limit'],
+  // ★ facts（2026-10-21）：**选择性读 DB** —— `fields` 是它的核心参数（白名单在
+  //   `explore_code.ts#FACTS_COLUMNS`，那里是唯一住处）；`project_dir` 与 read 同口径（缺省 cwd）。
+  facts: ['fields', 'file', 'limit', 'name', 'project_dir'],
   arch_layer: ['check_violations', 'feature', 'layers', 'no_cache', 'persist'],
   guided_tour: ['feature'],
   check_monolith: [
@@ -110,6 +113,9 @@ export function assertExploreArgKeys(action: string, args: Record<string, unknow
  *   ⇒ ★★ **"没列" ≠ "没有必填"**（★ 与"没圈到就省略"同：★ **本表是【已知】，不是【穷举】** ✓）
  */
 export const EXPLORE_REQUIRED: Record<string, readonly string[]> = {
+  // ★ facts（2026-10-21）：描述里点名"**硬必填 file**" ⇒ 收进来（缺了在【入口】就拒，
+  //   而不是往下跑到"读不到库"那一步才报）。
+  facts: ['file'],
   run_simulation: ['feature'],
   reset_simulation: ['feature'],
   search: ['project_dir'],

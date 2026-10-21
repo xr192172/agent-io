@@ -17733,17 +17733,14 @@
           "id": "file_src_application_meta_explore_explore_arg_spec_ts",
           "summary": "【L1 待建构】核心层 · src/application/meta/explore — 3 个 API（导入自 0 个模块）（src/application/meta/explore/explore_arg_spec.ts） ← 节点 file_src_application_meta_explore_explore_arg_spec_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_explore_arg_spec_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "释放 file_src_application_meta_explore_explore_arg_spec_ts：本轮活已由子代理完成，build + verify 已验收通过",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-21T02:42:50.917Z"
+          "owner": "agent-facts-db",
+          "claimed_at": "2026-10-21T07:08:34.471Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_explore_explore_code_ts",
@@ -17764,17 +17761,14 @@
           "id": "file_src_application_meta_explore_explore_code_ts",
           "summary": "【L1 待建构】核心层 · src/application/meta/explore — 4 个 API（导入自 23 个模块）（src/application/meta/explore/explore_code.ts） ← 节点 file_src_application_meta_explore_explore_code_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_explore_code_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "释放 file_src_application_meta_explore_explore_code_ts：本轮活已由子代理完成，build + verify 已验收通过",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-21T02:42:50.995Z"
+          "owner": "agent-facts-db",
+          "claimed_at": "2026-10-21T07:08:05.983Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_explore_first_hop_args_ts",
@@ -17853,7 +17847,19 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "task": {
+          "id": "file_src_application_meta_handlers_ts",
+          "summary": "【L1 待建构】API 层 · src/application/meta — 1 个 API（导入自 3 个模块）（src/application/meta/handlers.ts） ← 节点 file_src_application_meta_handlers_ts",
+          "expectations": [],
+          "state": "claimed",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_handlers_ts\"].responsibility"
+          },
+          "owner": "agent-facts-db",
+          "claimed_at": "2026-10-21T07:08:34.635Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_impact_impact_report_ts",
@@ -17890,17 +17896,14 @@
           "id": "file_src_application_meta_index_ts",
           "summary": "【L1 待建构】入口层 · src/application/meta — 2 个 API（导入自 36 个模块）（src/application/meta/index.ts） ← 节点 file_src_application_meta_index_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_index_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "释放 file_src_application_meta_index_ts：本轮活已由子代理完成，build + verify 已验收通过",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-21T02:42:51.070Z"
+          "owner": "agent-facts-db",
+          "claimed_at": "2026-10-21T07:08:34.550Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_integrity_index_integrity_ts",
@@ -82436,7 +82439,7 @@
         ],
         "lines": 150,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_explore_explore_code_ts",
@@ -82495,7 +82498,7 @@
         ],
         "lines": 593,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_explore_first_hop_args_ts",
@@ -82693,7 +82696,8 @@
           }
         ],
         "lines": 38,
-        "layer": "api"
+        "layer": "api",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_impact_impact_report_ts",
@@ -82747,7 +82751,7 @@
         ],
         "lines": 1356,
         "layer": "entry",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_integrity_index_integrity_ts",
@@ -98990,11 +98994,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T06:53:08.006Z",
+    "saved_at": "2026-10-21T07:08:34.661Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792563917183,
-    "age": 1670823
+    "age": 2597478
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

@@ -181,6 +181,9 @@ export const META_TOOLS: ToolDef[] = [
       '★ 按需选用与必填项（缺任一项即报错，别空调）：' +
       '巨石体检用 check_monolith（给 project_dir|feature|files 之一）；' +
       '读文件内容用 read（硬必填 file）；' +
+      '★ 读源码用 read，读索引事实用 facts（硬必填 file；fields 选列，默认集不含 body_text）：' +
+      'facts 读 cache.db 的 nodes（索引那一刻的签名/形参/返回类型/成员/函数体原文），' +
+      '带同源校验（contentHash(当前源码) === files.content_hash）—— 与源码不同源就报错、绝不回旧快照；' +
       '盯文件变更用 watch（硬必填 project_dir）；' +
       '看模块导览用 guided_tour（硬必填 feature）；' +
       '生成模块思维导图用 derive_mind_map（硬必填 feature）；' +

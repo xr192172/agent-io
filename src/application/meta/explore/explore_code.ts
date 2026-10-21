@@ -1,8 +1,12 @@
 /**
  * explore_code: 代码理解统一入口
  *
- * 将 search / read / arch_layer / guided_tour / check_monolith / derive_mind_map /
+ * 将 search / read / facts / arch_layer / guided_tour / check_monolith / derive_mind_map /
  * run_simulation / reset_simulation / watch 工具聚合为单工具，通过 action 分发。
+ * ★ 2026-10-21 加 `facts`：**选择性读 DB**（`nodes` 上的索引事实）—— 与 `read`（读源码）是
+ *   两条互不替代的读法。分层：**DB 全量存、读时按需取列**；DSL 才是"面向 LLM 直接读"的产物。
+ *   ★ 它带**同源校验**（`contentHash(当前源码) === files.content_hash`）：库与源码不同源就**拒绝**，
+ *   绝不把旧快照当事实返回（照旧副本重写 = 把旧代码写回去）。
  * ★ 2026-10-21：删掉 6 个「别处已能回答、实测成功率 0-3%」的 action（diff_impact /
  *   inject_replay / derive_split / derive_chain / derive_anim_flow / derive_algorithm）：
  *   影响面 → `impact_analysis`；注入回放/回放观测 → `observe_instrument` + `observe_trace`；
@@ -28,6 +32,14 @@ import { requireStr, optionalStr, optionalNum, optionalBool, optionalArr } from 
 import { assertExploreArgKeys, assertExploreRequired } from './explore_arg_spec.js';
 import { semanticSearch } from '../llm/semantic_search.js';
 import { ensureProjectIndex, ensureIndexAroundSeed } from '../../../infrastructure/index/index_freshness.js';
+// ★ action=facts（选择性读 DB）的判据全在下层，本文件只解参与渲染，不重推一遍：
+//   · `contentHash` = 「库与源码同源」的唯一哈希（= files.content_hash 存的同一个函数）；
+//   · `readSymbolBody` = body 的五道准入（含同源校验）—— 别在这里再写一套；
+//   · `toIndexKey` = 「路径 → 索引键」的唯一住处（根外 ⇒ null）。
+import { contentHash, readSymbolBody, toIndexKey } from '../../../infrastructure/index/symbols.js';
+import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
+// ★ 字段名的"是不是想写 X"与 explore_arg_spec 同一把尺（同一个函数），不另写一份编辑距离。
+import { suggestNames } from '../../../infrastructure/text/arg_suggest.js';
 import { scheduleBackfill, backfillState, backfillSummary } from '../../../infrastructure/index/index_backfill.js';
 import { archLayer } from '../../../infrastructure/analysis/structure/arch_layer.js';
 import type { LayerDef } from '../../../infrastructure/analysis/structure/layer_detect.js';
@@ -45,6 +57,8 @@ import { matchSymbols, describeSymbol } from '../../refactor/edit/edit_code.js';
 export const EXPLORE_ACTIONS = [
   'search',
   'read',
+  // ★ facts：**选择性读 DB**（索引事实），与 read（读源码）是两条互不替代的读法。
+  'facts',
   'arch_layer',
   'guided_tour',
   'check_monolith',
@@ -192,6 +206,18 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
         : '';
       return { message: r.message + tileNote + skipNote, data };
     }
+    case 'facts': {
+      // ★ 读的是 cache.db 的 `nodes`（索引那一刻的事实），**不是源码** —— 读源码用 case 'read'。
+      //   同源校验、字段白名单、body 五道准入全在 readFacts 里（唯一住处），这里只解参。
+      const r = readFacts({
+        project_dir: optionalStr(args, 'project_dir'),
+        file: requireStr(args, 'file'),
+        name: optionalStr(args, 'name'),
+        fields: optionalArr(args, 'fields', 'string[]') as string[] | undefined,
+        limit: optionalNum(args, 'limit'),
+      });
+      return { message: r.message, data: r.data };
+    }
     case 'arch_layer': {
       const r = await archLayer({
         feature: requireStr(args, 'feature'),
@@ -274,6 +300,11 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
 // ─────────────────────────────────────────────────────────────
 // action=read：按符号定位或行区间读文件（行号契约见 line_utils）
 // ─────────────────────────────────────────────────────────────
+//
+// ★★ 读源码用 **read**，读索引事实用 **facts**（两个 action，别混）：
+//   · read  = 磁盘上**现在**的源码（行号与 edit_code 同基准 ⇒ "先读后改"用它）；
+//   · facts = cache.db 里**索引那一刻**的解析事实（列可选、带同源校验；要查签名/形参/函数体原文用它）。
+//   ★ facts 过期会**报错**而不是回旧数据 ⇒ 想"读旧版本"是不可能的（也不该可能）。
 //
 // 心智流：explore(search/read) → 确认行号 → edit_code。read 是 edit 的
 // "先读后改"前置：返回的 start/end/每行行号与 edit_code(op=range) 同基准
@@ -491,4 +522,346 @@ async function readCode(
       lines: linesOut,
     },
   };
+}
+
+// ─────────────────────────────────────────────────────────────
+// action=facts：**选择性读 DB**（`nodes` 表）—— ★ 读的是**索引事实**，不是源码（那是 action=read）
+// ─────────────────────────────────────────────────────────────
+//
+// ## 分层（2026-10-21 用户定的判据，别再改）
+// · **DB 全量存**：解析器能给的都落库（`nodes` 21 列，含 `body_text`）；
+// · **读的时候按需取列**：LLM 直接读 DB 层也应当**选择性读**，不必把整行端上来；
+//   「面向 LLM 直接读」的是 DSL 层 ⇒ 本 action **不生成 / 不改 DSL**，只把索引里的事实端出来。
+//
+// ## ★★ 与 `read` 的分界（两条互不替代的读法）
+// · `read`  = 读**源码**（磁盘现在的内容；行号与 `edit_code` 同基准，用于"先读后改"）；
+// · `facts` = 读**索引快照**（索引那一刻的解析事实；**带同源校验，过期就拒绝**）。
+//   ★ 为什么过期必须拒：`signature` / `body_text` 都是索引时的副本；拿着旧副本重写 = 把旧代码写回去。
+//     **给旧数据比报错坏得多** ⇒ 本 action 只有"库与源码同源"这一条路能返回数据。
+//
+// ## ★ 为什么字段必须是白名单（不是"顺手校验一下"）
+// 列名要拼进 SQL。把用户传的 `fields` 直接拼上去 = 在只读工具上开一个注入口。
+// ⇒ `FACTS_COLUMNS` 是「字段名 → 列名」的**唯一住处**；不认识的字段**当场拒**（并给"是不是想写 X"）。
+//
+// ## ★ 边界（如实写在这里）
+// · **只读库：不建索引、不做保鲜** —— 库里没这个文件就报错并告诉你先 `read` 一次（它会就地补索引）；
+// · `body_text` 是**重字段**（本仓最长的一个函数 3565 行）：默认集**不含**它，只能显式要；
+// · 行数上限 = `limit`（缺省 50）；截断时回执**明写「共 N 个，返回 M 个」**，不静默少给。
+
+/** 可读字段白名单（★ 同时是「字段名 → SQL 列」的唯一映射；**别拿入参直接拼 SQL**） */
+const FACTS_COLUMNS = {
+  kind: 'kind',
+  signature: 'signature',
+  params: 'params',
+  return_type: 'return_type',
+  type_params: 'type_params',
+  modifiers: 'modifiers',
+  members: 'members',
+  docstring: 'docstring',
+  start_line: 'start_line',
+  end_line: 'end_line',
+  body_text: 'body_text',
+  body_hash: 'body_hash',
+  parent: 'parent',
+  qualified_name: 'qualified_name',
+} as const;
+
+type FactsField = keyof typeof FACTS_COLUMNS;
+
+const FACTS_FIELDS = Object.keys(FACTS_COLUMNS) as FactsField[];
+
+/** 默认集 ★ **不含 `body_text`**（重字段：只在 `fields` 里显式要了才读） */
+const FACTS_DEFAULT_FIELDS: readonly FactsField[] = [
+  'kind', 'signature', 'params', 'return_type', 'start_line', 'end_line',
+];
+
+/** 列全部符号时的缺省上限（截断**必须**在回执里写明"共 N 个，返回 M 个"） */
+const FACTS_DEFAULT_LIMIT = 50;
+
+/** DB 里存成 JSON 文本的列 ⇒ 出参**解成结构化值**（解不开就原样回文本，不假装是数组） */
+const FACTS_JSON_FIELDS = new Set<FactsField>(['params', 'type_params', 'modifiers', 'members']);
+
+/** 索引时间 → 人读年龄（过期报错里要说清"多旧"，只说"过期"等于没说） */
+function factsAge(ms: number): string {
+  const d = Math.max(0, Date.now() - ms);
+  if (d < 60_000) return `${Math.round(d / 1000)} 秒`;
+  if (d < 3_600_000) return `${Math.round(d / 60_000)} 分钟`;
+  if (d < 86_400_000) return `${Math.round(d / 3_600_000)} 小时`;
+  return `${Math.round(d / 86_400_000)} 天`;
+}
+
+function factsJsonOrRaw(v: unknown): unknown {
+  if (typeof v !== 'string') return v ?? null;
+  try {
+    return JSON.parse(v) as unknown;
+  } catch {
+    return v; // 坏 JSON 原样回（★ 不吞：调用方看到的就是库里的那段文本）
+  }
+}
+
+/** `fields` 白名单校验（★ 唯一入口：先校验、后拼 SQL） */
+function factsFieldsOf(raw: string[] | undefined): FactsField[] {
+  if (raw === undefined) return [...FACTS_DEFAULT_FIELDS];
+  if (raw.length === 0) {
+    throw new Error(
+      'facts 的 fields 是空数组 —— ★ 要么**别给**（用默认集），要么明确列出要哪几列。\n' +
+        `  ★ 默认集：${FACTS_DEFAULT_FIELDS.join(' · ')}\n` +
+        `  ★ 可读字段：${FACTS_FIELDS.join(' · ')}`,
+    );
+  }
+  const out: FactsField[] = [];
+  const bad: string[] = [];
+  for (const f of raw) {
+    if (typeof f !== 'string' || !FACTS_FIELDS.includes(f as FactsField)) {
+      bad.push(String(f));
+      continue;
+    }
+    if (!out.includes(f as FactsField)) out.push(f as FactsField);
+  }
+  if (bad.length) {
+    const hints = bad.map((b) => {
+      const near = suggestNames(b, FACTS_FIELDS);
+      return near.length ? `\`${b}\`（★ 是不是想写 \`${near[0]}\`？）` : `\`${b}\``;
+    });
+    throw new Error(
+      `facts 的 fields 里有**不认识的字段**：${hints.join('、')}\n` +
+        `  ★ 可读字段（白名单，★ 只认这些）：${FACTS_FIELDS.join(' · ')}\n` +
+        '  ★ 为什么必须拒（而不是忽略）：列名会拼进 SQL ⇒ 只认白名单；忽略掉等于"你要的那列没给、' +
+        '却回一份看起来正常的结果"。',
+    );
+  }
+  return out;
+}
+
+/** `limit` 校验：不给 = 缺省；给了就必须是 ≥1 的整数（形状错不静默当没给） */
+function factsLimitOf(raw: number | undefined): number {
+  if (raw === undefined) return FACTS_DEFAULT_LIMIT;
+  if (!Number.isInteger(raw) || raw < 1) {
+    throw new Error(`facts 的 limit 必须是 ≥1 的整数（收到 ${raw}）`);
+  }
+  return raw;
+}
+
+export interface FactsInput {
+  /** 目标项目根（缺省 = cwd；与 `read` 同口径） */
+  project_dir?: string;
+  /** 相对项目根的路径（也接受绝对路径；落在根外 ⇒ 拒） */
+  file: string;
+  /** 符号名（短名或 qualified_name，**精确匹配**）；不给 ⇒ 列该文件全部符号 */
+  name?: string;
+  /** 要哪几列（白名单）；缺省 = 默认集（不含 body_text） */
+  fields?: string[];
+  /** 列全部符号时的上限（缺省 50） */
+  limit?: number;
+}
+
+export interface FactsData {
+  action: 'facts';
+  /** 出处：`db` = `nodes` 表（**不是**从源码现切，也不是 DSL） */
+  source: 'db';
+  /** ★ 只有"库与源码同源"才可能走到这里 ⇒ 恒为 false（不一致时整个调用报错，不返回数据） */
+  stale: false;
+  project_dir: string;
+  /** 索引键：相对项目根的 posix 路径 */
+  file: string;
+  name?: string;
+  fields: FactsField[];
+  limit: number;
+  /** 该文件（或该名字）在库里的符号总数 */
+  total: number;
+  /** 本次实际返回的符号数 */
+  returned: number;
+  truncated: boolean;
+  index: { content_hash: string; indexed_at: string; indexed_age: string };
+  /** 每个符号一行；键 = 请求的字段（+ 恒返回的身份列 `name`） */
+  symbols: Array<Record<string, unknown>>;
+  /** 显式要了 `body_text`、但该行过不了 `readSymbolBody` 五道准入的符号（原因逐条列出，不静默给 null） */
+  body_rejected?: Array<{ qualified_name: string; reason: string; detail: string }>;
+}
+
+/**
+ * 从 `nodes` 表**选择性**读一个文件（或其中一个符号）的事实。
+ *
+ * ★ 判据全部复用下层，本函数**不重写**：
+ * · 「路径 → 索引键」= `toIndexKey`（唯一住处）；
+ * · 「库与源码同源」= `contentHash(当前源码) === files.content_hash`（唯一哈希）；
+ * · 「body 能不能信」= `readSymbolBody`（五道准入：有行 / 有体 / 库内自洽 / 同源 / 文本对得上）。
+ */
+export function readFacts(input: FactsInput): { message: string; data: FactsData } {
+  const root = path.resolve(input.project_dir ?? process.cwd());
+  const rel = toIndexKey(root, input.file);
+  if (!rel) {
+    throw new Error(
+      `facts 的 file 必须在项目根内：${input.file}（根 = ${root}）。\n` +
+        '  ★ 索引键是"相对项目根的 posix 路径"；根外路径造不出合法键 ⇒ 拒绝（不猜你要读哪个库）。',
+    );
+  }
+
+  // ── ① 字段白名单 + limit（★ 先校验，再拼 SQL）──
+  const fields = factsFieldsOf(input.fields);
+  const limit = factsLimitOf(input.limit);
+
+  // ── ② 同源校验：★ 这道闸就是「事实库」与「缓存」的分界 ──
+  const db = getProjectCacheDb(root);
+  const fileRow = db
+    .prepare('SELECT content_hash, indexed_at, size, modified_at FROM files WHERE path = $p')
+    .get({ p: rel }) as
+    | { content_hash: string; indexed_at: number; size: number; modified_at: number }
+    | undefined;
+  if (!fileRow) {
+    throw new Error(
+      `facts 读不到：${rel} **没有索引记录**（facts 只读索引，不建索引）。\n` +
+        `  ★ 库在：${path.join(root, '.agent-io', 'cache.db')}\n` +
+        `  ★ 先建索引再来：explore_code action=read file="${rel}"（它会就地补这个文件周围的索引），` +
+        `或 import_project project_dir="${root}"`,
+    );
+  }
+  const abs = path.join(root, ...rel.split('/'));
+  if (!fs.existsSync(abs)) {
+    throw new Error(
+      `facts 拒绝返回：**文件已不存在**（${rel}）—— 索引是陈旧的。\n` +
+        `  ★ files 里还留着它：content_hash=${fileRow.content_hash.slice(0, 12)}…，索引于 ` +
+        `${new Date(fileRow.indexed_at).toISOString()}（${factsAge(fileRow.indexed_at)}前）\n` +
+        '  ★ 为什么不给旧快照：那是"已经不存在的文件"的最后一版，照着它写 = 把死代码写回来。\n' +
+        '  ★ 处理：重新索引（import_project / index_integrity refresh=true）把这条陈旧行清掉。',
+    );
+  }
+  const src = fs.readFileSync(abs, 'utf8');
+  const nowHash = contentHash(src);
+  if (nowHash !== fileRow.content_hash) {
+    throw new Error(
+      `facts 拒绝返回：**索引过期**（文件 ${rel} 已改，索引是 ${factsAge(fileRow.indexed_at)}前的）。\n` +
+        `  files.content_hash（索引时）= ${fileRow.content_hash.slice(0, 12)}…\n` +
+        `  contentHash(当前源码)      = ${nowHash.slice(0, 12)}…\n` +
+        `  索引时间 = ${new Date(fileRow.indexed_at).toISOString()}\n` +
+        '  ★ 不返回旧快照（signature / params / body_text 都是索引那一刻的副本，可能就是旧代码）：\n' +
+        '    拿着旧副本重写 = 把旧代码写回去 —— **给旧数据比报错坏得多**，所以这里只报错。\n' +
+        // ★ 别在这里写"用 read 补索引"：read 走 `ensureIndexAroundSeed`，**已索引**的文件只会被
+        //   "缝合"进去、**不会**重同步（实测：改完再 read 两次，files.content_hash 仍是旧值）⇒
+        //   真能修的是"会做 stat 比对后重同步"的那两条。
+        `  ★ 处理：① 重新索引后重试（import_project project_dir="${root}"，` +
+        `或 index_integrity refresh=true —— 两者都会按 stat/hash 重同步变更文件）；` +
+        `② 直接读源码：explore_code action=read file="${rel}"（read 读的是磁盘，不受这份旧索引影响）`,
+    );
+  }
+
+  // ── ③ 查（★ 身份列恒取：渲染与 body 准入都要用；出参时按 `fields` 剔掉没要的）──
+  const identity: FactsField[] = ['qualified_name', 'kind', 'start_line', 'end_line'];
+  const selected: FactsField[] = [...fields];
+  for (const f of identity) if (!selected.includes(f)) selected.push(f);
+  const wantBody = fields.includes('body_text');
+  if (wantBody && !selected.includes('body_hash')) selected.push('body_hash');
+
+  let where = "file_path = $f AND kind != 'file'";
+  const nameParams: Record<string, string> = { f: rel };
+  if (input.name) {
+    where += ' AND (name = $n OR qualified_name = $n)';
+    nameParams['n'] = input.name;
+  }
+  const total = (db.prepare(`SELECT COUNT(*) c FROM nodes WHERE ${where}`).get(nameParams) as { c: number }).c;
+  if (total === 0) {
+    if (!input.name) {
+      throw new Error(
+        `facts 读不到：${rel} 在索引里**没有任何符号行**（文件节点在，但没解析出符号）。\n` +
+          `  ★ 索引时间 ${new Date(fileRow.indexed_at).toISOString()}（${factsAge(fileRow.indexed_at)}前）—— ` +
+          '这多半是解析失败留下的空壳，重新索引（read / import_project）后再看。',
+      );
+    }
+    const names = (
+      db
+        .prepare("SELECT name FROM nodes WHERE file_path = $f AND kind != 'file' ORDER BY start_line LIMIT 200")
+        .all({ f: rel }) as Array<{ name: string }>
+    ).map((r) => r.name);
+    throw new Error(
+      `facts 查不到符号：${rel}#${input.name}\n` +
+        `  ★ 该文件索引里有 ${names.length} 个符号：${names.slice(0, 20).join(' / ')}${names.length > 20 ? ' …' : ''}\n` +
+        '  ★ 只按 `name` / `qualified_name` **精确匹配**（不做模糊）—— 名字写错就是查不到，不猜。',
+    );
+  }
+
+  const cols = selected.map((f) => FACTS_COLUMNS[f]).join(', ');
+  const rows = db
+    .prepare(`SELECT name, ${cols} FROM nodes WHERE ${where} ORDER BY start_line, id LIMIT $lim`)
+    .all({ ...nameParams, lim: limit }) as Array<Record<string, string | number | null>>;
+
+  // ── ④ 出参：JSON 列解码 + `body_text` 过准入 + 剔掉没要的列 ──
+  const symbols: Array<Record<string, unknown>> = [];
+  const bodyRejected: Array<{ qualified_name: string; reason: string; detail: string }> = [];
+  for (const raw of rows) {
+    const row: Record<string, unknown> = { name: String(raw['name']) };
+    for (const f of selected) {
+      const v = raw[f];
+      row[f] = FACTS_JSON_FIELDS.has(f) && typeof v === 'string' ? factsJsonOrRaw(v) : v === undefined ? null : v;
+    }
+    if (wantBody) {
+      const qn = String(raw['qualified_name']);
+      const b = readSymbolBody(db, {
+        file: rel,
+        qualifiedName: qn,
+        startLine: Number(raw['start_line']),
+        src,
+      });
+      if (b.ok) {
+        row['body_text'] = b.body;
+      } else if (b.reason === 'no_body') {
+        // ★ NULL 的语义见 schema.ts：该节点没有体（type/interface/class / 该语言的体不是单一 AST 节点）——
+        //   这不是"空体"，所以给 null 就是**库里的原话**，不需要额外的 reason 键。
+        row['body_text'] = null;
+      } else {
+        row['body_text'] = null;
+        bodyRejected.push({ qualified_name: qn, reason: b.reason, detail: b.detail });
+      }
+    }
+    for (const f of selected) if (!fields.includes(f)) delete row[f];
+    symbols.push(row);
+  }
+
+  // ── ⑤ 回执（★ 共 N / 返回 M 必须显式）──
+  const returned = symbols.length;
+  const truncated = total > returned;
+  const lines: string[] = [
+    `facts ${rel}${input.name ? `#${input.name}` : ''} · source=db · stale=false · ` +
+      `索引于 ${new Date(fileRow.indexed_at).toISOString()}（${factsAge(fileRow.indexed_at)}前）`,
+    `共 ${total} 个符号，返回 ${returned} 个${truncated ? `（limit=${limit}，★ 截断）` : ''}`,
+  ];
+  rows.forEach((raw, i) => {
+    // ★ 签名里带换行（多行形参）会把回执列表打散 ⇒ 展示时压成一行（`data.symbols` 里仍是原文）
+    const sigRaw = fields.includes('signature') && typeof raw['signature'] === 'string' ? raw['signature'] : '';
+    const sig = sigRaw ? ` — ${sigRaw.replace(/\s+/g, ' ').trim()}` : '';
+    lines.push(`  ${i + 1}. L${raw['start_line']}-${raw['end_line']} ${raw['kind']} ${raw['qualified_name']}${sig}`);
+  });
+  lines.push(
+    `字段：${fields.join(' / ')}` +
+      (fields.includes('body_text')
+        ? ''
+        : '（★ 未读 body_text：默认集不含这个重字段，要原文请 fields:["body_text"]）'),
+  );
+  if (bodyRejected.length) {
+    lines.push(
+      `★ ${bodyRejected.length} 个符号的 body_text **未返回**（准入不过，不是"没有体"）：` +
+        bodyRejected.map((b) => `${b.qualified_name}（${b.reason}: ${b.detail}）`).join('；'),
+    );
+  }
+
+  const data: FactsData = {
+    action: 'facts',
+    source: 'db',
+    stale: false,
+    project_dir: root,
+    file: rel,
+    ...(input.name ? { name: input.name } : {}),
+    fields,
+    limit,
+    total,
+    returned,
+    truncated,
+    index: {
+      content_hash: fileRow.content_hash,
+      indexed_at: new Date(fileRow.indexed_at).toISOString(),
+      indexed_age: factsAge(fileRow.indexed_at),
+    },
+    symbols,
+    ...(bodyRejected.length ? { body_rejected: bodyRejected } : {}),
+  };
+  return { message: lines.join('\n'), data };
 }
