@@ -46,10 +46,14 @@ const HANDLERS = 'src/application/design/handlers.ts';
 const { fileFacts } = await import(pathToFileURL(path.join(ROOT, 'dist/src/infrastructure/index/file_facts.js')).href);
 const realDep = fileFacts(ROOT, HANDLERS).deps[0];
 
+/**
+ * ★ 2026-10-22（task.expectations 去副本）：判据不再住卡（`TaskSpec` 无该字段）。
+ *   夹具把判据放在 `criteria` 上，调用时作**第二个参数**交给领域函数（不再冒充卡字段）。
+ */
 const card = (exps, id = 'file_src_application_design_handlers_ts') => ({
   id,
   summary: '夹具',
-  expectations: exps,
+  criteria: exps,
   state: 'candidate',
 });
 
@@ -87,7 +91,7 @@ const CASES = [
 let pass = 0;
 const fails = [];
 for (const c of CASES) {
-  const v = await cardStanding(c.card, { root: ROOT, nodes: c.nodes ?? nodes, judge: judgeExpectations });
+  const v = await cardStanding(c.card, c.card.criteria, { root: ROOT, nodes: c.nodes ?? nodes, judge: judgeExpectations });
   const ok = v.standing === c.expect;
   if (ok) pass++;
   else fails.push(`${c.name}: 期望 ${c.expect}，实际 ${v.standing}`);
@@ -152,7 +156,7 @@ const satCases = [
   ['后态有红 ⇒ satisfied:false', card([{ kind: 'file-exists', path: 'src/__nope__.ts' }]), false],
 ];
 for (const [name, c, expect] of satCases) {
-  const v = await isSatisfied(c, { root: ROOT, nodes, judge: judgeExpectations });
+  const v = await isSatisfied(c, c.criteria, { root: ROOT, nodes, judge: judgeExpectations });
   const ok = v.satisfied === expect;
   if (ok) pass++;
   else fails.push(`F9 ${name}: 期望 ${expect}，实际 ${v.satisfied}（standing=${v.standing}）`);

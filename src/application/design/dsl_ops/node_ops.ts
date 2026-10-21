@@ -17,9 +17,6 @@ import { parseScope, formatScope } from '../../../domain/scope.js';
 // ★★★ T328（2026-10-15，进度轴收归）：进度的**唯一权威写入**是 `overlay` 锚点的 `progress`
 //   （+ evidence 闸）。node 的 add/update 只是**入口** ⇒ 一律路由到 `updateStatus`，**不再裸写** base 的 `Node.status`。
 import { updateStatus } from './status_tools.js';
-// ★★★ 2026-10-20：卡上的判据 vs decision 的判据 —— **同一把尺**（`publish` 用的也是它，见 `task_ops.ts#sameCriteria`）。
-import { sameCriteria } from './task_ops.js';
-import { taskLevel, type TaskSpec } from '../../../domain/task_schema.js';
 
 /** 形状卡轻校验：type 枚举 + properties/items 递归（防止渲染垃圾） */
 function assertValidSchema(s: AnimationValueSchema, path: string): void {
@@ -344,44 +341,15 @@ function assertDecisionFieldShapes(next: NodeDecision): void {
 }
 
 /**
- * ★★★ 2026-10-20：**卡上的判据不许被 decision 静默换掉**（「做的是 A、验收的是 B」）。
+ * ★★★ 2026-10-22：**A6 闸已删除**（`task.expectations` 去副本的连带处置）。
  *
- * ## 病（实测）
- * `complete` 的验收判据是**卡上那份**（`task_ops.ts#completeTask` 读 `card.expectations`），
- * 而 decision 是**另一份**（只有 `publish` 才会搬上卡）⇒ 卡已 claimed/done 时直接改 decision：
- * 卡上挂旧判据、decision 已是新的，**全程无报错**（§2.3「不报错的错」）。
- *
- * ## 判据（复用 `task_ops.ts#sameCriteria`，与 `publish` 同一把尺）
- * · 相同 ⇒ **放行**（改 `rationale` / `consequences` / `status` 这些**不进验收**的字段是合法的）；
- * · 不同 ⇒ **拒**，并点名正路：`reopen` → 改 decision → `publish{reason}`。
- *
- * ## ★ 为什么只判 **L2 卡**
- * L1 建构卡的验收判据**就是当下的 decision**（`completeTask` 的 L1 尺走 `constructionVerdict`，读 decision 而非卡）
- * ⇒ 它没有「两份判据」可漂移；拦它反而会堵死 L1 唯一的收口路
- * （claimed 时补 `decision.summary` + 一条 phase=post 判据 —— 这正是 `claimTask` / `completeTask` 回执点名的下一步）。
- *
- * ## ★ 为什么 `reopened_at` 非空时放行
- * `reopen` 的语义就是「这张卡要**换判据**重做」—— 它只把 done ⇒ claimed，**不动判据**，
- * 判据的落点被指定为随后的 `publish{reason}`（唯一原子换判据处，见 `task_ops.ts#publishTask`）。
- * ⇒ 账本开着时改 decision 是**正路的第 2 步**；拦它等于把 `reopen → 改 decision → publish` 这条路堵死。
- * ★ 这段窗口并不「静默」：账本没结清时 `complete` 由 `reopenGate` 挡（判据没换 ⇒ 只算把旧判据再跑一遍）。
+ * 它原先防的是「卡上挂旧判据、decision 已是新的」（做 A 验 B）——
+ * 而那件事的**成因**是判据有两份。现在判据只住 `decision.expectations`（`TaskSpec` 无该字段），
+ * 「做 A 验 B」在结构上不可能发生 ⇒ 这道闸**失去前提**，随副本一起删除。
+ * ★ 剩下的问题（claimed 卡在办期间判据被改）不是「两份」而是「同一份变了」——
+ *   那属于读集 / `assumption_check` 的域，不在这里再写一道比较。
+ * ★ 结构不变量改由写入端钉死：`task_ops.ts#writeTask` 断言任务格**不得自持** `expectations`。
  */
-function assertCardCriteriaUnchanged(card: TaskSpec | undefined, summary: string, expectations: readonly unknown[]): void {
-  if (!card || (card.state !== 'claimed' && card.state !== 'done')) return;
-  if (taskLevel(card) !== 'L2') return;
-  // ★ 账本开着（reopen 之后）⇒ 改判据是**正路的第 2 步**，publish 才是那道原子换判据的闸。
-  if (card.reopened_at) return;
-  if (sameCriteria(card, summary, expectations)) return;
-  throw new Error(
-    `decision 被拒：该节点上的任务卡 state=${card.state}，而这次要写的 (summary, expectations) 与卡上的判据不同 —— ` +
-      `complete 的验收判据是卡上那份（task_ops.ts#completeTask）⇒ 直接改 decision 只会让「做的是 A、验收的是 B」。\n` +
-      `★ 卡上：summary=「${card.summary}」/ ${card.expectations?.length ?? 0} 条期望；` +
-      `本次：summary=「${summary}」/ ${expectations.length} 条期望。\n` +
-      `★ 正路（判据不能静默换）：reopen（done ⇒ claimed）→ 改 decision → publish（带 data.reason）` +
-      `—— publish 会原子地把判据换上去并结清重开账。\n` +
-      `★ 只改 rationale / consequences / status 等不进验收的字段 ⇒ 不受此闸（summary + expectations 没变，照常落盘）。`,
-  );
-}
 
 /**
  * 决策写入纯函数（缺口①：作者/时间线）。
@@ -397,13 +365,12 @@ export function applyDecisionWrite(
   prevDecision: NodeDecision | undefined,
   history: DecisionHistoryEntry[] | undefined,
   next: NodeDecision | null | undefined,
-  opts?: { author?: DecisionAuthor; agent?: string; note?: string; now?: string; card?: TaskSpec },
+  opts?: { author?: DecisionAuthor; agent?: string; note?: string; now?: string },
 ): { decision: NodeDecision | undefined; decision_history: DecisionHistoryEntry[] | undefined } {
   // 未传 decision 字段：不改
   if (next === undefined) return { decision: prevDecision, decision_history: history };
-  // null ⇒ 清除（★ 已领/已完成卡的判据**不许**这样被抹掉 —— 同下面那一道闸，见 `assertCardCriteriaUnchanged`）
+  // null ⇒ 清除（★ 判据只住 decision ⇒ 清除它 = 该节点的卡从此无判据；需要先想清“这活还算不算” ）
   if (next === null) {
-    assertCardCriteriaUnchanged(opts?.card, '', []);
     return { decision: undefined, decision_history: undefined };
   }
 
@@ -431,10 +398,6 @@ export function applyDecisionWrite(
         '★ 只改别的字段时**不必重给** `summary`（合并语义会保留旧值）；★ 若是首版，`summary` 必须给。',
     );
   }
-  // ★★★ 2026-10-20：**卡已 claimed/done（L2）⇒ 判据不许静默换**（唯一判据见 `assertCardCriteriaUnchanged`）。
-  //   ★ 判的是**合并后**的 decision（`{...prevDecision, ...next}`）—— 只给 `rationale` 时 summary/expectations 仍取旧值，
-  //     与卡上逐字相同 ⇒ 照常落盘；只有真换了判据才拒。
-  assertCardCriteriaUnchanged(opts?.card, decision.summary, decision.expectations ?? []);
   // ★★★ T329（2026-10-15）：`scope`（这条决策管哪一片）—— 给了就**走唯一解析落点**校验。
   //   ★ 唯一落点 = `domain/scope.ts` 的 `parseScope`（文法与解析只有那一处；这里**不另写一把尺**）。
   //   ★ 非法 ⇒ **响亮抛**（`parseScope` 的报错已含"缺参数 / 未知种类"与文法指引），**不静默、不自动丢弃**。
@@ -542,8 +505,6 @@ export function updateNode(input: UpdateNodeInput): EditResult {
       author,
       agent,
       note: decision_note,
-      // ★ 卡（`node.task`）一并传入：已 claimed/done 的卡上判据不许被 decision 静默换掉
-      card: node.task,
     });
     if (nd === undefined) {
       delete node.decision;

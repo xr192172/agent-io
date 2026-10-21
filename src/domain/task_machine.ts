@@ -241,11 +241,17 @@ export const RED_DISPOSITION: Record<RedAttribution['kind'], RedDisposition> = {
  * ```
  *
  * @param card 任务格（`state` 不参与判定；★ 状态迁移由调用方先过 `applicableTransitions`）
+ * @param expectations 这张卡的判据 —— ★ **调用方按 `expectationsOf(node)` 现取**（`task_schema.ts`），
+ *   本函数**不读卡**（任务格不自持判据；`task.expectations` 副本已删）
  */
-export async function cardStanding(card: TaskSpec, opts: StandingInput): Promise<StandingVerdict> {
+export async function cardStanding(
+  card: TaskSpec,
+  expectations: readonly Expectation[],
+  opts: StandingInput,
+): Promise<StandingVerdict> {
   // ★ 分区只在这里做一次（phase 是期望自带的属性 ⇒ 不需要任何清单，"记得剔除"这一步已不存在）
-  const post = postExpectations(card.expectations);
-  const pre = card.expectations.filter((e) => expectationPhase(e) === 'pre');
+  const post = postExpectations(expectations);
+  const pre = expectations.filter((e) => expectationPhase(e) === 'pre');
   const items = (xs: readonly Expectation[]) =>
     xs.map((expectation) => ({ node_id: card.id, node_label: card.summary, expectation }));
 
@@ -420,8 +426,12 @@ export interface SatisfactionVerdict {
  *   该收而没收"），若那个布尔只活在 `cardStanding` 的返回值里，"谁问收口"就会各自拼条件。
  * ★ 它与 `isClaimable` **同源**（都读 `cardStanding`）⇒ 一处判据、两个方向，不是两把尺。
  */
-export async function isSatisfied(card: TaskSpec, opts: StandingInput): Promise<SatisfactionVerdict> {
-  const verdict = await cardStanding(card, opts);
+export async function isSatisfied(
+  card: TaskSpec,
+  expectations: readonly Expectation[],
+  opts: StandingInput,
+): Promise<SatisfactionVerdict> {
+  const verdict = await cardStanding(card, expectations, opts);
   return { satisfied: verdict.standing === 'satisfied', standing: verdict.standing, reason: verdict.reason, verdict };
 }
 
@@ -594,7 +604,7 @@ export const TRANSITIONS: readonly TaskTransition[] = [
         '而"一个文件会被反复改"是常态 ⇒ 必须有重开路径',
         'owner 必填（谁来重开 = 谁接手）',
         'reason 必填（为什么重开）—— ★ 无理由的重开等于把"完成"当摆设',
-        '★ 重开不改判据（expectations 仍来自 decision）；要换判据请走 reopen → 改 decision → publish{reason}（先改再 reopen 会被 A6 闸拒）',
+        '★ 重开不改判据（判据就住在 decision 里，重开不碰它）；要换判据请走 reopen → 改 decision → publish{reason}',
         '★ 同一件事有两个入口：`reopen`（显式两步）与 `claim intent=modify`（一步对外，内部 = 本迁移 + t_claim）',
         '★ 落 `reopened_from`（上一轮 owner）与 `reopen_reason`（为什么又开）—— 换手要留痕，理由不能只活在回执里',
         'CAS：state=done 时才写（防并发）',
@@ -611,7 +621,7 @@ export const TRANSITIONS: readonly TaskTransition[] = [
         '★ 用户 2026-10-20 裁定：「void 是『这事不做了』，不是『这事不存在过』」⇒ 必须能重新立卡，而不是另开节点',
         '★★ 与 t_reopen 的分界（同一个词的两种活）：t_reopen = done → claimed「接手」（判据不变，原卡继续）；t_relaunch = void → candidate「重新立卡」（判据要重给，卡回到没人领）',
         'reason 必填（为什么重新立卡）—— ★ 无理由的复活等于把「作废」当摆设',
-        '★ 清空 expectations：candidate 的含义是「没人领、判据待 publish 重给」；保留旧判据会让 claim 立刻 satisfied（没活可干）⇒ 与「重新立卡」自相矛盾',
+        '★ 判据不自持：relaunch 既清不掉也改不了判据（唯一住处 = decision）；卡回到 candidate 后，若 decision 的判据已全绿，claim 会提示 intent:modify ⇒ 要重给判据就改 decision，再 publish',
         '★ 判据不在这里重给：relaunch 只把卡放回 candidate，重给判据的唯一入口仍是 publish（从 decision 翻）',
         '★ summary / evidence 保留（「这活存在过」的历史不删）；owner / claimed_at 必须为空（void 只能从 candidate 来，而 candidate 不持 owner）',
         'CAS：state=void 时才写（防并发）',

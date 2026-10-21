@@ -72,18 +72,27 @@ const D = 'file_src_b_ts'; // 复用 B：补一份"overlay 已播种 progress"�
 // ★ 2026-10-17（T13 · cardStanding）：`satisfied` 卡**不可领**（没活干不许领）⇒
 //   夹具卡必须是"有活干"的那一格（一条**未满足**的后态判据），否则 ④b 的 claim 会被拒。
 //   ★ 施工完成由 `markSatisfied()` 摆态（真实流程里是"把活干完"）。
-const card = (id, p) => ({
-  id,
-  summary: `T349 ${id}`,
-  expectations: [{ kind: 'file-exists', path: `${p}.todo`, why: 'T349 夹具：**未满足**的后态判据（有活干 ⇒ 可领）' }],
-  state: 'candidate',
-});
+/**
+ * ★ 2026-10-22（task.expectations 去副本）：判据只住 `decision.expectations`，卡上**不再有**该字段
+ *   （`TaskSpec` 已删）⇒ 夹具把判据放在节点的 decision 上。
+ */
+const card = (id) => ({ id, summary: `T349 ${id}`, state: 'candidate' });
+const criteria = (p) => [{ kind: 'file-exists', path: p, why: 'T349 夹具：**未满足**的后态判据（有活干 ⇒ 可领）' }];
 
-/** ★ 夹具摆态：把该卡的判据换成一条**已满足**的（模拟"活干完了"）。不是产品行为。 */
+/** ★ 夹具摆态：把该节点的 decision 判据换成一条**已满足**的（模拟"活干完了"）。不是产品行为。 */
 const markSatisfied = (id, p) => {
   const dsl = getDSL(FEAT);
   const nodes = dsl.geometry.nodes.map((n) =>
-    n.id === id ? { ...n, task: { ...n.task, expectations: [{ kind: 'file-exists', path: p, why: 'T349 夹具：活干完了（后态判据已满足）' }] } } : n,
+    n.id === id
+      ? {
+          ...n,
+          decision: {
+            ...(n.decision ?? {}),
+            summary: n.decision?.summary ?? `T349 ${id}`,
+            expectations: [{ kind: 'file-exists', path: p, why: 'T349 夹具：活干完了（后态判据已满足）' }],
+          },
+        }
+      : n,
   );
   saveDSL({ ...dsl, geometry: { ...dsl.geometry, nodes } });
 };
@@ -100,9 +109,23 @@ saveDSL({
     width: 400,
     height: 300,
     nodes: [
-      { id: A, type: 'file', label: 'a.ts', description: 'src/a.ts', task: card(A, 'src/a.ts') },
+      {
+        id: A,
+        type: 'file',
+        label: 'a.ts',
+        description: 'src/a.ts',
+        decision: { summary: `T349 ${A}`, expectations: criteria('src/a.ts.todo') },
+        task: card(A),
+      },
       { id: B, type: 'file', label: 'b.ts', description: 'src/b.ts' },
-      { id: C, type: 'file', label: 'c.ts', description: 'src/c.ts', task: card(C, 'src/c.ts') },
+      {
+        id: C,
+        type: 'file',
+        label: 'c.ts',
+        description: 'src/c.ts',
+        decision: { summary: `T349 ${C}`, expectations: criteria('src/c.ts.todo') },
+        task: card(C),
+      },
     ],
     edges: [],
   },

@@ -1090,8 +1090,6 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
     author,
     agent,
     note,
-    // ★ 卡（`node.task`）一并传入：已 claimed/done 的卡上判据不许被 decision 静默换掉
-    card: target.node.task,
   });
   if (nd === undefined) throw new Error('decision.update 内部错误：写入结果为 undefined（summary 已非空，不应发生）');
   target.node.decision = nd;

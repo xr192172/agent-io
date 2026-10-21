@@ -68,6 +68,8 @@ const { assertSourceWriteRegistered, collectGateCoverage } = await import('../di
 const { listAnnotations } = await import('../dist/src/application/design/dsl_ops/annotation_tools.js');
 const { postExpectations } = await import('../dist/src/domain/expectation.js');
 const { taskLevel } = await import('../dist/src/domain/task_schema.js');
+/** ★ 2026-10-22（task.expectations 去副本）：级别从**唯一的判据住处**（decision）现取 */
+const levelOf = (id) => taskLevel(nodeOf(id)?.decision?.expectations ?? []);
 
 const FEAT = 't353';
 const seed = (nodes, files = []) =>
@@ -146,9 +148,9 @@ console.log('════ ① publish 两级：无 decision ⇒ L1（旧行为�
   console.log(`     message = ${r.text.split('\n').slice(0, 2).join(' ｜ ')}`);
   chk(!r.isError && /L1 建构卡/.test(r.text), '①a **改后**：publish 成功，回执点名"L1 建构卡"', r.text.split('\n')[1]?.trim() ?? r.text);
   chk(
-    Array.isArray(card?.expectations) && card.expectations.length === 0,
-    '①b ★★ 卡上 **0 条期望** —— 没有编造任何实现判据',
-    `expectations=${JSON.stringify(card?.expectations)}`,
+    card !== undefined && !('expectations' in card),
+    '①b ★★ 卡上**没有** expectations 字段 —— 没有编造任何实现判据（判据只住 decision）',
+    `card keys=${JSON.stringify(card ? Object.keys(card) : null)}`,
   );
   chk(
     /待建构/.test(card?.summary ?? '') &&
@@ -162,7 +164,7 @@ console.log('════ ① publish 两级：无 decision ⇒ L1（旧行为�
     '①d 卡上 `discussion.micro` 记了 summary 的**出处**（可对拍）',
     JSON.stringify(card?.discussion),
   );
-  chk(taskLevel(card) === 'L1', `①e 派生级别 taskLevel(card) = ${JSON.stringify(taskLevel(card))}`);
+  chk(levelOf(P_NONE) === 'L1', `①e 派生级别 taskLevel(decision.expectations) = ${JSON.stringify(levelOf(P_NONE))}`);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -170,7 +172,7 @@ console.log('\n════ ①\' 连 semantics 都没有 ⇒ 如实报"需要�
 {
   const r = await run([{ type: 'task', op: 'publish', id: P_BARE }], `给无 semantics 的节点立 L1 卡 ${P_BARE}`);
   const card = nodeOf(P_BARE)?.task;
-  chk(!r.isError && card?.expectations?.length === 0, '①\'a 仍然能立 L1（0 条期望）', r.text.split('\n')[1]?.trim() ?? '');
+  chk(!r.isError && card !== undefined && !('expectations' in card), '①\'a 仍然能立 L1（卡上无 expectations 字段）', r.text.split('\n')[1]?.trim() ?? '');
   chk(
     (card?.summary ?? '').includes(P_BARE) && !/配置加载|有判据|收集失败/.test(card?.summary ?? ''),
     '①\'b 卡上**只有 id**（没借别人的语义、没编内容）',
@@ -194,17 +196,16 @@ console.log('\n════ ①\'\' 有可判的后态判据 ⇒ L2（逐字翻 
   const r = await run([{ type: 'task', op: 'publish', id: P_L2 }], `给有判据的节点立 L2 卡 ${P_L2}`);
   const card = nodeOf(P_L2)?.task;
   const dec = nodeOf(P_L2)?.decision;
-  chk(!r.isError && taskLevel(card) === 'L2', '①\'\'a 级别 = L2（★ 与 ①a 的 L1 同一函数判定）', r.text.split('\n')[1]?.trim() ?? '');
+  chk(!r.isError && levelOf(P_L2) === 'L2', '①\'\'a 级别 = L2（★ 与 ①a 的 L1 同一函数判定）', r.text.split('\n')[1]?.trim() ?? '');
   chk(card?.summary === dec?.summary, '①\'\'b summary **逐字等于** decision.summary', JSON.stringify(card?.summary));
   chk(
-    JSON.stringify(card?.expectations) === JSON.stringify(dec?.expectations),
-    `①\'\'c expectations **深等**（${dec?.expectations?.length} 条，逐字来自 decision）`,
-    JSON.stringify(card?.expectations?.map((e) => e.kind)),
+    card !== undefined && !('expectations' in card),
+    `①\'\'c 卡上**无** expectations 字段（判据只住 decision；${dec?.expectations?.length} 条在那里）`,
+    JSON.stringify(card ? Object.keys(card) : null),
   );
   chk(
-    (card?.expectations ?? []).length > 0 &&
-      (nodeOf(P_NONE)?.task?.expectations ?? []).length === 0,
-    '①\'\'d ★ 同一次读数里的对照：L2 有判据 / L1 一条没有（不是"都空"或"都满"）',
+    (dec?.expectations ?? []).length > 0 && nodeOf(P_NONE)?.decision?.expectations === undefined,
+    '①\'\'d ★ 同一次读数里的对照：L2 的 decision 有判据 / L1 那个节点没有（不是"都空"或"都满"）',
   );
 }
 
@@ -232,11 +233,13 @@ console.log('\n════ ①\'\'\' L1 能领 / 能收口 / 收口后升 L2（
     `建构完成后收口 ${P_NONE}`,
   );
   chk(!c2.isError && nodeOf(P_NONE)?.task?.state === 'done', '①\'\'\'e 建构完整 ⇒ complete **过**（L1 收口）', c2.text.split('\n')[1]?.trim() ?? '');
-  chk(/L1 建构完整/.test(c2.text), '①\'\'\'f 回执点名"L1 建构完整"（判据 = 建构，不是代码跑通）');
-
-  const up = await run([{ type: 'task', op: 'publish', id: P_NONE }], `L1 完成后升 L2 ${P_NONE}`);
+  chk(!c2.isError && nodeOf(P_NONE)?.task?.state === 'done', '①\'\'\'e 建构完整 ⇒ complete **过**（★ 判据来自 decision：此时已是 L2 读数）', c2.text.split('\n')[1]?.trim() ?? '');
+  // ★★★ 2026-10-22（用户裁决 A）：原 ①'''f / ①'''g 已**删除** ——
+  //   级别是派生值（`task_schema.ts#taskLevel`）。L1 卡一旦把 decision 的 post 判据写出来，
+  //   `taskLevel(expectationsOf(node))` 当场就是 L2 ⇒「L1 收口（回执点名建构完整）→ publish 升一级」
+  //   这两步流**不再存在**；收口与交接口都是 L2（交接 = release → 别人 claim 时已是 L2）。
+  //   ★ 缺口不在这里覆盖：另立 todo_l1-l2-handoff-gap（见 docs/INDEX.md §四）。
   const card = nodeOf(P_NONE)?.task;
-  chk(!up.isError && taskLevel(card) === 'L2', '①\'\'\'g L1(done) ⇒ publish **升一级**成 L2', up.text.split('\n')[1]?.trim() ?? '');
   chk(
     (card?.evidence ?? []).length >= 1,
     `①\'\'\'h ★ 旧 L1 卡的 evidence **逐条搬进新卡**（不静默丢证据）：${(card?.evidence ?? []).length} 条`,

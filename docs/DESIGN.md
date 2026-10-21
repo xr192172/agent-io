@@ -35,7 +35,7 @@
 ## 已修
 
 - A2 红归属收成 `RedAttribution` + `RED_DISPOSITION` 穷尽表（`task_machine.ts`）
-- A6 已领/已完成 L2 卡的判据改动被拒（`node_ops.ts#assertCardCriteriaUnchanged`）
+- ~~A6 已领/已完成 L2 卡的判据改动被拒（`node_ops.ts#assertCardCriteriaUnchanged`）~~ **2026-10-22 删除**：判据单源后「做 A 验 B」在结构上不可能（`TaskSpec` 已无 `expectations`）；写端改成「任务格不得自持 expectations」的断言（`task_ops.ts#writeTask`）
 - B2 读数快照已从 DSL 删除，且 `validateDSL` 见 `reading_now` / `block_readings` 即报（`validator.ts#validateNoReadingSnapshots`）
 - B3 `t_void` 有写端；`t_supersede` 已退场；不可走的迁移标 `unimplemented`（`task_machine.ts#TRANSITIONS`）
 - B4 `enabled` + `blocked_by_open_question` 合为三值 `TransitionState`

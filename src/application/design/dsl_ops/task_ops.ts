@@ -56,11 +56,14 @@ import {
 // ★ 2026-10-21（D-judge-port）：判定器的**实现**住 application，由这里**注入**给 domain 的状态机
 //   （`cardStanding` / `isSatisfied` 的 `opts.judge`）—— domain 不再向上 import application。
 import { judgeExpectations } from '../intent/expectations.js';
-import { expectationPaths, postExpectations } from '../../../domain/expectation.js';
+import { expectationPaths, postExpectations, type Expectation } from '../../../domain/expectation.js';
 import {
   ABSENT_FILE_HASH,
   codeFingerprintOf,
   fingerprintOf,
+  // ★ 2026-10-22（task.expectations 去副本）：**判据的唯一读法** —— 从节点的 decision 现取；
+  //   本文件不再读卡上的副本（`TaskSpec` 已无该字段）。
+  expectationsOf,
   // ★ 2026-10-21：`todo.update` / `retire` 要判「这张卡还开着吗」—— ★ 读**既有那一把尺**
   //   （done / void 都算了结），不在本文件里再写一遍 `state === 'done' || state === 'void'`
   //   （那正是 `task_schema.ts` 2026-10-20 花了一笔改成 `isClosedTaskState` 的病）。
@@ -81,6 +84,7 @@ import { appendTodoTombstone, todoJournalFile } from '../board/todo_journal.js';
 //   ★ 本文件只调它：读端（complete 的提示）与写端（add / follows）共读同一把尺，不各算一遍。
 import { assertFollowsTarget, buildTodoChains, chainBadge } from '../../../domain/todo_chain.js';
 import { contentHash } from '../../../infrastructure/index/symbols.js';
+import type { DecisionHistoryEntry } from '../../../domain/geometry.js';
 // ★★★ 2026-10-21（并发控制·账户）：**规范唯一定义处**（`domain/actor_spec.ts`）。
 //   ★ 这里只用它做两件事：① 写入的 `data.owner` 过关（新值必须合规）② 与顶层 `agent` 比"是不是同一个人"。
 //   ★ 也读**同一个**严格开关（`actorStrictMode`），不自己再读一次 env。
@@ -249,6 +253,17 @@ function assertTransition(from: TaskState, to: TaskState, action: string): void 
  *   权威始终是 `task.state`（`progressOf` 是唯一映射，读端见 `overlay.ts#applyOverlay`）。
  */
 function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
+  // ★★★ 2026-10-22（task.expectations 去副本）：**结构不变量** —— 任务格**不得自持判据**。
+  //   判据只住 `decision.expectations`；这里是最靠近落盘的一道，写在它上面照样会被拒。
+  //   ★ 旧 DSL 里的副本必须先迁掉（否则任何 task op 都会在这里响亮失败，而不是悄悄写回一份新副本）。
+  if ((next as unknown as Record<string, unknown>).expectations !== undefined) {
+    throw new Error(
+      `任务格被拒（写端结构不变量）：节点 "${nodeId}" 的 task 里带了 \`expectations\` —— ` +
+        `判据只住 \`decision.expectations\`（TaskSpec 已无该字段）。\n` +
+        `★ 要改判据 ⇒ 改 decision（\`edit_dsl { type:'decision', op:'update', … }\`）；` +
+        `★ 旧 DSL 里的历史副本 ⇒ 先执行迁移（去掉 task.expectations），再写卡。`,
+    );
+  }
   const dsl = getDesignSheet(feature);
   if (!dsl) throw new Error(`feature "${feature}" 在落盘前读不到 ⇒ 不写（绝不静默降级）。`);
   // ★★★ 2026-10-18（Q5）：**按"挂在哪"分叉** —— todo 写 `todos[]`，节点任务写 `geometry.nodes[].task`。
@@ -261,20 +276,27 @@ function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
 }
 
 /**
- * 判据是否与卡上现有的**逐字相同**（`summary` + `expectations`）。
+ * 判据在 `since` **之后**换过吗 —— `publish` 结清重开账的唯一判据。
  *
- * ★ 为什么需要它：`publish` 的"原地换判据"是**重开账**的唯一结清口（见
- *   `task_schema.ts#TaskSpec.reopened_at`）—— 若"换了等于没换"也放行，账就白结了。
- * ★ 比较时**按键名排序**：decision 里键顺序变了不是"换判据"（同一个判据换了写法）。
+ * ★ 为什么不能像以前那样「卡上那份 vs decision」：任务格已不自持判据（`TaskSpec` 无该字段）
+ *   ⇒ 「换了没换」只能与 **decision 自己的上一版**比；现成的上一版 = `decision_history`
+ *   （`applyDecisionWrite` 每次更新把旧决策压栈；栈顶 = 刚被换掉的那一版）。
+ * ★ 取 `since` 之后的**第一条**历史：它的 `.decision` 就是 `since` 那一刻的决策样子
+ *   （第一条更新的前一版）；`since` 之后没有任何更新 ⇒ 现在的 decision 就是那版。
  */
-export function sameCriteria(card: TaskSpec, summary: string, expectations: readonly unknown[]): boolean {
-  if ((card.summary ?? '') !== summary) return false;
-  return canonCriteria(card.expectations ?? []) === canonCriteria(expectations);
+function criteriaChangedSince(
+  node: { decision?: { expectations?: Expectation[] }; decision_history?: DecisionHistoryEntry[] },
+  since: string | null | undefined,
+): boolean {
+  if (!since) return false;
+  const later = (node.decision_history ?? []).filter((h) => h.at > since);
+  if (!later.length) return false;
+  return canonCriteria(later[0].decision?.expectations ?? []) !== canonCriteria(node.decision?.expectations ?? []);
 }
 
 /**
  * 判据集合的**规范形态**（按键名排序的 JSON，逐条一行）。
- * ★ 「两条判据是否相同」（`sameCriteria`）与「判据的输入指纹」（`fingerprintEvidence`）**共用这一把尺** ——
+ * ★ 「判据是否换过」（`criteriaChangedSince`，与 `decision_history` 比）与「判据的输入指纹」（`fingerprintEvidence`）**共用这一把尺** ——
  *   分叉的后果是"换了判据"和"指纹没变"各说一套，而那正是证据失效判据的根。
  */
 function canonCriteria(xs: readonly unknown[]): string {
@@ -323,12 +345,12 @@ export function codeFingerprintAt(root: string, rels: readonly string[]): { code
  * @param sourceRoot 被分析项目的根（feature 的 `source_root`）；缺省 ⇒ 只算 `what` / `input`
  */
 export function fingerprintEvidence(
-  card: Pick<TaskSpec, 'expectations'>,
+  expectations: readonly Expectation[],
   sourceRoot: string | undefined,
   nodeId: string,
   ev: ProgressEvidence,
 ): TaskEvidenceFingerprint {
-  const exp = card.expectations ?? [];
+  const exp = expectations;
   const what =
     ev.kind === 'expectations'
       ? `judgeExpectations:${nodeId}（${exp.length} 条判据）`
@@ -561,7 +583,7 @@ export function publishTask(input: TaskOpInput): EditResult {
   let advance = false;
   let refresh = false;
   if (existing && existing.state !== 'candidate') {
-    advance = existing.state === 'done' && taskLevel(existing) === 'L1' && level === 'L2';
+    advance = existing.state === 'done' && taskLevel(expectations) === 'L1' && level === 'L2';
     refresh = onClaimed && reason.length > 0;
     if (onClaimed && !refresh) {
       throw new Error(
@@ -576,7 +598,7 @@ export function publishTask(input: TaskOpInput): EditResult {
       throw new Error(
         `publish 被拒：节点 "${node_id}" 上已有一张 state=${existing.state} 的任务卡` +
           (existing.owner ? `（owner=${existing.owner}）` : '') +
-          `（级别 ${taskLevel(existing)}） —— 覆盖它等于把"已完成/已作废"的判据换掉。\n` +
+          `（级别 ${taskLevel(expectations)}） —— 覆盖它等于把"已完成/已作废"的判据换掉。\n` +
           `★ 允许重翻 \`candidate\`（没人领）；★ 允许 **L1 已 done 且现在够得上 L2** ⇒ 升一级；` +
           `★ 允许 **claimed 带 \`data.reason\`** ⇒ 原地换判据。\n` +
           (existing.state === 'done'
@@ -598,8 +620,14 @@ export function publishTask(input: TaskOpInput): EditResult {
   }
 
   const nextSummary = decision?.summary ?? '';
-  /** ★ 这次 publish 是否**真的换了判据**（只在有旧卡时有意义；重开账结清要靠它） */
-  const sameAsCard = existing ? sameCriteria(existing, nextSummary, expectations) : false;
+  /**
+   * ★ 这次 publish 是否**真的换了判据**（重开账结清要靠它）。
+   * ★ 判据住 decision（卡不自持）⇒ “换了没换” = 「重开那一刻的 decision」vs「现在」，
+   *   上一版从 `decision_history` 现取（`criteriaChangedSince`）；summary 仍与卡上那份比（summary 仍是副本）。
+   */
+  const sameAsCard = existing
+    ? (existing.summary ?? '') === nextSummary && !criteriaChangedSince(node, existing.reopened_at)
+    : false;
 
   if (level === 'L2') {
     // ★★ 已领卡的**原地换判据**：只换 summary + expectations，其余逐条保留（★ 尤其 evidence）。
@@ -617,7 +645,6 @@ export function publishTask(input: TaskOpInput): EditResult {
       writeTask(feature, node_id, {
         ...existing!,
         summary: nextSummary,
-        expectations: expectations.map((e) => ({ ...e })),
         // ★ 判据真换了 ⇒ 重开账结清（旧判据的"绿"不再算这次工作的证据）
         ...(existing?.reopened_at ? { reopened_at: null } : {}),
       });
@@ -625,9 +652,9 @@ export function publishTask(input: TaskOpInput): EditResult {
         message:
           // ★ 首行自足（回执只透出首行）
           `已原地换判据任务 "${node_id}"（state=claimed 不变，owner=${existing?.owner ?? '（空）'}）：` +
-          `summary + ${expectations.length} 条判据已按 decision 重写，evidence ${kept.length} 条**逐条保留**。\n` +
+          `summary 已按 decision 重写；判据本就住 decision（${expectations.length} 条已是生效值），evidence ${kept.length} 条**逐条保留**。\n` +
           `★ 理由：${reason}\n` +
-          `★ 只换 \`summary\` + \`expectations\`；state / owner / claimed_at / evidence / discussion 全保留 —— ` +
+          `★ 只换 \`summary\`；判据不搬家（唯一住处 = decision）；state / owner / claimed_at / evidence / discussion 全保留 —— ` +
           `这正是它比"release → publish → claim"少两步、又不丢证据的原因。\n` +
           `★ 内容来源 = \`geometry.nodes[${node_id}].decision\`（summary 逐字 + expectations 逐字）。\n` +
           `★ 进度派生：task.state=claimed ⇒ progress=in_progress。下一步直接干活 → \`complete\`（写闸只认 claimed，已就位）。`,
@@ -652,7 +679,6 @@ export function publishTask(input: TaskOpInput): EditResult {
       id: node.id,
       // ★★ 逐字来自决策卡（不裁剪、不改写、不拼 acceptance）—— 这样"卡的内容来自哪里"可对拍
       summary: decision?.summary ?? '',
-      expectations: expectations.map((e) => ({ ...e })),
       state: 'candidate',
       // ★ L1 ⇒ L2 升级：旧 L1 卡的证据**逐条搬进新卡**（TaskSpec 无卡片历史 ⇒ 不静默丢证据）
       ...(advance && existing?.evidence?.length ? { evidence: existing.evidence } : {}),
@@ -696,9 +722,8 @@ export function publishTask(input: TaskOpInput): EditResult {
   writeTask(feature, node_id, {
     id: node.id,
     summary: basis.summary,
-    // ★★★ **空数组**（不是我没填）：L1 的判据是"DSL 建构完整"，用现有六类期望**表达不出来**；
-    //   编一条 `file-exists` 之类 = **编造实现判据** ⇒ 那正是本笔要避免的。
-    expectations: [],
+    // ★ 不落判据：L1 的判据是"DSL 建构完整"（`constructionVerdict` 读 decision）——
+    //   这里**不编**一条实现判据，也不再往卡上写空副本（判据唯一住处 = decision）。
     state: 'candidate',
     // ★ L1 ⇒ L2 之外的重翻：若旧卡是 L1（candidate）也不带证据（从没被 complete 过）；带上更安全。
     ...(node.task?.evidence?.length ? { evidence: node.task.evidence } : {}),
@@ -825,6 +850,8 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     );
   }
   const { dsl, card } = loadTask(feature, node_id);
+  /** ★ 判据现取的落点：卡挂的那个节点（todo 卡没有节点 ⇒ 0 条判据） */
+  const cardNode = (dsl.geometry?.nodes ?? []).find((n) => n.id === node_id);
   // ★★★ 2026-10-21：`state=claimed` 单独立一条报文（默认的“没有 claimed→claimed 迁移”不指路）。
   //   ★ 判据：**重复 claim 不幂等**。claim 是一次**事件**（写 `claimed_at`）—— 放过重领就等于
   //     悄悄**重置租约**：TTL 回收再也看不见“这个人其实已经停了”，`releaseIfExpired` 变成装饰。
@@ -884,7 +911,7 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   }
 
   // ── L1 建构卡：可领性看「DSL 建构完整吗」，不看对拍 ───────────────────────────
-  const level = taskLevel(card);
+  const level = taskLevel(expectationsOf(cardNode));
   let levelNote: string;
   /** L2 的站位读数（L1 没有它 —— 不伪造成 `work`：那是把"判不了"读成"有活"） */
   let claimStanding: CardStanding | undefined;
@@ -910,7 +937,12 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   } else {
     const root = requireRoot(dsl as { source_root?: string });
     // ★★ 判据复用（不新造第二把尺）：`cardStanding` 按 phase 分区 + `judgeExpectations` 判 + 派生五值。
-    const standing = await cardStanding(card, { root, nodes: dsl.geometry?.nodes ?? [], judge: judgeExpectations });
+    //   ★ 判据由**这里**从节点 decision 现取（唯一住处）；`cardStanding` 不读卡。
+    const standing = await cardStanding(card, expectationsOf(cardNode), {
+      root,
+      nodes: dsl.geometry?.nodes ?? [],
+      judge: judgeExpectations,
+    });
     if (!isClaimable(standing.standing, intent)) {
       throw new Error(
         `claim 被拒（可领性：${standing.standing}）：${standing.reason}\n` +
@@ -965,8 +997,7 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     const computed = computeClaimReadSet({
       root: sourceRoot,
       cardId: node_id,
-      card,
-      node: (dsl.geometry?.nodes ?? []).find((n) => n.id === node_id),
+      node: cardNode,
       declared: input.read_set,
     });
     readSet = computed.readSet;
@@ -1149,6 +1180,8 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   const { feature, node_id } = input;
   const evidence = input.evidence;
   const { dsl, card } = loadTask(feature, node_id);
+  /** ★ 判据现取的落点：卡挂的那个节点（todo 卡没有节点 ⇒ 0 条判据） */
+  const cardNode = (dsl.geometry?.nodes ?? []).find((n) => n.id === node_id);
   assertTransition(card.state, 'done', 'complete');
 
   /**
@@ -1163,7 +1196,7 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   }
 
   // ★ L1 / L2 两条收口尺（★ 各自唯一，别在这里就地判期望条数）
-  const level = taskLevel(card);
+  const level = taskLevel(expectationsOf(cardNode));
   let closeNote: string;
   let standing: CardStanding | undefined;
   // ★★★ 2026-10-18（Q5）：**todo（无节点任务）没有判据** ⇒ 不走 L1/L2 两条尺。
@@ -1192,7 +1225,11 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
     closeNote = `L1 建构完整（decision.summary + 后态判据 ${c.post} 条）—— ★ 判据是"DSL 建构完整"，不是代码跑通`;
   } else {
     const root = requireRoot(dsl as { source_root?: string });
-    const satisfied = await isSatisfied(card, { root, nodes: dsl.geometry?.nodes ?? [], judge: judgeExpectations });
+    const satisfied = await isSatisfied(card, expectationsOf(cardNode), {
+      root,
+      nodes: dsl.geometry?.nodes ?? [],
+      judge: judgeExpectations,
+    });
     if (!satisfied.satisfied) {
       throw new Error(
         `complete 被拒（可收口性：${satisfied.standing}）：${satisfied.reason}\n` +
@@ -1220,7 +1257,7 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   //   指纹没变 ⇒ 这条证据仍有效 ⇒ 不必重跑；变了 ⇒ 自动失效 ⇒ 只重跑这一处。
   //   ★ `covers` 只从**判据自己点名的文件**算（`expectationPaths`），不发明"这套测试覆盖谁"；
   //     算不出来就只落 `what`/`input`，读端判 `unverifiable`（**不是**"有效"）。
-  const fingerprint = fingerprintEvidence(card, dsl.source_root, node_id, evidence!);
+  const fingerprint = fingerprintEvidence(expectationsOf(cardNode), dsl.source_root, node_id, evidence!);
   writeTask(feature, node_id, {
     ...card,
     state: 'done',
@@ -1353,7 +1390,7 @@ export async function reopenTask(input: TaskOpInput): Promise<EditResult> {
   return {
     message:
       // ★ 首行自足（`edit_dsl` 只透出每个 op 的**首行**）—— 所以"判据没变 + 账本已记 + 下一步"必须在首行。
-      `已重开任务 "${node_id}"（done → claimed，owner=${owner}${normalizedInline(ownerSign.adm)}）：判据仍是卡上那 ${(card.expectations ?? []).length} 条、` +
+      `已重开任务 "${node_id}"（done → claimed，owner=${owner}${normalizedInline(ownerSign.adm)}）：判据（decision 上现取）仍是那 ${expectationsOf((dsl.geometry?.nodes ?? []).find((n) => n.id === node_id)).length} 条、` +
       `**重开账已记（reopened_at=${now}）** —— 判据没换、又没有 at ≥ 该时刻的新证据，\`complete\` 会被拒。\n` +
       `  理由：${input.reason}\n` +
       `  ★ 两步：① \`edit_dsl { type:'decision', op:'update', id:'${node_id}', data:{ summary, expectations } }\`；` +
@@ -1399,13 +1436,13 @@ export function relaunchTask(input: TaskOpInput): EditResult {
       'relaunch 被拒：缺 `data.reason` —— 为什么重新立卡？（t_relaunch 第 1 条）无理由的复活等于把"作废"当摆设。',
     );
   }
-  const { card } = loadTask(feature, node_id);
+  const { dsl, card } = loadTask(feature, node_id);
   assertTransition(card.state, 'candidate', 'relaunch');
-  const dropped = (card.expectations ?? []).length;
+  /** ★ 重新立卡**不动判据**（判据不住卡）：这里只报读数 —— decision 上现有几条 */
+  const kept = expectationsOf((dsl.geometry?.nodes ?? []).find((n) => n.id === node_id)).length;
   writeTask(feature, node_id, {
     ...card,
     state: 'candidate',
-    expectations: [],
     owner: null,
     claimed_at: null,
     // ★ 重新立卡 = 新账：上一轮的重开欠账不跟过来（否则 publish 之后 complete 会被"旧账"拒）
@@ -1414,17 +1451,16 @@ export function relaunchTask(input: TaskOpInput): EditResult {
   return {
     message:
       // ★ 首行自足（`edit_dsl` 只透出每个 op 的**首行**）
-      `已重新立卡任务 "${node_id}"（void → candidate）：旧判据 ${dropped} 条**已清空**（它们属于已作废的那件事），summary / evidence 保留。\n` +
+      `已重新立卡任务 "${node_id}"（void → candidate）：判据不由卡持有（decision 上现有 ${kept} 条，**未清空**），summary / evidence 保留。\n` +
       `  理由：${reason}\n` +
-      `  ★ 下一步：① 改 decision（判据的唯一来源）；② \`{ type:'task', op:'publish', id:'${node_id}' }\` ⇒ 按 decision 重给判据；然后 \`claim\`。\n` +
-      `  ★ 现在直接 claim 会被拒（0 条后态判据 = 判不了）。\n` +
-      `  ★ 与 reopen 的区别：reopen = done → claimed「接手」（判据不变）；relaunch = void → candidate「重新立卡」（判据重给）。`,
+      `  ★ 下一步：① 改 decision（判据的唯一来源）；② \`{ type:'task', op:'publish', id:'${node_id}' }\` ⇒ 把 summary 对齐 decision；然后 \`claim\`。\n` +
+      `  ★ 判据没换（decision 仍是那 ${kept} 条）：直接 claim 可能被判无活（satisfied / unknowable）—— 那时正路是改 decision，不是清卡。\n` +
+      `  ★ 与 reopen 的区别：reopen = done → claimed「接手」；relaunch = void → candidate「重新立卡」（判据仍住 decision，不随卡走）。`,
     feature,
     data: {
       node_id,
       state: 'candidate' as TaskState,
-      expectations_dropped: dropped,
-      expectations_kept: 0,
+      expectations_kept: kept,
       progress: progressOf({ state: 'candidate' }),
     },
   };
@@ -1537,7 +1573,7 @@ export function voidTask(input: TaskOpInput): EditResult {
   if (!reason || !reason.trim()) {
     throw new Error('void 被拒：必须给 `data.reason`（为什么这张卡不需要做了 —— 不留理由的作废等于静默丢弃）。');
   }
-  const { card } = loadTask(feature, node_id);
+  const { dsl, card } = loadTask(feature, node_id);
   if (card.state === 'done' || card.state === 'void') {
     throw new Error(
       `void 被拒：state=${card.state} 只能从 candidate 作废。` +
@@ -1550,7 +1586,7 @@ export function voidTask(input: TaskOpInput): EditResult {
     message:
       `已作废任务 "${node_id}"：${card.state} → void。\n` +
       `★ 理由：${reason.trim()}\n` +
-      `★ 卡上的判据（${(card.expectations ?? []).length} 条）与证据都保留 —— 作废的是"这活要做"，不是"这活存在过"。`,
+      `★ 判据（decision 上 ${expectationsOf((dsl.geometry?.nodes ?? []).find((n) => n.id === node_id)).length} 条）与证据都保留 —— 作废的是"这活要做"，不是"这活存在过"。`,
     feature,
     data: { node_id, state: 'void' as TaskState, reason: reason.trim() },
   };
@@ -2087,7 +2123,6 @@ export function applyTodoOp(
   const card: TaskSpec = {
     id,
     summary,
-    expectations: [], // ★ todo 没有判据（不是代码，判不了）
     state: 'candidate',
     owner: null,
     // ★ 缺省 = 链根（不落 `follows: undefined`，让册上少一个空键）

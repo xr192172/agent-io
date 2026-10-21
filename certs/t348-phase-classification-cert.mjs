@@ -57,7 +57,13 @@ const HOME = fs.mkdtempSync(path.join(TMP, 'home-'));
 process.env.AGENT_IO_HOME = HOME;
 
 const { expectationPhase, postExpectations } = await import('../dist/src/domain/expectation.js');
-const { cardStanding, isClaimable, isSatisfied } = await import('../dist/src/domain/task_machine.js');
+const { cardStanding: standingRaw, isClaimable, isSatisfied: satisfiedRaw } = await import('../dist/src/domain/task_machine.js');
+/**
+ * ★ 2026-10-22（task.expectations 去副本）：判据不再住卡（TaskSpec 无该字段）⇒ 夹具把它挂在 `criteria` 上，
+ *   由这两行适配器作为**第二个参数**送给领域函数（卡上不再有 expectations）。
+ */
+const cardStanding = (c, opts) => standingRaw(c, c.criteria ?? [], opts);
+const isSatisfied = (c, opts) => satisfiedRaw(c, c.criteria ?? [], opts);
 const { editDslHandler } = await import('../dist/src/application/design/handlers.js');
 const { saveDSL, getFeaturesDir } = await import('../dist/src/infrastructure/storage.js');
 const { judgeExpectations } = await import('../dist/src/application/design/intent/expectations.js');
@@ -76,7 +82,7 @@ await syncFile(db, ROOT, path.join(ROOT, 'src/exists.ts'));
 const EDGE_ABSENT = { kind: 'edge-absent', from: 'src/exists.ts', to: 'src/missing.ts', why: 'T348 夹具：前态判据（不该依赖一个不存在的目标 ⇒ 未施工时天然成立）' };
 const POST_MISSING = { kind: 'file-exists', path: 'src/missing.ts', why: 'T348 夹具：不存在的后态判据' };
 const POST_OK = { kind: 'file-exists', path: 'src/exists.ts', why: 'T348 夹具：存在的后态判据' };
-const card = (id, expectations) => ({ id, summary: `T348 ${id}`, expectations, state: 'candidate' });
+const card = (id, criteria) => ({ id, summary: `T348 ${id}`, criteria, state: 'candidate' });
 // ★ 2026-10-21（D-judge-port）：判定器改成**注入**（`StandingInput.judge` 必填）—— 四段夹具共用这一份 opts
 //   （★ 必须放在 `ROOT` 定义**之后**：ESM 的 `const` 不是 hoisted 的，提前引用会 ReferenceError）。
 //   ★ 注入的仍是生产那个 `judgeExpectations`（本证验的是「phase 分区」，不是另写一个判定器）。

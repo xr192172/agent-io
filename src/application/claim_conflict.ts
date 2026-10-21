@@ -54,6 +54,7 @@
 
 import path from 'node:path';
 import { nodePath } from '../domain/overlay.js';
+import type { Expectation } from '../domain/expectation.js';
 import type {
   TaskReadSet,
   TaskReadSetBasis,
@@ -130,16 +131,23 @@ export function parseDeclaredReadSet(raw: unknown): DeclaredReadSet | undefined 
   return out;
 }
 
-/** 算读集要的输入（★ 只有这三样事实：项目根、卡、节点） */
+/** 算读集要的输入（★ 事实只有两样：项目根、卡挂的那个节点） */
 export interface ClaimReadSetInput {
   /** 被分析项目的根（`dsl.source_root`）—— 读集里的路径一律相对它 */
   root: string;
   /** 卡的 id（= 节点 id）；只用于报文与 note */
   cardId: string;
-  /** 卡本身（只读 `expectations`） */
-  card: Pick<TaskSpec, 'expectations'>;
-  /** 卡挂的那个节点（决定 `node-path` 这一级兜底；todo 卡没有节点） */
-  node?: { id: string; type?: string; description?: string; path?: string };
+  /**
+   * 卡挂的那个节点 —— ★ 判据也在这里现取（`node.decision.expectations`：判据唯一住处，
+   * 任务格不自持）；todo 卡没有节点 ⇒ 判据恒 0 条。
+   */
+  node?: {
+    id: string;
+    type?: string;
+    description?: string;
+    path?: string;
+    decision?: { expectations?: Expectation[] };
+  };
   /** 调用方在 claim 时显式声明的读集 */
   declared?: DeclaredReadSet;
 }
@@ -218,9 +226,9 @@ export function computeClaimReadSet(input: ClaimReadSetInput): ClaimReadSetResul
     }
   }
 
-  // ── ② 卡上的判据点名（机械可算；L1 卡 0 条 ⇒ 这一级什么都不产出）──
+  // ── ② 判据点名（机械可算；判据从节点的 decision 现取 —— 任务格不自持；L1 卡 0 条 ⇒ 这一级什么都不产出）──
   let edgeNotes = 0;
-  for (const e of input.card.expectations ?? []) {
+  for (const e of input.node?.decision?.expectations ?? []) {
     if (!e || typeof e !== 'object') continue;
     const kind = (e as { kind?: unknown }).kind;
     const p = (e as { path?: unknown }).path;

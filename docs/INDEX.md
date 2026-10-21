@@ -50,7 +50,7 @@
 | ~~A7 在 4 条写路没接 `actor`~~ 已修：`rename_file`/`rename_files`/`symbol_move`/`apply_refactor_plan` 全接 | ✅ |
 | A7 默认仍是"提醒+放行"（`AGENT_IO_ACTOR_STRICT=1` 才拦） | `write_gate.ts` |
 | 自报拦不住冒充（stdio 拿不到可信身份） | 架构限制，非缺陷 |
-| L1 建构卡收不了口（`publish` 只能立 L1，`complete` 要求建构完整） | `task_ops.ts` |
+| **L1/L2 交接**（诊断 §6-2）：级别是派生值 ⇒ L1 卡一旦补上 post 判据就**当场变 L2**（`complete` 按 L2 判）；旧的「L1 done → publish 升 L2」两步流**不存在**。当前交接 = `release`（卡回 candidate）→ 下一个人 `claim` 时已是 L2。★ 这条流要不要保留？待裁：`todo_l1-l2-handoff-gap` | `task_ops.ts` · `task_schema.ts#taskLevel` |
 | ~~`satisfied` / `done` 锁死文件~~ 已修：`claim` 加 `intent=work\|modify`（done 走 t_reopen+t_claim 一步，须给 reason，evidence 保留） | ✅ |
 | ~~`edit_code` 接受空操作~~ 已修：判据是"替换后内容是否变了"，报"空操作"且不重建索引 | ✅ |
 | ~~`refactor_pipeline` 不走闸~~ 已修（`t357` 23/0）；`diagnose` / `upgrade apply` 仍未过闸（分层障碍：`infrastructure → application`，要注入 `beforeWrite` 而非 import） | 见 §六 |
@@ -69,7 +69,7 @@
 | 批量删孤儿节点无一键路径（**有意**）：只能逐条走 `edit_dsl`；不得绕过它直接调 `updateFeature` | `edit_dsl` |
 | `certs/t350` 读 `docs/task-system-plan.dsl.json`——文件不在库（`docs/*` 被 ignore）⇒ 该证跑不起来 | `certs/t350-publish-task-cert.mjs` |
 | 全语言通用 = 语言能力表（`parser` / `compiler` / `testRunner` / `probes`），不是"多支持几门语言"；增量编译是 TS 专属，不进通用层 | `parse/languages.ts` · `verify.mjs` |
-| `task.expectations` 仍是 `decision.expectations` 的副本（靠 A6 闸防漂移，不是单一来源） | `task_schema.ts` · `task_ops.ts` |
+| ~~`task.expectations` 是 `decision.expectations` 的副本~~ 已修：`TaskSpec` 无该字段，判据只住 decision（`task_schema.ts#expectationsOf`）；旧 A6 闸随副本删除，写端改为结构断言 | ✅ |
 | `reopen` 的闸只堵"零动作"：伪造 `evidence.at` 时间戳仍能过 | `task_ops.ts#reopenGate` |
 
 ## 五、文档

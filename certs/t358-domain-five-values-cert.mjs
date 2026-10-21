@@ -34,7 +34,13 @@
  * ## 用法
  *   npm run build && node certs/t358-domain-five-values-cert.mjs
  */
-const { cardStanding, isClaimable, isSatisfied } = await import('../dist/src/domain/task_machine.js');
+const { cardStanding: standingRaw, isClaimable, isSatisfied: satisfiedRaw } = await import('../dist/src/domain/task_machine.js');
+/**
+ * ★ 2026-10-22（task.expectations 去副本）：判据不再住卡（TaskSpec 无该字段）⇒ 夹具把它挂在 `criteria` 上，
+ *   由这两行适配器作为**第二个参数**送给领域函数（卡上不再有 expectations）。
+ */
+const cardStanding = (c, opts) => standingRaw(c, c.criteria ?? [], opts);
+const isSatisfied = (c, opts) => satisfiedRaw(c, c.criteria ?? [], opts);
 
 let P = 0;
 let F = 0;
@@ -108,10 +114,10 @@ const NODES = [
   { id: 'card_residual', path: 'src/mine.ts' },
   { id: 'card_pending', path: 'src/pending.ts' },
   { id: 'dep_pending', path: 'src/dep.ts' },
-  { id: 'dep_done', path: 'src/done.ts', task: { id: 'dep_done', summary: 'dep done', expectations: [], state: 'done' } },
+  { id: 'dep_done', path: 'src/done.ts', task: { id: 'dep_done', summary: 'dep done', state: 'done' } },
 ];
 
-const card = (id, expectations) => ({ id, summary: `T358 ${id}`, expectations, state: 'candidate' });
+const card = (id, criteria) => ({ id, summary: `T358 ${id}`, criteria, state: 'candidate' });
 const opts = (judge = makeJudge()) => ({ root: ROOT, nodes: NODES, judge });
 const brief = (v) =>
   `standing=${v.standing} · sat=${JSON.stringify(v.satisfaction)} · vio=${JSON.stringify(v.violation)} · redSeen=${v.redSeen}`;

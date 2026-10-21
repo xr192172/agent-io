@@ -108,8 +108,27 @@ const REAL3 = {
   },
 };
 
+/**
+ * ★ 2026-10-22：只搬节点的**设计**（decision / path），不搬它的**任务卡** ——
+ *   卡是运行时状态（可能已被别人领），不属于夹具前置；旧版直接拷 `REAL` 会把真仓的
+ *   `task.state=claimed` 一起拷进来 ⇒ 夹具被外部待办“领没领”绑架（本笔实测撞上）。
+ */
+const designOf = (n) => {
+  const c = JSON.parse(JSON.stringify(n));
+  delete c.task;
+  return c;
+};
+
 const FEAT = 't350';
 const A = REAL.id;
+/**
+ * ★ A 的路径住在 `semantic.files`（节点上无 path）—— 闸要的是**仓库相对路径**，不是 undefined。
+ * ★ 同时给夹具节点补上 `path`：写闸的 `byPath` 是「path 优先、回落 description」⇒ 没有 path 的节点对闸是**瞎的**
+ *   （那会让 ⑤a/⑤b 变成“谁都不拦”的假绿）。
+ */
+const pathOfNode = (id) => PLAN.semantic?.files?.find((f) => f.id === id)?.path ?? PLAN.geometry.nodes.find((n) => n.id === id)?.path;
+const REL_A = pathOfNode(A);
+const REL_C = pathOfNode(REAL2.id);
 const C = REAL2.id;
 const D = REAL3.id; // ★ 有红的真卡（claim 链路用）
 const N = 'node_without_decision'; // ★ ⑥ 夹具：没有 decision（⇒ 现在立 L1 建构卡）
@@ -132,9 +151,9 @@ const seed = (overrides = {}) =>
       height: 300,
       nodes: [
         // ★ decision 逐字搬（JSON 深拷，夹具不改一个字段）
-        { ...JSON.parse(JSON.stringify(REAL)), description: REAL.path },
-        { ...JSON.parse(JSON.stringify(REAL2)), description: REAL2.path },
-        { ...JSON.parse(JSON.stringify(REAL3)), description: REAL3.path },
+        { ...designOf(REAL), path: REL_A },
+        { ...designOf(REAL2), path: REL_C },
+        { ...designOf(REAL3), path: REAL3.path },
         { id: N, type: 'file', label: 'no decision', description: 'src/domain/discussion_log.ts' },
         { id: N2, type: 'file', label: 'no card', description: 'src/domain/no_card_fixture.ts' },
         {
@@ -189,8 +208,8 @@ const gate = (rel) => {
 // ════════════════════════════════════════════════════════════════════
 console.log('════ ⑤a 闸对照一：无卡 ⇒ 拒（立卡之前）════');
 {
-  const g = gate(REAL.path);
-  chk(!g.ok, `立卡前：${REAL.path} 被闸拒`, (g.msg ?? '').split('\n')[0]);
+  const g = gate(REL_A);
+  chk(!g.ok, `立卡前：${REL_A} 被闸拒`, (g.msg ?? '').split('\n')[0]);
   chk(/op:'publish'/.test(g.msg ?? ''), '★ 拒绝文案已经指向 publish（不再只教 claim —— 那对新 feature 不可满足）');
 }
 
@@ -212,20 +231,20 @@ const DEC_A = JSON.parse(JSON.stringify(REAL.decision));
     `card=${JSON.stringify(after.task?.summary)}\n     decision=${JSON.stringify(DEC_A.summary)}`,
   );
   chk(
-    JSON.stringify(after.task?.expectations) === JSON.stringify(DEC_A.expectations),
-    `②b expectations **深等**（${DEC_A.expectations.length} 条，逐字来自 decision）`,
-    `card=${JSON.stringify(after.task?.expectations?.map((e) => e.kind))}`,
+    after.task !== undefined && !('expectations' in after.task),
+    '②b ★ 卡上**没有** expectations 字段（判据只住 decision —— publish 不再搬副本）',
+    `card keys=${JSON.stringify(after.task ? Object.keys(after.task) : null)}`,
   );
   chk(
-    after.task?.expectations?.every((e, i) => JSON.stringify(e) === JSON.stringify(DEC_A.expectations[i])),
-    '②c 逐条 expectations 与 decision 一致（顺序也不动）',
+    JSON.stringify(nodeOf(A)?.decision?.expectations) === JSON.stringify(DEC_A.expectations),
+    `②c decision 仍是判据的唯一住处（${DEC_A.expectations.length} 条未变）`,
   );
 }
 
 // ════════════════════════════════════════════════════════════════════
 console.log('\n════ ⑤b 闸对照二：有 candidate（未领）⇒ **仍拒**（闸只认 claimed）════');
 {
-  const g = gate(REAL.path);
+  const g = gate(REL_A);
   chk(!g.ok, 'candidate 不解锁落盘（否则"立了卡"就等于"已开工"）', (g.msg ?? '').split('\n')[0]);
 }
 
@@ -250,7 +269,7 @@ console.log('\n════ ④ claim（candidate ⇒ claimed；★ 用**有红*
   const n = nodeOf(D);
   console.log('     message =', r.text.split('\n')[0]);
   chk(!r.isError, '④a 工具层 claim 成功');
-  chk(n.task?.state === 'claimed' && n.task?.owner === 'agent-t350', `④a state=${n.task?.state} owner=${n.task?.owner}`);
+  chk(n.task?.state === 'claimed' && n.task?.owner === 'agent:agent-t350', `④a state=${n.task?.state} owner=${n.task?.owner}（★ owner 已按 actor_spec 归一化）`);
   chk(progressOf(n.task) === 'in_progress' && n.status === 'in_progress', `④b claimed ⇒ progress=in_progress（${n.status}）`);
 }
 
@@ -269,9 +288,9 @@ console.log('\n════ ⑥ 两级分界：没有 decision ⇒ **L1 建构�
   chk(!r1.isError && /L1 建构卡/.test(r1.text), '⑥a 立卡**成功**，回执点名"级别 = L1 建构卡"', r1.text.split('\n')[0]);
   chk(card?.state === 'candidate', `⑥b 卡落在节点上：state=${JSON.stringify(card?.state)}`);
   chk(
-    Array.isArray(card?.expectations) && card.expectations.length === 0,
-    '⑥c ★★ 卡上 **0 条期望** —— L1 的验收是"DSL 建构完整"，**不编实现判据**',
-    `expectations=${JSON.stringify(card?.expectations)}`,
+    card !== undefined && card.state === 'candidate' && !('expectations' in card),
+    '⑥c ★★ 卡上**没有** expectations 字段 —— L1 的验收是"DSL 建构完整"，**不编实现判据**',
+    `card keys=${JSON.stringify(card ? Object.keys(card) : null)}`,
   );
   chk(
     /待建构/.test(card?.summary ?? '') && (card?.summary ?? '').includes(N) && /讨论记录/.test(card?.summary ?? ''),
@@ -330,7 +349,7 @@ console.log('\n════ ⑦ 不覆盖已领的卡（claimed 上再 publish �
 {
   const r = await run([{ type: 'task', op: 'publish', id: D }], `试图覆盖已领的卡 ${D}`);
   chk(r.isError && /state=claimed/.test(r.text), '⑦a 拒绝并点名已有卡的 state', r.text.split('\n')[0]);
-  chk(nodeOf(D)?.task?.owner === 'agent-t350', '⑦b 已领的卡**原样还在**（owner 没被抹掉）');
+  chk(nodeOf(D)?.task?.owner === 'agent:agent-t350', '⑦b 已领的卡**原样还在**（owner 没被抹掉；★ 归一化后的规范格式）');
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -361,8 +380,9 @@ console.log('\n════ ⑨ "自己坏"对照：把卡改成手写内容 ⇒
     `card=${JSON.stringify(card?.summary)} · decision=${JSON.stringify(decisionNow.summary)}`,
   );
   chk(
-    JSON.stringify(card?.expectations) === JSON.stringify(decisionNow.expectations),
-    '⑨b 但 expectations 仍等 ⇒ 变的只有被篡改的那一格（对照不是"整体比较失败"）',
+    card !== undefined && !('expectations' in card) && (decisionNow.expectations ?? []).length > 0,
+    '⑨b 且卡上**根本没有** expectations 字段（判据只住 decision ⇒ 没有"第二份"可比）',
+    `card keys=${JSON.stringify(card ? Object.keys(card) : null)}`,
   );
 }
 
@@ -376,9 +396,9 @@ console.log('\n════ ⑩ 有 decision 但**只有前态判据** ⇒ 也�
     r.text.split('\n')[0],
   );
   chk(
-    nodeOf(PRE)?.task?.expectations?.length === 0,
-    `⑩b 卡上 0 条期望（★ 不把前态判据抄进 L1 卡 —— 抄进去就变成"天然全过"的假判据）`,
-    JSON.stringify(nodeOf(PRE)?.task?.expectations),
+    nodeOf(PRE)?.task !== undefined && !('expectations' in nodeOf(PRE).task),
+    '⑩b 卡上**没有** expectations 字段（★ L1 卡不抄前态判据 —— 抄进去就是"天然全过"的假判据）',
+    JSON.stringify(Object.keys(nodeOf(PRE)?.task ?? {})),
   );
 }
 

@@ -268,14 +268,16 @@ export function evidenceFreshness(
  * **任务格**（`design/<f>.dsl.json` 的 `geometry.nodes[].task`）的结构。
  *
  * ★ `id` = `node_id`（任务与它挂在的节点**同一个 id**，不另立第二套 id 体系）。
- * ★ `expectations` 是**六类可判期望**（`domain/expectation.ts`），这里只是**引用**——
- *   判定器住 `application/design/intent/expectations.ts#judgeExpectations`（唯一一把尺）。
+ * ★ **本格不自持判据**（2026-10-22 · task.expectations 去副本）：判据只住节点的
+ *   `decision.expectations`，读端一律经 `expectationsOf(node)` 现取 ——
+ *   曾经的 `expectations` 副本 + A6 防漂移闸已删除（副本按定义会烂：实测已有一张停在旧版 3/5）。
+ *   判定器仍住 `application/design/intent/expectations.ts#judgeExpectations`（唯一一把尺）。
  */
 /**
  * **一条内容修订**（`TaskSpec.history[]` 的元素）—— `todo.update` 的旧值栈。
  *
  * ★ 为什么是 `{from, to}` 而不是「存一份旧的 TaskSpec 全文」（`DecisionHistoryEntry` 存的是旧决策全文）：
- *   任务卡**可改的内容只有 `summary`** 一句人话（判据 `expectations` 由 `publish` 从 decision 翻来，
+ *   任务卡**可改的内容只有 `summary`** 一句人话（判据不自持、住 `decision.expectations`，
  *   不从 `todo.update` 改）⇒ 存全文是**多余**，而且会让人以为「判据也变过」。
  *   ★ 但 `from` / `to` 必须**逐字**（不是「改了什么」的描述）—— 那是能被对拍的事实。
  */
@@ -368,8 +370,6 @@ export interface TaskSpec {
   id: string;
   /** 要做什么（人读一句） */
   summary: string;
-  /** 判据（六类，对着 DB 判） */
-  expectations: Expectation[];
   /** 四态之一 */
   state: TaskState;
   /**
@@ -540,6 +540,28 @@ export interface TaskSpec {
  *   已有**可判的** expectations ⇒ L2"——"太粗"的可判形态就是**没有后态判据**
  *   （全 `phase='pre'` 的卡按 `cardStanding` 必 `unknowable` ⇒ 翻成 L2 也**必然领不了**）。
  */
-export function taskLevel(card: Pick<TaskSpec, 'expectations'>): 'L1' | 'L2' {
-  return postExpectations(card.expectations ?? []).length > 0 ? 'L2' : 'L1';
+/**
+ * ★★★ **卡的判据唯一读法**（2026-10-22 · `task.expectations` 去副本）。
+ *
+ * 判据只住节点的 `decision.expectations`；任务格**不自持**（`TaskSpec` 里已无该字段）。
+ * ⇒ 「这张卡要验什么」= 这个函数；cardStanding / taskLevel / publish / patrol / 读集
+ *   全部经它现取，不许任何一处再去读卡上的副本（副本按定义会烂：实测 `diff_views` 卡停在 3/5）。
+ *
+ * ★ 为什么参数是**结构类型**（只认 `decision.expectations`）而不是 `Node`：
+ *   本文件是 domain 的形状层，引 `Node` 会与 `geometry.ts` 互指；todo 卡根本没有节点 ⇒ 传 `undefined` 即「0 条」。
+ */
+export interface CriteriaHome {
+  decision?: { expectations?: Expectation[] };
+}
+
+export function expectationsOf(home: CriteriaHome | null | undefined): Expectation[] {
+  return home?.decision?.expectations ?? [];
+}
+
+/**
+ * 卡的级别（L1/L2）—— **派生值**，不落盘。
+ * ★ 入参是**判据本身**（不是卡）：判据的唯一来源是 decision（见 {@link expectationsOf}）。
+ */
+export function taskLevel(expectations: readonly Expectation[]): 'L1' | 'L2' {
+  return postExpectations(expectations).length > 0 ? 'L2' : 'L1';
 }

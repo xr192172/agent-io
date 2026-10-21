@@ -62,7 +62,13 @@ fs.writeFileSync(path.join(ROOT, 'src/b.ts'), 'export const b = 2;\n', 'utf-8');
 fs.writeFileSync(path.join(ROOT, 'src/a.ts'), "import { b } from './b.js';\nexport const a = b;\n", 'utf-8');
 fs.writeFileSync(path.join(ROOT, 'src/fixture.weird'), 'package fixture\n\nfunc Keep() {}\n', 'utf-8');
 
-const { cardStanding, isClaimable, isSatisfied } = await import('../dist/src/domain/task_machine.js');
+const { cardStanding: standingRaw, isClaimable, isSatisfied: satisfiedRaw } = await import('../dist/src/domain/task_machine.js');
+/**
+ * ★ 2026-10-22（task.expectations 去副本）：判据不再住卡（TaskSpec 无该字段）⇒ 夹具把它挂在 `criteria` 上，
+ *   由这两行适配器作为**第二个参数**送给领域函数（卡上不再有 expectations）。
+ */
+const cardStanding = (c, opts) => standingRaw(c, c.criteria ?? [], opts);
+const isSatisfied = (c, opts) => satisfiedRaw(c, c.criteria ?? [], opts);
 // ★ 2026-10-21（D-judge-port）：判定器改成**注入**（`StandingInput.judge` 必填）—— 这里注入的就是生产那个
 //   `judgeExpectations`（不是为了夹具另写一个实现；本证验的仍是「五值在主表上的读数」）。
 const { judgeExpectations } = await import('../dist/src/application/design/intent/expectations.js');
@@ -84,7 +90,7 @@ const PRE_RED = { kind: 'edge-absent', from: 'src/a.ts', to: 'src/b.ts', why: 'T
 const PRE_GREEN = { kind: 'edge-absent', from: 'src/a.ts', to: 'src/c.ts', why: 'T351 夹具：a 不依赖 c（天然成立）' };
 const POST_UNSUPPORTED = { kind: 'symbol-exists', path: 'src/fixture.weird', symbol: 'Keep', why: 'T351 夹具：.weird 扩展名不走任何解析器 ⇒ 判不了（★ 别用 .go/.py/.rs：它们在本仓是**支持**的语言，会判成 pass —— 实测踩过）' };
 
-const card = (id, expectations) => ({ id, summary: `T351 ${id}`, expectations, state: 'candidate' });
+const card = (id, criteria) => ({ id, summary: `T351 ${id}`, criteria, state: 'candidate' });
 const NODES = [
   { id: 'node_satisfied', path: 'src/ok.ts' },
   { id: 'node_work', path: 'src/missing-own.ts' },
@@ -215,7 +221,7 @@ const run = async (ops, reason) => {
 const seedClaimed = (id) => {
   const dsl = getDSL(FEAT);
   const nodes = dsl.geometry.nodes.map((n) =>
-    n.id === id ? { ...n, task: { id, summary: n.decision.summary, expectations: n.decision.expectations.map((e) => ({ ...e })), state: 'claimed', owner: 'agent-t351', claimed_at: new Date().toISOString() } } : n,
+    n.id === id ? { ...n, task: { id, summary: n.decision.summary, state: 'claimed', owner: 'agent-t351', claimed_at: new Date().toISOString() } } : n,
   );
   saveDSL({ ...dsl, geometry: { ...dsl.geometry, nodes } });
 };

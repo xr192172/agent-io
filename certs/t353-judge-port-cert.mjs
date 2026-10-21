@@ -45,7 +45,13 @@ process.env.AGENT_IO_HOME = HOME; // ★ 必须在任何模块读它之前
 // ── 夹具代码根：只要一个存在的文件（`file-exists` 判据够用，且**不需要索引**）──
 fs.writeFileSync(path.join(ROOT, 'src/ok.ts'), 'export const ok = 1;\n', 'utf-8');
 
-const { cardStanding, isSatisfied } = await import('../dist/src/domain/task_machine.js');
+const { cardStanding: standingRaw, isSatisfied: satisfiedRaw } = await import('../dist/src/domain/task_machine.js');
+/**
+ * ★ 2026-10-22（task.expectations 去副本）：判据不再住卡（TaskSpec 无该字段）⇒ 夹具把它挂在 `criteria` 上，
+ *   由这两行适配器作为**第二个参数**送给领域函数（卡上不再有 expectations）。
+ */
+const cardStanding = (c, opts) => standingRaw(c, c.criteria ?? [], opts);
+const isSatisfied = (c, opts) => satisfiedRaw(c, c.criteria ?? [], opts);
 const { judgeExpectations } = await import('../dist/src/application/design/intent/expectations.js');
 
 let P = 0;
@@ -59,7 +65,7 @@ const POST_OK = { kind: 'file-exists', path: 'src/ok.ts', why: 'T353 夹具：�
 const POST_MISSING = { kind: 'file-exists', path: 'src/nope.ts', why: 'T353 夹具：不存在的后态判据' };
 // ★ 只用它来“凑出一批前态”（pre 批由 stub 接走，所以**不需要索引**）
 const PRE_EDGE = { kind: 'edge-absent', from: 'src/ok.ts', to: 'src/zzz.ts', why: 'T353 夹具：前态存在性' };
-const card = (id, expectations) => ({ id, summary: `T353 ${id}`, expectations, state: 'candidate' });
+const card = (id, criteria) => ({ id, summary: `T353 ${id}`, criteria, state: 'candidate' });
 const opts = (judge, nodes = []) => ({ root: ROOT, nodes, judge });
 
 /** 一份**空的**报告（= 一个“什么也没判”的判定器） */

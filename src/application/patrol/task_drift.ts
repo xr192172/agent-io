@@ -30,7 +30,7 @@ import { renderLiveFromDb } from '../../infrastructure/index/live_render.js';
 import { scanRevOf, type ScanRev } from '../../infrastructure/index/scan_rev.js';
 import { judgeExpectations } from '../design/intent/expectations.js';
 import { isSatisfied, releaseIfExpired, type CardStanding, type LeaseReleaseEvent } from '../../domain/task_machine.js';
-import { isClosedTaskState, type TaskSpec, type TaskState } from '../../domain/task_schema.js';
+import { expectationsOf, isClosedTaskState, type TaskSpec, type TaskState } from '../../domain/task_schema.js';
 import { expectationPhase } from '../../domain/expectation.js';
 
 /** 一条红判据的**点名**（不是计数 —— 计数说不出"哪条"）。 */
@@ -137,9 +137,12 @@ export async function patrolDrift(feature: string, opts: PatrolOptions): Promise
   //   （live 图可能是旧索引 ⇒ 新文件"不在图里"但**在盘上**，那是索引陈旧，不是节点消失）。
   const cards: TaskSpec[] = [];
   const pathByCard = new Map<string, string>();
+  /** card.id → 它挂的那个节点 —— ★ 判据从这里的 `decision.expectations` 现取（任务格不自持） */
+  const nodeByCard = new Map<string, (typeof design.geometry.nodes)[number]>();
   for (const n of design.geometry.nodes ?? []) {
     if (!n.task) continue;
     cards.push(n.task);
+    nodeByCard.set(n.task.id, n);
     const p = (n as { path?: string }).path;
     if (p) pathByCard.set(n.task.id, p);
   }
@@ -149,7 +152,7 @@ export async function patrolDrift(feature: string, opts: PatrolOptions): Promise
 
   // ── 3. 判定器：一次批量，把"哪条判据红"点名出来（★ 判据只有这一把尺） ──
   const items = open.flatMap((c) =>
-    (c.expectations ?? []).map((e) => ({ node_id: c.id, node_label: c.summary, expectation: e })),
+    expectationsOf(nodeByCard.get(c.id)).map((e) => ({ node_id: c.id, node_label: c.summary, expectation: e })),
   );
   const judged = await judgeExpectations(opts.root, items);
   const redBy = new Map<string, { post: DriftRed[]; pre: DriftRed[]; unsupported: number }>();
@@ -177,7 +180,11 @@ export async function patrolDrift(feature: string, opts: PatrolOptions): Promise
     // ★ 2026-10-21（D-judge-port）：判定器**注入**进状态机（domain 不再向上 import application）——
     //   本文件已经 import 了同一个 `judgeExpectations`（上面那一次批量判定用的就是它），所以注入的
     //   与批量判定**是同一把尺**（不是另起一个实现）。
-    const verdict = await isSatisfied(card, { root: opts.root, nodes: standingNodes, judge: judgeExpectations });
+    const verdict = await isSatisfied(card, expectationsOf(nodeByCard.get(card.id)), {
+      root: opts.root,
+      nodes: standingNodes,
+      judge: judgeExpectations,
+    });
     report.cards.push({
       id: card.id,
       state: card.state,
