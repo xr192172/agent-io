@@ -1,7 +1,7 @@
 {
   "id": "task-system-plan.translate",
   "kind": "translate_book",
-  "version": 2,
+  "version": 3,
   "feature": "task-system-plan",
   "meta": {
     "source_feature": "task-system-plan",
@@ -9,7 +9,8 @@
     "target_language": "go",
     "target_root": null,
     "created_at": "2026-10-21T12:45:00.000Z",
-    "revised_at": "2026-10-21T13:05:00.000Z",
+    "revised_at": "2026-10-21T13:22:00.000Z",
+    "types_rule": "types 只收【目标侧写法与源侧不同】的；同名映射（如 ActorKind→ActorKind）不进 types，按恒等处理，实质内容记在 symbols 那一行。⇒ 所以「某类型不在 types 里」= 它按同名恒等翻，不是漏了。",
     "baseline": {
       "db": ".agent-io/cache.db",
       "scanRev": 1792585939208,
@@ -41,15 +42,19 @@
       "rule": "verified / diff 只由对拍工具回填，且必须写明方向。本轮两者 available=false（唯一写入方 translate_go_ts 只做 Go→TS）⇒ 册里不允许出现这两个态；出现了就是伪造。"
     },
     "unverified_shapes": [
-      "Type#method（无 class 样例）",
-      "泛型实参（样本过小）"
+      "泛型实参（样本过小：全库 typeParamsNonEmpty 仅 20 条，T 在类型位置出现 37 次）",
+      "继承 / 实现（extends / implements）：两个样例都没有父类或接口实现 ⇒ 未验",
+      "getter / setter 的账：DB 里与方法同形（实测 KeyPool 的 `get length()` 记成 signature `length(): number`、modifiers 为空）⇒ 分不出 getter/setter；两个样例都没有 getter/setter ⇒ 其账目形态未验"
     ],
     "notes": [
       "类型名统计必须先剥注释：47 条类型表达式内嵌 JSDoc，不剥会数出只存在于注释里的类型名（实测假名：RESOLVE_EXTS / T356 / Lib / Use —— 第一版读数就把它们当成了外部类型）。",
       "members[].type 带前导 `': '`（实测 5689 条），params[].type 不带 ⇒ 同一份 JSON 两处格式不一致，消费方必须先剥前缀。",
       "带默认值的形参没有 type 键（实测全库 paramsNoType=115）⇒ 类型覆盖率天生缺一块，Top N 天然偏低。",
       "kind='type' 的类型别名只有 12/203 带 members ⇒ 「并集的成员」不在 DB 里，类型层要枚举字面量必须回源码读。",
-      "结构型类型位置占 1609/12668=12.7%（内联对象 661 / 含 null|undefined 的联合 726 / 真联合 279 / 函数类型 92，四类有重叠）⇒ types 只覆盖名字，结构归 shapes。"
+      "结构型类型位置占 1609/12668=12.7%（内联对象 661 / 含 null|undefined 的联合 726 / 真联合 279 / 函数类型 92，四类有重叠）⇒ types 只覆盖名字，结构归 shapes。",
+      "class 节点（:151 DesignDSLStore）的 members 有 12 条，但里面混着 1 个字段（member_kind=property）和 11 个方法（member_kind=method），且方法的参数/可见性都不在里面 ⇒ 方法以 kind='method' 的节点为准，class.members 不能当第二份事实用。",
+      "方法节点的 id 形如 `file#<parent>.<method>`，parent 是**名字**（不一定是类：`design_diff.ts#designDiff.checkEdgeInSource` 的 parent 是个 const 对象）⇒ 不能只凭 `.` 判断「这是类方法」，要配 kind='method' + 源码看。",
+      "可见性在 DB 里**部分可分辨**（实测）：`private` 与 `static` 都进了 modifiers（DesignDSLStore.writeDoc → [\"private\"]；TSComparator.loadDesign → [\"static\"]），但 **getter/setter 不可分辨**（KeyPool 的 `get length()` 就是普通 method 形状）⇒ 账上按 kind='method' + modifiers 记，getter 的「无括号访问」改写只能靠读源码。"
     ],
     "origin_rule": "三条账（types / symbols / shapes）每条都显式写 origin；source=源侧本来就有，added=源侧不存在、为目标新增（其 from 允许为 null）。汇总必须分开报数，不许把两类加成一个总数。",
     "progress": {
@@ -67,12 +72,6 @@
   },
 
   "types": [
-    {
-      "from": "string",
-      "to": "string",
-      "origin": "source",
-      "note": "全局 · 最高频（src/ ts 类型位置 7139 次 / 12668）。Go string 不可变、UTF-8，与 TS 同语义；唯一差异是 TS 的 string 可 null 时写作 `string | null`，那是下面那条。"
-    },
     {
       "from": "boolean",
       "to": "bool",
@@ -157,25 +156,6 @@
       "origin": "source",
       "note": "★ 必须人工：第三方（node:http）66 + 61 次，是本仓**唯一的**大块第三方类型面。对应 net/http 的 ResponseWriter / *http.Request，但方法形状不同（`res.end` / `req.on('data')`）⇒ 不是类型名替换，是整段函数改写。"
     },
-
-    {
-      "from": "ActorKind = 'human' | 'agent' | 'subagent'",
-      "to": "type ActorKind string + Human/Agent/Subagent 三个 const",
-      "origin": "source",
-      "note": "样例 · src/domain/actor_spec.ts:50。★ 字面量并集 → string 派生类型；★ 成员**不在 DB 里**（nodes.kind='type' 的 members 只覆盖 12/203）⇒ 本条依据源码，不依据 DB。"
-    },
-    {
-      "from": "ActorSource = 'explicit' | 'env' | 'none'",
-      "to": "type ActorSource string + Explicit/Env/SourceNone 三个 const",
-      "origin": "source",
-      "note": "样例 · :66。★ 注意 `none` 与零值 \"\" 不同 —— Go 零值是空串，必须保证不会有「零值被当成合法源」的路径，否则 status 字段会静默变成 none。"
-    },
-    {
-      "from": "ActorAdmission（interface）",
-      "to": "type ActorAdmission struct",
-      "origin": "source",
-      "note": "样例 · :69。字段一一对应：ok→Ok bool、actor→Actor *string、source→Source ActorSource、normalizedFrom→NormalizedFrom *string、error→Err *string（★ `error` 是 Go 预声明标识符，字段名必须让位）。"
-    },
     {
       "from": "v is string（类型谓词）",
       "to": "bool",
@@ -197,14 +177,14 @@
   ],
 
   "symbols": [
-    { "from": "src/domain/actor_spec.ts#ActorKind", "to": "internal/domain/actor_spec.go#ActorKind", "kind": "type", "origin": "source", "state": "pending", "note": "实质映射见 types 里那一条，本行只记「源有这个符号 / 译文有对应符号」。" },
+    { "from": "src/domain/actor_spec.ts#ActorKind", "to": "internal/domain/actor_spec.go#ActorKind", "kind": "type", "origin": "source", "state": "pending", "note": "★ 名字相同（ActorKind→ActorKind）⇒ 按 types 的判据不进 types，实质映射记在这里：字面量并集 `'human'|'agent'|'subagent'` → `type ActorKind string` + Human/Agent/Subagent 三个 const。★ 成员**不在 DB 里**（kind='type' 的 members 只覆盖 12/203）⇒ 依据源码 :50。" },
     { "from": "src/domain/actor_spec.ts#ACTOR_KINDS", "to": "internal/domain/actor_spec.go#ActorKinds", "kind": "const", "origin": "source", "state": "pending", "note": "`as const` 元组 → `[]ActorKind` 切片；★ 元组的「穷尽性」丢失（Go 切片可被追加）⇒ 若要保，得写成三个 const + 一个只读函数。" },
     { "from": "src/domain/actor_spec.ts#ACTOR_NAME_MAX", "to": "internal/domain/actor_spec.go#ActorNameMax", "kind": "const", "origin": "source", "state": "pending" },
     { "from": "src/domain/actor_spec.ts#ACTOR_NAME_RE", "to": "internal/domain/actor_spec.go#ActorNameRE", "kind": "const", "origin": "source", "state": "blocked", "note": "★ 源用 lookahead `(?=.*[a-z0-9])`，Go RE2 不支持 ⇒ 见 unknowns 第 1 条（要拆成两条判断，或引入非标准库）。" },
     { "from": "src/domain/actor_spec.ts#ACTOR_RE", "to": "internal/domain/actor_spec.go#ActorRE", "kind": "const", "origin": "source", "state": "blocked", "note": "同上，:60。" },
     { "from": "src/domain/actor_spec.ts#LEGACY_ACTOR_KIND", "to": "internal/domain/actor_spec.go#LegacyActorKind", "kind": "const", "origin": "source", "state": "pending", "note": "源是 `const x: ActorKind = 'agent'`（类型收窄），Go 的 const 无收窄语义 ⇒ 只能 `var LegacyActorKind = Agent` 或 `const LegacyActorKind ActorKind = \"agent\"`。" },
-    { "from": "src/domain/actor_spec.ts#ActorSource", "to": "internal/domain/actor_spec.go#ActorSource", "kind": "type", "origin": "source", "state": "pending" },
-    { "from": "src/domain/actor_spec.ts#ActorAdmission", "to": "internal/domain/actor_spec.go#ActorAdmission", "kind": "interface", "origin": "source", "state": "pending" },
+    { "from": "src/domain/actor_spec.ts#ActorSource", "to": "internal/domain/actor_spec.go#ActorSource", "kind": "type", "origin": "source", "state": "pending", "note": "★ 名字相同 ⇒ 不进 types；实质映射记在这里：`'explicit'|'env'|'none'` → `type ActorSource string` + Explicit/Env/SourceNone。★ 注意 `none` 与零值 \"\" 不同 —— Go 零值是空串，必须保证不会有「零值被当成合法源」的路径，否则 status 字段会静默变成 none。" },
+    { "from": "src/domain/actor_spec.ts#ActorAdmission", "to": "internal/domain/actor_spec.go#ActorAdmission", "kind": "interface", "origin": "source", "state": "pending", "note": "★ 名字相同 ⇒ 不进 types；interface → struct 的字段映射记在这里：ok→Ok bool、actor→Actor *string、source→Source ActorSource、normalizedFrom→NormalizedFrom *string、error→Err *string（★ `error` 是 Go 预声明标识符，字段名必须让位）。" },
     { "from": "src/domain/actor_spec.ts#actorStrictMode", "to": "internal/domain/actor_spec.go#ActorStrictMode", "kind": "function", "origin": "source", "state": "pending", "note": "读 env：os.Getenv 取代 process.env；★「读到空串」与「未设置」在两侧都是同一个结果，行为等价。" },
     { "from": "src/domain/actor_spec.ts#isCanonicalActor", "to": "internal/domain/actor_spec.go#IsCanonicalActor", "kind": "function", "origin": "source", "state": "pending", "note": "返回 bool；类型谓词的窄化丢失（见 types）。" },
     { "from": "src/domain/actor_spec.ts#isLegacyActorName", "to": "internal/domain/actor_spec.go#IsLegacyActorName", "kind": "function", "origin": "source", "state": "pending" },
@@ -214,7 +194,20 @@
     { "from": "src/domain/actor_spec.ts#suggestActorName", "to": "internal/domain/actor_spec.go#SuggestActorName", "kind": "function", "origin": "source", "state": "pending" },
     { "from": "src/domain/actor_spec.ts#admitActor", "to": "internal/domain/actor_spec.go#AdmitActor", "kind": "function", "origin": "source", "state": "pending", "note": "三个可选参数 + 默认值 ⇒ 见 unknowns 第 2、3 条；返回结构体按值返回（不是指针）—— 这条选择要写进译文，否则 nil 检查会各写一套。" },
     { "from": "src/domain/actor_spec.ts#normalizedActorNote", "to": "internal/domain/actor_spec.go#NormalizedActorNote", "kind": "function", "origin": "source", "state": "pending", "note": "★ 返回的是**给人看的中文回执文案**：原样保留，不翻译（见 atoms.text）。" },
-    { "from": null, "to": "internal/domain/actor_spec.go#AdmissionOptions", "kind": "type", "origin": "added", "state": "pending", "note": "★ 源侧**没有这个名字**：`admitActor` 第三参是匿名结构 `{ strict?: boolean }`（:203），Go 必须给它一个类型名 ⇒ 这是**新增**，不是翻译。读账的人不能把它当成「有源」。结构侧记在 shapes 里。" }
+    { "from": null, "to": "internal/domain/actor_spec.go#AdmissionOptions", "kind": "type", "origin": "added", "state": "pending", "note": "★ 源侧**没有这个名字**：`admitActor` 第三参是匿名结构 `{ strict?: boolean }`（:203），Go 必须给它一个类型名 ⇒ 这是**新增**，不是翻译。读账的人不能把它当成「有源」。结构侧记在 shapes 里。" },
+
+    { "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore", "to": "internal/infrastructure/analysis/observe/dsl_store.go#DesignDSLStore", "kind": "class", "origin": "source", "state": "pending", "note": "★ class 样例（106 行 / 11 个方法 / 1 个字段，其中 2 个私有方法）。选它的理由（实测，不猜）：仓内 src/ 只有 10 个 class，带私有方法的只有 3 个（ProposalStore 1 个 / DesignDSLStore 2 个 / SimulationEngine 7 个）；更小的 ProposalStore（89 行）只有 1 个私有方法，更小的 KeyPool（27 行）没有私有方法 ⇒ 本文件是「方法数 ≥2 且能同时验到 构造器 / 公开方法 / 私有方法 / 字段」的最小者。本样例**只把 class + 它的 11 个方法与 1 个字段入账**；同文件另外 5 个导出（DSLDoc / HistoryEntry / SaveMeta / silentErrorDiscardDSL / defaultDSLDir）**未入账** ⇒ 别把这份账当成「该文件已翻完」。" },
+    { "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.constructor", "to": "internal/infrastructure/analysis/observe/dsl_store.go#NewDesignDSLStore", "kind": "method", "origin": "source", "state": "pending", "note": "★ 形态变：TS 的构造器 → Go 的包级构造函数 `NewDesignDSLStore(dir string) *DesignDSLStore`（不再挂在类型上）⇒ `to` 的符号名与形态都变了，必须进账，否则「构造器去哪了」没人能答。源里 `dir?: string` + `?? defaultDSLDir()` 的默认值 ⇒ Go 里两种写法（空串当缺省 / 拆 New/NewWithDir）待定。" },
+    { "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.dslPath", "to": "internal/infrastructure/analysis/observe/dsl_store.go#(*DesignDSLStore).DSLPath", "kind": "method", "origin": "source", "state": "pending", "note": "Go 的初值缩略词保持全大写：dslPath → DSLPath（不是 DslPath）。" },
+    { "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.histPath", "to": "internal/infrastructure/analysis/observe/dsl_store.go#(*DesignDSLStore).HistPath", "kind": "method", "origin": "source", "state": "pending" },
+    { "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.load", "to": "internal/infrastructure/analysis/observe/dsl_store.go#(*DesignDSLStore).Load", "kind": "method", "origin": "source", "state": "pending", "note": "返回 `DSLDoc | null` → `(*DSLDoc, error)`：★ 两态变三态（空 vs 读失败）；源里 null 兼表「文件不存在/解析失败」两种意思 ⇒ 见 unknowns。" },
+    { "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.loadOrThrow", "to": "internal/infrastructure/analysis/observe/dsl_store.go#(*DesignDSLStore).LoadOrThrow", "kind": "method", "origin": "source", "state": "pending", "note": "★ `load()` + throw 的组合在 Go 里就是 `Load()` 返回 error 后 `if err != nil { return }` ⇒ 这两个方法会**塌成一个**（LoadOrThrow 消失）。账上仍留两行（源侧是两个符号），但 `to` 指同一个 Go 方法 ⇒ 这是**多对一**，必须看得见。" },
+    { "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.seedDefault", "to": "internal/infrastructure/analysis/observe/dsl_store.go#(*DesignDSLStore).SeedDefault", "kind": "method", "origin": "source", "state": "pending" },
+    { "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.save", "to": "internal/infrastructure/analysis/observe/dsl_store.go#(*DesignDSLStore).Save", "kind": "method", "origin": "source", "state": "pending", "note": "形参 `meta: SaveMeta = {}` 是**默认值 + 匿名对象**（同 actor_spec 的 {strict?}）⇒ Go 必须 `SaveMeta` 具名 + 零值等价；`decls: TSDLDecl[] | null` 的 null 表示「保留现值」⇒ 需 *[]TSDLDecl。" },
+    { "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.rollback", "to": "internal/infrastructure/analysis/observe/dsl_store.go#(*DesignDSLStore).Rollback", "kind": "method", "origin": "source", "state": "pending" },
+    { "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.history", "to": "internal/infrastructure/analysis/observe/dsl_store.go#(*DesignDSLStore).History", "kind": "method", "origin": "source", "state": "pending" },
+    { "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.writeDoc", "to": "internal/infrastructure/analysis/observe/dsl_store.go#(*DesignDSLStore).writeDoc", "kind": "method", "origin": "source", "state": "pending", "note": "★ 私有方法**也进账**（Go 侧变小写方法）。理由：TS 的 `private` 是**类级**可见性，Go 的小写是**包级**可见性 ⇒ 翻完以后同包任何文件都能调它，这是**语义放宽**，不是等价。不进账就等于把放宽藏起来。" },
+    { "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.appendHistory", "to": "internal/infrastructure/analysis/observe/dsl_store.go#(*DesignDSLStore).appendHistory", "kind": "method", "origin": "source", "state": "pending", "note": "同上（private → 包级私有）。" }
   ],
 
   "shapes": [
@@ -293,6 +286,16 @@
       "where": "shapes[1] · 279 个真联合（如 src/application/design/derive/derive_chain.ts:42 DeriveChainResult 的返回）",
       "what": "Go 没有 sum type，真联合到不了「结构到结构」",
       "why": "三选一（interface+type switch / 标签结构体 / 拆函数）都会改变调用点形状 ⇒ shapes 里统一 to:null，逐个进本清单人工定。★ 这 279 条是「shapes 天然做不到一一对应」的主要来源，别指望它自己收敛。"
+    },
+    {
+      "where": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.writeDoc / #appendHistory（modifiers=[\"private\"]）",
+      "what": "TS 的 private 是**类级**可见性，Go 的小写标识符是**包级**可见性",
+      "why": "翻完之后，同包的任何一个文件都能调 writeDoc / appendHistory ⇒ 这是**放宽**，不是等价。两条都进了账（不藏），但「放宽到什么程度算可接受」是人的决定：可接受就保持小写方法；要真的关住就得拆包（把 class 单独放一个包）——那是模块层的改动，不是翻译。"
+    },
+    {
+      "where": "class 的字段（src/infrastructure/analysis/observe/dsl_store.ts:152 `private readonly dir: string`）",
+      "what": "字段在账上**没有行**：nodes 里没有字段节点，只有 class.members 里一条 {name:'dir', type:': string', member_kind:'property'}",
+      "why": "symbols 的 `from` 必须能在 nodes.id 里查到（指纹与状态都按它索引），而字段没有 id ⇒ 硬造一个 `file#Class.dir` 会变成「账上有行、库里查不到」的假账。★ 而且 members[].type 不带可见性/readonly：`private readonly` 这两件事在 DB 里都丢了。⇒ 本轮**字段不进账**（Go 侧跟着 struct 走），要给它立账得先有字段级 id —— schema 缺口，先报不改。"
     },
     {
       "where": "shapes[0] · 661 个内联对象",
