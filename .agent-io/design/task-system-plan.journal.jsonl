@@ -1,0 +1,1 @@
+{"kind":"todo.delete","at":"2026-10-21T08:17:10.961Z","by":"deepseek-v4.1-flash","reason":"验证用的误建卡（从未 claim、无证据），验证完删掉，不留垃圾","card":{"id":"todo_verify_keep_symbols","summary":"不摘 symbols[]，改修符号表的质量（补全/去重）","expectations":[],"state":"candidate","owner":null}}

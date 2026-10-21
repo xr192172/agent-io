@@ -271,6 +271,27 @@ export function evidenceFreshness(
  * ★ `expectations` 是**六类可判期望**（`domain/expectation.ts`），这里只是**引用**——
  *   判定器住 `application/design/intent/expectations.ts#judgeExpectations`（唯一一把尺）。
  */
+/**
+ * **一条内容修订**（`TaskSpec.history[]` 的元素）—— `todo.update` 的旧值栈。
+ *
+ * ★ 为什么是 `{from, to}` 而不是「存一份旧的 TaskSpec 全文」（`DecisionHistoryEntry` 存的是旧决策全文）：
+ *   任务卡**可改的内容只有 `summary`** 一句人话（判据 `expectations` 由 `publish` 从 decision 翻来，
+ *   不从 `todo.update` 改）⇒ 存全文是**多余**，而且会让人以为「判据也变过」。
+ *   ★ 但 `from` / `to` 必须**逐字**（不是「改了什么」的描述）—— 那是能被对拍的事实。
+ */
+export interface TaskHistoryEntry {
+  /** 改动时刻（ISO 8601） */
+  at: string;
+  /** 改前的 `summary`（逐字） */
+  from: string;
+  /** 改后的 `summary`（逐字） */
+  to: string;
+  /** 为什么改（**必填** —— 无理由地改判据就是「悄悄改判据」，那是本仓最恨的静默） */
+  reason: string;
+  /** 谁改的（agent 名；缺省 ⇒ 未署名 —— 工具不伪造，同 `TaskEvidenceRecord.agent`） */
+  by?: string;
+}
+
 export interface TaskSpec {
   /** 任务 id（= 它挂的那个节点的 id） */
   id: string;
@@ -344,6 +365,46 @@ export interface TaskSpec {
    * ★ 要复活它，先回答「取代后旧卡变成什么」（目前只有 done / void 两个终态）。
    */
   replaces?: string;
+  /**
+   * ★★★ **改内容的旧值栈**（2026-10-21）：`todo.update` 每次改 `summary` 都把
+   * 「旧值 → 新值 + 为什么改」压进来（栈底最老、栈顶最近）—— ★ **不是覆盖**。
+   *
+   * ## 为什么必须留旧值（用户 2026-10-21 原话）
+   * 「不然的话，**以后有变化、或者说旧的怎么样新的怎么样，你怎么去做**？」
+   * ⇒ 只留新值 = 判据被**悄悄改掉**，下一个接手的人看不出「这条 todo 原来要求什么」。
+   *
+   * ## 为什么住**卡上**（而不是单独的表 / cache.db）
+   * · 它与「这张卡」**同生共死**：卡在册 ⇒ 历史在；卡被 `delete` 物理删 ⇒ 历史随卡进墓碑
+   *   （`board/todo_journal.ts`）—— 不需要第二处对账。
+   * · 本仓已有**同形先例**：`Node.decision_history`（`DecisionHistoryEntry[]`，压栈不覆盖）
+   *   ⇒ 不发明第二套（同一个词：修订史 = 卡上的数组）。
+   * · 文件头铁律 1「只落意图与事件」：修订是**事件**（带 at / 谁 / 为何），不是可现算的读数
+   *   ⇒ 该落设计侧；`cache.db` 是**可重建的事实索引**，落那里等于让它被一次重建冲掉。
+   *
+   * ★ 老 DSL 里没有这个键 ⇒ 读端一律 `?? []`（**不许**要求它存在 —— 向后兼容是硬约束）。
+   */
+  history?: TaskHistoryEntry[];
+  /**
+   * ★★★ **为什么作废**（2026-10-21）：`todo.retire` 的必填理由 —— ★ 落在**卡上**，不只在回执里
+   * （回执会丢；卡不会）。
+   *
+   * ## 语义（照 `design-principles` §6.7 的三步退役流，不发明第二套）
+   * 文件那边是 `lifecycle = {status:"deprecated", retire_reason:"…"}`；这里同一个词、同一条纪律：
+   * **作废 ≠ 删掉** —— 「这条曾经有效，被新的取代了」⇒ 卡**留在册里**（可考古），只是不再出现在待办里。
+   * ★ 与 `delete` 的分界（写在这里，也渲染进 `edit_dsl` 描述）：
+   *   `retire` = 曾经有效、被取代（历史有价值）· `delete` = 从未生效、纯粹误建（历史无价值，物理删 + 墓碑）。
+   *
+   * ## 与 `state` 的关系（★ 别误会成第 5 个状态）
+   * `retire` 把 `state` 置 **`void`**（复用既有终态），**不新造状态**：设计册
+   * `task_plan.state_machine.states` 是那四个值的副本，加一个态就得同步改它，而 `task_plan`
+   * **没有 `edit_dsl` 写入口**（`TYPE_KNOWN_KEYS` 里没有它）⇒ 只能手改设计册 = 绕过唯一写端。
+   * ⇒ 判据：`state==='void'` ∧ 有 `retire_reason` = **被取代**作废（区别于 t_void 的「target 消失」）。
+   */
+  retire_reason?: string;
+  /** 作废时刻（ISO 8601）；与 `retire_reason` 同生共死（三问「谁/何时/为何」同住一处，照 `released_at`） */
+  retired_at?: string | null;
+  /** 谁作废的（agent 名；缺省 ⇒ 未署名 —— 工具不伪造，同 `released_by`） */
+  retired_by?: string | null;
   /** ★ 证据记录（只落 `{kind, at, by, verdict}`，不落读数） */
   evidence?: TaskEvidenceRecord[];
   /** 讨论登记格（默认只渲染 `micro`） */

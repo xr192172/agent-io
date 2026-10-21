@@ -84,8 +84,8 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'view: design（默认，活态设计）/ live（实际代码快照，仅 query=dsl/nodes/edges/node/files/file 生效，用于对比设计 vs 代码现状）。',
     inputSchema: {
       query: z
-        .enum(['dsl', 'features', 'nodes', 'edges', 'node', 'decisions', 'files', 'file', 'digest', 'scope', 'calls', 'functions', 'annotations', 'approvals', 'approval_history', 'snapshots', 'templates', 'simulation_state', 'diff', 'goals', 'edge_intents', 'tag', 'pool', 'pending'])
-        .describe('查询类型：dsl=完整DSL, features=feature列表, nodes=节点摘要, edges=边摘要, node=节点详情, decisions=决策目录(按功能线分组), files=文件摘要, file=文件详情, digest=每文件一行紧凑认知索引(F职责/R关系/A契约/S高熵决策,只读派生), scope=**圈定范围**(按 layer/swimlane/arch_layer/subtree/files 解析成确定的文件集合,只读派生), calls=调用关系, functions=函数级大纲(目录→文件→函数+调用/被调用/回环), annotations=标注, approvals=**按审批状态看【全部】批注**（★ 默认含未提交的 `draft`；只要待审批的用 `status="pending_review"`）, approval_history=审批历史, snapshots=快照, templates=模板, simulation_state=仿真状态, diff=对比, goals=结构化目标(meta.goals), edge_intents=边级意图(edge.intent), tag=功能标记(人给文件节点打的"隶属某功能"标签:给 tag=成员+失联,省略=列全部标签), pool=**任务池**(把各节点上的 task 卡按状态归拢成池:candidate/claimed/done/void 各几张,只读派生;★ feature 不存在会抛,不返回空池), pending=**欠账视图**(只读直读 overlay 权威:列未完成锚点 progress!=done,含 progress_evidence 与决策卡 scope;★ 未登记 progress 的锚点不算欠账,不落盘)'),
+        .enum(['dsl', 'features', 'nodes', 'edges', 'node', 'decisions', 'files', 'file', 'digest', 'scope', 'calls', 'functions', 'annotations', 'approvals', 'approval_history', 'snapshots', 'templates', 'simulation_state', 'diff', 'goals', 'edge_intents', 'tag', 'pool', 'todo', 'pending'])
+        .describe('查询类型：dsl=完整DSL, features=feature列表, nodes=节点摘要, edges=边摘要, node=节点详情, decisions=决策目录(按功能线分组), files=文件摘要, file=文件详情, digest=每文件一行紧凑认知索引(F职责/R关系/A契约/S高熵决策,只读派生), scope=**圈定范围**(按 layer/swimlane/arch_layer/subtree/files 解析成确定的文件集合,只读派生), calls=调用关系, functions=函数级大纲(目录→文件→函数+调用/被调用/回环), annotations=标注, approvals=**按审批状态看【全部】批注**（★ 默认含未提交的 `draft`；只要待审批的用 `status="pending_review"`）, approval_history=审批历史, snapshots=快照, templates=模板, simulation_state=仿真状态, diff=对比, goals=结构化目标(meta.goals), edge_intents=边级意图(edge.intent), tag=功能标记(人给文件节点打的"隶属某功能"标签:给 tag=成员+失联,省略=列全部标签), pool=**任务池**(把各节点上的 task 卡按状态归拢成池:candidate/claimed/done/void 各几张,只读派生;★ feature 不存在会抛,不返回空池), todo=**todo 待办列表**(顶层 `todos[]` —— ★ 默认只列**活卡** candidate+claimed：已完成 done 与**已作废 void**（`todo.retire` 落的）**不在待办里**；要看它们传 `state=done|void|all`；每项出 id/summary/state/owner/node_id/retire_reason/history，并附**墓碑**（物理删过的卡），pending=**欠账视图**(只读直读 overlay 权威:列未完成锚点 progress!=done,含 progress_evidence 与决策卡 scope;★ 未登记 progress 的锚点不算欠账,不落盘)'),
       scope: z
         .string()
         .optional()
@@ -99,6 +99,16 @@ export const DESIGN_TOOLS: ToolDef[] = [
       view: z.enum(['design', 'live']).default('design').describe('视图层级：design=设计视图（默认），live=实际代码快照'),
       feature: z.string().optional().describe('feature 名（nodes/edges/node/decisions/files/file/digest/annotations/approvals 等需要）'),
       node_id: z.string().optional().describe('query=node 时：节点 ID'),
+      // ★★ 2026-10-21：`query=todo` 的**按 state 过滤**（用户裁决：「retire 之后必须不在待办里」+「要能按 state 过滤」）。
+      //   ★ 缺省 = 待办（只列活卡）—— 判据在 `query_feature.ts` 的 `case 'todo'`（读 `isClosedTaskState`），这里只声明值域。
+      state: z
+        .enum(['candidate', 'claimed', 'done', 'void', 'all'])
+        .optional()
+        .describe(
+          'query=todo 时：按状态过滤。缺省 = **待办**（只列活卡 candidate/claimed；' +
+            'done 与已作废的 void **不在待办里**）。all = 全部（含已了结）。' +
+            '★ 想看「谁被作废了、为什么」⇒ state=void（每项带 retire_reason / retired_at）。',
+        ),
       tag: z.string().optional().describe('query=tag 时：功能标记名（给=列出该标签的成员与失联成员；省略=列出全部标签）。★ 与决策卡上的 decision.tags 不是一件事'),
       thread: z.string().optional().describe('query=decisions 时：按功能线过滤（不传=全部，按 thread 分组输出）'),
       decision_status: z.enum(['active', 'draft']).optional().describe('query=decisions 时：按决策状态过滤（active=生效中/draft=草案）。★ 原 superseded 已退场'),

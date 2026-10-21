@@ -58,13 +58,20 @@ import {
   ABSENT_FILE_HASH,
   codeFingerprintOf,
   fingerprintOf,
+  // ★ 2026-10-21：`todo.update` / `retire` 要判「这张卡还开着吗」—— ★ 读**既有那一把尺**
+  //   （done / void 都算了结），不在本文件里再写一遍 `state === 'done' || state === 'void'`
+  //   （那正是 `task_schema.ts` 2026-10-20 花了一笔改成 `isClosedTaskState` 的病）。
+  isClosedTaskState,
   progressOf,
   taskLevel,
   type TaskDiscussion,
   type TaskEvidenceFingerprint,
+  type TaskHistoryEntry,
   type TaskSpec,
   type TaskState,
 } from '../../../domain/task_schema.js';
+// ★ 2026-10-21：`todo.delete` 的**墓碑**（物理删是唯一让卡真的从册上消失的操作 ⇒ 必须有卡外留痕）。
+import { appendTodoTombstone, todoJournalFile } from '../board/todo_journal.js';
 import { contentHash } from '../../../infrastructure/index/symbols.js';
 import { updateStatus } from './status_tools.js';
 
@@ -1338,6 +1345,237 @@ export function voidTask(input: TaskOpInput): EditResult {
  * 新建后 `state='candidate'`、`expectations=[]` —— **之后 claim / complete / void 全部复用 `task_ops` 的同一套 op**
  * （`loadTask` 会在 `geometry` 找不到时回退到 `todos`）。
  */
+// ─────────────────────────────────────────────────────────────
+// todo 的「改 / 作废 / 物理删」（2026-10-21）
+//
+// ★ 用户裁定的判据（原话）：「说了多少次了要配好**所有的增删改查操作**，包括 Todo 也是一样的呀
+//   …… 不然的话，**以后有变化、或者说旧的怎么样新的怎么样，你怎么去做**？」
+// ⇒ 三个 op 各答一个问题：
+//   · update —— 内容变了，**旧值怎么查**（`history[]`，压栈不覆盖）
+//   · retire —— 这条不做了，**为什么**（`retire_reason` 落卡上，卡留在册里）
+//   · delete —— 这张根本是误建，**怎么证明它没生效过**（机器判据 + 墓碑）
+// ─────────────────────────────────────────────────────────────
+
+/** 一次 `todos[]` 定位的结果（`index` 给 `delete` 用；update / retire 只读 `card`）。 */
+interface TodoHit {
+  dsl: NonNullable<ReturnType<typeof getDesignSheet>>;
+  card: TaskSpec;
+  index: number;
+}
+
+/**
+ * 在 `todos[]` 里按 id 定位。**找不到就是失败**（不降级成「新建一张」—— 那会把「改错 id」变成「悄悄多一张卡」）。
+ * ★ 报错把两条最常见的来路都指了：① 刚被 delete（册上**故意**没有它了，墓碑里有）；② id 记错。
+ */
+function findTodoCard(feature: string, action: string, id: string): TodoHit {
+  const dsl = getDesignSheet(feature);
+  if (!dsl) throw new Error(`feature "${feature}" 不存在 —— todo 住在设计 DSL 的顶层 todos[]。`);
+  const todos = dsl.todos ?? [];
+  const index = todos.findIndex((t) => t.id === id);
+  if (index < 0) {
+    throw new Error(
+      `todo.${action} 被拒：todos[] 里没有 "${id}"。\n` +
+        `★ 两条常见来路：① 它刚被 todo.delete 过 ⇒ 册上**故意**没有它了（墓碑在 ${todoJournalFile(feature)}，可用 get_dsl query=todo 查）；② id 记错了 ⇒ get_dsl query=todo 拿一遍当前 id。`,
+    );
+  }
+  return { dsl, card: todos[index], index };
+}
+
+/**
+ * ★ **身份不可变**：`data.id` 只许在 `add` 时给（那时它是「新卡要什么 id」）。
+ * 改/作废/删都认 `operations[].id`（要动**哪一张**）—— 两件事混在一个键里就会有人以为能「改 id」。
+ */
+function assertNoIdentityChange(action: string, data: Record<string, unknown>): void {
+  if (data.id !== undefined) {
+    throw new Error(
+      `todo.${action} **不改身份**：要动哪一张请用 \`operations[].id\`，\`data.id\` 只在 add 时能给。\n` +
+        `★ 为什么拦：id 是这张卡在册上的身份（todos[] 的下标、node_id 的指向、别的卡 reason 里对它的引用都靠它）—— 改了它，等于让「被取代的那张」凭空消失。`,
+    );
+  }
+}
+
+/**
+ * `todo.update` —— 改 `summary`，★ **旧值压进 `history[]`**（压栈，不覆盖）。
+ *
+ * ## 为什么必须留旧值（这是本 op 存在的全部理由）
+ * 用户原话：「以后有变化、或者说**旧的怎么样新的怎么样**，你怎么去做？」
+ * ⇒ 只写新值 = 判据被悄悄改掉 ⇒ 下一个接手的人看不出「这条 todo 原来要求什么」
+ *   ⇒ 三张互相矛盾的卡就会一直矛盾下去（2026-10-21 的真实事故）。
+ *
+ * ## 允许改的只有**活卡**
+ * `done` / `void` 是**已了结**的卡 —— 改它的内容就是改写历史。要再来一轮请重新立卡
+ * （判据 = `isClosedTaskState`，★ 不在本文件里再写一遍 done|void 的字面量）。
+ */
+function updateTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult {
+  assertNoIdentityChange('update', data);
+  const next = String(data.summary ?? '').trim();
+  const reason = String(data.reason ?? '').trim();
+  const { card } = findTodoCard(feature, 'update', id);
+
+  if (isClosedTaskState(card.state)) {
+    throw new Error(
+      `todo.update 被拒：${id} 已经是 ${card.state}（了结的卡不改内容 —— 改了就是改写历史）。` +
+        (card.retire_reason ? `\n  已记录的作废理由：${card.retire_reason}` : '') +
+        `\n★ 要在旧结论之上开新活 ⇒ 新 add 一张（并在它的 reason 里点名它取代了 ${id}）；\n★ 真是误建 ⇒ todo.delete（**只在从未生效时**才放行）。`,
+    );
+  }
+  if (card.summary === next) {
+    throw new Error(
+      `todo.update 被拒：新 summary 与现值**逐字相同** ⇒ 没有改动可记。\n` +
+        `★ 这里**故意不留空 history**：修订史只记真发生过的改动，否则「这张卡被改过几次」这个读数就是假的。`,
+    );
+  }
+
+  const at = new Date().toISOString();
+  const entry: TaskHistoryEntry = { at, from: card.summary, to: next, reason, ...(agent ? { by: agent } : {}) };
+  const history = [...(card.history ?? []), entry];
+  writeTask(feature, id, { ...card, summary: next, history });
+
+  return {
+    message:
+      `已改 todo "${id}" 的内容（★ 旧值已进 history，没有丢）：\n` +
+      `  旧：${card.summary}\n  新：${next}\n  为什么改：${reason}\n` +
+      `  history 现 ${history.length} 条 —— get_dsl query=todo 可逐条看 from/to/reason。`,
+    feature,
+    data: { todo_id: id, from: card.summary, to: next, reason, history_count: history.length },
+  };
+}
+
+/**
+ * `todo.retire` —— 作废：**卡留在册里**，但**不再出现在待办里**。
+ *
+ * ## 语义（照 `design-principles` §6.7 的三步退役流，不发明第二套）
+ * 文件那边是 `lifecycle={status:'deprecated', retire_reason}`；这里同一个词、同一条纪律：
+ * 「这条**曾经有效**，被新的取代了」⇒ 卡留着（历史有价值），理由落卡上（能考古）。
+ *
+ * ## 状态落在哪
+ * `state` 置 **`void`**（复用既有终态，不新造第 5 个态 —— 理由见 `TaskSpec.retire_reason` 的注释）。
+ * ⇒ 「不在待办里」不是靠这条 op 自己保证的，而是靠**既有的那把尺** `isClosedTaskState`：
+ *   `get_dsl query=todo` 默认只列活卡 ⇒ 作废的卡自动出去（不需要在读端再写一条 if）。
+ *
+ * ## 迁移存在性读迁移表
+ * `assertTransition(card.state, 'void', …)` —— 谁能作废由 `task_machine.TRANSITIONS` 一处回答。
+ */
+function retireTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult {
+  assertNoIdentityChange('retire', data);
+  const reason = String(data.reason ?? '').trim();
+  const { card } = findTodoCard(feature, 'retire', id);
+
+  if (isClosedTaskState(card.state)) {
+    throw new Error(
+      `todo.retire 被拒：${id} 已经是 ${card.state}（了结的卡不能再作废一次）。` +
+        (card.retire_reason ? `\n  已记录的作废理由：${card.retire_reason}` : '') +
+        `\n★ 它**还在册里**（这正是 retire 的意义）—— 用 get_dsl query=todo state=void 能查到。`,
+    );
+  }
+  // ★ 提示（不是第二份判据）：`t_void` 的 from 只有 candidate ⇒ **已被领的卡退不了**。
+  //   ★ 真判据仍是下面那行 `assertTransition`（读迁移表）；这里只是把「该怎么办」提前说清 ——
+  //     否则调用方只会看到「可走：candidate / done」，还得自己去翻迁移表才知道要先 release。
+  if (card.state === 'claimed') {
+    throw new Error(
+      `todo.retire 被拒：${id} 正被 ${card.owner ?? '（空 owner）'} 领取着 —— 迁移表里作废只从 candidate 走（t_void）。\n` +
+        `★ 两条正路：① 先 \`release\`（data.reason）交回候选，再 retire；② 其实已经干完了 ⇒ 走 \`complete\`。\n` +
+        `★ 为什么不让 claimed 直接作废：那会让「谁领的、干到哪」凭空断掉（release 才是留痕的放下动作）。`,
+    );
+  }
+  assertTransition(card.state, 'void', 'todo.retire');
+
+  const at = new Date().toISOString();
+  writeTask(feature, id, {
+    ...card,
+    state: 'void',
+    retire_reason: reason,
+    retired_at: at,
+    ...(agent ? { retired_by: agent } : {}),
+  });
+
+  return {
+    message:
+      `已作废 todo "${id}"（★ 卡**留在册里**，只是不再进待办）：\n` +
+      `  为什么：${reason}\n` +
+      `  state=void · retired_at=${at}${agent ? ` · retired_by=${agent}` : ''}\n` +
+      `★ 之后：get_dsl query=todo **不再列它**；get_dsl query=todo state=void 仍能查到（含 retire_reason）。`,
+    feature,
+    data: { todo_id: id, state: 'void' as TaskState, retire_reason: reason, retired_at: at },
+  };
+}
+
+/**
+ * `todo.delete` —— **物理删**，只给「从未生效的误建」用。
+ *
+ * ## 判据是机器判的，不是自觉
+ * 「从未生效」= `state === 'candidate'` **∧** 没被领过（`claimed_at` 空）**∧** 一条证据都没有。
+ * 任一不满足 ⇒ **拒**，并指路 `retire`。
+ * ⇒ 这样「retire 还是 delete」不是靠文档约定，而是**发错就报错**（本仓的纪律：判据要有执行者）。
+ *
+ * ## 删了以后怎么追溯（★ 不是无声消失）
+ * ① 卡从 `todos[]` 移出；② 整张卡（原样）追加进墓碑日志 `<feature>.journal.jsonl`。
+ * ★ **顺序有意义**：先落盘、后写墓碑 —— 墓碑写失败会抛 ⇒ `edit_dsl` 把整批回滚成调用前的字节
+ *   ⇒ 不会出现「卡没了、也没留痕」这一格。
+ */
+function deleteTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult {
+  assertNoIdentityChange('delete', data);
+  const reason = String(data.reason ?? '').trim();
+  const { dsl, card } = findTodoCard(feature, 'delete', id);
+
+  const evidenceCount = card.evidence?.length ?? 0;
+  const tookEffect = card.state !== 'candidate' || !!card.claimed_at || evidenceCount > 0;
+  if (tookEffect) {
+    throw new Error(
+      `todo.delete 被拒：${id} **曾经生效过**（state=${card.state}` +
+        (card.claimed_at ? `，claimed_at=${card.claimed_at}` : '') +
+        (evidenceCount ? `，evidence ${evidenceCount} 条` : '') +
+        `）⇒ 这不是误建，是历史。\n` +
+        `★ 判据（机器判，不靠自觉）：delete 只放行「candidate ∧ 从未被 claim ∧ 一条证据都没有」的卡。\n` +
+        `  · **retire**：这条曾经有效、被新的取代了（历史有价值）⇒ todo.retire，reason 点名取代它的那张\n` +
+        `  · **delete**：这条从未生效、纯粹误操作 ⇒ 才是这里`,
+    );
+  }
+
+  const at = new Date().toISOString();
+  const todos = (dsl.todos ?? []).filter((t) => t.id !== id);
+  const nextDsl = { ...dsl, todos };
+  const ov = loadOverlay(feature) ?? seedOverlayFromDsl(nextDsl);
+  saveDesignSheet(applyOverlay(nextDsl, ov));
+  const journal = appendTodoTombstone(feature, {
+    kind: 'todo.delete',
+    at,
+    ...(agent ? { by: agent } : {}),
+    reason,
+    card,
+  });
+
+  return {
+    message:
+      `已物理删除 todo "${id}"（★ 它从未生效，所以是误建而不是历史）：\n` +
+      `  为什么删：${reason}\n` +
+      `  墓碑：${journal}（整张卡原样留在那里 ⇒ 仍然可追溯）\n` +
+      `★ 待办里不再有它；要查「删过什么」⇒ get_dsl query=todo 的 deleted 段。`,
+    feature,
+    data: { todo_id: id, deleted: true, reason, journal, summary: card.summary },
+  };
+}
+
+/** 三个「改/作废/删」op 的分发（id 的存在由 `OP_SPECS` 的 `opsRequiringId` 保证）。 */
+function applyTodoMutation(
+  feature: string,
+  op: { op: string; id?: string; data?: Record<string, unknown> },
+  agent?: string,
+): EditResult {
+  const id = op.id as string;
+  const data = op.data ?? {};
+  switch (op.op) {
+    case 'update':
+      return updateTodoCard(feature, id, data, agent);
+    case 'retire':
+      return retireTodoCard(feature, id, data, agent);
+    case 'delete':
+      return deleteTodoCard(feature, id, data, agent);
+    default:
+      throw new Error(`todo 不支持操作: ${op.op}（改/作废/删分别是 update / retire / delete）`);
+  }
+}
+
 export function applyTodoOp(
   feature: string,
   op: { op: string; id?: string; data?: Record<string, unknown> },
@@ -1361,8 +1599,9 @@ export function applyTodoOp(
     const ti = todos0.findIndex((t) => t.id === todoId);
     if (ti < 0) throw new Error(`todo.link 被拒：todos[] 里没有 "${todoId}"`);
     const cur = todos0[ti];
-    if (cur.state === 'done' || cur.state === 'void') {
-      throw new Error(`todo.link 被拒：${todoId} 已是终态（${cur.state}）`);
+    // ★ 2026-10-21：读**既有那把尺**（`done`/`void` 都算了结），不在这里再抄一遍两个状态名。
+    if (isClosedTaskState(cur.state)) {
+      throw new Error(`todo.link 被拒：${todoId} 已了结（${cur.state}）—— 已作废/已完成的不再挂节点。`);
     }
     const node = (dsl0.geometry?.nodes ?? []).find((n) => n.id === nodeId);
     if (!node) throw new Error(`todo.link 被拒：geometry.nodes 里没有 "${nodeId}"`);
@@ -1385,10 +1624,17 @@ export function applyTodoOp(
     };
   }
 
-  if (op.op !== 'add') throw new Error(`todo 仅支持 add / link（收到 ${op.op}）`);
+  // ★★★ 2026-10-21：**改 / 作废 / 物理删** 三个 op 走同一处分发。
+  //   ★ 它们的 id 由 `OP_SPECS` 的 `opsRequiringId` 保证（不是这里判的 —— 一处判据）。
+  if (op.op === 'update' || op.op === 'retire' || op.op === 'delete') {
+    return applyTodoMutation(feature, op, agent);
+  }
+
+  if (op.op !== 'add') throw new Error(`todo 仅支持 add / link / update / retire / delete（收到 ${op.op}）`);
   const data = op.data ?? {};
-  const summary = typeof data.summary === 'string' ? data.summary.trim() : '';
-  if (!summary) throw new Error('todo.add 被拒：必须给 data.summary（要做什么，一句人话）');
+  // ★ 2026-10-21：`todo.add 需要 data.summary` **不在这里判** —— 判据只有一处 = `OP_SPECS.required.add`
+  //   （`checkOpSpec` 在 `applyOperation` 入口跑，空串/全空白也算缺）。这里只做取值。
+  const summary = String(data.summary ?? '').trim();
 
   const dsl = getDesignSheet(feature);
   if (!dsl) throw new Error(`feature "${feature}" 不存在 —— todo 也住在设计 DSL 里（顶层 todos[]）。`);

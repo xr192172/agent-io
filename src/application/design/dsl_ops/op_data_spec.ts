@@ -50,6 +50,16 @@ export interface OpSpec {
    *   ⇒ 现在**按 type 各自声明**，报错文案**从本字段派生**（仍是判据一处）。
    */
   idNote?: string;
+  /**
+   * ★★★ **只有这几个 op 要 `operations[].id`**（2026-10-21）—— 用于 `idRequired:false` 而**部分 op 仍需 id** 的 type
+   * （目前只有 `todo`：`add` 不用 id（自动从 summary 生成），而 `link`/`update`/`retire`/`delete` 都要）。
+   *
+   * ★ 为什么要这个字段（而不是留在 handler 里 `if (!op.id) throw`）：
+   *   ① 那是**第二份判据**（本表是「哪些键必须给」的唯一住处）；
+   *   ② 报错文案在表里 ⇒ 也**渲染进 `edit_dsl` 的描述**（提前看得见，而不是发一次残缺请求才知道）。
+   * ★ 与 `idRequired:true` 的区别：那个是「**每个** op 都要 id」（node/edge/file/task…）。
+   */
+  opsRequiringId?: readonly string[];
   /** 【按 op 细分】的必需 data 键：`op → 键名清单`（未列出的 op ⇒ 无必需键） */
   required: Record<string, string[]>;
   /** 【按 op 细分】的"至少给一组"：`op → 若干组，每组内全部要给` */
@@ -197,14 +207,37 @@ export const OP_SPECS: readonly OpSpec[] = [
     //   **任务格的唯一写端**。`id` = 任务格所在的**节点 id**（任务与节点同居）——
     //   ★ 不是顶层 `tasks[]`，也不是 overlay 锚点。
     type: 'todo',
-    ops: ['add', 'link'],
+    ops: ['add', 'link', 'update', 'retire', 'delete'],
     idRequired: false,
-    required: { add: ['summary'], link: ['node_id'] },
+    opsRequiringId: ['link', 'update', 'retire', 'delete'],
+    // ★★★ 2026-10-21：**三个新 op 的必填键**（用户裁决：「说了多少次了要配好所有的增删改查操作」）。
+    //   · update：summary（改成什么）+ reason（**为什么改** —— 无理由 = 悄悄改判据）
+    //   · retire：reason（为什么作废；★ 必须点名**被谁取代**，否则考古不了）
+    //   · delete：reason（为什么物理删；★ 只给「从未生效的误建」用）
+    //   ★ 这里是**唯一判据**：handler 里不再判一遍（`checkOpSpec` 在 `applyOperation` 入口跑）。
+    required: {
+      add: ['summary'],
+      link: ['node_id'],
+      update: ['summary', 'reason'],
+      retire: ['reason'],
+      delete: ['reason'],
+    },
     note:
       '★ **无节点任务**（2026-10-18 Q5）：和 task **同一套状态机/同一套 claim/complete/void 语义**，' +
       '区别只在"挂在哪"（task 挂 geometry.nodes[].task，todo 挂顶层 todos[]）。' +
       '★ add 只需 data.summary（可选 data.decision: creator/source/handoff；data.id 可指定）。' +
-      '★ 它**没有 expectations**（不是代码，判不了）⇒ 完成只收 attestation 证据。',
+      `★ 它**没有 expectations**（不是代码，判不了）⇒ 完成只收 attestation 证据。
+      ★ **update** = 改内容，★ **必留旧值**：{op:"update", id:"todo_x", data:{summary:"新说法", reason:"为什么改"}}
+           ⇒ 旧 summary 压进 history[]（{at, from, to, reason}，**不是覆盖** —— 「旧的怎么样、新的怎么样」都能查）；
+           ★ id 改不了（身份不变，data.id 会被拒）；★ 只允许活卡（state=candidate|claimed）—— done/void 是了结的卡，改它就是改写历史。
+      ★ **retire** = 作废（**卡留在册里**）：{op:"retire", id:"todo_x", data:{reason:"被 todo_yyy 取代"}}
+           ⇒ state 置 void + 落 retire_reason / retired_at（照 §6.7 的退役流：作废≠删掉，理由要能考古）；
+           ★ 之后就不在待办里了（get_dsl query=todo 默认只列活卡），但仍能被 query=todo state=void 查到。
+      ★ **delete** = **物理删**，★ 只给「**从未生效**的误建」用：{op:"delete", id:"todo_x", data:{reason:"误建，从未生效"}}
+           ⇒ 出册 + 落墓碑（<feature>.journal.jsonl，含被删卡全文）⇒ 可追溯，不是无声消失。
+      ★ **retire 还是 delete？**（判据是机器判的，不是自觉）：retire = 这条**曾经有效**、被新的取代了（历史有价值）；
+           delete = 这条**从未生效**、纯粹误操作 ⇒ delete 只放行「candidate 且从未被 claim 过、一条证据都没有」的卡，
+           其余一律**拒**并指路 retire（★ 别用 delete 清历史）。`,
   },
   {
     type: 'task',
@@ -405,7 +438,11 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
   //   ★ 为什么不是新 op：`claim` 仍是那一步状态迁移（candidate→claimed），只是**来意**多了一维 ——
   //     没有它，`satisfied` 卡永远领不到 ⇒ 写闸不认 ⇒ **文件永久只读**（结构性错误，见 task_machine.ts 文件头）。
   task: ['owner', 'reason', 'evidence', 'intent'],
-  todo: ['summary', 'decision', 'owner', 'id', 'node_id'],
+  // ★★★ 2026-10-21：补 `reason` —— `todo.update` / `retire` / `delete` 三个新 op 都读它
+  //   （update=为什么改 · retire=为什么作废 · delete=为什么物理删）。★ 不补 ⇒ 传了会被「不被认的键」拒。
+  //   ★ `history` / `retire_reason` / `retired_at` **不在这里**：它们由写端**自己落**（append 到卡上），
+  //     不是「data 里可以随便给的字段」—— 让调用方直接塞 history 就能伪造修订史。
+  todo: ['summary', 'decision', 'owner', 'id', 'node_id', 'reason'],
 };
 /** ★★ 断言：`TYPE_KNOWN_KEYS` 的键集**必须恰好覆盖 `OP_SPECS` 的全部 type**（多 / 少都红）。 */
 export type KnownKeysMissingTypes = Exclude<(typeof OP_SPECS)[number]['type'], keyof typeof TYPE_KNOWN_KEYS>;
@@ -462,7 +499,11 @@ export function checkOpSpec<T extends FeatureOperationLike>(op: T): CheckedOpera
         (spec.note ? `\n★ ${type} 补充：${spec.note}` : ''),
     );
   }
-  if (spec.idRequired && !op.id) {
+  // ★★★ 2026-10-21：`idRequired`（**每个** op 都要）与 `opsRequiringId`（**这几个** op 要）**合读一处**；
+  //   后者是给 `idRequired:false` 的 type 用的（`todo` 的 add 不用 id —— 它由 summary 自动生成）。
+  //   ★ 不在下面各 case 里写 `if (type === 'todo' && !id)` 的第二份判据。
+  const idNeeded = spec.idRequired || (spec.opsRequiringId ?? []).includes(o);
+  if (idNeeded && !op.id) {
     throw new Error(`${type}.${o} 需要 id${spec.idNote ? `（${spec.idNote}）` : ''}`);
   }
   const data = (op.data ?? {}) as Record<string, unknown>;
@@ -507,7 +548,9 @@ export function renderOpSpecs(): string {
       const req = s.required[o] ?? [];
       const any = s.anyOf?.[o];
       const bits: string[] = [];
-      if (s.idRequired) bits.push('id');
+      // ★ 2026-10-21：`opsRequiringId` 的 op 也要渲染 id（否则 `todo.update` 看起来「不用 id」，
+      //   调用方就会漏 —— 那正是本表存在的理由：**提前看得见**，而不是发一次残缺请求才知道）。
+      if (s.idRequired || (s.opsRequiringId ?? []).includes(o)) bits.push('id');
       if (req.length) bits.push(`data.${req.join(' + data.')}`);
       if (any) bits.push(any.map((g) => `data.${g.join(' + data.')}`).join(' 或 '));
       return bits.length ? `${o}（需 ${bits.join('；')}）` : `${o}（无必需字段）`;

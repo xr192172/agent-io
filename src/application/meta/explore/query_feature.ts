@@ -43,7 +43,12 @@
  *   pending          → **欠账视图**（只读直读 overlay，列未完成锚点）{ feature }
  */
 
-import { getDSLByView, listFeatures as listStoredFeatures } from '../../../infrastructure/storage.js';
+// ★ 2026-10-21：`query=todo` 要**设计侧原样**（todos[] 不在扫描产物里）⇒ 直取 `getDSL`。
+import { getDSL, getDSLByView, listFeatures as listStoredFeatures } from '../../../infrastructure/storage.js';
+// ★ 2026-10-21：todo 的**状态判据**（`isClosedTaskState` = 唯一那把尺）与**墓碑**（物理删的留痕）。
+//   ★ 前者不在这里重写（done/void 两个名字只住 `task_schema.ts`）；后者不在这里重读（读端也只有一处）。
+import { TASK_STATES, isClosedTaskState, type TaskState } from '../../../domain/task_schema.js';
+import { readTodoTombstones } from '../../design/board/todo_journal.js';
 // ★★★ T330：欠账视图（`query=pending`）**直读 overlay 权威** —— `progress_evidence` 不被
 //   `applyOverlay` 投影回 base（`overlay.ts:481/500`）⇒ 要 evidence 只能读 overlay 本体。
 import { loadOverlay } from '../../../infrastructure/storage_overlay.js';
@@ -100,9 +105,20 @@ export interface QueryFeatureInput {
     | 'edge_intents'
     | 'tag'
     | 'pool'
+    // ★ 2026-10-21：todo 的**待办读端**（含按 state 过滤 + 墓碑）。
+    | 'todo'
     | 'pending';
   /** feature 名（dsl/nodes/edges/node/decisions/files/file/digest/annotations/approvals/approval_history/snapshots/simulation_state 必填；features/templates 忽略；diff 用 feature_a/feature_b） */
   feature?: string;
+  /**
+   * ★★ todo（2026-10-21）：**按 state 过滤**。
+   *
+   * 缺省 = **待办**（只列活卡：candidate / claimed）—— 判据 = `!isClosedTaskState(state)`，
+   * 所以 `done` 与 `void`（含 `todo.retire` 落的作废卡）**天然不在待办里**。
+   * `all` = 全部（含已了结）· 给具体值 = 只列那一类（★ 要看**谁作废了、为什么** ⇒ `state=void`）。
+   * ★ 值域 = `task_schema.ts#TASK_STATES`（不在这里抄一份字面量）。
+   */
+  state?: TaskState | 'all';
   /** node：节点 ID */
   node_id?: string;
   /**
@@ -1294,6 +1310,109 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       return {
         message: lines.join('\n'),
         data: { tag: input.tag, members, found, missing },
+      };
+    }
+
+    // ── todo 列表（★ 2026-10-21：todo 的**待办读端**）────────────────────────
+    //
+    // ★ 为什么必须现在补（用户裁决的原话）：「**retire 之后必须不在待办里** —— 否则"作废"只是
+    //   加了个字段，待办列表里还是满的，等于没做」+「**要能按 state 过滤**」。
+    //   ⇒ 实测（补之前）：`todos[]` **没有任何读端能列出 id** —— `query=pool` 只数**节点上的 task**，
+    //     一条 todo 都不数（`listPool` 的循环只走 `geometry.nodes`）⇒ 作废与否，人根本看不见。
+    //
+    // ★ 判据**一处**：「这张卡还开着吗」= `!isClosedTaskState(state)`（`task_schema.ts` 那一把尺，
+    //   `done` / `void` 都算了结）⇒ 默认列表**天然排除**已完成与已作废（retire 落的 state=void）。
+    //   ★ 不在本分支里再写 `state !== 'void' && state !== 'done'` —— 那就是第二份判据。
+    //
+    // ★ 为什么 view=live 直接拒（而不是返回空列表）：`todos[]` 只住设计侧，扫描产物里没有它。
+    //   返回空列表会被读成「没有 todo」，而真相是「这一侧根本没有这个概念」。
+    case 'todo': {
+      const feature = requireFeature(input);
+      if ((input.view ?? 'design') === 'live') {
+        throw new Error(
+          'query=todo 只读**设计侧**（todos[] 不在扫描产物里）⇒ view=live 没有意义。\n' +
+            '★ 这里**故意不返回空列表**：空列表会被读成「没有 todo」，而真相是「这一侧没有这个字段」。',
+        );
+      }
+      const dsl = getDSL(feature);
+      if (!dsl) {
+        throw new Error(
+          `feature "${feature}" 不存在 ⇒ 读不到 todo。\n` +
+            '★ 同理不返回空列表：空列表会被读成「没有 todo」，而真相是「没有这个 feature」。',
+        );
+      }
+
+      const cards = dsl.todos ?? [];
+      const want = input.state;
+      // ★ 默认 = **待办**（活卡）；`all` = 全部；给了具体 state = 按 state 过滤。
+      const picked =
+        want === 'all'
+          ? cards
+          : want
+            ? cards.filter((t) => t.state === want)
+            : cards.filter((t) => !isClosedTaskState(t.state));
+
+      const byState: Record<string, number> = {};
+      for (const s of TASK_STATES) byState[s] = 0;
+      for (const t of cards) if (t.state in byState) byState[t.state]++;
+
+      const { entries: tombstones, bad_lines } = readTodoTombstones(feature);
+      const scope =
+        want === 'all'
+          ? '全部（含已了结）'
+          : want
+            ? `state=${want}`
+            : '待办＝活卡（candidate + claimed）';
+
+      const lines: string[] = [
+        `══ feature "${feature}" 的 todo · ${scope} ${viewTag} ══`,
+        '',
+        `  口径：默认只列**活卡**（未了结）—— 已了结（done / void）**不在待办里**；要看 ⇒ state=done | void | all。`,
+        `  ★ 作废（todo.retire）= state 置 void + 落 retire_reason ⇒ 它**自动**从待办里出去，但**仍在册里**。`,
+        `  读数：册上共 ${cards.length} 张（活 ${cards.filter((t) => !isClosedTaskState(t.state)).length}` +
+          ` · 完成 ${byState.done ?? 0} · 作废 ${byState.void ?? 0}），本次列出 ${picked.length} 张`,
+      ];
+
+      if (picked.length === 0) {
+        lines.push('', '  （这一类里没有卡）');
+      } else {
+        picked.forEach((t, i) => {
+          const owner = t.owner ? `owner=${t.owner}` : 'owner=（没人领）';
+          const linked = t.node_id ? ` · node=${t.node_id}` : '';
+          lines.push('', `  ${i + 1}. [${t.id}] ${t.state} · ${owner}${linked}`);
+          lines.push(`     ${t.summary}`);
+          if (t.retire_reason) {
+            lines.push(`     ★ 作废理由：${t.retire_reason}${t.retired_at ? `（${t.retired_at}）` : ''}`);
+          }
+          const hist = t.history ?? [];
+          if (hist.length > 0) {
+            const last = hist[hist.length - 1];
+            lines.push(
+              `     修订史 ${hist.length} 条；最近 ${last.at}：旧「${last.from}」→ 新「${last.to}」（因为：${last.reason}）`,
+            );
+          }
+        });
+      }
+
+      if (tombstones.length > 0 || bad_lines > 0) {
+        lines.push('', `  ★ 墓碑（物理删过的，${tombstones.length} 条${bad_lines ? ` · ⚠ ${bad_lines} 行读不出` : ''}）：`);
+        for (const d of tombstones) {
+          lines.push(`     - [${d.card.id}] ${d.at} · 为什么删：${d.reason}`);
+        }
+        lines.push('  ★ 墓碑在 `<feature>.journal.jsonl`（append-only）；那里存着被删卡的**全文**。');
+      }
+
+      return {
+        message: lines.join('\n'),
+        data: {
+          feature,
+          scope,
+          total: cards.length,
+          open: cards.filter((t) => !isClosedTaskState(t.state)).length,
+          by_state: byState,
+          items: picked,
+          deleted: tombstones,
+        },
       };
     }
 
