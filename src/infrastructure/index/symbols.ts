@@ -409,8 +409,8 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
       insIdent.run({ fp: rel, nm: idn.name, k: idn.kind, ln: idn.line, col: idn.col, si: idn.start_index, ei: idn.end_index });
     }
     const insNode = db.prepare(
-      `INSERT INTO nodes(id, kind, name, qualified_name, file_path, language, start_line, end_line, parent, signature, docstring, sym_hash, is_closure, members, params, updated_at)
-       VALUES ($id, $k, $nm, $qn, $fp, $lang, $sl, $el, $par, $sig, NULL, $h, $isClos, $mem, $prms, $ts)`,
+      `INSERT INTO nodes(id, kind, name, qualified_name, file_path, language, start_line, end_line, parent, signature, docstring, sym_hash, is_closure, members, params, return_type, type_params, modifiers, updated_at)
+       VALUES ($id, $k, $nm, $qn, $fp, $lang, $sl, $el, $par, $sig, NULL, $h, $isClos, $mem, $prms, $ret, $tps, $mods, $ts)`,
     );
     const seenIds = new Set<string>();
     parsed.symbols.forEach((s, i) => {
@@ -426,6 +426,11 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
         // ★ v13：函数/方法形参（JSON）—— **零参函数存 `[]`**（与“不是函数”的 NULL 区分开）；
         //   type/class 没有 `params` 字段 ⇒ NULL。
         prms: s.params ? JSON.stringify(s.params) : null,
+        // ★ v14：返回类型 / 泛型参数 / 修饰符（`symbol_shape.ts` 唯一出处）——
+        //   ★ 三态同 params：`[]` = 抽到了确实没有；NULL = 没抽到（不猜）。
+        ret: s.returnType ?? null,
+        tps: s.typeParams ? JSON.stringify(s.typeParams) : null,
+        mods: s.modifiers ? JSON.stringify(s.modifiers) : null,
       });
     });
 

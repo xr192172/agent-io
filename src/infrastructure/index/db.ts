@@ -63,7 +63,7 @@ export function endBatch(db: Database, rollback = false): void {
   txDepth.set(key, d - 1);
 }
 
-export const SCHEMA_VERSION = 13; // v13：nodes.params（函数/方法形参 JSON）—— 旧库无此列，清库重解析 // v12：imports.start_index/end_index（整句 span）—— 旧库无此列，清库重解析 // v11：identifiers 表（标识符位置）—— 旧库无此表，清库重解析 // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
+export const SCHEMA_VERSION = 14; // v14：nodes.return_type / type_params / modifiers（返回类型 / 泛型 / 修饰符）—— 旧库无此列，清库重解析 // v13：nodes.params（函数/方法形参 JSON）—— 旧库无此列，清库重解析 // v12：imports.start_index/end_index（整句 span）—— 旧库无此列，清库重解析 // v11：identifiers 表（标识符位置）—— 旧库无此表，清库重解析 // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
 
 /** 默认 db 文件路径：<dataHome>/.agent-io/cache.db */
 export function getDbFile(): string {
@@ -193,6 +193,12 @@ export function openDb(dbFile: string = getDbFile()): Database {
     // ★ v13：nodes.params（函数/方法形参 JSON）—— signature 只有一根字符串，
     //   消费方各拆一次 ⇒ 假差异（T154）；结构化事实落库后只除一处。
     'ALTER TABLE nodes ADD COLUMN params TEXT',
+    // ★ v14：nodes.return_type / type_params / modifiers（返回类型 / 泛型 / 修饰符）——
+    //   与 params 同一条病根（signature 一根串），旧库此三列缺失，清库重解析。
+    //   ★ '[]' = 抽到了确实没有；NULL = 没抽到（判据见 schema.ts 的列注释）。
+    'ALTER TABLE nodes ADD COLUMN return_type TEXT',
+    'ALTER TABLE nodes ADD COLUMN type_params TEXT',
+    'ALTER TABLE nodes ADD COLUMN modifiers TEXT',
   ]) {
     try {
       db.exec(ddl);
@@ -208,7 +214,7 @@ export function openDb(dbFile: string = getDbFile()): Database {
   }
   db.prepare(
     'INSERT OR IGNORE INTO schema_versions(version, applied_at, description) VALUES (?, ?, ?)',
-  ).run(SCHEMA_VERSION, Date.now(), 'v13: nodes.params（函数/方法形参 JSON）—— signature 只有一根字符串，消费方各拆一次会出假差异；结构化事实落库，旧库无此列 ⇒ 清库重解析');
+  ).run(SCHEMA_VERSION, Date.now(), 'v14: nodes.return_type/type_params/modifiers（返回类型 / 泛型参数 / 修饰符）—— 此前只能从 signature 拆串，落库后 consistency 等消费方读同一份；旧库无此列 ⇒ 清库重解析');
   return db;
 }
 

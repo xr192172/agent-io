@@ -374,6 +374,12 @@ export interface ApiMatch {
    */
   params_via?: 'ast' | 'regex';
   /**
+   * ★ v14：本条签名比对**返回类型从哪来** —— `ast` = 读结构化 `ParsedSymbol.returnType`
+   *   （`nodes.return_type` 同源）；`regex` = 退回从签名串拆（该语言没抽到 / 本符号没注解）。
+   *   ★ 与 `params_via` 分开：一条比对可以「形参读 AST、返回类型拆串」（如 JS 没返回注解）。
+   */
+  return_via?: 'ast' | 'regex';
+  /**
    * ★ T157（2026-10-11）：**类型契约**（interface/type/class）的成员级明细。
    * ★ 只在"期望侧被解析成类型声明"时填；函数/方法契约**不填**（那是 `reason` 的事）。
    * ★★ `extras` **不算差异**（契约只声明"必需有什么"，实现多出来的成员合法）——
@@ -420,6 +426,8 @@ interface ParsedApi {
   kind: string;
   /** ★ v13：AST 形参表（与 `nodes.params` 同一个提取器）；缺省 = 该语法没给 `parameters` 字段 */
   params?: ParsedParam[];
+  /** ★ v14：AST 返回类型原文（与 `nodes.return_type` 同源）；缺省 = 没注解 / 该语法没这个字段 */
+  returnType?: string;
 }
 
 function normalizeSignature(sig: string): string {
@@ -550,10 +558,12 @@ function returnTypeOf(signature: string): string {
  */
 function compareSignatures(
   expected: string,
-  actual: { name: string; signature: string; params?: ParsedParam[] },
+  /** ★ v14：`returnType` = AST 原文（`ParsedSymbol.returnType` / `nodes.return_type`）；
+   *  缺省 ⇒ 返回类型退回拆签名串（`return_via` 标 `regex`） */
+  actual: { name: string; signature: string; params?: ParsedParam[]; returnType?: string },
   /** ★ v13：设计侧形参表（由 `expectedParamsOf` 用**同一个内核解析器**出）；null = 解析不了 */
   expectedParams?: ParsedParam[] | null,
-): { score: number; reason?: string; params_via: 'ast' | 'regex' } {
+): { score: number; reason?: string; params_via: 'ast' | 'regex'; return_via?: 'ast' | 'regex' } {
   const expectedName = extractFuncName(expected);
   const actualName = actual.name; // ★ AST 权威名（不再对 actual.signature 正则取名）
 
@@ -623,9 +633,12 @@ function compareSignatures(
       return { score: 80, reason: `形参类型不匹配：期望对象形参，实际 ${actText}`, params_via: 'ast' };
     }
 
-    // 返回类型：仅当两侧都是具体类型（不含语义省略号 ...）时才严格比对
+    // 返回类型：★ v14 优先读 **AST**（`ParsedSymbol.returnType` / `nodes.return_type`），
+    //   拆签名串只作**兜底**且明标 `return_via`（不再两边各拆一次同一根串）。
+    //   判据不变：仅当两侧都是具体类型（不含语义省略号 ...）时才严格比对。
     const expectedRet = returnTypeOf(expected);
-    const actualRet = returnTypeOf(actual.signature);
+    const actualRet = actual.returnType ?? returnTypeOf(actual.signature);
+    const returnVia: 'ast' | 'regex' = actual.returnType != null ? 'ast' : 'regex';
     const expConcrete = !!expectedRet && !expectedRet.includes('...');
     const actConcrete = !!actualRet && !actualRet.includes('...');
     const retCompatible =
@@ -634,10 +647,10 @@ function compareSignatures(
       expectedRet.toLowerCase().includes(actualRet.toLowerCase()) ||
       actualRet.toLowerCase().includes(expectedRet.toLowerCase());
     if (!retCompatible) {
-      return { score: 80, reason: `返回类型不匹配：期望 ${expectedRet}，实际 ${actualRet}`, params_via: 'ast' };
+      return { score: 80, reason: `返回类型不匹配：期望 ${expectedRet}，实际 ${actualRet}`, params_via: 'ast', return_via: returnVia };
     }
 
-    return { score: 100, params_via: 'ast' };
+    return { score: 100, params_via: 'ast', return_via: returnVia };
   }
 
   // ── 兜底：文本切分（**原逻辑原样保留**；只在 AST 给不出形参时走）──────────
@@ -662,9 +675,11 @@ function compareSignatures(
       return { score: 80, reason: `形参类型不匹配：期望对象形参，实际 ${actualArgs}`, params_via: 'regex' };
     }
 
-    // 返回类型：仅当两侧都是具体类型（不含语义省略号 ...）时才严格比对
+    // 返回类型：★ v14 即使走文本兜底，返回类型**仍先读 AST**（`actual.returnType`）——
+    //   “形参拆串”与“返回值拆串”是两件事，别一并降级。
     const expectedRet = returnTypeOf(expected);
-    const actualRet = returnTypeOf(actual.signature);
+    const actualRet = actual.returnType ?? returnTypeOf(actual.signature);
+    const returnVia: 'ast' | 'regex' = actual.returnType != null ? 'ast' : 'regex';
     const expConcrete = !!expectedRet && !expectedRet.includes('...');
     const actConcrete = !!actualRet && !actualRet.includes('...');
     const retCompatible =
@@ -673,10 +688,10 @@ function compareSignatures(
       expectedRet.toLowerCase().includes(actualRet.toLowerCase()) ||
       actualRet.toLowerCase().includes(expectedRet.toLowerCase());
     if (!retCompatible) {
-      return { score: 80, reason: `返回类型不匹配：期望 ${expectedRet}，实际 ${actualRet}`, params_via: 'regex' };
+      return { score: 80, reason: `返回类型不匹配：期望 ${expectedRet}，实际 ${actualRet}`, params_via: 'regex', return_via: returnVia };
     }
 
-    return { score: 100, params_via: 'regex' };
+    return { score: 100, params_via: 'regex', return_via: returnVia };
   }
 
   return { score: 90, reason: '签名不完全一致', params_via: 'regex' };
@@ -883,6 +898,8 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
                 kind: s.kind,
                 // ★ v13：形参读 AST（与 `nodes.params` 同一个提取器），不再拆 signature
                 params: s.params,
+                // ★ v14：返回类型也读 AST（与 `nodes.return_type` 同源）
+                returnType: s.returnType,
               });
             }
           }
@@ -979,6 +996,8 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
               match_score: comparison.score,
               reason: comparison.reason,
               params_via: comparison.params_via,
+              // ★ v14：返回类型的判据来源（和形参分开标）
+              return_via: comparison.return_via,
             });
             if (comparison.score === 100) {
               matchedCount++;
@@ -995,6 +1014,8 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
               match_score: comparison.score,
               reason: comparison.reason,
               params_via: comparison.params_via,
+              // ★ v14：返回类型的判据来源（和形参分开标）
+              return_via: comparison.return_via,
             });
             mismatchedCount++;
           }

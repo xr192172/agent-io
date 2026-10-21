@@ -16,6 +16,9 @@
  *     符号提取不含顶层 const/赋值表达式——常量值变更（FLAG=true→false）符号级零差异，
  *     曾被误判"无实质变更"漏掉 import 层波及。norm_hash 补第二道判定：符号无差异
  *     且全文归一化无差异才是纯注释/格式；norm 变了 → 符号外实质变更，按文件级波及
+ *   - v14：nodes.return_type / type_params / modifiers（返回类型原文 / 泛型参数 / 修饰符+装饰器）。
+ *     三者此前都只能从 signature 里拆（consistency 的 returnTypeOf、mind_map 的 outs）——
+ *     与 v13 的 params 同一个病根；结构化事实落库后消费方读同一份
  *
  * 节点 id 约定：
  *   - 文件节点：id = 相对项目根的 posix 路径（如 "src/tools/serve.ts"），kind='file'
@@ -70,6 +73,19 @@ CREATE TABLE IF NOT EXISTS nodes (
                              --   type/interface 的定义本来就没有地方落（signature 只有 Name()）
     params TEXT,             -- ★ v13（2026-10-20）：函数/方法形参 JSON（name/type/optional/variadic）——
                              --   signature 只有一根字符串，消费方各拆一次 ⇒ 假差异；此处是结构化事实。
+    -- ★★ v14（2026-10-21）：三块「以前只能从 signature 里拆」的事实。
+    --   判据（与 params 同一把尺，**写死**，不要重新解释）：
+    --     · '[]'  = **抽到了、此处确实没有**（没有泛型 / 没有修饰符）；
+    --     · NULL  = **没抽到**（该语言没有这条语法 / 该符号不是这一类 / 解析器没给）。
+    --   ★ 这两个值**不可互换**：把 NULL 写成 '[]' 等于对调用方说「确实没有」，
+    --     而那是我们不知道的事（params v13 已立此规矩）。
+    return_type TEXT,        -- v14：返回值**原文**（int / Promise<X> / Go 多返回值 (bool, int) /
+                             --   PHP ?array）。★ 标量：NULL = 没抽到或无返回类型注解，**没有 '[]' 语义**。
+    type_params TEXT,        -- v14：泛型参数 JSON 数组 [{name, constraint?, default?}]。
+                             --   '[]' = 抽到了、此处没泛型；NULL = 该语言没有泛型语法（php / js）。
+    modifiers TEXT,          -- v14：修饰符 + 装饰器 JSON 数组（export/async/static/readonly/abstract/
+                             --   public/protected… + @dec / #[Attr] / [Obsolete] / #[inline]）。
+                             --   '[]' = 抽到了、确实没有；NULL = 该语言不抽（go：无修饰符关键字）。
     sym_hash TEXT,           -- v3：符号 span 归一化 hash（去注释/空白）——符号级 diff 依据
     is_closure INTEGER NOT NULL DEFAULT 0,  -- v8: 局部闭包/辅助函数标记——不进 DSL 契约面，但仍保留供搜索/引用
     updated_at INTEGER NOT NULL

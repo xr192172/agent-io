@@ -30,6 +30,7 @@ import { missingLanguageHint } from './lang_hint.js';
 
 import { typeMembersOf, TYPE_DECL_NODES, type ParsedTypeMember } from './type_members.js';
 import { paramsOf, type ParsedParam } from './symbol_params.js';
+import { shapeOf, type ParsedTypeParam } from './symbol_shape.js';
 
 export interface ParsedSymbol {
   name: string;
@@ -62,6 +63,26 @@ export interface ParsedSymbol {
    * `consistency.ts` 的 `compareSignatures` 原先 `match(/\(([^)]*)\)/)` 拆串，现改读本字段。
    */
   params?: ParsedParam[];
+  /**
+   * ★ 2026-10-21（v14）：**返回类型原文**（`Promise<X>` / `(bool, int)` / `?array`）。
+   *
+   * 为什么单独一列：消费方（`consistency.ts` 的 `returnTypeOf` / `derive_mind_map` 的 outs）
+   * 此前都从 `signature` 里**拆同一根串** —— 与 v13 的形参同一个病根。
+   * 取不到（无返回类型注解 / 该语法无此字段）⇒ 省略（落库 NULL），不猜。
+   */
+  returnType?: string;
+  /**
+   * ★ 2026-10-21（v14）：**泛型参数表**（name / constraint / default），由 `symbol_shape.ts` 从 AST 抽。
+   * ★ 三态（schema 注释里写死）：**省略** = 该语言没有泛型语法 / 没抽；
+   *   `[]` = 抽到了、此处确实没有泛型；非空 = 真有。
+   */
+  typeParams?: ParsedTypeParam[];
+  /**
+   * ★ 2026-10-21（v14）：**修饰符 + 装饰器**（`export`/`async`/`static`/`readonly`/`abstract`/
+   *   `public`… + `@dec` / `#[Attr]` / `[Obsolete]`）。
+   * ★ 同样三态：省略 = 该语言不抽（Go 无修饰符关键字）；`[]` = 抽了、确实没有。
+   */
+  modifiers?: string[];
 }
 
 /** import 依赖（用于 import_project 的跨文件边推导） */
@@ -170,6 +191,9 @@ interface SyntaxNodeLike {
   isNamed?: boolean;
   /** 子树含 ERROR/MISSING 节点（tree-sitter 容错解析不抛错，靠此标记识别语法破坏） */
   hasError?: boolean;
+  /** 父节点（★ v14：装饰器/注解可能挂在父节点或前驱兄弟上 —— python `decorated_definition`、
+   *  ts `export_statement`、rust `attribute_item`；tree-sitter 节点原生提供，测试桩可不给） */
+  parent?: SyntaxNodeLike | null;
   childForFieldName(name: string): SyntaxNodeLike | null;
   child(index: number): SyntaxNodeLike | null;
   childCount: number;
@@ -392,12 +416,22 @@ function traverseAndExtract(
         //   （适配器 closureLiteralNodeTypes）。
         const vt = valueNode?.type;
         const isClosureLit = !!vt && (LANG_ADAPTERS[lang.name]?.closureLiteralNodeTypes ?? []).includes(vt);
+        // ★ 2026-10-21（v14）：顶层 const 绑定的**函数值**（`const h = async (): Promise<X> => …`）
+        //   也抽返回类型/泛型/修饰符 —— 这类 handler 是本仓的主体结构（server_registry 等）。
+        //   ★ 导出关键字在**声明节点**的父级（export_statement），不在值节点上 ⇒ 单独补第一项。
+        const valueShape = valueNode ? shapeOf(valueNode, lang.name) : {};
+        const constMods =
+          node.parent?.type === 'export_statement'
+            ? ['export', ...(valueShape.modifiers ?? [])]
+            : valueShape.modifiers;
         symbols.push({
           name: nameNode.text,
           kind: 'const',
           start_line: node.startPosition.row + 1,
           end_line: node.endPosition.row + 1,
           qualified_name: nameNode.text,
+          ...valueShape,
+          ...(constMods ? { modifiers: [...new Set(constMods)] } : {}),
           signature: `const ${nameNode.text} = ${valueBrief}`,
           parent: undefined,
           is_closure: isClosureLit ? true : undefined,
@@ -437,6 +471,9 @@ function traverseAndExtract(
         ...(kind === 'function' || kind === 'method'
           ? { params: paramsOf(node, lang.field_map.parameters || 'parameters', lang.name) }
           : {}),
+        // ★ 2026-10-21（v14）：**返回类型 / 泛型参数 / 修饰符**（`symbol_shape.ts` 唯一出处）。
+        //   三样都是「抽不到就省略」⇒ 落库 NULL；抽得到但为空 ⇒ `[]`（见 schema 注释）。
+        ...shapeOf(node, lang.name),
         signature,
         parent: symbolParent,
         is_closure: isClosureSymbol ? true : undefined,
