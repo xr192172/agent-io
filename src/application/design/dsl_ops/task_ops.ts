@@ -1,7 +1,7 @@
 /**
  * task_ops.ts —— **任务格的唯一写端**（`publish` / `claim` / `release` / `complete`）。
  *
- * 设计出处：`docs/task-system-plan.dsl.json` 的 `task_plan.task_home`（OQ11 裁定 B 的展开）：
+ * 设计出处：`.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.task_home`（OQ11 裁定 B 的展开）：
  *   · **家** = `geometry.nodes[].task`（与节点同居；★ 不设顶层 `tasks[]`）；
  *   · **唯一写端** = `edit_dsl {type:'task'}`（四个 action 都从这里进）；
  *   · **两轴消歧** = `task.state` 是唯一权威，`node.status`（progress 三轴）对它只是
@@ -190,7 +190,7 @@ function assertTransition(from: TaskState, to: TaskState, action: string): void 
     const can = applicableTransitions(from).map((t) => t.to);
     throw new Error(
       `${action} 被拒：state=${from} 没有到 ${to} 的**可用**迁移（可走：${can.length ? can.join(' / ') : '（无 —— 终态）'}）。` +
-        `★ 迁移表唯一住处 = src/domain/task_machine.ts#TRANSITIONS（docs/task-system-plan.dsl.json 的 state_machine）。`,
+        `★ 迁移表唯一住处 = src/domain/task_machine.ts#TRANSITIONS（.agent-io/design/task-system-plan.dsl.json 的 state_machine）。`,
     );
   }
 }
@@ -340,7 +340,7 @@ function reopenGate(
 /**
  * 立卡（`∅ → candidate`）：**两级**（`task_plan.two_level_tasks` + `publish_rule.corrected`）。
  *
- * ## ★★★ 为什么这一条从"拒"改成"L1 建构卡"（2026-10-17 · `docs/gate-principle.md`）
+ * ## ★★★ 为什么这一条从"拒"改成"L1 建构卡"（2026-10-17 · 闸原则：`.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.gate_principle`）
  * 旧判据（T12）：`没有 decision / 没有 expectations / 只有前态判据 ⇒ 一律拒`。
  * ★ 用户 2026-10-17 的原话与裁定（`two_level_tasks.why_needed` 逐字）：
  *   "**第一个 decision 从哪来？**" —— 拒的这条**把第一个决策卡也挡在门外** = 鸡生蛋 = 环。
@@ -1129,7 +1129,7 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
     if (!c.complete) {
       throw new Error(
         `complete 被拒（L1 建构未完成）：${c.missing.join('；')}。\n` +
-          `★ L1 的收口判据 = **DSL 建构完整**（\`docs/task-system-plan.dsl.json\` 的 \`two_level_tasks.L1_construct\`：` +
+          `★ L1 的收口判据 = **DSL 建构完整**（\`.agent-io/design/task-system-plan.dsl.json\` 的 \`two_level_tasks.L1_construct\`：` +
           `输出"可判的期望"，判据"建构完整" —— ★ **不是代码跑通**）。\n` +
           `★ 怎么办：给节点写决策卡 \`edit_dsl {type:'decision', op:'update', id:'${node_id}', data:{ summary, expectations } }\` ` +
           `（至少一条**相位 post** 的期望，如 \`file-exists\` / \`symbol-exists\`），再 complete。\n` +

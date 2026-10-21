@@ -41,7 +41,7 @@ function assertValidShapes(shapes: NodeShapes): void {
 }
 
 // ─────────────────────────────────────────────────────────────
-// ★★★ `path` 型节点（2026-10-17 · `docs/gate-principle.md` §三「每个环节独立的入口」）
+// ★★★ `path` 型节点（2026-10-17 · 闸原则 §三「每个环节独立的入口」= `.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.gate_principle.independent_entries`）
 // ─────────────────────────────────────────────────────────────
 
 /**
@@ -56,7 +56,7 @@ export const PATH_NODE_KINDS = ['file', 'doc', 'module', 'symbol'] as const;
 export type PathNodeKind = (typeof PATH_NODE_KINDS)[number];
 
 /**
- * ★ **造节点入口自己的校验**（`gate-principle.md` §三：入口要有校验，不能乱造）。
+ * ★ **造节点入口自己的校验**（闸原则 §三：入口要有校验，不能乱造 —— 判据典 = `.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.gate_principle.independent_entries`）。
  *
  * 三条，都是"会损坏数据/造成不一致"的那一类（⇒ 必须**阻断**，不是提醒）：
  *   ① `path` 非空 —— 空路径 = 一个指不到任何文件的"文件指针"（`byPath` 会拿空串认亲 ⇒ 串味）；

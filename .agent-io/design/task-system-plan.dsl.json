@@ -45029,9 +45029,128 @@
           "reopened_at": "2026-10-20T10:47:42.904Z",
           "reopen_reason": "清注释里的用户原话",
           "reopened_from": "deepseek-v4.1-flash",
-          "release_reason": "edit_code 批量格式未查清，未改",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T10:48:15.016Z"
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/expectation.ts",
+                "name": "expectationPhase",
+                "fp": "eb6b9ff9b27cb1776cf2842f6191bb24ef0ab8c2"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "CardStanding",
+                "fp": "704d92ebaf2c0dfe151ccbd194ecf85e72ce03cf"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "LeaseReleaseEvent",
+                "fp": "18cf7d123a7f8b79f423d021606eec499b2c4be9"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "RED_DISPOSITION",
+                "fp": "3114a43a01ee4c484167498071a1a68815516d38"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "RedAttribution",
+                "fp": "0f36e355d1e7c27a871c8228c7003736a1cd85be"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "RedDisposition",
+                "fp": "3657a655469b76b10e68371d73fc775560476d25"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "SatisfactionCounts",
+                "fp": "28e706f9dfb2d200c53ad4a96eb9f62666216f32"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "SatisfactionVerdict",
+                "fp": "d4384ab64abebfda43c04b9215e695eb29a77044"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "StandingInput",
+                "fp": "05f46a1d2b119b4670ef022de1bcb593e1779e92"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "StandingNode",
+                "fp": "b855c6faf88529b5ae478f4277f11c8610ff8af1"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "StandingVerdict",
+                "fp": "60649b7303d565ed490e92e43d48fa3a986caeff"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "TRANSITIONS",
+                "fp": "8e6dd89aa86a98b342332023b08de986e7e6b97e"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "TaskTransition",
+                "fp": "25b14f9ed89bcf0cc2127d68c7c11c1ffb050403"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "TransitionState",
+                "fp": "d8e7fcf0627d85d4c366abeac743c42eaf7b33a1"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "ViolationCounts",
+                "fp": "34cdfc96344535f034e4cd0bcc6fe9f1dd42e306"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "applicableTransitions",
+                "fp": "58a482bb9498e16c4167a45583793fa578ed419e"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "cardStanding",
+                "fp": "ade6af07c46135c41313a99ac77303b59b80bd0c"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "isClaimable",
+                "fp": "ade887076dec0553f9b6a44e094a3551e61ac1f3"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "isSatisfied",
+                "fp": "246abcbefaac15b99fb9d0dbd8266950f90e22b6"
+              },
+              {
+                "file": "src/domain/task_machine.ts",
+                "name": "releaseIfExpired",
+                "fp": "b17ecef6c0d5461090612dbb69c61060f3b509bb"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/expectation.ts",
+                "content_hash": "844799230da0874ef21817edba9555d87094c93c"
+              },
+              {
+                "path": "src/domain/task_machine.ts",
+                "content_hash": "7fdfc9e8802ffca7d2decc59b9ef761e45f05177"
+              }
+            ],
+            "computed_at": "2026-10-21T14:23:05.702Z",
+            "basis": [
+              "expectations"
+            ],
+            "note": "1 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
+          },
+          "release_reason": "32 处失效文档引用已修完（注释级；tsc --noEmit 0 error）：task_machine.ts 4 处 / task_schema.ts 4 / write_gate.ts 7 等",
+          "released_by": "subagent:docref",
+          "released_at": "2026-10-21T14:27:00.097Z"
         },
         "status": "draft"
       },
@@ -53032,7 +53151,71 @@
             },
             "agent": "all-externalize"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_application_design_board_pool_ts",
+          "summary": "把各节点 task 格按 state 收集成\"池\"：一条只读调用就能看到 candidate / claimed / done",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/board/pool.ts",
+              "why": "读端要有个家"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/board/pool.ts",
+              "symbol": "BoardView",
+              "why": "池的读数是具名类型（不许散装对象 —— 否则又是\"形状没人定\"）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/board/pool.ts",
+              "symbol": "listPool",
+              "why": "★ 唯一的读取入口；没有它，pool 就又只能 node -e 看"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/board/pool.ts",
+              "symbol": "ALL_STATES",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            }
+          ],
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/board/pool.ts",
+                "name": "ALL_STATES",
+                "fp": "d7ad0bf49cdd49aa2a6b283dd6c8e4f53b0a69a0"
+              },
+              {
+                "file": "src/application/design/board/pool.ts",
+                "name": "BoardView",
+                "fp": "f45176c79ea7e2decbac0fdf1c5c1958059f1a02"
+              },
+              {
+                "file": "src/application/design/board/pool.ts",
+                "name": "listPool",
+                "fp": "750cdf591fcaec48be307e84611058216b3332ca"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/board/pool.ts",
+                "content_hash": "e5837072dbc848f289f4bad24abb77d1f87a4005"
+              }
+            ],
+            "computed_at": "2026-10-21T14:25:01.726Z",
+            "basis": [
+              "expectations"
+            ]
+          },
+          "release_reason": "pool.ts:4 的设计出处已改指 .agent-io/design/task-system-plan.dsl.json（注释级，不动 listPool）",
+          "released_by": "subagent:docref",
+          "released_at": "2026-10-21T14:27:00.175Z"
+        }
       },
       {
         "id": "file_src_application_design_line_design_line_ts",
@@ -99422,11 +99605,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T13:37:59.871Z",
+    "saved_at": "2026-10-21T14:27:00.201Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 6357060,
+    "age": 9297390,
     "dbSchemaVersion": 16
   },
   "_forked_from": {

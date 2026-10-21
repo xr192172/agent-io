@@ -1,7 +1,7 @@
 /**
  * task_machine.ts —— 任务状态机：**状态迁移与可领性判定**。
  *
- * 设计出处：`docs/task-system-plan.dsl.json` 的节点 `file_src_domain_task_machine_ts`
+ * 设计出处：`.agent-io/design/task-system-plan.dsl.json` 的节点 `file_src_domain_task_machine_ts`
  * （`task_plan.state_machine` 的 `transitions` / `patrols` 是本文件的语义来源）。
  *
  * ## ★★ 前态判据（`phase='pre'`，如 `edge-absent`）由「期望自带」—— 本文件**不再有任何清单**
@@ -9,9 +9,14 @@
  * ⇒ 若拿它们一起判"是否已满足"，**每一张刚出生的卡都会「全过」** ⇒
  *   ★ **任务还没领就被误收口**。所以判定前必须先**选取后态判据**（按期望自带的 `phase`）。
  *
- * ★★★ 2026-10-16（T10 · `docs/principle-rewrite-not-patch.md` §四）：**这一段原先是一处补丁**——
+ * ★★★ 2026-10-16（T10）：**这一段原先是一处补丁**——
  *   本文件曾自带一份清单 `NEGATIVE_KINDS = ['edge-absent']` + `positiveExpectations()`（"判定前记得剔除"）。
- *   ★ 它是"补丁"的三个特征都占：① 别处要**记得**剔；② 同类问题再来一次要**再加一条**；③ 需注释解释缘由。
+ *   ★ 判据（2026-10-16 用户「不打补丁，收归原生结构」原话；原文随 54 份老文档清理删除、未进 `docs/DESIGN.md`，
+ *     故结论就地留在这里，不再指向任何文档路径）：
+ *     「**不要打补丁，而是直接重写**……**有补丁说明你原来的设计有问题**，那你就**重新连同这个补丁一起重新去设计
+ *      这个东西**。**补丁只是一个兜底性的东西**……**你以后改的话可能会漏看这个补丁**，但是你把它**重新结构写进去了，
+ *      你会得到一个更好、更优、更优雅的一个项目**。」
+ *   ★ 按它判，下面这三点它都占：① 别处要**记得**剔；② 同类问题再来一次要**再加一条**；③ 需注释解释缘由。
  *   ⇒ 已**收归进原生结构**：`Expectation` 现在**自带 `phase` 维度**
  *     （`domain/expectation.ts#expectationPhase` / `#postExpectations`）——
  *     **分类由 phase 决定**，本文件里"前态判据"这件事**已从 phase 派生**（不再有自己的清单）。
@@ -42,7 +47,13 @@ import { expectationPhase, expectationSubjectPath, normPath, postExpectations, t
 import { isTaskState, type TaskSpec, type TaskState } from './task_schema.js';
 
 /**
- * ★★★ 一张卡的**五值读数**（`docs/_extract/task-system-discussion-2.md` §5.1 `P30` 的裁决）。
+ * ★★★ 一张卡的**五值读数**（讨论 2 · `P30` 的裁决 —— 裁决已落进设计侧，不必回讨论稿：
+ * `.agent-io/design/task-system-plan.dsl.json` 的节点 `file_src_domain_task_machine_ts` ·
+ * `decision.expectations` 里 `cardStanding` / `isSatisfied` 那两条 `why` 就是裁决原文）。
+ *
+ * ★ P30 的【为什么】（原文摘句；讨论稿本身已不在盘上，原文出处 = commit e3fb5d2c）：
+ *   `complete` 调的**就是** `canClaim`；只改一处会把收口闸放行红卡（比现状更坏）
+ *   ⇒ 必须拆成「**一个读数** + **两个谓词**」，而不是"两把同形的尺"。
  *
  * ## 它收归的是什么（铁律 3：补丁 ⇒ 结构）
  * 收归前，"这张卡现在能干什么"被**四处各判一次**：
@@ -152,7 +163,8 @@ export interface StandingVerdict {
 /**
  * ★★★ **一条红的归属**（2026-10-17 重写：这一维原本不存在，所以每遇到一种新情况都要"再加一条 if"）。
  *
- * ## 它收归的是什么（`docs/principle-rewrite-not-patch.md` 的判据）
+ * ## 它收归的是什么（判据 = 「补丁的三条特征」：别处要**记得**配合 / 同类问题再来一次要**再加一条** /
+ * 需要注释解释**为什么这样** —— 2026-10-16 用户原话「有补丁说明你原来的设计有问题」，原文已随老文档清理删除）
  * 收归前，"红落在谁那儿"用 `own / foreignOwners / orphan` **三个局部变量 + 四段 if** 表达，
  * 而"每种归属意味着什么（可领 / 等谁 / 只是漂移）"**散在四段 reason 文案里**。于是：
  *   · ★ 加一类归属 ⇒ 要**再加一条 if** 并**再写一遍 reason**（= 补丁的定义）；

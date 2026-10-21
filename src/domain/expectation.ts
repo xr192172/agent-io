@@ -111,7 +111,8 @@ export type Expectation =
 export const EXPECTATION_KINDS = ['file-exists', 'symbol-exists', 'signature-matches', 'edge-exists', 'edge-absent', 'call-exists', 'run', 'source-has'] as const;
 
 /**
- * ★★★ 判据的**阶段**维度（2026-10-16 · T10 · `docs/principle-rewrite-not-patch.md` §四）。
+ * ★★★ 判据的**阶段**维度（2026-10-16 · T10）。下面 ①②③ 就是判它是不是补丁的那三条特征
+ * —— 出自用户 2026-10-16「有补丁说明你原来的设计有问题」那句，原文已随老文档清理删除。
  *
  * ## 要收归的那个补丁是什么
  * 原先判定"是否已满足"的调用方（`src/domain/task_machine.ts` 的 `canClaim`）**自带一份清单**

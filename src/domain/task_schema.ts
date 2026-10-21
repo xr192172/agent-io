@@ -1,7 +1,7 @@
 /**
  * task_schema.ts —— **任务格**（挂在设计侧节点上的任务对象）的形状。
  *
- * 设计出处：`docs/task-system-plan.dsl.json` 的节点 `file_src_domain_task_schema_ts`
+ * 设计出处：`.agent-io/design/task-system-plan.dsl.json` 的节点 `file_src_domain_task_schema_ts`
  * （其 `decision.expectations` 要求本文件存在，且含 `TaskState` / `TaskSpec` 两个符号）。
  *
  * ## 它是什么（一句话）
@@ -15,7 +15,7 @@
  *    而"checked=6 passed=3"这类**对拍读数**必陈旧 ⇒ **不许**进这里。
  * 2. **设计侧不复制事实** —— 任何能由 `cache.db` 现算的字段（`line` / `loc` / `hash` /
  *    `reads` / `call_count`）**一律不许出现**在本文件导出的形状里。
- *    ★ 这条不是口号：`docs/task-system-plan.dsl.json` 的 `invariant_checks` 里有一条
+ *    ★ 这条不是口号：`.agent-io/design/task-system-plan.dsl.json` 的 `invariant_checks` 里有一条
  *      机器可跑的检查专门钉它（`red_when: task 格落了快照、复制了事实`）。
  * 3. **`evidence` 不是 `ProgressEvidence` 原样** —— 后者是「三档证据」（`overlay.ts`，
  *    含 `reading.observed` 这类**读数**）；本格只留 `{kind, at, by, verdict}` 四键，
@@ -37,7 +37,7 @@ import type { DiagramStatus } from './geometry.js';
  * | `done` | 已完成 |
  * | `void` | 失效（target 在 DB 已查不到 —— ★ 与 `done` 是**两种不同结局**） |
  *
- * ★ 五态与 `docs/task-system-plan.dsl.json` 的 `task_plan.state_machine.states` **逐字一致**；
+ * ★ 五态与 `.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.state_machine.states` **逐字一致**；
  *   这里是**唯一住处**，别处不许再抄一份字面量。
  */
 export const TASK_STATES = ['candidate', 'claimed', 'done', 'void'] as const;
@@ -522,7 +522,7 @@ export interface TaskSpec {
 }
 
 /**
- * ★★★ **任务卡的两级：L1 建构卡 / L2 实现卡**（2026-10-17 · `docs/task-system-plan.dsl.json`
+ * ★★★ **任务卡的两级：L1 建构卡 / L2 实现卡**（2026-10-17 · `.agent-io/design/task-system-plan.dsl.json`
  * 的 `task_plan.two_level_tasks` + `publish_rule.corrected`）。
  *
  * ## 语义（逐字来自设计 DSL）

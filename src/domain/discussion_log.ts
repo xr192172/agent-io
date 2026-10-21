@@ -1,7 +1,7 @@
 /**
  * discussion_log.ts —— **讨论登记格**（`TaskDiscussion`）的**纯函数**：微缩渲染 + 展开判定。
  *
- * 设计出处：`docs/task-system-plan.dsl.json` 的节点 `file_src_domain_discussion_log_ts`
+ * 设计出处：`.agent-io/design/task-system-plan.dsl.json` 的节点 `file_src_domain_discussion_log_ts`
  * （`decision.expectations` 要求本文件存在且含 `renderMicro` / `shouldExpand`；
  * `decision.acceptance` 要求「展开条件是机器可判的（领取时 / 判失败需裁决时 / expand=discussion）」；
  * `semantic.files` 的责任 = 「讨论登记：微缩在前、按需展开、版本链」）。

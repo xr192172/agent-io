@@ -214,8 +214,9 @@ function validateReasoningIntegrity(dsl: DesignDSL): ValidationErrorItem[] {
  * `task_plan.plan_to_work.reading_now` 停在 **2026-10-16**：`checked 25 / passed 12 / failed 12`。
  * 而 **2026-10-19 实跑 `judgeExpectations`**：`checked 517 / passed 515 / failed 0`。
  * ⇒ **快照说"还有 12 条红"，实际 0 条。** 它躺在"唯一手写源"里，读它的人（含下一个窗口的 LLM）
- *   会以为还有 12 件活；而且它引用的复跑入口 `certs/.work/probe-plan-detail.mjs` 读的是
- *   **已删除**的 `docs/task-system-plan.dsl.json` ⇒ 连"怎么复跑"都是断的。
+ *   会以为还有 12 件活；而且它引用的复跑入口 `certs/.work/probe-plan-detail.mjs` 至今仍按**老路径**
+ *   （`docs/` 下那份）去读设计 DSL —— 那份早已迁到 `.agent-io/design/task-system-plan.dsl.json`
+ *   ⇒ 连"怎么复跑"都是断的。
  *
  * ## 判据
  * 读数是**派生量**（跑一次就有），只能【读时现算】。落盘 = 第二份真相 = 会过期 = 会骗人。

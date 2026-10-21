@@ -157,7 +157,7 @@ export interface Node {
   /** 节点实现状态：draft=待实现, in_progress=实现中, done=已完成 */
   status?: DiagramStatus;
   /**
-   * ★★★ **任务格的家**（2026-10-17 · `docs/task-system-plan.dsl.json` 的 `task_plan.task_home`）。
+   * ★★★ **任务格的家**（2026-10-17 · `.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.task_home`）。
    *
    * 设计裁定（OQ11=B）：「任务与节点**同居**」—— 任务挂在它要改的那个节点上，
    * **不设顶层 `tasks[]`**。理由：顶层数组会让"判据对着节点判、状态却去别处找"，
@@ -189,7 +189,7 @@ export interface Node {
   /** 节点类型描述（如 service/module/database/api/queue/ui） */
   type?: string;
   /**
-   * ★★★ **显式文件指针（仓库相对路径）**（2026-10-17 · `docs/gate-principle.md` §三「每个环节独立的入口」）。
+   * ★★★ **显式文件指针（仓库相对路径）**（2026-10-17 · 闸原则 §三「每个环节独立的入口」= `.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.gate_principle.independent_entries`）。
    *
    * ## 它补的是什么洞
    * 写闸 / 任务机 / 设计单（`write_gate.ts#nodeFilePath`、`task_machine.ts#StandingNode`、

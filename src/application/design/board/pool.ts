@@ -1,7 +1,7 @@
 /**
  * pool.ts —— **任务池的读端**（`board_pool` 节点）。
  *
- * 设计出处：`docs/task-system-plan.dsl.json` 的节点 `file_src_application_design_board_pool_ts`
+ * 设计出处：`.agent-io/design/task-system-plan.dsl.json` 的节点 `file_src_application_design_board_pool_ts`
  * - `decision.summary`：「把各节点 task 格按 state 收集成"池"：一条只读调用就能看到 candidate / claimed / done」
  * - `decision.acceptance`：「`listPool` 返回 `BoardView{byState,total,folded}` 且 `shown+folded==total`；能经 `get_dsl` 的查询触达」
  *

@@ -1,7 +1,7 @@
 /**
  * task_drift.ts —— **漂移巡检**（live 每次重算后跑）。
  *
- * 设计出处：`docs/task-system-plan.dsl.json` 的节点
+ * 设计出处：`.agent-io/design/task-system-plan.dsl.json` 的节点
  * `file_src_application_patrol_task_drift_ts`（`decision.summary` 逐字）：
  * 「live 重算后对所有非 done 的卡跑 judgeExpectations ⇒ 抓「漏收口」与「应转失效」」。
  * 同节点的 `decision.acceptance`：「两类异常都有计数出口；红时给出卡 id」。

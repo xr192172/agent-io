@@ -203,7 +203,7 @@ export const OP_SPECS: readonly OpSpec[] = [
       '`alternatives` = 数组，每项 `{option, rejected_because}` 两个都要（★ **已被排除的方案**放这，缺 `rejected_because` 会被拒）',
   },
   {
-    // ★★★ 2026-10-17（T11 · `docs/task-system-plan.dsl.json#task_home`）：
+    // ★★★ 2026-10-17（T11 · `.agent-io/design/task-system-plan.dsl.json#task_home`）：
     //   **任务格的唯一写端**。`id` = 任务格所在的**节点 id**（任务与节点同居）——
     //   ★ 不是顶层 `tasks[]`，也不是 overlay 锚点。
     type: 'todo',
@@ -329,7 +329,8 @@ export const NODE_DATA_KEYS = [
   'content',
   'sub_dsl',
   'attributes',
-  // ★★★ 2026-10-17（`docs/gate-principle.md` §三「每个环节独立的入口」）：**补 `path`**。
+  // ★★★ 2026-10-17（闸原则 §三「每个环节独立的入口」）：**补 `path`**。
+  //   判据典 = `.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.gate_principle.independent_entries`。
   //   此前 data 键集里**没有** `path` ⇒ 经 `edit_dsl {type:'node', op:'add'}` 造 `path` 型节点
   //   会被"不被认的键"拒 ⇒ 写端只能给**老节点**挂卡、不能**新建**指向文件的节点
   //   ⇒ 「接取要 path 型节点」而「造节点要已有节点」= 环。

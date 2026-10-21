@@ -530,7 +530,7 @@ export interface TaskGateOutcome {
    */
   basis: TaskGateBasis;
   /**
-   * ★★★ **放行时留下的警告**（2026-10-17 · `docs/gate-principle.md` §二「提醒」）。
+   * ★★★ **放行时留下的警告**（2026-10-17 · 闸原则「提醒」= `.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.gate_principle.core`）。
    *
    * 来源只有一个：**收集失败**（文件节点既无 `path` 也无 `description`）。
    * ★ 它**不损坏数据**（只是"这次写没在账上被核对"）⇒ 按原则**放行 + 留痕**，
@@ -722,14 +722,16 @@ export function collectGateCoverage(rootArg: string): GateCoverage {
 }
 
 /**
- * ★★★ **收集失败的留痕**（2026-10-17 · `docs/gate-principle.md` §二「提醒」+ §四 #3）。
+ * ★★★ **收集失败的留痕**（2026-10-17 · 闸原则「提醒」+ 当时「4 处堵」清单第 3 条「收集失败 ⇒ 点名 + 放行 + 留痕」；
+ * 判据典 = `.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.gate_principle.core`「不会毁坏数据 ⇒ 提醒 + 放行」）。
  *
  * ## 改前 / 改后（一句话）
  * · 改前（T352）：`unaddressable` 非空 ⇒ **抛错**，源码**一个字节都不写**；
  * · 改后（本笔）：**点名 + 放行 + 留痕** —— 因为"某个老节点没写 `path`"**不损坏数据**，
  *   它只说明"这次写**没在账上**"（= 记录问题，不是数据问题）。
  *   ★ 继续抛的代价是**死循环**：`write_gate` 是所有源码写的咽喉，一个缺字段的节点
- *     会让整个项目改不动，而要补字段又得先改……（正是 `gate-principle.md` §三 说的"环"）。
+ *     会让整个项目改不动，而要补字段又得先改……（正是闸原则 §三 说的"环"：`.agent-io/design/task-system-plan.dsl.json`
+ *     的 `task_plan.gate_principle.independent_entries`「必须有下游的产物才能进 ⇒ 那不是闸，是环」）。
  * ★★ **"不许静默"这条没有退**：改前是"抛"，现在必须**点名 + 落盘留痕**，
  *    退回"不报、直接放行"照样是本证要打红的错。
  *
@@ -855,7 +857,8 @@ export function exemptionLines(exempted: readonly GateExemption[]): string {
  * ★★★ 拒绝之外的第三种结果（T352 → **2026-10-17 改**）：收集失败 ⇒ 既**不是拒绝**、也**不许**被读成"不适用"：
  *      **放行 + 点名 + 留痕**（`basis:'unaddressable'`；留痕写进该 feature 的 `annotations`）。
  *      ★ 为什么不拒：它**不损坏数据**（只是"这次写没在账上"）；拒会让"一个老节点缺字段"把整个项目锁死
- *      （`gate-principle.md` §二 的判据）。★ 前置闸（下一条）**仍然拒** —— 那一条会真的造成不一致。
+ *      （闸原则「提醒」的判据「**它会损坏数据吗**」⇒ 不会就放行；`.agent-io/design/task-system-plan.dsl.json`
+ *      的 `task_plan.gate_principle.core`）。★ 前置闸（下一条）**仍然拒** —— 那一条会真的造成不一致。
  *
  * ## ★★ T332（2026-10-15）**追加**的第二条判据：前置闸（解锁）
  * 上面这条之外，**追加**：某条 edge intent **显式**声明了 `requires`（非空）∧ 该边源节点(from)
@@ -1112,7 +1115,7 @@ function evaluateTaskGate(
   // ★ T352：**先收集、再判定**。★ 2026-10-17：收集失败（`unaddressable`）从"抛"改成"放行 + 留痕"，
   //   但**仍先收集**、且**仍点名**（见 `recordUnaddressableWarnings`）—— 退回"静默跳过"照样是错。
   const cov = collectGateCoverage(root);
-  // ★★★ 2026-10-17（`docs/gate-principle.md` §二 + §四 #3）：**收集失败不再抛** ——
+  // ★★★ 2026-10-17（闸原则「提醒」+「4 处堵」清单第 3 条 = `.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.gate_principle.core`）：**收集失败不再抛** ——
   //   它不损坏数据（只是"这次写没在账上"），按"**点名 + 放行 + 留痕**"处理。
   //   ★ 判据仍是 T352 那条不变量：`applicable:false` **只许**表示「本项目不用任务系统」；
   //     所以收集失败**不走** `applicable:false`，而是走 `basis:'unaddressable'`（applicable:true）。
@@ -1428,7 +1431,7 @@ function evaluateTaskGate(
     };
   }
   if (!checked) {
-    // ★ 2026-10-17：收集失败**不再抛**（`gate-principle.md` §二）。★ 但也不许混进
+    // ★ 2026-10-17：收集失败**不再抛**（闸原则「提醒」= `task_plan.gate_principle.core`）。★ 但也不许混进
     //   `files-not-in-design` 那句"都不在设计里"——那会变成**一句假话**（节点在，只是指不出文件）。
     if (cov.unaddressable.length) {
       return {
@@ -1437,7 +1440,7 @@ function evaluateTaskGate(
         note:
           `放行（收集失败）：本批 ${unmapped.length} 个文件**都不在任何"可寻址"的节点上**，` +
           `其中 ${cov.unaddressable.length} 个文件节点**收集失败**（既无 path 也无 description）⇒ ` +
-          `闸对它们**是瞎的** ⇒ 按 \`gate-principle.md\` §二 **点名 + 放行 + 留痕**（★ 缺字段不损坏数据，只是"没在账上"）。\n` +
+          `闸对它们**是瞎的** ⇒ 按闸原则「提醒」**点名 + 放行 + 留痕**（★ 缺字段不损坏数据，只是"没在账上" = 记录问题，不是数据问题）。\n` +
           `★ 点名：\n${warnings.join('\n')}\n` +
           `★ 依据读数：${cov.totalFeatures} 条 feature 里 ${cov.rootFeatureCount} 条 source_root 指到本根、` +
           `${covering.length} 条收集到了 path→node 表（共 ${covering.reduce((s, c) => s + c.byPath.size, 0)} 条路径）。`,

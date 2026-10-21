@@ -338,7 +338,7 @@ function touchedOf(input: UpdateFeatureInput): Touched {
  *   · `binding`  —— `setNodeSemantic({node_id: op.id, …})`；
  *   · `status`   —— `updateStatus({node_id: op.id, …})`；
  *   · `task`     —— 任务格（2026-10-17）：`id` = **任务格所在的 node_id**（与节点同居，
- *     `docs/task-system-plan.dsl.json#task_home`）⇒ 它确实是节点 id；
+ *     `.agent-io/design/task-system-plan.dsl.json#task_home`）⇒ 它确实是节点 id；
  *   · `decision` —— 决策写入口，`id` = **文件/文档节点 id 或仓库相对路径**（2026-10-10 T106 加）；
  *     ★★ 2026-10-10（T-e2e Bug2 修）：**路径必须先解析成真节点 id**（`findDecisionTargetNode`）再收 ——
  *     此前把 `op.id`（可能是路径）原样丢进 `alive.has(id)` ⇒ 路径永远匹配不上 ⇒ `nodes` 整项省略。
