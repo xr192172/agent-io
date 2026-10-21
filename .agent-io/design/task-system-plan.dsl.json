@@ -98990,11 +98990,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T06:09:05.551Z",
+    "saved_at": "2026-10-21T06:53:08.006Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792562707661,
-    "age": 237890
+    "scanRev": 1792563917183,
+    "age": 1670823
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -101146,6 +101146,20 @@
     {
       "id": "todo_db-补全-边元数据-edges-metadata-是个空壳-实测只有-cros",
       "summary": "【DB 补全·边元数据】`edges.metadata` 是个空壳：实测只有 `{\"cross\":true}` 一个布尔，8 列里这列等于没用。★ 这条【先别填】—— 因为现在没有任何消费方，填了就是又造一个\"建好了没人读\"（`nodes.params` 昨天刚犯过）。要先回答的问题：谁会读 metadata？候选消费方与它需要的东西：① `impact_analysis` 要\"这次调用是不是跨进程/跨语言\" ② `translate` 要\"这个调用的接收者是什么类型\" ③ `reconcile_effects` 要\"这次调用是不是 IO\"。⇒ 本卡的动作是【定消费方】，定了再填；没定就先让它空着，别自欺。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_翻译-前提-dsl-摘掉-symbols-实测-200-个文件里-191-个有它",
+      "summary": "【翻译·前提】DSL 摘掉 `symbols[]`（实测 200 个文件里 191 个有它）—— 这是\"DSL 语言无关、可直接复用\"这条成立的前提。它装的是\"这个文件有哪些符号\"的名字清单（`live_render.ts:76 kindOf` 还把 function/method/const 一律折成 `type`），本质是代码事实的镜像，**换一门语言后完全无意义**（它列的是 TS 的函数名）。实测陈旧读数：DSL 3021 条 vs 库 8674 条 · 383 条 DSL 独有 · 2558/2649 条 kind 与库不同 · 20 个文件行数过期 · 27-30 个 DSL 文件盘上已不存在。★ 摘掉之后 DSL 剩下的才是真正语言无关的东西：gates（实测 149/226 个节点有）+ 意图/决策。机制已建好：`storage.ts:723 factsExternalized`（`_sync.facts=db`）+ `renderLiveFromDb` 现渲染补齐；现在 `_sync` 里没有 `facts` 键，所以还在册。★ 前置：先修 `overlay.ts:58 computeFileSignature` —— 它靠 `kind:name` 做 rename 认亲，而有损 kind 让\"函数\"和\"类型\"指纹相同（这本身是个 bug）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_翻译-工作台-翻译册-feature-translate-json-它是-可以改",
+      "summary": "【翻译·工作台】翻译册（`<feature>.translate.json`）：它是\"可以改的地方\" —— 源 DB 不能改（只读事实）、源码不能直接改（要先有指导），所以翻译决策必须落在中间层。★ 关键判据（用户 2026-10-21 定）：**DSL 层语言无关 ⇒ 直接复用不翻**；**DB 层往下逐层翻**，因为各层\"术语不一样\"。三层映射（从粗到细，每层都可先桩后实）：① 类型/术语层：`int ↔ number`、`[]T ↔ T[]`、`error ↔ throws/Result`、包/模块结构；② 函数层：签名形变（默认参数/多返回值/重载/可变参数）、惯用法（错误处理、迭代、并发）；③ 原子层：标识符风格（`snake_case ↔ camelCase`）、关键字（`if`/`for`/`defer`/`using`）、字面量。状态机：`pending → generating → stubbed → translated → verified → diff | blocked`。★ **\"一一对应\"在账上，不在文件上**：文件是最小可索引单位 ⇒ 未翻的符号先写桩（`throw new Error(\"TODO: not translated\")`），文件才可索引；本仓 `symbols.ts:568 ensureStub` 已是这个模式的先例，换个方向用。★ **翻译侧 DB 不\"翻译\"，是索引产生的**：目标源码写完跑一次 import_project 就有了 —— 若从源 DB 逐对翻，它和源码的行号/偏移必然对不上，会变成一个\"看起来像 DB 的假 DB\"（比没有更坏）。★ \"下一个翻谁\" = 查 `state=pending` 且指纹变了的那行 ⇒ 这个查询驱动整个循环（这就是\"工具主导\"的含义）。",
       "expectations": [],
       "state": "candidate",
       "owner": null
