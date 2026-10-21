@@ -99015,11 +99015,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T08:57:36.703Z",
+    "saved_at": "2026-10-21T08:58:52.940Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792573023388,
-    "age": 33315
+    "age": 109552
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -101221,6 +101221,20 @@
     {
       "id": "todo_dsl-符号表-最终判据-保留-symbols-只修它的失真与幽灵-方向判据-用",
       "summary": "【DSL 符号表·最终判据】**保留 `symbols[]`，只修它的失真与幽灵**。\n\n★ 方向判据（用户 2026-10-21 两次纠正后定死）：\n  「设计册本身它不就是要在原 DB 上改嘛，原 DB 已经有了，所以它直接**复制**过去，然后**它改的是它的事**，\n   它要的是**实际去追上设计**。你不要老是想让设计册去靠实际册。」\n  ⇒ **DSL = 复制基线 → 独立演化 → 差值即待办**；**实际追设计，不是设计追实际**。\n\n★ 所以此前两种说法都作废：\n  ① 「摘掉 symbols[]」                      ← 错：它是缩略图/目录，是 `facts` 的**导航入口**（没它 LLM 不知道该查哪个名字）\n  ② 「检测 DSL 是否陈旧、与 DB 同步」        ← 错：这是\"设计靠实际\"的方向；DSL 比 DB 新是**正常**的，那是待办\n\n要修三件（**只修这三件，别扩**）：\n  （a）**kind 保真**：`src/application/design/live_render.ts:76 kindOf` 把 function/method/const 一律折成 type ⇒\n       实测 2558/2649 条符号 kind 与 `nodes` 表不一致；\n       连带 `src/application/design/overlay.ts:58 computeFileSignature` 靠 `kind:name` 认亲 ⇒ 函数与类型指纹相同（rename 会误认）。\n  （b）**幽灵清理**：27-30 个 DSL 里还记着、但盘上已不存在的文件 —— 这是**唯一真正的错**（设计册里写了不该存在的东西）。\n  （c）**基线可追溯**：DSL 记下它复制自哪一刻的 DB（`_sync` 里带上索引时刻），这样\"设计比实际新 / 实际比设计新\"**可判**，\n       但**绝不因此自动改写设计册**。\n\n★ 翻译场景：**源侧 DSL 保留 symbols[]**；复制到译文侧时**脱掉**（目标符号还不存在，带了就是假目录）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_并发控制-账户-把-actor-从-随手写的字符串-变成-有规范的账户-并在所有",
+      "summary": "【并发控制·账户】把 `actor` 从\"随手写的字符串\"变成**有规范的账户**，并在所有写路上强制（A7）。\n\n现状（实测）：\n· `actor` 已存在：`edit_code` / `rename_symbols` / `apply_writes` / `refactor_plan` / `remove_dead_imports` / `deprecate_offline`\n  都一路交到 `write_gate`；`AGENT_IO_ACTOR_STRICT=1` 时真的拒（实测 owner=alice + actor=me ⇒ 拒，文件未改）。\n· 本轮补齐：`rename_local` / `annotate_functions` / `rules apply` 三条漏传的；`approveChange` 改用 `c.submitter`（提案人=代码作者，不是拍板人）。\n· **缺口不是通道，是\"账户\"这个概念本身**：现在只是任意字符串，没有命名规范 ⇒ 无法审计\"谁是谁\"。\n\n要做：\n（a）**命名规范**：`human:<name>` / `agent:<session>` / `subagent:<task>`；不合规范的 actor 在 STRICT 模式下拒。\n（b）**账户↔任务的所有权已存在**（`task.owner` + A7），但要在**每一条**写路上生效 —— 判据只住 `write_gate`，调用方只负责传。\n（c）★ **缺省值要明说**：非 STRICT 下 actor 为空 ⇒ 提醒+放行（现在是这个行为，保留）；STRICT 下必须拒。\n★ 不需要密码学账户/登录：单机场景，`actor` 就是身份；要的是**可追溯**，不是**鉴权**。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_并发控制-闭包冲突-任务冲突按-可达闭包-算-两个任务要改的符号-其影响面-传递",
+      "summary": "【并发控制·闭包冲突】任务冲突按**可达闭包**算：两个任务要改的符号，其影响面（传递闭包）如果重叠 ⇒ 串行。\n★ 这是\"比文件级准\"的判据：改 `kernel.ts` 的 `parseFileFull` 会影响所有调用方，但文件级写闸只看到\"kernel.ts 被占了\"。\n\n做法（用已有的 `edges`）：\n· 任务闭包 = 该任务 claim 的节点所含符号 + 沿 `edges(kind IN ('call','type_ref'))` 的**反向传递闭包**（谁依赖我）。\n· 重叠判据 = 两个闭包的交集非空。\n\n★ 三个必须处理的坑：\n① **`import` 边必须排除** —— 它会让全仓近乎连通（一个 util 被 import 就全相关），冲突率会爆炸。只用 `call` / `type_ref`。\n② **成本**：13k+ 边算传递闭包，每次 claim 都算不可接受 ⇒ 缓存（按 `symbols.sym_hash` 失效）。\n③ **死锁**：A 等 B、B 等 A ⇒ 必须**按任务 id 字典序**固定加锁顺序，否则会互等。\n\n★ 形态建议：**claim 时报冲突，不自动排队**。\n   理由：自动排队 = 分布式锁（要持有、要超时、要防孤儿），单机场景成本远大于收益；\n   报冲突 + 让人决定（换任务 / 等 / 显式认领冲突）已经够用，而且**不引入新的隐蔽状态**。\n★ 不许\"自动降级为并行\" —— 冲突就是冲突，静默并行比排队更坏。",
       "expectations": [],
       "state": "candidate",
       "owner": null
