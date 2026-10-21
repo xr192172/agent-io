@@ -63,7 +63,7 @@ export function endBatch(db: Database, rollback = false): void {
   txDepth.set(key, d - 1);
 }
 
-export const SCHEMA_VERSION = 14; // v14：nodes.return_type / type_params / modifiers（返回类型 / 泛型 / 修饰符）—— 旧库无此列，清库重解析 // v13：nodes.params（函数/方法形参 JSON）—— 旧库无此列，清库重解析 // v12：imports.start_index/end_index（整句 span）—— 旧库无此列，清库重解析 // v11：identifiers 表（标识符位置）—— 旧库无此表，清库重解析 // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
+export const SCHEMA_VERSION = 15; // v15：nodes.body_text / body_hash（函数体原文 + sha1）—— 旧库无此列，清库重解析 // v14：nodes.return_type / type_params / modifiers（返回类型 / 泛型 / 修饰符）—— 旧库无此列，清库重解析 // v13：nodes.params（函数/方法形参 JSON）—— 旧库无此列，清库重解析 // v12：imports.start_index/end_index（整句 span）—— 旧库无此列，清库重解析 // v11：identifiers 表（标识符位置）—— 旧库无此表，清库重解析 // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
 
 /** 默认 db 文件路径：<dataHome>/.agent-io/cache.db */
 export function getDbFile(): string {
@@ -199,6 +199,12 @@ export function openDb(dbFile: string = getDbFile()): Database {
     'ALTER TABLE nodes ADD COLUMN return_type TEXT',
     'ALTER TABLE nodes ADD COLUMN type_params TEXT',
     'ALTER TABLE nodes ADD COLUMN modifiers TEXT',
+    // ★ v15：nodes.body_text / body_hash（函数体原文 + 它的 sha1）——
+    //   v14 之后 DB 知道「函数长什么样」但不知道「它做了什么」⇒ 重写必须开源文件。
+    //   ★ NULL = 该节点没有体（或该语言的体不是单一节点）；**空串是禁用的**（见 schema.ts 列注释）。
+    //   ★ 两列与 files.content_hash 同一代快照，读 body 前必须过"库内自洽 + 库与源码同源"两道。
+    'ALTER TABLE nodes ADD COLUMN body_text TEXT',
+    'ALTER TABLE nodes ADD COLUMN body_hash TEXT',
   ]) {
     try {
       db.exec(ddl);
@@ -214,7 +220,7 @@ export function openDb(dbFile: string = getDbFile()): Database {
   }
   db.prepare(
     'INSERT OR IGNORE INTO schema_versions(version, applied_at, description) VALUES (?, ?, ?)',
-  ).run(SCHEMA_VERSION, Date.now(), 'v14: nodes.return_type/type_params/modifiers（返回类型 / 泛型参数 / 修饰符）—— 此前只能从 signature 拆串，落库后 consistency 等消费方读同一份；旧库无此列 ⇒ 清库重解析');
+  ).run(SCHEMA_VERSION, Date.now(), 'v15: nodes.body_text/body_hash（函数体原文 + sha1）—— 此前 DB 只知道函数长什么样、不知道它做了什么 ⇒ 重写必须打开源文件；旧库无此列 ⇒ 清库重解析');
   return db;
 }
 

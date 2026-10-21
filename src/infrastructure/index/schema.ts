@@ -19,6 +19,10 @@
  *   - v14：nodes.return_type / type_params / modifiers（返回类型原文 / 泛型参数 / 修饰符+装饰器）。
  *     三者此前都只能从 signature 里拆（consistency 的 returnTypeOf、mind_map 的 outs）——
  *     与 v13 的 params 同一个病根；结构化事实落库后消费方读同一份
+ *   - v15：nodes.body_text / body_hash（**函数体原文** + 它的 sha1）。
+ *     v14 之前 DB 知道「这个函数长什么样」（签名/形参/返回类型/修饰符/成员），**不知道它做了什么** ⇒
+ *     重写时仍必须打开源文件（那正是"看着 DB 重写不安全"的来源）。判据：**要不要打开源文件**
+ *     —— 打不开就说明 DB 不全。★ `NULL` 的语义与 `files.content_hash` 的用法**写死在列注释里**（见下）
  *
  * 节点 id 约定：
  *   - 文件节点：id = 相对项目根的 posix 路径（如 "src/tools/serve.ts"），kind='file'
@@ -86,6 +90,30 @@ CREATE TABLE IF NOT EXISTS nodes (
     modifiers TEXT,          -- v14：修饰符 + 装饰器 JSON 数组（export/async/static/readonly/abstract/
                              --   public/protected… + @dec / #[Attr] / [Obsolete] / #[inline]）。
                              --   '[]' = 抽到了、确实没有；NULL = 该语言不抽（go：无修饰符关键字）。
+    -- ★★ v15（2026-10-21）：**函数体原文**。NULL 的语义（与 params v13 / 三列 v14 同一把尺，**写死**）：
+    --     · NULL = **这个节点没有体**（type / interface / class / 纯值 const 声明），
+    --              或**该语言的体不是单一 AST 节点**（bodyIsSelf：julia / fish / crystal —— 见 kernel.ts 的 LANG_ADAPTERS）
+    --              ⇒ 我们**不知道**它做了什么；
+    --     · 非空串 = 原文：**从 AST 的 body 节点取 text**，不做任何格式化（不重排缩进、不去注释、
+    --              不归一化空白）—— 消费方要把它当**源码字节**用。
+    --     · 【禁止】空串 '' —— 空串会被下游读成"体确实是空的"，而我们不知道的事不许写成知道。
+    --   ★ 是否含外层花括号 = **照语法树原样**（这决定消费方怎么拼回去）：
+    --     · ts/js/go/java/kotlin/php/c#/rust：体节点是 statement_block / block / function_body /
+    --       compound_statement ⇒ **含** 花括号；
+    --     · python：block = **缩进语句块**，不含 def 行、**没有花括号**；
+    --     · ts/js 箭头函数简写（x => x+1）的 body 字段是**表达式** ⇒ 不含花括号；
+    --     · kotlin 的 function_body 在 = expr 形态下也是一段表达式。
+    --   ★★ 与 files.content_hash 的关系（**读 body 之前必读这一段**）：
+    --     两列都是**索引那一刻**的快照，与 files.content_hash **同一代**。
+    --     body_hash 只证明"这段文本没被本表的写入路径篡改过"，**不证明文件与索引还同源**。
+    --     ⇒ 每个消费方读完 body 必须自己过两道：
+    --       ① 库内自洽：sha1(body_text) === body_hash；
+    --       ② 库与源码同源：contentHash(当前源码) === files.content_hash（contentHash 见 index/symbols.ts）。
+    --     任一道不过 ⇒ 报"**索引过期**"并**拒绝返回旧 body** —— 旧 body 正是"照旧代码重写新代码"的直接来源。
+    --     手里没有源码内容时退一步：至少用 size + mtimeMs 与 files 行比对（detectStaleIndex 同一把尺），
+    --     并在回执里明标"只做了 stat 级校验"，不许当成"已同源"。
+    body_text TEXT,
+    body_hash TEXT,          -- v15：**原文**的 sha1（不做归一化 —— 归一化会把"改了注释/格式"伪装成"没变"）
     sym_hash TEXT,           -- v3：符号 span 归一化 hash（去注释/空白）——符号级 diff 依据
     is_closure INTEGER NOT NULL DEFAULT 0,  -- v8: 局部闭包/辅助函数标记——不进 DSL 契约面，但仍保留供搜索/引用
     updated_at INTEGER NOT NULL

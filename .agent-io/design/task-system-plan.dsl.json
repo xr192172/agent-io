@@ -17693,17 +17693,14 @@
           "id": "file_src_application_meta_explore_contract_page_ts",
           "summary": "【L1 待建构】核心层 · src/application/meta/explore — 7 个 API（导入自 11 个模块）（src/application/meta/explore/contract_page.ts） ← 节点 file_src_application_meta_explore_contract_page_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_contract_page_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:07.193Z"
+          "owner": "agent-body-v15",
+          "claimed_at": "2026-10-21T04:48:14.071Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_explore_explore_arg_spec_ts",
@@ -50259,8 +50256,8 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_db_ts\"].responsibility"
           },
-          "owner": "codebuddy-v14-nodes-cols",
-          "claimed_at": "2026-10-21T04:07:25.529Z"
+          "owner": "agent-body-v15",
+          "claimed_at": "2026-10-21T04:48:13.572Z"
         },
         "status": "in_progress"
       },
@@ -50494,8 +50491,8 @@
               "verdict": "pass"
             }
           ],
-          "owner": "codebuddy-v14-nodes-cols",
-          "claimed_at": "2026-10-21T04:07:25.455Z",
+          "owner": "agent-body-v15",
+          "claimed_at": "2026-10-21T04:47:42.741Z",
           "reopened_at": "2026-10-20T15:14:17.828Z",
           "reopen_reason": "schema v13 增加 nodes.params 列",
           "reopened_from": null
@@ -50585,8 +50582,8 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_symbols_ts\"].responsibility"
           },
-          "owner": "codebuddy-v14-nodes-cols",
-          "claimed_at": "2026-10-21T04:07:25.380Z"
+          "owner": "agent-body-v15",
+          "claimed_at": "2026-10-21T04:48:13.768Z"
         },
         "status": "in_progress"
       },
@@ -51007,8 +51004,8 @@
             }
           ],
           "state": "claimed",
-          "owner": "codebuddy-v14-nodes-cols",
-          "claimed_at": "2026-10-21T04:07:06.287Z",
+          "owner": "agent-body-v15",
+          "claimed_at": "2026-10-21T04:48:13.972Z",
           "evidence": [
             {
               "kind": "expectations",
@@ -82378,7 +82375,7 @@
         ],
         "lines": 478,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_explore_explore_arg_spec_ts",
@@ -98953,11 +98950,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-21T04:36:19.162Z",
+    "saved_at": "2026-10-21T04:48:14.106Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792557378812,
-    "age": 350
+    "age": 715294
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

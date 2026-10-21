@@ -83,6 +83,18 @@ export interface ParsedSymbol {
    * ★ 同样三态：省略 = 该语言不抽（Go 无修饰符关键字）；`[]` = 抽了、确实没有。
    */
   modifiers?: string[];
+  /**
+   * ★ 2026-10-21（v15）：**函数体原文**（`nodes.body_text`）—— 从 AST 的体节点取 `text`，原文照录。
+   *
+   * 为什么加：v14 之后 DB 知道"函数长什么样"（签名 / 形参 / 返回类型 / 修饰符），**不知道它做了什么**
+   * ⇒ 重写一个函数仍必须打开源文件（用户判据：**不用打开源文件才算 DB 全**）。
+   * ★ 取法规则表 = `LANG_ADAPTERS` 的 `bodyFields` / `bodyNodeTypes`（与 `bodyChildren` **同一份**，
+   *   不另抄一份）⇒ 内核里没有"按语言的 if"。
+   * ★ 省略 = 没有体（type / interface / class / 纯值 const）**或**该语言的体不是单一 AST 节点
+   *   （`bodyIsSelf`：julia / fish / crystal）⇒ 落库 NULL；**空串禁用**
+   *   （判据见 `schema.ts` 的列注释：NULL 的含义、是否含花括号、怎么用 `files.content_hash` 校验同源）。
+   */
+  bodyText?: string;
 }
 
 /** import 依赖（用于 import_project 的跨文件边推导） */
@@ -420,6 +432,10 @@ function traverseAndExtract(
         //   也抽返回类型/泛型/修饰符 —— 这类 handler 是本仓的主体结构（server_registry 等）。
         //   ★ 导出关键字在**声明节点**的父级（export_statement），不在值节点上 ⇒ 单独补第一项。
         const valueShape = valueNode ? shapeOf(valueNode, lang.name) : {};
+        // ★ v15：const 绑的是**函数值**（箭头 / 函数表达式 / Go func_literal）⇒ 体也落库；
+        //   绑定的是普通值（`const X = 1`、`const h = wrap(...)` 的调用结果）⇒ 取不到体 ⇒ NULL。
+        //   ★ 这不是按语言分支：字段名/节点类型的差异全在 LANG_ADAPTERS 的规则表里。
+        const valueBody = valueNode ? bodyTextOf(valueNode, lang) : undefined;
         const constMods =
           node.parent?.type === 'export_statement'
             ? ['export', ...(valueShape.modifiers ?? [])]
@@ -432,6 +448,7 @@ function traverseAndExtract(
           qualified_name: nameNode.text,
           ...valueShape,
           ...(constMods ? { modifiers: [...new Set(constMods)] } : {}),
+          ...(valueBody ? { bodyText: valueBody } : {}),
           signature: `const ${nameNode.text} = ${valueBrief}`,
           parent: undefined,
           is_closure: isClosureLit ? true : undefined,
@@ -456,6 +473,9 @@ function traverseAndExtract(
         if (receiverMatch) symbolParent = receiverMatch[1];
       }
       const qn = parent ? `${parent}.${name}` : name;
+      // ★ v15：函数/方法从 **AST 的体节点**取原文（规则表 = LANG_ADAPTERS 的 bodyFields / bodyNodeTypes）。
+      //   取不到（type/class 走不到这里；解析器没给体）⇒ undefined ⇒ 落库 NULL（不是空串）。
+      const bodyOfSymbol = kind === 'function' || kind === 'method' ? bodyTextOf(node, lang) : undefined;
       // 局部闭包标记：当前 node 位于「函数作用域」内（上层是 function/method）→ 内部辅助函数，
       // 非设计契约。类型作用域（顶层/类内）不标——方法与顶层函数仍是契约。
       const isClosureSymbol = enclosingIsFunction;
@@ -469,7 +489,11 @@ function traverseAndExtract(
         ...(TYPE_DECL_NODES.has(node.type) ? { members: typeMembersOf(node) } : {}),
         // ★ 2026-10-20（v13）：函数/方法把**形参表**抽出来（`symbol_params.ts` 早就有，只是没接上）
         ...(kind === 'function' || kind === 'method'
-          ? { params: paramsOf(node, lang.field_map.parameters || 'parameters', lang.name) }
+          ? {
+              params: paramsOf(node, lang.field_map.parameters || 'parameters', lang.name),
+              // ★ v15：体原文（见 bodyTextOf 的注释：原文照录，含/不含外层花括号由语法树决定）
+              ...(bodyOfSymbol ? { bodyText: bodyOfSymbol } : {}),
+            }
           : {}),
         // ★ 2026-10-21（v14）：**返回类型 / 泛型参数 / 修饰符**（`symbol_shape.ts` 唯一出处）。
         //   三样都是「抽不到就省略」⇒ 落库 NULL；抽得到但为空 ⇒ `[]`（见 schema 注释）。
@@ -1605,6 +1629,43 @@ function bodyChildren(node: SyntaxNodeLike, lang: LanguageEntry, nameIndex: numb
     return out;
   }
   return null;
+}
+
+/**
+ * 符号的**函数体原文**（schema v15 的 `nodes.body_text`）。
+ *
+ * 取法 = `bodyChildren` 的**单节点版**，消费**同一份规则表**（`LANG_ADAPTERS` 的
+ * `bodyFields` / `bodyNodeTypes`）—— 不给 body_text 另抄一份逐语言清单，否则两份会各自漂移。
+ * 三级（全数据驱动，内核不认识任何具体语言）：
+ *   ① 适配器 `bodyFields` ?? DEFAULT_BODY_FIELDS 的字段值（ts/js `body`、python `suite`/`body`、
+ *      go/java/c#/rust `body`、php `body`…）⇒ **返回该节点本身**（不是它的孩子）；
+ *   ② 适配器 `bodyNodeTypes` 声明的体节点类型（实测 kotlin：`function_body` / `class_body`）；
+ *   ③ 都没有 ⇒ undefined。★ `bodyIsSelf`（julia / fish / crystal / solidity）**故意不造**：
+ *      那几门的体是"本节点的子节点序列"，没有单一节点 ⇒ 拼出来的是我们**发明**的一段文本，
+ *      而不是语法树上的一颗节点的原文 ⇒ 落 NULL（宁缺勿造）。
+ *
+ * ★ 原文照录：`node.text` 直接返回 —— 不重排缩进、不去注释、不归一化空白。
+ * ★ **外层花括号照语法树原样**（消费方要靠这条决定怎么拼回去）：
+ *   ts/js（statement_block）/ go（block）/ java（block）/ kotlin（function_body）/ php
+ *   （compound_statement）/ c#（block）/ rust（block）⇒ **含** `{ }`；
+ *   python 的 `block` = 缩进语句块 ⇒ **不含** `def` 行、没有花括号；
+ *   ts/js 箭头简写（`x => x+1`）的 body 字段是表达式 ⇒ 不含花括号。
+ * ★ 空串 ⇒ undefined（"有一个零宽度的体"不是事实；空串会污染 `body_hash` 的语义）。
+ */
+function bodyTextOf(node: SyntaxNodeLike, lang: LanguageEntry): string | undefined {
+  const a = LANG_ADAPTERS[lang.name];
+  for (const f of a?.bodyFields ?? DEFAULT_BODY_FIELDS) {
+    const c = node.childForFieldName(f);
+    if (c) return c.text || undefined;
+  }
+  const types = a?.bodyNodeTypes;
+  if (types) {
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i);
+      if (c && types.includes(c.type)) return c.text || undefined;
+    }
+  }
+  return undefined;
 }
 
 /** 第一个命名子节点（跳过匿名关键字/标点；isNamed 缺省视为命名节点） */

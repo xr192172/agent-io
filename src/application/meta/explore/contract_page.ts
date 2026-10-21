@@ -19,6 +19,14 @@
  * | 字段/成员清单 | **内核 AST** | `parseAstRoot` 走 `interface_body`/`object_type`/`class_body`（**不是正则**） |
  * | 产者 / 消费者 | **`find_references` 已有的能力** | 调 `findReferences`（**不自己写一套匹配**）：mode=field 的「构」=产者、「读/解」=消费者；mode=symbol 的 importers 并入消费者 |
  * | 接法边 | **`CHAIN_EDGES`**（`src/domain/chain_wiring.ts`） | 唯一权威，连 `[ran]` 标签也用它的 `evidenceLabel` |
+ * | **实现（函数体）** | **`nodes.body_text`（schema v15）** | `readSymbolBody`（**五道准入**：有行 / 有体 / 库内自洽 / 与源码同源 / 文本对得上） |
+ *
+ * ## ★ 为什么现在才给"实现"（v15）
+ * 用户判据：**重写一个函数时，只要还得打开源文件，就说明 DB 不全**。v14 之前 `nodes` 只有
+ * 签名 / 形参 / 返回类型 / 修饰符 / 成员 —— DB 知道"它长什么样"，**不知道它做了什么**。
+ * v15 把函数体原文（`body_text`）与它的 `sha1`（`body_hash`）落库 ⇒ 本工具**一次把实现也端上来**。
+ * ★ 仍然**不盲信 DB**：读 body 走 `readSymbolBody` 的五道准入（含 `files.content_hash` 同源校验）；
+ *   索引过期 ⇒ **不给 body、报出原因**（`implementation_absent`），绝不返回一个"看起来能用"的旧实现。
  * | 词表口径 | **`b_terms`**（`src/domain/b_terms.ts`） | `B_TERMS` 原样带出（不改写、不摘要） |
  *
  * ## ★★ 三条纪律（照本仓已立的先例抄口径）
@@ -35,7 +43,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseAstRoot, parseFileFull, memberNamesOf, findTypeDeclByName } from '../../../infrastructure/parse/index.js';
 import { ensureProjectIndex } from '../../../infrastructure/index/index_freshness.js';
-import { hasAnyIndexedFiles } from '../../../infrastructure/index/symbols.js';
+import { hasAnyIndexedFiles, readSymbolBody } from '../../../infrastructure/index/symbols.js';
 import { locateCandidates } from '../../../infrastructure/analysis/diagnosis/candidate_locator.js';
 import type { Candidate, SymptomParsed } from '../../../infrastructure/analysis/diagnosis/contract.js';
 import { findReferences } from '../../refactor/find/find_references.js';
@@ -45,6 +53,18 @@ import { B_TERMS, withTouched, type Touched, type TouchedProduct } from '../../.
 
 /** 每个面**最多回多少条**（避免刷屏）；真实总数另给 `count`，截断在 `limitations` 里如实标注。 */
 const MAX_SITES = 40;
+
+/**
+ * 实现原文最多回多少**字符**（`nodes.body_text` 截断点）。
+ * ★ 为什么必须截：本仓最长的一个函数 3565 行 —— 原样打出来会撑爆回执/上下文；
+ *   截断是**显式**的（`truncated` + `chars`/`lines` 给全文体量），不是静默少给。
+ */
+const BODY_CAP = 6000;
+
+/** 花括号口径（与 `schema.ts` 的 `body_text` 列注释同一句话）—— 决定消费方怎么拼回去。 */
+const BODY_BRACE_NOTE =
+  '外层花括号**随语法树原样**：ts/js · go · java · kotlin · php · c# · rust 的体**含** { }；' +
+  'python 的 block 是缩进语句块（**不含** def 行、没有花括号）；箭头简写（x => expr）的体是一段表达式。';
 
 export interface ContractPageInput {
   /** 要查的**符号名**或**类型名**（模块级声明名，如 `Touched` / `withTouched` / `written_files`）。 */
@@ -70,6 +90,30 @@ export interface ContractDefinition {
   /** 内核 AST 给的签名（取不到时为空串，另在 limitations 里说） */
   signature: string;
   qualified_name: string;
+}
+
+/**
+ * ★ v15：函数/方法的**实现原文**（`nodes.body_text`）—— 重写它之前**不必再打开源文件**。
+ *
+ * ★ 出来的每一份都**过了五道准入**（见 `index/symbols.ts#readSymbolBody`）：库里有行 / 有体 /
+ *   `sha1(body_text) === body_hash` / `contentHash(当前源码) === files.content_hash` / 文本在该符号 span 里。
+ *   任一道不过 ⇒ **本对象根本不出现**，改用 `implementation_absent` 报原因（不许"看起来能用"）。
+ */
+export interface ContractImplementation {
+  /** 函数体原文（**原文照录**；超长时按 `BODY_CAP` 截断，见 `truncated`） */
+  body: string;
+  /** 全文的 sha1（★ 是**未截断**原文的 hash：截断只影响 `body`，不影响这个指纹） */
+  body_hash: string;
+  /** 全文**字符数**（截断前；> `body.length` 即被截断） */
+  chars: number;
+  /** 全文**行数** */
+  lines: number;
+  /** `body` 是否被截断（`chars > BODY_CAP`） */
+  truncated: boolean;
+  /** 出处：`db` = `nodes.body_text`（**不是**从源码现切） */
+  source: 'db';
+  /** 人读说明：同源判据的读数 + **是否含外层花括号**（决定怎么拼回去） */
+  note: string;
 }
 
 /** 一个引用点（消费者/产者的逐条位置）。 */
@@ -118,6 +162,14 @@ export interface ContractPageResult {
   /** 字段 / 成员清单（interface / type / class）—— 内核 AST 走出来的，**不是正则**。 */
   members?: string[];
   members_note?: string;
+  /**
+   * ★ v15：函数/方法的**实现原文**（`nodes.body_text`，五道准入全过才给）。
+   * ★ 超长截断到 `BODY_CAP` 字符（`truncated` 标记 + `chars`/`lines` 给全文体量），
+   *   因为本仓有个 3565 行的函数 —— 回执里不许把它原样打出来。
+   */
+  implementation?: ContractImplementation;
+  /** ★ 没给 `implementation` 时**为什么**（`no_row` / `no_body` / `hash_mismatch` / `index_stale` / `text_mismatch` / `no_source`）—— 不是"没有这段"。 */
+  implementation_absent?: { reason: string; detail: string };
   /** ★ 产者：谁**构造**它（`find_references` mode=field 的「构」点 = 对象字面量键）。 */
   producers?: { source: string; count: number; sites: ContractSite[]; note: string };
   /** ★ 消费者：谁**读/解构**它（mode=field「读/解」点）+ 谁 **import/使用**它（mode=symbol）。 */
@@ -303,6 +355,56 @@ async function contractPageCore(input: ContractPageInput): Promise<ContractPageR
     }
   }
 
+  // ── ①b 实现（v15）：函数体原文 **从库读**（`nodes.body_text`），五道准入唯一住处 = `readSymbolBody` ──
+  //   ★ 为什么不"从源码现切"：那等于这两列白建 —— 工具还是得靠源文件（用户判据：不用打开源文件才算 DB 全）。
+  //   ★ 为什么仍要 `src`：同源判据 `contentHash(src) === files.content_hash` 必须拿**当前源码**才算得出来；
+  //     算不出来 ⇒ 不给 body 并报原因 —— 宁可"没给"，也不给一个"看起来能用"的旧实现。
+  let implementation: ContractImplementation | undefined;
+  let implementationAbsent: { reason: string; detail: string } | undefined;
+  const bodyKind = definition?.kind ?? pick.kind;
+  if (bodyKind === 'function' || bodyKind === 'method' || bodyKind === 'const') {
+    if (!src) {
+      implementationAbsent = {
+        reason: 'no_source',
+        detail: `定义文件读不到（${relFile}）⇒ 无法做 content_hash 同源校验，拒绝返回可能过期的 body`,
+      };
+    } else {
+      const read = readSymbolBody(db, {
+        file: relFile,
+        qualifiedName: pick.qualified_name,
+        startLine: pick.start_line,
+        src,
+      });
+      if (read.ok) {
+        const chars = read.body.length;
+        const lines = read.body.split('\n').length;
+        const truncated = chars > BODY_CAP;
+        implementation = {
+          body: truncated ? read.body.slice(0, BODY_CAP) : read.body,
+          body_hash: read.body_hash,
+          chars,
+          lines,
+          truncated,
+          source: 'db',
+          note:
+            '★ 与源码**同源**（contentHash(当前源码) === files.content_hash）且库内自洽（sha1(body_text) === body_hash）；' +
+            '原文照录、不重排缩进。' +
+            BODY_BRACE_NOTE +
+            (truncated ? ` ★ 已截断：正文只给了前 ${BODY_CAP} 字符（全文 ${chars} 字符 / ${lines} 行）。` : ''),
+        };
+      } else if (read.reason !== 'no_body' || bodyKind !== 'const') {
+        // `const` 绑纯值（`const X = 1`）⇒ 本来就没有体，不算"少做"；其余一律如实报。
+        implementationAbsent = { reason: read.reason, detail: read.detail };
+        if (read.reason === 'index_stale') {
+          limitations.push(
+            `实现（函数体）**未给出**：索引过期（${read.detail}）⇒ 先重建索引（import_project / index_integrity refresh:true）再重查；` +
+              '本工具**不会**拿旧 body 冒充当前实现。',
+          );
+        }
+      }
+    }
+  }
+
   // ── ③ 产者 / 消费者：**find_references 已有的能力**（不自己写匹配）──
   //   消费者 = mode=field 的「读/解构/声明」点 + mode=symbol 的 importers（谁 import/用它）。
   //   产者   = mode=field 的「构造」点（对象字面量键 = 谁在构造形如它的对象）。
@@ -382,6 +484,9 @@ async function contractPageCore(input: ContractPageInput): Promise<ContractPageR
     ...(definition ? { definition } : {}),
     ...(members !== undefined ? { members } : {}),
     ...(membersNote ? { members_note: membersNote } : {}),
+    // ★ v15：实现原文（五道准入全过才给）/ 没给时的具名原因
+    ...(implementation ? { implementation } : {}),
+    ...(implementationAbsent ? { implementation_absent: implementationAbsent } : {}),
     producers,
     consumers,
     chain_edges: edges,
@@ -434,6 +539,20 @@ export function renderContractPage(r: ContractPageResult): string {
     L.push(`\n① 定义在哪：\`${d.file}:${d.line}\`（${d.kind}${d.end_line !== d.line ? `，到 L${d.end_line}` : ''}）`);
     L.push(`   签名：${d.signature || '（内核 AST 未取到签名）'}`);
     L.push(`   qualified_name：${d.qualified_name}`);
+  }
+
+  // ①b 实现（v15）
+  if (r.implementation) {
+    const im = r.implementation;
+    L.push(
+      `\n▣ 实现（函数体原文 · nodes.body_text · ${im.lines} 行 / ${im.chars} 字符${im.truncated ? ' · **已截断**' : ''} · sha1 ${im.body_hash.slice(0, 12)}…）`,
+    );
+    L.push(`   ${im.note}`);
+    L.push('   ```');
+    for (const ln of im.body.split('\n')) L.push(`   ${ln}`);
+    L.push('   ```');
+  } else if (r.implementation_absent) {
+    L.push(`\n▣ 实现（函数体）：**没给**　[${r.implementation_absent.reason}] ${r.implementation_absent.detail}`);
   }
 
   // ② 成员

@@ -173,6 +173,101 @@ export function symbolSpanHash(lines: string[], startLine: number, endLine: numb
   return crypto.createHash('sha1').update(out.join('').replace(/\s+/g, ''), 'utf-8').digest('hex');
 }
 
+// ─────────────────────────────────────────────────────────────
+// v15：读 `nodes.body_text`（函数体原文）—— **四道准入**（照 `imports.start_index` / `nodes.members` 的先例，
+// 不盲信 DB）
+// ─────────────────────────────────────────────────────────────
+//
+// ★ 为什么必须四道：body 是**重写代码的依据**，读错一格的代价 = "照旧代码写出新代码"。
+//   而它是**副本**不是唯一一份（源文件才是权威）⇒ 读它之前必须证明"它还是这个文件的那一段"。
+//
+//   ① 库里有行：`nodes` 有 (file_path, qualified_name, start_line) 这一行（旧库没有 body_text 列 ⇒ 也算不过）；
+//   ② 有体：`body_text IS NOT NULL`（NULL = 该节点没有体 / 该语言的体不是单一节点 —— 不是"空体"）；
+//   ③ 库内自洽：`sha1(body_text) === body_hash`（本表写入路径没被绕过）；
+//   ④ 库与源码同源：`contentHash(src) === files.content_hash` —— ★ **这一道是"索引过期"的唯一判据**；
+//   ⑤ 取出的文本能对上：`body_text` 确实是该符号 span 里的一段（行号与体互相印证）。
+//   任一道不过 ⇒ `ok:false` + **具名 reason**；调用方**必须如实透出**，不许把它当"没有体"悄悄跳过。
+
+export type SymbolBodyReject =
+  /** 库里有没这一行 / 旧库缺 body_text 列 */
+  | 'no_row'
+  /** body_text IS NULL：该节点没有体，或该语言的体不是单一 AST 节点 */
+  | 'no_body'
+  /** sha1(body_text) ≠ body_hash：库内不自洽（写入路径被绕过 / 行被手改） */
+  | 'hash_mismatch'
+  /** contentHash(src) ≠ files.content_hash：**索引过期**，库里的 body 可能是旧代码 */
+  | 'index_stale'
+  /** body_text 不在该符号 span 的源码里：行号或体对不上 */
+  | 'text_mismatch';
+
+export type SymbolBodyRead =
+  | { ok: true; body: string; body_hash: string }
+  | { ok: false; reason: SymbolBodyReject; detail: string };
+
+/**
+ * 读一个符号的函数体原文（`nodes.body_text`），**五道准入**见上方注释。
+ *
+ * 入参必须给 `src`（这份源码的**当前**内容）：没有它就证明不了"库与源码同源"，
+ * 而"证明不了"在本仓不算"可以用"（§2d 不许猜）。手工/无源码场景请显式退到
+ * `size + mtimeMs` 的 stat 级校验，并在回执里写明"只做了 stat 级"。
+ *
+ * `startLine` 用**库里的** start_line（不是源码/AST 的）——它是定位键的一部分。
+ */
+export function readSymbolBody(
+  db: Database,
+  opts: { file: string; qualifiedName: string; startLine: number; src: string },
+): SymbolBodyRead {
+  type Row = { body_text: string | null; body_hash: string | null; start_line: number; end_line: number };
+  let row: Row | undefined;
+  try {
+    row = db
+      .prepare(
+        'SELECT body_text, body_hash, start_line, end_line FROM nodes WHERE file_path = $f AND qualified_name = $q AND start_line = $s',
+      )
+      .get({ f: opts.file, q: opts.qualifiedName, s: opts.startLine }) as Row | undefined;
+  } catch (e) {
+    // 旧库（v15 之前建的）没有这两列 ⇒ 说清是"库落后"，不是"没体"
+    return { ok: false, reason: 'no_row', detail: `nodes 查询失败（旧库缺 body_text/body_hash 列？需重建索引）：${(e as Error).message}` };
+  }
+  if (!row) {
+    return { ok: false, reason: 'no_row', detail: `nodes 里没有 ${opts.file}#${opts.qualifiedName}:L${opts.startLine} 这一行` };
+  }
+  if (row.body_text === null || row.body_text === '') {
+    return { ok: false, reason: 'no_body', detail: 'body_text 为 NULL/空（该节点没有体，或该语言的体不是单一 AST 节点）' };
+  }
+  // ③ 库内自洽
+  const h = contentHash(row.body_text);
+  if (!row.body_hash || row.body_hash !== h) {
+    return {
+      ok: false,
+      reason: 'hash_mismatch',
+      detail: `sha1(body_text)=${h.slice(0, 12)}… ≠ body_hash=${(row.body_hash ?? 'NULL').slice(0, 12)}…`,
+    };
+  }
+  // ④ 库与源码同源
+  const fileRow = db.prepare('SELECT content_hash FROM files WHERE path = $p').get({ p: opts.file }) as
+    | { content_hash: string }
+    | undefined;
+  if (!fileRow) return { ok: false, reason: 'index_stale', detail: `files 里没有 ${opts.file} 的 content_hash` };
+  if (fileRow.content_hash !== contentHash(opts.src)) {
+    return {
+      ok: false,
+      reason: 'index_stale',
+      detail: 'contentHash(当前源码) ≠ files.content_hash ⇒ **索引过期**：库里的 body 可能是旧代码',
+    };
+  }
+  // ⑤ 取出的文本能对上（CRLF 只在这里归一，**不改返回值**）
+  const span = opts.src.split(/\r?\n/).slice(row.start_line - 1, row.end_line).join('\n');
+  if (!span.includes(row.body_text.replace(/\r\n/g, '\n'))) {
+    return {
+      ok: false,
+      reason: 'text_mismatch',
+      detail: `body_text 不在 L${row.start_line}-L${row.end_line} 的源码里（行号或体对不上）`,
+    };
+  }
+  return { ok: true, body: row.body_text, body_hash: row.body_hash };
+}
+
 /** qualified_name → hash 集合（文件内重名如 TS 重载合并比较） */
 function hashSetsOf(rows: Array<{ qualified_name: string; sym_hash: string | null }>): Map<string, Set<string>> {
   const m = new Map<string, Set<string>>();
@@ -409,8 +504,8 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
       insIdent.run({ fp: rel, nm: idn.name, k: idn.kind, ln: idn.line, col: idn.col, si: idn.start_index, ei: idn.end_index });
     }
     const insNode = db.prepare(
-      `INSERT INTO nodes(id, kind, name, qualified_name, file_path, language, start_line, end_line, parent, signature, docstring, sym_hash, is_closure, members, params, return_type, type_params, modifiers, updated_at)
-       VALUES ($id, $k, $nm, $qn, $fp, $lang, $sl, $el, $par, $sig, NULL, $h, $isClos, $mem, $prms, $ret, $tps, $mods, $ts)`,
+      `INSERT INTO nodes(id, kind, name, qualified_name, file_path, language, start_line, end_line, parent, signature, docstring, sym_hash, is_closure, members, params, return_type, type_params, modifiers, body_text, body_hash, updated_at)
+       VALUES ($id, $k, $nm, $qn, $fp, $lang, $sl, $el, $par, $sig, NULL, $h, $isClos, $mem, $prms, $ret, $tps, $mods, $bdy, $bdyh, $ts)`,
     );
     const seenIds = new Set<string>();
     parsed.symbols.forEach((s, i) => {
@@ -431,6 +526,13 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
         ret: s.returnType ?? null,
         tps: s.typeParams ? JSON.stringify(s.typeParams) : null,
         mods: s.modifiers ? JSON.stringify(s.modifiers) : null,
+        // ★ v15：函数体原文 + 它的 sha1。
+        //   ★ **原文照录**（见 kernel.ts 的 bodyTextOf）：不重排缩进、不去注释、不归一化空白 ——
+        //     消费方要拿它当源码字节用；归一化会把"改了注释/格式"伪装成"没变"。
+        //   ★ 取不到 ⇒ NULL（该节点没有体 / 该语言的体不是单一 AST 节点）；
+        //     **绝不写空串** —— 空串会被读成"体确实是空的"，而那是我们不知道的事。
+        bdy: s.bodyText ?? null,
+        bdyh: s.bodyText ? contentHash(s.bodyText) : null,
       });
     });
 
