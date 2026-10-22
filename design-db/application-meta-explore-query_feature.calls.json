@@ -7,7 +7,7 @@
     {
       "name": "QueryFeatureInput",
       "kind": "interface",
-      "line": 89,
+      "line": 97,
       "signature": "QueryFeatureInput()",
       "members": [
         {
@@ -165,7 +165,7 @@
     {
       "name": "QueryFeatureResult",
       "kind": "interface",
-      "line": 192,
+      "line": 200,
       "signature": "QueryFeatureResult()",
       "members": [
         {
@@ -185,7 +185,7 @@
     {
       "name": "DSLWithMeta",
       "kind": "interface",
-      "line": 199,
+      "line": 207,
       "signature": "DSLWithMeta()",
       "members": [
         {
@@ -199,61 +199,61 @@
     {
       "name": "requireFeature",
       "kind": "function",
-      "line": 203,
+      "line": 211,
       "signature": "requireFeature(input: QueryFeatureInput): string"
     },
     {
       "name": "loadDSL",
       "kind": "function",
-      "line": 210,
+      "line": 218,
       "signature": "loadDSL(input: QueryFeatureInput)"
     },
     {
       "name": "queryFileCalls",
       "kind": "function",
-      "line": 229,
+      "line": 237,
       "signature": "queryFileCalls(db: Database, relPath: string): { incoming: Array<{ caller: string; callee: string; line: number; cross: boolean }>; outgoing: Array<{ caller: string; callee: string; line: number; cross: boolean }> }"
     },
     {
       "name": "symbolNameFromId",
       "kind": "function",
-      "line": 268,
+      "line": 276,
       "signature": "symbolNameFromId(nodeId: string): string"
     },
     {
       "name": "filePathFromId",
       "kind": "function",
-      "line": 274,
+      "line": 282,
       "signature": "filePathFromId(nodeId: string): string"
     },
     {
       "name": "dedupePreserve",
       "kind": "function",
-      "line": 286,
+      "line": 294,
       "signature": "dedupePreserve(xs: string[]): string[]"
     },
     {
       "name": "compactList",
       "kind": "function",
-      "line": 298,
+      "line": 306,
       "signature": "compactList(xs: string[], cap = 5): string"
     },
     {
       "name": "contractHint",
       "kind": "function",
-      "line": 303,
+      "line": 311,
       "signature": "contractHint(c: BrickContract): string"
     },
     {
       "name": "renderTodoChains",
       "kind": "function",
-      "line": 334,
+      "line": 342,
       "signature": "renderTodoChains(cards: readonly TaskSpec[],\n  idx: ReturnType<typeof buildTodoChains>,\n  picked: readonly TaskSpec[],): string[]"
     },
     {
       "name": "queryFeature",
       "kind": "function",
-      "line": 409,
+      "line": 417,
       "signature": "queryFeature(input: QueryFeatureInput): QueryFeatureResult"
     }
   ],
@@ -572,7 +572,7 @@
     },
     {
       "from": "src/application/meta/explore/query_feature.ts#queryFeature",
-      "to": "src/domain/task_schema.ts#isClosedTaskState"
+      "to": "src/domain/task_schema.ts#archivedTasks"
     },
     {
       "from": "src/application/meta/explore/query_feature.ts#queryFeature",
@@ -581,6 +581,14 @@
     {
       "from": "src/application/meta/explore/query_feature.ts#queryFeature",
       "to": "src/domain/task_schema.ts#isClosedTaskState"
+    },
+    {
+      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
+      "to": "src/domain/task_schema.ts#isClosedTaskState"
+    },
+    {
+      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
+      "to": "src/domain/task_schema.ts#liveTasks"
     },
     {
       "from": "src/application/meta/explore/query_feature.ts#queryFeature",

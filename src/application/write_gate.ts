@@ -1631,7 +1631,8 @@ function evaluateTaskGate(
       `    agent: '<你的身份>',\n` +
       `    operations: [{ type:'task', op:'claim', id:'${first.cands[0].nodeId}', data:{ owner: '<你的身份>' } }] }\n` +
       `  · 卡住在 \`todos[]\`（带 \`node_id\` 指向该节点）；\`geometry.nodes[].task\` 只是派生投影（读端不认它）。\n` +
-      `  · 任务态四态：candidate / claimed / done / void（★ superseded 已退场；void 可用 relaunch 重新立卡）；\n` +
+      `  · 任务态五态：candidate / preparing / claimed / done / void（★ superseded 已退场；void 可用 relaunch 重新立卡）；\n` +
+      `    ★ preparing（领了但还不能干）**没有写权** —— 它等于 candidate，先把判据补全再 start。\n` +
       `    ★ \`node.status\`（draft / in_progress / done）对它是**派生值**（progressOf），**不许直接改**。\n` +
       `  · claim 写前必过「可领」读数（cardStanding ∈ work/violated）；complete 必过「可收口」读数（isSatisfied）且另需 \`data.evidence\`（与 status 同一把证据尺）。\n` +
       `  · 覆盖这条改动的 feature 有多条时，在**任一条**里 claim 即可（本闸不替你挑）。\n` +

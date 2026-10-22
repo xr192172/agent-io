@@ -307,39 +307,51 @@
       ]
     },
     {
+      "name": "LEASE_STATES",
+      "kind": "const",
+      "line": 503,
+      "signature": "const LEASE_STATES = ['preparing', 'claimed'] as const"
+    },
+    {
+      "name": "isLeaseHolding",
+      "kind": "function",
+      "line": 506,
+      "signature": "isLeaseHolding(s: TaskState): boolean"
+    },
+    {
       "name": "LEASE_TTL_MS",
       "kind": "const",
-      "line": 516,
+      "line": 531,
       "signature": "const LEASE_TTL_MS = (() => { const raw = Number(process.env.AGENT_IO_LEASE_TT…"
     },
     {
       "name": "isLeaseExpired",
       "kind": "function",
-      "line": 534,
+      "line": 549,
       "signature": "isLeaseExpired(card: TaskSpec, nowMs: number, ttlMs: number = LEASE_TTL_MS): boolean"
     },
     {
       "name": "leaseAgeHours",
       "kind": "function",
-      "line": 543,
+      "line": 559,
       "signature": "leaseAgeHours(card: TaskSpec, nowMs: number): number | null"
     },
     {
       "name": "releaseIfExpired",
       "kind": "function",
-      "line": 568,
+      "line": 584,
       "signature": "releaseIfExpired(cards: readonly TaskSpec[],\n  nowMs: number,\n  ttlMs: number,): LeaseReleaseEvent[]"
     },
     {
       "name": "TransitionState",
       "kind": "type",
-      "line": 616,
+      "line": 632,
       "signature": "TransitionState()"
     },
     {
       "name": "TaskTransition",
       "kind": "interface",
-      "line": 622,
+      "line": 638,
       "signature": "TaskTransition()",
       "members": [
         {
@@ -377,13 +389,13 @@
     {
       "name": "TRANSITIONS",
       "kind": "const",
-      "line": 640,
+      "line": 656,
       "signature": "const TRANSITIONS = [ { id: 't_claim', from: 'candidate', to: 'claimed', stat…"
     },
     {
       "name": "applicableTransitions",
       "kind": "function",
-      "line": 759,
+      "line": 847,
       "signature": "applicableTransitions(from: TaskState): TaskTransition[]"
     }
   ],
@@ -426,6 +438,14 @@
     {
       "from": "src/domain/task_machine.ts#isSatisfied",
       "to": "src/domain/task_machine.ts#cardStanding"
+    },
+    {
+      "from": "src/domain/task_machine.ts#isLeaseExpired",
+      "to": "src/domain/task_machine.ts#isLeaseHolding"
+    },
+    {
+      "from": "src/domain/task_machine.ts#releaseIfExpired",
+      "to": "src/domain/task_machine.ts#isLeaseHolding"
     },
     {
       "from": "src/domain/task_machine.ts#releaseIfExpired",

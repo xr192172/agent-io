@@ -284,16 +284,32 @@ export const OP_SPECS: readonly OpSpec[] = [
            ★ 已归档的卡要 reopen / claim，**必须先 unarchive**（写端结构不变量会拒）。`,
   },
   {
+    // ★★★ 2026-10-23：设计册 `task_plan.state_machine` 的**唯一写端**（加第 5 态时撞出来的缺口：
+    //   代码改了、设计册还是 4 值，而那个字段**没有任何写入口** ⇒ 只能手改 = 绕过写端）。
+    type: 'task_plan',
+    ops: ['update'],
+    idRequired: false,
+    required: { update: [] },
+    note:
+      '★ 只写 `task_plan.state_machine`（`states` / 单条 `transition` upsert / `note`），别的 `task_plan.*` **不开后门**。' +
+      '★★ `data.states` 必须与 `src/domain/task_schema.ts#TASK_STATES` **逐字相同**（含顺序）—— 写端强制比对，不一致当场拒；' +
+      '这就是「设计册与代码同步」的机制形态（不是记得去改，而是改不动）。' +
+      '`data.transition` = `{id, from, to, guard:{clauses:[…]}, executor?}`，按 `id` upsert；`guard.clauses` **非空**（说不出判据的迁移不许进册）。' +
+      '★ 写完记得 `design_line { action:\'gen-db\' }`（design-db 是契约门的输入，旧了就成了假门）。',
+  },
+  {
     type: 'task',
     // ★ 2026-10-20：加 relaunch（void → candidate，重新立卡；判据由 publish 重给）
     // ★★★ 2026-10-22：加 renew（续租）/ expire（自己过期回 candidate）——
     //   `expire` 是**批量**的（扫全 feature 的过期 claimed 卡）⇒ 不要 id ⇒ 改用 `opsRequiringId`。
-    ops: ['publish', 'claim', 'release', 'complete', 'void', 'reopen', 'relaunch', 'renew', 'expire'],
+    // ★★★ 2026-10-23：加 start —— 两段式领取的**第二段**（preparing → claimed）
+    ops: ['publish', 'claim', 'start', 'release', 'complete', 'void', 'reopen', 'relaunch', 'renew', 'expire'],
     idRequired: false,
-    opsRequiringId: ['publish', 'claim', 'release', 'complete', 'void', 'reopen', 'relaunch', 'renew'],
+    opsRequiringId: ['publish', 'claim', 'start', 'release', 'complete', 'void', 'reopen', 'relaunch', 'renew'],
     idNote: '任务格所在节点的 id（`geometry.nodes[].task`；★ 任务与节点同居）',
     required: {
       claim: ['owner'],
+      start: ['owner'],
       release: ['reason'],
       complete: ['evidence'],
       void: ['reason'],
@@ -303,7 +319,13 @@ export const OP_SPECS: readonly OpSpec[] = [
       expire: [],
     },
     note:
-      '★ **任务态唯一写端**（四态 `candidate|claimed|done|void`；★ superseded 已退场）；`node.status` 只是它的**派生值**（`task_schema.ts#progressOf`），不许直接改。' +
+      '★ **任务态唯一写端**（**五态** `candidate|preparing|claimed|done|void`；★ superseded 已退场）；`node.status` 只是它的**派生值**（`task_schema.ts#progressOf`），不许直接改。' +
+      '★★ `preparing` = **领了但不能干**（2026-10-23 两段式领取）：判据（后态）0 条时 `claim` **不进 claimed**，进 `preparing`；' +
+      '回执点名"给哪个 node 补几条哪类判据"（`data.missing` 里还有可粘的模板）；准备期间照常改 `decision`（判据只住 decision），' +
+      '改完 `op:\'start\'`（第二段）才进 claimed（删快照 + 改态，**一次落盘**）；放弃 `release` / 超时 `expire` 会**按快照逐字还原**判据。' +
+      '★ 判据已经在的卡（修缺陷 / 重构）**直接一段式 claim**，不两段式。' +
+      '★ 存量卡（`publish` 盖 `judge_gate` 之前立的）不硬约束：照旧一段式领，但留 `claimed_without_judge` 并在回执里警告（迁移期，不静默）。' +
+      '★ `op:\'start\'`：`data.owner`（必须是你）—— `preparing → claimed`。' +
       'publish:**立卡=翻该节点的决策卡**：有后态判据⇒**L2**（summary+expectations 逐字搬）；' +
       '无 decision/太粗⇒**L1 建构卡**（**0 条期望**，验收=DSL 建构完整）；' +
       '★不收 data（**唯一例外**：`state=claimed` 的卡带 `data.reason` ⇒ **原地换判据**：只换 summary+expectations，' +

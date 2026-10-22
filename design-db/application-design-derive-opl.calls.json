@@ -7,19 +7,19 @@
     {
       "name": "OplStatus",
       "kind": "type",
-      "line": 23,
+      "line": 25,
       "signature": "OplStatus()"
     },
     {
       "name": "OplLiveState",
       "kind": "type",
-      "line": 24,
+      "line": 26,
       "signature": "OplLiveState()"
     },
     {
       "name": "OplApi",
       "kind": "interface",
-      "line": 27,
+      "line": 29,
       "signature": "OplApi()",
       "members": [
         {
@@ -39,7 +39,7 @@
     {
       "name": "OplDeclFile",
       "kind": "interface",
-      "line": 34,
+      "line": 36,
       "signature": "OplDeclFile()",
       "members": [
         {
@@ -65,7 +65,7 @@
     {
       "name": "OplLiveFile",
       "kind": "interface",
-      "line": 42,
+      "line": 44,
       "signature": "OplLiveFile()",
       "members": [
         {
@@ -91,7 +91,7 @@
     {
       "name": "OplState",
       "kind": "interface",
-      "line": 49,
+      "line": 51,
       "signature": "OplState()",
       "members": [
         {
@@ -177,97 +177,97 @@
     {
       "name": "oplRoot",
       "kind": "const",
-      "line": 75,
+      "line": 77,
       "signature": "const oplRoot = (feature: string) => path.join(getStorageRoot(), 'opl', f…"
     },
     {
       "name": "implRoot",
       "kind": "const",
-      "line": 76,
+      "line": 78,
       "signature": "const implRoot = (feature: string, id: string) => path.join(oplRoot(featur…"
     },
     {
       "name": "stateFile",
       "kind": "const",
-      "line": 77,
+      "line": 79,
       "signature": "const stateFile = (feature: string, id: string) => path.join(oplRoot(featur…"
     },
     {
       "name": "slugify",
       "kind": "function",
-      "line": 79,
+      "line": 81,
       "signature": "slugify(s: string): string"
     },
     {
       "name": "readState",
       "kind": "function",
-      "line": 87,
+      "line": 89,
       "signature": "readState(feature: string, id: string): OplState"
     },
     {
       "name": "writeState",
       "kind": "function",
-      "line": 92,
+      "line": 94,
       "signature": "writeState(s: OplState, feature: string): OplState"
     },
     {
       "name": "oplAdd",
       "kind": "function",
-      "line": 101,
+      "line": 103,
       "signature": "oplAdd(feature: string, idea: string): OplState"
     },
     {
       "name": "oplLocate",
       "kind": "function",
-      "line": 125,
+      "line": 127,
       "signature": "oplLocate(feature: string, id: string): Promise<OplState>"
     },
     {
       "name": "langFromPath",
       "kind": "function",
-      "line": 142,
+      "line": 144,
       "signature": "langFromPath(p: string): OplDeclFile['lang']"
     },
     {
       "name": "assertContractNotFromCode",
       "kind": "function",
-      "line": 167,
+      "line": 169,
       "signature": "assertContractNotFromCode(codeSignaturesFedAsContext: readonly string[]): void"
     },
     {
       "name": "oplDeclare",
       "kind": "function",
-      "line": 184,
+      "line": 186,
       "signature": "oplDeclare(feature: string,\n  id: string,\n  overrides?: { files?: OplDeclFile[]; declCodeContext?: string[] },): OplState"
     },
     {
       "name": "oplImplement",
       "kind": "function",
-      "line": 212,
+      "line": 214,
       "signature": "oplImplement(feature: string, id: string): OplState"
     },
     {
       "name": "extractApis",
       "kind": "function",
-      "line": 220,
+      "line": 222,
       "signature": "extractApis(src: string): Map<string, string>"
     },
     {
       "name": "sha1",
       "kind": "function",
-      "line": 242,
+      "line": 244,
       "signature": "sha1(s: string): string"
     },
     {
       "name": "opSignatureCacheFile",
       "kind": "const",
-      "line": 245,
+      "line": 247,
       "signature": "const opSignatureCacheFile = (feature: string) => path.join(oplRoot(feature), '_cache'…"
     },
     {
       "name": "SignatureCacheEntry",
       "kind": "interface",
-      "line": 246,
+      "line": 248,
       "signature": "SignatureCacheEntry()",
       "members": [
         {
@@ -287,73 +287,73 @@
     {
       "name": "SignatureCache",
       "kind": "type",
-      "line": 250,
+      "line": 252,
       "signature": "SignatureCache()"
     },
     {
       "name": "fileApisWithCache",
       "kind": "function",
-      "line": 253,
+      "line": 255,
       "signature": "fileApisWithCache(feature: string,\n  relPath: string,\n  abs: string,): { apis: Map<string, string>; viaCache: boolean }"
     },
     {
       "name": "signaturesEqual",
       "kind": "function",
-      "line": 278,
+      "line": 280,
       "signature": "signaturesEqual(actual: string, expected: string): boolean"
     },
     {
       "name": "oplCheck",
       "kind": "function",
-      "line": 320,
+      "line": 322,
       "signature": "oplCheck(feature: string, id: string): OplState"
     },
     {
       "name": "oplIntegrate",
       "kind": "function",
-      "line": 355,
+      "line": 357,
       "signature": "oplIntegrate(feature: string, id: string): Promise<OplState>"
     },
     {
       "name": "oplList",
       "kind": "function",
-      "line": 419,
+      "line": 421,
       "signature": "oplList(feature: string): Array<{ id: string; title: string; idea: string; status: OplStatus; parentFeat?: string; integrated: boolean; updated: string }>"
     },
     {
       "name": "oplGet",
       "kind": "function",
-      "line": 437,
+      "line": 439,
       "signature": "oplGet(feature: string, id: string): OplState"
     },
     {
       "name": "parseLlmJson",
       "kind": "function",
-      "line": 446,
+      "line": 448,
       "signature": "parseLlmJson(raw: string): unknown"
     },
     {
       "name": "llmDeclare",
       "kind": "function",
-      "line": 457,
+      "line": 459,
       "signature": "llmDeclare(feature: string,\n  s: OplState,\n  cfg: ReturnType<typeof loadLlmConfig>,): Promise<{ files: OplDeclFile[]; fedSignatures: string[] } | null>"
     },
     {
       "name": "llmImplement",
       "kind": "function",
-      "line": 508,
+      "line": 510,
       "signature": "llmImplement(feature: string,\n  s: OplState,\n  cfg: ReturnType<typeof loadLlmConfig>,): Promise<Record<string, string> | null>"
     },
     {
       "name": "oplAuto",
       "kind": "function",
-      "line": 547,
+      "line": 549,
       "signature": "oplAuto(feature: string, id?: string, idea?: string): Promise<OplState>"
     },
     {
       "name": "oplAutoImpl",
       "kind": "function",
-      "line": 552,
+      "line": 554,
       "signature": "oplAutoImpl(feature: string, id: string, s0: OplState): Promise<OplState>"
     }
   ],
@@ -372,6 +372,10 @@
     },
     {
       "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/dsl_write_scope.js",
       "kind": "relative"
     },
     {
@@ -579,6 +583,14 @@
     {
       "from": "src/application/design/derive/opl.ts#oplLocate",
       "to": "src/application/meta/view/derive_mind_map.ts#placeProposals"
+    },
+    {
+      "from": "src/application/design/derive/opl.ts#oplAdd",
+      "to": "src/infrastructure/dsl_write_scope.ts#runDslWriteScope"
+    },
+    {
+      "from": "src/application/design/derive/opl.ts#oplIntegrate",
+      "to": "src/infrastructure/dsl_write_scope.ts#runDslWriteScope"
     },
     {
       "from": "src/application/design/derive/opl.ts#llmDeclare",

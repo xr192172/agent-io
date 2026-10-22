@@ -50,6 +50,8 @@ import {
   cardStanding,
   isClaimable,
   isLeaseExpired,
+  // ★ 2026-10-23：哪些状态持租约的唯一值域（`preparing` 也持）—— 本文件不自写 `=== 'claimed'`
+  isLeaseHolding,
   isSatisfied,
   leaseAgeHours,
   LEASE_TTL_MS,
@@ -59,7 +61,7 @@ import {
 // ★ 2026-10-21（D-judge-port）：判定器的**实现**住 application，由这里**注入**给 domain 的状态机
 //   （`cardStanding` / `isSatisfied` 的 `opts.judge`）—— domain 不再向上 import application。
 import { judgeExpectations } from '../intent/expectations.js';
-import { expectationPaths, postExpectations, type Expectation } from '../../../domain/expectation.js';
+import { expectationPaths, expectationPhase, postExpectations, type Expectation } from '../../../domain/expectation.js';
 import {
   ABSENT_FILE_HASH,
   codeFingerprintOf,
@@ -81,10 +83,13 @@ import {
   taskLevel,
   // ★★★ 2026-10-22（迁移第②步 · 读端切到 todos[]）：卡的**权威住处**判据只住 `task_schema`（本文件不自写）。
   taskOfNode,
+  // ★ 2026-10-23：设计册 `state_machine.states` 的写端要拿它做**逐字比对**（同步 = 改不动就漂不了）
+  TASK_STATES,
   todosForNode,
   type TaskDiscussion,
   type TaskEvidenceFingerprint,
   type TaskHistoryEntry,
+  type PreparedSnapshot,
   type TaskReadSet,
   type TaskSpec,
   type TaskState,
@@ -358,6 +363,133 @@ function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
 }
 
 /**
+ * ★★★ **一次「判据空」的体检 + 照做清单**（2026-10-23 · 两段式领取的**反馈**那一半 = 判据 D）。
+ *
+ * ## 为什么必须能"照做"，而不只是"请补判据"
+ * 用户 2026-10-22 原话：*「接任务的时候应该要有反馈」*。而「请补判据」这种回执等于**没说**：
+ * 补哪一类？补几条？写到哪个字段？—— 都得自己再想一遍，于是这一步会被跳过，
+ * 结果就是今天这个读数：**candidate 137 张里 85%（117 张）判据 0 条**。
+ * ⇒ 本函数把"缺什么"算成**具体到能抄**的东西：节点 id、类别、条数、以及每条可直接粘的 JSON 模板
+ *   （模板里的 `path` / `symbol` 从该节点的 `semantic.files` 现取，不是占位符）。
+ *
+ * ## ★ 它**不编判据**
+ * 模板里的 `signature` / `must` / `why` 是**空白待填**的（只填入真实的 path / symbol）——
+ * 替人编一条"必须这样"的验收，等于用一个假判据换掉"没有判据"，比空着更坏。
+ */
+interface CriteriaGap {
+  /** 要补几条 */
+  need: number;
+  /** 哪几类（`Expectation['kind']` 里挑） */
+  kinds: string[];
+  /** 人读清单（逐行，直接进回执） */
+  lines: string[];
+  /** 可直接粘的模板（每条一个 JSON 串） */
+  templates: string[];
+}
+
+function criteriaGap(
+  dsl: NonNullable<ReturnType<typeof getDesignSheet>>,
+  node:
+    | {
+        id?: string;
+        type?: string;
+        path?: string;
+        description?: string;
+        decision?: { expectations?: Expectation[] };
+      }
+    | undefined,
+  cardId: string,
+): CriteriaGap {
+  const expectations = node?.decision?.expectations ?? [];
+  const post = postExpectations(expectations);
+  const pre = expectations.filter((e) => expectationPhase(e) === 'pre');
+  const sem = (dsl.semantic?.files ?? []).find((f) => f.id === node?.id);
+  const filePath =
+    (node?.path ?? '').trim() ||
+    (sem?.path ?? '').trim() ||
+    (node?.type === 'file' || node?.type === 'doc' ? (node?.description ?? '').trim() : '');
+  /** ★ 从这个节点**已有的符号**里取一个真实名字（模板里不写 `<symbol>` 这种占位符 —— 那还是要人再查一遍） */
+  const symbols = (sem?.symbols ?? []).map((s) => String((s as { name?: unknown }).name ?? '')).filter(Boolean);
+  const sample = symbols[0];
+  const kinds = sample ? ['signature-matches', 'source-has'] : ['file-exists', 'source-has'];
+  const need = kinds.length;
+
+  const lines: string[] = [
+    `节点 ${cardId} 的 \`decision.expectations\` 里**后态判据（phase=post）0 条**` +
+      (pre.length
+        ? `（现有 ${pre.length} 条**全是前态** —— 前态判据"还没施工就天然成立"，拿它当验收 = 永远绿）`
+        : '（**一条判据都没有**）'),
+    `要补 **${need} 条**：${kinds.join(' + ')} —— ` +
+      (sample
+        ? `一个"结构"（\`${sample}\` 的签名就算证据）+ 一个"行为/文本"（关键写法必须在）`
+        : `一个"文件在"（该文件必须存在）+ 一个"文本在"（关键写法必须在）`),
+    `写到哪：\`edit_dsl { type:'decision', op:'update', id:'${cardId}', data:{ expectations:[…] } }\`` +
+      `（判据**只住 decision**，不在卡上；卡上的是一张回滚快照）`,
+    `补齐后：\`edit_dsl { type:'task', op:'start', id:'${cardId}', data:{ owner:'<你>' } }\`` +
+      `（第二段：删快照 + state→claimed，**一次落盘**）`,
+    `放弃：\`release\`（会按 \`prepared_snapshot\` 把判据**逐字还原** ⇒ 零残留）`,
+  ];
+  if (!filePath) {
+    lines.push(
+      `★★ 该节点**没有 path**（\`node.path\` / \`semantic.files[].path\` 皆空）⇒ 判据无处可指：` +
+        `先给它补 path（\`node update\`）或改用带 node_id 的 todo 卡，否则这一类判据写不出来`,
+    );
+  }
+
+  const templates: string[] = sample
+    ? [
+        `{"kind":"signature-matches","path":${JSON.stringify(filePath || '<该节点 path>')},"symbol":${JSON.stringify(sample)},` +
+          `"signature":"<目标签名：把当前签名抄过来，只改你要改的那部分>","why":"<谁依赖它 / 为什么必须长这样>"}`,
+        `{"kind":"source-has","path":${JSON.stringify(filePath || '<该节点 path>')},"must":["<必须出现的关键写法>"],` +
+          `"why":"<为什么这段必须在>"}`,
+      ]
+    : [
+        `{"kind":"file-exists","path":${JSON.stringify(filePath || '<该节点 path>')},"why":"<为什么这个文件必须在>"}`,
+        `{"kind":"source-has","path":${JSON.stringify(filePath || '<该节点 path>')},"must":["<必须出现的关键写法>"],` +
+          `"why":"<为什么这段必须在>"}`,
+      ];
+  return { need, kinds, lines, templates };
+}
+
+/**
+ * ★★★ **落卡 + 按快照还原 decision.expectations**（2026-10-23 · 两段式领取的**回滚**那一半）。
+ *
+ * ## 为什么必须是一个函数、一次 saveDSL（判据 B / C 的共同地基）
+ * 「把判据写回去」与「把卡退回 candidate」若分两次落盘，中间崩掉就得到
+ * **判据已还原、卡还在 preparing**（或反之）—— 而 `preparing` 的快照是**唯一**的还原依据，
+ * 那一格一旦丢了，谁都不知道该退回什么。⇒ 两步写在**同一份内存副本**里，`saveDesignSheet` 只调一次。
+ *
+ * ★ 还原是**逐字**的（`snapshot.expectations` 原样写回 `decision.expectations`），
+ *   不是"删掉这次新增的"—— 后者要判"哪些是新增的"，而判据没有 id，判不出来（这是本仓反复踩的坑）。
+ * ★ 没有 `decision` 的节点 ⇒ **抛**（不当成"还原成功"）：快照本身就是从 decision 拍的，
+ *   它不在说明节点被删过，静默放过会让"零残留"变成一句空话。
+ */
+function writeTaskAndRestoreSnapshot(
+  feature: string,
+  nodeId: string,
+  next: TaskSpec,
+  snapshot: PreparedSnapshot,
+): void {
+  assertCardWritable(nodeId, next);
+  const dsl = getDesignSheet(feature);
+  if (!dsl) throw new Error(`feature "${feature}" 在落盘前读不到 ⇒ 不写（绝不静默降级）。`);
+  let nextDsl = withCardWritten(dsl, nodeId, next);
+  const nodes = (nextDsl.geometry?.nodes ?? []).map((n) => {
+    if (n.id !== nodeId) return n;
+    if (!n.decision) {
+      throw new Error(
+        `回滚被拒：节点 "${nodeId}" 现在**没有 decision**（快照是从 decision 拍的）⇒ 无法把判据写回。` +
+          `★ 这不是"还原成功"：先确认节点没被删/没被重建，再手工处理 —— 工具不假装做了。`,
+      );
+    }
+    return { ...n, decision: { ...n.decision, expectations: snapshot.expectations } };
+  });
+  nextDsl = { ...nextDsl, geometry: { ...nextDsl.geometry!, nodes } };
+  const ov = loadOverlay(feature) ?? seedOverlayFromDsl(nextDsl);
+  saveDesignSheet(applyOverlay(nextDsl, ov));
+}
+
+/**
  * 判据在 `since` **之后**换过吗 —— `publish` 结清重开账的唯一判据。
  *
  * ★ 为什么不能像以前那样「卡上那份 vs decision」：任务格已不自持判据（`TaskSpec` 无该字段）
@@ -624,6 +756,8 @@ export function publishTask(input: TaskOpInput): EditResult {
    * ★ 它只换 `summary` + `expectations` —— 其余字段（含 `evidence`）**逐条保留**。
    */
   const onClaimed = existing?.state === 'claimed';
+  /** ★ 2026-10-23：两段式第一段的卡（`preparing`）—— 允许 publish **只刷 summary**，见下面的分支 */
+  const onPreparing = existing?.state === 'preparing';
   const reason = (input.reason ?? '').trim();
 
   // ★★★ publish 的输入**没有内容**：内容只能来自 decision。`owner/evidence` 是别的 action 的参数，
@@ -665,7 +799,7 @@ export function publishTask(input: TaskOpInput): EditResult {
   // 已有任务格：只允许 ① 重翻 candidate ② L1(done) ⇒ L2 升一级 ③ claimed + reason ⇒ 原地换判据
   let advance = false;
   let refresh = false;
-  if (existing && existing.state !== 'candidate') {
+  if (existing && existing.state !== 'candidate' && existing.state !== 'preparing') {
     advance = existing.state === 'done' && taskLevel(expectations) === 'L1' && level === 'L2';
     refresh = onClaimed && reason.length > 0;
     if (onClaimed && !refresh) {
@@ -711,6 +845,46 @@ export function publishTask(input: TaskOpInput): EditResult {
   const sameAsCard = existing
     ? (existing.summary ?? '') === nextSummary && !criteriaChangedSince(node, existing.reopened_at)
     : false;
+
+  /**
+   * ★★★ 2026-10-23（两段式领取的配套）：**准备中的卡也能被 `publish` 刷新**。
+   *
+   * ## 为什么非要开这一格
+   * 第一段期间干的活就是"改 `decision`" —— 而改完 decision 的正路是 `publish`（把卡对齐 decision）。
+   * 若 publish 见到 `preparing` 就拒，那就等于**要人绕回 candidate 再重新领**，
+   * 而绕回 candidate 的那一步（`release`）会把判据**按快照还原掉** ⇒ 刚补的判据被自己抹了。
+   *
+   * ## ★ 它与 candidate 的「重翻」**不是**同一件事
+   * candidate 重翻是**整卡重建**（新建一个 candidate 卡，owner/快照全没有）——
+   * 对 preparing 那么做等于**把事务账本丢了**（快照没了 ⇒ 放弃时无从还原）。
+   * ⇒ 这里只换 `summary`，**state / owner / claimed_at / prepared_snapshot 全部原样留着**。
+   */
+  if (onPreparing) {
+    writeTask(feature, node_id, {
+      ...existing!,
+      summary: nextSummary,
+      judge_gate: 'strict',
+    });
+    const nowPost = postExpectations(expectationsOf(node)).length;
+    return {
+      message:
+        `已刷新**准备中**任务 "${node_id}"（state=preparing 不变，owner=${existing?.owner ?? '（空）'}）：` +
+        `summary 已按 decision 重写；当前后态判据 ${nowPost} 条` +
+        (nowPost > 0 ? ` ⇒ 可以 \`start\`（第二段）了` : ` ⇒ 还差后态判据，\`start\` 仍会被拒`) +
+        `\n★ 事务账本**没动**：\`prepared_snapshot\` 原样留着（放弃时按它逐字还原），owner / claimed_at 也没动。` +
+        `\n★ 与 candidate「重翻」的区别：那个是整卡重建（快照会没），这个只换 summary。`,
+      feature,
+      data: {
+        node_id,
+        level,
+        state: 'preparing' as TaskState,
+        summary: decision?.summary ?? '',
+        post_expectations: nowPost,
+        refreshed: true,
+        progress: progressOf({ state: 'preparing' }),
+      },
+    };
+  }
 
   if (level === 'L2') {
     // ★★ 已领卡的**原地换判据**：只换 summary + expectations，其余逐条保留（★ 尤其 evidence）。
@@ -763,6 +937,8 @@ export function publishTask(input: TaskOpInput): EditResult {
       // ★★ 逐字来自决策卡（不裁剪、不改写、不拼 acceptance）—— 这样"卡的内容来自哪里"可对拍
       summary: decision?.summary ?? '',
       state: 'candidate',
+      // ★★★ 2026-10-23：`publish` 是**判据门的盖章处** —— 从此新立的卡判据空就不许直接 claim
+      judge_gate: 'strict',
       // ★ L1 ⇒ L2 升级：旧 L1 卡的证据**逐条搬进新卡**（TaskSpec 无卡片历史 ⇒ 不静默丢证据）
       ...(advance && existing?.evidence?.length ? { evidence: existing.evidence } : {}),
       // ★★★ 重开账：candidate 重翻是**整卡重建**（下面的字段就是全部）⇒ 若判据与旧卡逐字相同，
@@ -808,6 +984,8 @@ export function publishTask(input: TaskOpInput): EditResult {
     // ★ 不落判据：L1 的判据是"DSL 建构完整"（`constructionVerdict` 读 decision）——
     //   这里**不编**一条实现判据，也不再往卡上写空副本（判据唯一住处 = decision）。
     state: 'candidate',
+    // ★★★ 2026-10-23：L1 卡也盖章 —— L1 的活正是「去把判据建起来」，它才是两段式的主战场
+    judge_gate: 'strict',
     // ★ L1 ⇒ L2 之外的重翻：若旧卡是 L1（candidate）也不带证据（从没被 complete 过）；带上更安全。
     ...(existing?.evidence?.length ? { evidence: existing.evidence } : {}),
     discussion,
@@ -948,6 +1126,25 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   const { dsl, card } = loadTask(feature, node_id);
   /** ★ 判据现取的落点：卡挂的那个节点（todo 卡没有节点 ⇒ 0 条判据） */
   const cardNode = (dsl.geometry?.nodes ?? []).find((n) => n.id === node_id);
+  /**
+   * ★★★ 2026-10-23（两段式领取 · **第一段 = 领了但不能干**）。
+   *
+   * ## 判据（三条，缺一不可）
+   * ① 有节点（`todo` 卡结构上没有挂判据的地方 ⇒ 不适用）；
+   * ② 该节点的**后态判据 0 条**（有一条就够开工 ⇒ 一段式）；
+   * ③ 这张卡是 `judge_gate='strict'`（`publish` 之后新立的）——
+   *    ★ 存量卡不走这条（迁移期规则，见 `TaskSpec.claimed_without_judge` 那段）。
+   *
+   * ## 为什么 ② 是「后态判据」而不是「判据条数」
+   * 一张卡可以只有 `edge-absent`（前态）：它**还没施工就天然成立** ⇒ `cardStanding` 会给
+   * `unknowable`（后态空集不按全过算）⇒ 那种卡**根本领不了**（constructionVerdict 也说没建完）。
+   * ⇒ "判据空"的准确含义 = **后态判据 0 条**（`postExpectations`，与 level / cardStanding 同一把尺）。
+   */
+  const twoPhase =
+    !!cardNode &&
+    card.state === 'candidate' &&
+    card.judge_gate === 'strict' &&
+    postExpectations(expectationsOf(cardNode)).length === 0;
   // ★★★ 2026-10-21：`state=claimed` 单独立一条报文（默认的“没有 claimed→claimed 迁移”不指路）。
   //   ★ 判据：**重复 claim 不幂等**。claim 是一次**事件**（写 `claimed_at`）—— 放过重领就等于
   //     悄悄**重置租约**：TTL 回收再也看不见“这个人其实已经停了”，`releaseIfExpired` 变成装饰。
@@ -984,7 +1181,8 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     }
   }
   // ★ 租约已过期的 claimed 卡 ⇒ **语义上等于 candidate**（无主），不按 claimed→claimed 拦
-  if (!takeover) assertTransition(card.state, 'claimed', 'claim');
+  // ★ 两段式的第一段是 candidate → **preparing**（不是 claimed）—— 目标态由判据决定，不在这里写死
+  if (!takeover) assertTransition(card.state, twoPhase ? 'preparing' : 'claimed', 'claim');
 
   // ★★ 领取**意图**（2026-10-20）：缺省 `work` ⇒ **老调用方的行为逐字不变**。
   //   ★ 运行期守卫：JSON 里的值不可信（`op_data_spec` 只查"键认不认"，不查枚举）。
@@ -1027,7 +1225,14 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   let levelNote: string;
   /** L2 的站位读数（L1 没有它 —— 不伪造成 `work`：那是把"判不了"读成"有活"） */
   let claimStanding: CardStanding | undefined;
-  if (reopening && intent === 'modify') {
+  if (twoPhase) {
+    // ★ 两段式：**不判"有没有活"** —— 这一段要回答的问题不是"能否施工"，而是"验收标准在不在"。
+    //   顺序是有意的：判据都没有的时候，`constructionVerdict` / `cardStanding` 的读数只会误导
+    //   （前者说"建构未完成"想让你去写 DSL，后者对空集给 unknowable）⇒ 先解决判据。
+    levelNote =
+      `★ 两段式第一段：判据（后态）0 条 ⇒ 进 **preparing（领了不能开工）**，` +
+      `判据已按快照存档（放弃/超时会逐字还原）；补齐后 \`start\` 才进 claimed`;
+  } else if (reopening && intent === 'modify') {
     // ★ 不判判据：与 t_reopen 一致（重开不改判据，也不拿判据决定能不能重开）。
     //   ★ 若这里再判一次，节点后来退化成 blocked / unknowable 就会把文件重新锁上 —— 那正是本条要拆的锁。
     //   ★ 安全不靠它：`reopened_at` 已记账本借方 ⇒ 想再 done 必须给**新**证据或真换判据（`reopenGate`）。
@@ -1134,12 +1339,84 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       (claimConflict?.unchecked.length ? `（另 ${claimConflict.unchecked.length} 张活跃卡没读集、这次没比）` : '')
     : '；★ 读集**未算**（该 feature 没有 source_root）';
 
+  if (twoPhase) {
+    // ── 两段式第一段：落 preparing + 快照（★ 判据**不动**：这一段不写 decision，只记账）──
+    const gap = criteriaGap(dsl, cardNode, node_id);
+    const at = new Date().toISOString();
+    writeTask(feature, node_id, {
+      ...card,
+      state: 'preparing',
+      owner,
+      claimed_at: at,
+      // ★★★ 事务的快照：改之前的 expectations **逐字**存一份（`start` 删、`release`/`expire` 还原）
+      prepared_snapshot: { expectations: expectationsOf(cardNode), at, missing: gap.lines },
+      read_set: readSet,
+      release_reason: undefined,
+      released_by: undefined,
+      released_at: undefined,
+    });
+    return {
+      message:
+        // ★ 首行自足（`edit_dsl` 批量回执只印首行）—— ★ 判据 D 的读数就在这一行里：
+        //   哪个节点 / 缺几条 / 哪几类 / 下一步是什么，全在首行，读回执的人不必再问一遍。
+        `已领取但**不能开工**（preparing）任务 "${node_id}"（owner=${owner}）：` +
+        `该节点的**后态判据 0 条** ⇒ 先给 ${node_id} 补 **${gap.need} 条**（${gap.kinds.join(' + ')}）再 start；` +
+        `判据已按快照存档（放弃/超时会**逐字还原**）` +
+        `\n★ **缺什么（照做清单）**：\n` +
+        gap.lines.map((l) => `  · ${l}`).join('\n') +
+        `\n★ **可直接粘的模板**（只差你填 \`<…>\` 那几处）：\n` +
+        gap.templates.map((t, i) => `  ${i + 1}) ${t}`).join('\n') +
+        `\n★ 为什么不在 claimed：\`write_gate\` 只认 \`state=claimed\` ⇒ preparing 期间**拿不到写权**` +
+        `（这就是"领了不能干"的机制形态，不是靠谁记得拦）。判据写进 \`decision\` 走 \`edit_dsl\`，不受写闸管。` +
+        `\n★ 租约：preparing 也持租约（TTL 同 claimed）⇒ 你跑了不回来，\`expire\` 会**还原判据**并退回 candidate。` +
+        readHead,
+      feature,
+      data: {
+        node_id,
+        level,
+        state: 'preparing' as TaskState,
+        owner,
+        claimed_at: at,
+        intent,
+        snapshot_expectations: expectationsOf(cardNode).length,
+        missing: {
+          node_id,
+          need: gap.need,
+          kinds: gap.kinds,
+          lines: gap.lines,
+          templates: gap.templates,
+        },
+        next: `edit_dsl { type:'task', op:'start', id:'${node_id}', data:{ owner:'${owner}' } }`,
+        progress: progressOf({ state: 'preparing' }),
+      },
+    };
+  }
+
+  /**
+   * ★★★ 2026-10-23（**迁移期规则**）：存量卡（`publish` 盖 `judge_gate` 之前立的）判据空也**放它领**，
+   * 但落 `claimed_without_judge` + 回执里**响亮警告**。
+   *
+   * ## 为什么不能一刀切（这条有实测读数，不是妥协）
+   * 2026-10-22 盘点：candidate 137 张里 **117 张（85%）判据 0 条**。
+   * 一刀切 = 这 117 张**同时不可领** = 与今早「29 个文件被租约锁死」**同效**（用户点名的病）。
+   * ⇒ 硬约束只对**新立的卡**生效（`judge_gate='strict'`，由 `publish` 盖章）；
+   *   存量卡**留痕但不拦**：账上能查到"这张卡是在没有判据的情况下开工的"，
+   *   收口那一步照样要过 `complete` 的判据闸（该红还是会红）。
+   */
+  const legacyGap =
+    !!cardNode && postExpectations(expectationsOf(cardNode)).length === 0 && card.judge_gate !== 'strict'
+      ? criteriaGap(dsl, cardNode, node_id)
+      : undefined;
   const claimedAt = new Date().toISOString();
   writeTask(feature, node_id, {
     ...card,
     state: 'claimed',
     owner,
     claimed_at: claimedAt,
+    // ★ 存量卡的免检痕迹（不是豁免：收口照旧要过判据闸）
+    ...(legacyGap
+      ? { claimed_without_judge: { at: claimedAt, missing: legacyGap.lines } }
+      : {}),
     // ★★★ 2026-10-22：**接管痕迹**（只有"上一任租约过期"才有）—— 不静默接手别人的活
     ...(takeover ? { taken_over_from: takeover } : {}),
     // ★ 读集**覆盖**写回（不是 append）；`undefined` ⇒ 不留下一次 claim 的幽灵占位
@@ -1166,7 +1443,18 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       //   调用方没被告知"（正是本仓禁的静默兜底）。
       `已领取任务 "${node_id}"（owner=${owner}` +
       (ownerAdm.normalizedFrom ? `，★ 已归一化自 \`${ownerAdm.normalizedFrom}\`` : '') +
-      `，claimed_at=${claimedAt}）—— ${levelNote}${readHead}` +
+      `，claimed_at=${claimedAt}）—— ${levelNote}` +
+      // ★★★ 迁移期：存量卡免检必须**在首行说出来**（`edit_dsl` 只印首行 ⇒ 写在第 2 行等于没说）
+      (legacyGap
+        ? `；★★ 警告（存量卡·判据为空）：后态判据 0 条 ⇒ **放行**（迁移期不拦，已落 claimed_without_judge），要补 ${legacyGap.need} 条（${legacyGap.kinds.join(' + ')}）`
+        : '') +
+      `${readHead}` +
+      // ★★★ 迁移期：存量卡免检也要**说出来**（静默放行 = 假绿灯）
+      (legacyGap
+        ? `\n★★ **警告（存量卡·判据为空）**：该节点的**后态判据 0 条**，而这张卡是 \`judge_gate\` 之前的存量卡 ⇒ ` +
+          `放它开工（**不拦**，否则 117 张存量卡会同时不可领）。已落 \`claimed_without_judge\`。` +
+          `\n★ 要补的话：**${legacyGap.need} 条**（${legacyGap.kinds.join(' + ')}）；收口时 \`complete\` 仍会按判据闸判（不会因为这条记录放绿）。`
+        : '') +
       // ★★★ 2026-10-22（链 C）：留痕**只有一份实现** —— `actor_spec.ts#normalizedActorNote`（`invokeTool` 用的就是它）。
       //   ★ 这里原先手抄了同一段文案 ⇒ 两处文案一改就漂（本仓最贵的病是「第二份判据/第二份留痕」）。
       normalizedActorNote(ownerAdm) +
@@ -1333,11 +1621,19 @@ export async function expireTasks(input: TaskOpInput): Promise<EditResult> {
   const lines: string[] = [];
   for (const e of expired) {
     const age = leaseAgeHours(e.card, now);
-    writeTask(feature, e.id, {
+    /**
+     * ★★★ 2026-10-23（两段式 · **超时 = 回滚**）：`preparing` 的卡超时不能只是"回 candidate" ——
+     * 它在此期间**真改过 `decision.expectations`** ⇒ 必须按 `prepared_snapshot` **逐字写回**，
+     * 否则"人跑了"这件事会在设计侧留下半套判据（下一个领的人会拿它当验收）。
+     * ★ 这与 `release`（人主动放弃）走的是**同一个**还原函数 —— 两种来路、一套口径。
+     */
+    const snapshot = e.card.state === 'preparing' ? (e.card.prepared_snapshot ?? null) : null;
+    const next: TaskSpec = {
       ...e.card,
       state: 'candidate',
       owner: null,
       claimed_at: null,
+      prepared_snapshot: null,
       // ★ 痕迹：谁被收回、挂了多久、按什么 TTL 判的（审计要能复原当时的口径）
       expired_from: {
         owner: e.card.owner ?? null,
@@ -1346,19 +1642,30 @@ export async function expireTasks(input: TaskOpInput): Promise<EditResult> {
         ttl_ms: LEASE_TTL_MS,
       },
       expired_at: new Date(now).toISOString(),
-    });
-    lines.push(`  · ${e.id}（原 owner=${e.card.owner ?? '（空）'}，挂了 ${age ?? '?'}h）→ candidate`);
+    };
+    if (snapshot) writeTaskAndRestoreSnapshot(feature, e.id, next, snapshot);
+    else writeTask(feature, e.id, next);
+    lines.push(
+      `  · ${e.id}（原 owner=${e.card.owner ?? '（空）'}，挂了 ${age ?? '?'}h）→ candidate` +
+        (snapshot ? `，★ 判据已按快照还原（${snapshot.expectations.length} 条）` : ''),
+    );
   }
 
   const ttlH = Math.round(LEASE_TTL_MS / 3.6e6);
   return {
     message:
       expired.length === 0
-        ? `✓ 没有过期的租约（扫了 ${all.filter((x) => x.card.state === 'claimed').length} 张 claimed 卡，TTL=${ttlH}h）。`
+        ? `✓ 没有过期的租约（扫了 ${all.filter((x) => isLeaseHolding(x.card.state)).length} 张持租约卡（claimed + preparing），TTL=${ttlH}h）。`
         : `✓ 已收回 ${expired.length} 张过期租约（TTL=${ttlH}h）→ candidate：\n${lines.join('\n')}` +
           `\n★ 痕迹落在各自的 \`expired_from\` / \`expired_at\`（与 release 的 \`release_reason\` 可区分：一个是"人放弃"，一个是"超时"）。`,
     feature,
-    data: { expired: expired.map((e) => e.id), ttl_ms: LEASE_TTL_MS, scanned_claimed: all.filter((x) => x.card.state === 'claimed').length },
+    data: {
+      expired: expired.map((e) => e.id),
+      ttl_ms: LEASE_TTL_MS,
+      scanned_claimed: all.filter((x) => x.card.state === 'claimed').length,
+      // ★ 2026-10-23：preparing 也持租约（它跑了不回来同样要回收，且回收要**还原判据**）
+      scanned_preparing: all.filter((x) => x.card.state === 'preparing').length,
+    },
   };
 }
 
@@ -1371,6 +1678,12 @@ export async function releaseTask(input: TaskOpInput): Promise<EditResult> {
 
   const { card } = loadTask(feature, node_id);
   assertTransition(card.state, 'candidate', 'release');
+  /**
+   * ★★★ 2026-10-23（两段式 · 放弃 = 回滚）：从 `preparing` 退出来时，`decision.expectations` 是
+   * **真被改过**的（不是草稿）⇒ 必须按 `prepared_snapshot` **逐字写回**，否则"没领成的活"
+   * 会在设计侧留下半套判据，下一个领的人会拿它当既有验收（用户说的"设计 DB 残留"）。
+   */
+  const snapshot = card.state === 'preparing' ? (card.prepared_snapshot ?? null) : null;
   const releasedAt = new Date().toISOString();
   // ★★★ 2026-10-22（链 C · 身份归一化）：`by` 与 claim 的 `owner` 走**同一套规范**。
   //   原先 `const by = input.agent ?? null` 原样落盘 ⇒ 同一张卡上 `owner=agent:agent-t349`、
@@ -1379,19 +1692,30 @@ export async function releaseTask(input: TaskOpInput): Promise<EditResult> {
   const bySign = signTaskActor(input.agent, 'release 的署名（released_by / 回执 by）');
   const by = bySign.actor;
 
-  writeTask(feature, node_id, {
+  const next: TaskSpec = {
     ...card,
     state: 'candidate',
     owner: null,
     claimed_at: null,
+    // ★ 快照用掉即删：它是**回滚依据**，不是历史（留着会让下一次 prepare 的快照对不上）
+    prepared_snapshot: null,
     release_reason: reason,
     released_by: by,
     released_at: releasedAt,
-  });
+  };
+  if (snapshot) {
+    // ★★★ 还原与改态在**同一次 saveDSL**（否则会留下"判据回了一半"的中间态）
+    writeTaskAndRestoreSnapshot(feature, node_id, next, snapshot);
+  } else {
+    writeTask(feature, node_id, next);
+  }
 
   return {
     message:
-      `已释放任务 "${node_id}"（candidate；by=${by ?? '未署名'}${normalizedInline(bySign.adm)}，reason=${reason}）。` +
+      `已释放任务 "${node_id}"（candidate；by=${by ?? '未署名'}${normalizedInline(bySign.adm)}，reason=${reason}）` +
+      (snapshot
+        ? `★ **判据已按快照回滚**（${snapshot.expectations.length} 条，拍于 ${snapshot.at}）⇒ 与 claim 之前**逐字相同**，零残留。`
+        : '') +
       // ★ 首行自足：`edit_dsl` 批量回执只印首行 ⇒ 归一化必须在首行点名；下面这行给人话规则（同一份留痕实现）。
       normalizedActorNote(bySign.adm) +
       `\n★ 进度派生：task.state=candidate ⇒ progress=draft。` +
@@ -1749,6 +2073,226 @@ export function relaunchTask(input: TaskOpInput): EditResult {
   };
 }
 
+/**
+ * ★★★ **两段式领取 · 第二段（`start`）**（2026-10-23）：`preparing → claimed`。
+ *
+ * ## 一句话
+ * 「判据补齐了」这件事**由主体宣布**，然后**一次落盘**完成两件事：**删快照** + **state→claimed**。
+ *
+ * ## 为什么是"一次"（判据 B 的全部）
+ * 拆成两次写会出现两种半生效态：
+ *   · 删了快照、没改态 ⇒ 卡还在 preparing，但**回滚依据已经没了**（放弃时无从还原）；
+ *   · 改了态、没删快照 ⇒ 卡在 claimed 却带着一张"旧判据"的快照，
+ *     下一次 prepare 会拿它当底账 ⇒ **回滚到别人的版本**。
+ * ⇒ 这里只调**一次** `writeTask`（内部一次 `saveDesignSheet`），结构上不给中间态存在的机会。
+ *
+ * ## 三条判据（`t_start` 的 guard，这里只执行）
+ * ① `state === 'preparing'`（别的一段式卡请直接 `claim`）；
+ * ② **后态判据 ≥ 1 条** —— 空判据不许进 claimed，否则两段式就白做了（这就是它的全部目的）；
+ * ③ `owner` 必须是**你**（`sameActor`）—— 不能替别人把他"准备中"的卡开工。
+ *
+ * ★ 它**不判定"有没有活"**（`cardStanding` / `constructionVerdict` 一个都不调）：
+ *   start 回答的是"验收标准在不在"，不是"这活还剩多少"。判据的满足度在 `complete` 那一侧判。
+ */
+export function startTask(input: TaskOpInput): EditResult {
+  const { feature, node_id } = input;
+  const { dsl, card } = loadTask(feature, node_id);
+  if (card.state !== 'preparing') {
+    throw new Error(
+      `start 被拒：节点 "${node_id}" 的 state=${card.state} —— start 只用于**两段式第一段**（preparing → claimed）。\n` +
+        (card.state === 'candidate'
+          ? `★ 它还没被领：判据已就位的话直接 \`claim\`（一段式）；判据空的话 claim 会把它带进 preparing。`
+          : `★ state=${card.state} 的可走迁移见 domain/task_machine.ts#TRANSITIONS。`),
+    );
+  }
+  const whoRaw = (input.owner ?? input.agent ?? '').trim();
+  if (!whoRaw) {
+    throw new Error(
+      `start 被拒：要给 \`data.owner\`（谁在宣布"判据补齐了"）—— 不认匿名开工（与 claim 同一条纪律）。` +
+        (card.owner ? `\n★ 这张卡现在挂在 ${card.owner} 手上。` : ''),
+    );
+  }
+  const whoAdm = admitActor(whoRaw, null, { strict: actorStrictMode() });
+  if (!whoAdm.ok || !whoAdm.actor) {
+    throw new Error(`${whoAdm.error ?? `✗ start 被拒：\`data.owner\` 不合法（收到 ${JSON.stringify(whoRaw)}）`}`);
+  }
+  if (!card.owner || !sameActor(card.owner, whoAdm.actor)) {
+    throw new Error(
+      `start 被拒：这张卡不是你准备的（owner=${card.owner ?? '（空）'}，你=${whoAdm.actor}）—— ` +
+        `不能替别人把他"准备中"的卡开工。★ 别人的 preparing 到期后会被 \`expire\` **还原判据**并退回 candidate。`,
+    );
+  }
+  const node = (dsl.geometry?.nodes ?? []).find((n) => n.id === node_id);
+  const post = postExpectations(expectationsOf(node));
+  if (!post.length) {
+    // ★ 判据 D 的第二个出口：第①段没补够就想开工 —— 回执照样得说清"还差什么"，不能只说"不行"。
+    const gap = criteriaGap(dsl, node, node_id);
+    throw new Error(
+      `start 被拒（判据还是空的）：节点 ${node_id} 的**后态判据（phase=post）0 条** ⇒ ` +
+        `说"准备完了"没有依据（两段式的全部意义就是这一条）。\n` +
+        `★ 还差：**${gap.need} 条**（${gap.kinds.join(' + ')}）\n` +
+        gap.lines.map((l) => `  · ${l}`).join('\n') +
+        `\n★ 可直接粘的模板：\n` +
+        gap.templates.map((t, i) => `  ${i + 1}) ${t}`).join('\n') +
+        `\n★ 卡**原地不动**（仍是 preparing、快照仍在）—— 补完再 start 即可；要放弃就 release（会还原判据）。`,
+    );
+  }
+  assertTransition(card.state, 'claimed', 'start');
+  const at = new Date().toISOString();
+  // ★★★ 一次写：删快照 + 改态（`writeTask` 内部只有一次 `saveDesignSheet`）—— 判据 B 就靠这一行。
+  writeTask(feature, node_id, {
+    ...card,
+    state: 'claimed',
+    // ★ 新租约从此刻起算（preparing 那段的时间不算"施工中"，否则 TTL 会替你算错年龄）
+    claimed_at: at,
+    prepared_snapshot: null,
+  });
+  return {
+    message:
+      `已开始任务 "${node_id}"（preparing → claimed，owner=${card.owner}${normalizedInline(whoAdm)}）：` +
+      `后态判据 ${post.length} 条已就位、**快照已删** —— 两件事在**同一次落盘**里完成（原子，判据 B）。` +
+      `\n★ 现在才有写权：\`write_gate\` 只认 \`state=claimed\`（preparing 期间它一直没放行，这就是"领了不能干"）。` +
+      `\n★ 收口仍走 \`complete\`（判据仍然是 decision 上那 ${post.length} 条，快照已不存在 ⇒ 无从"还原成旧判据"）。` +
+      `\n★ 进度派生：task.state=claimed ⇒ progress=in_progress。` +
+      normalizedActorNote(whoAdm),
+    feature,
+    data: {
+      node_id,
+      state: 'claimed' as TaskState,
+      owner: card.owner,
+      claimed_at: at,
+      post_expectations: post.length,
+      snapshot_dropped: true,
+      progress: progressOf({ state: 'claimed' }),
+    },
+  };
+}
+
+/**
+ * ★★★ **设计册 `task_plan.state_machine` 的唯一写入口**（2026-10-23）。
+ *
+ * ## 为什么非有它不可（今天撞到的墙）
+ * 加第 5 态 `preparing` 之后，代码侧 `TASK_STATES` 改了，而设计册
+ * `.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.state_machine.states` 还是 4 值 ——
+ * **同一件事两处权威**（本仓头号病）。而此前这个字段**没有任何写入口**
+ * （`TYPE_KNOWN_KEYS` 里没有 `task_plan`）⇒ 只能手改 JSON = 绕过唯一写端
+ * （`task_schema.ts` 的 `retire_reason` 那段注释里记着这条债）。
+ *
+ * ## 判据（写在最靠近落盘的地方，别处不再判一遍）
+ * ① `data.states` **必须与 `TASK_STATES` 逐字相同**（顺序也相同）—— 不一致就**拒**，
+ *    并把两边逐项报出来。★ 这是"同步"这两个字的机制形态：不是"记得去改"，而是**改不动**。
+ * ② `data.transition` 按 `id` **upsert**（不整表替换 ⇒ 不用一次贴 10 条 guard 原文）。
+ *    每条必须有 `id` / `from` / `to`（两个都必须落在 `TASK_STATES` 里）∧ **非空 `guard.clauses`**
+ *    （一条说不出判据的迁移 = 没人知道它凭什么可走）。
+ * ③ `data.note` 可选（`state_machine` 的人读附注）。
+ *
+ * ★ 它**只管 `state_machine` 这一格**，不碰 `task_plan` 的其它键
+ *   （`two_level_tasks` / `gate_principle` … 那些还没有写入口，别在这里顺手开一个后门）。
+ */
+export function applyTaskPlanOp(feature: string, op: TaskOpRequest): EditResult {
+  const dsl = getDesignSheet(feature);
+  if (!dsl) throw new Error(`feature "${feature}" 不存在 ⇒ 没有设计册可写。`);
+  if (op.op !== 'update') {
+    throw new Error(`task_plan 只支持 op:'update'（收到 ${JSON.stringify(op.op)}）—— 状态机只有"改"，没有"整表增删"。`);
+  }
+  const data = (op.data ?? {}) as Record<string, unknown>;
+
+  const rec = dsl as unknown as { task_plan?: Record<string, unknown> };
+  const tp: Record<string, unknown> = { ...(rec.task_plan ?? {}) };
+  const prevSm = (tp.state_machine as Record<string, unknown> | undefined) ?? {};
+  const sm: Record<string, unknown> = { ...prevSm };
+  const changed: string[] = [];
+
+  // ── ① states：必须与代码侧逐字一致 ───────────────────────────────
+  if (data.states !== undefined) {
+    const got = data.states;
+    if (!Array.isArray(got) || got.some((s) => typeof s !== 'string')) {
+      throw new Error(`task_plan.update 被拒：\`data.states\` 必须是字符串数组（收到 ${JSON.stringify(got)}）。`);
+    }
+    const same = got.length === TASK_STATES.length && got.every((s, i) => s === TASK_STATES[i]);
+    if (!same) {
+      throw new Error(
+        `task_plan.update 被拒（**设计册与代码不许漂**）：\`data.states\` 必须与 ` +
+          `\`src/domain/task_schema.ts#TASK_STATES\` **逐字相同**（含顺序）。\n` +
+          `  代码：${JSON.stringify([...TASK_STATES])}\n` +
+          `  收到：${JSON.stringify(got)}\n` +
+          `★ 这条不是形式主义：状态表住两处，迟早有一处是旧的 —— 而"哪一份算数"会由**调用方**临时决定。`,
+      );
+    }
+    sm.states = [...got];
+    changed.push(`states ${JSON.stringify(prevSm.states ?? [])} → ${JSON.stringify(got)}`);
+  }
+
+  // ── ② transition：按 id upsert ────────────────────────────────
+  if (data.transition !== undefined) {
+    const t = data.transition as {
+      id?: unknown;
+      from?: unknown;
+      to?: unknown;
+      guard?: { clauses?: unknown };
+      executor?: unknown;
+    };
+    if (typeof t?.id !== 'string' || !t.id.trim()) {
+      throw new Error(`task_plan.update 被拒：\`data.transition.id\` 必填（迁移 id，如 t_start）。`);
+    }
+    if (!isTaskState(t.from) || !isTaskState(t.to)) {
+      throw new Error(
+        `task_plan.update 被拒：\`${t.id}\` 的 from/to 必须落在 TASK_STATES 里` +
+          `（收到 from=${JSON.stringify(t.from)} / to=${JSON.stringify(t.to)}）。`,
+      );
+    }
+    const clauses = t.guard?.clauses;
+    if (!Array.isArray(clauses) || !clauses.length || clauses.some((c) => typeof c !== 'string')) {
+      throw new Error(
+        `task_plan.update 被拒：\`${t.id}\` 的 \`guard.clauses\` 必须是非空字符串数组 —— ` +
+          `一条说不出判据的迁移 = 没人知道它凭什么可走（本仓把 guard 当**正文**，不是装饰）。`,
+      );
+    }
+    const list = Array.isArray(sm.transitions) ? [...(sm.transitions as Array<Record<string, unknown>>)] : [];
+    const idx = list.findIndex((x) => x.id === t.id);
+    const nextTr: Record<string, unknown> = {
+      id: t.id,
+      from: t.from,
+      to: t.to,
+      guard: { clauses: [...(clauses as string[])] },
+    };
+    if (typeof t.executor === 'string' && t.executor.trim()) nextTr.executor = t.executor;
+    if (idx >= 0) list[idx] = { ...list[idx], ...nextTr };
+    else list.push(nextTr);
+    sm.transitions = list;
+    changed.push(`transition ${t.id}（${t.from} → ${t.to}）${idx >= 0 ? '已更新' : '已新增'}`);
+  }
+
+  if (data.note !== undefined) {
+    if (typeof data.note !== 'string') throw new Error(`task_plan.update 被拒：\`data.note\` 必须是字符串。`);
+    sm.note = data.note;
+    changed.push('note');
+  }
+
+  if (!changed.length) {
+    throw new Error(
+      `task_plan.update 被拒：没有可写的键 —— 认 \`states\`（必须 === TASK_STATES）/ \`transition\`（单条 upsert）/ \`note\`。`,
+    );
+  }
+
+  tp.state_machine = sm;
+  const nextDsl = { ...(dsl as unknown as Record<string, unknown>), task_plan: tp };
+  saveDesignSheet(nextDsl as unknown as typeof dsl);
+
+  return {
+    message:
+      `已写设计册 \`task_plan.state_machine\`（feature=${feature}）：${changed.join('；')}。` +
+      `\n★ 判据：\`states\` 与代码 \`TASK_STATES\` **逐字一致**（写端强制比对，不靠"记得去改"）；迁移按 id upsert。` +
+      `\n★ 下一步：\`design_line { action:'gen-db' }\` 让 design-db 跟上（否则契约门读的是旧要求）。`,
+    feature,
+    data: {
+      states: sm.states,
+      transition_count: Array.isArray(sm.transitions) ? sm.transitions.length : 0,
+      changed,
+    },
+  };
+}
+
 export async function applyTaskOp(
   feature: string,
   op: TaskOpRequest,
@@ -1787,6 +2331,9 @@ export async function applyTaskOp(
     case 'relaunch':
       // ★★★ 2026-10-20：void → candidate「重新立卡」（判据由 publish 重给）
       return relaunchTask(input);
+    case 'start':
+      // ★★★ 2026-10-23（两段式第二段）：preparing → claimed —— 删快照 + 改态，**一次落盘**
+      return startTask(input);
     case 'renew':
       // ★★★ 2026-10-22：**显式续租** —— 只刷 `claimed_at`，不动读集、不动判据
       return renewTask(input);

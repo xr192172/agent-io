@@ -7,19 +7,19 @@
     {
       "name": "getSnapshotsDir",
       "kind": "function",
-      "line": 22,
+      "line": 24,
       "signature": "getSnapshotsDir(feature: string): string"
     },
     {
       "name": "snapshotFileName",
       "kind": "function",
-      "line": 30,
+      "line": 32,
       "signature": "snapshotFileName(label: string, timestamp: string): string"
     },
     {
       "name": "SaveSnapshotInput",
       "kind": "interface",
-      "line": 35,
+      "line": 37,
       "signature": "SaveSnapshotInput()",
       "members": [
         {
@@ -45,7 +45,7 @@
     {
       "name": "SnapshotInfo",
       "kind": "interface",
-      "line": 41,
+      "line": 43,
       "signature": "SnapshotInfo()",
       "members": [
         {
@@ -107,7 +107,7 @@
     {
       "name": "SaveSnapshotResult",
       "kind": "interface",
-      "line": 53,
+      "line": 55,
       "signature": "SaveSnapshotResult()",
       "members": [
         {
@@ -145,37 +145,37 @@
     {
       "name": "saveSnapshot",
       "kind": "function",
-      "line": 62,
+      "line": 64,
       "signature": "saveSnapshot(input: SaveSnapshotInput): SaveSnapshotResult"
     },
     {
       "name": "geometrySignature",
       "kind": "function",
-      "line": 107,
+      "line": 109,
       "signature": "geometrySignature(dsl: DesignDSL): string"
     },
     {
       "name": "latestSnapshotGeometrySignature",
       "kind": "function",
-      "line": 113,
+      "line": 115,
       "signature": "latestSnapshotGeometrySignature(feature: string): string | null"
     },
     {
       "name": "saveAutoSnapshot",
       "kind": "function",
-      "line": 129,
+      "line": 131,
       "signature": "saveAutoSnapshot(feature: string, reason: string): SaveSnapshotResult | null"
     },
     {
       "name": "pruneSnapshots",
       "kind": "function",
-      "line": 138,
+      "line": 140,
       "signature": "pruneSnapshots(feature: string, max = 20): number"
     },
     {
       "name": "ListSnapshotsInput",
       "kind": "interface",
-      "line": 151,
+      "line": 153,
       "signature": "ListSnapshotsInput()",
       "members": [
         {
@@ -189,7 +189,7 @@
     {
       "name": "ListSnapshotsResult",
       "kind": "interface",
-      "line": 155,
+      "line": 157,
       "signature": "ListSnapshotsResult()",
       "members": [
         {
@@ -215,13 +215,13 @@
     {
       "name": "listSnapshots",
       "kind": "function",
-      "line": 162,
+      "line": 164,
       "signature": "listSnapshots(input: ListSnapshotsInput): ListSnapshotsResult"
     },
     {
       "name": "RollbackSnapshotInput",
       "kind": "interface",
-      "line": 221,
+      "line": 223,
       "signature": "RollbackSnapshotInput()",
       "members": [
         {
@@ -241,7 +241,7 @@
     {
       "name": "RollbackSnapshotResult",
       "kind": "interface",
-      "line": 226,
+      "line": 228,
       "signature": "RollbackSnapshotResult()",
       "members": [
         {
@@ -273,13 +273,13 @@
     {
       "name": "rollbackSnapshot",
       "kind": "function",
-      "line": 234,
+      "line": 236,
       "signature": "rollbackSnapshot(input: RollbackSnapshotInput): RollbackSnapshotResult"
     },
     {
       "name": "DeleteSnapshotInput",
       "kind": "interface",
-      "line": 310,
+      "line": 312,
       "signature": "DeleteSnapshotInput()",
       "members": [
         {
@@ -299,7 +299,7 @@
     {
       "name": "DeleteSnapshotResult",
       "kind": "interface",
-      "line": 315,
+      "line": 317,
       "signature": "DeleteSnapshotResult()",
       "members": [
         {
@@ -325,7 +325,7 @@
     {
       "name": "deleteSnapshot",
       "kind": "function",
-      "line": 322,
+      "line": 324,
       "signature": "deleteSnapshot(input: DeleteSnapshotInput): DeleteSnapshotResult"
     }
   ],
@@ -340,6 +340,10 @@
     },
     {
       "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/dsl_write_scope.js",
       "kind": "relative"
     },
     {
@@ -416,6 +420,10 @@
     {
       "from": "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",
       "to": "src/domain/geometry.ts#resolveDiagramStatus"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",
+      "to": "src/infrastructure/dsl_write_scope.ts#runDslWriteScope"
     },
     {
       "from": "src/application/design/lifecycle/snapshot.ts#saveSnapshot",

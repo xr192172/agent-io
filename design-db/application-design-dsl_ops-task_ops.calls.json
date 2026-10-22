@@ -7,19 +7,19 @@
     {
       "name": "signTaskActor",
       "kind": "function",
-      "line": 133,
+      "line": 147,
       "signature": "signTaskActor(raw: string | undefined | null,\n  field: string,): { actor: string | null; adm: ActorAdmission }"
     },
     {
       "name": "normalizedInline",
       "kind": "function",
-      "line": 151,
+      "line": 165,
       "signature": "normalizedInline(adm: ActorAdmission): string"
     },
     {
       "name": "TaskOpRequest",
       "kind": "interface",
-      "line": 156,
+      "line": 170,
       "signature": "TaskOpRequest()",
       "members": [
         {
@@ -51,7 +51,7 @@
     {
       "name": "TaskOpInput",
       "kind": "interface",
-      "line": 163,
+      "line": 177,
       "signature": "TaskOpInput()",
       "members": [
         {
@@ -107,7 +107,7 @@
     {
       "name": "Loaded",
       "kind": "interface",
-      "line": 195,
+      "line": 209,
       "signature": "Loaded()",
       "members": [
         {
@@ -133,61 +133,117 @@
     {
       "name": "loadTask",
       "kind": "function",
-      "line": 201,
+      "line": 215,
       "signature": "loadTask(feature: string, nodeId: string): Loaded"
     },
     {
       "name": "requireRoot",
       "kind": "function",
-      "line": 230,
+      "line": 250,
       "signature": "requireRoot(dsl: { source_root?: string }): string"
     },
     {
       "name": "assertTransition",
       "kind": "function",
-      "line": 242,
+      "line": 262,
       "signature": "assertTransition(from: TaskState, to: TaskState, action: string): void"
+    },
+    {
+      "name": "assertCardWritable",
+      "kind": "function",
+      "line": 285,
+      "signature": "assertCardWritable(nodeId: string, next: TaskSpec): void"
+    },
+    {
+      "name": "withCardWritten",
+      "kind": "function",
+      "line": 312,
+      "signature": "withCardWritten(dsl: NonNullable<ReturnType<typeof getDesignSheet>>,\n  nodeId: string,\n  next: TaskSpec,): NonNullable<ReturnType<typeof getDesignSheet>>"
     },
     {
       "name": "writeTask",
       "kind": "function",
-      "line": 258,
+      "line": 356,
       "signature": "writeTask(feature: string, nodeId: string, next: TaskSpec): void"
+    },
+    {
+      "name": "CriteriaGap",
+      "kind": "interface",
+      "line": 379,
+      "signature": "CriteriaGap()",
+      "members": [
+        {
+          "name": "need",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kinds",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "lines",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "templates",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "criteriaGap",
+      "kind": "function",
+      "line": 390,
+      "signature": "criteriaGap(dsl: NonNullable<ReturnType<typeof getDesignSheet>>,\n  node:\n    | {\n        id?: string;\n        type?: string;\n        path?: string;\n        description?: string;\n        decision?: { expectations?: Expectation[] };\n      }\n    | undefined,\n  cardId: string,): CriteriaGap"
+    },
+    {
+      "name": "writeTaskAndRestoreSnapshot",
+      "kind": "function",
+      "line": 467,
+      "signature": "writeTaskAndRestoreSnapshot(feature: string,\n  nodeId: string,\n  next: TaskSpec,\n  snapshot: PreparedSnapshot,): void"
     },
     {
       "name": "criteriaChangedSince",
       "kind": "function",
-      "line": 290,
+      "line": 501,
       "signature": "criteriaChangedSince(node: { decision?: { expectations?: Expectation[] }; decision_history?: DecisionHistoryEntry[] },\n  since: string | null | undefined,): boolean"
     },
     {
       "name": "canonCriteria",
       "kind": "function",
-      "line": 305,
+      "line": 516,
       "signature": "canonCriteria(xs: readonly unknown[]): string"
     },
     {
       "name": "codeFingerprintAt",
       "kind": "function",
-      "line": 325,
+      "line": 536,
       "signature": "codeFingerprintAt(root: string, rels: readonly string[]): { code: string; covers: string[] }"
     },
     {
       "name": "fingerprintEvidence",
       "kind": "function",
-      "line": 350,
+      "line": 561,
       "signature": "fingerprintEvidence(expectations: readonly Expectation[],\n  sourceRoot: string | undefined,\n  nodeId: string,\n  ev: ProgressEvidence,): TaskEvidenceFingerprint"
     },
     {
       "name": "reopenGate",
       "kind": "function",
-      "line": 386,
+      "line": 597,
       "signature": "reopenGate(card: TaskSpec,\n  evidence: ProgressEvidence | undefined,): { ok: true } | { ok: false; reason: string }"
     },
     {
       "name": "ConstructBasis",
       "kind": "interface",
-      "line": 455,
+      "line": 666,
       "signature": "ConstructBasis()",
       "members": [
         {
@@ -213,85 +269,97 @@
     {
       "name": "constructBasis",
       "kind": "function",
-      "line": 465,
+      "line": 676,
       "signature": "constructBasis(dsl: NonNullable<ReturnType<typeof getDesignSheet>>,\n  node: { id: string; type?: string; label?: string; title?: string; description?: string; path?: string },): ConstructBasis"
     },
     {
       "name": "constructionVerdict",
       "kind": "function",
-      "line": 508,
+      "line": 719,
       "signature": "constructionVerdict(dsl: NonNullable<ReturnType<typeof getDesignSheet>>,\n  nodeId: string,): { complete: boolean; missing: string[]; post: number }"
     },
     {
       "name": "publishTask",
       "kind": "function",
-      "line": 527,
+      "line": 738,
       "signature": "publishTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "claimTask",
       "kind": "function",
-      "line": 816,
+      "line": 1074,
       "signature": "claimTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "renewTask",
       "kind": "function",
-      "line": 1167,
+      "line": 1535,
       "signature": "renewTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "expireTasks",
       "kind": "function",
-      "line": 1233,
+      "line": 1601,
       "signature": "expireTasks(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "releaseTask",
       "kind": "function",
-      "line": 1279,
+      "line": 1674,
       "signature": "releaseTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "completeTask",
       "kind": "function",
-      "line": 1338,
+      "line": 1750,
       "signature": "completeTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "reopenTask",
       "kind": "function",
-      "line": 1554,
+      "line": 1966,
       "signature": "reopenTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "relaunchTask",
       "kind": "function",
-      "line": 1626,
+      "line": 2038,
       "signature": "relaunchTask(input: TaskOpInput): EditResult"
+    },
+    {
+      "name": "startTask",
+      "kind": "function",
+      "line": 2097,
+      "signature": "startTask(input: TaskOpInput): EditResult"
+    },
+    {
+      "name": "applyTaskPlanOp",
+      "kind": "function",
+      "line": 2192,
+      "signature": "applyTaskPlanOp(feature: string, op: TaskOpRequest): EditResult"
     },
     {
       "name": "applyTaskOp",
       "kind": "function",
-      "line": 1664,
+      "line": 2296,
       "signature": "applyTaskOp(feature: string,\n  op: TaskOpRequest,\n  agent?: string,): Promise<EditResult>"
     },
     {
       "name": "publishFromDiff",
       "kind": "function",
-      "line": 1737,
+      "line": 2372,
       "signature": "publishFromDiff(feature: string, nodeId: string): EditResult"
     },
     {
       "name": "voidTask",
       "kind": "function",
-      "line": 1772,
+      "line": 2407,
       "signature": "voidTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "TodoHit",
       "kind": "interface",
-      "line": 1826,
+      "line": 2461,
       "signature": "TodoHit()",
       "members": [
         {
@@ -317,56 +385,68 @@
     {
       "name": "findTodoCard",
       "kind": "function",
-      "line": 1836,
+      "line": 2471,
       "signature": "findTodoCard(feature: string, action: string, id: string): TodoHit"
     },
     {
       "name": "assertNoIdentityChange",
       "kind": "function",
-      "line": 1854,
+      "line": 2489,
       "signature": "assertNoIdentityChange(action: string, data: Record<string, unknown>): void"
     },
     {
       "name": "updateTodoCard",
       "kind": "function",
-      "line": 1875,
+      "line": 2510,
       "signature": "updateTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "retireTodoCard",
       "kind": "function",
-      "line": 1925,
+      "line": 2560,
       "signature": "retireTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "deleteTodoCard",
       "kind": "function",
-      "line": 1995,
+      "line": 2630,
       "signature": "deleteTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
+    },
+    {
+      "name": "applyArchiveOp",
+      "kind": "function",
+      "line": 2715,
+      "signature": "applyArchiveOp(feature: string,\n  data: Record<string, unknown>,\n  agent: string | undefined,\n  mode: 'archive' | 'unarchive',): EditResult"
     },
     {
       "name": "followTodoCard",
       "kind": "function",
-      "line": 2070,
+      "line": 2843,
       "signature": "followTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "applyTodoMutation",
       "kind": "function",
-      "line": 2123,
+      "line": 2896,
       "signature": "applyTodoMutation(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
     },
     {
       "name": "todoChainNote",
       "kind": "function",
-      "line": 2163,
+      "line": 2943,
       "signature": "todoChainNote(cards: readonly TaskSpec[], id: string): { head: string; detail: string }"
     },
     {
       "name": "applyTodoOp",
       "kind": "function",
-      "line": 2227,
+      "line": 3007,
       "signature": "applyTodoOp(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
+    },
+    {
+      "name": "importTodoCards",
+      "kind": "function",
+      "line": 3168,
+      "signature": "importTodoCards(feature: string, data: Record<string, unknown>, agent?: string): EditResult"
     }
   ],
   "imports": [
@@ -475,12 +555,40 @@
       "to": "src/application/design/board/todo_journal.ts#todoJournalFile"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+      "to": "src/application/design/board/todo_journal.ts#todoJournalFile"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
       "to": "src/application/design/dsl_ops/status_tools.ts#updateStatus"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoMutation",
+      "to": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoMutation",
+      "to": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
       "to": "src/application/design/dsl_ops/task_ops.ts#applyTodoMutation"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#writeTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#assertCardWritable"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#writeTaskAndRestoreSnapshot",
+      "to": "src/application/design/dsl_ops/task_ops.ts#assertCardWritable"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#assertCardWritable"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#assertCardWritable"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#updateTodoCard",
@@ -520,6 +628,10 @@
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#relaunchTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#assertTransition"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#startTask",
       "to": "src/application/design/dsl_ops/task_ops.ts#assertTransition"
     },
     {
@@ -567,6 +679,18 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#criteriaChangedSince"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#criteriaGap"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#criteriaGap"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#startTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#criteriaGap"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoMutation",
       "to": "src/application/design/dsl_ops/task_ops.ts#deleteTodoCard"
     },
@@ -599,6 +723,10 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#followTodoCard"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#importTodoCards"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
       "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
     },
@@ -623,6 +751,10 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#startTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#voidTask",
       "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
     },
@@ -639,7 +771,15 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#normalizedInline"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#startTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#normalizedInline"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#retireTodoCard",
+      "to": "src/application/design/dsl_ops/task_ops.ts#normalizedInline"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
       "to": "src/application/design/dsl_ops/task_ops.ts#normalizedInline"
     },
     {
@@ -699,6 +839,14 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#signTaskActor"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#signTaskActor"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#startTask"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
       "to": "src/application/design/dsl_ops/task_ops.ts#todoChainNote"
     },
@@ -711,6 +859,26 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#voidTask"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#writeTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#withCardWritten"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#writeTaskAndRestoreSnapshot",
+      "to": "src/application/design/dsl_ops/task_ops.ts#withCardWritten"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#withCardWritten"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#withCardWritten"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
       "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
     },
@@ -720,6 +888,10 @@
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
       "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
     },
     {
@@ -751,6 +923,10 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#startTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#voidTask",
       "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
     },
@@ -767,6 +943,14 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#expireTasks",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTaskAndRestoreSnapshot"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#releaseTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTaskAndRestoreSnapshot"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#signTaskActor",
       "to": "src/domain/actor_spec.ts#actorStrictMode"
     },
@@ -776,6 +960,10 @@
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/actor_spec.ts#actorStrictMode"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#startTask",
       "to": "src/domain/actor_spec.ts#actorStrictMode"
     },
     {
@@ -788,6 +976,10 @@
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/actor_spec.ts#admitActor"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#startTask",
       "to": "src/domain/actor_spec.ts#admitActor"
     },
     {
@@ -807,7 +999,15 @@
       "to": "src/domain/actor_spec.ts#normalizedActorNote"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#startTask",
+      "to": "src/domain/actor_spec.ts#normalizedActorNote"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#retireTodoCard",
+      "to": "src/domain/actor_spec.ts#normalizedActorNote"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
       "to": "src/domain/actor_spec.ts#normalizedActorNote"
     },
     {
@@ -823,8 +1023,20 @@
       "to": "src/domain/actor_spec.ts#sameActor"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#startTask",
+      "to": "src/domain/actor_spec.ts#sameActor"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#fingerprintEvidence",
       "to": "src/domain/expectation.ts#expectationPaths"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#criteriaGap",
+      "to": "src/domain/expectation.ts#expectationPhase"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#criteriaGap",
+      "to": "src/domain/expectation.ts#postExpectations"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#constructionVerdict",
@@ -835,7 +1047,27 @@
       "to": "src/domain/expectation.ts#postExpectations"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/domain/expectation.ts#postExpectations"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/expectation.ts#postExpectations"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/expectation.ts#postExpectations"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#startTask",
+      "to": "src/domain/expectation.ts#postExpectations"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#writeTask",
+      "to": "src/domain/overlay.ts#applyOverlay"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#writeTaskAndRestoreSnapshot",
       "to": "src/domain/overlay.ts#applyOverlay"
     },
     {
@@ -843,11 +1075,19 @@
       "to": "src/domain/overlay.ts#applyOverlay"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+      "to": "src/domain/overlay.ts#applyOverlay"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
       "to": "src/domain/overlay.ts#applyOverlay"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+      "to": "src/domain/overlay.ts#applyOverlay"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#importTodoCards",
       "to": "src/domain/overlay.ts#applyOverlay"
     },
     {
@@ -855,15 +1095,27 @@
       "to": "src/domain/overlay.ts#seedOverlayFromDsl"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#writeTaskAndRestoreSnapshot",
+      "to": "src/domain/overlay.ts#seedOverlayFromDsl"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#deleteTodoCard",
       "to": "src/domain/overlay.ts#seedOverlayFromDsl"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+      "to": "src/domain/overlay.ts#seedOverlayFromDsl"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
       "to": "src/domain/overlay.ts#seedOverlayFromDsl"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+      "to": "src/domain/overlay.ts#seedOverlayFromDsl"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#importTodoCards",
       "to": "src/domain/overlay.ts#seedOverlayFromDsl"
     },
     {
@@ -899,6 +1151,10 @@
       "to": "src/domain/task_machine.ts#isLeaseExpired"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#expireTasks",
+      "to": "src/domain/task_machine.ts#isLeaseHolding"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
       "to": "src/domain/task_machine.ts#isSatisfied"
     },
@@ -921,6 +1177,26 @@
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#codeFingerprintAt",
       "to": "src/domain/task_schema.ts#codeFingerprintOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/domain/task_schema.ts#expectationsOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/task_schema.ts#expectationsOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/task_schema.ts#expectationsOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/task_schema.ts#expectationsOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/task_schema.ts#expectationsOf"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
@@ -951,6 +1227,10 @@
       "to": "src/domain/task_schema.ts#expectationsOf"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#startTask",
+      "to": "src/domain/task_schema.ts#expectationsOf"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#voidTask",
       "to": "src/domain/task_schema.ts#expectationsOf"
     },
@@ -959,11 +1239,35 @@
       "to": "src/domain/task_schema.ts#fingerprintOf"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#assertCardWritable",
+      "to": "src/domain/task_schema.ts#isArchivedTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+      "to": "src/domain/task_schema.ts#isArchivedTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+      "to": "src/domain/task_schema.ts#isArchivedTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+      "to": "src/domain/task_schema.ts#isArchivedTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#assertCardWritable",
+      "to": "src/domain/task_schema.ts#isClosedTaskState"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#updateTodoCard",
       "to": "src/domain/task_schema.ts#isClosedTaskState"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#retireTodoCard",
+      "to": "src/domain/task_schema.ts#isClosedTaskState"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
       "to": "src/domain/task_schema.ts#isClosedTaskState"
     },
     {
@@ -979,6 +1283,18 @@
       "to": "src/domain/task_schema.ts#isClosedTaskState"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskPlanOp",
+      "to": "src/domain/task_schema.ts#isTaskState"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#importTodoCards",
+      "to": "src/domain/task_schema.ts#isTaskState"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/domain/task_schema.ts#progressOf"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
       "to": "src/domain/task_schema.ts#progressOf"
     },
@@ -988,6 +1304,10 @@
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/domain/task_schema.ts#progressOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
       "to": "src/domain/task_schema.ts#progressOf"
     },
     {
@@ -1007,6 +1327,10 @@
       "to": "src/domain/task_schema.ts#progressOf"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#startTask",
+      "to": "src/domain/task_schema.ts#progressOf"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
       "to": "src/domain/task_schema.ts#taskLevel"
     },
@@ -1021,6 +1345,18 @@
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
       "to": "src/domain/task_schema.ts#taskLevel"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#loadTask",
+      "to": "src/domain/task_schema.ts#taskOfNode"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/domain/task_schema.ts#taskOfNode"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#expireTasks",
+      "to": "src/domain/task_schema.ts#todosForNode"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#followTodoCard",
@@ -1071,6 +1407,10 @@
       "to": "src/infrastructure/storage.ts#getDesignSheet"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#writeTaskAndRestoreSnapshot",
+      "to": "src/infrastructure/storage.ts#getDesignSheet"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
       "to": "src/infrastructure/storage.ts#getDesignSheet"
     },
@@ -1079,15 +1419,27 @@
       "to": "src/infrastructure/storage.ts#getDesignSheet"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskPlanOp",
+      "to": "src/infrastructure/storage.ts#getDesignSheet"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#findTodoCard",
       "to": "src/infrastructure/storage.ts#getDesignSheet"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+      "to": "src/infrastructure/storage.ts#getDesignSheet"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
       "to": "src/infrastructure/storage.ts#getDesignSheet"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+      "to": "src/infrastructure/storage.ts#getDesignSheet"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#importTodoCards",
       "to": "src/infrastructure/storage.ts#getDesignSheet"
     },
     {
@@ -1099,15 +1451,31 @@
       "to": "src/infrastructure/storage.ts#saveDesignSheet"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#writeTaskAndRestoreSnapshot",
+      "to": "src/infrastructure/storage.ts#saveDesignSheet"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskPlanOp",
+      "to": "src/infrastructure/storage.ts#saveDesignSheet"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#deleteTodoCard",
       "to": "src/infrastructure/storage.ts#saveDesignSheet"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+      "to": "src/infrastructure/storage.ts#saveDesignSheet"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
       "to": "src/infrastructure/storage.ts#saveDesignSheet"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+      "to": "src/infrastructure/storage.ts#saveDesignSheet"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#importTodoCards",
       "to": "src/infrastructure/storage.ts#saveDesignSheet"
     },
     {
@@ -1115,15 +1483,27 @@
       "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#writeTaskAndRestoreSnapshot",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#deleteTodoCard",
       "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
       "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#importTodoCards",
       "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
     }
   ],

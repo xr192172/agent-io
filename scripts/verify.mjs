@@ -168,6 +168,25 @@ const GATES = [
       '它旧了，契约门就变成假门。★ 只读入库文件（`design/*.dsl.json` + `design-db/`），**不读 cache.db** ⇒ 可复现。' +
       '★ 真冲突（两个 feature 对同一文件要求互斥）也在这里红 —— 那种红重跑修不好，只能改设计。',
   },
+  // ★★★ 2026-10-23（第八道）：**两段式领取**（preparing 第 5 态 + prepared_snapshot 事务）。
+  //   为什么它算门：`preparing` 的每一条行为都**只在运行时成立**——
+  //   ① claim 判据空 ⇒ 进 preparing（不是 claimed）；② start 删快照与改态**同一次落盘**；
+  //   ③ release/expire 按快照**逐字还原**；④ 存量卡留痕不拦。
+  //   这四条哪一条坏掉，`tsc` 都一声不响（都是"值"不是"形状"）⇒ 只有行为夹具抓得住。
+  //   ★ 消融实测（直接改 dist，改一行跑红再从备份还原）：claim 的 preparing→claimed ⇒ 7 条红；
+  //     start 不删快照 ⇒ B7 红；release 改成 writeTask（不还原）⇒ C3 红。
+  {
+    name: '两段式领取',
+    kind: 'gate',
+    cmd: 'node',
+    args: ['certs/t360-two-phase-claim-cert.mjs'],
+    why:
+      '★ 卡原文 A-D 逐条：A 判据空不许 claim（进 preparing + 点名缺什么）· B start 原子（删快照+改态一次落盘）· ' +
+      'C 放弃/超时零残留（判据与 claim 前逐字相同）· D 反馈可读（首行说清"哪个 node / 补几条 / 哪几类"）· ' +
+      '⑥ 判据已在的卡一段式 / 存量卡留痕不拦。35 条断言，一次跑 ~1s，只写临时 `AGENT_IO_HOME`。' +
+      '★ 它挡的事故：「领了不能干」退化成「领了就能干」（= 判据永远补不上，回到 117 张判据空的老状态），' +
+      '以及「事务」退化成「改了不回滚」（设计侧残留半套判据，下一个人拿它当验收）。',
+  },
   // ★★★ 2026-10-20：**删掉「结构意图 gap」这道门** —— 它指向 `scripts/structure_gap.mjs`，
   //   而那个脚本 2026-10-19 已随「它只指向已删的 tests/」一起删除 ⇒ 这道门从此 **永远 FAIL**
   //   （实测：Cannot find module `scripts/structure_gap.mjs`）。

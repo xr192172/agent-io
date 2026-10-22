@@ -493,6 +493,21 @@ export interface LeaseReleaseEvent {
 }
 
 /**
+ * ★★★ **哪些状态持有租约**（2026-10-23）—— 「TTL 熔断」的唯一值域。
+ *
+ * `preparing` 也持租约：它虽然不能写代码，但它**占着这张卡**（别人领不走），而且它在
+ * `decision` 上改东西 ⇒ 它跑了不回来，同样会留下半套判据 ⇒ 一样必须能被 TTL 回收（`expire`）。
+ * ★ 写成一张表而不是在两个函数里各写 `=== 'claimed' || === 'preparing'`：后者就是本仓
+ *   「同一判据住两处」的最小形态 —— 加第 6 态时会漏改一处。
+ */
+export const LEASE_STATES = ['preparing', 'claimed'] as const;
+
+/** 该状态**持有租约**吗（`isLeaseExpired` / `releaseIfExpired` 的唯一读法）。 */
+export function isLeaseHolding(s: TaskState): boolean {
+  return (LEASE_STATES as readonly TaskState[]).includes(s);
+}
+
+/**
  * ★★★ **租约时长**（唯一常量 · 2026-10-22 用户裁定）
  *
  * ## 用户原话（这是它存在的理由）
@@ -532,7 +547,8 @@ export const LEASE_TTL_MS: number = (() => {
  * ★ 不把"取不到"读成"没人占" —— 那会让**真正在办**的卡被接管。
  */
 export function isLeaseExpired(card: TaskSpec, nowMs: number, ttlMs: number = LEASE_TTL_MS): boolean {
-  if (card.state !== 'claimed') return false;
+  // ★ 2026-10-23：`preparing` **也持租约**（见 `LEASE_STATES`）—— 它跑了不回来同样要能被回收
+  if (!isLeaseHolding(card.state)) return false;
   if (!card.claimed_at) return false;
   const claimedMs = Date.parse(card.claimed_at);
   if (!Number.isFinite(claimedMs)) return false;
@@ -573,7 +589,7 @@ export function releaseIfExpired(
   const out: LeaseReleaseEvent[] = [];
   for (const card of cards) {
     // ★ 运行期守卫：状态从 JSON 读回时静态类型不再有保证
-    if (!isTaskState(card.state) || card.state !== 'claimed') continue;
+    if (!isTaskState(card.state) || !isLeaseHolding(card.state)) continue;
     if (!card.claimed_at) continue; // 没有 claimed_at ⇒ 判不了，不当过期（不静默改 state）
     const claimedMs = Date.parse(card.claimed_at);
     if (!Number.isFinite(claimedMs)) continue; // 时间不合法 ⇒ 同上
@@ -652,6 +668,78 @@ export const TRANSITIONS: readonly TaskTransition[] = [
         '★ state=candidate ⇒ CAS：owner IS NULL 时才写 owner（changes === 1）',
         '★★ state=done ⇒ 本迁移不直接执行：先走 t_reopen（reason 必填、owner 换手、reopened_at / reopen_reason / reopened_from 记账、evidence 保留），再写 owner —— 一步对外（claim intent=modify）两步对内；intent=work 时仍要 isClaimable 放行（判据后来退化了才有活）',
         '★ state=void 不走这里（t_relaunch → candidate → publish → claim）',
+      ],
+    },
+  },
+  /**
+   * ★★★ 2026-10-23（两段式领取 · 第一段）：`candidate → preparing`。
+   *
+   * ## 它治的病（用户原话）
+   * *「接任务的时候应该要有反馈……如果没有写判据的话，你只是立了张任务在那里。
+   *   在接取任务的时候不能直接接，而是要先把判据补全……先是领了任务但是还不能开始」*
+   * ⇒ 「领了」与「能开工」被拆成两步；`preparing` 就是那个**领了但不能干**的格子
+   *   （写闸只认 `claimed` ⇒ 这一格天然没有写权，不是靠某处记得拦）。
+   *
+   * ## ★ 不是所有卡都走这条边
+   * 判据**已经在**的卡（修缺陷 / 重构 / 改注释）直接 `t_claim` 一段式。
+   * 「要不要两段」的判据只有一条：**该节点的后态判据是不是空的**（+ `judge_gate==='strict'`）。
+   */
+  {
+    id: 't_prepare',
+    from: 'candidate',
+    to: 'preparing',
+    state: { kind: 'ready' },
+    guard: {
+      clauses: [
+        '该卡是 `judge_gate=\'strict\'`（`publish` 之后新立的卡）—— 存量卡不硬约束（迁移期，见 `claimed_without_judge`）',
+        '该节点的 `decision.expectations` 里**后态判据（phase=post）条数为 0** —— 有一条就不走这条边（判据已在 ⇒ 一段式 t_claim）',
+        'CAS：state=candidate ∧ owner 为空 ⇒ 就地写 owner + claimed_at（preparing 也持租约，TTL 到期可回收）',
+        '★ 落 `prepared_snapshot` = 改之前 `decision.expectations` 的**逐字副本**（事务的快照那是半边）',
+        '★ 回执必须**点名缺什么**（给哪个 node 补几条哪类判据，可照做）—— 只说"请补判据"不算（判据 D）',
+      ],
+    },
+  },
+  /**
+   * ★★★ 2026-10-23（两段式领取 · **第二段 = start**）：`preparing → claimed`。
+   *
+   * ## 原子性（判据 B）
+   * 「删快照」与「state→claimed」必须在**同一次 saveDSL** 里 —— 拆成两次写就会出现
+   * `claimed` 但快照还在（或反之）这种**半生效**状态，而它俩正是回滚的全部依据。
+   * ⇒ 代码里是**一个** `writeTask` 调用（`task_ops#startTask`），不给"中间态"存在的机会。
+   */
+  {
+    id: 't_start',
+    from: 'preparing',
+    to: 'claimed',
+    state: { kind: 'ready' },
+    guard: {
+      clauses: [
+        '该节点的后态判据（phase=post）**至少 1 条** —— 空判据不得进 claimed（否则两段式白做）',
+        'owner 必须是**你**（`sameActor`）—— 不能替别人把他"准备中"的卡开工',
+        '★ 一次落盘：删 `prepared_snapshot` + `state=\'claimed\'`（+ 刷 `claimed_at` 为新租约）',
+        '★ 不回滚、不重写判据：这一段**只认账**（判据已经在 decision 里，是 prepare 期间写进去的）',
+      ],
+    },
+  },
+  /**
+   * ★★★ 2026-10-23（两段式领取 · **放弃 = 回滚**）：`preparing → candidate`。
+   *
+   * ## 零残留（判据 C）
+   * `preparing` 期间判据是**真写进 decision** 的（不是草稿）⇒ 放弃时必须把它**逐字写回**
+   * `prepared_snapshot.expectations`，并删掉快照 —— 否则"没领成的活"会在设计侧留下半套判据，
+   * 而下一个来领的人会**拿它当既有验收**（这正是用户说的"设计 DB 残留，会影响其他的东西"）。
+   */
+  {
+    id: 't_abandon',
+    from: 'preparing',
+    to: 'candidate',
+    state: { kind: 'ready' },
+    guard: {
+      clauses: [
+        '显式 release 事件（带 by + reason），或 TTL 到期（`expire`）—— 两条都走**同一个还原函数**',
+        '★ 有 `prepared_snapshot` ⇒ 把 `decision.expectations` **逐字写回**快照内容，再删快照',
+        '★ 同一条件不成立（没有快照）⇒ 只回 candidate，不碰 decision（不假装还原过）',
+        '★ 还原与改态在**同一次 saveDSL**：不留"判据回了一半"的中间态',
       ],
     },
   },

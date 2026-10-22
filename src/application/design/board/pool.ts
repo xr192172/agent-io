@@ -24,7 +24,7 @@ import { isLeaseExpired, leaseAgeHours } from '../../../domain/task_machine.js';
 // ★ 节点卡「占着什么文件」用 `nodePath`（`path` 优先、`description` 回落）—— 那是全仓唯一一把尺
 //   （`write_gate.ts#nodeFilePath` / `overlay.ts#nodePath` 同口径），本文件**不复制第三份**。
 import { nodePath } from '../../../domain/overlay.js';
-import type { TaskSpec, TaskState } from '../../../domain/task_schema.js';
+import { TASK_STATES, type TaskSpec, type TaskState } from '../../../domain/task_schema.js';
 // ★★★ 2026-10-22（迁移第②步）：「这个节点上有没有 `todos[]` 的卡」的判据**只住** `task_schema#todosForNode`
 //   —— 本文件不另写 `dsl.todos.some(t => t.node_id === …)`（那会是第二份口径，迟早与闸/进度判据对不上）。
 import { todosForNode } from '../../../domain/task_schema.js';
@@ -34,7 +34,9 @@ import { todosForNode } from '../../../domain/task_schema.js';
 import { archivedTasks, liveTasks } from '../../../domain/task_schema.js';
 
 /** 卡的全部可能状态（★ 与 `task_schema.ts#TASK_STATES` 同源：`superseded` 已于 2026-10-17 删除） */
-const ALL_STATES: TaskState[] = ['candidate', 'claimed', 'done', 'void'];
+// ★★★ 2026-10-23：**不再手抄状态表** —— 加第 5 态 `preparing` 时这里是**唯一**漏格（tsc 抓到了）：
+//   手抄的第二份字面量正是「同一判据住两处」。现在直接派生 `TASK_STATES`（唯一住处）。
+const ALL_STATES: readonly TaskState[] = TASK_STATES;
 
 /**
  * 卡挂在**哪儿** —— 池里的卡有两个来源（★ 2026-10-22 实测：只看 `geometry.nodes` 会漏掉全部 todo 卡）。
@@ -166,7 +168,8 @@ export function listPool(feature: string, nowMs: number = Date.now()): BoardView
     );
   }
 
-  const byState: Record<TaskState, number> = { candidate: 0, claimed: 0, done: 0, void: 0 };
+  // ★ 2026-10-23：由 `TASK_STATES` **派生**初值（手写四个 0 就是第二份状态表；加第 5 态时 tsc 抓到了这里）
+  const byState = Object.fromEntries(TASK_STATES.map((s) => [s, 0])) as Record<TaskState, number>;
   const bySource: Record<PoolCardSource, number> = { node: 0, todo: 0 };
   const cards: PoolCard[] = [];
   let total = 0;

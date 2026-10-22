@@ -37,7 +37,7 @@ import { addExpectedApi, updateExpectedApi, deleteExpectedApi, setExpectedApis, 
 import { updateStatus } from './status_tools.js';
 // ★★★ 2026-10-17（task_home）：任务格的**唯一写端**（claim / release / complete）。
 //   ★ 本文件只做**路由**；任务态的迁移与判定住 `task_ops.ts`（不在别处直接改 state）。
-import { applyTodoOp, applyTaskOp } from './task_ops.js';
+import { applyTodoOp, applyTaskOp, applyTaskPlanOp } from './task_ops.js';
 // ★★★ T340：**自洽性闸** —— 改设计即校验自洽。判据是现成的 `validateDSL`（`domain/validator.ts:159`，
 //   查 dangling_edge / duplicate_id / anchor_broken / reasoning 引用），**本处只调不改**（判定与 schema 都不动）。
 import { validateDSL } from '../../../domain/validator.js';
@@ -103,8 +103,10 @@ export interface FeatureOperation {
    * - layout：自动布局（op=apply data.algo=dag|force|grid + 各算法参数）
    * - simulation：仿真（op=reset 重置到初始状态）
    * - tag：功能标记（op=add/delete，data.tag 必填；data.files = 成员文件（仓库相对路径或文件 id），省略 = 只动这个 tag 自身）
-   * - task：任务格（op=publish/claim/release/complete，id 为 node_id；★ 任务态**唯一写端**；
+   * - task：任务格（op=publish·claim·start·release·complete…，id 为 node_id；★ 任务态**唯一写端**；
    *   ★ publish 的内容来自该节点的 `decision`，**不收** data 里的手写描述）
+   * - task_plan：**设计册 `task_plan.state_machine` 的唯一写端**（op=update；`data.states` 必须 === `TASK_STATES`，
+   *   `data.transition` 按 id upsert。此前它没有写入口 ⇒ 只能手改 JSON = 绕过唯一写端）
    */
   type:
     | 'node'
@@ -121,6 +123,7 @@ export interface FeatureOperation {
     | 'tag'
     | 'decision'
     | 'task'
+    | 'task_plan'
     | 'todo';
   /** 目标 ID：node_id / edge_id / file_id（api 类型为所属 file_id）；annotation/approval/snapshot/layout/simulation 用 data 传参，本字段可空 */
   id?: string;
@@ -523,6 +526,10 @@ async function applyOperation(
       // ★★★ 2026-10-17（task_home）：任务格的**唯一写端** —— 四个 action 都进 `task_ops`，
       //   不在本文件里直接改 `node.task.state`（那是"第二个写端"）。
       return applyTaskOp(feature, op, agent);
+    case 'task_plan':
+      // ★★★ 2026-10-23：设计册 `task_plan.state_machine` 的**唯一写端**（此前这个字段只能手改 JSON
+      //   = 绕过唯一写端 —— `task_schema.ts` 里记着这条债）。见 `task_ops#applyTaskPlanOp`。
+      return applyTaskPlanOp(feature, op);
     default:
       throw new Error(`未知操作类型: ${op.type satisfies never}`);
   }

@@ -28,21 +28,31 @@ import type { ProgressEvidence } from './overlay.js';
 import type { DiagramStatus } from './geometry.js';
 
 /**
- * 四态（★ 要**显式类型**，不许散落字符串）。
+ * 五态（★ 要**显式类型**，不许散落字符串）。
  *
- * | 态 | 含义 |
- * |---|---|
- * | `candidate` | 候选（还没人领） |
- * | `claimed` | 已领（有 owner + claimed_at） |
- * | `done` | 已完成 |
- * | `void` | 失效（target 在 DB 已查不到 —— ★ 与 `done` 是**两种不同结局**） |
+ * | 态 | 含义 | 持有租约 | 能给写权 |
+ * |---|---|---|---|
+ * | `candidate` | 候选（还没人领） | ✘ | ✘ |
+ * | `preparing` | **已领·不能干**（判据还没补全，见下） | ✔ | ✘ |
+ * | `claimed` | 已领·可开工（有 owner + claimed_at） | ✔ | ✔ |
+ * | `done` | 已完成 | ✘ | ✘ |
+ * | `void` | 失效（target 在 DB 已查不到 / 被取代 —— ★ 与 `done` 是**两种不同结局**） | ✘ | ✘ |
  *
- * ★ 四态与 `.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.state_machine.states` **逐字一致**（2026-10-22 更正：DSL 的 `states` 与 `TASK_STATES` 都是 4 值；原句写「五态」时两头都不成立）；
- *   这里是**唯一住处**，别处不许再抄一份字面量。
+ * ## ★★★ `preparing` 为什么必须是**独立的状态**，而不是「claimed + 一个标记位」
+ * 它要回答的那个问题**恰好是写权**：`write_gate` 只认 `state==='claimed'` ⇒
+ * 「领了但还不能干」在**权限层**必须与「领了能干活」**不是同一格**；
+ * 若做成 `claimed + preparing_at`，那「补判据期间」这张卡就已经把文件**锁上了**
+ * ⇒ 别人也改不了、判据却还没定义 —— 锁了却没有验收标准，是这仓最贵的那类锁。
+ * ★ 另一条：`preparing` 不是「草稿判据」的住处。判据仍然**只住** `decision.expectations`
+ *   （写端照旧 `decision op=update`）；`preparing` 期间真正的落盘是**一张回滚快照**
+ *   （`TaskSpec.prepared_snapshot`），放弃/超时按它**逐字还原** ⇒ 零残留。
+ *
+ * ★ 五态与 `.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.state_machine.states` **逐字一致**；
+ *   这里是**唯一住处**，别处不许再抄一份字面量（`board/pool.ts` 的 `ALL_STATES` 已改成由本常量派生）。
  */
-export const TASK_STATES = ['candidate', 'claimed', 'done', 'void'] as const;
+export const TASK_STATES = ['candidate', 'preparing', 'claimed', 'done', 'void'] as const;
 
-/** 四态中某一态。 */
+/** 五态中某一态。 */
 export type TaskState = (typeof TASK_STATES)[number];
 
 /**
@@ -129,6 +139,7 @@ export function archivedTasks<T extends { archived_at?: string | null }>(tasks: 
  * | state | progress |
  * |---|---|
  * | `candidate` | `draft` |
+ * | `preparing` | `draft`（★ 领了**还不能干** ⇒ 不许说 `in_progress`） |
  * | `claimed` | `in_progress` |
  * | `done` | `done` |
  * | `void` | **`undefined`**（不映射进三轴） |
@@ -136,20 +147,29 @@ export function archivedTasks<T extends { archived_at?: string | null }>(tasks: 
  * ★★★ `void`（以及已退场的 `superseded`）**不许硬塞一个值**（如塞 `draft`）—— 那会让"失效"看起来像"还没开始"，
  *   是**新的补丁**。⇒ 返回 `undefined`，由读端如实呈现"这一轴没有值"。
  */
+/**
+ * 任务态 ⇒ 进度（**唯一**映射表）。
+ *
+ * ★★ 2026-10-23：从 `switch` 改成 `Record<TaskState, …>` —— 加第 5 态 `preparing` 时，
+ *   `switch` **没有报错**（函数返回 `DiagramStatus | undefined`，漏一格的 `switch` 会**隐式返回 `undefined`**），
+ *   也就是「`preparing` 那一轴没有值」会静默成立；`Record` 把同一个漏格变成**编译错误**。
+ *   ⇒ 这就是本仓「别用 default 掩盖穷尽性」在**返回可空**的函数上的那一格。
+ */
+const PROGRESS_BY_STATE: Record<TaskState, DiagramStatus | undefined> = {
+  candidate: 'draft',
+  // ★ `preparing` = 领了但**还不能干**（判据没补全）⇒ 与 candidate 同档 `draft`。
+  //   ★ 不许给 `in_progress`：那会让「卡在补判据」看起来像「正在施工」。
+  preparing: 'draft',
+  claimed: 'in_progress',
+  done: 'done',
+  void: undefined,
+};
+
 export function progressOf(task: Pick<TaskSpec, 'state'> | null | undefined): DiagramStatus | undefined {
   if (!task) return undefined;
   // ★ 运行期守卫：state 从 JSON 读回时静态类型不再有保证 ⇒ 认不出的态一律"无值"（不猜）
   if (!isTaskState(task.state)) return undefined;
-  switch (task.state) {
-    case 'candidate':
-      return 'draft';
-    case 'claimed':
-      return 'in_progress';
-    case 'done':
-      return 'done';
-    case 'void':
-      return undefined;
-  }
+  return PROGRESS_BY_STATE[task.state];
 }
 
 /**
@@ -509,6 +529,34 @@ export interface TaskReadSet {
   note?: string;
 }
 
+/**
+ * ★★★ **两段式领取的回滚底账**（2026-10-23）—— 事务里的「快照」那一半。
+ *
+ * ## 它存的是什么（一句话）
+ * `preparing` 开始**那一刻**，该节点 `decision.expectations` 的**逐字副本**。
+ *
+ * ## 为什么不是「草稿判据」（用户 2026-10-22 明确否掉的方案）
+ * 草稿方案要在 `decision` 上再开一个 `draft_expectations` ⇒ **判据有了第二个家**
+ * （本仓头号病），且「转正」= 把一份搬到另一份，搬一半崩了就是两个家各存一半。
+ * 用户原话：*「你如果因为选择了这个导致难度增大的话，那你还不如搞成事务呢，
+ * 反正也就是一个快照的事情」* ⇒ **原地改 `expectations`，另存一张快照**。
+ *
+ * ## ★ 为什么它不算「任务格自持判据」（铁律：判据只住 decision）
+ * 判据的**读端一个都不读它** —— `expectationsOf` / `cardStanding` / `publish` / 读集
+ * 全部仍只读 `decision.expectations`。它只在**两个时刻**被读：
+ *   ① `start`（第二段）之后**删除**（一次性）；② `release` / `expire` 放弃时**写回** decision。
+ * ⇒ 它是**事件**（「接手那一刻它长什么样」），与 `TaskEvidenceRecord.fingerprint` 同族：
+ *   索引算不出「当时」，所以必须落；而它**永远不进判定链**。
+ */
+export interface PreparedSnapshot {
+  /** 改之前 `decision.expectations` 的逐字副本（★ 不是摘要、不是指纹 —— 要能原样写回） */
+  expectations: Expectation[];
+  /** 快照时刻（= `claimed_at`，同一次时钟读取） */
+  at: string;
+  /** 当时**缺什么**（与回执同款的照做清单）—— 存在卡上，接手的人不必重算才知道要补什么 */
+  missing: string[];
+}
+
 export interface TaskSpec {
   /** 任务 id（= 它挂的那个节点的 id） */
   id: string;
@@ -714,6 +762,36 @@ export interface TaskSpec {
    *   不假装它“不冲突”。
    */
   read_set?: TaskReadSet;
+  /**
+   * ★★★ **判据门**（2026-10-23 · 两段式领取的**施工允许**标记）。
+   *
+   * 由 `publish`（立卡的那一步）**盖章**：`'strict'` ⇒ 这张卡的判据是**新立的**，
+   * ⇒ `claim` 时判据为空就**必须**走 `preparing`（第一段），不许直接进 `claimed`。
+   *
+   * ## 为什么要一个标记，而不是「判据空 ⇒ 一律两段式」
+   * 存量（2026-10-22 之前立的）**判据空的卡有 137 张**（candidate 137 里 85% 判据 0 条）。
+   * 一刀切 ⇒ 这 137 张**同时不可领** = 与今早「29 个文件被租约锁死」**同效**（用户点名的病）。
+   * ⇒ 迁移期规则：**只有 `publish` 之后新立的卡硬约束**；存量卡照旧一段式领，
+   *   但领的时候**留痕** `claimed_without_judge` + 回执里**响亮警告**（不静默）。
+   * ★ 缺省（无此字段）= 存量卡 ⇒ 宽松。★ 不写成 `judge_gate:'legacy'`：老 DSL 里没有这个键，
+   *   「没有」本身就该读成「老卡」，多写一个值只会让两处都要判。
+   */
+  judge_gate?: 'strict';
+  /**
+   * ★★★ **存量卡的免检痕迹**（2026-10-23 · 迁移期）：判据为空的**老卡**被一段式领走时落这一笔。
+   *
+   * 语义 = 「这张卡是在没有判据的情况下被领走的」—— 不是豁免，是**记账**：
+   * 收口时照样要过 `complete` 的判据闸（该红还是会红），但**领卡**这一步放它过去，
+   * 否则 137 张存量卡会集体不可领。
+   * ★ 与 `prepared_snapshot` 的区别：这个**没有可回滚的东西**（它没准备过，也没改过判据），
+   *   它只是一条「什么时候、缺什么就开工了」的记录，供后续补判据时对账。
+   */
+  claimed_without_judge?: { at: string; missing: string[] } | null;
+  /**
+   * ★★★ **两段式领取的回滚快照**（见 {@link PreparedSnapshot}）。
+   * 只在 `state === 'preparing'` 期间非空；`start` 删除、`release` / `expire` 用它还原。
+   */
+  prepared_snapshot?: PreparedSnapshot | null;
 }
 
 /**

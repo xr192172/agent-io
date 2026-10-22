@@ -13293,7 +13293,7 @@
         "task": {
           "id": "file_src_application_design_dsl_ops_task_ops_ts",
           "summary": "publish / claim / release / complete / void 五个 op，写 design/<f>.dsl.json 的 task 格。★ void 是卡生命周期的出口（candidate → void）：没有它会死锁 —— candidate + satisfied 时 claim 拒（satisfied 只可收口）、complete 拒（未领不能收口）⇒ 永远卡住；而'代码先于卡存在'时必然发生。★ publishFromDiff：从 diff 的差异建 L1 卡（VISION §7「无卡 ⇒ 补卡」）。",
-          "state": "claimed",
+          "state": "done",
           "evidence": [
             {
               "kind": "attestation",
@@ -13366,10 +13366,26 @@
                 ]
               },
               "verdict": "pass"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-22T17:41:06.320Z",
+              "by": "llm",
+              "agent": "subagent:deepseek-two-phase",
+              "fingerprint": {
+                "what": "npm run verify",
+                "input": "c823849e0bed9fd3c01cdc7e9f37633eb9f501a8",
+                "code": "16df1ceb475982c05a635bd3c022bd5ac6c3d9d4",
+                "covers": [
+                  "src/application/design/dsl_ops/task_ops.ts",
+                  "src/domain/task_machine.ts"
+                ]
+              },
+              "verdict": "pass"
             }
           ],
-          "owner": "subagent:deepseek-park-archive",
-          "claimed_at": "2026-10-22T16:55:00.405Z",
+          "owner": "subagent:deepseek-two-phase",
+          "claimed_at": "2026-10-22T17:15:19.691Z",
           "reopened_at": "2026-10-22T16:55:00.405Z",
           "reopen_reason": "加软归档：todo archive/unarchive + writeTask 不变量（本批 5 个文件，锚点在这里）",
           "reopened_from": "subagent:deepseek-card-migrate",
@@ -13468,41 +13484,29 @@
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "writeTask",
-                "fp": "ce06d537300766ba5455037ac26451a6a3e812d0"
+                "fp": "4038bea8cc00fa286bb1694b681b2a5a2ea7bca5"
               }
             ],
             "files": [
               {
-                "path": "src/application/design/board/pool.ts",
-                "content_hash": "b37178c9c13a1a178bcf07a01e1e09b13b51c4ec"
-              },
-              {
-                "path": "src/application/design/dsl_ops/op_data_spec.ts",
-                "content_hash": "bd17a4b0a125fbd259932b493a2763c177cb67ae"
-              },
-              {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "5a8f9d8dfc4cba0ea65ae042a5c041cc714948df"
-              },
-              {
-                "path": "src/application/meta/explore/query_feature.ts",
-                "content_hash": "7305275dabb4eb078b25b2fd2eebbc9b39ac7a7a"
-              },
-              {
-                "path": "src/domain/task_schema.ts",
-                "content_hash": "cffe247e567446cb4e85b3458c9fbb16624036a9"
+                "content_hash": "70b30e18c99487582380a464954684bfc58c449e"
               }
             ],
-            "computed_at": "2026-10-22T16:55:00.360Z",
+            "computed_at": "2026-10-22T17:15:19.628Z",
             "basis": [
-              "declared",
               "expectations"
             ],
             "note": "1 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
           },
-          "node_id": "file_src_application_design_dsl_ops_task_ops_ts"
+          "node_id": "file_src_application_design_dsl_ops_task_ops_ts",
+          "taken_over_from": {
+            "from_owner": "subagent:deepseek-park-archive",
+            "from_claimed_at": "2026-10-22T16:55:00.405Z",
+            "age_hours": 0.3
+          }
         },
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -55693,17 +55697,29 @@
             "files": [
               {
                 "path": "scripts/impl-fixture.mjs",
-                "content_hash": "51167b449da089719e388491158de770ba25ea48"
+                "content_hash": "9ac843a1771b41f0b21c04c92053b9096240b43d"
               }
             ],
-            "computed_at": "2026-10-21T19:08:21.799Z",
+            "computed_at": "2026-10-22T17:40:07.487Z",
             "basis": [
               "node-path"
             ]
           },
-          "release_reason": "L1 卡按新语义收不了口（级别派生 ⇒ 见 todo_l1-l2-handoff-gap）⇒ 释放，不留 claimed 占位：file_scripts_impl-fixture_mjs",
-          "released_by": "subagent:exp-single-source",
-          "released_at": "2026-10-21T19:19:50.231Z"
+          "node_id": "file_scripts_impl-fixture_mjs",
+          "claimed_without_judge": {
+            "at": "2026-10-22T17:40:07.534Z",
+            "missing": [
+              "节点 file_scripts_impl-fixture_mjs 的 `decision.expectations` 里**后态判据（phase=post）0 条**（**一条判据都没有**）",
+              "要补 **2 条**：signature-matches + source-has —— 一个\"结构\"（`ROOT` 的签名就算证据）+ 一个\"行为/文本\"（关键写法必须在）",
+              "写到哪：`edit_dsl { type:'decision', op:'update', id:'file_scripts_impl-fixture_mjs', data:{ expectations:[…] } }`（判据**只住 decision**，不在卡上；卡上的是一张回滚快照）",
+              "补齐后：`edit_dsl { type:'task', op:'start', id:'file_scripts_impl-fixture_mjs', data:{ owner:'<你>' } }`（第二段：删快照 + state→claimed，**一次落盘**）",
+              "放弃：`release`（会按 `prepared_snapshot` 把判据**逐字还原** ⇒ 零残留）"
+            ]
+          },
+          "prepared_snapshot": null,
+          "release_reason": "量具更新已完成（迁移表加 t_prepare/t_start/t_abandon 三行）；该卡的 L1 建构（decision.summary + 后态判据）不属于本次，放回候选",
+          "released_by": "subagent:deepseek-two-phase",
+          "released_at": "2026-10-22T17:41:15.050Z"
         },
         "status": "draft"
       },
@@ -84195,7 +84211,7 @@
         ],
         "lines": 670,
         "layer": "core",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -105225,11 +105241,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T17:02:22.019Z",
+    "saved_at": "2026-10-22T17:41:26.028Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 105019208,
+    "age": 107363217,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -105419,6 +105435,7 @@
     "state_machine": {
       "states": [
         "candidate",
+        "preparing",
         "claimed",
         "done",
         "void"
@@ -105570,6 +105587,49 @@
             "kind": "ready"
           },
           "executor": "completeTask"
+        },
+        {
+          "id": "t_prepare",
+          "from": "candidate",
+          "to": "preparing",
+          "guard": {
+            "clauses": [
+              "该卡是 judge_gate=strict（publish 之后新立的卡）—— 存量卡不硬约束（迁移期，见 claimed_without_judge）",
+              "该节点的 decision.expectations 里后态判据（phase=post）条数为 0 —— 有一条就不走这条边（判据已在 ⇒ 一段式 t_claim）",
+              "CAS：state=candidate ∧ owner 为空 ⇒ 就地写 owner + claimed_at（preparing 也持租约，TTL 到期可回收）",
+              "落 prepared_snapshot = 改之前 decision.expectations 的逐字副本（事务的快照那一半）",
+              "回执必须点名缺什么（给哪个 node 补几条哪类判据，可照做）—— 只说『请补判据』不算（判据 D）"
+            ]
+          },
+          "executor": "claimTask"
+        },
+        {
+          "id": "t_start",
+          "from": "preparing",
+          "to": "claimed",
+          "guard": {
+            "clauses": [
+              "该节点的后态判据（phase=post）至少 1 条 —— 空判据不得进 claimed（否则两段式白做）",
+              "owner 必须是你（sameActor）—— 不能替别人把他准备中的卡开工",
+              "一次落盘：删 prepared_snapshot + state=claimed（+ 刷 claimed_at 为新租约）",
+              "不回滚、不重写判据：这一段只认账（判据已经在 decision 里，是 prepare 期间写进去的）"
+            ]
+          },
+          "executor": "startTask"
+        },
+        {
+          "id": "t_abandon",
+          "from": "preparing",
+          "to": "candidate",
+          "guard": {
+            "clauses": [
+              "显式 release 事件（带 by + reason），或 TTL 到期（expire）—— 两条都走同一个还原函数",
+              "有 prepared_snapshot ⇒ 把 decision.expectations 逐字写回快照内容，再删快照",
+              "同一条件不成立（没有快照）⇒ 只回 candidate，不碰 decision（不假装还原过）",
+              "还原与改态在同一次 saveDSL：不留『判据回了一半』的中间态"
+            ]
+          },
+          "executor": "releaseTask / expireTasks"
         }
       ],
       "terminal_states": [],
@@ -109439,10 +109499,32 @@
     },
     {
       "type": "todo",
-      "state": "candidate",
+      "state": "done",
       "id": "todo_两段式领取-领了不能干-先把判据补全才能正式开始-且要事务回滚",
       "created_at": "2026-10-22T11:32:45.900Z",
-      "summary": "【用户 2026-10-22 RFC（原话见下）】\n> 「接任务的时候应该要有反馈……如果没有写判据的话，你只是立了张任务在那里。\n>  在接取任务的时候不能直接接，而是要先把判据补全……或者说是**两段式接取**：\n>  先是领了任务但是还不能开始，而是要先去把设计 DB 完善好，才能正式开始这个任务。\n>  并且这个要做**事务级的锁**……不然你这个设计 DB 设计到一半，然后你这个任务没有领，\n>  然后突然就不做了，那么就可能会导致你这个设计 DB 残留，会影响其他的东西，\n>  所以此时你就要像是事务一样要**回滚**。」\n\n## 实测读数（这就是为什么需要它）\n```\ncandidate 137 张（todo 50 + node 87）· 其中【判据 0 条】= 117（85%）\n★ 但根因不是\"忘了写\"：todo 卡的判据挂在 node_id 指向的节点上，\n  而 123 张 todo 里【只有 1 张】有 node_id ⇒ todo 卡【结构上无处挂判据】\n  ⇒ 与「卡独立化」那张卡是同一件事（`todo_决策卡应该记节点…`）\n```\n\n## 任务类型枚举（用户说\"我可能枚举不全\"⇒ 我补全到 8 类）\n| # | 类型 | 对设计 DSL | 对 ER/DB | 判据从哪来 | 要两段式？ |\n|---|---|---|---|---|---|\n| 1 | **新增能力**（新文件/新工具） | 加节点 + decision | 可能加表 | **新写** | ✔ |\n| 2 | **修改已有行为** | **改 expectations** | 可能改 | **改写** | ✔ |\n| 3 | **修缺陷**（设计对、代码错） | **不改** | 不改 | **已有（红的那个）** | ✘ 一段式 |\n| 4 | **重构**（行为不变） | 可能拆/合节点 | 不改 | **现有判据必须仍绿** | ✘ 一段式 |\n| 5 | **清理/退役** | **删节点 + lifecycle** | 可能删表 | **删后（引用为 0）** | ✔ |\n| 6 | **文档/注释** | 可能改 summary | 不改 | 极弱（`source-has`） | ✔（弱判据也算） |\n| 7 | **迁移**（格式/数据） | 改结构 | **必改** | **迁移前后一致** | ✔ |\n| 8 | **实验/探针**（一次性） | **不改** | 不改 | 无（用完即删） | ✘ 不许立卡 |\n\n★ **关键结论：不是所有任务都要两段式。** 第 3/4 类（修缺陷 / 重构）判据**已经存在** ⇒ 直接一段式领。\n   **要补判据的才是 1/2/5/6/7。**\n\n## 机制设计（★ 「草稿判据」是关键，不要\"直接改 expectations\"）\n```\n① claim 时若判据为空 ⇒ **不许 claim**，改为进入 `preparing`（第一段）：\n   · task.state = \"preparing\"（新状态，或 claimed + preparing_at）\n   · 输出**反馈**：缺什么（哪个 node 的 decision 要补几条哪类判据）+ 参考样例\n② 补判据 ⇒ 写进 **`decision.draft_expectations`**（★ 不影响 cardStanding，因为它只读 expectations）\n③ `start`（第二段）⇒ **一次原子写**：draft 转正（expectations = draft; draft = null）+ state=claimed\n④ 放弃/超时 ⇒ **删 draft** ⇒ 零残留（★ 这才是\"回滚\"：残留的是 draft，不是生效的判据）\n```\n★ 为什么用 `draft_expectations` 而不是\"改了再回滚\"：\n  回滚要快照 + 恢复，而**快照本身会过期**（若期间别人也改了 decision）。\n  草稿没有这个问题：**没转正 = 从未生效** ⇒ 不存在\"回滚失败\"这种状态。\n\n## 事务的边界（★ 用户要的\"同时\"具体指这两件事）\n```\n\"开始任务\" = 【draft 转正】+【state → claimed】必须同一次落盘（一个 writeTask 调用）\n★ 反过来也成立：state=claimed 但 draft 未转正 ⇒ 不可能（代码结构上不允许）\n★ 判据：写一个夹具——start 时让第二步抛错 ⇒ **state 必须仍是 preparing、draft 必须还在**（原子）\n```\n\n## 判据（四条，都要能红）\n  A. **没判据不许 claim**：造一张判据空的卡 ⇒ claim 必须给出 `preparing` + **点名缺什么**（不是静默成功）\n  B. **两段式原子**：start 中途失败 ⇒ state 仍 `preparing`、draft 仍在（不许半生效）\n  C. **放弃零残留**：preparing 中放弃 ⇒ `expectations` 与 claim 前**逐字相同**、draft 为 null、state 回 candidate\n  D. **反馈可读**：preparing 的回执必须说清\"要给哪个 node 补几条哪类判据\"（★ 不是\"请补判据\"这种空话）\n\n## 与其它卡的关系（顺序）\n```\n前置：todo_决策卡应该记节点…（卡独立化）—— 否则 todo 卡仍然无处挂判据（本卡只能覆盖节点卡）\n★ 但本卡的 ① ② ③ ④ 四条判据可以在**节点卡**上先做（87 张 node candidate 里也有判据空的）\n```"
+      "summary": "【用户 2026-10-22 RFC（原话见下）】\n> 「接任务的时候应该要有反馈……如果没有写判据的话，你只是立了张任务在那里。\n>  在接取任务的时候不能直接接，而是要先把判据补全……或者说是**两段式接取**：\n>  先是领了任务但是还不能开始，而是要先去把设计 DB 完善好，才能正式开始这个任务。\n>  并且这个要做**事务级的锁**……不然你这个设计 DB 设计到一半，然后你这个任务没有领，\n>  然后突然就不做了，那么就可能会导致你这个设计 DB 残留，会影响其他的东西，\n>  所以此时你就要像是事务一样要**回滚**。」\n\n## 实测读数（这就是为什么需要它）\n```\ncandidate 137 张（todo 50 + node 87）· 其中【判据 0 条】= 117（85%）\n★ 但根因不是\"忘了写\"：todo 卡的判据挂在 node_id 指向的节点上，\n  而 123 张 todo 里【只有 1 张】有 node_id ⇒ todo 卡【结构上无处挂判据】\n  ⇒ 与「卡独立化」那张卡是同一件事（`todo_决策卡应该记节点…`）\n```\n\n## 任务类型枚举（用户说\"我可能枚举不全\"⇒ 我补全到 8 类）\n| # | 类型 | 对设计 DSL | 对 ER/DB | 判据从哪来 | 要两段式？ |\n|---|---|---|---|---|---|\n| 1 | **新增能力**（新文件/新工具） | 加节点 + decision | 可能加表 | **新写** | ✔ |\n| 2 | **修改已有行为** | **改 expectations** | 可能改 | **改写** | ✔ |\n| 3 | **修缺陷**（设计对、代码错） | **不改** | 不改 | **已有（红的那个）** | ✘ 一段式 |\n| 4 | **重构**（行为不变） | 可能拆/合节点 | 不改 | **现有判据必须仍绿** | ✘ 一段式 |\n| 5 | **清理/退役** | **删节点 + lifecycle** | 可能删表 | **删后（引用为 0）** | ✔ |\n| 6 | **文档/注释** | 可能改 summary | 不改 | 极弱（`source-has`） | ✔（弱判据也算） |\n| 7 | **迁移**（格式/数据） | 改结构 | **必改** | **迁移前后一致** | ✔ |\n| 8 | **实验/探针**（一次性） | **不改** | 不改 | 无（用完即删） | ✘ 不许立卡 |\n\n★ **关键结论：不是所有任务都要两段式。** 第 3/4 类（修缺陷 / 重构）判据**已经存在** ⇒ 直接一段式领。\n   **要补判据的才是 1/2/5/6/7。**\n\n## 机制设计（★ 「草稿判据」是关键，不要\"直接改 expectations\"）\n```\n① claim 时若判据为空 ⇒ **不许 claim**，改为进入 `preparing`（第一段）：\n   · task.state = \"preparing\"（新状态，或 claimed + preparing_at）\n   · 输出**反馈**：缺什么（哪个 node 的 decision 要补几条哪类判据）+ 参考样例\n② 补判据 ⇒ 写进 **`decision.draft_expectations`**（★ 不影响 cardStanding，因为它只读 expectations）\n③ `start`（第二段）⇒ **一次原子写**：draft 转正（expectations = draft; draft = null）+ state=claimed\n④ 放弃/超时 ⇒ **删 draft** ⇒ 零残留（★ 这才是\"回滚\"：残留的是 draft，不是生效的判据）\n```\n★ 为什么用 `draft_expectations` 而不是\"改了再回滚\"：\n  回滚要快照 + 恢复，而**快照本身会过期**（若期间别人也改了 decision）。\n  草稿没有这个问题：**没转正 = 从未生效** ⇒ 不存在\"回滚失败\"这种状态。\n\n## 事务的边界（★ 用户要的\"同时\"具体指这两件事）\n```\n\"开始任务\" = 【draft 转正】+【state → claimed】必须同一次落盘（一个 writeTask 调用）\n★ 反过来也成立：state=claimed 但 draft 未转正 ⇒ 不可能（代码结构上不允许）\n★ 判据：写一个夹具——start 时让第二步抛错 ⇒ **state 必须仍是 preparing、draft 必须还在**（原子）\n```\n\n## 判据（四条，都要能红）\n  A. **没判据不许 claim**：造一张判据空的卡 ⇒ claim 必须给出 `preparing` + **点名缺什么**（不是静默成功）\n  B. **两段式原子**：start 中途失败 ⇒ state 仍 `preparing`、draft 仍在（不许半生效）\n  C. **放弃零残留**：preparing 中放弃 ⇒ `expectations` 与 claim 前**逐字相同**、draft 为 null、state 回 candidate\n  D. **反馈可读**：preparing 的回执必须说清\"要给哪个 node 补几条哪类判据\"（★ 不是\"请补判据\"这种空话）\n\n## 与其它卡的关系（顺序）\n```\n前置：todo_决策卡应该记节点…（卡独立化）—— 否则 todo 卡仍然无处挂判据（本卡只能覆盖节点卡）\n★ 但本卡的 ① ② ③ ④ 四条判据可以在**节点卡**上先做（87 张 node candidate 里也有判据空的）\n```",
+      "owner": "subagent:deepseek-two-phase",
+      "claimed_at": "2026-10-22T17:41:25.880Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T17:41:25.837Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T17:41:25.994Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-two-phase",
+          "fingerprint": {
+            "what": "node certs/t360-two-phase-claim-cert.mjs && npm run verify",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "type": "todo",
@@ -110221,7 +110303,7 @@
     {
       "id": "file_src_application_design_dsl_ops_task_ops_ts",
       "summary": "publish / claim / release / complete / void 五个 op，写 design/<f>.dsl.json 的 task 格。★ void 是卡生命周期的出口（candidate → void）：没有它会死锁 —— candidate + satisfied 时 claim 拒（satisfied 只可收口）、complete 拒（未领不能收口）⇒ 永远卡住；而'代码先于卡存在'时必然发生。★ publishFromDiff：从 diff 的差异建 L1 卡（VISION §7「无卡 ⇒ 补卡」）。",
-      "state": "claimed",
+      "state": "done",
       "evidence": [
         {
           "kind": "attestation",
@@ -110294,10 +110376,26 @@
             ]
           },
           "verdict": "pass"
+        },
+        {
+          "kind": "reading",
+          "at": "2026-10-22T17:41:06.320Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-two-phase",
+          "fingerprint": {
+            "what": "npm run verify",
+            "input": "c823849e0bed9fd3c01cdc7e9f37633eb9f501a8",
+            "code": "16df1ceb475982c05a635bd3c022bd5ac6c3d9d4",
+            "covers": [
+              "src/application/design/dsl_ops/task_ops.ts",
+              "src/domain/task_machine.ts"
+            ]
+          },
+          "verdict": "pass"
         }
       ],
-      "owner": "subagent:deepseek-park-archive",
-      "claimed_at": "2026-10-22T16:55:00.405Z",
+      "owner": "subagent:deepseek-two-phase",
+      "claimed_at": "2026-10-22T17:15:19.691Z",
       "reopened_at": "2026-10-22T16:55:00.405Z",
       "reopen_reason": "加软归档：todo archive/unarchive + writeTask 不变量（本批 5 个文件，锚点在这里）",
       "reopened_from": "subagent:deepseek-card-migrate",
@@ -110396,39 +110494,27 @@
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
             "name": "writeTask",
-            "fp": "ce06d537300766ba5455037ac26451a6a3e812d0"
+            "fp": "4038bea8cc00fa286bb1694b681b2a5a2ea7bca5"
           }
         ],
         "files": [
           {
-            "path": "src/application/design/board/pool.ts",
-            "content_hash": "b37178c9c13a1a178bcf07a01e1e09b13b51c4ec"
-          },
-          {
-            "path": "src/application/design/dsl_ops/op_data_spec.ts",
-            "content_hash": "bd17a4b0a125fbd259932b493a2763c177cb67ae"
-          },
-          {
             "path": "src/application/design/dsl_ops/task_ops.ts",
-            "content_hash": "5a8f9d8dfc4cba0ea65ae042a5c041cc714948df"
-          },
-          {
-            "path": "src/application/meta/explore/query_feature.ts",
-            "content_hash": "7305275dabb4eb078b25b2fd2eebbc9b39ac7a7a"
-          },
-          {
-            "path": "src/domain/task_schema.ts",
-            "content_hash": "cffe247e567446cb4e85b3458c9fbb16624036a9"
+            "content_hash": "70b30e18c99487582380a464954684bfc58c449e"
           }
         ],
-        "computed_at": "2026-10-22T16:55:00.360Z",
+        "computed_at": "2026-10-22T17:15:19.628Z",
         "basis": [
-          "declared",
           "expectations"
         ],
         "note": "1 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
       },
-      "node_id": "file_src_application_design_dsl_ops_task_ops_ts"
+      "node_id": "file_src_application_design_dsl_ops_task_ops_ts",
+      "taken_over_from": {
+        "from_owner": "subagent:deepseek-park-archive",
+        "from_claimed_at": "2026-10-22T16:55:00.405Z",
+        "age_hours": 0.3
+      }
     },
     {
       "id": "file_src_application_design_handlers_ts",
@@ -112957,18 +113043,29 @@
         "files": [
           {
             "path": "scripts/impl-fixture.mjs",
-            "content_hash": "51167b449da089719e388491158de770ba25ea48"
+            "content_hash": "9ac843a1771b41f0b21c04c92053b9096240b43d"
           }
         ],
-        "computed_at": "2026-10-21T19:08:21.799Z",
+        "computed_at": "2026-10-22T17:40:07.487Z",
         "basis": [
           "node-path"
         ]
       },
-      "release_reason": "L1 卡按新语义收不了口（级别派生 ⇒ 见 todo_l1-l2-handoff-gap）⇒ 释放，不留 claimed 占位：file_scripts_impl-fixture_mjs",
-      "released_by": "subagent:exp-single-source",
-      "released_at": "2026-10-21T19:19:50.231Z",
-      "node_id": "file_scripts_impl-fixture_mjs"
+      "node_id": "file_scripts_impl-fixture_mjs",
+      "claimed_without_judge": {
+        "at": "2026-10-22T17:40:07.534Z",
+        "missing": [
+          "节点 file_scripts_impl-fixture_mjs 的 `decision.expectations` 里**后态判据（phase=post）0 条**（**一条判据都没有**）",
+          "要补 **2 条**：signature-matches + source-has —— 一个\"结构\"（`ROOT` 的签名就算证据）+ 一个\"行为/文本\"（关键写法必须在）",
+          "写到哪：`edit_dsl { type:'decision', op:'update', id:'file_scripts_impl-fixture_mjs', data:{ expectations:[…] } }`（判据**只住 decision**，不在卡上；卡上的是一张回滚快照）",
+          "补齐后：`edit_dsl { type:'task', op:'start', id:'file_scripts_impl-fixture_mjs', data:{ owner:'<你>' } }`（第二段：删快照 + state→claimed，**一次落盘**）",
+          "放弃：`release`（会按 `prepared_snapshot` 把判据**逐字还原** ⇒ 零残留）"
+        ]
+      },
+      "prepared_snapshot": null,
+      "release_reason": "量具更新已完成（迁移表加 t_prepare/t_start/t_abandon 三行）；该卡的 L1 建构（decision.summary + 后态判据）不属于本次，放回候选",
+      "released_by": "subagent:deepseek-two-phase",
+      "released_at": "2026-10-22T17:41:15.050Z"
     },
     {
       "id": "file_src_application_source_writer_ts",

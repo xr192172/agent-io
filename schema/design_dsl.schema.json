@@ -141,7 +141,7 @@
           "properties": {
             "id": { "type": "string", "description": "任务 id（= 所在节点的 id）" },
             "summary": { "type": "string", "description": "要做什么（人读一句）" },
-            "state": { "type": "string", "enum": ["candidate", "claimed", "done", "void", "superseded"] },
+            "state": { "type": "string", "enum": ["candidate", "preparing", "claimed", "done", "void"] },
             "owner": { "type": ["string", "null"] },
             "claimed_at": { "type": ["string", "null"] },
             "release_reason": { "type": "string" },

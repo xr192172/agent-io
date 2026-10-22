@@ -7,13 +7,13 @@
     {
       "name": "MonolithStatus",
       "kind": "type",
-      "line": 31,
+      "line": 33,
       "signature": "MonolithStatus()"
     },
     {
       "name": "CommunityInfo",
       "kind": "interface",
-      "line": 33,
+      "line": 35,
       "signature": "CommunityInfo()",
       "members": [
         {
@@ -51,7 +51,7 @@
     {
       "name": "FileMonolithReport",
       "kind": "interface",
-      "line": 46,
+      "line": 48,
       "signature": "FileMonolithReport()",
       "members": [
         {
@@ -101,7 +101,7 @@
     {
       "name": "CheckMonolithInput",
       "kind": "interface",
-      "line": 60,
+      "line": 62,
       "signature": "CheckMonolithInput()",
       "members": [
         {
@@ -175,7 +175,7 @@
     {
       "name": "CheckMonolithResult",
       "kind": "interface",
-      "line": 85,
+      "line": 87,
       "signature": "CheckMonolithResult()",
       "members": [
         {
@@ -213,19 +213,19 @@
     {
       "name": "countLines",
       "kind": "function",
-      "line": 97,
+      "line": 99,
       "signature": "countLines(content: string): number"
     },
     {
       "name": "assessLines",
       "kind": "function",
-      "line": 107,
+      "line": 109,
       "signature": "assessLines(lines: number, warn = 500, crit = 1000): MonolithStatus"
     },
     {
       "name": "DeclUnit",
       "kind": "interface",
-      "line": 118,
+      "line": 120,
       "signature": "DeclUnit()",
       "members": [
         {
@@ -257,139 +257,139 @@
     {
       "name": "GO_RECEIVER_SIG_RE",
       "kind": "const",
-      "line": 128,
+      "line": 130,
       "signature": "const GO_RECEIVER_SIG_RE = /^(\\w+)\\.(\\w+)\\(/"
     },
     {
       "name": "buildDeclUnits",
       "kind": "function",
-      "line": 136,
+      "line": 138,
       "signature": "buildDeclUnits(symbols: ParsedSymbol[]): DeclUnit[]"
     },
     {
       "name": "buildReferenceGraph",
       "kind": "function",
-      "line": 209,
+      "line": 211,
       "signature": "buildReferenceGraph(units: DeclUnit[], content: string): Array<Map<number, number>>"
     },
     {
       "name": "symmetrize",
       "kind": "function",
-      "line": 230,
+      "line": 232,
       "signature": "symmetrize(directed: Array<Map<number, number>>): Array<Map<number, number>>"
     },
     {
       "name": "LOUVAIN_EPS",
       "kind": "const",
-      "line": 246,
+      "line": 248,
       "signature": "const LOUVAIN_EPS = 1e-7"
     },
     {
       "name": "LOUVAIN_MAX_AGG",
       "kind": "const",
-      "line": 247,
+      "line": 249,
       "signature": "const LOUVAIN_MAX_AGG = 20"
     },
     {
       "name": "louvain",
       "kind": "function",
-      "line": 254,
+      "line": 256,
       "signature": "louvain(adj: Array<Map<number, number>>): number[]"
     },
     {
       "name": "louvainLocalMove",
       "kind": "function",
-      "line": 306,
+      "line": 308,
       "signature": "louvainLocalMove(graph: Array<Map<number, number>>, n: number): { community: number[] }"
     },
     {
       "name": "NAME_STOPWORDS",
       "kind": "const",
-      "line": 365,
+      "line": 367,
       "signature": "const NAME_STOPWORDS = new Set([ 'utils', 'util', 'helper', 'helpers', 'common',…"
     },
     {
       "name": "tokenizeName",
       "kind": "function",
-      "line": 371,
+      "line": 373,
       "signature": "tokenizeName(name: string): string[]"
     },
     {
       "name": "suggestFileName",
       "kind": "function",
-      "line": 386,
+      "line": 388,
       "signature": "suggestFileName(declNames: string[], ext: string, taken: Set<string>, origBase: string): string"
     },
     {
       "name": "analyzeFileContent",
       "kind": "function",
-      "line": 437,
+      "line": 439,
       "signature": "analyzeFileContent(relPath: string,\n  content: string,\n  warn = 500,\n  crit = 1000,\n  flagCohesive = true,): Promise<FileMonolithReport>"
     },
     {
       "name": "PV_NODE_W",
       "kind": "const",
-      "line": 547,
+      "line": 549,
       "signature": "const PV_NODE_W = 220"
     },
     {
       "name": "PV_NODE_H",
       "kind": "const",
-      "line": 548,
+      "line": 550,
       "signature": "const PV_NODE_H = 64"
     },
     {
       "name": "PV_COLS",
       "kind": "const",
-      "line": 549,
+      "line": 551,
       "signature": "const PV_COLS = 3"
     },
     {
       "name": "PV_GAP_X",
       "kind": "const",
-      "line": 550,
+      "line": 552,
       "signature": "const PV_GAP_X = 40"
     },
     {
       "name": "PV_GAP_Y",
       "kind": "const",
-      "line": 551,
+      "line": 553,
       "signature": "const PV_GAP_Y = 30"
     },
     {
       "name": "PV_PAD",
       "kind": "const",
-      "line": 552,
+      "line": 554,
       "signature": "const PV_PAD = 20"
     },
     {
       "name": "PV_TITLE",
       "kind": "const",
-      "line": 553,
+      "line": 555,
       "signature": "const PV_TITLE = 30"
     },
     {
       "name": "PV_CONTAINER_GAP",
       "kind": "const",
-      "line": 554,
+      "line": 556,
       "signature": "const PV_CONTAINER_GAP = 60"
     },
     {
       "name": "buildSplitPreviewDsl",
       "kind": "function",
-      "line": 557,
+      "line": 559,
       "signature": "buildSplitPreviewDsl(feature: string,\n  reports: FileMonolithReport[],\n  warn: number,\n  crit: number,): DesignDSL"
     },
     {
       "name": "sanitizeId",
       "kind": "function",
-      "line": 655,
+      "line": 657,
       "signature": "sanitizeId(s: string): string"
     },
     {
       "name": "checkMonolith",
       "kind": "function",
-      "line": 664,
+      "line": 666,
       "signature": "checkMonolith(input: CheckMonolithInput): Promise<CheckMonolithResult>"
     }
   ],
@@ -412,6 +412,10 @@
       "kind": "relative"
     },
     {
+      "source": "../../dsl_write_scope.js",
+      "kind": "relative"
+    },
+    {
       "source": "../../parse/index.js",
       "kind": "relative"
     },
@@ -430,10 +434,6 @@
     }
   ],
   "calls": [
-    {
-      "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
-      "to": "src/infrastructure/analysis/health/health_cache.ts#fileFingerprint"
-    },
     {
       "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
       "to": "src/infrastructure/analysis/health/health_cache.ts#healthKey"
@@ -491,12 +491,20 @@
       "to": "src/infrastructure/analysis/structure/monolith.ts#symmetrize"
     },
     {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
+      "to": "src/infrastructure/dsl_write_scope.ts#runDslWriteScope"
+    },
+    {
       "from": "src/infrastructure/analysis/structure/monolith.ts#analyzeFileContent",
       "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
     },
     {
       "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
       "to": "src/infrastructure/project_view.ts#getProjectView"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
+      "to": "src/infrastructure/storage.ts#fileFingerprint"
     },
     {
       "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",

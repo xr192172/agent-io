@@ -7,7 +7,7 @@
     {
       "name": "ImportProjectInput",
       "kind": "interface",
-      "line": 42,
+      "line": 46,
       "signature": "ImportProjectInput()",
       "members": [
         {
@@ -99,7 +99,7 @@
     {
       "name": "ImportProjectResult",
       "kind": "interface",
-      "line": 124,
+      "line": 128,
       "signature": "ImportProjectResult()",
       "members": [
         {
@@ -161,97 +161,97 @@
     {
       "name": "SKIP_DIR_EXTRA",
       "kind": "const",
-      "line": 157,
+      "line": 161,
       "signature": "const SKIP_DIR_EXTRA = INDEX_SKIP_DIR_EXTRA"
     },
     {
       "name": "SKIP_DIRS",
       "kind": "const",
-      "line": 158,
+      "line": 162,
       "signature": "const SKIP_DIRS = { has: (n: string) => shouldSkipDir(n, SKIP_DIR_EXTRA), }…"
     },
     {
       "name": "ARCHIVE_DIRS",
       "kind": "const",
-      "line": 168,
+      "line": 172,
       "signature": "const ARCHIVE_DIRS = new Set([ '_archive', 'archive', 'archived', '_old', 'old…"
     },
     {
       "name": "TEST_FILE_RE",
       "kind": "const",
-      "line": 176,
+      "line": 180,
       "signature": "const TEST_FILE_RE = /(_test\\.go$|\\.test\\.[tj]sx?$|\\.spec\\.[tj]sx?$|test_.*\\.p…"
     },
     {
       "name": "FILE_W",
       "kind": "const",
-      "line": 179,
+      "line": 183,
       "signature": "const FILE_W = 240"
     },
     {
       "name": "FILE_H",
       "kind": "const",
-      "line": 180,
+      "line": 184,
       "signature": "const FILE_H = 64"
     },
     {
       "name": "COL_GAP",
       "kind": "const",
-      "line": 181,
+      "line": 185,
       "signature": "const COL_GAP = 110"
     },
     {
       "name": "ROW_GAP",
       "kind": "const",
-      "line": 182,
+      "line": 186,
       "signature": "const ROW_GAP = 40"
     },
     {
       "name": "PAD",
       "kind": "const",
-      "line": 183,
+      "line": 187,
       "signature": "const PAD = 20"
     },
     {
       "name": "TITLE_H",
       "kind": "const",
-      "line": 184,
+      "line": 188,
       "signature": "const TITLE_H = 30"
     },
     {
       "name": "MARGIN",
       "kind": "const",
-      "line": 185,
+      "line": 189,
       "signature": "const MARGIN = 60"
     },
     {
       "name": "IMPORT_LAYOUT",
       "kind": "const",
-      "line": 188,
+      "line": 192,
       "signature": "const IMPORT_LAYOUT = { FILE_W, FILE_H, COL_GAP, ROW_GAP, PAD, TITLE_H, MARGIN }"
     },
     {
       "name": "LANG_COLORS",
       "kind": "const",
-      "line": 191,
+      "line": 195,
       "signature": "const LANG_COLORS = { go: { bg: '#1a4a7a', color: '#ffffff' }, ts: { bg: '#15…"
     },
     {
       "name": "DEFAULT_FILE_COLOR",
       "kind": "const",
-      "line": 199,
+      "line": 203,
       "signature": "const DEFAULT_FILE_COLOR = { bg: '#37474f', color: '#eceff1' }"
     },
     {
       "name": "DIR_STYLE",
       "kind": "const",
-      "line": 200,
+      "line": 204,
       "signature": "const DIR_STYLE = { bg: '#152141', color: '#90caf9' }"
     },
     {
       "name": "GiMatcher",
       "kind": "interface",
-      "line": 207,
+      "line": 211,
       "signature": "GiMatcher()",
       "members": [
         {
@@ -271,43 +271,43 @@
     {
       "name": "GitignoreMatchers",
       "kind": "type",
-      "line": 218,
+      "line": 222,
       "signature": "GitignoreMatchers()"
     },
     {
       "name": "carryOverNodeGates",
       "kind": "function",
-      "line": 238,
+      "line": 242,
       "signature": "carryOverNodeGates(prev: DesignDSL | null, next: DesignDSL): number"
     },
     {
       "name": "collectGitignore",
       "kind": "function",
-      "line": 254,
+      "line": 258,
       "signature": "collectGitignore(root: string): GitignoreMatchers | null"
     },
     {
       "name": "isGitignored",
       "kind": "function",
-      "line": 285,
+      "line": 289,
       "signature": "isGitignored(chain: GiMatcher[], full: string, isDir: boolean): boolean"
     },
     {
       "name": "walkFiles",
       "kind": "function",
-      "line": 294,
+      "line": 298,
       "signature": "walkFiles(root: string,\n  includeTests: boolean,\n  includeArchive = false,\n  gitignore: GitignoreMatchers | null = null,\n  /**\n   * ★ 可选：**因非代码后缀被排除**的文件（绝对路径）收集器 —— 「排除必须出声」的载体（D6-2）。\n   *\n   * 为什么要有它：`source_exts.ts` 的 `excludedNonCodeExts` 自述是\"口径收紧的可见性载体\"，\n   *   而本走查原先**连数都不数**地跳过 `.json/.html/.css/...` ⇒ 回执里看不到它们被排除了\n   *   ⇒ 下一个人会以为是\"本来就没有\"。这里把\"被排除的\"如实交回给调用方（`importProject` 拼进回执）。\n   * ★ 只收「**可解析但非代码**」的后缀（= `excludedNonCodeExts`，与本走查同一把 L1 尺）：\n   *   不吞\"走查本来就不该进的\"（跳目录/gitignore/测试/噪音），也不夸大（未装语言的那些另有其类）。\n   */\n  excludedOut?: string[],): string[]"
     },
     {
       "name": "inArchiveDir",
       "kind": "function",
-      "line": 383,
+      "line": 387,
       "signature": "inArchiveDir(p: string): boolean"
     },
     {
       "name": "FileEntry",
       "kind": "interface",
-      "line": 392,
+      "line": 396,
       "signature": "FileEntry()",
       "members": [
         {
@@ -339,13 +339,13 @@
     {
       "name": "toPosix",
       "kind": "function",
-      "line": 400,
+      "line": 404,
       "signature": "toPosix(p: string): string"
     },
     {
       "name": "GoModule",
       "kind": "interface",
-      "line": 405,
+      "line": 409,
       "signature": "GoModule()",
       "members": [
         {
@@ -365,31 +365,31 @@
     {
       "name": "readGoModules",
       "kind": "function",
-      "line": 415,
+      "line": 419,
       "signature": "readGoModules(root: string): GoModule[]"
     },
     {
       "name": "RESOLVE_EXTS",
       "kind": "const",
-      "line": 448,
+      "line": 452,
       "signature": "const RESOLVE_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.py', '.go']"
     },
     {
       "name": "buildIndex",
       "kind": "function",
-      "line": 451,
+      "line": 455,
       "signature": "buildIndex(files: FileEntry[]): {\n  byNoExt: Map<string, FileEntry>;\n  byDir: Map<string, FileEntry[]>;\n  /** ★ 精确路径 → 条目（`resolveProjectImport` 的 `rels` 视角；2026-09-30 T2） */\n  byRel: Map<string, FileEntry>;\n  /** ★ 精确路径全集（传给内核 `resolveProjectImport` 的唯一入参形态） */\n  rels: Set<string>;\n  /**\n   * ★★ 补全候选用的扩展名 —— **必须是索引里真实存在的那些**，否则会静默丢解析（2026-09-30 T2）。\n   *\n   * 为什么（这条是踩出来的）：本索引的 `byNoExt` 是**扩展名无关**的（键 = 去掉扩展名的路径 ⇒\n   * 任何扩展名都能命中）；而内核 `resolveProjectImport` 走的是 `completionCandidates`，\n   * 它**逐个枚举** `base + ext`。若只传旧的窄表 `RESOLVE_EXTS`（`.ts/.tsx/.js/.jsx/.py/.go`），\n   * 那么 `.hs` / `.scala` / `.jl` 之类的文件**永远补不出来** ⇒ 解析静默变空（实测：\n   * `hroot/Use.hs` 的 `import Lib` 从「命中 `hroot/Lib.hs`」退化成「空」）。\n   * ⇒ 顺序仍是 `RESOLVE_EXTS` **优先**（那是同名不同扩展名时的选择优先级，与 `extRank` 同源），\n   *   其余扩展名按索引实际出现补在后面。\n   */\n  exts: string[];\n  /** 同名不同扩展名的碰撞记录（被丢弃的一方），用于结果可见性 */\n  collisions: string[];\n}"
     },
     {
       "name": "resolveImport",
       "kind": "function",
-      "line": 543,
+      "line": 547,
       "signature": "resolveImport(imp: ParsedImport,\n  importer: FileEntry,\n  index: { byNoExt: Map<string, FileEntry>; byDir: Map<string, FileEntry[]>; byRel: Map<string, FileEntry>; rels: Set<string>; exts: string[] },\n  goModules: GoModule[],): FileEntry[]"
     },
     {
       "name": "LayoutItem",
       "kind": "interface",
-      "line": 584,
+      "line": 588,
       "signature": "LayoutItem()",
       "members": [
         {
@@ -427,25 +427,25 @@
     {
       "name": "rankItems",
       "kind": "function",
-      "line": 593,
+      "line": 597,
       "signature": "rankItems(ids: string[], deps: Array<[string, string]>): Map<string, number>"
     },
     {
       "name": "layoutGroup",
       "kind": "function",
-      "line": 622,
+      "line": 626,
       "signature": "layoutGroup(items: LayoutItem[], deps: Array<[string, string]>): { w: number; h: number }"
     },
     {
       "name": "parsedKindToSymbolKind",
       "kind": "function",
-      "line": 738,
+      "line": 742,
       "signature": "parsedKindToSymbolKind(kind: string): Symbol['kind']"
     },
     {
       "name": "importProject",
       "kind": "function",
-      "line": 752,
+      "line": 756,
       "signature": "importProject(input: ImportProjectInput): Promise<ImportProjectResult>"
     }
   ],
@@ -483,6 +483,14 @@
     },
     {
       "source": "../storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../dsl_write_scope.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../index/self_writes.js",
       "kind": "relative"
     },
     {
@@ -536,6 +544,10 @@
     {
       "from": "src/infrastructure/graph/import_project.ts#importProject",
       "to": "src/infrastructure/analysis/structure/role_title.ts#generateFileRoleTitles"
+    },
+    {
+      "from": "src/infrastructure/graph/import_project.ts#importProject",
+      "to": "src/infrastructure/dsl_write_scope.ts#runDslWriteScope"
     },
     {
       "from": "src/infrastructure/graph/import_project.ts#importProject",
@@ -615,6 +627,10 @@
     },
     {
       "from": "src/infrastructure/graph/import_project.ts#importProject",
+      "to": "src/infrastructure/index/self_writes.ts#readSelfWrites"
+    },
+    {
+      "from": "src/infrastructure/graph/import_project.ts#importProject",
       "to": "src/infrastructure/index/symbols.ts#getFileParse"
     },
     {
@@ -655,10 +671,6 @@
     },
     {
       "from": "src/infrastructure/graph/import_project.ts#importProject",
-      "to": "src/infrastructure/storage.ts#ensureBaseline"
-    },
-    {
-      "from": "src/infrastructure/graph/import_project.ts#importProject",
       "to": "src/infrastructure/storage.ts#getDSL"
     },
     {
@@ -668,6 +680,10 @@
     {
       "from": "src/infrastructure/graph/import_project.ts#importProject",
       "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/infrastructure/graph/import_project.ts#importProject",
+      "to": "src/infrastructure/storage.ts#rebuildBaseline"
     },
     {
       "from": "src/infrastructure/graph/import_project.ts#importProject",

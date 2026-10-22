@@ -7,7 +7,7 @@
     {
       "name": "DagLayoutInput",
       "kind": "interface",
-      "line": 16,
+      "line": 18,
       "signature": "DagLayoutInput()",
       "members": [
         {
@@ -51,7 +51,7 @@
     {
       "name": "ForceLayoutInput",
       "kind": "interface",
-      "line": 30,
+      "line": 32,
       "signature": "ForceLayoutInput()",
       "members": [
         {
@@ -107,55 +107,55 @@
     {
       "name": "assertFlatLayoutSafe",
       "kind": "function",
-      "line": 53,
+      "line": 55,
       "signature": "assertFlatLayoutSafe(dsl: DesignDSL, algo: string): void"
     },
     {
       "name": "dagLayoutCore",
       "kind": "function",
-      "line": 65,
+      "line": 67,
       "signature": "dagLayoutCore(input: DagLayoutInput): { message: string; rank_count: number; edge_crossings: number }"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 295,
+      "line": 297,
       "signature": "touchedOf(input: DagLayoutInput): Touched"
     },
     {
       "name": "dagLayout",
       "kind": "function",
-      "line": 299,
+      "line": 301,
       "signature": "dagLayout(input: DagLayoutInput): TouchedProduct<ReturnType<typeof dagLayoutCore>>"
     },
     {
       "name": "countEdgeCrossings",
       "kind": "function",
-      "line": 305,
+      "line": 307,
       "signature": "countEdgeCrossings(dsl: DesignDSL): number"
     },
     {
       "name": "segmentsIntersect",
       "kind": "function",
-      "line": 340,
+      "line": 342,
       "signature": "segmentsIntersect(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number): boolean"
     },
     {
       "name": "direction",
       "kind": "function",
-      "line": 354,
+      "line": 356,
       "signature": "direction(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number): number"
     },
     {
       "name": "onSegment",
       "kind": "function",
-      "line": 358,
+      "line": 360,
       "signature": "onSegment(x1: number, y1: number, x2: number, y2: number, x: number, y: number): boolean"
     },
     {
       "name": "ForceNode",
       "kind": "interface",
-      "line": 363,
+      "line": 365,
       "signature": "ForceNode()",
       "members": [
         {
@@ -199,13 +199,13 @@
     {
       "name": "forceLayout",
       "kind": "function",
-      "line": 372,
+      "line": 374,
       "signature": "forceLayout(input: ForceLayoutInput): { message: string; iterations: number; edge_crossings: number }"
     },
     {
       "name": "GridAlignInput",
       "kind": "interface",
-      "line": 514,
+      "line": 516,
       "signature": "GridAlignInput()",
       "members": [
         {
@@ -225,7 +225,7 @@
     {
       "name": "gridAlign",
       "kind": "function",
-      "line": 520,
+      "line": 522,
       "signature": "gridAlign(input: GridAlignInput): { message: string; grid_size: number; aligned_count: number }"
     }
   ],
@@ -237,6 +237,10 @@
     },
     {
       "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/dsl_write_scope.js",
       "kind": "relative"
     },
     {
@@ -308,6 +312,18 @@
     {
       "from": "src/application/design/workbench/dag_layout.ts#dagLayout",
       "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#dagLayoutCore",
+      "to": "src/infrastructure/dsl_write_scope.ts#runDslWriteScope"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#forceLayout",
+      "to": "src/infrastructure/dsl_write_scope.ts#runDslWriteScope"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#gridAlign",
+      "to": "src/infrastructure/dsl_write_scope.ts#runDslWriteScope"
     },
     {
       "from": "src/application/design/workbench/dag_layout.ts#dagLayoutCore",

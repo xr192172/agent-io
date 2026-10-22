@@ -256,6 +256,14 @@
     },
     {
       "from": "src/application/patrol/task_drift.ts#patrolDrift",
+      "to": "src/domain/task_schema.ts#taskOfNode"
+    },
+    {
+      "from": "src/application/patrol/task_drift.ts#patrolDrift",
+      "to": "src/domain/task_schema.ts#taskOfNode"
+    },
+    {
+      "from": "src/application/patrol/task_drift.ts#patrolDrift",
       "to": "src/infrastructure/index/live_render.ts#renderLiveFromDb"
     },
     {

@@ -7,19 +7,19 @@
     {
       "name": "MAX_CARD_SYMBOLS",
       "kind": "const",
-      "line": 75,
+      "line": 76,
       "signature": "const MAX_CARD_SYMBOLS = 200"
     },
     {
       "name": "MAX_CARD_FILES",
       "kind": "const",
-      "line": 78,
+      "line": 79,
       "signature": "const MAX_CARD_FILES = 100"
     },
     {
       "name": "DeclaredReadSet",
       "kind": "interface",
-      "line": 81,
+      "line": 82,
       "signature": "DeclaredReadSet()",
       "members": [
         {
@@ -39,13 +39,13 @@
     {
       "name": "parseDeclaredReadSet",
       "kind": "function",
-      "line": 93,
+      "line": 94,
       "signature": "parseDeclaredReadSet(raw: unknown): DeclaredReadSet | undefined"
     },
     {
       "name": "ClaimReadSetInput",
       "kind": "interface",
-      "line": 135,
+      "line": 136,
       "signature": "ClaimReadSetInput()",
       "members": [
         {
@@ -77,7 +77,7 @@
     {
       "name": "ClaimReadSetResult",
       "kind": "interface",
-      "line": 155,
+      "line": 156,
       "signature": "ClaimReadSetResult()",
       "members": [
         {
@@ -97,13 +97,13 @@
     {
       "name": "computeClaimReadSet",
       "kind": "function",
-      "line": 167,
+      "line": 168,
       "signature": "computeClaimReadSet(input: ClaimReadSetInput): ClaimReadSetResult"
     },
     {
       "name": "ActiveClaim",
       "kind": "interface",
-      "line": 309,
+      "line": 310,
       "signature": "ActiveClaim()",
       "members": [
         {
@@ -129,7 +129,7 @@
     {
       "name": "UncheckedClaim",
       "kind": "interface",
-      "line": 316,
+      "line": 317,
       "signature": "UncheckedClaim()",
       "members": [
         {
@@ -149,7 +149,7 @@
     {
       "name": "ClaimConflictHit",
       "kind": "interface",
-      "line": 321,
+      "line": 322,
       "signature": "ClaimConflictHit()",
       "members": [
         {
@@ -181,7 +181,7 @@
     {
       "name": "ClaimConflictReport",
       "kind": "interface",
-      "line": 330,
+      "line": 331,
       "signature": "ClaimConflictReport()",
       "members": [
         {
@@ -213,31 +213,31 @@
     {
       "name": "collectActiveClaims",
       "kind": "function",
-      "line": 349,
+      "line": 350,
       "signature": "collectActiveClaims(root: string,\n  /** ★ 自己 = **(feature, id) 两元组**：两份 feature 可以有同名节点（本仓实测就有）⇒ 只按 id 排自己会漏掉另一册上的同一张卡 */\n  self: { feature: string; id: string },): { claims: ActiveClaim[]; unchecked: UncheckedClaim[]; features: string[] }"
     },
     {
       "name": "detectClaimConflicts",
       "kind": "function",
-      "line": 388,
+      "line": 396,
       "signature": "detectClaimConflicts(mine: TaskReadSet,\n  claims: readonly ActiveClaim[],\n  meta: { unchecked: readonly UncheckedClaim[]; features: readonly string[] },): ClaimConflictReport"
     },
     {
       "name": "shortFp",
       "kind": "const",
-      "line": 418,
+      "line": 426,
       "signature": "const shortFp = (fp: string): string => (fp ? fp.slice(0, 12) : '（此刻不存在）')"
     },
     {
       "name": "claimConflictMessage",
       "kind": "function",
-      "line": 424,
+      "line": 432,
       "signature": "claimConflictMessage(report: ClaimConflictReport, mine: TaskReadSet): string"
     },
     {
       "name": "claimConflictLine",
       "kind": "function",
-      "line": 470,
+      "line": 478,
       "signature": "claimConflictLine(report: ClaimConflictReport, mine: TaskReadSet): string"
     }
   ],
@@ -259,6 +259,10 @@
       "source": "../domain/task_schema.js",
       "kind": "relative",
       "type_only": true
+    },
+    {
+      "source": "../domain/task_schema.js",
+      "kind": "relative"
     },
     {
       "source": "../infrastructure/storage.js",
@@ -285,6 +289,10 @@
     {
       "from": "src/application/claim_conflict.ts#computeClaimReadSet",
       "to": "src/application/read_set.ts#loadFileFacts"
+    },
+    {
+      "from": "src/application/claim_conflict.ts#collectActiveClaims",
+      "to": "src/domain/task_schema.ts#todosForNode"
     },
     {
       "from": "src/application/claim_conflict.ts#computeClaimReadSet",

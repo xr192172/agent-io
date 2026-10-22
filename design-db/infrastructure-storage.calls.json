@@ -7,121 +7,121 @@
     {
       "name": "getPackageRoot",
       "kind": "function",
-      "line": 35,
+      "line": 37,
       "signature": "getPackageRoot(): string"
     },
     {
       "name": "getDataHome",
       "kind": "function",
-      "line": 62,
+      "line": 64,
       "signature": "getDataHome(): string"
     },
     {
       "name": "getStorageRoot",
       "kind": "function",
-      "line": 76,
+      "line": 78,
       "signature": "getStorageRoot(): string"
     },
     {
       "name": "requireProjectRoot",
       "kind": "function",
-      "line": 102,
+      "line": 104,
       "signature": "requireProjectRoot(cands: Record<string, unknown>): string"
     },
     {
       "name": "getFeaturesDir",
       "kind": "function",
-      "line": 118,
+      "line": 120,
       "signature": "getFeaturesDir(): string"
     },
     {
       "name": "getLiveDslFile",
       "kind": "function",
-      "line": 123,
+      "line": 125,
       "signature": "getLiveDslFile(): string"
     },
     {
       "name": "getFeatureFile",
       "kind": "function",
-      "line": 128,
+      "line": 130,
       "signature": "getFeatureFile(feature: string): string"
     },
     {
       "name": "getLiveDir",
       "kind": "function",
-      "line": 137,
+      "line": 139,
       "signature": "getLiveDir(baseDir?: string): string"
     },
     {
       "name": "getLiveFeatureFile",
       "kind": "function",
-      "line": 144,
+      "line": 146,
       "signature": "getLiveFeatureFile(feature: string, baseDir?: string): string"
     },
     {
       "name": "buildSyncMeta",
       "kind": "function",
-      "line": 190,
-      "signature": "buildSyncMeta(input: {\n  feature: string;\n  sourceRoot?: string;\n  source: string;\n  /** 上一份 `_sync`：保留 `facts` 声明，并作为 `scanRev` / `dbSchemaVersion` 的**继承来源** */\n  prev?: Record<string, unknown>;\n  /**\n   * ★ 只有\"**这一次写就是在从库复制**\"才传 `true`（其余一律不传）：\n   * · `true` 的调用方：`saveLiveFeature`（live 视图每次都是照库现画）、`live_render`（现渲染）、\n   *   `import_project` 的 fork / 重建（`saveDSL(…, {refreshScanRev:true})`）、以及**首次**（无基线）。\n   * · **不传**的调用方：`saveDesignSheet`（claim/publish/release/complete 改任务）、\n   *   `saveDSL` 的其它全部调用点（edit_dsl 改内容）—— 它们只前进 `saved_at`。\n   */\n  refreshScanRev?: boolean;\n}): Record<string, unknown>"
+      "line": 192,
+      "signature": "buildSyncMeta(input: {\n  feature: string;\n  sourceRoot?: string;\n  source: string;\n  /** 上一份 `_sync`：保留 `facts` 声明，并作为 `scanRev` / `dbSchemaVersion` 的**继承来源** */\n  prev?: Record<string, unknown>;\n  /**\n   * ★ 只有\"**这一次写就是在从库复制**\"才传 `true`（其余一律不传）：\n   * · `true` 的调用方：`saveLiveFeature`（live 视图每次都是照库现画）、`live_render`（现渲染）、\n   *   `import_project` 的 fork / 重建（`saveDSL(…, {refreshScanRev:true})`）、以及**首次**（无基线）。\n   * · **不传**的调用方：`saveDesignSheet`（claim/publish/release/complete 改任务）、\n   *   `saveDSL` 的其它全部调用点（edit_dsl 改内容）—— 它们只前进 `saved_at`。\n   */\n  refreshScanRev?: boolean;\n  /**\n   * ★★ 2026-10-22：**这次写是谁授权的**（`edit_dsl:<…>` / `import:<…>` / `tool:<…>` / `sandbox` / `canvas-patch`）。\n   * 由 `saveDSL` 从 `dsl_write_scope` 取；**不传则继承上一份** —— `saveDesignSheet` / `saveLiveFeature`\n   * 这类不经过 `saveDSL` 的落盘口不该把别人的留痕冲掉。\n   */\n  via?: string;\n}): Record<string, unknown>"
     },
     {
       "name": "syncMeta",
       "kind": "function",
-      "line": 235,
+      "line": 247,
       "signature": "syncMeta(dsl: DesignDSL, source: string, refreshScanRev?: boolean): Record<string, unknown>"
     },
     {
       "name": "saveLiveFeature",
       "kind": "function",
-      "line": 248,
+      "line": 260,
       "signature": "saveLiveFeature(dsl: DesignDSL, baseDir?: string): string"
     },
     {
       "name": "getLiveFeature",
       "kind": "function",
-      "line": 261,
+      "line": 273,
       "signature": "getLiveFeature(feature: string, baseDir?: string): DesignDSL | null"
     },
     {
       "name": "getDesignDir",
       "kind": "function",
-      "line": 307,
+      "line": 319,
       "signature": "getDesignDir(baseDir?: string): string"
     },
     {
       "name": "getDesignSheetFile",
       "kind": "function",
-      "line": 312,
+      "line": 324,
       "signature": "getDesignSheetFile(feature: string, baseDir?: string): string"
     },
     {
       "name": "saveDesignSheet",
       "kind": "function",
-      "line": 320,
+      "line": 332,
       "signature": "saveDesignSheet(dsl: DesignDSL, baseDir?: string): string"
     },
     {
       "name": "getDesignSheet",
       "kind": "function",
-      "line": 333,
+      "line": 348,
       "signature": "getDesignSheet(feature: string, baseDir?: string): DesignDSL | null"
     },
     {
       "name": "getBaselineDir",
       "kind": "function",
-      "line": 356,
+      "line": 379,
       "signature": "getBaselineDir(baseDir?: string): string"
     },
     {
       "name": "getBaselineFeatureFile",
       "kind": "function",
-      "line": 363,
+      "line": 386,
       "signature": "getBaselineFeatureFile(feature: string, baseDir?: string): string"
     },
     {
       "name": "BaselineFactsFile",
       "kind": "interface",
-      "line": 393,
+      "line": 416,
       "signature": "BaselineFactsFile()",
       "members": [
         {
@@ -159,67 +159,123 @@
     {
       "name": "getBaselineFactsFile",
       "kind": "function",
-      "line": 404,
+      "line": 427,
       "signature": "getBaselineFactsFile(feature: string, baseDir?: string): string"
     },
     {
       "name": "getBaselineFacts",
       "kind": "function",
-      "line": 412,
+      "line": 435,
       "signature": "getBaselineFacts(feature: string, baseDir?: string): BaselineFactsFile | null"
     },
     {
       "name": "saveBaselineFactsIfAbsent",
       "kind": "function",
-      "line": 430,
+      "line": 453,
       "signature": "saveBaselineFactsIfAbsent(feature: string,\n  sourceRoot: string,\n  rels: readonly string[],\n  readFacts: (rel: string) => { apis: readonly string[]; deps: readonly string[] },\n  baseDir?: string,): { written: boolean; file: string; files: number }"
     },
     {
       "name": "saveBaselineFeature",
       "kind": "function",
-      "line": 458,
+      "line": 481,
       "signature": "saveBaselineFeature(dsl: DesignDSL, baseDir?: string): string"
     },
     {
       "name": "getBaselineFeature",
       "kind": "function",
-      "line": 471,
+      "line": 496,
       "signature": "getBaselineFeature(feature: string, baseDir?: string): DesignDSL | null"
+    },
+    {
+      "name": "BaselineDrift",
+      "kind": "interface",
+      "line": 525,
+      "signature": "BaselineDrift()",
+      "members": [
+        {
+          "name": "from",
+          "type": ": string | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "added",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "changed",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "removed",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "fileFingerprint",
+      "kind": "function",
+      "line": 541,
+      "signature": "fileFingerprint(f: {\n  symbols?: ReadonlyArray<{ name?: string; line?: number; end_line?: number; signature?: string }>;\n  lines?: number;\n}): string"
+    },
+    {
+      "name": "diffBaselineFiles",
+      "kind": "function",
+      "line": 555,
+      "signature": "diffBaselineFiles(prev: DesignDSL | null, next: DesignDSL): BaselineDrift"
+    },
+    {
+      "name": "dslContentHash",
+      "kind": "function",
+      "line": 579,
+      "signature": "dslContentHash(dsl: DesignDSL): string"
+    },
+    {
+      "name": "rebuildBaseline",
+      "kind": "function",
+      "line": 594,
+      "signature": "rebuildBaseline(dsl: DesignDSL, baseDir?: string): { file: string; drift: BaselineDrift }"
     },
     {
       "name": "viewBaseDirCandidates",
       "kind": "function",
-      "line": 503,
+      "line": 623,
       "signature": "viewBaseDirCandidates(feature: string, explicit?: string): string[]"
     },
     {
       "name": "readViewAtCandidates",
       "kind": "function",
-      "line": 514,
+      "line": 634,
       "signature": "readViewAtCandidates(feature: string,\n  explicit: string | undefined,\n  fileAt: (base: string) => string,\n  readAt: (base: string) => T | null,): T | null"
     },
     {
       "name": "getLiveFeatureResolved",
       "kind": "function",
-      "line": 527,
+      "line": 647,
       "signature": "getLiveFeatureResolved(feature: string, explicit?: string): DesignDSL | null"
     },
     {
       "name": "getBaselineFeatureResolved",
       "kind": "function",
-      "line": 541,
+      "line": 661,
       "signature": "getBaselineFeatureResolved(feature: string, explicit?: string): DesignDSL | null"
     },
     {
       "name": "ensureBaseline",
       "kind": "function",
-      "line": 549,
+      "line": 672,
       "signature": "ensureBaseline(dsl: DesignDSL, baseDir?: string): void"
     },
     {
       "name": "ArchiveEntry",
       "kind": "interface",
-      "line": 565,
+      "line": 688,
       "signature": "ArchiveEntry()",
       "members": [
         {
@@ -269,175 +325,199 @@
     {
       "name": "getArchiveDir",
       "kind": "function",
-      "line": 583,
+      "line": 706,
       "signature": "getArchiveDir(feature: string, baseDir?: string): string"
     },
     {
       "name": "getArchiveEntryFile",
       "kind": "function",
-      "line": 590,
+      "line": 713,
       "signature": "getArchiveEntryFile(feature: string, entryId: string, baseDir?: string): string"
     },
     {
       "name": "sanitizeEntryId",
       "kind": "function",
-      "line": 601,
+      "line": 724,
       "signature": "sanitizeEntryId(p: string): string"
     },
     {
       "name": "saveArchiveEntry",
       "kind": "function",
-      "line": 607,
+      "line": 730,
       "signature": "saveArchiveEntry(entry: ArchiveEntry, baseDir?: string): string"
     },
     {
       "name": "listArchiveEntries",
       "kind": "function",
-      "line": 616,
+      "line": 739,
       "signature": "listArchiveEntries(feature: string, baseDir?: string): ArchiveEntry[]"
     },
     {
       "name": "getArchiveEntryByPath",
       "kind": "function",
-      "line": 632,
+      "line": 755,
       "signature": "getArchiveEntryByPath(feature: string, filePath: string, baseDir?: string): ArchiveEntry | null"
     },
     {
       "name": "clearArchiveEntries",
       "kind": "function",
-      "line": 637,
+      "line": 760,
       "signature": "clearArchiveEntries(feature: string, baseDir?: string): void"
     },
     {
       "name": "ensureFeaturesDir",
       "kind": "function",
-      "line": 643,
+      "line": 766,
       "signature": "ensureFeaturesDir(): void"
     },
     {
       "name": "DslChangeCallback",
       "kind": "type",
-      "line": 648,
+      "line": 771,
       "signature": "DslChangeCallback()"
     },
     {
       "name": "dslChangeCallback",
       "kind": "const",
-      "line": 649,
+      "line": 772,
       "signature": "const dslChangeCallback = null"
     },
     {
       "name": "onDslChange",
       "kind": "function",
-      "line": 652,
+      "line": 775,
       "signature": "onDslChange(cb: DslChangeCallback): void"
+    },
+    {
+      "name": "CANVAS_ONLY_FIELDS",
+      "kind": "const",
+      "line": 802,
+      "signature": "const CANVAS_ONLY_FIELDS = ['annotations', 'user_nodes', 'canvas_notes'] as const"
+    },
+    {
+      "name": "canvasPatchOnly",
+      "kind": "function",
+      "line": 805,
+      "signature": "canvasPatchOnly(dsl: DesignDSL, prev: DesignDSL | null): boolean"
+    },
+    {
+      "name": "isSandboxDataHome",
+      "kind": "function",
+      "line": 818,
+      "signature": "isSandboxDataHome(): boolean"
+    },
+    {
+      "name": "assertDslWriteAllowed",
+      "kind": "function",
+      "line": 826,
+      "signature": "assertDslWriteAllowed(dsl: DesignDSL, where: string): string"
     },
     {
       "name": "saveDSL",
       "kind": "function",
-      "line": 663,
+      "line": 854,
       "signature": "saveDSL(dsl: DesignDSL,\n  source: string = 'mcp',\n  base_dsl_rev?: number,\n  opts?: { refreshScanRev?: boolean },): string"
     },
     {
       "name": "lastLiveFallback",
       "kind": "const",
-      "line": 747,
+      "line": 942,
       "signature": "const lastLiveFallback = null"
     },
     {
       "name": "liveFallbackWarned",
       "kind": "const",
-      "line": 748,
+      "line": 943,
       "signature": "const liveFallbackWarned = false"
     },
     {
       "name": "getLiveFallback",
       "kind": "function",
-      "line": 751,
+      "line": 946,
       "signature": "getLiveFallback(): { file: string; error: string; at: string } | null"
     },
     {
       "name": "isLiveDslParseable",
       "kind": "function",
-      "line": 769,
+      "line": 964,
       "signature": "isLiveDslParseable(): boolean"
     },
     {
       "name": "currentDslRev",
       "kind": "function",
-      "line": 781,
+      "line": 976,
       "signature": "currentDslRev(feature: string): number"
     },
     {
       "name": "readDSLRaw",
       "kind": "function",
-      "line": 787,
+      "line": 982,
       "signature": "readDSLRaw(feature: string): DesignDSL | null"
     },
     {
       "name": "factsExternalized",
       "kind": "function",
-      "line": 832,
+      "line": 1027,
       "signature": "factsExternalized(dsl: DesignDSL | null): boolean"
     },
     {
       "name": "factsBackfillBusy",
       "kind": "const",
-      "line": 841,
+      "line": 1036,
       "signature": "const factsBackfillBusy = false"
     },
     {
       "name": "mergeFacts",
       "kind": "function",
-      "line": 844,
+      "line": 1039,
       "signature": "mergeFacts(dsl: DesignDSL, rendered: DesignDSL): DesignDSL"
     },
     {
       "name": "withFacts",
       "kind": "function",
-      "line": 865,
+      "line": 1060,
       "signature": "withFacts(dsl: DesignDSL | null, feature: string): DesignDSL | null"
     },
     {
       "name": "getDSL",
       "kind": "function",
-      "line": 880,
+      "line": 1075,
       "signature": "getDSL(feature: string): DesignDSL | null"
     },
     {
       "name": "DSLView",
       "kind": "type",
-      "line": 885,
+      "line": 1080,
       "signature": "DSLView()"
     },
     {
       "name": "getDSLByView",
       "kind": "function",
-      "line": 892,
+      "line": 1087,
       "signature": "getDSLByView(feature: string, view: DSLView = 'design'): DesignDSL | null"
     },
     {
       "name": "listFeatures",
       "kind": "function",
-      "line": 903,
+      "line": 1098,
       "signature": "listFeatures(): DesignDSL[]"
     },
     {
       "name": "listDesignSheets",
       "kind": "function",
-      "line": 937,
+      "line": 1132,
       "signature": "listDesignSheets(): DesignDSL[]"
     },
     {
       "name": "deleteFeature",
       "kind": "function",
-      "line": 961,
+      "line": 1156,
       "signature": "deleteFeature(feature: string): void"
     },
     {
       "name": "clearAllFeatures",
       "kind": "function",
-      "line": 997,
+      "line": 1192,
       "signature": "clearAllFeatures(): void"
     }
   ],
@@ -464,6 +544,14 @@
       "type_only": true
     },
     {
+      "source": "node:crypto",
+      "kind": "package"
+    },
+    {
+      "source": "./dsl_write_scope.js",
+      "kind": "relative"
+    },
+    {
       "source": "./index/scan_rev.js",
       "kind": "relative"
     },
@@ -473,6 +561,10 @@
     }
   ],
   "calls": [
+    {
+      "from": "src/infrastructure/storage.ts#assertDslWriteAllowed",
+      "to": "src/infrastructure/dsl_write_scope.ts#currentDslWriteScope"
+    },
     {
       "from": "src/infrastructure/storage.ts#getLiveFeatureResolved",
       "to": "src/infrastructure/index/live_render.ts#renderLiveFromDb"
@@ -486,12 +578,24 @@
       "to": "src/infrastructure/index/scan_rev.ts#scanRevOf"
     },
     {
+      "from": "src/infrastructure/storage.ts#saveDesignSheet",
+      "to": "src/infrastructure/storage.ts#assertDslWriteAllowed"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveDSL",
+      "to": "src/infrastructure/storage.ts#assertDslWriteAllowed"
+    },
+    {
       "from": "src/infrastructure/storage.ts#syncMeta",
       "to": "src/infrastructure/storage.ts#buildSyncMeta"
     },
     {
       "from": "src/infrastructure/storage.ts#saveDSL",
       "to": "src/infrastructure/storage.ts#buildSyncMeta"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#assertDslWriteAllowed",
+      "to": "src/infrastructure/storage.ts#canvasPatchOnly"
     },
     {
       "from": "src/infrastructure/storage.ts#deleteFeature",
@@ -506,8 +610,16 @@
       "to": "src/infrastructure/storage.ts#currentDslRev"
     },
     {
+      "from": "src/infrastructure/storage.ts#rebuildBaseline",
+      "to": "src/infrastructure/storage.ts#diffBaselineFiles"
+    },
+    {
       "from": "src/infrastructure/storage.ts#saveDSL",
       "to": "src/infrastructure/storage.ts#dslChangeCallback"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveBaselineFeature",
+      "to": "src/infrastructure/storage.ts#dslContentHash"
     },
     {
       "from": "src/infrastructure/storage.ts#saveDSL",
@@ -516,6 +628,14 @@
     {
       "from": "src/infrastructure/storage.ts#withFacts",
       "to": "src/infrastructure/storage.ts#factsExternalized"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#diffBaselineFiles",
+      "to": "src/infrastructure/storage.ts#fileFingerprint"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#dslContentHash",
+      "to": "src/infrastructure/storage.ts#fileFingerprint"
     },
     {
       "from": "src/infrastructure/storage.ts#getArchiveEntryFile",
@@ -570,12 +690,20 @@
       "to": "src/infrastructure/storage.ts#getBaselineFeatureFile"
     },
     {
+      "from": "src/infrastructure/storage.ts#rebuildBaseline",
+      "to": "src/infrastructure/storage.ts#getBaselineFeatureFile"
+    },
+    {
       "from": "src/infrastructure/storage.ts#getBaselineFeatureResolved",
       "to": "src/infrastructure/storage.ts#getBaselineFeatureFile"
     },
     {
       "from": "src/infrastructure/storage.ts#deleteFeature",
       "to": "src/infrastructure/storage.ts#getBaselineFeatureFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#rebuildBaseline",
+      "to": "src/infrastructure/storage.ts#getBaselineFeatureResolved"
     },
     {
       "from": "src/infrastructure/storage.ts#getDSLByView",
@@ -607,6 +735,10 @@
     },
     {
       "from": "src/infrastructure/storage.ts#getArchiveDir",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#isSandboxDataHome",
       "to": "src/infrastructure/storage.ts#getDataHome"
     },
     {
@@ -714,8 +846,16 @@
       "to": "src/infrastructure/storage.ts#getPackageRoot"
     },
     {
+      "from": "src/infrastructure/storage.ts#isSandboxDataHome",
+      "to": "src/infrastructure/storage.ts#getPackageRoot"
+    },
+    {
       "from": "src/infrastructure/storage.ts#getFeaturesDir",
       "to": "src/infrastructure/storage.ts#getStorageRoot"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#assertDslWriteAllowed",
+      "to": "src/infrastructure/storage.ts#isSandboxDataHome"
     },
     {
       "from": "src/infrastructure/storage.ts#getArchiveEntryByPath",
@@ -727,6 +867,10 @@
     },
     {
       "from": "src/infrastructure/storage.ts#viewBaseDirCandidates",
+      "to": "src/infrastructure/storage.ts#readDSLRaw"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#assertDslWriteAllowed",
       "to": "src/infrastructure/storage.ts#readDSLRaw"
     },
     {
@@ -748,6 +892,10 @@
     {
       "from": "src/infrastructure/storage.ts#saveArchiveEntry",
       "to": "src/infrastructure/storage.ts#sanitizeEntryId"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#rebuildBaseline",
+      "to": "src/infrastructure/storage.ts#saveBaselineFeature"
     },
     {
       "from": "src/infrastructure/storage.ts#ensureBaseline",

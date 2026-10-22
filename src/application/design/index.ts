@@ -118,11 +118,12 @@ export const DESIGN_TOOLS: ToolDef[] = [
       // ★★ 2026-10-21：`query=todo` 的**按 state 过滤**（规则：**retire 之后必须不在待办里** + **要能按 state 过滤**）。
       //   ★ 缺省 = 待办（只列活卡）—— 判据在 `query_feature.ts` 的 `case 'todo'`（读 `isClosedTaskState`），这里只声明值域。
       state: z
-        .enum(['candidate', 'claimed', 'done', 'void', 'all'])
+        .enum(['candidate', 'preparing', 'claimed', 'done', 'void', 'all'])
         .optional()
         .describe(
-          'query=todo 时：按状态过滤。缺省 = **待办**（只列活卡 candidate/claimed；' +
+          'query=todo 时：按状态过滤。缺省 = **待办**（只列活卡 candidate/preparing/claimed；' +
             'done 与已作废的 void **不在待办里**）。all = 全部（含已了结）。' +
+            '★ preparing = 领了但**还不能干**（两段式第一段：判据没补全）。' +
             '★ 想看「谁被作废了、为什么」⇒ state=void（每项带 retire_reason / retired_at）。',
         ),
       // ★★★ 2026-10-21：`query=todo` 的**按继任链分组**（跑环：一环 → 二环 → 三环）。

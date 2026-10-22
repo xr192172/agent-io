@@ -7,19 +7,19 @@
     {
       "name": "ALL_STATES",
       "kind": "const",
-      "line": 30,
-      "signature": "const ALL_STATES = ['candidate', 'claimed', 'done', 'void']"
+      "line": 39,
+      "signature": "const ALL_STATES = TASK_STATES"
     },
     {
       "name": "PoolCardSource",
       "kind": "type",
-      "line": 37,
+      "line": 47,
       "signature": "PoolCardSource()"
     },
     {
       "name": "PoolCard",
       "kind": "interface",
-      "line": 48,
+      "line": 58,
       "signature": "PoolCard()",
       "members": [
         {
@@ -81,13 +81,13 @@
     {
       "name": "firstLine",
       "kind": "function",
-      "line": 73,
+      "line": 83,
       "signature": "firstLine(s: string | undefined): string"
     },
     {
       "name": "BoardView",
       "kind": "interface",
-      "line": 83,
+      "line": 93,
       "signature": "BoardView()",
       "members": [
         {
@@ -115,6 +115,12 @@
           "member_kind": "property"
         },
         {
+          "name": "archived",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
           "name": "bySource",
           "type": ": Record<PoolCardSource, number>",
           "optional": false,
@@ -131,7 +137,7 @@
     {
       "name": "listPool",
       "kind": "function",
-      "line": 138,
+      "line": 162,
       "signature": "listPool(feature: string, nowMs: number = Date.now()): BoardView"
     }
   ],
@@ -150,8 +156,15 @@
     },
     {
       "source": "../../../domain/task_schema.js",
-      "kind": "relative",
-      "type_only": true
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/task_schema.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/task_schema.js",
+      "kind": "relative"
     }
   ],
   "calls": [
@@ -170,6 +183,22 @@
     {
       "from": "src/application/design/board/pool.ts#listPool",
       "to": "src/domain/task_machine.ts#leaseAgeHours"
+    },
+    {
+      "from": "src/application/design/board/pool.ts#listPool",
+      "to": "src/domain/task_schema.ts#archivedTasks"
+    },
+    {
+      "from": "src/application/design/board/pool.ts#listPool",
+      "to": "src/domain/task_schema.ts#liveTasks"
+    },
+    {
+      "from": "src/application/design/board/pool.ts#listPool",
+      "to": "src/domain/task_schema.ts#liveTasks"
+    },
+    {
+      "from": "src/application/design/board/pool.ts#listPool",
+      "to": "src/domain/task_schema.ts#todosForNode"
     },
     {
       "from": "src/application/design/board/pool.ts#listPool",

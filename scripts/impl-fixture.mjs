@@ -118,7 +118,12 @@ for (const [standing, expect] of claimableCases) {
 const transCases = [
   ['done', ['t_reopen']],
   ['void', ['t_relaunch']],
-  ['candidate', ['t_claim', 't_void', 't_done_from_candidate']],
+  // ★★★ 2026-10-23：加 `t_prepare`（两段式第一段 candidate → preparing）——
+  //   ★ 这条**不是"为了让门变绿"而放宽**：夹具本来就是"迁移表的快照"，
+  //     表真的多了这一条（`TRANSITIONS` 里 t_prepare 是 ready），所以**期望值**跟着表走。
+  //     ★ 判据是：如果 t_prepare 被误设成 blocked/unimplemented，这条**必须**红（它钉的是"可走"）。
+  ['candidate', ['t_claim', 't_prepare', 't_void', 't_done_from_candidate']],
+  ['preparing', ['t_start', 't_abandon']],
 ];
 for (const [from, expectIds] of transCases) {
   const got = applicableTransitions(from).map((t) => t.id).sort();

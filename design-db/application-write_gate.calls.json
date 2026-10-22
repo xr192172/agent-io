@@ -341,73 +341,73 @@
     {
       "name": "recordUnaddressableWarnings",
       "kind": "function",
-      "line": 819,
+      "line": 824,
       "signature": "recordUnaddressableWarnings(items: GateCoverage['unaddressable'],\n  rels: readonly string[],): string[]"
     },
     {
       "name": "exemptionLines",
       "kind": "function",
-      "line": 885,
+      "line": 890,
       "signature": "exemptionLines(exempted: readonly GateExemption[]): string"
     },
     {
       "name": "WriteActor",
       "kind": "type",
-      "line": 960,
+      "line": 965,
       "signature": "WriteActor()"
     },
     {
       "name": "resolveActor",
       "kind": "function",
-      "line": 974,
+      "line": 979,
       "signature": "resolveActor(explicit?: WriteActor | null): WriteActor | null"
     },
     {
       "name": "actorStrict",
       "kind": "function",
-      "line": 998,
+      "line": 1003,
       "signature": "actorStrict(): boolean"
     },
     {
       "name": "evaluateRunAuthorize",
       "kind": "function",
-      "line": 1035,
+      "line": 1040,
       "signature": "evaluateRunAuthorize(args: {\n  scope: Scope;\n  rels: readonly string[];\n  covering: readonly GateCoverageFeature[];\n  actor: WriteActor | null;\n}): | { ok: true; feature: string; scopeText: string; nodeCount: number; allowedCount: number; anchor: { nodeId: string; owner: string } }\n  | { ok: false; reason: string }"
     },
     {
       "name": "assertSourceWriteRegisteredFor",
       "kind": "function",
-      "line": 1125,
+      "line": 1130,
       "signature": "assertSourceWriteRegisteredFor(projectRoot: string,\n  files: readonly string[],\n  actor?: WriteActor | null,\n  authorize?: string | null,\n  symbols?: readonly AssumptionTarget[],): TaskGateOutcome"
     },
     {
       "name": "assertSourceWriteRegistered",
       "kind": "function",
-      "line": 1145,
+      "line": 1150,
       "signature": "assertSourceWriteRegistered(projectRoot: string,\n  files: readonly string[],\n  /**\n   * ★★★ T356：`authorize` = **按 run 授权**（一个 scope 一次授权一批文件）——\n   * 值 = `domain/scope.ts` 的**现成文法**（`files:` / `nodes:` / `subtree:` / `layer:` / `swimlane:` / `arch_layer:`）。\n   * ★ 它**只影响本次调用**：不写库、不新增路径事实（理由见 `evaluateRunAuthorize` 的注释）。\n   * ★ 2026-10-21：`symbols` = 本次要写的符号（假设检定的符号级粒度；不给 ⇒ 文件级）。\n   */\n  opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[] },): TaskGateOutcome"
     },
     {
       "name": "evaluateTaskGate",
       "kind": "function",
-      "line": 1171,
+      "line": 1176,
       "signature": "evaluateTaskGate(projectRoot: string,\n  files: readonly string[],\n  opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[] },): TaskGateOutcome"
     },
     {
       "name": "reopenAndResolveAfterWrite",
       "kind": "function",
-      "line": 1673,
+      "line": 1679,
       "signature": "reopenAndResolveAfterWrite(projectRoot: string,\n  files: readonly string[],): Promise<{\n  refsReopened: number;\n  refsReopenedFiles: number;\n  cross: { total: number; resolved: number; external: number; failed: number };\n  error?: string;\n}>"
     },
     {
       "name": "reopenNote",
       "kind": "function",
-      "line": 1701,
+      "line": 1707,
       "signature": "reopenNote(r: { refsReopened: number; error?: string }): string"
     },
     {
       "name": "writeThroughLine",
       "kind": "function",
-      "line": 1720,
+      "line": 1726,
       "signature": "writeThroughLine(index: WriteThroughOutcome | null): string"
     }
   ],
@@ -607,6 +607,10 @@
     {
       "from": "src/application/write_gate.ts#evaluateTaskGate",
       "to": "src/domain/task_schema.ts#progressOfNode"
+    },
+    {
+      "from": "src/application/write_gate.ts#collectGateCoverage",
+      "to": "src/domain/task_schema.ts#taskOfNode"
     },
     {
       "from": "src/application/write_gate.ts#syncSelfWrites",

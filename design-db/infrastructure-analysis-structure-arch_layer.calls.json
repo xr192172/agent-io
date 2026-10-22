@@ -7,7 +7,7 @@
     {
       "name": "ArchLayerInput",
       "kind": "interface",
-      "line": 33,
+      "line": 35,
       "signature": "ArchLayerInput()",
       "members": [
         {
@@ -45,7 +45,7 @@
     {
       "name": "ArchLayerFileAssign",
       "kind": "interface",
-      "line": 46,
+      "line": 48,
       "signature": "ArchLayerFileAssign()",
       "members": [
         {
@@ -77,7 +77,7 @@
     {
       "name": "LayerMatrixRow",
       "kind": "interface",
-      "line": 58,
+      "line": 60,
       "signature": "LayerMatrixRow()",
       "members": [
         {
@@ -103,7 +103,7 @@
     {
       "name": "ArchLayerResult",
       "kind": "interface",
-      "line": 64,
+      "line": 66,
       "signature": "ArchLayerResult()",
       "members": [
         {
@@ -171,37 +171,37 @@
     {
       "name": "collectSources",
       "kind": "function",
-      "line": 85,
+      "line": 87,
       "signature": "collectSources(sourceRoot: string,\n  rels: string[],): Promise<Array<{ path: string; src: string }>>"
     },
     {
       "name": "scanImportEdges",
       "kind": "function",
-      "line": 101,
+      "line": 103,
       "signature": "scanImportEdges(files: Array<{ path: string; src: string }>): ImportEdge[]"
     },
     {
       "name": "buildLayerMatrix",
       "kind": "function",
-      "line": 122,
+      "line": 124,
       "signature": "buildLayerMatrix(edges: ImportEdge[], fileLayers: Record<string, string>): LayerMatrixRow[]"
     },
     {
       "name": "dslFingerprint",
       "kind": "function",
-      "line": 140,
+      "line": 142,
       "signature": "dslFingerprint(dsl: DesignDSL): string"
     },
     {
       "name": "dslSourceRels",
       "kind": "function",
-      "line": 156,
+      "line": 158,
       "signature": "dslSourceRels(dsl: DesignDSL): string[]"
     },
     {
       "name": "archLayer",
       "kind": "function",
-      "line": 165,
+      "line": 167,
       "signature": "archLayer(input: ArchLayerInput): Promise<ArchLayerResult>"
     }
   ],
@@ -223,6 +223,10 @@
       "kind": "relative"
     },
     {
+      "source": "../../dsl_write_scope.js",
+      "kind": "relative"
+    },
+    {
       "source": "./layer_detect.js",
       "kind": "relative"
     },
@@ -237,10 +241,6 @@
     }
   ],
   "calls": [
-    {
-      "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
-      "to": "src/infrastructure/analysis/health/health_cache.ts#fileFingerprint"
-    },
     {
       "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
       "to": "src/infrastructure/analysis/health/health_cache.ts#healthKey"
@@ -284,6 +284,14 @@
     {
       "from": "src/infrastructure/analysis/structure/arch_layer.ts#scanImportEdges",
       "to": "src/infrastructure/analysis/structure/layer_detect.ts#parseImportsLight"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+      "to": "src/infrastructure/dsl_write_scope.ts#runDslWriteScope"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+      "to": "src/infrastructure/storage.ts#fileFingerprint"
     },
     {
       "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",

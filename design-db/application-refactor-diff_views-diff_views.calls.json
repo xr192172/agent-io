@@ -7,7 +7,7 @@
     {
       "name": "DiffViewsInput",
       "kind": "interface",
-      "line": 33,
+      "line": 36,
       "signature": "DiffViewsInput()",
       "members": [
         {
@@ -27,13 +27,13 @@
     {
       "name": "FileChangeType",
       "kind": "type",
-      "line": 41,
+      "line": 44,
       "signature": "FileChangeType()"
     },
     {
       "name": "FileDiff",
       "kind": "interface",
-      "line": 44,
+      "line": 47,
       "signature": "FileDiff()",
       "members": [
         {
@@ -95,7 +95,7 @@
     {
       "name": "SymbolDiff",
       "kind": "interface",
-      "line": 63,
+      "line": 66,
       "signature": "SymbolDiff()",
       "members": [
         {
@@ -145,7 +145,7 @@
     {
       "name": "ApiDiff",
       "kind": "interface",
-      "line": 78,
+      "line": 81,
       "signature": "ApiDiff()",
       "members": [
         {
@@ -177,7 +177,7 @@
     {
       "name": "EdgeDiff",
       "kind": "interface",
-      "line": 86,
+      "line": 89,
       "signature": "EdgeDiff()",
       "members": [
         {
@@ -203,13 +203,13 @@
     {
       "name": "ThreeWayState",
       "kind": "type",
-      "line": 109,
+      "line": 112,
       "signature": "ThreeWayState()"
     },
     {
       "name": "DecisionCardRef",
       "kind": "interface",
-      "line": 122,
+      "line": 125,
       "signature": "DecisionCardRef()",
       "members": [
         {
@@ -253,7 +253,7 @@
     {
       "name": "ThreeWayFile",
       "kind": "interface",
-      "line": 138,
+      "line": 141,
       "signature": "ThreeWayFile()",
       "members": [
         {
@@ -339,7 +339,7 @@
     {
       "name": "ThreeWaySummary",
       "kind": "interface",
-      "line": 160,
+      "line": 163,
       "signature": "ThreeWaySummary()",
       "members": [
         {
@@ -407,7 +407,7 @@
     {
       "name": "DiffViewsResult",
       "kind": "interface",
-      "line": 183,
+      "line": 186,
       "signature": "DiffViewsResult()",
       "members": [
         {
@@ -418,7 +418,7 @@
         },
         {
           "name": "data",
-          "type": ": {\r\n    feature: string;\r\n    /** 设计视图是否存在 */\r\n    design_exists: boolean;\r\n    /** live 视图是否存在 */\r\n    live_exists: boolean;\r\n    /** 基线视图（契约创立时刻的 fork）是否存在 */\r\n    baseline_exists: boolean;\r\n    /**\r\n     * ★★ **T86**：本次比较的「**事实抵消**」前提核对结果。\r\n     *\r\n     * ★★★ **只在\"前提不满足\"时才有这个键**（正常路径**根本不出现**）——\r\n     *   这是\"**防御性判据的成本要匹配它的触发概率**\"那条通则的落地：\r\n     *   本节检的是「两侧 `source_root` 不同 / 缺失」，而**正常流程下两侧同源于一次 `import_project`\r\n     *   ⇒ 必然相同**（★ 我试了两种造法**都造不出**这个坏状态：删 `features/<f>.json` 的字段没用\r\n     *   —— `getDSL` 优先读\"活态文件\"；传不同 `live_dir` 也没用 —— 它不改 `source_root`）。\r\n     *   ⇒ 既然**几乎永远为空**，就**不该占常态输出的位置**（否则每次多一个恒空的字段，还会让人以为\"这里有东西看\"）。\r\n     * ★ 非空 ⇒ 下面的差异**不能**直接读成「设计变了」或「代码变了」。见 `mergedApis` 的文档。\r\n     */\r\n    notes?: string[];\r\n    /** 总体统计 */\r\n    summary: {\r\n      /** 设计视图文件数 */\r\n      design_files: number;\r\n      /** live 视图文件数 */\r\n      live_files: number;\r\n      /** 新增文件（仅 design 有） */\r\n      added_files: number;\r\n      /** 删除文件（仅 live 有） */\r\n      removed_files: number;\r\n      /** 修改文件（两边都有但内容不同） */\r\n      modified_files: number;\r\n      /** 未变文件 */\r\n      unchanged_files: number;\r\n      /** 设计侧总符号数 */\r\n      design_symbols: number;\r\n      /** live 侧总符号数 */\r\n      live_symbols: number;\r\n      /** 设计侧总 API 数 */\r\n      design_apis: number;\r\n      /** live 侧总 API 数 */\r\n      live_apis: number;\r\n      /** 新增依赖边数（仅设计无） */\r\n      added_edges: number;\r\n      /** 删除依赖边数（仅实际无，结构塌方） */\r\n      removed_edges: number;\r\n    };\r\n    /** 文件级对比详情 */\r\n    files: FileDiff[];\r\n    /** 依赖边级对比（两视图共有的文件节点之间的依赖变化） */\r\n    edges: EdgeDiff[];\r\n    /** 三方对比（baseline 存在时）详情 */\r\n    three_way?: {\r\n      /** 基线视图文件数 */\r\n      baseline_files: number;\r\n      summary: ThreeWaySummary;\r\n      files: ThreeWayFile[];\r\n      /**\r\n       * ★ 基线能否前移到 live（2026-10-19）：**实际侧清零**即可，设计的活不阻塞。\r\n       * ★ 本工具**只判不写** —— 前移等于宣布新出发点，必须有决策卡。\r\n       */\r\n      baseline_can_advance: { ok: boolean; blockers: string[]; note: string };\r\n    };\r\n  }",
+          "type": ": {\n    feature: string;\n    /** 设计视图是否存在 */\n    design_exists: boolean;\n    /** live 视图是否存在 */\n    live_exists: boolean;\n    /** 基线视图（契约创立时刻的 fork）是否存在 */\n    baseline_exists: boolean;\n    /**\n     * ★★ **T86**：本次比较的「**事实抵消**」前提核对结果。\n     *\n     * ★★★ **只在\"前提不满足\"时才有这个键**（正常路径**根本不出现**）——\n     *   这是\"**防御性判据的成本要匹配它的触发概率**\"那条通则的落地：\n     *   本节检的是「两侧 `source_root` 不同 / 缺失」，而**正常流程下两侧同源于一次 `import_project`\n     *   ⇒ 必然相同**（★ 我试了两种造法**都造不出**这个坏状态：删 `features/<f>.json` 的字段没用\n     *   —— `getDSL` 优先读\"活态文件\"；传不同 `live_dir` 也没用 —— 它不改 `source_root`）。\n     *   ⇒ 既然**几乎永远为空**，就**不该占常态输出的位置**（否则每次多一个恒空的字段，还会让人以为\"这里有东西看\"）。\n     * ★ 非空 ⇒ 下面的差异**不能**直接读成「设计变了」或「代码变了」。见 `mergedApis` 的文档。\n     */\n    notes?: string[];\n    /** 总体统计 */\n    summary: {\n      /** 设计视图文件数 */\n      design_files: number;\n      /** live 视图文件数 */\n      live_files: number;\n      /** 新增文件（仅 design 有） */\n      added_files: number;\n      /** 删除文件（仅 live 有） */\n      removed_files: number;\n      /** 修改文件（两边都有但内容不同） */\n      modified_files: number;\n      /** 未变文件 */\n      unchanged_files: number;\n      /** 设计侧总符号数 */\n      design_symbols: number;\n      /** live 侧总符号数 */\n      live_symbols: number;\n      /** 设计侧总 API 数 */\n      design_apis: number;\n      /** live 侧总 API 数 */\n      live_apis: number;\n      /** 新增依赖边数（仅设计无） */\n      added_edges: number;\n      /** 删除依赖边数（仅实际无，结构塌方） */\n      removed_edges: number;\n    };\n    /** 文件级对比详情 */\n    files: FileDiff[];\n    /** 依赖边级对比（两视图共有的文件节点之间的依赖变化） */\n    edges: EdgeDiff[];\n    /** 三方对比（baseline 存在时）详情 */\n    three_way?: {\n      /** 基线视图文件数 */\n      baseline_files: number;\n      summary: ThreeWaySummary;\n      files: ThreeWayFile[];\n      /**\n       * ★ 基线能否前移到 live（2026-10-19）：**实际侧清零**即可，设计的活不阻塞。\n       * ★ 本工具**只判不写** —— 前移等于宣布新出发点，必须有决策卡。\n       */\n      baseline_can_advance: { ok: boolean; blockers: string[]; note: string };\n    };\n  }",
           "optional": false,
           "member_kind": "property"
         }
@@ -427,110 +427,110 @@
     {
       "name": "diffViewsCore",
       "kind": "function",
-      "line": 258,
+      "line": 261,
       "signature": "diffViewsCore(input: DiffViewsInput): DiffViewsResult"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 761,
+      "line": 764,
       "signature": "touchedOf(input: DiffViewsInput): Touched"
     },
     {
       "name": "diffViews",
       "kind": "function",
-      "line": 771,
+      "line": 774,
       "signature": "diffViews(input: DiffViewsInput): TouchedProduct<DiffViewsResult>"
     },
     {
       "name": "humanResponsibility",
       "kind": "function",
-      "line": 787,
+      "line": 790,
       "signature": "humanResponsibility(s: string | undefined): string"
     },
     {
       "name": "metaChanged",
       "kind": "function",
-      "line": 805,
+      "line": 808,
       "signature": "metaChanged(a: SemanticFile | undefined, b: SemanticFile | undefined): boolean"
     },
     {
       "name": "structChanged",
       "kind": "function",
-      "line": 819,
-      "signature": "structChanged(a: SemanticFile | undefined,\r\n  b: SemanticFile | undefined,\r\n  aRoot?: string,\r\n  bRoot?: string,): boolean"
+      "line": 822,
+      "signature": "structChanged(a: SemanticFile | undefined,\n  b: SemanticFile | undefined,\n  aRoot?: string,\n  bRoot?: string,): boolean"
     },
     {
       "name": "baselineAdvanceBlockers",
       "kind": "function",
-      "line": 842,
+      "line": 845,
       "signature": "baselineAdvanceBlockers(summary: ThreeWaySummary): string[]"
     },
     {
       "name": "fileChanged",
       "kind": "function",
-      "line": 851,
-      "signature": "fileChanged(a: SemanticFile | undefined,\r\n  b: SemanticFile | undefined,\r\n  // ★ T20：事实（actual_apis）已不在 DSL 里 ⇒ 要把它算进来就必须知道\"去哪儿取\"（各侧自己的 source_root）\r\n  aRoot?: string,\r\n  bRoot?: string,): boolean"
+      "line": 854,
+      "signature": "fileChanged(a: SemanticFile | undefined,\n  b: SemanticFile | undefined,\n  // ★ T20：事实（actual_apis）已不在 DSL 里 ⇒ 要把它算进来就必须知道\"去哪儿取\"（各侧自己的 source_root）\n  aRoot?: string,\n  bRoot?: string,): boolean"
     },
     {
       "name": "isDiffNoiseSymbol",
       "kind": "function",
-      "line": 878,
+      "line": 881,
       "signature": "isDiffNoiseSymbol(s: Symbol): boolean"
     },
     {
       "name": "symbolsSemanticallyEqual",
       "kind": "function",
-      "line": 887,
+      "line": 890,
       "signature": "symbolsSemanticallyEqual(a: Symbol[], b: Symbol[]): boolean"
     },
     {
       "name": "diffSymbols",
       "kind": "function",
-      "line": 900,
+      "line": 903,
       "signature": "diffSymbols(design: Symbol[], live: Symbol[]): SymbolDiff[]"
     },
     {
       "name": "diffApis",
       "kind": "function",
-      "line": 951,
+      "line": 954,
       "signature": "diffApis(design: ExpectedApi[], live: ExpectedApi[]): ApiDiff[]"
     },
     {
       "name": "diffEdges",
       "kind": "function",
-      "line": 994,
-      "signature": "diffEdges(design: Edge[],\r\n  live: Edge[],\r\n  designFileIds: Set<string>,\r\n  liveFileIds: Set<string>,): EdgeDiff[]"
+      "line": 997,
+      "signature": "diffEdges(design: Edge[],\n  live: Edge[],\n  designFileIds: Set<string>,\n  liveFileIds: Set<string>,): EdgeDiff[]"
     },
     {
       "name": "fileDecisionChanged",
       "kind": "function",
-      "line": 1026,
+      "line": 1029,
       "signature": "fileDecisionChanged(a: DesignDSL | null, b: DesignDSL | null, path: string, aId?: string, bId?: string): boolean"
     },
     {
       "name": "symbolsDecisionChanged",
       "kind": "function",
-      "line": 1039,
+      "line": 1042,
       "signature": "symbolsDecisionChanged(fa: SemanticFile | undefined, fb: SemanticFile | undefined): boolean"
     },
     {
       "name": "fileDecisionRef",
       "kind": "function",
-      "line": 1050,
+      "line": 1053,
       "signature": "fileDecisionRef(dsl: DesignDSL | null, filePath: string, fileId?: string): DecisionCardRef | undefined"
     },
     {
       "name": "symbolDecisionRefs",
       "kind": "function",
-      "line": 1067,
+      "line": 1070,
       "signature": "symbolDecisionRefs(dsl: DesignDSL | null, filePath: string): Record<string, DecisionCardRef>"
     },
     {
       "name": "getArchiveRef",
       "kind": "function",
-      "line": 1085,
-      "signature": "getArchiveRef(feature: string,\r\n  filePath: string,\r\n  state: ThreeWayState,\r\n  live_dir?: string,): { retire_reason?: string; merged_into?: string; archived_at?: string } | undefined"
+      "line": 1088,
+      "signature": "getArchiveRef(feature: string,\n  filePath: string,\n  state: ThreeWayState,\n  live_dir?: string,): { retire_reason?: string; merged_into?: string; archived_at?: string } | undefined"
     }
   ],
   "imports": [
