@@ -104481,11 +104481,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T09:34:07.775Z",
+    "saved_at": "2026-10-22T09:44:49.387Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 78124964,
+    "age": 78766576,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108241,9 +108241,24 @@
       "state": "candidate",
       "owner": null,
       "follows": "todo_写原语已能覆盖-写-移-删-追加-四类-sourcewritetxn-commi"
+    },
+    {
+      "type": "todo",
+      "state": "candidate",
+      "id": "todo_已完成的卡不该留在活态-224-张里-94-张是-done-void-该进-archive-可查但不占池",
+      "summary": "【实测 2026-10-22：活态共 **224 张**卡（`nodes[].task` 103 + `todos[]` 121），其中 done 78 + void 16 = **94 张（42%）已完成却仍挂在\"待办池\"里**】\n★ 这不是打扫问题，是**容器混装**：已完成的和待办的住在同一个数组里 ⇒ 每次读册子都要过滤，每次盘都会把 done 当\"待办\"看（今天盘点 73 张里 34 张就是这么来的）。\n\n## 为什么不能\"直接搬走\"（先量过）\n读端有三处**会断**：\n  ① `task_ops.ts:209 loadTask` 按 id 找 todo ⇒ 归档后\"再开这张卡\"会找不到\n  ② `task_ops.ts:1962/2003` 的 `follows` 链（子卡查父卡）⇒ 父卡归档后链断\n     （链跨代：`todoChainNote` 要一路读回去，这是读**历史**的正当用途，不能一刀切）\n  ③ `claim_conflict.ts:363` 扫全量算读集冲突 ⇒ 归档的卡不该参与，但**当前**它参与了\n\n## 判据（选一条并说明取舍，不许\"直接删\"）\n  A. **软归档**：加 `archived_at`，活态口径 = `!archived_at`（`liveTasks(dsl)` 唯一住处）；\n     `loadTask` / `follows` **照样能查到**（它们按 id 找，历史正当）；展示层（`pool.ts` 已有 `folded` 计数）\n     只统计活态。★ 好处：零迁移风险、可回滚；坏处：文件体积不减。\n  B. **物理分家**：`dsl.archive[]` 单独一组，读端改成\"先活后史\"。\n     ★ 好处：体积真减；坏处：三处读端都要改，且 `follows` 链要跨容器。\n  C. **B + 按年分片**（`archive/2026.json` 之类）⇒ 册子不随年头变胖。\n★ **建议先 A 再 C**：A 立刻把\"池子\"从 224 降到 130，且不改任何功能语义；C 是长期。\n\n## 与\"卡独立化\"的关系（★ 读这张卡前先读那张）\n归档只是**症状**。根因是 `node.task` 是**单数** ⇒ 一个节点只能有**一张**卡 ⇒ 历史只能靠原地覆盖（`reopened_from` 只记上一次）。⇒ 见下一环卡 `todo_决策卡应该记节点而不是节点记决策卡`。\n★ 如果先做那张（`tasks[]`），本卡的归档就是**天然的**（按 state 过滤即可）—— 所以**顺序**：\n   要么先 A 止血、再做结构；要么直接做结构。**别先做 B 再做结构**（会做两遍）。",
+      "created_at": "2026-10-22T09:44:49.354Z"
+    },
+    {
+      "type": "todo",
+      "state": "candidate",
+      "id": "todo_决策卡应该记节点-而不是节点记决策卡-node-task-是单数-历史被原地覆盖",
+      "summary": "【结构问题（用户 2026-10-22 提出）：`geometry.nodes[].task` 是**单数** ⇒ 一个节点在生命周期里只能有**一张**卡。\n做过几次、每次谁做的、为什么重开，只能靠原地覆盖 + `reopened_from`（**只记上一次**）。】\n\n## 可证伪的证据\n  · 活态 224 张卡里 **94 张（42%）是 done/void** —— 它们\"还在\"不是因为有用，是因为**没有地方可放**（一放就丢历史）。\n    ⇒ **\"池子只进不出\"的直接成因**：不是人不想收口，是**收口 = 丢历史**，于是大家选择不收。\n  · `reopened_from` 只能记上一次 ⇒ 一张卡被 reopen 三次，只剩\"最近一次从谁手里接的\"。\n  · `expire` / `taken_over_from` 都是往**同一张卡**上叠痕迹 ⇒ 卡变成\"多人多轮的混合物\"，读不出\"这一轮是谁做的\"。\n\n## 用户提的方向（这是正确的方向）\n「应该让**决策卡去记节点**，而不是节点去记决策卡」⇒ 卡是**独立实体**，`node_id` 是它的**引用字段**：\n```\ndsl.tasks[] = [ { id, node_id, state, owner, claimed_at, created_at, ... }, ... ]\nnode.task    = 派生（该节点最新的活态卡），或删掉由读端现算\n```\n★ 好处（每一条都可证伪）：\n  ① 一个节点可以有 N 张卡 ⇒ **历史天然存在**（不用归档容器）\n  ② 归档 = `tasks.filter(state in [candidate, claimed])` ⇒ 本仓**不需要**新增 `archive[]`\n  ③ 同一节点多轮 ⇒ 每张卡独立，`evidence`/`owner` 不再混\n  ④ **\"收口 = 丢历史\"消失** ⇒ 预期：`done` 比例会上升（人愿意收口了）—— 这是可量的验收指标\n\n## 代价（别低估）\n  ① `task_ops.ts` 已 **2,354 行 / 9 个 op**（god-file，文档也点了）⇒ 改造要在它身上动刀，     ★ **建议同时按 op 拆文件**（否则改完它 3,000 行）\n  ② 9 个 op 都按 `node.task` 找卡 ⇒ 全要改成\"按 id 找\"\n  ③ `follows` 链 / `claim_conflict` / `pool` / `A7` 的读端\n  ④ 老数据的迁移：224 张卡要搬进 `tasks[]`（★ 迁移本身要有证：搬完每张卡的 owner/state/evidence 逐字不变）\n\n## 判据\n  A. 迁移后：`224 张卡` 的 (id, state, owner, claimed_at, evidence 条数) **逐字不变**（可脚本比对）\n  B. 同一节点连开两次卡（complete → claim 换 reason）⇒ `tasks[]` 里**两条**，旧的仍在，state=done\n  C. 归档口径只有一处（`liveTasks`），`pool` 的 `shown` = 活态数\n  D. 9 个 op 的对外契约**不变**（`edit_dsl { type:'task', op:'claim', id:'<节点id>' }` 仍可用）\n     ★ 这一点最关键：**内部换了容器，外部调用方零改动** —— 否则就是\"重写了一个新系统\"",
+      "follows": "todo_已完成的卡不该留在活态-224-张里-94-张是-done-void-该进-archive-可查但不占池",
+      "created_at": "2026-10-22T09:44:49.354Z"
     }
   ],
-  "_dsl_rev": 1274,
+  "_dsl_rev": 1275,
   "feature_tree": {
     "features": [
       {
