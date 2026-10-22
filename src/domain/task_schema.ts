@@ -17,9 +17,11 @@
  *    `reads` / `call_count`）**一律不许出现**在本文件导出的形状里。
  *    ★ 这条不是口号：`.agent-io/design/task-system-plan.dsl.json` 的 `invariant_checks` 里有一条
  *      机器可跑的检查专门钉它（`red_when: task 格落了快照、复制了事实`）。
- * 3. **`evidence` 不是 `ProgressEvidence` 原样** —— 后者是「三档证据」（`overlay.ts`，
- *    含 `reading.observed` 这类**读数**）；本格只留 `{kind, at, by, verdict}` 四键，
- *    ★ **读数永远现算**（见 `TaskEvidenceRecord`）。
+ * 3. **`evidence` 只落白名单内的键** —— 入参是「三档证据」（`overlay.ts`），
+ *    落盘只留 `TASK_EVIDENCE_KEYS` 名单上的键（唯一裁口 `pickTaskEvidence`），名单外一律丢。
+ *    ★ 2026-10-23 更正：名单里**必须有** `observed` / `command` / `why` ——
+ *      此前只留 `{kind, at, by, verdict}`，实测 192 条证据 **0 条**带读数原始值，
+ *      「我实际看到了什么」一个字都没留下（见 `TaskEvidenceRecord` 里那段账）。
  */
 import { createHash } from 'node:crypto';
 import type { Expectation } from './expectation.js';
@@ -299,9 +301,17 @@ export interface TaskDiscussion {
 /**
  * 证据记录 —— ★ **不是** `ProgressEvidence` 原样（见文件头铁律 3）。
  *
- * 落盘只允许这四键：`kind`（复用既有三档枚举，不新造第四档）· `at`（何时）·
- * `by`（谁，仅口供有）· `verdict`（那次判定的结论）。
- * ★ **不落 `observed` / 不落 `passed` / `failed` 计数** —— 那是**读数快照**，必陈旧。
+ * 落盘只允许 `TASK_EVIDENCE_KEYS` 名单上的键：`kind`（复用既有三档枚举，不新造第四档）·
+ * `at`（何时）· `by`（谁）· `agent`（具体是谁）· `verdict`（那次判定的结论）·
+ * `fingerprint`（代码指纹）· `observed`（**读数原文**）· `command`（**命令原文**）· `why`（为什么算完成）。
+ * ★ **不落 `passed` / `failed` 计数** —— 那是**能现算的聚合**，必陈旧。
+ *
+ * ## ★★★ 2026-10-23：`observed` / `command` 为什么从「不落」改成「必须落」
+ * 旧说法是「读数快照必陈旧 ⇒ 不落」。**代价实测出来了**：跨册 192 条证据里
+ * **0 条**带 `observed`、**0 条**带 `command` ⇒ 卡片纪律要的「谁、何时、为什么」只剩
+ * 「谁、何时、什么结论」，收口门退化成**「我说完成了」**（用户原话：「你实际看到了什么」才是证据）。
+ * ★ 陈旧与否由 `fingerprint`（`evidenceFreshness`）回答 —— 拿「删掉读数」回避陈旧，
+ *   代价是「当年读到什么」永远无从复核，那是更贵的不可核。
  */
 export interface TaskEvidenceRecord {
   /** ★ 复用 `ProgressEvidence` 的三档枚举（`expectations` / `reading` / `attestation`），不另立一套 */
@@ -315,7 +325,16 @@ export interface TaskEvidenceRecord {
    * **状态变化要有主体宣布** —— 主体不记名字，"显式"和"自动"就没有区别了。
    */
   agent?: string;
-  /** 那次判定的结论（★ 结论可落，"读数"不落） */
+  /**
+   * ★★★ 2026-10-23：**读数原文**（`reading` 证据的「看到了什么」）—— 逐字搬运，不改写。
+   * ★ 缺省 = 历史证据（白名单上线前落的那些）或口供类证据；★ **不回填**（回填 = 替历史编读数）。
+   */
+  observed?: string;
+  /** ★ 2026-10-23：**命令原文**（`reading` 的 `command`）—— 与 `observed` 成对才复跑得出。 */
+  command?: string;
+  /** 理由（`attestation` 的 `why`；`reading` 也可带 —— 为什么这段读数算数）。 */
+  why?: string;
+  /** 那次判定的结论（★ 结论可落，读数另存 `observed`） */
   verdict: 'pass' | 'fail' | 'unsupported';
   /**
    * ★★★ 2026-10-21：**代码指纹** —— 这份证据「**还作数吗**」的机器判据（形状见 `TaskEvidenceFingerprint`）。
@@ -323,6 +342,55 @@ export interface TaskEvidenceRecord {
    *   ★ **不回填**：回填等于替历史编一个"当时那份代码长什么样"，那是假读数。
    */
   fingerprint?: TaskEvidenceFingerprint | null;
+}
+
+/**
+ * 证据落盘**只允许**这些键（★ 唯一白名单；唯一消费者 `pickTaskEvidence`）。
+ *
+ * ★ 白名单**不是**「挑几个认识的留下」——它是「只准名单上的进来」：
+ *   名单外的键（调用方塞的 `{hack:'x'}`）**一律丢**，所以补上 `observed` 不等于什么都能塞。
+ * ★ 2026-10-23 之前名单里没有 `observed` / `command` ⇒ 读数原文被静默丢弃（实测 192 条 0 条带读数）。
+ */
+export const TASK_EVIDENCE_KEYS = [
+  'kind',
+  'at',
+  'by',
+  'agent',
+  'verdict',
+  'fingerprint',
+  // ★ 读数原文（reading 的 observed / command；attestation 的 why 也走这里）
+  'observed',
+  'command',
+  'why',
+] as const;
+
+/** 白名单里的一个键 */
+export type TaskEvidenceKey = (typeof TASK_EVIDENCE_KEYS)[number];
+
+/**
+ * 把一条「想落盘的证据」裁成白名单形状 —— ★ `complete` 的**唯一**证据落盘入口。
+ *
+ * 三条规矩：
+ * ① **名单外一律丢**（`{hack:'x'}` 进不来）；
+ * ② 值**逐字搬运**，不 trim / 不改写（改一个字符就不是同一条读数）；
+ * ③ 空串 / 纯空白 ⇒ 丢（`observed:''` 不是读数，证据闸也不收它）。
+ */
+export function pickTaskEvidence(raw: Readonly<Record<string, unknown>>): TaskEvidenceRecord {
+  const out: Record<string, unknown> = {};
+  for (const k of TASK_EVIDENCE_KEYS) {
+    const v = raw[k];
+    if (v === undefined) continue;
+    if (typeof v === 'string' && v.trim() === '') continue;
+    out[k] = v;
+  }
+  // ★ 这两个键缺了就不是一条证据（`kind` 决定三档、`verdict` 是结论）—— 宁可当场报，不落半条。
+  if (typeof out.kind !== 'string' || out.verdict === undefined) {
+    throw new Error(
+      `pickTaskEvidence：缺必填键（kind=${JSON.stringify(out.kind)}，verdict=${JSON.stringify(out.verdict)}）` +
+        `—— 白名单只裁剪，**不替调用方编字段**。`,
+    );
+  }
+  return out as unknown as TaskEvidenceRecord;
 }
 
 /**

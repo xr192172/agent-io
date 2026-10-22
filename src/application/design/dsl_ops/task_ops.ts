@@ -81,6 +81,9 @@ import {
   isTaskState,
   progressOf,
   taskLevel,
+  // ★★★ 2026-10-23：证据落盘的**唯一裁口**（白名单住 `task_schema.ts#TASK_EVIDENCE_KEYS`）——
+  //   本文件不逐字段手写证据：那种写法正是 `observed` / `command` 被静默丢掉的形状。
+  pickTaskEvidence,
   // ★★★ 2026-10-22（迁移第②步 · 读端切到 todos[]）：卡的**权威住处**判据只住 `task_schema`（本文件不自写）。
   taskOfNode,
   // ★ 2026-10-23：设计册 `state_machine.states` 的写端要拿它做**逐字比对**（同步 = 改不动就漂不了）
@@ -1840,39 +1843,36 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   //   ★ `covers` 只从**判据自己点名的文件**算（`expectationPaths`），不发明"这套测试覆盖谁"；
   //     算不出来就只落 `what`/`input`，读端判 `unverifiable`（**不是**"有效"）。
   const fingerprint = fingerprintEvidence(expectationsOf(cardNode), dsl.source_root, node_id, evidence!);
+  // ★★★ 2026-10-23（证据落盘白名单）：**入参原样交给白名单裁**，不再逐字段手写。
+  //   手写那版的实测后果：跨册 192 条证据里 **0 条**带 `observed` / `command` ——
+  //   `reading` 的「我看到了什么读数」被**静默丢弃**，卡上只剩「谁、何时、什么结论」
+  //   ⇒ 收口门形同「我说完成了」。
+  //   ★ 裁口只有一个（`task_schema.ts#TASK_EVIDENCE_KEYS`）：名单外的键（如 `hack:'x'`）**照样丢**。
+  //   ★ 派生字段（`at` / `by` / `agent` / `fingerprint` / `verdict`）写在展开**之后** ⇒ 覆盖入参同名键。
+  const persisted = pickTaskEvidence({
+    ...(evidence as unknown as Record<string, unknown>),
+    at,
+    // ★★★ 2026-10-20：**主体必记**（OQ1 的另一半）——
+    //   此前 `by` 只在 attestation 时写 ⇒ expectations 收口的卡看不出"谁宣布的"。
+    //   现在所有 kind 都记：`by` 分人/机器，`agent` 记具体是谁。
+    by: evidence!.kind === 'attestation' ? evidence!.by : 'llm',
+    ...(signer.actor ? { agent: signer.actor } : {}),
+    // ★ 2026-10-21：这条证据的**代码指纹**（`what` / `input` / `code` / `covers`）—— 见上面那段。
+    fingerprint,
+    verdict: 'pass',
+  });
   writeTask(feature, node_id, {
     ...card,
     state: 'done',
-    evidence: [
-      ...(card.evidence ?? []),
-      {
-        kind: evidence!.kind,
-        at,
-        // ★★★ 2026-10-20：**主体必记**（OQ1 的另一半）——
-        //   此前 `by` 只在 attestation 时写 ⇒ expectations 收口的卡看不出"谁宣布的"。
-        //   现在所有 kind 都记：`by` 分人/机器，`agent` 记具体是谁。
-        by: evidence!.kind === 'attestation' ? evidence!.by : 'llm',
-        ...(evidence!.kind === 'attestation' && evidence!.why ? { why: evidence!.why } : {}),
-        ...(signer.actor ? { agent: signer.actor } : {}),
-        // ★ 2026-10-21：这条证据的**代码指纹**（`what` / `input` / `code` / `covers`）—— 见上面那段。
-        fingerprint,
-        verdict: 'pass',
-      },
-    ],
+    evidence: [...(card.evidence ?? []), persisted],
   });
 
-  // ★★★ 2026-10-22：**说清"哪些字段没落盘"**（一个子代理实测 34/34 条 `observed` 都不见了，
-  //   它以为遇到了 bug）。★ 那不是 bug，是 `task_schema.ts:140` 的**有意设计**：
-  //   「不落 `observed` / 不落 passed/failed 计数 —— 那是**读数快照**，必陈旧」，
-  //   任务格只留结论 `{kind, at, by, verdict}`，跑的命令原文落在 `fingerprint.what` 里。
-  //   ⇒ 但**"有意不存"和"静默丢掉"在回执上长得一样** —— 所以这里必须明说，
-  //     否则每个填了 `observed` 的人都会以为自己的读数留在卡上了（本仓最忌这种"沉默的丢"）。
-  const notPersistedNote =
-    evidence!.kind === 'reading' && (evidence! as { observed?: string }).observed
-      ? '\n★ 注意：`observed`（你写的那段读数）**不落盘** —— 任务格只存结论 `{kind, at, by, verdict}`，' +
-        '跑的命令原文在 `fingerprint.what` 里。理由：读数快照必陈旧（`task_schema.ts:140`）。' +
-        '要留读数 ⇒ 写进 `docs/` 或回执里，别指望卡上。'
-      : '';
+  // ★★★ 2026-10-23：**说清"哪些键真落了盘"** —— 「有意不存」和「静默丢掉」在回执上长得一样，
+  //   所以把**实际落盘的键**逐个念出来（名单外的键不会被念：它们本来就不该进证据）。
+  //   ★ 旧版这段写的是「`observed` 不落盘」—— 那正是本卡要修的行为，注释已随之改写。
+  const persistedNote =
+    ` ★ 证据落盘（白名单内）：${Object.keys(persisted).join(' · ')}` +
+    '（★ 名单 = `task_schema.ts#TASK_EVIDENCE_KEYS`；名单外的键一律丢）。';
 
   // ★★★ 2026-10-21（跑环继任链）：**收口的这一刻正是"还有没有下一环"该被问的时候**——
   //   规则：**做完一环发现还有新的 ⇒ 就直接在这一环下面登记第二步**。
@@ -1918,8 +1918,7 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
 
   return {
     message:
-      `已完成任务 "${node_id}"（owner=${card.owner}，级别=${level}${normalizedInline(signer.adm)}）—— ${closeNote}、证据 kind=${evidence!.kind}。${chainNote.head}` +
-      notPersistedNote +
+      `已完成任务 "${node_id}"（owner=${card.owner}，级别=${level}${normalizedInline(signer.adm)}）—— ${closeNote}、证据 kind=${evidence!.kind}。${persistedNote}${chainNote.head}` +
       chainNote.detail +
       normalizedActorNote(signer.adm) +
       (legacy ? `\n${legacy.message.split('\n')[0]}` : '\n★ todo：无节点 status 可投影（不在 geometry）⇒ 跳过 updateStatus') +

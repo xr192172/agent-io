@@ -13382,13 +13382,32 @@
                 ]
               },
               "verdict": "pass"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-22T18:02:33.864Z",
+              "by": "llm",
+              "agent": "subagent:deepseek-evidence-fix",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node certs/.work/probe-evidence-whitelist.mjs && npm run verify",
+                "input": "c823849e0bed9fd3c01cdc7e9f37633eb9f501a8",
+                "code": "f501ff93fb6e443134a3442cddfd71c8d84a726f",
+                "covers": [
+                  "src/application/design/dsl_ops/task_ops.ts",
+                  "src/domain/task_machine.ts"
+                ]
+              },
+              "observed": "探针 PASS=9 FAIL=0（A observed/command 逐字 · B 摘掉白名单里的 observed ⇒ A1 红而 A2 绿 · C hack/evil_field 被丢 · D why 落盘）；verify 8 道门全 PASS（exit=0）；complete 首行念出「★ 证据落盘（白名单内）：kind · at · by · agent · verdict · fingerprint · observed · command」。",
+              "command": "npm run build && node certs/.work/probe-evidence-whitelist.mjs && npm run verify",
+              "why": "src/application/design/dsl_ops/task_ops.ts 的 complete 已不再逐字段手写证据，改走 src/domain/task_schema.ts#pickTaskEvidence 白名单；本卡（该文件的文件卡）随之收口。"
             }
           ],
-          "owner": "subagent:deepseek-two-phase",
-          "claimed_at": "2026-10-22T17:15:19.691Z",
-          "reopened_at": "2026-10-22T16:55:00.405Z",
-          "reopen_reason": "加软归档：todo archive/unarchive + writeTask 不变量（本批 5 个文件，锚点在这里）",
-          "reopened_from": "subagent:deepseek-card-migrate",
+          "owner": "subagent:deepseek-evidence-fix",
+          "claimed_at": "2026-10-22T18:02:33.750Z",
+          "reopened_at": "2026-10-22T17:46:45.364Z",
+          "reopen_reason": "证据落盘丢 observed：completeTask 只落 kind/at/by/verdict，要为 reading/attestation 保留 observed/command/why（白名单式）",
+          "reopened_from": "subagent:deepseek-two-phase",
           "read_set": {
             "symbols": [
               {
@@ -13414,7 +13433,7 @@
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "applyTaskOp",
-                "fp": "3e7da052084c4ea43817c25511fef927f6410fb8"
+                "fp": "d5e3888e422efb152e7e9bd8ac4ec7eadb83266f"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -13424,12 +13443,12 @@
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "claimTask",
-                "fp": "7ae3518ce3f300edfb22c785914a2464e6d864a8"
+                "fp": "8db19250a2a4229b21e1b223393774c4234ca710"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "completeTask",
-                "fp": "a35030ac9131efbf5af492e12ad4acf3cf0714b0"
+                "fp": "3c8cfb0056628f0449c75be4d57b0b7809eb98bb"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -13444,7 +13463,7 @@
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "expireTasks",
-                "fp": "a92aeb506daf63033c5f8f2afc3c7ac26ca176d0"
+                "fp": "65d0497e29e05f1d1b746186cf9d7b2aeb0252f1"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -13459,12 +13478,12 @@
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "publishTask",
-                "fp": "004f809152a7d0bfd926ad932b2b0ab36d679392"
+                "fp": "0c9bbfcc7cf240bac976b5b5eb334dff0157f0b8"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "releaseTask",
-                "fp": "3a727b385e663be2a2ef6fd5e094a79ea0c1a043"
+                "fp": "0fc78194f465e32f41b6b415c6a12fc29f08ba6a"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -13490,10 +13509,10 @@
             "files": [
               {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "70b30e18c99487582380a464954684bfc58c449e"
+                "content_hash": "0340df238f6e1334994844d1aede00cd2d05caa8"
               }
             ],
-            "computed_at": "2026-10-22T17:15:19.628Z",
+            "computed_at": "2026-10-22T18:02:33.700Z",
             "basis": [
               "expectations"
             ],
@@ -13504,7 +13523,8 @@
             "from_owner": "subagent:deepseek-park-archive",
             "from_claimed_at": "2026-10-22T16:55:00.405Z",
             "age_hours": 0.3
-          }
+          },
+          "prepared_snapshot": null
         },
         "status": "done"
       },
@@ -105241,11 +105261,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T17:41:26.028Z",
+    "saved_at": "2026-10-22T18:02:33.900Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 107363217,
+    "age": 108631089,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -109215,8 +109235,62 @@
     {
       "id": "todo_证据落盘丢字段-reading-证据的-observed-被静默丢弃-compl",
       "summary": "【证据落盘丢字段】reading 证据的 observed 被静默丢弃：complete 在 src/application/design/dsl_ops/task_ops.ts:1435-1450 只落 kind/at/by/agent/fingerprint{what,input}/verdict —— 而证据闸（src/domain/overlay.ts:121 validateProgressEvidence）要求 observed 必填。实测 2026-10-22 收口 34 张卡，34/34 条 evidence 回读只有 what（命令原文），看不到“看到了什么”。判据：① 写一条带 observed 的 reading 收口 ⇒ 回读 evidence[i].observed 非空；② 同一把尺：要么给 TaskEvidence 补 observed 字段，要么把它折进 fingerprint.what，★ 二选一，别两处都存。★ 先定形状再改，别顺手加第二个权威。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-evidence-fix",
+      "claimed_at": "2026-10-22T18:00:09.673Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T18:00:09.630Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T17:55:12.909Z",
+          "by": "llm",
+          "verdict": "pass",
+          "fingerprint": {
+            "what": "npm run build && node certs/.work/probe-evidence-whitelist.mjs && npm run verify",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "observed": "A：complete 后卡上证据 {\"kind\":\"reading\",\"at\":...,\"by\":\"llm\",\"agent\":\"subagent:deepseek-evidence-fix\",\"verdict\":\"pass\",\"fingerprint\":{...},\"observed\":\"stdout: 1（逐字比对：含中文 + 标点 · 与空格）\",\"command\":\"node -e \\\"console.log(1)\\\"\"} —— observed/command 逐字相同（探针 PASS=9 FAIL=0）。B 消融：从 dist 的 TASK_EVIDENCE_KEYS 摘掉 'observed' ⇒ A1 红（observed 丢）而 A2 绿（command 仍落）⇒ 是白名单在管。C：入参塞 {hack:'x', evil_field:{...}} ⇒ 落盘记录里两个键都不存在，同一条证据的 observed/command 仍在。历史：192 条证据与改前备份逐字比对 192/192 相同、0 条消失、0 条被裁键。verify：8 道门全 PASS（exit=0）。",
+          "command": "npm run build && node certs/.work/probe-evidence-whitelist.mjs && npm run verify",
+          "why": "192 条历史证据的 observed/command 补不回来 —— 当年就没落盘，回填等于替历史编读数，故一条都不回填（诚实缺省 = 历史证据不带 observed）。"
+        },
+        {
+          "kind": "reading",
+          "at": "2026-10-22T17:55:52.274Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-evidence-fix",
+          "verdict": "pass",
+          "fingerprint": {
+            "what": "npm run build && node certs/.work/probe-evidence-whitelist.mjs && npm run verify",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "observed": "A：complete 后卡上证据逐字带 observed + command（探针 PASS=9 FAIL=0；本卡自己这条就是实证）。B 消融：从 dist 的 TASK_EVIDENCE_KEYS 摘掉 observed ⇒ A1 红（observed 丢）而 A2 绿（command 仍落）⇒ 是白名单在管，不是别处顺手留的。C：入参塞 {hack:'x', evil_field:{...}} ⇒ 落盘记录里两个键都不存在，同一条证据的 observed/command 仍在。历史：192 条证据与改前备份逐字比对 192/192 相同、0 条消失、0 条被裁键。verify：全部 8 道门 PASS（exit=0）。",
+          "command": "npm run build && node certs/.work/probe-evidence-whitelist.mjs && npm run verify",
+          "why": "192 条历史证据的 observed/command 补不回来 —— 当年就没落盘，回填等于替历史编读数 ⇒ 一条都不回填（历史证据 = 不带 observed，读端按「缺省」处理）。"
+        },
+        {
+          "kind": "reading",
+          "at": "2026-10-22T18:00:33.461Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-evidence-fix",
+          "verdict": "pass",
+          "fingerprint": {
+            "what": "npm run build && node certs/.work/probe-evidence-whitelist.mjs && npm run verify",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "observed": "A（真册）：本卡上一条 reading 证据逐字带 observed + command（就是这份 JSON 自己）。A（探针）：certs/.work/probe-evidence-whitelist.mjs PASS=9 FAIL=0。B（消融，直接改 dist 再还原）：从 TASK_EVIDENCE_KEYS 摘掉 observed ⇒ A1 红（observed 丢）而 A2 绿（command 仍落）⇒ 是白名单在管。C：入参塞 {hack:'x', evil_field:{...}} ⇒ 落盘记录里两键都不存在，同一条证据的 observed/command 仍在。D：attestation 的 why 逐字落盘。历史：192 条证据与改前备份逐字比对 192/192 相同、0 消失、0 被裁键（按 key 集合比，因为白名单会重排键序）。回执：complete 首行现在念出「★ 证据落盘（白名单内）：kind · at · by · agent · verdict · fingerprint · observed · command」（实测复制）。verify：8 道门全 PASS（exit=0）。",
+          "command": "npm run build && node certs/.work/probe-evidence-whitelist.mjs && npm run verify",
+          "why": "192 条历史证据的 observed/command 补不回来（当年没落盘）⇒ 一条都不回填，回填等于替历史编读数。★ 第二笔（本条）：收口之后才发现 edit_dsl 回执只取 message 首行（update_feature.ts:248）⇒ 第一版把落盘键清单写在第二行 = 读者永远看不到，已改成首行内联；这是同一个病的第二张脸（「写了但没人看得见」）。"
+        }
+      ],
+      "reopened_at": "2026-10-22T18:00:09.673Z",
+      "reopen_reason": "收口后实测发现 edit_dsl 回执只取首行 ⇒ 我加的「证据落盘」note 在第二行、读者看不到；已改 src/application/design/dsl_ops/task_ops.ts 内联进首行，需补一条证据",
+      "reopened_from": "subagent:deepseek-evidence-fix"
     },
     {
       "id": "todo_写原语已能覆盖-写-移-删-追加-四类-sourcewritetxn-commi",
@@ -110392,13 +110466,32 @@
             ]
           },
           "verdict": "pass"
+        },
+        {
+          "kind": "reading",
+          "at": "2026-10-22T18:02:33.864Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-evidence-fix",
+          "verdict": "pass",
+          "fingerprint": {
+            "what": "npm run build && node certs/.work/probe-evidence-whitelist.mjs && npm run verify",
+            "input": "c823849e0bed9fd3c01cdc7e9f37633eb9f501a8",
+            "code": "f501ff93fb6e443134a3442cddfd71c8d84a726f",
+            "covers": [
+              "src/application/design/dsl_ops/task_ops.ts",
+              "src/domain/task_machine.ts"
+            ]
+          },
+          "observed": "探针 PASS=9 FAIL=0（A observed/command 逐字 · B 摘掉白名单里的 observed ⇒ A1 红而 A2 绿 · C hack/evil_field 被丢 · D why 落盘）；verify 8 道门全 PASS（exit=0）；complete 首行念出「★ 证据落盘（白名单内）：kind · at · by · agent · verdict · fingerprint · observed · command」。",
+          "command": "npm run build && node certs/.work/probe-evidence-whitelist.mjs && npm run verify",
+          "why": "src/application/design/dsl_ops/task_ops.ts 的 complete 已不再逐字段手写证据，改走 src/domain/task_schema.ts#pickTaskEvidence 白名单；本卡（该文件的文件卡）随之收口。"
         }
       ],
-      "owner": "subagent:deepseek-two-phase",
-      "claimed_at": "2026-10-22T17:15:19.691Z",
-      "reopened_at": "2026-10-22T16:55:00.405Z",
-      "reopen_reason": "加软归档：todo archive/unarchive + writeTask 不变量（本批 5 个文件，锚点在这里）",
-      "reopened_from": "subagent:deepseek-card-migrate",
+      "owner": "subagent:deepseek-evidence-fix",
+      "claimed_at": "2026-10-22T18:02:33.750Z",
+      "reopened_at": "2026-10-22T17:46:45.364Z",
+      "reopen_reason": "证据落盘丢 observed：completeTask 只落 kind/at/by/verdict，要为 reading/attestation 保留 observed/command/why（白名单式）",
+      "reopened_from": "subagent:deepseek-two-phase",
       "read_set": {
         "symbols": [
           {
@@ -110424,7 +110517,7 @@
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
             "name": "applyTaskOp",
-            "fp": "3e7da052084c4ea43817c25511fef927f6410fb8"
+            "fp": "d5e3888e422efb152e7e9bd8ac4ec7eadb83266f"
           },
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -110434,12 +110527,12 @@
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
             "name": "claimTask",
-            "fp": "7ae3518ce3f300edfb22c785914a2464e6d864a8"
+            "fp": "8db19250a2a4229b21e1b223393774c4234ca710"
           },
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
             "name": "completeTask",
-            "fp": "a35030ac9131efbf5af492e12ad4acf3cf0714b0"
+            "fp": "3c8cfb0056628f0449c75be4d57b0b7809eb98bb"
           },
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -110454,7 +110547,7 @@
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
             "name": "expireTasks",
-            "fp": "a92aeb506daf63033c5f8f2afc3c7ac26ca176d0"
+            "fp": "65d0497e29e05f1d1b746186cf9d7b2aeb0252f1"
           },
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -110469,12 +110562,12 @@
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
             "name": "publishTask",
-            "fp": "004f809152a7d0bfd926ad932b2b0ab36d679392"
+            "fp": "0c9bbfcc7cf240bac976b5b5eb334dff0157f0b8"
           },
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
             "name": "releaseTask",
-            "fp": "3a727b385e663be2a2ef6fd5e094a79ea0c1a043"
+            "fp": "0fc78194f465e32f41b6b415c6a12fc29f08ba6a"
           },
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -110500,10 +110593,10 @@
         "files": [
           {
             "path": "src/application/design/dsl_ops/task_ops.ts",
-            "content_hash": "70b30e18c99487582380a464954684bfc58c449e"
+            "content_hash": "0340df238f6e1334994844d1aede00cd2d05caa8"
           }
         ],
-        "computed_at": "2026-10-22T17:15:19.628Z",
+        "computed_at": "2026-10-22T18:02:33.700Z",
         "basis": [
           "expectations"
         ],
@@ -110514,7 +110607,8 @@
         "from_owner": "subagent:deepseek-park-archive",
         "from_claimed_at": "2026-10-22T16:55:00.405Z",
         "age_hours": 0.3
-      }
+      },
+      "prepared_snapshot": null
     },
     {
       "id": "file_src_application_design_handlers_ts",
@@ -113201,6 +113295,13 @@
       "state": "candidate",
       "owner": null,
       "follows": "todo_迁移第②步-读端切到-todos-第①步已完成-104-张-nodes-task"
+    },
+    {
+      "id": "todo_证据白名单没挂门-task-evidence-keys-picktaskevid",
+      "summary": "【证据白名单没挂门】TASK_EVIDENCE_KEYS / pickTaskEvidence 的正确性目前只靠一次性探针（certs/.work/probe-evidence-whitelist.mjs，未入库、不在 verify 里）⇒ 下一次有人删掉 observed 或改成「任意键都收」，8 道门一声不响。判据：① 把探针提升为 certs/tNNN-*-cert.mjs 并挂进 scripts/verify.mjs 的 GATES（同步改 verify 的「8 道门」说法）；② 证必须能被自己的反面打红：从 dist 的白名单摘掉 observed ⇒ 该门红（已实测能红，见 todo_证据落盘丢字段-…-compl 的证据）；③ 反向也不能松：塞 {hack:x} ⇒ 该门红。★ 为什么单独一张卡：本卡只修了落盘，没接线，按「建了必须接线」不许假收口。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_证据落盘丢字段-reading-证据的-observed-被静默丢弃-compl"
     }
   ],
   "_dsl_rev": 1293,
