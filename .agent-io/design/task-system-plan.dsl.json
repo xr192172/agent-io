@@ -103880,11 +103880,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T02:23:24.952Z",
+    "saved_at": "2026-10-22T02:31:37.256Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 52282141,
+    "age": 52774445,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -106250,9 +106250,16 @@
       "state": "candidate",
       "summary": "★ /api/overview 是只读接口但会调 tryDeriveFeatureTree ⇒ saveDSL 重写整份设计 DSL ⇒ 2026-10-22 实测把 96 张任务卡整片清空（5.03MB→2.16MB）。判据：① GET /api/overview 前后设计册字节完全相同；② 或把它拆成「只读的 judge/derive」+「显式写入的 refresh」两个入口，GET 侧不许落盘。★ 恢复只能 git checkout，会丢 HEAD 之后的卡。",
       "created_at": "2026-10-21T20:31:23.912Z"
+    },
+    {
+      "id": "todo_http-65条路由按重复度逐条退役",
+      "type": "todo",
+      "state": "candidate",
+      "summary": "【HTTP 面收敛 · 逐条退役】2026-10-22 已把 HTTP 接进 `invokeTool`（`GET /api/tool/<name>` 派生 + `GET /api/tools` 自描述），66 个能力在 HTTP 侧**零成本**获得。但老的 65 条 `ROUTES` 还在，其中**约 23 条与某个 tool 语义重复**（同一个能力两个面各写一遍 ⇒ 判据住两处）。判据：① 对 65 条逐条判三分类（UI 专用 / 与 tool 重复 / 两者都有），分类结果落进本卡；② 「与 tool 重复」的那些改成**薄壳**（解析入参 → `invokeTool` → 回 JSON，**不许**再自己写编排）；③ 全表改完后，「同一能力两处实现」的数量 = 0（由 `assertRouteTable` + 一份 path↔tool 对照表机器验）。★ 不许一刀切删：前端在用这些 path，删要配合改前端；且 `/api/load`、`/api/save`、SSE、`/api/layout/*` 本来就不是工具（UI 专用），不该硬塞进 `TOOL_DEFS`。",
+      "created_at": "2026-10-22T02:31:37.218Z"
     }
   ],
-  "_dsl_rev": 1252,
+  "_dsl_rev": 1253,
   "feature_tree": {
     "features": [
       {
