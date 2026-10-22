@@ -312,6 +312,19 @@ export function openDb(dbFile: string = getDbFile()): Database {
   fs.mkdirSync(path.dirname(dbFile), { recursive: true });
   const db = new DatabaseSync(dbFile);
   db.exec('PRAGMA journal_mode = WAL');
+  /**
+   * ★★★ 2026-10-22：**等锁，别立刻抛** —— `database is locked` 的实测病灶
+   *
+   * 现场：本仓的 MCP server（`dist/src/presentation/mcp/server.js`）常驻，一直持有 `cache.db`；
+   * 而 `npm run verify` 的「实现夹具」也要开库 ⇒ 两个写者撞上 ⇒ `ERR_SQLITE_ERROR errcode=5`。
+   * ★ 后果不是"某次失败"，是**门会随机红** ⇒ 人会学会"重跑一次看" ⇒ 再往后 **FAIL 变成噪音**，
+   *   真 FAIL 也被忽略（这比假绿更坏：假绿能被"注入⇒必须红"抓出来，噪音不能）。
+   *
+   * 判据：`busy_timeout` 是 SQLite 原生的"等锁"机制 —— 把"瞬时争用"变成"排队"。
+   * ★ 它**只治瞬时争用**：如果锁被长事务占住，5 秒后照样抛（那时才是真问题，该找长事务）。
+   * ★ 为什么 5000ms：verify 里最长的一道门约 200ms（实测），5s 是 25 倍余量，不会掩盖真卡死。
+   */
+  db.exec('PRAGMA busy_timeout = 5000');
   db.exec('PRAGMA foreign_keys = ON');
   // ★ v16：**先对齐形状再跑 SCHEMA_SQL** —— 旧库的 identifiers 还没有 file_id 列，
   //   而 SCHEMA_SQL 里有 CREATE INDEX ... ON identifiers(name, file_id) ⇒ 会直接 no such column。
