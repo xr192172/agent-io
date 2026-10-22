@@ -104669,11 +104669,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T14:15:20.756Z",
+    "saved_at": "2026-10-22T14:25:36.609Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 94997945,
+    "age": 95613798,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108561,6 +108561,12 @@
     {
       "id": "todo_pr-式退役-剩余两个消费者-2026-10-22-已删-review-chan",
       "summary": "【PR 式退役 · 剩余两个消费者（2026-10-22 已删 review_changes 与 set_design_intent 的 propose 分支）】\n\n已删：\n· src/application/meta/index.ts 的 review_changes（144 行工具定义 + import）\n· src/application/design/index.ts 的 propose 分支（44 行）+ 类型收窄 + import\n⇒ 7 门 PASS\n\n剩余 2 个消费者（★ 不许「保留入口但换实现」，那是换皮）：\n\n① src/application/meta/llm/llm_decider.ts:27\n   import proposeChange —— 它整个是「LLM 决策 → 产 PR → 等人/下一 agent 批」\n   ⇒ 正确形态：LLM 决策应产出【卡】（publish），不是 PR\n   ⇒ 判据：decideCanvasNotes 的产出里不许有 status=pending/approved；只有「立卡」或「不改」\n\n② src/presentation/http/serve.ts:60\n   import proposeChange / listChanges / approveChange / rejectChange —— HTTP 面的 /api/code/* 路由\n   ⇒ 那是「人的代码审批页面」那套（review_changes 文档原文：PR 不挂在人的审批页面上）\n   ⇒ 判据：删路由后 /api/code/* 返回 404（不是返回 410 —— 那还是活着）\n\n★ 两者删完后 code_workbench.ts（852 行）才能删\n★ 最终反证：grep -rn 'approveChange|proposeChange' src/ = 0，且「完成」只剩 cardStanding 一个裁判",
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_用户-2026-10-22-提出-内置-laya-0-4b-决策器-作为任务系统",
+      "summary": "【用户 2026-10-22 提出：内置 Laya（0.4B 决策器）作为任务系统的中立校验者】\n\n## Laya / Jev 是什么（已查证，不是 Jira/Linear）\n```\n· 决策器，不是生成模型：读文本 + 结构化问题（choice / score / noul）⇒ 一次前向返回答案 + 概率\n· 90ms 量级、零幻觉（不生成文字，所以没有「格式不对」）\n· Jev（TypeSafe AI，闭源）· Laya（Apache 2.0，开源，0.4B，convaiinnovations/laya）\n★ 用户选 Laya：开源 + 可微调 + 训练组件多\n```\n\n## 定位（★ 这里必须精确，否则会用它替代机械判据）\n```\n本仓现在两层判定，中间空着：\n  机械层  cardStanding（symbol-exists / signature-matches 绿不绿）        ✅ 有\n  语义层  「改动和卡说的是不是同一件事」                                  ❌ 空\n  分诊层  llm_decider（用大 LLM 判 change/done/reject）                   ⚠️ 贵\n\n⇒ Laya 该填的是【语义层】和【分诊层】，不是机械层\n⇒ 绝不许它取代 cardStanding：那会把「可机械判定」换成「概率判断」\n⇒ 「中立第三方」的精确含义：cardStanding 本来就中立（它是代码）；真正会「自己判自己」的是\n   执行的那个 LLM（它写代码也写 evidence）⇒ Laya 的价值是【没参与执行，不会为执行辩护】\n```\n\n## 风险（官方实测，不是推测）\n```\n「判别式模型没有推理能力可借……走出训练分布，概率退化成接近均匀 = 抛硬币」\n官方实测：客服意图分类 4/4 全对；同一模型玩俄罗斯方块 ⇒ 概率均匀（=随机）\n⇒ 本仓「设计判据」是高度领域特定文本 ⇒ zero-shot 大概率没用，可能要微调\n⇒ 但微调要标注数据，本仓 224 张卡不是标注好的训练集\n```\n\n## 已写离线试跑（不改任何流程）\n```\nD:/project_develop/_design-canvas-labs/laya-probe.py\n★ ground truth 用【合成对照】而不是 done（今天实测 done 里有一批假收口）：\n   正样本：A 卡 summary + A 卡自己的 evidence\n   负样本：A 卡 summary + B 卡的 evidence（随机错配）\n   ⇒ 负样本「确定是错的」（不同卡的活不可能同一件事），不需要人标\n```\n\n## 判据（决定后面全部设计）\n```\n正样本 ≥ 70% 且 负样本 ≥ 70% 且 平均置信 > 0.6 ⇒ 值得接（当校验者）\n否则 ⇒ 只能当分诊器（替换 llm_decider 的大 LLM），别当校验者\n★ 反证：若它全判「是」（负样本 0%）⇒ 那是抛硬币/退化，不是判别力\n```\n\n## 接入时的硬约束（若试跑通过）\n```\n① Laya 的判断只进 evidence【附加项】，不参与 isSatisfied（机械判据说了算）\n② 低置信（< 阈值）⇒ 转人工（本仓 = 留 visible 标记，不自动收口）\n③ 不许「Laya 说是就是」—— 它是第三方，不是裁判；裁判只有一个（cardStanding）\n```",
       "state": "candidate",
       "owner": null
     }
