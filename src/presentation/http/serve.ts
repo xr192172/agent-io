@@ -57,7 +57,6 @@ import { languageConcepts } from '../../infrastructure/analysis/capability/langu
 import { buildDictionaryView, getGlobalDictFile, getProjectDictFile, loadGlobalDict, loadProjectDict, saveGlobalEntry, saveProjectEntry, splitHighlights, validateProjectRoot, type DictEntry } from '../../infrastructure/dictionary.js';
 import { ingestTerm, generateDictEntry } from './dict_gen.js';
 import { readRegistry, updateArtifact } from '../../infrastructure/index/registry.js';
-import { proposeChange, listChanges, approveChange, rejectChange } from '../../application/design/workbench/code_workbench.js';
 import { checkMonolith } from '../../infrastructure/analysis/structure/monolith.js';
 import type { FileMonolithReport } from '../../infrastructure/analysis/structure/monolith.js';
 import { runArchifyPipeline } from './archify/archify_pipeline.js';
@@ -1675,89 +1674,6 @@ async function handleApiCanvasNotesStatus(req: http.IncomingMessage, res: http.S
   }
 }
 
-/** GET /api/code/workbench：列出某项目的代码变更（P3 工作台） */
-async function handleApiCodeWorkbench(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  try {
-    const url = new URL(req.url!, 'http://localhost');
-    const project_dir = url.searchParams.get('project_dir') || '';
-    if (!project_dir) {
-      sendError(res, 400, '缺少 project_dir');
-      return;
-    }
-    const changes = listChanges(project_dir);
-    sendJson(res, 200, { success: true, changes, project_dir });
-  } catch (e) {
-    sendError(res, 500, (e as Error).message);
-  }
-}
-
-/** POST /api/code/propose：提交变更提案（干跑预览 + 落为 pending） */
-async function handleApiCodePropose(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  try {
-    const body = await readBody(req);
-    const params = JSON.parse(body.toString('utf-8'));
-    if (!params.project_dir) {
-      sendError(res, 400, '缺少 project_dir');
-      return;
-    }
-    const r = await proposeChange({
-      kind: params.kind,
-      project_dir: params.project_dir,
-      op: params.op || {},
-      submitter: params.submitter,
-    });
-    if (!r.ok) {
-      sendError(res, 409, r.error || '预览失败');
-      return;
-    }
-    sendJson(res, 200, { success: true, change: r.change });
-  } catch (e) {
-    sendError(res, 500, (e as Error).message);
-  }
-}
-
-/**
- * ★★★ T186（2026-10-12）：审批**必须自报身份** —— 与 observe 侧 `reviewer` 同口径。
- *
- * `reviewer` 优先取 body（前端/第三方会话可自带），否则落到 `'human:workbench'`
- * —— ★ 这不是"编一个身份"：**这条路由本来就是给人用的工作台**，
- *   所以那个默认值**说的就是事实**（"人在工作台点的"）。
- *   ★ 而第三方会话（下一个接手的 Agent）走 MCP 的 `review_changes`，
- *     **必须自带身份**（那条路的默认值是空 ⇒ 空就报错，见 `checkReviewer`）。
- */
-function codeReviewerFrom(params: Record<string, unknown>): string {
-  const r = typeof params.reviewer === 'string' ? params.reviewer.trim() : '';
-  return r || 'human:workbench';
-}
-
-/** POST /api/code/approve：通过并真正写盘 */
-async function handleApiCodeApprove(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  try {
-    const body = await readBody(req);
-    const params = JSON.parse(body.toString('utf-8'));
-    const r = await approveChange(params.project_dir || '', params.id || '', codeReviewerFrom(params));
-    sendJson(res, 200, { success: r.ok, status: r.status, result: r.result, error: r.error });
-  } catch (e) {
-    sendError(res, 500, (e as Error).message);
-  }
-}
-
-/** POST /api/code/reject：驳回丢弃（不写盘） */
-async function handleApiCodeReject(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  try {
-    const body = await readBody(req);
-    const params = JSON.parse(body.toString('utf-8'));
-    const r = rejectChange(params.project_dir || '', params.id || '', codeReviewerFrom(params));
-    sendJson(res, 200, { success: r.ok, status: r.status, result: r.result, error: r.error });
-  } catch (e) {
-    sendError(res, 500, (e as Error).message);
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Observe 提案：列出 / 审批 / 驳回（2026-10-06，T62）
-// ─────────────────────────────────────────────────────────────
-// ★ 为什么开在 **HTTP** 而不是 MCP 工具：审批的语义是「**谁**批准了这条声明」——
 //   本仓既有先例正是 `code_workbench` 的 `/api/code/approve|reject`（LLM 起草 → **人**批准），
 //   而 observe 的提案三态（propose / approve / reject）与它一一对应。
 //   做成 MCP 工具会退化成"**agent 批准自己的提案**"，语义弱。
@@ -3212,8 +3128,7 @@ export async function startServer(port?: number): Promise<void> {
         url.startsWith('/api/registry') || url.startsWith('/api/import') ||
         url.startsWith('/api/layout') || url.startsWith('/api/scaffold') ||
         url.startsWith('/api/mind-map') || url.startsWith('/api/canvas-notes') ||
-        url.startsWith('/api/code/approve') || url.startsWith('/api/code/reject') ||
-        url.startsWith('/api/code/propose') || url.startsWith('/api/gateway') ||
+        url.startsWith('/api/gateway') ||
         // ★ observe 提案审批/驳回会**写权威 dsl.json**（或改提案状态）⇒ 必须同受 Origin 校验（T62）
         url.startsWith('/api/observe/proposals/approve') || url.startsWith('/api/observe/proposals/reject') ||
         url.startsWith('/api/reveal-file'));
@@ -3246,7 +3161,6 @@ export async function startServer(port?: number): Promise<void> {
       console.log(`  - 代码生成 API: POST /api/scaffold`);
       console.log(`  - 一致性检查 API: POST /api/consistency`);
       console.log(`  - 数据/API 引擎（前端统一为 dsl-workbench，不再渲染自包含 HTML）`);
-      console.log(`    - 代码审批 API: 列出 /api/code/workbench ｜ 提案 /api/code/propose ｜ 通过 /api/code/approve ｜ 驳回 /api/code/reject`);
       console.log(
         `    - Observe 提案 API: 列出 GET /api/observe/proposals?project_dir=… ｜ 通过 POST /api/observe/proposals/approve ｜ 驳回 POST /api/observe/proposals/reject` +
           `（body 需 project_dir / id / reviewer —— reviewer 是审批者身份，为第三方会话审批留位）`,

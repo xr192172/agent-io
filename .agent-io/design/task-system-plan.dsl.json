@@ -53484,66 +53484,27 @@
         "task": {
           "id": "file_src_presentation_http_serve_ts",
           "summary": "【L1 待建构】核心层 · src/presentation/http — 50 个 API（导入自 57 个模块）（src/presentation/http/serve.ts） ← 节点 file_src_presentation_http_serve_ts",
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_http_serve_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
+          "owner": "agent:main",
+          "claimed_at": "2026-10-22T14:13:03.756Z",
           "read_set": {
-            "symbols": [
-              {
-                "file": "src/presentation/http/serve.ts",
-                "name": "handleApiFeatureLine",
-                "fp": "5d8fd2f7ebde56f0bdb61496e78311a171d574f4"
-              },
-              {
-                "file": "src/presentation/http/serve.ts",
-                "name": "handleApiObserveApprove",
-                "fp": "329d0ba6586fa14ddabcafb02df0703a4170e4fb"
-              },
-              {
-                "file": "src/presentation/http/serve.ts",
-                "name": "handleApiObserveJudge",
-                "fp": "38ee0a2150d0c783010a57840d44c692e56c32fe"
-              },
-              {
-                "file": "src/presentation/http/serve.ts",
-                "name": "handleApiObserveLog",
-                "fp": "6123598c19cd0dab000dd20ca7989820f442253f"
-              },
-              {
-                "file": "src/presentation/http/serve.ts",
-                "name": "handleApiObserveProposals",
-                "fp": "9f85e9aac7d7fb0234c8e6bf26bfc3f5df40f0b7"
-              },
-              {
-                "file": "src/presentation/http/serve.ts",
-                "name": "handleApiObserveReject",
-                "fp": "39235adfd1816ba7d62ca4be97121213a6240bd8"
-              },
-              {
-                "file": "src/presentation/http/serve.ts",
-                "name": "handleApiReconcileChain",
-                "fp": "b9469eaedd532f177025abfd6e5f2eb02afc6dff"
-              }
-            ],
+            "symbols": [],
             "files": [
               {
                 "path": "src/presentation/http/serve.ts",
-                "content_hash": "a8cf0123cd1268ad45b986f3f6421aac05a53212"
+                "content_hash": "d07facf1e8ca215964ae178ab7a718a66a3ef879"
               }
             ],
-            "computed_at": "2026-10-21T20:23:17.184Z",
+            "computed_at": "2026-10-22T14:13:03.713Z",
             "basis": [
-              "declared"
+              "node-path"
             ]
-          },
-          "release_reason": "陈旧租约 10h（原 owner=subagent:serve-split），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:02.759Z"
+          }
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_presentation_mcp_lifecycle_ts",
@@ -98699,7 +98660,7 @@
         ],
         "lines": 3360,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_presentation_mcp_lifecycle_ts",
@@ -104708,11 +104669,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T13:57:40.477Z",
+    "saved_at": "2026-10-22T14:15:20.756Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 93937666,
+    "age": 94997945,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108585,9 +108546,17 @@
     },
     {
       "id": "todo_用户-2026-10-22-裁定-代码变更审批流已废弃-且它是另一套设计-与卡式",
-      "summary": "【用户 2026-10-22 裁定：代码变更审批流已废弃，且它是另一套设计，与卡式天生不兼容】\n\n★ 我上一轮用错了判据：数了「有 3 个调用方」就说不能删。\n  正确判据是「它和本仓的卡式是不是同一套」。实测不是：\n\n| | PR 式（review_changes） | 卡式（本仓） |\n|---|---|---|\n| 怎么算完成 | approveChange（有人点同意） | cardStanding 判 decision.expectations |\n| 裁判是 | 下一个 agent 看 diff | 判据自己对实际代码 |\n| 状态 | pending/approved/rejected/executed | candidate/claimed/done/void |\n\n⇒ 【同一个问题两个裁判】⇒ 不是风格差异，是两套「完成」的定义。\n\n★ 关系实测：review_changes 就是 code_workbench 的封装\n  meta/index.ts:56   import { listChanges, getChange, addReview, approveChange, rejectChange } from ../design/workbench/code_workbench.js\n  meta/index.ts:274  name: review_changes（action: list/show/comment/approve/reject）\n  meta/index.ts:391  await approveChange(...)  ← 审批落地就在 code_workbench 里\n\n★ 判据（退役时用）\n  ① 删除后，「完成」只有一个裁判：complete → cardStanding → isSatisfied\n  ② 3 个调用方（design/index.ts / meta/index.ts / llm_decider.ts）必须一起改，不许「保留一个入口但换实现」\n     ★ 那等于换皮，两套还在\n  ③ 反证：造一张「判据未绿但有人 approve」的场景 ⇒ 不许出现 done（today: approve 能独立于判据）\n  ④ 数据：设计册里不能有 approved/rejected 状态残留（实测 state_machine 只有 4 态 ⇒ 说明数据侧早就是卡式了）\n\n★ 注意：它读 overlay（dsl_intent 变更的 before/after）⇒ 删它时那处 overlay 依赖一起消失",
+      "summary": "【★ 更正（用户 2026-10-22 澄清）：这不是推翻 2026-10-12 的裁定，而是一脉相承】\n\n## 真实脉络\n「我后面有一个叫做**账户系统**的，这其实就继承了 PR 的这样一个概念，只是现在我们还是单系统。就是说一个 agent 没有必要去做这个审批系统，而且这个审批系统本身也不那么严谨，因为人本身在发出这个请求的时候，他就已经审批过了。反而是 **Agent 与 Agent 之间的交接**需要确保它们是在做同一件事，并且看到用户的第一手资料，以达到**不漂移**的目的。」\n\n⇒ PR/「谁确认」这个概念没被废弃，被**账户系统**继承：\n· 单 agent：自己批自己没意义 ⇒ 不需要审批流\n· 人的请求本身已是「交出内容」= 一次确认 ⇒ 再点一次没必要\n· **真需求 = Agent ↔ Agent 交接对齐**：同一件事 + 同一份第一手资料 ⇒ 防漂移\n\n## 已做（2026-10-22）\n· meta/index.ts：review_changes 工具 + import = 145 行删\n· design/index.ts：set_design_intent 的 propose 分支 = 46 行删\n· presentation/http/serve.ts：4 个 /api/code/* handler + import = 87 行删\n⇒ 7 门 PASS；handleApiCode 命中 = 0 ⇒ 人的审批页面彻底消失（404，不是 410）\n\n## 剩余 1 个消费者\nsrc/application/meta/llm/llm_decider.ts:27 import proposeChange\n· 它 = 「批注工单 → LLM 决策 → 审批流闭环」（读 open 批注，判 change/done/reject）\n· 核心价值正当，问题只在最后那一跳：change 映射到 PR\n⇒ 正确形态：change 应产出【卡】（publish）\n⇒ 判据：decideCanvasNotes 的产出里不许有 status=pending/approved\n★ 它改完后 code_workbench.ts（852 行）才能删\n\n## 交付给账户系统的（这条别丢）\nPR 式留下的唯一真需求 = **交接对齐**（同一件事 + 第一手资料 + 防漂移）\n⇒ 账户系统要继承【这件事】，不是【approve/reject 那套动词】\n★ 反证：若账户系统最后又长出 pending/approved + 人点同意 ⇒ 那是把废弃的东西换名复活",
       "state": "candidate",
-      "owner": null
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-10-22T14:15:20.723Z",
+          "from": "【用户 2026-10-22 裁定：代码变更审批流已废弃，且它是另一套设计，与卡式天生不兼容】\n\n★ 我上一轮用错了判据：数了「有 3 个调用方」就说不能删。\n  正确判据是「它和本仓的卡式是不是同一套」。实测不是：\n\n| | PR 式（review_changes） | 卡式（本仓） |\n|---|---|---|\n| 怎么算完成 | approveChange（有人点同意） | cardStanding 判 decision.expectations |\n| 裁判是 | 下一个 agent 看 diff | 判据自己对实际代码 |\n| 状态 | pending/approved/rejected/executed | candidate/claimed/done/void |\n\n⇒ 【同一个问题两个裁判】⇒ 不是风格差异，是两套「完成」的定义。\n\n★ 关系实测：review_changes 就是 code_workbench 的封装\n  meta/index.ts:56   import { listChanges, getChange, addReview, approveChange, rejectChange } from ../design/workbench/code_workbench.js\n  meta/index.ts:274  name: review_changes（action: list/show/comment/approve/reject）\n  meta/index.ts:391  await approveChange(...)  ← 审批落地就在 code_workbench 里\n\n★ 判据（退役时用）\n  ① 删除后，「完成」只有一个裁判：complete → cardStanding → isSatisfied\n  ② 3 个调用方（design/index.ts / meta/index.ts / llm_decider.ts）必须一起改，不许「保留一个入口但换实现」\n     ★ 那等于换皮，两套还在\n  ③ 反证：造一张「判据未绿但有人 approve」的场景 ⇒ 不许出现 done（today: approve 能独立于判据）\n  ④ 数据：设计册里不能有 approved/rejected 状态残留（实测 state_machine 只有 4 态 ⇒ 说明数据侧早就是卡式了）\n\n★ 注意：它读 overlay（dsl_intent 变更的 before/after）⇒ 删它时那处 overlay 依赖一起消失",
+          "to": "【★ 更正（用户 2026-10-22 澄清）：这不是推翻 2026-10-12 的裁定，而是一脉相承】\n\n## 真实脉络\n「我后面有一个叫做**账户系统**的，这其实就继承了 PR 的这样一个概念，只是现在我们还是单系统。就是说一个 agent 没有必要去做这个审批系统，而且这个审批系统本身也不那么严谨，因为人本身在发出这个请求的时候，他就已经审批过了。反而是 **Agent 与 Agent 之间的交接**需要确保它们是在做同一件事，并且看到用户的第一手资料，以达到**不漂移**的目的。」\n\n⇒ PR/「谁确认」这个概念没被废弃，被**账户系统**继承：\n· 单 agent：自己批自己没意义 ⇒ 不需要审批流\n· 人的请求本身已是「交出内容」= 一次确认 ⇒ 再点一次没必要\n· **真需求 = Agent ↔ Agent 交接对齐**：同一件事 + 同一份第一手资料 ⇒ 防漂移\n\n## 已做（2026-10-22）\n· meta/index.ts：review_changes 工具 + import = 145 行删\n· design/index.ts：set_design_intent 的 propose 分支 = 46 行删\n· presentation/http/serve.ts：4 个 /api/code/* handler + import = 87 行删\n⇒ 7 门 PASS；handleApiCode 命中 = 0 ⇒ 人的审批页面彻底消失（404，不是 410）\n\n## 剩余 1 个消费者\nsrc/application/meta/llm/llm_decider.ts:27 import proposeChange\n· 它 = 「批注工单 → LLM 决策 → 审批流闭环」（读 open 批注，判 change/done/reject）\n· 核心价值正当，问题只在最后那一跳：change 映射到 PR\n⇒ 正确形态：change 应产出【卡】（publish）\n⇒ 判据：decideCanvasNotes 的产出里不许有 status=pending/approved\n★ 它改完后 code_workbench.ts（852 行）才能删\n\n## 交付给账户系统的（这条别丢）\nPR 式留下的唯一真需求 = **交接对齐**（同一件事 + 第一手资料 + 防漂移）\n⇒ 账户系统要继承【这件事】，不是【approve/reject 那套动词】\n★ 反证：若账户系统最后又长出 pending/approved + 人点同意 ⇒ 那是把废弃的东西换名复活",
+          "reason": "用户澄清：不是推翻 2026-10-12 裁定，PR 概念被账户系统继承；人的审批页面已全删"
+        }
+      ]
     },
     {
       "id": "todo_pr-式退役-剩余两个消费者-2026-10-22-已删-review-chan",
