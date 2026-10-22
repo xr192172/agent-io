@@ -42,6 +42,7 @@ import {
   type RefactorPlan,
   type RefactorTarget,
 } from '../../refactor/pipeline/refactor_plan.js';
+import { attachGateNote } from '../../refactor/gate_note.js';
 
 export interface RewriteArgs {
   /** 仓库根（绝对路径） */
@@ -54,6 +55,15 @@ export interface RewriteArgs {
   prefix?: string;
   /** ★ true 才真落盘；默认 false = 零写入 */
   apply?: boolean;
+  /**
+   * ★★★ 2026-10-22（写闸覆盖面 · 第 3 条入口）：**本次写入者身份**。
+   * 本函数**不自己过闸** —— 落盘交给 `applyRefactorPlan → editCode`（唯一实现）；
+   * 但闸既然在那一层，身份就必须**在这里往下传**，否则 `design_line action=sync-signatures`
+   * 这条入口就只能看见 env（生产面 stdio 没有 env ⇒ 闸对"谁在写"恒不设防）。
+   */
+  actor?: string;
+  /** ★★★ T356：按 run 授权 —— 同上，一路传到 `editCode` 的写闸（判据仍只住 `write_gate`） */
+  authorize?: string;
 }
 
 /**
@@ -93,6 +103,12 @@ export interface RewriteResult {
   reason: RewriteReason | null;
   /** ★ 规划/语法门/写闸拦截（非 null ⇒ 一个字节都没落盘） */
   gate: RewriteGate | null;
+  /**
+   * ★★★ 2026-10-22（写闸覆盖面 · 回执线）：**任务闸的放行读数**（闸的 `note` 逐字，含豁免点名）。
+   * 来源 = `applyRefactorPlan` 回执的 `task_gate`（闸在 `editCode` 里跑，本层只**带出来**）。
+   * ★ 零写入 / 被拦 / 幂等全已应用时没有这个字段 —— 那几种处境闸压根没跑。
+   */
+  task_gate?: string;
   scanned: number;
   /** 签名相同的条数 */
   same: number;
@@ -158,7 +174,14 @@ export async function rewriteSymbols(args: RewriteArgs): Promise<RewriteResult> 
   try {
     const plan = await buildRefactorPlan({ project_dir: args.projectDir, targets });
     stage = 'apply';
-    const res = await applyRefactorPlan({ project_dir: args.projectDir, plan, atomic: true });
+    const res = await applyRefactorPlan({
+      project_dir: args.projectDir,
+      plan,
+      atomic: true,
+      // ★★★ 2026-10-22（写闸覆盖面）：身份与授权一路往下传 —— 闸在 `editCode` 里，不传就等于没接。
+      actor: args.actor,
+      authorize: args.authorize,
+    });
     // ★★★ 落盘后【重算】一次：报告反映「现在」，不拿 apply 前的读数冒充结果
     stage = 'recheck';
     const after = await diffSymbols({ projectDir: args.projectDir, onlyFile: args.onlyFile, prefix: args.prefix });
@@ -179,7 +202,9 @@ export async function rewriteSymbols(args: RewriteArgs): Promise<RewriteResult> 
     // ★ did_work 的口径只有一条：**真有差异被 apply**（不是"跑了 apply"，也不是 `ok`）
     out.did_work = res.applied > 0;
     out.reason = out.did_work ? null : res.already_applied > 0 && res.failed === 0 ? 'already_applied' : 'apply_failed';
-    return out;
+    // ★★★ 2026-10-22（写闸覆盖面 · 回执线）：闸判了、豁免了，就必须**带出来** —— 统一走
+    //   `attachGateNote`（唯一带出口，不在这里另拼一句话）。
+    return attachGateNote(out, res.task_gate);
   } catch (e) {
     out.gate = { stage, error: (e as Error).message };
     out.reason = 'gate_blocked';

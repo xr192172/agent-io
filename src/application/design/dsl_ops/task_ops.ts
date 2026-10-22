@@ -771,12 +771,15 @@ export function publishTask(input: TaskOpInput): EditResult {
  *     ★★ `satisfied` 卡的处置**由意图决定**（2026-10-20）：
  *        · 缺省 `intent='work'` ⇒ **必拒**（没活干不许领）—— 这条与 `complete` 的判据**分开**：
  *          收口侧读 `isSatisfied`，两侧同源（都读 `cardStanding`）但**不是同一个谓词**；
+ *          ★ 这一句**只说 L2 卡**：L1 两侧读的是**另一个**函数 `constructionVerdict`
+ *            （与 `cardStanding` 是**两把尺**，各自显式命名 —— 见下面「L1 建构卡」那段）；
  *        · `intent='modify'` ⇒ **放行**（判据已全过，但文件要改：改判据 / 重构 / 改注释）——
  *          ★ 放行的是**写权**，不是"这张卡又有活了"：回执逐字写"本次是【修改】不是【补红】"。
  *     ★ 为什么不能只靠 reopen：`t_reopen` 只从 `done` 起跳；`candidate` + `satisfied` 既领不了、
  *        也没有 reopen 可走 ⇒ 那张卡指向的文件**谁也改不了**（2026-10-20 实测：改一行注释都不行）。
  *  ② CAS：`state === 'candidate'` ∧ `owner` 为空 ⇒ 就地写；`state === 'done'` ⇒ 走**重开**（见下节）；
- *     `claimed`（别人的在办活）/ `void`（判据已作废）⇒ **拒**（不覆盖别人的领，也不复活废掉的卡）；
+ *     `claimed`（别人的在办活）/ `void`（**已宣布弃做**）⇒ **拒**（不覆盖别人的领，也不复活弃掉的卡；
+ *     ★ 判据本身**没作废**，它仍在 decision —— 拒的理由是「这活已被宣布不做」，不是「判据坏了」）；
  *  ③ 写 `owner` + `claimed_at`（`releaseIfExpired` 的 TTL 靠它）。
  *
  * ## ★★★ `done` 卡：重开式领取（2026-10-20 · 第二笔）
@@ -788,14 +791,25 @@ export function publishTask(input: TaskOpInput): EditResult {
  *   · `reason` 必填（`t_reopen` 的 guard 第 4 条）；
  *   · `intent=modify` 不判判据（重开不改判据）；`intent=work` 仍判（没红可修 ⇒ 拒；退化了 ⇒ 放行）；
  *   · owner 换手 + `reopened_from` / `reopen_reason` 记账，`evidence[]` 原样保留。
- * ★ `void` **不走这条路**（见 `relaunchTask`）：void 的判据已作废，写权应当从「重新立卡 → publish」来。
+ * ★ `void` **不走这条路**（见 `relaunchTask`）：它只能 `relaunch` 回 candidate 再走 claim ——
+ *   写权不从"复活一张弃做的卡"来（判据仍在 decision，但拿一件不做了的活的验收去写盘 = 自欺）。
  *
  * ## ★★★ L1 建构卡为什么不走 `cardStanding`（2026-10-17）
  * L1 卡 `expectations: []` ⇒ `cardStanding` 必给 **`unknowable`**（空集不按全过算）⇒ 若照②拒，
  * **L1 卡永远领不了** = 把"生成 L1 卡"这道口子又堵回去（同一个环的另一种形态）。
  * ★ L1 的"有没有活"是**另一把可判的尺**（不是放宽标准，是换对尺）：
  * **DSL 建构完整吗？** 不完整 ⇒ 有活（可领）；已完整 ⇒ 没活（拒，并指向 publish 出 L2）。
- * 判据唯一出处 = `constructionVerdict`（complete 侧用**同一个函数**判收口）。
+ * 判据唯一出处 = `constructionVerdict`。
+ *
+ * ## ★★★ 两把尺的分工（2026-10-22 运行时取证，`certs/t359`）
+ * | 卡 | claim 侧 | complete 侧 | 尺 |
+ * |---|---|---|---|
+ * | **L1**（decision 没有 post 判据） | `constructionVerdict().complete === false` ⇒ 可领 | `constructionVerdict().complete === true` ⇒ 可收口 | **同一把**（方向相反） |
+ * | **L2**（有 post 判据） | `isClaimable(cardStanding(card))` | `isSatisfied(card)` = `cardStanding === 'satisfied'` | 同一个读数、两个谓词 |
+ * ⇒ 所以**不是**"claim 用一把、状态判定用另一把"：**每一级内部两侧用同一把**；
+ *   跨级才是两把尺（`constructionVerdict` vs `cardStanding`），各自显式命名、不互相冒充。
+ * ★ 已知结构性风险（**不在本段**）：选哪把尺由 `taskLevel`（**派生值**）决定 ⇒ 给 decision 补一条
+ *   post 判据就当场从 L1 变 L2 —— 交接流待裁，见 `todo_l1-l2-handoff-gap`。
  */
 export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   const { feature, node_id } = input;
@@ -1196,6 +1210,9 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   }
 
   // ★ L1 / L2 两条收口尺（★ 各自唯一，别在这里就地判期望条数）
+  //   · L1 ⇒ constructionVerdict（与 claim 侧**同一个函数**：那边判 false 才可领，这边判 true 才可收口）
+  //   · L2 ⇒ isSatisfied（= cardStanding === 'satisfied'；与 claim 的 isClaimable 同源、不同谓词）
+  //   ★ 2026-10-22 取证：certs/t359 逐条钉住"每一级内部两侧同一把尺"（跨级才是两把尺）。
   const level = taskLevel(expectationsOf(cardNode));
   let closeNote: string;
   let standing: CardStanding | undefined;
@@ -1414,14 +1431,15 @@ export async function reopenTask(input: TaskOpInput): Promise<EditResult> {
  * `void` 的语义是「**这件事不做了**」，不是「**这件事不存在过**」⇒ 要做回来了，
  * 不该逼人另开节点（节点 id 就是文件，另开 = 同一文件两张卡）。
  *
- * ## ★ 为什么清空 `expectations`（这一条最容易做错）
- * `candidate` 的含义 = **没人领 · 判据待 `publish` 重给**。
- * 若保留旧判据：`claim` 读 `cardStanding` ⇒ 旧判据早就绿了 ⇒ `satisfied` ⇒ **拒领**（"没活干"），
- * 于是这张卡既领不了、`publish` 又只认 `candidate`……那是把刚拆掉的死锁原样搬到 `void` 上。
- * ⇒ **清空 `expectations`**（旧判据属于"已作废的那件事"），同时保留：
- *   · `summary` —— 原来做的是什么（人读；`publish` 会按 decision 重写）；
- *   · `evidence` —— "这活存在过"（与 `void` 同一条纪律：作废的是"要做"，不是"存在过"）。
- * ⇒ 之后必须 `publish`（从 `decision` 重翻）才能 `claim` —— **判据不在这里给**（唯一来源仍是 decision）。
+ * ## ★ 判据不随卡走 ⇒ `relaunch` **清不了也改不了**判据（旧注释已作废）
+ * 卡上**没有** `expectations` 字段（`TaskSpec` 无它；判据唯一住处 = `decision`）。
+ * ⇒ `relaunch` 只把 `state` 放回 `candidate`，判据仍是 decision 上那几条 ——
+ *   **不存在**"清空旧判据"这个动作（卡的副本已于 2026-10-20 删除）。
+ * ★ 后果必须说清：卡回到 candidate 后，若 decision 的判据**仍然全绿**，`claim` 会判 `satisfied`
+ *   （没活干）⇒ 拒领。**这不是死锁**，两条正路：
+ *   ① 这活真要重做 ⇒ 改 `decision`（换/加判据）再 `publish`；
+ *   ② 只是要改文件（取写权）⇒ `claim` 带 `intent:'modify'`。
+ * 保留：`summary`（原来做的是什么）· `evidence`（"这活存在过"）—— 作废的是"要做"，不是"存在过"。
  *
  * ## 三条判据（`t_relaunch` 的 guard，这里只执行）
  * ① `reason` 必填（为什么重新立卡）—— ★ 无理由的复活等于把"作废"当摆设

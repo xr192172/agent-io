@@ -45696,13 +45696,33 @@
                 ]
               },
               "verdict": "pass"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-10-22T03:47:53.036Z",
+              "by": "llm",
+              "why": "src/domain/task_machine.ts 的 TRANSITIONS.t_void 已补 4 条语义 clause（void=弃做 / 单向闸 / 非终态 / 不改不删判据）+ 文件头三出口一句；verify 7 门全绿，t349/t350/t351/t353/t358/t359 全生（184 条断言）",
+              "agent": "subagent:void-l1-cards",
+              "fingerprint": {
+                "what": "attestation:llm",
+                "input": "ab606ec9561cd616085d3e191ac68ad5b238637b",
+                "code": "2425f971b7ffd2ac5951f211f2b09b5d9657ccc9",
+                "covers": [
+                  "src/application/design/intent/expectations.ts",
+                  "src/domain/expectation.ts",
+                  "src/domain/judge_port.ts",
+                  "src/domain/task_machine.ts",
+                  "src/domain/task_schema.ts"
+                ]
+              },
+              "verdict": "pass"
             }
           ],
-          "owner": "subagent:exp-single-source",
-          "claimed_at": "2026-10-21T18:56:59.525Z",
-          "reopened_at": "2026-10-21T18:56:59.525Z",
-          "reopen_reason": "改 task_machine.ts 的 cardStanding/isSatisfied 签名：判据由调用方按 decision 现取；完成 task.expectations 去副本",
-          "reopened_from": "subagent:domain-five-values",
+          "owner": "subagent:void-l1-cards",
+          "claimed_at": "2026-10-22T03:40:49.553Z",
+          "reopened_at": "2026-10-22T03:40:49.553Z",
+          "reopen_reason": "为 src/domain/task_machine.ts 的 TRANSITIONS.t_void 补语义（void=弃做、非收尾、非终态），只改注释不补红",
+          "reopened_from": "subagent:exp-single-source",
           "read_set": {
             "symbols": [
               {
@@ -45743,7 +45763,7 @@
               {
                 "file": "src/domain/task_machine.ts",
                 "name": "SatisfactionCounts",
-                "fp": "28e706f9dfb2d200c53ad4a96eb9f62666216f32"
+                "fp": "ddd96d492486f0143961e96738e4836605922824"
               },
               {
                 "file": "src/domain/task_machine.ts",
@@ -45768,7 +45788,7 @@
               {
                 "file": "src/domain/task_machine.ts",
                 "name": "TRANSITIONS",
-                "fp": "8e6dd89aa86a98b342332023b08de986e7e6b97e"
+                "fp": "5066ca5c2aa8c55ee1c72ad01cc8c50fee264f39"
               },
               {
                 "file": "src/domain/task_machine.ts",
@@ -45793,7 +45813,7 @@
               {
                 "file": "src/domain/task_machine.ts",
                 "name": "cardStanding",
-                "fp": "51da520af7ba9508ac6441b9f7a2dd09c2616206"
+                "fp": "e7fad638a0227c658e8f4432280ceb3b23796136"
               },
               {
                 "file": "src/domain/task_machine.ts",
@@ -45803,7 +45823,7 @@
               {
                 "file": "src/domain/task_machine.ts",
                 "name": "isSatisfied",
-                "fp": "246abcbefaac15b99fb9d0dbd8266950f90e22b6"
+                "fp": "0ae2f287a3302e96d21755681171719b1ee53102"
               },
               {
                 "file": "src/domain/task_machine.ts",
@@ -45818,14 +45838,14 @@
               },
               {
                 "path": "src/domain/judge_port.ts",
-                "content_hash": "755e8df4d863aeec065004a5357b06d04dd5b271"
+                "content_hash": "8a01f0092e9c521b5937939384bf71d7c9d1a092"
               },
               {
                 "path": "src/domain/task_machine.ts",
-                "content_hash": "7ad84573d755738245c00fa11af6162d4f7fd99b"
+                "content_hash": "feafdcf81361d199f831ceb37ea67fbe03cd5195"
               }
             ],
-            "computed_at": "2026-10-21T18:56:59.494Z",
+            "computed_at": "2026-10-22T03:40:49.523Z",
             "basis": [
               "expectations"
             ],
@@ -53615,17 +53635,17 @@
             "files": [
               {
                 "path": "src/application/design/board/pool.ts",
-                "content_hash": "e5837072dbc848f289f4bad24abb77d1f87a4005"
+                "content_hash": "3483b50bc43fa5d3c2bc7ecce06b6d8a1e9b5285"
               }
             ],
-            "computed_at": "2026-10-21T14:25:01.726Z",
+            "computed_at": "2026-10-22T03:50:01.672Z",
             "basis": [
               "expectations"
             ]
           },
-          "release_reason": "pool.ts:4 的设计出处已改指 .agent-io/design/task-system-plan.dsl.json（注释级，不动 listPool）",
-          "released_by": "subagent:docref",
-          "released_at": "2026-10-21T14:27:00.175Z"
+          "release_reason": "pool.ts 的 BoardView.folded 注释已改（「终态」→「已了结」，并注明 t_reopen/t_relaunch 可重开）；仅注释，不动 listPool",
+          "released_by": "subagent:void-l1-cards",
+          "released_at": "2026-10-22T03:50:16.681Z"
         }
       },
       {
@@ -53949,9 +53969,9 @@
         "task": {
           "id": "file_src_application_design_rewrite_rewrite_ts",
           "summary": "⑥「设计 DB → 源码」的执行器（`design_line action=rewrite`）。只做一件事：源码签名与设计签名不一致时，把源码改回设计签名。★ 2026-10-20 体检发现：它的 `ok:true` 同时表示「做了且复核干净 / 没事可做 / 路径写错 / 这类符号我不管」——**四种情况输出逐字相同**。",
-          "state": "candidate",
-          "owner": null,
-          "claimed_at": null,
+          "state": "done",
+          "owner": "subagent:codebuddy",
+          "claimed_at": "2026-10-22T04:00:27.167Z",
           "evidence": [
             {
               "kind": "expectations",
@@ -53964,14 +53984,45 @@
               "by": "llm",
               "agent": "workbuddy",
               "verdict": "pass"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-22T04:11:19.783Z",
+              "by": "llm",
+              "agent": "subagent:codebuddy",
+              "fingerprint": {
+                "what": "node .tmp-cert/design-line-gate-cert.mjs ; npm run build ; npm run verify",
+                "input": "83d109ffa8f007e5f8a23bdfe10d800371f936e6",
+                "code": "3e8bd5cb0b9e0de6063d6acf473117614d2875f2",
+                "covers": [
+                  "src/application/design/rewrite/rewrite.ts"
+                ]
+              },
+              "verdict": "pass"
             }
           ],
           "reopened_at": "2026-10-20T06:28:37.778Z",
-          "release_reason": "子代理已结束，释放占用的卡",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T10:49:14.388Z"
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/rewrite/rewrite.ts",
+                "name": "rewriteSymbols",
+                "fp": "bdf042b8c179a88d10980257a5641741454a5f5a"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/rewrite/rewrite.ts",
+                "content_hash": "1eb85b6fae847e87c7bc441767f49985ff30a097"
+              }
+            ],
+            "computed_at": "2026-10-22T04:00:27.126Z",
+            "basis": [
+              "expectations"
+            ]
+          }
         },
-        "status": "draft",
+        "status": "done",
         "decision_history": [
           {
             "at": "2026-10-20T03:31:17.643Z",
@@ -100551,7 +100602,7 @@
         "id": "file_src_application_design_rewrite_rewrite_ts",
         "path": "src/application/design/rewrite/rewrite.ts",
         "responsibility": "⑥ 设计 DB → 源码的编排（清单 → 语法门 → 落盘 → 复核）",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_line_design_diff_ts",
@@ -103880,11 +103931,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T03:24:43.773Z",
+    "saved_at": "2026-10-22T04:11:19.911Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 55960962,
+    "age": 58757100,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -104116,7 +104167,11 @@
           "to": "void",
           "guard": {
             "clauses": [
-              "target 在 DB 查不到（files/edges 任一查无此 target）"
+              "target 在 DB 查不到（files/edges 任一查无此 target）",
+              "★★ 2026-10-22 语义（唯一住处 = 这四条）：void = 「这事**不做了**」（弃做）—— **不是「干完了」**（done），也**不是「放回去」**（release）；收尾只能走 t_done_from_claimed / t_done_from_candidate",
+              "★ 单向闸：**只有 candidate 能进**（claimed 必须先 t_release）—— 理由不是风格：作废一张在办的卡会让「谁领的、干到哪」凭空断掉",
+              "★ 但**不是终态**：void 有且只有一条出边 t_relaunch（void → candidate，reason 必填）⇒ 「弃做」可撤销，而「完成」不能被 void 冒充",
+              "★ 作废的是「这活要做」，不是「这活存在过」：判据住 decision（不随卡走）⇒ void **不改也不删判据**；summary / evidence 保留"
             ],
             "read": "existsTarget(target) === false",
             "distinct_from": "done：『失效』(target 没了) ≠ 『已满足』(expectations 全过)"
@@ -104195,7 +104250,8 @@
               "★ 用户 2026-10-20 裁定：「void 是『这事不做了』，不是『这事不存在过』」⇒ 必须能重新立卡，而不是另开节点",
               "★★ 与 t_reopen 的分界（同一个词的两种活）：t_reopen = done → claimed「接手」（判据不变，原卡继续）；t_relaunch = void → candidate「重新立卡」（判据要重给，卡回到没人领）",
               "reason 必填（为什么重新立卡）—— ★ 无理由的复活等于把「作废」当摆设",
-              "★ 清空 expectations：candidate 的含义是「没人领、判据待 publish 重给」；保留旧判据会让 claim 立刻 satisfied（没活可干）⇒ 与「重新立卡」自相矛盾",
+              "★ 判据不随卡走 ⇒ relaunch **不改也不清**判据（卡上没有 expectations 字段；判据唯一住处 = decision）—— 2026-10-22 更正：旧版这里写「清空 expectations」，与实现不符（卡的副本已于 2026-10-20 删除）",
+              "★ 但 candidate ≠ 没活可干：判据仍全绿时 claim 会判 satisfied ⇒ 拒领；正路是改 decision 再 publish，或 claim 带 intent=modify",
               "★ 判据不在这里重给：relaunch 只把卡放回 candidate，重给判据的唯一入口仍是 publish（从 decision 翻）",
               "★ summary / evidence 保留（「这活存在过」的历史不删）；owner / claimed_at 必须为空（void 只能从 candidate 来，而 candidate 不持 owner）",
               "CAS：state=void 时才写（防并发）"
@@ -105850,20 +105906,62 @@
     {
       "id": "todo_真漏-remove-dead-imports-的写闸没有-actor-参数-实测",
       "summary": "【★ 真漏：remove_dead_imports 的写闸没有 actor 参数】实测：传 actor:\"me\" 去改 owner=alice 的文件 ⇒ 照样落盘成功，回执里连 task_gate 都没有（子代理实测，非推测）。根因：它走 write_gate#snapshotAndRecordSelfWrite（write_gate.ts 内），那条路的闸【连 actor 参数都没有】。同族三条（推测，未实跑）：① design_line action=rewrite → rewriteSymbols → applyRefactorPlan 不传 actor（刚接好的链在这一入口又断）；② rename_symbols 的文件联动内层 renameFile 不传 actor（AGENT_IO_ACTOR_STRICT=1 下会「外层放行、内层拒」自相矛盾）；③ code_workbench 的 renameFile/editCode 三处不传（它经人工 approve 落地，不是 MCP 工具）。★ 正解：让 snapshotAndRecordSelfWrite 也接 actor（判据一处），别再各接一遍。★ 验收：remove_dead_imports 传 actor=me 改 owner=alice 的文件 ⇒ A7 必须拒。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:codebuddy",
+      "claimed_at": "2026-10-22T04:10:38.888Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T04:10:38.855Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T04:11:01.782Z",
+          "by": "llm",
+          "agent": "subagent:codebuddy",
+          "fingerprint": {
+            "what": "node .tmp-cert/remove-dead-imports-gate-cert.mjs   # 仓外夹具：卡 owner=agent:alice，改 src/{a,b,c}.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_断线-apply-refactor-plan-回执不带-task-gate-闸判",
       "summary": "【断线：apply_refactor_plan 回执不带 task_gate】闸判了、豁免了，但 editCode 的 task_gate 在 applyRefactorPlan 这一层被丢 ⇒ 回执 DATA 里只有 ok/plan_id/written/items。★ 做法：照 refactor/gate_note.ts 的 attachGateNote() 接上（判据一处）。★ 另：cli <tool> --schema 不显示 actor（edit_code 也一样，CLI 展示层旧缺口）；MCP tools/list 里有。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:codebuddy",
+      "claimed_at": "2026-10-22T04:10:39.004Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T04:10:38.971Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T04:11:01.901Z",
+          "by": "llm",
+          "agent": "subagent:codebuddy",
+          "fingerprint": {
+            "what": "node .tmp-cert/design-line-gate-cert.mjs ; node certs/t357-pipeline-gate-cert.mjs ; npm run verify",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_写闸覆盖面-6-个入口绕开或丢身份-子代理逐个实测-读码列出-2026-10-2",
       "summary": "【写闸收口 · 写闸是每调用点自觉调，不是唯一通道】\n★ 结构判据：src/ 内对【用户源码路径】的 fs.writeFileSync 只剩 1 处（application/source_writer.ts）；写 .agent-io/ / dist/ / cache.db 的产物写走白名单（白名单本身只住一处）。\n★ 实测底数（2026-10-21）：fs.writeFileSync 97 处（另有 31 处非 fs. 前缀的 writeFileSync，合计 128）· 走 writeSourceFiles( 的只有 2 处（apply_writes.ts:109、rename_symbols.ts:485）· 各自调闸的写路至少 8 条。\n★ 同一 bug 在 4 个文件各修一遍（闸的返回值被丢 ⇒ 闸判了、豁免生效了、回执里一个字都没有）：edit_code.ts:392 / rename_file.ts:100 / rename_files.ts:93 / symbol_move.ts:122 —— 四段几乎相同的注释就是「判据不在唯一通道里」的证据。\n★ 已知 6 个入口（子代理逐个实测/读码，2026-10-20）：① refactor_pipeline（pipeline/refactor_pipeline.ts:632/653）直接 fs.writeFileSync，完全不走闸；② code_workbench（design/workbench/code_workbench.ts:765/784）调 editCode 但不传 actor；③ design_line action=sync-signatures/rewrite（design/rewrite/rewrite.ts:160）调 applyRefactorPlan 不传 actor，且 task_gate 在这一层又丢；④ deprecate_offline（deprecate_offline/deprecate_offline.ts:374）调 removeDeadImportsWithVerify 不传 actor，且会物理删文件；⑤ diagnose / diagnose_loop（infrastructure/analysis/diagnosis/repair.ts:236）直接 fs.writeFileSync；⑥ upgrade apply（authoring/version_upgrade/rewrite.ts:133）直接 fs.writeFileSync。\n★ 验收：① 上面 97 处里，目标路径落在用户源码的归零（只留 source_writer.ts 那一处）；② 产物写全部命中白名单，且白名单外的写被拒；③ 四条重复注释删掉三条（只剩 source_writer 里那一份）；④ 反向对照：新增一个绕过 source_writer 直接写 src/ 的调用，闸必须拒（不是只靠 grep）。",
-      "state": "candidate",
-      "owner": null,
+      "state": "done",
+      "owner": "subagent:codebuddy",
       "history": [
         {
           "at": "2026-10-21T15:09:08.605Z",
@@ -105871,6 +105969,27 @@
           "to": "【写闸收口 · 写闸是每调用点自觉调，不是唯一通道】\n★ 结构判据：src/ 内对【用户源码路径】的 fs.writeFileSync 只剩 1 处（application/source_writer.ts）；写 .agent-io/ / dist/ / cache.db 的产物写走白名单（白名单本身只住一处）。\n★ 实测底数（2026-10-21）：fs.writeFileSync 97 处（另有 31 处非 fs. 前缀的 writeFileSync，合计 128）· 走 writeSourceFiles( 的只有 2 处（apply_writes.ts:109、rename_symbols.ts:485）· 各自调闸的写路至少 8 条。\n★ 同一 bug 在 4 个文件各修一遍（闸的返回值被丢 ⇒ 闸判了、豁免生效了、回执里一个字都没有）：edit_code.ts:392 / rename_file.ts:100 / rename_files.ts:93 / symbol_move.ts:122 —— 四段几乎相同的注释就是「判据不在唯一通道里」的证据。\n★ 已知 6 个入口（子代理逐个实测/读码，2026-10-20）：① refactor_pipeline（pipeline/refactor_pipeline.ts:632/653）直接 fs.writeFileSync，完全不走闸；② code_workbench（design/workbench/code_workbench.ts:765/784）调 editCode 但不传 actor；③ design_line action=sync-signatures/rewrite（design/rewrite/rewrite.ts:160）调 applyRefactorPlan 不传 actor，且 task_gate 在这一层又丢；④ deprecate_offline（deprecate_offline/deprecate_offline.ts:374）调 removeDeadImportsWithVerify 不传 actor，且会物理删文件；⑤ diagnose / diagnose_loop（infrastructure/analysis/diagnosis/repair.ts:236）直接 fs.writeFileSync；⑥ upgrade apply（authoring/version_upgrade/rewrite.ts:133）直接 fs.writeFileSync。\n★ 验收：① 上面 97 处里，目标路径落在用户源码的归零（只留 source_writer.ts 那一处）；② 产物写全部命中白名单，且白名单外的写被拒；③ 四条重复注释删掉三条（只剩 source_writer 里那一份）；④ 反向对照：新增一个绕过 source_writer 直接写 src/ 的调用，闸必须拒（不是只靠 grep）。",
           "reason": "同主题合并：原卡只列 6 个入口，缺「唯一通道」这条结构判据与 97 处直写的底数；补进来后不另建第二张写闸卡",
           "by": "subagent:card-scribe"
+        }
+      ],
+      "claimed_at": "2026-10-22T04:10:38.771Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T04:10:38.730Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T04:11:01.675Z",
+          "by": "llm",
+          "agent": "subagent:codebuddy",
+          "fingerprint": {
+            "what": "node certs/t355-gate-exemption-cert.mjs ; node certs/t357-pipeline-gate-cert.mjs ; node certs/t359-l1-two-rulers-cert.mjs ; npm run verify ; node .tmp-cert/design-line-gate-cert.mjs ; node .tmp-cert/remove-dead-imports-gate-cert.mjs",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
         }
       ]
     },
@@ -105946,14 +106065,58 @@
     {
       "id": "todo_状态机语义-void-是单向闸-不是收尾动作-transitions-里-t-v",
       "summary": "【状态机语义】`void` 是单向闸，不是收尾动作：`TRANSITIONS` 里 `t_void: candidate→void`，claimed 不能直达；void 之后写闸锁死，改一次要 `relaunch → claim` 三步。⇒ 收尾该用 `done`（干完了）或 `release`（放回去），不该用 void（弃做）。要做的：① 写进 README/GUIDE，把三者的语义写死；② 检查有没有别处把 void 当\"完成\"。判据：文档里能一句话分清 done / release / void 的差别，且没有任何流程建议\"用 void 收尾\"。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:void-l1-cards",
+      "claimed_at": "2026-10-22T03:48:05.536Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T03:48:05.502Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "attestation",
+          "at": "2026-10-22T03:48:05.634Z",
+          "by": "llm",
+          "why": "判据①已满足：docs/GUIDE-USAGE.md 新增一句分清 done/release/void（并新增典型流程一行「放弃一个活」），docs/INDEX.md 任务卡行同步；判据②：全仓 docs/src 帮助文本已扫，无任何流程建议用 void 收尾（唯一残留：pool.ts 把 done+void 折叠叫「终态」，仅展示分组、已列入诚实清单）",
+          "agent": "subagent:void-l1-cards",
+          "fingerprint": {
+            "what": "attestation:llm",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_状态机结构-l1-卡挂在两把尺中间-cardstanding-对-expecta",
       "summary": "【状态机结构】L1 卡挂在两把尺中间：`cardStanding` 对 `expectations: []` 必给 `unknowable`，而 `t_claim` 的 guard 逐字要 `isClaimable(cardStanding(card))` ⇒ L1 卡【绕开】它，改走 `isConstructionComplete`（task_ops.ts:762）。⇒ claim 用一把尺、状态判定用另一把；`complete` 侧读哪把【待验】（task_ops.ts:663 注释说\"两侧同源但不同谓词\"）。要做的：先取证 complete 侧到底读什么（运行时打点，别再靠注释），再定是\"统一成一把尺\"还是\"两把尺各自显式命名\"。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:void-l1-cards",
+      "claimed_at": "2026-10-22T03:48:05.754Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T03:48:05.723Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "attestation",
+          "at": "2026-10-22T03:48:05.850Z",
+          "by": "llm",
+          "why": "evidence 取证已完成：certs/t359-l1-two-rulers-cert.mjs 14/14 绿（运行时读数：L1 卡同一时刻 cardStanding=unknowable 但 claim 成功；L1 的 complete 拒因为「L1 建构未完成」= constructionVerdict，而非「可收口性：unknowable」；L2 的 claim/complete 分别为 isClaimable/isSatisfied）；task_ops.ts 里 constructionVerdict 恰 2 处（claim/complete）",
+          "agent": "subagent:void-l1-cards",
+          "fingerprint": {
+            "what": "attestation:llm",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_结构性死锁-edit-code-的-先解析再编辑-是对的-防止在坏树上改-但解析",
@@ -106315,7 +106478,7 @@
       "updated_at": "2026-10-22T02:52:00.638Z"
     }
   ],
-  "_dsl_rev": 1255,
+  "_dsl_rev": 1257,
   "feature_tree": {
     "features": [
       {

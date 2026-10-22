@@ -40,6 +40,7 @@
 |---|---|
 | 改一个函数 | `edit_dsl(op:publish)` → `edit_dsl(op:claim, data.owner)` → `edit_code op=symbol` → `edit_dsl(op:complete, data.evidence)` |
 | 改一张已完成卡的判据 | `edit_dsl(op:reopen)` → 改 `decision` → `edit_dsl(op:publish, data.reason)`（原地换 `summary` + `expectations`，`evidence` 保留） |
+| 放弃一个活（不是干完了） | 干完了 ⇒ `complete`；活还在、现在做不了 ⇒ `release`（回 candidate，别人能领）；永远不做了 ⇒ `void`（`data.reason`）；之后又要做 ⇒ `relaunch`（回 candidate） |
 | 改一处文本（不知符号/行号） | `edit_code op=replace_text dry_run=true` → 同参去掉 `dry_run` |
 | 加一个新文件 | `design_line action=diff` → `get_dsl query=node` → `edit_code op=insert` → `edit_code op=symbol` → `design_line action=sync-signatures apply=true` |
 | 按设计重写一片 | `design_line action=diff` → `get_dsl query=scope scope=<expr>` → 逐节点 claim → `edit_code` → complete |
@@ -54,6 +55,7 @@
 | 交活前 | `npm run verify`（6 道门）+ `npm run certs`（见 `GUIDE-GATE.md`） |
 | 开并行支线 | `git worktree add`（§2.4） |
 
+- **`done` / `release` / `void` 不是同义词**：`done` = 干完了（判据全过 + 证据）· `release` = 放回去（`claimed → candidate`，活还在，别人能领）· `void` = 不做了（`candidate → void`，理由必填，判据/证据保留，可 `relaunch` 复活）。★ 没有任何流程建议"用 void 收尾" —— 「已完成」只能由 `done` 表达，「暂时不做」用 `release`，「永远不做」才是 `void`。
 - **新建文件的设计（T20）**：必须在**同一批** `node.add` 的 `data.decision.expectations` 里带一条 `file-exists` 指向该路径。闸要的是"依据"不是"现状"——新文件没有现状可读，别造空壳骗闸。`delete` 不参与本闸（它断言"不该存在"，不需要现状）。
 - 立卡要早于动手：先做后立卡，判据只剩"注册"能红 ⇒ 卡一出生就 `satisfied`，没有"有活可干"的证据（要改只能 `claim intent=modify` 取写权）。
 

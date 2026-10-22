@@ -286,11 +286,12 @@ export const OP_SPECS: readonly OpSpec[] = [
       '★★ **`state=done` 的卡也能 claim**（2026-10-20）：内部 = `t_reopen` + `t_claim`（一步对外，两步对内）—— ' +
       '① `data.reason` **必填**（为什么又开）；② `intent=modify` 不判判据（取写权），`intent=work` 仍判（没红可修 ⇒ 拒）；' +
       '③ owner **换手**，原 owner 记进 `reopened_from`、理由记进 `reopen_reason`；④ `evidence[]` 逐条保留（上一轮干过什么）。' +
-      '★ `state=void` 不走 claim（判据已作废）⇒ 先 `relaunch` → `publish`（判据重给）→ claim · ' +
+      '★ `state=void` 不走 claim（这活已被宣布**弃做**，判据仍在 decision）⇒ 先 `relaunch`（`data.reason` 必填）回 candidate；判据仍全绿时 claim 要带 `intent:modify`，要重给判据则改 decision 再 `publish` · ' +
       'release:`data.reason`（by 走顶层 `agent`）· ' +
       'complete:`data.evidence`（同一把证据尺；L2 须 isSatisfied，L1 须建构完整）· ' +
       'reopen:`data.owner`+`data.reason`（done→claimed「接手」，**判据不变**，原卡继续；落 `reopen_reason` / `reopened_from`）· ' +
-      'relaunch:`data.reason`（void→candidate「重新立卡」，★ **清空 expectations**、保留 summary/evidence；判据要再用 publish 从 decision 重给 —— 与 reopen 不是一回事）。',
+      'relaunch:`data.reason`（void→candidate「重新立卡」，reason 必填；★ 判据不随卡走（仍在 decision，relaunch **不改也不清**）、summary/evidence 保留 —— 与 reopen 不是一回事）· ' +
+      '★ 三条出口别混：`done`=**干完了**（收口）· `release`=**放回去**（claimed→candidate，活还在）· `void`=**不做了**（candidate→void，弃做）—— ★ **不许用 void 收尾**。',
   },
 ];
 

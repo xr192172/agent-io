@@ -66,7 +66,9 @@ import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, 
 import { designLineHandler } from './line/design_line.js';
 import { genDesignDb } from './db/gen_design_db.js';
 import { rewriteSymbols } from './rewrite/rewrite.js';
+import { gateHumanLines } from '../refactor/gate_note.js';
 import { designDiff } from './line/design_diff.js';
+
 import type { ToolDef } from '../types.js';
 
 export const DESIGN_TOOLS: ToolDef[] = [
@@ -456,7 +458,14 @@ export const DESIGN_TOOLS: ToolDef[] = [
           onlyFile: a.file ? String(a.file) : undefined,
           prefix: a.prefix ? String(a.prefix) : undefined,
           apply: a.apply === true,
+          // ★★★ 2026-10-22（写闸覆盖面 · 第 3 条入口）：身份与授权一路传到底。
+          //   此前这里**没有这两行** ⇒ `rewriteSymbols → applyRefactorPlan → editCode` 那条链
+          //   在最后一跳丢了身份，闸只能看 env（生产面 stdio 没有 env ⇒ 恒不设防）。
+          //   ★ 与其它写工具同一写法：只**交上去**，解释它们的是写闸。
+          actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
+          authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
         });
+
         const L: string[] = [
           `════ SYNC-SIGNATURES（原 REWRITE · 只同步签名，不生成实现）· ${r.feature || '(未指定 feature)'} · ${r.scanned} 份设计 DB ════`,
           '',
@@ -511,6 +520,12 @@ export const DESIGN_TOOLS: ToolDef[] = [
         } else if (r.reason === 'no_diff') {
           L.push('', '  ✓ 比过了：没有签名差异。');
         }
+        // ★★★ 2026-10-22（写闸覆盖面 · 回执线）：闸的读数进**人读消息** ——
+        //   与其它四条写路（edit_code / rename_file / rename_files / symbol_move / apply_refactor_plan）
+        //   同一句话：`gateHumanLines`（不在这里另写渲染）。机器侧字段是 `data.task_gate`（随 `...r` 出去）。
+        const gateLine = gateHumanLines(r.task_gate);
+        if (gateLine) L.push(gateLine);
+
         // ★ `ok` = 「这次调用/这次 apply 有没有失败」。`path_not_found` 是调用方写错了路径 ⇒ 明确 false
         //   （「设计 DB 没副本」「真的没差异」仍是 true：那不是失败，是**世界就是这样**）。
         const ok = r.gate ? false : r.applied ? r.applied.ok : r.reason !== 'path_not_found';

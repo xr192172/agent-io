@@ -45,6 +45,13 @@
  * 裁定实现为「主体显式收口」；同一天新增 `t_relaunch`（`void → candidate`，重新立卡）。
  * ★ 因此**没有真正的终态**了：`done` 能 `t_reopen`、`void` 能 `t_relaunch`。
  *   "这个状态还开着吗"由 `task_schema.ts#isClosedTaskState` 回答（done / void 已了结，不再巡）。
+ *
+ * ★★★ 2026-10-22（三条出口的语义写死，判据在 `TRANSITIONS.t_void` 的 clauses 里）：
+ *   · `done`    = **干完了**（收口：`t_done_from_claimed` / `t_done_from_candidate`，要 isSatisfied + 证据）；
+ *   · `release` = **放回去**（`claimed → candidate`：活还在，别人还能领）；
+ *   · `void`    = **不做了**（弃做：`candidate → void`，理由必填）。
+ *   ⇒ ★ **不许用 `void` 收尾**：它既不是"完成"，也不是"关掉这张卡"的快捷方式 ——
+ *     「已完成」只能由 done 表达，「暂时不做」用 release，「永远不做」才是 void。
  */
 // ★★★ 2026-10-21（D-judge-port）：**不再 import application** —— 判定器收成端口（`./judge_port.js`），
 //   由调用方注入。本文件现在的 import 全在同层：`./expectation.js` / `./judge_port.js` / `./task_schema.js`。
@@ -599,7 +606,13 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     to: 'void',
     state: { kind: 'ready' },
     guard: {
-      clauses: ['target 在 DB 查不到（files / edges 任一查无此 target）'],
+      clauses: [
+        'target 在 DB 查不到（files / edges 任一查无此 target）',
+        '★★ 2026-10-22 语义（唯一住处 = 这四条）：void = 「这事**不做了**」（弃做）—— **不是「干完了」**（done），也**不是「放回去」**（release）；收尾只能走 t_done_from_claimed / t_done_from_candidate',
+        '★ 单向闸：**只有 candidate 能进**（claimed 必须先 t_release）—— 理由不是风格：作废一张在办的卡会让「谁领的、干到哪」凭空断掉',
+        '★ 但**不是终态**：void 有且只有一条出边 t_relaunch（void → candidate，reason 必填）⇒ 「弃做」可撤销，而「完成」不能被 void 冒充',
+        '★ 作废的是「这活要做」，不是「这活存在过」：判据住 decision（不随卡走）⇒ void **不改也不删判据**；summary / evidence 保留',
+      ],
     },
   },
   {

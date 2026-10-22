@@ -3292,9 +3292,22 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "subagent:claimreadset 自 2026-10-21T10:35 领取 op_data_spec.ts 后已交回：本轮 subagent:follows-chain 要改 TYPE_KNOWN_KEYS.todo 与 OP_SPECS.todo",
-          "released_by": "subagent:follows-chain",
-          "released_at": "2026-10-21T13:23:41.599Z"
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/design/dsl_ops/op_data_spec.ts",
+                "content_hash": "09f885faac45b6eb1190c43ad91f99c7dab999af"
+              }
+            ],
+            "computed_at": "2026-10-22T03:40:32.393Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "release_reason": "改 op_data_spec.ts 的 task 帮助文本已完：relaunch「清空 expectations」已改正（判据住 decision），并补「三条出口别混」一句",
+          "released_by": "subagent:void-l1-cards",
+          "released_at": "2026-10-22T03:47:57.522Z"
         },
         "status": "draft"
       },
@@ -3338,9 +3351,22 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "释放 file_src_application_design_dsl_ops_task_ops_ts：本轮活已由子代理完成，build + verify 已验收通过",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-21T02:42:49.281Z"
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/design/dsl_ops/task_ops.ts",
+                "content_hash": "0872e68bc08b794156682d87ca1eef47b2e4e9a3"
+              }
+            ],
+            "computed_at": "2026-10-22T03:40:43.423Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "release_reason": "改 task_ops.ts 的注释已完：relaunchTask 的过期段已改写，claim/complete 两侧尺子已点名（L1=constructionVerdict，L2=cardStanding）",
+          "released_by": "subagent:void-l1-cards",
+          "released_at": "2026-10-22T03:47:57.535Z"
         },
         "status": "draft"
       },
@@ -3400,9 +3426,22 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "释放 file_src_application_design_index_ts：本轮活已由子代理完成，build + verify 已验收通过",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-21T02:42:49.294Z"
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/design/index.ts",
+                "content_hash": "99f122ec754f5f50eedb154d6fbe78f83b8ce753"
+              }
+            ],
+            "computed_at": "2026-10-22T04:00:50.686Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "release_reason": "本轮活已完（src/application/design/index.ts:466-467 传 actor/authorize、:527 gateHumanLines；夹具 15/0），但该节点 L1 建构不完整（无 decision.summary / 0 条后态判据）⇒ 只 release，不冒充 done",
+          "released_by": "subagent:codebuddy",
+          "released_at": "2026-10-22T04:11:21.049Z"
         },
         "status": "draft"
       },
@@ -26336,11 +26375,11 @@
   "annotations": [],
   "_dsl_rev": 180,
   "_sync": {
-    "saved_at": "2026-10-21T19:19:50.203Z",
+    "saved_at": "2026-10-22T04:11:21.055Z",
     "source": "design_sheet",
     "feature": "design-canvas",
     "scanRev": 1792582983534,
-    "age": 27406669,
+    "age": 59297521,
     "dbSchemaVersion": 16
   },
   "todos": []

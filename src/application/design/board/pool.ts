@@ -48,7 +48,9 @@ export interface BoardView {
   /** 展开显示的（= `total - folded`） */
   shown: number;
   /**
-   * 折叠的：**终态**（`done` / `void`）。
+   * 折叠的：**已了结**（`done` / `void`）。
+   * ★ **不是「终态」**（2026-10-22）：`done` 能 `t_reopen`、`void` 能 `t_relaunch` ⇒ 两者都可重新打开；
+   *   折叠只是"默认不占视线"，不表示这张卡不能再动。
    * ★ 折叠不是"看不见"，是"默认不占视线" —— 所以它仍计入 `total`。
    */
   folded: number;
