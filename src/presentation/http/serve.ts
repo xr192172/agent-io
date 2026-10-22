@@ -3012,20 +3012,10 @@ const ROUTES: readonly HttpRoute[] = [
   { path: '/api/load', methods: ['GET'], handler: handleApiLoad },
   // L2881
   { path: '/api/features', methods: ['GET'], handler: handleApiFeatures },
-  // L2886
-  { path: '/api/observe/log', methods: ['GET'], handler: handleApiObserveLog },
-  // L2891
-  { path: '/api/observe/judge', methods: ['POST'], handler: handleApiObserveJudge },
-  // L2896
-  { path: '/api/live/rebuild', methods: ['POST'], handler: handleApiLiveRebuild },
-  // L2901
-  { path: '/api/import', methods: ['POST'], handler: handleApiImport },
   // L2906
   { path: '/api/live', methods: ['GET'], handler: handleApiLive },
   // L2911
   { path: '/api/split_plan', methods: ['POST'], handler: handleApiSplitPlan },
-  // L2916
-  { path: '/api/monolith', methods: ['POST'], handler: handleApiMonolith },
   // L2921
   { path: '/api/reveal-file', methods: ['POST'], handler: handleApiRevealFile },
   // L2926
@@ -3034,14 +3024,6 @@ const ROUTES: readonly HttpRoute[] = [
   { path: '/api/layout/force', methods: ['POST'], handler: (req, res) => handleApiLayout(req, res, 'force') },
   // L2936
   { path: '/api/layout/grid', methods: ['POST'], handler: (req, res) => handleApiLayout(req, res, 'grid') },
-  // L2941
-  { path: '/api/consistency', methods: ['POST'], handler: handleApiConsistency },
-  // L2946
-  { path: '/api/diff-impact', methods: ['POST'], handler: handleApiDiffImpact },
-  // L2951
-  { path: '/api/diff-views', methods: ['POST'], handler: handleApiDiffViews },
-  // L2956
-  { path: '/api/mind-map', methods: ['POST'], handler: handleApiMindMap },
   // L2961  ★ INLINE
   { path: '/api/proposals', methods: ['POST'], handler: (req, res, ctx) => {
       void (async () => {
@@ -3103,12 +3085,6 @@ const ROUTES: readonly HttpRoute[] = [
   { path: '/api/opl', methods: ['POST'], handler: handleApiOpl },
   // L3031
   { path: '/api/mind-map-teach', methods: ['GET'], handler: handleApiMindMapTeachGet },
-  // L3036
-  { path: '/api/mind-map', methods: ['GET'], handler: handleApiMindMapGet },
-  // L3041
-  { path: '/api/arch-layer', methods: ['POST'], handler: handleApiArchLayer },
-  // L3046
-  { path: '/api/guided-tour', methods: ['POST'], handler: handleApiGuidedTour },
   // L3051
   { path: '/api/semantic-search', methods: ['POST'], handler: handleApiSemanticSearch },
   // L3056
@@ -3133,30 +3109,8 @@ const ROUTES: readonly HttpRoute[] = [
   { path: '/api/explain/generate', methods: ['POST'], handler: handleApiExplainGenerate },
   // L3103
   { path: '/api/feature-dsl', methods: ['GET'], handler: handleApiFeatureDsl },
-  // L3108
-  { path: '/api/canvas-notes/digest', methods: ['GET'], handler: handleApiCanvasNotesDigest },
-  // L3113
-  { path: '/api/canvas-notes/status', methods: ['POST'], handler: handleApiCanvasNotesStatus },
-  // L3118
-  { path: '/api/canvas-notes', methods: ['GET'], handler: handleApiCanvasNotesGet },
-  // L3123
-  { path: '/api/canvas-notes', methods: ['POST'], handler: handleApiCanvasNotesSave },
   // L3128
   { path: '/api/feature-meta', methods: ['GET'], handler: handleApiFeatureMeta },
-  // L3133
-  { path: '/api/code/workbench', methods: ['GET'], handler: handleApiCodeWorkbench },
-  // L3138
-  { path: '/api/code/propose', methods: ['POST'], handler: handleApiCodePropose },
-  // L3143
-  { path: '/api/code/approve', methods: ['POST'], handler: handleApiCodeApprove },
-  // L3148
-  { path: '/api/code/reject', methods: ['POST'], handler: handleApiCodeReject },
-  // L3155
-  { path: '/api/observe/proposals/approve', methods: ['POST'], handler: handleApiObserveApprove },
-  // L3160
-  { path: '/api/observe/proposals/reject', methods: ['POST'], handler: handleApiObserveReject },
-  // L3165
-  { path: '/api/observe/proposals', methods: ['GET'], handler: handleApiObserveProposals },
   // L3171
   { path: '/api/gateway', methods: [], handler: (req, res, ctx) => handleApiGateway(req, res, ctx.method, ctx.url) },
   // L3177
@@ -3169,16 +3123,12 @@ const ROUTES: readonly HttpRoute[] = [
     } },
   // L3190
   { path: '/api/trace-exec', methods: ['POST'], handler: handleApiTraceExec },
-  // L3195
-  { path: '/api/chain-recon', methods: ['POST'], handler: handleApiReconcileChain },
   // L3200
   { path: '/api/focus', methods: ['POST'], handler: handleApiFocus },
   // L3205
   { path: '/api/archify-demo', methods: ['POST'], handler: handleApiArchifyDemo },
   // L3210
   { path: '/api/function-outline', methods: ['GET'], handler: handleApiFunctionOutline },
-  // L3214
-  { path: '/api/feature-line', methods: ['GET'], handler: handleApiFeatureLine },
   // L3218  ★ INLINE
   { path: '/api/function-run', methods: ['POST'], handler: (req, res, ctx) => {
       const q = new URL(req.url || '/', 'http://localhost');
