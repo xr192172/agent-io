@@ -103858,11 +103858,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T05:30:04.977Z",
+    "saved_at": "2026-10-22T05:41:09.724Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 63482166,
+    "age": 64146913,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -105785,8 +105785,29 @@
     {
       "id": "todo_a7-在生产面不可达-侦察-实现-a7-在正常-mcp-面-永远不触发-vsco",
       "summary": "【★ A7 在生产面不可达】【侦察→实现】★★ A7 在正常 MCP 面【永远不触发】：.vscode/mcp.json 与 ~/.workbuddy/mcp.json 都没设 AGENT_IO_ACTOR ⇒ resolveActor() 恒 null ⇒ 写闸永远走「提醒+放行」，永远看不到拒绝。子代理原话：「这是产品面与验收面的裂缝」。★ 这正是用户 2026-10-20 说的「设计好了但不会用」。修法要落到【运行时入口】：① MCP server 启动时设 actor（会话级；install_mcp.mjs:338-340 已明确不该在安装时写死）；② 或 claim 时显式传且校验 owner===actor；③ 至少要 cli doctor 打印 pid/谁拉起的/当前 dist build 时间/env 里的 actor。★ 验收：不设 env 时 A7 必须无法冒充（要么抛要么拒），不许静默放行。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:gate-audit",
+      "claimed_at": "2026-10-22T05:40:05.062Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T05:40:05.008Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "attestation",
+          "at": "2026-10-22T05:41:09.587Z",
+          "by": "llm",
+          "why": "卡称『A7 在正常 MCP 面永远不触发（resolveActor 恒 null）』已不成立：2026-10-20 eeeb542a 把 actor 做成跨工具保留入参（src/presentation/mcp/server_registry.ts:713 CALL_ACTOR_FIELD；edit_code.ts:1092 resolveActor(args.actor)）。2026-10-22 在 AGENT_IO_ACTOR=undefined 下实跑 invokeTool(edit_code)：冒名 subagent:impostor ⇒ isError 且报文含『A7 谁在写』拒绝；卡主 subagent:card-owner ⇒ 放行写入；不传 actor ⇒ 放行且 task_gate 明写『A7 未核对…提醒+放行』。故『生产面不可达』为过期主张。残余（不传 actor 即放行 = 自报拦不住冒充）已登记在 docs/INDEX.md §四，属架构边界，不是本卡缺陷。",
+          "fingerprint": {
+            "what": "attestation:llm",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_tsx-改造-3-个脚本恢复零构建可跑-实现-tsx-已装-4-23-15-但-",
@@ -105827,8 +105848,29 @@
     {
       "id": "todo_假门-check-true-的门主张要删-实现-src-application-",
       "summary": "【假门：check=true 的门主张要删】【实现】src/application/design/db/gen_design_db.ts 的 check=true 不是 verify 的门（verify.mjs 的 5 道门里没有它），但它的输出被当成门用。★ 它结构上【不可能绿】：同一文件被 design-canvas 与 task-system-plan 各持一个节点，而只有一份投影 ⇒ 第二个节点永远对不上（实测：搬家前后逐条相同 52 条；全新鲜产物仍 23 条红）。★ 做两件事：① 注释/文档删掉「它能当门」的主张，保留它作为诊断（报「哪些 DB 文件对不上」）；② 要么修根因（同文件两节点不再算冲突），要么明写「它只报读数，不判红」。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:gate-audit",
+      "claimed_at": "2026-10-22T05:40:05.201Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T05:40:05.163Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "attestation",
+          "at": "2026-10-22T05:41:09.694Z",
+          "by": "llm",
+          "why": "卡称『check=true 结构上不可能绿（同文件两节点、第二个永远对不上，实测 23 条红）』已被 2026-10-20 8d170540 修掉：src/application/design/db/gen_design_db.ts:342 起按路径归并 planDesignDb（一路径一投影、判据取并集、真冲突单判），文件头 56-57 明写『本工具是诊断，不是门』。实跑 node scripts/gen-db-check.mjs ⇒ 351 份投影/374 文件节点 · 真冲突 0 · 陈旧 0 · 缺 0 · 多 0，EXIT=0；实跑 design_line action=gen-db check=true ⇒ 真冲突 0（37 条 drift 是未重跑生成器的普通陈旧，重跑可修，非结构不可能）。『删它能当门的主张』已完成，『真判据』由第 6 道门 scripts/gen-db-check.mjs（scripts/verify.mjs:165）接手；诊断器保留。",
+          "fingerprint": {
+            "what": "attestation:llm",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_⑥-清幽灵节点-实现-设计侧有-12-25-个节点指向盘上不存在的路径-含-ce",

@@ -9,7 +9,7 @@
 | A3 | `claim` 是 check-then-act：CAS 判的是开头加载的内存 `card`，不重读盘 ⇒ 并发领同一张卡可互相覆盖 | `task_ops.ts#claimTask` | 未修 |
 | A4 | 证据闸只验形状：`evidence.all_green` 手填即收，从不与判定结果对账 | `overlay.ts#validateProgressEvidence` | 部分 |
 | A5 | L1 卡（0 条期望）恒判 `unknowable` ⇒ 永不进 `missed_close`，巡检看不见"该收口的建构卡" | `task_drift.ts#patrolDrift` | 未修 |
-| A7 | `owner ≠ actor` 默认只提醒 + 放行；`AGENT_IO_ACTOR` 全仓无赋值 ⇒ 阻断面在生产不可达 | `write_gate.ts#resolveActor` | 部分 |
+| A7 | `owner ≠ actor` **只在调用方自报 `actor` 时**才拒（2026-10-22 实测：冒名拒 / 卡主放行）；不传 `actor` ⇒ 提醒 + 放行 ⇒ **自报拦不住冒充** | `write_gate.ts#resolveActor` `server_registry.ts#CALL_ACTOR_FIELD` | 部分 |
 | B1 | 巡检两个计数与设计 DSL 口径不一致：`missed_close` 只报 claimed；`should_void` 混装"卡多余 / 违约 / 节点消失" | `task_drift.ts` | 未修 |
 | B5 | `renderMicro` / `shouldExpand` 在 `src/` 零调用（只有探针调） | `discussion_log.ts` | 未修 |
 | B6 | `edit_dsl` 整批失败只回滚 DSL 字节，不回滚 overlay（进度权威） | `update_feature.ts#restoreRaw` | 未修 |

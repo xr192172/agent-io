@@ -40,7 +40,7 @@
 | 判据两把尺 | **L1 卡**（decision 无 post 判据）：claim / complete 同读 `constructionVerdict`（方向相反：`false` 可领 / `true` 可收口）；**L2 卡**（有 post 判据）：claim 读 `isClaimable(cardStanding)`、complete 读 `isSatisfied`（同一读数、两个谓词）。★ 跨级才是两把尺，各自显式命名、不互相冒充（L1/L2 交接流待裁：`todo_l1-l2-handoff-gap`） | ✅ `certs/t359` |
 | 判据 8 kind | `file-exists` `symbol-exists` `signature-matches` `edge-exists` `edge-absent` `call-exists` `source-has` `run` | ✅ |
 | 写闸 | 改源码须有 claimed 卡；`gate:'exempt'` 的节点免闸 | ✅ 已真拦 |
-| A7 | `owner ≠ actor` ⇒ 拒 | ⚠️ 见 §四 |
+| A7 | 带 `actor` 时 `owner ≠ actor` ⇒ 拒（不传 ⇒ 提醒 + 放行） | ⚠️ 见 §四 |
 | 重写 | `design_line rewrite`：只把源码签名拉回设计签名 | ✅ 不生成实现 |
 | 设计 DB | `gen-db` 从 DSL 派生 344 份 | ✅ 有第 6 道门 `gen-db-check` |
 
