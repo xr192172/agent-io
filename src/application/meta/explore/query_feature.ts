@@ -70,6 +70,9 @@ import { getSimulationState } from '../../design/lifecycle/simulation.js';
 //   ★★ **验收句没被翻成期望 ⇒ 永远不进待办 ⇒ 文件落地了却没人接**。
 //   ⇒ 这条 import + 下面那个 `case 'pool'` 就是把那句话兑成事实。
 import { listPool } from '../../design/board/pool.js';
+// ★ 2026-10-22（D-T8 上架读端）：在挂的卡要报「挂了多久 / 租约过没过」⇒ TTL 取 domain 的唯一那份定义，
+//   本文件不写 2h 这个数（写死一处就等着两处不一致）。
+import { LEASE_TTL_MS } from '../../../domain/task_machine.js';
 import { diffFeatures } from '../../../infrastructure/analysis/impact/diff.js';
 import type { Node, Edge, NodeDecision } from '../../../domain/geometry.js';
 import { resolveDiagramStatus } from '../../../domain/geometry.js';
@@ -1465,6 +1468,17 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       for (const t of cards) if (t.state in byState) byState[t.state]++;
 
       const { entries: tombstones, bad_lines } = readTodoTombstones(feature);
+      // ★★★ 2026-10-22（D-T8 上架读端）：**在挂的卡**要看得见 —— 谁占着 / 挂了多久 / 读集多大。
+      //
+      // ★ 口径**唯一出处** = `board/pool.ts#listPool`（现算、不缓存）：
+      //   ⇒ 本分支**只渲染**，不自己再扫一遍 `geometry.nodes` / `todos` ——
+      //     那会是第二份枚举，而"两半各看不见另一半"正是这张卡要修的病因。
+      // ★★ 为什么必须借池的口径：`todos[]` 里 3 张 claimed，`geometry.nodes[].task` 里另有 3 张
+      //   claimed ⇒ **以前 `query=todo` 一张节点卡都看不见**（"卡挂了看不见"就是这么来的）。
+      const pool = listPool(feature);
+      const claimed = pool.cards.filter((c) => c.state === 'claimed');
+      const ttlH = Math.round(LEASE_TTL_MS / 3.6e6);
+
       const scope =
         want === 'all'
           ? '全部（含已了结）'
@@ -1480,6 +1494,38 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         `  读数：册上共 ${cards.length} 张（活 ${cards.filter((t) => !isClosedTaskState(t.state)).length}` +
           ` · 完成 ${byState.done ?? 0} · 作废 ${byState.void ?? 0}），本次列出 ${picked.length} 张`,
       ];
+
+      // ★★★ 2026-10-22（D-T8）：**在挂的卡**点名（id + owner + 挂了多久 + 读集大小）。
+      // ★ 现算自 `listPool`（上面刚取的那一份）⇒ 释放/删掉一张卡，下一次调用就看不见它（没有缓存，
+      //   所以"两次调用结果必须不同"是可以被实测的）。
+      if (claimed.length === 0) {
+        lines.push(
+          '',
+          `  ★ 在挂的卡：0 张（没有任何卡处于 claimed）· 池里共 ${pool.total} 张` +
+            `（节点卡 ${pool.bySource.node} / todo 卡 ${pool.bySource.todo}）`,
+        );
+      } else {
+        lines.push('', `  ★ 在挂的卡（claimed ${claimed.length} 张 · 现算 · 不缓存）—— 谁占着什么、挂了多久：`);
+        for (const c of claimed) {
+          // ★ 判不了就说判不了（`claimed_at` 缺失/非法 ⇒ age_hours=null）—— 不读成"刚挂上"
+          const age = c.age_hours === null ? '挂了多久**判不了**（claimed_at 缺失或不是合法时间）' : `挂了 ${c.age_hours}h`;
+          const lease = c.overdue ? `⚠ 租约已过期（>${ttlH}h ⇒ 可 claim 接管 / expire 回收）` : `租约未过期（TTL ${ttlH}h）`;
+          const rs = c.read_set
+            ? `读集 ${c.read_set.files} 文件 / ${c.read_set.symbols} 符号（依据 ${c.read_set.basis.join('+') || '空'}）`
+            : '读集（无 —— claim 时没算）';
+          lines.push(
+            `     · [${c.id}] ${c.source === 'node' ? '节点卡' : 'todo 卡'}「${c.label}」` +
+              ` · owner=${c.owner ?? '（空）'} · ${age} · ${lease} · ${rs}`,
+          );
+        }
+        const nodeClaimed = claimed.filter((c) => c.source === 'node').length;
+        if (nodeClaimed > 0) {
+          lines.push(
+            `  ★ 其中 ${nodeClaimed} 张是**节点卡**（住 geometry.nodes[].task，不在 todos[] 里 —— ` +
+              `以前本视图完全看不见它们）。文件占用全景 ⇒ get_dsl query=pool`,
+          );
+        }
+      }
 
       // ★ 有链才提链（没链时不提：免得读者以为漏了什么）
       const multi = [...chains.chains.values()].filter((ids) => ids.length > 1).length;
@@ -1545,6 +1591,20 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           by_state: byState,
           items: picked,
           deleted: tombstones,
+          // ★★★ 2026-10-22（D-T8）：**在挂的卡**的机器可读形态（与上面那段的同一个来源 `listPool`）
+          //   ★ id / owner / 挂了多久 / 读集大小 都在这里 ⇒ 判据 A/B 可以用 JSON 直接比，不用抓文本
+          claimed: claimed.map((c) => ({
+            id: c.id,
+            source: c.source,
+            label: c.label,
+            owner: c.owner,
+            claimed_at: c.claimed_at,
+            age_hours: c.age_hours,
+            overdue: c.overdue,
+            read_set: c.read_set,
+          })),
+          pool_totals: { total: pool.total, by_state: pool.byState, by_source: pool.bySource },
+
           // ★★★ 2026-10-21（跑环继任链）：链的**机器可读**形态 —— 每个环一格，四问逐格回答：
           //   ① follows（上一环）② children（下一环）③ depth / total（第几环 · 共几环）
           //   ④ broken（最近的作废祖先；null = 链没断）。★ 全是**现算**，落盘里只有 follows 一个键。
@@ -1587,7 +1647,7 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       const fold = v.folded > 0 ? `（其中终态折叠 ${v.folded} 张）` : '';
       return {
         message:
-          `任务池：共 ${v.total} 张卡${fold} ⇒ 候选 ${v.byState.candidate} / 已领 ${v.byState.claimed}` +
+          `任务池：共 ${v.total} 张卡（节点卡 ${v.bySource.node} + todo 卡 ${v.bySource.todo}）${fold} ⇒ 候选 ${v.byState.candidate} / 已领 ${v.byState.claimed}` +
           ` / 已完成 ${v.byState.done} / 作废 ${v.byState.void} ${viewTag}`,
         data: v,
       };

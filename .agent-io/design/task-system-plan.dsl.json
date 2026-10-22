@@ -17990,17 +17990,17 @@
             "files": [
               {
                 "path": "src/application/meta/explore/query_feature.ts",
-                "content_hash": "581c83cf5d15f8d1836819dd204effb654783e12"
+                "content_hash": "7425ee5370e82da0e5d390a87d6a572b544c9ddf"
               }
             ],
-            "computed_at": "2026-10-21T13:17:50.681Z",
+            "computed_at": "2026-10-22T14:44:24.073Z",
             "basis": [
               "node-path"
             ]
           },
-          "release_reason": "src/application/meta/explore/query_feature.ts 的链展示已落地，交回候选",
-          "released_by": "subagent:follows-chain",
-          "released_at": "2026-10-21T13:37:59.763Z"
+          "release_reason": "D-T8 接线已落盘并 verify 全绿；本卡要的 DSL 建构（decision + 后态判据）不在本卡范围，交回池里",
+          "released_by": null,
+          "released_at": "2026-10-22T14:56:43.663Z"
         },
         "status": "draft"
       },
@@ -54131,10 +54131,10 @@
         "type": "file",
         "label": "上架读端（待接取池）",
         "path": "src/application/design/board/pool.ts",
-        "status": "draft",
+        "status": "done",
         "decision": {
-          "summary": "把各节点 task 格按 state 收集成\"池\"：一条只读调用就能看到 candidate / claimed / done",
-          "acceptance": "listPool 返回 BoardView{byState,total,folded} 且 shown+folded==total；能经 get_dsl 的查询触达",
+          "summary": "把**所有卡**（geometry.nodes[].task + todos[]）按 state 收成\"池\"，并同时给出**卡的列表**：一条只读调用就能回答「谁占着哪个文件、挂了多久、读集多大」（D-T8：卡挂了看不见）",
+          "acceptance": "listPool 返回 BoardView{byState,total,shown,folded,bySource,cards} 且 shown+folded==total；cards 每张带 id/owner/label/claimed_at/age_hours/overdue/read_set 大小（年龄与过期**现算**、不落盘、不缓存 ⇒ 释放/删掉一张卡，下一次调用必须看不见它）；get_dsl query=todo 的「在挂的卡」段经它点名 claimed 卡（实测：造一张 claimed 卡 ⇒ 点名 + owner + 挂了多久；释放 ⇒ 消失）",
           "provenance": {
             "kind": "friction",
             "where": "docs/_extract/flow-check-1.md 第③步「完全没有读端」+ frictions.jsonl",
@@ -54163,9 +54163,22 @@
               "path": "src/application/design/board/pool.ts",
               "symbol": "ALL_STATES",
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/board/pool.ts",
+              "symbol": "PoolCard",
+              "why": "★ 卡的列表要有具名类型：id/owner/age_hours/read_set 的形状钉在一处，否则读端与渲染端各猜一份"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/meta/explore/query_feature.ts",
+              "symbol": "queryFeature",
+              "target": "listPool",
+              "why": "★ 接线判据（D-T8②）：读端建了必须有人调 —— 摘掉这行调用，query=todo 的「在挂的卡」整段就没了。★ 诚实边界：它是**函数级**判据（queryFeature→listPool），分辨不出是哪个分支调的（另一个分支 query=pool 也调）；分支级由实测 A/B 反证（造 claimed 卡 ⇒ 点名；释放 ⇒ 消失）"
             }
           ],
-          "updated_at": "2026-10-19T01:47:37.698Z",
+          "updated_at": "2026-10-22T14:53:55.381Z",
           "agent": "all-externalize"
         },
         "description": "src/application/design/board/pool.ts",
@@ -54201,14 +54214,153 @@
               ]
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-22T14:53:08.123Z",
+            "decision": {
+              "summary": "把各节点 task 格按 state 收集成\"池\"：一条只读调用就能看到 candidate / claimed / done",
+              "acceptance": "listPool 返回 BoardView{byState,total,folded} 且 shown+folded==total；能经 get_dsl 的查询触达",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/flow-check-1.md 第③步「完全没有读端」+ frictions.jsonl",
+                "note": "★ 今天实测：卡挂了以后只能 node -e 读到 state=candidate，没有任何读端"
+              },
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/board/pool.ts",
+                  "why": "读端要有个家"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/board/pool.ts",
+                  "symbol": "BoardView",
+                  "why": "池的读数是具名类型（不许散装对象 —— 否则又是\"形状没人定\"）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/board/pool.ts",
+                  "symbol": "listPool",
+                  "why": "★ 唯一的读取入口；没有它，pool 就又只能 node -e 看"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/board/pool.ts",
+                  "symbol": "ALL_STATES",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "updated_at": "2026-10-19T01:47:37.698Z",
+              "agent": "all-externalize"
+            },
+            "note": "为 src/application/design/board/pool.ts 加判据：卡的列表要有具名类型（PoolCard），否则「谁占着/挂了多久」又变成散装对象"
+          },
+          {
+            "at": "2026-10-22T14:53:48.173Z",
+            "decision": {
+              "summary": "把各节点 task 格按 state 收集成\"池\"：一条只读调用就能看到 candidate / claimed / done",
+              "acceptance": "listPool 返回 BoardView{byState,total,folded} 且 shown+folded==total；能经 get_dsl 的查询触达",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/flow-check-1.md 第③步「完全没有读端」+ frictions.jsonl",
+                "note": "★ 今天实测：卡挂了以后只能 node -e 读到 state=candidate，没有任何读端"
+              },
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/board/pool.ts",
+                  "why": "读端要有个家"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/board/pool.ts",
+                  "symbol": "BoardView",
+                  "why": "池的读数是具名类型（不许散装对象 —— 否则又是\"形状没人定\"）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/board/pool.ts",
+                  "symbol": "listPool",
+                  "why": "★ 唯一的读取入口；没有它，pool 就又只能 node -e 看"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/board/pool.ts",
+                  "symbol": "ALL_STATES",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/board/pool.ts",
+                  "symbol": "PoolCard",
+                  "why": "★ 卡的列表要有具名类型：id/owner/age_hours/read_set 的形状钉在一处，否则读端与渲染端各猜一份"
+                }
+              ],
+              "updated_at": "2026-10-22T14:53:08.123Z",
+              "agent": "all-externalize"
+            },
+            "note": "为 src/application/meta/explore/query_feature.ts 加接线判据：queryFeature 必须调 listPool（否则 pool.ts 建了没人调）"
+          },
+          {
+            "at": "2026-10-22T14:53:55.381Z",
+            "decision": {
+              "summary": "把各节点 task 格按 state 收集成\"池\"：一条只读调用就能看到 candidate / claimed / done",
+              "acceptance": "listPool 返回 BoardView{byState,total,folded} 且 shown+folded==total；能经 get_dsl 的查询触达",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/flow-check-1.md 第③步「完全没有读端」+ frictions.jsonl",
+                "note": "★ 今天实测：卡挂了以后只能 node -e 读到 state=candidate，没有任何读端"
+              },
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/board/pool.ts",
+                  "why": "读端要有个家"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/board/pool.ts",
+                  "symbol": "BoardView",
+                  "why": "池的读数是具名类型（不许散装对象 —— 否则又是\"形状没人定\"）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/board/pool.ts",
+                  "symbol": "listPool",
+                  "why": "★ 唯一的读取入口；没有它，pool 就又只能 node -e 看"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/board/pool.ts",
+                  "symbol": "ALL_STATES",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/board/pool.ts",
+                  "symbol": "PoolCard",
+                  "why": "★ 卡的列表要有具名类型：id/owner/age_hours/read_set 的形状钉在一处，否则读端与渲染端各猜一份"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "symbol": "queryFeature",
+                  "target": "listPool",
+                  "why": "★ 接线判据（D-T8②）：读端建了必须有人调 —— 摘掉这行调用，query=todo 的「在挂的卡」整段就没了。★ 诚实边界：它是**函数级**判据（queryFeature→listPool），分辨不出是哪个分支调的（另一个分支 query=pool 也调）；分支级由实测 A/B 反证（造 claimed 卡 ⇒ 点名；释放 ⇒ 消失）"
+                }
+              ],
+              "updated_at": "2026-10-22T14:53:48.173Z",
+              "agent": "all-externalize"
+            },
+            "note": "2026-10-22 D-T8 上架读端：原验收只要求 byState 计数 ⇒ 计数回答了\"几张\"，没回答\"是哪几张、谁占的、占多久了\"。本次补 cards（含 todos[] 那 140 张，原先根本不进池）+ bySource，并把接线判据落成 call-exists。"
           }
         ],
         "task": {
           "id": "file_src_application_design_board_pool_ts",
           "summary": "把各节点 task 格按 state 收集成\"池\"：一条只读调用就能看到 candidate / claimed / done",
-          "state": "candidate",
-          "owner": null,
-          "claimed_at": null,
+          "state": "done",
+          "owner": "subagent:deepseek-pool-reader",
+          "claimed_at": "2026-10-22T14:44:18.878Z",
           "read_set": {
             "symbols": [
               {
@@ -54230,17 +54382,31 @@
             "files": [
               {
                 "path": "src/application/design/board/pool.ts",
-                "content_hash": "3483b50bc43fa5d3c2bc7ecce06b6d8a1e9b5285"
+                "content_hash": "8b8c6615dcaa5b8a7384a9c93118976155ecf943"
               }
             ],
-            "computed_at": "2026-10-22T03:50:01.672Z",
+            "computed_at": "2026-10-22T14:44:18.833Z",
             "basis": [
               "expectations"
             ]
           },
-          "release_reason": "pool.ts 的 BoardView.folded 注释已改（「终态」→「已了结」，并注明 t_reopen/t_relaunch 可重开）；仅注释，不动 listPool",
-          "released_by": "subagent:void-l1-cards",
-          "released_at": "2026-10-22T03:50:16.681Z"
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-22T14:54:34.016Z",
+              "by": "llm",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js get_dsl --json {\"feature\":\"task-system-plan\",\"query\":\"todo\"}",
+                "input": "5f35261ce310d9da807dcc67fe1ea8fa13bd37e7",
+                "code": "e6e0951c84773f671b77426546b9f6edbcc57b54",
+                "covers": [
+                  "src/application/design/board/pool.ts",
+                  "src/application/meta/explore/query_feature.ts"
+                ]
+              },
+              "verdict": "pass"
+            }
+          ]
         }
       },
       {
@@ -103871,7 +104037,7 @@
         ],
         "lines": 84,
         "layer": "core",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_board_todo_journal_ts",
@@ -104669,11 +104835,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T14:32:45.221Z",
+    "saved_at": "2026-10-22T14:56:43.702Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 96042410,
+    "age": 97480891,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108547,10 +108713,31 @@
     },
     {
       "type": "todo",
-      "state": "candidate",
+      "state": "done",
       "id": "todo_上架读端-D-T8-pool-ts-未实现-卡挂了看不见-且接入点未定",
       "created_at": "2026-10-22T11:27:31.943Z",
-      "summary": "【来自设计侧自标：`task_plan.service_flow.steps[2].unjudged`】\n> ★★ 上架读端（D-T8）：`src/application/design/board/pool.ts` 未实现 ⇒ 第 3 步没有读端，卡挂了看不见。★★ 且**接入点未定**：要接进 `queryFeature`（`handlers.ts:492 getDslHandler` → …）\n\n★ 为什么它是\"可执行\"而不是\"人工约定\"：「未实现」+「接入点未定」都是可执行的：缺的是代码 + 一个调用点。\n\n★ 判据两条：\n  ① **读端存在且被调**：`get_dsl` 的 `query=todo` 必须走 `pool.ts`，且回执里**看得见 claimed 卡**\n     （今天是\"卡挂了看不见\" —— 实测 `pool.ts` 只统计 state 计数，不列卡）。\n  ② **接入点写死一处**：`handlers.ts#getDslHandler` 是唯一入口（★ 别另开一个 query 分支）。\n★ 验收：造一张 claimed 卡 ⇒ `get_dsl query=todo` 的回执里必须**点名它 + owner + 挂了多久**；\n  删掉那张卡 ⇒ 回执里必须消失（不许缓存）"
+      "summary": "【来自设计侧自标：`task_plan.service_flow.steps[2].unjudged`】\n> ★★ 上架读端（D-T8）：`src/application/design/board/pool.ts` 未实现 ⇒ 第 3 步没有读端，卡挂了看不见。★★ 且**接入点未定**：要接进 `queryFeature`（`handlers.ts:492 getDslHandler` → …）\n\n★ 为什么它是\"可执行\"而不是\"人工约定\"：「未实现」+「接入点未定」都是可执行的：缺的是代码 + 一个调用点。\n\n★ 判据两条：\n  ① **读端存在且被调**：`get_dsl` 的 `query=todo` 必须走 `pool.ts`，且回执里**看得见 claimed 卡**\n     （今天是\"卡挂了看不见\" —— 实测 `pool.ts` 只统计 state 计数，不列卡）。\n  ② **接入点写死一处**：`handlers.ts#getDslHandler` 是唯一入口（★ 别另开一个 query 分支）。\n★ 验收：造一张 claimed 卡 ⇒ `get_dsl query=todo` 的回执里必须**点名它 + owner + 挂了多久**；\n  删掉那张卡 ⇒ 回执里必须消失（不许缓存）",
+      "owner": "subagent:deepseek-pool-reader",
+      "claimed_at": "2026-10-22T14:44:30.579Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T14:44:30.532Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T14:55:02.072Z",
+          "by": "llm",
+          "fingerprint": {
+            "what": "node dist/src/presentation/cli/cli.js get_dsl --json {\"feature\":\"task-system-plan\",\"query\":\"todo\"}",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "type": "todo",
@@ -108648,9 +108835,16 @@
       "summary": "【用户 2026-10-22 两问，都指到真缺口】\n\n## 问 1：「预决策完了，被做成卡了，那不就是完成了吗？为什么不能标完成呢？」\n\n★ 先纠我自己的错：**能标完成**。\n```\n· `{type:'todo', op:'complete'}` ⇒ 报「todo 不支持 complete」（只有 add/link/update/follows/retire/delete）\n· `{type:'task', op:'complete', id:<todo id>}` ⇒ ✅ 可以，但要求 state=claimed（先 claim）\n⇒ todo 卡的 complete 走的是【task 的 op 表】，不是 todo 的\n⇒ 我上一轮用错了 type，于是把 3 张做完的卡误 retire 了（已用 relaunch → claim → complete 改正）\n```\n\n★ **但真缺口在别处**：`publish` 之后 todo 不会自动完成。\n```\ntask_ops.ts:2235 原文：「早先版本会『从 decision 翻判据、建卡、todo 标 done』⇒ 越权（做了落地人 + publish 的活）」\n⇒ 所以「publish 顺带把 todo 标 done」被当成越权删掉了\n⇒ 后果：todo 变成 task 之后，todo 仍是 candidate ⇒ 它会【继续出现在待办池里】，看起来没做\n⇒ 与用户的核心诉求冲突：「被做成卡了 = 完成」——这句话在语义上成立，但系统没落这个账\n```\n\n**判据（下一环）**：\n```\n① publish 成功后，同一 id 的 todo 必须留下【可查的去向】：\n   要么 state → done（完成），要么 data.published_as = <新 task 的节点 id>\n② 反证：publish 一张 todo ⇒ 它不许再出现在 query=todo 的候选里\n③ 不许「自动 done 且不记去向」—— 那只记了结果没记因果，违反「谁、何时、为什么」的 evidence 纪律\n```\n\n## 问 2：「预决策会被推翻，你准备了对应的状态吗？删除啊之类的」\n\n★ **有 `retire`（作废）**，而且是正确的状态：\n```\n· retire：不做了 / 被推翻 ⇒ state=void + retire_reason + retired_at（卡留在册里，不进待办）\n· 状态机：void 只能回 candidate（可用迁移，TRANSITIONS 是唯一住处）\n```\n\n★ **但一个词混了两件事**：\n```\n完成（做完了，产出已交付）  ≠  作废（不做了，被推翻）\n而 todo 的「完成」要走 task.complete，「作废」要走 todo.retire ⇒ 两条路名字不对称，容易走错\n★ 我今天就走过：把 3 张做完的卡用了 retire ⇒ 状态上它们成了「作废」，语义错\n⇒ 判据：todo 也要有自己的 complete（或至少在 retire 的回执里提示「你是想作废还是想标完成」）\n```\n\n## 顺带（skill 该记的）\n```\n★ `type:'todo'` 和 `type:'task'` 的 op 表【不是同一张】：\n   todo: add/link/update/follows/retire/delete\n   task: publish/claim/release/complete/void/reopen/relaunch/renew/expire\n⇒ todo 卡的状态迁移（claim/complete/relaunch）全走 `type:'task'`\n```",
       "state": "candidate",
       "owner": null
+    },
+    {
+      "id": "todo_d-t9-todo-card-read-set-empty",
+      "summary": "【读集】todo 卡 claim 时读集恒空（依据 空）⇒ D-T8 读端只能显示「读集（无）」：实测 9 张 claimed 里 4 张 todo 卡全是空的（claim 节点卡有 node-path 兜底，todo 卡没有）。要做的：todo claim 若带 node_id 就按 node-path 算读集（与节点卡同一条兜底），没有 node_id 就写 read_set.note=「无节点可指」——不许静默空着。判据：claim 一张带 node_id 的 todo ⇒ read_set.files ≥ 1；claim 一张不带 node_id 的 ⇒ read_set.note 非空且回执写明。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_上架读端-D-T8-pool-ts-未实现-卡挂了看不见-且接入点未定"
     }
   ],
-  "_dsl_rev": 1286,
+  "_dsl_rev": 1290,
   "feature_tree": {
     "features": [
       {
