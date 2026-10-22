@@ -493,6 +493,61 @@ export interface LeaseReleaseEvent {
 }
 
 /**
+ * ★★★ **租约时长**（唯一常量 · 2026-10-22 用户裁定）
+ *
+ * ## 用户原话（这是它存在的理由）
+ * *「正常的互联网的租约不是过了一段时间会自己断掉的吗？也就是说 Agent 在对文件不再进行操作的情况下
+ *   租约就应该断了，或者说任务就该自己暂时终止。应该有一个这样的中断机制，熔断机制，
+ *   要不然的话 agent 一直不回报，那岂不是任务一直卡别人的线程」*
+ *
+ * ## 它修的是什么（实测现场）
+ * `releaseIfExpired` 早就写好了（纯函数、判据正确），`scripts/patrol.mjs` 也能跑 ——
+ * 但 **`ttl_ms` 从来没有被定过值**（源码注释写着"取值待裁"），而且 **patrol 不在 `verify` 里**。
+ * ⇒ 2026-10-22 实测：**29 个文件节点被 10~27 小时前的租约锁着**，锁住 `write_gate.ts` /
+ *   `edit_code.ts` / `server_registry.ts` / `index/db.ts` / `parse/kernel.ts` ⇒ **整个仓改不动**。
+ * ⇒ 判据在、参数在、函数在，就是**没人触发**。所以 TTL 必须有**默认值**，且判定要发生在**读写那一刻**，
+ *   不能指望"有人记得跑 patrol"。
+ *
+ * ## 取值 2 小时（可 `AGENT_IO_LEASE_TTL_HOURS` 覆盖）
+ * - 一个 agent 改一个文件**不可能**花 2h（真跑 2h 的那种，应该拆卡而不是续租）；
+ * - 比 24h 灵敏一个数量级：24h 的 TTL 对"10~27h"那批只能抓到最老的几条（等于没修）。
+ * - ★ 取值是**业务决定**，不是代码决定 —— 但"待裁"的代价是**永远不生效**，比一个可能偏保守的值坏得多。
+ */
+export const LEASE_TTL_MS: number = (() => {
+  const raw = Number(process.env.AGENT_IO_LEASE_TTL_HOURS ?? '2');
+  const h = Number.isFinite(raw) && raw > 0 ? raw : 2;
+  return h * 3600_000;
+})();
+
+/**
+ * ★★★ **这张卡的租约过期了吗**（唯一判据 · 2026-10-22）
+ *
+ * ★ 与 `releaseIfExpired` 的分工（别合并、也别各写一份年龄算法）：
+ * - `releaseIfExpired` = **批量的、纯的**事件产出（给 patrol / 报告用，不改 state）；
+ * - 本函数 = **单张卡的、布尔**的判定（给 `claim` 的接管判定、给 A7 的"还算不算被占"用）。
+ * ⇒ 两者用**同一个 `age > ttl` 口径**，只是形状不同；真正的"执行"（改 state）仍然只住在 `task_ops`。
+ *
+ * ## 「判不了就不判」（与 `releaseIfExpired` 同一条纪律）
+ * `state !== 'claimed'` / 缺 `claimed_at` / 时间不合法 ⇒ **false**（不当过期）。
+ * ★ 不把"取不到"读成"没人占" —— 那会让**真正在办**的卡被接管。
+ */
+export function isLeaseExpired(card: TaskSpec, nowMs: number, ttlMs: number = LEASE_TTL_MS): boolean {
+  if (card.state !== 'claimed') return false;
+  if (!card.claimed_at) return false;
+  const claimedMs = Date.parse(card.claimed_at);
+  if (!Number.isFinite(claimedMs)) return false;
+  return nowMs - claimedMs > ttlMs;
+}
+
+/** 租约已挂了多久（小时，1 位小数）；判不了 ⇒ null */
+export function leaseAgeHours(card: TaskSpec, nowMs: number): number | null {
+  if (!card.claimed_at) return null;
+  const t = Date.parse(card.claimed_at);
+  if (!Number.isFinite(t)) return null;
+  return Math.round(((nowMs - t) / 3.6e6) * 10) / 10;
+}
+
+/**
  * ★★ **TTL 超时回收**（设计 DSL：`task_machine` 节点的 `releaseIfExpired`）。
  *
  * ## 为什么非有它不可

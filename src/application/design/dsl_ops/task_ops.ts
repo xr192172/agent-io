@@ -49,7 +49,10 @@ import {
   applicableTransitions,
   cardStanding,
   isClaimable,
+  isLeaseExpired,
   isSatisfied,
+  leaseAgeHours,
+  LEASE_TTL_MS,
   type CardStanding,
   type ClaimIntent,
 } from '../../../domain/task_machine.js';
@@ -869,22 +872,39 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   //   ★ 判据：**重复 claim 不幂等**。claim 是一次**事件**（写 `claimed_at`）—— 放过重领就等于
   //     悄悄**重置租约**：TTL 回收再也看不见“这个人其实已经停了”，`releaseIfExpired` 变成装饰。
   //   ★ 要换读集（这一轮要碰的东西变了）⇒ 先 `release` 再 `claim`：读集**覆盖**重算（不是追加）。
+  /**
+   * ★★★ **接管痕迹**（2026-10-22 · 租约熔断）。
+   * 只有"卡是 claimed 但租约已过期"这一种情况会填；落盘时写进 task，供审计。
+   */
+  let takeover: { from_owner?: string; from_claimed_at: string; age_hours: number | null } | undefined;
   if (card.state === 'claimed') {
-    const alreadyMine = !!card.owner && sameActor(card.owner, owner);
-    throw new Error(
-      `claim 被拒（这张卡**已经在办**）：节点 "${node_id}" 的 state=claimed，` +
-        `owner=${card.owner ?? '（空）'}，claimed_at=${card.claimed_at ?? '（无）'}。\n` +
-        (alreadyMine
-          ? '★ 它**已经在你自己手上** —— 重复 claim **不幂等**：放过它就等于**重置租约**' +
-            '（`claimed_at` 会被刷新，TTL 回收再也看不见真正的停工）。\n' +
-            '★ 怎么办：① 直接干活；② 这一轮**要碰的东西变了**（读集要换）⇒ 先 `release` 再 `claim`，' +
-            '读集会被**重算并覆盖**（不是追加）。\n'
-          : '★ 这是**别人的在办活**（A7：卡不是你的）⇒ 只能等它 `release` / `complete`；' +
-            '抢领会覆盖对方的工作。\n') +
-        '★ 另：`claimed → claimed` 本来就不在迁移表里（唯一住处 `domain/task_machine.ts#TRANSITIONS`）。',
-    );
+    // ★★★ 2026-10-22 用户裁定（熔断）：**租约到期 ⇒ 视为无主，允许接管**。
+    //   用户原话：*「正常的互联网的租约不是过了一段时间会自己断掉的吗？…要不然 agent 一直不回报，
+    //            那岂不是任务一直卡别人的线程」*
+    //   ★ 实测现场：29 个文件节点被 10~27h 前的租约锁着，锁住 write_gate/edit_code/server_registry ⇒ 全仓改不动。
+    //   ★ 纪律：接管**不静默** —— 旧 owner / 旧 claimed_at / 挂了多久，全部写进 task（`taken_over_from`）。
+    const nowMs = Date.now();
+    if (isLeaseExpired(card, nowMs)) {
+      takeover = { from_owner: card.owner ?? undefined, from_claimed_at: card.claimed_at ?? '', age_hours: leaseAgeHours(card, nowMs) };
+    } else {
+      const alreadyMine = !!card.owner && sameActor(card.owner, owner);
+      throw new Error(
+        `claim 被拒（这张卡**已经在办**）：节点 "${node_id}" 的 state=claimed，` +
+          `owner=${card.owner ?? '（空）'}，claimed_at=${card.claimed_at ?? '（无）'}，` +
+          `已挂 ${leaseAgeHours(card, nowMs) ?? '?'}h（租约 ${Math.round(LEASE_TTL_MS / 3.6e6)}h 未到期）。\n` +
+          (alreadyMine
+            ? '★ 它**已经在你自己手上** —— 重复 claim **不幂等**：放过它就等于**重置租约**' +
+              '（`claimed_at` 会被刷新，TTL 回收再也看不见真正的停工）。\n' +
+              '★ 怎么办：① 直接干活；② 这一轮**要碰的东西变了**（读集要换）⇒ 先 `release` 再 `claim`，' +
+              '读集会被**重算并覆盖**（不是追加）。\n'
+            : '★ 这是**别人的在办活**（A7：卡不是你的）⇒ 等它到期（到期后**任何 agent 都能接管**，' +
+              '接管会记 `taken_over_from`），或等它 `release` / `complete`。\n') +
+          '★ 另：`claimed → claimed` 本来就不在迁移表里（唯一住处 `domain/task_machine.ts#TRANSITIONS`）。',
+      );
+    }
   }
-  assertTransition(card.state, 'claimed', 'claim');
+  // ★ 租约已过期的 claimed 卡 ⇒ **语义上等于 candidate**（无主），不按 claimed→claimed 拦
+  if (!takeover) assertTransition(card.state, 'claimed', 'claim');
 
   // ★★ 领取**意图**（2026-10-20）：缺省 `work` ⇒ **老调用方的行为逐字不变**。
   //   ★ 运行期守卫：JSON 里的值不可信（`op_data_spec` 只查"键认不认"，不查枚举）。
@@ -978,13 +998,17 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
 
   // ★ CAS（单写者队列下等价于"读到的还是那张 candidate 卡"）：不满足 ⇒ 拒，不抢别人的领。
   //   ★ 2026-10-20：`done` 走的是**重开**（`t_reopen`），不是"抢别人的在办活"——
-  //     上一轮的 owner 只记进 `reopened_from`，而 `claimed` 仍被这句 CAS 拦死（在办活不可夺）。
-  const casOk = reopening || (card.state === 'candidate' && !card.owner);
+  //     上一轮的 owner 只记进 `reopened_from`。
+  //   ★★★ 2026-10-22（租约熔断）：`takeover` 有值 ⇒ 那张 claimed 卡的**租约已过期** ⇒
+  //     **视为无主**，这一步放行。★ 不这么改，上面分支里写的"允许接管"就是装饰 ——
+  //     真正的门在这里（实测：改完分支仍然被这句 CAS 拦死，是证抓出来的）。
+  const casOk = reopening || !!takeover || (card.state === 'candidate' && !card.owner);
   if (!casOk) {
     throw new Error(
       `claim 被拒（CAS）：节点 "${node_id}" 的任务格已是 state=${card.state} / owner=${JSON.stringify(card.owner ?? null)} —— ` +
         `只在 state=candidate ∧ owner 为空时就地写；state=done 走【重开】（带 reason）；` +
-        `state=claimed 是别人的在办活（先 release，或等它 done）；state=void 先 relaunch。`,
+        `state=claimed 是别人的在办活（★ 租约 ${Math.round(LEASE_TTL_MS / 3.6e6)}h 内不可夺，到期后任何人可接管并记 taken_over_from）；` +
+        `state=void 先 relaunch。`,
     );
   }
 
@@ -1036,6 +1060,8 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     state: 'claimed',
     owner,
     claimed_at: claimedAt,
+    // ★★★ 2026-10-22：**接管痕迹**（只有"上一任租约过期"才有）—— 不静默接手别人的活
+    ...(takeover ? { taken_over_from: takeover } : {}),
     // ★ 读集**覆盖**写回（不是 append）；`undefined` ⇒ 不留下一次 claim 的幽灵占位
     read_set: readSet,
     // ★★ 2026-10-20：`done` 卡的**新账另起** —— 只写这一轮的「从谁手里、为什么开」；
