@@ -238,17 +238,34 @@ export function setNodeSemantic(input: SetNodeSemanticInput): EditResult {
   //   · 进度有唯一权威（`overlay` 锚点的 `progress`），base 上两份都只是 `applyOverlay` 的**投影**；
   //   · 而文件节点在 `geometry.nodes` 与 `semantic.files` 里**共用同一个 id**（同一锚点）⇒ 一次投影两处，
   //     手写同步 = **第二处判据**（会漂移，且会经 `seedOverlayFromDsl` 把非投影值灌回 `progress`、**绕过 evidence 闸**）。
-  //   ★ 行为变化：`node_id` 与 `file_id` **不同 id** 时不再被强制对齐（各自投影各自的 `progress`）—— 见本次报告。
 
-  saveDSL(dsl);
+  // ★★★ 2026-10-22（api_setNodeSemantic-dumbwrite）：**T328 之后这个函数什么都不改，却回执"已绑定"** ——
+  //   即"只 `saveDSL(dsl)` 的哑写"：调用方以为它在写，其实一个字段都没变（而且白写了一遍盘、`_sync` 元数据还前进了）。
+  //   ## 为什么"没有可改的字段"不是漏改，而是**结构使然**
+  //   `SemanticFile.id` 的定义就是「与 `geometry.nodes.id` 对应」（`domain/semantic.ts`），
+  //   绑定**不是**一个字段，而是**两者共用同一个 id** 这件事本身 ⇒ 没有第三处位置可写
+  //   （再写一个 `node.semantic_file_id` = 同一件事住两处 = 本仓头号病：第二份判据）。
+  //   ## 所以这一档的正确形状：**要么无话可说就别写盘，要么当场拒**
+  if (node_id !== file_id) {
+    throw new Error(
+      `拒绝绑定：节点 "${node_id}" 与文件 "${file_id}" **不是同一个 id**。\n` +
+        '★ 语义层与几何层是**按 id 相等**绑定的（`SemanticFile.id` 的定义：「与 geometry.nodes.id 对应」）' +
+        '⇒ 两个不同 id 之间**没有**可写的绑定字段，写下去只能是一条"看起来绑了其实没绑"的记录。\n' +
+        '★ 怎么办：① 要给这个节点补语义 ⇒ 用 `edit_dsl` 的 `file op=update`，`id` 填**这个节点 id**' +
+        '（语义记录的 id 必须就是节点 id）；② 若这是两条不同的东西 ⇒ 它们本来就是两个节点，不需要"绑"。',
+    );
+  }
 
+  // ★ **不写盘**：`node_id === file_id` 时"绑定"已经成立（同一 id），本次调用**没有任何字段要改** ——
+  //   空写一遍盘会让 `_sync` 元数据前进（"改了但没改"），那正是本卡要拆的哑写。
   return {
     message: [
-      `已绑定节点 "${node_id}" 与文件 "${file_id}"`,
+      `节点 "${node_id}" 与语义文件 "${file_id}" **本来就是同一个 id** ⇒ 绑定已成立（SemanticFile.id === geometry.nodes.id），**无字段可改**`,
       `节点标签: ${node.label}`,
       `文件路径: ${file.path}`,
-      // ★ T328：不再同步 ⇒ 这里读的是 base 上的**投影值**（不是被本 op 改出来的）。
+      // ★ T328：读的是 base 上的**投影值**（不是被本 op 改出来的）。
       sync_status ? `状态（读 base 投影）: ${node.status ?? '-'}` : '状态不同步',
+      '★ 本次**没有写盘**（哑写已拆）：要改语义内容请用 file op=update，要改进度请用 status op=update（带 evidence）。',
     ].join('\n'),
     feature,
   };

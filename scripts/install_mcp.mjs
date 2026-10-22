@@ -23,6 +23,7 @@
  *   windsurf ~/.codeium/windsurf/mcp_config.json(Windsurf 用户级)
  *   cline    ~/.cline/mcp_settings.json         (Cline 扩展)
  *   trae     <root>/.trae/mcp.json              (TRAE 项目级 MCP，需在设置中开启「启用项目级 MCP」)
+ *   workbuddy ~/.workbuddy/mcp.json             (WorkBuddy 用户级 —— ★ 本机**真正在用**的那一份)
  *
  * 安全：所有写入前备份原文件为 <file>.agent-io.bak；合并时保留已有其他 server；
  *      配置文件 JSON 解析失败时**不静默覆盖**。
@@ -320,6 +321,21 @@ const PLATFORMS = [
     // 用 ${workspaceFolder} 相对项目根：git worktree / 目录迁移时仍指向当前项目 dist
     args: [`${WF}/dist/src/presentation/mcp/server.js`],
   },
+  // ★★★ 2026-10-22（install-mcp-no-workbuddy）：**WorkBuddy** —— 上面 9 个平台里没有它，
+  //   而本机**真正在用的**恰恰是这一份（`~/.workbuddy/mcp.json`）。
+  //   ⇒ 注册脚本管不到它 ⇒ 自动保鲜的两个 env（`AGENT_IO_AUTO_WATCH` / `AGENT_IO_PROJECT_DIR`）
+  //     只能靠**手改**才生效；换项目 / 重装又漏（这正是本卡要补的那一格）。
+  //   ★ `probe` 用**目录**而不是配置文件：装了 WorkBuddy 就一定有 `~/.workbuddy/`，
+  //     而 `mcp.json` 本身可能还没建 —— 那一态是 `missing`（待创建），正是首次该做的事。
+  {
+    name: 'workbuddy',
+    label: 'WorkBuddy（桌面端）',
+    configPath: path.join(HOME, '.workbuddy', 'mcp.json'),
+    kind: 'json',
+    keyPath: 'mcpServers',
+    serverKey: 'agent-io',
+    probe: [path.join(HOME, '.workbuddy')],
+  },
 ];
 
 const baseServerValue = {
@@ -396,7 +412,12 @@ function sameServer(cur, want) {
   const ka = Object.keys(ea).sort();
   const kb = Object.keys(eb).sort();
   if (ka.length !== kb.length || ka.some((k, i) => k !== kb[i])) return false;
-  return ka.every((k) => String(ea[k]) === String(eb[k]));
+  // ★★★ 2026-10-22（install-mcp-no-workbuddy）：**路径类 env 归一后再比** ——
+  //   同一条路径的两种写法（反斜杠 / 正斜杠）是**同一个目录**；不归一 ⇒ 每次都被判 `stale` 并重写一遍
+  //   （本仓真实现场：`~/.workbuddy/mcp.json` 里是正斜杠，而脚本给的是 `process.cwd()` 的反斜杠）。
+  //   ★ `args` 那条早就走 `normForCompare` 了（见 `sameServer` 上面），env 这条漏了同一步。
+  //   ★ 归一**不会**把"不同的目录"变相等：`normForCompare` 只把 ROOT 的两种写法折成 `${workspaceFolder}`。
+  return ka.every((k) => normForCompare(ea[k]) === normForCompare(eb[k]));
 }
 
 /** 该 client 是否已安装（`probe == null` = 项目级配置 ⇒ 恒真） */

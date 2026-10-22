@@ -1470,7 +1470,17 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   let legacy: ReturnType<typeof updateStatus> | null = null;
   if (!isTodo) {
     try {
-      legacy = updateStatus({ feature, node_id, status: 'done', evidence });
+      /**
+       * ★★★ 2026-10-22（reopen-evidence-deadlock）：**把"这条证据已过 reopenGate"这件事交给投影端**。
+       *
+       * 走到这里时：① `isSatisfied` / `constructionVerdict` 已经跑过并全过（上面的 L1/L2 两支）；
+       * ② `reopenGate` 已放行（重开过的卡 ⇒ 这条证据的 `at` ≥ `reopened_at`）
+       * ⇒ 锚点上那条更老的 `expectations` 证据**不该**把这次收口噎死（那正是本卡修的死锁），
+       * 但它也**不该被覆盖**（机器判据比口供强）—— 这两件都在 `updateStatus` 里按这个标记办。
+       * ★ 反过来说：手工 `edit_dsl {type:'status'}` **传不进这个标记**（`update_feature.ts` 逐字段构造）
+       *   ⇒ "点一下 done"那条路的闸**没松**。
+       */
+      legacy = updateStatus({ feature, node_id, status: 'done', evidence, evidenceClearedBy: 'task-complete' });
     } catch (e) {
       // ★ 失败 ⇒ 把调用前的字节写回（否则"状态已变 done、调用报错"）
       if (rawBeforeComplete !== null) fs.writeFileSync(designFileForRollback, rawBeforeComplete, 'utf-8');

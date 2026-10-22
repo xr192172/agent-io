@@ -241,7 +241,17 @@ const nothingHit = expHits.length === 0 && certHits.length === 0;
 if (JSON_OUT) {
   console.log(JSON.stringify({
     changed,
-    expectations: expHits.map((h) => ({ node_id: h.node_id, kind: h.expectation.kind, paths: h.paths, text: h.text })),
+    // ★★★ 2026-10-22（t354 剩余缺口②）：**补 `why`** —— 它是每条契约唯一的人话摘要
+    //   （`text` 只是"kind + 路径 + 符号"的形状描述，读不出"为什么要有这一条"）。
+    //   ★ t354 的断言要"每条都带 node_id + **摘要** + path"，而旧输出里根本没有摘要 —— 那不是断言太严，
+    //     是**输出缺一列**（补输出，不是把断言改松）。
+    expectations: expHits.map((h) => ({
+      node_id: h.node_id,
+      kind: h.expectation.kind,
+      paths: h.paths,
+      text: h.text,
+      why: typeof h.expectation.why === 'string' ? h.expectation.why : '',
+    })),
     certs: certHits.map((c) => ({ file: c.file, touches: c.touches })),
     ran: {
       certs: certRuns.map((r) => ({ file: r.file, rc: r.rc, pass: r.pass, fail: r.fail, kind: r.kind, ms: r.ms })),
@@ -269,7 +279,11 @@ console.log(`\n★ 改动文件：${changed.length} 个`);
 for (const f of changed) console.log(`   · ${f}`);
 
 console.log(`\n★ 命中契约：${expHits.length} 条期望`);
-for (const h of expHits) console.log(`   · ${h.node_id}  ←  ${h.text}   [path: ${h.paths.join(' , ')}]`);
+for (const h of expHits) {
+  console.log(`   · ${h.node_id}  ←  ${h.text}   [path: ${h.paths.join(' , ')}]`);
+  // ★ 摘要另起一行：它是给人判断"这条契约该不该改"用的，挤在同行会把路径挤没
+  if (typeof h.expectation.why === 'string' && h.expectation.why.trim()) console.log(`       摘要：${h.expectation.why}`);
+}
 if (expHits.length === 0) console.log('   （无：没有任何 expectation 的 path 命中改动文件）');
 
 console.log(`\n★ 命中证：${certHits.length} 张`);

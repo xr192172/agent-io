@@ -53,6 +53,27 @@ export interface UpdateStatusInput {
    * `attestation` 的 `source_node_id` 由本写端**自动填**，调用方**不传**（传了也被覆盖）。
    */
   evidence?: ProgressEvidence;
+  /**
+   * ★★★ 2026-10-22（reopen-evidence-deadlock）：**"这条证据已由上层收口链判过"** 的显式标记。
+   *
+   * ## 它解的是哪个死锁（实跑读数，不是推测）
+   * `done → claim(intent:'modify')`（内部 = `t_reopen`，落 `reopened_at`）之后想再收口：
+   *   · 用 `expectations` ⇒ 被 `task_ops#reopenGate` 拒（"没有时间戳 = 旧判据再跑一遍 = 白洞"）；
+   *   · 用 `attestation`  ⇒ 被**本文件**下面那条闸拒（"已有机器判据的锚点不许用口供覆盖"）；
+   * ⇒ 两条闸单独都对，合起来把"重开后判据没换"这一类卡**钉死**（只有 `reading` 能同时过）。
+   * ## 为什么可以放行（而不是把闸拆了）
+   * 这两个判据问的是**不同的问题**：`reopenGate` 问"这条证据是不是**新的**"，
+   * 本文件那条问"这条口供会不会**盖掉**更强的机器判据"。而 `completeTask` 走到 `updateStatus` 时，
+   * **机器判据刚刚跑过并且全过**（`isSatisfied` / `constructionVerdict` 都在它前面），
+   * 且（重开过的卡）新证据的 `at` 已由 `reopenGate` 核过 ≥ `reopened_at`。
+   * ⇒ 这一刻"口供"不是替代判据，而是**给这次收口署名**（谁/何时/为什么）。
+   * ## 边界（★ 别越界，越界就是把洞挖回来）
+   * · 只有 `task_ops#completeTask` 传它（过完 `reopenGate` 之后）；
+   * · **公开入口传不进来**：`edit_dsl {type:'status'}` 只转 `status` / `evidence`（`update_feature.ts` 逐字段构造）
+   *   ⇒ 手工"点一下 done"那条路**一个字都没松**；
+   * · 锚点上原有的 `expectations` 证据**不覆盖**（它更强）—— 本文件只在 `task.evidence` 里记这次口供。
+   */
+  evidenceClearedBy?: 'task-complete';
 }
 
 export interface StatusResult {
@@ -96,7 +117,11 @@ export function updateStatus(input: UpdateStatusInput): StatusResult {
   // ★★★ T333（2026-10-15）：**`attestation` 与已有机器判据互斥** —— 同一锚点**已存在**
   //   `progress_evidence.kind === 'expectations'`（机器可跑的判据）时，**不许**用 `attestation`（口供）覆盖它。
   //   ★ 只在"**已经**存在 expectations"时禁 ⇒ **不影响任何没有机器判据的场景**（那是 attestation 的本职）。
-  if (evidence?.kind === 'attestation' && prev?.progress_evidence?.kind === 'expectations') {
+  if (
+    evidence?.kind === 'attestation' &&
+    prev?.progress_evidence?.kind === 'expectations' &&
+    input.evidenceClearedBy !== 'task-complete' // ★ 见 UpdateStatusInput.evidenceClearedBy（重开后的收口走这条）
+  ) {
     throw new Error(
       `拒绝：节点 "${node_id}" **已有机器判据**（progress_evidence.kind='expectations'）` +
         ` ⇒ **不许用 \`attestation\`（口供）覆盖** —— **有机器可跑的判据就别用口供**。\n` +
@@ -115,8 +140,21 @@ export function updateStatus(input: UpdateStatusInput): StatusResult {
     ...(prev ?? { path: cand?.path ?? semFile!.path, kind: cand?.kind ?? 'file' }),
   };
   anchor.progress = status;
-  if (evidence) anchor.progress_evidence = evidence;
-  else delete anchor.progress_evidence;
+  /**
+   * ★ 2026-10-22：机器判据**比口供强** ⇒ 两者同时存在时**保留机器判据**，口供不覆盖。
+   * （调用方已经在 `task.evidence` 里留了这条口供 —— 见 `task_ops#completeTask` 的 append。）
+   */
+  const keptMachineJudge = evidence?.kind === 'attestation' && prev?.progress_evidence?.kind === 'expectations';
+  if (keptMachineJudge) {
+    // ★ **什么都不做** ⇒ 锚点原样留着那条更老的 `expectations`（它比口供强）。
+    //   ★★ 这一支**必须单独写**：写成 `if (evidence && !kept) … else delete …` 时，
+    //   `kept === true` 会掉进 `else` 去**删证据** —— 2026-10-22 第一版就是这样，
+    //   被 t363 的 ③'' 当场抓住（"锚点仍是 expectations" 报 undefined）。别把它合回去。
+  } else if (evidence) {
+    anchor.progress_evidence = evidence;
+  } else {
+    delete anchor.progress_evidence;
+  }
   const next: DesignOverlay = { ...ov, anchors: { ...ov.anchors, [node_id]: anchor } };
   saveOverlay(next);
 
@@ -127,10 +165,16 @@ export function updateStatus(input: UpdateStatusInput): StatusResult {
   const statusLabel = { draft: '待实现', in_progress: '实现中', done: '已完成' }[status];
   return {
     message: [
-      `已更新节点状态: ${node_id} → ${statusLabel}`,
+      // ★★ 2026-10-22：`complete` 的回执**只取这一行**（`task_ops` 的 `legacy.message.split('\n')[0]`）
+      //   ⇒ "机器判据被保留"这件事**必须写在首行**，写在下面几行等于没说（t363 的 ③''' 就是钉这个的）。
+      `已更新节点状态: ${node_id} → ${statusLabel}` +
+        (keptMachineJudge ? `（★ 锚点上的机器判据**被保留**，这次口供只进 task.evidence）` : ''),
       // ★ T328：`dsl.status` 不再落库（派生值）⇒ 这里**现算**一个给回执，不写盘。
       `feature 整体状态: ${computeFeatureStatus(applied.geometry.nodes)}`,
       `★ 权威已写进 overlay 的锚点 progress（base 上的是投影）` +
+        (keptMachineJudge
+          ? `；★ 锚点上原有的机器判据（kind='expectations'）**被保留**（它比口供强）—— 这次的口供只落在 task.evidence`
+          : '') +
         (status === 'done' ? `；证据 kind=${evidence!.kind}` : ''),
     ].join('\n'),
     feature,

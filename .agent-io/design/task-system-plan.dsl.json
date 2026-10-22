@@ -3324,7 +3324,64 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "task": {
+          "id": "file_scripts_hook-task-gate_mjs",
+          "summary": "【L1 待建构】核心层 · scripts — 2 个 API（导入自 2 个模块）（scripts/hook-task-gate.mjs） ← 节点 file_scripts_hook-task-gate_mjs",
+          "state": "done",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_scripts_hook-task-gate_mjs\"].responsibility"
+          },
+          "owner": "subagent:deepseek-fix5",
+          "claimed_at": "2026-10-22T07:19:10.810Z",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "scripts/hook-task-gate.mjs",
+                "content_hash": "c5b11487b7ac894ee2018af8bcb2053a065f1297"
+              }
+            ],
+            "computed_at": "2026-10-22T07:19:10.769Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-22T07:45:18.529Z",
+              "by": "llm",
+              "agent": "subagent:deepseek-fix5",
+              "fingerprint": {
+                "what": "node certs/t361-hook-task-gate-cert.mjs; node scripts/verify-changed.mjs scripts/hook-task-gate.mjs",
+                "input": "af070782cd1a52b97c76c44afb715ca2e5cb708c",
+                "code": "cbdd57713a020ad708da5c58d580043fec4b9e4f",
+                "covers": [
+                  "scripts/hook-task-gate.mjs"
+                ]
+              },
+              "verdict": "pass"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "写文件前的**会话级提醒**（每会话每文件一次，永远 exit 0）：回答\"这一步在不在账上\"。★ 判据**一律读** `write_gate#collectGateCoverage`（路径口径、节点表、豁免声明三样都在那里）—— 不许自己再建一张 `path → 节点` 表（第二份判据必漂移）；读不到 dist 要**明说**\"闸自己跑不了\"，不许静默放行。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "scripts/hook-task-gate.mjs",
+              "must": [
+                "collectGateCoverage",
+                "rootFeatureCount"
+              ],
+              "why": "★ 2026-10-22 实测：它曾读 `docs/task-system-plan.dsl.json`（2026-10-18 已废弃 + 进 .gitignore）且只认 `x.path`（650 个节点里只有 8 个有 path）⇒ 双重恒 0 命中，**一次都没提醒过**。`collectGateCoverage` = 判据只住一处的接线；`rootFeatureCount` = \"这个根不归本册管就别响\"。"
+            }
+          ],
+          "updated_at": "2026-10-22T07:38:10.089Z",
+          "agent": "subagent:deepseek-fix5"
+        }
       },
       {
         "id": "file_scripts_hub_mjs",
@@ -3375,7 +3432,64 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "task": {
+          "id": "file_scripts_install_mcp_mjs",
+          "summary": "【L1 待建构】核心层 · scripts — 24 个 API（导入自 4 个模块）（scripts/install_mcp.mjs） ← 节点 file_scripts_install_mcp_mjs",
+          "state": "done",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_scripts_install_mcp_mjs\"].responsibility"
+          },
+          "owner": "subagent:deepseek-fix5",
+          "claimed_at": "2026-10-22T07:19:12.149Z",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "scripts/install_mcp.mjs",
+                "content_hash": "4c4b7df61d5497c5591c2c0a58213585a69352ed"
+              }
+            ],
+            "computed_at": "2026-10-22T07:19:12.108Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-22T07:45:20.034Z",
+              "by": "llm",
+              "agent": "subagent:deepseek-fix5",
+              "fingerprint": {
+                "what": "node certs/t362-install-mcp-workbuddy-cert.mjs",
+                "input": "f401fb186fb0a16982c844add16abc58c434d41c",
+                "code": "6cf0639699a1c110ef3a4f56e0019f512c338cfc",
+                "covers": [
+                  "scripts/install_mcp.mjs"
+                ]
+              },
+              "verdict": "pass"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "把 agent-io 的 MCP server 块写进各 client 的配置（含\"注册即保鲜\"的三个 env），并**只为已安装的 client** 写、**换名即清旧键**、**陈旧条目会检出并修**。★ 平台清单必须覆盖**真正在用的** client —— 漏一个，那份配置就只能靠手改。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "scripts/install_mcp.mjs",
+              "must": [
+                "'.workbuddy'",
+                "AGENT_IO_AUTO_WATCH"
+              ],
+              "why": "★ 2026-10-22 实测：9 个平台里**没有 WorkBuddy**，而 `~/.workbuddy/mcp.json` 是本机真正在用的那份⇒ 自动保鲜的两个 env 只能手改，换项目/重装就漏（漏了不报错，只是索引不再保鲜）。`'.workbuddy'` = 那一项还在；`AGENT_IO_AUTO_WATCH` = 保鲜开关还写着。"
+            }
+          ],
+          "updated_at": "2026-10-22T07:38:11.372Z",
+          "agent": "subagent:deepseek-fix5"
+        }
       },
       {
         "id": "file_scripts_mcp_mcp_call_mjs",
@@ -3868,7 +3982,63 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "task": {
+          "id": "file_scripts_verify-changed_mjs",
+          "summary": "【L1 待建构】核心层 · scripts — 7 个 API（导入自 4 个模块）（scripts/verify-changed.mjs） ← 节点 file_scripts_verify-changed_mjs",
+          "state": "done",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_scripts_verify-changed_mjs\"].responsibility"
+          },
+          "owner": "subagent:deepseek-fix5",
+          "claimed_at": "2026-10-22T07:19:13.489Z",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "scripts/verify-changed.mjs",
+                "content_hash": "ae4387e33a0f42ae3674fe78481b177a2d2146cd"
+              }
+            ],
+            "computed_at": "2026-10-22T07:19:13.448Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-22T07:45:21.571Z",
+              "by": "llm",
+              "agent": "subagent:deepseek-fix5",
+              "fingerprint": {
+                "what": "node certs/t354-incremental-verify-cert.mjs",
+                "input": "80bc68dde54e0f138e04edf381dad74c27b0fa4a",
+                "code": "b35266f07d516278df1acc0a065f895f6af73b22",
+                "covers": [
+                  "scripts/verify-changed.mjs"
+                ]
+              },
+              "verdict": "pass"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "**增量验证入口**（改哪跑哪）：① 契约 `path` 命中改动文件 ⇒ 就地判；② 证的 `touches:` 命中 ⇒ 只跑那几张证。★ 设计册的**唯一位置**是 `.agent-io/design/`；命中 0 条**不等于绿**（那是\"没验\"），必须打在结论行上。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "scripts/verify-changed.mjs",
+              "must": [
+                ".agent-io/design/task-system-plan.dsl.json"
+              ],
+              "why": "★ 2026-10-22 实测：它原先读 `docs/task-system-plan.dsl.json` —— 那位置 2026-10-18 就废弃了且进了 .gitignore ⇒ `plan=null` ⇒ ②②'⑤'⑥' **四条变成空断言**（\"通过\"不是因为对，是因为没东西可判）。改对后 t354：PASS 10→12 / FAIL 4→2。"
+            }
+          ],
+          "updated_at": "2026-10-22T07:38:12.622Z",
+          "agent": "subagent:deepseek-fix5"
+        }
       },
       {
         "id": "file_scripts_verify_mjs",
@@ -5015,14 +5185,97 @@
         "task": {
           "id": "file_src_application_design_dsl_ops_api_ops_ts",
           "summary": "DSL 的【文件契约】写入原语：`expected_apis` 的增 / 改 / 删（按签名逐字匹配）、`setExpectedApis`（整块重写，T160）与 `setNodeSemantic`（节点↔文件绑定）。★ 它只维护\"这个文件对外**承诺**哪些签名\"这一张清单：**不判签名写得对不对**（tsc 契约的事）、**不判实现有没有**（对拍的事）、**不写进度**（T328 后 `setNodeSemantic` 不再同步 status，进度归 `overlay.progress`）。",
-          "state": "candidate",
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已完成，交回候选池",
-          "released_by": "deepseek-v4.1-flash",
-          "released_at": "2026-10-20T10:26:32.098Z"
+          "state": "done",
+          "owner": "subagent:deepseek-fix5",
+          "claimed_at": "2026-10-22T07:19:17.961Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/dsl_ops/api_ops.ts",
+                "name": "AddExpectedApiInput",
+                "fp": "3574dc4f652d0c93897c827c9706d6b61d4dd0ce"
+              },
+              {
+                "file": "src/application/design/dsl_ops/api_ops.ts",
+                "name": "DeleteExpectedApiInput",
+                "fp": "352773c594f653d440b5658549b6949925da81c8"
+              },
+              {
+                "file": "src/application/design/dsl_ops/api_ops.ts",
+                "name": "SetExpectedApisData",
+                "fp": "caa7cab4bc95d34013b91e59c0e00a3d6bd69973"
+              },
+              {
+                "file": "src/application/design/dsl_ops/api_ops.ts",
+                "name": "SetExpectedApisInput",
+                "fp": "21d8908f6cbbaaa9810ddbc26e44004700b64ad6"
+              },
+              {
+                "file": "src/application/design/dsl_ops/api_ops.ts",
+                "name": "SetNodeSemanticInput",
+                "fp": "d0142a060cf5e8f1254924a492d30832832289c8"
+              },
+              {
+                "file": "src/application/design/dsl_ops/api_ops.ts",
+                "name": "UpdateExpectedApiInput",
+                "fp": "244b18d03ab9c3591dee6b89379c11f968dbd4d2"
+              },
+              {
+                "file": "src/application/design/dsl_ops/api_ops.ts",
+                "name": "addExpectedApi",
+                "fp": "112082ec9844cbf70103aa1cf1c13d0453ed6e9d"
+              },
+              {
+                "file": "src/application/design/dsl_ops/api_ops.ts",
+                "name": "deleteExpectedApi",
+                "fp": "5d273f7d824703083d5df9006bdc62866db26f82"
+              },
+              {
+                "file": "src/application/design/dsl_ops/api_ops.ts",
+                "name": "setExpectedApis",
+                "fp": "4d8cee8cd95888caf3c014cb5ae32c9f99c3cef7"
+              },
+              {
+                "file": "src/application/design/dsl_ops/api_ops.ts",
+                "name": "setNodeSemantic",
+                "fp": "7a8ad2924ce72700bde708838c469b273afcdf3f"
+              },
+              {
+                "file": "src/application/design/dsl_ops/api_ops.ts",
+                "name": "updateExpectedApi",
+                "fp": "453c99b1b893a8cc9bf16d94541c4a42249050e7"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/dsl_ops/api_ops.ts",
+                "content_hash": "4925c8553f484b24d37271498add6322393f66aa"
+              }
+            ],
+            "computed_at": "2026-10-22T07:19:17.916Z",
+            "basis": [
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-22T07:45:23.484Z",
+              "by": "llm",
+              "agent": "subagent:deepseek-fix5",
+              "fingerprint": {
+                "what": "node certs/t364-set-node-semantic-cert.mjs; node scripts/verify-changed.mjs src/application/design/dsl_ops/api_ops.ts",
+                "input": "22cf2f0b695d39bde540510c2edfe5b1f8141f67",
+                "code": "b00d15247fcc3dba15cfd90a044df11adde8707d",
+                "covers": [
+                  "src/application/design/dsl_ops/api_ops.ts"
+                ]
+              },
+              "verdict": "pass"
+            }
+          ]
         },
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_dsl_ops_edge_ops_ts",
@@ -11215,7 +11468,85 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_application_design_dsl_ops_status_tools_ts",
+          "summary": "**进度投影的唯一入口**（`updateStatus`）：手动设某节点进度时，只写 `<feature>.overlay.json` 锚点的 `progress`（唯一权威），再用 `applyOverlay` 把它**投影回** base 的 `node.status`；**不落库 `dsl.status`** —— feature 整体状态是 `computeFeatureStatus` 现算的**派生值**，读侧统一走 `domain/geometry.ts#resolveDiagramStatus`。★ 与任务系统的关系：任务格里 **`task.state` 才是权威**，`node.status` 只是它的**派生**（`task_schema.ts#progressOf`）—— 本文件只负责\"手动投影\"这一条路，**不是**任务态写端，也不该被用来把任务格勾成 done。★ 其它边界：置 `done` **必须带 evidence**（`validateProgressEvidence`，三档之一），否则当场拒、不静默补、不自动降级；`check_status`（按 `TODO` 文本猜完成度）已移除，不再提供；本文件**不判**\"这件事是否真做完\"（那是 evidence 的来源责任）。",
+          "state": "done",
+          "owner": "subagent:deepseek-fix5",
+          "claimed_at": "2026-10-22T07:48:14.295Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/dsl_ops/status_tools.ts",
+                "name": "StatusResult",
+                "fp": "5838e9d66920b657f58cf4422ab62b4b1aaf2fed"
+              },
+              {
+                "file": "src/application/design/dsl_ops/status_tools.ts",
+                "name": "UpdateStatusInput",
+                "fp": "fa98e124809597af1a09dd101784dfd49b0f228c"
+              },
+              {
+                "file": "src/application/design/dsl_ops/status_tools.ts",
+                "name": "computeFeatureStatus",
+                "fp": "623fed8a2fb5019334f607aaa35ac999f7a37de5"
+              },
+              {
+                "file": "src/application/design/dsl_ops/status_tools.ts",
+                "name": "updateStatus",
+                "fp": "54a2f5adde79767d5b0e60c68deb32bd6f4c257b"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/dsl_ops/status_tools.ts",
+                "content_hash": "c191806b48946959751db0962daeb24b5817fb3a"
+              }
+            ],
+            "computed_at": "2026-10-22T07:48:14.246Z",
+            "basis": [
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-22T07:45:25.123Z",
+              "by": "llm",
+              "agent": "subagent:deepseek-fix5",
+              "fingerprint": {
+                "what": "node certs/t363-reopen-complete-cert.mjs; node scripts/verify-changed.mjs src/application/design/dsl_ops/status_tools.ts",
+                "input": "962daa746c60eb348b46dbabd1cdd44f708713ea",
+                "code": "68fe279097cef13380195aafaf572ffc18ae9a53",
+                "covers": [
+                  "src/application/design/dsl_ops/status_tools.ts"
+                ]
+              },
+              "verdict": "pass"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-10-22T07:48:40.002Z",
+              "by": "llm",
+              "why": "只改了一行注释（split 的转义写错），7 条后态判据仍全过；本次收口就是 t363 修好的那条正路（done→claim(modify)→complete(attestation)）",
+              "agent": "subagent:deepseek-fix5",
+              "fingerprint": {
+                "what": "attestation:llm",
+                "input": "962daa746c60eb348b46dbabd1cdd44f708713ea",
+                "code": "986633cd1f80d43be3d5dc6a86ed2a0775379d8f",
+                "covers": [
+                  "src/application/design/dsl_ops/status_tools.ts"
+                ]
+              },
+              "verdict": "pass"
+            }
+          ],
+          "reopened_at": "2026-10-22T07:48:14.295Z",
+          "reopen_reason": "只改 status_tools.ts 第 168 行的注释：split('\\n') 应为 split('\n')",
+          "reopened_from": "subagent:deepseek-fix5"
+        },
+        "status": "done"
       },
       {
         "id": "file_src_application_design_dsl_ops_task_ops_ts",
@@ -12937,13 +13268,29 @@
                 ]
               },
               "verdict": "pass"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-22T07:45:31.439Z",
+              "by": "llm",
+              "agent": "subagent:deepseek-fix5",
+              "fingerprint": {
+                "what": "node certs/t363-reopen-complete-cert.mjs; node scripts/verify-changed.mjs src/application/design/dsl_ops/task_ops.ts",
+                "input": "ad1f33a5f07922025dc0186c58b51abaffc0d8ee",
+                "code": "cc03bad967500331d9076ad35982d0d9295beefd",
+                "covers": [
+                  "src/application/design/dsl_ops/task_ops.ts",
+                  "src/domain/task_machine.ts"
+                ]
+              },
+              "verdict": "pass"
             }
           ],
-          "owner": "subagent:exp-single-source",
-          "claimed_at": "2026-10-21T18:57:15.836Z",
-          "reopened_at": "2026-10-20T10:47:41.583Z",
-          "reopen_reason": "清注释里的用户原话",
-          "reopened_from": "deepseek-v4.1-flash",
+          "owner": "subagent:deepseek-fix5",
+          "claimed_at": "2026-10-22T07:19:16.271Z",
+          "reopened_at": "2026-10-22T07:19:16.271Z",
+          "reopen_reason": "本轮改动该文件；intent=modify 取写权",
+          "reopened_from": "subagent:exp-single-source",
           "read_set": {
             "symbols": [
               {
@@ -12969,7 +13316,7 @@
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "applyTaskOp",
-                "fp": "0c940d5eb23cac4fafe0a81d2cf8ad8db2b3904a"
+                "fp": "3e7da052084c4ea43817c25511fef927f6410fb8"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -12979,12 +13326,12 @@
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "claimTask",
-                "fp": "c90f1c716086c669705b3c04566c9f4edade55b7"
+                "fp": "7ae3518ce3f300edfb22c785914a2464e6d864a8"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "completeTask",
-                "fp": "3fec873ce580ed6a280867908e3b334095600108"
+                "fp": "5c3aa8fb538121be3963e347194e97d533a1f3e2"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -13009,7 +13356,7 @@
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "publishTask",
-                "fp": "d2825df9f02be48fdef3d84332dc4298145e7965"
+                "fp": "ca74cc429e6e78a6dc71a61e4061df38c2d97fe5"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -13024,21 +13371,21 @@
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "voidTask",
-                "fp": "f801fe2d68e5037567763d684410b5bde53e7254"
+                "fp": "2eb2f7037a72847f3c60fc992839ab4a82f7a286"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "writeTask",
-                "fp": "10fa637a7277a83a52829cde44aa79fb90e81c6e"
+                "fp": "34b639ed1be0f732ff712092eeeaf1c3252bb67f"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "04b419790fc3504401edd053aa2492ad337d902c"
+                "content_hash": "d1b95850a42d183de2617ef80ebc53bb8ee8c97c"
               }
             ],
-            "computed_at": "2026-10-21T18:57:15.807Z",
+            "computed_at": "2026-10-22T07:19:16.230Z",
             "basis": [
               "expectations"
             ],
@@ -77502,7 +77849,8 @@
           }
         ],
         "lines": 103,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_scripts_hub_mjs",
@@ -77781,7 +78129,8 @@
           }
         ],
         "lines": 564,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_scripts_mcp_mcp_call_mjs",
@@ -81862,7 +82211,8 @@
           }
         ],
         "lines": 318,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_scripts_verify_mjs",
@@ -82599,7 +82949,7 @@
         ],
         "lines": 255,
         "layer": "core",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_dsl_ops_edge_ops_ts",
@@ -82979,7 +83329,8 @@
           }
         ],
         "lines": 173,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_design_dsl_ops_task_ops_ts",
@@ -104044,11 +104395,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T06:18:22.015Z",
+    "saved_at": "2026-10-22T07:48:40.125Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 66379204,
+    "age": 71797314,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -105836,8 +106187,29 @@
     {
       "id": "todo_api_setNodeSemantic-dumbwrite",
       "summary": "api_ops.setNodeSemantic 现在是【空写】：只 saveDSL(dsl) 而不改任何字段（T328 留下的哑写）⇒ 调用方以为它在写，实际什么都没变。★ 子代理 2026-10-19 补设计时发现",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-fix5",
+      "claimed_at": "2026-10-22T07:18:28.295Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T07:18:28.253Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T07:46:31.556Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-fix5",
+          "fingerprint": {
+            "what": "node certs/t364-set-node-semantic-cert.mjs",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_run-cannot-load-module",
@@ -105866,8 +106238,29 @@
     {
       "id": "todo_install-mcp-no-workbuddy",
       "summary": "★★ install_mcp.mjs 的平台列表里【没有 WorkBuddy】—— 而真正在用的 MCP 配置是 ~/.workbuddy/mcp.json（env 空）。今天自动保鲜的 env 是靠手改它才生效的；下次换项目/重装又漏。★ 修法：给 PLATFORMS 加一项 { label:\"WorkBuddy\", configPath: ~/.workbuddy/mcp.json, keyPath:\"mcpServers\", serverKey:\"agent-io\", probe:null }",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-fix5",
+      "claimed_at": "2026-10-22T07:18:10.113Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T07:18:10.065Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T07:46:10.280Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-fix5",
+          "fingerprint": {
+            "what": "node certs/t362-install-mcp-workbuddy-cert.mjs && node scripts/install_mcp.mjs --check",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_delete-coldstart-trio",
@@ -106016,8 +106409,29 @@
     {
       "id": "todo_④-修活-hook-task-gate-mjs-实现-scripts-hook-",
       "summary": "【④ 修活 hook-task-gate.mjs】【实现】scripts/hook-task-gate.mjs 现在是死的第二闸：读 .agent-io/design/task-system-plan.dsl.json（不存在）⇒ 静默 return（空）；按 x.path 匹配而 geometry 里 0 个 path ⇒ 恒 0 命中。★ 要改成调 collectGateCoverage（判据只住一处），做「量具区账外改动」的会话级提醒。★ 不许自己判。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-fix5",
+      "claimed_at": "2026-10-22T07:18:02.200Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T07:18:02.159Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T07:46:14.469Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-fix5",
+          "fingerprint": {
+            "what": "node certs/t361-hook-task-gate-cert.mjs",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_⑤-gate-principle-md-悬空引用收口-实现-docs-gate-",
@@ -106678,8 +107092,29 @@
     {
       "id": "todo_reopen-evidence-deadlock",
       "summary": "【重开后的收口死锁】done 卡走 claim intent=modify（内部 t_reopen，落 reopened_at）后，若判据没换：\n· 用 attestation（at ≥ reopened_at）收口 ⇒ 被 src/application/design/dsl_ops/status_tools.ts:93 拒：「节点已有机器判据（progress_evidence.kind='expectations'）⇒ 不许用口供覆盖」；\n· 改用 expectations{all_green:true,unsupported:0} 收口 ⇒ 被 src/application/design/dsl_ops/task_ops.ts#reopenGate 拒：「重开未结清时 expectations 没有时间戳，就是旧判据再跑一遍」；\n⇒ 两条闸单独都对，合起来把「重开后判据未变」这一类卡钉死。★ 实测只有 reading（command/observed/at）能同时过两闸——而两处报错的「二选一」都没提这条路。\n判据：二选一——① status_tools 在「本次 complete 带来的新证据」场景放行 attestation（只写入 task.evidence，不覆盖 anchor 的历史 expectations 权威）；或 ② reopenGate 承认「带 at ≥ reopened_at 且带代码指纹/covers 的 expectations」。并配一条证：done → claim(intent=modify) → complete(attestation) 必须能收口；同时零工作量（判据未变且无新证据）仍必须拒——两条都要实测。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-fix5",
+      "claimed_at": "2026-10-22T07:18:26.911Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T07:18:26.864Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T07:46:11.730Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-fix5",
+          "fingerprint": {
+            "what": "node certs/t363-reopen-complete-cert.mjs",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_10-处-无闸源码写-无法直接塞进写原语-需先定它们的身份与授权口径-清单-实测",
@@ -106749,9 +107184,31 @@
     {
       "id": "todo_t354-剩余两条真缺口-write-gate-契约0-摘要读不到",
       "type": "todo",
-      "state": "candidate",
+      "state": "done",
       "summary": "【t354 从「4 条空断言」变成「2 条真缺口」】2026-10-22 修好了它的读路径：`scripts/verify-changed.mjs:57` 原先读 `docs/task-system-plan.dsl.json` —— 那位置 2026-10-18 就废弃了（`storage.ts#getDesignDir` 头注明写「现在只有一处」），且 `docs/*` 进了 .gitignore ⇒ 文件不存在 ⇒ `plan=null` ⇒ ②②'⑤'⑥' **四条变成空断言**（它们\"通过\"不是因为对，是因为没东西可判）。改成 `.agent-io/design/task-system-plan.dsl.json` 后：PASS 10→12 / FAIL 4→2。\n剩下两条**都是既有的真缺口，不许改断言让它变绿**：\n  ① `write_gate.ts` 现在 **契约 0 / 证 0** ⇒ 工具把它标成「没验」而不是「绿」（证里自述这是 `touches_gap` 的洞）。     它是个核心文件（所有源码写的唯一闸），却一条契约都没有 —— 这是\"最重要的一处没人验\"。\n  ② ② 的断言要求「每条都带 node_id + **摘要** + path」，而输出里只有 `node_id :: kind :: path`，摘要没打印出来     ⇒ 要么补输出、要么把断言改成它真能看见的东西（★ 二选一，不许删断言）。\n判据：① `write_gate.ts` 有 ≥1 条 post 契约且能被 t354 命中；② ② 的断言与输出口径一致（断言要看的字段确实在输出里）；③ 两条修完后 t354 全绿，且**新增的断言能红**（造一个反例）。",
-      "created_at": "2026-10-22T04:58:14.557Z"
+      "created_at": "2026-10-22T04:58:14.557Z",
+      "owner": "subagent:deepseek-fix5",
+      "claimed_at": "2026-10-22T07:18:12.653Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T07:18:12.612Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T07:45:36.454Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-fix5",
+          "fingerprint": {
+            "what": "node certs/t354-incremental-verify-cert.mjs",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_并发控制-账户-续-把-4-条仍在写闸之外的-源码写路-接上账户-本卡是上一环实",
@@ -106773,9 +107230,30 @@
       "state": "candidate",
       "summary": "【2026-10-22 实测：29 个文件节点被占，全部是 **10~27 小时前**领的】没有哪个 agent 会花 10 小时不改完一个文件 ⇒ 这些是**陈旧租约**，而它们锁住了 `write_gate.ts`、`edit_code.ts`、`server_registry.ts`、`index/db.ts`、`parse/kernel.ts`、`meta/index.ts` —— 等于**整个仓的主要模块都改不动**（A7 会把来改的人一律拒掉）。本会话已逐条 release 28 条（备份在仓外），但**根因没修**：\n  ① `claim` 只查「有没有人占」，**不查「占了多久」** ⇒ 一个死掉的会话/子代理能永久锁文件。\n  ② `release` **没有 owner 校验**（本会话用 `subagent:lease-audit` 就释放了 `codebuddy-r4` 的租约）     —— ★ 这一条是双刃：它让陈旧租约**能被清掉**，但也意味着谁都能抢占别人的活。\n  ③ 没有「租约心跳 / 过期」的概念：`claimed_at` 字段在，但**没有任何地方读它做判断**。\n判据（选一条并给出取舍）：\n  A. `claim` 时若目标节点的 `claimed_at` 超过 N 小时（建议 2h）⇒ **不直接拒**，而是回执里明写「这个租约 X 小时没动过（owner=Y），本次 claim 视为接管，旧 owner 已被通知」，并在 task 上记 `stale_takeover_at`；\n  B. 或给 `release` 加 owner 校验 + 一个**显式的** `force_release`（要 reason + 记 `released_from`）—— 两条路选哪条要定，**不许两条都不做**（现状就是两条都没做，所以只能靠人肉发现）。\n★ 附带：本卡的证据是「28 条清单 + 年龄」，可复跑：`geometry.nodes[].task.state==='claimed'` 且 `now - claimed_at > 6h` 的条数（清完后应为 0，直到下一次有人忘了 release）。",
       "created_at": "2026-10-22T06:18:21.976Z"
+    },
+    {
+      "id": "todo_edit-dsl-type-binding-现在诚实了-但仍是-空操作-2026",
+      "summary": "【`edit_dsl {type:\"binding\"}` 现在诚实了，但仍是**空操作**】2026-10-22 把它从\"只 saveDSL 的哑写\"改成\"同 id ⇒ 明说无字段可改、不写盘；不同 id ⇒ 当场拒\"（t364 PASS=7）。但按 schema 它**还在工具面上**：`TYPE_KNOWN_KEYS.binding = [file_id, sync_status]`，而 `SemanticFile.id === geometry.nodes.id` 是结构事实 ⇒ 这个 op 的**全部合法输入**都不会改变任何字节。\n判据（二选一，先问用户/设计）：① 退役（从 OP_SPECS / TYPE_KNOWN_KEYS / server.ts 描述里一起删，并留一条\"为什么它不可能有内容\"的墓碑注释）；② 赋予真语义（例：把节点 `description` 与语义 `path` 对齐）—— 但那要先证明\"对齐\"不是第二份判据。★ 不许留着让 LLM 继续调一个恒不生效的 op。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_api_setNodeSemantic-dumbwrite"
+    },
+    {
+      "id": "todo_hook-还差最后一米-没有任何-client-配置挂它-2026-10-22-",
+      "summary": "【hook 还差最后一米：没有任何 client 配置挂它】2026-10-22 把 scripts/hook-task-gate.mjs 修活了（判据走 write_gate#collectGateCoverage，t361 PASS=10），但本仓**没有** .claude/settings.json，~/.workbuddy/ 下也没有 PreToolUse 配置 ⇒ 它现在只是一个\"能跑对的脚本\"，**不是\"每会话提醒\"**。\n判据：① 至少一个真正在用的 client 的 hooks 配置里出现 `node <repo>/scripts/hook-task-gate.mjs`；② 真写一次文件时它确实被调用（留一条 certs/.work/hook-seen-<session>.json）；③ 长会话下它不因 dist 未 build 而静默（t361 的 ⑧ 已钉住\"跑不了要明说\"）。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_④-修活-hook-task-gate-mjs-实现-scripts-hook-"
+    },
+    {
+      "id": "todo_4-张证是红的-原因都是-读-2026-10-18-已废弃的-agent-io-",
+      "summary": "【4 张证是红的，原因都是\"读 2026-10-18 已废弃的 .agent-io/features/ 路径\"】2026-10-22 实测：t341 / t343 / t348 在 readFileSync 上 ENOENT（`certs/.work/tmp34x/.../agent-io.json`、`.agent-io/features/self-2026-10-15.json`、`.agent-io/features/t348.json`），t344 的 ④ 三条红（rebuild_design 前后 design/<f>.dsl.json 1103→2368 字节、meta.goals 丢了）。★ 这不是本次改动引入的（那几条路径本次一个字没碰），但**证红着 = 那几格没人守**。\n判据：① 三张 ENOENT 的证改成读 `.agent-io/design/` 或自建夹具（**不许删断言**）；② t344 要么修 rebuild_design 的行为，要么把它的三条断言改成\"重建会碰 design/\"后的正确期望；③ 修完后这 4 张各自 PASS/FAIL 读数落在回报里。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_t354-剩余两条真缺口-write-gate-契约0-摘要读不到"
     }
   ],
-  "_dsl_rev": 1261,
+  "_dsl_rev": 1271,
   "feature_tree": {
     "features": [
       {
