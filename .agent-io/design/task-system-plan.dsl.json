@@ -104701,11 +104701,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T12:41:59.120Z",
+    "saved_at": "2026-10-22T13:04:41.066Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 89396309,
+    "age": 90758255,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108569,6 +108569,12 @@
           "by": "subagent:deepseek-raw-source"
         }
       ]
+    },
+    {
+      "id": "todo_2026-10-22-排查结论-矛盾一-progress-的权威住了两处-src",
+      "summary": "【2026-10-22 排查结论】\n\n★ 矛盾一：progress 的权威住了两处\n· src/application/design/dsl_ops/file_ops.ts:62 说：「T328 进度走权威（overlay.progress + 闸 + 投影回 base）」\n· src/application/write_gate.ts:1233 说：「有 task ⇒ 派生（progressOf），没有才回落 overlay」\n⇒ 实测后果：task-system-plan 上 overlay.progress 与 task.state 12/26 不一致，且 write_gate 那条实测【卡是对的】\n⇒ 判据：定唯一权威（建议 task.state 派生；overlay.progress 只做「没卡节点」的兜底，读端标注可能过期）\n\n★ 矛盾二：任务系统住在设计册 op 目录\n· src/application/design/dsl_ops/task_ops.ts 2354 行 / 9 个 op = dsl_ops/ 5918 行的 40%\n· 它是任务系统核心，不是「设计册的一个 op」⇒ 应搬到 application/task/\n· ★ 建议同时按 op 拆文件（否则搬完还是 2354 行）\n\n★ 顺带纠两个记忆错误\n· src/application/design/workbench/code_workbench.ts 不是前端：它是代码变更审批流（852 行，被 design/index.ts + meta/index.ts + llm_decider.ts 调用）\n· src/application/design/dsl_ops/status_tools.ts 不是死代码：file_ops.ts:16 import 了 updateStatus\n\n★ 验收\n· 矛盾一：造一个「有 card 且 overlay.progress 不同」的节点 ⇒ 两个读端必须给同一个答案\n· 矛盾二：搬完后 9 个 op 对外契约不变（edit_dsl {type:task, op:claim, id:<节点id>} 仍可用）",
+      "state": "candidate",
+      "owner": null
     }
   ],
   "_dsl_rev": 1286,
