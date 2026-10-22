@@ -148,6 +148,23 @@ for (const n of plan?.geometry?.nodes ?? []) {
 /** `touches:` 一行声明。★ 只认**行首的** `touches:`（散文里提到 `touches` 不算声明） */
 const TOUCH_RE = /^[ \t]*(?:\*|\/\/|\/\*)?[ \t]*touches[ \t]*:[ \t]*(.+)$/m;
 
+/**
+ * ★★★ 2026-10-22：**派生索引兜底**（`scripts/derive-touches.mjs` 的产物）
+ *
+ * 为什么必须加：实测 **75 张证里 70 张没写 `touches:`**（本文件第 41 行自己就记着这个缺口）
+ * ⇒ `certHits` 恒为空 ⇒ 增量入口"命中 0 张" ⇒ **它不是"只跑受影响的"，是"什么都不跑"**。
+ *
+ * ★ 优先级：**显式声明 > 派生**（作者写的意图比机器猜的准）；
+ *   两个都没有 ⇒ `null` ⇒ 调用方按**全跑**处理（漏跑=假绿，多跑只是慢）。
+ */
+let DERIVED_TOUCHES = {};
+try {
+  DERIVED_TOUCHES = JSON.parse(fs.readFileSync(`${CERTS}/.touches.json`, 'utf8'));
+} catch {
+  // 没有派生索引就退化为"只认显式声明"（与旧行为一致，不静默改变语义）
+  DERIVED_TOUCHES = {};
+}
+
 function touchesOf(file) {
   let src = '';
   try {
@@ -155,15 +172,22 @@ function touchesOf(file) {
   } catch {
     return null;
   }
+  // ① 显式声明优先
   const m = src.match(TOUCH_RE);
-  if (!m) return null;
-  return [...new Set(
-    m[1]
-      .replace(/\*\/\s*$/, '')
-      .split(/[,\s]+/)
-      .map((s) => s.replace(/[`'"]/g, '').trim())
-      .filter(Boolean),
-  )];
+  if (m) {
+    return [...new Set(
+      m[1]
+        .replace(/\*\/\s*$/, '')
+        .split(/[,\s]+/)
+        .map((s) => s.replace(/[`'"]/g, '').trim())
+        .filter(Boolean),
+    )];
+  }
+  // ② 派生索引兜底（★ 这是 2026-10-22 补的：之前 70/75 张落进了"null ⇒ 不跑"）
+  const d = DERIVED_TOUCHES[file];
+  if (Array.isArray(d) && d.length) return d;
+  // ③ 都没有 ⇒ null（调用方必须按"全跑"处理，不许当"不跑"）
+  return null;
 }
 
 // ★ 收集规则与 run-all 对齐（`t<数字>-...mjs`）；★ 绝不含 `run-all-certs.mjs`（本入口**不跑全量**）
@@ -177,13 +201,17 @@ const noTouches = [];
 for (const f of certFiles) {
   const t = touchesOf(f);
   if (t === null) {
+    // ★★★ 2026-10-22：**无 touches ⇒ 必须全跑，不许跳过**
+    //   ★ 为什么：跳过 = 漏跑 = 假绿；全跑只是慢。今天实测"命中 0 张"就是因为这里 continue。
+    //   ★ 如果这里嫌慢：那要补的是【touches 声明/派生】，不是"允许它不跑"。
     noTouches.push(f);
+    certHits.push({ file: f, touches: [], kind: 'full-run', why: '★ 无 touches 声明（也没派生到）⇒ 必须全跑' });
     continue;
   }
   const hit = t.filter((p) => changedSet.has(norm(p)));
   const selfChanged = changedSet.has(`certs/${f}`);
   if (hit.length > 0 || selfChanged) {
-    certHits.push({ file: f, touches: t, why: selfChanged ? '改动文件就是它自己' : `touches 命中 ${hit.join(', ')}` });
+    certHits.push({ file: f, touches: t, kind: selfChanged ? 'self-changed' : 'touches', why: selfChanged ? '改动文件就是它自己' : `touches 命中 ${hit.join(', ')}` });
   }
 }
 
@@ -236,7 +264,13 @@ if (!NO_RUN && expHits.length > 0 && judge) {
 const badCerts = certRuns.filter((r) => r.kind === 'red' || r.kind === 'crash');
 const redExps = (expReport?.items ?? []).filter((i) => i.verdict === 'fail');
 const red = badCerts.length > 0 || redExps.length > 0;
-const nothingHit = expHits.length === 0 && certHits.length === 0;
+/**
+ * ★★ 2026-10-22：`nothingHit` 必须只看【精准命中】，不能把"兜底全跑"算进去。
+ * 为什么：改成"零命中⇒全跑"之后，`certHits` 永远非空 ⇒ `nothingHit` 永远 false ⇒
+ * 这条读数就死了（它会说"命中了"，实际一张精准的都没有）。用户的 t354 ① 正是靠它。
+ */
+const certPreciseHits = certHits.filter((c) => (c.kind ?? 'touches') !== 'full-run');
+const nothingHit = expHits.length === 0 && certPreciseHits.length === 0;
 
 if (JSON_OUT) {
   console.log(JSON.stringify({
@@ -252,7 +286,11 @@ if (JSON_OUT) {
       text: h.text,
       why: typeof h.expectation.why === 'string' ? h.expectation.why : '',
     })),
-    certs: certHits.map((c) => ({ file: c.file, touches: c.touches })),
+    // ★★ 2026-10-22：`kind` 必须输出 —— "精准命中"与"兜底全跑"是两个概念，
+    //   下游（t354 的 ④/⑤）要能分开数；混成一个数会让"精准性"这条判据失真。
+    certs: certHits.map((c) => ({ file: c.file, touches: c.touches, kind: c.kind ?? 'touches' })),
+    certs_precise: certHits.filter((c) => c.kind !== 'full-run').length,
+    certs_full_run: certHits.filter((c) => c.kind === 'full-run').length,
     ran: {
       certs: certRuns.map((r) => ({ file: r.file, rc: r.rc, pass: r.pass, fail: r.fail, kind: r.kind, ms: r.ms })),
       expectations: expReport ? { checked: expReport.checked, passed: expReport.passed, failed: expReport.failed, unsupported: expReport.unsupported } : null,

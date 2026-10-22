@@ -113,7 +113,7 @@
     "design:mutate": "node scripts/mutate.mjs",
     "design:fixture": "node scripts/impl-fixture.mjs",
     "design:impl-mutate": "node scripts/impl-mutate.mjs",
-    "verify:changed": "node scripts/verify-changed.mjs"
+    "verify:changed": "node scripts/derive-touches.mjs && node scripts/verify-changed.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

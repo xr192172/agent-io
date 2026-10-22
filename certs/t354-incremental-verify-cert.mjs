@@ -86,11 +86,25 @@ const files = (r) => (r.j?.certs ?? []).map((c) => c.file);
 {
   const r = runTool(['src/__t354_nothing_here__.ts']);
   chk(
-    !!r.j && r.j.changed.length === 1 && r.j.expectations.length === 0 && r.j.certs.length === 0 && r.j.nothingHit === true && r.j.red === false,
-    '① 给一个什么都没命中的文件 ⇒ **契约 0 / 证 0**（不是"把 64 张都算上"）',
+    // ★★ 2026-10-22：口径改「精准命中」—— 见下面 ①''（"零命中 ⇒ 全跑"是新行为，不许混进来）
+    !!r.j && r.j.changed.length === 1 && r.j.expectations.length === 0 && r.j.certs_precise === 0 && r.j.nothingHit === true && r.j.red === false,
+    '① 给一个什么都没命中的文件 ⇒ **契约 0 / 精准命中证 0**（不是"把 64 张都算上"）',
     `changed=${JSON.stringify(r.j?.changed)} · 契约=${r.j?.expectations.length} · 证=${r.j?.certs.length} · nothingHit=${r.j?.nothingHit} · exit=${r.rc}`,
   );
   chk(r.j?.ran?.certs?.length === 0, '①\' `--no-run` ⇒ **一张都没跑**（`ran.certs` 为空：算集合 ≠ 跑）', `ran.certs=${JSON.stringify(r.j?.ran?.certs)}`);
+  /**
+   * ★★★ 2026-10-22 新增：**"零命中 ⇒ 全跑"必须作为一个【被点名的类】存在**
+   *
+   * 为什么（这是本证今天最重要的一条）：原来 75 张证里 70 张没 `touches` ⇒ 它们被**静默跳过** ⇒
+   * 增量入口输出"命中 0 张"，读起来像"没有影响"，实际是"**什么都没验**"。
+   * 现在它们会被跑（不漏），但**必须单独计数** —— 否则"精准命中"和"兜底全跑"在读数上长得一样，
+   * 而后者意味着【touches 没填】这个缺陷仍然存在（只是不再静默）。
+   */
+  chk(
+    typeof r.j?.certs_full_run === 'number' && r.j.certs_full_run === r.j.certs.length - r.j.certs_precise,
+    '①\'\' **"零命中⇒全跑"单独计数**（`certs_full_run`），不许混进"命中"',
+    `precise=${r.j?.certs_precise} · full_run=${r.j?.certs_full_run} · total=${r.j?.certs?.length}`,
+  );
 }
 
 // ── ② 契约命中（★ 带 node_id + 摘要 + path）──
@@ -117,8 +131,8 @@ const files = (r) => (r.j?.certs ?? []).map((c) => c.file);
     `nodes=${JSON.stringify([...new Set(exps.map((e) => e.node_id))])}`,
   );
   chk(
-    (r.j?.certs ?? []).length <= 5 && files(r).every((f) => !f.includes('run-all-certs')),
-    '④ **命中证 ≤ 5**（设计判据）且**没有 run-all-certs**（增量入口不许偷跑全量）',
+    (r.j?.certs_precise ?? 0) <= 5 && files(r).every((f) => !f.includes('run-all-certs')),
+    '④ **精准命中证 ≤ 5**（设计判据）且**没有 run-all-certs**（增量入口不许偷跑全量）',
     `证=${JSON.stringify(files(r))}`,
   );
   chk(
@@ -153,8 +167,8 @@ const files = (r) => (r.j?.certs ?? []).map((c) => c.file);
 {
   const r = runTool(['src/application/write_gate.ts']);
   chk(
-    r.j?.changed.length === 1 && (r.j?.certs ?? []).length <= 5,
-    '④\'\' 改 `write_gate.ts` ⇒ 改动 1 个 / 命中证 ≤ 5（★ 当前实测 0 张 ⇒ 见下一条的"洞"）',
+    r.j?.changed.length === 1 && (r.j?.certs_precise ?? 0) <= 5,
+    '④\'\' 改 `write_gate.ts` ⇒ 改动 1 个 / **精准**命中证 ≤ 5（★ 当前实测 0 张 ⇒ 见下一条的"洞"）',
     `改动=${r.j?.changed.length} · 契约=${r.j?.expectations.length} · 证=${(r.j?.certs ?? []).length} · exit=${r.rc}`,
   );
   /**
@@ -174,8 +188,8 @@ const files = (r) => (r.j?.certs ?? []).map((c) => c.file);
 {
   const r = runTool(['src/domain/task_machine.ts.bak']);
   chk(
-    (r.j?.expectations ?? []).length === 0 && (r.j?.certs ?? []).length === 0,
-    '⑤ **精确匹配**：`task_machine.ts.bak` ⇒ 0 条（若改用 `includes()` 子串，这里会冒出 7 条 ⇒ 本证当场红）',
+    (r.j?.expectations ?? []).length === 0 && (r.j?.certs_precise ?? 0) === 0,
+    '⑤ **精确匹配**：`task_machine.ts.bak` ⇒ 0 条**精准**命中（若改用 `includes()` 子串，这里会冒出 7 条 ⇒ 本证当场红）',
     `契约=${r.j?.expectations.length} · 证=${(r.j?.certs ?? []).length}`,
   );
   const real = runTool(['src/domain/task_machine.ts']);
