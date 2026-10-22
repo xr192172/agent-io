@@ -105024,11 +105024,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T15:15:45.041Z",
+    "saved_at": "2026-10-22T15:26:17.869Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 98622230,
+    "age": 99255058,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -106722,7 +106722,7 @@
     {
       "id": "todo_D-dual-write",
       "summary": "【已失效 · 2026-10-22 复核】dual_write 这个度量随 overlay 去掉 decision 一并消失：grep 全仓只剩 docs/DESIGN.md:58 一行记述，src/ scripts/ 0 命中 ⇒ 原卡列的三个前提（OverlayAnchor 无 updated_at / DriftReport 无 authority_unknown / …）已无对象，不必再做。★ 若将来重新引入 overlay 决策副本，再重新立卡。",
-      "state": "candidate",
+      "state": "void",
       "owner": null,
       "history": [
         {
@@ -106732,7 +106732,9 @@
           "reason": "2026-10-22 复核：原卡描述的现状已变（grep/读数见 summary）。依据 = 2026-10-22 盘点 + 本代理复核",
           "by": "subagent:deepseek-closeout"
         }
-      ]
+      ],
+      "retire_reason": "已失效（实测核实）：overlay 26 个锚点里 decision = 0 ⇒ dual_write 度量随 decision 一并消失",
+      "retired_at": "2026-10-22T15:26:17.558Z"
     },
     {
       "id": "todo_D-actor-entry",
@@ -106935,7 +106937,7 @@
     {
       "id": "todo_A6",
       "summary": "【已删除 · 2026-10-22 复核】A6 闸随「task.expectations 去副本」一并删除：src/application/design/dsl_ops/node_ops.ts:344-351 明写「A6 闸已删除」——它防的是\"卡上挂旧判据、decision 已是新的\"，而 TaskSpec 现在没有 expectations 字段，做 A 验 B 在结构上不可能。★ 剩下的\"claimed 期间判据被改\"归读集 / assumption_check（src/application/read_set.ts:564 checkAssumptions）管，不在这里再写一道比较。",
-      "state": "candidate",
+      "state": "void",
       "owner": null,
       "history": [
         {
@@ -106945,7 +106947,9 @@
           "reason": "2026-10-22 复核：原卡描述的现状已变（grep/读数见 summary）。依据 = 2026-10-22 盘点 + 本代理复核",
           "by": "subagent:deepseek-closeout"
         }
-      ]
+      ],
+      "retire_reason": "已删除（今天查过）：task.expectations 副本已删，A6 防漂移闸随之删除",
+      "retired_at": "2026-10-22T15:26:17.652Z"
     },
     {
       "id": "todo_api_setNodeSemantic-dumbwrite",
@@ -108283,7 +108287,7 @@
     {
       "id": "todo_index-alias-reexport",
       "summary": "【数字记错 · 已修 · 2026-10-22 复核】「别名再导出 92 条」是记错的数：真仓实测只有 1 条（commit a788fb46 记：69 处调用 / 新增 57 条边）。索引器（src/infrastructure/index/symbols.ts）现已覆盖别名再导出的 5 种形态 + 9 个原因标签 + 剥注释，回执同时报\"连上多少 / 跳过多少\"。★ 原判据「≥90/92」无对象，不再作为验收。",
-      "state": "candidate",
+      "state": "void",
       "owner": null,
       "history": [
         {
@@ -108293,7 +108297,9 @@
           "reason": "2026-10-22 复核：原卡描述的现状已变（grep/读数见 summary）。依据 = 2026-10-22 盘点 + 本代理复核",
           "by": "subagent:deepseek-closeout"
         }
-      ]
+      ],
+      "retire_reason": "数字记错（实测核实）：别名再导出实际 1 条，不是 92 条",
+      "retired_at": "2026-10-22T15:26:17.743Z"
     },
     {
       "id": "todo_serve-split-orchestration",
@@ -108358,7 +108364,7 @@
     {
       "id": "todo_five-state-cleanup",
       "summary": "【已过期 · 2026-10-22 复核】已是四态且散文段已改：src/domain/task_schema.ts:43 TASK_STATES = candidate/claimed/done/void，:40 文件头明写「2026-10-22 更正：DSL 的 states 与 TASK_STATES 都是 4 值；原句写『五态』时两头都不成立」；superseded 只剩历史记述（src/domain/task_schema.ts:100/485），DSL 里 0 条 ⇒ 原卡记的「44 处写五态 / DSL 17 处 superseded」是当时的读数，现已清零。",
-      "state": "candidate",
+      "state": "void",
       "owner": null,
       "follows": "todo_design-drift-transitions",
       "history": [
@@ -108369,7 +108375,9 @@
           "reason": "2026-10-22 复核：原卡描述的现状已变（grep/读数见 summary）。依据 = 2026-10-22 盘点 + 本代理复核",
           "by": "subagent:deepseek-closeout"
         }
-      ]
+      ],
+      "retire_reason": "已过期（今天查过）：TASK_STATES 现在是 4 态 candidate/claimed/done/void",
+      "retired_at": "2026-10-22T15:26:17.837Z"
     },
     {
       "id": "todo_translate-book-tool",
