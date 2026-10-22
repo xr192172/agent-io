@@ -51726,48 +51726,36 @@
         "task": {
           "id": "file_src_infrastructure_index_symbols_ts",
           "summary": "【L1 待建构】入口层 · src/infrastructure/index — 29 个 API（导入自 8 个模块）（src/infrastructure/index/symbols.ts） ← 节点 file_src_infrastructure_index_symbols_ts",
-          "state": "claimed",
+          "state": "candidate",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_symbols_ts\"].responsibility"
           },
-          "owner": "subagent:t360-alias",
-          "claimed_at": "2026-10-21T18:05:16.103Z",
+          "owner": null,
+          "claimed_at": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/infrastructure/index/symbols.ts",
-                "name": "findCrossFileTarget",
-                "fp": "3ef2e2a6e366fac60ccb83054ab2c656fe89c280"
-              },
-              {
-                "file": "src/infrastructure/index/symbols.ts",
-                "name": "reexportsOf",
-                "fp": "b72d4b2ba1485c8c17410009b43d565d4d81fbfd"
-              },
-              {
-                "file": "src/infrastructure/index/symbols.ts",
-                "name": "resolveCrossFileCalls",
-                "fp": "31db45f022d13498fa390c0d9e063bbef285f513"
-              },
-              {
-                "file": "src/infrastructure/index/symbols.ts",
-                "name": "resolveReexportTarget",
-                "fp": "c2705b0af3082a3798e7f49d07a932c2f7ba642e"
+                "name": "applyParsedToIndex",
+                "fp": "e562414599724f5797424b40c2943e5fc60abdc1"
               }
             ],
             "files": [
               {
                 "path": "src/infrastructure/index/symbols.ts",
-                "content_hash": "aafaf89349a6f09d908ccdcdee3cb18f6d635348"
+                "content_hash": "93f8755c12b3d3526f20d260493e7aae9624333a"
               }
             ],
-            "computed_at": "2026-10-21T18:05:16.070Z",
+            "computed_at": "2026-10-22T04:55:03.508Z",
             "basis": [
               "declared"
             ]
-          }
+          },
+          "release_reason": "本轮改动已完成并验证（build + 全量重建 + t349~t359 + npm run verify 7 道），释放写权；★ 这张是 L1 建构卡，判据（decision.summary / 后态判据）仍缺，不是收口",
+          "released_by": null,
+          "released_at": "2026-10-22T04:55:16.513Z"
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_index_watch_project_ts",
@@ -95360,7 +95348,7 @@
         ],
         "lines": 1114,
         "layer": "entry",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_index_watch_project_ts",
@@ -103931,11 +103919,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T04:11:19.911Z",
+    "saved_at": "2026-10-22T04:55:16.543Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 58757100,
+    "age": 61393732,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -106166,14 +106154,56 @@
     {
       "id": "todo_db-补全-逻辑-函数体落库-nodes-没有-body-db-现在知道-这个函",
       "summary": "【DB 补全·逻辑】函数体落库：`nodes` 没有 body —— DB 现在知道\"这个函数长什么样\"（签名/形参/返回类型/修饰符/成员），但【不知道它做了什么】⇒ 重写时仍必须打开源文件。实测体量：3470 个函数/方法，行数合计 90,942（平均 26 行，最长 3565）≈ 3-4MB，存得下。要做的：`nodes` 加 `body_text`（原文）+ `body_hash`（同源校验），由 kernel 从 AST 的 body 节点取 `text`。★ 血的教训照抄：`imports.start_index/end_index` 那次立了\"四道准入\"（库里有行/字段齐全/库与源码同源/取出的文本能对上），body 更必须照做 —— 否则读到的可能是过期代码（而这是\"重写用错源码\"的直接来源）。★ 边界：`body_text` 是【唯一一份】还是【副本】？源文件才是权威 ⇒ 读的时候必须用 `files.content_hash` 校验，不一致就报\"索引过期\"，不许静默返回旧 body。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:db-backfill",
+      "claimed_at": "2026-10-22T04:52:32.808Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T04:52:32.757Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "attestation",
+          "at": "2026-10-22T04:52:32.910Z",
+          "by": "llm",
+          "why": "这条【不是本轮新做的】—— 它已由 v15 落地（commit 98633a0c「nodes 加 body_text/body_hash（schema v15，8 语言）+ contract_page 接上（五道准入，读完不再只能看签名）」），本轮只做实测复核：① 库读数 nodes.body_text 非空 4131/9696 行、合计 4,003,182 字符（function 3405/3405、method 237/243 —— 剩 6 条是 TS 接口成员的签名，本来没有体；箭头函数 const 也落了体：489 条）；② 实跑 contract_page symbol=readSymbolBody ⇒ 实现原文从库端出（51 行 / 2126 字符，sha1 56c1edcd…），回执逐字写「与源码同源（contentHash(当前源码)===files.content_hash）且库内自洽（sha1(body_text)===body_hash）」；③ 读路径唯一住处 readSymbolBody 的五道准入（有行 / 有体 / hash 自洽 / 与源码同源 / 文本在该符号 span 内）任一不过 ⇒ 只出 implementation_absent（reason=no_row|no_body|hash_mismatch|index_stale|text_mismatch|no_source），绝不返回旧体。⇒ 卡要的『重写时不必再打开源文件』已成立，判据全部可复跑。",
+          "fingerprint": {
+            "what": "attestation:llm",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_db-补全-调用边-先把-没成边-分成三类-再决定补哪些-实测-unresolv",
       "summary": "【DB 补全·调用边】先把\"没成边\"分成三类，再决定补哪些：实测 `unresolved_refs` 里 call external 24,263 / resolved 2,299 / failed 1,595。样本 reference_name：`console.log` / `path.join` / `JSON.stringify` / `results.push` / `fs.writeFileSync`⇒ 【大部分 external 是对的】：目标本来就不在仓内，不该有边。要做的（顺序不能反）：① 先按\"接收者是否能在仓内解析\"分类，量化\"仓内限定调用被误判成 external\"有多少；② 再只补这一类（`symbols.ts:946` 的 `expr.includes('.')` 一律当 external 是根因）；③ 顺带 Go 同包互调（`relImportsByFile` 只装 `kind='relative'`，Go 是 `package`）。★ 不许\"把所有 unresolved 都建成边\"—— 那会把 `console.log` 建成边，比没有更坏。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:db-backfill",
+      "claimed_at": "2026-10-22T04:52:33.028Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T04:52:32.996Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "attestation",
+          "at": "2026-10-22T04:52:33.142Z",
+          "by": "llm",
+          "why": "先分类再决定（卡里要求的顺序）。读数（cache.db 全库）：dotted 未决调用 24,786；能判接收者类型、且该类型落在本文件相对导入文件里的只有 956 条 —— 852 条 T 根本不在导入链（真仓外，external 正确）、83 条 T 在仓内但成员不属于它、13 条目标只存在于 nodes.members JSON（接口方法没有节点 ⇒ 不可寻址）、8 条成员节点存在（真漏连）。⇒ 卡的核心判断成立：99.9% 的 external 是对的，不该「把所有 unresolved 都建成边」。只补最后一类：新增 makeImportedTypeMemberLookup（类型唯一 + 成员唯一，一跳相对导入；两个出处都是 nodes 的行，不重猜源码），第一趟只做快路径、收尾 resolveCrossFileCalls 做终审（冷重建按路径顺序解析，a.ts 常先于 b.ts ⇒ 只靠第一趟会漏，实测重建后 8 条只成 4 条）。前后读数：跨文件成员调用边 call 0 → 10（RefactorLangRegistry.register 4、TSProbeCapture.pathFor 1、TSComparator.* 5），call 边 7856 → 7864；标签纠谎 42 条（receiver-type-external:T / member-not-of:T → type-member-unprovable:T，T 确实在仓内）。反证（另造夹具，跑完自清）：.tmp-xfile-probe/{registry,caller,orphan}.ts ⇒ 实例成员 reg.register() 与静态成员 ProbeRegistry.pathFor() 两条边都建成且 metadata={cross:true}，负例（类型不在导入链上）0 条边、台账写 member-not-of；同步回执 cross_type_edges=2。",
+          "fingerprint": {
+            "what": "attestation:llm",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_db-补全-边元数据-edges-metadata-是个空壳-实测只有-cros",

@@ -39,6 +39,8 @@ export interface SyncFileResult {
   node_count: number;
   edge_count: number;
   call_count?: number;
+  /** ★ 2026-10-22（DB 补全·调用边）：其中由**跨文件类型成员**证出来的边（`reg.register()` / `Ts.静态成员()`）—— 单列是为了让"补了多少"能在回执里读，而不是靠事后数库 */
+  cross_type_edges?: number;
   /** 符号级 diff 计数（v3）：updated 且非首次导入时给出；undefined=无对比意义 */
   symbol_diff?: { added: number; removed: number; changed: number };
   error?: string;
@@ -894,6 +896,26 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
     );
     // 本文件的「局部名 → 声明类型」表：一次扫描，供判定逐调用查
     const receiverTypes = declaredReceiverTypes(content);
+    // ★ 2026-10-22（DB 补全·调用边）：跨文件类型成员的两件工具 —— 判据见 makeImportedTypeMemberLookup。
+    //   `relBound` = 本文件**相对导入**的绑定名（判「接收者本身就是导入的类名」）；
+    //   `typeMemberOf` = 一跳相对导入 → 类型 → 成员（一次文件同步里共享 prepared statement 与类型名缓存）。
+    const relBound = new Set<string>();
+    for (const imp of parsed.imports) {
+      if (imp.kind !== 'relative') continue;
+      for (const b of imp.bindings ?? []) relBound.add(b);
+    }
+    const typeMemberOf = makeImportedTypeMemberLookup(
+      db,
+      projectRoot,
+      rel,
+      parsed.imports.filter((imp) => imp.kind === 'relative').map((imp) => imp.source),
+    );
+    const insCallCross = db.prepare(
+      "INSERT OR IGNORE INTO edges(source, target, kind, line, col, metadata) VALUES ($src, $tgt, 'call', $ln, NULL, '{\"cross\":true}')",
+    );
+    /** FK 防御：目标符号此刻必须在 nodes 里（目标文件可能还没被索引到 ⇒ 不建边，留给跨文件那轮） */
+    const targetNodeExists = db.prepare('SELECT 1 x FROM nodes WHERE id = $id');
+    let crossTypeCount = 0;
     let callCount = 0;
     for (const c of parsed.calls) {
       const srcId = idOf(c.caller);
@@ -915,6 +937,47 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
           // 证明成立但目标节点不在本次写入集（qn 漂移）⇒ 留 pending，让跨文件那轮再试
           insUnresolved.run({ from: srcId, rn: c.callee_expr, ln: c.line, fid: fileId, lang: ext, nt: c.callee });
         }
+        continue;
+      }
+      // ★ 2026-10-22（DB 补全·调用边）：**仓内跨文件类型成员** —— 同文件那把尺只能说「这个类型不在本文件」，
+      //   不等于「这个类型不在仓内」。两种形态同属一类（判据见 makeImportedTypeMemberLookup）：
+      //     ① `reg.register()`：`reg` 的声明类型 T 声明在另一个文件 ⇒ classifyCall 报 receiver-type-external:T；
+      //     ② `TSProbeCapture.pathFor()`：接收者本身就是**相对导入的类名** ⇒ classifyCall 报 none（交给跨文件）。
+      //   本趟只做**快路径**（目标符号此刻已在库里就顺手建边）；其余一律落 pending + 类型提示，
+      //   由收尾 `resolveCrossFileCalls` 定论（见 makeImportedTypeMemberLookup 的「两趟」段）。
+      let crossType: string | null = null;
+      if (verdict.kind === 'external' && verdict.why.startsWith('receiver-type-external:')) {
+        crossType = verdict.why.slice('receiver-type-external:'.length);
+      } else if (verdict.kind === 'none' && c.callee_expr.includes('.')) {
+        const recv = c.callee_expr.slice(0, c.callee_expr.lastIndexOf('.')).trim();
+        if (/^[A-Za-z_$][\w$]*$/.test(recv) && relBound.has(recv)) crossType = recv;
+      }
+      if (crossType) {
+        const look = typeMemberOf(crossType, c.callee);
+        if (look.kind === 'hit' && targetNodeExists.get({ id: `${look.file}#${look.qn}` })) {
+          insCallCross.run({ src: srcId, tgt: `${look.file}#${look.qn}`, ln: c.line });
+          crossTypeCount++;
+          continue;
+        }
+        // ★★ 证不出 / 目标文件此刻还没索引到 / 这个类型根本不在相对导入里 —— **三种情形都不在这趟定论**。
+        //   为什么连 `no-type` 也要落 pending：冷重建是按路径顺序解析的，`watch_project_tool.ts` 常常
+        //   先于它导入的 `probe.ts` 被解析 ⇒ 此刻「相对导入里没有这个类型」是**时限造成的**，不是事实。
+        //   （实测代价：只给 hit 以外的情形落 pending 时，全量重建后 8 条边只建成 4 条，其余被永久盖成
+        //    `dotted-unprovable`，与真相不符。）⇒ 一律 pending + 「接收者的声明类型」提示，交第二趟终审。
+        insUnresolvedTagged.run({
+          from: srcId,
+          rn: c.callee_expr,
+          ln: c.line,
+          fid: fileId,
+          lang: ext,
+          nt: c.callee,
+          st: 'pending',
+          cd: JSON.stringify({
+            verdict: 'external',
+            why: `receiver-type-external:${crossType}`,
+            receiver_type: crossType,
+          }),
+        });
         continue;
       }
       if (verdict.kind === 'none') {
@@ -984,6 +1047,7 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
     if (ownTx) db.exec('COMMIT');
     return {
       path: rel, status: 'updated', node_count: parsed.symbols.length, edge_count: edgeCount, call_count: callCount,
+      cross_type_edges: crossTypeCount,
       symbol_diff: symbolDiff
         ? { added: symbolDiff.added.length, removed: symbolDiff.removed.length, changed: symbolDiff.changed.length }
         : undefined,
@@ -1568,6 +1632,13 @@ export interface CrossFileResolveStats {
    * 只回一个 resolved，跳过的那批就是**静默少报**。
    */
   reexportSkipped?: Record<string, number>;
+  /**
+   * 2026-10-22（DB 补全·调用边）：其中由**仓内跨文件类型成员**证出来的边条数
+   * （`resolved` 的子集：`reg.register()` / `X.staticMember()` 这一类）。
+   * 单列的理由：`resolved` 混着「裸名沿 import 命中」和「类型成员命中」两种来源，
+   * 读的人分不出**这一轮补的是哪一种** ⇒ 没法判这条判据到底有没有生效。
+   */
+  cross_type?: number;
 }
 
 /**
@@ -1598,17 +1669,17 @@ export function resolveCrossFileCalls(
     scope.length
       ? db
           .prepare(
-            `SELECT id, from_node_id, reference_name, reference_kind, line FROM unresolved_refs
+            `SELECT id, from_node_id, reference_name, reference_kind, line, candidates FROM unresolved_refs
              WHERE status='pending' AND reference_kind IN ('call','type_ref')
                AND (${scope.map((_, i) => `from_node_id LIKE $s${i}`).join(' OR ')})`,
           )
           .all(Object.fromEntries(scope.map((f, i) => [`s${i}`, `${f}#%`])))
       : db
           .prepare(
-            "SELECT id, from_node_id, reference_name, reference_kind, line FROM unresolved_refs WHERE status='pending' AND reference_kind IN ('call','type_ref')",
+            "SELECT id, from_node_id, reference_name, reference_kind, line, candidates FROM unresolved_refs WHERE status='pending' AND reference_kind IN ('call','type_ref')",
           )
           .all()
-  ) as Array<{ id: number; from_node_id: string; reference_name: string; reference_kind: string; line: number }>;
+  ) as Array<{ id: number; from_node_id: string; reference_name: string; reference_kind: string; line: number; candidates: string | null }>;
   if (rows.length === 0) return { total: 0, resolved: 0, external: 0, failed: 0 };
 
   // 预加载：文件名 → 符号名集合（import 限定匹配用）
@@ -1700,6 +1771,22 @@ export function resolveCrossFileCalls(
   const indexedFiles = new Set(
     (db.prepare('SELECT path FROM files').all() as Array<{ path: string }>).map((row) => row.path),
   );
+  // ★ 2026-10-22（DB 补全·调用边）：文件 → 「跨文件类型成员」查找器（按文件缓存，判据见 makeImportedTypeMemberLookup）。
+  //   只有走到带点调用才会建；同一文件的 `reg.xxx()` 一整片共用一份类型名缓存。
+  const typeLookupByFile = new Map<string, ReturnType<typeof makeImportedTypeMemberLookup>>();
+  const typeLookupFor = (file: string): ReturnType<typeof makeImportedTypeMemberLookup> => {
+    let f = typeLookupByFile.get(file);
+    if (!f) {
+      f = makeImportedTypeMemberLookup(
+        db,
+        projectRoot,
+        file,
+        (relImportsByFile.get(file) ?? []).map((i) => i.source),
+      );
+      typeLookupByFile.set(file, f);
+    }
+    return f;
+  };
   const updResolved = db.prepare("UPDATE unresolved_refs SET status='resolved' WHERE id = $i");
   // ★ 2026-10-21：状态与**原因标签**一起写（candidates 列）——「没建边」不许静默：
   //   external = 目标在仓外（不是漏连）· failed = 证不出来（suspect/unknown），要能查到为什么。
@@ -1758,15 +1845,61 @@ export function resolveCrossFileCalls(
     }
 
     if (expr.includes('.')) {
-      // ★ 2026-10-21：带点调用里**唯一可证**的是 `import * as X` 的命名空间成员（X.foo 且 X 是命名空间导入）。
-      //   其余（局部变量 / 链式 / 返回值 / Go 包调用）一律 external —— 仓内没有可证目标，宁漏不错。
+      // ★ 2026-10-21：带点调用里可证的第一类是 `import * as X` 的命名空间成员（X.foo 且 X 是命名空间导入）。
+      // ★ 2026-10-22（DB 补全·调用边）：第二类是**仓内跨文件类型成员**，两种形态同一判据：
+      //   ① 接收者的**声明类型** T 在仓内另一文件（第一趟把 T 写进 candidates.receiver_type 再落 pending）；
+      //   ② 接收者本身就是**本文件相对导入的类名**（`import { X }` 后 `X.staticMember()`）。
+      //   判据只在 makeImportedTypeMemberLookup 一份；这里只负责「全库符号表齐了」之后的**终审**。
+      const dotAt = lastReceiverDot(expr);
+      const recv = dotAt > 0 ? expr.slice(0, dotAt).trim() : '';
+      const member = dotAt > 0 ? expr.slice(dotAt + 1).trim() : '';
+      /** 第一趟留下的「接收者声明类型」提示（坏 JSON 不阻断：退化成没有提示） */
+      let hint: string | null = null;
+      try {
+        const cd = r.candidates ? (JSON.parse(r.candidates) as { receiver_type?: string }) : null;
+        if (typeof cd?.receiver_type === 'string' && cd.receiver_type) hint = cd.receiver_type;
+      } catch {
+        /* 坏 JSON ⇒ 当没有提示，下面照旧走命名空间/外部两条路 */
+      }
+      const simpleRecv = /^[A-Za-z_$][\w$]*$/.test(recv) ? recv : '';
+      const recvType = simpleRecv
+        ? (hint ?? ((relBindingsByFile.get(rel)?.has(simpleRecv) ?? false) ? simpleRecv : null))
+        : null;
+      if (recvType && member) {
+        const look = typeLookupFor(rel)(recvType, member);
+        if (look.kind === 'hit') {
+          insEdge.run({ src: r.from_node_id, tgt: `${look.file}#${look.qn}`, k: 'call', ln: r.line, md: CROSS_META });
+          updResolved.run({ i: r.id });
+          stats.resolved++;
+          stats.cross_type = (stats.cross_type ?? 0) + 1;
+          continue;
+        }
+        if (look.kind === 'type-in-repo-no-member') {
+          // T **在仓内**、成员证不出（接口方法只记在 `nodes.members` JSON、没有节点 / 类型推断错）⇒
+          // 标签必须说真话：不许继续沿用「T 是仓外类型」。
+          updExternal.run({
+            i: r.id,
+            cd: JSON.stringify({ verdict: 'external', why: `type-member-unprovable:${recvType}` }),
+          });
+          stats.external++;
+          continue;
+        }
+      }
       const nsTarget = findNamespaceMemberTarget(db, projectRoot, rel, expr);
       if (nsTarget) {
         insEdge.run({ src: r.from_node_id, tgt: `${nsTarget.file}#${nsTarget.qn}`, k: 'call', ln: r.line, md: CROSS_META });
         updResolved.run({ i: r.id });
         stats.resolved++;
       } else {
-        updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'dotted-unprovable' }) });
+        // ★ 有类型提示就把**原判定**写回去（`receiver-type-external:T` = 类型在仓外）；
+        //   没有提示才是 `dotted-unprovable`（接收者形态证不出来）。两者混成一个词会误导读端。
+        updExternal.run({
+          i: r.id,
+          cd: JSON.stringify({
+            verdict: 'external',
+            why: hint ? `receiver-type-external:${hint}` : 'dotted-unprovable',
+          }),
+        });
         stats.external++;
       }
       continue;
@@ -1865,6 +1998,100 @@ function findCrossFileTarget(
     if (viaBarrel) return viaBarrel;
   }
   return null;
+}
+
+/**
+ * ★ 2026-10-22（DB 补全·调用边）：**仓内跨文件类型成员**的唯一判据。
+ *
+ * ## 补的是哪一种「没成边」
+ *   `classifyCall` 手里只有**本文件**的符号表 ⇒ 遇到 `reg.register()`（`reg` 的声明类型 T 声明在另一个文件）
+ *   它只能报 `external / receiver-type-external:T`。而那句标签的意思是「**T 是仓外类型**」——
+ *   T 明明在仓内。**同文件尺的子集结论被当成了全局结论**：边没建，标签还在说假话。
+ *
+ * ## 判据（两条都要能证；证不出就不建边 —— 与「错连比漏连坏」同一条纪律）
+ *   ① **类型唯一**：T 在本文件**相对导入**的目标文件里恰好声明 1 次（0 次 = 仓外 / >1 次 = 同名歧义 ⇒ 都不证）；
+ *   ② **成员唯一**：那个文件里叫 `memberName` 的节点恰好 1 个，且属主就是 T（`parent` 允许是限定名，比尾段）。
+ *   ⇒ 两个出处都是**库里的行**（`nodes`），不是把源码再正则猜一遍；与同文件 `typed-member` 是同一把尺，
+ *     只是把「本文件」换成「本文件的一跳相对导入」。
+ *
+ * ## 三种结果（第三种是给标签纠谎用的，不是给建边用的）
+ *   · `hit`                    ⇒ 可建边（跨文件 ⇒ `metadata={cross:true}`）
+ *   · `type-in-repo-no-member` ⇒ T 在仓内，但成员证不出来（接口成员只记在 `nodes.members` JSON 里；
+ *     或类型推断错）⇒ **调用方必须把原因写对**，不许继续说「T 是仓外类型」
+ *   · `no-type`                ⇒ 相对导入里没有这个类型 ⇒ 原判定（external）成立，调用方保持不动
+ *
+ * ## 限度（明写，别让下游以为这是全解）
+ *   · 只走**一跳**相对导入：barrel 再导出的类型不在这里展开（那是 `findCrossFileTarget` 的 re-export 路）；
+ *   · 只认 `class|interface|type` 的声明节点。
+ */
+/**
+ * ★ 2026-10-22（DB 补全·调用边）：**仓内跨文件类型成员**的唯一判据（两趟共用，判据只有这一份）。
+ *
+ * ## 补的是哪一种「没成边」
+ *   `classifyCall` 手里只有**本文件**的符号表 ⇒ 遇到 `reg.register()`（`reg` 的声明类型 T 声明在另一个文件）
+ *   它只能报 `external / receiver-type-external:T`。而那句标签的意思是「**T 是仓外类型**」——
+ *   T 明明在仓内。**同文件尺的子集结论被当成了全局结论**：边没建，标签还在说假话。
+ *
+ * ## 判据（两条都要能证；证不出就不建边 —— 与「错连比漏连坏」同一条纪律）
+ *   ① **类型唯一**：T 在本文件**相对导入**的目标文件里恰好声明 1 次（0 次 = 仓外 / >1 次 = 同名歧义 ⇒ 都不证）；
+ *   ② **成员唯一**：那个文件里叫 `memberName` 的节点恰好 1 个，且属主就是 T（`parent` 允许是限定名，比尾段）。
+ *   ⇒ 两个出处都是**库里的行**（`nodes`），不是把源码再正则猜一遍；与同文件 `typed-member` 是同一把尺，
+ *     只是把「本文件」换成「本文件的一跳相对导入」。
+ *
+ * ## 三种结果（第三种是给标签纠谎用的，不是给建边用的）
+ *   · `hit`                    ⇒ 可建边（跨文件 ⇒ `metadata={cross:true}`）
+ *   · `type-in-repo-no-member` ⇒ T 在仓内，但成员证不出来（接口成员只记在 `nodes.members` JSON 里；
+ *     或类型推断错）⇒ **调用方必须把原因写对**，不许继续说「T 是仓外类型」
+ *   · `no-type`                ⇒ 相对导入里没有这个类型 ⇒ 原判定（external）成立，调用方保持不动
+ *
+ * ## 谁调它（两趟，但判据只有这一份）
+ *   · 第一趟 `applyParsedToIndex`：**只做快路径**（目标符号此刻已在库里就顺手建边）；
+ *   · 第二趟 `resolveCrossFileCalls`：**记账的终审**。为什么必须有第二趟：冷重建时按路径顺序解析，
+ *     `a.ts` 先于 `b.ts` ⇒ 第一趟看不见 `b.ts` 的类，判据必然落空（实测：全量重建后 8 条边一条没建，
+ *     单独重解析才建出来）。**顺序不该改变事实** ⇒ 定论放在全库符号表齐了之后。
+ *
+ * ## 限度（明写，别让下游以为这是全解）
+ *   · 只走**一跳**相对导入：barrel 再导出的类型不在这里展开（那是 `findCrossFileTarget` 的 re-export 路）；
+ *   · 只认 `class|interface|type` 的声明节点（接口方法不在 `nodes` 里 ⇒ 见 `type-in-repo-no-member`）。
+ */
+function makeImportedTypeMemberLookup(
+  db: Database,
+  projectRoot: string,
+  fromRel: string,
+  relImportSources: readonly string[],
+): (
+  typeName: string,
+  memberName: string,
+) => { kind: 'hit'; file: string; qn: string } | { kind: 'type-in-repo-no-member'; file: string } | { kind: 'no-type' } {
+  // 本文件相对导入的目标文件集（与 import 边同口径：同一个 resolveImportTarget）
+  const targets = new Set<string>();
+  for (const source of relImportSources) {
+    const t = resolveImportTarget(projectRoot, fromRel, source);
+    if (t) targets.add(t);
+  }
+  const qDecl = db.prepare("SELECT file_path FROM nodes WHERE name = $n AND kind IN ('class','interface','type')");
+  const qMember = db.prepare('SELECT qualified_name, parent FROM nodes WHERE file_path = $f AND name = $m');
+  /** 类型名 → 声明文件（null = 证不出）。一张文件的同步里同一个 T 会被问很多次（`reg.xxx()` 一整片） */
+  const declCache = new Map<string, string | null>();
+  const declFileOf = (typeName: string): string | null => {
+    if (declCache.has(typeName)) return declCache.get(typeName) ?? null;
+    const files = new Set<string>();
+    for (const r of qDecl.all({ n: typeName }) as Array<{ file_path: string }>) {
+      if (targets.has(r.file_path)) files.add(r.file_path);
+    }
+    const file = files.size === 1 ? [...files][0] : null;
+    declCache.set(typeName, file);
+    return file;
+  };
+  return (typeName, memberName) => {
+    const file = declFileOf(typeName);
+    if (!file) return { kind: 'no-type' };
+    const hits = (
+      qMember.all({ f: file, m: memberName }) as Array<{ qualified_name: string; parent: string | null }>
+    ).filter((r) => (r.parent ?? '') === typeName || (r.parent ?? '').split('.').pop() === typeName);
+    if (hits.length === 1) return { kind: 'hit', file, qn: hits[0].qualified_name };
+    return { kind: 'type-in-repo-no-member', file };
+  };
 }
 
 /**
