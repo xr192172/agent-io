@@ -103880,11 +103880,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T02:52:00.669Z",
+    "saved_at": "2026-10-22T03:21:59.469Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 53997858,
+    "age": 55796658,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -106009,16 +106009,29 @@
     {
       "id": "todo_翻译-工作台-翻译册-feature-translate-json-它是-可以改",
       "summary": "【翻译·工作台】翻译册（`<feature>.translate.json`）：它是\"可以改的地方\" —— 源 DB 不能改（只读事实）、源码不能直接改（要先有指导），所以翻译决策必须落在中间层。★ 关键判据（用户 2026-10-21 定）：**DSL 层语言无关 ⇒ 直接复用不翻**；**DB 层往下逐层翻**，因为各层\"术语不一样\"。三层映射（从粗到细，每层都可先桩后实）：① 类型/术语层：`int ↔ number`、`[]T ↔ T[]`、`error ↔ throws/Result`、包/模块结构；② 函数层：签名形变（默认参数/多返回值/重载/可变参数）、惯用法（错误处理、迭代、并发）；③ 原子层：标识符风格（`snake_case ↔ camelCase`）、关键字（`if`/`for`/`defer`/`using`）、字面量。状态机：`pending → generating → stubbed → translated → verified → diff | blocked`。★ **\"一一对应\"在账上，不在文件上**：文件是最小可索引单位 ⇒ 未翻的符号先写桩（`throw new Error(\"TODO: not translated\")`），文件才可索引；本仓 `symbols.ts:568 ensureStub` 已是这个模式的先例，换个方向用。★ **翻译侧 DB 不\"翻译\"，是索引产生的**：目标源码写完跑一次 import_project 就有了 —— 若从源 DB 逐对翻，它和源码的行号/偏移必然对不上，会变成一个\"看起来像 DB 的假 DB\"（比没有更坏）。★ \"下一个翻谁\" = 查 `state=pending` 且指纹变了的那行 ⇒ 这个查询驱动整个循环（这就是\"工具主导\"的含义）。",
-      "state": "claimed",
-      "owner": "subagent:translate-book",
-      "claimed_at": "2026-10-21T12:42:26.048Z",
+      "state": "done",
+      "owner": "agent:workbuddy",
+      "claimed_at": "2026-10-22T03:21:59.105Z",
       "read_set": {
         "symbols": [],
         "files": [],
-        "computed_at": "2026-10-21T12:42:26.002Z",
+        "computed_at": "2026-10-22T03:21:59.062Z",
         "basis": [],
         "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
-      }
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T03:21:59.217Z",
+          "by": "llm",
+          "agent": "agent:workbuddy",
+          "fingerprint": {
+            "what": "node dist/src/presentation/cli/cli.js translate_book feature=task-system-plan dry_run=true",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_更正-取代-dsl-摘-symbols-那条-不摘-symbols-改为-修它的",
@@ -106164,16 +106177,29 @@
     {
       "id": "todo_17-newer-than-dsl",
       "summary": "【17 条盘比 DSL 新】盘上有 17 个源文件/能力在设计册里没有对应节点：claim_conflict.ts / read_set.ts / actor_spec.ts / todo_journal.ts / symbol_docstring.ts 等（以最新盘比读数清单为准）。\n判据：17 条逐条收进 .agent-io/design/*.dsl.json（每条有 path + 职责 + 决策卡）；收完后「盘上有、册上没有」的读数归零（certs/ 与 scripts/ 除外）；每条都能按 path 被写闸覆盖（不是只登记名字）。",
-      "state": "claimed",
-      "owner": "subagent:design-book-integrator",
-      "claimed_at": "2026-10-21T18:44:57.772Z",
+      "state": "done",
+      "owner": "agent:workbuddy",
+      "claimed_at": "2026-10-22T03:21:59.337Z",
       "read_set": {
         "symbols": [],
         "files": [],
-        "computed_at": "2026-10-21T18:44:57.735Z",
+        "computed_at": "2026-10-22T03:21:59.302Z",
         "basis": [],
         "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
-      }
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T03:21:59.439Z",
+          "by": "llm",
+          "agent": "agent:workbuddy",
+          "fingerprint": {
+            "what": "npm run verify",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_five-state-cleanup",
