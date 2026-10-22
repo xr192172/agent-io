@@ -54627,7 +54627,44 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "`actor` 身份的**唯一定义处**：什么算合法身份、老格式怎么归一化、非法怎么拒。★ 为什么存在：读集（`application/read_set.ts`）**按 actor 分桶** —— 分桶键不干净 ⇒ 同一个 agent 被拆成多个桶 / 不同 agent 挤进同一个桶 ⇒「我读的」被当成「别人读的」，误报与漏报**同时**发生（实测真实调用里 `workbuddy` / `agent-a7` / `deepseek-v4.1-flash` 混着写，同一轮里同一个人既写 `workbuddy` 又写模型名）。★ 边界（它不做什么）：不落盘；除了 `AGENT_IO_ACTOR` / `AGENT_IO_ACTOR_STRICT` 不读别的状态；**不做身份的业务解释**（谁是 owner 由调用方决定）；`actorKey` 只做**规范化**不做授权；`sameActor` 只回答「是不是同一个」，不回答「能不能」。",
+          "acceptance": "`admitActor` 三种处置严格分开：① 合法 `<kind>:<name>` ⇒ `ok:true` 且 `actor` 原样、`source` 记为 explicit/env；② 老格式（无类前缀）非 STRICT ⇒ `ok:true` + `normalizedFrom`（归一成 `agent:<name>`），STRICT ⇒ `ok:false` 且**不猜**；③ 非法 ⇒ `ok:false`，`error` 里**逐条**列出原因（含空白 / 非法字符 / 大写 / 类别不在 `ACTOR_KINDS` / 超 `ACTOR_NAME_MAX`）。★ 显式给了但**不合法不回落**到 `AGENT_IO_ACTOR`（回落 = 静默兜底，会掩盖调用方的错）。三参都空 ⇒ `{ok:true, actor:null, source:'none'}`。`actorKey` 三档：`null`/`undefined`/空串 ⇒ `null`；合法 ⇒ 原样；老格式 ⇒ 归一后；★ 非空但非法 ⇒ **原样返回**（fail-closed，且与归一后的值不相等）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/actor_spec.ts",
+              "why": "身份的唯一定义处要有落点"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/actor_spec.ts",
+              "symbol": "admitActor",
+              "why": "解析 + 校验 + 归一化的唯一实现"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/actor_spec.ts",
+              "symbol": "actorKey",
+              "why": "分桶键的规范化（三档行为住这里）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/actor_spec.ts",
+              "symbol": "sameActor",
+              "why": "「是不是同一个身份」的唯一判据"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/actor_spec.ts",
+              "symbol": "ACTOR_RE",
+              "why": "规范格式的形状本身（改它 = 改什么算合法）"
+            }
+          ],
+          "updated_at": "2026-10-22T10:20:00+08:00",
+          "agent": "agent:workbuddy"
+        }
       },
       {
         "id": "file_src_domain_judge_port_ts",
@@ -54643,7 +54680,38 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "「判定器」的**端口**（domain 侧唯一契约）：只声明形状，实现住 application，由调用方注入。★ 为什么存在：`task_machine.ts` 曾**向上** import `application/design/intent/expectations.ts#judgeExpectations` —— 「domain 不许 import infrastructure」这条满足了、「不许向上」那条违反了 ⇒ 规则满足一半 = 没满足。★ 这**不是**第二把尺：判定器仍然只有 `judgeExpectations` 一个实现，本文件只是它的**类型**。★ 边界（它不做什么）：**不含任何实现**；不读盘、不读索引、不判定；不替实现决定「判不了该算哪种」——它只负责**留住 `unsupported` 这个词**。",
+          "acceptance": "端口契约三条必须是**形状可验**的：① `Verdict` 是**四值** `pass|fail|unsupported|pending`（不是 `boolean` —— 那会把 `unsupported` 压成 `false`，`cardStanding` 的 `unknowable` 就从五值里消失）；② `ExpectationsReport.checked` 能与提交的 `items.length` 对照（残缺报告由 `cardStanding` 判 `unknowable`，端口是边界、边界上的承诺要有人验）；③ `ExpectationItem` 携带「挂在哪个节点」的归因字段，且 `unsupported` 不与 `pass` 混用。★ 已知未决：`pending` 在 domain 侧**还没有处置**（只有 pending 后态判据的卡会被判 `satisfied`），该洞记在册、**不许**在端口实现里把 `pending` 写成 `pass`（用假绿换假绿）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/judge_port.ts",
+              "why": "端口契约要有落点"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/judge_port.ts",
+              "symbol": "Verdict",
+              "why": "四值就是这条契约本身（压成 boolean 即违约）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/judge_port.ts",
+              "symbol": "ExpectationsReport",
+              "why": "checked 与 items.length 的对照靠它承载"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/judge_port.ts",
+              "symbol": "Judge",
+              "why": "注入点的形状（domain 只声明、不实现）"
+            }
+          ],
+          "updated_at": "2026-10-22T10:20:00+08:00",
+          "agent": "agent:workbuddy"
+        }
       },
       {
         "id": "file_src_domain_todo_chain_ts",
@@ -54659,7 +54727,38 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "todo 的**跑环继任链**（`follows`）：怎么读、怎么判、怎么显示。★ 为什么存在：`todo.link` 只把 todo 挂到**设计节点**，`task.reopen/relaunch` 是「重开**同一张**卡」⇒ 此前**没有任何字段能表达 todo → todo 的继任关系**；替代品是人在 `summary` 里手写「取代 xxx」，而 2026-10-21 真因此立了三张**方向互相矛盾**的卡。★ 边界（它不做什么）：**不改状态**（只读 + 判 + 渲染）；不落盘；不替调用方决定「要不要立下一环」；`assertFollowsTarget` 只**拒非法**（自指 / 悬挂 / 接在 void 下 / 成环），不**修**。",
+          "acceptance": "`buildTodoChains` 对 `follows` 的四种异常**分别**处置且各自可判：① 指向册上不存在的 id ⇒ 进 `dangling`，**不凭空造根节点**；② 自指 ⇒ `assertFollowsTarget` 抛；③ 接在 `state=void` 的卡下 ⇒ 抛（链已断，报文给出「接回还活着的前一环」或「另起一条链」两条正路）；④ 成环 ⇒ 抛，且沿父指针上溯时**带 seen 集**（册上本来就有环时不死循环）。环次与链根由 memo 化的父指针上溯得出；`chainBadge` 的文案只读 `ChainPlace` 的字段，**不另算一遍**。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/todo_chain.ts",
+              "why": "链的读/判/显示要有落点"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/todo_chain.ts",
+              "symbol": "buildTodoChains",
+              "why": "四类异常的分流全在它里面"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/todo_chain.ts",
+              "symbol": "assertFollowsTarget",
+              "why": "写前拒非法（自指/悬挂/接 void/成环）的唯一判据"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/todo_chain.ts",
+              "symbol": "chainBadge",
+              "why": "显示侧只读 ChainPlace，不另算"
+            }
+          ],
+          "updated_at": "2026-10-22T10:20:00+08:00",
+          "agent": "agent:workbuddy"
+        }
       },
       {
         "id": "file_src_infrastructure_authoring_translate_book_ts",
@@ -103781,11 +103880,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T01:59:53.869Z",
+    "saved_at": "2026-10-22T02:04:40.161Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 50871058,
+    "age": 51157350,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -106153,7 +106252,7 @@
       "created_at": "2026-10-21T20:31:23.912Z"
     }
   ],
-  "_dsl_rev": 1250,
+  "_dsl_rev": 1251,
   "feature_tree": {
     "features": [
       {
