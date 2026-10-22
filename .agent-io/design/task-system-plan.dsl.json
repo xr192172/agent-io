@@ -55559,6 +55559,142 @@
           "borderRadius": 4
         },
         "arch_layer": "core"
+      },
+      {
+        "id": "file_application_meta_archive_archive_node_ts",
+        "label": "archive_node.ts",
+        "x": 40,
+        "y": 20090,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/application/meta/archive/archive_node.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core",
+        "status": "draft"
+      },
+      {
+        "id": "file_application_observe_reconcile_proposal_approve_ts",
+        "label": "proposal_approve.ts",
+        "x": 40,
+        "y": 20180,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/application/observe/reconcile/proposal_approve.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core",
+        "status": "draft"
+      },
+      {
+        "id": "file_application_observe_reconcile_proposal_list_ts",
+        "label": "proposal_list.ts",
+        "x": 40,
+        "y": 20270,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/application/observe/reconcile/proposal_list.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core",
+        "status": "draft"
+      },
+      {
+        "id": "file_application_observe_reconcile_proposal_reject_ts",
+        "label": "proposal_reject.ts",
+        "x": 40,
+        "y": 20360,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/application/observe/reconcile/proposal_reject.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core",
+        "status": "draft"
+      },
+      {
+        "id": "file_application_observe_runtime_judge_observe_events_ts",
+        "label": "judge_observe_events.ts",
+        "x": 40,
+        "y": 20450,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/application/observe/runtime/judge_observe_events.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core",
+        "status": "draft"
+      },
+      {
+        "id": "file_application_observe_runtime_observe_log_query_ts",
+        "label": "observe_log_query.ts",
+        "x": 40,
+        "y": 20540,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/application/observe/runtime/observe_log_query.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core",
+        "status": "draft"
+      },
+      {
+        "id": "file_infrastructure_analysis_diagnosis_test_contract_ts",
+        "label": "test_contract.ts",
+        "x": 40,
+        "y": 20630,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/infrastructure/analysis/diagnosis/test_contract.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "infra",
+        "status": "draft"
+      },
+      {
+        "id": "file_infrastructure_source_write_port_ts",
+        "label": "source_write_port.ts",
+        "x": 40,
+        "y": 20720,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/infrastructure/source_write_port.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "infra",
+        "status": "draft"
       }
     ],
     "edges": [
@@ -104517,11 +104653,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T10:32:00.163Z",
+    "saved_at": "2026-10-22T10:37:01.971Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 81597352,
+    "age": 81899160,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108309,7 +108445,7 @@
       "summary": "【实测 2026-10-22：`src/infrastructure/source_write_port.ts` 是当天新建的源文件，设计册里**匹配节点数 = 0**，而 `npm run verify` **7 门全绿**。】\n\n## 为什么这是最坏的那种\n```\n设计 DSL 的整套价值 = 「施工产物能被设计对拍」\n但如果【新建的源文件根本不在册上】⇒ 它永远不参与对拍 ⇒ 它是设计之外的一片飞地\n★ 而 verify 全绿 ⇒ 没有任何门会说\"漏了一个文件\" ⇒ 漂移是【静默】的\n```\n★ 用户 2026-10-22 的原话点破了它：\n> 「你领到这个任务去之后，如果没有设计 DSL 和设计 DB，就是你没写这个那你就要先把这个完善……\n>  **两边对上了才是判据**」\n⇒ 现在缺的正是那个\"两边对上\"的检查里的一半：**册子 → 代码**（有 `call-exists` 等），而**代码 → 册子**（\"每个源文件都该有节点\"）**没有**。\n\n## 判据（选一条）\n  A. **门**：`verify` 加一道「源文件 ↔ 设计节点」的双向对账 —— **新增文件没有节点 ⇒ 红**。\n     ★ 难点：`src/infrastructure/**` 有 100+ 文件，未必都该有节点（可能是纯内部实现）⇒ 要定\"哪些文件必须有节点\"（建议：**被 `application` 层 import 的**必须有，纯叶子按目录豁免）。\n  B. **工具**：`edit_code` 的 `create`（★ 现在没有这个 op，见另一张卡）在建文件时**顺手提示**\"这个文件在设计里吗\"。\n  C. **报告**：`design-check` 加一段\"设计外的源文件\"清单（不红，但要点名）—— 最轻，但**不阻止**漂移。\n★ 建议 A + C：C 让人看见，A 才是闸。\n\n## 本次的具体缺口（先补或先挂）\n  `src/infrastructure/source_write_port.ts` 需要：① `geometry.nodes` 一个 file 节点 ② `decision`（已备好两条判据：\n  `file-exists` + `commitSourceWrite` 的 `symbol-exists`，见同日补判据脚本）③ `edges`（谁 import 它：\n  5 个语言包 + `rename_symbols.ts`）。★ ②已经写好但**因为节点不存在而没地方挂**（脚本报\"找不到节点\"）。\n\n## 验收\n```\n删掉 source_write_port.ts 的节点（造一个\"设计外文件\"）⇒ verify 必须红\n恢复 ⇒ 绿\n★ 不许用\"报告里有清单\"当验收（报告不是闸）\n```"
     }
   ],
-  "_dsl_rev": 1279,
+  "_dsl_rev": 1280,
   "feature_tree": {
     "features": [
       {
