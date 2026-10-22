@@ -543,20 +543,6 @@
         }
       },
       {
-        "id": "dir_src_application_design_bricks",
-        "label": "📁 bricks",
-        "x": 11300,
-        "y": 10834,
-        "width": 1330,
-        "height": 342,
-        "type": "module",
-        "style": {
-          "bg": "#152141",
-          "color": "#90caf9",
-          "borderRadius": 8
-        }
-      },
-      {
         "id": "dir_src_application_design_lifecycle",
         "label": "📁 lifecycle",
         "x": 12740,
@@ -1053,20 +1039,6 @@
         "y": 160,
         "width": 630,
         "height": 238,
-        "type": "module",
-        "style": {
-          "bg": "#152141",
-          "color": "#90caf9",
-          "borderRadius": 8
-        }
-      },
-      {
-        "id": "dir_src_presentation_cli_render",
-        "label": "📁 render",
-        "x": 3860,
-        "y": 488,
-        "width": 630,
-        "height": 758,
         "type": "module",
         "style": {
           "bg": "#152141",
@@ -58052,12 +58024,6 @@
         "label": "contains"
       },
       {
-        "id": "contains_src_application_design_src_application_design_bricks",
-        "from": "dir_src_application_design",
-        "to": "dir_src_application_design_bricks",
-        "label": "contains"
-      },
-      {
         "id": "contains_src_application_design_src_application_design_derive",
         "from": "dir_src_application_design",
         "to": "dir_src_application_design_derive",
@@ -58475,12 +58441,6 @@
         "id": "contains_src_presentation_src_presentation_cli",
         "from": "dir_src_presentation",
         "to": "dir_src_presentation_cli",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_presentation_cli_src_presentation_cli_render",
-        "from": "dir_src_presentation_cli",
-        "to": "dir_src_presentation_cli_render",
         "label": "contains"
       },
       {
@@ -61122,13 +61082,6 @@
         "type": "dashed"
       },
       {
-        "id": "dep_dir_src_application_design_lifecycle_dir_src_application_design_bricks",
-        "from": "dir_src_application_design_lifecycle",
-        "to": "dir_src_application_design_bricks",
-        "label": "imports ×2",
-        "type": "dashed"
-      },
-      {
         "id": "dep_dir_src_application_design_lifecycle_dir_src_application_design_derive",
         "from": "dir_src_application_design_lifecycle",
         "to": "dir_src_application_design_derive",
@@ -61154,13 +61107,6 @@
         "from": "dir_src_application_design_lifecycle",
         "to": "file_src_application_design_no_file_entries_ts",
         "label": "imports",
-        "type": "dashed"
-      },
-      {
-        "id": "dep_dir_src_application_design_workbench_dir_src_application_design_bricks",
-        "from": "dir_src_application_design_workbench",
-        "to": "dir_src_application_design_bricks",
-        "label": "imports ×3",
         "type": "dashed"
       },
       {
@@ -61941,13 +61887,6 @@
         "from": "file_src_application_design_handlers_ts",
         "to": "dir_src_application_design_lifecycle",
         "label": "imports",
-        "type": "dashed"
-      },
-      {
-        "id": "dep_file_src_application_design_index_ts_dir_src_application_design_bricks",
-        "from": "file_src_application_design_index_ts",
-        "to": "dir_src_application_design_bricks",
-        "label": "imports ×3",
         "type": "dashed"
       },
       {
@@ -103919,11 +103858,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T04:58:14.601Z",
+    "saved_at": "2026-10-22T05:09:19.177Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 61571790,
+    "age": 62236366,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -105864,8 +105803,29 @@
     {
       "id": "todo_⑥-清幽灵节点-实现-设计侧有-12-25-个节点指向盘上不存在的路径-含-ce",
       "summary": "【⑥ 清幽灵节点】【实现】设计侧有 12~25 个节点指向盘上不存在的路径（含 certs/design-contracts/*.contract.ts 已迁到 design-db/、3 个 .tmp-*.mjs 垃圾）。★ 危害：闸的覆盖面里混着幽灵；collectGateCoverage 不会报「节点指向不存在的文件」。★ 做法：删节点 or 标 void，并加一条读数（多少节点指向不存在的文件）。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:ghost-node",
+      "claimed_at": "2026-10-22T05:08:17.017Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T05:08:16.976Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T05:09:19.140Z",
+          "by": "llm",
+          "agent": "subagent:ghost-node",
+          "fingerprint": {
+            "what": "node /d/project_develop/_design-canvas-labs/ghost-classify.cjs ; node certs/t349-*.mjs ... certs/t359-*.mjs ; npm run verify",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_清注释里的用户原话-102-处-55-个文件-src-下注释写着-用户说-用户原",
@@ -106515,7 +106475,7 @@
       "created_at": "2026-10-22T04:58:14.557Z"
     }
   ],
-  "_dsl_rev": 1258,
+  "_dsl_rev": 1260,
   "feature_tree": {
     "features": [
       {
