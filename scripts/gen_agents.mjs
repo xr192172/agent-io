@@ -111,6 +111,8 @@ ${triggerTable}
 | 改了 \`src/\`，调工具前 | \`npm run build\` —— 工具跑 \`dist/\`，不 build 就是旧逻辑 |
 | 并行作业 | 不许并行 \`npm run build\`（共写 \`dist/\`）；验证可写库外 loader 直跑 \`src/\`，用完清探针产物 |
 | 提交前 | \`npm run verify\`（门清单见 \`docs/GUIDE-GATE.md\`） |
+| 改完只想跑受影响的证 | \`npm run verify:changed\` —— **增量入口**（按改动集挑证 + 契约；★ 它不是闸，是内环） |
+| 想查陈旧租约 / 漏收口 | \`npm run patrol\` —— **只报告不改 state**（TTL 到期、claimed 超期、missed_close） |
 | 调工具前查入参 | \`npm run tool -- <工具名> --schema\` |
 
 ## 四、判据与数据

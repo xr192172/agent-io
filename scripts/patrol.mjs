@@ -31,13 +31,21 @@ const arg = (name, dflt) => {
   return i >= 0 && argv[i + 1] ? argv[i + 1] : dflt;
 };
 const feature = arg('feature', 'task-system-plan');
-const ttlHours = Number(arg('ttl-hours', '24'));
 const asJson = argv.includes('--json');
 const root = process.cwd();
 
 // ★ Windows：动态 import 的绝对路径必须是 file:// URL，否则报 ERR_UNSUPPORTED_ESM_URL_SCHEME
 const target = path.join(root, 'dist', 'src', 'application', 'patrol', 'task_drift.js');
 const { patrolDrift } = await import(pathToFileURL(target).href);
+
+// ★★★ 2026-10-22：**默认 TTL 从 `LEASE_TTL_MS` 派生，不再在这里写死 24h**
+//   ★ 为什么必须改：本文件写 24h、而 `domain/task_machine.ts#LEASE_TTL_MS` 是 2h
+//     ⇒ 同一个数住两处 ⇒ `patrol` 说"没有过期租约"时，`claim` 那边早就按 2h 接管了。
+//     （这正是本仓头号病，今天刚在别处修过一次，这里又撞到。）
+//   ★ 仍可用 `--ttl-hours` 临时覆盖（诊断用），但**默认值不许再有自己的口径**。
+const { LEASE_TTL_MS } = await import(pathToFileURL(path.join(root, 'dist', 'src', 'domain', 'task_machine.js')).href);
+const ttlHoursOverride = arg('ttl-hours', null);
+const ttlHours = ttlHoursOverride !== null ? Number(ttlHoursOverride) : LEASE_TTL_MS / 3.6e6;
 
 const report = await patrolDrift(feature, {
   root,
