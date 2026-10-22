@@ -1449,6 +1449,19 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
     ],
   });
 
+  // ★★★ 2026-10-22：**说清"哪些字段没落盘"**（一个子代理实测 34/34 条 `observed` 都不见了，
+  //   它以为遇到了 bug）。★ 那不是 bug，是 `task_schema.ts:140` 的**有意设计**：
+  //   「不落 `observed` / 不落 passed/failed 计数 —— 那是**读数快照**，必陈旧」，
+  //   任务格只留结论 `{kind, at, by, verdict}`，跑的命令原文落在 `fingerprint.what` 里。
+  //   ⇒ 但**"有意不存"和"静默丢掉"在回执上长得一样** —— 所以这里必须明说，
+  //     否则每个填了 `observed` 的人都会以为自己的读数留在卡上了（本仓最忌这种"沉默的丢"）。
+  const notPersistedNote =
+    evidence!.kind === 'reading' && (evidence! as { observed?: string }).observed
+      ? '\n★ 注意：`observed`（你写的那段读数）**不落盘** —— 任务格只存结论 `{kind, at, by, verdict}`，' +
+        '跑的命令原文在 `fingerprint.what` 里。理由：读数快照必陈旧（`task_schema.ts:140`）。' +
+        '要留读数 ⇒ 写进 `docs/` 或回执里，别指望卡上。'
+      : '';
+
   // ★★★ 2026-10-21（跑环继任链）：**收口的这一刻正是"还有没有下一环"该被问的时候**——
   //   规则：**做完一环发现还有新的 ⇒ 就直接在这一环下面登记第二步**。
   //   ★ 但**只是提示**：不许阻塞。提示一阻塞，就会有人为了过闸乱填一张（那比没有链更坏）。
@@ -1494,6 +1507,7 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   return {
     message:
       `已完成任务 "${node_id}"（owner=${card.owner}，级别=${level}${normalizedInline(signer.adm)}）—— ${closeNote}、证据 kind=${evidence!.kind}。${chainNote.head}` +
+      notPersistedNote +
       chainNote.detail +
       normalizedActorNote(signer.adm) +
       (legacy ? `\n${legacy.message.split('\n')[0]}` : '\n★ todo：无节点 status 可投影（不在 geometry）⇒ 跳过 updateStatus') +

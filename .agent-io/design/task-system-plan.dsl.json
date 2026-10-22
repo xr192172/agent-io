@@ -104395,11 +104395,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T07:48:40.125Z",
+    "saved_at": "2026-10-22T08:13:47.141Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 71797314,
+    "age": 73304330,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -106041,8 +106041,29 @@
     {
       "id": "todo_D-judge-port",
       "summary": "抽 JudgePort 破 domain→application 倒挂（用户 2026-10-17 拍 A）",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:03:49.405Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:03:49.359Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:03:49.516Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "ls -l src/domain/judge_port.ts && grep 't353-judge-port-cert' certs/.work/cert-report.md",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_D-invariant-0",
@@ -106071,9 +106092,18 @@
     },
     {
       "id": "todo_D-dual-write",
-      "summary": "dual_write 的三个前提都不存在（OverlayAnchor 无 updated_at / DriftReport 无 authority_unknown）",
+      "summary": "【已失效 · 2026-10-22 复核】dual_write 这个度量随 overlay 去掉 decision 一并消失：grep 全仓只剩 docs/DESIGN.md:58 一行记述，src/ scripts/ 0 命中 ⇒ 原卡列的三个前提（OverlayAnchor 无 updated_at / DriftReport 无 authority_unknown / …）已无对象，不必再做。★ 若将来重新引入 overlay 决策副本，再重新立卡。",
       "state": "candidate",
-      "owner": null
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-10-22T08:08:23.020Z",
+          "from": "dual_write 的三个前提都不存在（OverlayAnchor 无 updated_at / DriftReport 无 authority_unknown）",
+          "to": "【已失效 · 2026-10-22 复核】dual_write 这个度量随 overlay 去掉 decision 一并消失：grep 全仓只剩 docs/DESIGN.md:58 一行记述，src/ scripts/ 0 命中 ⇒ 原卡列的三个前提（OverlayAnchor 无 updated_at / DriftReport 无 authority_unknown / …）已无对象，不必再做。★ 若将来重新引入 overlay 决策副本，再重新立卡。",
+          "reason": "2026-10-22 复核：原卡描述的现状已变（grep/读数见 summary）。依据 = 2026-10-22 盘点 + 本代理复核",
+          "by": "subagent:deepseek-closeout"
+        }
+      ]
     },
     {
       "id": "todo_D-actor-entry",
@@ -106125,27 +106155,99 @@
     },
     {
       "id": "todo_D-anti-decoration",
-      "summary": "11/15 条边没有判据",
+      "summary": "【已过期 · 2026-10-22 复核】装饰边已不存在：.agent-io/design/task-system-plan.dsl.json 的 1155 条边全部是 contains(633) / imports(522；\"imports ×N\" 只是调用次数后缀)，decision / 装饰边 0 条（geometry.edges 只有 label 一种关系字段，实测只有这两个值）⇒ 原卡「11/15 条边没有判据」不再成立：剩下的边都是机器可算的结构关系。",
       "state": "candidate",
-      "owner": null
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-10-22T08:08:23.112Z",
+          "from": "11/15 条边没有判据",
+          "to": "【已过期 · 2026-10-22 复核】装饰边已不存在：.agent-io/design/task-system-plan.dsl.json 的 1155 条边全部是 contains(633) / imports(522；\"imports ×N\" 只是调用次数后缀)，decision / 装饰边 0 条（geometry.edges 只有 label 一种关系字段，实测只有这两个值）⇒ 原卡「11/15 条边没有判据」不再成立：剩下的边都是机器可算的结构关系。",
+          "reason": "2026-10-22 复核：原卡描述的现状已变（grep/读数见 summary）。依据 = 2026-10-22 盘点 + 本代理复核",
+          "by": "subagent:deepseek-closeout"
+        }
+      ]
     },
     {
       "id": "todo_D-parallel",
       "summary": "\"两两交集为空\"算不出来（path 覆盖率不够）",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:06:39.328Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:06:39.281Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:06:39.449Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "sed -n \"25,45p\" src/application/claim_conflict.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_D-claim-incomplete",
       "summary": "\"领到先查依据\"由人执行，无机器检查器",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:06:39.591Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:06:39.554Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:06:39.723Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "sed -n \"1030,1060p\" src/application/design/dsl_ops/task_ops.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_D-design-completeness",
       "summary": "D1–D9 本身没有检查器",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:06:39.855Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:06:39.809Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:06:39.969Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "node scripts/design-check.mjs",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_D-gate-text",
@@ -106169,8 +106271,29 @@
     {
       "id": "todo_A4",
       "summary": "A4：证据闸只校验【形状】（task_ops.ts:601）—— L1 卡可用手填 {all_green:true} 收口，从不与真实判定对账",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:06:40.091Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:06:40.058Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:06:40.193Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "sed -n \"1375,1425p\" src/application/design/dsl_ops/task_ops.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_A5",
@@ -106180,9 +106303,18 @@
     },
     {
       "id": "todo_A6",
-      "summary": "A6：已领卡的 decision 可静默漂移（node_ops.ts:419）—— claimed/done 的 L2 卡，decision 改了没人管（第四条死锁成因没有执行者）",
+      "summary": "【已删除 · 2026-10-22 复核】A6 闸随「task.expectations 去副本」一并删除：src/application/design/dsl_ops/node_ops.ts:344-351 明写「A6 闸已删除」——它防的是\"卡上挂旧判据、decision 已是新的\"，而 TaskSpec 现在没有 expectations 字段，做 A 验 B 在结构上不可能。★ 剩下的\"claimed 期间判据被改\"归读集 / assumption_check（src/application/read_set.ts:564 checkAssumptions）管，不在这里再写一道比较。",
       "state": "candidate",
-      "owner": null
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-10-22T08:08:23.200Z",
+          "from": "A6：已领卡的 decision 可静默漂移（node_ops.ts:419）—— claimed/done 的 L2 卡，decision 改了没人管（第四条死锁成因没有执行者）",
+          "to": "【已删除 · 2026-10-22 复核】A6 闸随「task.expectations 去副本」一并删除：src/application/design/dsl_ops/node_ops.ts:344-351 明写「A6 闸已删除」——它防的是\"卡上挂旧判据、decision 已是新的\"，而 TaskSpec 现在没有 expectations 字段，做 A 验 B 在结构上不可能。★ 剩下的\"claimed 期间判据被改\"归读集 / assumption_check（src/application/read_set.ts:564 checkAssumptions）管，不在这里再写一道比较。",
+          "reason": "2026-10-22 复核：原卡描述的现状已变（grep/读数见 summary）。依据 = 2026-10-22 盘点 + 本代理复核",
+          "by": "subagent:deepseek-closeout"
+        }
+      ]
     },
     {
       "id": "todo_api_setNodeSemantic-dumbwrite",
@@ -106214,8 +106346,11 @@
     {
       "id": "todo_run-cannot-load-module",
       "summary": "run 契约的求值域【不加载业务函数】（只有 validateDSL/fs/path）⇒ \"调用 updateStatus 看它抛不抛\"这类【真行为契约】写不出来，只能钉\"闸的接线与顺序\"（grep 级）。★ 2026-10-19 子代理补 status_tools 设计时发现；它单独跑过 validateProgressEvidence(done, undefined) 确实拒，但没法写成 expectation",
-      "state": "candidate",
-      "owner": null
+      "state": "void",
+      "owner": null,
+      "retire_reason": "不做：run 契约的求值域是**故意**不加载业务函数的——src/domain/expectation.ts:78-80 明写 expect 可用名字只有 input / root / validateDSL，\"它不是任意代码执行：求值域只在这个小池子里\"。开业务函数 = 在判定器里跑仓内任意代码，而真行为契约已由 behavior_baseline（src/application/observe/index.ts:306）与 run_tests（src/application/observe/index.ts:389）承担。⇒ 这是设计选择，不是待办。",
+      "retired_at": "2026-10-22T08:08:39.894Z",
+      "retired_by": "subagent:deepseek-closeout"
     },
     {
       "id": "todo_symbol-exists-cannot-type-only",
@@ -106226,14 +106361,56 @@
     {
       "id": "todo_rescan-index",
       "summary": "cache.db 索引过期：task_ops.ts / task_drift.ts / task_machine.ts 的内容改过（今天大量改动），而索引还是旧的 ⇒ 13 条 call-exists/edge-exists 判不了（unsupported）⇒ D6 红。★ 修法：跑 import_project 重扫（MCP 工具，我在子代理里调不到）",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:06:40.314Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:06:40.281Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:06:40.420Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "node scripts/design-check.mjs；node -e \"比对 cache.db files.content_hash 与盘上 sha1\"",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_rescan-no-hash-update",
       "summary": "★★ import_project 重扫【不更新 content_hash】：实测跑 558 个文件（22.8s）后，task_ops.ts / task_drift.ts / task_machine.ts 的 files.content_hash 仍是旧值（722f11 / 239d8cad / 95bc5dd7），而当前 sha1 是 ca4d3f / 17260312 / 72583af2 ⇒ 保鲜（indexStaleFor）永远说\"索引与源码不一致\" ⇒ 13 条 call-exists/edge-exists 永远判不了。★ 根因待查（syncProject 的增量分支 / toRelPath / max_files 之外）—— 不是\"保鲜坏了\"，是\"重扫没生效\"",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:07:57.904Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:07:57.863Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:07:58.011Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "node -e \"SELECT path,content_hash FROM files 与 crypto sha1 逐一比\"",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_install-mcp-no-workbuddy",
@@ -106271,8 +106448,29 @@
     {
       "id": "todo_查清-imports-start-index-落库只有-39-ts-的原因并修好",
       "summary": "查清 imports.start_index 落库只有 39%（TS）的原因并修好 —— 抽取层已证有值（task_machine.ts 首条 si=1887），写入代码（symbols.ts:511）读着也对，唯一写入点仅此一处；但 DB 里 686/1739 为 NULL。★ 关键矛盾：identifiers 与 imports 抽自同一棵树，identifiers 有 126504 行偏移、imports 却只有 39% —— 问题不在「树没给」。下一步：直接打印 task_machine.ts 里 import_statement 节点的 startIndex，看是不是这个节点类型特别。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:07:58.130Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:07:58.098Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:07:58.239Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "node -e \"SELECT count(*), sum(start_index IS NULL) FROM imports\"",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_查清-imports-start-index-落库只有-39-ts-的原因并修好-2",
@@ -106294,8 +106492,29 @@
     {
       "id": "todo_持续收集-用本仓工具哪里不顺手-并汇总进-docs-dogfood-md-已建-",
       "summary": "持续收集「用本仓工具哪里不顺手」并汇总进 docs/dogfood.md（已建，2026-10-20 首版 13 条）。★ 机制两条：① 每周一 09:00 有 automation「agent-io dogfood 自检」跑一次真实小事并追加；② 每次派子代理时，在回报格式里加一条「用这个工具时哪里让你多做了动作 / 让你猜了」——2026-10-20 的子代理就是靠这条在第 5 分钟指出「库正在被旧进程写」，而我查代码查了 20 分钟。★ 判据：dogfood.md 记**体验**（想做什么 → 多做了什么/猜了什么），真缺陷进 docs/todo.md，两者不混。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:08:04.530Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:08:04.496Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:08:04.640Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "wc -l docs/dogfood.md",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_侦察-实现-imports-剩-0-4-prunedeletedfiles-与-",
@@ -106317,8 +106536,29 @@
     {
       "id": "todo_侦察-实现-done-卡不能连续改动-需要-追加一卡-的语义-现象-同一节点做第",
       "summary": "【侦察→实现】`done` 卡不能连续改动：需要「追加一卡」的语义。现象：同一节点做第二件事时，`publish` 拒（\"覆盖它等于把已完成的判据换掉\"），`release` 只能 claimed→candidate，实际路径是 `reopen → release → 改 decision → publish` 四步。2026-10-20 我因此两次无卡改动（schema.ts 的 identifiers → imports span）。★ 侦察要点：四步里哪一步是真正必要的？能不能用一个 `supersede`（旧卡作废 + 新卡继承）替代？注意 `t_reopen`（done→claimed）已经在 2026-10-19 加了。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:06:54.484Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:06:54.451Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:06:54.590Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "sed -n \"920,960p\" src/application/design/dsl_ops/task_ops.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_实现-给-complete-挂变异测试-试点-不全局-现状-scripts-im",
@@ -106329,8 +106569,29 @@
     {
       "id": "todo_实现-find-references-field-refs-的-定位-从正则换成",
       "summary": "【实现】`find_references` / `field_refs` 的**定位**从正则换成 `identifiers` 表。现状：两者都是\"正则定位 + AST 分类\"（`field_refs` 有 18 处 AST 调用）。换掉定位能省 `readFileSync` 且不再误报注释。★ 边界：只换定位，**不动** `classifyOffset` 那套 AST 分类；`find_references` 的正则目前是**兜底**（`if (!anyAstHit)`），要看清再动。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:08:04.277Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:08:04.239Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:08:04.398Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "sed -n \"20,45p\" src/application/refactor/find/field_refs.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_实现-task-plan-写端-唯一还要手改-json-的一块-现状-task-",
@@ -106358,8 +106619,29 @@
     {
       "id": "todo_侦察-实现-给-src-application-write-gate-ts-加-",
       "summary": "【侦察→实现】给 src/application/write_gate.ts 加「量具豁免」：certs/（证）与 scripts/（运维脚本）不受任务闸。★ 现象（2026-10-20 实测）：写闸全仓受闸后，改一张坏证也要先 publish + claim；而「证坏了」往往正是「闸/契约坏了」，会成死循环（要修证 → 先立卡 → 立卡要先保证闸对 → 而闸对不对要靠证）。★ 设计要点：① 这是**放宽判据**，必须只放宽到「量具」，不许放宽到产品代码；② 豁免的判据只能住一处（），别在闸里散落路径字符串（本仓头号病根＝同一判据住两处）；③ 豁免必须**显式可查**（回执里说「本次写入被豁免为量具」，不许静默放行）；④ 反面对照：豁免生效后，改 src/ 下任一文件仍必须受闸。★ 边界： 是【Design DB】不是证 —— 它是派生物，但**不是量具**，要不要豁免单独判（VISION 冲突3 已裁「DSL 浅 · DB 在 certs/」）。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:08:03.774Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:08:03.723Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:08:03.887Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "grep -n exempt src/application/write_gate.ts；node -e \"查 scripts/*.mjs 节点的 gate\"",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_a7-在生产面不可达-侦察-实现-a7-在正常-mcp-面-永远不触发-vsco",
@@ -106397,14 +106679,56 @@
     {
       "id": "todo_void-4-张降级卡-实现-gate-豁免让-4-张卡失去对象-文件已-exe",
       "summary": "【void 4 张降级卡】【实现】gate 豁免让 4 张卡失去对象（文件已 exempt）：design-canvas 3 张 claimed（scripts/contract-calls.mjs、dep.mjs、gen-contracts.mjs）+ task-system-plan 1 张 done（scripts/impl-mutate.mjs）。★ 处置：void 掉 task，【保留 decision】（判据仍是设计）。★ 先确认 t_void 的 from 允不允许从 claimed/done 走；不允许就先 reopen/relaunch。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:06:54.711Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:06:54.677Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:06:54.814Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "node -e \"遍历两册 geometry.nodes 查 contract-calls/dep/gen-contracts/impl-mutate 的 gate 与 task\"",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_另-3-处没接线的回执-实现-子代理报的-超出它那三条写路范围-rename-s",
       "summary": "【另 3 处没接线的回执】【实现】子代理报的（超出它那三条写路范围）：rename_symbols.ts:469、apply_writes.ts:97、code_workbench.ts:286/704 —— 都拿到 SourceWriteReport.task_gate 但丢了。★ 正解：从 SourceWriteReport.task_gate 统一带出（判据一处），别再各接一遍。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:08:04.024Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:08:03.987Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:08:04.151Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "sed -n \"495,520p;545,560p;655,670p\" src/application/refactor/rename/rename_symbols.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_④-修活-hook-task-gate-mjs-实现-scripts-hook-",
@@ -106529,20 +106853,83 @@
     {
       "id": "todo_重写-agents-md-37kb-src-presentation-的-age",
       "summary": "【重写 AGENTS.md（37KB）】src/presentation 的 AGENTS.md 是「为 AI agent 编写」的约定，37KB，是最可能诱导 agent 的文件。★ 它部分由 scripts/gen_agents.mjs 从 TRIGGER_ROWS 生成 ⇒ 要改生成源，不许只手改产物。★ 目标：只留现状（开发动作 → 必用工具 的表），删掉所有历史/原话/理由。★ 格式照 docs/INDEX.md。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:08:04.764Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:08:04.727Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:08:04.885Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "wc -c AGENTS.md；head -3 AGENTS.md",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_readme-与-contributing-校准-readme-md-readm",
       "summary": "【README 与 CONTRIBUTING 校准】README.md / README.en.md / CONTRIBUTING.md 未核对（可能有过期命令与路径）。★ 只校准事实，不重写风格。★ 验收：文中每条命令都能跑通（或标 deprecated）。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:08:06.284Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:08:06.239Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:08:06.402Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "grep -o \"npm run [a-z:-]*\" README.md | sort -u；node -e \"列 package.json scripts\"",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_结构-satisfied-不该锁死文件-现状-src-domain-task-m",
       "summary": "【★★ 结构：satisfied 不该锁死文件】现状：src/domain/task_machine.ts 的 isClaimable 判据是「后态有红才可领」⇒ satisfied（判据全过）⇒ 拒「没活干」⇒ 写闸只认 claimed ⇒ 已完成文件的任何改动（含改注释、重构、补文档）全部做不了。★ 用户裁定（2026-10-20）：「一个任务已完结之后为什么会直接锁文件，而不是持续让它像没有下过任务的文件一样，让它能够继续被下一个任务承载」⇒ 文件的【可写性】不该由【卡的活跃度】决定。★ 修法（倾向 a，简单）：satisfied 也允许 claim，但回执必须区分意图——「判据全过：本次领卡是【修改】不是【补红】」；done/void 的卡走 reopen/relaunch 后同样可领。另一候选 b：claim 加 intent=work|modify（精确但多一个参数）。★ 不许的做法：① 给每个文件标 gate=exempt（那是绕过闸，不是修结构）；② void+relaunch（会清空判据 = 毁设计信息）。★ 验收：satisfied 的节点可 claim → 改一行注释 → complete → 再进行下一轮仍可 claim；同时 A7 仍拦「领别人 owner 的卡」；写闸对「无任何卡且节点非 exempt」仍拒。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:06:54.935Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:06:54.901Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:06:55.038Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "grep -n \"export function isClaimable\" -A 4 src/domain/task_machine.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_真漏-remove-dead-imports-的写闸没有-actor-参数-实测",
@@ -106637,8 +107024,29 @@
     {
       "id": "todo_p1-增量测试的地基-evidence-带代码指纹-用户裁定-2026-10-2",
       "summary": "【P1 增量测试的地基：evidence 带代码指纹】用户裁定（2026-10-21）：开发期只跑\"改过的 + 受影响的\"，冻结期跑一次全量然后封存。实现形式不是新框架，而是：evidence 加 {输入指纹, 输出指纹, 代码指纹}；指纹没变 ⇒ 证据仍有效，不重跑；变了 ⇒ 自动失效。★ 形状已验证过：index_integrity 的 \"schema v12 ≠ 当前 v13 ⇒ 不可信 ⇒ 需重建\" 是同一个形状。★ 现成指纹：files.content_hash（四道准入在用）。★ 落点：src/application/refactor/edit/../observe/runtime/run_tests.ts 的回执 + task_schema 的 evidence 结构。★ 不许：改 expectations 的 run（它是纯读布尔表达式，每次判都求值，加跑命令会慢到不可用）。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:06:56.345Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:06:56.304Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:06:56.456Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "sed -n \"175,205p\" src/domain/task_schema.ts；grep -n fingerprintEvidence src/application/design/dsl_ops/task_ops.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_p1-增量测试的选量-测试-文件映射-现状-run-tests-跑-npm-te",
@@ -106661,14 +107069,56 @@
     {
       "id": "todo_translate-go-ts-照-rea-补两件-unknowns-对照测试-",
       "summary": "【translate_go_ts 照 REA 补两件：unknowns + 对照测试】依据（REA = github.com/morluto/rea，11 万星）：判据不是\"AST 一致\"，是\"新旧执行同样操作，比较输出\"（Aegis 133 组全一致；DX-Ball 3,205 组全一致）。★ 要补：① 回执带 unknowns（分开\"已知\"与\"推测\"，不许把合理故事当事实）；② 强制对照测试：没有测试就报【未验证】，不许报【完成】。★ 不许：把\"能编译\"当成功。★ 用户裁定：判据是\"功能达成\"不是\"结构相同\"——不能直接映射的可以手动翻译，能映射的搭映射表。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:08:06.536Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:08:06.496Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:08:06.657Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "sed -n \"96,110p;285,320p\" src/infrastructure/authoring/translate/receipt.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_账本加-via-字段-分清-agent-用了-证书跑了-扫射跑了-现状-agen",
       "summary": "【账本加 via 字段：分清 agent 用了 / 证书跑了 / 扫射跑了】现状：.agent-io/dogfood/usage.jsonl（16,422 行）的 DogfoodUsage 只有 {ts,tool,action,ok,ms,nextHops,err}，没有 actor / via ⇒ 分不清\"agent 用了\"和\"证书/扫射跑了\"（canvas_notes 7 次成功全落在 4 个扫射日，无法判断有没有人真用）。★ 最小改动：recordDogfoodUsage 加 via: mcp|cli|cert|sweep|gate（一条字段就够）。★ 顺带：mcp_scan.mjs 直接 def.handler({}) 绕过 invokeTool ⇒ 不入账；verify 门跑的那一遍也不在账本里。★ 这条不做，\"哪些工具没用\"永远是猜的。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:08:06.773Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:08:06.740Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:08:06.885Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "tail -1 .agent-io/dogfood/usage.jsonl",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_静默失效-翻译线-runparityonfilled-恒空转-slice-0-5",
@@ -106694,14 +107144,56 @@
     {
       "id": "todo_静默失效-health-java-分支先-replace-s-import-s-",
       "summary": "【静默失效·health】java 分支先 `replace(/^\\s*import\\s+static\\s+/,'')` 再匹配 `/^\\s*import\\s+([\\w.]+)/`，剥完 static 之后字符串里已经没有 \"import\" 二字 ⇒ 恒匹配失败；`import java.util.*;` 的 `*` 也让正则断掉。⇒ static import 与通配 import 两类静默漏掉。要做的：走 AST 子节点（`scoped_identifier` / `identifier`），通配（`asterisk` 子节点）明确不产绑定。判据：`import static a.b.C.m;` 必须取到 `m`，通配必须不产绑定且回执可解释。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:08:07.027Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:08:06.982Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:08:07.147Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "sed -n \"498,528p\" src/infrastructure/analysis/health/index.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_门腐坏-npm-run-invariants-默认入口硬编码-docs-task",
       "summary": "【门腐坏】`npm run invariants` 默认入口硬编码 `.agent-io/design/task-system-plan.dsl.json`（该文件已搬去 `.agent-io/design/`）⇒ 每次 exit=2 ENOENT；手动喂现存路径后 4 条里 2 条 FAIL，两条 cmd 是内嵌 `node -e` 字符串、里面也是同一条死路径。⇒ \"设计侧不复制事实\"这条 invariant 今天【没有任何约束力】。要做的：cmd 里的路径改成从 runner 传入（或读 `.agent-io/design/`）；修完必须能 4/4 PASS。★ 别只改默认路径 —— 那只是让它\"能跑\"，两条 cmd 仍然查不了东西。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:08:07.286Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:08:07.244Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:08:07.403Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "npm run invariants",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_状态机语义-void-是单向闸-不是收尾动作-transitions-里-t-v",
@@ -106861,8 +107353,11 @@
     {
       "id": "todo_db-补全-边元数据-edges-metadata-是个空壳-实测只有-cros",
       "summary": "【DB 补全·边元数据】`edges.metadata` 是个空壳：实测只有 `{\"cross\":true}` 一个布尔，8 列里这列等于没用。★ 这条【先别填】—— 因为现在没有任何消费方，填了就是又造一个\"建好了没人读\"（`nodes.params` 昨天刚犯过）。要先回答的问题：谁会读 metadata？候选消费方与它需要的东西：① `impact_analysis` 要\"这次调用是不是跨进程/跨语言\" ② `translate` 要\"这个调用的接收者是什么类型\" ③ `reconcile_effects` 要\"这次调用是不是 IO\"。⇒ 本卡的动作是【定消费方】，定了再填；没定就先让它空着，别自欺。",
-      "state": "candidate",
-      "owner": null
+      "state": "void",
+      "owner": null,
+      "retire_reason": "不做：edges.metadata 的消费方仍然只有 cross 一个布尔（src/application/meta/explore/query_feature.ts:253/259、src/infrastructure/index/function_outline.ts:134 都只读 .cross），补其它字段就是\"建好没人读\"（nodes.params 刚犯过）。⇒ 本卡的动作是「先定消费方再填」，而这件事没有排期、也不该占候选队列；将来真有消费方再重新立卡。",
+      "retired_at": "2026-10-22T08:08:39.984Z",
+      "retired_by": "subagent:deepseek-closeout"
     },
     {
       "id": "todo_翻译-前提-dsl-摘掉-symbols-实测-200-个文件里-191-个有它",
@@ -106903,8 +107398,11 @@
     {
       "id": "todo_更正-取代-dsl-摘-symbols-那条-不摘-symbols-改为-修它的",
       "summary": "【更正·取代\"DSL 摘 symbols\"那条】**不摘 `symbols[]`**，改为**修它的质量**。\n★ 用户裁定（2026-10-21）：「DSL 是**预览版、缩略版的 DB** —— 直接全量读 DB 很难，而且让它选择性读，它也不知道要读什么。\n有这个缩略版才能**指引它读什么**，要更细的再去用工具读 DB。」⇒ **`symbols[]` 是导航/目录，不是\"代码事实的冗余副本\"**。\n（我上一条把它当副本，判断错了：书目录也抄章节名，但目录的价值在导航，不在重复正文。）\n\n**真正的病是\"有损\"和\"陈旧\"，不是\"存在\"**——实测：\n① 有损：`live_render.ts:76 kindOf` 把 function/method/const **一律折成 type** ⇒ 2649 条共有符号里 2558 条 kind 与库不同；\n   更糟的是 `overlay.ts:58 computeFileSignature` 靠 `kind:name` 认亲 ⇒ **函数与类型指纹相同**（rename 会误认）。\n② 陈旧：383 条 DSL 独有 · 20 个文件行数过期 · 27-30 个 DSL 文件盘上已不存在（DSL 比 DB 旧，但没人知道）。\n\n要修三件：\n（a）**kind 保真**：`kindOf` 不再归一，function/method/const/type/interface 保持原样；顺带修 `computeFileSignature`。\n（b）**陈旧可见**：DSL 带\"索引时刻 + 源 content_hash 摘要\"，让\"DSL 比 DB 旧\"能被查出来（不许静默用旧目录导航）。\n（c）**清幽灵**：27-30 个盘上已不存在的文件，从 DSL 里删掉（或标 `stale`）。\n\n★ 翻译场景**沿用用户的解法**：复制到译文侧时**只脱掉 `symbols[]`**（目标符号还不存在，带了就是假目录），\n源侧 DSL 保留它。⇒ 不需要为了翻译去动源侧 DSL 的形状。",
-      "state": "candidate",
-      "owner": null
+      "state": "void",
+      "owner": null,
+      "retire_reason": "并入：本卡与 todo_dsl-符号表-最终判据 是同一件事的旧版——两张都写\"不摘 symbols，改修 kind 保真 + 清幽灵 + 基线可追溯\"，而后者已按其依据收口（src/infrastructure/index/live_render.ts:78-85 删掉本地 kindOf；task-system-plan.dsl.json 543 个 file 节点幽灵 0）。两张并存 = 同一判据两处权威，留旧版只会让人重做一遍。",
+      "retired_at": "2026-10-22T08:08:41.238Z",
+      "retired_by": "subagent:deepseek-closeout"
     },
     {
       "id": "todo_摘-symbols-把符号表从设计-dsl-里摘掉",
@@ -106927,54 +107425,56 @@
     {
       "id": "todo_dsl-符号表-最终判据-保留-symbols-只修它的失真与幽灵-方向判据-用",
       "summary": "【DSL 符号表·最终判据】**保留 `symbols[]`，只修它的失真与幽灵**。\n\n★ 方向判据（用户 2026-10-21 两次纠正后定死）：\n  「设计册本身它不就是要在原 DB 上改嘛，原 DB 已经有了，所以它直接**复制**过去，然后**它改的是它的事**，\n   它要的是**实际去追上设计**。你不要老是想让设计册去靠实际册。」\n  ⇒ **DSL = 复制基线 → 独立演化 → 差值即待办**；**实际追设计，不是设计追实际**。\n\n★ 所以此前两种说法都作废：\n  ① 「摘掉 symbols[]」                      ← 错：它是缩略图/目录，是 `facts` 的**导航入口**（没它 LLM 不知道该查哪个名字）\n  ② 「检测 DSL 是否陈旧、与 DB 同步」        ← 错：这是\"设计靠实际\"的方向；DSL 比 DB 新是**正常**的，那是待办\n\n要修三件（**只修这三件，别扩**）：\n  （a）**kind 保真**：`src/application/design/live_render.ts:76 kindOf` 把 function/method/const 一律折成 type ⇒\n       实测 2558/2649 条符号 kind 与 `nodes` 表不一致；\n       连带 `src/application/design/overlay.ts:58 computeFileSignature` 靠 `kind:name` 认亲 ⇒ 函数与类型指纹相同（rename 会误认）。\n  （b）**幽灵清理**：27-30 个 DSL 里还记着、但盘上已不存在的文件 —— 这是**唯一真正的错**（设计册里写了不该存在的东西）。\n  （c）**基线可追溯**：DSL 记下它复制自哪一刻的 DB（`_sync` 里带上索引时刻），这样\"设计比实际新 / 实际比设计新\"**可判**，\n       但**绝不因此自动改写设计册**。\n\n★ 翻译场景：**源侧 DSL 保留 symbols[]**；复制到译文侧时**脱掉**（目标符号还不存在，带了就是假目录）。",
-      "state": "candidate",
-      "owner": null,
-      "claimed_at": null,
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:06:56.580Z",
       "read_set": {
-        "symbols": [
-          {
-            "file": "src/domain/overlay.ts",
-            "name": "computeFileSignature",
-            "fp": "fa622e96ddf67968a157bc79807045661cdfc2ff"
-          },
-          {
-            "file": "src/infrastructure/index/live_render.ts",
-            "name": "kindOf",
-            "fp": "70505ec3ff8e49b10e6ebf3067a94ac31aeeb3e3"
-          }
-        ],
-        "files": [
-          {
-            "path": ".agent-io/design/design-canvas.dsl.json",
-            "content_hash": "dc1e7e3e09ee9edd5b7c2c5f10f5f544c9651129"
-          },
-          {
-            "path": ".agent-io/design/task-system-plan.dsl.json",
-            "content_hash": "846ea942bfce7d6bc46642eb1c6e1c1b9a6477d5"
-          },
-          {
-            "path": "src/domain/overlay.ts",
-            "content_hash": "150beb28ab0543e4a7132885d889ee757dad82e3"
-          },
-          {
-            "path": "src/infrastructure/index/live_render.ts",
-            "content_hash": "476f54d62584ab10d0b925330c3a291ba398feb8"
-          }
-        ],
-        "computed_at": "2026-10-21T11:18:12.770Z",
-        "basis": [
-          "declared"
-        ]
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:06:56.548Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
       },
-      "release_reason": "暂时释放：读集占住了要施工的 overlay.ts / live_render.ts，需先领节点卡；施工完再领回",
-      "released_by": "subagent:dsl-symbols-fixer",
-      "released_at": "2026-10-21T11:23:55.083Z"
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:06:56.703Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "sed -n \"74,96p\" src/infrastructure/index/live_render.ts；node -e \"数 543 个 file 节点盘上是否存在\"",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_并发控制-账户-把-actor-从-随手写的字符串-变成-有规范的账户-并在所有",
       "summary": "【并发控制·账户】把 `actor` 从\"随手写的字符串\"变成**有规范的账户**，并在所有写路上强制（A7）。\n\n现状（实测）：\n· `actor` 已存在：`edit_code` / `rename_symbols` / `apply_writes` / `refactor_plan` / `remove_dead_imports` / `deprecate_offline`\n  都一路交到 `write_gate`；`AGENT_IO_ACTOR_STRICT=1` 时真的拒（实测 owner=alice + actor=me ⇒ 拒，文件未改）。\n· 本轮补齐：`rename_local` / `annotate_functions` / `rules apply` 三条漏传的；`approveChange` 改用 `c.submitter`（提案人=代码作者，不是拍板人）。\n· **缺口不是通道，是\"账户\"这个概念本身**：现在只是任意字符串，没有命名规范 ⇒ 无法审计\"谁是谁\"。\n\n要做：\n（a）**命名规范**：`human:<name>` / `agent:<session>` / `subagent:<task>`；不合规范的 actor 在 STRICT 模式下拒。\n（b）**账户↔任务的所有权已存在**（`task.owner` + A7），但要在**每一条**写路上生效 —— 判据只住 `write_gate`，调用方只负责传。\n（c）★ **缺省值要明说**：非 STRICT 下 actor 为空 ⇒ 提醒+放行（现在是这个行为，保留）；STRICT 下必须拒。\n★ 不需要密码学账户/登录：单机场景，`actor` 就是身份；要的是**可追溯**，不是**鉴权**。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:07:58.357Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:07:58.325Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:07:58.458Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "sed -n \"55,75p\" src/domain/actor_spec.ts；sed -n \"844,856p\" src/presentation/mcp/server_registry.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_并发控制-闭包冲突-任务冲突按-可达闭包-算-两个任务要改的符号-其影响面-传递",
@@ -106988,46 +107488,181 @@
     {
       "id": "todo_并发控制-读集比对-取代-可达闭包-方案-那个方案已作废-成本高-精度低-依据-",
       "summary": "【并发控制·读集比对】取代\"可达闭包\"方案（那个方案已作废：成本高、精度低）。\n\n★ 依据（业界同题工作，已查证）：\n· **STORM**（arXiv 2605.20563《Multi-agent Collaboration with State Management》）：把问题当**状态管理**，\n  核心判据是「**agent 的推理依赖它读过的那些文件；只有这些文件没变，这次编辑才安全**」。\n  比 git-worktree 隔离 +18.7（Commit0-Lite），因为把冲突检测从**合并时**挪到了**写入时**。\n· **Aura 的 collision detection** 三层：File（噪声大）/ Symbol（真重叠）/ **Dependency（改了别人依赖的东西）**。\n  它举的例子就是本仓场景：「一个 agent 改了 `parseConfig` 签名，另一个按旧签名写了三处调用 —— git 干净合并、build 断」。\n\n★ 判据（用户 2026-10-21 定：\"不用太精确，LLM 自己会适配，减少不良后果即可\"）：\n```\n读集 R = 本会话 read / facts 过的文件 + 符号 + 它们的指纹（signature / sym_hash）\n写前比对：别人要写的符号 ∩ R ≠ ∅  ⇒ 报「你读的 X 变了（指纹 h1→h2）」，让 agent 自己重读适配\n```\n\n★ **这是\"可精确判定\"的**（比 hash 就行），而\"影响面/传递闭包\"是**不可判定的**（等价于判程序行为等价）。\n  ⇒ 用户说\"不用太精确\"，反而让我们用上了**更准**的方法：**精确的读集比对 > 近似的影响面估算**。\n\n★ 本仓的额外优势：`edges` / `identifiers` 已有 ⇒ 读集可以不止\"我读的文件\"，还能含\"我读的文件**依赖的符号**\"\n  ⇒ 这才做到 Aura 说的 Dependency 层。\n\n★ 明确**不做**的三件（照 STORM 的做法）：\n  ① 不做传递闭包（贵且不准）② 不做自动排队/分布式锁（引入隐蔽状态）③ 不在合并时补救（太晚）\n\n落地要点：\n· 读集记录挂在会话/任务上（`read` / `facts` 已经能知道读了什么 —— 现成的两个入口）\n· 写闸（`write_gate`）在落盘前比对，命中就在回执里点名\"哪条假设可能过期\"，**不阻塞**（用户要的是\"减少不良后果\"，不是\"拦住所有\"）\n· 与 A7（谁在写）是两件事：A7 管**身份**，读集管**假设是否过期**，别混进一个判据",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:07:58.577Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:07:58.544Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:07:58.683Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "grep -n checkAssumptions src/application/read_set.ts src/application/write_gate.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_pending-假绿-只有-pending-后态判据-run-blocked-b",
       "summary": "pending 假绿：只有 `pending` 后态判据（`run.blocked_by`）的卡会被判 `satisfied` ⇒ 可收口。★ 病根：`Verdict` 四值里只有它没被 `src/domain/task_machine.ts#cardStanding` 计数（`checked` 收它，`passed/failed/unsupported` 都不收）⇒ `failed===0 ∧ unsupported===0` ⇒ satisfied。★ 判据：`pending > 0 ⇒ unknowable`，reason 必须带 `blocked_by` 原文（“卡在哪”要能读出）；配自己的夹具：① 一张卡一条 `run{blocked_by:'等 X'}` ⇒ 期望 unknowable 且 reason 含“等 X”；② 同卡去掉 `blocked_by` ⇒ satisfied（对照，证明夹具能分辨）。★ 修它会改现网卡结论（本来能收口的卡变不能收口）⇒ 不与 D-judge-port 合并。",
-      "state": "candidate",
-      "owner": null,
-      "follows": "todo_D-judge-port"
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "follows": "todo_D-judge-port",
+      "claimed_at": "2026-10-22T08:07:58.804Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:07:58.771Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:07:58.909Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "sed -n \"330,365p\" src/domain/task_machine.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_domain-five-values",
       "summary": "【链 A 环3 · domain 五值单测】cardStanding(card,{root,nodes,judge}) 已能注入假 Judge ⇒ 用假 Judge 覆盖 5 值 × 前后态组合，全程不碰 fs / cache.db / 真实项目根。\n覆盖矩阵：\n· work —— 后态有红且可修（own 或 orphan）/ 前态无红；\n· violated —— 前态 failed > 0（★ 最容易漏的一格）；\n· blocked —— 后态有红但全部落在别人未完成/已 done 的节点（不可修）；\n· satisfied —— 后态全过、前态无红；\n· unknowable —— ① post.length === 0 ② unsupported > 0 ③ 残报 checked !== post.length；\n· pending > 0 —— 现在【不实现】unknowable，测试只钉「当前行为 = satisfied」，为链 A 环2 留对照。\n判据：五值断言全绿；故意把 `unsupported > 0 ⇒ unknowable` 改成 `⇒ satisfied` 必须变红，还原后再绿；跑完 < 1s；证明不必读盘（假 Judge 收到几条就回几条）。\n落点：certs/t358-domain-five-values-cert.mjs（本仓无 *.test.ts 框架，沿用 79 个证的套路）。",
-      "state": "candidate",
-      "owner": null,
-      "follows": "todo_pending-假绿-只有-pending-后态判据-run-blocked-b"
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "follows": "todo_pending-假绿-只有-pending-后态判据-run-blocked-b",
+      "claimed_at": "2026-10-22T08:06:56.821Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:06:56.785Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:06:56.925Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "node certs/t358-domain-five-values-cert.mjs",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_identity-normalize",
       "summary": "【身份归一化】release / void / complete 写进卡里的 by，必须与 claim 写 owner 走同一个 domain/actor_spec.ts#admitActor。\n现状（实测）：claim 已归一化（src/application/design/dsl_ops/task_ops.ts:744，`workbuddy` ⇒ `agent:workbuddy`）；release 没有（同文件:1054 `const by = input.agent ?? null` 原样落 released_by）⇒ 同一张卡上 owner 是规范格式、released_by 是老格式。\n判据：三条写路的 by 全部过 admitActor（STRICT 下老格式直接拒，非 STRICT 下归一化并在回执明说）；certs/t349-task-home-cert.mjs:271 那条 `released_by === 'agent-t349'` 改成断言规范格式（`agent:agent-t349`）后仍绿，t349 全证不红；void / complete 的署名同样有证覆盖。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:06:54.028Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:06:53.985Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:06:54.130Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "grep -rn signTaskActor src --include=*.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_design-drift-transitions",
       "summary": "【设计漂移 · 迁移表】代码 TRANSITIONS 7 条 vs 设计 DSL 6 条：src/domain/task_machine.ts:605 有 `t_relaunch`（void→candidate），而 .agent-io/design/task-system-plan.dsl.json 的 task_plan.state_machine.transitions 只有 t_claim / t_void / t_release / t_done_from_claimed / t_reopen / t_done_from_candidate。\n判据：DSL 的 transitions 补上 t_relaunch（from=void / to=candidate，guard 逐条对齐代码 :609-619），重跑设计一致性门后 7 = 7；★ 不许反向删代码那条（relaunch 是 void 的唯一回头路）。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:06:57.046Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:06:57.011Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:06:57.154Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "node -e \"打印 DSL task_plan.state_machine.transitions\"；grep -c \"id: 't_\" src/domain/task_machine.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_translate-3-terms",
       "summary": "【翻译册 · 3 条术语未覆盖】.agent-io/design/task-system-plan.translate.json 里 ZodType / RegExpMatchArray / McpServer 三条没有对应术语（unknowns 已点名三个源符号：src/application/types.ts#ToolDef、src/infrastructure/analysis/contract_gate/parts.ts#addDeclared、src/presentation/mcp/server_registry.ts#registerAllTools），各挂 1 个符号 blocked。\n判据：types 层给三条定死（源词 → Go 类型，或显式 origin=added）并写明理由；重跑翻译册生成后 blocked 从 40 降到 37，unknowns 里这三条消失，其余 37 条逐条仍在（不许顺手把别的也标绿）。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:08:08.881Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:08:08.833Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:08:08.989Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "node -e \"读 translate.json 的 types 并查 ZodType/RegExpMatchArray/McpServer\"",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_index-alias-reexport",
-      "summary": "【索引质量 · 别名再导出 92 条】`import {x as y}; export {y}` 这种形态解析不出边。实测 re-export 185 条里连上 86，剩 94 里 92 条是这个形态。\n判据：索引器能解析「本地别名再导出」并为它建边；回执必须同时报 连上多少 / 跳过多少（不许只报成功数）；重扫后该形态连上 ≥ 90/92，剩余 2 条逐条说明为什么跳（不许静默）。\n落点：src/infrastructure/index/symbols.ts 的 re-export 抽取。",
+      "summary": "【数字记错 · 已修 · 2026-10-22 复核】「别名再导出 92 条」是记错的数：真仓实测只有 1 条（commit a788fb46 记：69 处调用 / 新增 57 条边）。索引器（src/infrastructure/index/symbols.ts）现已覆盖别名再导出的 5 种形态 + 9 个原因标签 + 剥注释，回执同时报\"连上多少 / 跳过多少\"。★ 原判据「≥90/92」无对象，不再作为验收。",
       "state": "candidate",
-      "owner": null
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-10-22T08:08:24.742Z",
+          "from": "【索引质量 · 别名再导出 92 条】`import {x as y}; export {y}` 这种形态解析不出边。实测 re-export 185 条里连上 86，剩 94 里 92 条是这个形态。\n判据：索引器能解析「本地别名再导出」并为它建边；回执必须同时报 连上多少 / 跳过多少（不许只报成功数）；重扫后该形态连上 ≥ 90/92，剩余 2 条逐条说明为什么跳（不许静默）。\n落点：src/infrastructure/index/symbols.ts 的 re-export 抽取。",
+          "to": "【数字记错 · 已修 · 2026-10-22 复核】「别名再导出 92 条」是记错的数：真仓实测只有 1 条（commit a788fb46 记：69 处调用 / 新增 57 条边）。索引器（src/infrastructure/index/symbols.ts）现已覆盖别名再导出的 5 种形态 + 9 个原因标签 + 剥注释，回执同时报\"连上多少 / 跳过多少\"。★ 原判据「≥90/92」无对象，不再作为验收。",
+          "reason": "2026-10-22 复核：原卡描述的现状已变（grep/读数见 summary）。依据 = 2026-10-22 盘点 + 本代理复核",
+          "by": "subagent:deepseek-closeout"
+        }
+      ]
     },
     {
       "id": "todo_serve-split-orchestration",
@@ -107038,8 +107673,29 @@
     {
       "id": "todo_task-expectations-single-source",
       "summary": "【task.expectations 去副本】TaskSpec 不带 expectations 字段，一律按 decision_id 从 decision 现取。\n现状：task.expectations 是 decision.expectations 的副本，靠 A6 闸（src/application/design/dsl_ops/node_ops.ts:419）防漂移 ⇒ 违反「判据只住一处」。\n判据：TaskSpec 在类型层不再有 expectations 字段；cardStanding / claim / complete / patrol 全部经同一个 reader 按 decision_id 现取；A6 闸失去存在理由后删除或降级为读数；现网所有 claimed / done 卡的 standing 结论逐张不变（改前先存一份读数做对拍）。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:06:57.276Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:06:57.239Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:06:57.384Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "sed -n \"360,450p\" src/domain/task_schema.ts；sed -n \"338,356p\" src/application/design/dsl_ops/node_ops.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_17-newer-than-dsl",
@@ -107070,24 +107726,75 @@
     },
     {
       "id": "todo_five-state-cleanup",
-      "summary": "【设计漂移 · 散文段】task_schema『五态』vs TASK_STATES 4 值：src/domain/task_schema.ts:43 只给 candidate / claimed / done / void 四值，文件里却 44 处写「五态」。\n★ 源头在设计册，不在 TS：.agent-io/design/task-system-plan.dsl.json 的 task_home.axis_dedup.problem 仍写「…|void|superseded，五轴」、derived_map 留着 superseded（全文 17 处）、task_plan.service_flow.states 写「旁支：失效(void)/被取代(superseded)」。\n判据：先清 DSL 的散文段（superseded 清零、五轴/五态改成四态），再改 task_schema.ts 里那几个「五」字；只改 TS 不算完（会把漂移藏起来）。改完 tsc 绿、DSL 校验绿、全册 grep superseded = 0。",
+      "summary": "【已过期 · 2026-10-22 复核】已是四态且散文段已改：src/domain/task_schema.ts:43 TASK_STATES = candidate/claimed/done/void，:40 文件头明写「2026-10-22 更正：DSL 的 states 与 TASK_STATES 都是 4 值；原句写『五态』时两头都不成立」；superseded 只剩历史记述（src/domain/task_schema.ts:100/485），DSL 里 0 条 ⇒ 原卡记的「44 处写五态 / DSL 17 处 superseded」是当时的读数，现已清零。",
       "state": "candidate",
       "owner": null,
-      "follows": "todo_design-drift-transitions"
+      "follows": "todo_design-drift-transitions",
+      "history": [
+        {
+          "at": "2026-10-22T08:08:24.649Z",
+          "from": "【设计漂移 · 散文段】task_schema『五态』vs TASK_STATES 4 值：src/domain/task_schema.ts:43 只给 candidate / claimed / done / void 四值，文件里却 44 处写「五态」。\n★ 源头在设计册，不在 TS：.agent-io/design/task-system-plan.dsl.json 的 task_home.axis_dedup.problem 仍写「…|void|superseded，五轴」、derived_map 留着 superseded（全文 17 处）、task_plan.service_flow.states 写「旁支：失效(void)/被取代(superseded)」。\n判据：先清 DSL 的散文段（superseded 清零、五轴/五态改成四态），再改 task_schema.ts 里那几个「五」字；只改 TS 不算完（会把漂移藏起来）。改完 tsc 绿、DSL 校验绿、全册 grep superseded = 0。",
+          "to": "【已过期 · 2026-10-22 复核】已是四态且散文段已改：src/domain/task_schema.ts:43 TASK_STATES = candidate/claimed/done/void，:40 文件头明写「2026-10-22 更正：DSL 的 states 与 TASK_STATES 都是 4 值；原句写『五态』时两头都不成立」；superseded 只剩历史记述（src/domain/task_schema.ts:100/485），DSL 里 0 条 ⇒ 原卡记的「44 处写五态 / DSL 17 处 superseded」是当时的读数，现已清零。",
+          "reason": "2026-10-22 复核：原卡描述的现状已变（grep/读数见 summary）。依据 = 2026-10-22 盘点 + 本代理复核",
+          "by": "subagent:deepseek-closeout"
+        }
+      ]
     },
     {
       "id": "todo_translate-book-tool",
       "summary": "【翻译册接成 translate_book 工具】rebuildBook 现在只能靠内部函数/脚本重跑，不是工具面入口。\n判据：包成 `translate_book` 工具（与 translate_go_ts 并排注册在 src/presentation/mcp/server_registry.ts），入参 feature + 可选 force，能复跑并回写 .agent-io/design/<feature>.translate.json；同一 feature 连跑两次结果逐字相同（幂等），回执报 symbols / types / shapes / atoms 各多少条与 blocked 数；漏传 feature 时报错而不是静默用默认值。",
-      "state": "candidate",
-      "owner": null,
-      "follows": "todo_translate-3-terms"
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "follows": "todo_translate-3-terms",
+      "claimed_at": "2026-10-22T08:08:09.149Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:08:09.110Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:08:09.265Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "sed -n \"170,180p\" src/application/cross/index.ts",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_translate-first-module",
       "summary": "【真正翻第一个模块】挑 3-5 个函数的小文件，从 pending → stubbed → translated 走完一轮（源侧 DB 只读，目标源码写在仓库外或明确的译文目录，不碰源文件）。\n判据：目标文件的每个符号都有状态迁移留痕（pending→stubbed→translated，不许跳级）；译文能编译；★ 这一步要暴露「账上看不出的问题」——把遇到的（DB 缺字段 / 术语不够 / 签名形状对不上 / 默认参数丢失）逐条记进 unknowns 或新卡，不许只报「翻完了」。★ 完成后贴出该文件在翻译册里的状态前后对比（几个 pending → 几个 stubbed → 几个 translated）。",
-      "state": "candidate",
-      "owner": null,
-      "follows": "todo_translate-book-tool"
+      "state": "done",
+      "owner": "subagent:deepseek-closeout",
+      "follows": "todo_translate-book-tool",
+      "claimed_at": "2026-10-22T08:08:09.380Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:08:09.347Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:08:09.490Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "node -e \"统计 translate.json symbols 的 state\"",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_reopen-evidence-deadlock",
@@ -107227,9 +107934,31 @@
     {
       "id": "todo_陈旧租约没有过期机制-28-条-10-27h-的租约把整个仓锁住-claim-只查有没有人占",
       "type": "todo",
-      "state": "candidate",
+      "state": "done",
       "summary": "【2026-10-22 实测：29 个文件节点被占，全部是 **10~27 小时前**领的】没有哪个 agent 会花 10 小时不改完一个文件 ⇒ 这些是**陈旧租约**，而它们锁住了 `write_gate.ts`、`edit_code.ts`、`server_registry.ts`、`index/db.ts`、`parse/kernel.ts`、`meta/index.ts` —— 等于**整个仓的主要模块都改不动**（A7 会把来改的人一律拒掉）。本会话已逐条 release 28 条（备份在仓外），但**根因没修**：\n  ① `claim` 只查「有没有人占」，**不查「占了多久」** ⇒ 一个死掉的会话/子代理能永久锁文件。\n  ② `release` **没有 owner 校验**（本会话用 `subagent:lease-audit` 就释放了 `codebuddy-r4` 的租约）     —— ★ 这一条是双刃：它让陈旧租约**能被清掉**，但也意味着谁都能抢占别人的活。\n  ③ 没有「租约心跳 / 过期」的概念：`claimed_at` 字段在，但**没有任何地方读它做判断**。\n判据（选一条并给出取舍）：\n  A. `claim` 时若目标节点的 `claimed_at` 超过 N 小时（建议 2h）⇒ **不直接拒**，而是回执里明写「这个租约 X 小时没动过（owner=Y），本次 claim 视为接管，旧 owner 已被通知」，并在 task 上记 `stale_takeover_at`；\n  B. 或给 `release` 加 owner 校验 + 一个**显式的** `force_release`（要 reason + 记 `released_from`）—— 两条路选哪条要定，**不许两条都不做**（现状就是两条都没做，所以只能靠人肉发现）。\n★ 附带：本卡的证据是「28 条清单 + 年龄」，可复跑：`geometry.nodes[].task.state==='claimed'` 且 `now - claimed_at > 6h` 的条数（清完后应为 0，直到下一次有人忘了 release）。",
-      "created_at": "2026-10-22T06:18:21.976Z"
+      "created_at": "2026-10-22T06:18:21.976Z",
+      "owner": "subagent:deepseek-closeout",
+      "claimed_at": "2026-10-22T08:06:54.247Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:06:54.215Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T08:06:54.357Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-closeout",
+          "fingerprint": {
+            "what": "node certs/t360-lease-ttl-cert.mjs",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_edit-dsl-type-binding-现在诚实了-但仍是-空操作-2026",
@@ -107251,6 +107980,12 @@
       "state": "candidate",
       "owner": null,
       "follows": "todo_t354-剩余两条真缺口-write-gate-契约0-摘要读不到"
+    },
+    {
+      "id": "todo_证据落盘丢字段-reading-证据的-observed-被静默丢弃-compl",
+      "summary": "【证据落盘丢字段】reading 证据的 observed 被静默丢弃：complete 在 src/application/design/dsl_ops/task_ops.ts:1435-1450 只落 kind/at/by/agent/fingerprint{what,input}/verdict —— 而证据闸（src/domain/overlay.ts:121 validateProgressEvidence）要求 observed 必填。实测 2026-10-22 收口 34 张卡，34/34 条 evidence 回读只有 what（命令原文），看不到“看到了什么”。判据：① 写一条带 observed 的 reading 收口 ⇒ 回读 evidence[i].observed 非空；② 同一把尺：要么给 TaskEvidence 补 observed 字段，要么把它折进 fingerprint.what，★ 二选一，别两处都存。★ 先定形状再改，别顺手加第二个权威。",
+      "state": "candidate",
+      "owner": null
     }
   ],
   "_dsl_rev": 1271,
