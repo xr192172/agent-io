@@ -30,7 +30,7 @@ import { getDataHome } from './storage.js';
  *   每天 49~66 个不同工具、相邻两条只隔 10ms~1.2s）⇒ 它到底被真人用过没有，**读不出来**。
  * ⇒ 只补这一个字段。★ **不回填历史行**（append-only；老行没有 `via` 就是「不知道」，不许猜）。
  */
-export type DogfoodVia = 'mcp' | 'cli' | 'cert' | 'sweep' | 'gate';
+export type DogfoodVia = 'mcp' | 'cli' | 'cert' | 'sweep' | 'gate' | 'http';
 
 export interface DogfoodUsage {
   ts: string;

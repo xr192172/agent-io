@@ -38,6 +38,18 @@ import { diffImpact } from '../../infrastructure/analysis/impact/diff_impact.js'
 import { diffViews } from '../../application/refactor/diff_views/diff_views.js';
 import { watchProject } from '../../infrastructure/index/watch_project.js';
 import { createRebuildThrottler } from '../../application/observe/runtime/watch_project_tool.js';
+// ★★★ 2026-10-22：**HTTP 面接进 `invokeTool`** —— 与 MCP / CLI 同一个入口。
+//
+//   为什么现在才接：CLI 面早就是「`TOOL_DEFS` 的再投影」（`cli.ts` 头注自述），
+//   而 HTTP 面是**第三个独立实现**（65 条各自写 handler、各自调 application）——
+//   同一个能力在两个面各写一遍 = 判据住两处。
+//
+//   接上之后的形状：**一份能力清单（`TOOL_DEFS`）+ 三个薄适配器**。
+//   适配器只做「入参怎么来、产物怎么出」，**不重做保鲜 / 身份 / 校验 / 告警**（那些在 `invokeTool` 里）。
+import { TOOL_DEFS } from '../../application/tool_registry.js';
+import { invokeTool } from '../mcp/server_registry.js';
+import { DATA_MARKER, parseDataBlock } from '../../application/plumbing.js';
+import type { ToolDef } from '../../application/types.js';
 import { archLayer } from '../../infrastructure/analysis/structure/arch_layer.js';
 import { guidedTour } from '../../infrastructure/index/guided_tour.js';
 import { semanticSearch } from '../../application/meta/llm/semantic_search.js';
@@ -2847,8 +2859,138 @@ function assertRouteTable(routes: readonly HttpRoute[]): void {
   if (errors.length) throw new Error('路由表自检失败：\n  ' + errors.join('\n  '));
 }
 
+/**
+ * 把 `query` 里的**字符串**按 schema 还原成它期望的类型（boolean / number / 数组 / 对象）。
+ *
+ * ## 为什么必须有这一步
+ * URL query 里一切都是字符串（`refresh=true` / `depth=3`），而 `TOOL_DEFS` 的 schema 期望
+ * `boolean` / `number`。不还原的话，**每个工具都要在 HTTP 侧写一遍类型转换** = 又一处判据分叉。
+ *
+ * ## ★ 判据只有一处：zod（这里只做"能过就过"的尝试，不做判定）
+ * `safeParse` 只用来**挑一个能过的候选**；转不动的原样交出去，让 `invokeTool` 里的
+ * `validateToolArgs` 报错 —— 它的报文（"缺参数 x / 类型不对"）比这里权威，且 MCP/CLI 面读到的
+ * 是同一句话。**本函数不产生任何"拒绝"**，只产生"候选值"。
+ */
+function coerceArgsFor(schema: ToolDef['inputSchema'], raw: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(raw)) {
+    const s = schema[k];
+    if (!s || typeof v !== 'string') {
+      out[k] = v;
+      continue;
+    }
+    if (s.safeParse(v).success) {
+      out[k] = v;
+      continue;
+    }
+    const candidates: unknown[] = [];
+    if (v === 'true') candidates.push(true);
+    if (v === 'false') candidates.push(false);
+    if (v !== '' && !Number.isNaN(Number(v))) candidates.push(Number(v));
+    const looksJson = (v.startsWith('{') && v.endsWith('}')) || (v.startsWith('[') && v.endsWith(']'));
+    if (looksJson) {
+      try {
+        candidates.push(JSON.parse(v));
+      } catch {
+        // 不是合法 JSON ⇒ 不加入候选（不是错误：这个键本来就可能期望字符串）
+      }
+    }
+    const hit = candidates.find((c) => s.safeParse(c).success);
+    out[k] = hit === undefined ? v : hit;
+  }
+  return out;
+}
+
+/** 从 `invokeTool` 的 text 里取"人话"部分（`---DATA---` 之前），供 HTTP 回执的 `message` 用 */
+function messageOf(text: string): string {
+  const i = text.indexOf(DATA_MARKER);
+  return (i < 0 ? text : text.slice(0, i)).trim();
+}
+
+/**
+ * ★★★ `GET|POST /api/tool/<name>` —— **从 `TOOL_DEFS` 派生的通用出口**。
+ *
+ * ## 它解决的是什么（用户 2026-10-22 的原话）
+ * 「HTTP 和 MCP 不可以直接是对 CLI 的调用吗？它们三处不是其实就是同一处吗？
+ *   做一个注册器，你只要把 CLI 注册进去，自动衍生 MCP 和 HTTP」
+ *
+ * 实测的三处现状（2026-10-22）：
+ *   · **MCP**：`registerAllTools` → `invokeTool`
+ *   · **CLI**：`cli.ts` 头注自述"只是再投影一个面"→ 也走 `invokeTool`
+ *   · **HTTP**：**65 条各自写 handler**，一处都没走 `invokeTool` ⇒ 只有它是第三个实现
+ * ⇒ 本条路由把那半个洞补上：**能力注册一次，三个面各自只做适配**。
+ *
+ * ## 边界（它不做什么 —— 别把它当成"能替代 65 条"）
+ * · 它只覆盖**工具面**（`TOOL_DEFS` 里的 66 个能力）。UI 专用出口（`/api/load` 整份 DSL、
+ *   `/api/save`、静态文件、SSE、HTML 页面、`/api/layout/*` 这类画布几何）**本来就不是工具**，
+ *   它们不在派生范围里，也不该为了"统一"硬塞进 `TOOL_DEFS`。
+ * · 它**不**做参数白名单：schema 之外的键会被 `invokeTool` 的校验按它自己的口径处理
+ *   （本函数不另立一套"多余参数"判据）。
+ */
+async function handleApiTool(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  const rawUrl = req.url || '/';
+  const name = decodeURIComponent(rawUrl.replace(/^\/api\/tool\//, '').split('?')[0] ?? '');
+  const def = TOOL_DEFS.find((d) => d.name === name);
+  if (!def) {
+    sendError(
+      res,
+      404,
+      `没有这个工具：${JSON.stringify(name)}。\n` +
+        `★ 工具清单的唯一来源是 \`TOOL_DEFS\`（\`GET /api/tools\` 可列出，CLI \`--list\` 同一份）。`,
+    );
+    return;
+  }
+
+  const q = new URL(rawUrl, 'http://localhost');
+  const args: Record<string, unknown> = {};
+  for (const [k, v] of q.searchParams) args[k] = v;
+  if (req.method === 'POST') {
+    const text = (await readBody(req)).toString('utf-8').trim();
+    if (text) {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        sendError(res, 400, '请求体不是合法 JSON');
+        return;
+      }
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        sendError(res, 400, '请求体需为 JSON 对象（工具入参是一张键值表）');
+        return;
+      }
+      Object.assign(args, parsed);
+    }
+  }
+
+  const r = await invokeTool(def, coerceArgsFor(def.inputSchema, args), 'http');
+  sendJson(res, r.isError ? 400 : 200, { ok: !r.isError, tool: def.name, message: messageOf(r.text), data: parseDataBlock(r.text) });
+}
+
+/**
+ * `GET /api/tools` —— **注册器的自我描述**：这一刻能调哪些能力、各自要什么参数。
+ * ★ 与 `CLI --list`、MCP `tools/list` 同源（都是 `TOOL_DEFS`），所以三者永远不会漂。
+ */
+function handleApiTools(res: http.ServerResponse): void {
+  sendJson(res, 200, {
+    success: true,
+    count: TOOL_DEFS.length,
+    tools: TOOL_DEFS.map((d) => ({
+      name: d.name,
+      title: d.title,
+      description: d.description,
+      args: Object.keys(d.inputSchema),
+      call: { get: `/api/tool/${d.name}`, post: `/api/tool/${d.name}` },
+    })),
+  });
+}
+
 /** 65 条路由。★ **顺序即语义**（见上面 HttpRoute 头注）—— 增删请按原 if 链位置插入，别排序。 */
 const ROUTES: readonly HttpRoute[] = [
+  // ★★ 派生路由（2026-10-22）：**能力注册一次，HTTP 自动获得** —— 与 MCP(`registerAllTools`) / CLI(`cli.ts`)
+  //    同一个入口 `invokeTool`。放在表首：它们的前缀（`/api/tool/`、`/api/tools`）不与任何既有路由重叠，
+  //    且 `assertRouteTable` 会持续盯着这一点。
+  { path: '/api/tools', methods: ['GET'], handler: (req, res) => handleApiTools(res) },
+  { path: '/api/tool/', methods: ['GET', 'POST'], handler: (req, res) => void handleApiTool(req, res) },
   // L2856  ★ INLINE
   { path: '/api/events', methods: ['GET'], handler: (req, res, ctx) => {
       // SSE 端点：保持连接，推送 DSL 变更事件
