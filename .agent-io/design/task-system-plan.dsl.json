@@ -104653,11 +104653,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T11:32:45.940Z",
+    "saved_at": "2026-10-22T11:48:25.474Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 85243129,
+    "age": 86182663,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108499,9 +108499,16 @@
       "id": "todo_两段式领取-领了不能干-先把判据补全才能正式开始-且要事务回滚",
       "created_at": "2026-10-22T11:32:45.900Z",
       "summary": "【用户 2026-10-22 RFC（原话见下）】\n> 「接任务的时候应该要有反馈……如果没有写判据的话，你只是立了张任务在那里。\n>  在接取任务的时候不能直接接，而是要先把判据补全……或者说是**两段式接取**：\n>  先是领了任务但是还不能开始，而是要先去把设计 DB 完善好，才能正式开始这个任务。\n>  并且这个要做**事务级的锁**……不然你这个设计 DB 设计到一半，然后你这个任务没有领，\n>  然后突然就不做了，那么就可能会导致你这个设计 DB 残留，会影响其他的东西，\n>  所以此时你就要像是事务一样要**回滚**。」\n\n## 实测读数（这就是为什么需要它）\n```\ncandidate 137 张（todo 50 + node 87）· 其中【判据 0 条】= 117（85%）\n★ 但根因不是\"忘了写\"：todo 卡的判据挂在 node_id 指向的节点上，\n  而 123 张 todo 里【只有 1 张】有 node_id ⇒ todo 卡【结构上无处挂判据】\n  ⇒ 与「卡独立化」那张卡是同一件事（`todo_决策卡应该记节点…`）\n```\n\n## 任务类型枚举（用户说\"我可能枚举不全\"⇒ 我补全到 8 类）\n| # | 类型 | 对设计 DSL | 对 ER/DB | 判据从哪来 | 要两段式？ |\n|---|---|---|---|---|---|\n| 1 | **新增能力**（新文件/新工具） | 加节点 + decision | 可能加表 | **新写** | ✔ |\n| 2 | **修改已有行为** | **改 expectations** | 可能改 | **改写** | ✔ |\n| 3 | **修缺陷**（设计对、代码错） | **不改** | 不改 | **已有（红的那个）** | ✘ 一段式 |\n| 4 | **重构**（行为不变） | 可能拆/合节点 | 不改 | **现有判据必须仍绿** | ✘ 一段式 |\n| 5 | **清理/退役** | **删节点 + lifecycle** | 可能删表 | **删后（引用为 0）** | ✔ |\n| 6 | **文档/注释** | 可能改 summary | 不改 | 极弱（`source-has`） | ✔（弱判据也算） |\n| 7 | **迁移**（格式/数据） | 改结构 | **必改** | **迁移前后一致** | ✔ |\n| 8 | **实验/探针**（一次性） | **不改** | 不改 | 无（用完即删） | ✘ 不许立卡 |\n\n★ **关键结论：不是所有任务都要两段式。** 第 3/4 类（修缺陷 / 重构）判据**已经存在** ⇒ 直接一段式领。\n   **要补判据的才是 1/2/5/6/7。**\n\n## 机制设计（★ 「草稿判据」是关键，不要\"直接改 expectations\"）\n```\n① claim 时若判据为空 ⇒ **不许 claim**，改为进入 `preparing`（第一段）：\n   · task.state = \"preparing\"（新状态，或 claimed + preparing_at）\n   · 输出**反馈**：缺什么（哪个 node 的 decision 要补几条哪类判据）+ 参考样例\n② 补判据 ⇒ 写进 **`decision.draft_expectations`**（★ 不影响 cardStanding，因为它只读 expectations）\n③ `start`（第二段）⇒ **一次原子写**：draft 转正（expectations = draft; draft = null）+ state=claimed\n④ 放弃/超时 ⇒ **删 draft** ⇒ 零残留（★ 这才是\"回滚\"：残留的是 draft，不是生效的判据）\n```\n★ 为什么用 `draft_expectations` 而不是\"改了再回滚\"：\n  回滚要快照 + 恢复，而**快照本身会过期**（若期间别人也改了 decision）。\n  草稿没有这个问题：**没转正 = 从未生效** ⇒ 不存在\"回滚失败\"这种状态。\n\n## 事务的边界（★ 用户要的\"同时\"具体指这两件事）\n```\n\"开始任务\" = 【draft 转正】+【state → claimed】必须同一次落盘（一个 writeTask 调用）\n★ 反过来也成立：state=claimed 但 draft 未转正 ⇒ 不可能（代码结构上不允许）\n★ 判据：写一个夹具——start 时让第二步抛错 ⇒ **state 必须仍是 preparing、draft 必须还在**（原子）\n```\n\n## 判据（四条，都要能红）\n  A. **没判据不许 claim**：造一张判据空的卡 ⇒ claim 必须给出 `preparing` + **点名缺什么**（不是静默成功）\n  B. **两段式原子**：start 中途失败 ⇒ state 仍 `preparing`、draft 仍在（不许半生效）\n  C. **放弃零残留**：preparing 中放弃 ⇒ `expectations` 与 claim 前**逐字相同**、draft 为 null、state 回 candidate\n  D. **反馈可读**：preparing 的回执必须说清\"要给哪个 node 补几条哪类判据\"（★ 不是\"请补判据\"这种空话）\n\n## 与其它卡的关系（顺序）\n```\n前置：todo_决策卡应该记节点…（卡独立化）—— 否则 todo 卡仍然无处挂判据（本卡只能覆盖节点卡）\n★ 但本卡的 ① ② ③ ④ 四条判据可以在**节点卡**上先做（87 张 node candidate 里也有判据空的）\n```"
+    },
+    {
+      "type": "todo",
+      "state": "candidate",
+      "id": "todo_设计-DSL-有多个写端-saveDSL-谁都能调-所以校验和留痕全可绕过-baseline-也从不更新",
+      "created_at": "2026-10-22T11:48:25.442Z",
+      "summary": "【2026-10-22 实测（用户三连问点破）：\n  ① `baseline/` **零写入点** ⇒ 永远是 Oct 18 那一个\n  ② 当天改 DSL **41 次提交**、**18 个脚本用 `saveDSL` 直写**、`edit_dsl` **一次没用**\n  ③ 这些改动**没有 `checkOpSpec` / 没有 `validateDSL` / 没有 rev 校验**（`design-check.mjs` 也不在 verify 里）】\n\n## 用户的原话（这是设计意图，我一直没遵守）\n> 「我做设计 DSL 出来的理由就是为了**不让你直接在实际 DSL 上面改**，但是又需要你简单地拥有在实际 DSL 上改的写作难度」\n> 「似乎看起来你根本就没有用工具，而是直接自己手写的吧，要不然为什么这个基线没动过。还是说这基线也没有接线？」\n\n## 病灶：`saveDSL` 是 `export` 的，谁 import 谁就能写\n```\n唯一合法写端应该是 `edit_dsl` → checkOpSpec(键闸) → validateDSL(结构) → applyOperation(语义) → saveDSL\n但 saveDSL 被 18 个脚本 + 我自己（import dist 直接调）都能用 ⇒ 上面三道全可绕过\n⇒ 实测后果：今天 41 次 DSL 改动【一道校验都没过】；\n   唯一间接兜到的是 \"设计 DB 结构\" 门（它发现\"设计里有节点但没有投影\"，补了 8 个）\n```\n\n## 第二个病灶：baseline 存在但从不更新\n```\nbaseline 的用途（用户）：\"反映实际侧的变化，以免实际侧被人用工具以外的方式改了而我们不知道\"\n实测：`grep -rn \"saveDSLByView|baseline\" | grep 写` = 0 ⇒ 【没有任何写入点】\n⇒ 它现在回答\"4 天前的代码长什么样\"，不是\"上次扫描到现在变了什么\"\n★ 于是 `diff_views` 的 baseline 侧永远给旧答案 —— 而它存在的**唯一理由**就是给新答案\n```\n\n## 判据（分两条，各自可红）\n\n### A. 设计 DSL 的写端收敛为一处\n  A1. `saveDSL` 不再对外暴露\"裸写\"能力：加一个 `saveDSLByOperation(op, ...)`，**只有 `applyOperation` 能调**\n      （★ 技术手段：把 `saveDSL` 改成接受一个 `Authorization` token，该 token 只能由 `applyOperation` 内部构造）\n  A2. **反证**：绕过它直写 ⇒ 必须**抛**（不是\"警告\"）；\n      ★ 但**迁移期**要有出口：`--allow-raw-write` 且**必须写明理由**（记 `history` 的一行 `raw_write_reason`）\n  A3. `design-check.mjs` **挂进 verify**（它现在不在——所以 41 次改动一次都没被它看过）\n     ★ 但注意：它是\"全量扫\"，与增量哲学相反 ⇒ 应该进 `verify:changed` 的受影响集合（改 DSL ⇒ 跑 design-check）\n\n### B. baseline 必须跟着实际侧走\n  B1. **写入点定一处**：`import_project` / `rescan` 成功后 rebuild baseline（`saveDSLByView(feature, baseline 视图)`）\n  B2. **反证**：改一个源文件 + 重扫 ⇒ baseline 的 `content_hash` 必须变；不改 + 重扫 ⇒ 必须不变\n  B3. **它的用途要能兑现**：`diff_views baseline vs live` 必须能答\"**哪些文件被工具以外的方式改过**\"\n     ★ 判据：手改一个源文件（不经 edit_code）⇒ 重扫 ⇒ 报告里必须点名它\n\n## 为什么这条最贵（它把今天所有事串起来）\n```\n今天我做的一切\"判据/门/证\"，前提都是【设计侧是真的】\n但我改设计侧的方式（脚本直写）正是【设计侧最不该被改的方式】\n⇒ 我等于在\"用绕过设计纪律的方式去建立设计纪律\"\n★ 而且 baseline 不动 ⇒ 连\"我改了多少\"都没有第三方基线可比\n```"
     }
   ],
-  "_dsl_rev": 1285,
+  "_dsl_rev": 1286,
   "feature_tree": {
     "features": [
       {
