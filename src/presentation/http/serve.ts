@@ -3061,6 +3061,10 @@ const ROUTES: readonly HttpRoute[] = [
 ];
 
 export async function startServer(port?: number): Promise<void> {
+  // ★ 路由表自检必须在**起服务之前**跑（不是"存在即可"）：
+  //   重复注册 / 前缀抢匹配都是"某条路由永远不可达"，而那在运行期表现为**静默 404**
+  //   —— 不报错的错。放在这里 = 表一错就起不来。
+  assertRouteTable(ROUTES);
   const listenPort = port || PORT;
 
   // Observe 运行哨兵：设置 OBSERVE_EVENTS_FILE 时激活全局探针 sink，
