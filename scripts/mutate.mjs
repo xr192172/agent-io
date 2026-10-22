@@ -103,8 +103,8 @@ function mutantsOf(e) {
       out.push({ label: `path → ${m.path}`, exp: m });
       break;
     }
-    case 'edge-exists':
-    case 'edge-absent': {
+    case 'edge-exists': {
+      // edge-exists：把 from/to 改名 ⇒ 边找不到 ⇒ 判据应 fail ⇒ 突变有效
       const m = clone(e);
       m.from = `${e.from}__MUTANT__`;
       out.push({ label: `from → ${m.from}`, exp: m });
@@ -113,6 +113,20 @@ function mutantsOf(e) {
       out.push({ label: `to → ${m2.to}`, exp: m2 });
       break;
     }
+    case 'edge-absent':
+      // ★★★ 2026-10-22：**这套突变对它无效，已停用**（不是"暂时跳过"）。
+      //   它断言的是「这条边不存在」；把 `from`/`to` 改成不存在的名字 ⇒ 边**仍然**不存在
+      //   ⇒ 判据**仍然 pass** ⇒ 突变"存活"。★ 那是**量具的缺陷**，不是判据的装饰 ——
+      //   拿一个"改名字"的突变去质问"不存在"的断言，问的本来就不是同一个问题。
+      //   ★ 它能红的正确证法是【造出那条边】，那要改**仓库事实**（cache.db），不是改判据
+      //     ⇒ 超出本函数的范式（本函数只改 Expectation，不动被观测对象）。
+      //   ★ 出生证（2026-10-22 实跑，`_design-canvas-labs/serve-routes/edge-absent-proof.mjs`）：
+      //     · `task_machine.ts → task_schema.ts`（**真实存在**的边）断言 absent ⇒ **FAIL**
+      //       detail：`… **不该**依赖 …，但它确实依赖（边界越权）`
+      //     · `task_machine.ts → expectations.ts`（**真实不存在**）⇒ **PASS**
+      //     ⇒ 它按真实事实判定，不是恒真。
+      //   ⇒ 归入 `skipped_unmutatable`（**不计入 survived**），也不假装它被杀死。
+      return null;
     case 'call-exists': {
       const m = clone(e);
       m.target = `${e.target}__MUTANT__`;
@@ -185,6 +199,7 @@ export async function runMutate(feature, root = process.cwd()) {
   let skipped = 0;
   let skippedNoInput = 0; // 无 input
   let skippedDeclared = 0; // ★ mutants_ignore: ['*'] —— 声明"不参与输入突变"
+  let skippedUnmutatable = 0; // ★ 范式不适用（如 edge-absent 的"不存在"断言，见 mutantsOf 里的说明）
   const byKind = {};
   for (const it of items) {
     const muts = mutantsOf(it.expectation);
@@ -193,7 +208,7 @@ export async function runMutate(feature, root = process.cwd()) {
       if (it.expectation.kind === 'run') {
         if (it.expectation.input === undefined) skippedNoInput++;
         else skippedDeclared++; // expect 不读 input（= 已声明/应声明）
-      }
+      } else if (it.expectation.kind === 'edge-absent') skippedUnmutatable++;
       continue;
     }
     const k = it.expectation.kind;
@@ -211,7 +226,7 @@ export async function runMutate(feature, root = process.cwd()) {
       }
     }
   }
-  return { feature, checked: items.length, killed, survived, skipped, skipped_no_input: skippedNoInput, skipped_declared: skippedDeclared, byKind, survived_items: survivedItems };
+  return { feature, checked: items.length, killed, survived, skipped, skipped_no_input: skippedNoInput, skipped_declared: skippedDeclared, skipped_unmutatable: skippedUnmutatable, byKind, survived_items: survivedItems };
 }
 
 // ── CLI ──────────────────────────────────────────────────────────────
@@ -240,7 +255,10 @@ if (isCli) {
     console.log(`  expectation ${rep.checked} 条 · 突变 ${rep.killed + rep.survived} 次`);
     console.log(`  ✓ 被杀死（判据有反应）：${rep.killed}`);
     console.log(`  ★ 存活（判据对该突变无感）：${rep.survived}`);
-    console.log(`  … 跳过：${rep.skipped}（无 input ${rep.skipped_no_input ?? 0} · ★ 声明不参与突变 ${rep.skipped_declared ?? 0}）`);
+    console.log(
+      `  … 跳过：${rep.skipped}（无 input ${rep.skipped_no_input ?? 0} · ★ 声明不参与突变 ${rep.skipped_declared ?? 0}` +
+        ` · ★★ 范式不适用 ${rep.skipped_unmutatable ?? 0}）`,
+    );
     console.log(`\n  按 kind：`);
     for (const [k, s] of Object.entries(rep.byKind)) {
       console.log(`    ${k.padEnd(20)} killed ${String(s.killed).padStart(4)} · ★ survived ${s.survived}`);

@@ -103880,11 +103880,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T02:04:40.161Z",
+    "saved_at": "2026-10-22T02:23:24.952Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 51157350,
+    "age": 52282141,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -105177,7 +105177,7 @@
           "id": "D7",
           "name": "检查器自身可信",
           "rule": "每个体检项必须能【自己坏】（故意造一个反例 ⇒ 它要报）；且检查器认得的判据形式要与真实一致",
-          "now": "★ 2026-10-17 已抓 5 次检查器假读数：① 读空文件（路径分隔符不一致）⇒ 报「全 0」假绿；② 只数「其他文件」的引用 ⇒ 报 42 个假孤儿；③ 正则转义多套一层 ⇒ 报 105 个假死代码；④ 漏 ESM 的 js→ts 映射 ⇒ 报「全部无依赖」；⑤ 只认 判据/criteria/rule/check/cmd ⇒ 把 expr / metric / threshold 报成「无判据」（假红）。",
+          "now": "★ 2026-10-17 已抓 5 次检查器假读数：① 读空文件（路径分隔符不一致）⇒ 报「全 0」假绿；② 只数「其他文件」的引用 ⇒ 报 42 个假孤儿；③ 正则转义多套一层 ⇒ 报 105 个假死代码；④ 漏 ESM 的 js→ts 映射 ⇒ 报「全部无依赖」；⑤ 只认 判据/criteria/rule/check/cmd ⇒ 把 expr / metric / threshold 报成「无判据」（假红）。\n★ 2026-10-22 第 6 次（这次坏的是**量具自身**，不是被检对象）：突变器把 `edge-absent` 的 from/to 改名当突变 —— 而它断言的就是「这条边不存在」，改名后**仍然不存在** ⇒ 判据仍 pass ⇒ 被计成 survived（实测 2 次，byKind edge-absent killed 0 / survived 2）。\n  ⇒ 那是**范式不适用**，不是判据装饰：出生证实跑（`_design-canvas-labs/serve-routes/edge-absent-proof.mjs`）—— 拿**真实存在**的边 `task_machine.ts→task_schema.ts` 断言 absent ⇒ **FAIL**（detail：**不该**依赖…但它确实依赖）；拿**真实不存在**的 `→expectations.ts` ⇒ **PASS**。\n  ⇒ 修法：`edge-absent` 不再参与「改判据」式突变，归入 `skipped_unmutatable`（**不计入 survived，也不假装它被杀死**）；它能红的保证来自出生证，不来自自动突变 —— 这一点必须明说，否则下一个读者会以为它被突变覆盖了。\n★ 现状：survived 0 / killed 675 / skipped 36（无 input 4 · 声明 31 · 范式不适用 1）。",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
           "debt": "D-design-completeness",
           "expect": "(() => {\n  // ★ D7 的正解（用户 2026-10-19）：不靠人写反例，靠【系统自动突变】\n  //   · 存活（改坏了还 pass）= 装饰判据 ⇒ 必须为 0\n  //   · run 类跳过（expect 是任意表达式，改哪个字段会 fail 不可知）⇒ 如实计入 skipped，不假绿\n  if (!mutateReport) return false;\n  if (mutateReport.error) return false;\n  return mutateReport.survived === 0;\n})()",
@@ -106252,7 +106252,7 @@
       "created_at": "2026-10-21T20:31:23.912Z"
     }
   ],
-  "_dsl_rev": 1251,
+  "_dsl_rev": 1252,
   "feature_tree": {
     "features": [
       {
