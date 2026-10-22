@@ -7,13 +7,13 @@
     {
       "name": "renameTsSymbol",
       "kind": "function",
-      "line": 45,
+      "line": 46,
       "signature": "renameTsSymbol(args: LangRenameArgs): Promise<RenameSymbolResult>"
     },
     {
       "name": "tsPackage",
       "kind": "const",
-      "line": 206,
+      "line": 208,
       "signature": "const tsPackage = { exts: TS_JS_EXTS, rename: (a) => renameTsSymbol(a), }"
     }
   ],

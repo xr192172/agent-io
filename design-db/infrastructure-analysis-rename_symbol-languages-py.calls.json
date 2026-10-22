@@ -7,19 +7,19 @@
     {
       "name": "analyzePythonSource",
       "kind": "function",
-      "line": 28,
+      "line": 30,
       "signature": "analyzePythonSource(src: string): Promise<GoModuleAnalysis | null>"
     },
     {
       "name": "renamePythonSymbol",
       "kind": "function",
-      "line": 161,
-      "signature": "renamePythonSymbol(args: {\n  file: string;\n  symbol: string;\n  to: string;\n  dryRun: boolean;\n  resolvedRoot: string;\n  blocked: string[];\n}): Promise<RenameSymbolResult>"
+      "line": 163,
+      "signature": "renamePythonSymbol(args: {\n  file: string;\n  symbol: string;\n  to: string;\n  dryRun: boolean;\n  resolvedRoot: string;\n  blocked: string[];\n  /** ★ 落盘注入（`parts#SourceWriteHook`）：引擎不写盘，没注入就抛 */\n  write?: SourceWriteHook;\n}): Promise<RenameSymbolResult>"
     },
     {
       "name": "pyPackage",
       "kind": "const",
-      "line": 282,
+      "line": 286,
       "signature": "const pyPackage = { exts: ['.py'], rename: (a) => renamePythonSymbol({ file…"
     }
   ],

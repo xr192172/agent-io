@@ -25,7 +25,7 @@
     {
       "name": "renderHandoffPanel",
       "kind": "function",
-      "line": 1265,
+      "line": 1268,
       "signature": "renderHandoffPanel(fromTool: string | undefined,\n  touched: Record<string, unknown> | undefined,\n  /**\n   * 下游工具的**入参路径表**（由 `collectInputPaths(d.inputSchema)` 提供；★ 与 `CHAIN_EDGES.toPath` 同形）。\n   * ★★★ 为什么不是 `readonly string[]`（=`catalogOf(...).requiredKeys`）：那只给**顶层 + schema 必填**\n   *   ⇒ 照不出**模式相关必填**（见 `missingOf` 与 `declaredRequiredMembersOf` 的头注，T140）。\n   */\n  pathsOf: (tool: string) => readonly InputPath[],): string"
     }
   ],

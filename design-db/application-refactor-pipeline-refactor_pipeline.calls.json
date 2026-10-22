@@ -509,6 +509,22 @@
       "to": "src/infrastructure/analysis/package_migration/core.ts#computeMigrationPlan"
     },
     {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
+      "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#RefactorLangRegistry.register"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
+      "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#RefactorLangRegistry.register"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
+      "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#RefactorLangRegistry.register"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
+      "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#RefactorLangRegistry.register"
+    },
+    {
       "from": "src/application/refactor/pipeline/refactor_pipeline.ts#dominantExecutor",
       "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#manifestPresent"
     },

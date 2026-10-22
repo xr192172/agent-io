@@ -350,10 +350,6 @@
       "to": "src/application/observe/reconcile/approval.ts#ensureHistory"
     },
     {
-      "from": "src/application/observe/reconcile/approval.ts#uid",
-      "to": "src/application/observe/reconcile/approval.ts#now"
-    },
-    {
       "from": "src/application/observe/reconcile/approval.ts#addHistory",
       "to": "src/application/observe/reconcile/approval.ts#now"
     },

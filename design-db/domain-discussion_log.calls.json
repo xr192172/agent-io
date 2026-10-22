@@ -7,31 +7,31 @@
     {
       "name": "MICRO_KEYS",
       "kind": "const",
-      "line": 36,
+      "line": 35,
       "signature": "const MICRO_KEYS = ['micro', 'open_count'] as const"
     },
     {
       "name": "MicroKey",
       "kind": "type",
-      "line": 39,
+      "line": 38,
       "signature": "MicroKey()"
     },
     {
       "name": "EXPAND_ONLY_FIELDS",
       "kind": "const",
-      "line": 49,
+      "line": 48,
       "signature": "const EXPAND_ONLY_FIELDS = ['user_quote', 'conclusion', 'decided_at', 'supersedes'] …"
     },
     {
       "name": "ExpandOnlyField",
       "kind": "type",
-      "line": 52,
+      "line": 51,
       "signature": "ExpandOnlyField()"
     },
     {
       "name": "DiscussionMicro",
       "kind": "interface",
-      "line": 55,
+      "line": 54,
       "signature": "DiscussionMicro()",
       "members": [
         {
@@ -51,31 +51,31 @@
     {
       "name": "renderMicro",
       "kind": "function",
-      "line": 74,
+      "line": 73,
       "signature": "renderMicro(discussion: TaskDiscussion): DiscussionMicro"
     },
     {
       "name": "excludedFields",
       "kind": "function",
-      "line": 87,
+      "line": 86,
       "signature": "excludedFields(discussion: TaskDiscussion): ExpandOnlyField[]"
     },
     {
       "name": "ExpandTrigger",
       "kind": "type",
-      "line": 103,
+      "line": 102,
       "signature": "ExpandTrigger()"
     },
     {
       "name": "EXPAND_TRIGGERS",
       "kind": "const",
-      "line": 106,
+      "line": 105,
       "signature": "const EXPAND_TRIGGERS = ['claim', 'judge-failed', 'explicit'] as const"
     },
     {
       "name": "ExpandContext",
       "kind": "interface",
-      "line": 112,
+      "line": 111,
       "signature": "ExpandContext()",
       "members": [
         {
@@ -101,13 +101,13 @@
     {
       "name": "matchedExpandTriggers",
       "kind": "function",
-      "line": 126,
+      "line": 125,
       "signature": "matchedExpandTriggers(ctx?: ExpandContext | null): ExpandTrigger[]"
     },
     {
       "name": "shouldExpand",
       "kind": "function",
-      "line": 146,
+      "line": 145,
       "signature": "shouldExpand(discussion?: TaskDiscussion | null,\n  ctx?: ExpandContext | null,): boolean"
     }
   ],

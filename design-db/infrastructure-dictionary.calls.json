@@ -137,49 +137,49 @@
     {
       "name": "writeDictFile",
       "kind": "function",
-      "line": 153,
+      "line": 156,
       "signature": "writeDictFile(file: string, entries: DictEntry[]): void"
     },
     {
       "name": "loadGlobalDict",
       "kind": "function",
-      "line": 159,
+      "line": 162,
       "signature": "loadGlobalDict(): DictEntry[]"
     },
     {
       "name": "loadProjectDict",
       "kind": "function",
-      "line": 165,
+      "line": 168,
       "signature": "loadProjectDict(projectRoot: string): DictEntry[]"
     },
     {
       "name": "saveGlobalEntry",
       "kind": "function",
-      "line": 175,
+      "line": 178,
       "signature": "saveGlobalEntry(entry: DictEntry): number"
     },
     {
       "name": "saveProjectEntry",
       "kind": "function",
-      "line": 189,
+      "line": 192,
       "signature": "saveProjectEntry(projectRoot: string, entry: DictEntry): number"
     },
     {
       "name": "buildDictionaryView",
       "kind": "function",
-      "line": 208,
+      "line": 211,
       "signature": "buildDictionaryView(projectRoot?: string | null): DictionaryView"
     },
     {
       "name": "findDictHits",
       "kind": "function",
-      "line": 251,
+      "line": 254,
       "signature": "findDictHits(text: string,\n  view: DictionaryView,): Array<{ term: string; start: number; end: number }[]>"
     },
     {
       "name": "splitHighlights",
       "kind": "function",
-      "line": 285,
+      "line": 288,
       "signature": "splitHighlights(text: string, view: DictionaryView): Array<{ text: string; term?: string }>"
     }
   ],

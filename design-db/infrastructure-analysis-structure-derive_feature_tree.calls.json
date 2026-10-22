@@ -153,9 +153,15 @@
       "signature": "dirFallbackTree(input: FeatureTreeInput,\n  liveDsl: DesignDSL | null,\n  semanticFiles: Array<{ id: string; path: string }>,\n  reason: string,): FeatureTreeResult"
     },
     {
+      "name": "persistFeatureTree",
+      "kind": "function",
+      "line": 283,
+      "signature": "persistFeatureTree(feature: string,\n  tree: NonNullable<DesignDSL['feature_tree']>,\n  liveDsl: DesignDSL | null,): void"
+    },
+    {
       "name": "deriveFeatureTree",
       "kind": "function",
-      "line": 267,
+      "line": 294,
       "signature": "deriveFeatureTree(input: FeatureTreeInput,): Promise<FeatureTreeResult>"
     }
   ],
@@ -248,6 +254,14 @@
       "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#normPath"
     },
     {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#dirFallbackTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#persistFeatureTree"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#persistFeatureTree"
+    },
+    {
       "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
       "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#renameGroupsByLLM"
     },
@@ -284,11 +298,11 @@
       "to": "src/infrastructure/storage.ts#getDSLByView"
     },
     {
-      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#dirFallbackTree",
-      "to": "src/infrastructure/storage.ts#saveDSL"
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#persistFeatureTree",
+      "to": "src/infrastructure/storage.ts#getDesignSheet"
     },
     {
-      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#persistFeatureTree",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ]

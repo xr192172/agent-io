@@ -49,7 +49,7 @@
     {
       "name": "pythonAdapter",
       "kind": "const",
-      "line": 150,
+      "line": 152,
       "signature": "const pythonAdapter = { lang: 'python', label: 'Python', declarationFiles: ['py…"
     }
   ],

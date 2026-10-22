@@ -7,13 +7,13 @@
     {
       "name": "DESIGN_SHEET_NODE_KEYS",
       "kind": "const",
-      "line": 51,
+      "line": 50,
       "signature": "const DESIGN_SHEET_NODE_KEYS = [ 'label', 'type', 'title', 'description', 'status', 'lay…"
     },
     {
       "name": "NodeAttrDiff",
       "kind": "interface",
-      "line": 63,
+      "line": 62,
       "signature": "NodeAttrDiff()",
       "members": [
         {
@@ -45,7 +45,7 @@
     {
       "name": "SameIdDiff",
       "kind": "interface",
-      "line": 75,
+      "line": 74,
       "signature": "SameIdDiff()",
       "members": [
         {
@@ -65,7 +65,7 @@
     {
       "name": "ResolvedDiff",
       "kind": "interface",
-      "line": 88,
+      "line": 87,
       "signature": "ResolvedDiff()",
       "members": [
         {
@@ -91,7 +91,7 @@
     {
       "name": "DesignSheetDiff",
       "kind": "interface",
-      "line": 98,
+      "line": 97,
       "signature": "DesignSheetDiff()",
       "members": [
         {
@@ -129,31 +129,31 @@
     {
       "name": "nodesOf",
       "kind": "function",
-      "line": 128,
+      "line": 127,
       "signature": "nodesOf(dsl: DesignDSL | null | undefined): ReadonlyArray<Node>"
     },
     {
       "name": "sameValue",
       "kind": "function",
-      "line": 133,
+      "line": 132,
       "signature": "sameValue(a: unknown, b: unknown): boolean"
     },
     {
       "name": "designSheetRef",
       "kind": "function",
-      "line": 153,
+      "line": 152,
       "signature": "designSheetRef(n: Node): string"
     },
     {
       "name": "designSheetPendingRefs",
       "kind": "function",
-      "line": 194,
+      "line": 193,
       "signature": "designSheetPendingRefs(dsl: DesignDSL | null | undefined): string[]"
     },
     {
       "name": "PendingEntry",
       "kind": "interface",
-      "line": 204,
+      "line": 203,
       "signature": "PendingEntry()",
       "members": [
         {
@@ -179,43 +179,43 @@
     {
       "name": "trimStr",
       "kind": "const",
-      "line": 213,
+      "line": 212,
       "signature": "const trimStr = (v: unknown): string => (typeof v === 'string' ? v.trim()…"
     },
     {
       "name": "goalsOf",
       "kind": "function",
-      "line": 216,
+      "line": 215,
       "signature": "goalsOf(dsl: DesignDSL | null | undefined): Array<Record<string, unknown>>"
     },
     {
       "name": "goalPendingEntries",
       "kind": "function",
-      "line": 223,
+      "line": 222,
       "signature": "goalPendingEntries(dsl: DesignDSL | null | undefined): PendingEntry[]"
     },
     {
       "name": "nodePendingEntries",
       "kind": "function",
-      "line": 235,
+      "line": 234,
       "signature": "nodePendingEntries(dsl: DesignDSL | null | undefined): PendingEntry[]"
     },
     {
       "name": "pendingEntries",
       "kind": "function",
-      "line": 245,
+      "line": 244,
       "signature": "pendingEntries(dsl: DesignDSL | null | undefined): PendingEntry[]"
     },
     {
       "name": "diffDesignSheet",
       "kind": "function",
-      "line": 258,
+      "line": 257,
       "signature": "diffDesignSheet(design: DesignDSL, live: DesignDSL): DesignSheetDiff"
     },
     {
       "name": "diffDesignSheetLine",
       "kind": "function",
-      "line": 341,
+      "line": 340,
       "signature": "diffDesignSheetLine(d: DesignSheetDiff): string"
     }
   ],

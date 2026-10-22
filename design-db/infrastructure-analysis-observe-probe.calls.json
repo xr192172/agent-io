@@ -298,7 +298,7 @@
     {
       "name": "loadTSEvents",
       "kind": "function",
-      "line": 383,
+      "line": 386,
       "signature": "loadTSEvents(eventsPath: string): { events: TSEvent[]; skipped: number }"
     }
   ],
@@ -317,14 +317,6 @@
     }
   ],
   "calls": [
-    {
-      "from": "src/infrastructure/analysis/observe/probe.ts#captureProbe",
-      "to": "src/infrastructure/analysis/observe/probe.ts#TSProbeCapture.emit"
-    },
-    {
-      "from": "src/infrastructure/analysis/observe/probe.ts#emitFrame",
-      "to": "src/infrastructure/analysis/observe/probe.ts#TSProbeCapture.emit"
-    },
     {
       "from": "src/infrastructure/analysis/observe/probe.ts#enterScope",
       "to": "src/infrastructure/analysis/observe/probe.ts#emitFrame"

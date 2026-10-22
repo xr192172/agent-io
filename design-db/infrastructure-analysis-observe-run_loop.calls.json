@@ -148,6 +148,18 @@
   "calls": [
     {
       "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+      "to": "src/infrastructure/analysis/observe/contract.ts#TSComparator.aggregate"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.loadOrThrow"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.seedDefault"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
       "to": "src/infrastructure/analysis/observe/judge_service.ts#judgeEventsWithLLM"
     },
     {
@@ -177,6 +189,14 @@
     {
       "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
       "to": "src/infrastructure/analysis/observe/probe.ts#loadTSEvents"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.create"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.list"
     },
     {
       "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",

@@ -7,7 +7,7 @@
     {
       "name": "DESIGN_TOOLS",
       "kind": "const",
-      "line": 58,
+      "line": 74,
       "signature": "const DESIGN_TOOLS = [ { name: 'get_dsl', title: 'Query feature data', descrip…"
     }
   ],
@@ -18,6 +18,10 @@
     },
     {
       "source": "../plumbing.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./derive/opl.js",
       "kind": "relative"
     },
     {
@@ -75,6 +79,10 @@
     },
     {
       "source": "./rewrite/rewrite.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../refactor/gate_note.js",
       "kind": "relative"
     },
     {

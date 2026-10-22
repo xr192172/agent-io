@@ -7,13 +7,13 @@
     {
       "name": "PROBE_DIR_REL",
       "kind": "const",
-      "line": 61,
+      "line": 62,
       "signature": "const PROBE_DIR_REL = 'src/infrastructure/analysis/observe'"
     },
     {
       "name": "InstrNode",
       "kind": "interface",
-      "line": 67,
+      "line": 68,
       "signature": "InstrNode()",
       "members": [
         {
@@ -69,19 +69,19 @@
     {
       "name": "asInstr",
       "kind": "function",
-      "line": 79,
+      "line": 80,
       "signature": "asInstr(n: unknown): InstrNode"
     },
     {
       "name": "ProbeLevel",
       "kind": "type",
-      "line": 84,
+      "line": 85,
       "signature": "ProbeLevel()"
     },
     {
       "name": "InstrumentedSite",
       "kind": "interface",
-      "line": 87,
+      "line": 88,
       "signature": "InstrumentedSite()",
       "members": [
         {
@@ -137,7 +137,7 @@
     {
       "name": "InstrumentFileResult",
       "kind": "interface",
-      "line": 124,
+      "line": 125,
       "signature": "InstrumentFileResult()",
       "members": [
         {
@@ -175,7 +175,7 @@
     {
       "name": "InstrumentOptions",
       "kind": "interface",
-      "line": 144,
+      "line": 145,
       "signature": "InstrumentOptions()",
       "members": [
         {
@@ -219,49 +219,61 @@
           "type": ": boolean",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "commit",
+          "type": ": SourceWriteHook",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "openWrite",
+          "type": ": (files: readonly string[]) => SourceWriteHook",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "PROBE_MARKER",
       "kind": "const",
-      "line": 173,
+      "line": 187,
       "signature": "const PROBE_MARKER = 'observe:instrumented'"
     },
     {
       "name": "DEEP_MARKER",
       "kind": "const",
-      "line": 177,
+      "line": 191,
       "signature": "const DEEP_MARKER = 'observe:deep'"
     },
     {
       "name": "LEDGER_FILE",
       "kind": "const",
-      "line": 180,
+      "line": 194,
       "signature": "const LEDGER_FILE = '.agent-io/observe-ledger.json'"
     },
     {
       "name": "restoreOne",
       "kind": "function",
-      "line": 183,
-      "signature": "restoreOne(backupRoot: string, backupFile: string): string | null"
+      "line": 203,
+      "signature": "restoreOne(backupRoot: string, backupFile: string, restore?: SourceWriteHook): string | null"
     },
     {
       "name": "listBackups",
       "kind": "function",
-      "line": 192,
+      "line": 216,
       "signature": "listBackups(backupRoot: string): string[]"
     },
     {
       "name": "restoreInstrumented",
       "kind": "function",
-      "line": 211,
-      "signature": "restoreInstrumented(root: string): string[]"
+      "line": 235,
+      "signature": "restoreInstrumented(root: string, restore?: SourceWriteHook): string[]"
     },
     {
       "name": "ProbeLedger",
       "kind": "interface",
-      "line": 232,
+      "line": 258,
       "signature": "ProbeLedger()",
       "members": [
         {
@@ -305,271 +317,271 @@
     {
       "name": "ledgerPath",
       "kind": "function",
-      "line": 266,
+      "line": 292,
       "signature": "ledgerPath(root: string): string"
     },
     {
       "name": "buildProbeLedger",
       "kind": "function",
-      "line": 271,
+      "line": 297,
       "signature": "buildProbeLedger(results: InstrumentFileResult[],\n  projectRoot: string,\n  opts?: { contractMode?: boolean },): ProbeLedger"
     },
     {
       "name": "saveProbeLedger",
       "kind": "function",
-      "line": 314,
+      "line": 340,
       "signature": "saveProbeLedger(root: string, ledger: ProbeLedger): string"
     },
     {
       "name": "loadProbeLedger",
       "kind": "function",
-      "line": 322,
+      "line": 350,
       "signature": "loadProbeLedger(root: string): ProbeLedger | null"
     },
     {
       "name": "clearProbeLedger",
       "kind": "function",
-      "line": 333,
+      "line": 361,
       "signature": "clearProbeLedger(root: string): boolean"
     },
     {
       "name": "ledgerSummary",
       "kind": "function",
-      "line": 343,
+      "line": 373,
       "signature": "ledgerSummary(ledger: ProbeLedger): string"
     },
     {
       "name": "FN_TYPES",
       "kind": "const",
-      "line": 350,
+      "line": 380,
       "signature": "const FN_TYPES = new Set([ 'function_declaration', 'method_definition', 'a…"
     },
     {
       "name": "IO_CALLS",
       "kind": "const",
-      "line": 360,
+      "line": 390,
       "signature": "const IO_CALLS = { writeFileSync: 'writefile', writeFile: 'writefile', mkd…"
     },
     {
       "name": "isInstrumentableTsJsFile",
       "kind": "function",
-      "line": 398,
+      "line": 428,
       "signature": "isInstrumentableTsJsFile(rel: string): boolean"
     },
     {
       "name": "collectTsFiles",
       "kind": "function",
-      "line": 408,
+      "line": 438,
       "signature": "collectTsFiles(root: string): string[]"
     },
     {
       "name": "HostModuleSystem",
       "kind": "type",
-      "line": 413,
+      "line": 443,
       "signature": "HostModuleSystem()"
     },
     {
       "name": "nearestPackageType",
       "kind": "function",
-      "line": 419,
+      "line": 449,
       "signature": "nearestPackageType(startDir: string): string | undefined"
     },
     {
       "name": "detectModuleSystem",
       "kind": "function",
-      "line": 458,
+      "line": 488,
       "signature": "detectModuleSystem(file: string, content: string): HostModuleSystem"
     },
     {
       "name": "isTsHost",
       "kind": "function",
-      "line": 485,
+      "line": 515,
       "signature": "isTsHost(file: string): boolean"
     },
     {
       "name": "scopeRef",
       "kind": "function",
-      "line": 490,
+      "line": 520,
       "signature": "scopeRef(isTs: boolean): string"
     },
     {
       "name": "catchErrExpr",
       "kind": "function",
-      "line": 495,
+      "line": 525,
       "signature": "catchErrExpr(v: string, isTs: boolean): string"
     },
     {
       "name": "moduleBase",
       "kind": "function",
-      "line": 506,
+      "line": 536,
       "signature": "moduleBase(file: string): string"
     },
     {
       "name": "buildImportStmt",
       "kind": "function",
-      "line": 513,
+      "line": 543,
       "signature": "buildImportStmt(probeImport: string, system: HostModuleSystem): string"
     },
     {
       "name": "relativeProbeImport",
       "kind": "function",
-      "line": 524,
+      "line": 554,
       "signature": "relativeProbeImport(file: string, projectRoot: string): string"
     },
     {
       "name": "TS_ROOT_MARKER",
       "kind": "const",
-      "line": 554,
+      "line": 584,
       "signature": "const TS_ROOT_MARKER = `${PROBE_DIR_REL}/probe.ts`"
     },
     {
       "name": "tsJsRootHint",
       "kind": "const",
-      "line": 555,
+      "line": 585,
       "signature": "const tsJsRootHint = `★ 请**显式传** \\`project_root\\`（= agent-io 仓库根，即含 package.js…"
     },
     {
       "name": "methodAccessorKind",
       "kind": "function",
-      "line": 569,
+      "line": 599,
       "signature": "methodAccessorKind(n: InstrNode): 'get' | 'set' | null"
     },
     {
       "name": "detectEnclosingFunction",
       "kind": "function",
-      "line": 578,
+      "line": 608,
       "signature": "detectEnclosingFunction(root: InstrNode, insertIndex: number): string"
     },
     {
       "name": "extractParamNames",
       "kind": "function",
-      "line": 626,
+      "line": 656,
       "signature": "extractParamNames(fn: InstrNode): string[]"
     },
     {
       "name": "collectPatternNames",
       "kind": "function",
-      "line": 652,
+      "line": 682,
       "signature": "collectPatternNames(n: InstrNode, out: string[], depth = 0): void"
     },
     {
       "name": "firstIdentifier",
       "kind": "function",
-      "line": 672,
+      "line": 702,
       "signature": "firstIdentifier(n: InstrNode, depth = 0): InstrNode | null"
     },
     {
       "name": "isBlockBody",
       "kind": "function",
-      "line": 685,
+      "line": 715,
       "signature": "isBlockBody(fn: InstrNode): boolean"
     },
     {
       "name": "collectReturns",
       "kind": "function",
-      "line": 691,
+      "line": 721,
       "signature": "collectReturns(node: InstrNode, out: InstrNode[]): void"
     },
     {
       "name": "returnExpr",
       "kind": "function",
-      "line": 710,
+      "line": 740,
       "signature": "returnExpr(n: InstrNode): InstrNode | null"
     },
     {
       "name": "isSimpleExpr",
       "kind": "function",
-      "line": 726,
+      "line": 756,
       "signature": "isSimpleExpr(n: InstrNode): boolean"
     },
     {
       "name": "TS_GUARD_TYPES",
       "kind": "const",
-      "line": 746,
+      "line": 776,
       "signature": "const TS_GUARD_TYPES = new Set([ 'if_statement', 'else_clause', // ★ T274：tree-s…"
     },
     {
       "name": "isBracelessGuardReturn",
       "kind": "function",
-      "line": 755,
+      "line": 785,
       "signature": "isBracelessGuardReturn(parent: InstrNode | undefined): boolean"
     },
     {
       "name": "Insertion",
       "kind": "type",
-      "line": 760,
+      "line": 790,
       "signature": "Insertion()"
     },
     {
       "name": "tsJsInstrumentHooks",
       "kind": "const",
-      "line": 769,
+      "line": 799,
       "signature": "const tsJsInstrumentHooks = { lang: 'ts_js', markers: { core: PROBE_MARKER, deep: DEE…"
     },
     {
       "name": "instrumentFile",
       "kind": "function",
-      "line": 797,
+      "line": 827,
       "signature": "instrumentFile(file: string, opts: InstrumentOptions = {}): Promise<InstrumentFileResult>"
     },
     {
       "name": "collectSites",
       "kind": "function",
-      "line": 806,
+      "line": 836,
       "signature": "collectSites(root: InstrNode,\n  file: string,\n  content: string,\n  insertions: { index: number; removeTo?: number; site: InstrumentedSite }[],\n  fileRel: string,\n  probes?: string[],\n  scope = false,): void"
     },
     {
       "name": "isSideEffectFreeExpr",
       "kind": "function",
-      "line": 1056,
+      "line": 1086,
       "signature": "isSideEffectFreeExpr(n: InstrNode): boolean"
     },
     {
       "name": "parenInner",
       "kind": "function",
-      "line": 1071,
+      "line": 1101,
       "signature": "parenInner(n: InstrNode): InstrNode"
     },
     {
       "name": "findBlockChild",
       "kind": "function",
-      "line": 1080,
+      "line": 1110,
       "signature": "findBlockChild(n: InstrNode): InstrNode | null"
     },
     {
       "name": "deepProbeName",
       "kind": "function",
-      "line": 1089,
+      "line": 1119,
       "signature": "deepProbeName(root: InstrNode, file: string, atIndex: number): string"
     },
     {
       "name": "deepProbeInjected",
       "kind": "function",
-      "line": 1096,
+      "line": 1126,
       "signature": "deepProbeInjected(probeName: string, fileRel: string, fields: string): string"
     },
     {
       "name": "collectDeepSites",
       "kind": "function",
-      "line": 1109,
+      "line": 1139,
       "signature": "collectDeepSites(root: InstrNode,\n  file: string,\n  content: string,\n  insertions: { index: number; removeTo?: number; site: InstrumentedSite }[],\n  fileRel: string,\n  probes?: string[],): void"
     },
     {
       "name": "handleReturn",
       "kind": "function",
-      "line": 1181,
+      "line": 1211,
       "signature": "handleReturn(n: InstrNode,\n  root: InstrNode,\n  file: string,\n  content: string,\n  insertions: { index: number; removeTo?: number; site: InstrumentedSite }[],\n  fileRel: string,\n  parent?: InstrNode,\n  probes?: string[],): void"
     },
     {
       "name": "containsFunctionLike",
       "kind": "function",
-      "line": 1304,
+      "line": 1334,
       "signature": "containsFunctionLike(node: InstrNode): boolean"
     },
     {
       "name": "instrumentProject",
       "kind": "function",
-      "line": 1318,
+      "line": 1348,
       "signature": "instrumentProject(root: string, opts: InstrumentOptions = {}): Promise<InstrumentFileResult[]>"
     }
   ],
@@ -585,6 +597,11 @@
     {
       "source": "../../parse/source_exts.js",
       "kind": "relative"
+    },
+    {
+      "source": "../../source_write_port.js",
+      "kind": "relative",
+      "type_only": true
     },
     {
       "source": "./instrument_skeleton.js",

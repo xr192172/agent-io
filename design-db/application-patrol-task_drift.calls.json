@@ -244,6 +244,14 @@
     },
     {
       "from": "src/application/patrol/task_drift.ts#patrolDrift",
+      "to": "src/domain/task_schema.ts#expectationsOf"
+    },
+    {
+      "from": "src/application/patrol/task_drift.ts#patrolDrift",
+      "to": "src/domain/task_schema.ts#expectationsOf"
+    },
+    {
+      "from": "src/application/patrol/task_drift.ts#patrolDrift",
       "to": "src/domain/task_schema.ts#isClosedTaskState"
     },
     {

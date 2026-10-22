@@ -292,10 +292,6 @@
     {
       "from": "src/application/design/dsl_ops/api_ops.ts#setExpectedApis",
       "to": "src/infrastructure/storage.ts#saveDSL"
-    },
-    {
-      "from": "src/application/design/dsl_ops/api_ops.ts#setNodeSemantic",
-      "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ]
 }

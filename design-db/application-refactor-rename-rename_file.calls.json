@@ -253,13 +253,13 @@
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 629,
+      "line": 630,
       "signature": "touchedOf(input: RenameFileInput, r: RenameFileResult): Touched"
     },
     {
       "name": "renameFile",
       "kind": "function",
-      "line": 639,
+      "line": 640,
       "signature": "renameFile(input: RenameFileInput): Promise<TouchedProduct<RenameFileResult>>"
     }
   ],

@@ -7,7 +7,7 @@
     {
       "name": "SourceWriteCtx",
       "kind": "interface",
-      "line": 61,
+      "line": 63,
       "signature": "SourceWriteCtx()",
       "members": [
         {
@@ -45,7 +45,7 @@
     {
       "name": "SourceWriteReceipt",
       "kind": "interface",
-      "line": 84,
+      "line": 86,
       "signature": "SourceWriteReceipt()",
       "members": [
         {
@@ -93,9 +93,15 @@
       ]
     },
     {
+      "name": "SourceMutationKind",
+      "kind": "type",
+      "line": 116,
+      "signature": "SourceMutationKind()"
+    },
+    {
       "name": "SourceWriteTxn",
       "kind": "interface",
-      "line": 104,
+      "line": 122,
       "signature": "SourceWriteTxn()",
       "members": [
         {
@@ -141,6 +147,30 @@
           "member_kind": "method"
         },
         {
+          "name": "append",
+          "type": ": SourceWriteReceipt",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "copy",
+          "type": ": SourceWriteReceipt",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "move",
+          "type": ": SourceWriteReceipt",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
+          "name": "remove",
+          "type": ": SourceWriteReceipt",
+          "optional": false,
+          "member_kind": "method"
+        },
+        {
           "name": "close",
           "type": ": WriteThroughOutcome | null",
           "optional": false,
@@ -151,26 +181,32 @@
     {
       "name": "relOf",
       "kind": "function",
-      "line": 121,
+      "line": 147,
       "signature": "relOf(root: string, file: string): string | null"
     },
     {
       "name": "openSourceWrite",
       "kind": "function",
-      "line": 130,
+      "line": 156,
       "signature": "openSourceWrite(rootArg: string, files: readonly string[], ctx: SourceWriteCtx): SourceWriteTxn"
     },
     {
       "name": "writeSourceFile",
       "kind": "function",
-      "line": 201,
+      "line": 276,
       "signature": "writeSourceFile(root: string,\n  file: string,\n  content: string,\n  ctx: SourceWriteCtx,): SourceWriteReceipt"
     },
     {
       "name": "writeSourceBatch",
       "kind": "function",
-      "line": 219,
+      "line": 294,
       "signature": "writeSourceBatch(root: string,\n  entries: ReadonlyArray<readonly [string, string]>,\n  ctx: SourceWriteCtx,): SourceWriteReceipt[]"
+    },
+    {
+      "name": "restoreSourceBytes",
+      "kind": "function",
+      "line": 320,
+      "signature": "restoreSourceBytes(abs: string, content: string): void"
     }
   ],
   "imports": [
@@ -221,7 +257,23 @@
       "to": "src/application/source_writer.ts#relOf"
     },
     {
+      "from": "src/application/source_writer.ts#openSourceWrite",
+      "to": "src/application/source_writer.ts#relOf"
+    },
+    {
+      "from": "src/application/source_writer.ts#openSourceWrite",
+      "to": "src/application/source_writer.ts#relOf"
+    },
+    {
       "from": "src/application/source_writer.ts#openSourceWrite.commit",
+      "to": "src/application/source_writer.ts#relOf"
+    },
+    {
+      "from": "src/application/source_writer.ts#openSourceWrite.move",
+      "to": "src/application/source_writer.ts#relOf"
+    },
+    {
+      "from": "src/application/source_writer.ts#openSourceWrite.remove",
       "to": "src/application/source_writer.ts#relOf"
     },
     {

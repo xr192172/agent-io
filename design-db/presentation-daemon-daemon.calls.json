@@ -152,26 +152,6 @@
     },
     {
       "from": "src/presentation/daemon/daemon.ts#main",
-      "to": "src/application/observe/runtime/watch_project_tool.ts#listActiveWatches"
-    },
-    {
-      "from": "src/presentation/daemon/daemon.ts#main",
-      "to": "src/application/observe/runtime/watch_project_tool.ts#listActiveWatches"
-    },
-    {
-      "from": "src/presentation/daemon/daemon.ts#main",
-      "to": "src/application/observe/runtime/watch_project_tool.ts#setWatchToolEventListener"
-    },
-    {
-      "from": "src/presentation/daemon/daemon.ts#main",
-      "to": "src/application/observe/runtime/watch_project_tool.ts#watchProjectTool"
-    },
-    {
-      "from": "src/presentation/daemon/daemon.ts#main",
-      "to": "src/application/observe/runtime/watch_project_tool.ts#watchProjectTool"
-    },
-    {
-      "from": "src/presentation/daemon/daemon.ts#main",
       "to": "src/infrastructure/alert_inbox.ts#alertsSince"
     },
     {
@@ -185,10 +165,6 @@
     {
       "from": "src/presentation/daemon/daemon.ts#main",
       "to": "src/infrastructure/alert_inbox.ts#setAlertListener"
-    },
-    {
-      "from": "src/presentation/daemon/daemon.ts#scheduleLoopTrigger",
-      "to": "src/infrastructure/analysis/observe/run_loop.ts#runLoop"
     },
     {
       "from": "src/presentation/daemon/daemon.ts#main",

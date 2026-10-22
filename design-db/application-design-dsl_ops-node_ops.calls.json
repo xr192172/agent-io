@@ -7,43 +7,43 @@
     {
       "name": "assertValidSchema",
       "kind": "function",
-      "line": 25,
+      "line": 22,
       "signature": "assertValidSchema(s: AnimationValueSchema, path: string): void"
     },
     {
       "name": "assertValidShapes",
       "kind": "function",
-      "line": 38,
+      "line": 35,
       "signature": "assertValidShapes(shapes: NodeShapes): void"
     },
     {
       "name": "PATH_NODE_KINDS",
       "kind": "const",
-      "line": 55,
+      "line": 52,
       "signature": "const PATH_NODE_KINDS = ['file', 'doc', 'module', 'symbol'] as const"
     },
     {
       "name": "PathNodeKind",
       "kind": "type",
-      "line": 56,
+      "line": 53,
       "signature": "PathNodeKind()"
     },
     {
       "name": "normalizeNodePath",
       "kind": "function",
-      "line": 69,
+      "line": 66,
       "signature": "normalizeNodePath(raw: unknown, kind: unknown): string"
     },
     {
       "name": "normalizeGate",
       "kind": "function",
-      "line": 108,
+      "line": 105,
       "signature": "normalizeGate(raw: unknown): NodeGate"
     },
     {
       "name": "AddNodeInput",
       "kind": "interface",
-      "line": 124,
+      "line": 121,
       "signature": "AddNodeInput()",
       "members": [
         {
@@ -219,13 +219,13 @@
     {
       "name": "addNode",
       "kind": "function",
-      "line": 165,
+      "line": 162,
       "signature": "addNode(input: AddNodeInput): EditResult"
     },
     {
       "name": "UpdateNodeInput",
       "kind": "interface",
-      "line": 273,
+      "line": 270,
       "signature": "UpdateNodeInput()",
       "members": [
         {
@@ -413,31 +413,25 @@
     {
       "name": "assertDecisionFieldShapes",
       "kind": "function",
-      "line": 325,
+      "line": 322,
       "signature": "assertDecisionFieldShapes(next: NodeDecision): void"
-    },
-    {
-      "name": "assertCardCriteriaUnchanged",
-      "kind": "function",
-      "line": 369,
-      "signature": "assertCardCriteriaUnchanged(card: TaskSpec | undefined, summary: string, expectations: readonly unknown[]): void"
     },
     {
       "name": "applyDecisionWrite",
       "kind": "function",
-      "line": 396,
-      "signature": "applyDecisionWrite(prevDecision: NodeDecision | undefined,\n  history: DecisionHistoryEntry[] | undefined,\n  next: NodeDecision | null | undefined,\n  opts?: { author?: DecisionAuthor; agent?: string; note?: string; now?: string; card?: TaskSpec },): { decision: NodeDecision | undefined; decision_history: DecisionHistoryEntry[] | undefined }"
+      "line": 364,
+      "signature": "applyDecisionWrite(prevDecision: NodeDecision | undefined,\n  history: DecisionHistoryEntry[] | undefined,\n  next: NodeDecision | null | undefined,\n  opts?: { author?: DecisionAuthor; agent?: string; note?: string; now?: string },): { decision: NodeDecision | undefined; decision_history: DecisionHistoryEntry[] | undefined }"
     },
     {
       "name": "updateNode",
       "kind": "function",
-      "line": 471,
+      "line": 434,
       "signature": "updateNode(input: UpdateNodeInput): EditResult"
     },
     {
       "name": "DeleteNodeInput",
       "kind": "interface",
-      "line": 592,
+      "line": 553,
       "signature": "DeleteNodeInput()",
       "members": [
         {
@@ -457,7 +451,7 @@
     {
       "name": "deleteNode",
       "kind": "function",
-      "line": 597,
+      "line": 558,
       "signature": "deleteNode(input: DeleteNodeInput): EditResult"
     }
   ],
@@ -491,14 +485,6 @@
     {
       "source": "./status_tools.js",
       "kind": "relative"
-    },
-    {
-      "source": "./task_ops.js",
-      "kind": "relative"
-    },
-    {
-      "source": "../../../domain/task_schema.js",
-      "kind": "relative"
     }
   ],
   "calls": [
@@ -509,14 +495,6 @@
     {
       "from": "src/application/design/dsl_ops/node_ops.ts#updateNode",
       "to": "src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite"
-    },
-    {
-      "from": "src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite",
-      "to": "src/application/design/dsl_ops/node_ops.ts#assertCardCriteriaUnchanged"
-    },
-    {
-      "from": "src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite",
-      "to": "src/application/design/dsl_ops/node_ops.ts#assertCardCriteriaUnchanged"
     },
     {
       "from": "src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite",
@@ -571,10 +549,6 @@
       "to": "src/application/design/dsl_ops/status_tools.ts#updateStatus"
     },
     {
-      "from": "src/application/design/dsl_ops/node_ops.ts#assertCardCriteriaUnchanged",
-      "to": "src/application/design/dsl_ops/task_ops.ts#sameCriteria"
-    },
-    {
       "from": "src/application/design/dsl_ops/node_ops.ts#addNode",
       "to": "src/domain/expectation.ts#assertValidExpectations"
     },
@@ -589,10 +563,6 @@
     {
       "from": "src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite",
       "to": "src/domain/scope.ts#parseScope"
-    },
-    {
-      "from": "src/application/design/dsl_ops/node_ops.ts#assertCardCriteriaUnchanged",
-      "to": "src/domain/task_schema.ts#taskLevel"
     },
     {
       "from": "src/application/design/dsl_ops/node_ops.ts#addNode",

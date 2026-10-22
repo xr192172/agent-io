@@ -93,7 +93,7 @@
     {
       "name": "DogfoodActionStat",
       "kind": "interface",
-      "line": 96,
+      "line": 99,
       "signature": "DogfoodActionStat()",
       "members": [
         {
@@ -119,7 +119,7 @@
     {
       "name": "DogfoodToolStat",
       "kind": "interface",
-      "line": 102,
+      "line": 105,
       "signature": "DogfoodToolStat()",
       "members": [
         {
@@ -163,7 +163,7 @@
     {
       "name": "DogfoodViaStat",
       "kind": "interface",
-      "line": 114,
+      "line": 117,
       "signature": "DogfoodViaStat()",
       "members": [
         {
@@ -195,7 +195,7 @@
     {
       "name": "DogfoodSnapshot",
       "kind": "interface",
-      "line": 121,
+      "line": 124,
       "signature": "DogfoodSnapshot()",
       "members": [
         {
@@ -239,37 +239,37 @@
     {
       "name": "emptyAction",
       "kind": "function",
-      "line": 138,
+      "line": 141,
       "signature": "emptyAction(): DogfoodActionStat"
     },
     {
       "name": "snapshotDogfoodStats",
       "kind": "function",
-      "line": 159,
+      "line": 162,
       "signature": "snapshotDogfoodStats(opts: { includeSweeps?: boolean } = {}): DogfoodSnapshot"
     },
     {
       "name": "renderDogfoodSnapshot",
       "kind": "function",
-      "line": 236,
+      "line": 239,
       "signature": "renderDogfoodSnapshot(s: DogfoodSnapshot): string"
     },
     {
       "name": "renderDogfoodSummary",
       "kind": "function",
-      "line": 292,
+      "line": 295,
       "signature": "renderDogfoodSummary(s: DogfoodSnapshot): string"
     },
     {
       "name": "runDogfoodCLI",
       "kind": "function",
-      "line": 312,
+      "line": 315,
       "signature": "runDogfoodCLI(argv: string[]): void"
     },
     {
       "name": "isMain",
       "kind": "const",
-      "line": 322,
+      "line": 325,
       "signature": "const isMain = import.meta.url === pathToFileURL(path.resolve(process.ar…"
     }
   ],

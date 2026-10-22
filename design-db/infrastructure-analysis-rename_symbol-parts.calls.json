@@ -8,7 +8,7 @@
       "name": "collectFilesByExt",
       "kind": "function",
       "line": 33,
-      "signature": "collectFilesByExt(root: string,\n  ext: string,): { files: Set<string>; skipped: Array<{ path: string; why: string }> }"
+      "signature": "collectFilesByExt(root: string,\r\n  ext: string,): { files: Set<string>; skipped: Array<{ path: string; why: string }> }"
     },
     {
       "name": "Edit",
@@ -207,7 +207,7 @@
     {
       "name": "LangRenameArgs",
       "kind": "interface",
-      "line": 195,
+      "line": 205,
       "signature": "LangRenameArgs()",
       "members": [
         {
@@ -257,13 +257,19 @@
           "type": ": AliasConfig | null",
           "optional": false,
           "member_kind": "property"
+        },
+        {
+          "name": "write",
+          "type": ": SourceWriteHook",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "LangPackage",
       "kind": "interface",
-      "line": 208,
+      "line": 223,
       "signature": "LangPackage()",
       "members": [
         {
@@ -283,7 +289,7 @@
     {
       "name": "GoModuleAnalysis",
       "kind": "interface",
-      "line": 242,
+      "line": 257,
       "signature": "GoModuleAnalysis()",
       "members": [
         {
@@ -349,6 +355,10 @@
     },
     {
       "source": "../../../infrastructure/parse/ast_node.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../source_write_port.js",
       "kind": "relative"
     }
   ],

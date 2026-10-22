@@ -332,66 +332,6 @@
       "to": "src/infrastructure/render/dataflow_core.ts#evaluateCond"
     },
     {
-      "from": "src/infrastructure/render/dataflow_core.ts#collectJudgements",
-      "to": "src/infrastructure/render/dataflow_core.ts#evaluateCond.get"
-    },
-    {
-      "from": "src/infrastructure/render/dataflow_core.ts#collectJudgements",
-      "to": "src/infrastructure/render/dataflow_core.ts#evaluateCond.get"
-    },
-    {
-      "from": "src/infrastructure/render/dataflow_core.ts#collectJudgements",
-      "to": "src/infrastructure/render/dataflow_core.ts#evaluateCond.get"
-    },
-    {
-      "from": "src/infrastructure/render/dataflow_core.ts#collectJudgements",
-      "to": "src/infrastructure/render/dataflow_core.ts#evaluateCond.get"
-    },
-    {
-      "from": "src/infrastructure/render/dataflow_core.ts#collectJudgements",
-      "to": "src/infrastructure/render/dataflow_core.ts#evaluateCond.get"
-    },
-    {
-      "from": "src/infrastructure/render/dataflow_core.ts#collectJudgements",
-      "to": "src/infrastructure/render/dataflow_core.ts#evaluateCond.get"
-    },
-    {
-      "from": "src/infrastructure/render/dataflow_core.ts#buildDataTrace",
-      "to": "src/infrastructure/render/dataflow_core.ts#evaluateCond.get"
-    },
-    {
-      "from": "src/infrastructure/render/dataflow_core.ts#buildDataTrace",
-      "to": "src/infrastructure/render/dataflow_core.ts#evaluateCond.get"
-    },
-    {
-      "from": "src/infrastructure/render/dataflow_core.ts#buildDataTrace",
-      "to": "src/infrastructure/render/dataflow_core.ts#evaluateCond.get"
-    },
-    {
-      "from": "src/infrastructure/render/dataflow_core.ts#buildDataTrace",
-      "to": "src/infrastructure/render/dataflow_core.ts#evaluateCond.get"
-    },
-    {
-      "from": "src/infrastructure/render/dataflow_core.ts#buildNote",
-      "to": "src/infrastructure/render/dataflow_core.ts#evaluateCond.get"
-    },
-    {
-      "from": "src/infrastructure/render/dataflow_core.ts#buildNote",
-      "to": "src/infrastructure/render/dataflow_core.ts#evaluateCond.get"
-    },
-    {
-      "from": "src/infrastructure/render/dataflow_core.ts#collectJudgements",
-      "to": "src/infrastructure/render/dataflow_core.ts#evaluateCond.has"
-    },
-    {
-      "from": "src/infrastructure/render/dataflow_core.ts#collectJudgements",
-      "to": "src/infrastructure/render/dataflow_core.ts#evaluateCond.has"
-    },
-    {
-      "from": "src/infrastructure/render/dataflow_core.ts#buildDataTrace",
-      "to": "src/infrastructure/render/dataflow_core.ts#evaluateCond.has"
-    },
-    {
       "from": "src/infrastructure/render/dataflow_core.ts#buildDataTrace",
       "to": "src/infrastructure/render/dataflow_core.ts#isBranchEdge"
     },

@@ -69,25 +69,25 @@
     {
       "name": "appendReceipt",
       "kind": "function",
-      "line": 205,
+      "line": 207,
       "signature": "appendReceipt(lines: string[], receipt: Receipt): void"
     },
     {
       "name": "projectReceipt",
       "kind": "function",
-      "line": 231,
+      "line": 233,
       "signature": "projectReceipt(r: ProjectResult, fillRequested: boolean, verifyRequested: boolean): Receipt"
     },
     {
       "name": "parseSuppliedCases",
       "kind": "function",
-      "line": 264,
+      "line": 266,
       "signature": "parseSuppliedCases(raw: unknown): BehaviorCase[]"
     },
     {
       "name": "externalImportsOf",
       "kind": "function",
-      "line": 277,
+      "line": 279,
       "signature": "externalImportsOf(source: string): string[]"
     }
   ],

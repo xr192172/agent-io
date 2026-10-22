@@ -7,13 +7,13 @@
     {
       "name": "execFileAsync",
       "kind": "const",
-      "line": 38,
+      "line": 39,
       "signature": "const execFileAsync = promisify(execFile)"
     },
     {
       "name": "SubSplitMethod",
       "kind": "interface",
-      "line": 45,
+      "line": 46,
       "signature": "SubSplitMethod()",
       "members": [
         {
@@ -33,7 +33,7 @@
     {
       "name": "SubSplitGroupPlan",
       "kind": "interface",
-      "line": 51,
+      "line": 52,
       "signature": "SubSplitGroupPlan()",
       "members": [
         {
@@ -53,7 +53,7 @@
     {
       "name": "CommunitySubSplitPlan",
       "kind": "interface",
-      "line": 57,
+      "line": 58,
       "signature": "CommunitySubSplitPlan()",
       "members": [
         {
@@ -85,7 +85,7 @@
     {
       "name": "DeriveSplitInput",
       "kind": "interface",
-      "line": 65,
+      "line": 66,
       "signature": "DeriveSplitInput()",
       "members": [
         {
@@ -141,13 +141,25 @@
           "type": ": CommunitySubSplitPlan[]",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "actor",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "authorize",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "DeriveSplitResult",
       "kind": "interface",
-      "line": 92,
+      "line": 100,
       "signature": "DeriveSplitResult()",
       "members": [
         {
@@ -245,85 +257,85 @@
     {
       "name": "LangId",
       "kind": "type",
-      "line": 140,
+      "line": 148,
       "signature": "LangId()"
     },
     {
       "name": "detectLang",
       "kind": "function",
-      "line": 143,
+      "line": 151,
       "signature": "detectLang(ext: string): LangId | null"
     },
     {
       "name": "IMPORT_NODE_TYPES",
       "kind": "const",
-      "line": 151,
+      "line": 159,
       "signature": "const IMPORT_NODE_TYPES = { ts: ['import_statement'], go: ['import_declaration'], p…"
     },
     {
       "name": "mergeRanges",
       "kind": "function",
-      "line": 162,
+      "line": 170,
       "signature": "mergeRanges(ranges: Array<[number, number]>): Array<[number, number]>"
     },
     {
       "name": "removeLineRanges",
       "kind": "function",
-      "line": 179,
+      "line": 187,
       "signature": "removeLineRanges(content: string, ranges: Array<[number, number]>): string"
     },
     {
       "name": "sliceLineRanges",
       "kind": "function",
-      "line": 189,
+      "line": 197,
       "signature": "sliceLineRanges(content: string, ranges: Array<[number, number]>): string"
     },
     {
       "name": "dedupByOutermost",
       "kind": "function",
-      "line": 199,
+      "line": 207,
       "signature": "dedupByOutermost(list: ParsedSymbol[]): ParsedSymbol[]"
     },
     {
       "name": "collectImportRanges",
       "kind": "function",
-      "line": 214,
+      "line": 222,
       "signature": "collectImportRanges(filePath: string,\n  content: string,\n  lang: LangId,): Promise<Array<{ start: number; end: number; text: string }>>"
     },
     {
       "name": "importSourceOf",
       "kind": "function",
-      "line": 236,
+      "line": 244,
       "signature": "importSourceOf(text: string): string"
     },
     {
       "name": "referNames",
       "kind": "function",
-      "line": 266,
+      "line": 274,
       "signature": "referNames(text: string, names: string[], filePath: string): string[]"
     },
     {
       "name": "escapeRe",
       "kind": "function",
-      "line": 281,
+      "line": 289,
       "signature": "escapeRe(s: string): string"
     },
     {
       "name": "goPackage",
       "kind": "function",
-      "line": 286,
+      "line": 294,
       "signature": "goPackage(content: string): string"
     },
     {
       "name": "isPythonPackage",
       "kind": "function",
-      "line": 292,
+      "line": 300,
       "signature": "isPythonPackage(projectRoot: string, fileRel: string): boolean"
     },
     {
       "name": "Wiring",
       "kind": "interface",
-      "line": 309,
+      "line": 317,
       "signature": "Wiring()",
       "members": [
         {
@@ -373,25 +385,25 @@
     {
       "name": "buildWiring",
       "kind": "function",
-      "line": 348,
+      "line": 356,
       "signature": "buildWiring(lang: LangId,\n  projectRoot: string,\n  targetRel: string,\n  newRel: string,\n  content: string,\n  extractedText: string,\n  remainingNames: string[],\n  extractedNames: string[],\n  /**\n   * ★★★ T211（2026-10-12）：**原文件抽走那些符号之后剩下的正文**。\n   *\n   * ## 为什么需要它（★ 实测踩到的真 bug）\n   * 原先 ts/js 分支写的是 *\"`import { 【全部被抽走的符号】 } from './新文件'`\"* ⇒ ★ **无脑全给** ✗\n   * 实测（真落盘，夹具 `mixed.ts`）：切完之后 `mixed.ts` **只用到 `toCsv`/`downloadCsv`**\n   * ⇒ ★ **它一个被抽走的符号都不需要** ⇒ 却被硬塞了\n   * `import { SECRET, signToken, verifyToken } from './fixture-session-token'` ⇒\n   * ★★ 而 `SECRET` 在原文件里是**模块私有的**（`const SECRET`，没 `export`）⇒\n   * ★★★ **TS2459：declares 'SECRET' locally, but it is not exported** ⇒ **切出来的代码【编不过】** ✓\n   *\n   * ⇒ ★ 判据（就是要它）：**只把\"残余正文里真的还引用到\"的那些接回来** ✓\n   *   ★ 而\"谁真的被引用\"已有现成助手 `referNames`（本文件已在用另一个方向 ✓）⇒ ★ **不再造第二把尺** ✓\n   */\n  remainingText: string,): Wiring"
     },
     {
       "name": "insertImport",
       "kind": "function",
-      "line": 447,
+      "line": 455,
       "signature": "insertImport(content: string, importLine: string): string"
     },
     {
       "name": "stripQuotesStr",
       "kind": "function",
-      "line": 467,
+      "line": 475,
       "signature": "stripQuotesStr(s: string): string"
     },
     {
       "name": "GoImportSpec",
       "kind": "interface",
-      "line": 473,
+      "line": 481,
       "signature": "GoImportSpec()",
       "members": [
         {
@@ -429,97 +441,97 @@
     {
       "name": "collectGoImportSpecs",
       "kind": "function",
-      "line": 482,
+      "line": 490,
       "signature": "collectGoImportSpecs(filePath: string, content: string): Promise<GoImportSpec[]>"
     },
     {
       "name": "pruneGoImports",
       "kind": "function",
-      "line": 509,
+      "line": 517,
       "signature": "pruneGoImports(content: string, filePath: string): Promise<string>"
     },
     {
       "name": "pythonBoundNames",
       "kind": "function",
-      "line": 594,
+      "line": 602,
       "signature": "pythonBoundNames(stmtText: string): string[]"
     },
     {
       "name": "prunePythonImports",
       "kind": "function",
-      "line": 618,
+      "line": 626,
       "signature": "prunePythonImports(content: string, filePath: string): Promise<string>"
     },
     {
       "name": "pruneUnusedImports",
       "kind": "function",
-      "line": 646,
+      "line": 654,
       "signature": "pruneUnusedImports(content: string,\n  filePath: string,\n  lang: LangId,): Promise<{ content: string; pruned: string[] }>"
     },
     {
       "name": "prunedDiffs",
       "kind": "function",
-      "line": 665,
+      "line": 673,
       "signature": "prunedDiffs(before: string, after: string, lang: LangId): string[]"
     },
     {
       "name": "shq",
       "kind": "function",
-      "line": 678,
+      "line": 686,
       "signature": "shq(p: string): string"
     },
     {
       "name": "runCompile",
       "kind": "function",
-      "line": 687,
+      "line": 695,
       "signature": "runCompile(lang: LangId,\n  projectDir: string,\n  targetRel: string,\n  newRel: string,): Promise<{ command: string; ok?: boolean; output: string; skipped?: string }>"
     },
     {
       "name": "runShell",
       "kind": "function",
-      "line": 746,
+      "line": 754,
       "signature": "runShell(command: string, cwd: string): Promise<{ ok: boolean; output: string }>"
     },
     {
       "name": "hasTestFiles",
       "kind": "function",
-      "line": 757,
+      "line": 765,
       "signature": "hasTestFiles(projectDir: string, re: RegExp): boolean"
     },
     {
       "name": "runTest",
       "kind": "function",
-      "line": 782,
+      "line": 790,
       "signature": "runTest(lang: LangId,\n  projectDir: string,\n  targetRel: string,\n  newRel: string,): Promise<{ command: string; ok?: boolean; output: string; skipped?: string }>"
     },
     {
       "name": "splitOnce",
       "kind": "function",
-      "line": 832,
+      "line": 840,
       "signature": "splitOnce(input: DeriveSplitInput): Promise<DeriveSplitResult>"
     },
     {
       "name": "runSubSplit",
       "kind": "function",
-      "line": 1154,
+      "line": 1171,
       "signature": "runSubSplit(input: DeriveSplitInput): Promise<DeriveSplitResult>"
     },
     {
       "name": "deriveSplitCore",
       "kind": "function",
-      "line": 1238,
+      "line": 1255,
       "signature": "deriveSplitCore(input: DeriveSplitInput): Promise<DeriveSplitResult>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 1246,
+      "line": 1263,
       "signature": "touchedOf(input: DeriveSplitInput, r: DeriveSplitResult): Touched"
     },
     {
       "name": "deriveSplit",
       "kind": "function",
-      "line": 1273,
+      "line": 1290,
       "signature": "deriveSplit(input: DeriveSplitInput): Promise<TouchedProduct<DeriveSplitResult>>"
     }
   ],
@@ -550,6 +562,10 @@
     },
     {
       "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../source_writer.js",
       "kind": "relative"
     },
     {
@@ -793,6 +809,18 @@
     {
       "from": "src/application/design/derive/derive_split.ts#deriveSplit",
       "to": "src/application/design/derive/derive_split.ts#touchedOf"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/source_writer.ts#openSourceWrite"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/source_writer.ts#restoreSourceBytes"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/source_writer.ts#restoreSourceBytes"
     },
     {
       "from": "src/application/design/derive/derive_split.ts#deriveSplit",

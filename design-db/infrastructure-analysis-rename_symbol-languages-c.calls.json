@@ -7,19 +7,19 @@
     {
       "name": "analyzeCLanguage",
       "kind": "function",
-      "line": 27,
+      "line": 29,
       "signature": "analyzeCLanguage(src: string): Promise<GoModuleAnalysis | null>"
     },
     {
       "name": "renameCSymbol",
       "kind": "function",
-      "line": 114,
-      "signature": "renameCSymbol(args: {\n  file: string;\n  symbol: string;\n  to: string;\n  dryRun: boolean;\n  resolvedRoot: string;\n  blocked: string[];\n}): Promise<RenameSymbolResult>"
+      "line": 116,
+      "signature": "renameCSymbol(args: {\n  file: string;\n  symbol: string;\n  to: string;\n  dryRun: boolean;\n  resolvedRoot: string;\n  blocked: string[];\n  /** ★ 落盘注入（`parts#SourceWriteHook`）：引擎不写盘，没注入就抛 */\n  write?: SourceWriteHook;\n}): Promise<RenameSymbolResult>"
     },
     {
       "name": "cPackage",
       "kind": "const",
-      "line": 218,
+      "line": 222,
       "signature": "const cPackage = { exts: ['.c', '.h'], rename: (a) => renameCSymbol({ file…"
     }
   ],

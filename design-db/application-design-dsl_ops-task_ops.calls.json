@@ -7,19 +7,19 @@
     {
       "name": "signTaskActor",
       "kind": "function",
-      "line": 126,
+      "line": 133,
       "signature": "signTaskActor(raw: string | undefined | null,\n  field: string,): { actor: string | null; adm: ActorAdmission }"
     },
     {
       "name": "normalizedInline",
       "kind": "function",
-      "line": 144,
+      "line": 151,
       "signature": "normalizedInline(adm: ActorAdmission): string"
     },
     {
       "name": "TaskOpRequest",
       "kind": "interface",
-      "line": 149,
+      "line": 156,
       "signature": "TaskOpRequest()",
       "members": [
         {
@@ -51,7 +51,7 @@
     {
       "name": "TaskOpInput",
       "kind": "interface",
-      "line": 156,
+      "line": 163,
       "signature": "TaskOpInput()",
       "members": [
         {
@@ -107,7 +107,7 @@
     {
       "name": "Loaded",
       "kind": "interface",
-      "line": 188,
+      "line": 195,
       "signature": "Loaded()",
       "members": [
         {
@@ -133,61 +133,61 @@
     {
       "name": "loadTask",
       "kind": "function",
-      "line": 194,
+      "line": 201,
       "signature": "loadTask(feature: string, nodeId: string): Loaded"
     },
     {
       "name": "requireRoot",
       "kind": "function",
-      "line": 223,
+      "line": 230,
       "signature": "requireRoot(dsl: { source_root?: string }): string"
     },
     {
       "name": "assertTransition",
       "kind": "function",
-      "line": 235,
+      "line": 242,
       "signature": "assertTransition(from: TaskState, to: TaskState, action: string): void"
     },
     {
       "name": "writeTask",
       "kind": "function",
-      "line": 251,
+      "line": 258,
       "signature": "writeTask(feature: string, nodeId: string, next: TaskSpec): void"
     },
     {
-      "name": "sameCriteria",
+      "name": "criteriaChangedSince",
       "kind": "function",
-      "line": 270,
-      "signature": "sameCriteria(card: TaskSpec, summary: string, expectations: readonly unknown[]): boolean"
+      "line": 290,
+      "signature": "criteriaChangedSince(node: { decision?: { expectations?: Expectation[] }; decision_history?: DecisionHistoryEntry[] },\n  since: string | null | undefined,): boolean"
     },
     {
       "name": "canonCriteria",
       "kind": "function",
-      "line": 280,
+      "line": 305,
       "signature": "canonCriteria(xs: readonly unknown[]): string"
     },
     {
       "name": "codeFingerprintAt",
       "kind": "function",
-      "line": 300,
+      "line": 325,
       "signature": "codeFingerprintAt(root: string, rels: readonly string[]): { code: string; covers: string[] }"
     },
     {
       "name": "fingerprintEvidence",
       "kind": "function",
-      "line": 325,
-      "signature": "fingerprintEvidence(card: Pick<TaskSpec, 'expectations'>,\n  sourceRoot: string | undefined,\n  nodeId: string,\n  ev: ProgressEvidence,): TaskEvidenceFingerprint"
+      "line": 350,
+      "signature": "fingerprintEvidence(expectations: readonly Expectation[],\n  sourceRoot: string | undefined,\n  nodeId: string,\n  ev: ProgressEvidence,): TaskEvidenceFingerprint"
     },
     {
       "name": "reopenGate",
       "kind": "function",
-      "line": 361,
+      "line": 386,
       "signature": "reopenGate(card: TaskSpec,\n  evidence: ProgressEvidence | undefined,): { ok: true } | { ok: false; reason: string }"
     },
     {
       "name": "ConstructBasis",
       "kind": "interface",
-      "line": 430,
+      "line": 455,
       "signature": "ConstructBasis()",
       "members": [
         {
@@ -213,73 +213,85 @@
     {
       "name": "constructBasis",
       "kind": "function",
-      "line": 440,
+      "line": 465,
       "signature": "constructBasis(dsl: NonNullable<ReturnType<typeof getDesignSheet>>,\n  node: { id: string; type?: string; label?: string; title?: string; description?: string; path?: string },): ConstructBasis"
     },
     {
       "name": "constructionVerdict",
       "kind": "function",
-      "line": 483,
+      "line": 508,
       "signature": "constructionVerdict(dsl: NonNullable<ReturnType<typeof getDesignSheet>>,\n  nodeId: string,): { complete: boolean; missing: string[]; post: number }"
     },
     {
       "name": "publishTask",
       "kind": "function",
-      "line": 502,
+      "line": 527,
       "signature": "publishTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "claimTask",
       "kind": "function",
-      "line": 775,
+      "line": 816,
       "signature": "claimTask(input: TaskOpInput): Promise<EditResult>"
+    },
+    {
+      "name": "renewTask",
+      "kind": "function",
+      "line": 1167,
+      "signature": "renewTask(input: TaskOpInput): Promise<EditResult>"
+    },
+    {
+      "name": "expireTasks",
+      "kind": "function",
+      "line": 1233,
+      "signature": "expireTasks(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "releaseTask",
       "kind": "function",
-      "line": 1081,
+      "line": 1279,
       "signature": "releaseTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "completeTask",
       "kind": "function",
-      "line": 1140,
+      "line": 1338,
       "signature": "completeTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "reopenTask",
       "kind": "function",
-      "line": 1323,
+      "line": 1554,
       "signature": "reopenTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "relaunchTask",
       "kind": "function",
-      "line": 1394,
+      "line": 1626,
       "signature": "relaunchTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "applyTaskOp",
       "kind": "function",
-      "line": 1433,
+      "line": 1664,
       "signature": "applyTaskOp(feature: string,\n  op: TaskOpRequest,\n  agent?: string,): Promise<EditResult>"
     },
     {
       "name": "publishFromDiff",
       "kind": "function",
-      "line": 1500,
+      "line": 1737,
       "signature": "publishFromDiff(feature: string, nodeId: string): EditResult"
     },
     {
       "name": "voidTask",
       "kind": "function",
-      "line": 1535,
+      "line": 1772,
       "signature": "voidTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "TodoHit",
       "kind": "interface",
-      "line": 1589,
+      "line": 1826,
       "signature": "TodoHit()",
       "members": [
         {
@@ -305,55 +317,55 @@
     {
       "name": "findTodoCard",
       "kind": "function",
-      "line": 1599,
+      "line": 1836,
       "signature": "findTodoCard(feature: string, action: string, id: string): TodoHit"
     },
     {
       "name": "assertNoIdentityChange",
       "kind": "function",
-      "line": 1617,
+      "line": 1854,
       "signature": "assertNoIdentityChange(action: string, data: Record<string, unknown>): void"
     },
     {
       "name": "updateTodoCard",
       "kind": "function",
-      "line": 1638,
+      "line": 1875,
       "signature": "updateTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "retireTodoCard",
       "kind": "function",
-      "line": 1688,
+      "line": 1925,
       "signature": "retireTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "deleteTodoCard",
       "kind": "function",
-      "line": 1758,
+      "line": 1995,
       "signature": "deleteTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "followTodoCard",
       "kind": "function",
-      "line": 1833,
+      "line": 2070,
       "signature": "followTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "applyTodoMutation",
       "kind": "function",
-      "line": 1886,
+      "line": 2123,
       "signature": "applyTodoMutation(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
     },
     {
       "name": "todoChainNote",
       "kind": "function",
-      "line": 1926,
+      "line": 2163,
       "signature": "todoChainNote(cards: readonly TaskSpec[], id: string): { head: string; detail: string }"
     },
     {
       "name": "applyTodoOp",
       "kind": "function",
-      "line": 1990,
+      "line": 2227,
       "signature": "applyTodoOp(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
     }
   ],
@@ -410,6 +422,11 @@
     {
       "source": "../../../infrastructure/index/symbols.js",
       "kind": "relative"
+    },
+    {
+      "source": "../../../domain/geometry.js",
+      "kind": "relative",
+      "type_only": true
     },
     {
       "source": "../../../domain/actor_spec.js",
@@ -514,7 +531,7 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#assertTransition"
     },
     {
-      "from": "src/application/design/dsl_ops/task_ops.ts#sameCriteria",
+      "from": "src/application/design/dsl_ops/task_ops.ts#criteriaChangedSince",
       "to": "src/application/design/dsl_ops/task_ops.ts#canonCriteria"
     },
     {
@@ -546,8 +563,16 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#constructionVerdict"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#criteriaChangedSince"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoMutation",
       "to": "src/application/design/dsl_ops/task_ops.ts#deleteTodoCard"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#expireTasks"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#updateTodoCard",
@@ -575,6 +600,10 @@
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#renewTask",
       "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
     },
     {
@@ -630,6 +659,10 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#releaseTask"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#renewTask"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
       "to": "src/application/design/dsl_ops/task_ops.ts#reopenGate"
     },
@@ -648,10 +681,6 @@
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoMutation",
       "to": "src/application/design/dsl_ops/task_ops.ts#retireTodoCard"
-    },
-    {
-      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
-      "to": "src/application/design/dsl_ops/task_ops.ts#sameCriteria"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#releaseTask",
@@ -695,6 +724,14 @@
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#renewTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#expireTasks",
       "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
     },
     {
@@ -779,6 +816,10 @@
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/actor_spec.ts#sameActor"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#renewTask",
       "to": "src/domain/actor_spec.ts#sameActor"
     },
     {
@@ -846,12 +887,72 @@
       "to": "src/domain/task_machine.ts#isClaimable"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/task_machine.ts#isLeaseExpired"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#renewTask",
+      "to": "src/domain/task_machine.ts#isLeaseExpired"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#expireTasks",
+      "to": "src/domain/task_machine.ts#isLeaseExpired"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
       "to": "src/domain/task_machine.ts#isSatisfied"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/task_machine.ts#leaseAgeHours"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/task_machine.ts#leaseAgeHours"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#renewTask",
+      "to": "src/domain/task_machine.ts#leaseAgeHours"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#expireTasks",
+      "to": "src/domain/task_machine.ts#leaseAgeHours"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#codeFingerprintAt",
       "to": "src/domain/task_schema.ts#codeFingerprintOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/task_schema.ts#expectationsOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/task_schema.ts#expectationsOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/domain/task_schema.ts#expectationsOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/domain/task_schema.ts#expectationsOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/domain/task_schema.ts#expectationsOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#reopenTask",
+      "to": "src/domain/task_schema.ts#expectationsOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#relaunchTask",
+      "to": "src/domain/task_schema.ts#expectationsOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#voidTask",
+      "to": "src/domain/task_schema.ts#expectationsOf"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#fingerprintEvidence",
@@ -974,6 +1075,10 @@
       "to": "src/infrastructure/storage.ts#getDesignSheet"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#expireTasks",
+      "to": "src/infrastructure/storage.ts#getDesignSheet"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#findTodoCard",
       "to": "src/infrastructure/storage.ts#getDesignSheet"
     },
@@ -1051,12 +1156,12 @@
   "requirements_calls": [
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
-      "to": "src/domain/task_machine.ts#cardStanding",
+      "to": "certs/t348-phase-classification-cert.mjs#cardStanding",
       "why": "★ 讨论 2 · P30：claim 读**可领**那一侧（work/violated 才可领）；satisfied 必拒（没活干不许领）"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
-      "to": "src/domain/task_machine.ts#isSatisfied",
+      "to": "certs/t348-phase-classification-cert.mjs#isSatisfied",
       "why": "★ 讨论 2 · P30 的结构判据：complete 读**可收口**那一侧（isSatisfied），★ 不许再与 claim 共用同一个判据 —— 共用会放行 violated 卡（后态全过、前态越权）"
     },
     {

@@ -49,7 +49,7 @@
     {
       "name": "nodeAdapter",
       "kind": "const",
-      "line": 133,
+      "line": 135,
       "signature": "const nodeAdapter = { lang: 'node', label: 'Node', declarationFiles: ['.nvmrc…"
     }
   ],

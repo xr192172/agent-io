@@ -169,43 +169,43 @@
     {
       "name": "idSeq",
       "kind": "const",
-      "line": 116,
+      "line": 118,
       "signature": "const idSeq = 0"
     },
     {
       "name": "appendDeclaration",
       "kind": "function",
-      "line": 119,
+      "line": 121,
       "signature": "appendDeclaration(projectRoot: string, declaredFiles: string[], expectedFiles: string[]): LedgerEntry"
     },
     {
       "name": "markConsumed",
       "kind": "function",
-      "line": 134,
+      "line": 136,
       "signature": "markConsumed(projectRoot: string, verdicts: ConsumeVerdict[]): void"
     },
     {
       "name": "recoverPending",
       "kind": "function",
-      "line": 158,
+      "line": 160,
       "signature": "recoverPending(projectRoot: string,\n  excludeIds: Set<string>,\n  now: Date = new Date(),): { entries: LedgerEntry[]; expired: number }"
     },
     {
       "name": "resolveViolation",
       "kind": "function",
-      "line": 187,
+      "line": 189,
       "signature": "resolveViolation(projectRoot: string, id: string, reviewer: string, reason: string): LedgerEntry"
     },
     {
       "name": "listLedger",
       "kind": "function",
-      "line": 206,
+      "line": 208,
       "signature": "listLedger(projectRoot: string, status?: LedgerEntryStatus | 'all'): LedgerEntry[]"
     },
     {
       "name": "countOpenViolations",
       "kind": "function",
-      "line": 214,
+      "line": 216,
       "signature": "countOpenViolations(projectRoot: string): number"
     }
   ],

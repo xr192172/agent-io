@@ -89,7 +89,7 @@
     {
       "name": "ExportMarkdownInput",
       "kind": "interface",
-      "line": 149,
+      "line": 151,
       "signature": "ExportMarkdownInput()",
       "members": [
         {
@@ -109,7 +109,7 @@
     {
       "name": "ExportMarkdownResult",
       "kind": "interface",
-      "line": 154,
+      "line": 156,
       "signature": "ExportMarkdownResult()",
       "members": [
         {
@@ -135,7 +135,7 @@
     {
       "name": "exportMarkdown",
       "kind": "function",
-      "line": 161,
+      "line": 163,
       "signature": "exportMarkdown(input: ExportMarkdownInput): ExportMarkdownResult"
     }
   ],

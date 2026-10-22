@@ -7,13 +7,13 @@
     {
       "name": "DiagnoseLoopStage",
       "kind": "type",
-      "line": 40,
+      "line": 41,
       "signature": "DiagnoseLoopStage()"
     },
     {
       "name": "DiagnoseLoopInput",
       "kind": "interface",
-      "line": 42,
+      "line": 43,
       "signature": "DiagnoseLoopInput()",
       "members": [
         {
@@ -45,13 +45,25 @@
           "type": ": number",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "actor",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "authorize",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "DiagnoseLoopResult",
       "kind": "interface",
-      "line": 53,
+      "line": 61,
       "signature": "DiagnoseLoopResult()",
       "members": [
         {
@@ -77,13 +89,13 @@
     {
       "name": "diagnoseLoop",
       "kind": "function",
-      "line": 91,
+      "line": 99,
       "signature": "diagnoseLoop(input: DiagnoseLoopInput): Promise<DiagnoseLoopResult>"
     },
     {
       "name": "diagnoseLoopInner",
       "kind": "function",
-      "line": 104,
+      "line": 112,
       "signature": "diagnoseLoopInner(input: DiagnoseLoopInput): Promise<DiagnoseLoopResult>"
     }
   ],
@@ -127,12 +139,20 @@
     {
       "source": "../../../infrastructure/git.js",
       "kind": "relative"
+    },
+    {
+      "source": "../../source_writer.js",
+      "kind": "relative"
     }
   ],
   "calls": [
     {
       "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoop",
       "to": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/application/source_writer.ts#openSourceWrite"
     },
     {
       "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",

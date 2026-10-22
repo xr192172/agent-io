@@ -270,34 +270,6 @@
       "to": "src/infrastructure/parse/languages.ts#languageModuleSpec"
     },
     {
-      "from": "src/infrastructure/parse/source_exts.ts#isTsExt",
-      "to": "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has"
-    },
-    {
-      "from": "src/infrastructure/parse/source_exts.ts#isTsJsExt",
-      "to": "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has"
-    },
-    {
-      "from": "src/infrastructure/parse/source_exts.ts#isSourceExt",
-      "to": "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has"
-    },
-    {
-      "from": "src/infrastructure/parse/source_exts.ts#isNodeRunnableExt",
-      "to": "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has"
-    },
-    {
-      "from": "src/infrastructure/parse/source_exts.ts#isCodeLangExt",
-      "to": "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has"
-    },
-    {
-      "from": "src/infrastructure/parse/source_exts.ts#shouldSkipDir",
-      "to": "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has"
-    },
-    {
-      "from": "src/infrastructure/parse/source_exts.ts#shouldSkipDir",
-      "to": "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has"
-    },
-    {
       "from": "src/infrastructure/parse/source_exts.ts#codeSourceExtSet",
       "to": "src/infrastructure/parse/source_exts.ts#codeSourceExts"
     },

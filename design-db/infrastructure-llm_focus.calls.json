@@ -369,6 +369,10 @@
     {
       "from": "src/infrastructure/llm_focus.ts#callChat",
       "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#configFileReadPath",
+      "to": "src/infrastructure/storage.ts#getDataHome"
     }
   ]
 }

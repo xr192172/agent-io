@@ -7,7 +7,7 @@
     {
       "name": "Patch",
       "kind": "interface",
-      "line": 24,
+      "line": 25,
       "signature": "Patch()",
       "members": [
         {
@@ -39,7 +39,7 @@
     {
       "name": "PatchPlan",
       "kind": "interface",
-      "line": 31,
+      "line": 32,
       "signature": "PatchPlan()",
       "members": [
         {
@@ -59,7 +59,7 @@
     {
       "name": "AppliedPatch",
       "kind": "interface",
-      "line": 37,
+      "line": 38,
       "signature": "AppliedPatch()",
       "members": [
         {
@@ -85,7 +85,7 @@
     {
       "name": "RepairInput",
       "kind": "interface",
-      "line": 44,
+      "line": 45,
       "signature": "RepairInput()",
       "members": [
         {
@@ -123,19 +123,19 @@
     {
       "name": "allowedPatchFiles",
       "kind": "function",
-      "line": 61,
+      "line": 62,
       "signature": "allowedPatchFiles(input: RepairInput): string[]"
     },
     {
       "name": "normalizeRel",
       "kind": "function",
-      "line": 70,
+      "line": 71,
       "signature": "normalizeRel(p: string): string"
     },
     {
       "name": "PatchJson",
       "kind": "interface",
-      "line": 78,
+      "line": 79,
       "signature": "PatchJson()",
       "members": [
         {
@@ -155,25 +155,25 @@
     {
       "name": "buildRepairPrompt",
       "kind": "function",
-      "line": 88,
+      "line": 89,
       "signature": "buildRepairPrompt(input: RepairInput, allowed: string[]): string"
     },
     {
       "name": "readSnippet",
       "kind": "function",
-      "line": 109,
+      "line": 110,
       "signature": "readSnippet(absFile: string, aroundLine: number): string | undefined"
     },
     {
       "name": "generatePatch",
       "kind": "function",
-      "line": 125,
+      "line": 126,
       "signature": "generatePatch(input: RepairInput): Promise<PatchPlan | null>"
     },
     {
       "name": "ValidationError",
       "kind": "interface",
-      "line": 165,
+      "line": 166,
       "signature": "ValidationError()",
       "members": [
         {
@@ -193,26 +193,26 @@
     {
       "name": "validatePatches",
       "kind": "function",
-      "line": 171,
+      "line": 172,
       "signature": "validatePatches(project_dir: string, plan: PatchPlan, allowed: string[]): ValidationError[]"
     },
     {
       "name": "formatPatchDiff",
       "kind": "function",
-      "line": 200,
+      "line": 201,
       "signature": "formatPatchDiff(project_dir: string, plan: PatchPlan): string[]"
     },
     {
       "name": "applyPatches",
       "kind": "function",
-      "line": 223,
-      "signature": "applyPatches(project_dir: string, plan: PatchPlan, allowed: string[]): { applied: AppliedPatch[]; errors: ValidationError[] }"
+      "line": 231,
+      "signature": "applyPatches(project_dir: string,\n  plan: PatchPlan,\n  allowed: string[],\n  write?: SourceWriteHook,): { applied: AppliedPatch[]; errors: ValidationError[] }"
     },
     {
       "name": "revertPatches",
       "kind": "function",
-      "line": 243,
-      "signature": "revertPatches(applied: AppliedPatch[]): void"
+      "line": 263,
+      "signature": "revertPatches(applied: AppliedPatch[], restore?: SourceWriteHook): void"
     }
   ],
   "imports": [
@@ -226,6 +226,10 @@
     },
     {
       "source": "../../llm_focus.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../source_write_port.js",
       "kind": "relative"
     },
     {
@@ -270,6 +274,10 @@
     {
       "from": "src/infrastructure/analysis/diagnosis/repair.ts#generatePatch",
       "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/repair.ts#applyPatches",
+      "to": "src/infrastructure/source_write_port.ts#commitSourceWrite"
     }
   ]
 }

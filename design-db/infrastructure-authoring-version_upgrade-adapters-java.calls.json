@@ -55,19 +55,19 @@
     {
       "name": "hasMainEntry",
       "kind": "function",
-      "line": 146,
+      "line": 148,
       "signature": "hasMainEntry(content: string): boolean"
     },
     {
       "name": "javaRunProbe",
       "kind": "function",
-      "line": 156,
+      "line": 158,
       "signature": "javaRunProbe(file: SourceFile, boundary: number): Promise<DynamicGateItem>"
     },
     {
       "name": "javaAdapter",
       "kind": "const",
-      "line": 203,
+      "line": 207,
       "signature": "const javaAdapter = { lang: 'java', label: 'JDK', declarationFiles: ['pom.xml…"
     }
   ],

@@ -157,14 +157,6 @@
   ],
   "calls": [
     {
-      "from": "src/presentation/mcp/server.ts#main",
-      "to": "src/application/observe/runtime/watch_project_tool.ts#closeAllActiveWatches"
-    },
-    {
-      "from": "src/presentation/mcp/server.ts#runAutoWatchHook",
-      "to": "src/application/observe/runtime/watch_project_tool.ts#watchProjectTool"
-    },
-    {
       "from": "src/presentation/mcp/server.ts#runAutoWatchHook",
       "to": "src/infrastructure/graph/import_project.ts#importProject"
     },

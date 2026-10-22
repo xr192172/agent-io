@@ -319,10 +319,6 @@
       "to": "src/application/stage_registry.ts#isFresh"
     },
     {
-      "from": "src/application/stage_registry.ts#isFresh",
-      "to": "src/application/stage_registry.ts#isFresh"
-    },
-    {
       "from": "src/application/stage_registry.ts#ensureStage",
       "to": "src/application/stage_registry.ts#locateState"
     },

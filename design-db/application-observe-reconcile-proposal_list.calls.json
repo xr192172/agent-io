@@ -1,0 +1,44 @@
+{
+  "//": "Design DB —— src/application/observe/reconcile/proposal_list.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/application/observe/reconcile/proposal_list.ts",
+  "symbols": [
+    {
+      "name": "ListObserveProposalsResult",
+      "kind": "type",
+      "line": 15,
+      "signature": "ListObserveProposalsResult()"
+    },
+    {
+      "name": "listObserveProposals",
+      "kind": "function",
+      "line": 34,
+      "signature": "listObserveProposals(projectDir: string, context: string): ListObserveProposalsResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/analysis/observe/dsl_store.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/observe/proposal_store.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/dictionary.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/observe/reconcile/proposal_list.ts#listObserveProposals",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#defaultDSLDir"
+    },
+    {
+      "from": "src/application/observe/reconcile/proposal_list.ts#listObserveProposals",
+      "to": "src/infrastructure/dictionary.ts#validateProjectRoot"
+    }
+  ]
+}

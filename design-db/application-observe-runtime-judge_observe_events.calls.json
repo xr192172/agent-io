@@ -1,0 +1,86 @@
+{
+  "//": "Design DB —— src/application/observe/runtime/judge_observe_events.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/application/observe/runtime/judge_observe_events.ts",
+  "symbols": [
+    {
+      "name": "JudgeObserveEventsInput",
+      "kind": "interface",
+      "line": 22,
+      "signature": "JudgeObserveEventsInput()",
+      "members": [
+        {
+          "name": "events",
+          "type": ": unknown",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "use_llm",
+          "type": ": unknown",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": unknown",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "ctx",
+          "type": ": ObserveRuleCtx",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "JudgeObserveEventsResult",
+      "kind": "type",
+      "line": 33,
+      "signature": "JudgeObserveEventsResult()"
+    },
+    {
+      "name": "judgeObserveEvents",
+      "kind": "function",
+      "line": 38,
+      "signature": "judgeObserveEvents(input: JudgeObserveEventsInput): Promise<JudgeObserveEventsResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/analysis/observe/judge_service.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/observe/judge.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../infrastructure/analysis/observe/probe.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/observe/runtime/judge_observe_events.ts#judgeObserveEvents",
+      "to": "src/infrastructure/analysis/observe/judge_service.ts#judgeEvents"
+    },
+    {
+      "from": "src/application/observe/runtime/judge_observe_events.ts#judgeObserveEvents",
+      "to": "src/infrastructure/analysis/observe/judge_service.ts#judgeEventsWithLLM"
+    },
+    {
+      "from": "src/application/observe/runtime/judge_observe_events.ts#judgeObserveEvents",
+      "to": "src/infrastructure/analysis/observe/judge_service.ts#normalizeEvents"
+    },
+    {
+      "from": "src/application/observe/runtime/judge_observe_events.ts#judgeObserveEvents",
+      "to": "src/infrastructure/analysis/observe/judge_service.ts#renderJudgeReport"
+    }
+  ]
+}

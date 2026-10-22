@@ -1,0 +1,90 @@
+{
+  "//": "Design DB —— src/application/observe/reconcile/proposal_approve.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/application/observe/reconcile/proposal_approve.ts",
+  "symbols": [
+    {
+      "name": "ApproveObserveProposalInput",
+      "kind": "interface",
+      "line": 18,
+      "signature": "ApproveObserveProposalInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reviewer",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "use_llm",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "context",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "ApproveObserveProposalResult",
+      "kind": "type",
+      "line": 31,
+      "signature": "ApproveObserveProposalResult()"
+    },
+    {
+      "name": "approveObserveProposal",
+      "kind": "function",
+      "line": 36,
+      "signature": "approveObserveProposal(input: ApproveObserveProposalInput): Promise<ApproveObserveProposalResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/analysis/observe/approve_gated.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/observe/dsl_store.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/observe/proposal_store.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/dictionary.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/observe/reconcile/proposal_approve.ts#approveObserveProposal",
+      "to": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated"
+    },
+    {
+      "from": "src/application/observe/reconcile/proposal_approve.ts#approveObserveProposal",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#defaultDSLDir"
+    },
+    {
+      "from": "src/application/observe/reconcile/proposal_approve.ts#approveObserveProposal",
+      "to": "src/infrastructure/dictionary.ts#validateProjectRoot"
+    }
+  ]
+}

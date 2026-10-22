@@ -107,6 +107,12 @@
           "member_kind": "property"
         },
         {
+          "name": "pending",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
           "name": "items",
           "type": ": ExpectationItem[]",
           "optional": false,
@@ -129,7 +135,7 @@
     {
       "name": "Judge",
       "kind": "type",
-      "line": 100,
+      "line": 117,
       "signature": "Judge()"
     }
   ],

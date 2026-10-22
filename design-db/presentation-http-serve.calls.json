@@ -7,445 +7,433 @@
     {
       "name": "PORT",
       "kind": "const",
-      "line": 87,
+      "line": 101,
       "signature": "const PORT = parseInt(process.argv[2]) || 3000"
     },
     {
       "name": "PUBLIC_DIR",
       "kind": "const",
-      "line": 88,
+      "line": 102,
       "signature": "const PUBLIC_DIR = path.join(process.cwd(), 'output')"
     },
     {
       "name": "LIVE_FILE",
       "kind": "const",
-      "line": 105,
+      "line": 119,
       "signature": "const LIVE_FILE = getDesignSheetFile(process.env.AGENT_IO_FEATURE ?? 'task-…"
     },
     {
       "name": "getServeProjectRoot",
       "kind": "function",
-      "line": 108,
+      "line": 122,
       "signature": "getServeProjectRoot(): string"
     },
     {
       "name": "sseClients",
       "kind": "const",
-      "line": 114,
+      "line": 128,
       "signature": "const sseClients = new Set()"
     },
     {
       "name": "broadcastSSE",
       "kind": "function",
-      "line": 117,
+      "line": 131,
       "signature": "broadcastSSE(event: string, data: unknown): void"
     },
     {
       "name": "notifyDslChange",
       "kind": "function",
-      "line": 129,
+      "line": 143,
       "signature": "notifyDslChange(feature: string, source: string): void"
     },
     {
       "name": "MIME_TYPES",
       "kind": "const",
-      "line": 133,
+      "line": 147,
       "signature": "const MIME_TYPES = { '.html': 'text/html; charset=utf-8', '.json': 'applicat…"
     },
     {
       "name": "getMimeType",
       "kind": "function",
-      "line": 143,
+      "line": 157,
       "signature": "getMimeType(filePath: string): string"
     },
     {
       "name": "sendJson",
       "kind": "function",
-      "line": 148,
+      "line": 162,
       "signature": "sendJson(res: http.ServerResponse, status: number, data: unknown): void"
     },
     {
       "name": "sendError",
       "kind": "function",
-      "line": 153,
+      "line": 167,
       "signature": "sendError(res: http.ServerResponse, status: number, message: string): void"
     },
     {
       "name": "guard",
       "kind": "function",
-      "line": 159,
+      "line": 173,
       "signature": "guard(res: http.ServerResponse,\n  path: string,\n  schemaKey: ResponseSchemaKey,\n  payload: unknown,\n  status = 200,): void"
     },
     {
       "name": "handleApiSave",
       "kind": "function",
-      "line": 204,
+      "line": 218,
       "signature": "handleApiSave(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiLoad",
       "kind": "function",
-      "line": 257,
+      "line": 271,
       "signature": "handleApiLoad(_req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiFeatures",
       "kind": "function",
-      "line": 270,
+      "line": 284,
       "signature": "handleApiFeatures(_req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiObserveLog",
       "kind": "function",
-      "line": 317,
+      "line": 331,
       "signature": "handleApiObserveLog(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiObserveJudge",
       "kind": "function",
-      "line": 337,
+      "line": 351,
       "signature": "handleApiObserveJudge(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiLive",
       "kind": "function",
-      "line": 367,
+      "line": 383,
       "signature": "handleApiLive(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiLiveRebuild",
       "kind": "function",
-      "line": 387,
+      "line": 403,
       "signature": "handleApiLiveRebuild(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "IMPORT_BODY_LIMIT",
       "kind": "const",
-      "line": 432,
+      "line": 448,
       "signature": "const IMPORT_BODY_LIMIT = 200 * 1024 * 1024"
     },
     {
       "name": "handleApiImport",
       "kind": "function",
-      "line": 433,
+      "line": 449,
       "signature": "handleApiImport(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "buildSplitPlanMarkdown",
       "kind": "function",
-      "line": 528,
+      "line": 544,
       "signature": "buildSplitPlanMarkdown(r: FileMonolithReport, relPath: string, generatedAt: string): string"
     },
     {
       "name": "handleApiSplitPlan",
       "kind": "function",
-      "line": 594,
+      "line": 610,
       "signature": "handleApiSplitPlan(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiMonolith",
       "kind": "function",
-      "line": 645,
+      "line": 661,
       "signature": "handleApiMonolith(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiRevealFile",
       "kind": "function",
-      "line": 691,
+      "line": 707,
       "signature": "handleApiRevealFile(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "collectChainInfo",
       "kind": "function",
-      "line": 739,
+      "line": 755,
       "signature": "collectChainInfo(dsl: {\n    geometry: { nodes: Array<{ id: string; x?: number; host?: string; layer?: string; label?: string; description?: string }> };\n    semantic?: { files?: Array<{ id: string; path: string }> };\n  },\n  nodeId: string,\n  projectRoot: string,): { steps: TraceStepSpec[]; infos: ChainNodeInfo[] }"
     },
     {
       "name": "locateHostSource",
       "kind": "function",
-      "line": 803,
+      "line": 819,
       "signature": "locateHostSource(dsl: { semantic?: { files?: Array<{ id: string; path: string }> } },\n  nodeId: string,\n  projectRoot: string,): string | null"
     },
     {
       "name": "handleApiTraceExec",
       "kind": "function",
-      "line": 818,
+      "line": 834,
       "signature": "handleApiTraceExec(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiReconcileChain",
       "kind": "function",
-      "line": 865,
+      "line": 881,
       "signature": "handleApiReconcileChain(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiArchifyDemo",
       "kind": "function",
-      "line": 892,
+      "line": 908,
       "signature": "handleApiArchifyDemo(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiFunctionOutline",
       "kind": "function",
-      "line": 921,
+      "line": 937,
       "signature": "handleApiFunctionOutline(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiFunctionRun",
       "kind": "function",
-      "line": 947,
+      "line": 963,
       "signature": "handleApiFunctionRun(req: http.IncomingMessage, res: http.ServerResponse, sourceRoot?: string): Promise<void>"
     },
     {
       "name": "handleApiChainExec",
       "kind": "function",
-      "line": 986,
+      "line": 1002,
       "signature": "handleApiChainExec(req: http.IncomingMessage, res: http.ServerResponse, sourceRoot?: string): Promise<void>"
     },
     {
       "name": "handleApiFunctionExample",
       "kind": "function",
-      "line": 1014,
+      "line": 1030,
       "signature": "handleApiFunctionExample(req: http.IncomingMessage, res: http.ServerResponse, sourceRoot?: string): Promise<void>"
     },
     {
       "name": "handleApiFeatureLine",
       "kind": "function",
-      "line": 1058,
+      "line": 1074,
       "signature": "handleApiFeatureLine(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiFocus",
       "kind": "function",
-      "line": 1077,
+      "line": 1093,
       "signature": "handleApiFocus(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiLayout",
       "kind": "function",
-      "line": 1103,
+      "line": 1119,
       "signature": "handleApiLayout(req: http.IncomingMessage, res: http.ServerResponse, layoutType: 'dag' | 'force' | 'grid'): Promise<void>"
     },
     {
       "name": "handleApiConsistency",
       "kind": "function",
-      "line": 1151,
+      "line": 1167,
       "signature": "handleApiConsistency(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiDiffImpact",
       "kind": "function",
-      "line": 1168,
+      "line": 1184,
       "signature": "handleApiDiffImpact(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiMindMap",
       "kind": "function",
-      "line": 1193,
+      "line": 1209,
       "signature": "handleApiMindMap(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiMindMapTeachGet",
       "kind": "function",
-      "line": 1217,
+      "line": 1233,
       "signature": "handleApiMindMapTeachGet(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiMindMapGet",
       "kind": "function",
-      "line": 1238,
+      "line": 1254,
       "signature": "handleApiMindMapGet(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiOverview",
       "kind": "function",
-      "line": 1262,
+      "line": 1278,
       "signature": "handleApiOverview(req: http.IncomingMessage,\n  res: http.ServerResponse,\n  method: string,): Promise<void>"
     },
     {
       "name": "handleApiAnnotations",
       "kind": "function",
-      "line": 1300,
+      "line": 1316,
       "signature": "handleApiAnnotations(req: http.IncomingMessage,\n  res: http.ServerResponse,\n  method: string,): Promise<void>"
     },
     {
       "name": "handleApiUserNodes",
       "kind": "function",
-      "line": 1363,
+      "line": 1379,
       "signature": "handleApiUserNodes(req: http.IncomingMessage,\n  res: http.ServerResponse,\n  method: string,): Promise<void>"
     },
     {
       "name": "handleApiOpl",
       "kind": "function",
-      "line": 1419,
+      "line": 1435,
       "signature": "handleApiOpl(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiDiffViews",
       "kind": "function",
-      "line": 1475,
+      "line": 1491,
       "signature": "handleApiDiffViews(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiFeatureMeta",
       "kind": "function",
-      "line": 1492,
+      "line": 1508,
       "signature": "handleApiFeatureMeta(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiFeatureDsl",
       "kind": "function",
-      "line": 1528,
+      "line": 1544,
       "signature": "handleApiFeatureDsl(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiCanvasNotesGet",
       "kind": "function",
-      "line": 1548,
+      "line": 1564,
       "signature": "handleApiCanvasNotesGet(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiCanvasNotesSave",
       "kind": "function",
-      "line": 1568,
+      "line": 1584,
       "signature": "handleApiCanvasNotesSave(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiCanvasNotesDigest",
       "kind": "function",
-      "line": 1597,
+      "line": 1613,
       "signature": "handleApiCanvasNotesDigest(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiCanvasNotesStatus",
       "kind": "function",
-      "line": 1623,
+      "line": 1639,
       "signature": "handleApiCanvasNotesStatus(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiCodeWorkbench",
       "kind": "function",
-      "line": 1663,
+      "line": 1679,
       "signature": "handleApiCodeWorkbench(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiCodePropose",
       "kind": "function",
-      "line": 1679,
+      "line": 1695,
       "signature": "handleApiCodePropose(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "codeReviewerFrom",
       "kind": "function",
-      "line": 1712,
+      "line": 1728,
       "signature": "codeReviewerFrom(params: Record<string, unknown>): string"
     },
     {
       "name": "handleApiCodeApprove",
       "kind": "function",
-      "line": 1718,
+      "line": 1734,
       "signature": "handleApiCodeApprove(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiCodeReject",
       "kind": "function",
-      "line": 1730,
+      "line": 1746,
       "signature": "handleApiCodeReject(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
-    },
-    {
-      "name": "observeDataDir",
-      "kind": "function",
-      "line": 1761,
-      "signature": "observeDataDir(projectDir: string): string"
-    },
-    {
-      "name": "readObserveProjectDir",
-      "kind": "function",
-      "line": 1766,
-      "signature": "readObserveProjectDir(raw: string, context: string, res: http.ServerResponse): string | null"
     },
     {
       "name": "handleApiObserveProposals",
       "kind": "function",
-      "line": 1783,
+      "line": 1780,
       "signature": "handleApiObserveProposals(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiObserveApprove",
       "kind": "function",
-      "line": 1798,
+      "line": 1800,
       "signature": "handleApiObserveApprove(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiObserveReject",
       "kind": "function",
-      "line": 1838,
+      "line": 1825,
       "signature": "handleApiObserveReject(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiSemanticSearch",
       "kind": "function",
-      "line": 1870,
+      "line": 1846,
       "signature": "handleApiSemanticSearch(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiArchLayer",
       "kind": "function",
-      "line": 1888,
+      "line": 1864,
       "signature": "handleApiArchLayer(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiLanguageConcepts",
       "kind": "function",
-      "line": 1906,
+      "line": 1882,
       "signature": "handleApiLanguageConcepts(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiGuidedTour",
       "kind": "function",
-      "line": 1924,
+      "line": 1900,
       "signature": "handleApiGuidedTour(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiDictQuery",
       "kind": "function",
-      "line": 1945,
+      "line": 1921,
       "signature": "handleApiDictQuery(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiDictHighlight",
       "kind": "function",
-      "line": 1971,
+      "line": 1947,
       "signature": "handleApiDictHighlight(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiDictIngest",
       "kind": "function",
-      "line": 1989,
+      "line": 1965,
       "signature": "handleApiDictIngest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiDictGenerate",
       "kind": "function",
-      "line": 2011,
+      "line": 1987,
       "signature": "handleApiDictGenerate(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiGitDiff",
       "kind": "function",
-      "line": 2033,
+      "line": 2009,
       "signature": "handleApiGitDiff(_req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiRegistry",
       "kind": "function",
-      "line": 2067,
+      "line": 2043,
       "signature": "handleApiRegistry(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "Narrations",
       "kind": "type",
-      "line": 2105,
+      "line": 2081,
       "signature": "Narrations()",
       "members": [
         {
@@ -471,73 +459,179 @@
     {
       "name": "EXPLAIN_SCRIPT",
       "kind": "const",
-      "line": 2107,
+      "line": 2083,
       "signature": "const EXPLAIN_SCRIPT = [ { title: '入口：MCP 服务', n: { newbie: 'agent-io 的\"大门\"是一个叫 …"
     },
     {
       "name": "handleApiExplain",
       "kind": "function",
-      "line": 2223,
+      "line": 2199,
       "signature": "handleApiExplain(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiExplainGenerate",
       "kind": "function",
-      "line": 2249,
+      "line": 2225,
       "signature": "handleApiExplainGenerate(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiTour",
       "kind": "function",
-      "line": 2322,
+      "line": 2298,
       "signature": "handleApiTour(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleTourPage",
       "kind": "function",
-      "line": 2361,
+      "line": 2337,
       "signature": "handleTourPage(res: http.ServerResponse): void"
     },
     {
       "name": "handleExplainPage",
       "kind": "function",
-      "line": 2466,
+      "line": 2442,
       "signature": "handleExplainPage(res: http.ServerResponse): void"
     },
     {
       "name": "handleStaticFile",
       "kind": "function",
-      "line": 2652,
+      "line": 2628,
       "signature": "handleStaticFile(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "MAX_BODY_SIZE",
       "kind": "const",
-      "line": 2699,
+      "line": 2675,
       "signature": "const MAX_BODY_SIZE = 5 * 1024 * 1024"
     },
     {
       "name": "readBody",
       "kind": "function",
-      "line": 2701,
+      "line": 2677,
       "signature": "readBody(req: http.IncomingMessage, maxSize = MAX_BODY_SIZE): Promise<Buffer>"
     },
     {
       "name": "handleApiGateway",
       "kind": "function",
-      "line": 2723,
+      "line": 2699,
       "signature": "handleApiGateway(req: http.IncomingMessage, res: http.ServerResponse, method: string, url: string): Promise<void>"
     },
     {
       "name": "handleOpenAICompat",
       "kind": "function",
-      "line": 2810,
+      "line": 2786,
       "signature": "handleOpenAICompat(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
+    },
+    {
+      "name": "safeOriginPattern",
+      "kind": "const",
+      "line": 2801,
+      "signature": "const safeOriginPattern = /^https?:\\/\\/(localhost|127\\.0\\.0\\.1|\\[::1\\]|0\\.0\\.0\\.0)(…"
+    },
+    {
+      "name": "isSafeOrigin",
+      "kind": "function",
+      "line": 2802,
+      "signature": "isSafeOrigin(origin: string | undefined): boolean"
+    },
+    {
+      "name": "RouteCtx",
+      "kind": "interface",
+      "line": 2823,
+      "signature": "RouteCtx()",
+      "members": [
+        {
+          "name": "method",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "url",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "origin",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "HttpRoute",
+      "kind": "interface",
+      "line": 2829,
+      "signature": "HttpRoute()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "match",
+          "type": ": (url: string) => boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "methods",
+          "type": ": readonly string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "handler",
+          "type": ": (req: http.IncomingMessage, res: http.ServerResponse, ctx: RouteCtx) => void",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "assertRouteTable",
+      "kind": "function",
+      "line": 2845,
+      "signature": "assertRouteTable(routes: readonly HttpRoute[]): void"
+    },
+    {
+      "name": "coerceArgsFor",
+      "kind": "function",
+      "line": 2874,
+      "signature": "coerceArgsFor(schema: ToolDef['inputSchema'], raw: Record<string, unknown>): Record<string, unknown>"
+    },
+    {
+      "name": "messageOf",
+      "kind": "function",
+      "line": 2905,
+      "signature": "messageOf(text: string): string"
+    },
+    {
+      "name": "handleApiTool",
+      "kind": "function",
+      "line": 2930,
+      "signature": "handleApiTool(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
+    },
+    {
+      "name": "handleApiTools",
+      "kind": "function",
+      "line": 2973,
+      "signature": "handleApiTools(res: http.ServerResponse): void"
+    },
+    {
+      "name": "ROUTES",
+      "kind": "const",
+      "line": 2988,
+      "signature": "const ROUTES = [ // ★★ 派生路由（2026-10-22）：**能力注册一次，HTTP 自动获得** —— 与 MCP(`r…"
     },
     {
       "name": "startServer",
       "kind": "function",
-      "line": 2822,
+      "line": 3155,
       "signature": "startServer(port?: number): Promise<void>"
     }
   ],
@@ -575,27 +669,27 @@
       "kind": "relative"
     },
     {
-      "source": "../../infrastructure/analysis/observe/log_query.js",
-      "kind": "relative"
-    },
-    {
-      "source": "../../infrastructure/analysis/observe/judge_service.js",
-      "kind": "relative"
-    },
-    {
       "source": "../../infrastructure/analysis/observe/judge_guard.js",
       "kind": "relative"
     },
     {
-      "source": "../../infrastructure/analysis/observe/proposal_store.js",
+      "source": "../../application/observe/runtime/observe_log_query.js",
       "kind": "relative"
     },
     {
-      "source": "../../infrastructure/analysis/observe/dsl_store.js",
+      "source": "../../application/observe/runtime/judge_observe_events.js",
       "kind": "relative"
     },
     {
-      "source": "../../infrastructure/analysis/observe/approve_gated.js",
+      "source": "../../application/observe/reconcile/proposal_list.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/observe/reconcile/proposal_approve.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/observe/reconcile/proposal_reject.js",
       "kind": "relative"
     },
     {
@@ -637,6 +731,23 @@
     {
       "source": "../../application/observe/runtime/watch_project_tool.js",
       "kind": "relative"
+    },
+    {
+      "source": "../../application/tool_registry.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../mcp/server_registry.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/plumbing.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/types.js",
+      "kind": "relative",
+      "type_only": true
     },
     {
       "source": "../../infrastructure/analysis/structure/arch_layer.js",
@@ -776,18 +887,6 @@
       "to": "src/application/design/derive/derive_chain.ts#deriveDetailChain"
     },
     {
-      "from": "src/presentation/http/serve.ts#handleApiImport",
-      "to": "src/application/design/derive/derive_chain.ts#sanitize"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiImport",
-      "to": "src/application/design/derive/derive_chain.ts#sanitize"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiImport",
-      "to": "src/application/design/derive/derive_chain.ts#sanitize"
-    },
-    {
       "from": "src/presentation/http/serve.ts#handleApiOpl",
       "to": "src/application/design/derive/opl.ts#oplAdd"
     },
@@ -884,16 +983,8 @@
       "to": "src/application/meta/view/derive_mind_map.ts#getMindMapFile"
     },
     {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/application/meta/view/derive_mind_map.ts#getMindMapFile"
-    },
-    {
       "from": "src/presentation/http/serve.ts#handleApiCanvasNotesStatus",
       "to": "src/application/meta/view/derive_mind_map.ts#markCanvasNotesStatus"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/application/meta/view/derive_mind_map.ts#placeProposals"
     },
     {
       "from": "src/presentation/http/serve.ts#handleApiCanvasNotesDigest",
@@ -924,12 +1015,32 @@
       "to": "src/application/observe/capture/feature_line.ts#getFeatureLine"
     },
     {
+      "from": "src/presentation/http/serve.ts#handleApiObserveApprove",
+      "to": "src/application/observe/reconcile/proposal_approve.ts#approveObserveProposal"
+    },
+    {
+      "from": "src/presentation/http/serve.ts#handleApiObserveProposals",
+      "to": "src/application/observe/reconcile/proposal_list.ts#listObserveProposals"
+    },
+    {
+      "from": "src/presentation/http/serve.ts#handleApiObserveReject",
+      "to": "src/application/observe/reconcile/proposal_reject.ts#rejectObserveProposal"
+    },
+    {
       "from": "src/presentation/http/serve.ts#handleApiReconcileChain",
       "to": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChain"
     },
     {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/application/observe/runtime/watch_project_tool.ts#createRebuildThrottler"
+      "from": "src/presentation/http/serve.ts#handleApiObserveJudge",
+      "to": "src/application/observe/runtime/judge_observe_events.ts#judgeObserveEvents"
+    },
+    {
+      "from": "src/presentation/http/serve.ts#handleApiObserveLog",
+      "to": "src/application/observe/runtime/observe_log_query.ts#queryObserveLogUseCase"
+    },
+    {
+      "from": "src/presentation/http/serve.ts#handleApiTool",
+      "to": "src/application/plumbing.ts#parseDataBlock"
     },
     {
       "from": "src/presentation/http/serve.ts#handleApiDiffViews",
@@ -948,44 +1059,12 @@
       "to": "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact"
     },
     {
-      "from": "src/presentation/http/serve.ts#handleApiObserveApprove",
-      "to": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#observeDataDir",
-      "to": "src/infrastructure/analysis/observe/dsl_store.ts#defaultDSLDir"
-    },
-    {
       "from": "src/presentation/http/serve.ts#startServer",
       "to": "src/infrastructure/analysis/observe/judge.ts#judgeEvent"
     },
     {
       "from": "src/presentation/http/serve.ts#startServer",
       "to": "src/infrastructure/analysis/observe/judge_guard.ts#judgeGuardLog"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiObserveJudge",
-      "to": "src/infrastructure/analysis/observe/judge_service.ts#judgeEvents"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiObserveJudge",
-      "to": "src/infrastructure/analysis/observe/judge_service.ts#judgeEventsWithLLM"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiObserveJudge",
-      "to": "src/infrastructure/analysis/observe/judge_service.ts#normalizeEvents"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiObserveJudge",
-      "to": "src/infrastructure/analysis/observe/judge_service.ts#renderJudgeReport"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiObserveLog",
-      "to": "src/infrastructure/analysis/observe/log_query.ts#queryObserveLog"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#readBody",
-      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.reject"
     },
     {
       "from": "src/presentation/http/serve.ts#startServer",
@@ -1049,10 +1128,6 @@
     },
     {
       "from": "src/presentation/http/serve.ts#handleApiDiffImpact",
-      "to": "src/infrastructure/dictionary.ts#validateProjectRoot"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#readObserveProjectDir",
       "to": "src/infrastructure/dictionary.ts#validateProjectRoot"
     },
     {
@@ -1340,6 +1415,10 @@
       "to": "src/presentation/http/dict_gen.ts#ingestTerm"
     },
     {
+      "from": "src/presentation/http/serve.ts#startServer",
+      "to": "src/presentation/http/serve.ts#assertRouteTable"
+    },
+    {
       "from": "src/presentation/http/serve.ts#notifyDslChange",
       "to": "src/presentation/http/serve.ts#broadcastSSE"
     },
@@ -1374,6 +1453,10 @@
     {
       "from": "src/presentation/http/serve.ts#handleApiCodeReject",
       "to": "src/presentation/http/serve.ts#codeReviewerFrom"
+    },
+    {
+      "from": "src/presentation/http/serve.ts#handleApiTool",
+      "to": "src/presentation/http/serve.ts#coerceArgsFor"
     },
     {
       "from": "src/presentation/http/serve.ts#handleApiTraceExec",
@@ -1449,271 +1532,31 @@
     },
     {
       "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiAnnotations"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiArchLayer"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiArchifyDemo"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiCanvasNotesDigest"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiCanvasNotesGet"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiCanvasNotesSave"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiCanvasNotesStatus"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiChainExec"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiCodeApprove"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiCodePropose"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiCodeReject"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiCodeWorkbench"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiConsistency"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiDictGenerate"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiDictHighlight"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiDictIngest"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiDictQuery"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiDiffImpact"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiDiffViews"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiExplain"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiExplainGenerate"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiFeatureDsl"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiFeatureLine"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiFeatureMeta"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiFeatures"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiFocus"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiFunctionExample"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiFunctionOutline"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiFunctionRun"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiGateway"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiGitDiff"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiGuidedTour"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiImport"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiLanguageConcepts"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiLayout"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiLayout"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiLayout"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiLive"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiLiveRebuild"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiLoad"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiMindMap"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiMindMapGet"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiMindMapTeachGet"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiMonolith"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiObserveApprove"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiObserveJudge"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiObserveLog"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiObserveProposals"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiObserveReject"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiOpl"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiOverview"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiReconcileChain"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiRegistry"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiRevealFile"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiSave"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiSemanticSearch"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiSplitPlan"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiTour"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiTraceExec"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleApiUserNodes"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#handleOpenAICompat"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
       "to": "src/presentation/http/serve.ts#handleStaticFile"
+    },
+    {
+      "from": "src/presentation/http/serve.ts#startServer",
+      "to": "src/presentation/http/serve.ts#isSafeOrigin"
+    },
+    {
+      "from": "src/presentation/http/serve.ts#startServer",
+      "to": "src/presentation/http/serve.ts#isSafeOrigin"
+    },
+    {
+      "from": "src/presentation/http/serve.ts#startServer",
+      "to": "src/presentation/http/serve.ts#isSafeOrigin"
     },
     {
       "from": "src/presentation/http/serve.ts#handleApiTraceExec",
       "to": "src/presentation/http/serve.ts#locateHostSource"
     },
     {
+      "from": "src/presentation/http/serve.ts#handleApiTool",
+      "to": "src/presentation/http/serve.ts#messageOf"
+    },
+    {
       "from": "src/presentation/http/serve.ts#startServer",
       "to": "src/presentation/http/serve.ts#notifyDslChange"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiObserveProposals",
-      "to": "src/presentation/http/serve.ts#observeDataDir"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiObserveApprove",
-      "to": "src/presentation/http/serve.ts#observeDataDir"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiObserveReject",
-      "to": "src/presentation/http/serve.ts#observeDataDir"
     },
     {
       "from": "src/presentation/http/serve.ts#handleApiSave",
@@ -1880,24 +1723,8 @@
       "to": "src/presentation/http/serve.ts#readBody"
     },
     {
-      "from": "src/presentation/http/serve.ts#startServer",
+      "from": "src/presentation/http/serve.ts#handleApiTool",
       "to": "src/presentation/http/serve.ts#readBody"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#readBody"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiObserveProposals",
-      "to": "src/presentation/http/serve.ts#readObserveProjectDir"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiObserveApprove",
-      "to": "src/presentation/http/serve.ts#readObserveProjectDir"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiObserveReject",
-      "to": "src/presentation/http/serve.ts#readObserveProjectDir"
     },
     {
       "from": "src/presentation/http/serve.ts#handleApiSave",
@@ -2356,11 +2183,7 @@
       "to": "src/presentation/http/serve.ts#sendError"
     },
     {
-      "from": "src/presentation/http/serve.ts#readObserveProjectDir",
-      "to": "src/presentation/http/serve.ts#sendError"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#readObserveProjectDir",
+      "from": "src/presentation/http/serve.ts#handleApiObserveProposals",
       "to": "src/presentation/http/serve.ts#sendError"
     },
     {
@@ -2373,22 +2196,6 @@
     },
     {
       "from": "src/presentation/http/serve.ts#handleApiObserveApprove",
-      "to": "src/presentation/http/serve.ts#sendError"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiObserveApprove",
-      "to": "src/presentation/http/serve.ts#sendError"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiObserveApprove",
-      "to": "src/presentation/http/serve.ts#sendError"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiObserveReject",
-      "to": "src/presentation/http/serve.ts#sendError"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiObserveReject",
       "to": "src/presentation/http/serve.ts#sendError"
     },
     {
@@ -2508,27 +2315,15 @@
       "to": "src/presentation/http/serve.ts#sendError"
     },
     {
-      "from": "src/presentation/http/serve.ts#startServer",
+      "from": "src/presentation/http/serve.ts#handleApiTool",
       "to": "src/presentation/http/serve.ts#sendError"
     },
     {
-      "from": "src/presentation/http/serve.ts#startServer",
+      "from": "src/presentation/http/serve.ts#handleApiTool",
       "to": "src/presentation/http/serve.ts#sendError"
     },
     {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#sendError"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#sendError"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
-      "to": "src/presentation/http/serve.ts#sendError"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#startServer",
+      "from": "src/presentation/http/serve.ts#handleApiTool",
       "to": "src/presentation/http/serve.ts#sendError"
     },
     {
@@ -2840,12 +2635,16 @@
       "to": "src/presentation/http/serve.ts#sendJson"
     },
     {
-      "from": "src/presentation/http/serve.ts#startServer",
+      "from": "src/presentation/http/serve.ts#handleApiTool",
       "to": "src/presentation/http/serve.ts#sendJson"
     },
     {
-      "from": "src/presentation/http/serve.ts#startServer",
+      "from": "src/presentation/http/serve.ts#handleApiTools",
       "to": "src/presentation/http/serve.ts#sendJson"
+    },
+    {
+      "from": "src/presentation/http/serve.ts#handleApiTool",
+      "to": "src/presentation/mcp/server_registry.ts#invokeTool"
     }
   ]
 }

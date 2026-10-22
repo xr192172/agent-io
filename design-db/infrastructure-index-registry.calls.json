@@ -93,37 +93,37 @@
     {
       "name": "writeRegistry",
       "kind": "function",
-      "line": 68,
+      "line": 70,
       "signature": "writeRegistry(entries: ArtifactEntry[]): void"
     },
     {
       "name": "registerArtifact",
       "kind": "function",
-      "line": 77,
+      "line": 79,
       "signature": "registerArtifact(entry: Partial<ArtifactEntry>): ArtifactEntry"
     },
     {
       "name": "registerArtifactTo",
       "kind": "function",
-      "line": 82,
+      "line": 84,
       "signature": "registerArtifactTo(file: string, entry: Partial<ArtifactEntry>): ArtifactEntry"
     },
     {
       "name": "readFileEntries",
       "kind": "function",
-      "line": 114,
+      "line": 116,
       "signature": "readFileEntries(file: string): ArtifactEntry[]"
     },
     {
       "name": "writeFileEntries",
       "kind": "function",
-      "line": 124,
+      "line": 127,
       "signature": "writeFileEntries(file: string, entries: ArtifactEntry[]): void"
     },
     {
       "name": "updateArtifact",
       "kind": "function",
-      "line": 132,
+      "line": 135,
       "signature": "updateArtifact(relPath: string, patch: Partial<ArtifactEntry>): ArtifactEntry | null"
     }
   ],

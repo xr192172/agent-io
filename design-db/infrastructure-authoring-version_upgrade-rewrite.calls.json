@@ -7,7 +7,7 @@
     {
       "name": "RewriteItem",
       "kind": "interface",
-      "line": 21,
+      "line": 22,
       "signature": "RewriteItem()",
       "members": [
         {
@@ -63,13 +63,13 @@
     {
       "name": "buildRewritePlan",
       "kind": "function",
-      "line": 33,
+      "line": 34,
       "signature": "buildRewritePlan(featureGroups: Array<{ declaration: { projectDir: string }; hits: FeatureHit[] }>,\n  removedGroups: Array<{ declaration: { projectDir: string }; hits: RemovedHit[] }>): RewriteItem[]"
     },
     {
       "name": "PlanEdit",
       "kind": "interface",
-      "line": 72,
+      "line": 73,
       "signature": "PlanEdit()",
       "members": [
         {
@@ -95,19 +95,19 @@
     {
       "name": "SAFE_SUBSTITUTIONS",
       "kind": "const",
-      "line": 79,
+      "line": 80,
       "signature": "const SAFE_SUBSTITUTIONS = [ // Node：new Buffer() 构造器（废弃）→ Buffer.from()，语义一致 { kind…"
     },
     {
       "name": "suggestDeterministicEdits",
       "kind": "function",
-      "line": 85,
+      "line": 86,
       "signature": "suggestDeterministicEdits(hits: RemovedHit[]): PlanEdit[]"
     },
     {
       "name": "ApplyResult",
       "kind": "interface",
-      "line": 98,
+      "line": 99,
       "signature": "ApplyResult()",
       "members": [
         {
@@ -127,8 +127,8 @@
     {
       "name": "applyEdits",
       "kind": "function",
-      "line": 108,
-      "signature": "applyEdits(root: string, edits: PlanEdit[]): ApplyResult"
+      "line": 109,
+      "signature": "applyEdits(root: string, edits: PlanEdit[], write?: SourceWriteHook): ApplyResult"
     }
   ],
   "imports": [
@@ -139,6 +139,10 @@
     {
       "source": "node:path",
       "kind": "package"
+    },
+    {
+      "source": "../../source_write_port.js",
+      "kind": "relative"
     },
     {
       "source": "./features.js",
@@ -155,6 +159,10 @@
     {
       "from": "src/infrastructure/authoring/version_upgrade/rewrite.ts#buildRewritePlan",
       "to": "src/infrastructure/authoring/version_upgrade/rewrite.ts#suggestDeterministicEdits"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/rewrite.ts#applyEdits",
+      "to": "src/infrastructure/source_write_port.ts#commitSourceWrite"
     }
   ]
 }

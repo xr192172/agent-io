@@ -7,7 +7,7 @@
     {
       "name": "RewriteArgs",
       "kind": "interface",
-      "line": 46,
+      "line": 47,
       "signature": "RewriteArgs()",
       "members": [
         {
@@ -39,19 +39,31 @@
           "type": ": boolean",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "actor",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "authorize",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "RewriteReason",
       "kind": "type",
-      "line": 72,
+      "line": 82,
       "signature": "RewriteReason()"
     },
     {
       "name": "RewriteGate",
       "kind": "interface",
-      "line": 83,
+      "line": 93,
       "signature": "RewriteGate()",
       "members": [
         {
@@ -71,7 +83,7 @@
     {
       "name": "RewriteResult",
       "kind": "interface",
-      "line": 88,
+      "line": 98,
       "signature": "RewriteResult()",
       "members": [
         {
@@ -96,6 +108,12 @@
           "name": "gate",
           "type": ": RewriteGate | null",
           "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "task_gate",
+          "type": ": string",
+          "optional": true,
           "member_kind": "property"
         },
         {
@@ -157,13 +175,13 @@
     {
       "name": "rewriteSymbols",
       "kind": "function",
-      "line": 124,
+      "line": 140,
       "signature": "rewriteSymbols(args: RewriteArgs): Promise<RewriteResult>"
     },
     {
       "name": "noWorkReason",
       "kind": "function",
-      "line": 197,
+      "line": 222,
       "signature": "noWorkReason(r: Pick<SymbolDiffResult, 'copies' | 'scanned' | 'same' | 'differ' | 'uncompared'>,\n  fileMissing: boolean,): RewriteReason"
     }
   ],
@@ -182,6 +200,10 @@
     },
     {
       "source": "../../refactor/pipeline/refactor_plan.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../refactor/gate_note.js",
       "kind": "relative"
     }
   ],
@@ -205,6 +227,10 @@
     {
       "from": "src/application/design/rewrite/rewrite.ts#noWorkReason",
       "to": "src/application/design/rewrite/symbol_diff.ts#uncomparedTotal"
+    },
+    {
+      "from": "src/application/design/rewrite/rewrite.ts#rewriteSymbols",
+      "to": "src/application/refactor/gate_note.ts#attachGateNote"
     },
     {
       "from": "src/application/design/rewrite/rewrite.ts#rewriteSymbols",

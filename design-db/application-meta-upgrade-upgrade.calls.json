@@ -7,67 +7,67 @@
     {
       "name": "TOOL_LABEL",
       "kind": "const",
-      "line": 41,
+      "line": 42,
       "signature": "const TOOL_LABEL = { java: 'JDK', node: 'Node', go: 'Go', python: 'Python' }"
     },
     {
       "name": "statusBadge",
       "kind": "function",
-      "line": 43,
+      "line": 44,
       "signature": "statusBadge(status: string): string"
     },
     {
       "name": "renderToolchain",
       "kind": "function",
-      "line": 54,
+      "line": 55,
       "signature": "renderToolchain(scan: ContractScanResult['scan']): string[]"
     },
     {
       "name": "renderFeatures",
       "kind": "function",
-      "line": 80,
+      "line": 81,
       "signature": "renderFeatures(res: ContractScanResult): string[]"
     },
     {
       "name": "renderUncovered",
       "kind": "function",
-      "line": 102,
+      "line": 103,
       "signature": "renderUncovered(res: ContractScanResult): string[]"
     },
     {
       "name": "renderRemoved",
       "kind": "function",
-      "line": 111,
+      "line": 112,
       "signature": "renderRemoved(res: ContractScanResult): string[]"
     },
     {
       "name": "renderGates",
       "kind": "function",
-      "line": 132,
+      "line": 133,
       "signature": "renderGates(gates: StaticGateResult[]): string[]"
     },
     {
       "name": "renderDynamicGates",
       "kind": "function",
-      "line": 160,
+      "line": 161,
       "signature": "renderDynamicGates(gates: DynamicGateResult[]): string[]"
     },
     {
       "name": "renderSummary",
       "kind": "function",
-      "line": 188,
+      "line": 189,
       "signature": "renderSummary(res: ContractScanResult): string[]"
     },
     {
       "name": "upgradeScanData",
       "kind": "function",
-      "line": 199,
+      "line": 200,
       "signature": "upgradeScanData(res: ContractScanResult,\r\n  gates: StaticGateResult[] = [],\r\n  dynamicGates: DynamicGateResult[] = []): Record<string, unknown>"
     },
     {
       "name": "UpgradeScanResult",
       "kind": "interface",
-      "line": 246,
+      "line": 247,
       "signature": "UpgradeScanResult()",
       "members": [
         {
@@ -105,7 +105,7 @@
     {
       "name": "UpgradeScanOptions",
       "kind": "interface",
-      "line": 256,
+      "line": 257,
       "signature": "UpgradeScanOptions()",
       "members": [
         {
@@ -125,13 +125,13 @@
     {
       "name": "runUpgradeScan",
       "kind": "function",
-      "line": 265,
+      "line": 266,
       "signature": "runUpgradeScan(root: string, opts: UpgradeScanOptions = {}): Promise<UpgradeScanResult>"
     },
     {
       "name": "UpgradeApplyResult",
       "kind": "interface",
-      "line": 280,
+      "line": 281,
       "signature": "UpgradeApplyResult()",
       "members": [
         {
@@ -157,31 +157,31 @@
     {
       "name": "dirMissingLine",
       "kind": "function",
-      "line": 293,
+      "line": 294,
       "signature": "dirMissingLine(root: string): string | null"
     },
     {
       "name": "scanAndPlan",
       "kind": "function",
-      "line": 299,
+      "line": 300,
       "signature": "scanAndPlan(root: string, lines: string[], report: Record<string, unknown>): void"
     },
     {
       "name": "runUpgradePlanReport",
       "kind": "function",
-      "line": 329,
+      "line": 330,
       "signature": "runUpgradePlanReport(root: string): UpgradeApplyResult"
     },
     {
       "name": "runUpgradeApplyLoop",
       "kind": "function",
-      "line": 344,
-      "signature": "runUpgradeApplyLoop(root: string,\r\n  edits: PlanEdit[],\r\n  skipVerify = false): Promise<UpgradeApplyResult>"
+      "line": 345,
+      "signature": "runUpgradeApplyLoop(root: string,\n  edits: PlanEdit[],\n  skipVerify = false,\n  /** ★ 2026-10-22（并发控制·账户）：谁在写 —— 落盘要过写闸（判据仍只在 `write_gate` 一处） */\n  writeCtx: { actor?: string; authorize?: string } = {},): Promise<UpgradeApplyResult>"
     },
     {
       "name": "upgradeHandler",
       "kind": "const",
-      "line": 456,
+      "line": 466,
       "signature": "const upgradeHandler = wrapData(async (a) => { const projectDir = requireStr(a, …"
     }
   ],
@@ -230,6 +230,10 @@
     },
     {
       "source": "../../../infrastructure/git.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../source_writer.js",
       "kind": "relative"
     }
   ],
@@ -285,6 +289,10 @@
     {
       "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeScan",
       "to": "src/application/meta/upgrade/upgrade.ts#upgradeScanData"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
+      "to": "src/application/source_writer.ts#openSourceWrite"
     },
     {
       "from": "src/application/meta/upgrade/upgrade.ts#renderUncovered",

@@ -455,10 +455,6 @@
       "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#RefactorLangRegistry.all"
     },
     {
-      "from": "src/infrastructure/analysis/refactor/refactor_langs.ts#RefactorLangRegistry.get",
-      "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#RefactorLangRegistry.get"
-    },
-    {
       "from": "src/infrastructure/analysis/refactor/refactor_langs.ts#RefactorLangRegistry.forProject",
       "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#dirHasSource"
     }

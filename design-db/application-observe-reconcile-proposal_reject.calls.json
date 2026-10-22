@@ -1,0 +1,76 @@
+{
+  "//": "Design DB —— src/application/observe/reconcile/proposal_reject.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/application/observe/reconcile/proposal_reject.ts",
+  "symbols": [
+    {
+      "name": "RejectObserveProposalInput",
+      "kind": "interface",
+      "line": 16,
+      "signature": "RejectObserveProposalInput()",
+      "members": [
+        {
+          "name": "project_dir",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reviewer",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "context",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "RejectObserveProposalResult",
+      "kind": "type",
+      "line": 27,
+      "signature": "RejectObserveProposalResult()"
+    },
+    {
+      "name": "rejectObserveProposal",
+      "kind": "function",
+      "line": 32,
+      "signature": "rejectObserveProposal(input: RejectObserveProposalInput): RejectObserveProposalResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/analysis/observe/dsl_store.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/observe/proposal_store.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/dictionary.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/observe/reconcile/proposal_reject.ts#rejectObserveProposal",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#defaultDSLDir"
+    },
+    {
+      "from": "src/application/observe/reconcile/proposal_reject.ts#rejectObserveProposal",
+      "to": "src/infrastructure/dictionary.ts#validateProjectRoot"
+    }
+  ]
+}

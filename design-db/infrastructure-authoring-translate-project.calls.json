@@ -333,31 +333,31 @@
     {
       "name": "writeReport",
       "kind": "function",
-      "line": 218,
+      "line": 220,
       "signature": "writeReport(outDir: string, report: ReportEntry[]): void"
     },
     {
       "name": "buildTypesMap",
       "kind": "function",
-      "line": 241,
+      "line": 243,
       "signature": "buildTypesMap(modules: ProjectModule[]): TypesMapEntry[]"
     },
     {
       "name": "detectConflicts",
       "kind": "function",
-      "line": 251,
+      "line": 253,
       "signature": "detectConflicts(modules: ProjectModule[]): ConflictEntry[]"
     },
     {
       "name": "writeTypesMap",
       "kind": "function",
-      "line": 271,
+      "line": 275,
       "signature": "writeTypesMap(outDir: string, map: TypesMapEntry[]): void"
     },
     {
       "name": "ProjectCallContext",
       "kind": "interface",
-      "line": 295,
+      "line": 299,
       "signature": "ProjectCallContext()",
       "members": [
         {
@@ -377,13 +377,13 @@
     {
       "name": "buildProjectCallNote",
       "kind": "function",
-      "line": 301,
+      "line": 305,
       "signature": "buildProjectCallNote(m: ProjectModule, defined: Map<string, SymbolDef>, ctx?: ProjectCallContext): string"
     },
     {
       "name": "TscCluster",
       "kind": "interface",
-      "line": 339,
+      "line": 343,
       "signature": "TscCluster()",
       "members": [
         {
@@ -409,25 +409,25 @@
     {
       "name": "TS_CODE_LABEL",
       "kind": "const",
-      "line": 346,
+      "line": 350,
       "signature": "const TS_CODE_LABEL = { 2304: '未定义的名字/类型', 2307: '找不到模块', 2503: '找不到命名空间', 2339…"
     },
     {
       "name": "clusterKeyFor",
       "kind": "function",
-      "line": 353,
+      "line": 357,
       "signature": "clusterKeyFor(code: number, msg: string): string"
     },
     {
       "name": "verifyProjectTree",
       "kind": "function",
-      "line": 365,
+      "line": 369,
       "signature": "verifyProjectTree(modules: ProjectModule[]): TscCluster[]"
     },
     {
       "name": "translateGoProject",
       "kind": "function",
-      "line": 411,
+      "line": 415,
       "signature": "translateGoProject(projectDir: string, opts: ProjectOptions = {}): Promise<ProjectResult>"
     }
   ],

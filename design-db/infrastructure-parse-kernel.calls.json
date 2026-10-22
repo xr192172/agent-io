@@ -1058,16 +1058,8 @@
       "to": "src/infrastructure/parse/kernel.ts#extractCallsFromBody"
     },
     {
-      "from": "src/infrastructure/parse/kernel.ts#extractImportBindings",
-      "to": "src/infrastructure/parse/kernel.ts#extractImportBindings"
-    },
-    {
       "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractImports",
       "to": "src/infrastructure/parse/kernel.ts#extractImportBindings"
-    },
-    {
-      "from": "src/infrastructure/parse/kernel.ts#extractImportSources",
-      "to": "src/infrastructure/parse/kernel.ts#extractImportSources"
     },
     {
       "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractImports",

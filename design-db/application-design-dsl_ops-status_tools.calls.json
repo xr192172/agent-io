@@ -33,13 +33,19 @@
           "type": ": ProgressEvidence",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "evidenceClearedBy",
+          "type": ": 'task-complete'",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "StatusResult",
       "kind": "interface",
-      "line": 58,
+      "line": 79,
       "signature": "StatusResult()",
       "members": [
         {
@@ -59,13 +65,13 @@
     {
       "name": "updateStatus",
       "kind": "function",
-      "line": 63,
+      "line": 84,
       "signature": "updateStatus(input: UpdateStatusInput): StatusResult"
     },
     {
       "name": "computeFeatureStatus",
       "kind": "function",
-      "line": 150,
+      "line": 194,
       "signature": "computeFeatureStatus(nodes: Array<{ status?: DiagramStatus }>): DiagramStatus"
     }
   ],

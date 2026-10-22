@@ -193,7 +193,7 @@
     {
       "name": "TaskHistoryEntry",
       "kind": "interface",
-      "line": 282,
+      "line": 284,
       "signature": "TaskHistoryEntry()",
       "members": [
         {
@@ -231,7 +231,7 @@
     {
       "name": "TaskReadSetSymbol",
       "kind": "interface",
-      "line": 329,
+      "line": 331,
       "signature": "TaskReadSetSymbol()",
       "members": [
         {
@@ -257,7 +257,7 @@
     {
       "name": "TaskReadSetFile",
       "kind": "interface",
-      "line": 339,
+      "line": 341,
       "signature": "TaskReadSetFile()",
       "members": [
         {
@@ -277,13 +277,13 @@
     {
       "name": "TaskReadSetBasis",
       "kind": "type",
-      "line": 352,
+      "line": 354,
       "signature": "TaskReadSetBasis()"
     },
     {
       "name": "TaskReadSet",
       "kind": "interface",
-      "line": 355,
+      "line": 357,
       "signature": "TaskReadSet()",
       "members": [
         {
@@ -321,7 +321,7 @@
     {
       "name": "TaskSpec",
       "kind": "interface",
-      "line": 366,
+      "line": 368,
       "signature": "TaskSpec()",
       "members": [
         {
@@ -333,12 +333,6 @@
         {
           "name": "summary",
           "type": ": string",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "expectations",
-          "type": ": Expectation[]",
           "optional": false,
           "member_kind": "property"
         },
@@ -409,6 +403,36 @@
           "member_kind": "property"
         },
         {
+          "name": "renewed_count",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "last_renewed_at",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "taken_over_from",
+          "type": ": { from_owner?: string; from_claimed_at: string; age_hours: number | null } | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "expired_from",
+          "type": ": { owner: string | null; claimed_at: string | null; age_hours: number | null; ttl_ms: number } | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "expired_at",
+          "type": ": string | null",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
           "name": "replaces",
           "type": ": string",
           "optional": true,
@@ -459,10 +483,30 @@
       ]
     },
     {
+      "name": "CriteriaHome",
+      "kind": "interface",
+      "line": 576,
+      "signature": "CriteriaHome()",
+      "members": [
+        {
+          "name": "decision",
+          "type": ": { expectations?: Expectation[] }",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "expectationsOf",
+      "kind": "function",
+      "line": 580,
+      "signature": "expectationsOf(home: CriteriaHome | null | undefined): Expectation[]"
+    },
+    {
       "name": "taskLevel",
       "kind": "function",
-      "line": 543,
-      "signature": "taskLevel(card: Pick<TaskSpec, 'expectations'>): 'L1' | 'L2'"
+      "line": 588,
+      "signature": "taskLevel(expectations: readonly Expectation[]): 'L1' | 'L2'"
     }
   ],
   "imports": [

@@ -19,13 +19,13 @@
     {
       "name": "loadOverlay",
       "kind": "function",
-      "line": 34,
+      "line": 36,
       "signature": "loadOverlay(feature: string): DesignOverlay | null"
     },
     {
       "name": "MergeResult",
       "kind": "interface",
-      "line": 44,
+      "line": 46,
       "signature": "MergeResult()",
       "members": [
         {
@@ -57,25 +57,25 @@
     {
       "name": "syncTagsToOverlay",
       "kind": "function",
-      "line": 78,
+      "line": 80,
       "signature": "syncTagsToOverlay(feature: string,\n  dsl: DesignDSL,): { changed: boolean; written: number; cleared: boolean; file: string | null }"
     },
     {
       "name": "syncLifecycleToOverlay",
       "kind": "function",
-      "line": 108,
+      "line": 110,
       "signature": "syncLifecycleToOverlay(feature: string,\n  dsl: DesignDSL,): { changed: boolean; written: number; cleared: number; file: string | null; notes: string[] }"
     },
     {
       "name": "dropLifecycleFromOverlay",
       "kind": "function",
-      "line": 145,
+      "line": 147,
       "signature": "dropLifecycleFromOverlay(feature: string,\n  fileId: string,): { changed: boolean; file: string | null }"
     },
     {
       "name": "mergeDesignLayer",
       "kind": "function",
-      "line": 169,
+      "line": 171,
       "signature": "mergeDesignLayer(base: DesignDSL): MergeResult"
     }
   ],

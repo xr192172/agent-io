@@ -213,25 +213,25 @@
     {
       "name": "applyNodeOp",
       "kind": "function",
-      "line": 1127,
+      "line": 1125,
       "signature": "applyNodeOp(feature: string, op: CheckedOperation<FeatureOperation>, agent?: string): EditResult"
     },
     {
       "name": "applyEdgeOp",
       "kind": "function",
-      "line": 1161,
+      "line": 1159,
       "signature": "applyEdgeOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult"
     },
     {
       "name": "applyFileOp",
       "kind": "function",
-      "line": 1196,
+      "line": 1194,
       "signature": "applyFileOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult"
     },
     {
       "name": "applyApiOp",
       "kind": "function",
-      "line": 1220,
+      "line": 1218,
       "signature": "applyApiOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult"
     }
   ],

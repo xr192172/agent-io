@@ -7,25 +7,25 @@
     {
       "name": "GO_DEF_NODE_TYPES",
       "kind": "const",
-      "line": 30,
+      "line": 32,
       "signature": "const GO_DEF_NODE_TYPES = new Set(['function_declaration', 'type_spec', 'const_spec…"
     },
     {
       "name": "analyzeGoSource",
       "kind": "function",
-      "line": 32,
+      "line": 34,
       "signature": "analyzeGoSource(src: string): Promise<GoModuleAnalysis | null>"
     },
     {
       "name": "renameGoSymbol",
       "kind": "function",
-      "line": 153,
-      "signature": "renameGoSymbol(args: {\n  file: string; // 定义文件绝对路径\n  symbol: string;\n  to: string;\n  dryRun: boolean;\n  resolvedRoot: string;\n  blocked: string[];\n}): Promise<RenameSymbolResult>"
+      "line": 155,
+      "signature": "renameGoSymbol(args: {\n  file: string; // 定义文件绝对路径\n  symbol: string;\n  to: string;\n  dryRun: boolean;\n  resolvedRoot: string;\n  blocked: string[];\n  /** ★ 落盘注入（`parts#SourceWriteHook`）：引擎不写盘，没注入就抛 */\n  write?: SourceWriteHook;\n}): Promise<RenameSymbolResult>"
     },
     {
       "name": "goPackage",
       "kind": "const",
-      "line": 308,
+      "line": 312,
       "signature": "const goPackage = { exts: ['.go'], rename: (a) => renameGoSymbol({ file: a.…"
     }
   ],

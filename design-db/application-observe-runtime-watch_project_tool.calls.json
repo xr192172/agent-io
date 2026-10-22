@@ -947,6 +947,10 @@
       "to": "src/infrastructure/analysis/impact/impact_ledger_store.ts#resolveViolation"
     },
     {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#ensureObserveSink",
+      "to": "src/infrastructure/analysis/observe/probe.ts#TSProbeCapture.pathFor"
+    },
+    {
       "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
       "to": "src/infrastructure/analysis/observe/probe.ts#captureProbe"
     },

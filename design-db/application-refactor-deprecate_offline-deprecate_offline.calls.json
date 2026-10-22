@@ -7,7 +7,7 @@
     {
       "name": "DeprecateOfflinePlan",
       "kind": "interface",
-      "line": 55,
+      "line": 56,
       "signature": "DeprecateOfflinePlan()",
       "members": [
         {
@@ -27,7 +27,7 @@
     {
       "name": "DeprecateOfflineOptions",
       "kind": "interface",
-      "line": 62,
+      "line": 63,
       "signature": "DeprecateOfflineOptions()",
       "members": [
         {
@@ -83,13 +83,13 @@
     {
       "name": "DeprecateOutcome",
       "kind": "type",
-      "line": 83,
+      "line": 84,
       "signature": "DeprecateOutcome()"
     },
     {
       "name": "DeprecateOfflineItem",
       "kind": "interface",
-      "line": 95,
+      "line": 96,
       "signature": "DeprecateOfflineItem()",
       "members": [
         {
@@ -127,7 +127,7 @@
     {
       "name": "DeprecateOfflineResult",
       "kind": "interface",
-      "line": 103,
+      "line": 104,
       "signature": "DeprecateOfflineResult()",
       "members": [
         {
@@ -177,7 +177,7 @@
     {
       "name": "DeprecateSink",
       "kind": "interface",
-      "line": 119,
+      "line": 120,
       "signature": "DeprecateSink()",
       "members": [
         {
@@ -191,55 +191,55 @@
     {
       "name": "goModulePrefix",
       "kind": "function",
-      "line": 128,
+      "line": 129,
       "signature": "goModulePrefix(project_dir: string): string | null"
     },
     {
       "name": "resolveGoPackageFile",
       "kind": "function",
-      "line": 139,
+      "line": 140,
       "signature": "resolveGoPackageFile(project_dir: string, sub: string): string | null"
     },
     {
       "name": "goPackageOfFile",
       "kind": "function",
-      "line": 153,
+      "line": 154,
       "signature": "goPackageOfFile(project_dir: string, moduleRel: string): string | null"
     },
     {
       "name": "resolveConsumerSource",
       "kind": "function",
-      "line": 162,
+      "line": 163,
       "signature": "resolveConsumerSource(project_dir: string, consumerRel: string, source: string): string | null"
     },
     {
       "name": "aggregateProjectSources",
       "kind": "function",
-      "line": 200,
+      "line": 201,
       "signature": "aggregateProjectSources(project_dir: string,\n  dead: DeadDepCandidate[],): Map<string, { moduleFile: string; consumers: number }>"
     },
     {
       "name": "remainingImporters",
       "kind": "function",
-      "line": 225,
+      "line": 226,
       "signature": "remainingImporters(project_dir: string,\n  moduleRel: string,\n  scannedFiles: string[],): number"
     },
     {
       "name": "enumerateDeriveSources",
       "kind": "function",
-      "line": 266,
+      "line": 267,
       "signature": "enumerateDeriveSources(src: string): Set<string>"
     },
     {
       "name": "hasActiveReference",
       "kind": "function",
-      "line": 283,
+      "line": 284,
       "signature": "hasActiveReference(project_dir: string, moduleRel: string, scannedFiles: string[]): boolean"
     },
     {
       "name": "deprecateOfflineCore",
       "kind": "function",
-      "line": 327,
+      "line": 328,
       "signature": "deprecateOfflineCore(opts: DeprecateOfflineOptions, sink: DeprecateSink): Promise<DeprecateOfflineResult>"
     },
     {
@@ -286,6 +286,10 @@
     },
     {
       "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../source_writer.js",
       "kind": "relative"
     }
   ],
@@ -357,6 +361,10 @@
     {
       "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
       "to": "src/application/refactor/edit/remove_dead_imports.ts#writtenFilesOf"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
+      "to": "src/application/source_writer.ts#restoreSourceBytes"
     },
     {
       "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOffline",

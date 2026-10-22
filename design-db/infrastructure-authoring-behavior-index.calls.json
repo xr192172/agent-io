@@ -453,7 +453,7 @@
     {
       "name": "VerifyResult",
       "kind": "interface",
-      "line": 823,
+      "line": 825,
       "signature": "VerifyResult()",
       "members": [
         {
@@ -485,19 +485,19 @@
     {
       "name": "verifyBaseline",
       "kind": "function",
-      "line": 831,
+      "line": 833,
       "signature": "verifyBaseline(spec: BehaviorSpec, baselinePath?: string): VerifyResult"
     },
     {
       "name": "diffRuns",
       "kind": "function",
-      "line": 851,
+      "line": 853,
       "signature": "diffRuns(before: BehaviorRun, after: BehaviorRun): BehaviorDiff"
     },
     {
       "name": "BehaviorLangPack",
       "kind": "interface",
-      "line": 909,
+      "line": 911,
       "signature": "BehaviorLangPack()",
       "members": [
         {
@@ -553,7 +553,7 @@
     {
       "name": "BuildCtx",
       "kind": "interface",
-      "line": 927,
+      "line": 929,
       "signature": "BuildCtx()",
       "members": [
         {
@@ -591,7 +591,7 @@
     {
       "name": "BuiltPlan",
       "kind": "interface",
-      "line": 939,
+      "line": 941,
       "signature": "BuiltPlan()",
       "members": [
         {
@@ -611,85 +611,85 @@
     {
       "name": "failRun",
       "kind": "function",
-      "line": 946,
+      "line": 948,
       "signature": "failRun(fileAbs: string, hash: string, error: string): BehaviorRun"
     },
     {
       "name": "runWithLangPack",
       "kind": "function",
-      "line": 954,
+      "line": 956,
       "signature": "runWithLangPack(spec: BehaviorSpec, pack: BehaviorLangPack): BehaviorRun"
     },
     {
       "name": "firstLine",
       "kind": "function",
-      "line": 1005,
+      "line": 1009,
       "signature": "firstLine(s: string | undefined | null): string"
     },
     {
       "name": "parseJsonTail",
       "kind": "function",
-      "line": 1010,
+      "line": 1014,
       "signature": "parseJsonTail(stdout: string, langLabel: string): BehaviorSampleResult[] | { error: string }"
     },
     {
       "name": "pythonPack",
       "kind": "const",
-      "line": 1024,
+      "line": 1028,
       "signature": "const pythonPack = { lang: 'python', exts: ['.py'], toolchain: () => toolcha…"
     },
     {
       "name": "nodePack",
       "kind": "const",
-      "line": 1038,
+      "line": 1042,
       "signature": "const nodePack = { lang: 'node', exts: [...NODE_EXTS], toolchain: () => to…"
     },
     {
       "name": "goPack",
       "kind": "const",
-      "line": 1054,
+      "line": 1058,
       "signature": "const goPack = { lang: 'go', exts: [...GO_EXTS], toolchain: () => toolch…"
     },
     {
       "name": "javaPack",
       "kind": "const",
-      "line": 1069,
+      "line": 1073,
       "signature": "const javaPack = { lang: 'java', exts: [...JAVA_EXTS], toolchain: () => to…"
     },
     {
       "name": "csharpPack",
       "kind": "const",
-      "line": 1087,
+      "line": 1091,
       "signature": "const csharpPack = { lang: 'csharp', exts: [...CS_EXTS], toolchain: () => to…"
     },
     {
       "name": "cPack",
       "kind": "const",
-      "line": 1109,
+      "line": 1113,
       "signature": "const cPack = { lang: 'c', exts: [...C_EXTS], // C 认 cc 或 gcc（任一可用即可）——…"
     },
     {
       "name": "BEHAVIOR_PACKS",
       "kind": "const",
-      "line": 1131,
+      "line": 1135,
       "signature": "const BEHAVIOR_PACKS = [pythonPack, nodePack, goPack, javaPack, csharpPack, cPack]"
     },
     {
       "name": "packOf",
       "kind": "function",
-      "line": 1133,
+      "line": 1137,
       "signature": "packOf(lang: BehaviorLang): BehaviorLangPack"
     },
     {
       "name": "langOfFile",
       "kind": "function",
-      "line": 1140,
+      "line": 1144,
       "signature": "langOfFile(file: string): BehaviorLang"
     },
     {
       "name": "runHarness",
       "kind": "function",
-      "line": 1150,
+      "line": 1154,
       "signature": "runHarness(spec: BehaviorSpec): BehaviorRun"
     }
   ],

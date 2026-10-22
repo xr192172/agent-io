@@ -7,7 +7,7 @@
     {
       "name": "NamespaceDeclRule",
       "kind": "interface",
-      "line": 49,
+      "line": 51,
       "signature": "NamespaceDeclRule()",
       "members": [
         {
@@ -33,7 +33,7 @@
     {
       "name": "NamespaceLangRules",
       "kind": "interface",
-      "line": 64,
+      "line": 66,
       "signature": "NamespaceLangRules()",
       "members": [
         {
@@ -95,7 +95,7 @@
     {
       "name": "NamespaceLangSpec",
       "kind": "interface",
-      "line": 98,
+      "line": 100,
       "signature": "NamespaceLangSpec()",
       "members": [
         {
@@ -109,13 +109,13 @@
     {
       "name": "makeNamespaceAnalyzer",
       "kind": "function",
-      "line": 114,
+      "line": 116,
       "signature": "makeNamespaceAnalyzer(rules: NamespaceLangRules)"
     },
     {
       "name": "NamespaceRenameArgs",
       "kind": "interface",
-      "line": 268,
+      "line": 270,
       "signature": "NamespaceRenameArgs()",
       "members": [
         {
@@ -153,13 +153,19 @@
           "type": ": string[]",
           "optional": false,
           "member_kind": "property"
+        },
+        {
+          "name": "write",
+          "type": ": SourceWriteHook",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "renameNamespaceSymbol",
       "kind": "function",
-      "line": 282,
+      "line": 286,
       "signature": "renameNamespaceSymbol(spec: NamespaceLangSpec, args: NamespaceRenameArgs): Promise<RenameSymbolResult>"
     }
   ],

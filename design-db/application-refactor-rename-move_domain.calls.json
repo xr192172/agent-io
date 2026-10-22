@@ -7,7 +7,7 @@
     {
       "name": "MoveDomainInput",
       "kind": "interface",
-      "line": 43,
+      "line": 42,
       "signature": "MoveDomainInput()",
       "members": [
         {
@@ -33,7 +33,7 @@
     {
       "name": "MoveDomainResult",
       "kind": "interface",
-      "line": 55,
+      "line": 54,
       "signature": "MoveDomainResult()",
       "members": [
         {
@@ -113,13 +113,13 @@
     {
       "name": "untouchedEntries",
       "kind": "function",
-      "line": 95,
+      "line": 94,
       "signature": "untouchedEntries(dirAbs: string): string[]"
     },
     {
       "name": "MoveDomainOutput",
       "kind": "interface",
-      "line": 105,
+      "line": 104,
       "signature": "MoveDomainOutput()",
       "members": [
         {
@@ -151,7 +151,7 @@
     {
       "name": "moveDomain",
       "kind": "function",
-      "line": 113,
+      "line": 112,
       "signature": "moveDomain(input: MoveDomainInput): Promise<MoveDomainOutput>"
     }
   ],

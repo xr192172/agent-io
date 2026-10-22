@@ -123,13 +123,13 @@
     {
       "name": "writeAtomic",
       "kind": "function",
-      "line": 135,
+      "line": 137,
       "signature": "writeAtomic(file: string, data: string): void"
     },
     {
       "name": "ProposalStore",
       "kind": "class",
-      "line": 152,
+      "line": 154,
       "signature": "ProposalStore()",
       "members": [
         {
@@ -233,10 +233,6 @@
     {
       "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.write",
       "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.filePath"
-    },
-    {
-      "from": "src/infrastructure/analysis/observe/proposal_store.ts#validateDecls",
-      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.get"
     },
     {
       "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.reject",

@@ -1,0 +1,237 @@
+{
+  "//": "Design DB —— src/application/meta/archive/archive_node.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/application/meta/archive/archive_node.ts",
+  "symbols": [
+    {
+      "name": "ArchiveNodeInput",
+      "kind": "interface",
+      "line": 31,
+      "signature": "ArchiveNodeInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "retire_reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "merged_into",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "ArchiveNodeResult",
+      "kind": "interface",
+      "line": 42,
+      "signature": "ArchiveNodeResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "archive_id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file_path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "merged_into",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "archived_decision",
+          "type": ": { summary?: string; thread?: string } | null",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "removed_from_dsl",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "archiveNodeCore",
+      "kind": "function",
+      "line": 53,
+      "signature": "archiveNodeCore(input: ArchiveNodeInput): ArchiveNodeResult"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 163,
+      "signature": "touchedOf(input: ArchiveNodeInput): Touched"
+    },
+    {
+      "name": "archiveNode",
+      "kind": "function",
+      "line": 171,
+      "signature": "archiveNode(input: ArchiveNodeInput): TouchedProduct<ArchiveNodeResult>"
+    },
+    {
+      "name": "ListArchiveInput",
+      "kind": "interface",
+      "line": 176,
+      "signature": "ListArchiveInput()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "live_dir",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "ListArchiveResult",
+      "kind": "interface",
+      "line": 183,
+      "signature": "ListArchiveResult()",
+      "members": [
+        {
+          "name": "message",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "entries",
+          "type": ": ArchiveEntry[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "listArchive",
+      "kind": "function",
+      "line": 190,
+      "signature": "listArchive(input: ListArchiveInput): ListArchiveResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/semantic.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/dsl_removal.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/storage_overlay.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/meta/archive/archive_node.ts#archiveNode",
+      "to": "src/application/meta/archive/archive_node.ts#archiveNodeCore"
+    },
+    {
+      "from": "src/application/meta/archive/archive_node.ts#archiveNode",
+      "to": "src/application/meta/archive/archive_node.ts#touchedOf"
+    },
+    {
+      "from": "src/application/meta/archive/archive_node.ts#archiveNode",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/meta/archive/archive_node.ts#archiveNodeCore",
+      "to": "src/domain/dsl_removal.ts#removeFileFromDsl"
+    },
+    {
+      "from": "src/application/meta/archive/archive_node.ts#archiveNodeCore",
+      "to": "src/domain/semantic.ts#assertLifecycle"
+    },
+    {
+      "from": "src/application/meta/archive/archive_node.ts#archiveNodeCore",
+      "to": "src/infrastructure/storage.ts#getArchiveEntryByPath"
+    },
+    {
+      "from": "src/application/meta/archive/archive_node.ts#archiveNodeCore",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/meta/archive/archive_node.ts#listArchive",
+      "to": "src/infrastructure/storage.ts#listArchiveEntries"
+    },
+    {
+      "from": "src/application/meta/archive/archive_node.ts#archiveNodeCore",
+      "to": "src/infrastructure/storage.ts#saveArchiveEntry"
+    },
+    {
+      "from": "src/application/meta/archive/archive_node.ts#archiveNodeCore",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    },
+    {
+      "from": "src/application/meta/archive/archive_node.ts#archiveNodeCore",
+      "to": "src/infrastructure/storage_overlay.ts#dropLifecycleFromOverlay"
+    },
+    {
+      "from": "src/application/meta/archive/archive_node.ts#archiveNodeCore",
+      "to": "src/infrastructure/storage_overlay.ts#syncLifecycleToOverlay"
+    }
+  ]
+}

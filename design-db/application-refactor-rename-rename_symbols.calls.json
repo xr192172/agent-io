@@ -317,56 +317,56 @@
     {
       "name": "localItemResult",
       "kind": "function",
-      "line": 561,
+      "line": 576,
       "signature": "localItemResult(it: LocalRenameOutcome, dryRun: boolean): RenameSymbolResult"
     },
     {
       "name": "renameSymbolsLocal",
       "kind": "function",
-      "line": 587,
+      "line": 602,
       "signature": "renameSymbolsLocal(input: RenameSymbolsInput): Promise<RenameSymbolsResult>"
     },
     {
       "name": "camelToSnake",
       "kind": "function",
-      "line": 673,
+      "line": 688,
       "signature": "camelToSnake(str: string): string"
     },
     {
       "name": "classifyLiteral",
       "kind": "function",
-      "line": 678,
+      "line": 693,
       "signature": "classifyLiteral(file: string, lineText: string, needle: string): LiteralMatchKind"
     },
     {
       "name": "gitIgnoredTopDirs",
       "kind": "function",
-      "line": 692,
+      "line": 707,
       "signature": "gitIgnoredTopDirs(root: string): Set<string>"
     },
     {
       "name": "scanLiteralOccurrences",
       "kind": "function",
-      "line": 709,
+      "line": 724,
       "signature": "scanLiteralOccurrences(projectDir: string,\n  needles: string[],): Array<{ needle: string; matches: RawLiteralMatch[] }>"
     },
     {
       "name": "decideLiteral",
       "kind": "function",
-      "line": 779,
+      "line": 794,
       "signature": "decideLiteral(kind: LiteralMatchKind, frozen: boolean, isGenerated: boolean): LiteralDecision"
     },
     {
       "name": "buildLiteralPlan",
       "kind": "function",
-      "line": 791,
+      "line": 806,
       "signature": "buildLiteralPlan(rootDir: string,\n  renames: RenameSymbolsItem[],\n  guard?: { isFrozen(absFile: string, src: string, pos: number): boolean; isGeneratedFile(absFile: string): boolean } | null,): RenameSymbolsResult['literals']"
     },
     {
       "name": "applyLiteralPlan",
       "kind": "function",
-      "line": 825,
-      "signature": "applyLiteralPlan(plan: RenameSymbolsResult['literals']): { filesWritten: number; files: string[] }"
+      "line": 840,
+      "signature": "applyLiteralPlan(plan: RenameSymbolsResult['literals'],\n  /** ★ 落盘注入（与 `renameSymbol` 的 `write` 同源）：缺它而有改动要写 ⇒ 抛，不回落裸写 */\n  write?: SourceWriteHook,): { filesWritten: number; files: string[] }"
     }
   ],
   "imports": [

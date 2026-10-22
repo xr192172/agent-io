@@ -47,6 +47,12 @@
           "member_kind": "property"
         },
         {
+          "name": "cross_type_edges",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
           "name": "symbol_diff",
           "type": ": { added: number; removed: number; changed: number }",
           "optional": true,
@@ -63,7 +69,7 @@
     {
       "name": "SyncProjectResult",
       "kind": "interface",
-      "line": 47,
+      "line": 49,
       "signature": "SyncProjectResult()",
       "members": [
         {
@@ -119,7 +125,7 @@
     {
       "name": "SymbolHit",
       "kind": "interface",
-      "line": 59,
+      "line": 61,
       "signature": "SymbolHit()",
       "members": [
         {
@@ -163,7 +169,7 @@
     {
       "name": "IndexStats",
       "kind": "interface",
-      "line": 68,
+      "line": 70,
       "signature": "IndexStats()",
       "members": [
         {
@@ -195,79 +201,79 @@
     {
       "name": "toIndexKey",
       "kind": "function",
-      "line": 97,
+      "line": 99,
       "signature": "toIndexKey(projectRoot: string, p: string): string | null"
     },
     {
       "name": "toRelPath",
       "kind": "function",
-      "line": 111,
+      "line": 113,
       "signature": "toRelPath(projectRoot: string, absPath: string): string"
     },
     {
       "name": "contentHash",
       "kind": "function",
-      "line": 128,
+      "line": 130,
       "signature": "contentHash(content: string): string"
     },
     {
       "name": "countLinesOf",
       "kind": "function",
-      "line": 132,
+      "line": 134,
       "signature": "countLinesOf(content: string): number"
     },
     {
       "name": "SymbolStatus",
       "kind": "type",
-      "line": 143,
+      "line": 145,
       "signature": "SymbolStatus()"
     },
     {
       "name": "mergeSymbolStatus",
       "kind": "function",
-      "line": 146,
+      "line": 148,
       "signature": "mergeSymbolStatus(a: SymbolStatus | undefined,\r\n  b: SymbolStatus | undefined,): SymbolStatus | undefined"
     },
     {
       "name": "symbolSpanHash",
       "kind": "function",
-      "line": 164,
+      "line": 166,
       "signature": "symbolSpanHash(lines: string[], startLine: number, endLine: number, lang: string): string"
     },
     {
       "name": "SymbolBodyReject",
       "kind": "type",
-      "line": 191,
+      "line": 193,
       "signature": "SymbolBodyReject()"
     },
     {
       "name": "SymbolBodyRead",
       "kind": "type",
-      "line": 203,
+      "line": 205,
       "signature": "SymbolBodyRead()"
     },
     {
       "name": "readSymbolBody",
       "kind": "function",
-      "line": 216,
+      "line": 218,
       "signature": "readSymbolBody(db: Database,\r\n  opts: { file: string; qualifiedName: string; startLine: number; src: string },): SymbolBodyRead"
     },
     {
       "name": "hashSetsOf",
       "kind": "function",
-      "line": 272,
+      "line": 274,
       "signature": "hashSetsOf(rows: Array<{ qualified_name: string; sym_hash: string | null }>): Map<string, Set<string>>"
     },
     {
       "name": "resolveImportTarget",
       "kind": "function",
-      "line": 302,
+      "line": 304,
       "signature": "resolveImportTarget(projectRoot: string,\r\n  fromRel: string,\r\n  source: string,\r\n  exts?: readonly string[],): string | null"
     },
     {
       "name": "SyncPrelude",
       "kind": "interface",
-      "line": 319,
+      "line": 321,
       "signature": "SyncPrelude()",
       "members": [
         {
@@ -317,25 +323,25 @@
     {
       "name": "PreludeResult",
       "kind": "type",
-      "line": 330,
+      "line": 332,
       "signature": "PreludeResult()"
     },
     {
       "name": "hasLegacyImportRows",
       "kind": "function",
-      "line": 345,
+      "line": 347,
       "signature": "hasLegacyImportRows(db: Database, rel: string): boolean"
     },
     {
       "name": "syncFilePrelude",
       "kind": "function",
-      "line": 360,
+      "line": 362,
       "signature": "syncFilePrelude(db: Database, projectRoot: string, absPath: string): PreludeResult"
     },
     {
       "name": "ReceiverType",
       "kind": "interface",
-      "line": 409,
+      "line": 411,
       "signature": "ReceiverType()",
       "members": [
         {
@@ -355,79 +361,79 @@
     {
       "name": "CALL_GUARD_BUILTIN_TYPES",
       "kind": "const",
-      "line": 415,
+      "line": 417,
       "signature": "const CALL_GUARD_BUILTIN_TYPES = new Set([ 'Set', 'Map', 'WeakMap', 'WeakSet', 'ReadonlySe…"
     },
     {
       "name": "declaredReceiverTypes",
       "kind": "function",
-      "line": 430,
+      "line": 432,
       "signature": "declaredReceiverTypes(content: string): Map<string, ReceiverType | null>"
     },
     {
       "name": "CallVerdict",
       "kind": "type",
-      "line": 478,
+      "line": 480,
       "signature": "CallVerdict()"
     },
     {
       "name": "visibleToCaller",
       "kind": "function",
-      "line": 500,
+      "line": 502,
       "signature": "visibleToCaller(callerQn: string, sym: ParsedSymbol): boolean"
     },
     {
       "name": "ownerIs",
       "kind": "function",
-      "line": 512,
+      "line": 514,
       "signature": "ownerIs(sym: ParsedSymbol, typeName: string): boolean"
     },
     {
       "name": "enclosingClassOf",
       "kind": "function",
-      "line": 519,
+      "line": 521,
       "signature": "enclosingClassOf(callerQn: string, symbols: readonly ParsedSymbol[]): ParsedSymbol | null"
     },
     {
       "name": "baseChainOf",
       "kind": "function",
-      "line": 530,
+      "line": 532,
       "signature": "baseChainOf(content: string, symbols: readonly ParsedSymbol[], cls: ParsedSymbol): string[]"
     },
     {
       "name": "classifyCall",
       "kind": "function",
-      "line": 568,
+      "line": 570,
       "signature": "classifyCall(args: {\r\n  content: string;\r\n  symbols: readonly ParsedSymbol[];\r\n  /** declaredReceiverTypes() 的结果（每个文件建一次） */\r\n  receiverTypes: ReadonlyMap<string, ReceiverType | null>;\r\n  /** 本文件的 import 列表（判「接收者是不是导入名」——那种 `X.foo()` 归跨文件解析） */\r\n  imports: ReadonlyArray<{ bindings?: string[] }>;\r\n  callerQn: string;\r\n  callee: string;\r\n  calleeExpr: string;\r\n}): CallVerdict"
     },
     {
       "name": "lastReceiverDot",
       "kind": "function",
-      "line": 638,
+      "line": 640,
       "signature": "lastReceiverDot(expr: string): number"
     },
     {
       "name": "applyParsedToIndex",
       "kind": "function",
-      "line": 658,
+      "line": 660,
       "signature": "applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude, parsed: ParsedFile): SyncFileResult"
     },
     {
       "name": "syncFile",
       "kind": "function",
-      "line": 998,
+      "line": 1062,
       "signature": "syncFile(db: Database, projectRoot: string, absPath: string): Promise<SyncFileResult>"
     },
     {
       "name": "syncFileSync",
       "kind": "function",
-      "line": 1015,
+      "line": 1079,
       "signature": "syncFileSync(db: Database, projectRoot: string, absPath: string): SyncFileResult"
     },
     {
       "name": "ReopenRefsResult",
       "kind": "interface",
-      "line": 1043,
+      "line": 1107,
       "signature": "ReopenRefsResult()",
       "members": [
         {
@@ -447,55 +453,55 @@
     {
       "name": "reopenRefsTo",
       "kind": "function",
-      "line": 1055,
+      "line": 1119,
       "signature": "reopenRefsTo(db: Database, names: readonly string[]): ReopenRefsResult"
     },
     {
       "name": "changedSymbolNames",
       "kind": "function",
-      "line": 1101,
+      "line": 1165,
       "signature": "changedSymbolNames(db: Database, rel: string): string[]"
     },
     {
       "name": "syncProject",
       "kind": "function",
-      "line": 1126,
+      "line": 1190,
       "signature": "syncProject(db: Database,\r\n  projectRoot: string,\r\n  absPaths: string[],): Promise<SyncProjectResult>"
     },
     {
       "name": "removeFileRel",
       "kind": "function",
-      "line": 1159,
+      "line": 1223,
       "signature": "removeFileRel(db: Database, rel: string): void"
     },
     {
       "name": "removeFile",
       "kind": "function",
-      "line": 1170,
+      "line": 1234,
       "signature": "removeFile(db: Database, projectRoot: string, absPath: string): void"
     },
     {
       "name": "goPackageCache",
       "kind": "const",
-      "line": 1189,
+      "line": 1253,
       "signature": "const goPackageCache = new Map<string, { mtimeMs: number; pkg: string | null }>()"
     },
     {
       "name": "goPackageName",
       "kind": "function",
-      "line": 1190,
+      "line": 1254,
       "signature": "goPackageName(projectRoot: string, rel: string): string | null"
     },
     {
       "name": "findGoSamePackageTarget",
       "kind": "function",
-      "line": 1209,
+      "line": 1273,
       "signature": "findGoSamePackageTarget(db: Database,\r\n  fromRel: string,\r\n  name: string,\r\n  kinds: readonly string[],\r\n  goFilesByDir: ReadonlyMap<string, ReadonlyArray<{ file: string; pkg: string }>>,): { file: string; qn: string } | null"
     },
     {
       "name": "ReexportSource",
       "kind": "interface",
-      "line": 1239,
+      "line": 1303,
       "signature": "ReexportSource()",
       "members": [
         {
@@ -521,7 +527,7 @@
     {
       "name": "ReexportMiss",
       "kind": "interface",
-      "line": 1249,
+      "line": 1313,
       "signature": "ReexportMiss()",
       "members": [
         {
@@ -541,7 +547,7 @@
     {
       "name": "ReexportIndex",
       "kind": "interface",
-      "line": 1255,
+      "line": 1319,
       "signature": "ReexportIndex()",
       "members": [
         {
@@ -567,73 +573,73 @@
     {
       "name": "reexportCache",
       "kind": "const",
-      "line": 1261,
+      "line": 1325,
       "signature": "const reexportCache = new Map<string, { mtimeMs: number; idx: ReexportIndex }>()"
     },
     {
       "name": "stripComments",
       "kind": "function",
-      "line": 1272,
+      "line": 1336,
       "signature": "stripComments(text: string): string"
     },
     {
       "name": "reexportsOf",
       "kind": "function",
-      "line": 1276,
+      "line": 1340,
       "signature": "reexportsOf(projectRoot: string, rel: string): ReexportIndex"
     },
     {
       "name": "resolveReexportTarget",
       "kind": "function",
-      "line": 1375,
+      "line": 1439,
       "signature": "resolveReexportTarget(db: Database,\n  projectRoot: string,\n  barrelRel: string,\n  name: string,\n  namesByFile: Map<string, Set<string>>,\n  kinds?: readonly string[],\n  depth: number = 0,\n  seen: Set<string> = new Set(),\n  miss?: ReexportMiss[],\n  indexedFiles?: ReadonlySet<string>,): { file: string; qn: string } | null"
     },
     {
       "name": "nsImportCache",
       "kind": "const",
-      "line": 1456,
+      "line": 1520,
       "signature": "const nsImportCache = new Map<string, { mtimeMs: number; map: Map<string, strin…"
     },
     {
       "name": "namespaceImportsOf",
       "kind": "function",
-      "line": 1457,
+      "line": 1521,
       "signature": "namespaceImportsOf(projectRoot: string, rel: string): Map<string, string[]>"
     },
     {
       "name": "dynImportCache",
       "kind": "const",
-      "line": 1478,
+      "line": 1542,
       "signature": "const dynImportCache = new Map<string, { mtimeMs: number; map: Map<string, strin…"
     },
     {
       "name": "dynamicImportsOf",
       "kind": "function",
-      "line": 1479,
+      "line": 1543,
       "signature": "dynamicImportsOf(projectRoot: string, rel: string): Map<string, string[]>"
     },
     {
       "name": "findNamespaceMemberTarget",
       "kind": "function",
-      "line": 1504,
+      "line": 1568,
       "signature": "findNamespaceMemberTarget(db: Database,\r\n  projectRoot: string,\r\n  fromRel: string,\r\n  expr: string,): { file: string; qn: string } | null"
     },
     {
       "name": "BUILTIN_PREFIXES",
       "kind": "const",
-      "line": 1530,
+      "line": 1594,
       "signature": "const BUILTIN_PREFIXES = new Set([ 'Math', 'JSON', 'Array', 'Object', 'String', 'N…"
     },
     {
       "name": "BUILTIN_CALLEES",
       "kind": "const",
-      "line": 1546,
+      "line": 1610,
       "signature": "const BUILTIN_CALLEES = new Set([ 'String', 'Number', 'Boolean', 'Object', 'Array…"
     },
     {
       "name": "CrossFileResolveStats",
       "kind": "interface",
-      "line": 1557,
+      "line": 1621,
       "signature": "CrossFileResolveStats()",
       "members": [
         {
@@ -665,37 +671,49 @@
           "type": ": Record<string, number>",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "cross_type",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "resolveCrossFileCalls",
       "kind": "function",
-      "line": 1587,
+      "line": 1658,
       "signature": "resolveCrossFileCalls(db: Database,\r\n  projectRoot: string,\r\n  opts: { scopeFiles?: readonly string[]; keepUnresolvedPending?: boolean } = {},): CrossFileResolveStats"
     },
     {
       "name": "BUILTIN_TYPES",
       "kind": "const",
-      "line": 1821,
+      "line": 1954,
       "signature": "const BUILTIN_TYPES = new Set([ 'string', 'number', 'boolean', 'void', 'any', '…"
     },
     {
       "name": "findCrossFileTarget",
       "kind": "function",
-      "line": 1831,
+      "line": 1964,
       "signature": "findCrossFileTarget(db: Database,\r\n  relImportsByFile: Map<string, Array<{ source: string; line: number }>>,\r\n  projectRoot: string,\r\n  fromRel: string,\r\n  name: string,\r\n  namesByFile: Map<string, Set<string>>,\r\n  /** 目标必须是的符号 kind（call → function/const；type_ref → interface/type/class）；缺省不限 */\n  kinds?: readonly string[],\n  /** 没建边的原因出口（re-export 那一段会往里投「为什么跳过」） */\n  miss?: ReexportMiss[],\n  /** 已建索引的文件集：区分「目标不在索引里」与「目标里没这个符号」 */\n  indexedFiles?: ReadonlySet<string>,): { file: string; qn: string } | null"
+    },
+    {
+      "name": "makeImportedTypeMemberLookup",
+      "kind": "function",
+      "line": 2057,
+      "signature": "makeImportedTypeMemberLookup(db: Database,\r\n  projectRoot: string,\r\n  fromRel: string,\r\n  relImportSources: readonly string[],): (\r\n  typeName: string,\r\n  memberName: string,\r\n) => { kind: 'hit'; file: string; qn: string } | { kind: 'type-in-repo-no-member'; file: string } | { kind: 'no-type' }"
     },
     {
       "name": "pruneDeletedFiles",
       "kind": "function",
-      "line": 1895,
+      "line": 2122,
       "signature": "pruneDeletedFiles(db: Database,\r\n  projectRoot: string,\r\n  absPaths: string[],\r\n  retainedOut?: string[],): string[]"
     },
     {
       "name": "CachedSymbol",
       "kind": "interface",
-      "line": 1932,
+      "line": 2159,
       "signature": "CachedSymbol()",
       "members": [
         {
@@ -745,7 +763,7 @@
     {
       "name": "CachedImport",
       "kind": "interface",
-      "line": 1943,
+      "line": 2170,
       "signature": "CachedImport()",
       "members": [
         {
@@ -771,7 +789,7 @@
     {
       "name": "CachedFileParse",
       "kind": "interface",
-      "line": 1949,
+      "line": 2176,
       "signature": "CachedFileParse()",
       "members": [
         {
@@ -797,55 +815,55 @@
     {
       "name": "getFileParse",
       "kind": "function",
-      "line": 1960,
+      "line": 2187,
       "signature": "getFileParse(db: Database, relPath: string): CachedFileParse | null"
     },
     {
       "name": "searchSymbols",
       "kind": "function",
-      "line": 1982,
+      "line": 2209,
       "signature": "searchSymbols(db: Database, query: string, limit = 20): SymbolHit[]"
     },
     {
       "name": "getIndexStats",
       "kind": "function",
-      "line": 1998,
+      "line": 2225,
       "signature": "getIndexStats(db: Database): IndexStats"
     },
     {
       "name": "hasAnyIndexedFiles",
       "kind": "function",
-      "line": 2011,
+      "line": 2238,
       "signature": "hasAnyIndexedFiles(db: Database): boolean"
     },
     {
       "name": "isFileIndexed",
       "kind": "function",
-      "line": 2017,
+      "line": 2244,
       "signature": "isFileIndexed(db: Database, relPath: string): boolean"
     },
     {
       "name": "getResolvedImportTargets",
       "kind": "function",
-      "line": 2027,
+      "line": 2254,
       "signature": "getResolvedImportTargets(db: Database, relPath: string): string[]"
     },
     {
       "name": "getResolvedImportSources",
       "kind": "function",
-      "line": 2039,
+      "line": 2266,
       "signature": "getResolvedImportSources(db: Database, relPath: string): string[]"
     },
     {
       "name": "getRawImportsOfFile",
       "kind": "function",
-      "line": 2051,
+      "line": 2278,
       "signature": "getRawImportsOfFile(db: Database,\r\n  relPath: string,): Array<{ source: string; kind: 'relative' | 'package'; type_only: boolean; line: number }>"
     },
     {
       "name": "findFilesImportingAnySource",
       "kind": "function",
-      "line": 2075,
+      "line": 2302,
       "signature": "findFilesImportingAnySource(db: Database, sources: string[]): string[]"
     }
   ],
@@ -990,6 +1008,18 @@
       "to": "src/infrastructure/index/symbols.ts#lastReceiverDot"
     },
     {
+      "from": "src/infrastructure/index/symbols.ts#resolveCrossFileCalls",
+      "to": "src/infrastructure/index/symbols.ts#lastReceiverDot"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
+      "to": "src/infrastructure/index/symbols.ts#makeImportedTypeMemberLookup"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#resolveCrossFileCalls",
+      "to": "src/infrastructure/index/symbols.ts#makeImportedTypeMemberLookup"
+    },
+    {
       "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
       "to": "src/infrastructure/index/symbols.ts#mergeSymbolStatus"
     },
@@ -1039,6 +1069,10 @@
     },
     {
       "from": "src/infrastructure/index/symbols.ts#findCrossFileTarget",
+      "to": "src/infrastructure/index/symbols.ts#resolveImportTarget"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#makeImportedTypeMemberLookup",
       "to": "src/infrastructure/index/symbols.ts#resolveImportTarget"
     },
     {

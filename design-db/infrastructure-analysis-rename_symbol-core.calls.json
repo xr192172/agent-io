@@ -43,22 +43,36 @@
       ]
     },
     {
+      "name": "RenameSymbolHooks",
+      "kind": "interface",
+      "line": 70,
+      "signature": "RenameSymbolHooks()",
+      "members": [
+        {
+          "name": "write",
+          "type": ": SourceWriteHook",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
       "name": "renameSymbolCore",
       "kind": "function",
-      "line": 63,
-      "signature": "renameSymbolCore(input: RenameSymbolInput): Promise<RenameSymbolResult>"
+      "line": 75,
+      "signature": "renameSymbolCore(input: RenameSymbolInput, hooks?: RenameSymbolHooks): Promise<RenameSymbolResult>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 116,
+      "line": 128,
       "signature": "touchedOf(input: RenameSymbolInput, r: RenameSymbolResult): Touched"
     },
     {
       "name": "renameSymbol",
       "kind": "function",
-      "line": 142,
-      "signature": "renameSymbol(input: RenameSymbolInput): Promise<TouchedProduct<RenameSymbolResult>>"
+      "line": 154,
+      "signature": "renameSymbol(input: RenameSymbolInput, hooks?: RenameSymbolHooks): Promise<TouchedProduct<RenameSymbolResult>>"
     }
   ],
   "imports": [

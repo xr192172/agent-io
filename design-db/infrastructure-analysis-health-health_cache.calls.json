@@ -57,19 +57,19 @@
     {
       "name": "healthKey",
       "kind": "function",
-      "line": 93,
+      "line": 95,
       "signature": "healthKey(prefix: string, parts: Array<string | number | boolean>): string"
     },
     {
       "name": "MAX_HEALTH_CACHE_FILES",
       "kind": "const",
-      "line": 113,
+      "line": 115,
       "signature": "const MAX_HEALTH_CACHE_FILES = 20"
     },
     {
       "name": "pruneHealthCache",
       "kind": "function",
-      "line": 122,
+      "line": 124,
       "signature": "pruneHealthCache(root: string, max = MAX_HEALTH_CACHE_FILES): number"
     }
   ],

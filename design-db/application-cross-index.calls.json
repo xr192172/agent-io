@@ -7,7 +7,7 @@
     {
       "name": "CROSS_TOOLS",
       "kind": "const",
-      "line": 23,
+      "line": 25,
       "signature": "const CROSS_TOOLS = [ { name: 'translate_go_ts', title: 'Go→TS 半自动翻译（骨架 + 可选 …"
     }
   ],
@@ -41,7 +41,15 @@
       "kind": "relative"
     },
     {
+      "source": "../../infrastructure/authoring/translate/book.js",
+      "kind": "relative"
+    },
+    {
       "source": "../../infrastructure/authoring/translate/tool.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/storage.js",
       "kind": "relative"
     },
     {

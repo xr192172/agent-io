@@ -95,25 +95,25 @@
     {
       "name": "writeAtomic",
       "kind": "function",
-      "line": 106,
+      "line": 109,
       "signature": "writeAtomic(file: string, data: string): void"
     },
     {
       "name": "appendLine",
       "kind": "function",
-      "line": 125,
+      "line": 130,
       "signature": "appendLine(file: string, obj: unknown): void"
     },
     {
       "name": "readJsonl",
       "kind": "function",
-      "line": 131,
+      "line": 136,
       "signature": "readJsonl(file: string): T[]"
     },
     {
       "name": "DesignDSLStore",
       "kind": "class",
-      "line": 151,
+      "line": 156,
       "signature": "DesignDSLStore()",
       "members": [
         {
@@ -192,7 +192,7 @@
     {
       "name": "defaultDSLDir",
       "kind": "function",
-      "line": 263,
+      "line": 268,
       "signature": "defaultDSLDir(projectRoot = process.cwd()): string"
     }
   ],

@@ -187,14 +187,6 @@
       "to": "src/application/refactor/gate_note.ts#attachGateNote"
     },
     {
-      "from": "src/application/refactor/rename/rename_files.ts#renameFilesCore",
-      "to": "src/application/refactor/rename/rename_file.ts#renameFile"
-    },
-    {
-      "from": "src/application/refactor/rename/rename_files.ts#renameFilesCore",
-      "to": "src/application/refactor/rename/rename_file.ts#renameFile"
-    },
-    {
       "from": "src/application/refactor/rename/rename_files.ts#renameFiles",
       "to": "src/application/refactor/rename/rename_files.ts#renameFilesCore"
     },
