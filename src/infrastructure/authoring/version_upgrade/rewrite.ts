@@ -14,6 +14,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { commitSourceWrite, type SourceWriteHook } from '../../source_write_port.js';
 import type { FeatureHit } from './features.js';
 import type { RemovedHit } from './removed.js';
 
@@ -105,7 +106,7 @@ export interface ApplyResult {
  * 规则：from 必须在文件内容中出现且出现次数与 fromCount 一致（缺省 1），
  * 否则整条编辑拒绝并抛错——保证每次替换都是精确锚定、可回退。
  */
-export function applyEdits(root: string, edits: PlanEdit[]): ApplyResult {
+export function applyEdits(root: string, edits: PlanEdit[], write?: SourceWriteHook): ApplyResult {
   const byFile = new Map<string, PlanEdit[]>();
   for (const e of edits) {
     const arr = byFile.get(e.file) ?? [];
@@ -130,7 +131,9 @@ export function applyEdits(root: string, edits: PlanEdit[]): ApplyResult {
       applied += 1;
     }
     if (content !== orig) {
-      fs.writeFileSync(abs, content, 'utf-8');
+      // ★ 2026-10-22：`write` = 落盘注入（写闸事务的 `commit`）。版本升级改的是**用户源码** ⇒ 必须过闸；
+      //   缺注入而有改动 ⇒ 抛（`commitSourceWrite`），不回落裸写。
+      commitSourceWrite(write, abs, content);
       changedFiles.push(file);
     }
   }

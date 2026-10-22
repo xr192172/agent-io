@@ -33,6 +33,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { isNoiseFileName, isTsExt, isTsJsExt } from '../../parse/source_exts.js';
+import type { SourceWriteHook } from '../../source_write_port.js';
 // ★★★ 2026-10-15：**语言无关的插桩骨架**（本文件即从它派生 —— 见 `instrument_skeleton.ts` 头注）。
 //   `applyInsertions` / `prependAfterShebang` / `backupOriginal` / 主流程 `instrumentFileWithHooks`
 //   全部搬到骨架 ⇒ 本文件只留 **TS/JS 专属的那几件**（AST 遍历、命名、return 改写、ESM/CJS 判制式）。
@@ -161,6 +162,19 @@ export interface InstrumentOptions {
   /** scope 模式：true 时用 try/finally 包裹函数体注入 enterScope/exitScope
    *  （带 trace/frame 的调用树录制），替代逐点 captureProbe。默认 false（captureProbe 点探针）。 */
   scope?: boolean;
+  /**
+   * ★ 2026-10-22（并发控制·账户）：**落盘注入**（写闸事务的 `commit`）。
+   *   插桩改的是**用户源码** ⇒ 必须过闸；缺注入而有改动要写 ⇒ 抛（`commitSourceWrite`）。
+   *   ★ 与上面的 `write`（布尔=「要不要真写」）**不是一件事**，别混：
+   *     `write:false` = 干跑；`commit` = 「真要写时走哪条闸」。
+   */
+  commit?: SourceWriteHook;
+  /**
+   * ★ 整批一次判闸：项目级入口拿「本次要动的**全部**文件」开**一道**闸，再派生逐文件的 `commit`。
+   *   ★ 为什么不是逐文件开闸：一次插桩 = 一个撤回点；逐文件判会让 `authorize` 从「整批原子」
+   *     退化成「能过的先落」= 制造半写（一半文件带探针、一半没有）。
+   */
+  openWrite?: (files: readonly string[]) => SourceWriteHook;
 }
 
 /**
@@ -179,12 +193,20 @@ const DEEP_MARKER = 'observe:deep';
 /** 探针台账文件名（相对被插桩项目根，位于 .agent-io 下） */
 const LEDGER_FILE = '.agent-io/observe-ledger.json';
 
-/** 从备份镜像 path 还原: 把备份文件拷回原位置 */
-function restoreOne(backupRoot: string, backupFile: string): string | null {
+/**
+ * 从备份镜像 path 还原: 把备份文件拷回原位置。
+ *
+ * ★ 2026-10-22：`restore` = **回滚通道**的注入（应用层注 `source_writer#restoreSourceBytes`）。
+ *   写回的是插桩**之前**的备份字节 ⇒ 不产生新版本 ⇒ 不判闸（判据见 `restoreSourceBytes` 头注）。
+ *   缺注入仍按原样直写（还原不许因为「没接线」而丢功能），但**不进闸是判据，不是漏接**。
+ */
+function restoreOne(backupRoot: string, backupFile: string, restore?: SourceWriteHook): string | null {
   const rel = path.relative(path.join(backupRoot, BACKUP_DIR), backupFile);
   if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return null;
   const target = path.join(backupRoot, rel);
-  fs.writeFileSync(target, fs.readFileSync(backupFile, 'utf-8'), 'utf-8');
+  const bytes = fs.readFileSync(backupFile, 'utf-8');
+  if (restore) restore(target, bytes);
+  else fs.writeFileSync(target, bytes, 'utf-8');
   return target;
 }
 
@@ -208,11 +230,11 @@ function listBackups(backupRoot: string): string[] {
  * 还原被插桩项目的所有文件：从 .agent-io/observe-backup 拷回原版，然后删除备份目录。
  * 返回已还原的文件绝对路径列表。
  */
-export function restoreInstrumented(root: string): string[] {
+export function restoreInstrumented(root: string, restore?: SourceWriteHook): string[] {
   const backups = listBackups(root);
   const restored: string[] = [];
   for (const b of backups) {
-    const t = restoreOne(root, b);
+    const t = restoreOne(root, b, restore);
     if (t) restored.push(t);
   }
   if (backups.length > 0) {

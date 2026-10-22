@@ -19,7 +19,7 @@
  *     class/enum 值类型双栖，identifier 与 type_identifier 都改。
  *   - 原子性：任一阻断（新名撞名、星号转发、目标不是模块级符号）→ 全部不落盘，返回理由。
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { expandClosureDetailed, loadAliasConfig, resolveAliasedImport, type AliasConfig } from '../../../../infrastructure/analysis/project_root/index.js';
 import { createProtectGuard } from '../../../../infrastructure/analysis/refactor/protect.js';
@@ -29,6 +29,7 @@ import { TS_JS_EXTS } from '../../../../infrastructure/parse/source_exts.js';
 import {
   applyEdits,
   toOps,
+  commitSourceWrite,
   kindNodeTypes,
   buildNoExt,
   resolveRel,
@@ -43,7 +44,7 @@ import type { LangPackage, LangRenameArgs } from '../parts.js';
 // TS/JS 跨文件改名执行器（原 core 收尾那段，整体搬入）
 // ─────────────────────────────────────────────
 export async function renameTsSymbol(args: LangRenameArgs): Promise<RenameSymbolResult> {
-  const { file: defAbs, symbol, to, dryRun, resolvedRoot, blocked, skipped, aliasCfg } = args;
+  const { file: defAbs, symbol, to, dryRun, resolvedRoot, blocked, skipped, aliasCfg, write } = args;
 
   const defSrc = readFileSync(defAbs, 'utf-8');
   const def = await analyzeModuleSource(defSrc, defAbs);
@@ -169,14 +170,15 @@ export async function renameTsSymbol(args: LangRenameArgs): Promise<RenameSymbol
   if (defEditList.length > 0) {
     const out = applyEdits(defSrc, defEditList);
     if (out !== defSrc && !dryRun) {
-      writeFileSync(defAbs, out, 'utf-8');
+      // ★ 引擎不写盘：交给调用方注入的 `write`（= 写闸事务的 commit）。缺注入 ⇒ 抛，不降级。
+      commitSourceWrite(write, defAbs, out);
       filesWritten++;
     }
   }
   for (const [f, { edits, note, src }] of importerEdits) {
     const out = applyEdits(src, edits);
     if (out !== src && !dryRun) {
-      writeFileSync(f, out, 'utf-8');
+      commitSourceWrite(write, f, out);
       filesWritten++;
     }
     importers.push({ file: (path.relative(resolvedRoot, f) || f).replace(/\\/g, '/'), edits: edits.filter((e) => e.len > 0).length, note, ops: toOps(src, edits) });

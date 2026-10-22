@@ -559,9 +559,10 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
   //    原实现是先 renameSync 再改引用，中途任何一步（文件改写/索引写入）失败
   //    都会导致「文件已走、引用仍指向旧路径、索引悬空」的半完成状态，用户无从回退。
   //    新顺序：复制 → 改引用（原文件仍在，失败零损失）→ 删原文件 + 重索引。
-  const toDir = path.dirname(toAbs);
-  fs.mkdirSync(toDir, { recursive: true });
-  fs.copyFileSync(fromAbs, toAbs);
+  // ★★★ 2026-10-22（写闸覆盖面 · ④）：**「复制 + 删原文件」也是改源码** —— 之前这两个动词在闸外
+  //   （闸判了、写盘走的是裸 `fs.copyFileSync` / `fs.unlinkSync`）。现在四类动词都走同一道事务：
+  //   路径仍在 open 时声明过的集合里（`[fromAbs, toAbs, ...importers]`），没声明 ⇒ 抛。
+  txn.copy(fromAbs, toAbs);
   const db = getProjectCacheDb(projectRoot);
   let copySucceeded = true;
 
@@ -586,8 +587,8 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
       txn.commit(toAbs, out);
     }
 
-    // 6) 全部改写成功后才删除原文件 + 重索引
-    fs.unlinkSync(fromAbs);
+    // 6) 全部改写成功后才删除原文件 + 重索引（★ 删除也是**改源码** ⇒ 走同一道事务，不再裸 `fs.unlinkSync`）
+    txn.remove(fromAbs);
     removeFile(db, projectRoot, fromAbs);
     await syncFile(db, projectRoot, toAbs);
     // ★ 写闸收尾（2026-09-15）：被移动/被改写的文件里可能有符号"消失/改名"，

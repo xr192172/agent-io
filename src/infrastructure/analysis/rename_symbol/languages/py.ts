@@ -10,7 +10,7 @@
  *     imports → from-import/import 绑定（本地名→路径）
  *     selections → `X.sym` attribute 引用（跨模块改名用）
  */
-import { readFileSync, writeFileSync, readdirSync, type Dirent } from 'node:fs';
+import { readFileSync, readdirSync, type Dirent } from 'node:fs';
 import path from 'node:path';
 import { getParser } from '../../../../infrastructure/parse/loader.js';
 import { findLanguageByExt } from '../../../../infrastructure/parse/languages.js';
@@ -19,6 +19,8 @@ import { createProtectGuard } from '../../../../infrastructure/analysis/refactor
 import {
   applyEdits,
   toOps,
+  commitSourceWrite,
+  type SourceWriteHook,
   type N,
   type RenameSymbolFileInfo,
   type RenameSymbolResult,
@@ -165,8 +167,10 @@ export async function renamePythonSymbol(args: {
   dryRun: boolean;
   resolvedRoot: string;
   blocked: string[];
+  /** ★ 落盘注入（`parts#SourceWriteHook`）：引擎不写盘，没注入就抛 */
+  write?: SourceWriteHook;
 }): Promise<RenameSymbolResult> {
-  const { file, symbol, to, dryRun, resolvedRoot } = args;
+  const { file, symbol, to, dryRun, resolvedRoot, write } = args;
   const skipped: Array<{ path: string; why: string }> = [];
 
   // 基础校验（与 TS 分支一致）
@@ -248,7 +252,7 @@ export async function renamePythonSymbol(args: {
   for (const [abs, { src, edits }] of editsByFile) {
     const out = applyEdits(src, edits);
     if (out !== src && !dryRun) {
-      writeFileSync(abs, out, 'utf-8');
+      commitSourceWrite(write, abs, out);
       filesWritten++;
     }
     const isDef = path.resolve(abs) === path.resolve(file);

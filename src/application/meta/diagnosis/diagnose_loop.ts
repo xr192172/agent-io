@@ -35,6 +35,7 @@ import {
 import { detectKind } from '../../../infrastructure/analysis/diagnosis/verifier.js';
 import { readTestContract } from '../../../infrastructure/analysis/diagnosis/test_contract.js';
 import { gitRestoreFiles } from '../../../infrastructure/git.js';
+import { openSourceWrite, restoreSourceBytes } from '../../source_writer.js';
 
 /** 闭环在**哪一步停下**（★ 回执里要如实说清楚 —— "止步"与"做完了"长得像，是本仓最反对的） */
 export type DiagnoseLoopStage = 'cache' | 'diagnose' | 'plan' | 'applied' | 'verified' | 'reverted';
@@ -48,6 +49,13 @@ export interface DiagnoseLoopInput {
   verify?: boolean;
   /** 验证命令超时（秒），默认 300 */
   verify_timeout_sec?: number;
+  /**
+   * ★ 2026-10-22（并发控制·账户）：**谁在写** —— 补丁落盘要过写闸（判据仍只在 `write_gate` 一处）。
+   *   与 `edit_code` / `rename_symbols` 的 `actor` **同一把尺**：`<kind>:<name>`。
+   */
+  actor?: string;
+  /** ★ 按 run 授权（T356）：与 `actor` 成对出现，本层不解释 scope */
+  authorize?: string;
 }
 
 export interface DiagnoseLoopResult {
@@ -176,7 +184,16 @@ async function diagnoseLoopInner(input: DiagnoseLoopInput): Promise<DiagnoseLoop
   }
 
   // ── 阶段 4：应用 ────────────────────────────────────────────────
-  const { applied, errors } = applyPatches(root, plan, allowed);
+  // ★★★ 2026-10-22（并发控制·账户）：补丁改的是**用户源码** ⇒ 落盘走写原语（整批一次判闸 + 一份快照），
+  //   而 `actor` 从本工具的入参一路交上去（判据仍只在 `write_gate` 一处，本层不判第二遍）。
+  //   ★ 整批一次判闸的理由：一次 diagnose_loop = 一个撤回点；逐文件判会让 authorize 从「整批原子」
+  //     退化成「能过的先落」= 制造半写。
+  const txn = openSourceWrite(root, [...new Set(plan.patches.map((p) => p.file))], {
+    label: `diagnose_loop:apply:${plan.patches.length} 补丁`,
+    actor: input.actor,
+    authorize: input.authorize,
+  });
+  const { applied, errors } = applyPatches(root, plan, allowed, (abs, content) => txn.commit(abs, content));
   if (errors.length > 0) {
     lines.push('✗ 补丁校验失败，**未改动任何文件**：');
     for (const e of errors) lines.push(`  - ${e.file} → ${e.reason}`);
@@ -185,6 +202,8 @@ async function diagnoseLoopInner(input: DiagnoseLoopInput): Promise<DiagnoseLoop
       data: { ...data, next: '★ 按上面的理由调整后重试。**没有改动项目源码**。' },
     };
   }
+  // ★ 补丁全落完才收尾（自写登记 + 索引写穿）；一条都没落 ⇒ `close()` 返回 null（不会凭空写穿）
+  txn.close();
   const changedFiles = [...new Set(applied.map((a) => a.file))];
   data.applied = true;
   data.stopped_at = 'applied';
@@ -201,7 +220,7 @@ async function diagnoseLoopInner(input: DiagnoseLoopInput): Promise<DiagnoseLoop
     };
   }
   if (!kind) {
-    revertPatches(applied);
+    revertPatches(applied, restoreSourceBytes);
     gitRestoreFiles(root, changedFiles);
     data.verify = { skipped: true, reason: '项目类型未识别（无法知道该跑什么验证命令）' };
     data.reverted = true;
@@ -240,7 +259,7 @@ async function diagnoseLoopInner(input: DiagnoseLoopInput): Promise<DiagnoseLoop
   }
   lines.push('✗ 验证失败 ⇒ 正在回退补丁…');
   lines.push(tail);
-  revertPatches(applied);
+  revertPatches(applied, restoreSourceBytes);
   gitRestoreFiles(root, changedFiles);
   data.reverted = true;
   data.stopped_at = 'reverted';

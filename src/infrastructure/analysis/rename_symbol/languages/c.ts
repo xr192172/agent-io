@@ -8,7 +8,7 @@
  *   imports      → `#include`（alias=去扩展头文件名，供"包含该头"判定）
  * 执行器：def 文件 + 所有"已定义该符号"文件（原型/定义）+ 所有 `#include` def 头文件的文件 → 裸引用联动。
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { getParser } from '../../../../infrastructure/parse/loader.js';
 import { findLanguageByExt } from '../../../../infrastructure/parse/languages.js';
@@ -18,6 +18,8 @@ import {
   collectFilesByExt,
   applyEdits,
   toOps,
+  commitSourceWrite,
+  type SourceWriteHook,
   type N,
   type RenameSymbolFileInfo,
   type RenameSymbolResult,
@@ -118,8 +120,10 @@ export async function renameCSymbol(args: {
   dryRun: boolean;
   resolvedRoot: string;
   blocked: string[];
+  /** ★ 落盘注入（`parts#SourceWriteHook`）：引擎不写盘，没注入就抛 */
+  write?: SourceWriteHook;
 }): Promise<RenameSymbolResult> {
-  const { file, symbol, to, dryRun, resolvedRoot } = args;
+  const { file, symbol, to, dryRun, resolvedRoot, write } = args;
   const blocked = args.blocked.slice();
   if (!/^[A-Za-z_]\w*$/.test(to)) return { ok: false, symbol, to, filesWritten: 0, blocked: ['新名非法：' + to] };
   if (symbol === to) return { ok: false, symbol, to, filesWritten: 0, blocked: ['新名与旧名相同：' + symbol] };
@@ -182,7 +186,7 @@ export async function renameCSymbol(args: {
   for (const [abs, { src, edits }] of editsByFile) {
     const out = applyEdits(src, edits);
     if (out !== src && !dryRun) {
-      writeFileSync(abs, out, 'utf-8');
+      commitSourceWrite(write, abs, out);
       filesWritten++;
     }
     const isDef = path.resolve(abs) === path.resolve(file);

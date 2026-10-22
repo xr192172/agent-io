@@ -25,7 +25,7 @@
  *   - 跨模块文件 → `X.sym` 限定引用（qualifier 末段 == def 模块末段）
  *   - 冻结行保护 + 原子性（任一阻断 → 整体不落盘）
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { createProtectGuard } from '../../../infrastructure/analysis/refactor/protect.js';
 import { getParser } from '../../../infrastructure/parse/loader.js';
@@ -35,7 +35,9 @@ import {
   collectFilesByExt,
   applyEdits,
   toOps,
+  commitSourceWrite,
   nameInfo,
+  type SourceWriteHook,
   type N,
   type RenameSymbolFileInfo,
   type RenameSymbolResult,
@@ -272,6 +274,8 @@ export interface NamespaceRenameArgs {
   dryRun: boolean;
   resolvedRoot: string;
   blocked: string[];
+  /** ★ 落盘注入（`parts#SourceWriteHook`）：引擎不写盘，没注入就抛 */
+  write?: SourceWriteHook;
 }
 
 /**
@@ -280,7 +284,7 @@ export interface NamespaceRenameArgs {
  *   —— 行为零改动（同一个分析器、同一条模块判定、同一个 label 文本）。
  */
 export async function renameNamespaceSymbol(spec: NamespaceLangSpec, args: NamespaceRenameArgs): Promise<RenameSymbolResult> {
-  const { file, symbol, to, dryRun, resolvedRoot } = args;
+  const { file, symbol, to, dryRun, resolvedRoot, write } = args;
   const blocked = args.blocked.slice();
   const analyze = spec.analyze;
 
@@ -347,7 +351,7 @@ export async function renameNamespaceSymbol(spec: NamespaceLangSpec, args: Names
   for (const [abs, { src, edits }] of editsByFile) {
     const out = applyEdits(src, edits);
     if (out !== src && !dryRun) {
-      writeFileSync(abs, out, 'utf-8');
+      commitSourceWrite(write, abs, out);
       filesWritten++;
     }
     const isDef = path.resolve(abs) === path.resolve(file);

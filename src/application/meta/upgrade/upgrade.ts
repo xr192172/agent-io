@@ -37,6 +37,7 @@ import type { RemovedHit } from '../../../infrastructure/authoring/version_upgra
 import { buildRewritePlan, applyEdits, type PlanEdit } from '../../../infrastructure/authoring/version_upgrade/rewrite.js';
 import { runVerification, defaultVerifyCommands } from '../../../infrastructure/verify_refactor.js';
 import { isGitRepo, gitDirty, gitCommitFiles, gitCommitAll, gitRestoreFiles } from '../../../infrastructure/git.js';
+import { openSourceWrite } from '../../source_writer.js';
 
 const TOOL_LABEL: Record<string, string> = { java: 'JDK', node: 'Node', go: 'Go', python: 'Python' };
 
@@ -344,7 +345,9 @@ export function runUpgradePlanReport(root: string): UpgradeApplyResult {
 export async function runUpgradeApplyLoop(
   root: string,
   edits: PlanEdit[],
-  skipVerify = false
+  skipVerify = false,
+  /** ★ 2026-10-22（并发控制·账户）：谁在写 —— 落盘要过写闸（判据仍只在 `write_gate` 一处） */
+  writeCtx: { actor?: string; authorize?: string } = {},
 ): Promise<UpgradeApplyResult> {
   const lines: string[] = [];
   const report: Record<string, unknown> = { root };
@@ -389,7 +392,14 @@ export async function runUpgradeApplyLoop(
   // 2. 应用编辑（先校验后落盘：歧义/未命中 → 拒绝，不改任何文件）
   let changedFiles: string[];
   try {
-    const r = applyEdits(root, edits);
+    // ★★★ 整批一次判闸（一次 upgrade apply = 一个撤回点）；`actor` 从工具入参一路交上去。
+    const txn = openSourceWrite(root, [...new Set(edits.map((e) => e.file))], {
+      label: `upgrade:apply:${edits.length} 处编辑`,
+      actor: writeCtx.actor,
+      authorize: writeCtx.authorize,
+    });
+    const r = applyEdits(root, edits, (abs, content) => txn.commit(abs, content));
+    txn.close();
     changedFiles = r.changedFiles;
     lines.push(`✓ 已应用编辑 ${r.applied} 处，实际改动文件: ${changedFiles.join('、') || '（无）'}`);
   } catch (e) {
@@ -468,7 +478,10 @@ export const upgradeHandler = wrapData(async (a) => {
         data: { ok: false, reason: 'missing_edits' },
       };
     }
-    const r = await runUpgradeApplyLoop(root, edits, a.skip_verify === true);
+    const r = await runUpgradeApplyLoop(root, edits, a.skip_verify === true, {
+      // ★ 2026-10-20 起 `actor` 是**跨工具保留键**（入口自动注入 schema），本工具只需把它交下去。
+      actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
+    });
     return { message: r.lines.join('\n'), data: r.report };
   }
 

@@ -14,6 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadLlmConfig, callChat } from '../../llm_focus.js';
+import { commitSourceWrite, type SourceWriteHook } from '../../source_write_port.js';
 import type { FixSuggestion, RootCause } from './contract.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -219,8 +220,20 @@ export function formatPatchDiff(project_dir: string, plan: PatchPlan): string[] 
   return out;
 }
 
-/** 应用补丁；返回已应用记录（含原始内容，供回退）。先整体校验通过再逐个应用。 */
-export function applyPatches(project_dir: string, plan: PatchPlan, allowed: string[]): { applied: AppliedPatch[]; errors: ValidationError[] } {
+/**
+ * 应用补丁；返回已应用记录（含原始内容，供回退）。先整体校验通过再逐个应用。
+ *
+ * ★ 2026-10-22：`write` = **落盘注入**（写闸事务的 `commit`）。补丁改的是**用户源码** ⇒
+ *   必须过闸（判据在 `application/write_gate`，本层只接住）。没注入而有补丁要落 ⇒ 抛（`commitSourceWrite`）。
+ *   ★ 为什么是注入而不是 import：`infrastructure/` 不能 import `application/source_writer`（倒挂），
+ *     端口见 `infrastructure/source_write_port.ts`。
+ */
+export function applyPatches(
+  project_dir: string,
+  plan: PatchPlan,
+  allowed: string[],
+  write?: SourceWriteHook,
+): { applied: AppliedPatch[]; errors: ValidationError[] } {
   const errs = validatePatches(project_dir, plan, allowed);
   if (errs.length > 0) return { applied: [], errors: errs };
 
@@ -233,17 +246,25 @@ export function applyPatches(project_dir: string, plan: PatchPlan, allowed: stri
     const head = lines.slice(0, p.start_line - 1);
     const tail = lines.slice(p.end_line); // end_line 1-based 含，index=end_line 起为保留尾
     const newLines = p.new_content.split(/\r?\n/);
-    fs.writeFileSync(abs, [...head, ...newLines, ...tail].join('\n'), 'utf-8');
+    commitSourceWrite(write, abs, [...head, ...newLines, ...tail].join('\n'));
     applied.push({ file: p.file, absFile: abs, original });
   }
   return { applied, errors: [] };
 }
 
-/** 回退：按原始内容还原已应用的文件（验收失败时调用） */
-export function revertPatches(applied: AppliedPatch[]): void {
+/**
+ * 回退：按原始内容还原已应用的文件（验收失败时调用）。
+ *
+ * ★ 2026-10-22：走的是**回滚通道**（`restore` 注入 ⇒ 应用层注 `source_writer#restoreSourceBytes`），
+ *   **不是**写路：写回的是「应用之前读到的原样」，不产生新版本。判据与 `deprecate_offline` 的回滚同一份
+ *   （闸若在这一刻拒绝，等于把用户的源码停在半改状态）。
+ *   ★ 缺注入 ⇒ 仍按原样直写（回滚不许因为「没接线」而丢功能）；但它**不进闸**这件事是**判据**，不是漏接。
+ */
+export function revertPatches(applied: AppliedPatch[], restore?: SourceWriteHook): void {
   for (const a of applied) {
     try {
-      fs.writeFileSync(a.absFile, a.original, 'utf-8');
+      if (restore) restore(a.absFile, a.original);
+      else fs.writeFileSync(a.absFile, a.original, 'utf-8');
     } catch {
       /* 文件已被删除等极端情况：忽略，交给 git 兜底 */
     }

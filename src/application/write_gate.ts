@@ -53,6 +53,7 @@
 
 import { selfWritesPath, SELF_WRITE_TTL_MS, readSelfWrites, type SelfWriteEntry } from '../infrastructure/index/self_writes.js';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { getProjectCacheDb, beginBatch, endBatch, projectCacheDbPath, type Database } from '../infrastructure/index/db.js';
 import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls, type SyncStatus, type CrossFileResolveStats , toIndexKey, toRelPath } from '../infrastructure/index/symbols.js';
@@ -560,6 +561,62 @@ export interface TaskGateOutcome {
    *   那时 `error` 字段如实说明（**不是**"没查"）。
    */
   assumption_check?: AssumptionCheck;
+}
+
+/**
+ * ★★★ 2026-10-22（写闸覆盖面 · ③）：「这次要写的**主体**是什么」——**一条判据，四类取值**。
+ *
+ * ## 为什么是分类而不是逐个工具 if（这是本仓头号病的形状）
+ * 2026-10-22 盘点：全仓有 10 处「源码写」在闸外，牵涉 6 个工具。若按工具一个个问「给不给它闸」，
+ * 答案会散落在 6 个文件里、下次加第 7 个工具时**没人知道该照哪条**。
+ * ⇒ 判据只回答**一类问题**：「这条路径上的字节，是不是用户的源码？」
+ *   是 ⇒ **必须过闸**；不是 ⇒ **不必过**（且必须能说出它属于哪一类）。
+ *
+ * ## 四类（取值互斥、可机械判定）
+ * | subject | 判据（按顺序，先命中先定） | 要不要闸 |
+ * |---|---|---|
+ * | `outside-root` | `toIndexKey(root, abs) === null`（根外） | **判不了也管不着**（闸的键空间是「相对根的路径」） |
+ * | `temp` | 在 `os.tmpdir()` 之下 | **不要**（探针/编译/试跑文件，不是用户源码） |
+ * | `product` | 首段是产物目录（`.agent-io` / `design-db` / `dist` / `node_modules` / `output`） | **不要**（工具自有状态，另一条通道） |
+ * | `source` | 其余 | **必须**（这就是「改用户源码」） |
+ *
+ * ## 实测锚点（2026-10-22，用来校准分类，别当结论抄）
+ * · `upgrade` 的 4 个 adapter 写点（java.ts:110/163 · node.ts:106 · python.ts:122）全在 `os.tmpdir()` ⇒ `temp`
+ *   —— 它们写的是**单文件编译/试跑的临时副本**，不是用户源码 ⇒ **豁免不是懒，是判据**。
+ * · `go_instrument.ts:345`（go.mod 修补）是 `source` ⇒ **该有闸**，而它跑在 Go 进程里 ⇒
+ *   本分类**不构成豁免**，它是**已知缺口**（跨进程写，TS 闸看不见，见 todo 卡）。
+ * · `derive_split` / `diagnose_loop` / `observe_instrument` / `upgrade apply` 全 `source` ⇒ 已接闸。
+ */
+export type WriteSubject = 'source' | 'product' | 'temp' | 'outside-root';
+
+/** 产物目录首段（★ 唯一住处：别在别处再列一遍） */
+const PRODUCT_TOP_DIRS = new Set(['.agent-io', 'design-db', 'dist', 'node_modules', 'output']);
+
+/** 判「这个写属于哪一类主体」（纯函数，无 IO） */
+export function classifyWriteSubject(root: string, abs: string): { subject: WriteSubject; why: string } {
+  // ★ 顺序即判据（先命中先定）：temp 要在 outside-root **之前** ——
+  //   系统临时目录本来就在项目根外，若先判 outside-root，就永远说不出「这是临时副本」这件更有用的事实。
+  const norm = abs.replace(/\\/g, '/');
+  const tmp = path.resolve(os.tmpdir()).replace(/\\/g, '/');
+  if (norm === tmp || norm.startsWith(tmp + '/')) return { subject: 'temp', why: `在系统临时目录下（${os.tmpdir()}）：临时副本，不是用户源码` };
+  const rel = toIndexKey(root, abs);
+  if (rel === null) return { subject: 'outside-root', why: '不在项目根内：造不出「相对根的路径」⇒ 闸的键空间里没有它' };
+  const top = rel.split('/')[0];
+  if (PRODUCT_TOP_DIRS.has(top)) return { subject: 'product', why: '首段「' + top + '」是产物/状态目录（工具自有，不是用户源码）' };
+  return { subject: 'source', why: '项目根内的普通路径 ⇒ 改它就是改用户源码' };
+}
+
+/**
+ * ★ 闸拒绝的**前缀**（唯一取值处）：所有拒绝文案都以它开头（`拒绝落盘（…）：`）。
+ * ★ 为什么要有它：调用方要把「被闸拦下」和「世界不好」分开（前者必须 `isError`，否则脚本里
+ *   "没写成"与"做成了"长得一样）；而拿散文去 `includes('拒绝')` 嗅探 = 判据住两处。
+ */
+export const GATE_REJECTION_PREFIX = '拒绝落盘';
+
+/** 这个错误是不是**闸的拒绝**（唯一判据：文案前缀 = {@link GATE_REJECTION_PREFIX}） */
+export function isGateRejection(err: unknown): boolean {
+  const m = err instanceof Error ? err.message : String(err ?? '');
+  return m.startsWith(GATE_REJECTION_PREFIX);
 }
 
 /** 任务闸放行的依据分类（★ 唯一取值处；`applicable:false` 只许前两格） */

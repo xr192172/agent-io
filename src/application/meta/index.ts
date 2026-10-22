@@ -610,6 +610,9 @@ export const META_TOOLS: ToolDef[] = [
         apply: optionalBool(a, 'apply'),
         verify: optionalBool(a, 'verify'),
         verify_timeout_sec: optionalNum(a, 'verify_timeout_sec'),
+        // ★★★ 2026-10-22（并发控制·账户）：补丁落盘要过写闸 ⇒ 逐调用自报身份（`actor` 是跨工具保留键）
+        actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
+        authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
       };
       const r = await diagnoseLoop(input);
       // ★★★ T202b：**把 `touched` 传出去** —— `wrapData` 读的就是 `r.touched`（见 `plumbing.ts`），

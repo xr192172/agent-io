@@ -32,7 +32,10 @@ export type {
   RenameSymbolInput,
   RenameSymbolFileInfo,
   RenameSymbolResult,
+  RenameSymbolHooks,
 } from './core.js';
+// ★ 落盘注入点的类型（写盘住在 application：引擎只接住调用方注入的 `write`）
+export type { SourceWriteHook } from './parts.js';
 
 // ★ 模块级作用域解析已下沉到 infrastructure（2026-10-04，T26）；对外契约不变，仍从这里取用。
 export { analyzeModuleSource } from '../../../infrastructure/parse/module_analysis.js';

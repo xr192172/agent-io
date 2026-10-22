@@ -41,7 +41,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { renameSymbol, type RenameSymbolInput, type RenameSymbolResult } from '../../../infrastructure/analysis/rename_symbol/index.js';
+import { renameSymbol, type RenameSymbolInput, type RenameSymbolResult, type SourceWriteHook } from '../../../infrastructure/analysis/rename_symbol/index.js';
 import { renameLocals, type LocalRenameOutcome } from './rename_local.js';
 import { renameFile } from './rename_file.js';
 import { resolveProjectRoot } from '../../../infrastructure/analysis/project_root/index.js';
@@ -420,12 +420,20 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
     }
   }
 
-  const doWrite = async (): Promise<Omit<RenameSymbolsResult, 'scope'>> => {
+  /**
+   * ★★★ 2026-10-22（写原语收口）：引擎**不再自己写盘** —— 内容算好后交给这个 `write`，
+   *   而它落到闸事务的 `commit`（`openSourceWrite` 在**任何字节落盘之前**已整批判过闸 + 拍过整批快照）。
+   *   ★ 为什么只能落到 `commit`：`commit` 只认 `open` 时**声明过**的路径 ⇒
+   *     "引擎偷写一个没判过闸的文件"在结构上不可能（不靠自觉、不靠注释）。
+   *   ★ 这不是新加的一道闸：闸本来就在这一层（下面 `openSourceWrite`）——
+   *     之前的问题是**闸判了、落盘却走的是引擎自己的 `fs.writeFileSync`**（判与写不住在一起）。
+   */
+  const doWrite = async (write: SourceWriteHook): Promise<Omit<RenameSymbolsResult, 'scope'>> => {
     const applied: RenameSymbolsResult['applied'] = [];
     let filesWritten = 0;
     for (let i = 0; i < renames.length; i++) {
       const item = renames[i];
-      const result: ModuleSymbolRenameResult = await renameSymbol({ project_dir: projectDir, file: item.file, symbol: item.symbol, to: item.to, dry_run: false });
+      const result: ModuleSymbolRenameResult = await renameSymbol({ project_dir: projectDir, file: item.file, symbol: item.symbol, to: item.to, dry_run: false }, { write });
       if (!result.ok) {
         return {
           ok: false,
@@ -466,7 +474,7 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
     if (input.apply_literals === true && rootDir) {
       const guard = createProtectGuard(rootDir);
       const fresh = buildLiteralPlan(rootDir, renames, guard);
-      const lit = applyLiteralPlan(fresh);
+      const lit = applyLiteralPlan(fresh, write);
       literalFilesWritten = lit.filesWritten;
       for (const f of lit.files) touched.push(f);
       literals = fresh;
@@ -479,7 +487,14 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
   // 没有根就无从算相对路径，快照与写穿都会变成空操作，不如如实跳过（并如实标注）。
   const gateRoot = rootDir ?? projectDir;
   if (!gateRoot) {
-    const value = await doWrite();
+    // ★ 本支**没有项目根** ⇒ 闸无从判（`basis:'no-files'`），快照与索引写穿也都是空操作。
+    //   这是本文件**唯一**保留的直写：它只在"既没给 project_dir、也定位不到根"时可达，
+    //   而且是**既有**降级路（回执里 `indexWriteThrough.note` 已如实说"跳过快照与索引写穿"）。
+    //   ★ 不把它塞进写原语的理由：原语要的正是"相对根的路径"，没有根时它只会判 `no-files`（= 假闸）。
+    const unrootedWrite: SourceWriteHook = (abs, content) => {
+      fs.writeFileSync(abs, content, 'utf-8');
+    };
+    const value = await doWrite(unrootedWrite);
     return { ...value, indexWriteThrough: { ok: false, mode: 'skipped', note: '未定位到项目根 ⇒ 跳过快照与索引写穿' } };
   }
 
@@ -496,7 +511,7 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
     authorize: input.authorize,
   });
   // ★ `doWrite` 里逐条落盘（内容边算边落）—— 此时闸已判、写前快照已拍；`close` 才登记自写 + 写穿。
-  const value = await doWrite();
+  const value = await doWrite((abs, content) => txn.commit(abs, content));
   const gated = {
     value,
     report: {
@@ -822,7 +837,11 @@ export function buildLiteralPlan(
 }
 
 /** 落盘字面量计划：只写 decision=apply 的命中（code/docs/test；契约/历史/冻结行跳过）。返回写入文件数与文件清单。 */
-export function applyLiteralPlan(plan: RenameSymbolsResult['literals']): { filesWritten: number; files: string[] } {
+export function applyLiteralPlan(
+  plan: RenameSymbolsResult['literals'],
+  /** ★ 落盘注入（与 `renameSymbol` 的 `write` 同源）：缺它而有改动要写 ⇒ 抛，不回落裸写 */
+  write?: SourceWriteHook,
+): { filesWritten: number; files: string[] } {
   const byFile = new Map<string, Array<{ pos: number; len: number; text: string }>>();
   if (!plan) return { filesWritten: 0, files: [] };
   for (const item of plan) {
@@ -851,7 +870,13 @@ export function applyLiteralPlan(plan: RenameSymbolsResult['literals']): { files
     let out = src;
     for (const e of sorted) out = out.slice(0, e.pos) + e.text + out.slice(e.pos + e.len);
     if (out !== src) {
-      fs.writeFileSync(file, out, 'utf-8');
+      if (!write) {
+        throw new Error(
+          `拒绝落盘（applyLiteralPlan）：\`${file}\` 的字面量要改，但本次调用**没有注入 write**。\n` +
+            '  ★ 字面量改写同样是**改用户源码** ⇒ 必须走写闸事务（`openSourceWrite` 的 commit）。',
+        );
+      }
+      write(file, out);
       filesWritten++;
       files.push(file);
     }

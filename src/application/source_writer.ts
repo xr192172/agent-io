@@ -9,7 +9,9 @@
  * ⇒ 同一件事（"判闸了没有"）被 8 条写路各自记一遍，漏一处就是一个静默撒谎点。
  *
  * ## 判据（本模块的边界，机械可查）
- * `src/` 内对**用户源码路径**的 `fs.writeFileSync` 只许存在**本文件一处**（见 `commit`）。
+ * `src/` 内对**用户源码路径**的 `fs.writeFileSync` 只许存在**本文件两处**：
+ *   ① `commit`（覆盖写：判闸 → 快照 → 写 → 登记）；
+ *   ② `restoreSourceBytes`（**回滚**：把删之前读到的字节放回去 —— 判据见该函数头注）。
  * 写 `.agent-io/` / `design-db/` / `dist/` 的**产物写不在此限**（那是另一条通道，本模块不管）。
  *
  * ## 三步顺序（顺序本身就是判据，别调换）
@@ -99,7 +101,23 @@ export interface SourceWriteReceipt {
 }
 
 /**
- * 一次**已开闸**的批量写。`commit` 只接受 `paths` 里声明过的文件 —— 这是"没有逃生口"的实现。
+ * ★★★ 2026-10-22（写闸覆盖面 · ④）：**四种改源码的动作**，同一道闸。
+ *
+ * ## 为什么必须一起收（判据，不是凑数）
+ * 改前本原语只有 `commit`（= **覆盖写**）。而「源码会消失」这件事，覆盖写只是其中一种：
+ * 移动（`copyFileSync` + `unlinkSync`）**换个名字源码就在旧路径没了**；删除（`rmSync`）**直接没了**；
+ * 追加（`appendFileSync`）**绕开整份快照**。
+ * ⇒ 判据从「有没有 `writeFileSync`」扩成「**有没有动过用户源码的字节**」，四种动词一起过闸。
+ *
+ * ## 为什么闸不用改
+ * `assertSourceWriteRegistered` 判的是**路径**（这批文件挂在谁的已领取任务上），与动作无关 ⇒
+ * 四类共用同一次判定。**新增的不是闸，是动词**（改前只有 write 一个动词可走）。
+ */
+export type SourceMutationKind = 'write' | 'move' | 'delete' | 'append';
+
+/**
+ * 一次**已开闸**的批量写。`commit` / `copy` / `move` / `remove` / `append` 只接受 `paths` 里声明过的文件
+ * —— 这是「没有逃生口」的实现：**没在 open 时判过闸的路径，任何动词都写不了**。
  */
 export interface SourceWriteTxn {
   /** 本批已在 `openSourceWrite` 里判过闸的路径（项目相对 posix） */
@@ -113,6 +131,14 @@ export interface SourceWriteTxn {
   readonly snapshot?: FileSnapshotMeta;
   /** 落一个文件（路径必须在 `paths` 里；不在就抛） */
   commit(file: string, content: string): SourceWriteReceipt;
+  /** 追加（★ 不走整份快照的"覆盖"语义 ⇒ 之前它完全在闸外） */
+  append(file: string, content: string): SourceWriteReceipt;
+  /** 复制/新建目标（两端的路径都必须声明过；`from` 只读） */
+  copy(from: string, to: string): SourceWriteReceipt;
+  /** 移动 = copy + remove（两端的路径都必须声明过） */
+  move(from: string, to: string): SourceWriteReceipt;
+  /** 删除（源码会**消失** —— 这是本卡最贵的一种静默） */
+  remove(file: string): SourceWriteReceipt;
   /** 收尾：自写登记 + 索引写穿 + 写者基线刷新。没落过盘 ⇒ `null` */
   close(): WriteThroughOutcome | null;
 }
@@ -144,6 +170,41 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
   const allowed = new Set(declared);
   const written: string[] = [];
 
+  /**
+   * ★ 四种动词**共用**的声明校验（唯一实现）—— 与 `commit` 原来那段逐字同义，只是抽出来给 5 个动词用。
+   *   ★ 抽出来不是为了少写几行：是为了**不可能**出现"某个动词忘了校验"（本卡的病灶就是这个形状）。
+   */
+  const assertDeclared = (file: string, verb: string): string => {
+    const rel = relOf(root, file);
+    if (!rel) {
+      throw new Error(
+        `拒绝落盘（source_writer · ${verb}）：\`${file}\` 不在项目根内（${root}）—— 根外文件进不了快照、也进不了索引。`,
+      );
+    }
+    if (!allowed.has(rel)) {
+      throw new Error(
+        `拒绝落盘（source_writer · ${verb}）：\`${rel}\` **没有在 \`openSourceWrite\` 的 \`files\` 里声明过**。\n` +
+          `  ★ 本次已判过的路径（${declared.length} 条）：${declared.join(', ')}\n` +
+          '  ★ 怎么办：把这条路径加进 `files` 再开闸（判据只许走一次闸，不许绕）。',
+      );
+    }
+    if (!written.includes(rel)) written.push(rel);
+    return path.join(root, rel);
+  };
+
+  /** 收据（与 `commit` 逐字段同形 —— 5 个动词的回执不许有两种形状） */
+  const receiptOf = (file: string): SourceWriteReceipt => {
+    const rel = relOf(root, file) as string;
+    return {
+      path: rel,
+      task_gate: gate.note,
+      exemptions: gate.exempted,
+      warnings: gate.warnings,
+      ...(gate.assumption_check ? { assumption_check: gate.assumption_check } : {}),
+      ...(snapshot ? { snapshot } : {}),
+    };
+  };
+
   const txn: SourceWriteTxn = {
     paths: declared,
     task_gate: gate.note,
@@ -152,33 +213,47 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
     ...(gate.assumption_check ? { assumption_check: gate.assumption_check } : {}),
     ...(snapshot ? { snapshot } : {}),
     commit(file: string, content: string): SourceWriteReceipt {
-      const rel = relOf(root, file);
-      if (!rel) {
-        throw new Error(
-          `拒绝落盘（source_writer）：\`${file}\` 不在项目根内（${root}）—— 根外文件进不了快照、也进不了索引，` +
-            '写下去就是"改了但不可撤回、且索引看不见"。',
-        );
-      }
-      // ★★ 这就是"没有逃生口"那一行：没在 open 时判过闸的路径，这里**不许**写。
-      if (!allowed.has(rel)) {
-        throw new Error(
-          `拒绝落盘（source_writer）：\`${rel}\` **没有在 \`openSourceWrite\` 的 \`files\` 里声明过**。\n` +
-            `  ★ 本次已判过的路径（${declared.length} 条）：${declared.join(', ')}\n` +
-            '  ★ 怎么办：把这条路径加进 `files` 再开闸（判据只许走一次闸，不许绕）。',
-        );
-      }
-      const abs = path.join(root, rel);
+      // ★★ 这就是"没有逃生口"那一行（与另外 4 个动词**共用** `assertDeclared`）：
+      //   没在 open 时判过闸的路径，这里**不许**写。
+      const abs = assertDeclared(file, 'commit');
       fs.mkdirSync(path.dirname(abs), { recursive: true });
       fs.writeFileSync(abs, content, 'utf8');
-      if (!written.includes(rel)) written.push(rel);
       return {
-        path: rel,
+        path: relOf(root, file) as string,
         task_gate: gate.note,
         exemptions: gate.exempted,
         warnings: gate.warnings,
         ...(gate.assumption_check ? { assumption_check: gate.assumption_check } : {}),
         ...(snapshot ? { snapshot } : {}),
       };
+    },
+    append(file: string, content: string): SourceWriteReceipt {
+      const abs = assertDeclared(file, 'append');
+      fs.mkdirSync(path.dirname(abs), { recursive: true });
+      fs.appendFileSync(abs, content, 'utf8');
+      return receiptOf(file);
+    },
+    copy(from: string, to: string): SourceWriteReceipt {
+      const fromAbs = assertDeclared(from, 'copy(from)');
+      const toAbs = assertDeclared(to, 'copy(to)');
+      fs.mkdirSync(path.dirname(toAbs), { recursive: true });
+      fs.copyFileSync(fromAbs, toAbs);
+      return receiptOf(to);
+    },
+    move(from: string, to: string): SourceWriteReceipt {
+      const fromAbs = assertDeclared(from, 'move(from)');
+      const toAbs = assertDeclared(to, 'move(to)');
+      fs.mkdirSync(path.dirname(toAbs), { recursive: true });
+      fs.renameSync(fromAbs, toAbs);
+      written.push(relOf(root, fromAbs) as string);
+      return receiptOf(to);
+    },
+    remove(file: string): SourceWriteReceipt {
+      const abs = assertDeclared(file, 'remove');
+      fs.rmSync(abs, { force: true });
+      const rel = relOf(root, abs) as string;
+      if (!written.includes(rel)) written.push(rel);
+      return receiptOf(file);
     },
     close(): WriteThroughOutcome | null {
       if (!written.length) return null;
@@ -226,4 +301,23 @@ export function writeSourceBatch(
   const receipts = entries.map(([f, c]) => txn.commit(f, c));
   const index = txn.close();
   return index ? receipts.map((r) => ({ ...r, index })) : receipts;
+}
+
+/**
+ * ★ **回滚通道**（不是写路）：把「本次调用刚读走 / 删掉」的字节**逐字放回**。
+ *
+ * ## 为什么它可以不过闸（这是判据，不是偷懒）
+ * 1. **它写的不是新内容**：手上那份是**删之前**读到的原样（`deprecate_offline` 的 `backups`）。
+ *    「改源码」的定义是**产生新版本**；把旧版本放回去不产生任何新版本。
+ * 2. **闸在这里会制造数据丢失**：调用它的那一刻是「文件已经 `rmSync` 删掉、随后编译回归」——
+ *    闸拒绝一次 = 源码**永久**没了。回滚没有「换个写法重试」的余地 ⇒ 它的正确性优先于闸的仪式。
+ * 3. **该判闸的是「删」，不是「删错了再放回来」** ⇒ 闸必须挪到 `rmSync` **之前**
+ *    （见 todo 卡：写闸判据只覆盖覆盖写 · 要扩成 写/移/删/追加 四类）。
+ *
+ * ★ 用法**唯一**（`deprecate_offline.ts` 的编译回归分支），且必须与「先把内容读进内存」在同一个函数里，
+ *   中间不许夹别的写 —— 否则就不叫回滚了。
+ */
+export function restoreSourceBytes(abs: string, content: string): void {
+  fs.mkdirSync(path.dirname(abs), { recursive: true });
+  fs.writeFileSync(abs, content, 'utf8');
 }

@@ -18,7 +18,7 @@ import { findLangPackage } from './languages/registry.js';
 // 公共零件已抽到 ./parts.ts（断环：core → registry → 包 → core）
 // 下面**再导出**，保证对外 API 与拆分前逐字相同。
 // ─────────────────────────────────────────────
-import { NodeType, TS_EXTS, type RenameSymbolResult } from './parts.js';
+import { NodeType, TS_EXTS, type RenameSymbolResult, type SourceWriteHook } from './parts.js';
 export { TS_EXTS, stripQuotes, nameInfo, collectFilesByExt, applyEdits, toOps, kindNodeTypes, resolveRel, buildNoExt } from './parts.js';
 export type {
   N,
@@ -60,7 +60,19 @@ export interface RenameSymbolInput {
 
 
 
-async function renameSymbolCore(input: RenameSymbolInput): Promise<RenameSymbolResult> {
+/**
+ * ★ 引擎的**注入点**：落盘不在引擎手里（见 `parts.ts#SourceWriteHook`）。
+ *
+ * ★ 为什么不是 `RenameSymbolInput` 的一个字段：`input` 是**可序列化的调用入参**
+ *   （CLI / MCP / HTTP 都直接透传 JSON），塞函数进去会让这条入参不再是数据。
+ *   注入属于「这一层怎么落盘」，是用参数，不是用数据。
+ */
+export interface RenameSymbolHooks {
+  /** 落盘：项目绝对路径 → 内容。**只有** `dry_run:false` 会被调用；缺它而有改动要写 ⇒ 抛 */
+  write?: SourceWriteHook;
+}
+
+async function renameSymbolCore(input: RenameSymbolInput, hooks?: RenameSymbolHooks): Promise<RenameSymbolResult> {
   const { file, symbol, to } = input;
   const dryRun = input.dry_run === true;
   const blocked: string[] = [];
@@ -95,7 +107,7 @@ async function renameSymbolCore(input: RenameSymbolInput): Promise<RenameSymbolR
   // ── 语言包统一调度：go / python / C# / Java / C·C++ / TS·JS 家族（ext 互不相交，查表等价原 if 链）──
   const pkg = findLangPackage(defExt);
   if (pkg) {
-    const r = await pkg.rename({ file: defAbs, symbol, to, dryRun, resolvedRoot, blocked, skipped, aliasCfg });
+    const r = await pkg.rename({ file: defAbs, symbol, to, dryRun, resolvedRoot, blocked, skipped, aliasCfg, write: hooks?.write });
     // ★ T18：回传 Core 内部已定位的根（此前只在手里、没进产物）—— 不改语言包产物，只在本层补 project_dir。
     return { ...r, project_dir: resolvedRoot };
   }
@@ -139,7 +151,7 @@ function touchedOf(input: RenameSymbolInput, r: RenameSymbolResult): Touched {
   return touched;
 }
 
-export async function renameSymbol(input: RenameSymbolInput): Promise<TouchedProduct<RenameSymbolResult>> {
-  const r = await renameSymbolCore(input);
+export async function renameSymbol(input: RenameSymbolInput, hooks?: RenameSymbolHooks): Promise<TouchedProduct<RenameSymbolResult>> {
+  const r = await renameSymbolCore(input, hooks);
   return withTouched(r, touchedOf(input, r));
 }

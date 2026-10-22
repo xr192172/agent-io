@@ -40,6 +40,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseAstRoot } from '../../parse/kernel.js';
 import { skipDirSet } from '../../parse/source_exts.js';
+import { commitSourceWrite } from '../../source_write_port.js';
 // ★ 这四件**类型**住在 `instrument.ts`（TS 侧的历史落点，其它模块按 `./instrument.js` 取它）
 //   ⇒ 这里**只 import type**（编译后擦除，**不产生运行时环**）—— 同一件事**不写第二份**
 //   （本仓头号病根是"判据住两处"；类型同理）。
@@ -392,7 +393,8 @@ export async function instrumentFileWithHooks(
     // 写盘前先备份原文件（幂等：已备份则保留最早原版），供 --uninstrument 一键还原
     const backupRoot = opts.backupRoot ?? projectRoot;
     backupOriginal(backupRoot, file, content);
-    fs.writeFileSync(file, out, 'utf-8');
+    // ★ 2026-10-22：插桩改的是**用户源码** ⇒ 落盘只走注入的 `commit`（写闸事务）。缺注入 ⇒ 抛。
+    commitSourceWrite(opts.commit, file, out);
   }
   return result;
 }
@@ -488,7 +490,10 @@ export async function instrumentProjectWithHooks(
   opts: InstrumentOptions = {},
 ): Promise<InstrumentFileResult[]> {
   const files = collectSourceFiles(root, isInstrumentable);
-  const perFileOpts: InstrumentOptions = { ...opts, backupRoot: root };
+  // ★ 2026-10-22：**整批一次判闸** —— 文件表在这里才齐（`collectSourceFiles`），所以闸也在这里开，
+  //   然后派生逐文件的 `commit` 交给下面的循环。`openWrite` 缺省 ⇒ 沿用调用方给的 `commit`（单文件路径）。
+  const commit = opts.openWrite ? opts.openWrite(files) : opts.commit;
+  const perFileOpts: InstrumentOptions = { ...opts, backupRoot: root, commit, openWrite: undefined };
   const results: InstrumentFileResult[] = [];
   for (const f of files) {
     results.push(await instrumentFileWithHooks(f, hooks, perFileOpts));

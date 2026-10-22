@@ -49,6 +49,7 @@ import {
   type InstrumentedSite,
   type InstrumentFileResult,
 } from './instrument.js';
+import type { SourceWriteHook } from '../../source_write_port.js';
 import {
   instrumentGoProject,
   isGoProject,
@@ -136,7 +137,8 @@ export interface ObserveLangPack {
    */
   inProcess: boolean;
   instrument(root: string, opts: ObserveInstrumentOptions): Promise<ObserveInstrumentReport>;
-  uninstrument(root: string): Promise<ObserveUninstrumentReport>;
+  /** ★ `opts.restore` = 还原的**回滚通道**注入（可选：缺省按原样直写，理由见 `restoreOne` 头注） */
+  uninstrument(root: string, opts?: Pick<ObserveInstrumentOptions, 'restore'>): Promise<ObserveUninstrumentReport>;
   /** 该语言暴露的保守规则（写进报告 / 供人审；照抄 `RefactorStageExecutor.limitations` 的做法） */
   limitations: string[];
   /** 该语言「探针就位 ≠ 有事件」的**接法提示**（每语言接线方式不同 —— 见报告渲染）。 */
@@ -155,6 +157,13 @@ export interface ObserveInstrumentOptions {
   scope?: boolean;
   deep?: boolean;
   effects?: boolean;
+  /**
+   * ★ 2026-10-22（并发控制·账户）：整批一次判闸的注入点（见 `InstrumentOptions.openWrite`）。
+   *   由**应用层**建（它才知道 `actor` 与写原语），语言包只往下传。
+   */
+  openWrite?: (files: readonly string[]) => SourceWriteHook;
+  /** ★ 还原走的**回滚通道**注入（见 `source_writer#restoreSourceBytes`） */
+  restore?: SourceWriteHook;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -279,6 +288,8 @@ export const tsJsObservePack: ObserveLangPack = {
       write: !opts.dryRun,
       contractProbes: opts.contractProbes,
       scope: opts.scope,
+      // ★ 整批一次判闸（文件表在骨架里才齐，闸也在那里开）
+      openWrite: opts.openWrite,
     });
     const rep: ObserveInstrumentReport = {
       lang: 'ts_js',
@@ -299,8 +310,8 @@ export const tsJsObservePack: ObserveLangPack = {
     }
     return rep;
   },
-  async uninstrument(root) {
-    const restored = restoreInstrumented(root);
+  async uninstrument(root, opts) {
+    const restored = restoreInstrumented(root, opts?.restore);
     const cleared = clearProbeLedger(root);
     return { lang: 'ts_js', restored: restored.length, restoredFiles: restored, ledgerCleared: cleared };
   },
@@ -434,6 +445,8 @@ export const pyObservePack: ObserveLangPack = {
       projectRoot: opts.projectRoot,
       write: !opts.dryRun,
       contractProbes: opts.contractProbes,
+      // ★ 与 TS 侧同一条：整批一次判闸
+      openWrite: opts.openWrite,
     });
     const rep: ObserveInstrumentReport = {
       lang: 'python',
@@ -454,9 +467,9 @@ export const pyObservePack: ObserveLangPack = {
     }
     return rep;
   },
-  async uninstrument(root) {
+  async uninstrument(root, opts) {
     // ★ 备份/台账是**语言无关**的（`.agent-io/` 同一套）⇒ 直接复用 TS 侧实现
-    const restored = restoreInstrumented(root);
+    const restored = restoreInstrumented(root, opts?.restore);
     const cleared = clearProbeLedger(root);
     return { lang: 'python', restored: restored.length, restoredFiles: restored, ledgerCleared: cleared };
   },

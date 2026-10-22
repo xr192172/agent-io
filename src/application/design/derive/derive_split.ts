@@ -32,6 +32,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { parseFileFull, parseAstRoot, ParsedSymbol } from '../../../infrastructure/parse/index.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
+import { openSourceWrite, restoreSourceBytes } from '../../source_writer.js';
 // ★ T212：判"有没有被真的引用"前**先剔注释**（★ 用 AST 的注释区间 ⇒ 不把注释里的提及当成引用 ✓）
 import { stripCommentsSync } from '../../../infrastructure/parse/comments.js';
 
@@ -87,6 +88,13 @@ export interface DeriveSplitInput {
   /** 社区内子拆分计划（P3）：提供后进入编排模式，对每个 splittable 社区的每个类型单元
    *  自动按 owner 拆到独立文件。此时 target_file/symbols/new_file 由编排内部生成。 */
   subsplit?: CommunitySubSplitPlan[];
+  /**
+   * ★ 2026-10-22（并发控制·账户）：**谁在写** —— `dry_run:false` 会改用户源码（新建 + 改写）⇒ 过写闸。
+   *   与 `edit_code` / `rename_symbols` / `diagnose_loop` 的 `actor` **同一把尺**。
+   */
+  actor?: string;
+  /** ★ 按 run 授权（T356）：与 `actor` 成对出现，本层不解释 scope */
+  authorize?: string;
 }
 
 export interface DeriveSplitResult {
@@ -1018,8 +1026,16 @@ async function splitOnce(input: DeriveSplitInput): Promise<DeriveSplitResult> {
   let rolledBack = false;
 
   if (!dryRun) {
-    writeFileSync(newAbs, newContent, 'utf8');
-    writeFileSync(targetAbs, origContentWithImport, 'utf8');
+    // ★★★ 2026-10-22（并发控制·账户）：两处写是**一件事**（新文件 + 改写原文件）⇒ 整批一次判闸 + 一份快照；
+    //   逐文件判会让 `authorize` 从「整批原子」退化成「能过的先落」= 制造半写（只剩新文件、原文件没去掉符号）。
+    const txn = openSourceWrite(projectRoot, [newAbs, targetAbs], {
+      label: `derive_split:${newRel}`,
+      actor: input.actor,
+      authorize: input.authorize,
+    });
+    txn.commit(newAbs, newContent);
+    txn.commit(targetAbs, origContentWithImport);
+    txn.close();
     if (verifyCompile) {
       compileResult = await runCompile(lang, projectRoot, targetRel, newRel);
       // ★★★ T214 续：**只有【明确 false】才当失败** —— ★ 跳过（有 `skipped`、无 `ok`）**不是失败** ✓
@@ -1027,7 +1043,8 @@ async function splitOnce(input: DeriveSplitInput): Promise<DeriveSplitResult> {
       //   ★ 而把"跳过"改成"省略 `ok`"之后，`!ok` 会**把跳过也当成失败** ✗ ⇒ ★ 判据必须写死成 `=== false` ✓
       if (compileResult.ok === false) {
         // 编译失败：回滚原文件到拆分前，并删除新文件（不能只清空——空 .go 文件本身非法会破坏整个包）
-        writeFileSync(targetAbs, content, 'utf8');
+        // ★ 回滚走**回滚通道**（写回的是拆分前读到的原样），不是写路 —— 判据见 `source_writer#restoreSourceBytes`。
+        restoreSourceBytes(targetAbs, content);
         if (existsSync(newAbs)) rmSync(newAbs);
         rolledBack = true;
       }
@@ -1042,7 +1059,7 @@ async function splitOnce(input: DeriveSplitInput): Promise<DeriveSplitResult> {
     testResult = await runTest(lang, projectRoot, targetRel, newRel);
     // ★★ 同上：★ 只有【明确 false】才算"测试没过" ⇒ 跳过（无 `ok`）不当成失败 ✓
     if (testResult.ok === false) {
-      writeFileSync(targetAbs, content, 'utf8');
+      restoreSourceBytes(targetAbs, content);
       if (existsSync(newAbs)) rmSync(newAbs);
       rolledBack = true;
     }

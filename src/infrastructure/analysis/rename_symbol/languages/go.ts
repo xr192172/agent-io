@@ -10,7 +10,7 @@
  * 本解析只取「定义偏移 + 裸引用标识符偏移」，不建 import 图（跨包 pkg.Sym 引用需 Go 包路径
  * import 图，工作量大，留后；本版先交付同包改名这一 90% 场景）。
  */
-import { readFileSync, writeFileSync, readdirSync, type Dirent } from 'node:fs';
+import { readFileSync, readdirSync, type Dirent } from 'node:fs';
 import path from 'node:path';
 import { getParser } from '../../../../infrastructure/parse/loader.js';
 import { findLanguageByExt } from '../../../../infrastructure/parse/languages.js';
@@ -19,7 +19,9 @@ import { createProtectGuard } from '../../../../infrastructure/analysis/refactor
 import {
   applyEdits,
   toOps,
+  commitSourceWrite,
   stripQuotes,
+  type SourceWriteHook,
   type GoModuleAnalysis,
   type LangPackage,
   type N,
@@ -157,8 +159,10 @@ export async function renameGoSymbol(args: {
   dryRun: boolean;
   resolvedRoot: string;
   blocked: string[];
+  /** ★ 落盘注入（`parts#SourceWriteHook`）：引擎不写盘，没注入就抛 */
+  write?: SourceWriteHook;
 }): Promise<RenameSymbolResult> {
-  const { file, symbol, to, dryRun, resolvedRoot } = args;
+  const { file, symbol, to, dryRun, resolvedRoot, write } = args;
   const blocked = args.blocked.slice();
   const skipped: Array<{ path: string; why: string }> = [];
 
@@ -274,7 +278,7 @@ export async function renameGoSymbol(args: {
   for (const [abs, { src, edits }] of editsByFile) {
     const out = applyEdits(src, edits);
     if (out !== src && !dryRun) {
-      writeFileSync(abs, out, 'utf-8');
+      commitSourceWrite(write, abs, out);
       filesWritten++;
     }
     const isDef = path.resolve(abs) === path.resolve(file);

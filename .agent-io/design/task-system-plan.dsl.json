@@ -55152,7 +55152,34 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_source_writer_ts",
+          "summary": "【L1 待建构】source_writer —— 改用户源码的唯一原语（写闸 / 快照 / 自写登记的唯一组合点）（src/application/source_writer.ts） ← 节点 file_src_application_source_writer_ts",
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_source_writer_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/source_writer.ts",
+                "content_hash": "005add4af764cdebe2830de02c76022269f21fff"
+              }
+            ],
+            "computed_at": "2026-10-22T08:25:09.824Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "release_reason": "src/application/source_writer.ts 的 anchor 卡本轮只当授权锚点用，用毕释放（owner=subagent:deepseek-writegate）",
+          "released_by": "subagent:deepseek-writegate",
+          "released_at": "2026-10-22T09:06:06.663Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_domain_actor_spec_ts",
@@ -103802,7 +103829,8 @@
           }
         ],
         "lines": 229,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_domain_actor_spec_ts",
@@ -104395,11 +104423,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T08:13:47.141Z",
+    "saved_at": "2026-10-22T09:06:06.694Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 73304330,
+    "age": 76443883,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -107826,20 +107854,83 @@
     {
       "id": "todo_10-处-无闸源码写-无法直接塞进写原语-需先定它们的身份与授权口径-清单-实测",
       "summary": "10 处**无闸源码写**无法直接塞进写原语 —— 需先定它们的身份与授权口径。清单（实测）：`src/application/design/derive/derive_split.ts:1021,1022,1030,1045`、`src/infrastructure/analysis/diagnosis/repair.ts:236,246`、`src/infrastructure/analysis/observe/instrument_skeleton.ts:395`、`instrument.ts:187`、`go_instrument.ts:345`、`authoring/version_upgrade/rewrite.ts:133`。这 6 个工具（split_stage / diagnose_loop apply / observe instrument / uninstrument / go.mod 修补 / upgrade apply）**从来没有 actor、没有卡的概念**：塞进 `source_writer` 等于给它们**新增**一道闸（= 行为变更，在有卡的仓里会被拒），而且它们的签名里没有 ctx 可传。★ 先决定「给不给它们闸」，再决定「怎么给」；判据两条：① 有无 owner 可自报；② 这些工具的写是不是「改用户源码」（derive_split 是、instrument 是、repair 是）。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-writegate",
+      "claimed_at": "2026-10-22T08:25:50.503Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:25:50.469Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T09:05:41.352Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-writegate",
+          "fingerprint": {
+            "what": "node certs/.work/wg3-classify-probe.mjs",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_覆盖写还剩-8-处没进原语-6-个语言包各-1-处-writefilesync-",
       "summary": "覆盖写还剩 8 处没进原语：6 个语言包各 1 处 `writeFileSync`（`src/infrastructure/analysis/rename_symbol/languages/ts.ts:172,179`、`c.ts:185`、`go.ts:277`、`py.ts:251`、`namespace_family.ts:350`）+ `src/application/refactor/rename/rename_symbols.ts:854`（applyLiteralPlan）+ `src/application/refactor/deprecate_offline/deprecate_offline.ts:464`（删后回滚 restore）。★ 前 7 处的根因不是懒：`infrastructure/` **不能 import** `application/source_writer`（会造基础设施→应用层倒挂，本仓刚在 bea663df 拆掉唯一一处 domain→application 倒挂）。两条路：① 给 `renameSymbol` 注入 `write(abs, content)`（动 `parts.ts` + 5 个包 + `core.ts` + `rename_symbols`，约 8 个文件）；② 让引擎「返回待写内容」，由 application 层用 `writeSourceBatch` 落盘。★ 附带：`EditReceipt.task_gate` 已是必填（tsc 能报出漏接，实测报 2 条），但 `RenameFileResult` / `RenameFilesResult` / `SymbolMoveResult` 还有 **23 处构造点**（rename_file 6 / rename_files 6 / symbol_move 11，tsc 实测）没补 —— 补齐后才允许删掉那 4 处历史注释里剩下的 3 条。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-writegate",
+      "claimed_at": "2026-10-22T08:25:50.263Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:25:50.221Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T09:05:41.120Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-writegate",
+          "fingerprint": {
+            "what": "grep -rn 'writeFileSync(' src/infrastructure/analysis/rename_symbol/ | wc -l ; node /c/tmp/wg-abl.mjs ; node /c/tmp/wg-pos.mjs ; node dist/src/presentation/cli/cli.js rename_symbols project_dir=C:/tmp/wgfix renames=[{file:src/a.ts,symbol:alphaFn,to:gammaFn}] scope=module actor=agent:probe ; npm run verify ; for f in certs/t349..t360",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_写闸的判据只覆盖-覆盖写-移动-删除-追加-57-处仍是裸调-实测-fs-ren",
       "summary": "写闸的判据只覆盖「覆盖写」：**移动/删除/追加** 57 处仍是裸调（实测 `fs.renameSync|copyFileSync|unlinkSync|rmSync` 50 处 + `appendFileSync` 7 处），而且多数**改的是用户源码** —— `rename_file` 的 `copyFileSync(fromAbs, toAbs)` + `unlinkSync(fromAbs)`、`refactor_pipeline` 的 `fs.renameSync(m.from, m.to)`（文件搬移）、`deprecate_offline` 的 `fs.rmSync(..., {force:true})`（物理删模块文件）。★ 判据红线：**不许**写「`writeFileSync` = 0 ⇒ 收口」那种判据（那是假绿 —— 移动/删除仍在闸外，源码会静默消失）。要做的是把原语的判据扩成「写·移·删·追加」四类，或明确「移动/删除走另一条通道」并给出那条通道的闸。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-writegate",
+      "claimed_at": "2026-10-22T08:25:50.626Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:25:50.592Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T09:05:41.452Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-writegate",
+          "fingerprint": {
+            "what": "node certs/.work/wg4-mutation-probe.mjs ; grep -rn 'fs\\.(renameSync|copyFileSync|unlinkSync|rmSync)(' src --include=*.ts | grep -v source_writer | wc -l",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_l1-l2-handoff-gap",
@@ -107920,9 +108011,30 @@
     {
       "id": "todo_并发控制-账户-续-把-4-条仍在写闸之外的-源码写路-接上账户-本卡是上一环实",
       "summary": "【并发控制·账户·续】把 4 条仍在写闸之外的**源码写路**接上账户（本卡是上一环实测点名的那 4 条）。\n\n① `observe_instrument` —— `infrastructure/analysis/observe/instrument_skeleton.ts:395` 裸 `fs.writeFileSync`（+ `instrument.ts:187` 还原）。★ 实测：冒名 actor 仍能改写别人卡下的源码（isError=false，源码被改）。\n② `diagnose_loop` —— `infrastructure/analysis/diagnosis/repair.ts#applyPatches`(:236) 与 `revertPatches`(:246) 直写。\n③ `upgrade` —— `infrastructure/authoring/version_upgrade/rewrite.ts:133` 与 adapters（java:110/163 · node:106 · python:122）直写。注意 node adapter 写的是**临时文件再 rename**，闸要判的是最终路径。\n④ `derive_split` —— `application/design/derive/derive_split.ts:1021-1045` 直写（它**真写源码**），但住在\"禁改 design/**\"的边界里 ⇒ 先解禁或交由该线自己接。\n\n判据（每条都要消融，别只看\"参数在\"）：同一句调用只换 actor ⇒ 卡主放行且真写盘 / 冒名拒且零字节落盘 / 不传放行；`AGENT_IO_ACTOR_STRICT=1` 且不传 ⇒ 拒。\n★ **入口阻塞**（这就是本轮没做的原因）：①②③ 的 actor 起点分别在 `src/application/observe/handlers.ts`（节点卡 owner=subagent:serve-split）与 `src/application/meta/index.ts`（owner=agent-facts-db）—— 都在别人的 claimed 卡上，抢改会被 A7 拒。⇒ 等对应卡 release，或由持卡人接这一环。\n★ 别把 restore/rollback 也算进来：那三类写回的是已被写过的字节，是回退不是改。",
-      "state": "candidate",
-      "owner": null,
-      "follows": "todo_D-actor-entry"
+      "state": "done",
+      "owner": "subagent:deepseek-writegate",
+      "follows": "todo_D-actor-entry",
+      "claimed_at": "2026-10-22T08:25:50.381Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T08:25:50.348Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T09:05:41.230Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-writegate",
+          "fingerprint": {
+            "what": "node certs/.work/wg2-observe-probe.mjs ; node certs/.work/wg2-ports-probe.mjs",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_清注释-收尾-4-行-src-application-meta-explore-",
@@ -107986,6 +108098,34 @@
       "summary": "【证据落盘丢字段】reading 证据的 observed 被静默丢弃：complete 在 src/application/design/dsl_ops/task_ops.ts:1435-1450 只落 kind/at/by/agent/fingerprint{what,input}/verdict —— 而证据闸（src/domain/overlay.ts:121 validateProgressEvidence）要求 observed 必填。实测 2026-10-22 收口 34 张卡，34/34 条 evidence 回读只有 what（命令原文），看不到“看到了什么”。判据：① 写一条带 observed 的 reading 收口 ⇒ 回读 evidence[i].observed 非空；② 同一把尺：要么给 TaskEvidence 补 observed 字段，要么把它折进 fingerprint.what，★ 二选一，别两处都存。★ 先定形状再改，别顺手加第二个权威。",
       "state": "candidate",
       "owner": null
+    },
+    {
+      "id": "todo_写原语已能覆盖-写-移-删-追加-四类-sourcewritetxn-commi",
+      "summary": "写原语已能覆盖 写/移/删/追加 四类（SourceWriteTxn.commit/append/copy/move/remove），但**调用点还没搬**：实测原语外裸调 51 处（`fs.renameSync|copyFileSync|unlinkSync|rmSync` 47 + `fs.appendFileSync` 4；口径：只数 `fs.xxx(` 调用点、排除 src/application/source_writer.ts）。高价值前几名：storage.ts 8 · proposal_store.ts 4 · dsl_store.ts 4 · file_snapshot.ts 4 · refactor_pipeline.ts 2（`fs.renameSync(m.from, m.to)` = 文件搬移，**改的是用户源码**）· rename_file.ts 2（`:602/:617` 是回滚清理，属回滚类）。判据：① 每一处要么搬进事务（五动词之一），要么按 `write_gate#classifyWriteSubject` 归类并点名（回滚 / 产物 / 临时）；② **不许**写「writeFileSync=0 ⇒ 收口」那种判据（假绿：移动/删除仍在闸外，源码会静默消失）；③ 数字要可复现：给确切命令 + 读数，别抄旧数字（卡里 57 已过期为 51）。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_写闸的判据只覆盖-覆盖写-移动-删除-追加-57-处仍是裸调-实测-fs-ren"
+    },
+    {
+      "id": "todo_go-语言包的插桩写-仍无闸-observe-langs-ts-的-goobse",
+      "summary": "go 语言包的插桩写**仍无闸**：`observe_langs.ts` 的 goObservePack 走 `spawn('go', ['run','./cmd/instrument', root, …])` ⇒ 改源码发生在 **Go 子进程**里，TS 侧写闸看不见（`instrument_skeleton` 那条链只覆盖 TS/py 的本进程插桩）。同一类还有 go_instrument.ts:345 的 go.mod 修补（分类 = source）。两条路：① 让 Go 侧输出**待写文件清单 + 内容**，由 TS 侧统一落盘（复用 `openWrite(files)`，与 TS/py 同一道闸）；② 明确「外进程写」口径：回执里点名「本工具改源码走外进程、闸未覆盖」，并把 `AGENT_IO_ACTOR` 传给子进程自报。判据：改造后同一句调用只换 actor ⇒ 卡主写盘 / 冒名拒不写 / 零字节。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_并发控制-账户-续-把-4-条仍在写闸之外的-源码写路-接上账户-本卡是上一环实"
+    },
+    {
+      "id": "todo_npm-run-split-stage-node-dist-src-presen",
+      "summary": "`npm run split-stage` = `node dist/src/presentation/cli/cli.js split_stage`，但仓里**没有 split_stage 这个工具/handler**（`name: 'split_stage'` 命中 0），`derive_split.ts#deriveSplit` 也**零引用**（早没有活入口）。⇒ 本轮给 derive_split 接的闸（openSourceWrite 整批）目前**走不到**；而这个口子一旦被重新接上，就是一条无闸源码写路（新建文件 + 改写原文件）。要做：① 要么立 tool 入口（把 deriveSplit 接进 design 线 TOOL_DEFS 并透传 actor）；② 要么删掉 package.json 那条死命令 + 在 derive_split 头注写明「当前无入口」。判据：`node dist/.../cli.js split_stage` 要么跑通且有闸，要么明确报「未注册」（不是现在这种静默失效）。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_10-处-无闸源码写-无法直接塞进写原语-需先定它们的身份与授权口径-清单-实测"
+    },
+    {
+      "id": "todo_editreceipt-task-gate-已是-必填-tsc-能报出漏接-但-",
+      "summary": "`EditReceipt.task_gate` 已是**必填**（tsc 能报出漏接），但 `RenameFileResult.task_gate` 仍是**可选**（`rename_file.ts:105` 写成 `task_gate?: string`）⇒ 构造点漏接时 tsc 不报，「闸判了、回执里一个字没有」这个老病还留着一半门。要做：把 `RenameFileResult` / `RenameFilesResult` / `SymbolMoveResult` 的 `task_gate` 改必填，再按 tsc 报错逐点补齐（旧卡记的是 23 处：rename_file 6 / rename_files 6 / symbol_move 11，需重新数）。判据：改必填后 `npm run build` 必须报出这些构造点（红），补齐后转绿 —— 这就是「可选字段 = 允许不说」的反面证据。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_覆盖写还剩-8-处没进原语-6-个语言包各-1-处-writefilesync-"
     }
   ],
   "_dsl_rev": 1271,

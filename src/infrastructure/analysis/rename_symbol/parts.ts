@@ -187,6 +187,16 @@ export function buildNoExt(files: string[]): Map<string, string> {
 }
 
 // ─────────────────────────────────────────────
+// ★ 落盘注入点（引擎**不拥有**写盘）
+//
+// 判据与实现在 `infrastructure/source_write_port.ts`（**唯一住处**）：这里只**再导出**，
+// 让语言包与 core 的取用路径（`../parts.js`）保持不变（与本文件顶部 `ast_node` 的再导出同一手法）。
+// 一句话记住：`infrastructure/` 不能 import `application/source_writer`（倒挂），
+// 所以引擎只拿一个函数；实现方把「已经判过闸的那一个 `txn.commit`」注进来。
+import { commitSourceWrite, type SourceWriteHook } from '../../source_write_port.js';
+export { commitSourceWrite, type SourceWriteHook };
+
+// ─────────────────────────────────────────────
 // 语言包契约（原 `languages/types.ts` 并入此处）
 // ★ 为什么不单开一个 `languages/types.ts`：它只会被 `import type` 引用 ⇒ dep-cruiser 判它**孤儿**
 //   （类型导入不算依赖，既有 `version_upgrade/adapters/types.ts` 就是这么进已知清单的）。
@@ -203,6 +213,11 @@ export interface LangRenameArgs {
   skipped: Array<{ path: string; why: string }>;
   /** TS/JS 家族专用：tsconfig 路径别名配置（无 tsconfig 时为 null） */
   aliasCfg: AliasConfig | null;
+  /**
+   * ★ 落盘注入（见 {@link SourceWriteHook}）：**引擎不写盘**，只把「算好的内容」交给它。
+   *   `dryRun=true` 时不会被调用；`dryRun=false` 且缺它 ⇒ {@link commitSourceWrite} **抛**（不降级成裸写）。
+   */
+  write?: SourceWriteHook;
 }
 
 export interface LangPackage {

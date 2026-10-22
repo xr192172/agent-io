@@ -29,6 +29,9 @@ import {
 import { loadProbeLedger, ledgerSummary } from '../../infrastructure/analysis/observe/instrument.js';
 import { DesignDSLStore, defaultDSLDir } from '../../infrastructure/analysis/observe/dsl_store.js';
 import { getDSLByView, getLiveDir, requireProjectRoot } from '../../infrastructure/storage.js';
+import { openSourceWrite, restoreSourceBytes, type SourceWriteTxn } from '../source_writer.js';
+import { isGateRejection } from '../write_gate.js';
+import type { SourceWriteHook } from '../../infrastructure/source_write_port.js';
 import { observeTrace } from '.././observe/capture/observe_trace.js';
 import { reconcileChain } from '.././observe/reconcile/reconcile_chain.js';
 import type { ReconcileChainInput } from '.././observe/reconcile/reconcile_chain.js';
@@ -337,9 +340,38 @@ export const observeInstrumentHandler = wrapData(async (a) => {
     };
   }
 
+  // ★★★ 2026-10-22（并发控制·账户）：插桩改的是**用户源码** ⇒ 落盘走写原语，`actor` 逐调用自报。
+  //   ★ 闸开在**这一层**（应用层）而不是语言包/骨架：只有这里知道 `actor`，也只有这里能用写原语
+  //     （`infrastructure/` 不能 import `application/source_writer` —— 倒挂）。
+  //   ★ 整批一次判闸：`openWrite(files)` 拿「本次要动的全部文件」开**一道**闸，再派生逐文件 commit
+  //     ⇒ 一次插桩 = 一份快照 = 一个撤回点（逐文件判会让 `authorize` 退化成「能过的先落」）。
+  //   ★ `dryRun` 时**不开闸**（干跑不写盘，拉闸进来只会让不该拒的调用被拒）。
+  const actor = typeof a.actor === 'string' && a.actor ? a.actor : undefined;
+  const authorize = typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined;
+  const txns: SourceWriteTxn[] = [];
+  const openWrite =
+    dryRun || unintrument
+      ? undefined
+      : (files: readonly string[]): SourceWriteHook => {
+          if (!files.length) {
+            // 没有要动的文件 ⇒ 不建事务；真被调用就是逻辑错了，要点名而不是静默
+            return () => {
+              throw new Error('observe_instrument：本批没有声明任何文件，却有落盘请求（内部错误）');
+            };
+          }
+          const txn = openSourceWrite(target, files, {
+            label: `observe_instrument:${files.length} 文件`,
+            actor,
+            authorize,
+          });
+          txns.push(txn);
+          return (abs, content) => txn.commit(abs, content);
+        };
+
   try {
     if (unintrument) {
-      const rep = await pack.uninstrument(target);
+      // ★ 还原走**回滚通道**（写回插桩前的备份字节，不产生新版本）—— 判据见 `restoreSourceBytes` 头注
+      const rep = await pack.uninstrument(target, { restore: restoreSourceBytes });
       return { message: renderUninstrumentReport(rep), data: rep };
     }
     const rep = await pack.instrument(target, {
@@ -349,6 +381,7 @@ export const observeInstrumentHandler = wrapData(async (a) => {
       scope: a.scope === true,
       deep: a.deep === true,
       effects: a.effects === true,
+      openWrite,
     });
     return {
       message: renderInstrumentReport(rep, { target, contractProbes }).join('\n'),
@@ -356,7 +389,16 @@ export const observeInstrumentHandler = wrapData(async (a) => {
     };
   } catch (e) {
     // ★ 包自己已经**响亮失败**过了（Go 缺工具链 / 目录不存在）⇒ 这里只补一句是哪个语言包，不吞、不改写。
-    return { message: `Observe 插桩失败（语言包 ${pack.lang}）：${(e as Error).message}`, data: {} };
+    // ★ 2026-10-22：**被写闸拦住**要升成 `isError`（否则「没写成」与「插好了」在脚本里长得一样）。
+    //   判据来自闸自己（`isGateRejection`），不在这里嗅探散文。
+    return {
+      message: `Observe 插桩失败（语言包 ${pack.lang}）：${(e as Error).message}`,
+      data: {},
+      ...(isGateRejection(e) ? { isError: true } : {}),
+    };
+  } finally {
+    // ★ 收尾：自写登记 + 索引写穿（没落过盘 ⇒ `close()` 返回 null，不会凭空写穿）
+    for (const t of txns) t.close();
   }
 });
 
