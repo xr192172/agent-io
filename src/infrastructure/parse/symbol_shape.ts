@@ -133,7 +133,7 @@ const SHAPE_SPECS: Record<string, ShapeSpec> = {
   },
   // ── Go ──────────────────────────────────────────────────────────────────
   // 实测：返回值在 `result` 字段；多返回值时字段值是 **parameter_list**，
-  //   文本原样是 `(bool, int)` —— 按用户要求**保留原文**（不拆成数组）。
+  //   文本原样是 `(bool, int)` —— **保留原文**（不拆成数组）。
   //   泛型在 `type_parameters`（`type_parameter_declaration`，约束在 `type` 字段）。
   //   ★ 修饰符**故意不写**：Go 没有修饰符关键字，export 由首字母大小写编码 ——
   //     写 `[]` 会被读成「抽了、确实没有」，写 `export` 则是发明语法 ⇒ 恒 NULL。

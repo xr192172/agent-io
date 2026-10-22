@@ -2,7 +2,7 @@
  * diagnose_loop_cli —— 一键诊断闭环 CLI（T5）
  *
  * 把诊断工具从"只建议不执行"升级为闭环：诊断 → 修复 → 验证 → 提交。
- * 单段可启停（用户偏好 modular/stage-based）：
+ * 单段可启停（modular / stage-based）：
  *
  *   node dist/src/tools/diagnose_loop_cli.js --project <dir> --symptom "<症状>"
  *        [--apply]      跳过补丁审批直接应用（默认逐个交互确认）
@@ -13,7 +13,7 @@
  *
  * 闭环阶段：
  *   0. 前置：项目必须是 git 仓库（回退依赖 git 还原）
- *   1. 基线：改前若工作区脏 → 提交 baseline 快照（用户偏好：改前自动提交）
+ *   1. 基线：改前若工作区脏 → 提交 baseline 快照（改前自动提交）
  *   2. 诊断：runDiagnosis（规则+LLM 双引擎）
  *   3. 修复：LLM 生成行级补丁 → 白名单校验 → 展示真实 diff → 审批 → 应用
  *   4. 验证：探测项目类型跑测试（npm test / go test / pytest …）
@@ -90,7 +90,7 @@ async function main(): Promise<number> {
     return 1;
   }
 
-  // ── 阶段 1：基线快照（改前自动提交，用户偏好）
+  // ── 阶段 1：基线快照（改前自动提交）
   const baseline = { committed: false, head: '' };
   if (gitDirty(root)) {
     if (auto || (await confirm(null, '工作区有未提交改动。是否先提交基线快照后继续？[y/N] '))) {

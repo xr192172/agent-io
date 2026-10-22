@@ -377,7 +377,7 @@ export async function runUpgradeApplyLoop(
   }
   report.edits = edits;
 
-  // 1. 基线快照（改前自动提交，用户偏好）
+  // 1. 基线快照（改前自动提交）
   if (gitDirty(root)) {
     const r = gitCommitAll(root, 'chore: baseline before upgrade-rewrite');
     report.baseline = { committed: r.committed, out: r.out };

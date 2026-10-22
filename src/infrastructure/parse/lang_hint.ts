@@ -172,7 +172,7 @@ export function missingLanguageHint(ext: string, capabilityId?: string): string 
     // ★★ 2026-10-08：「**没装**」与「**装了但是死包**」必须分开说 —— 见本文件头注那条反向的坑。
     //   判据取自 probe 的**唯一落点** `languagePackagePresence`（真筛子住那儿），此处不重判。
     const st = languagePackageStatus(languageModuleSpec(registered.pkg, registered.pkgSpec));
-    // ★★ 2026-10-08 **第二次更正**（用户追问"怎么会是死包呢"后联网查证）：
+    // ★★ 2026-10-08 **第二次更正**（联网查证后）：
     //   上一版我写「模板非 node-gyp-build ⇒ **装 / 重装都无用**」—— **两处都不准**：
     //   ① 原因是**影子**（模板指纹），真因是**依赖 `nan`（NAN 绑定）**；
     //   ② 「无用」**不能只看本机这一份就下判决** —— 实测 `tree-sitter-css`：本机 0.20.0 是

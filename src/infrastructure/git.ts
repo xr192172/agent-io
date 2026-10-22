@@ -3,7 +3,7 @@
  *
  * 一键诊断闭环的持久化边界：只用四个只读/精确操作，不在闭环外做
  * 任何破坏性 git 动作。
- *   - 基线快照：改前把当前工作区改动提交为 baseline（用户偏好：改前自动提交）
+ *   - 基线快照：改前把当前工作区改动提交为 baseline（改前自动提交）
  *   - 精确提交：只 add 补丁实际改动的文件（不用 git add -A，防误入敏感文件）
  *   - 回退：验收失败时 git checkout 还原补丁改动的文件
  */
@@ -51,7 +51,7 @@ export function gitCommitFiles(dir: string, files: string[], message: string): {
   return commit.ok ? { committed: true, out: commit.out } : { committed: false, out: commit.out };
 }
 
-/** 基线快照：git add -A 全量暂存后提交（改前自动提交，用户偏好） */
+/** 基线快照：git add -A 全量暂存后提交（改前自动提交） */
 export function gitCommitAll(dir: string, message: string): { committed: boolean; out: string } {
   const add = run(dir, 'git add -A');
   if (!add.ok) return { committed: false, out: add.out };

@@ -6,7 +6,7 @@
  *   - findSuggestCandidates：纯逻辑挑出短名/无意义局部变量（宁漏不误），附声明行上下文。
  *   - suggestRenames：请 LLM 给每个候选一个新名+理由；无 LLM / 调用失败 → 如实降级只列候选。
  *
- * 只建议、不替用户拍板：suggested 是"建议值"，最终是否应用交给调用方连到 renameMany。
+ * 只建议、不替调用方拍板：suggested 是"建议值"，最终是否应用交给调用方连到 renameMany。
  */
 
 import { analyzeLocals } from '../../../infrastructure/parse/ast_rename.js';

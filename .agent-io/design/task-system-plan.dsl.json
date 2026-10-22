@@ -30331,9 +30331,108 @@
           "state": "candidate",
           "owner": null,
           "claimed_at": null,
-          "release_reason": "注释清理已完成，交回候选池",
-          "released_by": "deepseek-v4.1-flash",
-          "released_at": "2026-10-20T10:26:37.013Z"
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "DESIGN_SHEET_NODE_KEYS",
+                "fp": "e3b5196a2da0ade0486bc0f2f61b4a6d1a469cdc"
+              },
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "DesignSheetDiff",
+                "fp": "ca2b9c125ae18467ddcd31501f14bcdf4fb2b213"
+              },
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "NodeAttrDiff",
+                "fp": "a88f0bd185b81f13c8c09a2ae96306cb27e7ee6e"
+              },
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "PendingEntry",
+                "fp": "81ee7f07242b16d3a3829ab5e10070c9814ad2f5"
+              },
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "ResolvedDiff",
+                "fp": "dd386878c2bbf1c18a8251aa477f8d748dafd841"
+              },
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "SameIdDiff",
+                "fp": "7f7ff61286c3515677cf2695b0a02dcf2ef2ed89"
+              },
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "designSheetPendingRefs",
+                "fp": "7b531f6e611a751f65739aa9974231832e2caeeb"
+              },
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "designSheetRef",
+                "fp": "4209d7a00ad515432fae828872cf40c36a018b5f"
+              },
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "diffDesignSheet",
+                "fp": "4948877b17ded20eeb0bf72e516b8c916632ed76"
+              },
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "diffDesignSheetLine",
+                "fp": "60238f5472bcd6339409a7f9c2504be6f477190a"
+              },
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "goalPendingEntries",
+                "fp": "4e8e2ae58ea486200f51bf439e30a1cc3a0ab072"
+              },
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "goalsOf",
+                "fp": "2c345653a7ab744ed4179eeba544bd4b41585c20"
+              },
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "nodePendingEntries",
+                "fp": "af46999f989bbd624d614fdacf432753cedd24f9"
+              },
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "nodesOf",
+                "fp": "0c2ac2c150091c4ba5d4b7e184e74d5aa06ace90"
+              },
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "pendingEntries",
+                "fp": "2a7493f3007588c5a649968ea0b78af7b791091d"
+              },
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "sameValue",
+                "fp": "35e64e941320f90ef6a3b8d3f17b808b44a79cb2"
+              },
+              {
+                "file": "src/domain/design_sheet.ts",
+                "name": "trimStr",
+                "fp": "106132e50631857827658839ddd1ddd96b894b7f"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/design_sheet.ts",
+                "content_hash": "bb7f364e774d8155448fd5fc68249ac259a9885a"
+              }
+            ],
+            "computed_at": "2026-10-22T05:52:00.128Z",
+            "basis": [
+              "expectations"
+            ]
+          },
+          "release_reason": "注释清理（用户原话类引用）已落盘，写权用完",
+          "released_by": "subagent:comment-clean",
+          "released_at": "2026-10-22T05:59:52.132Z"
         },
         "status": "draft"
       },
@@ -103858,11 +103957,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T05:41:09.724Z",
+    "saved_at": "2026-10-22T06:00:18.362Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 64146913,
+    "age": 65295551,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -105902,8 +106001,29 @@
     {
       "id": "todo_清注释里的用户原话-102-处-55-个文件-src-下注释写着-用户说-用户原",
       "summary": "【清注释里的用户原话】102 处 / 55 个文件（src/ 下注释写着「用户说…」「用户原话…」「用户裁定…」）。★ 用户 2026-10-20 明确：「我希望把这些『用户说什么』也从注释里去掉，你仅表达它的功能等这些东西就够了，你老追溯我说了什么干嘛，我说什么只是我对你的，又不是我对程序说的」。★ 做法：把「用户说 XXX」改成「规则：XXX」或直接删掉引用，只留功能/约束本身。★ 不许改代码行为，只改注释。★ 验收：grep 该模式 = 0；tsc 绿；verify 6 门全过。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:comment-clean",
+      "claimed_at": "2026-10-22T05:47:26.367Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T05:47:26.321Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T06:00:18.331Z",
+          "by": "llm",
+          "agent": "subagent:comment-clean",
+          "fingerprint": {
+            "what": "git grep -nE '用户(说|原话|口述|裁定|明确|偏好|判据|拍板|定调|裁决|追问|反馈|洞见|理念|设想|选中的|已拍的|要的|拒绝|希望的)' HEAD -- src | wc -l  →  56 ；grep -rnE 同模式 src | wc -l  →  10 ；node _onlycomment.js（git diff -U0 -- src 逐行判注释）→ 改动行 173 / 非注释行 0 ；npm run build → exit 0 ；npm run verify → exit 0「全部 7 道门通过」",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_重写-agents-md-37kb-src-presentation-的-age",
@@ -106552,6 +106672,13 @@
       "state": "candidate",
       "owner": null,
       "follows": "todo_D-actor-entry"
+    },
+    {
+      "id": "todo_清注释-收尾-4-行-src-application-meta-explore-",
+      "summary": "【清注释·收尾 4 行】src/application/meta/explore/contract_page.ts:25,359 / src/infrastructure/parse/kernel.ts:91 / src/presentation/mcp/server_registry.ts:480 —— 这 3 个文件各有一张【别人的 claimed 卡】（owner=agent-body-v15 / agent-docstring / subagent:account，claimed_at 都是 2026-10-21），A7 不许抢，所以上一轮没碰。判据：那 3 张卡 release/complete 之后，把「用户判据：…」「用户拍板：…」改成规则本身（只动注释）；验收 = grep -rnE '用户(说|原话|口述|裁定|裁决|逐字|判据|拍板)' src 只剩 dict_gen 的『用户选中的原始写法』2 行 + diagnose_loop_cli 的 4 条运行时输出。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_清注释里的用户原话-102-处-55-个文件-src-下注释写着-用户说-用户原"
     }
   ],
   "_dsl_rev": 1260,

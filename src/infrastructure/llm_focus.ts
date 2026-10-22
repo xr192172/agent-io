@@ -6,7 +6,7 @@
  *   - trace_exec：数据真实流转（用户输入 → 每步真实 in/out）
  *   - llm_focus：从全链里挑出值得聚焦的关键节点（判定点/汇聚点/高风险函数），附理由
  *
- * 配置（用户偏好：配置文件管理 API keys/model 参数，未来前端 HUB 集成）：
+ * 配置（配置文件管理 API keys/model 参数，未来前端 HUB 集成）：
  *   <home>/.agent-io/config.json        ← 默认（含密钥，放用户主目录，避免随项目打包/提交泄漏）
  *   <projectRoot>/.agent-io/config.json ← 旧默认位置，读取时回退兼容
  *   { "llm": { "apiKey": "sk-...", "model": "gpt-4o-mini", "baseURL": "https://api.openai.com/v1" } }

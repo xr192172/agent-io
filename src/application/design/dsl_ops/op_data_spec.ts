@@ -214,7 +214,7 @@ export const OP_SPECS: readonly OpSpec[] = [
     ops: ['add', 'link', 'update', 'follows', 'retire', 'delete'],
     idRequired: false,
     opsRequiringId: ['link', 'update', 'follows', 'retire', 'delete'],
-    // ★★★ 2026-10-21：**三个新 op 的必填键**（用户裁决：「说了多少次了要配好所有的增删改查操作」）。
+    // ★★★ 2026-10-21：**三个新 op 的必填键**（规则：**增删改查四个动作都要配齐**）。
     //   · update：summary（改成什么）+ reason（**为什么改** —— 无理由 = 悄悄改判据）
     //   · retire：reason（为什么作废；★ 必须点名**被谁取代**，否则考古不了）
     //   · delete：reason（为什么物理删；★ 只给「从未生效的误建」用）

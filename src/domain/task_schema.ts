@@ -120,7 +120,7 @@ export function progressOf(task: Pick<TaskSpec, 'state'> | null | undefined): Di
 export interface TaskDiscussion {
   /** 微缩：10 秒可读的一行（★ 默认只渲染这个） */
   micro: string;
-  /** 用户设想（逐字原话；★ 展开时才渲染） */
+  /** 引文原文（★ 展开时才渲染） */
   user_quote?: string;
   /** 整理结果 + 出处 */
   conclusion?: string;
@@ -383,9 +383,9 @@ export interface TaskSpec {
   /**
    * ★★★ **跑环继任链**（2026-10-21）：这张 todo 的**上一环**是哪张 todo（`todos[]` 里另一张卡的 id）。
    *
-   * ## 它是什么（用户原话）
-   * 「有些任务要不要设计成**跑环任务**？完成一环、完成二环、完成三环……做完了之后发现还有新的，
-   *   那就**直接再在这个下面登记第二步、第三步**」
+   * ## 它是什么
+   * **跑环任务**：完成一环、二环、三环……做完发现还有新的，
+   *   就**直接再在这一环下面登记第二步、第三步**。
    * ⇒ `follows` 指向**父 todo 的 id**，形成 `一环 → 二环 → 三环` 的一条链。
    *
    * ## 为什么是**单指针**（一条链，不是一棵树）

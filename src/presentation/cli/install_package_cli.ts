@@ -105,7 +105,7 @@ export function compatVerdict(compat: TemplateCompat, prebuild: boolean | null, 
  * registry 元数据预检 —— 装包**前**，以及**本机那份已装但不可用时**（问上游还有没有救）。
  * best-effort：包不存在 / 网络不通 / 超时 ⇒ 如实返回原因（不猜、不假装能载入）。
  *
- * ★★ 2026-10-08 扩展（用户追问"怎么会是死包呢"逼出来的）：
+ * ★★ 2026-10-08 扩展（被"怎么会是死包呢"这个现象逼出来的）：
  *   原先只取 `scripts.install` —— 那是**影子判据**（判不出 NAN），而且**答不了**
  *   「本机装的是旧版 / 本机这份只是别人的传递依赖」这个**最常见**的情况。
  *   现在一次取 **version + scripts.install + dependencies**（`--json` 多字段 ⇒ 返回对象，
@@ -495,7 +495,7 @@ function main(): void {
       const realPkg = DERIVED[r.pkg] ?? r.pkg;
       const localJson = readLangPkgJson(realPkg);
       const local = templateCompatFromPkgJson(localJson);
-      // ★★ 2026-10-08 修一个**真缺陷**（用户追问"怎么会是死包呢"引出的）：
+      // ★★ 2026-10-08 修一个**真缺陷**（"怎么会是死包呢"这个现象引出的）：
       //   原先 `local === 'incompatible'` 就**直接下结论、从不问上游** ⇒ 于是
       //   「本机装的是旧版」与「本机这份只是**别人的传递依赖**」这两种最常见的情况被判成死包。
       //   实测 `tree-sitter-css`：本机 0.20.0（nan，`tree-sitter-scss` 的传递依赖），

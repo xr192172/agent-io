@@ -26,7 +26,7 @@
  *   · 本文件从 `application/meta/llm/gateway.ts` 搬到 `infrastructure/` —— 它管 key 池 / 用量 / 端点，
  *     **全是基础设施职责**；且会话线 `llm_focus.callChat`（infrastructure）要经它出网 ⇒ 不能反过来依赖 application。
  *   · 池内轮转**复用** `llm_pool.KeyPool`（不再自持 `keyCursor` 第二份状态机）：同一 KeyPool 对象**跨调用**保留
- *     ⇒ 第 1 把断了，下一次从第 2 把开始；转完一圈才回第 1 把（照用户口径）。
+ *     ⇒ 第 1 把断了，下一次从第 2 把开始；转完一圈才回第 1 把（既定口径）。
  *   · **对外只提供一个入口**：内部调用方只传 messages / temperature / jsonMode（不碰上游 / key / 池）；
  *     HTTP 端点仍是 `handleOpenAICompatRequest`。全仓**唯一**发 `/chat/completions` 的地方。
  */

@@ -159,7 +159,7 @@ export const consistencyHandler = wrapData(async (a) => {
 
   // ★★★ 2026-10-09（T78）：**把"人写的验收"的失败并进同一份块**。
   //   为什么必须：块的输入原本只有 `expected_apis` 对账，而**设计 DSL 的结构是从扫描 fork 的**
-  //   ⇒ 那一路对出来**永远干净** ⇒ **块永远是空的**，而"圈范围"正是用户要的那一步。
+  //   ⇒ 那一路对出来**永远干净** ⇒ **块永远是空的**，而"圈范围"正是这一步的产出。
   //   实测（2026-10-09 真跑）：验收报 `failed 1`，块报"有差异 0 个"，还把出问题的文件列进"已对齐" —— 两者矛盾。
   //   ★ 归属规则**只由 `domain/expectation.ts` 的 `expectationSubjectPath` 决定**（不在这里再推一遍）。
   const { failByPath, outsideScope, unsupportedInScope, unsupportedOutside } = groupExpectationFails(exp?.items ?? [], (p) => inScope.has(p));
@@ -271,7 +271,7 @@ export const consistencyHandler = wrapData(async (a) => {
   );
   // ★★★ 2026-10-09（T81 续）：**让"对拍"也能交出对象** —— 它交的是「**要我关注的文件**」。
   //   为什么这里是**差异面**而不是"作用面"：对拍这个动作的产出**本来就是**「哪些文件不对」
-  //   （用户要的那句「把**不对的范围**自动圈出来」正是指它）。而 `get_dsl query=scope` 交的是"作用面"
+  //   （「把**不对的范围**自动圈出来」正是指它）。而 `get_dsl query=scope` 交的是"作用面"
   //   ★ 来源枚举与口径见 `domain/b_terms.ts` 的 `scope_files.meaning`（**唯一住处**）—— 本处不再复述。
   //   ★ 口径照旧：**没差异 ⇒ 省略整个键**（不给空数组 —— 空数组会被读成"真的没有文件"）。
   const diffFiles = [...new Set(d.blocks.flatMap((b) => b.files))].sort();

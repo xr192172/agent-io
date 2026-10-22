@@ -115,7 +115,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       view: z.enum(['design', 'live']).default('design').describe('视图层级：design=设计视图（默认），live=实际代码快照'),
       feature: z.string().optional().describe('feature 名（nodes/edges/node/decisions/files/file/digest/annotations/approvals 等需要）'),
       node_id: z.string().optional().describe('query=node 时：节点 ID'),
-      // ★★ 2026-10-21：`query=todo` 的**按 state 过滤**（用户裁决：「retire 之后必须不在待办里」+「要能按 state 过滤」）。
+      // ★★ 2026-10-21：`query=todo` 的**按 state 过滤**（规则：**retire 之后必须不在待办里** + **要能按 state 过滤**）。
       //   ★ 缺省 = 待办（只列活卡）—— 判据在 `query_feature.ts` 的 `case 'todo'`（读 `isClosedTaskState`），这里只声明值域。
       state: z
         .enum(['candidate', 'claimed', 'done', 'void', 'all'])

@@ -1419,8 +1419,8 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
 
     // ── todo 列表（★ 2026-10-21：todo 的**待办读端**）────────────────────────
     //
-    // ★ 为什么必须现在补（用户裁决的原话）：「**retire 之后必须不在待办里** —— 否则"作废"只是
-    //   加了个字段，待办列表里还是满的，等于没做」+「**要能按 state 过滤**」。
+    // ★ 规则：**retire 之后必须不在待办里** —— 否则"作废"只是加了个字段，待办列表里还是满的，
+    //   等于没做；另外**要能按 state 过滤**。
     //   ⇒ 实测（补之前）：`todos[]` **没有任何读端能列出 id** —— `query=pool` 只数**节点上的 task**，
     //     一条 todo 都不数（`listPool` 的循环只走 `geometry.nodes`）⇒ 作废与否，人根本看不见。
     //

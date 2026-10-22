@@ -1,7 +1,7 @@
 /**
  * project_docs —— 每项目文档夹 → LLM 决策上下文（阶段 C · 文档注入）
  *
- * 设计（用户拍板路线：按批关联注入 + 项目仓库 docs/ + frontmatter 关联兜底文件名）：
+ * 设计（既定路线：按批关联注入 + 项目仓库 docs/ + frontmatter 关联兜底文件名）：
  *   1. 文档夹位置：<project_dir>/docs/**\/*.md（project_dir = feature 的 source_root，
  *      即真实项目仓库，文档跟代码同库）；兜底 <dataHome>/.agent-io/docs/<feature>/。
  *   2. 关联方式：文档头部 frontmatter 写 feature/steps/files 元信息（精确关联），
