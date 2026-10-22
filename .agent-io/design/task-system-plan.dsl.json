@@ -104481,11 +104481,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T09:44:49.387Z",
+    "saved_at": "2026-10-22T10:04:52.953Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 78766576,
+    "age": 79970142,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108253,12 +108253,20 @@
       "type": "todo",
       "state": "candidate",
       "id": "todo_决策卡应该记节点-而不是节点记决策卡-node-task-是单数-历史被原地覆盖",
-      "summary": "【结构问题（用户 2026-10-22 提出）：`geometry.nodes[].task` 是**单数** ⇒ 一个节点在生命周期里只能有**一张**卡。\n做过几次、每次谁做的、为什么重开，只能靠原地覆盖 + `reopened_from`（**只记上一次**）。】\n\n## 可证伪的证据\n  · 活态 224 张卡里 **94 张（42%）是 done/void** —— 它们\"还在\"不是因为有用，是因为**没有地方可放**（一放就丢历史）。\n    ⇒ **\"池子只进不出\"的直接成因**：不是人不想收口，是**收口 = 丢历史**，于是大家选择不收。\n  · `reopened_from` 只能记上一次 ⇒ 一张卡被 reopen 三次，只剩\"最近一次从谁手里接的\"。\n  · `expire` / `taken_over_from` 都是往**同一张卡**上叠痕迹 ⇒ 卡变成\"多人多轮的混合物\"，读不出\"这一轮是谁做的\"。\n\n## 用户提的方向（这是正确的方向）\n「应该让**决策卡去记节点**，而不是节点去记决策卡」⇒ 卡是**独立实体**，`node_id` 是它的**引用字段**：\n```\ndsl.tasks[] = [ { id, node_id, state, owner, claimed_at, created_at, ... }, ... ]\nnode.task    = 派生（该节点最新的活态卡），或删掉由读端现算\n```\n★ 好处（每一条都可证伪）：\n  ① 一个节点可以有 N 张卡 ⇒ **历史天然存在**（不用归档容器）\n  ② 归档 = `tasks.filter(state in [candidate, claimed])` ⇒ 本仓**不需要**新增 `archive[]`\n  ③ 同一节点多轮 ⇒ 每张卡独立，`evidence`/`owner` 不再混\n  ④ **\"收口 = 丢历史\"消失** ⇒ 预期：`done` 比例会上升（人愿意收口了）—— 这是可量的验收指标\n\n## 代价（别低估）\n  ① `task_ops.ts` 已 **2,354 行 / 9 个 op**（god-file，文档也点了）⇒ 改造要在它身上动刀，     ★ **建议同时按 op 拆文件**（否则改完它 3,000 行）\n  ② 9 个 op 都按 `node.task` 找卡 ⇒ 全要改成\"按 id 找\"\n  ③ `follows` 链 / `claim_conflict` / `pool` / `A7` 的读端\n  ④ 老数据的迁移：224 张卡要搬进 `tasks[]`（★ 迁移本身要有证：搬完每张卡的 owner/state/evidence 逐字不变）\n\n## 判据\n  A. 迁移后：`224 张卡` 的 (id, state, owner, claimed_at, evidence 条数) **逐字不变**（可脚本比对）\n  B. 同一节点连开两次卡（complete → claim 换 reason）⇒ `tasks[]` 里**两条**，旧的仍在，state=done\n  C. 归档口径只有一处（`liveTasks`），`pool` 的 `shown` = 活态数\n  D. 9 个 op 的对外契约**不变**（`edit_dsl { type:'task', op:'claim', id:'<节点id>' }` 仍可用）\n     ★ 这一点最关键：**内部换了容器，外部调用方零改动** —— 否则就是\"重写了一个新系统\"",
+      "summary": "【结构问题（用户 2026-10-22 提出并给出方案）：`geometry.nodes[].task` 是**单数** ⇒ 一个节点只能一张卡；而 `todos[]` 是另一套（独立、可多张）⇒ **同一个东西住了两个容器**。】\n\n## 用户的方案（★ 比我上一版的\"新增 dsl.tasks[]\"更简单 —— **不用新容器**）\n原话：*「角色卡直接挂在任务系统，任务系统里面指向这个任务的初始节点，就像你去游戏里做任务，它引导你去某个任务的那个触发点一样……因为它本身有这个读集的脚印嘛。然后我们只需要圈定一个文件节点的那个读的入口即可。」*\n```\n卡（独立实体，住 dsl.todos[]）\n  · node_id   = 指向「入口节点」（游戏里的\"任务触发点\"）  ← ★ 字段【已有】，注释就是这么写的\n  · read_set  = 这一轮要碰的符号/文件（读集脚印）        ← ★ 字段【已有】，claim 时现算\n  · owner / claimed_at / evidence / follows …            ← 已有\nnode         = 不再持有 task；node.status 仍由活态卡派生（progressOf）\n```\n★ 关键洞察：**A7 不需要\"卡挂在节点上\"才能判** —— 它靠 `owner` + `read_set`；`node_id` 只是\"从哪进去看设计\"。⇒ 卡的**归属**和**数据**都不需要节点当容器。\n\n## 可证伪的现状（不是推测）\n  · 活态 226 张卡：`nodes[].task` 103 + `todos[]` 123 ⇒ **两个容器**（同一概念住两处 = 本仓头号病）\n  · `todos[].node_id` 123 张里**只有 1 张**填了（还是个 void 的）⇒ **字段设计对了，但没被用起来**\n  · 94 张（42%）是 done/void 却仍在活态 ⇒ 因为\"收口 = 历史被下一张覆盖\"（见下一环卡）\n\n## 迁移方案（三步，每步可独立验收）\n  ① **并入**：把 `nodes[].task` 的卡复制进 `todos[]`，补 `node_id`（= 原节点 id，逐字）\n     ★ 验收：226 张卡的 (id, state, owner, claimed_at, evidence 条数) **逐字不变**\n  ② **读端切换**：`loadTask` / `pool` / `claim_conflict` / `follows` / `expire` 全改读 `todos[]`；\n     `node.task` 保留为**派生只读**（`taskOf(node) = todos.find(t => t.node_id===node.id && 活态)`）\n     ★ 验收：9 个 op 的对外契约**不变**（`edit_dsl {type:'task', op:'claim', id:'<节点id>'}` 仍可用）\n  ③ **删派生**：确认无读端依赖后，从 DSL 里删掉 `nodes[].task`（或标记 deprecated）\n     ★ 验收：`get_dsl` / 看板 / A7 全绿；且 **同节点连开两次卡 ⇒ todos 里两条历史**\n\n## 顺带的收益（可量）\n  · 归档变成 `todos.filter(state in [candidate,claimed])` ⇒ **不需要 archive 容器**（上一环卡可以并入本卡）\n  · `follows` 链天然跨节点（卡都在同一个数组里）\n  · 一个节点多轮 ⇒ 每张卡独立，`evidence` / `owner` 不再混（`reopened_from` 只记一次的缺陷消失）\n\n## 代价（别低估）\n  · `task_ops.ts` 已 2,354 行 / 9 个 op（god-file）⇒ ★ **建议同一笔里按 op 拆文件**，否则改完 3,000 行\n  · 226 张卡的迁移要有证（①的验收就是它）\n  · 老数据的 `node.task` 可能有 103 张里若干张是 `void`（2 张）—— 迁过去保留 state，别丢\n",
       "follows": "todo_已完成的卡不该留在活态-224-张里-94-张是-done-void-该进-archive-可查但不占池",
-      "created_at": "2026-10-22T09:44:49.354Z"
+      "created_at": "2026-10-22T09:44:49.354Z",
+      "updated_at": "2026-10-22T10:03:45.397Z"
+    },
+    {
+      "type": "todo",
+      "state": "candidate",
+      "created_at": "2026-10-22T10:04:52.915Z",
+      "id": "todo_verify-的门会偶发红-database-is-locked-让-FAIL-变成噪音",
+      "summary": "【实测 2026-10-22：`npm run verify` 的「实现夹具」门**偶发红**，原因是 `database is locked`（SQLite 并发）。同一份代码**重跑一次就绿**。当天至少 3 次（我 1 次、子代理 2 次）。】\n\n## 为什么这比\"假绿\"更坏\n```\n假绿：门说 OK 其实没测 —— 可被\"注入⇒必须红\"抓出来\n偶发红：门偶尔撒谎 ⇒ 人学会\"重跑一次看\" ⇒ 再往后 FAIL 变成【噪音】⇒ 真 FAIL 也会被忽略\n★ 本仓纪律（§2.3）：验证手段自身必须被验证，而\"时红时绿\"是最难被发现的那种失效\n```\n\n## 现场（完整栈）\n```\nfile:///.../dist/src/infrastructure/index/db.js:345\n  db.prepare('INSERT OR IGNORE INTO schema_versions(...)').run(...)\nError: database is locked   code=ERR_SQLITE_ERROR errcode=5\n  at openDb → getProjectCacheDb → pickDb → fileFacts → scripts/impl-fixture.mjs:47\n```\n⇒ 锁在 **`openDb` 的 schema 版本写入**上，不是业务查询。🔑 谁在读/写 `cache.db`：verify 自己的门（有好几道会开库）+ 可能还有观察者/服务进程。\n\n## 判据（三条，按代价从低到高）\n  A. **先量**：`verify` 时到底有谁在开 `cache.db`？把并发画出来（`lsof` / Windows 用 handle.exe，或临时打点）。\n     ★ 没量清就改 = 猜。\n  B. **busy_timeout**（最小改动）：`db.pragma('busy_timeout = 5000')` —— SQLite 原生的\"等锁\"机制，     写一次就能把\"瞬时争用\"变成\"排队\"。★ 但它只是**掩盖**，如果锁被长事务占住，5 秒后照样抛。\n  C. **单写者**（治根）：`cache.db` 只许一个进程写（本仓 `dispatch.ts` 已经有 daemon 单写者的先例）。\n     ⇒ 门里**只读**，写索引交给 indexer。\n\n## 验收（必须能证明\"不再偶发\"）\n```\n连续跑 10 次 npm run verify ⇒ 10 次全 exit=0\n★ 不许用\"重跑就好\"验收 —— 那正是要消灭的行为\n```\n\n## 附带：这条也是\"数据飞轮\"的敌人\n门偶发红 ⇒ 人开始不信门 ⇒ 回到\"我看一眼觉得没问题\" ⇒ 假收口的入口。比修好任何一张卡都优先。"
     }
   ],
-  "_dsl_rev": 1275,
+  "_dsl_rev": 1277,
   "feature_tree": {
     "features": [
       {
