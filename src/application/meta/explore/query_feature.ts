@@ -47,7 +47,7 @@
 import { getDSL, getDSLByView, listFeatures as listStoredFeatures } from '../../../infrastructure/storage.js';
 // ★ 2026-10-21：todo 的**状态判据**（`isClosedTaskState` = 唯一那把尺）与**墓碑**（物理删的留痕）。
 //   ★ 前者不在这里重写（done/void 两个名字只住 `task_schema.ts`）；后者不在这里重读（读端也只有一处）。
-import { TASK_STATES, isClosedTaskState, type TaskSpec, type TaskState } from '../../../domain/task_schema.js';
+import { TASK_STATES, isClosedTaskState, progressOfNode, type TaskSpec, type TaskState } from '../../../domain/task_schema.js';
 // ★★★ 2026-10-21（跑环继任链）：链的**位置**（上一环 / 下一环 / 第几环 / 断没断）与徽标措辞的
 //   唯一住处 = `domain/todo_chain.ts` —— ★ 读端只调它，不自己走一遍父指针（两处实现迟早对不上）。
 import { buildTodoChains, chainBadge, type ChainPlace } from '../../../domain/todo_chain.js';
@@ -1667,7 +1667,9 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
     //   ⇒ 判据逐字 = `a.progress !== undefined && a.progress !== 'done'`（★ **不是**裸 `!== 'done'`，
     //     那会把"从没人认领的锚点"也卷进来 —— 那正是"把没判读成通过"的同族错）。
     //
-    // ★ 数据来源 = overlay **权威**（不是 base 上那份被投影出来的 `status`）；每次**现算**、**不落盘**。
+    // ★ 数据来源 = **唯一入口** `progressOfNode`（`domain/task_schema.ts`）：有卡 ⇒ `task.state` 派生；
+    //   没卡 ⇒ 回落 overlay.progress 并标「可能过期」。★ **不是** base 上那份投影 `status`
+    //   （那是下游结果，且不带 evidence）；每次**现算**、**不落盘**。
     case 'pending': {
       const feature = requireFeature(input);
       const ov = loadOverlay(feature);
@@ -1679,32 +1681,52 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         };
       }
       const allAnchors = Object.entries(ov.anchors);
+      // ★★★ 2026-10-22（progress 权威归一）：**进度值不再在这里自己读 `a.progress`** —— 调唯一入口。
+      //   ★ 以前是 `a.progress !== 'done'`，而投影（`applyOverlay`）用 `task.state` 派生 ⇒ 同一个节点两个答案：
+      //     实测 task-system-plan 11 个节点 overlay 说 `done`、卡是 `candidate` ⇒ 投影显示 draft（老实），
+      //     本视图却**不报欠账**（漏报）。现在两边同一把尺。
+      //   ★ 口径未变：候选只收「锚点**登记过** progress」的（没人认领 ⇒ 不欠）；变的只是**那个值从哪来**。
+      const dsl = getDSL(feature);
+      const nodeById = new Map((dsl?.geometry?.nodes ?? []).map((n) => [n.id, n] as const));
       const debts = allAnchors
-        .filter(([, a]) => a.progress !== undefined && a.progress !== 'done')
-        .map(([id, a]) => ({
-          id,
-          path: a.path,
-          progress: a.progress,
-          progress_evidence: a.progress_evidence,
-          // ★★★ 2026-10-19（设计只住一处）：overlay 不再持有 decision ⇒ 这里不再带 decision_scope。
-          //   若要 decision.scope，读 design/<f>.dsl.json 的节点（getDSL）。
-        }))
+        .filter(([, a]) => a.progress !== undefined)
+        .map(([id, a]) => {
+          const reading = progressOfNode(nodeById.get(id) ?? { id }, a, dsl?.todos);
+          return {
+            id,
+            path: a.path,
+            progress: reading.status,
+            progress_source: reading.source,
+            possibly_stale: reading.possibly_stale,
+            progress_evidence: a.progress_evidence,
+            // ★★★ 2026-10-19（设计只住一处）：overlay 不再持有 decision ⇒ 这里不再带 decision_scope。
+            //   若要 decision.scope，读 design/<f>.dsl.json 的节点（getDSL）。
+          };
+        })
+        // ★ `undefined`（`void` 卡 / 什么都没有）= 「这一轴没有值」⇒ **不算欠账**（不硬塞 draft）
+        .filter((x) => x.progress !== undefined && x.progress !== 'done')
         .sort((x, y) => x.id.localeCompare(y.id));
 
       const registered = allAnchors.filter(([, a]) => a.progress !== undefined).length;
       const lines: string[] = [
         `══ feature "${feature}" 欠账（未完成锚点）${viewTag} ══`,
         '',
-        `  口径：「欠账」= overlay 锚点**已登记** progress 且 !== 'done'；` +
+        `  口径：「欠账」= 锚点**已登记** progress，且它「此刻的进度」!== 'done'；` +
           `★ **未登记 progress 的锚点不算欠账**（没人认领 ⇒ 不欠）。`,
-        `  来源：\`${feature}.overlay.json\` 锚点上的 progress（**权威**，不是 base 的投影 status）；每次现算、不落盘。`,
+        `  来源：progress 值走**唯一入口** \`progressOfNode\`（有卡 ⇒ \`task.state\` 派生；` +
+          `没卡 ⇒ 回落 overlay.progress 并标「可能过期」）；证据只能读 \`${feature}.overlay.json\`（不投影）；每次现算、不落盘。`,
         `  欠账 ${debts.length} 条（锚点总数 ${allAnchors.length} · 已登记进度 ${registered}）`,
       ];
       if (debts.length === 0) {
         lines.push('', '  （无欠账：所有已登记进度的锚点都是 done）');
       } else {
         debts.forEach((d, i) => {
-          lines.push('', `  ${i + 1}. [${d.id}]${d.path ? ` ${d.path}` : ''} · progress=${d.progress}`);
+          lines.push(
+            '',
+            `  ${i + 1}. [${d.id}]${d.path ? ` ${d.path}` : ''} · progress=${d.progress}` +
+              // ★ 回落 overlay 的读数**自己招认可能过期**（不许静默）
+              (d.possibly_stale ? '（overlay 回落 · ★ 可能过期）' : `（来自 ${d.progress_source}）`),
+          );
           lines.push(`     evidence: ${d.progress_evidence ? JSON.stringify(d.progress_evidence) : '(无)'}`);
         });
       }

@@ -46487,9 +46487,21 @@
               "path": "src/domain/task_schema.ts",
               "symbol": "taskLevel",
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_schema.ts",
+              "symbol": "progressOfNode",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 它是进度的唯一读端入口（2026-10-22 归一）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_schema.ts",
+              "symbol": "NodeProgress",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 它是 progressOfNode 的读数形状（含 possibly_stale）"
             }
           ],
-          "updated_at": "2026-10-19T01:47:36.382Z",
+          "updated_at": "2026-10-22T15:15:11.214Z",
           "agent": "all-externalize"
         },
         "decision_history": [
@@ -46890,14 +46902,174 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-22T15:15:11.126Z",
+            "decision": {
+              "summary": "在 design/<f>.dsl.json 的几何节点上加 task 格：任务 = 设计侧对象，不挂 overlay",
+              "acceptance": "task 格能落在 design/<f>.dsl.json 上、过 validateDSL、且重建不抹",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "why": "任务对象要有类型定义"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "TaskState",
+                  "why": "四态要是显式类型，不许散落字符串"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "TaskSpec",
+                  "why": "任务格的结构要有具名类型"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "TASK_STATES",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "CLOSED_TASK_STATES",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "TaskDiscussion",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "TaskEvidenceRecord",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "isTaskState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "isClosedTaskState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "progressOf",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "taskLevel",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "updated_at": "2026-10-19T01:47:36.382Z",
+              "agent": "all-externalize"
+            },
+            "note": "progress 权威归一新增两个导出"
+          },
+          {
+            "at": "2026-10-22T15:15:11.214Z",
+            "decision": {
+              "summary": "在 design/<f>.dsl.json 的几何节点上加 task 格：任务 = 设计侧对象，不挂 overlay",
+              "acceptance": "task 格能落在 design/<f>.dsl.json 上、过 validateDSL、且重建不抹",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "why": "任务对象要有类型定义"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "TaskState",
+                  "why": "四态要是显式类型，不许散落字符串"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "TaskSpec",
+                  "why": "任务格的结构要有具名类型"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "TASK_STATES",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "CLOSED_TASK_STATES",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "TaskDiscussion",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "TaskEvidenceRecord",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "isTaskState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "isClosedTaskState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "progressOf",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "taskLevel",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "progressOfNode",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 它是进度的唯一读端入口（2026-10-22 归一）"
+                }
+              ],
+              "updated_at": "2026-10-22T15:15:11.126Z",
+              "agent": "all-externalize"
+            },
+            "note": "progress 权威归一新增两个导出"
           }
         ],
         "task": {
           "id": "file_src_domain_task_schema_ts",
           "summary": "在 design/<f>.dsl.json 的几何节点上加 task 格：任务 = 设计侧对象，不挂 overlay",
           "state": "done",
-          "owner": "subagent:exp-single-source",
-          "claimed_at": "2026-10-21T18:56:52.388Z",
+          "owner": "subagent:deepseek-progress-authority",
+          "claimed_at": "2026-10-22T15:06:26.620Z",
           "read_set": {
             "symbols": [
               {
@@ -46923,7 +47095,7 @@
               {
                 "file": "src/domain/task_schema.ts",
                 "name": "TaskSpec",
-                "fp": "09bf53ef4223a593f67ea6dd79a87fda653760ac"
+                "fp": "ef63c06b443837a60b0c953218ca08679bdde0a4"
               },
               {
                 "file": "src/domain/task_schema.ts",
@@ -46948,16 +47120,16 @@
               {
                 "file": "src/domain/task_schema.ts",
                 "name": "taskLevel",
-                "fp": "b7aebf0a540eb0103b11fea75586a9a467f44490"
+                "fp": "9ccdf33916ffc412cdee32acee10140b3d6fb32f"
               }
             ],
             "files": [
               {
                 "path": "src/domain/task_schema.ts",
-                "content_hash": "33838e202a0253d7387adf8c1ca1394c071eda56"
+                "content_hash": "62e55c0347c6972eab1883ef8cbb74223bc16f69"
               }
             ],
-            "computed_at": "2026-10-21T18:56:52.358Z",
+            "computed_at": "2026-10-22T15:06:26.578Z",
             "basis": [
               "expectations"
             ]
@@ -46977,8 +47149,25 @@
                 ]
               },
               "verdict": "pass"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-22T15:15:18.937Z",
+              "by": "llm",
+              "fingerprint": {
+                "what": "node certs/t365-progress-authority-cert.mjs; node dist/src/presentation/cli/cli.js get_dsl feature=task-system-plan query=pending",
+                "input": "65eca0aae022f574835ec668dcfa2fa6573dc1b9",
+                "code": "35306703fd870883f5c3cce5ea23ba5cd859bfa2",
+                "covers": [
+                  "src/domain/task_schema.ts"
+                ]
+              },
+              "verdict": "pass"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-22T15:06:26.620Z",
+          "reopen_reason": "progress 权威归一到 progressOfNode（两处判据合成一处）",
+          "reopened_from": "subagent:exp-single-source"
         },
         "status": "done"
       },
@@ -104835,11 +105024,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T14:56:43.702Z",
+    "saved_at": "2026-10-22T15:15:45.041Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 97480891,
+    "age": 98622230,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108801,8 +108990,28 @@
     {
       "id": "todo_2026-10-22-排查结论-矛盾一-progress-的权威住了两处-src",
       "summary": "【2026-10-22 排查结论】\n\n★ 矛盾一：progress 的权威住了两处\n· src/application/design/dsl_ops/file_ops.ts:62 说：「T328 进度走权威（overlay.progress + 闸 + 投影回 base）」\n· src/application/write_gate.ts:1233 说：「有 task ⇒ 派生（progressOf），没有才回落 overlay」\n⇒ 实测后果：task-system-plan 上 overlay.progress 与 task.state 12/26 不一致，且 write_gate 那条实测【卡是对的】\n⇒ 判据：定唯一权威（建议 task.state 派生；overlay.progress 只做「没卡节点」的兜底，读端标注可能过期）\n\n★ 矛盾二：任务系统住在设计册 op 目录\n· src/application/design/dsl_ops/task_ops.ts 2354 行 / 9 个 op = dsl_ops/ 5918 行的 40%\n· 它是任务系统核心，不是「设计册的一个 op」⇒ 应搬到 application/task/\n· ★ 建议同时按 op 拆文件（否则搬完还是 2354 行）\n\n★ 顺带纠两个记忆错误\n· src/application/design/workbench/code_workbench.ts 不是前端：它是代码变更审批流（852 行，被 design/index.ts + meta/index.ts + llm_decider.ts 调用）\n· src/application/design/dsl_ops/status_tools.ts 不是死代码：file_ops.ts:16 import 了 updateStatus\n\n★ 验收\n· 矛盾一：造一个「有 card 且 overlay.progress 不同」的节点 ⇒ 两个读端必须给同一个答案\n· 矛盾二：搬完后 9 个 op 对外契约不变（edit_dsl {type:task, op:claim, id:<节点id>} 仍可用）",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "subagent:deepseek-progress-authority",
+      "claimed_at": "2026-10-22T15:15:26.545Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T15:15:26.503Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T15:15:26.654Z",
+          "by": "llm",
+          "fingerprint": {
+            "what": "node certs/t365-progress-authority-cert.mjs; node dist/src/presentation/cli/cli.js get_dsl feature=task-system-plan query=pending",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_用户-2026-10-22-裁定-代码变更审批流已废弃-且它是另一套设计-与卡式",
@@ -108842,9 +109051,16 @@
       "state": "candidate",
       "owner": null,
       "follows": "todo_上架读端-D-T8-pool-ts-未实现-卡挂了看不见-且接入点未定"
+    },
+    {
+      "id": "todo_2026-10-22-progress-归一-剩下的-本笔已做-见-docs-p",
+      "summary": "【2026-10-22 progress 归一 · 剩下的】\n\n本笔已做（见 docs/progress-authority-2026-10-22.md + certs/t365-progress-authority-cert.mjs）：判据归一到 src/domain/task_schema.ts#progressOfNode，三个读端接线。\n\n★ 还欠三件（按价值排序）：\n1. **12 个脏锚点**：task-system-plan 的 overlay 里 12 条 progress=done 而卡未 done（11 个 candidate + file_src_domain_task_schema_ts）。现在读端已不信它们，但**写端还在往里写**，下一个读 overlay 的人（脚本 / 人工 grep）照样被骗。⇒ 定一条：要么按 task.state 重投影一遍，要么把 progress 字段退役（卡里写的「第 ④ 步」）。\n2. **同型错注释**：src/application/design/dsl_ops/node_ops.ts:239 还写着「进度走权威（overlay.progress …）」，与 file_ops.ts:62 改前逐字相同。★ 那个文件节点**没有任务格** ⇒ 领卡前要先 publish。\n3. **词重**：src/application/design/dsl_ops/status_tools.ts 头部「改调权威」指的是**存储**（overlay），字面上与「权威判据」撞名。写端语义没错，但下一个读的人会再问一遍「到底谁说了算」。\n\n★ 附：本次实测读数（旧口径 0 条欠账 / 新口径 12 条）已在 docs/progress-authority-2026-10-22.md。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_2026-10-22-排查结论-矛盾一-progress-的权威住了两处-src"
     }
   ],
-  "_dsl_rev": 1290,
+  "_dsl_rev": 1293,
   "feature_tree": {
     "features": [
       {

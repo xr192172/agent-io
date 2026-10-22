@@ -1,0 +1,558 @@
+{
+  "observe-skeleton-cert.mjs": [
+    "src/infrastructure/analysis/observe/probe.js"
+  ],
+  "t136-unused-export-cert.mjs": [
+    "src/infrastructure/analysis/health/index.js"
+  ],
+  "t181-reset.mjs": [
+    "src/a.ts"
+  ],
+  "t182-cert.mjs": [
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage_overlay.js"
+  ],
+  "t182b-tombstone-cert.mjs": [
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage_overlay.js"
+  ],
+  "t183-cert.mjs": [
+    "src/application/meta/index.ts",
+    "src/domain/semantic.js"
+  ],
+  "t184-cert.mjs": [
+    "src/application/design/intent/consistency.js",
+    "src/application/meta/llm/gateway.ts"
+  ],
+  "t184b-cert.mjs": [
+    "src/__t184b_nonexistent__.ts",
+    "src/application/design/intent/consistency.js",
+    "src/application/plumbing.js",
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage_overlay.js"
+  ],
+  "t184b-probe.mjs": [
+    "src/application/design/intent/consistency.js",
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage_overlay.js"
+  ],
+  "t185-cert.mjs": [
+    "src/domain/semantic.js",
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage_overlay.js"
+  ],
+  "t186-cert.mjs": [
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage_overlay.js"
+  ],
+  "t186b-cert.mjs": [
+    "src/a.ts",
+    "src/application/plumbing.js",
+    "src/b.ts",
+    "src/c.ts",
+    "src/d.ts",
+    "src/e.ts",
+    "src/f.ts",
+    "src/infrastructure/analysis/observe/dsl_store.js",
+    "src/infrastructure/analysis/observe/ledger_fold.js",
+    "src/infrastructure/analysis/observe/proposal_store.js"
+  ],
+  "t187-probe.mjs": [
+    "src/application/design/handlers.js",
+    "src/application/meta/llm/gateway.ts",
+    "src/application/plumbing.js",
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage_overlay.js"
+  ],
+  "t188-cert.mjs": [
+    "src/application/plumbing.js",
+    "src/presentation/cli/cli.js"
+  ],
+  "t189-measure.mjs": [
+    "src/application/tool_registry.js",
+    "src/domain/chain_wiring.js"
+  ],
+  "t189-sweep.mjs": [
+    "src/application/plumbing.js",
+    "src/application/tool_registry.js",
+    "src/domain/chain_wiring.js"
+  ],
+  "t190-cert.mjs": [
+    "src/application/tool_registry.js",
+    "src/infrastructure/storage.js",
+    "src/presentation/mcp/server_registry.js"
+  ],
+  "t191-cert.mjs": [
+    "src/application/plumbing.js"
+  ],
+  "t192-flow.mjs": [
+    "src/a.ts",
+    "src/application/plumbing.js"
+  ],
+  "t192-phantom.mjs": [
+    "src/application/tool_registry.js"
+  ],
+  "t192-pointer-sweep.mjs": [
+    "src/application/tool_registry.js"
+  ],
+  "t193-card.mjs": [
+    "src/a.ts",
+    "src/application/plumbing.js"
+  ],
+  "t196-pointers.mjs": [
+    "src/application/harvest/harvest_decisions.ts",
+    "src/infrastructure/parse/kernel.ts",
+    "src/presentation/http/serve.ts"
+  ],
+  "t197-args.mjs": [
+    "src/application/meta/explore/explore_arg_spec.js",
+    "src/application/tool_registry.js"
+  ],
+  "t197c-approvals-cert.mjs": [
+    "src/application/meta/explore/explore_arg_spec.js",
+    "src/application/tool_registry.js"
+  ],
+  "t197sub-approval.mjs": [
+    "src/a.ts"
+  ],
+  "t197sub-flow-cert.mjs": [
+    "src/a.ts",
+    "src/application/plumbing.js"
+  ],
+  "t198-status.mjs": [
+    "src/application/observe/reconcile/approval.ts",
+    "src/application/tool_registry.js",
+    "src/domain/annotation.js",
+    "src/domain/annotation.ts"
+  ],
+  "t198sub-approval-cert.mjs": [
+    "src/a.ts"
+  ],
+  "t202-diagnose-loop.mjs": [
+    "src/application/meta/diagnosis/diagnose_loop.ts",
+    "src/application/meta/index.ts",
+    "src/application/meta/registry/capability_map.ts",
+    "src/domain/chain_wiring.ts",
+    "src/infrastructure/analysis/diagnosis/test_contract.ts",
+    "src/presentation/cli/cli.js",
+    "src/presentation/cli/diagnose_loop_cli.ts"
+  ],
+  "t203-touched-audit.mjs": [
+    "src/application/tool_registry.js"
+  ],
+  "t203b-declared.mjs": [
+    "src/application/tool_registry.js",
+    "src/domain/chain_wiring.js"
+  ],
+  "t205-splitchain.mjs": [
+    "src/application/design/bricks/signal_review.ts",
+    "src/mixed.ts"
+  ],
+  "t212-regex-vs-ast.mjs": [
+    "src/mixed.ts"
+  ],
+  "t238-freshness-cert.mjs": [
+    "src/application/stage_registry.ts",
+    "src/c.ts"
+  ],
+  "t245-index-key-cert.mjs": [
+    "src/application/refactor/edit/edit_code.ts",
+    "src/application/write_gate.ts",
+    "src/infrastructure/index/symbols.ts"
+  ],
+  "t316-observe-pack-cert.mjs": [
+    "src/infrastructure/analysis/observe/go_instrument.js",
+    "src/infrastructure/analysis/observe/instrument.js",
+    "src/infrastructure/analysis/observe/instrument_java.js",
+    "src/infrastructure/analysis/observe/instrument_py.js",
+    "src/infrastructure/analysis/observe/probe.js"
+  ],
+  "t326-tool-surface-cost-cert.mjs": [
+    "src/application/tool_registry.js"
+  ],
+  "t328-progress-authority-cert.mjs": [
+    "src/a.ts",
+    "src/application/design/dsl_ops/status_tools.js",
+    "src/application/design/handlers.js",
+    "src/b.ts",
+    "src/c.ts",
+    "src/d.ts",
+    "src/domain/geometry.js",
+    "src/domain/overlay.js",
+    "src/infrastructure/graph/import_project.js",
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage_overlay.js"
+  ],
+  "t329-scope-decision-cert.mjs": [
+    "src/a.ts",
+    "src/application/design/dsl_ops/update_feature.js",
+    "src/application/meta/explore/query_feature.js",
+    "src/b.ts",
+    "src/c.ts",
+    "src/domain/scope.ts",
+    "src/infrastructure/storage.js"
+  ],
+  "t330-pending-view-cert.mjs": [
+    "src/a.ts",
+    "src/application/design/dsl_ops/status_tools.js",
+    "src/application/design/dsl_ops/update_feature.js",
+    "src/application/meta/explore/query_feature.js",
+    "src/b.ts",
+    "src/c.ts",
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage_overlay.js"
+  ],
+  "t332-requires-gate-cert.mjs": [
+    "src/application/design/dsl_ops/status_tools.js",
+    "src/application/design/dsl_ops/task_ops.js",
+    "src/application/design/intent/set_design_intent.js",
+    "src/application/write_gate.js",
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage_overlay.js",
+    "src/x.ts",
+    "src/y.ts"
+  ],
+  "t333-attestation-binding-cert.mjs": [
+    "src/application/design/dsl_ops/status_tools.js",
+    "src/application/design/handlers.js",
+    "src/file_bind.ts",
+    "src/file_has_exp.ts",
+    "src/file_no_exp.ts",
+    "src/file_t_bind.ts",
+    "src/file_t_hasexp.ts",
+    "src/file_t_noexp.ts",
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage_overlay.js"
+  ],
+  "t334-mcp-evidence-path-cert.mjs": [
+    "src/application/design/handlers.js",
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage_overlay.js"
+  ],
+  "t335-expectation-from-acceptance-cert.mjs": [
+    "src/application/design/handlers.js",
+    "src/application/meta/explore/contract_page.ts",
+    "src/application/meta/explore/first_hop_args.ts",
+    "src/application/plumbing.js",
+    "src/application/refactor/rename/rename_file.ts",
+    "src/domain/chain_wiring.ts",
+    "src/infrastructure/index/db.js",
+    "src/infrastructure/index/symbols.js",
+    "src/infrastructure/storage.js"
+  ],
+  "t336-design-to-diffblocks-cert.mjs": [
+    "src/application/design/derive/opl.ts",
+    "src/application/design/dsl_ops/status_tools.ts",
+    "src/application/design/handlers.js",
+    "src/application/design/intent/consistency.ts",
+    "src/application/meta/explore/query_feature.ts",
+    "src/application/plumbing.js",
+    "src/application/refactor/rename/rename_file.ts",
+    "src/application/refactor/rename/rename_files.ts",
+    "src/application/refactor/rename/symbol_move.ts",
+    "src/application/write_gate.ts",
+    "src/domain/overlay.ts",
+    "src/infrastructure/index/db.js",
+    "src/infrastructure/index/symbols.js",
+    "src/infrastructure/storage.js"
+  ],
+  "t337-design-sheet-cert.mjs": [
+    "src/a.ts",
+    "src/application/design/handlers.js",
+    "src/application/plumbing.js",
+    "src/domain/validator.js",
+    "src/infrastructure/graph/import_project.js",
+    "src/infrastructure/storage.js"
+  ],
+  "t338-design-sheet-ref-cert.mjs": [
+    "src/a.ts",
+    "src/application/design/handlers.js",
+    "src/application/plumbing.js",
+    "src/domain/design_sheet.js",
+    "src/domain/design_sheet.ts",
+    "src/domain/expectation.ts",
+    "src/domain/overlay.ts",
+    "src/domain/scope.ts",
+    "src/domain/validator.js",
+    "src/infrastructure/graph/import_project.js",
+    "src/infrastructure/storage.js",
+    "src/planned/thing.ts"
+  ],
+  "t339-design-sheet-pending-home-cert.mjs": [
+    "src/a.ts",
+    "src/application/design/handlers.js",
+    "src/application/plumbing.js",
+    "src/domain/design_sheet.js",
+    "src/domain/expectation.ts",
+    "src/domain/geometry.ts",
+    "src/domain/overlay.ts",
+    "src/domain/scope.ts",
+    "src/domain/validator.js",
+    "src/infrastructure/graph/import_project.js",
+    "src/infrastructure/storage.js",
+    "src/planned/thing.ts"
+  ],
+  "t340-edit-dsl-validate-gate-cert.mjs": [
+    "src/a.ts",
+    "src/application/design/handlers.js",
+    "src/application/design/lifecycle/snapshot.js",
+    "src/b.ts",
+    "src/c.ts",
+    "src/domain/validator.js",
+    "src/domain/validator.ts",
+    "src/infrastructure/storage.js",
+    "src/legacy.ts",
+    "src/new.ts",
+    "src/ok.ts"
+  ],
+  "t341-error-key-gate-cert.mjs": [
+    "src/a.ts",
+    "src/application/design/handlers.js",
+    "src/application/design/lifecycle/snapshot.js",
+    "src/b.ts",
+    "src/c.ts",
+    "src/domain/validator.js",
+    "src/domain/validator.ts",
+    "src/infrastructure/storage.js"
+  ],
+  "t342-anchor-broken-repair-cert.mjs": [
+    "src/a.ts",
+    "src/application/design/dsl_ops/file_ops.ts",
+    "src/application/design/dsl_ops/update_feature.ts",
+    "src/application/design/handlers.js",
+    "src/domain/overlay.ts",
+    "src/domain/validator.js",
+    "src/domain/validator.ts",
+    "src/infrastructure/graph/import_project.ts",
+    "src/infrastructure/storage.js",
+    "src/orphan.ts"
+  ],
+  "t343-contract-not-from-code-and-attestation-applies-cert.mjs": [
+    "src/application/design/derive/__opl_noguard_t343.js",
+    "src/application/design/derive/opl.js",
+    "src/application/design/derive/opl.ts",
+    "src/application/design/dsl_ops/status_tools.ts",
+    "src/application/design/handlers.js",
+    "src/application/plumbing.js",
+    "src/domain/overlay.js",
+    "src/domain/overlay.ts",
+    "src/infrastructure/graph/import_project.ts",
+    "src/infrastructure/index/db.js",
+    "src/infrastructure/index/symbols.js",
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage_overlay.js",
+    "src/m.ts"
+  ],
+  "t344-design-sheet-resolved-cert.mjs": [
+    "src/a.ts",
+    "src/application/design/handlers.js",
+    "src/application/plumbing.js",
+    "src/b.ts",
+    "src/domain/design_sheet.js",
+    "src/domain/design_sheet.ts",
+    "src/domain/overlay.js",
+    "src/domain/overlay.ts",
+    "src/infrastructure/graph/import_project.js",
+    "src/infrastructure/storage.js",
+    "src/planned/ghost.ts"
+  ],
+  "t345-read-side-facts-backfill-cert.mjs": [
+    "src/alpha.ts",
+    "src/application/design/handlers.js",
+    "src/application/meta/explore/query_feature.js",
+    "src/application/meta/view/derive_mind_map.js",
+    "src/application/refactor/diff_views/diff_views.js",
+    "src/beta.ts",
+    "src/infrastructure/index/db.js",
+    "src/infrastructure/index/live_render.js",
+    "src/infrastructure/index/symbols.js",
+    "src/infrastructure/storage.js",
+    "src/tiny.ts"
+  ],
+  "t346-type-only-edge-verdict-cert.mjs": [
+    "src/a.ts",
+    "src/application/design/intent/expectations.js",
+    "src/application/design/intent/expectations.ts",
+    "src/b.ts",
+    "src/c.ts",
+    "src/infrastructure/index/db.js",
+    "src/infrastructure/index/file_facts.js",
+    "src/infrastructure/index/symbols.js"
+  ],
+  "t348-phase-classification-cert.mjs": [
+    "src/application/design/handlers.js",
+    "src/application/design/intent/expectations.js",
+    "src/domain/expectation.js",
+    "src/domain/task_machine.js",
+    "src/domain/task_machine.ts",
+    "src/exists.ts",
+    "src/infrastructure/index/db.js",
+    "src/infrastructure/index/symbols.js",
+    "src/infrastructure/storage.js",
+    "src/missing.ts"
+  ],
+  "t349-task-home-cert.mjs": [
+    "src/a.ts",
+    "src/application/design/dsl_ops/status_tools.js",
+    "src/application/design/dsl_ops/status_tools.ts",
+    "src/application/design/dsl_ops/task_ops.ts",
+    "src/application/design/handlers.js",
+    "src/application/write_gate.js",
+    "src/application/write_gate.ts",
+    "src/b.ts",
+    "src/c.ts",
+    "src/domain/actor_spec.js",
+    "src/domain/overlay.js",
+    "src/domain/task_schema.js",
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage_overlay.js"
+  ],
+  "t350-publish-task-cert.mjs": [
+    "src/application/design/handlers.js",
+    "src/application/write_gate.js",
+    "src/domain/discussion_log.ts",
+    "src/domain/no_card_fixture.ts",
+    "src/domain/overlay.ts",
+    "src/domain/pre_only_fixture.ts",
+    "src/domain/t350_work_fixture.ts",
+    "src/domain/task_schema.js",
+    "src/domain/task_schema.ts",
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage_overlay.js"
+  ],
+  "t351-card-standing-cert.mjs": [
+    "src/a.ts",
+    "src/application/design/handlers.js",
+    "src/application/design/intent/expectations.js",
+    "src/b.ts",
+    "src/c.ts",
+    "src/dep-target.ts",
+    "src/domain/task_machine.js",
+    "src/infrastructure/index/db.js",
+    "src/infrastructure/index/symbols.js",
+    "src/infrastructure/storage.js",
+    "src/mine.ts",
+    "src/missing-own.ts",
+    "src/ok.ts"
+  ],
+  "t352-write-gate-coverage-cert.mjs": [
+    "src/a.ts",
+    "src/application/design/dsl_ops/annotation_tools.js",
+    "src/application/design/handlers.js",
+    "src/application/write_gate.js",
+    "src/infrastructure/storage.js",
+    "src/missing-own.ts",
+    "src/other.ts"
+  ],
+  "t353-gate-principle-unblock-cert.mjs": [
+    "src/application/design/dsl_ops/annotation_tools.js",
+    "src/application/design/handlers.js",
+    "src/application/write_gate.js",
+    "src/domain/empty.ts",
+    "src/domain/exists.ts",
+    "src/domain/expectation.js",
+    "src/domain/gate.ts",
+    "src/domain/other.ts",
+    "src/domain/svc.ts",
+    "src/domain/t353_created.ts",
+    "src/domain/task_schema.js",
+    "src/infrastructure/storage.js"
+  ],
+  "t353-judge-port-cert.mjs": [
+    "src/application/design/intent/expectations.js",
+    "src/domain/task_machine.js",
+    "src/nope.ts",
+    "src/ok.ts",
+    "src/zzz.ts"
+  ],
+  "t354-incremental-verify-cert.mjs": [
+    "src/__t354_nothing_here__.ts",
+    "src/application/design/dsl_ops/task_ops.ts",
+    "src/application/write_gate.ts",
+    "src/domain/task_machine.ts"
+  ],
+  "t355-gate-exemption-cert.mjs": [
+    "src/a.ts",
+    "src/application/design/handlers.js",
+    "src/application/refactor/edit/edit_code.js",
+    "src/application/write_gate.js",
+    "src/b.ts",
+    "src/infrastructure/graph/import_project.js",
+    "src/infrastructure/storage.js",
+    "src/x.ts",
+    "src/y.ts"
+  ],
+  "t356-authorize-cert.mjs": [
+    "src/a.ts",
+    "src/application/refactor/edit/apply_writes.js",
+    "src/application/refactor/edit/edit_code.js",
+    "src/application/write_gate.js",
+    "src/b.ts",
+    "src/c.ts",
+    "src/d.ts",
+    "src/domain/scope.js",
+    "src/infrastructure/storage.js"
+  ],
+  "t357-pipeline-gate-cert.mjs": [
+    "src/a.ts",
+    "src/application/refactor/pipeline/refactor_pipeline.ts",
+    "src/b.ts",
+    "src/infrastructure/storage.js",
+    "src/presentation/cli/cli.js",
+    "src/x.ts"
+  ],
+  "t358-domain-five-values-cert.mjs": [
+    "src/a.ts",
+    "src/b.ts",
+    "src/c.ts",
+    "src/dep.ts",
+    "src/domain/task_machine.js",
+    "src/domain/task_machine.ts",
+    "src/done.ts",
+    "src/empty.ts",
+    "src/mine.ts",
+    "src/mine2.ts",
+    "src/ok.ts",
+    "src/other.ts",
+    "src/pending.ts",
+    "src/u.ts",
+    "src/x.ts"
+  ],
+  "t359-l1-two-rulers-cert.mjs": [
+    "src/application/design/dsl_ops/task_ops.ts",
+    "src/application/design/handlers.js",
+    "src/application/design/intent/expectations.js",
+    "src/domain/t359_fixture_absent.ts",
+    "src/domain/t359_fixture_green.ts",
+    "src/domain/t359_fixture_pre.ts",
+    "src/domain/t359_fixture_red.ts",
+    "src/domain/t359_fixture_red_target.ts",
+    "src/domain/task_machine.js",
+    "src/domain/task_machine.ts",
+    "src/domain/task_schema.js",
+    "src/infrastructure/storage.js"
+  ],
+  "t360-lease-ttl-cert.mjs": [
+    "src/application/design/dsl_ops/task_ops.js",
+    "src/domain/task_machine.js"
+  ],
+  "t361-hook-task-gate-cert.mjs": [
+    "src/candidate.ts",
+    "src/claimed.ts",
+    "src/desc-only.ts",
+    "src/exempt.ts",
+    "src/ghost.ts"
+  ],
+  "t362-install-mcp-workbuddy-cert.mjs": [
+    "src/presentation/mcp/server.js",
+    "src/server.js"
+  ],
+  "t363-reopen-complete-cert.mjs": [
+    "src/application/design/dsl_ops/status_tools.ts",
+    "src/application/design/dsl_ops/task_ops.ts",
+    "src/application/write_gate.ts"
+  ],
+  "t364-set-node-semantic-cert.mjs": [
+    "src/application/design/dsl_ops/api_ops.ts"
+  ]
+}

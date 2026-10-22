@@ -116,6 +116,85 @@ export function progressOf(task: Pick<TaskSpec, 'state'> | null | undefined): Di
   }
 }
 
+/**
+ * ★★★ **进度的唯一读端入口**（2026-10-22 · `progress` 权威归一）。
+ *
+ * ## 它治的病（两处给了两个答案，实测）
+ * · `application/design/dsl_ops/file_ops.ts` 的注释说「进度走权威 = `overlay.progress`」；
+ * · `application/write_gate.ts` 的 `effectiveProgress` 说「有 task ⇒ 派生（`progressOf`），没有才回落 overlay」。
+ * ⇒ 同一个节点两个答案。实测 task-system-plan 上「有卡且 overlay 登记过进度」的 26 个节点里，
+ *   **11 个**的 `overlay.progress` 与 `task.state` 不一致（overlay 说 `done`、卡是 `candidate`）——
+ *   overlay 那份是**交接期的影子副本**，会过期；卡上的 `state` 才是此刻的权威。
+ *
+ * ## 判据（**单一**，别在别处再写一遍）
+ *   ① 节点上有 task（`geometry.nodes[].task`）⇒ `progressOf(task)`；
+ *   ② 否则 `todos[]` 里有 `node_id` 指向它、且那张 todo 的态能派生进度 ⇒ 用那个派生值；
+ *      ★ `void` 的 todo **不作数**：todo 是「预决策**指向**」不是挂在该节点上的卡
+ *        （见 `TaskSpec.node_id` 的语义），它失效不该把节点的进度抹成「无值」。
+ *   ③ 否则回落 `overlay.progress`，**并标 `possibly_stale: true`**（不许静默回落）；
+ *   ④ 三者都没有 ⇒ 「这一轴没有值」（`undefined`，**不**硬塞 `draft`）。
+ *
+ * ## 读端（都调它，不许各写一遍）
+ * · `domain/overlay.ts#applyOverlay`（几何层 + semantic 层两处投影）
+ * · `application/write_gate.ts#evaluateTaskGate`（前置闸）
+ * · `application/meta/explore/query_feature.ts`（`query='pending'` 欠账视图）
+ *
+ * ★ **写端不动**：`overlay` 仍是进度的**存储**（`status_tools#updateStatus` 照旧写锚点 + 投影回 base）。
+ *   「权威存储」与「权威判据」是两件事 —— 住两处的是后者。
+ */
+export interface NodeProgress {
+  /** 三值进度；`undefined` = 这一轴没有值（`void` 卡 / 什么都没登记） */
+  status: DiagramStatus | undefined;
+  /** 这条读数**凭**什么（读端要能原样转述，不许只丢一个值出去） */
+  source: 'task' | 'todo' | 'overlay' | 'none';
+  /** ★ `true` = 回落 overlay 得到的读数**可能过期**；人读的读端必须把它说出来 */
+  possibly_stale: boolean;
+  /** 一句话说明（回执 / 视图里直接用） */
+  why: string;
+}
+
+export function progressOfNode(
+  node: { id?: string; task?: TaskSpec | null } | null | undefined,
+  anchor: { progress?: DiagramStatus } | null | undefined,
+  todos?: readonly TaskSpec[] | null,
+): NodeProgress {
+  if (node?.task) {
+    return {
+      status: progressOf(node.task),
+      source: 'task',
+      possibly_stale: false,
+      why: `节点有 task（state=${String(node.task.state)}）⇒ 派生`,
+    };
+  }
+  // ② `todos[]` 里「指向」它的预决策（★ 只要派生得出进度的；`void` 的指向不作数）
+  const pointed = (todos ?? []).find(
+    (t) => node?.id !== undefined && t.node_id === node.id && progressOf(t) !== undefined,
+  );
+  if (pointed) {
+    return {
+      status: progressOf(pointed),
+      source: 'todo',
+      possibly_stale: false,
+      why: `todos[] 里 ${pointed.id}（state=${String(pointed.state)}）的 node_id 指向本节点 ⇒ 派生`,
+    };
+  }
+  // ③ overlay 回落 —— ★ 必须标「可能过期」，不许静默
+  if (anchor?.progress !== undefined) {
+    return {
+      status: anchor.progress,
+      source: 'overlay',
+      possibly_stale: true,
+      why: '没有卡 ⇒ 回落 overlay.progress（交接期的影子副本，**可能过期**）',
+    };
+  }
+  return {
+    status: undefined,
+    source: 'none',
+    possibly_stale: false,
+    why: '既没有卡，也没有 overlay.progress ⇒ 这一轴没有值',
+  };
+}
+
 /** 讨论登记格（★ "不直接展示"的机制：默认只渲染 `micro` 一行 + `open.length`）。 */
 export interface TaskDiscussion {
   /** 微缩：10 秒可读的一行（★ 默认只渲染这个） */

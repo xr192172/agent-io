@@ -69,7 +69,7 @@
     {
       "name": "UpdateFileInput",
       "kind": "interface",
-      "line": 81,
+      "line": 85,
       "signature": "UpdateFileInput()",
       "members": [
         {
@@ -125,13 +125,13 @@
     {
       "name": "updateFile",
       "kind": "function",
-      "line": 103,
+      "line": 107,
       "signature": "updateFile(input: UpdateFileInput): EditResult"
     },
     {
       "name": "DeleteFileInput",
       "kind": "interface",
-      "line": 145,
+      "line": 149,
       "signature": "DeleteFileInput()",
       "members": [
         {
@@ -151,7 +151,7 @@
     {
       "name": "deleteFile",
       "kind": "function",
-      "line": 162,
+      "line": 166,
       "signature": "deleteFile(input: DeleteFileInput): EditResult"
     }
   ],

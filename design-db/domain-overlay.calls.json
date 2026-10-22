@@ -573,11 +573,11 @@
     },
     {
       "from": "src/domain/overlay.ts#applyOverlay",
-      "to": "src/domain/task_schema.ts#progressOf"
+      "to": "src/domain/task_schema.ts#progressOfNode"
     },
     {
       "from": "src/domain/overlay.ts#applyOverlay",
-      "to": "src/domain/task_schema.ts#progressOf"
+      "to": "src/domain/task_schema.ts#progressOfNode"
     }
   ]
 }

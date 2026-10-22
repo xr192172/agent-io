@@ -584,6 +584,10 @@
     },
     {
       "from": "src/application/meta/explore/query_feature.ts#queryFeature",
+      "to": "src/domain/task_schema.ts#progressOfNode"
+    },
+    {
+      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
       "to": "src/domain/todo_chain.ts#buildTodoChains"
     },
     {
@@ -613,6 +617,10 @@
     {
       "from": "src/application/meta/explore/query_feature.ts#queryFeature",
       "to": "src/infrastructure/index/function_outline.ts#buildFunctionOutline"
+    },
+    {
+      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
+      "to": "src/infrastructure/storage.ts#getDSL"
     },
     {
       "from": "src/application/meta/explore/query_feature.ts#queryFeature",

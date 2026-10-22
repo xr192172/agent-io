@@ -41,9 +41,47 @@
       "signature": "progressOf(task: Pick<TaskSpec, 'state'> | null | undefined): DiagramStatus | undefined"
     },
     {
+      "name": "NodeProgress",
+      "kind": "interface",
+      "line": 145,
+      "signature": "NodeProgress()",
+      "members": [
+        {
+          "name": "status",
+          "type": ": DiagramStatus | undefined",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "source",
+          "type": ": 'task' | 'todo' | 'overlay' | 'none'",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "possibly_stale",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "why",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "progressOfNode",
+      "kind": "function",
+      "line": 156,
+      "signature": "progressOfNode(node: { id?: string; task?: TaskSpec | null } | null | undefined,\n  anchor: { progress?: DiagramStatus } | null | undefined,\n  todos?: readonly TaskSpec[] | null,): NodeProgress"
+    },
+    {
       "name": "TaskDiscussion",
       "kind": "interface",
-      "line": 120,
+      "line": 199,
       "signature": "TaskDiscussion()",
       "members": [
         {
@@ -87,7 +125,7 @@
     {
       "name": "TaskEvidenceRecord",
       "kind": "interface",
-      "line": 142,
+      "line": 221,
       "signature": "TaskEvidenceRecord()",
       "members": [
         {
@@ -131,13 +169,13 @@
     {
       "name": "ABSENT_FILE_HASH",
       "kind": "const",
-      "line": 168,
+      "line": 247,
       "signature": "const ABSENT_FILE_HASH = '<absent>'"
     },
     {
       "name": "TaskEvidenceFingerprint",
       "kind": "interface",
-      "line": 191,
+      "line": 270,
       "signature": "TaskEvidenceFingerprint()",
       "members": [
         {
@@ -169,31 +207,31 @@
     {
       "name": "fingerprintOf",
       "kind": "function",
-      "line": 211,
+      "line": 290,
       "signature": "fingerprintOf(parts: readonly string[]): string"
     },
     {
       "name": "codeFingerprintOf",
       "kind": "function",
-      "line": 219,
+      "line": 298,
       "signature": "codeFingerprintOf(entries: ReadonlyArray<{ path: string; hash: string }>,): { code: string; covers: string[] }"
     },
     {
       "name": "EvidenceFreshness",
       "kind": "type",
-      "line": 228,
+      "line": 307,
       "signature": "EvidenceFreshness()"
     },
     {
       "name": "evidenceFreshness",
       "kind": "function",
-      "line": 251,
+      "line": 330,
       "signature": "evidenceFreshness(rec: Pick<TaskEvidenceRecord, 'fingerprint'>,\n  current: { code: string; covers: readonly string[]; input?: string } | null | undefined,): EvidenceFreshness"
     },
     {
       "name": "TaskHistoryEntry",
       "kind": "interface",
-      "line": 284,
+      "line": 363,
       "signature": "TaskHistoryEntry()",
       "members": [
         {
@@ -231,7 +269,7 @@
     {
       "name": "TaskReadSetSymbol",
       "kind": "interface",
-      "line": 331,
+      "line": 410,
       "signature": "TaskReadSetSymbol()",
       "members": [
         {
@@ -257,7 +295,7 @@
     {
       "name": "TaskReadSetFile",
       "kind": "interface",
-      "line": 341,
+      "line": 420,
       "signature": "TaskReadSetFile()",
       "members": [
         {
@@ -277,13 +315,13 @@
     {
       "name": "TaskReadSetBasis",
       "kind": "type",
-      "line": 354,
+      "line": 433,
       "signature": "TaskReadSetBasis()"
     },
     {
       "name": "TaskReadSet",
       "kind": "interface",
-      "line": 357,
+      "line": 436,
       "signature": "TaskReadSet()",
       "members": [
         {
@@ -321,7 +359,7 @@
     {
       "name": "TaskSpec",
       "kind": "interface",
-      "line": 368,
+      "line": 447,
       "signature": "TaskSpec()",
       "members": [
         {
@@ -485,7 +523,7 @@
     {
       "name": "CriteriaHome",
       "kind": "interface",
-      "line": 576,
+      "line": 655,
       "signature": "CriteriaHome()",
       "members": [
         {
@@ -499,13 +537,13 @@
     {
       "name": "expectationsOf",
       "kind": "function",
-      "line": 580,
+      "line": 659,
       "signature": "expectationsOf(home: CriteriaHome | null | undefined): Expectation[]"
     },
     {
       "name": "taskLevel",
       "kind": "function",
-      "line": 588,
+      "line": 667,
       "signature": "taskLevel(expectations: readonly Expectation[]): 'L1' | 'L2'"
     }
   ],
@@ -546,6 +584,18 @@
     {
       "from": "src/domain/task_schema.ts#progressOf",
       "to": "src/domain/task_schema.ts#isTaskState"
+    },
+    {
+      "from": "src/domain/task_schema.ts#progressOfNode",
+      "to": "src/domain/task_schema.ts#progressOf"
+    },
+    {
+      "from": "src/domain/task_schema.ts#progressOfNode",
+      "to": "src/domain/task_schema.ts#progressOf"
+    },
+    {
+      "from": "src/domain/task_schema.ts#progressOfNode",
+      "to": "src/domain/task_schema.ts#progressOf"
     }
   ]
 }

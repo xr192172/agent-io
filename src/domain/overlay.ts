@@ -19,7 +19,7 @@ import type { ThemeId, UserNode } from './types.js';
 import type { ExpectedApi, Symbol, FileLifecycle } from './semantic.js';
 // ★★★ 2026-10-17（task_home）：有 task 的节点，进度是**派生值**（`task.state ⇒ 三轴`）。
 //   ★ 只取这一个纯函数（task_schema 对 overlay 只有 `import type` ⇒ 不成运行期环）。
-import { progressOf } from './task_schema.js';
+import { progressOfNode } from './task_schema.js';
 
 /**
  * ★★★ **锚点"有内容"的唯一判据**（T182，2026-10-11）。
@@ -570,18 +570,19 @@ export function applyOverlay(base: DesignDSL, overlay: DesignOverlay): DesignDSL
           ...(a.attributes ? { attributes: a.attributes } : {}),
         } as typeof n)
       : { ...n };
-    // ★★★ 2026-10-17（task_home · 两轴消歧）：**有 task ⇒ 进度是派生值**（`progressOf(task)`），
-    //   `overlay.progress` 对这类节点**不再有话语权**（它是交接期的影子副本，第 ④ 步退役）。
-    //   ★ `void`/`superseded` ⇒ 派生值 = `undefined` ⇒ **如实无值**（不回落 overlay，也不硬塞 `draft`）。
-    if (n.task) {
-      const derived = progressOf(n.task);
-      if (derived) merged.status = derived;
+    // ★★★ 2026-10-22（progress 权威归一）：**这一处不再自带判据** —— 调
+    //   `task_schema.ts#progressOfNode`（唯一读端入口：有卡 ⇒ 派生；没卡 ⇒ 回落 overlay **并标「可能过期」**）。
+    //   ★ 有卡（`task`、或 `todos[]` 里有 `node_id` 指向它）⇒ 派生值**覆盖**；
+    //     `void` ⇒ 派生值 = `undefined` ⇒ **如实无值**（不回落 overlay，也不硬塞 `draft`）。
+    //   ★ 没有卡且有 `overlay.progress` ⇒ 投影（与 tag/决策卡同款「重建时投影回来」）；
+    //     两者都没有 ⇒ **原样保留 base**（不抹成 undefined）—— 让扫描侧的值当「读侧默认」。
+    const reading = progressOfNode(n, a, base.todos);
+    if (reading.source === 'task' || reading.source === 'todo') {
+      if (reading.status) merged.status = reading.status;
       else delete merged.status;
       return merged;
     }
-    // ★★ 进度轴（2026-10-15）：overlay.progress → `Node.status`（与 tag/决策卡同款"重建时投影回来"）。
-    //   ★ overlay 没写 progress 就**原样保留 base**（不抹成 undefined）—— 让扫描侧的值当"读侧默认"。
-    return a?.progress ? { ...merged, status: a.progress } : merged;
+    return reading.status ? { ...merged, status: reading.status } : merged;
   });
   out.geometry = { ...base.geometry!, nodes };
 
@@ -594,20 +595,19 @@ export function applyOverlay(base: DesignDSL, overlay: DesignOverlay): DesignDSL
   if (base.semantic) {
     const files = base.semantic.files.map((f) => {
       const a = overlay.anchors[f.id];
-      const t = taskById.get(f.id);
-      if (!a && !t) return f;
+      // ★★★ 2026-10-22（progress 权威归一）：**几何层与语义层同一把尺** —— 两边都调 `progressOfNode`。
+      //   以前这里自己写一遍（`if (t) … else if (a?.progress) …`）⇒ 与上面那段是**两份判据**。
+      const reading = progressOfNode({ id: f.id, task: taskById.get(f.id) }, a, base.todos);
+      if (!a && reading.source === 'none') return f;
       const merged = {
         ...f,
         ...(a?.lifecycle ? { lifecycle: a.lifecycle } : {}),
       } as (typeof base.semantic.files)[number];
-      // ★★★ 2026-10-17（task_home）：文件节点的进度同样**从 task 派生**（几何层与语义层同一把尺）；
-      //   没有 task 才走 overlay.progress 投影（与上面 Node.status 同款）。
-      if (t) {
-        const derived = progressOf(t);
-        if (derived) merged.status = derived;
+      if (reading.source === 'task' || reading.source === 'todo') {
+        if (reading.status) merged.status = reading.status;
         else delete merged.status;
-      } else if (a?.progress) {
-        merged.status = a.progress;
+      } else if (reading.status) {
+        merged.status = reading.status;
       }
       return merged;
     });

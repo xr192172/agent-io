@@ -59,7 +59,11 @@ export function addFile(input: AddFileInput): EditResult {
   dsl.semantic.files.push(file);
   saveDSL(dsl);
 
-  // ★★★ T328：进度走权威（`overlay.progress` + 闸 + 投影回 base）；文件已落盘 ⇒ `updateStatus` 能查到它。
+  // ★★★ 2026-10-22（progress 权威归一）：这一路径是**写端**，它回答的是「**写到哪**」——
+  //   `overlay.progress` 是**存储**（+ 闸 + 投影回 base），不是「进度由谁说了算」。
+  //   ★ **判据**（谁说了算）只住一处：`domain/task_schema.ts#progressOfNode` —— 有卡 ⇒ 派生 `task.state`；
+  //     没卡 ⇒ 回落 `overlay.progress`（并标「可能过期」）。★ 别把本行读成“overlay 是权威”（那是 10-15 的旧口径）。
+  //   文件已落盘 ⇒ `updateStatus` 能查到它。
   if (status !== undefined) updateStatus({ feature, node_id: file_id, status });
 
   return {

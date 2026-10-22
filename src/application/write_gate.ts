@@ -68,7 +68,7 @@ import { loadOverlay } from '../infrastructure/storage_overlay.js';
 import type { Annotation } from '../domain/annotation.js';
 // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：豁免判据的**取值域**住 `domain/geometry.ts`，
 //   本文件**只读**它（`nodes[].gate`）—— **不按路径前缀判**（路径前缀 = 本仓头号病根）。
-import type { NodeGate } from '../domain/geometry.js';
+import type { DiagramStatus, NodeGate } from '../domain/geometry.js';
 // ★★★ T356（2026-10-20）：「按 run 授权」（`authorize`）的**文法不新造** —— 直接用 `domain/scope.ts`
 //   那一对（`parseScope` / `resolveScope`，与 `get_dsl` 的 `scope` 参数、`design_diff` 的圈定**同一份**）。
 //   ★★ 但 **scope → 文件** 这一步**不许**用 `resolveScope().paths` —— 那是 `semantic.files` 口径，
@@ -83,7 +83,7 @@ import { admitActor, actorStrictMode, sameActor } from '../domain/actor_spec.js'
 // ★★★ 2026-10-17（OQ10 裁定）：闸的判据从「overlay 的 progress 是否登记过」改成
 //   「**该节点上是否有 state=claimed 的 task**」—— 任务格是唯一权威（`task_plan.task_home`），
 //   progress 对它只是派生值（`progressOf`）。
-import { progressOf, type TaskSpec } from '../domain/task_schema.js';
+import { progressOfNode, type NodeProgress, type TaskSpec } from '../domain/task_schema.js';
 // ★★★ 2026-10-21（并发控制·读集比对）：**假设检定**（「我读过的东西是不是被别人改了」）。
 //   ★ 与 A7（谁在写）**两个字段、两条判据**：A7 管身份，这一条管"假设是否过期" ⇒ 别混。
 //   ★ 这里只 import **判定内核 + 类型**：记录端在 `invokeTool`（读集从 read/facts 的产物里来），
@@ -651,6 +651,12 @@ export interface GateCoverageFeature {
   gateByPath: Map<string, NodeGate | undefined>;
   /** ★ node_id → 任务格（`geometry.nodes[].task`）—— 闸的判据读它（OQ10） */
   taskById: Map<string, TaskSpec>;
+  /**
+   * ★★★ 2026-10-22（progress 权威归一）：`todos[]`（预决策卡）—— 交给 `progressOfNode` 判“是否有卡指向本节点”。
+   * ★ 为什么闸也要它：`domain/overlay.ts#applyOverlay` 已经把「`todos[].node_id` 指向本节点」算作“有卡”，
+   *   闸不带上它就会对同一节点给出**另一个答案** —— 那正是本笔要治的病。
+   */
+  todos: readonly TaskSpec[];
 }
 
 /**
@@ -780,7 +786,7 @@ export function collectGateCoverage(rootArg: string): GateCoverage {
       }
     }
     // ★ `byPath` 为空且 `fileNodes > 0` 已在上面进 `unaddressable`（那只可能是"节点不可寻址"这一种病因）
-    if (byPath.size) cov.features.push({ feature: d.feature, byPath, gateByPath, taskById });
+    if (byPath.size) cov.features.push({ feature: d.feature, byPath, gateByPath, taskById, todos: d.todos ?? [] });
   }
   return cov;
 }
@@ -1223,20 +1229,25 @@ function evaluateTaskGate(
   /** ★ 只标了一份的：仍受闸，但**必须说清是哪一侧没标**（否则“我标了呀”会变成一次没头冤案） */
   const partialExempt: Array<{ rel: string; exempt: Array<{ feature: string; nodeId: string }>; gated: Array<{ feature: string; nodeId: string; gate: NodeGate | undefined }> }> = [];
 
-  // overlay 按 feature 懒读一次（★ 只作**前置闸**的回落值：有 task 的节点用派生进度）
+  // overlay 按 feature 懒读一次（★ 只作**回落值**：有卡的节点用派生进度 —— 判据在 `progressOfNode`）
   const ovByFeature = new Map<string, ReturnType<typeof loadOverlay>>();
-  const overlayProgress = (feature: string, nodeId: string): unknown => {
+  const overlayProgress = (feature: string, nodeId: string): DiagramStatus | undefined => {
     if (!ovByFeature.has(feature)) ovByFeature.set(feature, loadOverlay(feature));
     return ovByFeature.get(feature)?.anchors?.[nodeId]?.progress;
   };
 
-  // ★★ 一个问句一把尺：**该节点此刻的进度** —— 有 task ⇒ 派生（`progressOf`），没有才回落 overlay。
-  //   ★ 两处（前置闸 / 放行回执）都读它，不各写一遍（交接期两轴并存时，派生值优先）。
+  // ★★★ 2026-10-22（progress 权威归一）：**这一处不再自带判据** —— 调 `domain/task_schema.ts#progressOfNode`
+  //   （唯一读端入口：有卡 ⇒ 派生；没卡 ⇒ 回落 overlay 并标 `possibly_stale`）。
+  //   ★ 以前这里写 `t ? progressOf(t) : overlayProgress(...)`，而 `domain/overlay.ts#applyOverlay` 里又有两份
+  //     同型判据 ⇒ 同一个问句**三个答案**（实测 task-system-plan 上 11 个节点就是两种答案）。
   const taskByFeature = new Map(covering.map((c) => [c.feature, c.taskById] as const));
-  const effectiveProgress = (feature: string, nodeId: string): unknown => {
-    const t = taskByFeature.get(feature)?.get(nodeId);
-    return t ? progressOf(t) : overlayProgress(feature, nodeId);
-  };
+  const todosByFeature = new Map(covering.map((c) => [c.feature, c.todos] as const));
+  const effectiveProgress = (feature: string, nodeId: string): NodeProgress =>
+    progressOfNode(
+      { id: nodeId, task: taskByFeature.get(feature)?.get(nodeId) },
+      { progress: overlayProgress(feature, nodeId) },
+      todosByFeature.get(feature),
+    );
 
   // ★★★ T332（2026-10-15）：**前置闸（解锁）** —— **追加判据**（不新建闸门，与下面"未领"并列）。
   //
@@ -1260,7 +1271,7 @@ function evaluateTaskGate(
     feature: string;
     nodeId: string;
     edgeId: string;
-    missing: Array<{ id: string; progress: unknown }>;
+    missing: Array<{ id: string; progress: unknown; stale: boolean; source: NodeProgress['source'] }>;
   }> = [];
   {
     const edgesOf = (feature: string) => {
@@ -1278,7 +1289,10 @@ function evaluateTaskGate(
           if (!ei.requires || ei.requires.length === 0) continue; // ★★ 没标 requires ⇒ 不拦
           if (ei.from !== nodeId) continue; // ★ 只拦"该边源节点(from)"的源码写入
           const missing = ei.requires
-            .map((rid) => ({ id: rid, progress: effectiveProgress(feature, rid) }))
+            .map((rid) => {
+              const r = effectiveProgress(feature, rid);
+              return { id: rid, progress: r.status, stale: r.possibly_stale, source: r.source };
+            })
             .filter((x) => x.progress !== 'done');
           if (missing.length) unmetPrereq.push({ rel, feature, nodeId, edgeId, missing });
         }
@@ -1291,7 +1305,15 @@ function evaluateTaskGate(
       .map(
         (u) =>
           `  · ${u.rel}（节点 ${u.nodeId}，feature=${u.feature}）被边 ${u.edgeId} 的任务前置挡住：` +
-          u.missing.map((m) => `${m.id}（progress=${JSON.stringify(m.progress)}）`).join(' / ') +
+          u.missing
+            .map(
+              (m) =>
+                `${m.id}（progress=${JSON.stringify(m.progress)}` +
+                // ★ progress 权威归一：回落 overlay 的读数**必须自己招认可能过期**（不许静默）
+                (m.stale ? '，★ 来自 overlay 回落，**可能过期**（该节点没有卡）' : `，来自 ${m.source}`) +
+                '）',
+            )
+            .join(' / ') +
           ' **尚未 done**',
       )
       .join('\n');

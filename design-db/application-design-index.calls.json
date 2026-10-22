@@ -49,10 +49,6 @@
       "kind": "relative"
     },
     {
-      "source": "./workbench/code_workbench.js",
-      "kind": "relative"
-    },
-    {
       "source": "../../infrastructure/graph/import_project.js",
       "kind": "relative"
     },

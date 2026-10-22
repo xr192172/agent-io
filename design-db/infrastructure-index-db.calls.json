@@ -121,25 +121,25 @@
     {
       "name": "projectCachePool",
       "kind": "const",
-      "line": 396,
+      "line": 409,
       "signature": "const projectCachePool = new Map<string, Database>()"
     },
     {
       "name": "getProjectCacheDb",
       "kind": "function",
-      "line": 405,
+      "line": 418,
       "signature": "getProjectCacheDb(projectRoot: string): Database"
     },
     {
       "name": "closeAllProjectCacheDbs",
       "kind": "function",
-      "line": 416,
+      "line": 429,
       "signature": "closeAllProjectCacheDbs(): void"
     },
     {
       "name": "closeProjectCacheDb",
       "kind": "function",
-      "line": 428,
+      "line": 441,
       "signature": "closeProjectCacheDb(projectRoot: string): void"
     }
   ],
