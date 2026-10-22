@@ -418,6 +418,10 @@ export async function judgeExpectations(
     passed: out.filter((x) => x.verdict === 'pass').length,
     failed: out.filter((x) => x.verdict === 'fail').length,
     unsupported,
+    // ★★★ 2026-10-22：`pending` 单列 —— 此前四值里只有它没人计数 ⇒ 只有 pending 后态判据的卡
+    //   会被 `cardStanding` 判 `satisfied`（「还没干完，在等前置」被读成「可收口」）。
+    //   计数口径与其他三值一致：**只数 verdict，不重新解释**（怎么处置在 domain 侧）。
+    pending: out.filter((x) => x.verdict === 'pending').length,
     // ★ T256 缺口②：决策间冲突（同一对象上的互斥要求）—— 单列，不混进 pass/fail 计数
     conflicts: findExpectationConflicts(items),
     items: out,

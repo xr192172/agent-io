@@ -198,14 +198,27 @@ console.log('\n════ ⑤ unknowable：判不了（四种来路）══�
 }
 
 // ════════════════════════════════════════════════════════════════════
-console.log('\n════ ⑤e pending：★ 当前行为 = 假绿（链 A 环2 的对照）════');
+console.log('\n════ ⑤e pending：★ 2026-10-22 由「假绿」改成「压过 satisfied」════');
 {
   const v = await cardStanding(card('card_pending', [POST_PENDING]), opts());
-  chk(v.standing === 'satisfied', '⑤e ★ 当前行为：只有 pending ⇒ satisfied（这是既有洞，不是本证认可的语义）', brief(v));
-  chk(v.satisfaction.checked === 1 && v.satisfaction.failed === 0 && v.satisfaction.unsupported === 0 && v.redSeen === 0,
-    '⑤e′ pending 落在 checked 里，但 passed/failed/unsupported 都不收 ⇒ 五值里“看不见”', JSON.stringify(v.satisfaction));
-  chk(!/pending|blocked_by|等 X/.test(v.reason), '⑤e″ reason 里**没有** pending 的痕迹（假绿的证据：卡在哪读不出来）', v.reason);
-  console.log('     ★ 链 A 环2 修好后（pending>0 ⇒ unknowable），⑤e 必须变红 —— 红是预期的，不是回归。');
+  // ★★★ 2026-10-22：这一条**从钉旧行为翻成了钉新行为**。
+  //   本证原先写的是「只有 pending ⇒ satisfied（既有洞，不是本证认可的语义）」，并预言
+  //   「链 A 环2 修好后，⑤e 必须变红 —— 红是预期的，不是回归」。
+  //   ⇒ 那一天到了：`pending > 0 ⇒ unknowable`，理由：pending = 「活还没干完，在等前置」，
+  //     与 unsupported（判据判不了）不同，但**两者都不许被读成「全过」**。
+  chk(v.standing === 'unknowable', '⑤e ★ 只有 pending ⇒ unknowable（在等前置 ≠ 可收口）', brief(v));
+  chk(v.satisfaction.pending === 1, '⑤e′ pending 被**计数**了（此前五值里唯一没人数的那个）', JSON.stringify(v.satisfaction));
+  chk(/pending|在等前置/.test(v.reason) && String(v.reason).includes('等 X'),
+    '⑤e″ reason 里带 blocked_by 原文 —— 「卡在哪」必须读得出来', v.reason);
+  // ★ 反向对照：换成一条**明确绿**的后态判据 ⇒ satisfied。
+  //   ★ 为什么不用「同一条去掉 blocked_by」：本文件的 `baseVerdict` 对**无 blocked_by 的 run 一律给 fail**
+  //     （那条分支是给 ① work 用的），拿它当对照会测到「run 无 blocked_by ⇒ fail」而不是「pending 归零 ⇒ 绿」。
+  //   ⇒ 对照用 `POST_OK`（`file-exists src/ok.ts` ⇒ pass），它验的是同一件事：
+  //     **pending 计数为 0 时，reason 里不出现「在等前置」、standing 回到 satisfied**。
+  const v2 = await cardStanding(card('card_pending2', [POST_OK]), opts());
+  chk(v2.standing === 'satisfied', '⑤e‴ 对照组：换一条明确绿的判据 ⇒ satisfied（证明能分辨）', brief(v2));
+  chk(v2.satisfaction.pending === 0, '⑤e⁗ 对照组 satisfaction.pending === 0');
+  chk(!/在等前置/.test(v2.reason), '⑤e⁵ 对照组 reason 里不出现「在等前置」');
 }
 
 // ════════════════════════════════════════════════════════════════════

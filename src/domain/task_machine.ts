@@ -149,6 +149,13 @@ export interface SatisfactionCounts {
   passed: number;
   failed: number;
   unsupported: number;
+  /**
+   * ★★★ 2026-10-22：**在等前置的条数**（`Verdict.pending`）。
+   * ★ 为什么必须有这一格：`satisfied` 的条件是 `failed === 0 && violation.*`——
+   *   若 pending 不计数，一张**只有 pending 后态判据**的卡会判 `satisfied`（可收口），
+   *   而它其实还没干完。这是「判不了被读成没问题」，本仓最忌的那类绿。
+   */
+  pending: number;
 }
 
 /** 违约轴（★ **只**由前态判据得出） */
@@ -265,6 +272,12 @@ export async function cardStanding(
     passed: report.passed,
     failed: report.failed,
     unsupported: report.unsupported,
+    // ★★★ 2026-10-22：**从 `items` 数，不信 `report.pending`**。
+    //   为什么：`report.pending` 是**声称**的计数，而假 judge / 旧实现可能根本不填它
+    //   ⇒ 判据会静默失效（实测：`certs/t358` 的假 judge 不填 ⇒ 我的第一版判据看不见 pending）。
+    //   `checked === items.length` 那道守卫已经把「items 是唯一权威」立起来了 ⇒ 这里顺着它数。
+    //   ★ 这也守住一条：**别让"上游没填字段"变成"判据不生效"**（那就是换了个形状的假绿）。
+    pending: (report.items ?? []).filter((i) => i.verdict === 'pending').length,
   };
   const violation: ViolationCounts = {
     checked: pre.length,
@@ -310,6 +323,27 @@ export async function cardStanding(
       reason:
         `后态判据里 ${satisfaction.unsupported} 条**判不了**（unsupported 既不算过也不算不过）⇒ 判不了` +
         (redSeen > 0 ? `；★ 同时看到 ${redSeen} 条红，不许当成「没活」` : ''),
+    };
+  }
+
+  // ── ②.5 后态**在等前置**（pending）：也压过 satisfied（★★ 2026-10-22 补的一个假绿口子）
+  //   为什么与 ② unsupported 分开：`unsupported` = 「**这个判据**我判不了」（工具/索引不够）；
+  //   `pending` = 「**这活**还没干完，卡在某处」—— 卡在哪写在 `blocked_by` 里，**必须读得出来**。
+  //   两者都**不许**被读成「全过」，但只有 pending 需要把 blocked_by 原文带进 reason。
+  //   ★ 这条不补的后果就是：一张只有 `run{blocked_by:'等 X'}` 后态判据的卡被判 satisfied（可收口）。
+  if (satisfaction.pending > 0) {
+    const blocked = report.items
+      .filter((i) => i.verdict === 'pending')
+      .map((i) => (i.expectation.kind === 'run' ? String(i.expectation.blocked_by ?? '').trim() : ''))
+      .filter(Boolean);
+    return {
+      ...base,
+      standing: 'unknowable',
+      reason:
+        `后态判据里 ${satisfaction.pending} 条**在等前置**（pending：活还没干完，卡在某处）` +
+        `⇒ 判不了「收没收口」` +
+        (blocked.length ? `：\n${[...new Set(blocked)].map((b) => `  · 等：${b}`).join('\n')}` : '') +
+        (redSeen > 0 ? `\n★ 同时看到 ${redSeen} 条红，不许当成「没活」` : ''),
     };
   }
 

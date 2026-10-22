@@ -80,6 +80,23 @@ export interface ExpectationsReport {
   passed: number;
   failed: number;
   unsupported: number;
+  /**
+   * ★★★ 2026-10-22：**`pending` 的条数**（`Verdict` 四值里此前唯一没人数的那个）。
+   *
+   * ## 为什么必须单列（这条不是补充说明，是一个假绿现场）
+   * `cardStanding` 判 `satisfied` 的条件是 `failed === 0 ∧ violation.failed === 0 ∧ violation.unsupported === 0`。
+   * 而 `pending` 既不是 pass 也不是 fail/unsupported ⇒ **它一条都没被数过** ⇒
+   * 一张只有 `run{blocked_by:'等 X'}` 后态判据的卡会被判 `satisfied`（**可收口**），
+   * 而它其实**还没干完，只是在等前置**。这是本仓最忌的那种绿：**「判不了」被读成「没问题」**。
+   *
+   * ## 与 `unsupported` 的区别（别混）
+   * `unsupported` = 「**这个判据**我判不了」（扩展名不走解析器 / 依赖事实不完整）；
+   * `pending` = 「**这活**还没干完，卡在某处」—— 卡在哪写在契约的 `blocked_by` 里，**要能读出来**。
+   *
+   * ★ 向后兼容：注入式假 judge 不填这个字段时是 `undefined`，判据写成 `> 0` 为假 ⇒ 行为不变
+   *   （那是「它声称没有 pending」，是它自己的声明，不是本端口替它编）。
+   */
+  pending: number;
   items: ExpectationItem[];
   notes: string[];
   /** 决策间冲突（单列，**不混进** pass/fail 计数 —— 谁对是人的裁） */
