@@ -103880,11 +103880,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T02:31:37.256Z",
+    "saved_at": "2026-10-22T02:47:16.512Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 52774445,
+    "age": 53713701,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -106254,12 +106254,20 @@
     {
       "id": "todo_http-65条路由按重复度逐条退役",
       "type": "todo",
+      "state": "in_progress",
+      "summary": "【HTTP 面收敛 · 进度 25/43】2026-10-22：① HTTP 接进 `invokeTool`（`/api/tool/<name>` 派生 + `/api/tools` 自描述）；② **删掉 25 条与 tool 语义等价的路由**（68→43），判据是「HTTP handler 的核心调用 == 某 tool 的实现」；③ 实测：`/api/feature-line` ⇒ 404，`/api/tool/feature_line` ⇒ 200；`consistency_check` / `review_changes` 均 200 且有完整数据。\n★ 剩两件事：\n  (a) **24 个 handler 成死代码**（`handleApiObserveLog` / `handleApiCodePropose` / `handleApiCanvasNotesSave` …），要凭「无路由引用」的机器证据删掉（约 800 行）；★ 注意别误删 `handleStaticFile`（它在表外被调）、`handleTourPage` / `handleExplainPage`（被 /api/tour、/api/explain 间接调）。\n  (b) 剩余 42 条里有 **约 19 条是「只有 HTTP 有、MCP/CLI 拿不到」**（见 `todo_只有HTTP有的能力补成tool`）—— 那是**缺失**不是**重复**。",
+      "created_at": "2026-10-22T02:31:37.218Z",
+      "updated_at": "2026-10-22T02:47:16.476Z"
+    },
+    {
+      "id": "todo_只有HTTP有的能力补成tool",
+      "type": "todo",
       "state": "candidate",
-      "summary": "【HTTP 面收敛 · 逐条退役】2026-10-22 已把 HTTP 接进 `invokeTool`（`GET /api/tool/<name>` 派生 + `GET /api/tools` 自描述），66 个能力在 HTTP 侧**零成本**获得。但老的 65 条 `ROUTES` 还在，其中**约 23 条与某个 tool 语义重复**（同一个能力两个面各写一遍 ⇒ 判据住两处）。判据：① 对 65 条逐条判三分类（UI 专用 / 与 tool 重复 / 两者都有），分类结果落进本卡；② 「与 tool 重复」的那些改成**薄壳**（解析入参 → `invokeTool` → 回 JSON，**不许**再自己写编排）；③ 全表改完后，「同一能力两处实现」的数量 = 0（由 `assertRouteTable` + 一份 path↔tool 对照表机器验）。★ 不许一刀切删：前端在用这些 path，删要配合改前端；且 `/api/load`、`/api/save`、SSE、`/api/layout/*` 本来就不是工具（UI 专用），不该硬塞进 `TOOL_DEFS`。",
-      "created_at": "2026-10-22T02:31:37.218Z"
+      "summary": "【能力缺失 · 不是重复】2026-10-22 实测：HTTP 面有一批能力**在 MCP / CLI 面根本不存在**（不是\"两处各写一遍\"，是\"只有一处有\"）。清单（`grep explore_code` 的 action 全集确认过，`semantic` / `language_concepts` 都不在里面）：\n  · 检索类：`/api/semantic-search`（semanticSearch）· `/api/language-concepts`（languageConcepts）· `/api/git-diff`\n  · DSL 整份读写：`/api/load` · `/api/save` · `/api/features` · `/api/live` · `/api/feature-dsl` · `/api/feature-meta`（★ `get_dsl` 返回的是**摘要/片段**，不是整份 —— 这不是重复，是真的缺一个\"整份读\"）\n  · 词典：`/api/dict/{query,highlight,ingest,generate}`（4 条）\n  · 视图：`/api/overview` · `/api/mind-map-teach` · `/api/tour` · `/api/explain` · `/api/explain/generate`\n  · UI 几何（**大概率不该补**，前端自己算）：`/api/layout/{dag,force,grid}` · `/api/user_nodes` · `/api/annotations`（★ annotations 已有 `annotate_functions`，但那注解的是**函数**不是**画布批注**，两者别混）\n判据：① 逐条判「这是能力还是 UI 专属」，能力 ⇒ 补进 `TOOL_DEFS`（然后删路由）；UI 专属 ⇒ 在路由上加 `uiOnly: true` 并在 `assertRouteTable` 里认它；② 补完之后「只在 HTTP 面存在的能力」= 0（可由一份 path↔tool 对照表机器验）。\n★ 不许为了\"统一\"把 UI 专属硬塞进 `TOOL_DEFS`（那会让它从\"能力清单\"退化成\"HTTP 端点表\"）。",
+      "created_at": "2026-10-22T02:47:16.476Z"
     }
   ],
-  "_dsl_rev": 1253,
+  "_dsl_rev": 1254,
   "feature_tree": {
     "features": [
       {
