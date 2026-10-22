@@ -104653,11 +104653,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T11:22:48.897Z",
+    "saved_at": "2026-10-22T11:27:31.979Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 84646086,
+    "age": 84929168,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108464,9 +108464,37 @@
       "id": "todo_设计侧自标-51-条-unjudged-38-条-debt-但没有任何东西读它们-所以永远不进待办池",
       "created_at": "2026-10-22T11:22:48.867Z",
       "summary": "【实测 2026-10-22：`task_plan` 里设计侧**自己标了 51 条 `unjudged`（未判/零调用/未接线）+ 38 条 `debt`**，\n但【没有任何东西会读这些字段】—— 它们不是卡、不在看板、不进 verify、不进任何待办池。】\n\n## 这批是什么（全部来自设计侧自述，不是我的判断）\n```\npatrols[0].unjudged        ★ patrolDrift 全仓零调用（A1）⇒ 这个 metric 真的一次都没被算过\npatrols[1].metrics[*]      同上（3 条）\npatrols[2].unjudged        ★★ 这条 metric 写不成代码（OverlayAnchor 无 updated_at；11 个 decision 0 个带）\ndesign_dsl_health.anti_blindspot_checks[*].unjudged   ★ 没有检查器：anti_decoration/anti_comment 靠人看\ntwo_level_tasks.claim_incomplete_rule.unjudged        ★ \"领到先查依据\"由人执行，无机器检查器\nservice_flow.steps[2].unjudged   ★★ 上架读端（D-T8）pool.ts 未实现 ⇒ 卡挂了看不见；且【接入点未定】\nservice_flow.steps[6].unjudged   ★ 双验没有执行者（grep 双验 = 0），今天全靠自觉\nparallel_claim.unjudged          ★ \"两两交集为空\"要先能算 target 文件集合（path 覆盖率不够）\n```\n\n## 为什么这是最贵的一类\n```\n设计侧很诚实：它把\"我不知道怎么判 / 没人算过\"写进了 unjudged。\n但【诚实标注 ≠ 待办】：unjudged 字段不通知人、不出现在 get_dsl query=todo 里、也不会变红。\n⇒ 它等于一份【写给自己看的道歉信】。\n★ 于是同一件事会被反复撞见：今天我撞 patrol（A1），明天别人再撞一次，后天又一遍。\n★ 这正是用户问\"我设计的功能你为什么没写完\"的答案：不是忘，是【写了没人读】。\n```\n\n## 判据（三选一，我倾向 C）\n  A. **让 unjudged 可查询**：`get_dsl` 加 `query=unjudged`（只读列出 51+38 条）—— 最小改动，但仍靠人去看。\n  B. **每条 unjudged 自动转卡** —— 池子 +89（今天刚清完 42 张废卡，会立刻回胀）。\n  C. ★ **只转\"可执行\"的那部分**：unjudged 里有的只是说明（\"靠人看\"），有的才是\"该做没做\"（\"零调用\"/\"未实现\"/\"没有检查器\"）。\n     ⇒ 要一条**分类判据**：含 `零调用|未实现|没有检查器|未接线` ⇒ 转卡；含 `靠人看|由人执行|人工` ⇒ 进\"人工约定\"清单（不占待办池）。\n\n## 验收\n```\n扫描脚本输出必须【分两类】（可执行 / 人工约定），且\"可执行的条数 = 转出的卡数\"\n★ 反向：任取一条转出的卡，删掉它 ⇒ 该条 unjudged 必须重新出现在\"可执行\"清单里（不许静默消失）\n```"
+    },
+    {
+      "type": "todo",
+      "state": "candidate",
+      "id": "todo_巡检-metric-写不成代码-OverlayAnchor-没有-updated_at-所以-drift-判不了",
+      "created_at": "2026-10-22T11:27:31.943Z",
+      "summary": "【来自设计侧自标：`task_plan.patrols[2].unjudged`】\n> ★★ 不是\"巡检不跑\"（A1），而是**这条 metric 写不成代码**：① `OverlayAnchor` 没有 `updated_at`；② 设计侧 11 个 decision **0 个带 updated_at**（手写 JSON 绕过 node_ops 注入）；③ `DriftReport` 没有 auth…\n\n★ 为什么它是\"可执行\"而不是\"人工约定\"：「写不成代码」是可执行的：它缺的是一个**字段**（`updated_at`），不是\"靠人判断\"。\n\n★ 判据三条：\n  ① `OverlayAnchor` 加 `updated_at`（**由唯一写端 `updateStatus` / `node_ops` 在落盘前自动填**，与 `source_node_id` 同款）\n  ② 回填历史：11 个 decision 的 `updated_at` 用 `git log -1 --format=%ct -- <文件>` 逐条补（★ 不编造时间）\n  ③ drift metric 能算出「N 天没动过的 decision」⇒ `patrol` 报告里能看见\n★ 验收：改一个 decision 的 summary ⇒ 它的 `updated_at` 必须变；不改 ⇒ 必须不变"
+    },
+    {
+      "type": "todo",
+      "state": "candidate",
+      "id": "todo_anti-decoration-anti-comment-没有检查器-设计侧自标靠人看",
+      "created_at": "2026-10-22T11:27:31.943Z",
+      "summary": "【来自设计侧自标：`task_plan.design_dsl_health.anti_blindspot_checks[0..1].unjudged`】\n> ★ 没有检查器：anti_decoration / anti_comment 靠人看\n\n★ 为什么它是\"可执行\"而不是\"人工约定\"：「没有检查器」是可执行的：它缺的是一条**能红的判据**，不是\"人的判断力\"。\n\n★ 判据（两条，各要能红）：\n  ① **anti_decoration**：edge 的 `decision` 字段为空/无意义 ⇒ 红。\n     实测现状：1155 条边**全是** contains/imports，**0 条带 decision** ⇒ 这条一上就是 100% 红 ⇒\n     ★ 所以要先定：**哪些边必须带 decision**（不能\"全都要\"，那等于全红 = 噪音）。\n  ② **anti_comment**：`decision.summary` 是\"改注释/加注释\"这类**无行为变化**的描述 ⇒ 红。\n     ★ 判据必须是**可判的**（关键词 + 必须同时没有 expectations），不能靠语感。\n★ 验收：造一条\"只改注释\"的 decision ⇒ 必须红；造一条\"加符号\"的 ⇒ 必须绿"
+    },
+    {
+      "type": "todo",
+      "state": "candidate",
+      "id": "todo_上架读端-D-T8-pool-ts-未实现-卡挂了看不见-且接入点未定",
+      "created_at": "2026-10-22T11:27:31.943Z",
+      "summary": "【来自设计侧自标：`task_plan.service_flow.steps[2].unjudged`】\n> ★★ 上架读端（D-T8）：`src/application/design/board/pool.ts` 未实现 ⇒ 第 3 步没有读端，卡挂了看不见。★★ 且**接入点未定**：要接进 `queryFeature`（`handlers.ts:492 getDslHandler` → …）\n\n★ 为什么它是\"可执行\"而不是\"人工约定\"：「未实现」+「接入点未定」都是可执行的：缺的是代码 + 一个调用点。\n\n★ 判据两条：\n  ① **读端存在且被调**：`get_dsl` 的 `query=todo` 必须走 `pool.ts`，且回执里**看得见 claimed 卡**\n     （今天是\"卡挂了看不见\" —— 实测 `pool.ts` 只统计 state 计数，不列卡）。\n  ② **接入点写死一处**：`handlers.ts#getDslHandler` 是唯一入口（★ 别另开一个 query 分支）。\n★ 验收：造一张 claimed 卡 ⇒ `get_dsl query=todo` 的回执里必须**点名它 + owner + 挂了多久**；\n  删掉那张卡 ⇒ 回执里必须消失（不许缓存）"
+    },
+    {
+      "type": "todo",
+      "state": "candidate",
+      "id": "todo_设计完整性-9-条判据没有检查器-等-Expectation-与-invariant-合成一个抽象",
+      "created_at": "2026-10-22T11:27:31.943Z",
+      "summary": "【来自设计侧自标：`task_plan.design_completeness.criteria[0..8].unjudged`】\n> ★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）\n\n★ 为什么它是\"可执行\"而不是\"人工约定\"：「没有检查器」是可执行的。★ 但它自带一个**前置条件**（两个抽象合成）⇒ 本卡先做前置，不硬跑判据。\n\n★ 分两步，第 1 步是前置：\n  ① **前置**：`Expectation`（判据）与 `invariant`（不变式）现在两套形状 ⇒\n     定\"能不能合成一个抽象\"：能 ⇒ 合成；不能 ⇒ **写明为什么**（那也是一条判据）。\n  ② 合成后：9 条完整性判据各配一个检查器（`design-check.mjs` 已经是它的落点，实测 10/10 通过 ⇒ 加进去）\n★ 验收：9 条里至少 1 条能红（造一个不完整的设计 ⇒ 红）；且 `npm run verify` 里有它"
     }
   ],
-  "_dsl_rev": 1283,
+  "_dsl_rev": 1284,
   "feature_tree": {
     "features": [
       {

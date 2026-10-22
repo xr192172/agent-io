@@ -939,6 +939,9 @@ export function exemptionLines(exempted: readonly GateExemption[]): string {
  * 闸原来的唯一判据是「覆盖该文件的节点上**存在** `state==='claimed'` 的卡」——
  * ★ **不问 owner、不问时效** ⇒ 历史上任何人领过的卡，都是该文件的**永久万能钥匙**。
  * ★ 叠加另一个洞（`patrolDrift` 全仓零调用 ⇒ 卡永不过期）后：**任务闸对"谁在改"完全不设防**。
+ *   ★★ **2026-10-22 更新**：那个洞已补 —— `scripts/patrol.mjs:39` import 了 `patrolDrift`、`:50` 调用它，
+ *      并已挂 `npm run patrol`（`package.json`）。⇒ 上面这句"零调用"**已经过期**，留作历史；
+ *      真正要盯的是「**它有没有被定期跑**」（这是"接入点没接"那一类，不是"零调用"）。
  *
  * ## 三种情形三种处置（`docs/GOAL.md` G2 的一次实演 —— 同一道闸，不是"要么全放要么全拦"）
  * | 情形 | 处置 | 依据 |
