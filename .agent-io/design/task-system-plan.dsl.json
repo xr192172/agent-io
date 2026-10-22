@@ -104701,11 +104701,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T13:04:41.066Z",
+    "saved_at": "2026-10-22T13:38:34.812Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 90758255,
+    "age": 92792001,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108573,6 +108573,12 @@
     {
       "id": "todo_2026-10-22-排查结论-矛盾一-progress-的权威住了两处-src",
       "summary": "【2026-10-22 排查结论】\n\n★ 矛盾一：progress 的权威住了两处\n· src/application/design/dsl_ops/file_ops.ts:62 说：「T328 进度走权威（overlay.progress + 闸 + 投影回 base）」\n· src/application/write_gate.ts:1233 说：「有 task ⇒ 派生（progressOf），没有才回落 overlay」\n⇒ 实测后果：task-system-plan 上 overlay.progress 与 task.state 12/26 不一致，且 write_gate 那条实测【卡是对的】\n⇒ 判据：定唯一权威（建议 task.state 派生；overlay.progress 只做「没卡节点」的兜底，读端标注可能过期）\n\n★ 矛盾二：任务系统住在设计册 op 目录\n· src/application/design/dsl_ops/task_ops.ts 2354 行 / 9 个 op = dsl_ops/ 5918 行的 40%\n· 它是任务系统核心，不是「设计册的一个 op」⇒ 应搬到 application/task/\n· ★ 建议同时按 op 拆文件（否则搬完还是 2354 行）\n\n★ 顺带纠两个记忆错误\n· src/application/design/workbench/code_workbench.ts 不是前端：它是代码变更审批流（852 行，被 design/index.ts + meta/index.ts + llm_decider.ts 调用）\n· src/application/design/dsl_ops/status_tools.ts 不是死代码：file_ops.ts:16 import 了 updateStatus\n\n★ 验收\n· 矛盾一：造一个「有 card 且 overlay.progress 不同」的节点 ⇒ 两个读端必须给同一个答案\n· 矛盾二：搬完后 9 个 op 对外契约不变（edit_dsl {type:task, op:claim, id:<节点id>} 仍可用）",
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_用户-2026-10-22-裁定-代码变更审批流已废弃-且它是另一套设计-与卡式",
+      "summary": "【用户 2026-10-22 裁定：代码变更审批流已废弃，且它是另一套设计，与卡式天生不兼容】\n\n★ 我上一轮用错了判据：数了「有 3 个调用方」就说不能删。\n  正确判据是「它和本仓的卡式是不是同一套」。实测不是：\n\n| | PR 式（review_changes） | 卡式（本仓） |\n|---|---|---|\n| 怎么算完成 | approveChange（有人点同意） | cardStanding 判 decision.expectations |\n| 裁判是 | 下一个 agent 看 diff | 判据自己对实际代码 |\n| 状态 | pending/approved/rejected/executed | candidate/claimed/done/void |\n\n⇒ 【同一个问题两个裁判】⇒ 不是风格差异，是两套「完成」的定义。\n\n★ 关系实测：review_changes 就是 code_workbench 的封装\n  meta/index.ts:56   import { listChanges, getChange, addReview, approveChange, rejectChange } from ../design/workbench/code_workbench.js\n  meta/index.ts:274  name: review_changes（action: list/show/comment/approve/reject）\n  meta/index.ts:391  await approveChange(...)  ← 审批落地就在 code_workbench 里\n\n★ 判据（退役时用）\n  ① 删除后，「完成」只有一个裁判：complete → cardStanding → isSatisfied\n  ② 3 个调用方（design/index.ts / meta/index.ts / llm_decider.ts）必须一起改，不许「保留一个入口但换实现」\n     ★ 那等于换皮，两套还在\n  ③ 反证：造一张「判据未绿但有人 approve」的场景 ⇒ 不许出现 done（today: approve 能独立于判据）\n  ④ 数据：设计册里不能有 approved/rejected 状态残留（实测 state_machine 只有 4 态 ⇒ 说明数据侧早就是卡式了）\n\n★ 注意：它读 overlay（dsl_intent 变更的 before/after）⇒ 删它时那处 overlay 依赖一起消失",
       "state": "candidate",
       "owner": null
     }
