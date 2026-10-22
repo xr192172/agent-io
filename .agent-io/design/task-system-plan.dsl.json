@@ -104669,11 +104669,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T14:27:58.474Z",
+    "saved_at": "2026-10-22T14:32:45.221Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 95755663,
+    "age": 96042410,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108464,21 +108464,65 @@
     },
     {
       "type": "todo",
-      "state": "void",
+      "state": "done",
       "created_at": "2026-10-22T11:01:13.743Z",
       "id": "todo_verify-changed-增量验证入口建了但零接入-没人跑过它",
       "summary": "【实测 2026-10-22：`scripts/verify-changed.mjs`（2026-10-17 建的「增量验证入口」）**在 `package.json` 里没有对应 script，仓库里没有 `.claude/`（无 hook），全仓零调用点**。⇒ 建了 5 天，**没有人自动跑过它**。】\n\n## 这是今天第 4 次撞到同一个模式（这才是本仓最贵的一类问题）\n```\n① releaseIfExpired（domain 纯函数，判据正确）—— ttl_ms \"取值待裁\" ⇒ 没人能传 ⇒ 29 个文件被 10~27h 租约锁死\n② scripts/patrol.mjs（能跑，`--ttl-hours 24`）—— 不在 verify 里 ⇒ 没人跑\n③ scripts/hook-task-gate.mjs（自称\"每会话提醒\"）—— 读不存在的路径 + 只认 x.path ⇒ 【一条都没触发过】\n④ scripts/verify-changed.mjs（本卡）—— 零接入 ⇒ 5 天没人跑\n★ 四个的共同点：【机制建好了，接入点没接】。\n```\n★ 这比\"判据住两处\"更靠前：**判据住两处**至少有两处会跑；**接入点没接**是一处都不跑，而代码读起来完全正常（甚至带详尽注释和自述\"与 run-all-certs 并列\"）。\n\n## 为什么它会零接入（不是懒，是结构）\n本仓的\"跑东西\"只有三个真实入口：\n```\n· npm run verify        ← 用户/agent 会跑（因为它是唯一总门）\n· npm run certs         ← 收口/日终会跑\n· 某个 agent 手动 node scripts/xxx.mjs  ← 靠记性\n```\n⇒ 一个脚本要\"自动跑\"，**必须挂进前两个之一**（或 hook）。`verify-changed` 两个都没挂。\n\n## 判据\n  A. **它到底该不该自动跑？** 先回答这个 —— 它的语义是\"改了 X 只跑受影响的证\"，     那它**替代**不了 `verify`（`verify` 是类型/编译/签名，这几道必须全量）。⇒ 它是**开发内环**用的，\n     不是\"提交前必须过的闸\"。\n  B. 如果确实要\"自动\" ⇒ 挂 `package.json` 的 `\"verify:changed\"` **并且**写进 `AGENTS.md` 的\"改完跑什么\"，\n     ★ 但**不要**塞进 `verify`（会让 `verify` 依赖 git 改动集 ⇒ 同一份代码在不同工作区行为不同）。\n  C. 如果\"没人跑也无所谓\" ⇒ **在文件头写明它的定位**（\"这是一个可选的内环工具，不是闸\"），     ★ 否则下一个人（像我）会以为它在跑。\n\n## 附带：它和\"设计侧 vs 实际侧\"的关系（用户 2026-10-22 的洞察）\n> 「设计侧写判据……实际侧追上了设计侧，就是这个任务已完成……为什么还需要有一个门禁？」\n\n★ 用户是对的：**\"任务完成\"这件事不需要门禁** —— `complete` 已经会跑 `cardStanding`（判 `isSatisfied`）。\n⇒ 所以本卡**不是**\"补一个门\"，是\"**把已经写好的内环接到该接的地方，或者承认它是可选的并写明**\"。\n★ 而真正的缺口在别处：`cardStanding` **只判有卡的节点** ⇒ 没卡的节点永不参与对拍（见孤儿文件那张卡）。",
       "retire_reason": "今天已接线：package.json 加了 verify:changed（先派生 touches 再验），AGENTS.md 由 gen_agents.mjs 模板重建后带上了它",
-      "retired_at": "2026-10-22T14:27:58.177Z"
+      "retired_at": "2026-10-22T14:27:58.177Z",
+      "owner": "agent:main",
+      "claimed_at": "2026-10-22T14:32:26.106Z",
+      "reopened_at": null,
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T14:32:26.068Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T14:32:26.207Z",
+          "by": "llm",
+          "fingerprint": {
+            "what": "node -e \"console.log(require('./package.json').scripts['verify:changed'])\"",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "type": "todo",
-      "state": "void",
+      "state": "done",
       "created_at": "2026-10-22T11:07:13.131Z",
       "id": "todo_增量验证形同虚设-75-张证里-70-张没声明-touches-永远命中-0",
       "summary": "【实测 2026-10-22（接线时暴露）：`npm run verify:changed` 输出 —— **命中证 0 张** · **未声明 `touches` 的证：70 / 75 张（它们永远不会被增量命中）**。】\n\n## 这意味着什么\n```\n增量入口的逻辑 = \"改了 X ⇒ 挑出 touches 命中 X 的证来跑\"\n但 70/75 张证没声明 touches ⇒ 挑了 0 张\n⇒ 它会输出\"命中 0 ⇒ 本次增量没有覆盖任何证\"（它诚实说了），然后【退化成什么都不跑】\n★ 于是\"增量验证\"这个名字是假的：它不是\"只跑受影响的\"，是\"什么都不跑\"\n```\n★ 它自己那行写得很清楚：**「★ 这不等于通过：要真结论，跑 `node certs/run-all-certs.mjs`（全量）」** —— 诚实，但**没有人会读到最后一行**（尤其当它前面说\"0 张\"时，读起来像\"没有影响\"）。\n\n## 判据（A 是笨办法，B 是正解）\n  A. **给 70 张证逐张补 `touches:`** —— 可行，但**手写的 touches 会过期**（改了证忘了改 touches ⇒ 又变成静默漏跑）。\n  B. ★ **`touches` 从证的内容自动派生**：证里 `readFileSync` / `import` 了哪些 `src/**` 源文件，    那些就是它的 touches。\n    ★ 为什么这更对：**touches 是\"这个证观察了谁\"的事实**，不是\"作者声明的意图\"。      手写 = 第二份事实（会偏）；派生 = 从证自己的行为算出来（不会偏）。\n    ★ 而且它和本仓的\"增量\"哲学同源：`cache.db` 的 `content_hash` 已经在做\"文件变没变\"，      这里只是把\"证读了哪些文件\"也记一笔。\n  C. **兜底**：派生不出 touches 的证 ⇒ 归入\"永远全跑\"一组（并**报出这个数**，不许静默）。\n\n## 验收（必须能红）\n```\n改 src/application/design/dsl_ops/task_ops.ts\n⇒ npm run verify:changed 必须命中 ≥1 张证（今天实测是 0）\n⇒ 且那张证必须真的跑过（看它的输出，不是看\"命中\"这个计数）\n★ 反向：改一个没有任何证观察的文件（比如某个 .md）⇒ 命中 0 是【正确】的\n```\n\n## 与\"接入点没接\"的关系\n这是同一族的更深一层：\n```\n① verify-changed 没挂 package.json ⇒ 没人跑（已修：npm run verify:changed）\n② ★ 挂了之后发现：它跑了也等于没跑（70/75 没 touches）\n⇒ 【接上线才发现线是断的】—— 这正是\"接线必须真跑验收\"的价值：\n   只看\"package.json 里有这一行\"会以为接好了\n```",
       "retire_reason": "今天做完了：新增 scripts/derive-touches.mjs 自动派生 touches（覆盖率 1.3% → 86%），verify-changed 对 null 改为全跑（之前是 continue 跳过），输出分离 certs_precise / certs_full_run，t354 从 4 红修到 15/0",
-      "retired_at": "2026-10-22T14:27:58.261Z"
+      "retired_at": "2026-10-22T14:27:58.261Z",
+      "owner": "agent:main",
+      "claimed_at": "2026-10-22T14:32:01.590Z",
+      "reopened_at": null,
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T14:32:01.551Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T14:32:01.709Z",
+          "by": "llm",
+          "fingerprint": {
+            "what": "node certs/t354-incremental-verify-cert.mjs",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "type": "todo",
@@ -108532,8 +108576,8 @@
     {
       "id": "todo_统计-savedsl-60-个直写点-23-edit-dsl-正路-18-显式-",
       "summary": "【统计：saveDSL 直写点】实测 **50 个真实调用点**（旧读数 60 = 多算了 10 行**注释里引用**的写法；量具已修：scripts/stat-raw-writes.mjs 加「行首是 // / * / /* 不算调用」判据）：25 显式 source / 20 edit_dsl 正路 / 3 derive / 1 archive / 1 sync / **0 来源不明**。★★ 更正原卡：所谓的 11 处里 **3 处是注释不是调用** —— src/domain/overlay.ts:777、src/infrastructure/storage.ts:199、:707（overlay.ts 全文件真实 saveDSL 调用 = 0，grep 可核）⇒ 代码层只有 **8 处**待补，已全补：snapshot.ts:289(snapshot) / dag_layout.ts:266,492,542(dag_layout) / approval.ts:85,170(approval) / write_gate.ts:856(write_gate) / structure/monolith.ts:751(structure)。验收：node scripts/stat-raw-writes.mjs ⇒ 来源不明 = 0；反证：摘掉 dag_layout.ts:492 的 source ⇒ 它重新出现（1 处）。★ 未做：判据② 脚本层 .mjs 直写（原卡说 18 个，未复核）原样未动 —— 这一半仍是活的。",
-      "state": "void",
-      "owner": null,
+      "state": "done",
+      "owner": "agent:main",
       "history": [
         {
           "at": "2026-10-22T12:41:59.008Z",
@@ -108544,7 +108588,28 @@
         }
       ],
       "retire_reason": "今天做完了：scripts/stat-raw-writes.mjs 建成并修正口径（注释不算调用点），11 处来源不明已补 source（8 处代码 + 3 处是注释），现为 0",
-      "retired_at": "2026-10-22T14:27:58.346Z"
+      "retired_at": "2026-10-22T14:27:58.346Z",
+      "claimed_at": "2026-10-22T14:32:26.425Z",
+      "reopened_at": null,
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T14:32:26.391Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T14:32:26.528Z",
+          "by": "llm",
+          "fingerprint": {
+            "what": "node scripts/stat-raw-writes.mjs",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_2026-10-22-排查结论-矛盾一-progress-的权威住了两处-src",
@@ -108575,6 +108640,12 @@
     {
       "id": "todo_用户-2026-10-22-提出-内置-laya-0-4b-决策器-作为任务系统",
       "summary": "【用户 2026-10-22 提出：内置 Laya（0.4B 决策器）作为任务系统的中立校验者】\n\n## Laya / Jev 是什么（已查证，不是 Jira/Linear）\n```\n· 决策器，不是生成模型：读文本 + 结构化问题（choice / score / noul）⇒ 一次前向返回答案 + 概率\n· 90ms 量级、零幻觉（不生成文字，所以没有「格式不对」）\n· Jev（TypeSafe AI，闭源）· Laya（Apache 2.0，开源，0.4B，convaiinnovations/laya）\n★ 用户选 Laya：开源 + 可微调 + 训练组件多\n```\n\n## 定位（★ 这里必须精确，否则会用它替代机械判据）\n```\n本仓现在两层判定，中间空着：\n  机械层  cardStanding（symbol-exists / signature-matches 绿不绿）        ✅ 有\n  语义层  「改动和卡说的是不是同一件事」                                  ❌ 空\n  分诊层  llm_decider（用大 LLM 判 change/done/reject）                   ⚠️ 贵\n\n⇒ Laya 该填的是【语义层】和【分诊层】，不是机械层\n⇒ 绝不许它取代 cardStanding：那会把「可机械判定」换成「概率判断」\n⇒ 「中立第三方」的精确含义：cardStanding 本来就中立（它是代码）；真正会「自己判自己」的是\n   执行的那个 LLM（它写代码也写 evidence）⇒ Laya 的价值是【没参与执行，不会为执行辩护】\n```\n\n## 风险（官方实测，不是推测）\n```\n「判别式模型没有推理能力可借……走出训练分布，概率退化成接近均匀 = 抛硬币」\n官方实测：客服意图分类 4/4 全对；同一模型玩俄罗斯方块 ⇒ 概率均匀（=随机）\n⇒ 本仓「设计判据」是高度领域特定文本 ⇒ zero-shot 大概率没用，可能要微调\n⇒ 但微调要标注数据，本仓 224 张卡不是标注好的训练集\n```\n\n## 已写离线试跑（不改任何流程）\n```\nD:/project_develop/_design-canvas-labs/laya-probe.py\n★ ground truth 用【合成对照】而不是 done（今天实测 done 里有一批假收口）：\n   正样本：A 卡 summary + A 卡自己的 evidence\n   负样本：A 卡 summary + B 卡的 evidence（随机错配）\n   ⇒ 负样本「确定是错的」（不同卡的活不可能同一件事），不需要人标\n```\n\n## 判据（决定后面全部设计）\n```\n正样本 ≥ 70% 且 负样本 ≥ 70% 且 平均置信 > 0.6 ⇒ 值得接（当校验者）\n否则 ⇒ 只能当分诊器（替换 llm_decider 的大 LLM），别当校验者\n★ 反证：若它全判「是」（负样本 0%）⇒ 那是抛硬币/退化，不是判别力\n```\n\n## 接入时的硬约束（若试跑通过）\n```\n① Laya 的判断只进 evidence【附加项】，不参与 isSatisfied（机械判据说了算）\n② 低置信（< 阈值）⇒ 转人工（本仓 = 留 visible 标记，不自动收口）\n③ 不许「Laya 说是就是」—— 它是第三方，不是裁判；裁判只有一个（cardStanding）\n```",
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_用户-2026-10-22-两问-都指到真缺口-问-1-预决策完了-被做成卡了-",
+      "summary": "【用户 2026-10-22 两问，都指到真缺口】\n\n## 问 1：「预决策完了，被做成卡了，那不就是完成了吗？为什么不能标完成呢？」\n\n★ 先纠我自己的错：**能标完成**。\n```\n· `{type:'todo', op:'complete'}` ⇒ 报「todo 不支持 complete」（只有 add/link/update/follows/retire/delete）\n· `{type:'task', op:'complete', id:<todo id>}` ⇒ ✅ 可以，但要求 state=claimed（先 claim）\n⇒ todo 卡的 complete 走的是【task 的 op 表】，不是 todo 的\n⇒ 我上一轮用错了 type，于是把 3 张做完的卡误 retire 了（已用 relaunch → claim → complete 改正）\n```\n\n★ **但真缺口在别处**：`publish` 之后 todo 不会自动完成。\n```\ntask_ops.ts:2235 原文：「早先版本会『从 decision 翻判据、建卡、todo 标 done』⇒ 越权（做了落地人 + publish 的活）」\n⇒ 所以「publish 顺带把 todo 标 done」被当成越权删掉了\n⇒ 后果：todo 变成 task 之后，todo 仍是 candidate ⇒ 它会【继续出现在待办池里】，看起来没做\n⇒ 与用户的核心诉求冲突：「被做成卡了 = 完成」——这句话在语义上成立，但系统没落这个账\n```\n\n**判据（下一环）**：\n```\n① publish 成功后，同一 id 的 todo 必须留下【可查的去向】：\n   要么 state → done（完成），要么 data.published_as = <新 task 的节点 id>\n② 反证：publish 一张 todo ⇒ 它不许再出现在 query=todo 的候选里\n③ 不许「自动 done 且不记去向」—— 那只记了结果没记因果，违反「谁、何时、为什么」的 evidence 纪律\n```\n\n## 问 2：「预决策会被推翻，你准备了对应的状态吗？删除啊之类的」\n\n★ **有 `retire`（作废）**，而且是正确的状态：\n```\n· retire：不做了 / 被推翻 ⇒ state=void + retire_reason + retired_at（卡留在册里，不进待办）\n· 状态机：void 只能回 candidate（可用迁移，TRANSITIONS 是唯一住处）\n```\n\n★ **但一个词混了两件事**：\n```\n完成（做完了，产出已交付）  ≠  作废（不做了，被推翻）\n而 todo 的「完成」要走 task.complete，「作废」要走 todo.retire ⇒ 两条路名字不对称，容易走错\n★ 我今天就走过：把 3 张做完的卡用了 retire ⇒ 状态上它们成了「作废」，语义错\n⇒ 判据：todo 也要有自己的 complete（或至少在 retire 的回执里提示「你是想作废还是想标完成」）\n```\n\n## 顺带（skill 该记的）\n```\n★ `type:'todo'` 和 `type:'task'` 的 op 表【不是同一张】：\n   todo: add/link/update/follows/retire/delete\n   task: publish/claim/release/complete/void/reopen/relaunch/renew/expire\n⇒ todo 卡的状态迁移（claim/complete/relaunch）全走 `type:'task'`\n```",
       "state": "candidate",
       "owner": null
     }
