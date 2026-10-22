@@ -286,7 +286,7 @@ export function rollbackSnapshot(input: RollbackSnapshotInput): RollbackSnapshot
   // 移除快照元数据后恢复 DSL
   const restored = JSON.parse(JSON.stringify(targetData));
   delete restored._snapshot;
-  saveDSL(restored as DesignDSL);
+  saveDSL(restored as DesignDSL, 'snapshot');
 
   const nodeCount = restored.geometry?.nodes?.length ?? 0;
   const edgeCount = restored.geometry?.edges?.length ?? 0;

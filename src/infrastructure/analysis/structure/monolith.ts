@@ -748,7 +748,7 @@ export async function checkMonolith(input: CheckMonolithInput): Promise<CheckMon
   if (input.save_preview && oversized.length > 0) {
     previewFeature = input.preview_feature ?? `${input.feature ?? 'monolith'}_split_preview`;
     const previewDsl = buildSplitPreviewDsl(previewFeature, oversized, warn, crit);
-    saveDSL(previewDsl);
+    saveDSL(previewDsl, 'structure');
   }
 
   // 文本报告

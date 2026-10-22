@@ -17623,7 +17623,54 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_design_workbench_dag_layout_ts",
+          "summary": "【L1 待建构】核心层 · src/application/design/workbench — 10 个 API（导入自 3 个模块）（src/application/design/workbench/dag_layout.ts） ← 节点 file_src_application_design_workbench_dag_layout_ts",
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_workbench_dag_layout_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "scripts/stat-raw-writes.mjs",
+                "content_hash": "c0526a607bfcd22eb8606fc831dfeaef6a4b01c8"
+              },
+              {
+                "path": "src/application/design/lifecycle/snapshot.ts",
+                "content_hash": "498dfaec6a3ccef283d616f2cfe68abab05320df"
+              },
+              {
+                "path": "src/application/design/workbench/dag_layout.ts",
+                "content_hash": "dccaac98617a81da010c8fae00e2a13741b6f4f1"
+              },
+              {
+                "path": "src/application/observe/reconcile/approval.ts",
+                "content_hash": "d08c87783e9f19bfe97029f3371bf7b32f5adb94"
+              },
+              {
+                "path": "src/application/write_gate.ts",
+                "content_hash": "b5e9f1ef7d075342e104ac375ecbd7fafe90988b"
+              },
+              {
+                "path": "src/infrastructure/analysis/structure/monolith.ts",
+                "content_hash": "68e2f1ebb1cbe1667bb5b48bb9267d27f906ac96"
+              }
+            ],
+            "computed_at": "2026-10-22T12:38:28.213Z",
+            "basis": [
+              "declared"
+            ]
+          },
+          "release_reason": "只当写闸 anchor 用（authorize=files:… 拉这 5 个文件），活不在这个节点上；L1 建构卡未完成（dag_layout.ts 节点无 decision.summary/后态判据），不假收口",
+          "released_by": "subagent:deepseek-raw-source",
+          "released_at": "2026-10-22T12:41:59.091Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_dispatch_ts",
@@ -84182,7 +84229,8 @@
           }
         ],
         "lines": 555,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_dispatch_ts",
@@ -104653,11 +104701,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T12:13:43.332Z",
+    "saved_at": "2026-10-22T12:41:59.120Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 87700521,
+    "age": 89396309,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108509,9 +108557,18 @@
     },
     {
       "id": "todo_统计-savedsl-60-个直写点-23-edit-dsl-正路-18-显式-",
-      "summary": "【统计：saveDSL 60 个直写点】23 edit_dsl 正路 / 18 显式 source / 11 来源不明 / 8 系统派生。★ 结论：代码层 0 处人改设计却绕过 edit_dsl，真正的绕过在脚本层（18 个 .mjs）。★ 其中 domain/overlay.ts:777 是 overlay 自己在写 DSL —— 同生态位最直接的证据。判据：① 11 处各补 source ② 脚本层能删的删、留下的走 edit_dsl ③ overlay.ts:777 单独判它写回的是什么。验收：node scripts/stat-raw-writes.mjs ⇒ 来源不明=0；反证：删掉某处 source ⇒ 它必须重新出现在清单里。",
+      "summary": "【统计：saveDSL 直写点】实测 **50 个真实调用点**（旧读数 60 = 多算了 10 行**注释里引用**的写法；量具已修：scripts/stat-raw-writes.mjs 加「行首是 // / * / /* 不算调用」判据）：25 显式 source / 20 edit_dsl 正路 / 3 derive / 1 archive / 1 sync / **0 来源不明**。★★ 更正原卡：所谓的 11 处里 **3 处是注释不是调用** —— src/domain/overlay.ts:777、src/infrastructure/storage.ts:199、:707（overlay.ts 全文件真实 saveDSL 调用 = 0，grep 可核）⇒ 代码层只有 **8 处**待补，已全补：snapshot.ts:289(snapshot) / dag_layout.ts:266,492,542(dag_layout) / approval.ts:85,170(approval) / write_gate.ts:856(write_gate) / structure/monolith.ts:751(structure)。验收：node scripts/stat-raw-writes.mjs ⇒ 来源不明 = 0；反证：摘掉 dag_layout.ts:492 的 source ⇒ 它重新出现（1 处）。★ 未做：判据② 脚本层 .mjs 直写（原卡说 18 个，未复核）原样未动 —— 这一半仍是活的。",
       "state": "candidate",
-      "owner": null
+      "owner": null,
+      "history": [
+        {
+          "at": "2026-10-22T12:41:59.008Z",
+          "from": "【统计：saveDSL 60 个直写点】23 edit_dsl 正路 / 18 显式 source / 11 来源不明 / 8 系统派生。★ 结论：代码层 0 处人改设计却绕过 edit_dsl，真正的绕过在脚本层（18 个 .mjs）。★ 其中 domain/overlay.ts:777 是 overlay 自己在写 DSL —— 同生态位最直接的证据。判据：① 11 处各补 source ② 脚本层能删的删、留下的走 edit_dsl ③ overlay.ts:777 单独判它写回的是什么。验收：node scripts/stat-raw-writes.mjs ⇒ 来源不明=0；反证：删掉某处 source ⇒ 它必须重新出现在清单里。",
+          "to": "【统计：saveDSL 直写点】实测 **50 个真实调用点**（旧读数 60 = 多算了 10 行**注释里引用**的写法；量具已修：scripts/stat-raw-writes.mjs 加「行首是 // / * / /* 不算调用」判据）：25 显式 source / 20 edit_dsl 正路 / 3 derive / 1 archive / 1 sync / **0 来源不明**。★★ 更正原卡：所谓的 11 处里 **3 处是注释不是调用** —— src/domain/overlay.ts:777、src/infrastructure/storage.ts:199、:707（overlay.ts 全文件真实 saveDSL 调用 = 0，grep 可核）⇒ 代码层只有 **8 处**待补，已全补：snapshot.ts:289(snapshot) / dag_layout.ts:266,492,542(dag_layout) / approval.ts:85,170(approval) / write_gate.ts:856(write_gate) / structure/monolith.ts:751(structure)。验收：node scripts/stat-raw-writes.mjs ⇒ 来源不明 = 0；反证：摘掉 dag_layout.ts:492 的 source ⇒ 它重新出现（1 处）。★ 未做：判据② 脚本层 .mjs 直写（原卡说 18 个，未复核）原样未动 —— 这一半仍是活的。",
+          "reason": "原文把 domain/overlay.ts:777 当成 overlay 在写 DSL，实测是注释（overlay.ts 全文件真实 saveDSL 调用 = 0）；且 11 处里 3 处是注释、实为 8 处代码，已在 2026-10-22 逐处补完 source 并修好量具",
+          "by": "subagent:deepseek-raw-source"
+        }
+      ]
     }
   ],
   "_dsl_rev": 1286,

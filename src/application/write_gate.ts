@@ -853,7 +853,7 @@ function recordUnaddressableWarnings(
             resolved: false,
           });
           dsl.annotations = anns;
-          saveDSL(dsl);
+          saveDSL(dsl, 'write_gate');
           where = `留痕已写入 feature "${u.feature}" 的 annotations（id=${id}，severity=warning，unresolved）`;
         }
       }

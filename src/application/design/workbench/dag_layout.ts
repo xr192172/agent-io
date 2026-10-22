@@ -263,7 +263,7 @@ function dagLayoutCore(input: DagLayoutInput): { message: string; rank_count: nu
     currentLaneY += laneHeight + LANE_GAP_Y;
   });
 
-  saveDSL(dsl);
+  saveDSL(dsl, 'dag_layout');
 
   // 简单计算边交叉数
   const edgeCrossings = countEdgeCrossings(dsl);
@@ -489,7 +489,7 @@ export function forceLayout(input: ForceLayoutInput): { message: string; iterati
 
   dsl.geometry.width = width;
   dsl.geometry.height = height;
-  saveDSL(dsl);
+  saveDSL(dsl, 'dag_layout');
 
   const edgeCrossings = countEdgeCrossings(dsl);
 
@@ -539,7 +539,7 @@ export function gridAlign(input: GridAlignInput): { message: string; grid_size: 
   });
 
   dsl.geometry.grid_size = grid_size;
-  saveDSL(dsl);
+  saveDSL(dsl, 'dag_layout');
 
   return {
     message: [

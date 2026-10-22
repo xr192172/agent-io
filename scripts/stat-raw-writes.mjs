@@ -3,7 +3,7 @@
  * 统计：**谁能绕过 `edit_dsl` 直接写设计 DSL**（2026-10-22 · 用户要求"挂同类任务统计"）
  *
  * ## 为什么要有它
- * 实测：`saveDSL` 有 **60 个调用点**（`src/` 内），而 `edit_dsl` 只是其中一条链。
+ * 实测：`saveDSL` 有 **50 个真实调用点**（`src/` 内；★ 2026-10-22 之前数 60 —— 多出的 10 处是**注释里引用的写法**，不是调用，见下面 `head` 判据），而 `edit_dsl` 只是其中一条链。
  * 用户 2026-10-22 点破：*"似乎看起来你根本就没有用工具，而是直接自己手写的吧"*
  * ⇒ 当天 41 次 DSL 改动全走 `saveDSL` 直写，**没有 checkOpSpec / 没有 validateDSL / 没有 rev 校验**。
  *
@@ -45,6 +45,13 @@ for (const f of files) {
   lines.forEach((line, i) => {
     const m = line.match(/\bsaveDSL\s*\(/);
     if (!m || /function\s+saveDSL/.test(line)) return;
+    // ★★ 2026-10-22：**注释里提到的 `saveDSL(...)` 不是调用点** —— 旧口径把 **10 行注释**当成调用
+    //   （3 行落在「来源不明」：`src/domain/overlay.ts:777`、`src/infrastructure/storage.ts:199` / `:707`；
+    //    3 行落在「系统派生（import）」：`import_project.ts:228/1018/1019`；3 行在 `edit_dsl` 正路；
+    //    1 行在「显式 source」）⇒ 总量虚高 60（实 50）。★ `overlay.ts` 全文件真实调用 = 0，grep 可核。
+    //   ⇒ 量具不能把「提到」当「做了」：行首（去空白后）是 `//` `*` `/*` 的一律不算调用点。
+    const head = line.trimStart();
+    if (head.startsWith('//') || head.startsWith('*') || head.startsWith('/*')) return;
     // 取同一次调用里的第二个参数（如果有）
     const rest = line.slice(m.index);
     const argMatch = rest.match(/saveDSL\s*\(\s*[^,)]+(?:,\s*([^,)]+))?/);

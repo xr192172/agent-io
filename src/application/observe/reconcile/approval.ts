@@ -82,7 +82,7 @@ export function submitApproval(input: SubmitApprovalInput): SubmitApprovalResult
   }
 
   addHistory(ann, 'submit', 'pending_review', input.submitter ?? 'llm', input.comment);
-  saveDSL(dsl);
+  saveDSL(dsl, 'approval');
 
   return {
     message: `已提交审批：${ann.id}\n状态: pending_review\n指派人: ${ann.assignee ?? '(未指派)'}`,
@@ -167,7 +167,7 @@ export function reviewAnnotation(input: ReviewAnnotationInput): ReviewAnnotation
   }
 
   addHistory(ann, effect.action, effect.status, input.reviewer, input.comment);
-  saveDSL(dsl);
+  saveDSL(dsl, 'approval');
 
   const statusLabel = effect.label;
 
