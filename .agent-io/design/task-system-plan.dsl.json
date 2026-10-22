@@ -104653,11 +104653,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T11:07:13.162Z",
+    "saved_at": "2026-10-22T11:22:48.897Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 83710351,
+    "age": 84646086,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108457,9 +108457,16 @@
       "created_at": "2026-10-22T11:07:13.131Z",
       "id": "todo_增量验证形同虚设-75-张证里-70-张没声明-touches-永远命中-0",
       "summary": "【实测 2026-10-22（接线时暴露）：`npm run verify:changed` 输出 —— **命中证 0 张** · **未声明 `touches` 的证：70 / 75 张（它们永远不会被增量命中）**。】\n\n## 这意味着什么\n```\n增量入口的逻辑 = \"改了 X ⇒ 挑出 touches 命中 X 的证来跑\"\n但 70/75 张证没声明 touches ⇒ 挑了 0 张\n⇒ 它会输出\"命中 0 ⇒ 本次增量没有覆盖任何证\"（它诚实说了），然后【退化成什么都不跑】\n★ 于是\"增量验证\"这个名字是假的：它不是\"只跑受影响的\"，是\"什么都不跑\"\n```\n★ 它自己那行写得很清楚：**「★ 这不等于通过：要真结论，跑 `node certs/run-all-certs.mjs`（全量）」** —— 诚实，但**没有人会读到最后一行**（尤其当它前面说\"0 张\"时，读起来像\"没有影响\"）。\n\n## 判据（A 是笨办法，B 是正解）\n  A. **给 70 张证逐张补 `touches:`** —— 可行，但**手写的 touches 会过期**（改了证忘了改 touches ⇒ 又变成静默漏跑）。\n  B. ★ **`touches` 从证的内容自动派生**：证里 `readFileSync` / `import` 了哪些 `src/**` 源文件，    那些就是它的 touches。\n    ★ 为什么这更对：**touches 是\"这个证观察了谁\"的事实**，不是\"作者声明的意图\"。      手写 = 第二份事实（会偏）；派生 = 从证自己的行为算出来（不会偏）。\n    ★ 而且它和本仓的\"增量\"哲学同源：`cache.db` 的 `content_hash` 已经在做\"文件变没变\"，      这里只是把\"证读了哪些文件\"也记一笔。\n  C. **兜底**：派生不出 touches 的证 ⇒ 归入\"永远全跑\"一组（并**报出这个数**，不许静默）。\n\n## 验收（必须能红）\n```\n改 src/application/design/dsl_ops/task_ops.ts\n⇒ npm run verify:changed 必须命中 ≥1 张证（今天实测是 0）\n⇒ 且那张证必须真的跑过（看它的输出，不是看\"命中\"这个计数）\n★ 反向：改一个没有任何证观察的文件（比如某个 .md）⇒ 命中 0 是【正确】的\n```\n\n## 与\"接入点没接\"的关系\n这是同一族的更深一层：\n```\n① verify-changed 没挂 package.json ⇒ 没人跑（已修：npm run verify:changed）\n② ★ 挂了之后发现：它跑了也等于没跑（70/75 没 touches）\n⇒ 【接上线才发现线是断的】—— 这正是\"接线必须真跑验收\"的价值：\n   只看\"package.json 里有这一行\"会以为接好了\n```"
+    },
+    {
+      "type": "todo",
+      "state": "candidate",
+      "id": "todo_设计侧自标-51-条-unjudged-38-条-debt-但没有任何东西读它们-所以永远不进待办池",
+      "created_at": "2026-10-22T11:22:48.867Z",
+      "summary": "【实测 2026-10-22：`task_plan` 里设计侧**自己标了 51 条 `unjudged`（未判/零调用/未接线）+ 38 条 `debt`**，\n但【没有任何东西会读这些字段】—— 它们不是卡、不在看板、不进 verify、不进任何待办池。】\n\n## 这批是什么（全部来自设计侧自述，不是我的判断）\n```\npatrols[0].unjudged        ★ patrolDrift 全仓零调用（A1）⇒ 这个 metric 真的一次都没被算过\npatrols[1].metrics[*]      同上（3 条）\npatrols[2].unjudged        ★★ 这条 metric 写不成代码（OverlayAnchor 无 updated_at；11 个 decision 0 个带）\ndesign_dsl_health.anti_blindspot_checks[*].unjudged   ★ 没有检查器：anti_decoration/anti_comment 靠人看\ntwo_level_tasks.claim_incomplete_rule.unjudged        ★ \"领到先查依据\"由人执行，无机器检查器\nservice_flow.steps[2].unjudged   ★★ 上架读端（D-T8）pool.ts 未实现 ⇒ 卡挂了看不见；且【接入点未定】\nservice_flow.steps[6].unjudged   ★ 双验没有执行者（grep 双验 = 0），今天全靠自觉\nparallel_claim.unjudged          ★ \"两两交集为空\"要先能算 target 文件集合（path 覆盖率不够）\n```\n\n## 为什么这是最贵的一类\n```\n设计侧很诚实：它把\"我不知道怎么判 / 没人算过\"写进了 unjudged。\n但【诚实标注 ≠ 待办】：unjudged 字段不通知人、不出现在 get_dsl query=todo 里、也不会变红。\n⇒ 它等于一份【写给自己看的道歉信】。\n★ 于是同一件事会被反复撞见：今天我撞 patrol（A1），明天别人再撞一次，后天又一遍。\n★ 这正是用户问\"我设计的功能你为什么没写完\"的答案：不是忘，是【写了没人读】。\n```\n\n## 判据（三选一，我倾向 C）\n  A. **让 unjudged 可查询**：`get_dsl` 加 `query=unjudged`（只读列出 51+38 条）—— 最小改动，但仍靠人去看。\n  B. **每条 unjudged 自动转卡** —— 池子 +89（今天刚清完 42 张废卡，会立刻回胀）。\n  C. ★ **只转\"可执行\"的那部分**：unjudged 里有的只是说明（\"靠人看\"），有的才是\"该做没做\"（\"零调用\"/\"未实现\"/\"没有检查器\"）。\n     ⇒ 要一条**分类判据**：含 `零调用|未实现|没有检查器|未接线` ⇒ 转卡；含 `靠人看|由人执行|人工` ⇒ 进\"人工约定\"清单（不占待办池）。\n\n## 验收\n```\n扫描脚本输出必须【分两类】（可执行 / 人工约定），且\"可执行的条数 = 转出的卡数\"\n★ 反向：任取一条转出的卡，删掉它 ⇒ 该条 unjudged 必须重新出现在\"可执行\"清单里（不许静默消失）\n```"
     }
   ],
-  "_dsl_rev": 1282,
+  "_dsl_rev": 1283,
   "feature_tree": {
     "features": [
       {
