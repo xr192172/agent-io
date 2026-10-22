@@ -107,8 +107,44 @@ const orphans = all.filter((rel) => !sourceCandidates(rel).some((s) => fs.exists
 
 console.log(`[clean_dist] dist 产物 ${all.length} 个；**孤儿**（源文件已不存在）${orphans.length} 个。`);
 
+/**
+ * ★★★ 2026-10-22：**反向也要查**（源有、产物没有）。
+ *
+ * 此前只查孤儿 ⇒ 那句 "dist 与源码一一对应 ✓" 在**产物缺失**时照样打出来。
+ * 它证明的只是「**没有多的**」，**没证明「也没有少的」**——而 "一一对应" 两者都要。
+ *
+ * ★ 这不是理论缺口，2026-10-22 实测踩了两次：
+ *   `tsconfig` 开了 `incremental`（`tsBuildInfoFile` 在 `node_modules/.cache/`）⇒
+ *   手动删掉某个产物后 `npm run build` **不会重编它**（tsc 认为该源文件没变），
+ *   而本脚本报 ✓ ⇒ 接着跑去验证的**还是旧 build 的产物**（我据此连红两次，差点误判修复无效）。
+ * ⇒ 判据：**每个 `src/**\/*.ts`（除 `.d.ts`）都必须有对应 `.js` 产物**，缺一个就不可信。
+ * ★ 修法是 `rm node_modules/.cache/tsbuildinfo.json` 再 build（而不是在这里替 tsc 补编）。
+ */
+function walkSrc(dir, out = []) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) walkSrc(p, out);
+    else {
+      const rel = path.relative(ROOT, p).split(path.sep).join('/');
+      if (rel.startsWith('src/') && /\.tsx?$/.test(rel) && !rel.endsWith('.d.ts')) out.push(rel);
+    }
+  }
+  return out;
+}
+const srcTs = walkSrc(path.join(ROOT, 'src'));
+const missing = srcTs.filter((rel) => !fs.existsSync(path.join(DIST, rel.replace(/^src\//, 'src/').replace(/\.ts$/, '.js'))));
+
+if (missing.length > 0) {
+  console.error(`[clean_dist] ✗ **产物缺失 ${missing.length} 个**（源在、dist 里没有）—— dist 不可信：`);
+  for (const m of missing.slice(0, 20)) console.error(`   (missing) ${m} ⇒ 期望 dist/${m.replace(/\.ts$/, '.js')}`);
+  if (missing.length > 20) console.error(`   …还有 ${missing.length - 20} 个`);
+  console.error(`   ★ 多半是 tsc 增量缓存认为"没变" ⇒ rm node_modules/.cache/tsbuildinfo.json && npm run build`);
+  process.exit(1);
+}
+console.log(`[clean_dist] 反向检查：${srcTs.length} 个源文件，缺产物 0 个 ✓`);
+
 if (orphans.length === 0) {
-  console.log('[clean_dist] ⇒ dist 与源码一一对应 ✓');
+  console.log('[clean_dist] ⇒ dist 与源码一一对应 ✓（无孤儿 · 无缺失）');
   process.exit(0);
 }
 

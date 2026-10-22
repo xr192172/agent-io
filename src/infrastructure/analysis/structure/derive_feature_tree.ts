@@ -30,7 +30,7 @@
  */
 
 import { analyzeMonolith } from './analyze_monolith.js';
-import { getDSLByView, saveDSL } from '../../storage.js';
+import { getDSLByView, getDesignSheet, saveDSL } from '../../storage.js';
 import { loadLlmConfig, callChat, loadExplainConfig } from '../../llm_focus.js';
 import type {
   DesignDSL,
@@ -246,8 +246,7 @@ function dirFallbackTree(
   features.sort((a, b) => b.file_count - a.file_count);
 
   if (input.feature && liveDsl && features.length > 0) {
-    liveDsl.feature_tree = { features, file_map: fileMap, source: 'rule' };
-    saveDSL(liveDsl, 'feature_tree');
+    persistFeatureTree(input.feature, { features, file_map: fileMap, source: 'rule' }, liveDsl);
   }
   const total = semanticFiles.length;
   const mapped = Object.keys(fileMap).length;
@@ -262,6 +261,34 @@ function dirFallbackTree(
           `${mapped}/${total} 个文件按目录归属。原因：${reason}`
         : `${reason}（且无 live 语义文件 ⇒ 目录分组同样为空）`,
   };
+}
+
+/**
+ * ★★★ 2026-10-22：功能树落盘**只改 `feature_tree` 一个字段**，绝不整份覆盖。
+ *
+ * ## 这一处修的是什么（事故级）
+ * 原先是 `saveDSL(liveDsl, 'feature_tree')` —— 读的是 **live 视图**、走的是 `saveDSL`。
+ * 而 `saveDSL` 自 2026-10-18 起**只写设计侧**（`design/<f>.dsl.json`），不再写活态。
+ * ⇒ 于是「把功能树写回 live 快照」这句话**已经不成立**：实际发生时是
+ *   **用 live 快照整份盖掉设计册** ⇒ `todos` / 各节点的 `task` / `decision` 全部消失。
+ * ★ 2026-10-22 实测：`GET /api/overview`（一个看起来只读的接口）走 `tryDeriveFeatureTree`
+ *   ⇒ 设计册 5.03MB → 2.16MB，**96 张任务卡整片清空**。
+ *
+ * ## 为什么是"读设计册再写"而不是"干脆不写"
+ * 功能树是 `overview` 与结构图共用的**落盘事实**（`file_map` 被下游读），不落盘会退化成每次现算。
+ * ⇒ 保留写盘，但把写入面收窄到**本函数唯一负责的字段**：
+ *   `getDesignSheet` 是**裸读**（不并 overlay）⇒ 写回时不会把 overlay 的内容烘进 base。
+ * ★ 读不到设计册（只有 live 的项目）才退回 `liveDsl` —— 那是"首次落册"，语义上等于 fork。
+ */
+function persistFeatureTree(
+  feature: string,
+  tree: NonNullable<DesignDSL['feature_tree']>,
+  liveDsl: DesignDSL | null,
+): void {
+  const sheet = getDesignSheet(feature) ?? liveDsl;
+  if (!sheet) return;
+  sheet.feature_tree = tree;
+  saveDSL(sheet, 'feature_tree');
 }
 
 export async function deriveFeatureTree(
@@ -475,16 +502,18 @@ export async function deriveFeatureTree(
     scoped = features.filter((f) => mappedFids.has(f.id));
   }
 
-  // 6. 落盘（写回 live 快照；saveDSL 同时同步设计视图文件，使结构图与功能树对齐）
+  // 6. 落盘 —— ★ 只改 feature_tree（见 persistFeatureTree 头注：整份覆盖会清掉 todos / task / decision）
   if (input.feature && liveDsl) {
-    liveDsl.feature_tree = {
-      features: scoped,
-      file_map: fileMap,
-      source: usedLlm ? 'llm' : 'rule',
-      // ★ 仅在不一致时带上这个键（一致时不写 —— 空清单占位=装饰）
-      ...(community_dir_diff.length > 0 ? { community_dir_diff } : {}),
-    };
-    saveDSL(liveDsl, 'feature_tree');
+    persistFeatureTree(
+      input.feature,
+      {
+        features: scoped,
+        file_map: fileMap,
+        source: usedLlm ? 'llm' : 'rule',
+        ...(community_dir_diff.length > 0 ? { community_dir_diff } : {}),
+      },
+      liveDsl,
+    );
   }
 
   const total = semanticFiles.length;
