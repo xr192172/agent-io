@@ -2783,6 +2783,283 @@ async function handleOpenAICompat(req: http.IncomingMessage, res: http.ServerRes
   sendJson(res, r.status, r.body);
 }
 
+// CORS：仅允许 localhost 系列源（含 IPv4/IPv6/hostname），阻止第三方网页通过浏览器跨域调用写入 API
+// ★ 2026-10-22 从 `startServer` 内提到模块级：它是**无状态纯判据**，而路由表里的 SSE handler 也要用它
+//   ⇒ 判据不该只在"某个函数的调用栈里"可见。
+const safeOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:\d+)?$/;
+function isSafeOrigin(origin: string | undefined): boolean {
+  if (!origin) return true; // 非浏览器直接请求（curl/self）放行
+  return safeOriginPattern.test(origin);
+}
+
+/**
+ * ★★★ 2026-10-22：路由从 **65 条 `if (url.startsWith(...))` 链**改成**数据表**。
+ *
+ * ## 为什么改（不是"为了整齐"）
+ * 改之前，路由的**存在性只写在控制流里** ⇒ 没有任何地方能回答"这个 server 有哪几条 API"：
+ *   想知道就得读 379 行 if；想查"有没有重复注册同一个 path"只能靠人眼；
+ *   想给前端一份路由清单更是没有出处。
+ * ⇒ 现在路由是**数据**：能列出、能查重、能被下面 `assertRouteTable` 机器验。
+ *
+ * ## ★★ 改它的人必须知道的一条
+ * `path` 是**前缀匹配**（`startsWith`），所以**表顺序就是语义**：
+ * 若 A 是 B 的前缀且方法有交集，**A 在前就会吃掉 B**。
+ * 实测（2026-10-22 全表扫描）：当前 65 条里**没有**这种抢匹配；仅 2 对互为前缀
+ *   （`/api/mind-map` ⊂ `/api/mind-map-teach` · `/api/explain` ⊂ `/api/explain/generate`），
+ *   两对都靠 `methods` 区分 ⇒ 安全。`assertRouteTable()` 会持续盯着这件事。
+ */
+interface RouteCtx {
+  method: string;
+  url: string;
+  origin?: string;
+}
+
+interface HttpRoute {
+  /** 前缀匹配（默认匹配方式） */
+  path?: string;
+  /** 给了它就用它、忽略 path —— 只有根路由需要（`u === '/' || u.startsWith('/?')` 不是纯前缀，写 `'/'` 会吃掉所有路径） */
+  match?: (url: string) => boolean;
+  /** 允许的方法；**空数组 = 不限** */
+  methods: readonly string[];
+  handler: (req: http.IncomingMessage, res: http.ServerResponse, ctx: RouteCtx) => void;
+}
+
+/**
+ * ★ 表自检：重复注册 / 前缀抢匹配。**在 startServer 里真调一次**（不是只存在）。
+ * 判据两条：
+ *   ① 同一个 (path, method) 不许注册两次（后者永远不可达）；
+ *   ② 若 A.path 是 B.path 的真前缀，且 A 与 B 的方法有交集（或任一方不限方法）⇒ A 会吃掉 B。
+ */
+function assertRouteTable(routes: readonly HttpRoute[]): void {
+  const errors: string[] = [];
+  for (let i = 0; i < routes.length; i++) {
+    const A = routes[i];
+    if (!A.path) continue; // match 型不参与前缀判断
+    for (let j = i + 1; j < routes.length; j++) {
+      const B = routes[j];
+      if (!B.path) continue;
+      const share = A.methods.length === 0 || B.methods.length === 0 || A.methods.some((m) => B.methods.includes(m));
+      if (!share) continue;
+      if (A.path === B.path) errors.push(`重复注册 ${A.path}（第 ${i + 1} 与第 ${j + 1} 条，后者不可达）`);
+      else if (B.path.startsWith(A.path)) errors.push(`第 ${i + 1} 条 ${A.path} 是第 ${j + 1} 条 ${B.path} 的前缀 ⇒ 后者不可达`);
+    }
+  }
+  if (errors.length) throw new Error('路由表自检失败：\n  ' + errors.join('\n  '));
+}
+
+/** 65 条路由。★ **顺序即语义**（见上面 HttpRoute 头注）—— 增删请按原 if 链位置插入，别排序。 */
+const ROUTES: readonly HttpRoute[] = [
+  // L2856  ★ INLINE
+  { path: '/api/events', methods: ['GET'], handler: (req, res, ctx) => {
+      // SSE 端点：保持连接，推送 DSL 变更事件
+      const sseOrigin = isSafeOrigin(ctx.origin) ? (ctx.origin ?? '*') : 'null';
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': sseOrigin,
+      });
+      res.write('event: connected\ndata: {"message":"SSE connected"}\n\n');
+      sseClients.add(res);
+      req.on('close', () => { sseClients.delete(res); });
+      return;
+    } },
+  // L2871
+  { path: '/api/save', methods: ['POST'], handler: handleApiSave },
+  // L2876
+  { path: '/api/load', methods: ['GET'], handler: handleApiLoad },
+  // L2881
+  { path: '/api/features', methods: ['GET'], handler: handleApiFeatures },
+  // L2886
+  { path: '/api/observe/log', methods: ['GET'], handler: handleApiObserveLog },
+  // L2891
+  { path: '/api/observe/judge', methods: ['POST'], handler: handleApiObserveJudge },
+  // L2896
+  { path: '/api/live/rebuild', methods: ['POST'], handler: handleApiLiveRebuild },
+  // L2901
+  { path: '/api/import', methods: ['POST'], handler: handleApiImport },
+  // L2906
+  { path: '/api/live', methods: ['GET'], handler: handleApiLive },
+  // L2911
+  { path: '/api/split_plan', methods: ['POST'], handler: handleApiSplitPlan },
+  // L2916
+  { path: '/api/monolith', methods: ['POST'], handler: handleApiMonolith },
+  // L2921
+  { path: '/api/reveal-file', methods: ['POST'], handler: handleApiRevealFile },
+  // L2926
+  { path: '/api/layout/dag', methods: ['POST'], handler: (req, res) => handleApiLayout(req, res, 'dag') },
+  // L2931
+  { path: '/api/layout/force', methods: ['POST'], handler: (req, res) => handleApiLayout(req, res, 'force') },
+  // L2936
+  { path: '/api/layout/grid', methods: ['POST'], handler: (req, res) => handleApiLayout(req, res, 'grid') },
+  // L2941
+  { path: '/api/consistency', methods: ['POST'], handler: handleApiConsistency },
+  // L2946
+  { path: '/api/diff-impact', methods: ['POST'], handler: handleApiDiffImpact },
+  // L2951
+  { path: '/api/diff-views', methods: ['POST'], handler: handleApiDiffViews },
+  // L2956
+  { path: '/api/mind-map', methods: ['POST'], handler: handleApiMindMap },
+  // L2961  ★ INLINE
+  { path: '/api/proposals', methods: ['POST'], handler: (req, res, ctx) => {
+      void (async () => {
+        try {
+          const body = await readBody(req);
+          const params = JSON.parse(body.toString('utf-8') || '{}');
+          const feature = String(params.feature || '').trim();
+          if (!feature) {
+            sendError(res, 400, '缺少 feature 参数');
+            return;
+          }
+          const result = await placeProposals(feature);
+          sendJson(res, 200, { success: true, ...result });
+        } catch (e) {
+          sendError(res, 500, (e as Error).message);
+        }
+      })();
+      return;
+    } },
+  // L2981  ★ INLINE
+  { path: '/api/pipeline-like', methods: ['POST'], handler: (req, res, ctx) => {
+      void (async () => {
+        try {
+          const body = await readBody(req);
+          const params = JSON.parse(body.toString('utf-8') || '{}');
+          const feature = String(params.feature || '').trim();
+          const label = String(params.label || '').trim();
+          if (!feature || !label) {
+            sendError(res, 400, '缺少 feature 或 label 参数');
+            return;
+          }
+          if (typeof params.like !== 'boolean') {
+            sendError(res, 400, 'like 必须是布尔量（是/否产线视图）');
+            return;
+          }
+          const file = getMindMapFile(feature, 'teach');
+          if (!fs.existsSync(file)) {
+            sendError(res, 404, 'teach 导图未生成，请先调用 derive_mind_map 生成科普分镜');
+            return;
+          }
+          const mindMap = JSON.parse(fs.readFileSync(file, 'utf-8')) as MindMap;
+          mindMap.pipeline_like = mindMap.pipeline_like ?? {};
+          mindMap.pipeline_like[label] = params.like;
+          fs.writeFileSync(file, JSON.stringify(mindMap, null, 2), 'utf-8');
+          sendJson(res, 200, { success: true, like: params.like, pipeline_like: mindMap.pipeline_like });
+        } catch (e) {
+          sendError(res, 500, (e as Error).message);
+        }
+      })();
+      return;
+    } },
+  // L3013
+  { path: '/api/overview', methods: ['GET', 'POST'], handler: (req, res, ctx) => handleApiOverview(req, res, ctx.method) },
+  // L3018
+  { path: '/api/user_nodes', methods: ['GET', 'POST'], handler: (req, res, ctx) => handleApiUserNodes(req, res, ctx.method) },
+  // L3022
+  { path: '/api/annotations', methods: ['GET', 'POST'], handler: (req, res, ctx) => handleApiAnnotations(req, res, ctx.method) },
+  // L3026
+  { path: '/api/opl', methods: ['POST'], handler: handleApiOpl },
+  // L3031
+  { path: '/api/mind-map-teach', methods: ['GET'], handler: handleApiMindMapTeachGet },
+  // L3036
+  { path: '/api/mind-map', methods: ['GET'], handler: handleApiMindMapGet },
+  // L3041
+  { path: '/api/arch-layer', methods: ['POST'], handler: handleApiArchLayer },
+  // L3046
+  { path: '/api/guided-tour', methods: ['POST'], handler: handleApiGuidedTour },
+  // L3051
+  { path: '/api/semantic-search', methods: ['POST'], handler: handleApiSemanticSearch },
+  // L3056
+  { path: '/api/language-concepts', methods: ['POST'], handler: handleApiLanguageConcepts },
+  // L3061
+  { path: '/api/git-diff', methods: ['GET'], handler: handleApiGitDiff },
+  // L3066
+  { path: '/api/dict/query', methods: ['POST'], handler: handleApiDictQuery },
+  // L3070
+  { path: '/api/dict/highlight', methods: ['POST'], handler: handleApiDictHighlight },
+  // L3074
+  { path: '/api/dict/ingest', methods: ['POST'], handler: handleApiDictIngest },
+  // L3078
+  { path: '/api/dict/generate', methods: ['POST'], handler: handleApiDictGenerate },
+  // L3083
+  { path: '/api/registry', methods: [], handler: handleApiRegistry },
+  // L3088
+  { path: '/api/tour', methods: ['GET'], handler: handleApiTour },
+  // L3093
+  { path: '/api/explain', methods: ['GET'], handler: handleApiExplain },
+  // L3098
+  { path: '/api/explain/generate', methods: ['POST'], handler: handleApiExplainGenerate },
+  // L3103
+  { path: '/api/feature-dsl', methods: ['GET'], handler: handleApiFeatureDsl },
+  // L3108
+  { path: '/api/canvas-notes/digest', methods: ['GET'], handler: handleApiCanvasNotesDigest },
+  // L3113
+  { path: '/api/canvas-notes/status', methods: ['POST'], handler: handleApiCanvasNotesStatus },
+  // L3118
+  { path: '/api/canvas-notes', methods: ['GET'], handler: handleApiCanvasNotesGet },
+  // L3123
+  { path: '/api/canvas-notes', methods: ['POST'], handler: handleApiCanvasNotesSave },
+  // L3128
+  { path: '/api/feature-meta', methods: ['GET'], handler: handleApiFeatureMeta },
+  // L3133
+  { path: '/api/code/workbench', methods: ['GET'], handler: handleApiCodeWorkbench },
+  // L3138
+  { path: '/api/code/propose', methods: ['POST'], handler: handleApiCodePropose },
+  // L3143
+  { path: '/api/code/approve', methods: ['POST'], handler: handleApiCodeApprove },
+  // L3148
+  { path: '/api/code/reject', methods: ['POST'], handler: handleApiCodeReject },
+  // L3155
+  { path: '/api/observe/proposals/approve', methods: ['POST'], handler: handleApiObserveApprove },
+  // L3160
+  { path: '/api/observe/proposals/reject', methods: ['POST'], handler: handleApiObserveReject },
+  // L3165
+  { path: '/api/observe/proposals', methods: ['GET'], handler: handleApiObserveProposals },
+  // L3171
+  { path: '/api/gateway', methods: [], handler: (req, res, ctx) => handleApiGateway(req, res, ctx.method, ctx.url) },
+  // L3177
+  { path: '/v1/chat/completions', methods: ['POST'], handler: handleOpenAICompat },
+  // L3184  ★ INLINE
+  { match: (u: string) => u === '/' || u.startsWith('/?'), methods: [], handler: (req, res, ctx) => {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: true, frontend: 'dsl-workbench', note: '本 serve 仅提供数据/API；旧自包含前端已移除' }));
+      return;
+    } },
+  // L3190
+  { path: '/api/trace-exec', methods: ['POST'], handler: handleApiTraceExec },
+  // L3195
+  { path: '/api/chain-recon', methods: ['POST'], handler: handleApiReconcileChain },
+  // L3200
+  { path: '/api/focus', methods: ['POST'], handler: handleApiFocus },
+  // L3205
+  { path: '/api/archify-demo', methods: ['POST'], handler: handleApiArchifyDemo },
+  // L3210
+  { path: '/api/function-outline', methods: ['GET'], handler: handleApiFunctionOutline },
+  // L3214
+  { path: '/api/feature-line', methods: ['GET'], handler: handleApiFeatureLine },
+  // L3218  ★ INLINE
+  { path: '/api/function-run', methods: ['POST'], handler: (req, res, ctx) => {
+      const q = new URL(req.url || '/', 'http://localhost');
+      const proot = (q.searchParams.get('project_dir') || '').trim() || undefined;
+      void handleApiFunctionRun(req, res, proot);
+      return;
+    } },
+  // L3224  ★ INLINE
+  { path: '/api/chain-exec', methods: ['POST'], handler: (req, res, ctx) => {
+      const q = new URL(req.url || '/', 'http://localhost');
+      const proot = (q.searchParams.get('project_dir') || '').trim() || undefined;
+      void handleApiChainExec(req, res, proot);
+      return;
+    } },
+  // L3230  ★ INLINE
+  { path: '/api/function-example', methods: ['GET'], handler: (req, res, ctx) => {
+      const q = new URL(req.url || '/', 'http://localhost');
+      const proot = (q.searchParams.get('project_dir') || '').trim() || undefined;
+      void handleApiFunctionExample(req, res, proot);
+      return;
+    } },
+];
+
 export async function startServer(port?: number): Promise<void> {
   const listenPort = port || PORT;
 
@@ -2812,12 +3089,8 @@ export async function startServer(port?: number): Promise<void> {
 
   // 安全：默认仅绑定本机回环，避免局域网/公网暴露；如需跨机访问，显式设 AGENT_IO_BIND=0.0.0.0
   const bindHost = process.env.AGENT_IO_BIND || '127.0.0.1';
-  // CORS：仅允许 localhost 系列源（含 IPv4/IPv6/hostname），阻止第三方网页通过浏览器跨域调用写入 API
-  const safeOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:\d+)?$/;
-  const isSafeOrigin = (origin: string | undefined): boolean => {
-    if (!origin) return true; // 非浏览器直接请求（curl/self）放行
-    return safeOriginPattern.test(origin);
-  };
+  // ★ 2026-10-22：CORS 判据（`safeOriginPattern` / `isSafeOrigin`）已提到模块级 ——
+  //   它是**无状态纯判据**，而路由表（`ROUTES`）里的 SSE handler 也要用它 ⇒ 不能只在 startServer 里可见。
 
   const server = http.createServer((req, res) => {
     const url = req.url || '/';
@@ -2853,384 +3126,14 @@ export async function startServer(port?: number): Promise<void> {
       return;
     }
 
-    if (url.startsWith('/api/events') && method === 'GET') {
-      // SSE 端点：保持连接，推送 DSL 变更事件
-      const sseOrigin = isSafeOrigin(origin) ? (origin ?? '*') : 'null';
-      res.writeHead(200, {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': sseOrigin,
-      });
-      res.write('event: connected\ndata: {"message":"SSE connected"}\n\n');
-      sseClients.add(res);
-      req.on('close', () => { sseClients.delete(res); });
-      return;
-    }
-
-    if (url.startsWith('/api/save') && method === 'POST') {
-      handleApiSave(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/load') && method === 'GET') {
-      handleApiLoad(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/features') && method === 'GET') {
-      handleApiFeatures(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/observe/log') && method === 'GET') {
-      handleApiObserveLog(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/observe/judge') && method === 'POST') {
-      void handleApiObserveJudge(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/live/rebuild') && method === 'POST') {
-      handleApiLiveRebuild(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/import') && method === 'POST') {
-      void handleApiImport(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/live') && method === 'GET') {
-      handleApiLive(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/split_plan') && method === 'POST') {
-      handleApiSplitPlan(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/monolith') && method === 'POST') {
-      void handleApiMonolith(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/reveal-file') && method === 'POST') {
-      void handleApiRevealFile(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/layout/dag') && method === 'POST') {
-      handleApiLayout(req, res, 'dag');
-      return;
-    }
-
-    if (url.startsWith('/api/layout/force') && method === 'POST') {
-      handleApiLayout(req, res, 'force');
-      return;
-    }
-
-    if (url.startsWith('/api/layout/grid') && method === 'POST') {
-      handleApiLayout(req, res, 'grid');
-      return;
-    }
-
-    if (url.startsWith('/api/consistency') && method === 'POST') {
-      handleApiConsistency(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/diff-impact') && method === 'POST') {
-      handleApiDiffImpact(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/diff-views') && method === 'POST') {
-      handleApiDiffViews(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/mind-map') && method === 'POST') {
-      handleApiMindMap(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/proposals') && method === 'POST') {
-      void (async () => {
-        try {
-          const body = await readBody(req);
-          const params = JSON.parse(body.toString('utf-8') || '{}');
-          const feature = String(params.feature || '').trim();
-          if (!feature) {
-            sendError(res, 400, '缺少 feature 参数');
-            return;
-          }
-          const result = await placeProposals(feature);
-          sendJson(res, 200, { success: true, ...result });
-        } catch (e) {
-          sendError(res, 500, (e as Error).message);
-        }
-      })();
-      return;
-    }
-
-    // 产线视图确认/拒绝：主人对 LLM 的产线提议（pipeline_like）拍板 → 写保留 JSON（teach 文件）
-    if (url.startsWith('/api/pipeline-like') && method === 'POST') {
-      void (async () => {
-        try {
-          const body = await readBody(req);
-          const params = JSON.parse(body.toString('utf-8') || '{}');
-          const feature = String(params.feature || '').trim();
-          const label = String(params.label || '').trim();
-          if (!feature || !label) {
-            sendError(res, 400, '缺少 feature 或 label 参数');
-            return;
-          }
-          if (typeof params.like !== 'boolean') {
-            sendError(res, 400, 'like 必须是布尔量（是/否产线视图）');
-            return;
-          }
-          const file = getMindMapFile(feature, 'teach');
-          if (!fs.existsSync(file)) {
-            sendError(res, 404, 'teach 导图未生成，请先调用 derive_mind_map 生成科普分镜');
-            return;
-          }
-          const mindMap = JSON.parse(fs.readFileSync(file, 'utf-8')) as MindMap;
-          mindMap.pipeline_like = mindMap.pipeline_like ?? {};
-          mindMap.pipeline_like[label] = params.like;
-          fs.writeFileSync(file, JSON.stringify(mindMap, null, 2), 'utf-8');
-          sendJson(res, 200, { success: true, like: params.like, pipeline_like: mindMap.pipeline_like });
-        } catch (e) {
-          sendError(res, 500, (e as Error).message);
-        }
-      })();
-      return;
-    }
-
-    if (url.startsWith('/api/overview') && (method === 'GET' || method === 'POST')) {
-      void handleApiOverview(req, res, method);
-      return;
-    }
-
-    if (url.startsWith('/api/user_nodes') && (method === 'GET' || method === 'POST')) {
-      void handleApiUserNodes(req, res, method);
-      return;
-    }
-    if (url.startsWith('/api/annotations') && (method === 'GET' || method === 'POST')) {
-      void handleApiAnnotations(req, res, method);
-      return;
-    }
-    if (url.startsWith('/api/opl') && method === 'POST') {
-      void handleApiOpl(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/mind-map-teach') && method === 'GET') {
-      handleApiMindMapTeachGet(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/mind-map') && method === 'GET') {
-      handleApiMindMapGet(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/arch-layer') && method === 'POST') {
-      handleApiArchLayer(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/guided-tour') && method === 'POST') {
-      handleApiGuidedTour(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/semantic-search') && method === 'POST') {
-      handleApiSemanticSearch(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/language-concepts') && method === 'POST') {
-      handleApiLanguageConcepts(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/git-diff') && method === 'GET') {
-      handleApiGitDiff(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/dict/query') && method === 'POST') {
-      handleApiDictQuery(req, res);
-      return;
-    }
-    if (url.startsWith('/api/dict/highlight') && method === 'POST') {
-      handleApiDictHighlight(req, res);
-      return;
-    }
-    if (url.startsWith('/api/dict/ingest') && method === 'POST') {
-      handleApiDictIngest(req, res);
-      return;
-    }
-    if (url.startsWith('/api/dict/generate') && method === 'POST') {
-      handleApiDictGenerate(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/registry')) {
-      handleApiRegistry(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/tour') && method === 'GET') {
-      handleApiTour(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/explain') && method === 'GET') {
-      handleApiExplain(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/explain/generate') && method === 'POST') {
-      handleApiExplainGenerate(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/feature-dsl') && method === 'GET') {
-      handleApiFeatureDsl(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/canvas-notes/digest') && method === 'GET') {
-      handleApiCanvasNotesDigest(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/canvas-notes/status') && method === 'POST') {
-      void handleApiCanvasNotesStatus(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/canvas-notes') && method === 'GET') {
-      handleApiCanvasNotesGet(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/canvas-notes') && method === 'POST') {
-      void handleApiCanvasNotesSave(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/feature-meta') && method === 'GET') {
-      void handleApiFeatureMeta(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/code/workbench') && method === 'GET') {
-      handleApiCodeWorkbench(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/code/propose') && method === 'POST') {
-      void handleApiCodePropose(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/code/approve') && method === 'POST') {
-      void handleApiCodeApprove(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/code/reject') && method === 'POST') {
-      handleApiCodeReject(req, res);
-      return;
-    }
-
-    // Observe 提案（T62）：★ 具体路径放在前面（`/api/observe/proposals` 用了 startsWith，
-    // 而 `/api/observe/proposals/approve` 也是它的前缀 —— 顺序 + method 双保险）。
-    if (url.startsWith('/api/observe/proposals/approve') && method === 'POST') {
-      void handleApiObserveApprove(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/observe/proposals/reject') && method === 'POST') {
-      void handleApiObserveReject(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/observe/proposals') && method === 'GET') {
-      void handleApiObserveProposals(req, res);
-      return;
-    }
-
-    // 小网关：设置页接口（供应商/Key 池/用量）
-    if (url.startsWith('/api/gateway')) {
-      void handleApiGateway(req, res, method, url);
-      return;
-    }
-
-    // 小网关：OpenAI 兼容端点（上层网关 / OpenAI 客户端可把我当 upstream 纳管）
-    if (url.startsWith('/v1/chat/completions') && method === 'POST') {
-      void handleOpenAICompat(req, res);
-      return;
-    }
-
-    // 旧 serve 期自包含前端（/workbench 与旧出口）已撤——前端统一为 dsl-workbench，
-    // 本 serve 只做纯数据/API 引擎，不再渲染自包含 HTML 页面。
-    if (url === '/' || url.startsWith('/?')) {
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ ok: true, frontend: 'dsl-workbench', note: '本 serve 仅提供数据/API；旧自包含前端已移除' }));
-      return;
-    }
-
-    if (url.startsWith('/api/trace-exec') && method === 'POST') {
-      handleApiTraceExec(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/chain-recon') && method === 'POST') {
-      handleApiReconcileChain(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/focus') && method === 'POST') {
-      handleApiFocus(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/archify-demo') && method === 'POST') {
-      handleApiArchifyDemo(req, res);
-      return;
-    }
-
-    if (url.startsWith('/api/function-outline') && method === 'GET') {
-      handleApiFunctionOutline(req, res);
-      return;
-    }
-    if (url.startsWith('/api/feature-line') && method === 'GET') {
-      handleApiFeatureLine(req, res);
-      return;
-    }
-    if (url.startsWith('/api/function-run') && method === 'POST') {
-      const q = new URL(req.url || '/', 'http://localhost');
-      const proot = (q.searchParams.get('project_dir') || '').trim() || undefined;
-      void handleApiFunctionRun(req, res, proot);
-      return;
-    }
-    if (url.startsWith('/api/chain-exec') && method === 'POST') {
-      const q = new URL(req.url || '/', 'http://localhost');
-      const proot = (q.searchParams.get('project_dir') || '').trim() || undefined;
-      void handleApiChainExec(req, res, proot);
-      return;
-    }
-    if (url.startsWith('/api/function-example') && method === 'GET') {
-      const q = new URL(req.url || '/', 'http://localhost');
-      const proot = (q.searchParams.get('project_dir') || '').trim() || undefined;
-      void handleApiFunctionExample(req, res, proot);
+    // ── 分发：表顺序即优先级，首个命中即用（原 65 条 if 链已表化，见 ROUTES）────────
+    const hit = ROUTES.find(
+      (r) =>
+        (r.match ? r.match(url) : url.startsWith(r.path as string)) &&
+        (r.methods.length === 0 || r.methods.includes(method)),
+    );
+    if (hit) {
+      void hit.handler(req, res, { method, url, origin });
       return;
     }
 
