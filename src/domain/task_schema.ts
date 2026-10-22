@@ -459,6 +459,29 @@ export interface TaskSpec {
    */
   reopen_reason?: string | null;
   /**
+   * ★★★ **租约熔断的四个痕迹字段**（2026-10-22 · 用户裁定「租约该自己断，别一直卡别人的线程」）。
+   *
+   * ## 为什么四个都要落盘（不是"一个 claimed_at 够用"）
+   * 一个 `claimed` 的归属，**只能靠时间判断**。而"为什么现在归这个人"有三种完全不同的来路，
+   * 审计时必须能分开 —— 否则出事时只知道"被人拿走了"，不知道是谁、什么时候、按什么口径：
+   *
+   * | 字段 | 谁写的 | 回答什么 |
+   * |---|---|---|
+   * | `renewed_count` / `last_renewed_at` | `renew` | **他还在**（主动续命 N 次；第几次很关键 —— 一直续 = 这活拆分不当） |
+   * | `taken_over_from` | `claim`（租约过期后接管） | **此前的租约过期了，我接手的**（原 owner / 原 claimed_at / 挂了多久） |
+   * | `expired_from` / `expired_at` | `expire`（主动回收） | **没人来，时间到，自动回 candidate** |
+   *
+   * ★ 三者与 `release_reason`（人主动放回）**分开记**：一个"人放弃"、一个"超时"、一个"换手"，
+   *   混成一个字段就再也分不清"这活到底是被谁、因为什么放下的"。
+   * ★ `ttl_ms` 也记进去：TTL 是可配的（`AGENT_IO_LEASE_TTL_HOURS`），不记当时的取值，
+   *   半年后看到 `age_hours: 3` 会以为"3 小时就该过期"，而当时可能是 24h 的口径。
+   */
+  renewed_count?: number;
+  last_renewed_at?: string;
+  taken_over_from?: { from_owner?: string; from_claimed_at: string; age_hours: number | null } | null;
+  expired_from?: { owner: string | null; claimed_at: string | null; age_hours: number | null; ttl_ms: number } | null;
+  expired_at?: string | null;
+  /**
    * ★ **未实现**（2026-10-18 标）：原设计是「新卡带 replaces ⇒ 旧卡转 superseded」，
    * 而 superseded 状态已于 2026-10-17 删除 ⇒ **本字段目前无状态可转、无读取方** ⇒ 死字段。
    * ★ 要复活它，先回答「取代后旧卡变成什么」（done / void 是**两种结局**，且各自可经 t_reopen / t_relaunch 回头 ⇒ 本仓已没有「终态」这回事）。

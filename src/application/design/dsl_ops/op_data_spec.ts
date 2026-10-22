@@ -260,8 +260,11 @@ export const OP_SPECS: readonly OpSpec[] = [
   {
     type: 'task',
     // ★ 2026-10-20：加 relaunch（void → candidate，重新立卡；判据由 publish 重给）
-    ops: ['publish', 'claim', 'release', 'complete', 'void', 'reopen', 'relaunch'],
-    idRequired: true,
+    // ★★★ 2026-10-22：加 renew（续租）/ expire（自己过期回 candidate）——
+    //   `expire` 是**批量**的（扫全 feature 的过期 claimed 卡）⇒ 不要 id ⇒ 改用 `opsRequiringId`。
+    ops: ['publish', 'claim', 'release', 'complete', 'void', 'reopen', 'relaunch', 'renew', 'expire'],
+    idRequired: false,
+    opsRequiringId: ['publish', 'claim', 'release', 'complete', 'void', 'reopen', 'relaunch', 'renew'],
     idNote: '任务格所在节点的 id（`geometry.nodes[].task`；★ 任务与节点同居）',
     required: {
       claim: ['owner'],
@@ -270,6 +273,8 @@ export const OP_SPECS: readonly OpSpec[] = [
       void: ['reason'],
       reopen: ['owner', 'reason'],
       relaunch: ['reason'],
+      renew: ['owner'],
+      expire: [],
     },
     note:
       '★ **任务态唯一写端**（四态 `candidate|claimed|done|void`；★ superseded 已退场）；`node.status` 只是它的**派生值**（`task_schema.ts#progressOf`），不许直接改。' +

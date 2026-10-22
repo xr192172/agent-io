@@ -108,5 +108,64 @@ chk(isLeaseExpired({ state: 'claimed' }, Date.now()) === false, '④a 缺 claime
 chk(isLeaseExpired({ state: 'claimed', claimed_at: 'not-a-date' }, Date.now()) === false, '④b 坏时间 ⇒ false');
 chk(isLeaseExpired({ state: 'candidate', claimed_at: new Date(0).toISOString() }, Date.now()) === false, '④c 非 claimed ⇒ false');
 
+// ── ⑤ 续租：未过期 + 是自己的 ⇒ 成功，且计数 +1
+console.log('\n════ ⑤ renew：续租是合法路径（与"重复 claim 被拒"不矛盾）════');
+setClaimedAt(card.id, new Date(Date.now() - 30 * 60_000).toISOString(), 'agent:worker');
+const t5a = taskOf(card.id);
+let r5 = null;
+try {
+  r5 = await applyTaskOp('task-system-plan', { op: 'renew', id: card.id, data: { owner: 'agent:worker' } }, 'agent:worker');
+  chk(true, '⑤a 自己的卡 + 未过期 ⇒ 续租成功');
+} catch (e) {
+  chk(false, '⑤a 续租成功（实际被拒）', String(e.message).split('\n')[0].slice(0, 100));
+}
+const t5 = taskOf(card.id);
+chk(t5.renewed_count === 1, '⑤b renewed_count=1', String(t5.renewed_count));
+chk(Date.parse(t5.claimed_at) > Date.parse(t5a.claimed_at), '⑤c claimed_at 被刷新（确实续上了）');
+chk(/续租|renew/.test(String(r5?.message ?? '')), '⑤d 回执说清是续租');
+
+// ── ⑥ 续别人的卡 ⇒ 拒
+console.log('\n════ ⑥ 不许替别人续命 ════');
+try {
+  await applyTaskOp('task-system-plan', { op: 'renew', id: card.id, data: { owner: 'agent:stranger' } }, 'agent:stranger');
+  chk(false, '⑥ 应被拒（实际成功 ✗）');
+} catch (e) {
+  chk(/不是你领的/.test(String(e.message)), '⑥ 被拒（不是你领的）', String(e.message).split('\n')[0].slice(0, 70));
+}
+
+// ── ⑦ 过期后不许自己续（熔断的边界）
+console.log('\n════ ⑦ 过期后不能续 ⇒ 只能接管 ════');
+setClaimedAt(card.id, new Date(Date.now() - 5 * 3600_000).toISOString(), 'agent:worker');
+try {
+  await applyTaskOp('task-system-plan', { op: 'renew', id: card.id, data: { owner: 'agent:worker' } }, 'agent:worker');
+  chk(false, '⑦ 应被拒（实际成功 ✗ 过期还能续活，熔断就是装饰）');
+} catch (e) {
+  chk(/已经过期/.test(String(e.message)), '⑦ 被拒（已经过期，不许自己续活）', String(e.message).split('\n')[0].slice(0, 80));
+}
+
+// ── ⑧ expire：主动回收（没人来也会回 candidate）
+console.log('\n════ ⑧ expire：自己过期回 candidate ════');
+const d8 = read();
+const stock = (d8.todos ?? []).filter((t) => t.state === 'candidate').slice(0, 2);
+if (stock.length < 2) throw new Error('夹具要求 ≥2 张 candidate 卡');
+setClaimedAt(stock[0].id, new Date(Date.now() - 5 * 3600_000).toISOString(), 'agent:gone-1');
+setClaimedAt(stock[1].id, new Date().toISOString(), 'agent:alive'); // 这张不该被收
+let r8 = null;
+try {
+  r8 = await applyTaskOp('task-system-plan', { op: 'expire' }, 'subagent:gc');
+  chk(true, '⑧a expire 跑通（不需要 id，批量）');
+} catch (e) {
+  chk(false, '⑧a expire 跑通（实际抛错）', String(e.message).split('\n')[0].slice(0, 100));
+}
+const e0 = taskOf(stock[0].id);
+const e1 = taskOf(stock[1].id);
+chk(e0.state === 'candidate', '⑧b 过期的那张回 candidate', `state=${e0.state}`);
+chk(e0.owner === null && e0.claimed_at === null, '⑧c owner / claimed_at 被清空');
+chk(e0.expired_from?.owner === 'agent:gone-1' && Math.abs((e0.expired_from?.age_hours ?? 0) - 5) < 0.2,
+  '⑧d expired_from 记了原 owner + age≈5h', JSON.stringify(e0.expired_from));
+chk(e0.expired_from?.ttl_ms === LEASE_TTL_MS, '⑧e 记了当时的 TTL 口径（可配的值要留档）');
+chk(e1.state === 'claimed', '⑧f 未到期的那张**没被误收**', `state=${e1.state}`);
+chk(String(r8?.message ?? '').includes(stock[0].id), '⑧g 回执点名了被收的那张');
+
 console.log(`\n════ 汇总：PASS=${P_}  FAIL=${F} ════`);
 if (F > 0) process.exit(1);

@@ -1147,6 +1147,135 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
  * guard：state 必须是 `claimed`；**必须带 reason**（`t_release`：显式 release 事件带 by + reason）。
  * ★ `releaseIfExpired` 只**产出事件**、不静默改 state（那是它的纪律）；真改 state 的只有这里。
  */
+/**
+ * ★★★ **续租**（`renew` · 2026-10-22 用户裁定）
+ *
+ * ## 为什么必须是**独立的 op**，不是"再 claim 一次"
+ * 用户问过：*「如果再做的话，就续租应该也是可以的呀」* —— 对，但**不能复用 claim**：
+ * `claim` 会**重算并覆盖读集**（`read_set`），而续租的语义只是"我还在，别收回"，
+ * 它不该改动「这一轮要碰什么」。⇒ 一个只刷时间戳的 op。
+ *
+ * ## 三条必须拒的
+ * 1. `state !== 'claimed'` ⇒ 没在办，无从续
+ * 2. **不是你的卡** ⇒ 别人不能替你续命（`sameActor` 折算，与 A7 同一套）
+ * 3. **租约已经过期** ⇒ **不许自己续活** —— 那是熔断的反面（过期后唯一的出路是 `claim` 接管，
+ *    接管会记 `taken_over_from`，留痕）。
+ *
+ * ★ 与"自己重复 claim 也被拒"的关系：重复 claim 会被拒（不幂等），但 **`renew` 是合法路径** ——
+ *   这是 2026-10-22 用户追问后补的（原契约把两件事都堵死了，等于没有续租）。
+ */
+export async function renewTask(input: TaskOpInput): Promise<EditResult> {
+  const { feature, node_id, owner, agent } = input;
+  if (!node_id) throw new Error('renew 需要 `operations[].id`（要续哪张卡）。');
+  const { card } = loadTask(feature, node_id);
+  if (card.state !== 'claimed') {
+    throw new Error(
+      `renew 被拒：节点 "${node_id}" 的 state=${card.state} —— 只有 claimed 能续租（candidate 请直接 claim）。`,
+    );
+  }
+  const who = owner ?? agent;
+  if (!who) throw new Error('renew 被拒：要给 `data.owner`（续租必须证明"你还在"，不认匿名续命）。');
+  if (!card.owner || !sameActor(card.owner, who)) {
+    throw new Error(
+      `renew 被拒：这张卡不是你领的（owner=${card.owner ?? '（空）'}，你=${who}）⇒ 别人不能替你续命。`,
+    );
+  }
+  const now = Date.now();
+  if (isLeaseExpired(card, now)) {
+    throw new Error(
+      `renew 被拒：租约**已经过期**（挂了 ${leaseAgeHours(card, now) ?? '?'}h，TTL=${Math.round(LEASE_TTL_MS / 3.6e6)}h）` +
+        `⇒ 过期后**不许自己续活**（那是熔断的反面）。\n` +
+        `★ 出路：① 直接继续干活并**重新 claim**（会被判为"接管"，记 taken_over_from）；` +
+        `② 或者别人已经接管了 —— 那就该停下，先看当前 owner 是谁。`,
+    );
+  }
+  const at = new Date(now).toISOString();
+  const count = (card.renewed_count ?? 0) + 1;
+  writeTask(feature, node_id, {
+    ...card,
+    claimed_at: at,
+    last_renewed_at: at,
+    renewed_count: count,
+  });
+  const ttlH = Math.round(LEASE_TTL_MS / 3.6e6);
+  return {
+    message:
+      `✓ 已续租 "${node_id}"（第 ${count} 次，owner=${who}，新到期≈${new Date(now + LEASE_TTL_MS).toISOString().slice(11, 16)}Z + ${ttlH}h）。` +
+      `\n★ **续租不改任何判据、不动读集** —— 它只回答"我还在"，不回答"我改了要碰什么"。` +
+      `\n★ 过期后不能续（只能接管），这是熔断的边界：${'过期 = 你停了，不是你没空。'}`,
+    feature,
+    data: { node_id, renewed_count: count, last_renewed_at: at, ttl_ms: LEASE_TTL_MS },
+  };
+}
+
+/**
+ * ★★★ **自己过期**（`expire` · 2026-10-22 用户裁定）
+ *
+ * 用户原话：*「而且有没有自己过期的手段」* / *「任务就该自己暂时终止」*。
+ *
+ * ## 它补的是什么
+ * - `releaseIfExpired` **只产出事件**（纯函数，纪律：不静默改 state）；
+ * - 接管（`claim` 过期卡）只是"**别人来了**才发生"；
+ * - ⇒ **没人来的时候，卡会永远停在 claimed**。这就是用户说的"一直卡别人的线程"。
+ *
+ * 本 op 是那个**主动回收**：扫本 feature 里所有 `claimed` 且过期的卡，**回 candidate**，
+ * 并记 `expired_from { owner, claimed_at, age_hours, ttl_ms }` + `expired_at`。
+ *
+ * ## 与 `release` 的区别（别混）
+ * - `release` = **人**主动放回去（带 `reason`，算一次决策）；
+ * - `expire` = **时间**到了自动回（`reason='lease_ttl'`，不带人的意志）。
+ *   ⇒ 两者落的痕迹不同（`release_reason` vs `expired_from`），审计时能分清"人放弃"还是"超时"。
+ *
+ * ★ 它**不是**定时器：本仓不建后台 daemon（`verify` 里也没有常驻进程）。调用方是
+ *   `scripts/patrol.mjs` 或任何想清理的人 —— 但**判据只有一处**（`isLeaseExpired`），
+ *   所以"谁调"不再影响"判得对不对"。
+ */
+export async function expireTasks(input: TaskOpInput): Promise<EditResult> {
+  const { feature } = input;
+  const dsl = getDesignSheet(feature);
+  if (!dsl) throw new Error(`feature "${feature}" 不存在。`);
+  const now = Date.now();
+
+  // ★ 节点卡 + todo 卡**都扫**（两处都可能有 claimed）—— 口径只有 `isLeaseExpired` 一处
+  const all: Array<{ id: string; card: TaskSpec }> = [];
+  for (const n of dsl.geometry?.nodes ?? []) if (n.task) all.push({ id: n.id, card: n.task as TaskSpec });
+  for (const t of dsl.todos ?? []) all.push({ id: t.id, card: t as TaskSpec });
+
+  const expired = all.filter((x) => isLeaseExpired(x.card, now));
+  const lines: string[] = [];
+  for (const e of expired) {
+    const age = leaseAgeHours(e.card, now);
+    writeTask(feature, e.id, {
+      ...e.card,
+      state: 'candidate',
+      owner: null,
+      claimed_at: null,
+      // ★ 痕迹：谁被收回、挂了多久、按什么 TTL 判的（审计要能复原当时的口径）
+      expired_from: {
+        owner: e.card.owner ?? null,
+        claimed_at: e.card.claimed_at ?? null,
+        age_hours: age,
+        ttl_ms: LEASE_TTL_MS,
+      },
+      expired_at: new Date(now).toISOString(),
+    });
+    lines.push(`  · ${e.id}（原 owner=${e.card.owner ?? '（空）'}，挂了 ${age ?? '?'}h）→ candidate`);
+  }
+
+  const ttlH = Math.round(LEASE_TTL_MS / 3.6e6);
+  return {
+    message:
+      expired.length === 0
+        ? `✓ 没有过期的租约（扫了 ${all.filter((x) => x.card.state === 'claimed').length} 张 claimed 卡，TTL=${ttlH}h）。`
+        : `✓ 已收回 ${expired.length} 张过期租约（TTL=${ttlH}h）→ candidate：\n${lines.join('\n')}` +
+          `\n★ 痕迹落在各自的 \`expired_from\` / \`expired_at\`（与 release 的 \`release_reason\` 可区分：一个是"人放弃"，一个是"超时"）。`,
+    feature,
+    data: { expired: expired.map((e) => e.id), ttl_ms: LEASE_TTL_MS, scanned_claimed: all.filter((x) => x.card.state === 'claimed').length },
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+
 export async function releaseTask(input: TaskOpInput): Promise<EditResult> {
   const { feature, node_id } = input;
   const reason = (input.reason ?? '').trim();
@@ -1546,6 +1675,12 @@ export async function applyTaskOp(
     case 'relaunch':
       // ★★★ 2026-10-20：void → candidate「重新立卡」（判据由 publish 重给）
       return relaunchTask(input);
+    case 'renew':
+      // ★★★ 2026-10-22：**显式续租** —— 只刷 `claimed_at`，不动读集、不动判据
+      return renewTask(input);
+    case 'expire':
+      // ★★★ 2026-10-22：**自己过期** —— 过期的 claimed 卡回 candidate（记 expired_from）
+      return expireTasks(input);
     default:
       // ★ 合法性由 `OP_SPECS` 判（`task.ops` 是唯一清单）；走到这里说明表与分派漂了。
       throw new Error(`task 不支持操作: ${op.op}（合法值由 op_data_spec.ts 的 OP_SPECS.task.ops 判定）`);
