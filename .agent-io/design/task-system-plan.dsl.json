@@ -103880,11 +103880,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T03:21:59.469Z",
+    "saved_at": "2026-10-22T03:24:43.773Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 55796658,
+    "age": 55960962,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -105958,8 +105958,29 @@
     {
       "id": "todo_结构性死锁-edit-code-的-先解析再编辑-是对的-防止在坏树上改-但解析",
       "summary": "【结构性死锁】`edit_code` 的\"先解析再编辑\"是对的（防止在坏树上改），但解析失败时连\"修它\"这件事都做不了 ⇒ 死锁。实测：子代理改 kernel 时先落 helper、后落调用方，中间态语法错 ⇒ 所有对该文件的编辑被拒，只能用旧 dist 打垫片绕过。三条出路：a 加显式 escape 开关（开口子）/ b 用 ERROR 节点定位并局部替换（真解，要改编辑引擎）/ c 承认\"坏文件手改\"并写进文档。★ 倾向 b：它不绕过约束，而是让\"坏文件\"也变成可局部解析的。",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": "agent:workbuddy",
+      "claimed_at": "2026-10-22T03:24:43.635Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T03:24:43.590Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T03:24:43.743Z",
+          "by": "llm",
+          "agent": "agent:workbuddy",
+          "fingerprint": {
+            "what": "edit_code 在坏文件上的三路实测：replace_text / range / replace（`/tmp/brokentest/bad.ts` 缺右括号、`worse.ts` 则 `export function a( {`）；反向：好文件 + `return (1;`",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_公共能力-harness-的-coerce-只认-int-uint-float-",
