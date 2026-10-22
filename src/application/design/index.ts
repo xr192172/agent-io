@@ -34,6 +34,20 @@
  */
 import { z } from 'zod';
 import { requireStr, wrapData } from '../plumbing.js';
+// ★★★ 2026-10-22：OPL（Optimization Pipeline Loop）此前**只有 HTTP 入口**（`POST /api/opl`）——
+//   它是「你提一条愿望，产线自驱推进到收敛」的 **LLM 驱动产线**，却让模型调不到自己该用的东西。
+//   ⇒ 补成工具：注册一次，MCP / CLI / HTTP(`/api/tool/opl`) 三面同时获得。
+import {
+  oplAdd,
+  oplAuto,
+  oplLocate,
+  oplDeclare,
+  oplImplement,
+  oplCheck,
+  oplIntegrate,
+  oplList,
+  type OplState,
+} from './derive/opl.js';
 // ★ T170：`operations[]` 各 type 的 data 契约表（**唯一判据**）—— edit_dsl 描述里那段就是它的渲染。
 import { renderOpSpecs } from './dsl_ops/op_data_spec.js';
 // ★ T198：审批**状态值表** —— ★ 描述里**从它渲染**合法值（不手抄 ⇒ 不会与实现漂）。
@@ -781,6 +795,86 @@ export const DESIGN_TOOLS: ToolDef[] = [
       }
 
       throw new Error(`design_intent: 未知 action "${String(action)}"（可选值：set / propose）`);
+    }),
+  },
+  {
+    name: 'opl',
+    title: 'OPL 自驱产线：一条愿望推进到收敛（add → locate → declare → implement → check → integrate）',
+    description:
+      'OPL = Optimization Pipeline Loop。你只提一条愿望（`action=add` 给 `idea`），产线自驱推进：' +
+      '定位真实文件（locate）→ 出契约并写进设计 DSL（declare）→ 按契约写实现（implement）→ ' +
+      '真 DSL 比较（check：accepted / drift / missing，★ **结构判定零 LLM**，解析真实源码签名）→ 归并（integrate）。' +
+      '`action=auto` 是一键闭环（无 id 时给 idea 会自动 add）；其余 action 用于**单步推进与回滚**（每一步都可单独触发）。' +
+      '`action=list` 列出该 feature 的所有 OPL 条目（只读）。' +
+      '★ 为什么它是工具而不只是前端的一个按钮：它是**给 agent 用的产线** —— 决定"做什么、怎么收敛"的是模型自己，' +
+      '前端只是它的投屏。此前它只有 HTTP 入口，模型根本调不到（2026-10-22 补成工具）。' +
+      '★ 未配 LLM 时降级为规则路径（`mode=rule`），仍能推进，但契约以代码事实为准。',
+    inputSchema: {
+      feature: z.string().describe('feature 名'),
+      action: z
+        .enum(['add', 'auto', 'locate', 'declare', 'implement', 'check', 'integrate', 'list'])
+        .describe('产线阶段。auto = 一键闭环；list 只读'),
+      id: z.string().optional().describe('OPL 条目 id（除 add / list 之外的 action 都需要）'),
+      idea: z.string().optional().describe('愿望原文（action=add 必填；action=auto 无 id 时也用它自动建条）'),
+    },
+    handler: wrapData(async (a) => {
+      const feature = requireStr(a, 'feature');
+      const action = requireStr(a, 'action');
+      const id = a.id ? String(a.id) : '';
+      const idea = a.idea ? String(a.idea) : '';
+      // ★ 不暴露 `files`：`OplDeclFile` 要 {path, lang, apis[]}，让模型自己填 `apis` 就是
+      //   让它替 declare 干它该干的事（而且会填出空契约 = 假绿）。目标文件由 `locate` 推导。
+      //   （顺带：HTTP 那条 `/api/opl` 一直把 `params.files` 原样传进来 —— 类型上根本对不上，
+      //    这正是「HTTP 面没有 schema 校验」的实证。）
+
+      /** 回执首行必须自足（本仓纪律）：一眼看出是哪一条、到哪一步、集成了没 */
+      const summarize = (st: OplState): string =>
+        `OPL ${st.id}「${st.title}」：状态=${st.status} · 模式=${st.mode} · ` +
+        `声明 ${st.decl.length} 文件 · 实测 ${st.live.length} · ${st.integrated ? '已集成' : '未集成'}`;
+
+      /** oplog 只报最后 5 步（它是"人观察每一步做了什么"的痕迹，全量会淹掉回执） */
+      const withLog = (st: OplState): { message: string; data: OplState } => {
+        const tail = (st.oplog ?? []).slice(-5);
+        return {
+          message: [summarize(st), ...(tail.length ? ['  最近步骤：', ...tail.map((l) => `    · ${l}`)] : [])].join('\n'),
+          data: st,
+        };
+      };
+
+      switch (action) {
+        case 'add': {
+          if (!idea.trim()) throw new Error('action=add 需要 `idea`（愿望原文）—— 产线从一条愿望开始');
+          return withLog(oplAdd(feature, idea));
+        }
+        case 'auto':
+          return withLog(await oplAuto(feature, id || undefined, idea || undefined));
+        case 'locate':
+          return withLog(await oplLocate(feature, id));
+        case 'declare':
+          return withLog(oplDeclare(feature, id, {}));
+        case 'implement':
+          return withLog(oplImplement(feature, id));
+        case 'check':
+          return withLog(oplCheck(feature, id));
+        case 'integrate':
+          return withLog(await oplIntegrate(feature, id));
+        case 'list': {
+          const rows = oplList(feature);
+          const lines = rows.length
+            ? rows.map(
+                (r) =>
+                  `  ${r.id}「${r.title}」：${r.status}${r.integrated ? ' · 已集成' : ''}` +
+                  `${r.parentFeat ? ` · 父功能 ${r.parentFeat}` : ''} · 更新 ${r.updated}`,
+              )
+            : ['  （还没有 OPL 条目 —— 用 action=add 提一条愿望）'];
+          return {
+            message: [`OPL 条目 ${rows.length} 条（feature=${feature}）：`, ...lines].join('\n'),
+            data: { ok: true, feature, items: rows },
+          };
+        }
+        default:
+          throw new Error(`opl: 未知 action "${action}"（可选：add / auto / locate / declare / implement / check / integrate / list）`);
+      }
     }),
   },
 ];
