@@ -104653,11 +104653,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T10:37:01.971Z",
+    "saved_at": "2026-10-22T11:01:13.775Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 81899160,
+    "age": 83350964,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108443,9 +108443,16 @@
       "created_at": "2026-10-22T10:32:00.124Z",
       "id": "todo_新建源文件不进设计册-source-write-port-ts-实测-0-个节点而-verify-全绿",
       "summary": "【实测 2026-10-22：`src/infrastructure/source_write_port.ts` 是当天新建的源文件，设计册里**匹配节点数 = 0**，而 `npm run verify` **7 门全绿**。】\n\n## 为什么这是最坏的那种\n```\n设计 DSL 的整套价值 = 「施工产物能被设计对拍」\n但如果【新建的源文件根本不在册上】⇒ 它永远不参与对拍 ⇒ 它是设计之外的一片飞地\n★ 而 verify 全绿 ⇒ 没有任何门会说\"漏了一个文件\" ⇒ 漂移是【静默】的\n```\n★ 用户 2026-10-22 的原话点破了它：\n> 「你领到这个任务去之后，如果没有设计 DSL 和设计 DB，就是你没写这个那你就要先把这个完善……\n>  **两边对上了才是判据**」\n⇒ 现在缺的正是那个\"两边对上\"的检查里的一半：**册子 → 代码**（有 `call-exists` 等），而**代码 → 册子**（\"每个源文件都该有节点\"）**没有**。\n\n## 判据（选一条）\n  A. **门**：`verify` 加一道「源文件 ↔ 设计节点」的双向对账 —— **新增文件没有节点 ⇒ 红**。\n     ★ 难点：`src/infrastructure/**` 有 100+ 文件，未必都该有节点（可能是纯内部实现）⇒ 要定\"哪些文件必须有节点\"（建议：**被 `application` 层 import 的**必须有，纯叶子按目录豁免）。\n  B. **工具**：`edit_code` 的 `create`（★ 现在没有这个 op，见另一张卡）在建文件时**顺手提示**\"这个文件在设计里吗\"。\n  C. **报告**：`design-check` 加一段\"设计外的源文件\"清单（不红，但要点名）—— 最轻，但**不阻止**漂移。\n★ 建议 A + C：C 让人看见，A 才是闸。\n\n## 本次的具体缺口（先补或先挂）\n  `src/infrastructure/source_write_port.ts` 需要：① `geometry.nodes` 一个 file 节点 ② `decision`（已备好两条判据：\n  `file-exists` + `commitSourceWrite` 的 `symbol-exists`，见同日补判据脚本）③ `edges`（谁 import 它：\n  5 个语言包 + `rename_symbols.ts`）。★ ②已经写好但**因为节点不存在而没地方挂**（脚本报\"找不到节点\"）。\n\n## 验收\n```\n删掉 source_write_port.ts 的节点（造一个\"设计外文件\"）⇒ verify 必须红\n恢复 ⇒ 绿\n★ 不许用\"报告里有清单\"当验收（报告不是闸）\n```"
+    },
+    {
+      "type": "todo",
+      "state": "candidate",
+      "created_at": "2026-10-22T11:01:13.743Z",
+      "id": "todo_verify-changed-增量验证入口建了但零接入-没人跑过它",
+      "summary": "【实测 2026-10-22：`scripts/verify-changed.mjs`（2026-10-17 建的「增量验证入口」）**在 `package.json` 里没有对应 script，仓库里没有 `.claude/`（无 hook），全仓零调用点**。⇒ 建了 5 天，**没有人自动跑过它**。】\n\n## 这是今天第 4 次撞到同一个模式（这才是本仓最贵的一类问题）\n```\n① releaseIfExpired（domain 纯函数，判据正确）—— ttl_ms \"取值待裁\" ⇒ 没人能传 ⇒ 29 个文件被 10~27h 租约锁死\n② scripts/patrol.mjs（能跑，`--ttl-hours 24`）—— 不在 verify 里 ⇒ 没人跑\n③ scripts/hook-task-gate.mjs（自称\"每会话提醒\"）—— 读不存在的路径 + 只认 x.path ⇒ 【一条都没触发过】\n④ scripts/verify-changed.mjs（本卡）—— 零接入 ⇒ 5 天没人跑\n★ 四个的共同点：【机制建好了，接入点没接】。\n```\n★ 这比\"判据住两处\"更靠前：**判据住两处**至少有两处会跑；**接入点没接**是一处都不跑，而代码读起来完全正常（甚至带详尽注释和自述\"与 run-all-certs 并列\"）。\n\n## 为什么它会零接入（不是懒，是结构）\n本仓的\"跑东西\"只有三个真实入口：\n```\n· npm run verify        ← 用户/agent 会跑（因为它是唯一总门）\n· npm run certs         ← 收口/日终会跑\n· 某个 agent 手动 node scripts/xxx.mjs  ← 靠记性\n```\n⇒ 一个脚本要\"自动跑\"，**必须挂进前两个之一**（或 hook）。`verify-changed` 两个都没挂。\n\n## 判据\n  A. **它到底该不该自动跑？** 先回答这个 —— 它的语义是\"改了 X 只跑受影响的证\"，     那它**替代**不了 `verify`（`verify` 是类型/编译/签名，这几道必须全量）。⇒ 它是**开发内环**用的，\n     不是\"提交前必须过的闸\"。\n  B. 如果确实要\"自动\" ⇒ 挂 `package.json` 的 `\"verify:changed\"` **并且**写进 `AGENTS.md` 的\"改完跑什么\"，\n     ★ 但**不要**塞进 `verify`（会让 `verify` 依赖 git 改动集 ⇒ 同一份代码在不同工作区行为不同）。\n  C. 如果\"没人跑也无所谓\" ⇒ **在文件头写明它的定位**（\"这是一个可选的内环工具，不是闸\"），     ★ 否则下一个人（像我）会以为它在跑。\n\n## 附带：它和\"设计侧 vs 实际侧\"的关系（用户 2026-10-22 的洞察）\n> 「设计侧写判据……实际侧追上了设计侧，就是这个任务已完成……为什么还需要有一个门禁？」\n\n★ 用户是对的：**\"任务完成\"这件事不需要门禁** —— `complete` 已经会跑 `cardStanding`（判 `isSatisfied`）。\n⇒ 所以本卡**不是**\"补一个门\"，是\"**把已经写好的内环接到该接的地方，或者承认它是可选的并写明**\"。\n★ 而真正的缺口在别处：`cardStanding` **只判有卡的节点** ⇒ 没卡的节点永不参与对拍（见孤儿文件那张卡）。"
     }
   ],
-  "_dsl_rev": 1280,
+  "_dsl_rev": 1281,
   "feature_tree": {
     "features": [
       {
