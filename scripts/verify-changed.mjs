@@ -54,7 +54,12 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..').replace(/\\/g, '/');
-const PLAN = `${ROOT}/docs/task-system-plan.dsl.json`;
+// ★★★ 2026-10-22：设计册的**唯一位置**是 `.agent-io/design/`（`storage.ts#getDesignDir` 头注明写
+//   「曾经试过放 docs/ … 现在只有一处」）。本行原来指着 `docs/task-system-plan.dsl.json` —— 那位置
+//   2026-10-18 就废弃了，且 `docs/*` 进了 .gitignore ⇒ 文件根本不存在 ⇒ `plan=null` ⇒
+//   **t354 的 ②②'⑤'⑥' 四条变成空断言**（它们「通过」不是因为对，是因为没东西可判）。
+//   ⇒ 读不到册子要**当场报**，不许静默降到"只列不判"。
+const PLAN = `${ROOT}/.agent-io/design/task-system-plan.dsl.json`;
 const CERTS = `${ROOT}/certs`;
 
 const argv = process.argv.slice(2);
