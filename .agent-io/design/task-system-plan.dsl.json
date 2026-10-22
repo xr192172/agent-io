@@ -103880,11 +103880,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T02:47:16.512Z",
+    "saved_at": "2026-10-22T02:52:00.669Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 53713701,
+    "age": 53997858,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -106263,11 +106263,12 @@
       "id": "todo_只有HTTP有的能力补成tool",
       "type": "todo",
       "state": "candidate",
-      "summary": "【能力缺失 · 不是重复】2026-10-22 实测：HTTP 面有一批能力**在 MCP / CLI 面根本不存在**（不是\"两处各写一遍\"，是\"只有一处有\"）。清单（`grep explore_code` 的 action 全集确认过，`semantic` / `language_concepts` 都不在里面）：\n  · 检索类：`/api/semantic-search`（semanticSearch）· `/api/language-concepts`（languageConcepts）· `/api/git-diff`\n  · DSL 整份读写：`/api/load` · `/api/save` · `/api/features` · `/api/live` · `/api/feature-dsl` · `/api/feature-meta`（★ `get_dsl` 返回的是**摘要/片段**，不是整份 —— 这不是重复，是真的缺一个\"整份读\"）\n  · 词典：`/api/dict/{query,highlight,ingest,generate}`（4 条）\n  · 视图：`/api/overview` · `/api/mind-map-teach` · `/api/tour` · `/api/explain` · `/api/explain/generate`\n  · UI 几何（**大概率不该补**，前端自己算）：`/api/layout/{dag,force,grid}` · `/api/user_nodes` · `/api/annotations`（★ annotations 已有 `annotate_functions`，但那注解的是**函数**不是**画布批注**，两者别混）\n判据：① 逐条判「这是能力还是 UI 专属」，能力 ⇒ 补进 `TOOL_DEFS`（然后删路由）；UI 专属 ⇒ 在路由上加 `uiOnly: true` 并在 `assertRouteTable` 里认它；② 补完之后「只在 HTTP 面存在的能力」= 0（可由一份 path↔tool 对照表机器验）。\n★ 不许为了\"统一\"把 UI 专属硬塞进 `TOOL_DEFS`（那会让它从\"能力清单\"退化成\"HTTP 端点表\"）。",
-      "created_at": "2026-10-22T02:47:16.476Z"
+      "summary": "【能力归属 · 按受众判，不是按\"HTTP 有 tool 没\"判】\n★★ 2026-10-22 修正：本卡最初的判据是错的 —— 把「HTTP 有、TOOL_DEFS 没有」直接当成**缺失**。实际上 **`TOOL_DEFS` 的受众是 LLM/agent，HTTP 的受众是浏览器**：受众不同 ⇒ 大部分 HTTP 能力**不该**变成 tool，把它们塞进 `TOOL_DEFS` 会让它从「给模型的能力清单」退化成「HTTP 端点表」。\n\n判据三条（逐条问，全过才补）：\n  ① **LLM 能不能自己做到？** 能（跑 `git status`、读 `design/*.dsl.json`）⇒ 不补（多一个 tool = 多一份维护与误用面）。\n  ② **产出是「事实」还是「渲染结构」？** 渲染结构（mind_map 给前端画图、layout 坐标、overview 的 summary/卡片）⇒ 不补。\n  ③ **是不是写权威数据？** 整份覆盖写（`/api/save`）⇒ **绝不补**（2026-10-22 的设计册清空事故就是整份覆盖）。\n\n★ 按这三条过完 19 条的结果：\n  **该补（4 条）**：\n    · `/api/opl` —— ★★★ **最该补的一条**。`OPL = Optimization Pipeline Loop`（`application/design/derive/opl.ts`）：       人提一条愿望 ⇒ 自动 locate/declare/implement/check/converge。这是**LLM 驱动的自驱产线**，       却是唯一只能从 HTTP 触发的能力 —— 模型根本调不到它。\n    · `/api/semantic-search` —— `explore_code action=search` 是**关键词**搜索；语义搜索是另一种索引（`semanticSearch`），没有替代。\n    · `/api/features` —— 模型**不知道有哪些 feature**（`get_dsl` 必须传 feature，而列 feature 没有 tool）⇒ 硬缺口。\n    · `/api/dict/query` —— 术语词典查询（翻译/改名时要用）；`ingest`/`generate` 是写词典，视需要再定。\n  **不该补（其余 ~15 条）**，分三类：\n    · 渲染结构：`overview` · `mind-map-teach` · `tour` · `explain`(×2) · `registry` · `pipeline-like` · `feature-meta` · `focus`\n    · DSL 整份读写（前端画图用；且 5MB 塞进上下文有害）：`load` · `save` · `feature-dsl` · `live` —— ★ `save` 尤其危险\n    · LLM 自己能做 / 不该做：`git-diff`（能跑 git）· `layout`×3（几何）· `user_nodes` · `annotations` · `reveal-file`（OS 操作）\n    · 对外服务而非本仓能力：`gateway` · `/v1/chat/completions`\n判据：① 那 4 条补进 `TOOL_DEFS` 之后，**`GET /api/tools` 能列出它们、MCP 与 CLI 同时可用**（同一份清单）；② 其余 15 条在路由表上加 `uiOnly: true`，`assertRouteTable` 认这个标记 ⇒ 「只在 HTTP 面存在」变成**显式声明**而不是遗漏；③ 补完之后不该再有「能力存在但没人知道它只在一面」的条目。",
+      "created_at": "2026-10-22T02:47:16.476Z",
+      "updated_at": "2026-10-22T02:52:00.638Z"
     }
   ],
-  "_dsl_rev": 1254,
+  "_dsl_rev": 1255,
   "feature_tree": {
     "features": [
       {
