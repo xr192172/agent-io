@@ -211,7 +211,10 @@ export const OP_SPECS: readonly OpSpec[] = [
     //   ★ 为什么是独立 op 而不是塞进 `update`：update 回答「这张卡**要做什么**变了吗」（旧值压 history），
     //     follows 回答「它在**哪条链**上」—— 内容变更与结构变更是两件事。
     //   ★ 也是**唯一能造出环**的入口（add 只加叶子）⇒ 「链必须无环」那条判据真正被考到的地方。
-    ops: ['add', 'link', 'import', 'update', 'follows', 'retire', 'delete'],
+    // ★★★ 2026-10-22（软归档）：加 `archive` / `unarchive` —— 给**已了结**的卡盖 / 摘 `archived_at`。
+    //   ★ 为什么不是 `retire` 的别名：`retire` 改 `state`（活 ⇒ void，是**结局**），归档**不改 state**，
+    //     只是"默认不必再看"的一层可回滚标记 ⇒ 两件事、两个 op（混起来就没法「归档了但仍算 void」地回滚）。
+    ops: ['add', 'link', 'import', 'update', 'follows', 'retire', 'delete', 'archive', 'unarchive'],
     idRequired: false,
     opsRequiringId: ['link', 'update', 'follows', 'retire', 'delete'],
     // ★★★ 2026-10-22（卡迁移）：加 `import` —— **把一张已存在的卡逐字并入 `todos[]`**。
@@ -238,6 +241,11 @@ export const OP_SPECS: readonly OpSpec[] = [
       // ★ 2026-10-22（卡迁移）：`import` 只收 **cards**（整张卡的数组）—— 它不吃 summary/state/owner，
       //   那些只能从 `cards[i]` 里逐字搬（分开收就成了「让你现场拼一张卡」= 又一条编卡的路）。
       import: ['cards'],
+      // ★★★ 2026-10-22（软归档）：两个 op 是**批量**的 ⇒ 收 `ids` 而不是 `id`（故不进 `opsRequiringId`）。
+      //   ★ archive 还要 `reason`（理由落卡上：`archived_reason`）；unarchive **不收 reason**
+      //     —— 它是去掉一层标记，不是一次有内容的决定（真正有理由的那步是随后的 claim / reopen）。
+      archive: ['ids', 'reason'],
+      unarchive: ['ids'],
     },
     note:
       '★ **无节点任务**（2026-10-18 Q5）：和 task **同一套状态机/同一套 claim/complete/void 语义**，' +
@@ -263,7 +271,17 @@ export const OP_SPECS: readonly OpSpec[] = [
              data.follows=null = **摘成链根**（自己当第一环）—— ★ 给空串不算摘，那是忘记填；
            · ★ **拒**：自指 / 悬挂（父 id 不在册上）/ 接在**作废（void）**的卡下面 / **成环**（A→B→C→A 会让「第几环」永远算不出来）；
            · ★ **不级联作废**：上一环 retire 后子环**仍在册、仍然有效**，只在展示里标「上一环已作废」；
-           · 看链：get_dsl query=todo（每张卡带「环 2/3」）· query=todo chain=true（按链分组）· state=all（连已了结的一起看）。`,
+           · 看链：get_dsl query=todo（每张卡带「环 2/3」）· query=todo chain=true（按链分组）· state=all（连已了结的一起看）。
+      ★★★ **archive / unarchive = 软归档**（2026-10-22）：{op:"archive", data:{ids:["todo_a","todo_b"], reason:"为什么归档"}}
+           ⇒ 给卡盖 archived_at / archived_by / archived_reason（★ **state 一个字节不改** —— done / void 仍是两种结局，
+             归档不是第 5 个状态，只是一层**可回滚**的可见性标记）；
+           ★ 只接受**已了结**（done / void）的卡：归档一张还在跑的卡 = 让正在干的活从待办里消失 ⇒ **拒**；
+           ★ 之后：get_dsl query=todo（待办）不再列它们；state=done|void|all 仍**查得到**（带 archived_at）；
+             loadTask 按 id 照旧能取到（重开一张卡要先把标记摘掉）；
+           ★ 口径**只有一处**（domain/task_schema.ts 的 liveTasks / archivedTasks）—— 别处不许再写 !archived_at。
+      ★ **unarchive**：{op:"unarchive", data:{ids:["todo_a"]}} ⇒ 清掉 archived_at / archived_by
+           （★ **保留** archived_reason = 上一次为什么归档，供审计），卡立刻回到活态；
+           ★ 已归档的卡要 reopen / claim，**必须先 unarchive**（写端结构不变量会拒）。`,
   },
   {
     type: 'task',
@@ -492,7 +510,7 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
   // ★★★ 2026-10-22（卡迁移）：补 `cards` —— `todo.import` 唯一读的键（整张卡的数组，逐字搬进 `todos[]`）。
   //   ★ 它与 `summary`/`state`/`owner` 那几个**不是一张卡的两个入口**：`summary` 那是 `add` 用来**造**一张新卡，
   //     `cards` 是 `import` 用来**搬**一张已存在的卡（同一条纪律：造卡的入口不许顺手改卡上已有的事实）。
-  todo: ['summary', 'decision', 'owner', 'id', 'node_id', 'reason', 'follows', 'cards'],
+  todo: ['summary', 'decision', 'owner', 'id', 'node_id', 'reason', 'follows', 'cards', 'ids'],
 };
 /** ★★ 断言：`TYPE_KNOWN_KEYS` 的键集**必须恰好覆盖 `OP_SPECS` 的全部 type**（多 / 少都红）。 */
 export type KnownKeysMissingTypes = Exclude<(typeof OP_SPECS)[number]['type'], keyof typeof TYPE_KNOWN_KEYS>;

@@ -28,6 +28,10 @@ import type { TaskSpec, TaskState } from '../../../domain/task_schema.js';
 // ★★★ 2026-10-22（迁移第②步）：「这个节点上有没有 `todos[]` 的卡」的判据**只住** `task_schema#todosForNode`
 //   —— 本文件不另写 `dsl.todos.some(t => t.node_id === …)`（那会是第二份口径，迟早与闸/进度判据对不上）。
 import { todosForNode } from '../../../domain/task_schema.js';
+// ★★★ 2026-10-22（软归档）：**活态口径的唯一住处** = `task_schema#liveTasks` / `archivedTasks`。
+//   ★ 池只统计活态（已了结的卡被归档后不再占池），而"什么算活态"这件事**不许**在本文件里再写一遍
+//     （`!t.archived_at` 一写就是第二份口径 —— 本仓头号病）。
+import { archivedTasks, liveTasks } from '../../../domain/task_schema.js';
 
 /** 卡的全部可能状态（★ 与 `task_schema.ts#TASK_STATES` 同源：`superseded` 已于 2026-10-17 删除） */
 const ALL_STATES: TaskState[] = ['candidate', 'claimed', 'done', 'void'];
@@ -111,6 +115,15 @@ export interface BoardView {
    */
   folded: number;
   /**
+   * ★★★ 2026-10-22（软归档）：**已归档的卡数**（`archived_at` 非空）。
+   *
+   * ★ 它们**不计入** `total` / `byState` / `cards`（池是"现在还有哪些活"的视图），
+   *   但**必须报出来** —— 否则「按 `state` 数出来比册上少」会变成**静默少计**
+   *   （本仓最恨的一类：读者无法区分"没有"与"被排除了"）。
+   * ★ `total + archived` = 册上的卡总数（节点卡 + todo 卡，同一次枚举）。
+   */
+  archived: number;
+  /**
    * 两个来源**各**多少张卡（`node` = 节点卡 / `todo` = `todos[]`）。
    * ★ 有它才能把「节点卡 N / todo 卡 M」分别引用出来 —— 上面 `byState` 是两者**合计**。
    */
@@ -138,6 +151,11 @@ export interface BoardView {
  *   ⇒ **两半各看不见另一半**（今天 3 张 claimed 的节点卡在 todo 视图里完全不存在）。
  *   ★ 这个"两处都可能有 claimed"的口径不是新定的 —— `task_ops#expireTasks` 早就是这么扫的
  *     （注释逐字：「节点卡 + todo 卡**都扫**」），这里只是让**读端**跟上写端。
+ *
+ * ## ★★★ 2026-10-22（软归档）第三件事：**只统计活态**
+ * 已归档（`archived_at` 非空）的卡**不进** `total` / `byState` / `cards`，但会数进 `archived`
+ * ⇒ `total + archived` = 册上的卡数（不是"在池里静默消失"）。
+ * ★ 口径**唯一住处** = `domain/task_schema.ts#liveTasks` / `#archivedTasks` —— 本文件不写 filter。
  */
 export function listPool(feature: string, nowMs: number = Date.now()): BoardView {
   const dsl = getDSL(feature);
@@ -187,14 +205,25 @@ export function listPool(feature: string, nowMs: number = Date.now()): BoardView
   //   ⇒ **跳过**，由下面 todos 那一圈数它。实测修前 total=354（104 张被数两遍），修后 =250。
   //   ★ 为什么是"跳过"而不是"读端优先"：池是**卡的列表**，一张卡出现两次 = 双计（不是排序问题）。
   //   ★ 还没迁移的 feature（design-canvas 的 9 张没有 todos 镜像）⇒ 仍由这一圈数，**不丢卡**。
+  const todos = dsl.todos ?? [];
+  /** 节点卡（★ 已有 `todos[]` 卡指向该节点的 ⇒ 那份是派生投影，跳过；判据见上面那段注释） */
+  const nodeCards: TaskSpec[] = [];
+  /** 节点卡的人读标签（`PoolCard.label` = 路径）；todo 卡的标签现取 `summary` 首行 */
+  const nodeLabel = new Map<string, string>();
   for (const node of dsl.geometry?.nodes ?? []) {
     // ★ 没有卡（无 task）不计入池 —— 池是"卡"的集合，不是"节点"的集合
     if (!node.task) continue;
-    if (todosForNode(node.id, dsl.todos).length) continue;
-    take(node.task as TaskSpec, 'node', nodePath(node));
+    if (todosForNode(node.id, todos).length) continue;
+    nodeCards.push(node.task as TaskSpec);
+    nodeLabel.set(node.id, nodePath(node));
   }
-  for (const todo of dsl.todos ?? []) take(todo as unknown as TaskSpec, 'todo', firstLine(todo.summary));
+  // ★★★ 2026-10-22（软归档）：**只收活态** —— 已归档的卡不占池（口径唯一住处 = `task_schema#liveTasks`）。
+  //   ★ 为什么不是在这里写 `.filter(t => !t.archived_at)`：那会是第二份口径（池与待办迟早对不上）。
+  for (const card of liveTasks(nodeCards)) take(card, 'node', nodeLabel.get(card.id) ?? '');
+  for (const card of liveTasks(todos)) take(card as unknown as TaskSpec, 'todo', firstLine(card.summary));
+  // ★ 被排除的**必须报出来**（`BoardView.archived`）：否则「册上 252、池里 144」看着像少计了 108 张。
+  const archived = archivedTasks(nodeCards).length + archivedTasks(todos).length;
 
   const folded = byState.done + byState.void;
-  return { byState, total, shown: total - folded, folded, bySource, cards };
+  return { byState, total, shown: total - folded, folded, archived, bySource, cards };
 }

@@ -81,6 +81,42 @@ export function isClosedTaskState(s: TaskState): boolean {
 }
 
 /**
+ * ★★★ **归档判据的唯一读法**（2026-10-22 · 软归档）—— 「这张卡还进不进**活态**」。
+ *
+ * `archived_at` 非空 ⇒ 已归档。★ **别处不许再写一遍 `!!t.archived_at`**：
+ * 本仓头号病就是同一条判据住两处（迟早对不上），所以 predicates 收在这一个函数里，
+ * 下面两个集合函数都由它派生 —— 读端只许调 {@link liveTasks} / {@link archivedTasks}。
+ */
+export function isArchivedTask(t: { archived_at?: string | null } | null | undefined): boolean {
+  return !!t?.archived_at;
+}
+
+/**
+ * **活态卡**（= 未归档）—— 池（`board/pool.ts`）与待办默认列表（`query=todo`）**只认它**。
+ *
+ * ## 为什么这是个函数，而不是各读端自己 `.filter(t => !t.archived_at)`
+ * 那条 filter 一写就会出现第二份口径：某天有人加了 `archived` 标志位、有人在 `pool` 里忘了跟，
+ * 于是「池里 250 张、待办 144 张」这种对不上的读数就又回来了。⇒ 口径**只有这两处**（本函数 + {@link archivedTasks}）。
+ *
+ * ## 泛型是为了保留调用方的元素类型
+ * `todos[]` 与 `geometry.nodes[].task` 是同一种形状的卡，但读端常要在卡上挂 `source` / `label`
+ * （见 `board/pool.ts` 的 `PoolCard`）⇒ 只要元素上有 `archived_at` 就能过这把尺。
+ */
+export function liveTasks<T extends { archived_at?: string | null }>(tasks: readonly T[] | null | undefined): T[] {
+  return (tasks ?? []).filter((t) => !isArchivedTask(t));
+}
+
+/**
+ * **归档卡**（= `archived_at` 非空）—— 只用于「报出有多少张被排除」与考古。
+ *
+ * ★ **不参与活态统计**（池的 `total` / `byState` / 待办默认列表都不含它）；
+ *   但 `loadTask` / `follows` 链**照旧按 id 找得到**它们 —— 那是读历史，是正当用途。
+ */
+export function archivedTasks<T extends { archived_at?: string | null }>(tasks: readonly T[] | null | undefined): T[] {
+  return (tasks ?? []).filter((t) => isArchivedTask(t));
+}
+
+/**
  * ★★★ **两轴消歧的唯一映射**（2026-10-17 · `task_plan.task_home.axis_dedup`）：
  * 任务态（四值）⇒ 进度（三值 `DiagramStatus`）的**派生值**。
  *
@@ -635,6 +671,34 @@ export interface TaskSpec {
   retired_at?: string | null;
   /** 谁作废的（agent 名；缺省 ⇒ 未署名 —— 工具不伪造，同 `released_by`） */
   retired_by?: string | null;
+  /**
+   * ★★★ **软归档时刻**（2026-10-22 · `todo archive`）—— 「已了结，默认不必再看」。
+   *
+   * ## 它治的不是打扫问题，是**容器混装**
+   * `todos[]` 里 done / void 与 candidate 住同一个数组 ⇒ 每个读端都要自己过滤一遍，
+   * 每次盘点都会把 done 当「待办」数。实测 2026-10-22：`todos[]` 共 252 张，
+   * 其中 done 87 + void 21 = **108 张（43%）已经了结却仍占着活态池**。
+   *
+   * ## 判据（★ 唯一住处 = `isArchivedTask` / `liveTasks` / `archivedTasks`，别处不许再写 filter）
+   * `archived_at` 非空 ⇔ 已归档。★ **不是第 5 个状态**：`state` 一个字节不改（done / void 仍是两种结局），
+   * 归档只是一层**可回滚的可见性标记** —— `todo.unarchive` 清掉它，卡立刻回到活态（判据 A/C 就是这么验的）。
+   *
+   * ## 为什么是软归档，而不是把卡搬进 `archive[]`
+   * 三处读端按 **id** 找卡：`task_ops#loadTask`（重开一张卡）、`follows` 链（`todoChainNote` 要一路读回父卡）、
+   * `claim_conflict` 扫全量。物理搬走会把这三处**全部打断**（历史正当用途不能一刀切）；
+   * 软归档零迁移风险、可回滚，代价只是册子体积不减（按年分片是后续另一件事）。
+   *
+   * ## ★ 只有**已了结**的卡能归档（`task_ops#writeTask` 的结构不变量拦着）
+   * 归档一张 claimed 的卡 = 让「正在干的活」从待办里消失（静默丢活）⇒ 一律拒。
+   */
+  archived_at?: string | null;
+  /** 谁归档的（agent 名；缺省 ⇒ 未署名 —— 工具不伪造，同 `retired_by`） */
+  archived_by?: string | null;
+  /**
+   * 为什么归档（`todo archive` 必填）。★ 与 `retire_reason` 同一条纪律：**理由落卡上，不只在回执里**（回执会丢）。
+   * ★ `todo.unarchive` 清 `archived_at` 时**保留它**（=「上一次为什么归档」，照 `reopened_at` 结清后 `reopen_reason` 仍留着的先例）。
+   */
+  archived_reason?: string;
   /** ★ 证据记录（只落 `{kind, at, by, verdict}`，不落读数） */
   evidence?: TaskEvidenceRecord[];
   /** 讨论登记格（默认只渲染 `micro`） */

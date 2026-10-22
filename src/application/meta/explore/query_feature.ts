@@ -47,7 +47,15 @@
 import { getDSL, getDSLByView, listFeatures as listStoredFeatures } from '../../../infrastructure/storage.js';
 // ★ 2026-10-21：todo 的**状态判据**（`isClosedTaskState` = 唯一那把尺）与**墓碑**（物理删的留痕）。
 //   ★ 前者不在这里重写（done/void 两个名字只住 `task_schema.ts`）；后者不在这里重读（读端也只有一处）。
-import { TASK_STATES, isClosedTaskState, progressOfNode, type TaskSpec, type TaskState } from '../../../domain/task_schema.js';
+import {
+  TASK_STATES,
+  archivedTasks,
+  isClosedTaskState,
+  liveTasks,
+  progressOfNode,
+  type TaskSpec,
+  type TaskState,
+} from '../../../domain/task_schema.js';
 // ★★★ 2026-10-21（跑环继任链）：链的**位置**（上一环 / 下一环 / 第几环 / 断没断）与徽标措辞的
 //   唯一住处 = `domain/todo_chain.ts` —— ★ 读端只调它，不自己走一遍父指针（两处实现迟早对不上）。
 import { buildTodoChains, chainBadge, type ChainPlace } from '../../../domain/todo_chain.js';
@@ -1450,6 +1458,12 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       }
 
       const cards = dsl.todos ?? [];
+      // ★★★ 2026-10-22（软归档）：**活态口径的唯一住处** = `task_schema#liveTasks` / `#archivedTasks`
+      //   —— 本分支不写 `!t.archived_at`（那会是第二份口径，池与待办迟早对不上）。
+      //   ★ 默认列表只列**活态**；`state=<具体>` 与 `all` 仍查**全册**（含已归档）：
+      //     考古/审计是正当用途，只是每张要把 `archived_at` 带出来（否则"查得到却看不出已归档"）。
+      const live = liveTasks(cards);
+      const archived = archivedTasks(cards);
       const want = input.state;
       // ★★★ 2026-10-21（跑环继任链）：链的**位置**（depth / total / children / broken / 环次）
       //   只算一次，平铺列表与分组视图共用 —— ★ 判据唯一住处 = `domain/todo_chain.ts`，
@@ -1461,7 +1475,7 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           ? cards
           : want
             ? cards.filter((t) => t.state === want)
-            : cards.filter((t) => !isClosedTaskState(t.state));
+            : live.filter((t) => !isClosedTaskState(t.state));
 
       const byState: Record<string, number> = {};
       for (const s of TASK_STATES) byState[s] = 0;
@@ -1489,10 +1503,12 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       const lines: string[] = [
         `══ feature "${feature}" 的 todo · ${scope} ${viewTag} ══`,
         '',
-        `  口径：默认只列**活卡**（未了结）—— 已了结（done / void）**不在待办里**；要看 ⇒ state=done | void | all。`,
+        `  口径：默认只列**活卡**（未了结 ∧ 未归档）—— 已了结（done / void）**不在待办里**；要看 ⇒ state=done | void | all。`,
         `  ★ 作废（todo.retire）= state 置 void + 落 retire_reason ⇒ 它**自动**从待办里出去，但**仍在册里**。`,
-        `  读数：册上共 ${cards.length} 张（活 ${cards.filter((t) => !isClosedTaskState(t.state)).length}` +
-          ` · 完成 ${byState.done ?? 0} · 作废 ${byState.void ?? 0}），本次列出 ${picked.length} 张`,
+        `  ★ 归档（todo.archive）= 盖 archived_at（**不改 state**）⇒ 默认列表也不列它；` +
+          `\`state=\` 任一具体值 / all 仍查得到（每张带 archived_at）。`,
+        `  读数：册上共 ${cards.length} 张（活 ${live.filter((t) => !isClosedTaskState(t.state)).length}` +
+          ` · 完成 ${byState.done ?? 0} · 作废 ${byState.void ?? 0} · 已归档 ${archived.length}），本次列出 ${picked.length} 张`,
       ];
 
       // ★★★ 2026-10-22（D-T8）：**在挂的卡**点名（id + owner + 挂了多久 + 读集大小）。
@@ -1552,7 +1568,9 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         picked.forEach((t, i) => {
           const owner = t.owner ? `owner=${t.owner}` : 'owner=（没人领）';
           const linked = t.node_id ? ` · node=${t.node_id}` : '';
-          lines.push('', `  ${i + 1}. [${t.id}] ${t.state} · ${owner}${linked}`);
+          // ★ 2026-10-22（软归档）：查得到就必须看得出它已归档（否则 `state=all` 会把两种卡混成一种）
+          const arch = t.archived_at ? ` · 已归档 ${String(t.archived_at).slice(0, 10)}` : '';
+          lines.push('', `  ${i + 1}. [${t.id}] ${t.state} · ${owner}${linked}${arch}`);
           lines.push(`     ${t.summary}`);
           const place = chains.places.get(t.id);
           if (place && (place.parent || place.children.length > 0)) {
@@ -1588,6 +1606,9 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           scope,
           total: cards.length,
           open: cards.filter((t) => !isClosedTaskState(t.state)).length,
+          // ★★★ 2026-10-22（软归档）：**机器可读**的活态/归档读数（口径同 `liveTasks` / `archivedTasks`）
+          live: live.length,
+          archived: archived.length,
           by_state: byState,
           items: picked,
           deleted: tombstones,
@@ -1603,7 +1624,7 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
             overdue: c.overdue,
             read_set: c.read_set,
           })),
-          pool_totals: { total: pool.total, by_state: pool.byState, by_source: pool.bySource },
+          pool_totals: { total: pool.total, by_state: pool.byState, by_source: pool.bySource, archived: pool.archived },
 
           // ★★★ 2026-10-21（跑环继任链）：链的**机器可读**形态 —— 每个环一格，四问逐格回答：
           //   ① follows（上一环）② children（下一环）③ depth / total（第几环 · 共几环）

@@ -71,6 +71,9 @@ import {
   //   （done / void 都算了结），不在本文件里再写一遍 `state === 'done' || state === 'void'`
   //   （那正是 `task_schema.ts` 2026-10-20 花了一笔改成 `isClosedTaskState` 的病）。
   isClosedTaskState,
+  // ★★★ 2026-10-22（软归档）：归档判据**只读这一个函数**（`archived_at` 非空的唯一读法），
+  //   本文件不写 `!!card.archived_at`（判据住两处 = 本仓头号病）。
+  isArchivedTask,
   // ★ 2026-10-22（卡迁移）：`todo.import` 要挡「不是四态的 state」—— ★ 读**既有那一把尺**（同 task_machine 的判定），
   //   不在 import 里再列一遍四个字面量（那会变成第二份状态表）。
   isTaskState,
@@ -266,8 +269,15 @@ function assertTransition(from: TaskState, to: TaskState, action: string): void 
  * 落盘：**只改 `todos[]`**（唯一写端；`node.task` 是**派生投影**），然后把派生进度**投影**回 base（`applyOverlay`）。
  * ★ 投影这一步与 `updateStatus` 同款（T328）：base 上的 `status` 是**应用结果**，不是独立副本；
  *   权威始终是 `task.state`（`progressOf` 是唯一映射，读端见 `overlay.ts#applyOverlay`）。
+ *
+ * ★★★ 2026-10-22（软归档）：本条路径拆成三段 ——
+ *   ① `assertCardWritable`（**写端结构不变量**，两条）；② `withCardWritten`（卡片 ⇒ DSL 内存副本，**纯函数**）；
+ *   ③ `writeTask`（校验 → 改副本 → 投影 → 存盘）。
+ *   ★ 为什么要拆：`todo.archive` 要一次改 100+ 张卡，若逐张 `writeTask` = 每张都把 5 MB 的册子读写一遍
+ *     （实测不可接受）⇒ 它必须能"改完再存一次"。而「写哪一份 / 投影到哪」这条规则**只能有一处**，
+ *     所以抽成 `withCardWritten` 给两条路共用 —— 否则 archive 会变成第二份投影实现。
  */
-function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
+function assertCardWritable(nodeId: string, next: TaskSpec): void {
   // ★★★ 2026-10-22（task.expectations 去副本）：**结构不变量** —— 任务格**不得自持判据**。
   //   判据只住 `decision.expectations`；这里是最靠近落盘的一道，写在它上面照样会被拒。
   //   ★ 旧 DSL 里的副本必须先迁掉（否则任何 task op 都会在这里响亮失败，而不是悄悄写回一份新副本）。
@@ -279,8 +289,26 @@ function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
         `★ 旧 DSL 里的历史副本 ⇒ 先执行迁移（去掉 task.expectations），再写卡。`,
     );
   }
-  const dsl = getDesignSheet(feature);
-  if (!dsl) throw new Error(`feature "${feature}" 在落盘前读不到 ⇒ 不写（绝不静默降级）。`);
+  // ★★★ 2026-10-22（软归档）：**结构不变量 —— 归档只属于已了结的卡**。
+  //   归档一张还在跑的卡 = 让「正在干的活」从待办/池里**静默消失**（最坏的那种丢活）。
+  //   写在最靠近落盘的一道：任何 op 想这么写都会被拒，而不是靠每个 op 自己记得。
+  //   ★ 已归档的卡要重新进活态 ⇒ 先 `todo.unarchive`（**显式**）。**不在这里替它清**：
+  //     静默清除会让「这张卡曾经归档过」这件事没人知道（而它正是判据 A/C 的证据）。
+  if (isArchivedTask(next) && !isClosedTaskState(next.state)) {
+    throw new Error(
+      `任务卡被拒（写端结构不变量）："${nodeId}" 是 ${next.state}（**未了结**）却带着 archived_at=${String(next.archived_at)}。\n` +
+        `★ 归档只给**已了结**（done / void）的卡 —— 归档一张还在跑的卡，等于让正在干的活从待办里消失。\n` +
+        `★ 要让它重新进活态：\`edit_dsl { type:'todo', op:'unarchive', data:{ ids:['${nodeId}'] } }\`（先把标记清掉，再 claim / reopen）。`,
+    );
+  }
+}
+
+/** 「写哪一份、投影到哪」的**唯一实现**（纯函数：不读盘、不写盘）—— `writeTask` 与 `todo.archive` 共用。 */
+function withCardWritten(
+  dsl: NonNullable<ReturnType<typeof getDesignSheet>>,
+  nodeId: string,
+  next: TaskSpec,
+): NonNullable<ReturnType<typeof getDesignSheet>> {
   // ★★★ 2026-10-18（Q5）：**按"挂在哪"分叉** —— todo 写 `todos[]`，节点任务写 `geometry.nodes[].task`。
   // ★★★ 2026-10-22（卡迁移 · 兼容层）：**按卡的【住处】写回** —— 不再「todos 里有同 id 就当它是 todo 卡」。
   //   旧判据 `some(t => t.id === nodeId)` 在迁移后对 104 个节点**全部为真**（todos[] 里都有同 id 的镜像）
@@ -317,6 +345,14 @@ function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
       `落盘目标「${nodeId}」既不是带卡的节点、也不在 todos[] —— 卡没有住处，不写（绝不静默降级）。`,
     );
   }
+  return nextDsl;
+}
+
+function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
+  assertCardWritable(nodeId, next);
+  const dsl = getDesignSheet(feature);
+  if (!dsl) throw new Error(`feature "${feature}" 在落盘前读不到 ⇒ 不写（绝不静默降级）。`);
+  const nextDsl = withCardWritten(dsl, nodeId, next);
   const ov = loadOverlay(feature) ?? seedOverlayFromDsl(nextDsl);
   saveDesignSheet(applyOverlay(nextDsl, ov));
 }
@@ -2101,6 +2137,144 @@ function deleteTodoCard(feature: string, id: string, data: Record<string, unknow
 }
 
 /**
+ * `todo.archive` / `todo.unarchive` —— **软归档**：卡留在册，只是**不再进活态**。
+ *
+ * ## 语义（一句话）
+ * 归档 = 给一张**已了结**的卡盖一个时间戳（`archived_at`）。`state` 一个字节不改
+ * （done / void 仍**是两种结局**，归档不是第 5 个状态），只是池 / 待办默认列表不再列它。
+ *
+ * ## 为什么是软归档，不是把卡搬进 `archive[]`
+ * 三处读端**按 id 找卡**：`loadTask`（重开一张卡）、`follows` 链（`todoChainNote` 要读回父卡）、
+ * `claim_conflict`（扫全量算读集）—— 物理搬走会把三处一起打断（卡里实测过）。
+ * 软归档**零迁移风险、可回滚**；代价只是册子体积不减（按年分片是后续另一件事）。
+ *
+ * ## 为什么 `data.ids` 是**显式清单**（不做 `state=closed` 这种开关）
+ * 一个"归档所有已了结的卡"的开关，某天会在别人刚 done 完还没看完的时候把它吃掉。
+ * 批量是必须的（存量一次 100+ 张，一张一 op = 每张读写一遍 5 MB 的册子），
+ * 但**名字要点全**：归档哪几张，调用方自己列。
+ *
+ * ## 判据（任一不满足 ⇒ **整批回滚**；`edit_dsl` 是事务）
+ * ① 每张卡都必须在册上（找不到 ⇒ 拒，不静默跳）；
+ * ② 只有**已了结**（`isClosedTaskState`）的卡能归档 —— 归档一张 claimed 的卡 = 让正在干的活消失；
+ * ③ `archive` 的 `data.reason` 必填且**落卡上**（`archived_reason`，不只活在回执里）；
+ * ④ 已归档的**跳过**（幂等），并在回执里点名 —— 不重复盖时间戳（否则「何时归档的」会变成最后一次调用的时刻）。
+ *
+ * ## `unarchive` 为什么不收 reason
+ * 它是**去掉一层标记**，不是一次有内容的决定：清掉 `archived_at` / `archived_by`，**保留** `archived_reason`
+ * （=「上一次为什么归档」，照 `reopened_at` 结清后 `reopen_reason` 仍留着的先例）。
+ * 真正有理由的那一步必然是随后的 `claim` / `reopen`（那两处都要 `reason` 且会落卡）。
+ * ★ 所以这里**不编一个只活在回执里的理由**（那正是本仓说的"回执会丢"）。
+ */
+function applyArchiveOp(
+  feature: string,
+  data: Record<string, unknown>,
+  agent: string | undefined,
+  mode: 'archive' | 'unarchive',
+): EditResult {
+  const raw = data.ids;
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw new Error(
+      `todo.${mode} 需要 data.ids（**非空**数组：要${mode === 'archive' ? '归档' : '恢复'}哪几张，逐张列 id）。\n` +
+        `★ 这里**故意没有**「归档所有已了结的」这种开关：那种开关会在某天顺手吃掉别人刚 done 完的卡。`,
+    );
+  }
+  const ids = [...new Set(raw.map((x) => String(x).trim()).filter(Boolean))];
+  if (!ids.length) throw new Error(`todo.${mode} 的 data.ids 里没有任何有效 id（全是空串）⇒ 什么都不做，也不假装做了。`);
+  if (mode === 'archive' && !String(data.reason ?? '').trim()) {
+    throw new Error(`todo.archive 需要 data.reason（为什么归档 —— ★ 理由要落卡上，不只活在回执里）。`);
+  }
+  const reason = mode === 'archive' ? String(data.reason).trim() : '';
+  const dsl = getDesignSheet(feature);
+  if (!dsl) throw new Error(`feature "${feature}" 不存在 —— todo 住在设计 DSL 的顶层 todos[]。`);
+
+  const at = new Date().toISOString();
+  // ★ 署名与 claim 的 owner 同一套规范（老格式补前缀 + 留痕）—— 同 `retired_by` 的做法。
+  const sign = mode === 'archive' ? signTaskActor(agent, 'todo.archive 的署名（archived_by）') : null;
+
+  let working: NonNullable<ReturnType<typeof getDesignSheet>> = dsl;
+  const changed: string[] = [];
+  const skipped: string[] = [];
+  for (const id of ids) {
+    const cur = (working.todos ?? []).find((t) => t.id === id);
+    if (!cur) {
+      throw new Error(
+        `todo.${mode} 被拒：todos[] 里没有 "${id}"（★ 整批不落盘 —— 清单里有一个错 id，就不猜其余几张要不要动）。\n` +
+          `★ 两条常见来路：① 刚被 todo.delete 过（墓碑在 ${todoJournalFile(feature)}）；② id 记错了 ⇒ get_dsl query=todo state=all 拿一遍当前 id。`,
+      );
+    }
+    if (mode === 'archive') {
+      if (isArchivedTask(cur)) {
+        skipped.push(id); // 幂等：不重复盖时间戳
+        continue;
+      }
+      if (!isClosedTaskState(cur.state)) {
+        throw new Error(
+          `todo.archive 被拒："${id}" 是 ${cur.state}（**未了结**）—— 归档只给已经结束的卡（done / void）。\n` +
+            `★ 归档一张还在跑的卡 = 让正在干的活从待办里消失（静默丢活）。真要收尾 ⇒ 先 complete / retire。`,
+        );
+      }
+      const next: TaskSpec = {
+        ...cur,
+        archived_at: at,
+        ...(sign?.actor ? { archived_by: sign.actor } : {}),
+        archived_reason: reason,
+      };
+      assertCardWritable(id, next);
+      working = withCardWritten(working, id, next);
+      changed.push(id);
+    } else {
+      if (!isArchivedTask(cur)) {
+        skipped.push(id); // 幂等：本来就在活态
+        continue;
+      }
+      const next: TaskSpec = { ...cur };
+      // ★ 摘标记必须写 `undefined`，**不能** `delete next.archived_at`（同 `todo.follows` 摘链那条实测）：
+      //   `withCardWritten` 是 `{...旧卡, ...新卡}` 合并 ⇒ 新卡上"没有这个键"合并出来仍是**旧值**。
+      next.archived_at = undefined;
+      next.archived_by = undefined;
+      assertCardWritable(id, next);
+      working = withCardWritten(working, id, next);
+      changed.push(id);
+    }
+  }
+
+  if (changed.length) {
+    const ov = loadOverlay(feature) ?? seedOverlayFromDsl(working);
+    saveDesignSheet(applyOverlay(working, ov));
+  }
+
+  const todos = working.todos ?? [];
+  const live = todos.length - todos.filter((t) => isArchivedTask(t)).length;
+  const archivedTotal = todos.length - live;
+  const head =
+    mode === 'archive'
+      ? `已归档 ${changed.length} 张 todo（★ 卡**留在册里**，只是不再进活态：池 / 待办默认列表不再列它们）`
+      : `已把 ${changed.length} 张 todo **恢复**到活态（清掉 archived_at，state 本来就没变）`;
+  return {
+    message:
+      `${head}${skipped.length ? ` · 跳过 ${skipped.length} 张（${mode === 'archive' ? '本来就已经归档' : '本来就在活态'}）` : ''}：\n` +
+      (changed.length ? `  ${changed.join('\n  ')}\n` : '') +
+      (skipped.length ? `  ★ 跳过：${skipped.join(' / ')}\n` : '') +
+      `  读数：todos[] 共 ${todos.length} 张 —— 活态 ${live} · 归档 ${archivedTotal}` +
+      (mode === 'archive'
+        ? `\n  archived_at=${at}${sign?.actor ? ` · archived_by=${sign.actor}${normalizedInline(sign.adm)}` : ''}\n` +
+          `★ 之后：get_dsl query=todo（待办）不再列它们；\`state=done|void|all\` 仍**查得到**（每张带 archived_at）；` +
+          `\`loadTask\` 按 id 照旧能取到（重开一张卡要先用 \`todo.unarchive\` 把它放回活态）。`
+        : `\n★ 之后：它们重新进池 / 待办；archived_reason **保留**（= 上一次为什么归档，供审计）。`) +
+      (sign ? normalizedActorNote(sign.adm) : ''),
+    feature,
+    data: {
+      archived: mode === 'archive' ? changed : [],
+      unarchived: mode === 'unarchive' ? changed : [],
+      skipped,
+      ...(mode === 'archive' ? { archived_at: at } : {}),
+      live,
+      archived_total: archivedTotal,
+    },
+  };
+}
+
+/**
  * `todo.follows` —— **把一张卡接到另一张卡下面**（或摘下来成为链根）。
  *
  * ## 为什么不是 `update`
@@ -2188,8 +2362,15 @@ function applyTodoMutation(
       return retireTodoCard(feature, id, data, agent);
     case 'delete':
       return deleteTodoCard(feature, id, data, agent);
+    // ★★★ 2026-10-22（软归档）：批量、按 `data.ids`（**不要 id** —— 见 `applyArchiveOp` 文件头）
+    case 'archive':
+      return applyArchiveOp(feature, data, agent, 'archive');
+    case 'unarchive':
+      return applyArchiveOp(feature, data, agent, 'unarchive');
     default:
-      throw new Error(`todo 不支持操作: ${op.op}（改/接链/作废/删分别是 update / follows / retire / delete）`);
+      throw new Error(
+        `todo 不支持操作: ${op.op}（改/接链/作废/删分别是 update / follows / retire / delete；归档/恢复是 archive / unarchive）`,
+      );
   }
 }
 
@@ -2332,12 +2513,20 @@ export function applyTodoOp(
   // ★★★ 2026-10-21：**改 / 作废 / 物理删** 三个 op 走同一处分发。
   //   ★ 它们的 id 由 `OP_SPECS` 的 `opsRequiringId` 保证（不是这里判的 —— 一处判据）。
   // ★ 2026-10-21：`follows`（跑环继任链：接链 / 摘链）走同一处分发 —— 它也是「按 id 动一张卡」的 op。
-  if (op.op === 'update' || op.op === 'follows' || op.op === 'retire' || op.op === 'delete') {
+  if (
+    op.op === 'update' ||
+    op.op === 'follows' ||
+    op.op === 'retire' ||
+    op.op === 'delete' ||
+    // ★★★ 2026-10-22（软归档）：归档/恢复也是「按清单动卡」，走同一处分发。
+    op.op === 'archive' ||
+    op.op === 'unarchive'
+  ) {
     return applyTodoMutation(feature, op, agent);
   }
 
   if (op.op !== 'add') {
-    throw new Error(`todo 仅支持 add / link / import / update / follows / retire / delete（收到 ${op.op}）`);
+    throw new Error(`todo 仅支持 add / link / import / update / follows / retire / delete / archive / unarchive（收到 ${op.op}）`);
   }
   const data = op.data ?? {};
   // ★ 2026-10-21：`todo.add 需要 data.summary` **不在这里判** —— 判据只有一处 = `OP_SPECS.required.add`

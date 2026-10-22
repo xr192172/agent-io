@@ -3363,7 +3363,11 @@
               },
               "verdict": "pass"
             }
-          ]
+          ],
+          "node_id": "file_scripts_hook-task-gate_mjs",
+          "archived_at": "2026-10-22T17:01:15.281Z",
+          "archived_by": "subagent:deepseek-park-archive",
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
         },
         "status": "done",
         "decision": {
@@ -3471,7 +3475,11 @@
               },
               "verdict": "pass"
             }
-          ]
+          ],
+          "node_id": "file_scripts_install_mcp_mjs",
+          "archived_at": "2026-10-22T17:01:15.281Z",
+          "archived_by": "subagent:deepseek-park-archive",
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
         },
         "status": "done",
         "decision": {
@@ -4039,7 +4047,11 @@
           ],
           "reopened_at": "2026-10-22T16:06:11.599Z",
           "reopen_reason": "重开 scripts/verify-changed.mjs 的文件卡：改 DSL 时把 scripts/design-check.mjs 拉进受影响集合，不再全量挂 verify",
-          "reopened_from": "subagent:deepseek-fix5"
+          "reopened_from": "subagent:deepseek-fix5",
+          "node_id": "file_scripts_verify-changed_mjs",
+          "archived_at": "2026-10-22T17:01:15.281Z",
+          "archived_by": "subagent:deepseek-park-archive",
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
         },
         "status": "done",
         "decision": {
@@ -5291,7 +5303,11 @@
               },
               "verdict": "pass"
             }
-          ]
+          ],
+          "node_id": "file_src_application_design_dsl_ops_api_ops_ts",
+          "archived_at": "2026-10-22T17:01:15.281Z",
+          "archived_by": "subagent:deepseek-park-archive",
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
         },
         "status": "done"
       },
@@ -11106,7 +11122,11 @@
             "basis": [
               "expectations"
             ]
-          }
+          },
+          "node_id": "file_src_application_design_dsl_ops_op_data_spec_ts",
+          "archived_at": "2026-10-22T17:01:15.281Z",
+          "archived_by": "subagent:deepseek-park-archive",
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
         },
         "status": "done"
       },
@@ -11574,7 +11594,11 @@
           ],
           "reopened_at": "2026-10-22T07:48:14.295Z",
           "reopen_reason": "只改 status_tools.ts 第 168 行的注释：split('\\n') 应为 split('\n')",
-          "reopened_from": "subagent:deepseek-fix5"
+          "reopened_from": "subagent:deepseek-fix5",
+          "node_id": "file_src_application_design_dsl_ops_status_tools_ts",
+          "archived_at": "2026-10-22T17:01:15.281Z",
+          "archived_by": "subagent:deepseek-park-archive",
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
         },
         "status": "done"
       },
@@ -13269,7 +13293,7 @@
         "task": {
           "id": "file_src_application_design_dsl_ops_task_ops_ts",
           "summary": "publish / claim / release / complete / void 五个 op，写 design/<f>.dsl.json 的 task 格。★ void 是卡生命周期的出口（candidate → void）：没有它会死锁 —— candidate + satisfied 时 claim 拒（satisfied 只可收口）、complete 拒（未领不能收口）⇒ 永远卡住；而'代码先于卡存在'时必然发生。★ publishFromDiff：从 diff 的差异建 L1 卡（VISION §7「无卡 ⇒ 补卡」）。",
-          "state": "done",
+          "state": "claimed",
           "evidence": [
             {
               "kind": "attestation",
@@ -13344,11 +13368,11 @@
               "verdict": "pass"
             }
           ],
-          "owner": "subagent:deepseek-card-migrate",
-          "claimed_at": "2026-10-22T15:43:18.003Z",
-          "reopened_at": "2026-10-22T15:43:18.003Z",
-          "reopen_reason": "迁移要改 task_ops.ts：新增 todo op=import 逐字并入 + writeTask 按卡的住处写回（否则迁移后 104 个节点的写全会静默落到 todos 镜像，节点卡冻结）",
-          "reopened_from": "subagent:deepseek-fix5",
+          "owner": "subagent:deepseek-park-archive",
+          "claimed_at": "2026-10-22T16:55:00.405Z",
+          "reopened_at": "2026-10-22T16:55:00.405Z",
+          "reopen_reason": "加软归档：todo archive/unarchive + writeTask 不变量（本批 5 个文件，锚点在这里）",
+          "reopened_from": "subagent:deepseek-card-migrate",
           "read_set": {
             "symbols": [
               {
@@ -13404,12 +13428,12 @@
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "expireTasks",
-                "fp": "b6c1ebc8693176041f765e71f9026449f447a891"
+                "fp": "a92aeb506daf63033c5f8f2afc3c7ac26ca176d0"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "loadTask",
-                "fp": "5cc6c0bd0f621f09a576a9b3c9eaca52a295fc52"
+                "fp": "8f51c0aff569e804714dd9577188535e528478c0"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -13419,7 +13443,7 @@
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "publishTask",
-                "fp": "ca74cc429e6e78a6dc71a61e4061df38c2d97fe5"
+                "fp": "004f809152a7d0bfd926ad932b2b0ab36d679392"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -13444,23 +13468,41 @@
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "writeTask",
-                "fp": "34b639ed1be0f732ff712092eeeaf1c3252bb67f"
+                "fp": "ce06d537300766ba5455037ac26451a6a3e812d0"
               }
             ],
             "files": [
               {
+                "path": "src/application/design/board/pool.ts",
+                "content_hash": "b37178c9c13a1a178bcf07a01e1e09b13b51c4ec"
+              },
+              {
+                "path": "src/application/design/dsl_ops/op_data_spec.ts",
+                "content_hash": "bd17a4b0a125fbd259932b493a2763c177cb67ae"
+              },
+              {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "e07baf6998f358af6bac63ae4b5993ac7196956b"
+                "content_hash": "5a8f9d8dfc4cba0ea65ae042a5c041cc714948df"
+              },
+              {
+                "path": "src/application/meta/explore/query_feature.ts",
+                "content_hash": "7305275dabb4eb078b25b2fd2eebbc9b39ac7a7a"
+              },
+              {
+                "path": "src/domain/task_schema.ts",
+                "content_hash": "cffe247e567446cb4e85b3458c9fbb16624036a9"
               }
             ],
-            "computed_at": "2026-10-22T15:43:17.959Z",
+            "computed_at": "2026-10-22T16:55:00.360Z",
             "basis": [
+              "declared",
               "expectations"
             ],
             "note": "1 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
-          }
+          },
+          "node_id": "file_src_application_design_dsl_ops_task_ops_ts"
         },
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -46459,7 +46501,11 @@
               "expectations"
             ],
             "note": "2 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
-          }
+          },
+          "node_id": "file_src_domain_task_machine_ts",
+          "archived_at": "2026-10-22T17:01:15.281Z",
+          "archived_by": "subagent:deepseek-park-archive",
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
         },
         "status": "done"
       },
@@ -47226,7 +47272,11 @@
           ],
           "reopened_at": "2026-10-22T15:06:26.620Z",
           "reopen_reason": "progress 权威归一到 progressOfNode（两处判据合成一处）",
-          "reopened_from": "subagent:exp-single-source"
+          "reopened_from": "subagent:exp-single-source",
+          "node_id": "file_src_domain_task_schema_ts",
+          "archived_at": "2026-10-22T17:01:15.281Z",
+          "archived_by": "subagent:deepseek-park-archive",
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
         },
         "status": "done"
       },
@@ -50497,7 +50547,11 @@
               },
               "verdict": "pass"
             }
-          ]
+          ],
+          "node_id": "file_src_infrastructure_analysis_observe_go_instrument_ts",
+          "archived_at": "2026-10-22T17:01:15.281Z",
+          "archived_by": "subagent:deepseek-park-archive",
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
         },
         "status": "done",
         "decision": {
@@ -52091,7 +52145,11 @@
           "reopened_at": null,
           "release_reason": "补充已完成（unknown 说明 + 排序注释），tsc 0 error；先 release 才能 void（claimed 没有直达 void 的迁移）",
           "released_by": "general-purpose-3",
-          "released_at": "2026-10-20T16:46:29.792Z"
+          "released_at": "2026-10-20T16:46:29.792Z",
+          "node_id": "file_src_infrastructure_dogfood_stats_ts",
+          "archived_at": "2026-10-22T17:01:15.281Z",
+          "archived_by": "subagent:deepseek-park-archive",
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
         }
       },
       {
@@ -53432,7 +53490,11 @@
             "basis": [
               "expectations"
             ]
-          }
+          },
+          "node_id": "file_src_infrastructure_storage_ts",
+          "archived_at": "2026-10-22T17:01:15.281Z",
+          "archived_by": "subagent:deepseek-park-archive",
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
         },
         "status": "done"
       },
@@ -53542,7 +53604,11 @@
           "claimed_at": null,
           "release_reason": "cli.ts:277 传 via='cli' 已交付；先 release 才能 void",
           "released_by": "general-purpose-3",
-          "released_at": "2026-10-20T16:43:29.180Z"
+          "released_at": "2026-10-20T16:43:29.180Z",
+          "node_id": "file_src_presentation_cli_cli_ts",
+          "archived_at": "2026-10-22T17:01:15.281Z",
+          "archived_by": "subagent:deepseek-park-archive",
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
         }
       },
       {
@@ -55092,7 +55158,11 @@
             "basis": [
               "expectations"
             ]
-          }
+          },
+          "node_id": "file_src_application_design_rewrite_rewrite_ts",
+          "archived_at": "2026-10-22T17:01:15.281Z",
+          "archived_by": "subagent:deepseek-park-archive",
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
         },
         "status": "done",
         "decision_history": [
@@ -55224,7 +55294,11 @@
               "at": "2026-10-19T14:34:55.803Z",
               "verdict": "pass"
             }
-          ]
+          ],
+          "node_id": "file_src_application_design_line_design_diff_ts",
+          "archived_at": "2026-10-22T17:01:15.281Z",
+          "archived_by": "subagent:deepseek-park-archive",
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
         },
         "status": "done"
       },
@@ -55305,7 +55379,11 @@
               "agent": "workbuddy",
               "verdict": "pass"
             }
-          ]
+          ],
+          "node_id": "file_src_infrastructure_parse_mutants_ts",
+          "archived_at": "2026-10-22T17:01:15.281Z",
+          "archived_by": "subagent:deepseek-park-archive",
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
         },
         "status": "done"
       },
@@ -55382,7 +55460,11 @@
               "agent": "workbuddy",
               "verdict": "pass"
             }
-          ]
+          ],
+          "node_id": "file_scripts_impl-mutate_mjs",
+          "archived_at": "2026-10-22T17:01:15.281Z",
+          "archived_by": "subagent:deepseek-park-archive",
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
         },
         "status": "done",
         "gate": "exempt",
@@ -84113,7 +84195,7 @@
         ],
         "lines": 670,
         "layer": "core",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -105143,11 +105225,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T16:47:47.757Z",
+    "saved_at": "2026-10-22T17:02:22.019Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 104144946,
+    "age": 105019208,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -106785,7 +106867,10 @@
           "by": "llm",
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_D-judge-port",
@@ -106812,32 +106897,47 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_reason": "判据 C 消融后的复原：这张卡仍是 done，应回到归档态（池 144 张）",
+      "archived_at": "2026-10-22T17:02:22.010Z",
+      "archived_by": "subagent:deepseek-park-archive"
     },
     {
       "id": "todo_D-invariant-0",
       "summary": "不变量「任务=意图住设计侧」没有 check",
       "state": "void",
       "owner": null,
-      "node_id": "file_src_application_write_gate_ts"
+      "node_id": "file_src_application_write_gate_ts",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_D-invariant-1",
       "summary": "不变量「不落读数快照」—— ★ **DSL 自己违反了**（reading_now / block_readings 都是快照）",
       "state": "void",
-      "owner": null
+      "owner": null,
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_D-target-exists",
       "summary": "t_claim 的「target 在 DB 存在」无执行者（全仓 0 处）",
       "state": "void",
-      "owner": null
+      "owner": null,
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_D-release-by",
       "summary": "t_release 的「带 by」无执行者（releaseTask 是 input.agent ?? null）",
       "state": "void",
-      "owner": null
+      "owner": null,
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_D-dual-write",
@@ -106854,7 +106954,10 @@
         }
       ],
       "retire_reason": "已失效（实测核实）：overlay 26 个锚点里 decision = 0 ⇒ dual_write 度量随 decision 一并消失",
-      "retired_at": "2026-10-22T15:26:17.558Z"
+      "retired_at": "2026-10-22T15:26:17.558Z",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_D-actor-entry",
@@ -106890,19 +106993,28 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_D-validate-decision",
       "summary": "validateDSL 不看 decision（M1）⇒ D3 的\"✓\"是假绿",
       "state": "void",
-      "owner": null
+      "owner": null,
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_D-kind-expressiveness",
       "summary": "同 D8",
       "state": "void",
-      "owner": null
+      "owner": null,
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_D-anti-decoration",
@@ -106919,7 +107031,10 @@
         }
       ],
       "retire_reason": "卡自己写着「已过期 · 2026-10-22 复核」：装饰边已不存在（1155 条边全部是 contains/imports，0 条空决策）⇒ 无需再做",
-      "retired_at": "2026-10-22T14:27:58.435Z"
+      "retired_at": "2026-10-22T14:27:58.435Z",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_D-parallel",
@@ -106946,7 +107061,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_D-claim-incomplete",
@@ -106973,7 +107091,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_D-design-completeness",
@@ -107000,20 +107121,29 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_D-gate-text",
       "summary": "task_home.gate / what_a_card_proves.layers[*].gate —— 读起来像要求，但不是判据（gate 不在 CLAIM_KEYS）",
       "state": "void",
-      "owner": null
+      "owner": null,
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_D-edge-id-unique",
       "summary": "validator.ts:73-85 只查 nodes.id 唯一、**不查 edges.id** ⇒ 重复 id 能过校验，而 overlay.edges 按 id 键控会串",
       "state": "done",
       "owner": null,
-      "release_reason": "promoted to file_src_domain_validator_ts"
+      "release_reason": "promoted to file_src_domain_validator_ts",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_A3",
@@ -107046,7 +107176,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_A5",
@@ -107069,7 +107202,10 @@
         }
       ],
       "retire_reason": "已删除（今天查过）：task.expectations 副本已删，A6 防漂移闸随之删除",
-      "retired_at": "2026-10-22T15:26:17.652Z"
+      "retired_at": "2026-10-22T15:26:17.652Z",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_api_setNodeSemantic-dumbwrite",
@@ -107096,7 +107232,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_run-cannot-load-module",
@@ -107105,13 +107244,19 @@
       "owner": null,
       "retire_reason": "不做：run 契约的求值域是**故意**不加载业务函数的——src/domain/expectation.ts:78-80 明写 expect 可用名字只有 input / root / validateDSL，\"它不是任意代码执行：求值域只在这个小池子里\"。开业务函数 = 在判定器里跑仓内任意代码，而真行为契约已由 behavior_baseline（src/application/observe/index.ts:306）与 run_tests（src/application/observe/index.ts:389）承担。⇒ 这是设计选择，不是待办。",
       "retired_at": "2026-10-22T08:08:39.894Z",
-      "retired_by": "subagent:deepseek-closeout"
+      "retired_by": "subagent:deepseek-closeout",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_symbol-exists-cannot-type-only",
       "summary": "symbol-exists 只认 function/method —— 对【纯类型文件】（types.ts / contract.ts 那种全是 type/interface 的）会假红：实测 parseFileSymbols(types.ts) 只给 interface:DesignDSL，contract.ts 给 0 个 ⇒ 只能改用「行首锚定 export interface 块」的 run 冒充。★ 这是 D8（kind 表达力缺口）的活实例；2026-10-19 子代理补 domain 设计时发现",
       "state": "void",
-      "owner": null
+      "owner": null,
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_rescan-index",
@@ -107138,7 +107283,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_rescan-no-hash-update",
@@ -107165,7 +107313,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_install-mcp-no-workbuddy",
@@ -107192,7 +107343,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_delete-coldstart-trio",
@@ -107225,7 +107379,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_查清-imports-start-index-落库只有-39-ts-的原因并修好-2",
@@ -107242,7 +107399,10 @@
           "agent": "workbuddy",
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_持续收集-用本仓工具哪里不顺手-并汇总进-docs-dogfood-md-已建-",
@@ -107269,7 +107429,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_侦察-实现-imports-剩-0-4-prunedeletedfiles-与-",
@@ -107286,7 +107449,10 @@
           "agent": "workbuddy",
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_侦察-实现-done-卡不能连续改动-需要-追加一卡-的语义-现象-同一节点做第",
@@ -107313,7 +107479,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_实现-给-complete-挂变异测试-试点-不全局-现状-scripts-im",
@@ -107346,7 +107515,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_实现-task-plan-写端-唯一还要手改-json-的一块-现状-task-",
@@ -107369,7 +107541,10 @@
           "agent": "workbuddy",
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_侦察-实现-给-src-application-write-gate-ts-加-",
@@ -107396,7 +107571,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_a7-在生产面不可达-侦察-实现-a7-在正常-mcp-面-永远不触发-vsco",
@@ -107423,7 +107601,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_tsx-改造-3-个脚本恢复零构建可跑-实现-tsx-已装-4-23-15-但-",
@@ -107456,7 +107637,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_另-3-处没接线的回执-实现-子代理报的-超出它那三条写路范围-rename-s",
@@ -107483,7 +107667,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_④-修活-hook-task-gate-mjs-实现-scripts-hook-",
@@ -107510,7 +107697,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_⑤-gate-principle-md-悬空引用收口-实现-docs-gate-",
@@ -107549,7 +107739,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_⑥-清幽灵节点-实现-设计侧有-12-25-个节点指向盘上不存在的路径-含-ce",
@@ -107576,7 +107769,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_清注释里的用户原话-102-处-55-个文件-src-下注释写着-用户说-用户原",
@@ -107603,7 +107799,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_重写-agents-md-37kb-src-presentation-的-age",
@@ -107630,7 +107829,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_readme-与-contributing-校准-readme-md-readm",
@@ -107657,7 +107859,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_结构-satisfied-不该锁死文件-现状-src-domain-task-m",
@@ -107684,7 +107889,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_真漏-remove-dead-imports-的写闸没有-actor-参数-实测",
@@ -107711,7 +107919,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_断线-apply-refactor-plan-回执不带-task-gate-闸判",
@@ -107738,7 +107949,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_写闸覆盖面-6-个入口绕开或丢身份-子代理逐个实测-读码列出-2026-10-2",
@@ -107774,7 +107988,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_p1-增量测试的地基-evidence-带代码指纹-用户裁定-2026-10-2",
@@ -107801,7 +108018,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_p1-增量测试的选量-测试-文件映射-现状-run-tests-跑-npm-te",
@@ -107846,7 +108066,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_账本加-via-字段-分清-agent-用了-证书跑了-扫射跑了-现状-agen",
@@ -107873,7 +108096,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_静默失效-翻译线-runparityonfilled-恒空转-slice-0-5",
@@ -107921,7 +108147,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_门腐坏-npm-run-invariants-默认入口硬编码-docs-task",
@@ -107948,7 +108177,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_状态机语义-void-是单向闸-不是收尾动作-transitions-里-t-v",
@@ -107976,7 +108208,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_状态机结构-l1-卡挂在两把尺中间-cardstanding-对-expecta",
@@ -108004,7 +108239,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_结构性死锁-edit-code-的-先解析再编辑-是对的-防止在坏树上改-但解析",
@@ -108031,7 +108269,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_公共能力-harness-的-coerce-只认-int-uint-float-",
@@ -108076,7 +108317,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_db-补全-调用边-先把-没成边-分成三类-再决定补哪些-实测-unresolv",
@@ -108103,7 +108347,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_db-补全-边元数据-edges-metadata-是个空壳-实测只有-cros",
@@ -108112,7 +108359,10 @@
       "owner": null,
       "retire_reason": "不做：edges.metadata 的消费方仍然只有 cross 一个布尔（src/application/meta/explore/query_feature.ts:253/259、src/infrastructure/index/function_outline.ts:134 都只读 .cross），补其它字段就是\"建好没人读\"（nodes.params 刚犯过）。⇒ 本卡的动作是「先定消费方再填」，而这件事没有排期、也不该占候选队列；将来真有消费方再重新立卡。",
       "retired_at": "2026-10-22T08:08:39.984Z",
-      "retired_by": "subagent:deepseek-closeout"
+      "retired_by": "subagent:deepseek-closeout",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_翻译-前提-dsl-摘掉-symbols-实测-200-个文件里-191-个有它",
@@ -108121,7 +108371,10 @@
       "owner": null,
       "retire_reason": "方向错误：用户裁定 DSL 是缩略版 DB、symbols[] 用于导航且是复制基线，不该摘；由最终判据卡取代",
       "retired_at": "2026-10-21T08:25:15.846Z",
-      "retired_by": "workbuddy"
+      "retired_by": "workbuddy",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_翻译-工作台-翻译册-feature-translate-json-它是-可以改",
@@ -108148,7 +108401,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_更正-取代-dsl-摘-symbols-那条-不摘-symbols-改为-修它的",
@@ -108157,7 +108413,10 @@
       "owner": null,
       "retire_reason": "并入：本卡与 todo_dsl-符号表-最终判据 是同一件事的旧版——两张都写\"不摘 symbols，改修 kind 保真 + 清幽灵 + 基线可追溯\"，而后者已按其依据收口（src/infrastructure/index/live_render.ts:78-85 删掉本地 kindOf；task-system-plan.dsl.json 543 个 file 节点幽灵 0）。两张并存 = 同一判据两处权威，留旧版只会让人重做一遍。",
       "retired_at": "2026-10-22T08:08:41.238Z",
-      "retired_by": "subagent:deepseek-closeout"
+      "retired_by": "subagent:deepseek-closeout",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_摘-symbols-把符号表从设计-dsl-里摘掉",
@@ -108175,7 +108434,10 @@
       ],
       "retire_reason": "被 todo_verify_keep_symbols 取代（不摘 symbols，改修质量）",
       "retired_at": "2026-10-21T08:16:24.896Z",
-      "retired_by": "deepseek-v4.1-flash"
+      "retired_by": "deepseek-v4.1-flash",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_dsl-符号表-最终判据-保留-symbols-只修它的失真与幽灵-方向判据-用",
@@ -108202,7 +108464,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_并发控制-账户-把-actor-从-随手写的字符串-变成-有规范的账户-并在所有",
@@ -108229,7 +108494,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_并发控制-闭包冲突-任务冲突按-可达闭包-算-两个任务要改的符号-其影响面-传递",
@@ -108238,7 +108506,10 @@
       "owner": null,
       "retire_reason": "被\"读集比对\"取代：可达闭包成本高（13k 边每次 claim 算）且精度低（import 边会全连通），而 STORM 证明\"读集 ∩ 写集\"既便宜又可精确判定",
       "retired_at": "2026-10-21T09:17:17.509Z",
-      "retired_by": "workbuddy"
+      "retired_by": "workbuddy",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_并发控制-读集比对-取代-可达闭包-方案-那个方案已作废-成本高-精度低-依据-",
@@ -108265,7 +108536,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_pending-假绿-只有-pending-后态判据-run-blocked-b",
@@ -108293,7 +108567,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_domain-five-values",
@@ -108321,7 +108598,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_identity-normalize",
@@ -108348,7 +108628,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_design-drift-transitions",
@@ -108375,7 +108658,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_translate-3-terms",
@@ -108402,7 +108688,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_index-alias-reexport",
@@ -108419,7 +108708,10 @@
         }
       ],
       "retire_reason": "数字记错（实测核实）：别名再导出实际 1 条，不是 92 条",
-      "retired_at": "2026-10-22T15:26:17.743Z"
+      "retired_at": "2026-10-22T15:26:17.743Z",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_serve-split-orchestration",
@@ -108452,7 +108744,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_17-newer-than-dsl",
@@ -108479,7 +108774,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_five-state-cleanup",
@@ -108497,7 +108795,10 @@
         }
       ],
       "retire_reason": "已过期（今天查过）：TASK_STATES 现在是 4 态 candidate/claimed/done/void",
-      "retired_at": "2026-10-22T15:26:17.837Z"
+      "retired_at": "2026-10-22T15:26:17.837Z",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_translate-book-tool",
@@ -108525,7 +108826,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_translate-first-module",
@@ -108553,7 +108857,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_reopen-evidence-deadlock",
@@ -108580,7 +108887,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_10-处-无闸源码写-无法直接塞进写原语-需先定它们的身份与授权口径-清单-实测",
@@ -108607,7 +108917,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_覆盖写还剩-8-处没进原语-6-个语言包各-1-处-writefilesync-",
@@ -108634,7 +108947,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_写闸的判据只覆盖-覆盖写-移动-删除-追加-57-处仍是裸调-实测-fs-ren",
@@ -108661,7 +108977,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_l1-l2-handoff-gap",
@@ -108737,7 +109056,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_并发控制-账户-续-把-4-条仍在写闸之外的-源码写路-接上账户-本卡是上一环实",
@@ -108765,7 +109087,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_清注释-收尾-4-行-src-application-meta-explore-",
@@ -108801,7 +109126,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_edit-dsl-type-binding-现在诚实了-但仍是-空操作-2026",
@@ -108857,7 +109185,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_go-语言包的插桩写-仍无闸-observe-langs-ts-的-goobse",
@@ -108917,10 +109248,19 @@
     },
     {
       "type": "todo",
-      "state": "candidate",
+      "state": "claimed",
       "id": "todo_已完成的卡不该留在活态-224-张里-94-张是-done-void-该进-archive-可查但不占池",
       "summary": "【实测 2026-10-22：活态共 **224 张**卡（`nodes[].task` 103 + `todos[]` 121），其中 done 78 + void 16 = **94 张（42%）已完成却仍挂在\"待办池\"里**】\n★ 这不是打扫问题，是**容器混装**：已完成的和待办的住在同一个数组里 ⇒ 每次读册子都要过滤，每次盘都会把 done 当\"待办\"看（今天盘点 73 张里 34 张就是这么来的）。\n\n## 为什么不能\"直接搬走\"（先量过）\n读端有三处**会断**：\n  ① `task_ops.ts:209 loadTask` 按 id 找 todo ⇒ 归档后\"再开这张卡\"会找不到\n  ② `task_ops.ts:1962/2003` 的 `follows` 链（子卡查父卡）⇒ 父卡归档后链断\n     （链跨代：`todoChainNote` 要一路读回去，这是读**历史**的正当用途，不能一刀切）\n  ③ `claim_conflict.ts:363` 扫全量算读集冲突 ⇒ 归档的卡不该参与，但**当前**它参与了\n\n## 判据（选一条并说明取舍，不许\"直接删\"）\n  A. **软归档**：加 `archived_at`，活态口径 = `!archived_at`（`liveTasks(dsl)` 唯一住处）；\n     `loadTask` / `follows` **照样能查到**（它们按 id 找，历史正当）；展示层（`pool.ts` 已有 `folded` 计数）\n     只统计活态。★ 好处：零迁移风险、可回滚；坏处：文件体积不减。\n  B. **物理分家**：`dsl.archive[]` 单独一组，读端改成\"先活后史\"。\n     ★ 好处：体积真减；坏处：三处读端都要改，且 `follows` 链要跨容器。\n  C. **B + 按年分片**（`archive/2026.json` 之类）⇒ 册子不随年头变胖。\n★ **建议先 A 再 C**：A 立刻把\"池子\"从 224 降到 130，且不改任何功能语义；C 是长期。\n\n## 与\"卡独立化\"的关系（★ 读这张卡前先读那张）\n归档只是**症状**。根因是 `node.task` 是**单数** ⇒ 一个节点只能有**一张**卡 ⇒ 历史只能靠原地覆盖（`reopened_from` 只记上一次）。⇒ 见下一环卡 `todo_决策卡应该记节点而不是节点记决策卡`。\n★ 如果先做那张（`tasks[]`），本卡的归档就是**天然的**（按 state 过滤即可）—— 所以**顺序**：\n   要么先 A 止血、再做结构；要么直接做结构。**别先做 B 再做结构**（会做两遍）。",
-      "created_at": "2026-10-22T09:44:49.354Z"
+      "created_at": "2026-10-22T09:44:49.354Z",
+      "owner": "subagent:deepseek-park-archive",
+      "claimed_at": "2026-10-22T16:54:12.328Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T16:54:12.285Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      }
     },
     {
       "type": "todo",
@@ -108951,7 +109291,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "type": "todo",
@@ -108996,7 +109339,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "type": "todo",
@@ -109027,7 +109373,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "type": "todo",
@@ -109076,7 +109425,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "type": "todo",
@@ -109119,7 +109471,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_统计-savedsl-60-个直写点-23-edit-dsl-正路-18-显式-",
@@ -109157,7 +109512,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_2026-10-22-排查结论-矛盾一-progress-的权威住了两处-src",
@@ -109183,7 +109541,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_用户-2026-10-22-裁定-代码变更审批流已废弃-且它是另一套设计-与卡式",
@@ -109270,7 +109631,10 @@
           "verdict": "pass"
         }
       ],
-      "node_id": "file_scripts_hook-task-gate_mjs"
+      "node_id": "file_scripts_hook-task-gate_mjs",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "file_scripts_install_mcp_mjs",
@@ -109311,7 +109675,10 @@
           "verdict": "pass"
         }
       ],
-      "node_id": "file_scripts_install_mcp_mjs"
+      "node_id": "file_scripts_install_mcp_mjs",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "file_scripts_verify-changed_mjs",
@@ -109370,7 +109737,10 @@
       "reopened_at": "2026-10-22T16:06:11.599Z",
       "reopen_reason": "重开 scripts/verify-changed.mjs 的文件卡：改 DSL 时把 scripts/design-check.mjs 拉进受影响集合，不再全量挂 verify",
       "reopened_from": "subagent:deepseek-fix5",
-      "node_id": "file_scripts_verify-changed_mjs"
+      "node_id": "file_scripts_verify-changed_mjs",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "file_src_application_cross_index_ts",
@@ -109511,7 +109881,10 @@
           "verdict": "pass"
         }
       ],
-      "node_id": "file_src_application_design_dsl_ops_api_ops_ts"
+      "node_id": "file_src_application_design_dsl_ops_api_ops_ts",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "file_src_application_design_dsl_ops_file_ops_ts",
@@ -109759,7 +110132,10 @@
           "expectations"
         ]
       },
-      "node_id": "file_src_application_design_dsl_ops_op_data_spec_ts"
+      "node_id": "file_src_application_design_dsl_ops_op_data_spec_ts",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "file_src_application_design_dsl_ops_status_tools_ts",
@@ -109837,12 +110213,15 @@
       "reopened_at": "2026-10-22T07:48:14.295Z",
       "reopen_reason": "只改 status_tools.ts 第 168 行的注释：split('\\n') 应为 split('\n')",
       "reopened_from": "subagent:deepseek-fix5",
-      "node_id": "file_src_application_design_dsl_ops_status_tools_ts"
+      "node_id": "file_src_application_design_dsl_ops_status_tools_ts",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "file_src_application_design_dsl_ops_task_ops_ts",
       "summary": "publish / claim / release / complete / void 五个 op，写 design/<f>.dsl.json 的 task 格。★ void 是卡生命周期的出口（candidate → void）：没有它会死锁 —— candidate + satisfied 时 claim 拒（satisfied 只可收口）、complete 拒（未领不能收口）⇒ 永远卡住；而'代码先于卡存在'时必然发生。★ publishFromDiff：从 diff 的差异建 L1 卡（VISION §7「无卡 ⇒ 补卡」）。",
-      "state": "done",
+      "state": "claimed",
       "evidence": [
         {
           "kind": "attestation",
@@ -109917,11 +110296,11 @@
           "verdict": "pass"
         }
       ],
-      "owner": "subagent:deepseek-card-migrate",
-      "claimed_at": "2026-10-22T15:43:18.003Z",
-      "reopened_at": "2026-10-22T15:43:18.003Z",
-      "reopen_reason": "迁移要改 task_ops.ts：新增 todo op=import 逐字并入 + writeTask 按卡的住处写回（否则迁移后 104 个节点的写全会静默落到 todos 镜像，节点卡冻结）",
-      "reopened_from": "subagent:deepseek-fix5",
+      "owner": "subagent:deepseek-park-archive",
+      "claimed_at": "2026-10-22T16:55:00.405Z",
+      "reopened_at": "2026-10-22T16:55:00.405Z",
+      "reopen_reason": "加软归档：todo archive/unarchive + writeTask 不变量（本批 5 个文件，锚点在这里）",
+      "reopened_from": "subagent:deepseek-card-migrate",
       "read_set": {
         "symbols": [
           {
@@ -109977,12 +110356,12 @@
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
             "name": "expireTasks",
-            "fp": "b6c1ebc8693176041f765e71f9026449f447a891"
+            "fp": "a92aeb506daf63033c5f8f2afc3c7ac26ca176d0"
           },
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
             "name": "loadTask",
-            "fp": "5cc6c0bd0f621f09a576a9b3c9eaca52a295fc52"
+            "fp": "8f51c0aff569e804714dd9577188535e528478c0"
           },
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -109992,7 +110371,7 @@
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
             "name": "publishTask",
-            "fp": "ca74cc429e6e78a6dc71a61e4061df38c2d97fe5"
+            "fp": "004f809152a7d0bfd926ad932b2b0ab36d679392"
           },
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -110017,17 +110396,34 @@
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
             "name": "writeTask",
-            "fp": "34b639ed1be0f732ff712092eeeaf1c3252bb67f"
+            "fp": "ce06d537300766ba5455037ac26451a6a3e812d0"
           }
         ],
         "files": [
           {
+            "path": "src/application/design/board/pool.ts",
+            "content_hash": "b37178c9c13a1a178bcf07a01e1e09b13b51c4ec"
+          },
+          {
+            "path": "src/application/design/dsl_ops/op_data_spec.ts",
+            "content_hash": "bd17a4b0a125fbd259932b493a2763c177cb67ae"
+          },
+          {
             "path": "src/application/design/dsl_ops/task_ops.ts",
-            "content_hash": "e07baf6998f358af6bac63ae4b5993ac7196956b"
+            "content_hash": "5a8f9d8dfc4cba0ea65ae042a5c041cc714948df"
+          },
+          {
+            "path": "src/application/meta/explore/query_feature.ts",
+            "content_hash": "7305275dabb4eb078b25b2fd2eebbc9b39ac7a7a"
+          },
+          {
+            "path": "src/domain/task_schema.ts",
+            "content_hash": "cffe247e567446cb4e85b3458c9fbb16624036a9"
           }
         ],
-        "computed_at": "2026-10-22T15:43:17.959Z",
+        "computed_at": "2026-10-22T16:55:00.360Z",
         "basis": [
+          "declared",
           "expectations"
         ],
         "note": "1 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
@@ -111428,7 +111824,10 @@
         ],
         "note": "2 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
       },
-      "node_id": "file_src_domain_task_machine_ts"
+      "node_id": "file_src_domain_task_machine_ts",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "file_src_domain_task_schema_ts",
@@ -111534,7 +111933,10 @@
       "reopened_at": "2026-10-22T15:06:26.620Z",
       "reopen_reason": "progress 权威归一到 progressOfNode（两处判据合成一处）",
       "reopened_from": "subagent:exp-single-source",
-      "node_id": "file_src_domain_task_schema_ts"
+      "node_id": "file_src_domain_task_schema_ts",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "file_src_domain_validator_ts",
@@ -111666,7 +112068,10 @@
           "verdict": "pass"
         }
       ],
-      "node_id": "file_src_infrastructure_analysis_observe_go_instrument_ts"
+      "node_id": "file_src_infrastructure_analysis_observe_go_instrument_ts",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "file_src_infrastructure_analysis_observe_judge_ts",
@@ -111821,7 +112226,10 @@
       "release_reason": "补充已完成（unknown 说明 + 排序注释），tsc 0 error；先 release 才能 void（claimed 没有直达 void 的迁移）",
       "released_by": "general-purpose-3",
       "released_at": "2026-10-20T16:46:29.792Z",
-      "node_id": "file_src_infrastructure_dogfood_stats_ts"
+      "node_id": "file_src_infrastructure_dogfood_stats_ts",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "file_src_infrastructure_graph_dead_deps_ts",
@@ -112203,7 +112611,10 @@
           "expectations"
         ]
       },
-      "node_id": "file_src_infrastructure_storage_ts"
+      "node_id": "file_src_infrastructure_storage_ts",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "file_src_presentation_cli_cli_ts",
@@ -112217,7 +112628,10 @@
       "release_reason": "cli.ts:277 传 via='cli' 已交付；先 release 才能 void",
       "released_by": "general-purpose-3",
       "released_at": "2026-10-20T16:43:29.180Z",
-      "node_id": "file_src_presentation_cli_cli_ts"
+      "node_id": "file_src_presentation_cli_cli_ts",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "file_src_presentation_http_serve_ts",
@@ -112466,7 +112880,10 @@
           "expectations"
         ]
       },
-      "node_id": "file_src_application_design_rewrite_rewrite_ts"
+      "node_id": "file_src_application_design_rewrite_rewrite_ts",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "file_src_application_design_line_design_diff_ts",
@@ -112481,7 +112898,10 @@
           "verdict": "pass"
         }
       ],
-      "node_id": "file_src_application_design_line_design_diff_ts"
+      "node_id": "file_src_application_design_line_design_diff_ts",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "file_src_infrastructure_parse_mutants_ts",
@@ -112498,7 +112918,10 @@
           "verdict": "pass"
         }
       ],
-      "node_id": "file_src_infrastructure_parse_mutants_ts"
+      "node_id": "file_src_infrastructure_parse_mutants_ts",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "file_scripts_impl-mutate_mjs",
@@ -112515,7 +112938,10 @@
           "verdict": "pass"
         }
       ],
-      "node_id": "file_scripts_impl-mutate_mjs"
+      "node_id": "file_scripts_impl-mutate_mjs",
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "file_scripts_impl-fixture_mjs",
@@ -112639,7 +113065,10 @@
           },
           "verdict": "pass"
         }
-      ]
+      ],
+      "archived_at": "2026-10-22T17:01:15.281Z",
+      "archived_by": "subagent:deepseek-park-archive",
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
       "id": "todo_契约文案漂移-edit-dsl-的工具描述里-todo-那行的-op-清单仍是-",
