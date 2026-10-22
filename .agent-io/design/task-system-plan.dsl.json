@@ -11707,6 +11707,18 @@
               "path": "src/application/design/dsl_ops/task_ops.ts",
               "symbol": "writeTask",
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "renewTask",
+              "why": "★ 用户追问「你把续租的路径也断了吗」——对，上一版把\"重复 claim 也拒\"写进契约，而 claim 会**重算并覆盖 read_set**，本来就不该拿来续租。`renew` = 只刷 claimed_at、不动读集。三条必须拒：非 claimed / 不是你的卡 / 已过期（过期 = 你停了，不是你没空）。"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "expireTasks",
+              "why": "★ 用户问「有没有自己过期的手段」——原来只有 `releaseIfExpired`（纯函数、**只产事件不改 state**）⇒ 没人来接管时卡会**永远停在 claimed**。`expire` 是主动回收：回 candidate + 记 expired_from。★ 与 release 分开记痕（release_reason=人放弃 / expired_from=超时），审计要能分清。"
             }
           ],
           "updated_at": "2026-10-19T01:47:22.185Z",
@@ -19991,6 +20003,12 @@
                 "listDesignSheets"
               ],
               "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "classifyWriteSubject",
+              "why": "★ 2026-10-22 实测：\"51 处待搬\"是错的 —— 真改用户源码的只有 **1 处**，其余是 product(53)/temp(15)/回滚(2)。没有这个分类，就只剩两种笨办法：全搬（给产物/临时文件白加闸）或全不搬（源码裸写）。★ 顺序即判据：`temp` 必须在 `outside-root` **之前**判（系统临时目录本来就在根外）。"
             }
           ],
           "creator": "workbuddy-main",
@@ -42263,6 +42281,24 @@
                 "opts.judge("
               ],
               "why": "★ 接线那一句：端口摆着不用也算“绿” ⇒ 这一条只验“它确实问的是注入的 judge”。★ 故意只匹配最短前缀 `opts.judge(`（不写参数）：换行、改参数名、改 `root` 写法都不会失效"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "LEASE_TTL_MS",
+              "why": "★ 2026-10-22 用户裁定「租约过一段时间该自己断」：TTL 必须有**默认值**且**唯一**。此前 `releaseIfExpired(…, ttlMs)` 的 TTL 注释写着「取值待裁」⇒ 没人传过 ⇒ 判据在、函数在、就是没人触发（实测 29 个文件被 10~27h 的租约锁死）。可 `AGENT_IO_LEASE_TTL_HOURS` 覆盖。"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "isLeaseExpired",
+              "why": "★ 单张卡的**布尔**判定（与 `releaseIfExpired` 的批量事件产出分工，但**同一条 age > ttl 口径**）。claim 的接管判定、A7 的\"还算不算被占\"都要它 —— 没有它，那两处只能各写一遍年龄算法（= 判据住两处）。★ 「判不了就不判」：缺 claimed_at / 坏时间 ⇒ false（不把\"取不到\"读成\"没人占\"）。"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "leaseAgeHours",
+              "why": "★ 报文要能说\"挂了多久\"——`taken_over_from.age_hours` / `expired_from.age_hours` 都靠它。★ 只落年龄不落绝对时刻：绝对时刻已在 `claimed_at` 里，重复存就是副本（副本按定义会烂）。"
             }
           ],
           "updated_at": "2026-10-21T14:48:04.975Z",
@@ -104481,11 +104517,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T10:04:52.953Z",
+    "saved_at": "2026-10-22T10:32:00.163Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 79970142,
+    "age": 81597352,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108264,9 +108300,16 @@
       "created_at": "2026-10-22T10:04:52.915Z",
       "id": "todo_verify-的门会偶发红-database-is-locked-让-FAIL-变成噪音",
       "summary": "【实测 2026-10-22：`npm run verify` 的「实现夹具」门**偶发红**，原因是 `database is locked`（SQLite 并发）。同一份代码**重跑一次就绿**。当天至少 3 次（我 1 次、子代理 2 次）。】\n\n## 为什么这比\"假绿\"更坏\n```\n假绿：门说 OK 其实没测 —— 可被\"注入⇒必须红\"抓出来\n偶发红：门偶尔撒谎 ⇒ 人学会\"重跑一次看\" ⇒ 再往后 FAIL 变成【噪音】⇒ 真 FAIL 也会被忽略\n★ 本仓纪律（§2.3）：验证手段自身必须被验证，而\"时红时绿\"是最难被发现的那种失效\n```\n\n## 现场（完整栈）\n```\nfile:///.../dist/src/infrastructure/index/db.js:345\n  db.prepare('INSERT OR IGNORE INTO schema_versions(...)').run(...)\nError: database is locked   code=ERR_SQLITE_ERROR errcode=5\n  at openDb → getProjectCacheDb → pickDb → fileFacts → scripts/impl-fixture.mjs:47\n```\n⇒ 锁在 **`openDb` 的 schema 版本写入**上，不是业务查询。🔑 谁在读/写 `cache.db`：verify 自己的门（有好几道会开库）+ 可能还有观察者/服务进程。\n\n## 判据（三条，按代价从低到高）\n  A. **先量**：`verify` 时到底有谁在开 `cache.db`？把并发画出来（`lsof` / Windows 用 handle.exe，或临时打点）。\n     ★ 没量清就改 = 猜。\n  B. **busy_timeout**（最小改动）：`db.pragma('busy_timeout = 5000')` —— SQLite 原生的\"等锁\"机制，     写一次就能把\"瞬时争用\"变成\"排队\"。★ 但它只是**掩盖**，如果锁被长事务占住，5 秒后照样抛。\n  C. **单写者**（治根）：`cache.db` 只许一个进程写（本仓 `dispatch.ts` 已经有 daemon 单写者的先例）。\n     ⇒ 门里**只读**，写索引交给 indexer。\n\n## 验收（必须能证明\"不再偶发\"）\n```\n连续跑 10 次 npm run verify ⇒ 10 次全 exit=0\n★ 不许用\"重跑就好\"验收 —— 那正是要消灭的行为\n```\n\n## 附带：这条也是\"数据飞轮\"的敌人\n门偶发红 ⇒ 人开始不信门 ⇒ 回到\"我看一眼觉得没问题\" ⇒ 假收口的入口。比修好任何一张卡都优先。"
+    },
+    {
+      "type": "todo",
+      "state": "candidate",
+      "created_at": "2026-10-22T10:32:00.124Z",
+      "id": "todo_新建源文件不进设计册-source-write-port-ts-实测-0-个节点而-verify-全绿",
+      "summary": "【实测 2026-10-22：`src/infrastructure/source_write_port.ts` 是当天新建的源文件，设计册里**匹配节点数 = 0**，而 `npm run verify` **7 门全绿**。】\n\n## 为什么这是最坏的那种\n```\n设计 DSL 的整套价值 = 「施工产物能被设计对拍」\n但如果【新建的源文件根本不在册上】⇒ 它永远不参与对拍 ⇒ 它是设计之外的一片飞地\n★ 而 verify 全绿 ⇒ 没有任何门会说\"漏了一个文件\" ⇒ 漂移是【静默】的\n```\n★ 用户 2026-10-22 的原话点破了它：\n> 「你领到这个任务去之后，如果没有设计 DSL 和设计 DB，就是你没写这个那你就要先把这个完善……\n>  **两边对上了才是判据**」\n⇒ 现在缺的正是那个\"两边对上\"的检查里的一半：**册子 → 代码**（有 `call-exists` 等），而**代码 → 册子**（\"每个源文件都该有节点\"）**没有**。\n\n## 判据（选一条）\n  A. **门**：`verify` 加一道「源文件 ↔ 设计节点」的双向对账 —— **新增文件没有节点 ⇒ 红**。\n     ★ 难点：`src/infrastructure/**` 有 100+ 文件，未必都该有节点（可能是纯内部实现）⇒ 要定\"哪些文件必须有节点\"（建议：**被 `application` 层 import 的**必须有，纯叶子按目录豁免）。\n  B. **工具**：`edit_code` 的 `create`（★ 现在没有这个 op，见另一张卡）在建文件时**顺手提示**\"这个文件在设计里吗\"。\n  C. **报告**：`design-check` 加一段\"设计外的源文件\"清单（不红，但要点名）—— 最轻，但**不阻止**漂移。\n★ 建议 A + C：C 让人看见，A 才是闸。\n\n## 本次的具体缺口（先补或先挂）\n  `src/infrastructure/source_write_port.ts` 需要：① `geometry.nodes` 一个 file 节点 ② `decision`（已备好两条判据：\n  `file-exists` + `commitSourceWrite` 的 `symbol-exists`，见同日补判据脚本）③ `edges`（谁 import 它：\n  5 个语言包 + `rename_symbols.ts`）。★ ②已经写好但**因为节点不存在而没地方挂**（脚本报\"找不到节点\"）。\n\n## 验收\n```\n删掉 source_write_port.ts 的节点（造一个\"设计外文件\"）⇒ verify 必须红\n恢复 ⇒ 绿\n★ 不许用\"报告里有清单\"当验收（报告不是闸）\n```"
     }
   ],
-  "_dsl_rev": 1277,
+  "_dsl_rev": 1279,
   "feature_tree": {
     "features": [
       {
