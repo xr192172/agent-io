@@ -71,6 +71,9 @@ import {
   //   （done / void 都算了结），不在本文件里再写一遍 `state === 'done' || state === 'void'`
   //   （那正是 `task_schema.ts` 2026-10-20 花了一笔改成 `isClosedTaskState` 的病）。
   isClosedTaskState,
+  // ★ 2026-10-22（卡迁移）：`todo.import` 要挡「不是四态的 state」—— ★ 读**既有那一把尺**（同 task_machine 的判定），
+  //   不在 import 里再列一遍四个字面量（那会变成第二份状态表）。
+  isTaskState,
   progressOf,
   taskLevel,
   type TaskDiscussion,
@@ -270,10 +273,32 @@ function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
   const dsl = getDesignSheet(feature);
   if (!dsl) throw new Error(`feature "${feature}" 在落盘前读不到 ⇒ 不写（绝不静默降级）。`);
   // ★★★ 2026-10-18（Q5）：**按"挂在哪"分叉** —— todo 写 `todos[]`，节点任务写 `geometry.nodes[].task`。
-  const isTodo = (dsl.todos ?? []).some((t) => t.id === nodeId);
-  const nextDsl = isTodo
-    ? { ...dsl, todos: (dsl.todos ?? []).map((t) => (t.id === nodeId ? { ...t, ...next } : t)) }
-    : { ...dsl, geometry: { ...dsl.geometry!, nodes: (dsl.geometry?.nodes ?? []).map((n) => (n.id === nodeId ? { ...n, task: next } : n)) } };
+  // ★★★ 2026-10-22（卡迁移 · 兼容层）：**按卡的【住处】写回** —— 不再「todos 里有同 id 就当它是 todo 卡」。
+  //   旧判据 `some(t => t.id === nodeId)` 在迁移后对 104 个节点**全部为真**（todos[] 里都有同 id 的镜像）
+  //   ⇒ 节点卡的每一次 claim / complete 都会落进 todos[] 镜像，而节点卡**冻结在旧态**；
+  //   而读端（`loadTask` 节点优先、`progressOfNode` ①）读的仍是节点卡 ⇒ **一张卡两个答案、claim 永远不生效**。
+  //   判据：**节点上有卡** ⇒ 节点是主住处（与读端同序）；`todos[]` 里那条同 id·同 node_id 的
+  //   **迁移镜像**跟着写同一份（否则下一步把读端切到 todos[] 时，这一步之间落的账会丢）。
+  //   ★ 纯 todo 卡（节点上没有它的 id）行为不变：仍是只在 `todos[]` 里改。
+  const node = (dsl.geometry?.nodes ?? []).find((n) => n.id === nodeId);
+  const todoIdx = (dsl.todos ?? []).findIndex((t) => t.id === nodeId);
+  let nextDsl: typeof dsl;
+  if (node && (node.task || todoIdx < 0)) {
+    const nodes = (dsl.geometry?.nodes ?? []).map((n) => (n.id === nodeId ? { ...n, task: next } : n));
+    nextDsl = { ...dsl, geometry: { ...dsl.geometry!, nodes } };
+    const mirror = todoIdx >= 0 ? dsl.todos?.[todoIdx] : undefined;
+    if (mirror && mirror.node_id === nodeId) {
+      const todos = [...(dsl.todos ?? [])];
+      todos[todoIdx] = { ...next, node_id: nodeId };
+      nextDsl = { ...nextDsl, todos };
+    }
+  } else if (todoIdx >= 0) {
+    nextDsl = { ...dsl, todos: (dsl.todos ?? []).map((t) => (t.id === nodeId ? { ...t, ...next } : t)) };
+  } else {
+    throw new Error(
+      `落盘目标「${nodeId}」既不是带卡的节点、也不在 todos[] —— 卡没有住处，不写（绝不静默降级）。`,
+    );
+  }
   const ov = loadOverlay(feature) ?? seedOverlayFromDsl(nextDsl);
   saveDesignSheet(applyOverlay(nextDsl, ov));
 }
@@ -2272,6 +2297,11 @@ export function applyTodoOp(
     };
   }
 
+  // ★★★ 2026-10-22（卡迁移）：`import` = 把 `geometry.nodes[].task` 里**已有的卡**逐字并进 `todos[]`。
+  //   ★ 它与 `add` 的分工不是风格：`add` **造**一张卡（只能造出 candidate / owner=null），
+  //     `import` **搬**一张卡（state / owner / claimed_at / evidence / read_set 一个字节不改）。
+  if (op.op === 'import') return importTodoCards(feature, op.data ?? {}, agent);
+
   // ★★★ 2026-10-21：**改 / 作废 / 物理删** 三个 op 走同一处分发。
   //   ★ 它们的 id 由 `OP_SPECS` 的 `opsRequiringId` 保证（不是这里判的 —— 一处判据）。
   // ★ 2026-10-21：`follows`（跑环继任链：接链 / 摘链）走同一处分发 —— 它也是「按 id 动一张卡」的 op。
@@ -2280,7 +2310,7 @@ export function applyTodoOp(
   }
 
   if (op.op !== 'add') {
-    throw new Error(`todo 仅支持 add / link / update / follows / retire / delete（收到 ${op.op}）`);
+    throw new Error(`todo 仅支持 add / link / import / update / follows / retire / delete（收到 ${op.op}）`);
   }
   const data = op.data ?? {};
   // ★ 2026-10-21：`todo.add 需要 data.summary` **不在这里判** —— 判据只有一处 = `OP_SPECS.required.add`
@@ -2351,4 +2381,95 @@ export function applyTodoOp(
     feature,
     data: { todo_id: id, state: 'candidate' as TaskState, summary },
   };
+}
+
+/**
+ * ★★★ 2026-10-22（卡迁移 · `nodes[].task` → `todos[]`）：**把已有的卡逐字并进 `todos[]`**。
+ *
+ * ## 它回答的问题
+ * 「同一个概念住了两个容器」——`geometry.nodes[].task` 是**单数**（一个节点只能一张卡 ⇒ 历史被原地覆盖），
+ * `todos[]` 是独立的（可多张）。用户裁定：卡应当住 `todos[]`，用 `node_id` 指向**入口节点**。
+ * 本函数是「搬家」的那一只手：把节点上已有的那张卡**原样**放进 `todos[]`，补 `node_id`。
+ *
+ * ## 为什么不能直接走 `add`
+ * `add` 只收 `summary`：`state` 恒写 `candidate`、`owner` 恒 `null`、`claimed_at` / `evidence` / `read_set` 全丢
+ * ⇒ 搬 104 张卡 = **把 94 张的「已了结」和 103 个 owner 抹平**（那是丢历史，不是迁移）。
+ *
+ * ## 判据（三条，缺一不可）
+ * ① **不编**：卡上每个字段都从 `cards[i]` 逐字搬；本函数**只校验** `id` / `node_id`，不造任何值；
+ * ② **幂等**：`(id, node_id)` 已在册 ⇒ 跳过（不重复、不覆盖、不改既有那张的一个字节）；
+ * ③ **不许顶替**：同 `id` 已在册但指向**另一个** `node_id` ⇒ 拒（一个 id 两个入口，`follows` / `node_id` 的引用就失去唯一解）；
+ * ★ 同守 `writeTask` 那条结构不变量：带 `expectations` 的卡不收（判据只住 `decision.expectations`）。
+ * ★ 入口节点必须**真实存在**（`geometry.nodes` 里查得到）—— 悬挂的 `node_id` 就是「指不到触发点」，拒。
+ */
+function importTodoCards(feature: string, data: Record<string, unknown>, agent?: string): EditResult {
+  const raw = data.cards;
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw new Error('todo.import 需要 data.cards（非空数组：每项是一张要并入的卡，字段逐字搬、不重编）');
+  }
+  const dsl = getDesignSheet(feature);
+  if (!dsl) throw new Error(`feature "${feature}" 不存在 —— todo 住在设计 DSL 的顶层 todos[]。`);
+  const nodeIds = new Set((dsl.geometry?.nodes ?? []).map((n) => n.id));
+  const todos = [...(dsl.todos ?? [])];
+  /** 幂等键 = `(id, node_id)`（★ 不是单个 id：同一张卡在不同入口下是两条历史） */
+  const keyOf = (id: string, nodeId: string): string => `${id}||${nodeId}`;
+  const seen = new Map(todos.map((t) => [keyOf(String(t.id), String(t.node_id ?? '')), t]));
+  const byId = new Map(todos.map((t) => [String(t.id), t]));
+
+  const imported: string[] = [];
+  const skipped: string[] = [];
+  for (const [i, item] of raw.entries()) {
+    const card = (item ?? {}) as Record<string, unknown>;
+    const at = `cards[${i}]`;
+    const id = typeof card.id === 'string' ? card.id.trim() : '';
+    const nodeId = typeof card.node_id === 'string' ? card.node_id.trim() : '';
+    if (!id) throw new Error(`todo.import 被拒：${at} 没有 id —— 卡的 id 必须带上（写端不替你编一个）。`);
+    if (!nodeId) throw new Error(`todo.import 被拒：${at}（${id}）没有 node_id —— 住 todos[] 的卡必须指向一个入口节点。`);
+    if (!nodeIds.has(nodeId)) {
+      throw new Error(`todo.import 被拒：${at}（${id}）的 node_id "${nodeId}" 不在 geometry.nodes 里（悬挂的入口）。`);
+    }
+    if (!isTaskState(String(card.state))) {
+      throw new Error(
+        `todo.import 被拒：${at}（${id}）的 state "${String(card.state)}" 不是四态之一（candidate / claimed / done / void）。`,
+      );
+    }
+    if (card.expectations !== undefined) {
+      throw new Error(
+        `todo.import 被拒：${at}（${id}）带了 expectations —— 判据只住 \`decision.expectations\`（同 \`writeTask\` 的结构不变量）。`,
+      );
+    }
+    const sameId = byId.get(id);
+    if (sameId && String(sameId.node_id ?? '') !== nodeId) {
+      throw new Error(
+        `todo.import 被拒：id "${id}" 在 todos[] 里已指向 "${String(sameId.node_id ?? '（无）')}"，本次要指向 "${nodeId}"` +
+          ` —— 一个 id 两个入口会让 follows / node_id 的引用全部失去唯一解。`,
+      );
+    }
+    const k = keyOf(id, nodeId);
+    if (seen.has(k)) {
+      skipped.push(id);
+      continue;
+    }
+    // ★ 只改两个键：`id` 去空白、`node_id` 必填；其余**逐字搬**（state / owner / claimed_at / evidence / read_set …）
+    const next = { ...card, id, node_id: nodeId } as unknown as TaskSpec;
+    todos.push(next);
+    seen.set(k, next);
+    byId.set(id, next);
+    imported.push(id);
+  }
+
+  const listed = skipped.slice(0, 5).join(' / ');
+  const message =
+    `todo.import：并入 ${imported.length} 张 · 跳过 ${skipped.length} 张（(id, node_id) 已在册 ⇒ 幂等）` +
+    `${skipped.length ? `\n  · 跳过：${listed}${skipped.length > 5 ? ` …共 ${skipped.length} 张` : ''}` : ''}` +
+    `\n  · todos[] 现有 ${todos.length} 张（原 ${(dsl.todos ?? []).length} 张）` +
+    (agent ? `\n  · 发起者：${agent}` : '');
+
+  if (imported.length === 0) {
+    return { message, feature, data: { imported: 0, skipped: skipped.length, total: todos.length } };
+  }
+  const nextDsl = { ...dsl, todos };
+  const ov = loadOverlay(feature) ?? seedOverlayFromDsl(nextDsl);
+  saveDesignSheet(applyOverlay(nextDsl, ov));
+  return { message, feature, data: { imported: imported.length, skipped: skipped.length, total: todos.length } };
 }

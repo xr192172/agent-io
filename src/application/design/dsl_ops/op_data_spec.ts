@@ -211,9 +211,14 @@ export const OP_SPECS: readonly OpSpec[] = [
     //   ★ 为什么是独立 op 而不是塞进 `update`：update 回答「这张卡**要做什么**变了吗」（旧值压 history），
     //     follows 回答「它在**哪条链**上」—— 内容变更与结构变更是两件事。
     //   ★ 也是**唯一能造出环**的入口（add 只加叶子）⇒ 「链必须无环」那条判据真正被考到的地方。
-    ops: ['add', 'link', 'update', 'follows', 'retire', 'delete'],
+    ops: ['add', 'link', 'import', 'update', 'follows', 'retire', 'delete'],
     idRequired: false,
     opsRequiringId: ['link', 'update', 'follows', 'retire', 'delete'],
+    // ★★★ 2026-10-22（卡迁移）：加 `import` —— **把一张已存在的卡逐字并入 `todos[]`**。
+    //   为什么不是 `add`：`add` 只收 summary，state 恒写 candidate、owner 恒 null
+    //   （见 `task_ops.ts` 的 `applyTodoOp`）⇒ 迁移 `nodes[].task` 的 104 张卡时
+    //   **state / owner / claimed_at / evidence 会被抹平**，那是丢历史，不是迁移。
+    //   ★ 它**不建卡**（不编 summary、不给判据），只搬；★ 幂等判据 = `(id, node_id)` 已在册 ⇒ 跳过。
     // ★★★ 2026-10-21：**三个新 op 的必填键**（规则：**增删改查四个动作都要配齐**）。
     //   · update：summary（改成什么）+ reason（**为什么改** —— 无理由 = 悄悄改判据）
     //   · retire：reason（为什么作废；★ 必须点名**被谁取代**，否则考古不了）
@@ -230,6 +235,9 @@ export const OP_SPECS: readonly OpSpec[] = [
       follows: ['reason'],
       retire: ['reason'],
       delete: ['reason'],
+      // ★ 2026-10-22（卡迁移）：`import` 只收 **cards**（整张卡的数组）—— 它不吃 summary/state/owner，
+      //   那些只能从 `cards[i]` 里逐字搬（分开收就成了「让你现场拼一张卡」= 又一条编卡的路）。
+      import: ['cards'],
     },
     note:
       '★ **无节点任务**（2026-10-18 Q5）：和 task **同一套状态机/同一套 claim/complete/void 语义**，' +
@@ -481,7 +489,10 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
   //     只能回到在 summary 里手写「取代 xxx」（那正是 2026-10-21 立出三张矛盾卡的原因）。
   //   ★ `depth` / `children` / `total` **不在这里**：它们是**现算**的（`domain/todo_chain.ts`），
   //     让调用方塞 = 手写一份"我在第几环"，必与链的实际情况打架。
-  todo: ['summary', 'decision', 'owner', 'id', 'node_id', 'reason', 'follows'],
+  // ★★★ 2026-10-22（卡迁移）：补 `cards` —— `todo.import` 唯一读的键（整张卡的数组，逐字搬进 `todos[]`）。
+  //   ★ 它与 `summary`/`state`/`owner` 那几个**不是一张卡的两个入口**：`summary` 那是 `add` 用来**造**一张新卡，
+  //     `cards` 是 `import` 用来**搬**一张已存在的卡（同一条纪律：造卡的入口不许顺手改卡上已有的事实）。
+  todo: ['summary', 'decision', 'owner', 'id', 'node_id', 'reason', 'follows', 'cards'],
 };
 /** ★★ 断言：`TYPE_KNOWN_KEYS` 的键集**必须恰好覆盖 `OP_SPECS` 的全部 type**（多 / 少都红）。 */
 export type KnownKeysMissingTypes = Exclude<(typeof OP_SPECS)[number]['type'], keyof typeof TYPE_KNOWN_KEYS>;
