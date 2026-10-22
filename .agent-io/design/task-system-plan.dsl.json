@@ -54418,7 +54418,7 @@
         "type": "file",
         "label": "上架读端（待接取池）",
         "path": "src/application/design/board/pool.ts",
-        "status": "done",
+        "status": "draft",
         "decision": {
           "summary": "把**所有卡**（geometry.nodes[].task + todos[]）按 state 收成\"池\"，并同时给出**卡的列表**：一条只读调用就能回答「谁占着哪个文件、挂了多久、读集多大」（D-T8：卡挂了看不见）",
           "acceptance": "listPool 返回 BoardView{byState,total,shown,folded,bySource,cards} 且 shown+folded==total；cards 每张带 id/owner/label/claimed_at/age_hours/overdue/read_set 大小（年龄与过期**现算**、不落盘、不缓存 ⇒ 释放/删掉一张卡，下一次调用必须看不见它）；get_dsl query=todo 的「在挂的卡」段经它点名 claimed 卡（实测：造一张 claimed 卡 ⇒ 点名 + owner + 挂了多久；释放 ⇒ 消失）",
@@ -54645,9 +54645,9 @@
         "task": {
           "id": "file_src_application_design_board_pool_ts",
           "summary": "把各节点 task 格按 state 收集成\"池\"：一条只读调用就能看到 candidate / claimed / done",
-          "state": "done",
-          "owner": "subagent:deepseek-pool-reader",
-          "claimed_at": "2026-10-22T14:44:18.878Z",
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
           "read_set": {
             "symbols": [
               {
@@ -54658,21 +54658,35 @@
               {
                 "file": "src/application/design/board/pool.ts",
                 "name": "BoardView",
-                "fp": "f45176c79ea7e2decbac0fdf1c5c1958059f1a02"
+                "fp": "f82aa405779ee4889a3bc78b5fad008ff610c742"
+              },
+              {
+                "file": "src/application/design/board/pool.ts",
+                "name": "PoolCard",
+                "fp": "25a435480b4fa69f781b59d4e51f713e9b27409d"
               },
               {
                 "file": "src/application/design/board/pool.ts",
                 "name": "listPool",
-                "fp": "750cdf591fcaec48be307e84611058216b3332ca"
+                "fp": "5022fdc719362dc0b4564754c69569cb2544708a"
+              },
+              {
+                "file": "src/application/meta/explore/query_feature.ts",
+                "name": "queryFeature",
+                "fp": "9e3762d39630c77a7dd9bb1818a6df007d30cb85"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/board/pool.ts",
-                "content_hash": "8b8c6615dcaa5b8a7384a9c93118976155ecf943"
+                "content_hash": "9477362a45865bf880e532a38c65f2183486514c"
+              },
+              {
+                "path": "src/application/meta/explore/query_feature.ts",
+                "content_hash": "7305275dabb4eb078b25b2fd2eebbc9b39ac7a7a"
               }
             ],
-            "computed_at": "2026-10-22T14:44:18.833Z",
+            "computed_at": "2026-10-22T16:32:36.884Z",
             "basis": [
               "expectations"
             ]
@@ -54693,7 +54707,14 @@
               },
               "verdict": "pass"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-22T16:32:36.927Z",
+          "reopen_reason": "池的双计必须修（354→250）；读端权威从 node.task 切到 todos[]",
+          "reopened_from": "subagent:deepseek-pool-reader",
+          "node_id": "file_src_application_design_board_pool_ts",
+          "release_reason": "读端切换已完成并提交",
+          "released_by": null,
+          "released_at": "2026-10-22T16:47:47.719Z"
         }
       },
       {
@@ -104324,7 +104345,7 @@
         ],
         "lines": 84,
         "layer": "core",
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_board_todo_journal_ts",
@@ -105122,11 +105143,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T16:27:47.480Z",
+    "saved_at": "2026-10-22T16:47:47.757Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 102944669,
+    "age": 104144946,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -112253,9 +112274,9 @@
     {
       "id": "file_src_application_design_board_pool_ts",
       "summary": "把各节点 task 格按 state 收集成\"池\"：一条只读调用就能看到 candidate / claimed / done",
-      "state": "done",
-      "owner": "subagent:deepseek-pool-reader",
-      "claimed_at": "2026-10-22T14:44:18.878Z",
+      "state": "candidate",
+      "owner": null,
+      "claimed_at": null,
       "read_set": {
         "symbols": [
           {
@@ -112266,21 +112287,35 @@
           {
             "file": "src/application/design/board/pool.ts",
             "name": "BoardView",
-            "fp": "f45176c79ea7e2decbac0fdf1c5c1958059f1a02"
+            "fp": "f82aa405779ee4889a3bc78b5fad008ff610c742"
+          },
+          {
+            "file": "src/application/design/board/pool.ts",
+            "name": "PoolCard",
+            "fp": "25a435480b4fa69f781b59d4e51f713e9b27409d"
           },
           {
             "file": "src/application/design/board/pool.ts",
             "name": "listPool",
-            "fp": "750cdf591fcaec48be307e84611058216b3332ca"
+            "fp": "5022fdc719362dc0b4564754c69569cb2544708a"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "name": "queryFeature",
+            "fp": "9e3762d39630c77a7dd9bb1818a6df007d30cb85"
           }
         ],
         "files": [
           {
             "path": "src/application/design/board/pool.ts",
-            "content_hash": "8b8c6615dcaa5b8a7384a9c93118976155ecf943"
+            "content_hash": "9477362a45865bf880e532a38c65f2183486514c"
+          },
+          {
+            "path": "src/application/meta/explore/query_feature.ts",
+            "content_hash": "7305275dabb4eb078b25b2fd2eebbc9b39ac7a7a"
           }
         ],
-        "computed_at": "2026-10-22T14:44:18.833Z",
+        "computed_at": "2026-10-22T16:32:36.884Z",
         "basis": [
           "expectations"
         ]
@@ -112302,7 +112337,13 @@
           "verdict": "pass"
         }
       ],
-      "node_id": "file_src_application_design_board_pool_ts"
+      "reopened_at": "2026-10-22T16:32:36.927Z",
+      "reopen_reason": "池的双计必须修（354→250）；读端权威从 node.task 切到 todos[]",
+      "reopened_from": "subagent:deepseek-pool-reader",
+      "node_id": "file_src_application_design_board_pool_ts",
+      "release_reason": "读端切换已完成并提交",
+      "released_by": null,
+      "released_at": "2026-10-22T16:47:47.719Z"
     },
     {
       "id": "file_src_application_design_line_design_line_ts",
@@ -112576,9 +112617,29 @@
     {
       "id": "todo_迁移第②步-读端切到-todos-第①步已完成-104-张-nodes-task",
       "summary": "【迁移第②步 · 读端切到 todos[]】第①步已完成（104 张 nodes[].task 卡已逐字并入 todos[]，node_id=入口节点；读数：todos 142→246、B 判据 104 张逐一比对不一致 0、复跑新增 0；脚本 scripts/migrate-node-tasks-to-todos.mjs）。\n\n## 还没做的（本卡）\n· `loadTask`（src/application/design/dsl_ops/task_ops.ts）**节点优先** ⇒ 现在读的是 node.task；要改成读 todos[] 里 `node_id===节点id` 的活态卡\n· `listPool`（src/application/design/board/pool.ts）现在**两处都收** ⇒ 349 张（node 104 + todo 245）**同一批活被数了两遍**，切完应为 245\n· `claim_conflict` / `follows` / `expireTasks` / `patrol` 同样要跟\n· `node.task` 降为**派生只读**（`taskOf(node) = todos.find(t => t.node_id===node.id && 活态)`）\n\n## 验收（可证伪）\n· 9 个 task op 的**对外契约不变**：`edit_dsl {type:'task', op:'claim', id:'<节点id>'}` 仍可用\n· `query=pool` 的 total 从 349 回到 245（每张卡只数一次）\n· 同一节点连开两次卡 ⇒ todos 里**两条**历史（node.task 单数时做不到，这是本迁移的目的）\n· ★ 兼容层已铺好：写端 `writeTask` 现在**按卡的住处**写（节点卡写节点 + 同步 todos 镜像），\n  所以切读端时不会丢掉过渡期落的账；切完后把镜像那半去掉即可",
-      "state": "candidate",
-      "owner": null,
-      "follows": "todo_决策卡应该记节点-而不是节点记决策卡-node-task-是单数-历史被原地覆盖"
+      "state": "done",
+      "owner": "subagent:deepseek-readswitch",
+      "follows": "todo_决策卡应该记节点-而不是节点记决策卡-node-task-是单数-历史被原地覆盖",
+      "claimed_at": "2026-10-22T16:45:22.935Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T16:45:22.891Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T16:45:23.048Z",
+          "by": "llm",
+          "fingerprint": {
+            "what": "node dist/.../cli.js get_dsl --json {query:pool} + npm run verify + certs/t349,t350,t352,t354,t365",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_契约文案漂移-edit-dsl-的工具描述里-todo-那行的-op-清单仍是-",
@@ -112607,6 +112668,13 @@
       "state": "candidate",
       "owner": null,
       "follows": "todo_设计-DSL-有多个写端-saveDSL-谁都能调-所以校验和留痕全可绕过-baseline-也从不更新"
+    },
+    {
+      "id": "todo_迁移第③步-退役-node-task-投影-修两处读端缺陷-第②步已完成-读端全",
+      "summary": "【迁移第③步】退役 `node.task` 投影 + 修两处读端缺陷（第②步已完成：读端全切到 todos[]，pool 354→250）\n\n## 1. 退役投影（本步的正事）\n· 现状：读端已**只认** `todos[]`（`task_schema#taskOfNode` 是唯一裁定），但 `task_ops#writeTask` 仍在同步写 `node.task`（\"字段不撒谎\"那一半）。\n· 目标：把 `geometry.nodes[].task` 从 DSL 里**删掉**（104 张，全部已有同 id 的 todos 卡），并删 `writeTask` 的投影分支；`design-canvas` 那 9 张还没迁移的要**先迁**（脚本：scripts/migrate-node-tasks-to-todos.mjs）再删。\n· 判据：删完 `get_dsl query=pool` 的 total **不变**（250 / 9）；`grep -c \"n.task\" src` 只剩 `taskOfNode` 的回落那一处（或 0）。\n\n## 2. `todo add` 静默丢 `data.node_id`（实测）\n· `TYPE_KNOWN_KEYS.todo` 收了 `node_id`，但 add 的 handler **不用**它 ⇒ 传了也不报错、节点关系没落盘（只能 `todo add` → `todo link` 两步）。\n· 二选一：让 add 认它（一步到位），或**显式拒**（\"add 不设 node_id，请用 link\"）。★ 静默丢是最坏的第三种。\n· 出处：`src/application/design/dsl_ops/task_ops.ts#applyTodoOp` 的 add 支。\n\n## 3. 池**静默少计** 1 张（实测 250 vs 册上 251）\n· `todos[]` 里 `todo_http-65条路由按重复度逐条退役` 的 state=`in_progress`（不是四态）⇒ `listPool` 的 `ALL_STATES` 守卫**直接跳过、不点名**。\n· 要么改数据（`edit_dsl {type:\"todo\", op:\"update\"}` 改回 candidate/void），要么让池**点名**\"N 张 state 不认识、未计入\" —— 现在读者会以为册上只有 250。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_迁移第②步-读端切到-todos-第①步已完成-104-张-nodes-task"
     }
   ],
   "_dsl_rev": 1293,

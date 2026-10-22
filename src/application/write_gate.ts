@@ -83,7 +83,7 @@ import { admitActor, actorStrictMode, sameActor } from '../domain/actor_spec.js'
 // ★★★ 2026-10-17（OQ10 裁定）：闸的判据从「overlay 的 progress 是否登记过」改成
 //   「**该节点上是否有 state=claimed 的 task**」—— 任务格是唯一权威（`task_plan.task_home`），
 //   progress 对它只是派生值（`progressOf`）。
-import { progressOfNode, type NodeProgress, type TaskSpec } from '../domain/task_schema.js';
+import { progressOfNode, taskOfNode, type NodeProgress, type TaskSpec } from '../domain/task_schema.js';
 // ★★★ 2026-10-21（并发控制·读集比对）：**假设检定**（「我读过的东西是不是被别人改了」）。
 //   ★ 与 A7（谁在写）**两个字段、两条判据**：A7 管身份，这一条管"假设是否过期" ⇒ 别混。
 //   ★ 这里只 import **判定内核 + 类型**：记录端在 `invokeTool`（读集从 read/facts 的产物里来），
@@ -649,7 +649,7 @@ export interface GateCoverageFeature {
    * ★ 两张表**在同一个循环里建**（见 `collectGateCoverage`）—— 不许在别处再建第三张。
    */
   gateByPath: Map<string, NodeGate | undefined>;
-  /** ★ node_id → 任务格（`geometry.nodes[].task`）—— 闸的判据读它（OQ10） */
+  /** ★ node_id → **权威卡**（`todos[]` 里 `node_id` 指向它的那张；没有才回落 `geometry.nodes[].task` 投影）—— 闸的判据读它（OQ10） */
   taskById: Map<string, TaskSpec>;
   /**
    * ★★★ 2026-10-22（progress 权威归一）：`todos[]`（预决策卡）—— 交给 `progressOfNode` 判“是否有卡指向本节点”。
@@ -760,8 +760,13 @@ export function collectGateCoverage(rootArg: string): GateCoverage {
     /** ★ 只给下面 `semantic.files` 兜底用：那一路只知道 id，要按 id 找节点上有没有声明 gate */
     const gateById = new Map<string, NodeGate>();
     const taskById = new Map<string, TaskSpec>();
+    // ★★★ 2026-10-22（迁移第②步 · 读端切到 todos[]）：**闸问「谁占着」改读权威住处**。
+    //   旧写法 `if (n.task) taskById.set(n.id, n.task)` 读的是**派生投影** ⇒ 第①步之后同一张卡
+    //   在 `nodes[]` 与 `todos[]` 各一份，闸读哪一份没写明（在 todos 侧 claim / complete 它看不见）。
+    //   ★ 判据只住 `task_schema#taskOfNode`（todos 卡优先；没有 todos 卡才回落 `node.task`）。
     for (const n of d.geometry?.nodes ?? []) {
-      if (n.task) taskById.set(n.id, n.task);
+      const card = taskOfNode(n, d.todos ?? []);
+      if (card) taskById.set(n.id, card);
       if (n.gate) gateById.set(n.id, n.gate);
       const rel = nodeFilePath(n as { type?: string; description?: string } & { path?: string }, path.sep);
       if (rel) {
@@ -1625,7 +1630,7 @@ function evaluateTaskGate(
       `    reason: '开始实现 ${first.cands[0].nodeId}',\n` +
       `    agent: '<你的身份>',\n` +
       `    operations: [{ type:'task', op:'claim', id:'${first.cands[0].nodeId}', data:{ owner: '<你的身份>' } }] }\n` +
-      `  · 任务格住在节点上：\`geometry.nodes[].task\`（★ 不是顶层 tasks[]、不是 overlay）。\n` +
+      `  · 卡住在 \`todos[]\`（带 \`node_id\` 指向该节点）；\`geometry.nodes[].task\` 只是派生投影（读端不认它）。\n` +
       `  · 任务态四态：candidate / claimed / done / void（★ superseded 已退场；void 可用 relaunch 重新立卡）；\n` +
       `    ★ \`node.status\`（draft / in_progress / done）对它是**派生值**（progressOf），**不许直接改**。\n` +
       `  · claim 写前必过「可领」读数（cardStanding ∈ work/violated）；complete 必过「可收口」读数（isSatisfied）且另需 \`data.evidence\`（与 status 同一把证据尺）。\n` +

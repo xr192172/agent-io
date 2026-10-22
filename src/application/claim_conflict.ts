@@ -62,6 +62,7 @@ import type {
   TaskReadSetSymbol,
   TaskSpec,
 } from '../domain/task_schema.js';
+import { todosForNode } from '../domain/task_schema.js';
 import { listDesignSheets } from '../infrastructure/storage.js';
 import { toIndexKey } from '../infrastructure/index/symbols.js';
 import { loadFileFacts, type FactsCache } from './read_set.js';
@@ -358,9 +359,16 @@ export function collectActiveClaims(
   for (const dsl of listDesignSheets()) {
     if (!dsl.source_root || path.resolve(dsl.source_root) !== absRoot) continue;
     features.push(dsl.feature);
+    // ★★★ 2026-10-22（迁移第②步 · 读端切到 todos[]）：**同一张卡只对照一次**。
+    //   第①步把节点卡逐字并进 `todos[]` ⇒ 两处都收会把同一张 claimed 卡报两遍（`card_id` 一样、
+    //   冲突项重复），也会让"同一批文件的另一张卡"看起来有两张。
+    //   判据与 `pool#listPool` **同一把尺**：`todos[]` 里有卡指向该节点 ⇒ 节点那份是派生投影，跳过。
+    const todos = dsl.todos ?? [];
     const cards: Array<{ id: string; task: TaskSpec | undefined }> = [
-      ...(dsl.geometry?.nodes ?? []).map((n) => ({ id: n.id, task: n.task })),
-      ...(dsl.todos ?? []).map((t) => ({ id: t.id, task: t })),
+      ...(dsl.geometry?.nodes ?? [])
+        .filter((n) => todosForNode(n.id, todos).length === 0)
+        .map((n) => ({ id: n.id, task: n.task })),
+      ...todos.map((t) => ({ id: t.id, task: t })),
     ];
     for (const c of cards) {
       const t = c.task;

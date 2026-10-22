@@ -76,6 +76,9 @@ import {
   isTaskState,
   progressOf,
   taskLevel,
+  // ★★★ 2026-10-22（迁移第②步 · 读端切到 todos[]）：卡的**权威住处**判据只住 `task_schema`（本文件不自写）。
+  taskOfNode,
+  todosForNode,
   type TaskDiscussion,
   type TaskEvidenceFingerprint,
   type TaskHistoryEntry,
@@ -217,7 +220,13 @@ function loadTask(feature: string, nodeId: string): Loaded {
       `节点 "${nodeId}" 不在 feature "${feature}" 的 geometry.nodes 里 —— 任务与节点同居，找不到节点就没有家。`,
     );
   }
-  if (!node.task) {
+  // ★★★ 2026-10-22（迁移第②步 · 读端切到 todos[]）：**先按 `todos[]` 找它的卡**（迁移后权威在那儿）。
+  //   ① `id === nodeId` 的卡（迁移镜像 = 节点自己的卡）优先 —— `claim id:<节点id>` 的对外契约就钉在它上面；
+  //   ② 否则 `taskOfNode`（指向本节点的卡；一条都没有才回落 `node.task` 这个**派生投影**）。
+  //   ★ 旧写法 `if (!node.task) throw` 把投影当权威 ⇒ 在 todos 侧 claim 完，`node.task` 仍是旧态。
+  const ownCard = (dsl.todos ?? []).find((t) => t.id === nodeId);
+  const card = ownCard ?? taskOfNode(node, dsl.todos);
+  if (!card) {
     throw new Error(
       `节点 "${nodeId}" 上**没有任务格**（「geometry.nodes[].task」）⇒ 无卡可 claim / release / complete。\n` +
         `★ 立卡 = \`publish\`：\`{ type:'task', op:'publish', id:'${nodeId}' }\` —— 它把该节点的**决策卡**` +
@@ -226,7 +235,7 @@ function loadTask(feature: string, nodeId: string): Loaded {
         `有可判的后态判据 ⇒ **L2 实现卡**。★ 本工具**不替你凭空造一张空卡**。`,
     );
   }
-  return { dsl, nodeId, card: node.task };
+  return { dsl, nodeId, card };
 }
 
 /** 判据（`judgeExpectations`）要一个**被分析项目的根**；缺了就不判（★ 绝不兜底到 cwd）。 */
@@ -254,7 +263,7 @@ function assertTransition(from: TaskState, to: TaskState, action: string): void 
 }
 
 /**
- * 落盘：**只改 `node.task`**（唯一写端），然后把派生进度**投影**回 base（`applyOverlay`）。
+ * 落盘：**只改 `todos[]`**（唯一写端；`node.task` 是**派生投影**），然后把派生进度**投影**回 base（`applyOverlay`）。
  * ★ 投影这一步与 `updateStatus` 同款（T328）：base 上的 `status` 是**应用结果**，不是独立副本；
  *   权威始终是 `task.state`（`progressOf` 是唯一映射，读端见 `overlay.ts#applyOverlay`）。
  */
@@ -280,20 +289,29 @@ function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
   //   判据：**节点上有卡** ⇒ 节点是主住处（与读端同序）；`todos[]` 里那条同 id·同 node_id 的
   //   **迁移镜像**跟着写同一份（否则下一步把读端切到 todos[] 时，这一步之间落的账会丢）。
   //   ★ 纯 todo 卡（节点上没有它的 id）行为不变：仍是只在 `todos[]` 里改。
+  // ★★★ 2026-10-22（迁移第②步 · 写端跟着读端走）：**先写权威 `todos[]`，再刷派生投影 `node.task`**。
+  //   上一版（第①步的兼容层）是反的：节点优先写、todos 跟着镜像 —— 那是"读端还没切"时的临时序。
+  //   现在读端（`loadTask` / `taskOfNode` / `pool` / 闸 / `progressOfNode`）全部以 todos 为准
+  //   ⇒ 写端必须先落那里；`node.task` 只剩"字段不撒谎"这一个用途（读端**不认**它）。
+  //   ★ 还没迁移的 feature（todos 里没有这张卡）仍写节点 —— 那是**过渡**，不是第二权威。
   const node = (dsl.geometry?.nodes ?? []).find((n) => n.id === nodeId);
   const todoIdx = (dsl.todos ?? []).findIndex((t) => t.id === nodeId);
   let nextDsl: typeof dsl;
-  if (node && (node.task || todoIdx < 0)) {
+  if (todoIdx >= 0) {
+    const prev = (dsl.todos ?? [])[todoIdx];
+    const todos = [...(dsl.todos ?? [])];
+    // ★ `node_id` 是**住处**（`todos[]` 里这张卡挂在哪个节点上）：原样保留，否则卡会从节点上掉下来。
+    todos[todoIdx] = { ...next, ...(prev.node_id !== undefined ? { node_id: prev.node_id } : {}) };
+    nextDsl = { ...dsl, todos };
+    if (node?.task) {
+      const nodes = (dsl.geometry?.nodes ?? []).map((n) => (n.id === nodeId ? { ...n, task: next } : n));
+      nextDsl = { ...nextDsl, geometry: { ...dsl.geometry!, nodes } };
+    }
+  } else if (node) {
+    // ★ 节点存在但**还没有卡** ⇒ publish 就是"给没卡的节点立卡"，这里负责**新建**那一格
+    //   （t350 ①/⑥ 打的就是它 —— 少了这一支，publish 对无卡节点会报"卡没有住处"）。
     const nodes = (dsl.geometry?.nodes ?? []).map((n) => (n.id === nodeId ? { ...n, task: next } : n));
     nextDsl = { ...dsl, geometry: { ...dsl.geometry!, nodes } };
-    const mirror = todoIdx >= 0 ? dsl.todos?.[todoIdx] : undefined;
-    if (mirror && mirror.node_id === nodeId) {
-      const todos = [...(dsl.todos ?? [])];
-      todos[todoIdx] = { ...next, node_id: nodeId };
-      nextDsl = { ...nextDsl, todos };
-    }
-  } else if (todoIdx >= 0) {
-    nextDsl = { ...dsl, todos: (dsl.todos ?? []).map((t) => (t.id === nodeId ? { ...t, ...next } : t)) };
   } else {
     throw new Error(
       `落盘目标「${nodeId}」既不是带卡的节点、也不在 todos[] —— 卡没有住处，不写（绝不静默降级）。`,
@@ -562,7 +580,8 @@ export function publishTask(input: TaskOpInput): EditResult {
     );
   }
 
-  const existing = node.task;
+  // ★★★ 2026-10-22（迁移第②步）：**读权威**（`todos[]` 有它的卡就用那张；没有才回落 `node.task` 投影）。
+  const existing = taskOfNode(node, dsl.todos);
   /**
    * ★★ 2026-10-20：**已领卡的原地换判据**（`reopen` 之后的正路）。
    * ★ 判据只需两条：`state === 'claimed'` ∧ 带 `reason`（改动要有理由）。
@@ -754,7 +773,7 @@ export function publishTask(input: TaskOpInput): EditResult {
     //   这里**不编**一条实现判据，也不再往卡上写空副本（判据唯一住处 = decision）。
     state: 'candidate',
     // ★ L1 ⇒ L2 之外的重翻：若旧卡是 L1（candidate）也不带证据（从没被 complete 过）；带上更安全。
-    ...(node.task?.evidence?.length ? { evidence: node.task.evidence } : {}),
+    ...(existing?.evidence?.length ? { evidence: existing.evidence } : {}),
     discussion,
   });
 
@@ -762,14 +781,14 @@ export function publishTask(input: TaskOpInput): EditResult {
     message:
       // ★★★ 首行必须自足：`edit_dsl` 的回执**只透出首行**（其余行进 `data`/被丢弃，实测）。
       //   所以"级别 / 0 条期望 / 不编判据 / 缺什么"全放首行，后面的行只是展开。
-      `${node.task ? '已重翻' : '已立卡'}任务 "${node_id}" —— 级别 = **L1 建构卡**` +
+      `${existing ? '已重翻' : '已立卡'}任务 "${node_id}" —— 级别 = **L1 建构卡**` +
       `（**0 条期望**：判据 = **DSL 建构完整**，**不是代码跑通**；★ 不编实现判据）：${whyL1}` +
       (basis.missing.length ? `。★★ 缺"要做什么"：需要用户/我手写一句"我要实现什么"（本工具不编）` : '') +
       `\n★ summary 出处：${basis.source} ⇒ ${JSON.stringify(basis.summary)}\n` +
       (basis.missing.length ? `★★ ${basis.missing.join('\n★★ ')}\n` : '') +
       `★ 做完 L1 = 给该节点写决策卡（summary + 至少一条相位 post 的 expectation），再 \`complete\`；` +
       `之后再 \`publish\` 就会翻成 **L2 实现卡**（旧的 L1 证据会带过去）。\n` +
-      `★ 进度派生：task.state=candidate ⇒ progress=draft。任务格住在 \`geometry.nodes[].task\`（不设顶层 tasks[]）。`,
+      `★ 进度派生：task.state=candidate ⇒ progress=draft。卡**住在 \`todos[]\`**（带 \`node_id\` 指向该节点）；\`geometry.nodes[].task\` 只是**派生投影**（读端不认它）。`,
     feature,
     data: {
       node_id,
@@ -780,7 +799,7 @@ export function publishTask(input: TaskOpInput): EditResult {
       expectations: 0,
       post_expectations: 0,
       missing: basis.missing,
-      refreshed: !!node.task,
+      refreshed: !!existing,
       progress: progressOf({ state: 'candidate' }),
     },
   };
@@ -1262,8 +1281,16 @@ export async function expireTasks(input: TaskOpInput): Promise<EditResult> {
   const now = Date.now();
 
   // ★ 节点卡 + todo 卡**都扫**（两处都可能有 claimed）—— 口径只有 `isLeaseExpired` 一处
+  // ★★★ 2026-10-22（迁移第②步）：**同一张卡只扫一次**（第①步之后它在 nodes 与 todos 各一份 ⇒ 旧写法会
+  //   把同一张过期卡「收两次」：第二次拿到的已是 candidate，`isLeaseExpired` 不再为真 —— 看似无害，
+  //   但账上是两条 `expired_from`，且第二次会把第一次刚写的痕迹冲掉）。
+  //   判据与 `pool#listPool` 同一把尺：`todos[]` 里有卡指向该节点 ⇒ 节点那份是派生投影，跳过。
   const all: Array<{ id: string; card: TaskSpec }> = [];
-  for (const n of dsl.geometry?.nodes ?? []) if (n.task) all.push({ id: n.id, card: n.task as TaskSpec });
+  for (const n of dsl.geometry?.nodes ?? []) {
+    if (!n.task) continue;
+    if (todosForNode(n.id, dsl.todos).length) continue;
+    all.push({ id: n.id, card: n.task as TaskSpec });
+  }
   for (const t of dsl.todos ?? []) all.push({ id: t.id, card: t as TaskSpec });
 
   const expired = all.filter((x) => isLeaseExpired(x.card, now));

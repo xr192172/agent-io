@@ -127,10 +127,13 @@ export function progressOf(task: Pick<TaskSpec, 'state'> | null | undefined): Di
  *   overlay 那份是**交接期的影子副本**，会过期；卡上的 `state` 才是此刻的权威。
  *
  * ## 判据（**单一**，别在别处再写一遍）
- *   ① 节点上有 task（`geometry.nodes[].task`）⇒ `progressOf(task)`；
- *   ② 否则 `todos[]` 里有 `node_id` 指向它、且那张 todo 的态能派生进度 ⇒ 用那个派生值；
- *      ★ `void` 的 todo **不作数**：todo 是「预决策**指向**」不是挂在该节点上的卡
- *        （见 `TaskSpec.node_id` 的语义），它失效不该把节点的进度抹成「无值」。
+ *   ① **卡的权威住处 = `todos[]`**（`node_id` 指向本节点）⇒ `progressOf(卡)`。
+ *      `node.task` 降为**派生投影**：只有该 feature 还没有 `todos[]` 卡时才回落它（判据见 `taskOfNode`）。
+ *      ★ 2026-10-22（迁移第②步）改的就是这一条 —— 原写「节点上有 task ⇒ progressOf(task)」⇒
+ *        第①步把卡并进 `todos[]` 之后，在 todos 侧 claim/complete **进度不动**（读的仍是投影）。
+ *   ② 指向本节点的 todo **全部是 `void`** ⇒ **不作数**（`void` 是「预决策失效」不是「进度没了」），
+ *      落到 ③。★ 但若那张 `void` 就是**节点自己的卡**（`id === node.id`，迁移镜像）⇒ ① 给「无值」且**不**回落
+ *      overlay —— 与 `node.task` 时代的 ④ 同义（`void` 不许硬塞值）。
  *   ③ 否则回落 `overlay.progress`，**并标 `possibly_stale: true`**（不许静默回落）；
  *   ④ 三者都没有 ⇒ 「这一轴没有值」（`undefined`，**不**硬塞 `draft`）。
  *
@@ -153,29 +156,55 @@ export interface NodeProgress {
   why: string;
 }
 
+/**
+ * ★★★ 2026-10-22（迁移第②步 · 读端切到 `todos[]`）：**卡住哪一份为准**的唯一裁定。
+ *
+ * 病：第①步把 104 张 `geometry.nodes[].task` 逐字并进 `todos[]`（同一张卡住两处）⇒
+ *   池**双计**（354 而非 250）、闸读哪一份也没写明。
+ * 判据（**只此一处**，读端都调它）：
+ *   ① `todos[]` 里有 `node_id === node.id` 的卡 ⇒ **以它为准**（多条时取最后一条**未了结**的；
+ *      全是了结的 ⇒ 取最后一条）。历史条目留着 —— 这正是 `node.task`（单数）做不到的那件事；
+ *   ② 一条都没有 ⇒ 回落 `node.task`（**派生投影**，只服务还没迁移的 feature）；
+ *   ③ 都没有 ⇒ `undefined`。
+ * ★ 写端必须写 `todos[]`（`task_ops#writeTask`）；手改 `node.task` **不会被任何读端认**（就是 ① 这一条）。
+ */
+export function todosForNode(nodeId: string | undefined, todos?: readonly TaskSpec[] | null): TaskSpec[] {
+  if (nodeId === undefined) return [];
+  return (todos ?? []).filter((t) => t.node_id === nodeId);
+}
+
+/** 见 {@link todosForNode} 的判据 ①②③；`node.task` 只是**派生投影**。 */
+export function taskOfNode(
+  node: { id?: string; task?: TaskSpec | null } | null | undefined,
+  todos?: readonly TaskSpec[] | null,
+): TaskSpec | undefined {
+  const cards = todosForNode(node?.id, todos);
+  if (cards.length) {
+    const open = cards.filter((t) => t.state !== 'done' && t.state !== 'void');
+    return open.length ? open[open.length - 1] : cards[cards.length - 1];
+  }
+  return node?.task ?? undefined;
+}
+
 export function progressOfNode(
   node: { id?: string; task?: TaskSpec | null } | null | undefined,
   anchor: { progress?: DiagramStatus } | null | undefined,
   todos?: readonly TaskSpec[] | null,
 ): NodeProgress {
-  if (node?.task) {
+  // ★★★ 2026-10-22（迁移第②步）：① 改读**权威住处** `todos[]`（判据只住 `taskOfNode`）。
+  //   ★ 旧写法 `if (node?.task)` 读的是**派生投影** ⇒ 「改 todos 不动 node.task」在这里看起来没变。
+  const card = taskOfNode(node, todos);
+  const inTodos = todosForNode(node?.id, todos).length > 0;
+  /** ★ 这张是不是**节点自己的卡**（迁移镜像 `id === node.id`）—— 决定 `void` 要不要回落 overlay */
+  const ownCard = node?.id !== undefined && card?.id === node.id;
+  if (card && (card.state !== 'void' || ownCard)) {
     return {
-      status: progressOf(node.task),
-      source: 'task',
+      status: progressOf(card),
+      source: inTodos ? 'todo' : 'task',
       possibly_stale: false,
-      why: `节点有 task（state=${String(node.task.state)}）⇒ 派生`,
-    };
-  }
-  // ② `todos[]` 里「指向」它的预决策（★ 只要派生得出进度的；`void` 的指向不作数）
-  const pointed = (todos ?? []).find(
-    (t) => node?.id !== undefined && t.node_id === node.id && progressOf(t) !== undefined,
-  );
-  if (pointed) {
-    return {
-      status: progressOf(pointed),
-      source: 'todo',
-      possibly_stale: false,
-      why: `todos[] 里 ${pointed.id}（state=${String(pointed.state)}）的 node_id 指向本节点 ⇒ 派生`,
+      why: inTodos
+        ? `todos[] 里 ${card.id}（state=${String(card.state)}）指向本节点 ⇒ 派生（todos 是权威，node.task 只是投影）`
+        : `节点有 task（state=${String(card.state)}）⇒ 派生（该 feature 还没有 todos 卡）`,
     };
   }
   // ③ overlay 回落 —— ★ 必须标「可能过期」，不许静默

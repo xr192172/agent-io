@@ -30,7 +30,7 @@ import { renderLiveFromDb } from '../../infrastructure/index/live_render.js';
 import { scanRevOf, type ScanRev } from '../../infrastructure/index/scan_rev.js';
 import { judgeExpectations } from '../design/intent/expectations.js';
 import { isSatisfied, releaseIfExpired, type CardStanding, type LeaseReleaseEvent } from '../../domain/task_machine.js';
-import { expectationsOf, isClosedTaskState, type TaskSpec, type TaskState } from '../../domain/task_schema.js';
+import { expectationsOf, isClosedTaskState, taskOfNode, type TaskSpec, type TaskState } from '../../domain/task_schema.js';
 import { expectationPhase } from '../../domain/expectation.js';
 
 /** 一条红判据的**点名**（不是计数 —— 计数说不出"哪条"）。 */
@@ -139,12 +139,16 @@ export async function patrolDrift(feature: string, opts: PatrolOptions): Promise
   const pathByCard = new Map<string, string>();
   /** card.id → 它挂的那个节点 —— ★ 判据从这里的 `decision.expectations` 现取（任务格不自持） */
   const nodeByCard = new Map<string, (typeof design.geometry.nodes)[number]>();
+  // ★★★ 2026-10-22（迁移第②步 · 读端切到 todos[]）：**卡从权威住处取**（`taskOfNode`：todos 卡优先）。
+  //   旧写法 `if (!n.task) continue; cards.push(n.task)` 读的是**派生投影** ⇒ 迁完之后
+  //   在 todos 侧 release / complete 的卡，巡逻看到的还是旧态（漏判 missed_close，误判 vanished）。
   for (const n of design.geometry.nodes ?? []) {
-    if (!n.task) continue;
-    cards.push(n.task);
-    nodeByCard.set(n.task.id, n);
+    const card = taskOfNode(n, design.todos);
+    if (!card) continue;
+    cards.push(card);
+    nodeByCard.set(card.id, n);
     const p = (n as { path?: string }).path;
-    if (p) pathByCard.set(n.task.id, p);
+    if (p) pathByCard.set(card.id, p);
   }
   // ★ 2026-10-20：`isTerminalTaskState` → `isClosedTaskState` —— done/void 都能被重开/重生，
   //   所以这里问的不是"能不能迁移"，而是"这张卡还开着吗"（已了结的不判、不报 missed_close）。
@@ -173,7 +177,8 @@ export async function patrolDrift(feature: string, opts: PatrolOptions): Promise
   const standingNodes = (design.geometry.nodes ?? []).map((n) => ({
     id: n.id,
     path: (n as { path?: string }).path,
-    task: n.task,
+    // ★ 同上：状态机判 `dep-done` 读的是 `owner.task.state` ⇒ 也必须给**权威卡**（否则依赖方已完成还判 pending）。
+    task: taskOfNode(n, design.todos),
   }));
   for (const card of open) {
     const bucket = redBy.get(card.id) ?? { post: [], pre: [], unsupported: 0 };

@@ -25,14 +25,18 @@ import { isLeaseExpired, leaseAgeHours } from '../../../domain/task_machine.js';
 //   （`write_gate.ts#nodeFilePath` / `overlay.ts#nodePath` 同口径），本文件**不复制第三份**。
 import { nodePath } from '../../../domain/overlay.js';
 import type { TaskSpec, TaskState } from '../../../domain/task_schema.js';
+// ★★★ 2026-10-22（迁移第②步）：「这个节点上有没有 `todos[]` 的卡」的判据**只住** `task_schema#todosForNode`
+//   —— 本文件不另写 `dsl.todos.some(t => t.node_id === …)`（那会是第二份口径，迟早与闸/进度判据对不上）。
+import { todosForNode } from '../../../domain/task_schema.js';
 
 /** 卡的全部可能状态（★ 与 `task_schema.ts#TASK_STATES` 同源：`superseded` 已于 2026-10-17 删除） */
 const ALL_STATES: TaskState[] = ['candidate', 'claimed', 'done', 'void'];
 
 /**
  * 卡挂在**哪儿** —— 池里的卡有两个来源（★ 2026-10-22 实测：只看 `geometry.nodes` 会漏掉全部 todo 卡）。
- * · `node` = `geometry.nodes[].task`（文件/目录节点上的任务格，占**文件写权**的那张）；
- * · `todo` = `todos[]`（预决策卡，`edit_dsl type=todo` 建的那些）。
+ * · `todo` = `todos[]`（**权威**：预决策卡 + 2026-10-22 迁移进来的节点卡，后者带 `node_id`）；
+ * · `node` = `geometry.nodes[].task`（★ 迁移后**只剩派生投影**：`todos[]` 里已有卡指向该节点 ⇒ 不在这里数）；
+ *   ⇒ 仍有 `node` 来源卡的，只有**还没迁移**的 feature（design-canvas 那 9 张）。
  */
 export type PoolCardSource = 'node' | 'todo';
 
@@ -129,7 +133,7 @@ export interface BoardView {
  * ## ★★★ 2026-10-22（D-T8）改了两件事，都是"卡挂了看不见"的直接成因
  * ① **有了 `cards`**：以前只有 `byState` 计数 ⇒ 知道"3 张 claimed"，不知道"谁占着哪个文件、占了多久"。
  *   现在每张卡带 `owner` / `age_hours` / `overdue` / `read_set` 大小 ⇒ 一条只读调用回答完。
- * ② **枚举从一处变两处**：`geometry.nodes[].task` **和** `todos[]`。
+ * ② **枚举从一处变两处**：`geometry.nodes[].task` **和** `todos[]`（★ 2026-10-22 第②步补：两处同一张卡**只数一次**）。
  *   此前只走 nodes ⇒ 140 张 todo 卡**根本不进池**，而 `query=todo` 又只读 `todos[]`
  *   ⇒ **两半各看不见另一半**（今天 3 张 claimed 的节点卡在 todo 视图里完全不存在）。
  *   ★ 这个"两处都可能有 claimed"的口径不是新定的 —— `task_ops#expireTasks` 早就是这么扫的
@@ -178,9 +182,15 @@ export function listPool(feature: string, nowMs: number = Date.now()): BoardView
     total++;
   };
 
+  // ★★★ 2026-10-22（迁移第②步 · 修双计）：**同一张卡只数一次**。
+  //   `todos[]` 里已有 `node_id` 指向该节点的卡 ⇒ 节点上那份 `task` 是**派生投影**（第①步逐字并入的镜像）
+  //   ⇒ **跳过**，由下面 todos 那一圈数它。实测修前 total=354（104 张被数两遍），修后 =250。
+  //   ★ 为什么是"跳过"而不是"读端优先"：池是**卡的列表**，一张卡出现两次 = 双计（不是排序问题）。
+  //   ★ 还没迁移的 feature（design-canvas 的 9 张没有 todos 镜像）⇒ 仍由这一圈数，**不丢卡**。
   for (const node of dsl.geometry?.nodes ?? []) {
     // ★ 没有卡（无 task）不计入池 —— 池是"卡"的集合，不是"节点"的集合
     if (!node.task) continue;
+    if (todosForNode(node.id, dsl.todos).length) continue;
     take(node.task as TaskSpec, 'node', nodePath(node));
   }
   for (const todo of dsl.todos ?? []) take(todo as unknown as TaskSpec, 'todo', firstLine(todo.summary));
