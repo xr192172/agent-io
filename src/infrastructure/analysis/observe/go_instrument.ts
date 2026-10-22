@@ -11,6 +11,7 @@
  */
 
 import { DATA_DIR_NAME } from '../../data_dir.js';
+import { commitSourceWrite, type SourceWriteHook } from '../../source_write_port.js';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -180,6 +181,9 @@ export function readGoModuleName(root: string): string | null {
  * 把本仓的探针包拷进被测工程（幂等：已存在则覆盖为最新，保证与语言包同期）。
  * ★ 返回注入 import 应使用的**完整包路径**（`<module>/internal/camprobe`）。
  * ★ 拷不进去（没有 go.mod / 读不到 module / 源包缺失）⇒ **抛**（不静默退化成"改 go.mod"那条老路）。
+ * ★★ 分类（2026-10-22）：字面 `classifyWriteSubject` = **source**（落点在根内 `internal/camprobe/**`），但**主体**是
+ *   **product**：整目录由本仓 `observe-lang-go/probe` 拷来、 `uninstrument` 全删，用户从不手改（见上「它是生成物」）。
+ *   ⇒ **不搬**；且原语**表达不了**（`copy` 两端都必须在本项目根内，这里的 from 在 agent-io 仓）⇒ 已立下一环卡。
  */
 export function vendorGoProbe(root: string): string {
   const moduleName = readGoModuleName(root);
@@ -201,7 +205,9 @@ export function vendorGoProbe(root: string): string {
   return `${moduleName}/${VENDORED_PROBE_DIR}`;
 }
 
-/** 删掉拷进去的探针包（`uninstrument` 用）。返回是否删掉了东西。 */
+/** 删掉拷进去的探针包（`uninstrument` 用）。返回是否删掉了东西。
+ *  ★★ 分类（2026-10-22）：同 {@link vendorGoProbe} —— 字面 source、主体 product（工具自有生成物）⇒ **不搬**；
+ *  且原语**表达不了**（`remove` 只删文件、不递归删目录，这里删的是整棵 `internal/camprobe`）⇒ 已立下一环卡。 */
 export function unvendorGoProbe(root: string): boolean {
   const dst = path.join(root, VENDORED_PROBE_DIR);
   if (!fs.existsSync(dst)) return false;
@@ -328,8 +334,13 @@ export function checkGoObserveDeps(root: string, moduleDir?: string): GoDepsChec
 }
 
 /** 补桥：把 observe-lang-go 的 require/replace 追加到被测工程 go.mod（默认 dry-run 只返回将写内容）。
- *  返回是否实际写盘 changed。 */
-export function ensureGoObserveIntegration(root: string, moduleDir?: string, write = false): { changed: boolean; check: GoDepsCheck } {
+ *  返回是否实际写盘 changed。
+ *  ★★ 2026-10-22（写原语收口）：`go.mod` 按 `write_gate#classifyWriteSubject` 是 **source**
+ *  —— 它是被测工程**受版本管理的模块声明**，改它就是改用户源码 ⇒ 必须过闸。
+ *  `commit` = 写闸事务的 `commit`（应用层注 `txn.commit`）：缺注入 ⇒ `commitSourceWrite` **抛**，
+ *  不回落裸 `fs.writeFileSync`；闸拒也**原样上抛**（原先这里把写盘失败吞成 `changed:false`，
+ *  会让调用方把“没写成”读成“无需改” —— 静默降级正是本仓点名的病灶）。 */
+export function ensureGoObserveIntegration(root: string, moduleDir?: string, write = false, commit?: SourceWriteHook): { changed: boolean; check: GoDepsCheck } {
   const check = checkGoObserveDeps(root, moduleDir);
   if (!check.needs_require && !check.needs_replace) return { changed: false, check };
   if (!write) return { changed: false, check };
@@ -342,6 +353,7 @@ export function ensureGoObserveIntegration(root: string, moduleDir?: string, wri
   if (adds.length === 0) return { changed: false, check };
   const sep = src.endsWith('\n') ? '' : '\n';
   const next = src + sep + '\n' + adds.join('\n') + '\n';
-  try { fs.writeFileSync(modPath, next, 'utf-8'); } catch { return { changed: false, check }; }
+  // ★ 与搬前**逐字一致**的只有内容与路径：`next` 拼法、`modPath`、utf-8 都没动 —— 换的只是“谁来落盘”。
+  commitSourceWrite(commit, modPath, next);
   return { changed: true, check };
 }

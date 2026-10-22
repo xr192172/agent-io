@@ -491,6 +491,8 @@ async function execGo(codeText: string, entryName: string, args: unknown[], recv
   ].join('\n');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dc_go_'));
   try {
+    // ★ 裸调（本行写 + 同函数 `finally` 里那条 rm）留在此处（**不搬**，2026-10-22 分类收口）：
+    //   ⇒ classifyWriteSubject = temp（试跑副本，不是用户源码）⇒ 不过闸。
     fs.writeFileSync(path.join(dir, 'main.go'), main, 'utf-8');
     const out = await runSubprocess('go', ['run', path.join(dir, 'main.go')], '');
     return JSON.parse(out.trim());

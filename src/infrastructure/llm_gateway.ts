@@ -115,6 +115,8 @@ export function loadGatewayConfig(): GatewayConfig {
 
 function saveGatewayConfig(cfg: GatewayConfig): void {
   fs.mkdirSync(path.dirname(gatewayCfgPath()), { recursive: true });
+  // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：`gatewayCfgPath()` = `<dataHome>/.agent-io/gateway.json`
+  //   ⇒ classifyWriteSubject = product（网关配置，工具自有）⇒ 不过闸。
   fs.writeFileSync(gatewayCfgPath(), JSON.stringify(cfg, null, 2), 'utf-8');
 }
 
@@ -328,6 +330,8 @@ function loadStats(): UsageStat[] {
 
 function saveStats(stats: UsageStat[]): void {
   fs.mkdirSync(path.dirname(gatewayStatsPath()), { recursive: true });
+  // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：`gatewayStatsPath()` = `<dataHome>/.agent-io/gateway.stats.json`
+  //   ⇒ classifyWriteSubject = product（统计台账，工具自有）⇒ 不过闸。
   fs.writeFileSync(gatewayStatsPath(), JSON.stringify(stats, null, 2), 'utf-8');
 }
 

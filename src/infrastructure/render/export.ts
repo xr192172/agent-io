@@ -137,6 +137,8 @@ ${nodesXml}
 
   const file = path.resolve(input.output_path ?? `output/${input.feature}.svg`);
   ensureDir(file);
+  // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：这是**导出产物**（默认 `output/<f>.svg`，
+  //   路径可由 `output_path` 指定）—— 归主体是工具生成物，不是用户源码 ⇒ 不过闸（与下面的 markdown 导出同）。
   fs.writeFileSync(file, svg, 'utf-8');
 
   return {
@@ -292,6 +294,7 @@ export function exportMarkdown(input: ExportMarkdownInput): ExportMarkdownResult
   const md = lines.join('\n');
   const file = path.resolve(input.output_path ?? `output/${input.feature}.md`);
   ensureDir(file);
+  // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：同上，这是**导出的 markdown**（默认 `output/<f>.md`）⇒ 不过闸。
   fs.writeFileSync(file, md, 'utf-8');
 
   return {

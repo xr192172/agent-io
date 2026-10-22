@@ -357,6 +357,9 @@ export class TSProbeCapture {
     // 有界容错序列化：循环引用/大对象/含函数/不可 JSON 的值不再让 JSON.stringify 抛错丢帧，
     // 也不再整段落盘撑爆体积（如 Commander 对象、整个 profile 配置 dump）。详见 serializeSafe 文档。
     const serialized = serializeSafe(ev);
+    // ★ 裸调（本行 append + `clear` 里那行 unlink）留在此处（**不搬**，2026-10-22 分类收口）：
+    //   `eventsPath` 的唯一构造点 = `watch_project_tool.ts#observeEventsDir` ⇒ `<root>/.agent-io/observe/events.jsonl`
+    //   ⇒ classifyWriteSubject = product（事件流，工具自有状态）⇒ 不过闸。
     fs.appendFileSync(this.eventsPath, serialized + '\n', 'utf8');
     if (this.onEvent) {
       try {

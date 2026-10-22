@@ -102,6 +102,9 @@ export function silentErrorDiscardDSL(): TSDLDecl {
  *     真遇到 rename 失败（文件被占用、跨卷等）时，至少不会把 tmp 留在盘上。
  *   ⇒ 判据纪律：本条与 `data_dir.ts:20``storage.ts:86``derive_anim_flow.ts:500` 同类 ——
  *     那几处把判据写在了出事的地方，而本处**曾把未验证的判据写成了事实**。改前先测。
+ * ★ 裸调（5 处：tmp 写 / 两次 rename / 两次 rm）**留在此处不搬**（2026-10-22 分类收口）：
+ *   落点 = `<root>/.agent/observe/dsl.json` ⇒ classifyWriteSubject = product（设计 DSL 仓库，
+ *   工具自有状态；`.agent` 与 `.agent-io` 的分工见 `data_dir.ts:44-70`）⇒ 不过闸。
  */
 function writeAtomic(file: string, data: string): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -121,6 +124,8 @@ function writeAtomic(file: string, data: string): void {
   }
 }
 
+// ★ 本函数 1 处 append 留在此处（**不搬**，2026-10-22 分类收口）：`file` = `<root>/.agent/observe/*.jsonl`
+//   ⇒ classifyWriteSubject = product（审计流，工具自有）⇒ 不过闸。
 /** 追加一行 JSON（append-only 审计）。 */
 function appendLine(file: string, obj: unknown): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });

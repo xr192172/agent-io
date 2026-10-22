@@ -86,6 +86,9 @@ export function recordDogfoodUsage(u: DogfoodUsage): void {
     // ★ 2026-10-21：建的是 `logFile()` 的**父目录**（原为 `dogfoodLogDir()`）——
     //   账本可被 `AGENT_IO_DOGFOOD_FILE` 覆写到别处，建错了目录那一笔就会 ENOENT 被静默吞掉。
     fs.mkdirSync(path.dirname(logFile()), { recursive: true });
+    // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：`logFile()` = `<dataHome>/.agent-io/dogfood/usage.jsonl`
+    //   （可被 `AGENT_IO_DOGFOOD_FILE` 显式覆写到别处 —— 那也仍是账本，不是用户源码）
+    //   ⇒ classifyWriteSubject = product ⇒ 不过闸。
     fs.appendFileSync(logFile(), JSON.stringify(u) + '\n', 'utf-8');
   } catch {
     /* 记录失败不影响工具主流程 */

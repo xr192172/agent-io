@@ -77,6 +77,8 @@ export function writeHealthCache(key: string, data: unknown, root: string): void
   try {
     const dir = healthCacheDir(root);
     fs.mkdirSync(dir, { recursive: true });
+    // ★ 裸调（本写 + `pruneHealthCache` 里那条裁剪 rm）留在此处（**不搬**，2026-10-22 分类收口）：
+    //   `dir` = `healthCacheDir(root)` = `<root>/.agent-io/cache/health` ⇒ classifyWriteSubject = product ⇒ 不过闸。
     fs.writeFileSync(path.join(dir, `${key}.json`), JSON.stringify(data));
   } catch {
     // 缓存写失败不致命

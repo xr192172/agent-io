@@ -85,6 +85,8 @@ export function checkTranslationParity(opts: ParityOptions): ParityResult {
     const goSrc = /^\s*package\s/m.test(opts.goSource) ? opts.goSource : `package main\n` + opts.goSource;
     const goFile = path.join(tmp, 'calc.go');
     const tsFile = path.join(tmp, 'calc.ts');
+    // ★ 裸调（本两行写 + 下面 `finally` 里那条 rm）留在此处（**不搬**，2026-10-22 分类收口）：
+    //   两个落点都在 `mkdtempSync(os.tmpdir())` 建的目录下 ⇒ classifyWriteSubject = temp ⇒ 不过闸。
     fs.writeFileSync(goFile, goSrc, 'utf-8');
     fs.writeFileSync(tsFile, opts.tsOutput, 'utf-8');
 

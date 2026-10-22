@@ -103,6 +103,8 @@ function nodeRunProbe(dir: string, file: SourceFile): DynamicGateItem {
       }
       jsContent = tr.js;
     }
+    // ★ 裸调（本行写 + 下面 `finally` 里那条 rm）留在此处（**不搬**，2026-10-22 分类收口）：
+    //   `tmpFile` / `tmpDir` 都在 `mkdtempSync(os.tmpdir())` 下 ⇒ classifyWriteSubject = temp ⇒ 不过闸。
     fs.writeFileSync(tmpFile, jsContent, 'utf-8');
     const r = spawnSync(process.execPath, [tmpFile], { encoding: 'utf-8', timeout: 60_000, windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
     // 超时被终止时 Node 会同时置 error=ETIMEDOUT 与 signal=SIGTERM —— 必须先判 signal：

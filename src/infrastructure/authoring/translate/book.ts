@@ -703,6 +703,8 @@ export function serializeBook(book: TranslateBook): string {
 /** 写册子（唯一落盘点）。 */
 export function writeBook(bookPath: string, book: TranslateBook): void {
   fs.mkdirSync(path.dirname(bookPath), { recursive: true });
+  // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：`bookPath` 是**翻译册**（调用方指定的产物文件，
+  //   不是用户源码）⇒ 归主体 = 工具生成物 ⇒ 不过闸。
   fs.writeFileSync(bookPath, serializeBook(book), 'utf8');
 }
 

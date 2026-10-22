@@ -64,6 +64,14 @@ export function getDataHome(): string {
   return getPackageRoot();
 }
 
+/**
+ * ★★ 本文件 14 处裸调（writeFileSync ×6 / renameSync / rmSync / unlinkSync ×6）**不搬**（2026-10-22 分类收口）：
+ *   落点全在 `<dataHome>/.agent-io/**`（features / live / design / baseline / archive / cache）
+ *   或 `<dataHome>/agent-io.json`（活态视图，`getLiveDslFile()`，现只删不写）
+ *   ⇒ `classifyWriteSubject` = **product**（工具自有状态，不是用户源码）⇒ 不过闸。
+ *   ★ 逐处对应：saveLiveFeature · saveDesignSheetDSL · saveSnapshot · saveBaselineFeature ·
+ *     saveArchiveEntry · clearArchiveEntries · saveDSL#writeAtomic · deleteFeature（4 行）· clearAllFeatures。
+ */
 /** 设计存储根目录：<dataHome>/.agent-io */
 export function getStorageRoot(): string {
   return path.join(getDataHome(), DATA_DIR_NAME);

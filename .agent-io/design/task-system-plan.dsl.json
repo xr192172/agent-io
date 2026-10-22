@@ -50119,7 +50119,64 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_analysis_observe_go_instrument_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 13 个 API（导入自 5 个模块）（src/infrastructure/analysis/observe/go_instrument.ts） ← 节点 file_src_infrastructure_analysis_observe_go_instrument_ts",
+          "state": "done",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_go_instrument_ts\"].responsibility"
+          },
+          "owner": "subagent:deepseek-ports-infra",
+          "claimed_at": "2026-10-22T09:17:43.814Z",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/infrastructure/analysis/observe/go_instrument.ts",
+                "content_hash": "c08f3434e27ca5499513b33a150f03658fa7450d"
+              }
+            ],
+            "computed_at": "2026-10-22T09:17:43.781Z",
+            "basis": [
+              "declared"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "attestation",
+              "at": "2026-10-22T09:34:07.542Z",
+              "by": "llm",
+              "why": "锚点卡 src/infrastructure/analysis/observe/go_instrument.ts：go.mod 裸写已搬进 commitSourceWrite（第 4 参 SourceWriteHook），vendor/unvendor 两处加了分类注释；build=0、verify=0（7 门）、t349~t361 14 份证全 exit=0",
+              "agent": "subagent:deepseek-ports-infra",
+              "fingerprint": {
+                "what": "attestation:llm",
+                "input": "bc11d8d433ef0b74b950c9766200c2db2b0dba5e",
+                "code": "13412d72a72d3ef6a0fa1c1049ab2b3f76a66908",
+                "covers": [
+                  "src/infrastructure/analysis/observe/go_instrument.ts"
+                ]
+              },
+              "verdict": "pass"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "go 侧插桩的桥：把本仓探针包 vendor 进被测工程，并按需补 go.mod（本轮把 go.mod 写收进写原语）",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/analysis/observe/go_instrument.ts",
+              "symbol": "ensureGoObserveIntegration",
+              "why": "它是本文件唯一真正改用户源码的入口，必须在（且已改走 commitSourceWrite）"
+            }
+          ],
+          "rationale": "被测 Go 工程零配置是设计目标；而改 go.mod 就是改用户源码，必须有闸",
+          "acceptance": "go.mod 写经 commitSourceWrite（缺注入即抛）；vendor / unvendor 的分类与缺口写进注释与 docs",
+          "updated_at": "2026-10-22T09:33:56.282Z",
+          "agent": "subagent:deepseek-ports-infra"
+        }
       },
       {
         "id": "file_src_infrastructure_analysis_observe_index_ts",
@@ -91182,7 +91239,8 @@
           }
         ],
         "lines": 347,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_index_ts",
@@ -104423,11 +104481,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T09:09:06.638Z",
+    "saved_at": "2026-10-22T09:34:07.775Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 76623827,
+    "age": 78124964,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108102,9 +108160,31 @@
     {
       "id": "todo_写原语已能覆盖-写-移-删-追加-四类-sourcewritetxn-commi",
       "summary": "写原语已能覆盖 写/移/删/追加 四类（SourceWriteTxn.commit/append/copy/move/remove），但**调用点还没搬**：实测原语外裸调 51 处（`fs.renameSync|copyFileSync|unlinkSync|rmSync` 47 + `fs.appendFileSync` 4；口径：只数 `fs.xxx(` 调用点、排除 src/application/source_writer.ts）。高价值前几名：storage.ts 8 · proposal_store.ts 4 · dsl_store.ts 4 · file_snapshot.ts 4 · refactor_pipeline.ts 2（`fs.renameSync(m.from, m.to)` = 文件搬移，**改的是用户源码**）· rename_file.ts 2（`:602/:617` 是回滚清理，属回滚类）。判据：① 每一处要么搬进事务（五动词之一），要么按 `write_gate#classifyWriteSubject` 归类并点名（回滚 / 产物 / 临时）；② **不许**写「writeFileSync=0 ⇒ 收口」那种判据（假绿：移动/删除仍在闸外，源码会静默消失）；③ 数字要可复现：给确切命令 + 读数，别抄旧数字（卡里 57 已过期为 51）。",
-      "state": "candidate",
-      "owner": null,
-      "follows": "todo_写闸的判据只覆盖-覆盖写-移动-删除-追加-57-处仍是裸调-实测-fs-ren"
+      "state": "done",
+      "owner": "subagent:deepseek-ports-infra",
+      "follows": "todo_写闸的判据只覆盖-覆盖写-移动-删除-追加-57-处仍是裸调-实测-fs-ren",
+      "claimed_at": "2026-10-22T09:17:43.932Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T09:17:43.900Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "attestation",
+          "at": "2026-10-22T09:34:07.747Z",
+          "by": "llm",
+          "why": "73 处裸调逐处分类见 docs/write-primitive-classification-2026-10-22.md：source 真改源码 1 处已搬；回滚 2 / 字面source主体product 2 / product 53 / temp 15 均就地留并加注释。消融：wg5 改回裸写 ⇒ 4/6 红；恢复 ⇒ 10/0；wg3 12/0。剩余两件已立下一环卡。build=0 verify=0 7门；t349~t361 全 exit=0",
+          "agent": "subagent:deepseek-ports-infra",
+          "fingerprint": {
+            "what": "attestation:llm",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_go-语言包的插桩写-仍无闸-observe-langs-ts-的-goobse",
@@ -108147,9 +108227,23 @@
       "id": "todo_complete-的回执对-todo-卡一律说-只凭-attestation-证据-即使传的是-reading",
       "summary": "【实测：todo 卡收口时，回执固定写「★ 只凭 attestation 证据：谁、何时、为什么算完」，即使 `evidence.kind='reading'`（带命令 + 读数）】\n⇒ 后果：调用方会以为**自己传错了 kind**，反复重试或改成 attestation（反而降级了证据强度）。2026-10-22 至少两个子代理在回报里专门提到这一句 (\"看着像传错了\")。\n★ 根因：那句话是\"todo 卡没有判据可判 ⇒ 只能凭口供\"的说明，但它**没看 kind** 就说，于是和\"evidence kind=reading\"的事实冲突。\n判据：回执要按 `kind` 分支 —— `reading` ⇒ 说\"凭一条可复跑的读数（命令已记录）\"；`attestation` ⇒ 才说\"只凭口供\"；`expectations` ⇒ 说\"机器判据全绿\"。★ 反证：分别用三种 kind 收口同一张 todo 卡，回执必须给出**三句不同的话**。",
       "created_at": "2026-10-22T09:09:06.589Z"
+    },
+    {
+      "id": "todo_下一环-①-写原语缺两种-动词形态-跨根-copy-与递归目录-remove-实",
+      "summary": "下一环 ①：写原语缺两种**动词形态** —— 跨根 copy 与递归目录 remove。实测依据：`vendorGoProbe` 是 `fs.copyFileSync(本仓 observe-lang-go/probe/*.go, 目标工程 internal/camprobe/*.go)`，而 `SourceWriteTxn.copy(from,to)` 的**两端都必须在同一个项目根内**（`assertDeclared` → `relOf` 对根外 from 返 null ⇒ 抛）⇒ 迁不进去；`unvendorGoProbe` 是 `fs.rmSync(整棵 internal/camprobe, recursive)`，而 `txn.remove` 用的是 `fs.rmSync(abs,{force:true})`（**非递归**、只删文件）⇒ 也迁不进去。这两处是 2026-10-22 分类收口时仅剩的\"字面 source、搬不动\"的 2 处（`src/infrastructure/analysis/observe/go_instrument.ts:203/214`）。判据：要么给原语加 `copyFromOutOfRoot(fromAbs,to)`（from 只读、不需要闸，但**快照记不下来**这件事要写清）与 `removeDir`（递归前先逐文件声明），要么明确记下「探针包 vendor 目录永久豁免」并给出豁免的可查声明。禁：别再写\"裸调=0 ⇒ 收口\"那种假绿。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_写原语已能覆盖-写-移-删-追加-四类-sourcewritetxn-commi"
+    },
+    {
+      "id": "todo_下一环-②-go-instrument-ts-的-3-个导出-全仓-0-调用-v",
+      "summary": "下一环 ②：`go_instrument.ts` 的 3 个导出**全仓 0 调用** —— `vendorGoProbe` / `unvendorGoProbe` / `ensureGoObserveIntegration`（grep `--include=*.ts --include=*.mjs` 全仓，除定义文件自身 0 命中；文件内注释也说 T268 起不再是插桩前置）。后果有两件：① 本轮把 go.mod 写改走 `commitSourceWrite`（要求注入 `txn.commit`）后，**没有任何调用方**会注入 ⇒ 真调它必抛；② \"Go 侧插桩\"实际跑的是 Go 子进程那条路，TS 侧这三个函数等于**摆设 API**。判据：要么把它们接回 `observe_langs`/`handlers`（并注入 `txn.commit`），要么按“没有下游就不要兼容层”删掉（`data_dir.ts` 头注同一纪律）。禁：留着导出不接线还当成\"已支持\"。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_写原语已能覆盖-写-移-删-追加-四类-sourcewritetxn-commi"
     }
   ],
-  "_dsl_rev": 1272,
+  "_dsl_rev": 1274,
   "feature_tree": {
     "features": [
       {

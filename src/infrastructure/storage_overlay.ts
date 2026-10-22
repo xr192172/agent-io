@@ -26,6 +26,8 @@ function getOverlayFile(feature: string): string {
 export function saveOverlay(ov: DesignOverlay): string {
   const file = getOverlayFile(ov.feature);
   fs.mkdirSync(path.dirname(file), { recursive: true });
+  // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：`getOverlayFile()` = `<dataHome>/.agent-io/features/<f>.overlay.json`
+  //   ⇒ classifyWriteSubject = product（overlay 是工具自有设计状态）⇒ 不过闸。
   fs.writeFileSync(file, JSON.stringify(ov, null, 2), 'utf-8');
   return file;
 }

@@ -106,6 +106,8 @@ export function saveLedger(projectRoot: string, entries: LedgerEntry[]): void {
     .slice(0, LEDGER_CLOSED_CAP);
   const file: LedgerFile = { version: 1, entries: [...open, ...closed] };
   fs.mkdirSync(path.dirname(impactLedgerFile(projectRoot)), { recursive: true });
+  // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：`impactLedgerFile()` = `<root>/.agent-io/impact/ledger.json`
+  //   ⇒ classifyWriteSubject = product（影响台账，工具自有状态）⇒ 不过闸。
   fs.writeFileSync(impactLedgerFile(projectRoot), JSON.stringify(file, null, 2), 'utf-8');
 }
 

@@ -64,6 +64,8 @@ export function readRegistry(): ArtifactEntry[] {
   }
 }
 
+// ★ 本函数 2 处裸调（tmp 写 + rename）留在此处（**不搬**，2026-10-22 分类收口）：
+//   `registryFilePath()` = `<dataHome>/output/.registry.json` ⇒ classifyWriteSubject = product ⇒ 不过闸。
 /** 写回注册表（原子：先写临时文件再 rename） */
 function writeRegistry(entries: ArtifactEntry[]): void {
   const file = registryFilePath();
@@ -121,6 +123,7 @@ function readFileEntries(file: string): ArtifactEntry[] {
   }
 }
 
+// ★ 本函数 2 处裸调（tmp 写 + rename）留在此处（**不搬**，2026-10-22 分类收口）：落点同上，product ⇒ 不过闸。
 function writeFileEntries(file: string, entries: ArtifactEntry[]): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = `${file}.tmp`;

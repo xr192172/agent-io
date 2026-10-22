@@ -150,6 +150,9 @@ function readDictFile(file: string): DictEntry[] {
   }
 }
 
+// ★ 唯一的裸写（本函数）留在此处（**不搬**，2026-10-22 分类收口）：`file` 只来自
+//   `getGlobalDictFile()` / `getProjectDictFile()` = `<root>/.agent-io/dict.*.json`
+//   ⇒ classifyWriteSubject = product（词典是工具自有数据）⇒ 不过闸。
 function writeDictFile(file: string, entries: DictEntry[]): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(entries, null, 2), 'utf-8');

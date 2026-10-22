@@ -214,6 +214,8 @@ function buildReport(modules: ProjectModule[], fillRequested: boolean): ReportEn
   return out;
 }
 
+// ★ 本函数 2 处裸调留在此处（**不搬**，2026-10-22 分类收口）：落点 = `opts.outDir`（调用方**显式指定**的
+//   生成物目录，本函数只在 `if (opts.outDir)` 里被调）⇒ 归主体 = 产物，不是用户源码 ⇒ 不过闸。
 /** 落 A1 报告：translation-report.jsonl（逐行 JSON）+ translation-report.md（分组汇总） */
 function writeReport(outDir: string, report: ReportEntry[]): void {
   const jsonl = report.map((r) => JSON.stringify(r)).join('\n') + '\n';
@@ -267,6 +269,8 @@ function detectConflicts(modules: ProjectModule[]): ConflictEntry[] {
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+// ★ 本函数 2 处裸调留在此处（**不搬**，2026-10-22 分类收口）：同上，落点是调用方指定的 `opts.outDir`
+//   ⇒ 归主体 = 产物（types-map.json / .md）⇒ 不过闸。
 /** 落 B2 types-map：types-map.json（机器读）+ types-map.md（按文件分组，人读/跳转） */
 function writeTypesMap(outDir: string, map: TypesMapEntry[]): void {
   fs.mkdirSync(outDir, { recursive: true });
@@ -567,6 +571,8 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
     for (const m of modules) {
       const outAbs = path.join(path.resolve(opts.outDir), m.tsRel);
       fs.mkdirSync(path.dirname(outAbs), { recursive: true });
+      // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：`outAbs` = `opts.outDir/<tsRel>`（调用方指定的生成物目录）
+      //   ⇒ 归主体 = 产物（翻译出的 TS），不是用户源码 ⇒ 不过闸。
       fs.writeFileSync(outAbs, m.ts, 'utf-8');
     }
   }

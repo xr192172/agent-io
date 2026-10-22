@@ -131,6 +131,8 @@ export function validateDecls(decls: TSDLDecl[]): void {
  * 原子写（tmp + rename）。★ 与 Go `proposal.go:315-324` 的**有意分歧**：Go 这里是裸
  * `os.WriteFile`，而它自己的 `dsl_store.go:201-214` 用 tmp+rename ⇒ **Go 侧自身不一致**。
  * 本实现复用 `dsl_store` 的纪律。跨语言 JSON 格式不变。
+ * ★ 裸调（5 处：tmp 写 / 两次 rename / 两次 rm）**留在此处不搬**（2026-10-22 分类收口）：
+ *   落点 = `<root>/.agent/observe/proposals/**` ⇒ classifyWriteSubject = product（提案库，工具自有）⇒ 不过闸。
  */
 function writeAtomic(file: string, data: string): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });

@@ -175,6 +175,8 @@ export async function translateGoTsHandler(args: Record<string, unknown>): Promi
       notes.push(`未落盘：目标已存在，不覆盖（防止丢弃已填的函数体）⇒ ${outAbs}`);
     } else {
       fs.mkdirSync(path.dirname(outAbs), { recursive: true });
+      // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：`--out` = 调用方显式指定的**生成物落点**
+      //   （且已在上面两道闸里拒了覆盖与半成品）⇒ 归主体 = 产物 ⇒ 不过闸。
       fs.writeFileSync(outAbs, output, 'utf-8');
       outPath = outAbs;
       notes.push(`已写入 ${outAbs}`);

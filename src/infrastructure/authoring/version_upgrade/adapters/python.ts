@@ -119,6 +119,8 @@ function runProbe(file: SourceFile): DynamicGateItem {
     os.tmpdir(),
     `dc-py-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${path.basename(file.path)}`
   );
+  // ★ 裸调（本行写 + 下面 `finally` 里那条 rm）留在此处（**不搬**，2026-10-22 分类收口）：
+  //   `tmp` 在 `mkdtempSync(os.tmpdir())` 下 ⇒ classifyWriteSubject = temp ⇒ 不过闸。
   fs.writeFileSync(tmp, file.content, 'utf-8');
   try {
     const r = spawnSync(PY, [tmp], { encoding: 'utf-8', timeout: 60_000, windowsHide: true, maxBuffer: 8 * 1024 * 1024 });

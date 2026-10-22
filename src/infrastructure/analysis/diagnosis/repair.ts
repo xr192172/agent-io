@@ -263,6 +263,8 @@ export function applyPatches(
 export function revertPatches(applied: AppliedPatch[], restore?: SourceWriteHook): void {
   for (const a of applied) {
     try {
+      // ★ 分类（2026-10-22）：落点 = 用户源码 ⇒ **source**，但这一行走的是**回滚通道**
+      //   （把「应用之前读到的原样」放回，不产生新版本）⇒ **不搬进事务**，判据见 `source_writer#restoreSourceBytes`。
       if (restore) restore(a.absFile, a.original);
       else fs.writeFileSync(a.absFile, a.original, 'utf-8');
     } catch {

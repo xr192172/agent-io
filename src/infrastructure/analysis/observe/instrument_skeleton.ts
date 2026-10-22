@@ -286,6 +286,8 @@ export function backupOriginal(backupRoot: string, file: string, content: string
   const dest = backupPathFor(backupRoot, file);
   if (fs.existsSync(dest)) return; // 已备份过则保留最早的原版
   fs.mkdirSync(path.dirname(dest), { recursive: true });
+  // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：`dest` = `<root>/.agent-io/observe-backup/**`
+  //   ⇒ classifyWriteSubject = product（工具自有的回滚镜像，不是用户源码）⇒ 不过闸。
   fs.writeFileSync(dest, content, 'utf-8');
 }
 

@@ -103,6 +103,8 @@ function javacSingleFile(file: SourceFile, boundary: number): StaticGateItem {
   if (!isSelfContained(file.content)) {
     return { file: file.path, status: 'skipped', detail: '含外部依赖，无法单文件隔离编译，改由项目级构建验证' };
   }
+  // ★ 裸调（本函数写 + 下面 `finally` 里那条 rm）留在此处（**不搬**，2026-10-22 分类收口）：
+  //   `tmp` = `mkdtempSync(os.tmpdir())` ⇒ classifyWriteSubject = temp（单文件编译副本）⇒ 不过闸。
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-javac-'));
   // 用原始文件名（不含路径），保证 public class 名与文件名一致，javac 才认
   const abs = path.join(tmp, path.basename(file.path));
@@ -157,6 +159,8 @@ async function javaRunProbe(file: SourceFile, boundary: number): Promise<Dynamic
   if (!isSelfContained(file.content)) {
     return { file: file.path, status: 'skipped', detail: '含外部依赖，无法单文件隔离运行' };
   }
+  // ★ 裸调（本函数写 + 下面 `finally` 里那条 rm）留在此处（**不搬**，2026-10-22 分类收口）：
+  //   `tmp` = `mkdtempSync(os.tmpdir())` ⇒ classifyWriteSubject = temp（“编译 + 真跑”副本）⇒ 不过闸。
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-java-'));
   const abs = path.join(tmp, path.basename(file.path));
   try {

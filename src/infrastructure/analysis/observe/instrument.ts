@@ -205,6 +205,8 @@ function restoreOne(backupRoot: string, backupFile: string, restore?: SourceWrit
   if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return null;
   const target = path.join(backupRoot, rel);
   const bytes = fs.readFileSync(backupFile, 'utf-8');
+  // ★ 分类（2026-10-22）：落点 = 用户源码 ⇒ **source**，但这是**回滚通道**（写回插桩前的备份字节）
+  //   ⇒ **不搬进事务**（闸若在这一刻拒，源码就停在半改状态），判据见 `source_writer#restoreSourceBytes`。
   if (restore) restore(target, bytes);
   else fs.writeFileSync(target, bytes, 'utf-8');
   return target;
@@ -238,6 +240,8 @@ export function restoreInstrumented(root: string, restore?: SourceWriteHook): st
     if (t) restored.push(t);
   }
   if (backups.length > 0) {
+    // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：`BACKUP_DIR` = `.agent-io/observe-backup`
+    //   ⇒ classifyWriteSubject = product（插桩回滚镜像，工具自有）⇒ 不过闸。
     fs.rmSync(path.join(root, BACKUP_DIR), { recursive: true, force: true });
   }
   return restored;
@@ -336,6 +340,8 @@ export function buildProbeLedger(
 export function saveProbeLedger(root: string, ledger: ProbeLedger): string {
   const file = ledgerPath(root);
   fs.mkdirSync(path.dirname(file), { recursive: true });
+  // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：`ledgerPath()` = `<root>/.agent-io/observe-ledger.json`
+  //   ⇒ classifyWriteSubject = product（探针台账，工具自有状态）⇒ 不过闸。
   fs.writeFileSync(file, JSON.stringify(ledger, null, 2), 'utf-8');
   return file;
 }
@@ -354,6 +360,8 @@ export function loadProbeLedger(root: string): ProbeLedger | null {
 /** 清理台账（--uninstrument 一键全拔时联动删除）；存在并删除返回 true */
 export function clearProbeLedger(root: string): boolean {
   const file = ledgerPath(root);
+  // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：删的也是 `ledgerPath()` = `<root>/.agent-io/observe-ledger.json`
+  //   ⇒ classifyWriteSubject = product（工具自有台账）⇒ 不过闸。
   if (fs.existsSync(file)) {
     fs.rmSync(file, { force: true });
     return true;

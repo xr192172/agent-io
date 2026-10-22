@@ -577,20 +577,27 @@ export interface TaskGateOutcome {
  * |---|---|---|
  * | `outside-root` | `toIndexKey(root, abs) === null`（根外） | **判不了也管不着**（闸的键空间是「相对根的路径」） |
  * | `temp` | 在 `os.tmpdir()` 之下 | **不要**（探针/编译/试跑文件，不是用户源码） |
- * | `product` | 首段是产物目录（`.agent-io` / `design-db` / `dist` / `node_modules` / `output`） | **不要**（工具自有状态，另一条通道） |
+ * | `product` | 首段是产物目录（`.agent-io` / `.agent` / `design-db` / `dist` / `node_modules` / `output`），或本身就是产物文件（`agent-io.json`） | **不要**（工具自有状态，另一条通道） |
  * | `source` | 其余 | **必须**（这就是「改用户源码」） |
  *
  * ## 实测锚点（2026-10-22，用来校准分类，别当结论抄）
  * · `upgrade` 的 4 个 adapter 写点（java.ts:110/163 · node.ts:106 · python.ts:122）全在 `os.tmpdir()` ⇒ `temp`
  *   —— 它们写的是**单文件编译/试跑的临时副本**，不是用户源码 ⇒ **豁免不是懒，是判据**。
- * · `go_instrument.ts:345`（go.mod 修补）是 `source` ⇒ **该有闸**，而它跑在 Go 进程里 ⇒
- *   本分类**不构成豁免**，它是**已知缺口**（跨进程写，TS 闸看不见，见 todo 卡）。
+ * · `go_instrument.ts:345`（go.mod 修补）是 `source` ⇒ **该有闸**。★ 2026-10-22 收口：它原本是
+ *   本文下面点名的“已知缺口”（裸 `fs.writeFileSync`），现改走 `source_write_port#commitSourceWrite`
+ *   —— 缺注入就抛、闸拒就上抛（不再回落裸写）。
  * · `derive_split` / `diagnose_loop` / `observe_instrument` / `upgrade apply` 全 `source` ⇒ 已接闸。
  */
 export type WriteSubject = 'source' | 'product' | 'temp' | 'outside-root';
 
 /** 产物目录首段（★ 唯一住处：别在别处再列一遍） */
-const PRODUCT_TOP_DIRS = new Set(['.agent-io', 'design-db', 'dist', 'node_modules', 'output']);
+const PRODUCT_TOP_DIRS = new Set(['.agent-io', '.agent', 'design-db', 'dist', 'node_modules', 'output']);
+/**
+ * ★ 2026-10-22（分类口径补格）：**本身就是产物文件**的顶层条目（不是目录）。
+ *   唯一成员 `agent-io.json` = `storage.ts#getLiveDslFile()` 的活态视图（`data_dir.ts` 里点名的“第三份”，
+ *   现只删不写）。它住在 dataHome 根下 ⇒ 首段不是目录 ⇒ 只靠 {@link PRODUCT_TOP_DIRS} 会被误判成 `source`。
+ */
+const PRODUCT_TOP_FILES = new Set(['agent-io.json']);
 
 /** 判「这个写属于哪一类主体」（纯函数，无 IO） */
 export function classifyWriteSubject(root: string, abs: string): { subject: WriteSubject; why: string } {
@@ -602,6 +609,7 @@ export function classifyWriteSubject(root: string, abs: string): { subject: Writ
   const rel = toIndexKey(root, abs);
   if (rel === null) return { subject: 'outside-root', why: '不在项目根内：造不出「相对根的路径」⇒ 闸的键空间里没有它' };
   const top = rel.split('/')[0];
+  if (PRODUCT_TOP_FILES.has(rel)) return { subject: 'product', why: '「' + rel + '」是产物文件（工具自有的活态视图）' };
   if (PRODUCT_TOP_DIRS.has(top)) return { subject: 'product', why: '首段「' + top + '」是产物/状态目录（工具自有，不是用户源码）' };
   return { subject: 'source', why: '项目根内的普通路径 ⇒ 改它就是改用户源码' };
 }

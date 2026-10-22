@@ -816,6 +816,8 @@ export function captureBaseline(spec: BehaviorSpec, baselinePath?: string): Beha
     baseline_path: bp,
   };
   fs.mkdirSync(path.dirname(bp), { recursive: true });
+  // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：`baselinePathFor()` = `<root>/.agent-io/behavior/<f>__<fn>.json`
+  //   ⇒ classifyWriteSubject = product（行为基线是工具自有数据）⇒ 不过闸。
   fs.writeFileSync(bp, JSON.stringify(baseline, null, 2), 'utf-8');
   return baseline;
 }
@@ -969,6 +971,8 @@ function runWithLangPack(spec: BehaviorSpec, pack: BehaviorLangPack): BehaviorRu
     const plan = pack.build({ tmp, spec, content, targetAbs, write: (rel, c) => {
         const abs = path.join(tmp, rel);
         fs.mkdirSync(path.dirname(abs), { recursive: true });
+        // ★ 裸调（本行写 + `finally` 里那条 rm）留在此处（**不搬**，2026-10-22 分类收口）：
+        //   `abs` 在 `mkdtempSync(os.tmpdir())` 下 ⇒ classifyWriteSubject = temp ⇒ 不过闸。
         fs.writeFileSync(abs, c, 'utf-8');
       } });
 
