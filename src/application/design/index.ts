@@ -56,7 +56,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { getDSL, requireProjectRoot } from '../../infrastructure/storage.js';
-import { proposeChange } from './workbench/code_workbench.js';
+
 import { importProject } from '../../infrastructure/graph/import_project.js';
 import type { ImportProjectInput } from '../../infrastructure/graph/import_project.js';
 // ★ T15 切片（2026-10-05）：把「混合文件解耦」这对能力从 CLI 面接进 MCP 面 ——
@@ -755,61 +755,16 @@ export const DESIGN_TOOLS: ToolDef[] = [
         ),
     },
     handler: wrapData(async (a) => {
-      const action = (a.action as 'set' | 'propose' | undefined) ?? 'set';
+      const action = (a.action as 'set' | undefined) ?? 'set';
       const feature = requireStr(a, 'feature');
       const goals = Array.isArray(a.goals) ? (a.goals as unknown[]) : undefined;
       const edgeIntents = Array.isArray(a.edge_intents) ? (a.edge_intents as unknown[]) : undefined;
 
-      if (action === 'set') {
-        // set：直接落盘。[B] 自己处理"两类都没传 = 无改动"（与旧 set 入口逐字同义）。
-        const r = setDesignIntent({ feature, goals: goals as never, edge_intents: edgeIntents as never });
-        return { message: r.message, data: r };
-      }
+      // ★ 2026-10-22 PR 式退役：本工具只剩 set（propose 分支已删，走 publish 立卡）
+      const r = setDesignIntent({ feature, goals: goals as never, edge_intents: edgeIntents as never });
+      return { message: r.message, data: r };
 
-      if (action === 'propose') {
-        // propose：只算提案、永不落盘（[B] proposeChange 落 pending 审批卡）。
-        // 旧 propose 入口的 [C] 编排原样搬到这里（同一份逻辑，不再有第二处）。
-        if (!goals && !edgeIntents) throw new Error('至少传 goals 或 edge_intents 之一');
-        let project_dir = typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : '';
-        if (!project_dir) {
-          const dsl = getDSL(feature);
-          project_dir = requireProjectRoot({ 'dsl.source_root': dsl?.source_root });
-        }
-        const r = await proposeChange({
-          kind: 'dsl_intent',
-          project_dir,
-          op: { feature, goals: goals as never, edge_intents: edgeIntents as never },
-          // ★★★ T186：**记下"谁提的"** —— 此前这里写死 `'llm'`（**类别**，不是身份）
-          //   ⇒ 接手方**无法回答"这条是不是我自己提的"** ⇒ "不许自批"那条守卫形同虚设。
-          //   ★ 现在：调用方给了 `agent`（身份）就用它；**没给就如实留空**（不编一个假身份 —— 读端会明标"未署名"）。
-          ...(typeof a.agent === 'string' && a.agent.trim() ? { submitter: a.agent.trim() } : {}),
-        });
-        if (!r.ok) throw new Error(r.error ?? '提案失败');
-        const c = r.change;
-        const message = [
-          `已提出设计意图改写审批卡（pending，未写盘）：`,
-          `  提案：${c.label}`,
-          ...(c.summary ?? []).map((s) => `  · ${s}`),
-          `  预览：`,
-          ...(c.preview ?? '').split('\n').map((l) => `    ${l}`),
-          ``,
-          ``,
-          // ★★★ T186（2026-10-12）：**确认人不是人，是下一个接手的 Agent**。
-          //   ★ 别写成"**人**将在工作台「代码审批」页签看到"⇒ 与新方向**相反**
-          //     —— 接手方读到它，会以为"这不该我管，等人去点"。
-          `★ 这条 PR **等【下一个接手的 Agent】确认**（不是等人去点工作台）：` +
-            `接手方先 \`review_changes action=list\` 看见它，再 \`action=show\` 看全文与意见栈；` +
-            `拿不准就**开会**（别的会话 \`action=comment\` 各留意见），最后由某个会话 \`approve\` / \`reject\`。`,
-          `★ \`approve\` 后 goals/边意图才真正写入 DSL；\`reject\` 则丢弃。` +
-            `★ **必须署名，且不许自批**（提议人 ≠ 确认人）—— 见 \`review_changes\`。`,
-        ].join('\n');
-        return {
-          message,
-          data: { action, ok: true, project_dir, proposal: { id: c.id, kind: c.kind, label: c.label, summary: c.summary, diffs: c.diffs, preview: c.preview, status: c.status } },
-        };
-      }
 
-      throw new Error(`design_intent: 未知 action "${String(action)}"（可选值：set / propose）`);
     }),
   },
   {

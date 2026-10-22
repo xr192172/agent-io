@@ -17428,30 +17428,27 @@
         "task": {
           "id": "file_src_application_design_index_ts",
           "summary": "【L1 待建构】入口层 · src/application/design — 0 个 API（导入自 20 个模块）（src/application/design/index.ts） ← 节点 file_src_application_design_index_ts",
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
+          "owner": "agent:main",
+          "claimed_at": "2026-10-22T13:54:56.290Z",
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "01bab1e2778424c5137ce281bc4b0f4e788aa851"
+                "content_hash": "baad39844b6b0dd03f293bd581027029165d2da5"
               }
             ],
-            "computed_at": "2026-10-21T13:17:50.797Z",
+            "computed_at": "2026-10-22T13:54:56.246Z",
             "basis": [
               "node-path"
             ]
-          },
-          "release_reason": "src/application/design/index.ts 的 get_dsl chain 参数已登记，交回候选",
-          "released_by": "subagent:follows-chain",
-          "released_at": "2026-10-21T13:37:59.843Z"
+          }
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -18071,17 +18068,27 @@
         "task": {
           "id": "file_src_application_meta_index_ts",
           "summary": "【L1 待建构】入口层 · src/application/meta — 2 个 API（导入自 36 个模块）（src/application/meta/index.ts） ← 节点 file_src_application_meta_index_ts",
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_index_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 23h（原 owner=agent-facts-db），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:01.318Z"
+          "owner": "agent:main",
+          "claimed_at": "2026-10-22T13:53:42.296Z",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/meta/index.ts",
+                "content_hash": "7ca4e420e75a6395e5201c23c2a431f1c09b85cf"
+              }
+            ],
+            "computed_at": "2026-10-22T13:53:42.254Z",
+            "basis": [
+              "node-path"
+            ]
+          }
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_integrity_index_integrity_ts",
@@ -83784,7 +83791,7 @@
         ],
         "lines": 866,
         "layer": "entry",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -85204,7 +85211,7 @@
         ],
         "lines": 1356,
         "layer": "entry",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_integrity_index_integrity_ts",
@@ -104701,11 +104708,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T13:38:34.812Z",
+    "saved_at": "2026-10-22T13:57:40.477Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 92792001,
+    "age": 93937666,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -108579,6 +108586,12 @@
     {
       "id": "todo_用户-2026-10-22-裁定-代码变更审批流已废弃-且它是另一套设计-与卡式",
       "summary": "【用户 2026-10-22 裁定：代码变更审批流已废弃，且它是另一套设计，与卡式天生不兼容】\n\n★ 我上一轮用错了判据：数了「有 3 个调用方」就说不能删。\n  正确判据是「它和本仓的卡式是不是同一套」。实测不是：\n\n| | PR 式（review_changes） | 卡式（本仓） |\n|---|---|---|\n| 怎么算完成 | approveChange（有人点同意） | cardStanding 判 decision.expectations |\n| 裁判是 | 下一个 agent 看 diff | 判据自己对实际代码 |\n| 状态 | pending/approved/rejected/executed | candidate/claimed/done/void |\n\n⇒ 【同一个问题两个裁判】⇒ 不是风格差异，是两套「完成」的定义。\n\n★ 关系实测：review_changes 就是 code_workbench 的封装\n  meta/index.ts:56   import { listChanges, getChange, addReview, approveChange, rejectChange } from ../design/workbench/code_workbench.js\n  meta/index.ts:274  name: review_changes（action: list/show/comment/approve/reject）\n  meta/index.ts:391  await approveChange(...)  ← 审批落地就在 code_workbench 里\n\n★ 判据（退役时用）\n  ① 删除后，「完成」只有一个裁判：complete → cardStanding → isSatisfied\n  ② 3 个调用方（design/index.ts / meta/index.ts / llm_decider.ts）必须一起改，不许「保留一个入口但换实现」\n     ★ 那等于换皮，两套还在\n  ③ 反证：造一张「判据未绿但有人 approve」的场景 ⇒ 不许出现 done（today: approve 能独立于判据）\n  ④ 数据：设计册里不能有 approved/rejected 状态残留（实测 state_machine 只有 4 态 ⇒ 说明数据侧早就是卡式了）\n\n★ 注意：它读 overlay（dsl_intent 变更的 before/after）⇒ 删它时那处 overlay 依赖一起消失",
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_pr-式退役-剩余两个消费者-2026-10-22-已删-review-chan",
+      "summary": "【PR 式退役 · 剩余两个消费者（2026-10-22 已删 review_changes 与 set_design_intent 的 propose 分支）】\n\n已删：\n· src/application/meta/index.ts 的 review_changes（144 行工具定义 + import）\n· src/application/design/index.ts 的 propose 分支（44 行）+ 类型收窄 + import\n⇒ 7 门 PASS\n\n剩余 2 个消费者（★ 不许「保留入口但换实现」，那是换皮）：\n\n① src/application/meta/llm/llm_decider.ts:27\n   import proposeChange —— 它整个是「LLM 决策 → 产 PR → 等人/下一 agent 批」\n   ⇒ 正确形态：LLM 决策应产出【卡】（publish），不是 PR\n   ⇒ 判据：decideCanvasNotes 的产出里不许有 status=pending/approved；只有「立卡」或「不改」\n\n② src/presentation/http/serve.ts:60\n   import proposeChange / listChanges / approveChange / rejectChange —— HTTP 面的 /api/code/* 路由\n   ⇒ 那是「人的代码审批页面」那套（review_changes 文档原文：PR 不挂在人的审批页面上）\n   ⇒ 判据：删路由后 /api/code/* 返回 404（不是返回 410 —— 那还是活着）\n\n★ 两者删完后 code_workbench.ts（852 行）才能删\n★ 最终反证：grep -rn 'approveChange|proposeChange' src/ = 0，且「完成」只剩 cardStanding 一个裁判",
       "state": "candidate",
       "owner": null
     }
