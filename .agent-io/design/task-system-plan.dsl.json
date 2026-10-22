@@ -103858,11 +103858,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T05:09:19.177Z",
+    "saved_at": "2026-10-22T05:30:04.977Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 62236366,
+    "age": 63482166,
     "dbSchemaVersion": 16
   },
   "_forked_from": {
@@ -105540,9 +105540,39 @@
     },
     {
       "id": "todo_D-actor-entry",
-      "summary": "★★ **真正的缺陷不是\"5 个写链没传 actor\"，是「没人负责设置 AGENT_IO_ACTOR」** —— 那是一个**运行时入口**，而入口不存在。★ 而 calls 格",
-      "state": "candidate",
-      "owner": null
+      "summary": "【并发控制·账户】把 `actor` 从\"随手写的字符串\"变成**有规范的账户**，并在所有写路上强制（A7）。\n\n★ 2026-10-22 复核（subagent:account-line）—— 三条现状：\n（a）**命名规范：已闭环**。唯一实现 = `src/domain/actor_spec.ts`（`<kind>:<name>`，kind ∈ human|agent|subagent，name = `[a-z0-9_-]{1,40}`）；唯一落点 = `server_registry#invokeTool`（MCP / CLI / 证 / 扫射同一入口）⇒ 实测 4 条 admission 读数（合法 / 老格式归一化+留痕 / STRICT 不猜 / 非法逐条列因）+ 回执里\"已归一化\"那一行。\n（b）**每条写路生效：8 条实测 + 4 条静态**。实测口径 = 同一句调用只换 actor：卡主放行且真写盘 / 冒名拒且零字节落盘 / 不传放行（消融）。覆盖 edit_code（单 + 批量 targets）· rename_symbols（scope=local 与 module）· rename_files · move_symbol · apply_refactor_plan · remove_dead_imports · refactor_pipeline（dead_imports 步）· review_changes(approve，actor 取 c.submitter 而非拍板人)。静态已接同一条原语、运行时未跑：annotate_functions / rules(apply) / deprecate_offline / design_line(sync-signatures)。\n（c）**缺省值：已闭环**。无 actor ⇒ 提醒 + 放行；`AGENT_IO_ACTOR_STRICT=1` ⇒ 拒（报文给两条能过的路）。\n★ 顺带证伪 D-actor-entry：入口不再是\"没人负责设 AGENT_IO_ACTOR\" —— 2026-10-20 起 `actor` 是**逐调用的保留入参**（`server_registry.CALL_ACTOR_FIELD`，MCP 与 CLI 两面共用），env 只是兜底。\n\n★ 仍不在写闸上的源码写路（**本卡不做，已登记为下一环**）：observe_instrument / diagnose_loop / upgrade / derive_split。\n★ 明确**不算缺口**的两类：① rollback / restore（deprecate_offline 回滚、instrument 还原、revertPatches）—— 写回的是**已经被写过的字节**；② 生成物（translate/* 写 outDir）—— 不是同一棵树上的\"改源码\"。",
+      "state": "done",
+      "owner": "subagent:account-line",
+      "history": [
+        {
+          "at": "2026-10-22T05:29:35.202Z",
+          "from": "★★ **真正的缺陷不是\"5 个写链没传 actor\"，是「没人负责设置 AGENT_IO_ACTOR」** —— 那是一个**运行时入口**，而入口不存在。★ 而 calls 格",
+          "to": "【并发控制·账户】把 `actor` 从\"随手写的字符串\"变成**有规范的账户**，并在所有写路上强制（A7）。\n\n★ 2026-10-22 复核（subagent:account-line）—— 三条现状：\n（a）**命名规范：已闭环**。唯一实现 = `src/domain/actor_spec.ts`（`<kind>:<name>`，kind ∈ human|agent|subagent，name = `[a-z0-9_-]{1,40}`）；唯一落点 = `server_registry#invokeTool`（MCP / CLI / 证 / 扫射同一入口）⇒ 实测 4 条 admission 读数（合法 / 老格式归一化+留痕 / STRICT 不猜 / 非法逐条列因）+ 回执里\"已归一化\"那一行。\n（b）**每条写路生效：8 条实测 + 4 条静态**。实测口径 = 同一句调用只换 actor：卡主放行且真写盘 / 冒名拒且零字节落盘 / 不传放行（消融）。覆盖 edit_code（单 + 批量 targets）· rename_symbols（scope=local 与 module）· rename_files · move_symbol · apply_refactor_plan · remove_dead_imports · refactor_pipeline（dead_imports 步）· review_changes(approve，actor 取 c.submitter 而非拍板人)。静态已接同一条原语、运行时未跑：annotate_functions / rules(apply) / deprecate_offline / design_line(sync-signatures)。\n（c）**缺省值：已闭环**。无 actor ⇒ 提醒 + 放行；`AGENT_IO_ACTOR_STRICT=1` ⇒ 拒（报文给两条能过的路）。\n★ 顺带证伪 D-actor-entry：入口不再是\"没人负责设 AGENT_IO_ACTOR\" —— 2026-10-20 起 `actor` 是**逐调用的保留入参**（`server_registry.CALL_ACTOR_FIELD`，MCP 与 CLI 两面共用），env 只是兜底。\n\n★ 仍不在写闸上的源码写路（**本卡不做，已登记为下一环**）：observe_instrument / diagnose_loop / upgrade / derive_split。\n★ 明确**不算缺口**的两类：① rollback / restore（deprecate_offline 回滚、instrument 还原、revertPatches）—— 写回的是**已经被写过的字节**；② 生成物（translate/* 写 outDir）—— 不是同一棵树上的\"改源码\"。",
+          "reason": "复核结论替换过期描述：(a)(c) 已闭环、(b) 8 条实测通过；并把\"仍在闸外\"的写路显式点名，别让收口把它们一起埋掉。",
+          "by": "subagent:account-line"
+        }
+      ],
+      "claimed_at": "2026-10-22T05:29:50.847Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T05:29:50.797Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-22T05:30:04.944Z",
+          "by": "llm",
+          "agent": "subagent:account-line",
+          "fingerprint": {
+            "what": "node actor-audit.mjs（仓外审计脚本：8 条写路 × 卡主/冒名/不传 三态 + STRICT 两条，夹具 = 临时 home/root + 一对 claimed 卡 owner=subagent:card-owner）",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_D-validate-decision",
@@ -106473,6 +106503,13 @@
       "state": "candidate",
       "summary": "【t354 从「4 条空断言」变成「2 条真缺口」】2026-10-22 修好了它的读路径：`scripts/verify-changed.mjs:57` 原先读 `docs/task-system-plan.dsl.json` —— 那位置 2026-10-18 就废弃了（`storage.ts#getDesignDir` 头注明写「现在只有一处」），且 `docs/*` 进了 .gitignore ⇒ 文件不存在 ⇒ `plan=null` ⇒ ②②'⑤'⑥' **四条变成空断言**（它们\"通过\"不是因为对，是因为没东西可判）。改成 `.agent-io/design/task-system-plan.dsl.json` 后：PASS 10→12 / FAIL 4→2。\n剩下两条**都是既有的真缺口，不许改断言让它变绿**：\n  ① `write_gate.ts` 现在 **契约 0 / 证 0** ⇒ 工具把它标成「没验」而不是「绿」（证里自述这是 `touches_gap` 的洞）。     它是个核心文件（所有源码写的唯一闸），却一条契约都没有 —— 这是\"最重要的一处没人验\"。\n  ② ② 的断言要求「每条都带 node_id + **摘要** + path」，而输出里只有 `node_id :: kind :: path`，摘要没打印出来     ⇒ 要么补输出、要么把断言改成它真能看见的东西（★ 二选一，不许删断言）。\n判据：① `write_gate.ts` 有 ≥1 条 post 契约且能被 t354 命中；② ② 的断言与输出口径一致（断言要看的字段确实在输出里）；③ 两条修完后 t354 全绿，且**新增的断言能红**（造一个反例）。",
       "created_at": "2026-10-22T04:58:14.557Z"
+    },
+    {
+      "id": "todo_并发控制-账户-续-把-4-条仍在写闸之外的-源码写路-接上账户-本卡是上一环实",
+      "summary": "【并发控制·账户·续】把 4 条仍在写闸之外的**源码写路**接上账户（本卡是上一环实测点名的那 4 条）。\n\n① `observe_instrument` —— `infrastructure/analysis/observe/instrument_skeleton.ts:395` 裸 `fs.writeFileSync`（+ `instrument.ts:187` 还原）。★ 实测：冒名 actor 仍能改写别人卡下的源码（isError=false，源码被改）。\n② `diagnose_loop` —— `infrastructure/analysis/diagnosis/repair.ts#applyPatches`(:236) 与 `revertPatches`(:246) 直写。\n③ `upgrade` —— `infrastructure/authoring/version_upgrade/rewrite.ts:133` 与 adapters（java:110/163 · node:106 · python:122）直写。注意 node adapter 写的是**临时文件再 rename**，闸要判的是最终路径。\n④ `derive_split` —— `application/design/derive/derive_split.ts:1021-1045` 直写（它**真写源码**），但住在\"禁改 design/**\"的边界里 ⇒ 先解禁或交由该线自己接。\n\n判据（每条都要消融，别只看\"参数在\"）：同一句调用只换 actor ⇒ 卡主放行且真写盘 / 冒名拒且零字节落盘 / 不传放行；`AGENT_IO_ACTOR_STRICT=1` 且不传 ⇒ 拒。\n★ **入口阻塞**（这就是本轮没做的原因）：①②③ 的 actor 起点分别在 `src/application/observe/handlers.ts`（节点卡 owner=subagent:serve-split）与 `src/application/meta/index.ts`（owner=agent-facts-db）—— 都在别人的 claimed 卡上，抢改会被 A7 拒。⇒ 等对应卡 release，或由持卡人接这一环。\n★ 别把 restore/rollback 也算进来：那三类写回的是已被写过的字节，是回退不是改。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_D-actor-entry"
     }
   ],
   "_dsl_rev": 1260,
