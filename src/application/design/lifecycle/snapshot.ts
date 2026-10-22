@@ -14,6 +14,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
+// ★★ 2026-10-22（A1）：快照回滚是**派生写端**（serve.ts 直接 import）。
+import { runDslWriteScope } from '../../../infrastructure/dsl_write_scope.js';
 import { getStorageRoot } from '../../../infrastructure/storage.js';
 import type { DesignDSL } from '../../../domain/types.js';
 import { resolveDiagramStatus } from '../../../domain/geometry.js';
@@ -286,7 +288,7 @@ export function rollbackSnapshot(input: RollbackSnapshotInput): RollbackSnapshot
   // 移除快照元数据后恢复 DSL
   const restored = JSON.parse(JSON.stringify(targetData));
   delete restored._snapshot;
-  saveDSL(restored as DesignDSL, 'snapshot');
+  runDslWriteScope({ via: 'derived', who: 'snapshot' }, () => saveDSL(restored as DesignDSL, 'snapshot'));
 
   const nodeCount = restored.geometry?.nodes?.length ?? 0;
   const edgeCount = restored.geometry?.edges?.length ?? 0;

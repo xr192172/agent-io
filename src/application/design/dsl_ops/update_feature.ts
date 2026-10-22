@@ -14,6 +14,9 @@
 
 import fs from 'node:fs';
 import { getDSL, saveDSL, getDesignSheetFile } from '../../../infrastructure/storage.js';
+// ★★★ 2026-10-22（A1）：`edit_dsl` 是**人改设计的唯一正路** —— 它必须自己声明"这次写是谁授权的"，
+//   否则下面的 `applyOperation` → `saveDSL` 会抛（`storage.ts#assertDslWriteAllowed`）。
+import { runDslWriteScope } from '../../../infrastructure/dsl_write_scope.js';
 // ★★★ 2026-10-19（设计只住一处）：**syncDecisionsToOverlay 已退役** ——
 //   T75 当年加它是因为「base 重建会把 decision 冲掉」；而 design/ 现在是独立手写文件，
 //   重建不碰它 ⇒ 那个前提已不存在。decision 只住 design/，不再同步进 overlay。
@@ -227,7 +230,14 @@ async function updateFeatureCore(input: UpdateFeatureInput): Promise<EditResult>
   const changeReason = typeof input.reason === 'string' ? input.reason.trim() : '';
   try {
     for (const [i, op] of operations.entries()) {
-      const result = await applyOperation(feature, op, agent, changeReason);
+      // ★★★ 2026-10-22（A1/A2）：**授权只在 op 的执行期间有效**（`AsyncLocalStorage` 按调用栈传播，
+      //   `await` 之后仍在同一上下文里）。⇒ 本行之外（含 `updateFeatureCore` 的前后准备工作）
+      //   **没有**写权限：任何在别的路径上"顺手 saveDSL"的代码拿不到它。
+      //   ★ 这里也是"为什么只给 applyOperation"的答案：它是**唯一**逐条落盘的地方
+      //   （`node_ops` / `file_ops` / `task_ops` … 各自的 saveDSL 都在这条栈下面）。
+      const result = await runDslWriteScope({ via: 'edit_dsl', who: 'edit_dsl', feature }, () =>
+        applyOperation(feature, op, agent, changeReason),
+      );
       // ★★ 摘要 = **首行**。⇒ 〔继承下笔人的判据〕**op 的首行必须自足**：
       //   它是**唯一保证被看见**的那一行（明细与结构化产物都可能在传输/汇总时丢掉）。
       //   例：破坏性操作（删条目）必须把"删了几条"写进首行，并带 ⚠。

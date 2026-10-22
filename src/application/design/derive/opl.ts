@@ -16,6 +16,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { getDSL, saveDSL, getStorageRoot } from '../../../infrastructure/storage.js';
+// ★★ 2026-10-22（A1）：OPL 流水线是**派生写端**（serve.ts 的 /api/opl 直接 import 本模块）。
+import { runDslWriteScope } from '../../../infrastructure/dsl_write_scope.js';
 import { placeProposals, deriveMindMap } from '../../meta/view/derive_mind_map.js';
 import { callChat, loadLlmConfig } from '../../../infrastructure/llm_focus.js';
 import { apiSignaturesOf } from '../../../infrastructure/index/file_facts.js';
@@ -105,7 +107,7 @@ export function oplAdd(feature: string, idea: string): OplState {
   const id = `op_${randomUUID().slice(0, 8)}`;
   dsl.user_nodes = dsl.user_nodes ?? [];
   dsl.user_nodes.push({ id, parent_id: 'root', text: idea.trim().slice(0, 300), created: now });
-  saveDSL(dsl, 'browser');
+  runDslWriteScope({ via: 'derived', who: 'opl' }, () => saveDSL(dsl, 'browser'));
   const s: OplState = {
     id,
     idea: idea.trim(),
@@ -397,7 +399,7 @@ export async function oplIntegrate(feature: string, id: string): Promise<OplStat
       }
     }
   }
-  saveDSL(dsl, 'browser');
+  runDslWriteScope({ via: 'derived', who: 'opl' }, () => saveDSL(dsl, 'browser'));
   // 反上来接入导图：局部触发式更新——结构从活 DSL 重建（可真），
   // 但只把本次接入的 accepted 文件标 dirty；未变更文件复用上次导图的人话描述，不整树重算
   try {

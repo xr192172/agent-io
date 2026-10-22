@@ -3990,19 +3990,19 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_scripts_verify-changed_mjs\"].responsibility"
           },
-          "owner": "subagent:deepseek-fix5",
-          "claimed_at": "2026-10-22T07:19:13.489Z",
+          "owner": "subagent:deepseek-dsl-writer",
+          "claimed_at": "2026-10-22T16:06:11.599Z",
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "scripts/verify-changed.mjs",
-                "content_hash": "ae4387e33a0f42ae3674fe78481b177a2d2146cd"
+                "content_hash": "612b6479002e4d3d22676e737ede40b30d5776e1"
               }
             ],
-            "computed_at": "2026-10-22T07:19:13.448Z",
+            "computed_at": "2026-10-22T16:06:11.558Z",
             "basis": [
-              "node-path"
+              "expectations"
             ]
           },
           "evidence": [
@@ -4020,8 +4020,26 @@
                 ]
               },
               "verdict": "pass"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-10-22T16:27:47.444Z",
+              "by": "llm",
+              "why": "派活方要求的 4 项反证全部实跑：写端收敛/A2 抛/B2-B3 baseline 读数/A3 接线",
+              "fingerprint": {
+                "what": "attestation:llm",
+                "input": "80bc68dde54e0f138e04edf381dad74c27b0fa4a",
+                "code": "0bec2746ba3f007a6a3490acc042178e332bcf7d",
+                "covers": [
+                  "scripts/verify-changed.mjs"
+                ]
+              },
+              "verdict": "pass"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-22T16:06:11.599Z",
+          "reopen_reason": "重开 scripts/verify-changed.mjs 的文件卡：改 DSL 时把 scripts/design-check.mjs 拉进受影响集合，不再全量挂 verify",
+          "reopened_from": "subagent:deepseek-fix5"
         },
         "status": "done",
         "decision": {
@@ -53325,8 +53343,8 @@
           "id": "file_src_infrastructure_storage_ts",
           "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
           "state": "done",
-          "owner": "subagent:dsl-symbols-fixer",
-          "claimed_at": "2026-10-21T11:49:44.497Z",
+          "owner": "subagent:deepseek-dsl-writer",
+          "claimed_at": "2026-10-22T16:00:23.386Z",
           "evidence": [
             {
               "kind": "attestation",
@@ -53371,11 +53389,50 @@
                 ]
               },
               "verdict": "pass"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-10-22T16:27:47.315Z",
+              "by": "llm",
+              "why": "派活方要求的 4 项反证全部实跑：写端收敛/A2 抛/B2-B3 baseline 读数/A3 接线",
+              "fingerprint": {
+                "what": "attestation:llm",
+                "input": "7d919a43fb1c90485279b15675f41c72d36ec89b",
+                "code": "32a01116d35001e92fbe6848bf6654da673b3a9e",
+                "covers": [
+                  "src/infrastructure/storage.ts"
+                ]
+              },
+              "verdict": "pass"
             }
           ],
-          "reopened_at": "2026-10-21T11:49:44.497Z",
-          "reopen_reason": "修 buildSyncMeta 的 scanRev 语义：加 refreshScanRev，只有 import/fork/首次才刷新库代，edit_dsl 与 claim/publish/release/complete 只前进 saved_at；原卡 3 条判据不改",
-          "reopened_from": "subagent:dsl-symbols-fixer"
+          "reopened_at": "2026-10-22T16:00:23.386Z",
+          "reopen_reason": "重开 src/infrastructure/storage.ts 的文件卡：saveDSL 加写端授权（收 DSL 写端），并让 baseline 跟随实际侧重建",
+          "reopened_from": "subagent:dsl-symbols-fixer",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/storage.ts",
+                "name": "getDesignSheet",
+                "fp": "b8186c093fbdf90728ff0bdf49a4ef6ef8708b77"
+              },
+              {
+                "file": "src/infrastructure/storage.ts",
+                "name": "listDesignSheets",
+                "fp": "e40b5d0254f9c1cd7a4b62926e592bb06a2e28c9"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/storage.ts",
+                "content_hash": "2a7caef36a44378fafeaa0b7f149224a60fb9194"
+              }
+            ],
+            "computed_at": "2026-10-22T16:00:23.343Z",
+            "basis": [
+              "expectations"
+            ]
+          }
         },
         "status": "done"
       },
@@ -105065,12 +105122,13 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T15:52:18.871Z",
+    "saved_at": "2026-10-22T16:27:47.480Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 100816060,
-    "dbSchemaVersion": 16
+    "age": 102944669,
+    "dbSchemaVersion": 16,
+    "via": "edit_dsl:edit_dsl"
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -109015,10 +109073,32 @@
     },
     {
       "type": "todo",
-      "state": "candidate",
+      "state": "done",
       "id": "todo_设计-DSL-有多个写端-saveDSL-谁都能调-所以校验和留痕全可绕过-baseline-也从不更新",
       "created_at": "2026-10-22T11:48:25.442Z",
-      "summary": "【2026-10-22 实测（用户三连问点破）：\n  ① `baseline/` **零写入点** ⇒ 永远是 Oct 18 那一个\n  ② 当天改 DSL **41 次提交**、**18 个脚本用 `saveDSL` 直写**、`edit_dsl` **一次没用**\n  ③ 这些改动**没有 `checkOpSpec` / 没有 `validateDSL` / 没有 rev 校验**（`design-check.mjs` 也不在 verify 里）】\n\n## 用户的原话（这是设计意图，我一直没遵守）\n> 「我做设计 DSL 出来的理由就是为了**不让你直接在实际 DSL 上面改**，但是又需要你简单地拥有在实际 DSL 上改的写作难度」\n> 「似乎看起来你根本就没有用工具，而是直接自己手写的吧，要不然为什么这个基线没动过。还是说这基线也没有接线？」\n\n## 病灶：`saveDSL` 是 `export` 的，谁 import 谁就能写\n```\n唯一合法写端应该是 `edit_dsl` → checkOpSpec(键闸) → validateDSL(结构) → applyOperation(语义) → saveDSL\n但 saveDSL 被 18 个脚本 + 我自己（import dist 直接调）都能用 ⇒ 上面三道全可绕过\n⇒ 实测后果：今天 41 次 DSL 改动【一道校验都没过】；\n   唯一间接兜到的是 \"设计 DB 结构\" 门（它发现\"设计里有节点但没有投影\"，补了 8 个）\n```\n\n## 第二个病灶：baseline 存在但从不更新\n```\nbaseline 的用途（用户）：\"反映实际侧的变化，以免实际侧被人用工具以外的方式改了而我们不知道\"\n实测：`grep -rn \"saveDSLByView|baseline\" | grep 写` = 0 ⇒ 【没有任何写入点】\n⇒ 它现在回答\"4 天前的代码长什么样\"，不是\"上次扫描到现在变了什么\"\n★ 于是 `diff_views` 的 baseline 侧永远给旧答案 —— 而它存在的**唯一理由**就是给新答案\n```\n\n## 判据（分两条，各自可红）\n\n### A. 设计 DSL 的写端收敛为一处\n  A1. `saveDSL` 不再对外暴露\"裸写\"能力：加一个 `saveDSLByOperation(op, ...)`，**只有 `applyOperation` 能调**\n      （★ 技术手段：把 `saveDSL` 改成接受一个 `Authorization` token，该 token 只能由 `applyOperation` 内部构造）\n  A2. **反证**：绕过它直写 ⇒ 必须**抛**（不是\"警告\"）；\n      ★ 但**迁移期**要有出口：`--allow-raw-write` 且**必须写明理由**（记 `history` 的一行 `raw_write_reason`）\n  A3. `design-check.mjs` **挂进 verify**（它现在不在——所以 41 次改动一次都没被它看过）\n     ★ 但注意：它是\"全量扫\"，与增量哲学相反 ⇒ 应该进 `verify:changed` 的受影响集合（改 DSL ⇒ 跑 design-check）\n\n### B. baseline 必须跟着实际侧走\n  B1. **写入点定一处**：`import_project` / `rescan` 成功后 rebuild baseline（`saveDSLByView(feature, baseline 视图)`）\n  B2. **反证**：改一个源文件 + 重扫 ⇒ baseline 的 `content_hash` 必须变；不改 + 重扫 ⇒ 必须不变\n  B3. **它的用途要能兑现**：`diff_views baseline vs live` 必须能答\"**哪些文件被工具以外的方式改过**\"\n     ★ 判据：手改一个源文件（不经 edit_code）⇒ 重扫 ⇒ 报告里必须点名它\n\n## 为什么这条最贵（它把今天所有事串起来）\n```\n今天我做的一切\"判据/门/证\"，前提都是【设计侧是真的】\n但我改设计侧的方式（脚本直写）正是【设计侧最不该被改的方式】\n⇒ 我等于在\"用绕过设计纪律的方式去建立设计纪律\"\n★ 而且 baseline 不动 ⇒ 连\"我改了多少\"都没有第三方基线可比\n```"
+      "summary": "【2026-10-22 实测（用户三连问点破）：\n  ① `baseline/` **零写入点** ⇒ 永远是 Oct 18 那一个\n  ② 当天改 DSL **41 次提交**、**18 个脚本用 `saveDSL` 直写**、`edit_dsl` **一次没用**\n  ③ 这些改动**没有 `checkOpSpec` / 没有 `validateDSL` / 没有 rev 校验**（`design-check.mjs` 也不在 verify 里）】\n\n## 用户的原话（这是设计意图，我一直没遵守）\n> 「我做设计 DSL 出来的理由就是为了**不让你直接在实际 DSL 上面改**，但是又需要你简单地拥有在实际 DSL 上改的写作难度」\n> 「似乎看起来你根本就没有用工具，而是直接自己手写的吧，要不然为什么这个基线没动过。还是说这基线也没有接线？」\n\n## 病灶：`saveDSL` 是 `export` 的，谁 import 谁就能写\n```\n唯一合法写端应该是 `edit_dsl` → checkOpSpec(键闸) → validateDSL(结构) → applyOperation(语义) → saveDSL\n但 saveDSL 被 18 个脚本 + 我自己（import dist 直接调）都能用 ⇒ 上面三道全可绕过\n⇒ 实测后果：今天 41 次 DSL 改动【一道校验都没过】；\n   唯一间接兜到的是 \"设计 DB 结构\" 门（它发现\"设计里有节点但没有投影\"，补了 8 个）\n```\n\n## 第二个病灶：baseline 存在但从不更新\n```\nbaseline 的用途（用户）：\"反映实际侧的变化，以免实际侧被人用工具以外的方式改了而我们不知道\"\n实测：`grep -rn \"saveDSLByView|baseline\" | grep 写` = 0 ⇒ 【没有任何写入点】\n⇒ 它现在回答\"4 天前的代码长什么样\"，不是\"上次扫描到现在变了什么\"\n★ 于是 `diff_views` 的 baseline 侧永远给旧答案 —— 而它存在的**唯一理由**就是给新答案\n```\n\n## 判据（分两条，各自可红）\n\n### A. 设计 DSL 的写端收敛为一处\n  A1. `saveDSL` 不再对外暴露\"裸写\"能力：加一个 `saveDSLByOperation(op, ...)`，**只有 `applyOperation` 能调**\n      （★ 技术手段：把 `saveDSL` 改成接受一个 `Authorization` token，该 token 只能由 `applyOperation` 内部构造）\n  A2. **反证**：绕过它直写 ⇒ 必须**抛**（不是\"警告\"）；\n      ★ 但**迁移期**要有出口：`--allow-raw-write` 且**必须写明理由**（记 `history` 的一行 `raw_write_reason`）\n  A3. `design-check.mjs` **挂进 verify**（它现在不在——所以 41 次改动一次都没被它看过）\n     ★ 但注意：它是\"全量扫\"，与增量哲学相反 ⇒ 应该进 `verify:changed` 的受影响集合（改 DSL ⇒ 跑 design-check）\n\n### B. baseline 必须跟着实际侧走\n  B1. **写入点定一处**：`import_project` / `rescan` 成功后 rebuild baseline（`saveDSLByView(feature, baseline 视图)`）\n  B2. **反证**：改一个源文件 + 重扫 ⇒ baseline 的 `content_hash` 必须变；不改 + 重扫 ⇒ 必须不变\n  B3. **它的用途要能兑现**：`diff_views baseline vs live` 必须能答\"**哪些文件被工具以外的方式改过**\"\n     ★ 判据：手改一个源文件（不经 edit_code）⇒ 重扫 ⇒ 报告里必须点名它\n\n## 为什么这条最贵（它把今天所有事串起来）\n```\n今天我做的一切\"判据/门/证\"，前提都是【设计侧是真的】\n但我改设计侧的方式（脚本直写）正是【设计侧最不该被改的方式】\n⇒ 我等于在\"用绕过设计纪律的方式去建立设计纪律\"\n★ 而且 baseline 不动 ⇒ 连\"我改了多少\"都没有第三方基线可比\n```",
+      "owner": "subagent:deepseek-dsl-writer",
+      "claimed_at": "2026-10-22T15:59:56.569Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-22T15:59:56.527Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "attestation",
+          "at": "2026-10-22T16:27:47.201Z",
+          "by": "llm",
+          "why": "派活方要求的 4 项反证全部实跑：写端收敛/A2 抛/B2-B3 baseline 读数/A3 接线",
+          "fingerprint": {
+            "what": "attestation:llm",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "verdict": "pass"
+        }
+      ]
     },
     {
       "id": "todo_统计-savedsl-60-个直写点-23-edit-dsl-正路-18-显式-",
@@ -109219,19 +109299,19 @@
       "discussion": {
         "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_scripts_verify-changed_mjs\"].responsibility"
       },
-      "owner": "subagent:deepseek-fix5",
-      "claimed_at": "2026-10-22T07:19:13.489Z",
+      "owner": "subagent:deepseek-dsl-writer",
+      "claimed_at": "2026-10-22T16:06:11.599Z",
       "read_set": {
         "symbols": [],
         "files": [
           {
             "path": "scripts/verify-changed.mjs",
-            "content_hash": "ae4387e33a0f42ae3674fe78481b177a2d2146cd"
+            "content_hash": "612b6479002e4d3d22676e737ede40b30d5776e1"
           }
         ],
-        "computed_at": "2026-10-22T07:19:13.448Z",
+        "computed_at": "2026-10-22T16:06:11.558Z",
         "basis": [
-          "node-path"
+          "expectations"
         ]
       },
       "evidence": [
@@ -109249,8 +109329,26 @@
             ]
           },
           "verdict": "pass"
+        },
+        {
+          "kind": "attestation",
+          "at": "2026-10-22T16:27:47.444Z",
+          "by": "llm",
+          "why": "派活方要求的 4 项反证全部实跑：写端收敛/A2 抛/B2-B3 baseline 读数/A3 接线",
+          "fingerprint": {
+            "what": "attestation:llm",
+            "input": "80bc68dde54e0f138e04edf381dad74c27b0fa4a",
+            "code": "0bec2746ba3f007a6a3490acc042178e332bcf7d",
+            "covers": [
+              "scripts/verify-changed.mjs"
+            ]
+          },
+          "verdict": "pass"
         }
       ],
+      "reopened_at": "2026-10-22T16:06:11.599Z",
+      "reopen_reason": "重开 scripts/verify-changed.mjs 的文件卡：改 DSL 时把 scripts/design-check.mjs 拉进受影响集合，不再全量挂 verify",
+      "reopened_from": "subagent:deepseek-fix5",
       "node_id": "file_scripts_verify-changed_mjs"
     },
     {
@@ -111994,8 +112092,8 @@
       "id": "file_src_infrastructure_storage_ts",
       "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
       "state": "done",
-      "owner": "subagent:dsl-symbols-fixer",
-      "claimed_at": "2026-10-21T11:49:44.497Z",
+      "owner": "subagent:deepseek-dsl-writer",
+      "claimed_at": "2026-10-22T16:00:23.386Z",
       "evidence": [
         {
           "kind": "attestation",
@@ -112040,11 +112138,50 @@
             ]
           },
           "verdict": "pass"
+        },
+        {
+          "kind": "attestation",
+          "at": "2026-10-22T16:27:47.315Z",
+          "by": "llm",
+          "why": "派活方要求的 4 项反证全部实跑：写端收敛/A2 抛/B2-B3 baseline 读数/A3 接线",
+          "fingerprint": {
+            "what": "attestation:llm",
+            "input": "7d919a43fb1c90485279b15675f41c72d36ec89b",
+            "code": "32a01116d35001e92fbe6848bf6654da673b3a9e",
+            "covers": [
+              "src/infrastructure/storage.ts"
+            ]
+          },
+          "verdict": "pass"
         }
       ],
-      "reopened_at": "2026-10-21T11:49:44.497Z",
-      "reopen_reason": "修 buildSyncMeta 的 scanRev 语义：加 refreshScanRev，只有 import/fork/首次才刷新库代，edit_dsl 与 claim/publish/release/complete 只前进 saved_at；原卡 3 条判据不改",
+      "reopened_at": "2026-10-22T16:00:23.386Z",
+      "reopen_reason": "重开 src/infrastructure/storage.ts 的文件卡：saveDSL 加写端授权（收 DSL 写端），并让 baseline 跟随实际侧重建",
       "reopened_from": "subagent:dsl-symbols-fixer",
+      "read_set": {
+        "symbols": [
+          {
+            "file": "src/infrastructure/storage.ts",
+            "name": "getDesignSheet",
+            "fp": "b8186c093fbdf90728ff0bdf49a4ef6ef8708b77"
+          },
+          {
+            "file": "src/infrastructure/storage.ts",
+            "name": "listDesignSheets",
+            "fp": "e40b5d0254f9c1cd7a4b62926e592bb06a2e28c9"
+          }
+        ],
+        "files": [
+          {
+            "path": "src/infrastructure/storage.ts",
+            "content_hash": "2a7caef36a44378fafeaa0b7f149224a60fb9194"
+          }
+        ],
+        "computed_at": "2026-10-22T16:00:23.343Z",
+        "basis": [
+          "expectations"
+        ]
+      },
       "node_id": "file_src_infrastructure_storage_ts"
     },
     {
@@ -112449,6 +112586,27 @@
       "state": "candidate",
       "owner": null,
       "follows": "todo_决策卡应该记节点-而不是节点记决策卡-node-task-是单数-历史被原地覆盖"
+    },
+    {
+      "id": "todo_2026-10-22-收-dsl-写端的残留洞-等-serve-ts-卡释放-s",
+      "summary": "【2026-10-22 收 DSL 写端的残留洞·等 serve.ts 卡释放】saveDSL 现在无写授权即抛，但 src/presentation/http/serve.ts 的 5 个写点只靠一条「内容判据」兜着 4 个，第 5 个会被拒：\n\n1. serve.ts:239 `/api/save`（saveDSL(result.dsl,'browser',baseRev)）—— **整册**写 ⇒ 不是画布补丁 ⇒ 现在 500。它自己的注释写着「该路径已在退役名单上」，但若还有老前端在用就会坏。另外 4 个（1367 annotations / 1425 user_nodes / 1599+1664 canvas_notes）只动 annotations/user_nodes/canvas_notes 三格 ⇒ 走 storage.ts#assertDslWriteAllowed 的 canvas-patch 分支放行。\n\n★ 为什么没直接改 serve.ts：2026-10-22 16:00 它被 agent:main claim 着（<2h，租约未熔断）⇒ 按纪律不碰。\n★ 要做的：等卡释放 ⇒ 这 5 处包 runDslWriteScope({via:'canvas',who:'serve:/api/xxx'})，然后**删掉 storage.ts 的 canvas-patch 豁免**（豁免常驻 = 后门）；/api/save 若确认没人用就直接删端点。\n★ 判据：删掉 canvas-patch 分支后 annotations/user_nodes/canvas_notes 三端点仍 200，且裸 saveDSL(dsl) 仍抛。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_设计-DSL-有多个写端-saveDSL-谁都能调-所以校验和留痕全可绕过-baseline-也从不更新"
+    },
+    {
+      "id": "todo_2026-10-22-收-dsl-写端的残留洞-租约冲突-src-applica",
+      "summary": "【2026-10-22 收 DSL 写端的残留洞·租约冲突】src/application/design/derive/derive_chain.ts:778 的 saveDSL(dsl) **没有**包 runDslWriteScope ⇒ 它经 serve.ts 的 HTTP 派生入口被调时会抛「拒绝写入设计 DSL（没有写授权）」。\n\n★ 为什么没改：该文件的卡 file_src_application_design_derive_derive_chain_ts 被 codebuddy-params 占着（2026-10-22 16:09 实测 A7 拒），按纪律不碰。\n★ 要做的：等那张卡释放 ⇒ 照 dag_layout/opl 的样子包一层 runDslWriteScope({via:'derived',who:'derive_chain'})。\n★ 判据：从 serve 的派生入口触发一次，不再抛；`_sync.via` 读出 'derived:derive_chain'。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_设计-DSL-有多个写端-saveDSL-谁都能调-所以校验和留痕全可绕过-baseline-也从不更新"
+    },
+    {
+      "id": "todo_2026-10-22-实测-自写登记从-2026-10-13-起就是空的-bas",
+      "summary": "【2026-10-22 实测：自写登记从 2026-10-13 起就是空的】baseline 重建时的 drift 报告本来要回答「**哪些文件是被工具以外的方式改的**」（判断依据 = .agent-io/self-writes.json），但实测该文件只有 1 条 2026-10-13 的 scaffold:run82 记录 ⇒ recordSelfWrite **根本没接到 edit_code 上**（source_writer.ts 里那套「判闸→快照→写→登记」的第 ④ 步没跑）。\n\n⇒ 现在 import_project 的回执会**明说**「自写登记当前是空的 ⇒ 分不出工具改的与手改的」（不撒谎），但那条判据半个身子是空的。\n★ 要做的：查清 recordSelfWrite / syncSelfWritesSync 为什么没落（edit_code 是否走了 source_writer#commit 的 close），接线；再用「edit_code 改一个文件 + 手改另一个文件 + 重扫」验一次：前者进登记、后者被点名。\n★ 判据：self-writes.json 出现今天的 edit_code 条目；重扫回执出现「✓ 变更全部落在自写登记里」而不是「登记是空的」。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_设计-DSL-有多个写端-saveDSL-谁都能调-所以校验和留痕全可绕过-baseline-也从不更新"
     }
   ],
   "_dsl_rev": 1293,

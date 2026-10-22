@@ -216,6 +216,58 @@ for (const f of certFiles) {
 }
 
 // ════════════════════════════════════════════════════════════════════
+// ③.5 项目级检查：**改设计 DSL ⇒ 跑 design-check**（2026-10-22 · 卡 A3）
+//
+// ## 为什么住在这里、而不是 `npm run verify`
+// `scripts/design-check.mjs` 是**全量扫**（读整份设计册的 `task_plan.design_completeness.criteria`），
+// 与增量哲学相反；挂进总门 = 每次 verify 都全量跑一遍（用户 2026-10-07 已裁：「不建普查门」）。
+// ⇒ 正确位置是**受影响集合**：改了设计册（`.agent-io/design/*.dsl.json`）或改了它自己 ⇒ 跑它。
+//
+// ## 它挡的事故（实测，不是推测）
+// 2026-10-22 当天 41 次 DSL 改动，`design-check` **一次都没被跑过**（它不在任何门里）
+// ⇒ 那 41 次里"设计完整性"是什么样，**没人知道**；等发现时只能靠人回忆。
+//
+// ## 边界（诚实标注）
+// · 它判的是**项目级** `criteria[].expect`，不是节点级 `decision.expectations`（后者在第 ② 步）；
+// · 它只认默认 feature `task-system-plan`（`--feature` 未传）；改了**别的** feature 的册也会跑它，
+//   此时它扫的是 `task-system-plan` ⇒ **可能不相关**（宁可多跑一次，也不静默当作"没影响"）。
+// ════════════════════════════════════════════════════════════════════
+const DESIGN_SHEET_RE = /^\.agent-io\/design\/[^/]+\.dsl\.json$/;
+const designSheetHit = changed.find((p) => DESIGN_SHEET_RE.test(p)) ?? null;
+const designCheckWhy = designSheetHit
+  ? `改了设计册 ${designSheetHit}`
+  : changed.includes('scripts/design-check.mjs')
+    ? '改的就是 design-check 自己'
+    : '';
+const designCheckHit = designCheckWhy !== '';
+let designCheckRun = null;
+if (designCheckHit && !NO_RUN) {
+  const t0 = Date.now();
+  let out = '';
+  let rc = 0;
+  try {
+    out = execFileSync('node', [`${ROOT}/scripts/design-check.mjs`], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } catch (e) {
+    rc = typeof e.status === 'number' ? e.status : -1;
+    out = String(e.stdout ?? '') + String(e.stderr ?? '');
+  }
+  const c = out.match(/通过 (\d+) · ★ 不通过 (\d+) · 进行中 (\d+)（共 (\d+) 条）/);
+  designCheckRun = {
+    rc,
+    ms: Date.now() - t0,
+    pass: c ? Number(c[1]) : null,
+    fail: c ? Number(c[2]) : null,
+    pending: c ? Number(c[3]) : null,
+    checked: c ? Number(c[4]) : null,
+    out,
+  };
+}
+
+// ════════════════════════════════════════════════════════════════════
 // ④ 实际跑（★ 只跑上面算出的；--no-run 时一个都不跑）
 // ════════════════════════════════════════════════════════════════════
 const certRuns = [];
@@ -263,7 +315,8 @@ if (!NO_RUN && expHits.length > 0 && judge) {
 // ════════════════════════════════════════════════════════════════════
 const badCerts = certRuns.filter((r) => r.kind === 'red' || r.kind === 'crash');
 const redExps = (expReport?.items ?? []).filter((i) => i.verdict === 'fail');
-const red = badCerts.length > 0 || redExps.length > 0;
+// ★★ 2026-10-22（A3）：项目级检查也是判据之一 —— 它 FAIL 就是这次真的有红（不是附录）。
+const red = badCerts.length > 0 || redExps.length > 0 || (designCheckRun !== null && designCheckRun.rc !== 0);
 /**
  * ★★ 2026-10-22：`nothingHit` 必须只看【精准命中】，不能把"兜底全跑"算进去。
  * 为什么：改成"零命中⇒全跑"之后，`certHits` 永远非空 ⇒ `nothingHit` 永远 false ⇒
@@ -296,6 +349,19 @@ if (JSON_OUT) {
       expectations: expReport ? { checked: expReport.checked, passed: expReport.passed, failed: expReport.failed, unsupported: expReport.unsupported } : null,
     },
     nothingHit,
+    // ★★ 2026-10-22（A3）：`null` = **这次不该跑它**（不是"跑了没红"）—— 两者必须能分开读。
+    design_check: designCheckHit
+      ? {
+          why: designCheckWhy,
+          ran: designCheckRun !== null,
+          rc: designCheckRun?.rc ?? null,
+          pass: designCheckRun?.pass ?? null,
+          fail: designCheckRun?.fail ?? null,
+          pending: designCheckRun?.pending ?? null,
+          checked: designCheckRun?.checked ?? null,
+          ms: designCheckRun?.ms ?? null,
+        }
+      : null,
     red,
     noRun: NO_RUN,
   }));
@@ -327,6 +393,19 @@ if (expHits.length === 0) console.log('   （无：没有任何 expectation 的 
 console.log(`\n★ 命中证：${certHits.length} 张`);
 for (const c of certHits) console.log(`   · ${c.file}   （${c.why}）`);
 if (certHits.length === 0) console.log('   （无：没有证声明 touches 命中改动文件）');
+
+console.log(
+  `\n★ 项目级检查（design:check）：${designCheckHit ? designCheckWhy : '不跑（改动没碰设计册，也没碰它自己）'}`,
+);
+if (designCheckRun) {
+  const tag = designCheckRun.rc === 0 ? '✓' : '★ 有红';
+  console.log(
+    `   ${tag}  通过 ${designCheckRun.pass ?? '?'} · 不通过 ${designCheckRun.fail ?? '?'} · 进行中 ${designCheckRun.pending ?? '?'}（共 ${designCheckRun.checked ?? '?'} 条）  ${(designCheckRun.ms / 1000).toFixed(1)}s`,
+  );
+  if (designCheckRun.rc !== 0) console.log(designCheckRun.out.split('\n').slice(-15).join('\n'));
+} else if (designCheckHit && NO_RUN) {
+  console.log('   （--no-run：只算不跑）');
+}
 
 console.log(`\n★ 实际跑了：${NO_RUN ? 0 : certRuns.length} 张证 / ${NO_RUN ? 0 : expHits.length} 条期望`);
 for (const r of certRuns) {

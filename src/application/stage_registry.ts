@@ -211,7 +211,7 @@ export const STAGES: readonly Stage[] = [
     kind: 'derived',
     owner: 'dataHome',
     inputs: ['dsl_features'],
-    note: '设计基线（共同祖先）快照',
+    note: '基线快照（实际侧「上次扫描」的产物；常态由 import_project 重建，本工序只在缺失时补）',
     // ★ 与**读侧同一候选链**：报**第一个存在的**；都不存在 ⇒ 报优先级最高那个（"它该在哪"）。
     locate: (ctx) => {
       const feature = needFeature(ctx);

@@ -19,6 +19,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { getDSL, saveDSL, requireProjectRoot } from '../../storage.js';
+// ★★ 2026-10-22（A1）：架构分层结果回写是**派生写端**（serve.ts 直接 import）。
+import { runDslWriteScope } from '../../dsl_write_scope.js';
 import {
   detectArchLayers,
   detectLayerViolations,
@@ -239,7 +241,7 @@ export async function archLayer(input: ArchLayerInput): Promise<ArchLayerResult>
 
   let persisted = false;
   if (persist) {
-    saveDSL(layered, 'arch_layer');
+    runDslWriteScope({ via: 'derived', who: 'arch_layer' }, () => saveDSL(layered, 'arch_layer'));
     persisted = true;
   }
 

@@ -33,6 +33,12 @@ import { admitActor, normalizedActorNote } from '../../domain/actor_spec.js';
 import { scheduleBackfill, backfillState, isBackfillRunning } from '../../infrastructure/index/index_backfill.js';
 import { unknownArgHints, renderArgHints } from '../../infrastructure/text/arg_suggest.js';
 import { collectPendingAlertText, dispatchDslEdit } from '../../application/dispatch.js';
+// ★★★ 2026-10-22（A1）：**工具面是"系统派生写 DSL"的唯一合法出口** —— 在这里声明一次，
+//   25 个派生写点（derive / opl / dag_layout / archive / sync / approval …）全部落在授权内；
+//   而 `node -e "import('dist/…/storage.js').saveDSL(…)"` 拿不到它 ⇒ 抛（见 storage.ts#assertDslWriteAllowed）。
+//   ★ 为什么在**唯一咽喉**发、而不是逐个写点发：逐个发 = 25 处各写一份声明，
+//     漏一处就是一个静默撒谎点（本仓"判据住两处"的经典死法）；而这里本来就是"全部工具都走这里"。
+import { runDslWriteScope } from '../../infrastructure/dsl_write_scope.js';
 // ★★ 2026-10-06：「下一棒」提示 —— 链的接法（`CHAIN_EDGES`）+ 机器段标记（**单点**，别硬编码）
 import { renderNextHops, nextHopsOf } from '../../domain/chain_wiring.js';
 // ★ T251（2026-10-13）：`parseDataBlock` = 取 `---DATA---` 后**第一行**的**唯一**解析器
@@ -910,7 +916,10 @@ export async function invokeTool(
   const argHints = renderArgHints(unknownArgHints(a, knownArgs), knownArgs);
   // 狗食正式统计：记录每次工具调用的成败与子动作（失败静默，不阻断主流程）
   const t0 = Date.now();
-  const r = await def.handler(a);
+  // ★★★ 2026-10-22（A1）：**工具调用期间**才持有 DSL 写授权，`who` = 工具名（写进 `_sync.via` 留痕）。
+  //   ★ 工具自己也是"系统派生"的一类：它们造的是扫描/派生结果，表达不成 op，但**必须说得出自己是谁**。
+  //   ★ 派生之外的工具（读类）拿这份授权也没用 —— 它们不写；而写类工具的每次写都会在册子上留名。
+  const r = await runDslWriteScope({ via: 'tool', who: def.name }, () => def.handler(a));
   // ★★★ 2026-10-21（并发控制·读集比对）：**read / facts 读完就记读集**（写前比对的另一半）。
   //   位置：handler **之后**（拿得到产物）、任何包装/告警注入**之前**（取的是原始 `---DATA---`）。
   //   ★ 只有成功才记（失败的回执没有"读到了什么"）；★ 非 explore_code 的工具本函数直接返回。

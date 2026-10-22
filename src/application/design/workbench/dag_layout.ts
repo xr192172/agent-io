@@ -11,6 +11,8 @@
 
 import type { DesignDSL, ForceParams } from '../../../domain/types.js';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
+// ★★ 2026-10-22（A1）：布局是**派生写端**，自己声明自己（serve.ts 的画布布局端点直接 import 本模块）。
+import { runDslWriteScope } from '../../../infrastructure/dsl_write_scope.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface DagLayoutInput {
@@ -263,7 +265,7 @@ function dagLayoutCore(input: DagLayoutInput): { message: string; rank_count: nu
     currentLaneY += laneHeight + LANE_GAP_Y;
   });
 
-  saveDSL(dsl, 'dag_layout');
+  runDslWriteScope({ via: 'derived', who: 'dag_layout' }, () => saveDSL(dsl, 'dag_layout'));
 
   // 简单计算边交叉数
   const edgeCrossings = countEdgeCrossings(dsl);
@@ -489,7 +491,7 @@ export function forceLayout(input: ForceLayoutInput): { message: string; iterati
 
   dsl.geometry.width = width;
   dsl.geometry.height = height;
-  saveDSL(dsl, 'dag_layout');
+  runDslWriteScope({ via: 'derived', who: 'dag_layout' }, () => saveDSL(dsl, 'dag_layout'));
 
   const edgeCrossings = countEdgeCrossings(dsl);
 
@@ -539,7 +541,7 @@ export function gridAlign(input: GridAlignInput): { message: string; grid_size: 
   });
 
   dsl.geometry.grid_size = grid_size;
-  saveDSL(dsl, 'dag_layout');
+  runDslWriteScope({ via: 'derived', who: 'dag_layout' }, () => saveDSL(dsl, 'dag_layout'));
 
   return {
     message: [

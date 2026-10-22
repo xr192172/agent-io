@@ -2,7 +2,10 @@
  * diff_views：设计视图 vs 实际代码快照（live）的双栏对比 + 三方对比
  *
  * 加载同一 feature 的 baseline / design / live 三个 DSL：
- * - baseline：契约创立时刻的 fork 快照（import_project 首次写 live 时锚定），即 Git 共同祖先
+ * - baseline：**实际侧「上次扫描」的快照**（2026-10-22 起：每次 `import_project` 扫成功后
+ *   `rebuildBaseline` 重建；此前是"只在首次 fork 写一次、之后绝不移动" ⇒ 基线会陈旧到
+ *   回答"4 天前的代码"，而它存在的理由是回答"上次扫描到现在变了什么"）。
+ *   ★ 它是**实际侧**的快照，**不是设计侧的回滚点**。Git 语义上的角色仍是「共同祖先」（窗口 = 上次扫描）
  * - design：设计视图（意图）
  * - live：实际代码快照（实现）
  *

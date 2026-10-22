@@ -16,6 +16,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { DesignDSL } from '../domain/types.js';
+import { createHash } from 'node:crypto';
+import { currentDslWriteScope } from './dsl_write_scope.js';
 import { scanRevOf } from './index/scan_rev.js';
 import { renderLiveFromDb } from './index/live_render.js';
 
@@ -201,6 +203,12 @@ export function buildSyncMeta(input: {
    *   `saveDSL` 的其它全部调用点（edit_dsl 改内容）—— 它们只前进 `saved_at`。
    */
   refreshScanRev?: boolean;
+  /**
+   * ★★ 2026-10-22：**这次写是谁授权的**（`edit_dsl:<…>` / `import:<…>` / `tool:<…>` / `sandbox` / `canvas-patch`）。
+   * 由 `saveDSL` 从 `dsl_write_scope` 取；**不传则继承上一份** —— `saveDesignSheet` / `saveLiveFeature`
+   * 这类不经过 `saveDSL` 的落盘口不该把别人的留痕冲掉。
+   */
+  via?: string;
 }): Record<string, unknown> {
   const now = Date.now();
   const prevRev = typeof input.prev?.scanRev === 'number' ? (input.prev.scanRev as number) : null;
@@ -219,6 +227,8 @@ export function buildSyncMeta(input: {
     schemaVersion = typeof input.prev?.dbSchemaVersion === 'number' ? (input.prev.dbSchemaVersion as number) : null;
   }
   const facts = input.prev?.facts;
+  // ★★ 2026-10-22（写端留痕）：`via` 只由授权判据产出，这里只负责**传下去 / 继承**。
+  const via = input.via ?? (typeof input.prev?.via === 'string' ? (input.prev.via as string) : undefined);
   return {
     saved_at: new Date(now).toISOString(),
     source: input.source,
@@ -228,6 +238,8 @@ export function buildSyncMeta(input: {
     age: rev == null ? null : Math.max(0, now - rev),
     dbSchemaVersion: schemaVersion,
     ...(facts ? { facts } : {}),
+    // ★★ 2026-10-22：「这一版是谁写的」直接落在**册子上**（不是日志里）—— 留痕要在被写的东西里。
+    ...(via ? { via } : {}),
   };
 }
 
@@ -318,12 +330,15 @@ export function getDesignSheetFile(feature: string, baseDir?: string): string {
 
 /** 保存设计图（**手写**那一份；带 `_sync` 标记，与 `saveLiveFeature` 同形 ⇒ 两份文件形状一致） */
 export function saveDesignSheet(dsl: DesignDSL, baseDir?: string): string {
+  // ★★ 2026-10-22：与 `saveDSL` **同一道闸** —— 它写的是**同一个文件**（`design/<f>.dsl.json`）。
+  //   只闸 `saveDSL` 而放它 = 把门焊上又在旁边留个洞（`task_ops` 用它落盘，那条路在 edit_dsl 作用域内）。
+  const via = assertDslWriteAllowed(dsl, 'saveDesignSheet');
   const dir = getDesignDir(baseDir);
   fs.mkdirSync(dir, { recursive: true });
   const file = getDesignSheetFile(dsl.feature, baseDir);
   const data = {
     ...dsl,
-    _sync: syncMeta(dsl, 'design_sheet'),
+    _sync: { ...syncMeta(dsl, 'design_sheet'), via },
   };
   fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8');
   return file;
@@ -341,16 +356,24 @@ export function getDesignSheet(feature: string, baseDir?: string): DesignDSL | n
 }
 
 /**
- * 基线（baseline）快照存储：契约创立时刻的参考基准。
+ * 基线（baseline）快照存储：**实际侧"上次扫描"的参考基准**。
  *
- * Git 语义：首次为一个 feature 生成 live 快照时，顺带把同一份 DSL 写入 baseline/，
- * 作为「共同祖先」。之后 live 随代码演进持续更新、设计 DSL 随意图演进修改，
- * 两者都相对 baseline 各自前进。diff_views 的三方对比据此裁决：
+ * Git 语义上的角色仍是「共同祖先」，但**它是谁在什么时候的快照，2026-10-22 改了口径**：
+ *   · 旧口径（到 2026-10-22 为止）：**首次 fork 时**写一次，之后**绝不移动**
+ *     —— 实测后果：本仓 `task-system-plan` 的 baseline 停在 Oct 18（`todos=0`，实际侧旧扫描）
+ *     ⇒ 它回答"4 天前的代码长什么样"，而它**存在的唯一理由**是回答
+ *       "**上次扫描到现在变了什么**"（用户原话：「反映实际侧的变化，以免实际侧被人用
+ *       工具以外的方式改了而我们不知道」）⇒ 零写入点 = 那个用途从来没兑现过。
+ *   · 现口径：**每次 `import_project` 扫成功后由 `rebuildBaseline` 重建**（`graph/import_project.ts`），
+ *     所以「共同祖先」的窗口 = **上一次扫描**（更短、更贴近当下；三方对比照样成立）。
+ *     `ensureBaseline` 保留为"**缺失才补**"的幂等补缺，**永不覆盖**（stage_registry 那条工序用）。
+ *
+ * diff_views 的三方对比据此裁决（语义不变，只是窗口变短）：
  *   - baseline → design = 意图增量
- *   - baseline → live   = 实现增量
+ *   - baseline → live   = 实现增量（重建后即刻为 0；两次扫描之间才非空）
  *   - 两侧都改动且不一致 = 冲突（交 LLM 裁决）
  *
- * baseline 只在首次 fork 时写入，绝不随 live/design 更新而移动（除非显式重建），
+ * ★★ 它是**实际侧**的快照，**不是设计侧的回滚点** —— 别拿它当设计快照用。
  * 与 baseDir 归位规则和 live 一致（watch_project 监听任意项目时传 project_dir）。
  */
 export function getBaselineDir(baseDir?: string): string {
@@ -461,7 +484,9 @@ export function saveBaselineFeature(dsl: DesignDSL, baseDir?: string): string {
   const file = getBaselineFeatureFile(dsl.feature, baseDir);
   const data = {
     ...dsl,
-    _sync: syncMeta(dsl, 'baseline'),
+    // ★★ 2026-10-22（B2）：`content_hash` = **实际侧内容指纹**。
+    //   "改一个源文件 + 重扫 ⇒ 变 / 不改 + 重扫 ⇒ 不变" 要靠它读出来（别再靠 mtime/人回忆）。
+    _sync: { ...syncMeta(dsl, 'baseline'), via: 'baseline', content_hash: dslContentHash(dsl) },
   };
   fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8');
   return file;
@@ -476,6 +501,101 @@ export function getBaselineFeature(feature: string, baseDir?: string): DesignDSL
   } catch {
     return null;
   }
+}
+
+// ─────────────────────────────────────────────────────────────
+// ★★★ 2026-10-22（B：`baseline` 必须跟着**实际侧**走）
+//
+// ## 它回答的问题（用户原话）
+//   "反映实际侧的变化，以免实际侧被人**用工具以外的方式**改了而我们不知道"
+//
+// ## 改之前是什么（实测）
+//   `baseline/` **零写入点**：`ensureBaseline` 只在缺失时写 ⇒ 本仓 `task-system-plan` 的 baseline
+//   停在 Oct 18 且 `todos=0`（那是"实际侧旧扫描"的产物）⇒ 它回答的是"4 天前的代码长什么样"，
+//   而**它存在的唯一理由**是回答"上次扫描到现在变了什么"。
+//
+// ## 三条判据（可分别变红）
+//   B1 **写入点一处**：`rebuildBaseline`（只由 `import_project` 扫成功后调；`ensureBaseline` 仍是
+//      "缺失才补"的幂等补缺，**永不覆盖**）；
+//   B2 **content_hash**：写进 `_sync.content_hash` ⇒ 改源文件重扫要变、不改重扫不许变；
+//   B3 **用途兑现**：重建**之前**先算 drift（`diffBaselineFiles`），再把"没有自写登记的那些"点名报出去。
+// ─────────────────────────────────────────────────────────────
+
+/** 一次重扫相对上一份 baseline 的**文件级漂移**（判据见 `diffBaselineFiles`） */
+export interface BaselineDrift {
+  /** 上一份 baseline 的 `saved_at`（`null` = 之前没有 baseline ⇒ 这是首次锚定） */
+  from: string | null;
+  added: string[];
+  changed: string[];
+  removed: string[];
+}
+
+/**
+ * 单文件的"实际侧指纹"：**行数 + 每个符号的签名 / 起止行**。
+ *
+ * ★ 为什么不含"符号在文件里的偏移/字节"：DSL 里本来就没有 `content_hash`
+ *   （`domain/semantic.ts` 明写"事实只有一个家 = cache.db"，DSL 不复刻事实）。
+ * ★ 粒度（如实标注）：改注释 / 空行 / 增删行 / 改签名 / 调换顺序 **都会变**；
+ *   **同一行内等长的字面量替换不会变** —— 那是 `cache.db#files.content_hash` 的口径，DSL 侧取不到。
+ */
+function fileFingerprint(f: {
+  symbols?: ReadonlyArray<{ name?: string; line?: number; end_line?: number; signature?: string }>;
+  lines?: number;
+}): string {
+  const syms = (f.symbols ?? []).map(
+    (s) => `${s.name ?? ''}@${s.line ?? -1}-${s.end_line ?? -1}=${s.signature ?? ''}`,
+  );
+  return `${f.lines ?? 0}|${syms.join('\u0001')}`;
+}
+
+/**
+ * `baseline` 与 `next` 的**文件级漂移**（按 `semantic.files[].path` 对账）。
+ * ★ 只比**事实**（指纹），不比设计意图（decision / task / todos）—— 那是设计侧的事。
+ */
+export function diffBaselineFiles(prev: DesignDSL | null, next: DesignDSL): BaselineDrift {
+  const before = new Map((prev?.semantic?.files ?? []).map((f) => [f.path, f]));
+  const after = new Map((next.semantic?.files ?? []).map((f) => [f.path, f]));
+  const added: string[] = [];
+  const changed: string[] = [];
+  const removed: string[] = [];
+  for (const [p, f] of after) {
+    const o = before.get(p);
+    if (!o) {
+      added.push(p);
+      continue;
+    }
+    if (fileFingerprint(o) !== fileFingerprint(f)) changed.push(p);
+  }
+  for (const p of before.keys()) if (!after.has(p)) removed.push(p);
+  const savedAt = (prev as unknown as { _sync?: { saved_at?: string } } | null)?._sync?.saved_at;
+  return { from: savedAt ?? null, added: added.sort(), changed: changed.sort(), removed: removed.sort() };
+}
+
+/**
+ * 一份 DSL 的**实际侧内容指纹**（sha1，写进 baseline 的 `_sync.content_hash`）。
+ * ★ 只取**扫描得来**的东西（文件 path + 行数 + 符号签名与起止行 + 节点 id）：
+ *   不含 `_sync`、不含 decision / task / todos ⇒ "改了设计"不会冒充"改了代码"。
+ */
+export function dslContentHash(dsl: DesignDSL): string {
+  const files = [...(dsl.semantic?.files ?? [])]
+    .sort((x, y) => x.path.localeCompare(y.path))
+    .map((f) => `${f.path}:${fileFingerprint(f)}`);
+  const nodes = [...(dsl.geometry?.nodes ?? [])].map((n) => n.id).sort();
+  return createHash('sha1').update(JSON.stringify({ files, nodes })).digest('hex');
+}
+
+/**
+ * **重建 baseline = 实际侧"上次扫描"的快照**（B1 的**唯一覆盖写入口**）。
+ *
+ * ★ 顺序是判据：**先算 drift，再覆盖** —— 覆盖之后旧的"上次扫描"就不存在了，
+ *   那时再算 drift 只能算出"和它自己比"（= 恒空，假绿）。
+ * ★ 调用点只有一处：`graph/import_project.ts` 扫成功后（`grep rebuildBaseline` 应只有一个调用）。
+ */
+export function rebuildBaseline(dsl: DesignDSL, baseDir?: string): { file: string; drift: BaselineDrift } {
+  const prev = getBaselineFeatureResolved(dsl.feature, baseDir);
+  const drift = diffBaselineFiles(prev, dsl);
+  saveBaselineFeature(dsl, baseDir);
+  return { file: getBaselineFeatureFile(dsl.feature, baseDir), drift };
 }
 
 /**
@@ -543,8 +663,11 @@ export function getBaselineFeatureResolved(feature: string, explicit?: string): 
 }
 
 /**
- * fork 基线：仅在基线尚不存在时写入（契约创立时刻的一次性快照）。
- * 已在 live 更新（import/watch）时调用，保证基线锚定首次导入，不随代码演进漂移。
+ * **只在基线缺失时补一份**（幂等补缺）—— ★ 2026-10-22 起这**不是**常态写入点。
+ *
+ * 常态由 `rebuildBaseline`（每次 `import_project` 扫成功后）负责：基线跟**实际侧**走。
+ * 本函数保留的唯一理由：`stage_registry` 的 `dsl_baseline` 工序要能"缺了就补"，
+ * 而补缺**永不覆盖**已有基线（覆盖 = 把"上次扫描"这个答案删掉）。
  */
 export function ensureBaseline(dsl: DesignDSL, baseDir?: string): void {
   if (getBaselineFeature(dsl.feature, baseDir)) return;
@@ -653,12 +776,80 @@ export function onDslChange(cb: DslChangeCallback): void {
   dslChangeCallback = cb;
 }
 
+// ─────────────────────────────────────────────────────────────
+// ★★★ 2026-10-22（卡 `todo_设计-DSL-有多个写端-saveDSL-谁都能调-…`）：
+//     设计 DSL 的写端**只认一个判据 —— 你有没有写授权**
+//
+// ## 病灶（实测，不是推测）
+// `saveDSL` 是 `export` 的 ⇒ 18 个脚本 + `node -e "import('dist/…/storage.js')"` 都能写
+// ⇒ `checkOpSpec`（键闸）/ `validateDSL`（结构闸）/ `rev`（乐观锁）**全可绕过**。
+// 实测 2026-10-22 当天：41 次 DSL 改动**一道校验都没过**。
+//
+// ## 判据（三条，按序短路；`assertDslWriteAllowed` 是**唯一**住处，别在别处再判一次）
+// ① `dsl_write_scope` 里有授权 ⇒ 放行，并把 `via` 写进 `_sync`（留痕）；
+// ② **沙盒**：`getDataHome() !== getPackageRoot()`（`AGENT_IO_HOME` 指到包根之外）
+//    ⇒ 放行 —— 它写的**不是真设计册**，写坏也没人受损（certs / mcp_scan 靠这条，30 张证一行都不用改）；
+// ③ **画布补丁**：与磁盘那份比，**只有** `annotations` / `user_nodes` / `canvas_notes` 变了
+//    ⇒ 放行（人手在浏览器上批注，不是改设计结构）。★ 结构 / 决策 / 待办错一格就回到 ④；
+// ④ 其它 ⇒ **抛**。
+//
+// ## ★ 为什么不给 `--allow-raw-write` 后门
+// 那等于把刚焊上的门再拆下来，而且"迁移期出口"在本仓**没有一个按时退休过**（`catch {}` / 临时开关）。
+// 真要写系统派生 ⇒ 包一层 `runDslWriteScope`，**留下一行能被 grep 和审阅点名的声明**。
+// ─────────────────────────────────────────────────────────────
+
+/** 画布面只允许动的三格（`serve.ts` 的 annotations / user_nodes / canvas_notes 端点） */
+const CANVAS_ONLY_FIELDS = ['annotations', 'user_nodes', 'canvas_notes'] as const;
+
+/** 只有这三格变了 ⇒ 这次写是"画布批注"，不是"改设计"。比的是**去掉三格 + 元数据**之后的整份 JSON。 */
+function canvasPatchOnly(dsl: DesignDSL, prev: DesignDSL | null): boolean {
+  if (!prev) return false;
+  const strip = (d: DesignDSL): string => {
+    const o: Record<string, unknown> = { ...(d as unknown as Record<string, unknown>) };
+    for (const k of CANVAS_ONLY_FIELDS) delete o[k];
+    delete o._sync;
+    delete o._dsl_rev;
+    return JSON.stringify(o);
+  };
+  return strip(dsl) === strip(prev);
+}
+
+/** `AGENT_IO_HOME` 指到包根之外 = 沙盒（certs / mcp_scan 的临时 home）⇒ 写的不是真设计册。 */
+function isSandboxDataHome(): boolean {
+  return path.resolve(getDataHome()) !== path.resolve(getPackageRoot());
+}
+
+/**
+ * 写授权的**唯一判据**：过了返回 `via` 标签（写进 `_sync.via`），没过**抛**。
+ * ★ 返回值只用于留痕 —— **不要**让调用方拿它做别的判断（那就是第二个判据了）。
+ */
+function assertDslWriteAllowed(dsl: DesignDSL, where: string): string {
+  const scope = currentDslWriteScope();
+  if (scope) return `${scope.via}:${scope.who}`;
+  if (isSandboxDataHome()) return 'sandbox';
+  if (canvasPatchOnly(dsl, readDSLRaw(dsl.feature))) return 'canvas-patch';
+  throw new Error(
+    `拒绝写入设计 DSL（${where}，feature "${dsl.feature}"）：**没有写授权**。\n` +
+      `★ 这条闸的由来（用户原话）：「我做设计 DSL 出来的理由就是为了**不让你直接在实际 DSL 上面改**，` +
+      `但是又需要你简单地拥有在实际 DSL 上改的写作难度」。\n` +
+      `★ 实测（2026-10-22）：当天 41 次 DSL 改动全走 saveDSL 直写 ⇒ ` +
+      `checkOpSpec（键闸）/ validateDSL（结构闸）/ rev（乐观锁）**一道都没过**。\n` +
+      `⇒ 按你要做的事选一条合法写法：\n` +
+      `  ① 改设计内容 / 节点 / 待办 / 决策 ⇒ 走 \`edit_dsl\`（CLI 或 MCP 都有），它自带键闸 + 结构闸 + 乐观锁；\n` +
+      `  ② 你是**系统派生**（导入 / 派生 / 修复 / 归档）⇒ 在落盘外面包一层 ` +
+      `\`runDslWriteScope({via:'import'|'tool', who:'<你的入口名>'}, () => …)\`（src/infrastructure/dsl_write_scope.ts）；\n` +
+      `  ③ 你在**沙盒**里造夹具 ⇒ 设 \`AGENT_IO_HOME\` 指向包根之外的目录（本闸只管真设计册）。\n` +
+      `★ **没有** \`--allow-raw-write\` 这种开关，也不打算加 —— 那等于把刚焊上的门再拆下来。`,
+  );
+}
+
 /** 保存 DSL（覆盖），同时同步到活态文件
  *  source: 'mcp'（LLM 工具调用）| 'browser'（浏览器端保存）
  *  传入 source 决定 SSE 广播的来源标记，浏览器据此跳过自身触发的刷新
  *  base_dsl_rev 可选乐观锁：非 undefined 时要求磁盘当前 rev === base_dsl_rev，
  *  否则视为并发冲突抛错（最后写者胜 → 拒绝，防多会话丢改动）。
- *  省略则不做校验（保留旧直写语义，兼容既有 30 处调用）。
+ *  省略则不做校验（此时唯一的护栏是下面那道**写授权闸**）。
+ *  ★★★ 2026-10-22：本函数**不再是「谁 import 谁就能写」** —— 见上面 `assertDslWriteAllowed`。
  */
 export function saveDSL(
   dsl: DesignDSL,
@@ -666,6 +857,9 @@ export function saveDSL(
   base_dsl_rev?: number,
   opts?: { refreshScanRev?: boolean },
 ): string {
+  // ★★★ 2026-10-22（A1/A2）：**先问「你是谁」** —— 拿不到写授权就抛（不是警告）。
+  //   位置必须在任何落盘 / 自增 rev **之前**：被拒的写不许留下任何痕迹（连 rev 都不许动）。
+  const writeVia = assertDslWriteAllowed(dsl, 'saveDSL');
   ensureFeaturesDir();
   // ★★★ 2026-10-20：saveDSL 写的是**设计侧**（下面 `getDesignSheetFile`），而上面只建了 features/ ⇒
   //   全新 `AGENT_IO_HOME` 下 `writeAtomic` 直接 ENOENT（实测：t352 / t353 的 seed 崩在这一行）。
@@ -702,6 +896,7 @@ export function saveDSL(
     source: 'design_sheet',
     prev: prevSync,
     refreshScanRev: opts?.refreshScanRev,
+    via: writeVia,
   });
   // ★★★ 2026-10-18：写**设计侧**（唯一权威）；不再写 features/ 存档，也不写全局活态 agent-io.json
   // ★★ 这一改顺便修好了 import_project 的 fork：它此前调 saveDSL(designDsl) 想「fork 一份设计」，

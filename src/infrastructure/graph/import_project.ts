@@ -27,7 +27,11 @@ import type { DesignDSL, Node, Edge, SemanticFile, ExpectedApi, Symbol } from '.
 // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：`gate`（写闸豁免声明）是**设计侧裁定**，
 //   重扫只重建“结构”，**不许把它抹掉**（见下面 `carryOverNodeGates`）。
 import type { NodeGate } from '../../domain/geometry.js';
-import { saveDSL, saveLiveFeature, ensureBaseline, getDSL, saveBaselineFactsIfAbsent } from '../storage.js';
+import { saveDSL, saveLiveFeature, getDSL, saveBaselineFactsIfAbsent, rebuildBaseline } from '../storage.js';
+// ★★ 2026-10-22（A1）：扫描产物写 DSL 必须**声明自己是谁**（`import`），否则 `saveDSL` 会抛。
+import { runDslWriteScope } from '../dsl_write_scope.js';
+// ★★ 2026-10-22（B3）：「这次变更里**哪些不是本工具改的**」的判据 = 自写登记（`edit_code` 写源码时记的）。
+import { readSelfWrites } from '../index/self_writes.js';
 // ★ T85/D2：基线事实**独立取**（索引器的事实）—— **绝不从 DSL 取**（那是「自己测自己」）
 import { fileFacts } from '../index/file_facts.js';
 import { mergeDesignLayer } from '../storage_overlay.js';
@@ -1010,6 +1014,8 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     let roleNote: string | null = null;
     // ★ T85/D2：基线事实锚定的结果（**写了什么、有没有写失败，都要能报出来**）
     let baselineFactsNote: string | null = null;
+    // ★★★ 2026-10-22（B3）："自上次扫描到现在变了什么、哪些不是本工具改的"——**要在回执里点名**。
+    let baselineDriftNote: string | null = null;
     let overlayNote: string | null = null;
     // ★ T77：重建时"丢掉了哪些扫描产不出的节点"——**丢了就要说**，不许静默（空 = 没丢）
     let designDropNote: string | null = null;
@@ -1172,7 +1178,12 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       // ★ 导入 / fork / 重建 = **从库复制一份设计册** ⇒ 显式刷新库代。
       //   `scanRev` 只在"复制"这一刻取值；`edit_dsl` 与 task op 都不刷新，
       //   否则 `scanRev` 恒等于 `max(files.indexed_at)` ⇒ 差值恒 0（判据见 `buildSyncMeta` 头）。
-      saveDSL(designDsl, 'mcp', undefined, { refreshScanRev: true });
+      // ★★★ 2026-10-22（A1）：`via:'import'` = 「我是扫描产物，不是人改设计」。
+      //   这条声明是**能被 grep 到的**（`grep -rn "via: 'import'"`），而 2026-10-22 之前
+      //   这种写和"脚本顺手直写设计册"在代码里长得**一模一样**——那正是这张卡要治的病。
+      runDslWriteScope({ via: 'import', who: 'import_project', feature }, () => {
+        saveDSL(designDsl, 'mcp', undefined, { refreshScanRev: true });
+      });
       // 同时写入 live 代码快照：功能树聚类（derive_feature_tree）以 live 视图的
       // semantic.files 为语义基准做命中率闸门。手动导入的项目若只有设计 DSL 而无
       // live 快照，换项目后聚类会因语义基准为空被判"db 不相关"而拒生成 → 导图平铺。
@@ -1182,8 +1193,54 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     }
     // fork 基线：首次导入（无论 live_only 与否）即锚定契约创立时刻的参考基准，
     // 之后 live 随代码演进更新、设计 DSL 随意图演进，二者都相对 baseline 各自前进，
-    // diff_views 三方对比据此裁决冲突。ensureBaseline 只在基线缺失时写入，绝不漂移。
-    ensureBaseline(layered, input.live_dir);
+    // diff_views 三方对比据此裁决冲突。
+    //
+    // ★★★ 2026-10-22（B1）：**改成每次导入/重扫成功后重建**（原来 `ensureBaseline` = 只在缺失时写）。
+    //
+    // ## 改之前的实测病
+    // 只在缺失时写 ⇒ 本仓 `task-system-plan` 的 baseline 停在 Oct 18 且 `todos=0`（实际侧旧扫描）
+    // ⇒ 它回答"4 天前的代码长什么样"，而用户要它回答"**上次扫描到现在变了什么**"
+    // （原话：「反映实际侧的变化，以免实际侧被人用工具以外的方式改了而我们不知道」）。
+    // ★ 只在缺失时写 = 那个用途**从来没兑现过**（零写入点）。
+    //
+    // ## 口径（别搞混，今天查清过）
+    // baseline = **实际侧（扫描产物）的快照**，**不是设计侧的回滚点** ⇒ 它跟 `layered` 走、不跟 `designDsl` 走。
+    // 重建后 diff_views 的"共同祖先"窗口从"契约创立时刻"缩到"上次扫描"，三方对比照样成立
+    // （baseline→design = 意图增量，baseline→live = 实现增量），且窗口更短 ⇒ 冲突判定更贴近当下。
+    //
+    // ## ★ 为什么必须先算 drift 再重建
+    // 覆盖写之后旧快照就没了 ⇒ "变了什么"必须在**写之前**算，否则重建 = 把答案一起删掉。
+    const { drift } = rebuildBaseline(layered, input.live_dir);
+    {
+      const touchedFiles = [...drift.added, ...drift.changed];
+      // ★ B3 的判据：变了、但**不在本工具的自写登记**里 ⇒ "被人用工具以外的方式改了"。
+      //   ★ 粒度如实标注：`self-writes.json` 的条目带 10 分钟 TTL（`SELF_WRITE_TTL_MS`），
+      //     这里读**全量**（不过滤 TTL），所以"很久以前 edit_code 改的"仍算自写；
+      //     但被 `SELF_WRITE_MAX` 挤掉的老条目会让老改动**误报** ⇒ 措辞是"**没有登记**"，不是"一定是手改"。
+      // ★★★ 2026-10-22（实测更正）：`self-writes.json` **本仓当前是空的**（最后一次写是 2026-10-13 的
+      //   `scaffold:run82`）⇒ `recordSelfWrite` 这条**根本没接到 edit_code 上**。
+      //   ⇒ 若照原样报"这 N 个没有自写登记"，会把**工具改的**也一起说成可疑 = 一句精确的假话。
+      //   ⇒ 判据加一格：登记本**空着就当它不可用**，此时只报"变了什么"，并**明说分不出来**。
+      //   ★ 空 ≠ "它们都是手改"；空 = 这条判据没接线（下一张卡：给 edit_code 接 recordSelfWrite）。
+      const ledger = readSelfWrites(input.project_dir);
+      const ledgerLive = ledger.length > 0;
+      const selfWritten = new Set(ledger.flatMap((e) => e.files));
+      const untracked = touchedFiles.filter((f) => !selfWritten.has(f));
+      const total = touchedFiles.length + drift.removed.length;
+      baselineDriftNote = drift.from
+        ? `基线已重建（**实际侧**快照，不是设计回滚点）：自上次扫描（${drift.from}）变更 ${total} 个文件` +
+          `（新增 ${drift.added.length} / 改 ${drift.changed.length} / 删 ${drift.removed.length}）` +
+          (total === 0
+            ? '\n  ✓ 与上一份逐文件一致（源码没动）'
+            : !ledgerLive
+              ? '\n  ⚠ 自写登记（`.agent-io/self-writes.json`）**当前是空的** ⇒ 分不出「工具改的」与「手改的」，' +
+                '上面就是**全部变更**（这就是「点名」）。\n     ★ 空 ≠ "它们都是手改"：是本工具还没把 `edit_code` 的写登记进来（另一张卡）。'
+              : untracked.length
+                ? `\n  ⚠ 其中 ${untracked.length} 个**没有本工具的自写登记**（手改 / 编辑器 / 别的工具）：\n  - ${untracked.slice(0, 10).join('\n  - ')}` +
+                  (untracked.length > 10 ? `\n  … 另 ${untracked.length - 10} 个` : '')
+                : '\n  ✓ 变更全部落在自写登记里（本工具改的）')
+        : '基线已建立（首次锚定：上一份不存在 ⇒ 没有"变了什么"可比）';
+    }
     // ★★★ 2026-10-09（T85/D2）：**同时锚定「基线事实」—— 对拍的第二份产物**。
     //   规则：**对拍的「期望侧」与「被比的事实」必须是两份分开的产物** ——
     //   混在同一个里面就是"自己测自己"。
@@ -1246,6 +1303,9 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       skipped.length > 0 ? `跳过/截断:\n  - ${skipped.join('\n  - ')}` : null,
       roleNote ? `职责标题: ${roleNote}` : null,
       baselineFactsNote,
+      // ★★ 2026-10-22（B3）：**"自上次扫描变了什么 / 哪些不是工具改的"要出现在回执里**，
+      //   否则 baseline 重建了也只是一个数字（用户要的是"能看见"）。
+      baselineDriftNote,
       docNote,
       overlayNote ? `设计层 overlay: ${overlayNote}` : null,
       // ★ T77：重建丢掉了什么，**明确报出来**（不静默）

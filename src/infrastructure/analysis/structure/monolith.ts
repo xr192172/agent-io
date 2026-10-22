@@ -19,6 +19,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL, Node, Edge } from '../../../domain/types.js';
 import { getDSL, saveDSL, requireProjectRoot } from '../../storage.js';
+// ★★ 2026-10-22（A1）：拆分预览册是**派生写端**（serve.ts 直接 import）。
+import { runDslWriteScope } from '../../dsl_write_scope.js';
 import { parseFileFull } from '../../parse/index.js';
 import { getProjectView } from '../../project_view.js'; // ★ §19②
 import type { ParsedSymbol } from '../../parse/index.js';
@@ -748,7 +750,7 @@ export async function checkMonolith(input: CheckMonolithInput): Promise<CheckMon
   if (input.save_preview && oversized.length > 0) {
     previewFeature = input.preview_feature ?? `${input.feature ?? 'monolith'}_split_preview`;
     const previewDsl = buildSplitPreviewDsl(previewFeature, oversized, warn, crit);
-    saveDSL(previewDsl, 'structure');
+    runDslWriteScope({ via: 'derived', who: 'monolith' }, () => saveDSL(previewDsl, 'structure'));
   }
 
   // 文本报告
