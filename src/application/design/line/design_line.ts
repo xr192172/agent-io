@@ -21,6 +21,7 @@
  * - `lineReport` 是纯函数（给 root + feature，返回结构化读数），`designLineHandler` 只做入参适配
  *   ⇒ 判据能单测，不用起 MCP。
  */
+import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -420,4 +421,192 @@ export function mustHaveFor(design: unknown, onlyDesignIds: string[]): MustHaveR
     });
   }
   return out;
+}
+
+
+// ───────────────────────────────────────────────────────────────────────────
+// ★★★ action=brief（2026-10-23）：**开工简报** —— 把「设计要什么 / 现在是什么 / 差在哪」拼成一份
+// ───────────────────────────────────────────────────────────────────────────
+//
+// ## 它解决什么（用户原话，2026-10-23）
+// 「模型上下文里面应该要同时存在设计 DB 和实际源码应该怎么改」
+// ⇒ 现在 Agent 想知道"这个文件该实现什么"要调三次（get_dsl / explore_code / design_line report），
+//   而且三次的输出**互相对不上**：设计侧 10KB、实际侧一份符号表、report 只给 76.2% 这种和本文件无关的总数。
+//   ★ `must_have` 的注释早就点破过同一个病灶：「LLM 要写实现时仍得自己从 scope / 边去猜
+//     里面该有哪些函数 —— **猜错就白写一轮**」。
+//
+// ## 它不拥有任何判据（★ 这是分界线）
+// · 设计侧"该有什么" = `mustHaveFor`（本文件已有，读 decision.expectations + semantic.files）
+// · 实际侧"有什么"   = `fileFacts`（infrastructure/index/file_facts.ts，读 cache.db）
+// · 差               = 两者相减
+// ⇒ 本函数**只做投影与拼接**，一个判据都不新造。要改判据去改那两个源头。
+//
+// ## 输出形状（给 LLM 读的，不是给人看的报表）
+//   design.summary / acceptance / must_have / unsatisfied_expectations（只列没过的）
+//   live.symbols（只给签名，不贴全文 —— 全文用 explore_code / Read）
+//   gap.missing_symbols / gap.unsatisfied_count
+export interface BriefSymbol {
+  name: string;
+  kind?: string;
+  line?: number;
+  signature?: string;
+}
+
+export interface BriefReport {
+  target: { node_id?: string; path?: string };
+  design: {
+    summary?: string;
+    acceptance?: string;
+    must_have: MustHaveSymbol[];
+    /** 只列**未满足**的判据（判据本身住在 decision.expectations，这里不复制语义） */
+    unsatisfied_expectations: Array<{ kind: string; [k: string]: unknown }>;
+    why_empty?: string;
+  };
+  live: { symbols: BriefSymbol[]; indexed: boolean };
+  gap: { missing_symbols: MustHaveSymbol[]; unsatisfied_count: number };
+}
+
+/** 纯组装：入参是已经算好的两侧事实，本函数不做 I/O、不判判据 */
+export function briefFrom(dsl: unknown, target: { node_id?: string; path?: string }): BriefReport['design'] & { nodePath?: string } {
+  const d = (dsl ?? {}) as {
+    geometry?: { nodes?: Array<{ id?: string; path?: string; description?: string; decision?: unknown }> };
+    semantic?: { files?: Array<{ path?: string }> };
+  };
+  const nodes = d.geometry?.nodes ?? [];
+  const node = target.node_id ? nodes.find((n) => n.id === target.node_id) : undefined;
+  // ★★★ 2026-10-23（假红修正）：**文件节点的路径住在 `description`，不是 `path`**。
+  //   实测 `get_dsl node` 的输出：{"type":"file","description":"src/domain/task_schema.ts"}（无 path 字段）。
+  //   ★ 只认 `path` 会让 briefReport 拿不到文件 ⇒ fileFacts 不查 ⇒ 报「实际 0 符号（未索引）」
+  //     ⇒ **13 个明明存在的符号被全部报成"缺"** —— 一个典型的假红（比不报更坏）。
+  const filePath =
+    target.path ??
+    (typeof node?.path === 'string' ? node.path : typeof (node as { description?: unknown } | undefined)?.description === 'string'
+      ? String((node as { description: string }).description)
+      : undefined);
+  const dec = (node?.decision ?? undefined) as { summary?: string; acceptance?: string; expectations?: unknown } | undefined;
+  const exps = Array.isArray(dec?.expectations) ? (dec!.expectations as Array<{ kind?: string }>) : [];
+  return {
+    ...(dec?.summary ? { summary: dec.summary } : {}),
+    ...(dec?.acceptance ? { acceptance: dec.acceptance } : {}),
+    must_have: [],
+    unsatisfied_expectations: exps.map((e) => ({ ...e, kind: String(e.kind ?? '?') })),
+    ...(node ? {} : { why_empty: '找不到该节点（node_id 不对？）⇒ 只给路径级信息' }),
+    nodePath: filePath,
+  };
+}
+
+
+/**
+ * `action=brief` 的 I/O 侧：**取两侧事实 → 交给纯组装 → 算差**。
+ *
+ * ★ 它读三样、一样都不判：
+ *   ① `readDesignDsl`（设计侧 decision）
+ *   ② `mustHaveFor`（设计侧"该有什么"—— 判据在它那里）
+ *   ③ `fileFacts`（实际侧"有什么"—— 事实在 cache.db）
+ */
+export function briefReport(
+  root: string,
+  feature: string,
+  target: { node_id?: string; path?: string },
+): BriefReport {
+  // ★ 与 lineReport 同口径：直接读 `.agent-io/design/<f>.dsl.json`（不引入第二套读法）
+  const designFile = path.join(root, '.agent-io', 'design', `${feature}.dsl.json`);
+  const dsl = (fs.existsSync(designFile) ? JSON.parse(fs.readFileSync(designFile, 'utf-8')) : null) as unknown;
+  const base = briefFrom(dsl, target);
+  const nodeId = target.node_id;
+  const filePath: string | undefined = base.nodePath;
+
+  // 设计侧：必含符号（判据住在 mustHaveFor，不在这里重算）
+  let must: MustHaveSymbol[] = [];
+  let whyEmpty: string | undefined = base.why_empty;
+  if (nodeId || filePath) {
+    const rep = mustHaveFor(dsl, nodeId ? [nodeId] : []);
+    const hit = rep.find((r) => (nodeId ? r.id === nodeId : filePath && r.path === filePath));
+    if (hit) {
+      must = hit.must_have;
+      whyEmpty = hit.why_empty;
+    } else if (!nodeId && filePath) {
+      // 路径级：把按 path 索引的判据捞出来（mustHaveFor 只按节点 id 收）
+      const all = mustHaveFor(dsl, []);
+      must = all.flatMap((r) => (r.path === filePath ? r.must_have : []));
+    }
+  }
+
+  // 实际侧：该文件现有符号
+  // ★★★ 2026-10-23（假红修正第二处）：**不能只用 `fileFacts.apis`** —— 它只收"可调用的顶层 API"
+  //   （声明见 file_facts.ts:38 的原话），**没有 type / interface / const**。
+  //   实测后果：`TaskState`（type）/ `TASK_STATES`（const）明明在文件里，却被报成"缺"
+  //   ⇒ 8 条假红（比不报更坏：Agent 会去"补"一个已经存在的符号）。
+  //   ⇒ 用 cache.db 的 `nodes` 表（`kind != 'file'` 的行 = 该文件所有顶层符号）判"在不在"；
+  //     `fileFacts` 仍用来补**签名**（它那份情报更细，但覆盖面窄）。
+  let live: BriefSymbol[] = [];
+  let indexed = false;
+  if (filePath) {
+    const facts = fileFacts(root, filePath as string, feature);
+    const sigByName = new Map<string, string | null>();
+    if (facts && facts.apis) for (const a of facts.apis) sigByName.set(a.name, a.signature ?? null);
+    const dbFile = path.join(root, '.agent-io', 'cache.db');
+    if (fs.existsSync(dbFile)) {
+      const db = new DatabaseSync(dbFile);
+      try {
+        const rows = db
+          .prepare(`SELECT name, kind, start_line FROM nodes WHERE file_path = ? AND kind <> 'file'`)
+          .all(filePath as string) as Array<{ name: string; kind: string; start_line: number | null }>;
+        indexed = rows.length > 0;
+        live = rows.map((r) => ({
+          name: r.name,
+          kind: r.kind,
+          ...(typeof r.start_line === 'number' ? { line: r.start_line } : {}),
+          ...(sigByName.get(r.name) ? { signature: sigByName.get(r.name) as string } : {}),
+        }));
+      } finally {
+        db.close();
+      }
+    }
+  }
+
+  // 差：必含 - 实有（按名字比；★ 同名不同 kind 也算有 —— 那属于"签名不对"，归 expectations）
+  const liveNames = new Set(live.map((l) => l.name));
+  const missing = must.filter((m) => !liveNames.has(m.name));
+
+  return {
+    target: { ...(nodeId ? { node_id: nodeId } : {}), ...(filePath ? { path: filePath as string } : {}) },
+    design: {
+      ...(base.summary ? { summary: base.summary } : {}),
+      ...(base.acceptance ? { acceptance: base.acceptance } : {}),
+      must_have: must,
+      unsatisfied_expectations: base.unsatisfied_expectations,
+      ...(whyEmpty ? { why_empty: whyEmpty } : {}),
+    },
+    live: { symbols: live, indexed },
+    gap: { missing_symbols: missing, unsatisfied_count: base.unsatisfied_expectations.length },
+  };
+}
+
+/** MCP handler：只做渲染（首行自足 —— 本仓硬纪律） */
+export function briefHandler(input: { project_dir: string; feature: string; node_id?: string; path?: string }): {
+  message: string;
+  data: BriefReport;
+} {
+  const r = briefReport(input.project_dir, input.feature, {
+    ...(input.node_id ? { node_id: input.node_id } : {}),
+    ...(input.path ? { path: input.path } : {}),
+  });
+  const where = r.target.path ?? r.target.node_id ?? '（未指定目标）';
+  const head =
+    `brief · ${where}（决策${r.design.summary ? '有' : '无'} · 必含 ${r.design.must_have.length} 符号 · ` +
+    `缺 ${r.gap.missing_symbols.length} · 判据 ${r.gap.unsatisfied_count} 条 · 实际 ${r.live.symbols.length} 符号${r.live.indexed ? '' : '（未索引）'}）`;
+  const lines = [head];
+  if (r.design.summary) lines.push(`  要什么：${r.design.summary}`);
+  if (r.design.acceptance) lines.push(`  验收：${r.design.acceptance}`);
+  if (r.design.why_empty) lines.push(`  ⚠ ${r.design.why_empty}`);
+  if (r.gap.missing_symbols.length > 0) {
+    lines.push(`  缺（设计说必须有、源码里没有）：`);
+    for (const m of r.gap.missing_symbols.slice(0, 12)) lines.push(`    - ${m.name}${m.why ? `  ← ${m.why}` : ''}`);
+    if (r.gap.missing_symbols.length > 12) lines.push(`    … 另 ${r.gap.missing_symbols.length - 12} 个`);
+  } else if (r.design.must_have.length > 0) {
+    lines.push(`  必含 ${r.design.must_have.length} 个符号【全都在】`);
+  }
+  lines.push(`  ★ 判据原文在 decision.expectations（本简报不复制语义）；源码全文用 explore_code / Read。`);
+  return { message: lines.join(String.fromCharCode(10)), data: r };
 }

@@ -62,7 +62,7 @@ import type { ImportProjectInput } from '../../infrastructure/graph/import_proje
 //   两者共用同一批 application 层核心（与 `brickify_cli` 同源；`split_stage_cli` 已于 2026-10-06 删除），CLI 只是 argv 薄壳。
 import { setDesignIntent } from './intent/set_design_intent.js';
 import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, renderDesignHandler } from './handlers.js';
-import { designLineHandler } from './line/design_line.js';
+import { designLineHandler, briefHandler } from './line/design_line.js';
 import { genDesignDb } from './db/gen_design_db.js';
 import { rewriteSymbols } from './rewrite/rewrite.js';
 import { gateHumanLines } from '../refactor/gate_note.js';
@@ -397,10 +397,11 @@ export const DESIGN_TOOLS: ToolDef[] = [
       project_dir: z.string().describe('项目根目录（含 .agent-io/）'),
       feature: z.string().optional().describe('feature 名（action=report 必填；action=gen-db 省略 = design/ 下全部）'),
       action: z
-        .enum(['report', 'gen-db', 'sync-signatures', 'rewrite', 'diff'])
+        .enum(['report', 'brief', 'gen-db', 'sync-signatures', 'rewrite', 'diff'])
         .optional()
         .describe(
-          'report=六步读数（默认，只读）· gen-db=设计 DSL → 设计 DB（写 design-db/）· ' +
+          'report=六步读数（默认，只读）· brief=开工简报（一个节点/文件：设计要什么 + 实际有什么 + 差在哪；只读）· ' +
+            'gen-db=设计 DSL → 设计 DB（写 design-db/）· ' +
             'sync-signatures=⑥ 设计 DB → 源码，**只同步函数签名、不生成实现**（默认零写入，apply=true 才落盘）· ' +
             'rewrite=同一动作的旧名（保留兼容；输出里的 did_work/reason 一致）',
         ),
@@ -415,6 +416,8 @@ export const DESIGN_TOOLS: ToolDef[] = [
       apply: z.boolean().optional().describe('★ 仅 action=sync-signatures/rewrite：true 才真落盘（默认零写入；落盘后会自动重算复核）'),
       file: z.string().optional().describe('★ 仅 action=sync-signatures/rewrite：只算一个文件（仓库相对路径）'),
       prefix: z.string().optional().describe('★ 仅 action=sync-signatures/rewrite：只算某个前缀（如 src/domain/）'),
+      node_id: z.string().optional().describe('★ 仅 action=brief：要看哪个节点（几何节点 id）；给了就用它定位文件与决策卡'),
+      path: z.string().optional().describe('★ 仅 action=brief：也可以直接给仓库相对路径（node_id 与 path 二选一）'),
     },
     handler: wrapData(async (a) => {
       const action = (a.action as string | undefined) ?? 'report';
@@ -564,6 +567,17 @@ export const DESIGN_TOOLS: ToolDef[] = [
           `边：扫描遗漏 ${d.missedEdges.length} · 真要建 ${d.realMissingEdges.length} · 只在实际侧 ${d.onlyLiveEdges.length}`,
         ];
         return { message: L.join('\n'), data: d };
+      }
+      if (action === 'brief') {
+        const feature = a.feature ? String(a.feature) : '';
+        if (!feature) throw new Error('design_line action=brief 需要 feature');
+        if (!a.node_id && !a.path) throw new Error('design_line action=brief 需要 node_id 或 path（要看哪个节点/文件）');
+        return briefHandler({
+          project_dir: String(a.project_dir),
+          feature,
+          ...(a.node_id ? { node_id: String(a.node_id) } : {}),
+          ...(a.path ? { path: String(a.path) } : {}),
+        });
       }
       const feature = a.feature ? String(a.feature) : '';
       if (!feature) throw new Error('design_line action=report 需要 feature（六步读数是按 feature 读的）');
