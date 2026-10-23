@@ -442,7 +442,7 @@ export function mustHaveFor(design: unknown, onlyDesignIds: string[]): MustHaveR
 // ⇒ 本函数**只做投影与拼接**，一个判据都不新造。要改判据去改那两个源头。
 //
 // ## 输出形状（给 LLM 读的，不是给人看的报表）
-//   design.summary / acceptance / must_have / unsatisfied_expectations（只列没过的）
+//   design.summary / acceptance / must_have / expectations（**设计要求原文**；★ 本函数不判满没满）
 //   live.symbols（只给签名，不贴全文 —— 全文用 explore_code / Read）
 //   gap.missing_symbols / gap.unsatisfied_count
 export interface BriefSymbol {
@@ -458,12 +458,12 @@ export interface BriefReport {
     summary?: string;
     acceptance?: string;
     must_have: MustHaveSymbol[];
-    /** 只列**未满足**的判据（判据本身住在 decision.expectations，这里不复制语义） */
-    unsatisfied_expectations: Array<{ kind: string; [k: string]: unknown }>;
+    /** ★ 设计要求**原文**（decision.expectations）。★ 不是「未满足」—— 本函数不判满没满，别拿它当验收结论 */
+    expectations: Array<{ kind: string; [k: string]: unknown }>;
     why_empty?: string;
   };
   live: { symbols: BriefSymbol[]; indexed: boolean };
-  gap: { missing_symbols: MustHaveSymbol[]; unsatisfied_count: number };
+  gap: { missing_symbols: MustHaveSymbol[]; expectation_count: number };
 }
 
 /** 纯组装：入参是已经算好的两侧事实，本函数不做 I/O、不判判据 */
@@ -489,7 +489,7 @@ export function briefFrom(dsl: unknown, target: { node_id?: string; path?: strin
     ...(dec?.summary ? { summary: dec.summary } : {}),
     ...(dec?.acceptance ? { acceptance: dec.acceptance } : {}),
     must_have: [],
-    unsatisfied_expectations: exps.map((e) => ({ ...e, kind: String(e.kind ?? '?') })),
+    expectations: exps.map((e) => ({ ...e, kind: String(e.kind ?? '?') })),
     ...(node ? {} : { why_empty: '找不到该节点（node_id 不对？）⇒ 只给路径级信息' }),
     nodePath: filePath,
   };
@@ -575,11 +575,11 @@ export function briefReport(
       ...(base.summary ? { summary: base.summary } : {}),
       ...(base.acceptance ? { acceptance: base.acceptance } : {}),
       must_have: must,
-      unsatisfied_expectations: base.unsatisfied_expectations,
+      expectations: base.expectations,
       ...(whyEmpty ? { why_empty: whyEmpty } : {}),
     },
     live: { symbols: live, indexed },
-    gap: { missing_symbols: missing, unsatisfied_count: base.unsatisfied_expectations.length },
+    gap: { missing_symbols: missing, expectation_count: base.expectations.length },
   };
 }
 
@@ -593,9 +593,18 @@ export function briefHandler(input: { project_dir: string; feature: string; node
     ...(input.path ? { path: input.path } : {}),
   });
   const where = r.target.path ?? r.target.node_id ?? '（未指定目标）';
-  const head =
-    `brief · ${where}（决策${r.design.summary ? '有' : '无'} · 必含 ${r.design.must_have.length} 符号 · ` +
-    `缺 ${r.gap.missing_symbols.length} · 判据 ${r.gap.unsatisfied_count} 条 · 实际 ${r.live.symbols.length} 符号${r.live.indexed ? '' : '（未索引）'}）`;
+  // ★★★ 2026-10-23（用户反馈）：「决策有 · 必含 13 符号 · 缺 1 · 判据 13 条 · 实际 35 符号」这是干什么的？
+  //   那是一串**只可计数、不可理解**的密码：说"缺 1"不如说"缺哪个"；说"判据 13 条"也没说满没满（本函数根本没判）。
+  //   ⇒ 改成一句能直接读的话，最要紧的（缺什么、叫什么名）放最前。
+  const head = (() => {
+    if (!r.target.path) return `brief · ${where}（找不到文件路径 ⇒ 只能给节点级信息）`;
+    const n = r.gap.missing_symbols.length;
+    const names = r.gap.missing_symbols.slice(0, 3).map((m) => m.name).join();
+    const more = n === 1 ? '' : n > 3 ? ` 等 ${n} 个` : ` 这 ${n} 个`;
+    if (n > 0) return `${where}：设计要 ${r.design.must_have.length} 个符号，源码里缺 ${names}${more}`;
+    if (r.design.must_have.length > 0) return `${where}：设计要的 ${r.design.must_have.length} 个符号，源码里都有`;
+    return `${where}：设计没给这个文件列必含符号（decision 里没有 symbol-exists 判据）`;
+  })();
   const lines = [head];
   if (r.design.summary) lines.push(`  要什么：${r.design.summary}`);
   if (r.design.acceptance) lines.push(`  验收：${r.design.acceptance}`);
