@@ -513,6 +513,13 @@ export async function briefReport(
   root: string,
   feature: string,
   target: { node_id?: string; path?: string },
+  /**
+   * `skip_impact`：不算影响面。
+   * ★ 2026-10-23 实测必要性：`analyzeImpact` 每次都会 `buildImpactGraph`（全仓依赖图）。
+   *   批量扫 84 张卡时 4 分 56 秒还没跑完 ⇒ 逐卡算影响面是 O(cards × 全仓图)。
+   *   只要符号差时应该能跳过它（符号差查 cache.db，毫秒级）。
+   */
+  opts: { skip_impact?: boolean } = {},
 ): Promise<BriefReport> {
   // ★ 与 lineReport 同口径：直接读 `.agent-io/design/<f>.dsl.json`（不引入第二套读法）
   const designFile = path.join(root, '.agent-io', 'design', `${feature}.dsl.json`);
@@ -610,7 +617,7 @@ export async function briefReport(
 
   // 影响面：只给"改这个文件会炸谁"的规模 + 前 5 个（★ 不贴整份报告 —— 那是 impact_analysis 的活）
   let impact: BriefReport['impact'];
-  if (filePath) {
+  if (filePath && opts.skip_impact !== true) {
     try {
       const r = await analyzeImpact(root, [{ file: filePath as string }]);
       impact = { total: r.total, direct: r.direct, high_risk: r.high_risk, top: r.files.slice(0, 5).map((f) => f.file) };
