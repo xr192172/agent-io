@@ -204,7 +204,7 @@ export const OP_SPECS: readonly OpSpec[] = [
     // ★★★ 2026-10-22（软归档）：加 `archive` / `unarchive` —— 给**已了结**的卡盖 / 摘 `archived_at`。
     //   ★ 为什么不是 `retire` 的别名：`retire` 改 `state`（活 ⇒ void，是**结局**），归档**不改 state**，
     //     只是"默认不必再看"的一层可回滚标记 ⇒ 两件事、两个 op（混起来就没法「归档了但仍算 void」地回滚）。
-    ops: ['add', 'link', 'import', 'update', 'follows', 'retire', 'delete', 'archive', 'unarchive'],
+    ops: ['add', 'link', 'import', 'update', 'follows', 'retire', 'delete', 'archive', 'unarchive', 'move_to_history'],
     idRequired: false,
     opsRequiringId: ['link', 'update', 'follows', 'retire', 'delete'],
     // ★★★ 2026-10-22（卡迁移）：加 `import` —— **把一张已存在的卡逐字并入 `todos[]`**。
@@ -236,6 +236,9 @@ export const OP_SPECS: readonly OpSpec[] = [
       //     —— 它是去掉一层标记，不是一次有内容的决定（真正有理由的那步是随后的 claim / reopen）。
       archive: ['ids', 'reason'],
       unarchive: ['ids'],
+      // ★★★ 2026-10-23（history 表）：`move_to_history` 也是**批量**（收 `ids` 不收 `id`），
+      //   `reason` 必填且**落库**（`task_history.reason`）—— 理由不只在回执里。
+      move_to_history: ['ids', 'reason'],
     },
     note:
       '★ **无节点任务**（2026-10-18 Q5）：和 task **同一套状态机/同一套 claim/complete/void 语义**，' +

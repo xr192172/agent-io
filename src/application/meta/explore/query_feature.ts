@@ -76,6 +76,9 @@ import { getSimulationState } from '../../design/lifecycle/simulation.js';
 //   ★★ **验收句没被翻成期望 ⇒ 永远不进待办 ⇒ 文件落地了却没人接**。
 //   ⇒ 这条 import + 下面那个 `case 'pool'` 就是把那句话兑成事实。
 import { listPool } from '../../design/board/pool.js';
+// ★★★ 2026-10-23（history 表）：已了结卡出册后的**唯一读端** —— 住独立库（不参与索引重建），
+//   所以读它**不走 DSL**（`todos[]` 里已经没有这些卡了）。
+import { getTaskHistoryFile, queryTaskHistory } from '../../../infrastructure/task_history.js';
 // ★ 2026-10-22（D-T8 上架读端）：在挂的卡要报「挂了多久 / 租约过没过」⇒ TTL 取 domain 的唯一那份定义，
 //   本文件不写 2h 这个数（写死一处就等着两处不一致）。
 import { LEASE_TTL_MS } from '../../../domain/task_machine.js';
@@ -116,6 +119,8 @@ export interface QueryFeatureInput {
     | 'pool'
     // ★ 2026-10-21：todo 的**待办读端**（含按 state 过滤 + 墓碑）。
     | 'todo'
+    // ★★★ 2026-10-23：已了结卡的**历史读端**（`.agent-io/task-history.db` 的 task_history 表）
+    | 'history'
     | 'pending';
   /** feature 名（dsl/nodes/edges/node/decisions/files/file/digest/annotations/approvals/approval_history/snapshots/simulation_state 必填；features/templates 忽略；diff 用 feature_a/feature_b） */
   feature?: string;
@@ -137,6 +142,15 @@ export interface QueryFeatureInput {
    * ★ 两种形态读的是**同一个** `buildTodoChains` 结果 —— 不是两套算法。
    */
   chain?: boolean;
+  /**
+   * ★★★ 2026-10-23（history）：按**卡 id 精确**查。
+   * ★ 与 `search` 分工：这个是「我就要那一张」，`search` 是「我记得里面有个词」。
+   */
+  card_id?: string;
+  /** ★★★ 2026-10-23（history）：在 `summary` / `card_json` 里做**子串**匹配（用户原话：「要查的话你就搜索 history」） */
+  search?: string;
+  /** ★★★ 2026-10-23（history）：最多返回几条（默认 20，上限 500）—— 历史是 append-only，默认不许全量倒出来 */
+  limit?: number;
   /** node：节点 ID */
   node_id?: string;
   /**
@@ -1636,6 +1650,68 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
     // ★★ 口径由 `listPool` 一处保证（这里**不重算**）：
     //   `shown = total - folded`、`folded = done + void` ⇒ `shown + folded === total` **由构造保证**；
     //   ★ `feature` 不存在 ⇒ **抛**（**绝不返回空池** —— 空池会被读成"没有卡"，而真相是"没有这个 feature"）。
+    // ── 历史（已了结卡出册后的**唯一读端**）─────────────────────────────
+    //
+    // ★★★ 2026-10-23（用户裁定）：`todos[]` **只放活卡**；done / void 由 `todo.move_to_history`
+    //   移进 `.agent-io/task-history.db` 的 `task_history` 表（**项目级独立库**，不参与 `cache.db` 重建）。
+    //   ⇒ 这里读的是**另一张表**，不是"另一份 todos" ⇒ ★ **不并进 `query=todo` 的同一个列表**：
+    //     那个列表的读数是"册上还有多少张活卡"，混进历史会让这个读数重新失去意义（正是本次要修的病）。
+    // ★ `card_json` 是**整张卡原样**（evidence / retire_reason / 修订史都在里面）⇒ 本分支把它交给
+    //   `data.items[].card`，不摘要化（审计数据摘要化 = 以后答不上来"当时证据是什么"）。
+    case 'history': {
+      const feature = requireFeature(input);
+      const wantState = input.state && input.state !== 'all' ? input.state : undefined;
+      const { total, rows } = queryTaskHistory({
+        feature,
+        ...(wantState ? { state: wantState } : {}),
+        ...(input.card_id ? { card_id: input.card_id } : {}),
+        ...(input.search ? { search: input.search } : {}),
+        ...(input.limit ? { limit: input.limit } : {}),
+      });
+      const lines: string[] = [
+        `══ feature "${feature}" 的历史 · ${wantState ? `state=${wantState}` : '全部'} · 命中 ${rows.length}/${total} 条 ${viewTag} ══`,
+        '',
+        `  库：${getTaskHistoryFile()}（★ 项目级独立库 —— 索引重建 / import_project **不碰它**）`,
+        `  口径：这里只放**已了结**（done / void）的卡；活卡在 todos[] 里（get_dsl query=todo）。`,
+      ];
+      if (rows.length === 0) {
+        lines.push('', '  （没有匹配的历史记录）');
+      } else {
+        rows.forEach((r, i) => {
+          const ev = Array.isArray((r.card as { evidence?: unknown[] } | null)?.evidence)
+            ? ((r.card as { evidence: unknown[] }).evidence.length)
+            : 0;
+          lines.push(
+            '',
+            `  ${i + 1}. [${r.id}] ${r.state} · 入史 ${r.moved_at}` +
+              `${r.node_id ? ` · node=${r.node_id}` : ''}${ev ? ` · evidence ${ev} 条` : ''}`,
+            `     ${r.summary}`,
+            `     为什么入史：${r.reason}`,
+          );
+          if (!r.card) lines.push('     ⚠ card_json 解析失败 —— 这一行读不出原卡（★ 不猜，也不假装它是空的）');
+        });
+        if (total > rows.length) {
+          lines.push('', `  ★ 还有 ${total - rows.length} 条没列出（limit=${rows.length}）—— 加 limit，或用 state / card_id / search 收窄。`);
+        }
+      }
+      return {
+        message: lines.join('\n'),
+        data: {
+          feature,
+          total,
+          returned: rows.length,
+          items: rows.map((r) => ({
+            id: r.id,
+            state: r.state,
+            node_id: r.node_id ?? null,
+            moved_at: r.moved_at,
+            reason: r.reason,
+            card: r.card,
+          })),
+        },
+      };
+    }
+
     case 'pool': {
       const feature = requireFeature(input);
       const v = listPool(feature);

@@ -4150,40 +4150,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry",
-        "task": {
-          "id": "file_src_application_cross_index_ts",
-          "summary": "【L1 待建构】入口层 · src/application/cross — 0 个 API（导入自 9 个模块）（src/application/cross/index.ts） ← 节点 file_src_application_cross_index_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_cross_index_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "read_set": {
-            "symbols": [
-              {
-                "file": "src/application/cross/index.ts",
-                "name": "CROSS_TOOLS",
-                "fp": "4dc9bc97e23093432cf5e4ec0eb5b1af617e6892"
-              }
-            ],
-            "files": [
-              {
-                "path": "src/application/cross/index.ts",
-                "content_hash": "59615484606bfbd7e0b3b53399a54373997bdff1"
-              }
-            ],
-            "computed_at": "2026-10-21T19:26:16.248Z",
-            "basis": [
-              "declared"
-            ]
-          },
-          "release_reason": "陈旧租约 11h（原 owner=subagent:chain-e），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:00.659Z",
-          "node_id": "file_src_application_cross_index_ts"
-        }
+        "arch_layer": "entry"
       },
       {
         "id": "file_src_application_design_api_signature_ts",
@@ -4247,21 +4214,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_design_derive_derive_split_ts",
-          "summary": "【L1 待建构】核心层 · src/application/design/derive — 30 个 API（导入自 8 个模块）（src/application/design/derive/derive_split.ts） ← 节点 file_src_application_design_derive_derive_split_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_derive_derive_split_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:06.593Z",
-          "node_id": "file_src_application_design_derive_derive_split_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_design_derive_opl_ts",
@@ -13416,13 +13369,31 @@
               "observed": "探针 PASS=9 FAIL=0（A observed/command 逐字 · B 摘掉白名单里的 observed ⇒ A1 红而 A2 绿 · C hack/evil_field 被丢 · D why 落盘）；verify 8 道门全 PASS（exit=0）；complete 首行念出「★ 证据落盘（白名单内）：kind · at · by · agent · verdict · fingerprint · observed · command」。",
               "command": "npm run build && node certs/.work/probe-evidence-whitelist.mjs && npm run verify",
               "why": "src/application/design/dsl_ops/task_ops.ts 的 complete 已不再逐字段手写证据，改走 src/domain/task_schema.ts#pickTaskEvidence 白名单；本卡（该文件的文件卡）随之收口。"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-23T07:20:03.712Z",
+              "by": "llm",
+              "agent": "subagent:deepseek-task-history",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --experimental-sqlite 读 .agent-io/task-history.db + npm run verify",
+                "input": "c823849e0bed9fd3c01cdc7e9f37633eb9f501a8",
+                "code": "9ebda8054d55ece5672fbc912da32afcede8ab2a",
+                "covers": [
+                  "src/application/design/dsl_ops/task_ops.ts",
+                  "src/domain/task_machine.ts"
+                ]
+              },
+              "observed": "task_history 88 行（card_json 88/88 与迁移前逐字节一致）；todos 256→168 张（和=256 不丢卡）；import_project 重建 cache.db 后 history 仍 88 行；get_dsl query=todo 报 void 0 / 活 76；npm run verify 9/9 门 PASS；npm run build exit=0",
+              "command": "node --experimental-sqlite 读 .agent-io/task-history.db + npm run verify"
             }
           ],
-          "owner": "subagent:deepseek-evidence-fix",
-          "claimed_at": "2026-10-22T18:02:33.750Z",
-          "reopened_at": "2026-10-22T17:46:45.364Z",
-          "reopen_reason": "证据落盘丢 observed：completeTask 只落 kind/at/by/verdict，要为 reading/attestation 保留 observed/command/why（白名单式）",
-          "reopened_from": "subagent:deepseek-two-phase",
+          "owner": "subagent:deepseek-task-history",
+          "claimed_at": "2026-10-23T07:07:38.606Z",
+          "reopened_at": "2026-10-23T07:07:38.606Z",
+          "reopen_reason": "改 src/application/design/dsl_ops/task_ops.ts 加 todo.move_to_history（写 history 表后再出册），同批改 op_data_spec.ts / query_feature.ts / index.ts",
+          "reopened_from": "subagent:deepseek-evidence-fix",
           "read_set": {
             "symbols": [
               {
@@ -13463,7 +13434,7 @@
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "completeTask",
-                "fp": "3c8cfb0056628f0449c75be4d57b0b7809eb98bb"
+                "fp": "598d489556e037d66bb5e0b54b70c982ca761a01"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -13523,12 +13494,25 @@
             ],
             "files": [
               {
+                "path": "src/application/design/dsl_ops/op_data_spec.ts",
+                "content_hash": "b84b94ce9f932b88e422abb58be8414cae419f28"
+              },
+              {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "0340df238f6e1334994844d1aede00cd2d05caa8"
+                "content_hash": "e71e8da1e3cffe39f37f8f6bbaf5cbb4e146d63a"
+              },
+              {
+                "path": "src/application/design/index.ts",
+                "content_hash": "47c4f11a8907e308320fe880523301090e12bd3b"
+              },
+              {
+                "path": "src/application/meta/explore/query_feature.ts",
+                "content_hash": "d1c1cd63e34b54485755ca53437cc1aeef6dae43"
               }
             ],
-            "computed_at": "2026-10-22T18:02:33.700Z",
+            "computed_at": "2026-10-23T07:07:38.561Z",
             "basis": [
+              "declared",
               "expectations"
             ],
             "note": "1 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
@@ -17561,34 +17545,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry",
-        "task": {
-          "id": "file_src_application_design_index_ts",
-          "summary": "【L1 待建构】入口层 · src/application/design — 0 个 API（导入自 20 个模块）（src/application/design/index.ts） ← 节点 file_src_application_design_index_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "read_set": {
-            "symbols": [],
-            "files": [
-              {
-                "path": "src/application/design/index.ts",
-                "content_hash": "baad39844b6b0dd03f293bd581027029165d2da5"
-              }
-            ],
-            "computed_at": "2026-10-22T13:54:56.246Z",
-            "basis": [
-              "node-path"
-            ]
-          },
-          "release_reason": "交给子代理改 edit_dsl 的工具描述",
-          "released_by": null,
-          "released_at": "2026-10-22T15:52:18.833Z",
-          "node_id": "file_src_application_design_index_ts"
-        }
+        "arch_layer": "entry"
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -17604,21 +17561,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_design_intent_consistency_ts",
-          "summary": "【L1 待建构】核心层 · src/application/design/intent — 14 个 API（导入自 11 个模块）（src/application/design/intent/consistency.ts） ← 节点 file_src_application_design_intent_consistency_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_intent_consistency_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 26h（原 owner=codebuddy-v14-nodes-cols），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:00.758Z",
-          "node_id": "file_src_application_design_intent_consistency_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_design_intent_detect_drift_ts",
@@ -17730,21 +17673,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_design_workbench_code_workbench_ts",
-          "summary": "【L1 待建构】核心层 · src/application/design/workbench — 30 个 API（导入自 9 个模块）（src/application/design/workbench/code_workbench.ts） ← 节点 file_src_application_design_workbench_code_workbench_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_workbench_code_workbench_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "approveChange 三条委托写路已传 c.submitter，且 split_plan/edit_code 两条回执补回 task_gate；L1 卡无后证，release 不硬 complete",
-          "released_by": "agent-a7",
-          "released_at": "2026-10-21T08:54:45.884Z",
-          "node_id": "file_src_application_design_workbench_code_workbench_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_design_workbench_dag_layout_ts",
@@ -17760,54 +17689,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_design_workbench_dag_layout_ts",
-          "summary": "【L1 待建构】核心层 · src/application/design/workbench — 10 个 API（导入自 3 个模块）（src/application/design/workbench/dag_layout.ts） ← 节点 file_src_application_design_workbench_dag_layout_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_workbench_dag_layout_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "read_set": {
-            "symbols": [],
-            "files": [
-              {
-                "path": "scripts/stat-raw-writes.mjs",
-                "content_hash": "c0526a607bfcd22eb8606fc831dfeaef6a4b01c8"
-              },
-              {
-                "path": "src/application/design/lifecycle/snapshot.ts",
-                "content_hash": "498dfaec6a3ccef283d616f2cfe68abab05320df"
-              },
-              {
-                "path": "src/application/design/workbench/dag_layout.ts",
-                "content_hash": "dccaac98617a81da010c8fae00e2a13741b6f4f1"
-              },
-              {
-                "path": "src/application/observe/reconcile/approval.ts",
-                "content_hash": "d08c87783e9f19bfe97029f3371bf7b32f5adb94"
-              },
-              {
-                "path": "src/application/write_gate.ts",
-                "content_hash": "b5e9f1ef7d075342e104ac375ecbd7fafe90988b"
-              },
-              {
-                "path": "src/infrastructure/analysis/structure/monolith.ts",
-                "content_hash": "68e2f1ebb1cbe1667bb5b48bb9267d27f906ac96"
-              }
-            ],
-            "computed_at": "2026-10-22T12:38:28.213Z",
-            "basis": [
-              "declared"
-            ]
-          },
-          "release_reason": "只当写闸 anchor 用（authorize=files:… 拉这 5 个文件），活不在这个节点上；L1 建构卡未完成（dag_layout.ts 节点无 decision.summary/后态判据），不假收口",
-          "released_by": "subagent:deepseek-raw-source",
-          "released_at": "2026-10-22T12:41:59.091Z",
-          "node_id": "file_src_application_design_workbench_dag_layout_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_dispatch_ts",
@@ -17871,21 +17753,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_harvest_harvest_closure_ts",
-          "summary": "【L1 待建构】核心层 · src/application/harvest — 5 个 API（导入自 6 个模块）（src/application/harvest/harvest_closure.ts） ← 节点 file_src_application_harvest_harvest_closure_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_harvest_harvest_closure_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 24h（原 owner=agent-v16），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:00.854Z",
-          "node_id": "file_src_application_harvest_harvest_closure_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_harvest_harvest_decisions_ts",
@@ -17901,21 +17769,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_harvest_harvest_decisions_ts",
-          "summary": "【L1 待建构】核心层 · src/application/harvest — 32 个 API（导入自 14 个模块）（src/application/harvest/harvest_decisions.ts） ← 节点 file_src_application_harvest_harvest_decisions_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_harvest_harvest_decisions_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:06.945Z",
-          "node_id": "file_src_application_harvest_harvest_decisions_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_harvest_index_ts",
@@ -17931,21 +17785,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry",
-        "task": {
-          "id": "file_src_application_harvest_index_ts",
-          "summary": "【L1 待建构】入口层 · src/application/harvest — 0 个 API（导入自 10 个模块）（src/application/harvest/index.ts） ← 节点 file_src_application_harvest_index_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_harvest_index_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "释放 file_src_application_harvest_index_ts：本轮活已由子代理完成，build + verify 已验收通过",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-21T02:42:50.832Z",
-          "node_id": "file_src_application_harvest_index_ts"
-        }
+        "arch_layer": "entry"
       },
       {
         "id": "file_src_application_meta_diagnosis_diagnose_loop_ts",
@@ -17993,21 +17833,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_meta_explore_contract_page_ts",
-          "summary": "【L1 待建构】核心层 · src/application/meta/explore — 7 个 API（导入自 11 个模块）（src/application/meta/explore/contract_page.ts） ← 节点 file_src_application_meta_explore_contract_page_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_contract_page_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 25h（原 owner=agent-body-v15），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:00.954Z",
-          "node_id": "file_src_application_meta_explore_contract_page_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_meta_explore_explore_arg_spec_ts",
@@ -18023,21 +17849,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_meta_explore_explore_arg_spec_ts",
-          "summary": "【L1 待建构】核心层 · src/application/meta/explore — 3 个 API（导入自 0 个模块）（src/application/meta/explore/explore_arg_spec.ts） ← 节点 file_src_application_meta_explore_explore_arg_spec_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_explore_arg_spec_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 23h（原 owner=agent-facts-db），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:01.048Z",
-          "node_id": "file_src_application_meta_explore_explore_arg_spec_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_meta_explore_explore_code_ts",
@@ -18053,21 +17865,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_meta_explore_explore_code_ts",
-          "summary": "【L1 待建构】核心层 · src/application/meta/explore — 4 个 API（导入自 23 个模块）（src/application/meta/explore/explore_code.ts） ← 节点 file_src_application_meta_explore_explore_code_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_explore_code_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 23h（原 owner=agent-facts-db），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:01.139Z",
-          "node_id": "file_src_application_meta_explore_explore_code_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_meta_explore_first_hop_args_ts",
@@ -18115,34 +17913,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_meta_explore_query_feature_ts",
-          "summary": "【L1 待建构】核心层 · src/application/meta/explore — 9 个 API（导入自 20 个模块）（src/application/meta/explore/query_feature.ts） ← 节点 file_src_application_meta_explore_query_feature_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_query_feature_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "read_set": {
-            "symbols": [],
-            "files": [
-              {
-                "path": "src/application/meta/explore/query_feature.ts",
-                "content_hash": "7425ee5370e82da0e5d390a87d6a572b544c9ddf"
-              }
-            ],
-            "computed_at": "2026-10-22T14:44:24.073Z",
-            "basis": [
-              "node-path"
-            ]
-          },
-          "release_reason": "D-T8 接线已落盘并 verify 全绿；本卡要的 DSL 建构（decision + 后态判据）不在本卡范围，交回池里",
-          "released_by": null,
-          "released_at": "2026-10-22T14:56:43.663Z",
-          "node_id": "file_src_application_meta_explore_query_feature_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_meta_handlers_ts",
@@ -18158,21 +17929,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api",
-        "task": {
-          "id": "file_src_application_meta_handlers_ts",
-          "summary": "【L1 待建构】API 层 · src/application/meta — 1 个 API（导入自 3 个模块）（src/application/meta/handlers.ts） ← 节点 file_src_application_meta_handlers_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_handlers_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 23h（原 owner=agent-facts-db），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:01.228Z",
-          "node_id": "file_src_application_meta_handlers_ts"
-        }
+        "arch_layer": "api"
       },
       {
         "id": "file_src_application_meta_impact_impact_report_ts",
@@ -18204,39 +17961,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry",
-        "task": {
-          "id": "file_src_application_meta_index_ts",
-          "summary": "【L1 待建构】入口层 · src/application/meta — 2 个 API（导入自 36 个模块）（src/application/meta/index.ts） ← 节点 file_src_application_meta_index_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_index_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "read_set": {
-            "symbols": [],
-            "files": [
-              {
-                "path": "src/application/meta/index.ts",
-                "content_hash": "7ca4e420e75a6395e5201c23c2a431f1c09b85cf"
-              }
-            ],
-            "computed_at": "2026-10-22T13:53:42.254Z",
-            "basis": [
-              "node-path"
-            ]
-          },
-          "node_id": "file_src_application_meta_index_ts",
-          "prepared_snapshot": null,
-          "expired_from": {
-            "owner": "agent:main",
-            "claimed_at": "2026-10-22T13:53:42.296Z",
-            "age_hours": 13.1,
-            "ttl_ms": 7200000
-          },
-          "expired_at": "2026-10-23T02:58:22.489Z"
-        }
+        "arch_layer": "entry"
       },
       {
         "id": "file_src_application_meta_integrity_index_integrity_ts",
@@ -18300,21 +18025,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_meta_registry_capability_map_ts",
-          "summary": "【L1 待建构】核心层 · src/application/meta/registry — 26 个 API（导入自 8 个模块）（src/application/meta/registry/capability_map.ts） ← 节点 file_src_application_meta_registry_capability_map_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_registry_capability_map_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:07.659Z",
-          "node_id": "file_src_application_meta_registry_capability_map_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_meta_registry_cli_extract_ts",
@@ -18394,21 +18105,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_meta_registry_tool_faces_ts",
-          "summary": "【L1 待建构】核心层 · src/application/meta/registry — 3 个 API（导入自 2 个模块）（src/application/meta/registry/tool_faces.ts） ← 节点 file_src_application_meta_registry_tool_faces_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_registry_tool_faces_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:07.776Z",
-          "node_id": "file_src_application_meta_registry_tool_faces_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_meta_upgrade_upgrade_ts",
@@ -18456,21 +18153,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "ui",
-        "task": {
-          "id": "file_src_application_meta_view_derive_mind_map_ts",
-          "summary": "【L1 待建构】UI 层 · src/application/meta/view — 50 个 API（导入自 14 个模块）（src/application/meta/view/derive_mind_map.ts） ← 节点 file_src_application_meta_view_derive_mind_map_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_view_derive_mind_map_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 27h（原 owner=codebuddy-params），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:01.412Z",
-          "node_id": "file_src_application_meta_view_derive_mind_map_ts"
-        }
+        "arch_layer": "ui"
       },
       {
         "id": "file_src_application_meta_view_explain_gen_ts",
@@ -18598,21 +18281,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_observe_capture_trace_evidence_ts",
-          "summary": "【L1 待建构】核心层 · src/application/observe/capture — 6 个 API（导入自 4 个模块）（src/application/observe/capture/trace_evidence.ts） ← 节点 file_src_application_observe_capture_trace_evidence_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_observe_capture_trace_evidence_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:07.896Z",
-          "node_id": "file_src_application_observe_capture_trace_evidence_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_observe_handlers_ts",
@@ -18628,45 +18297,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api",
-        "task": {
-          "id": "file_src_application_observe_handlers_ts",
-          "summary": "【L1 待建构】API 层 · src/application/observe — 1 个 API（导入自 17 个模块）（src/application/observe/handlers.ts） ← 节点 file_src_application_observe_handlers_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_observe_handlers_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "read_set": {
-            "symbols": [
-              {
-                "file": "src/application/observe/handlers.ts",
-                "name": "observeJudgeHandler",
-                "fp": "e67b4d711ea2673d25027572932aa54db9d96b0c"
-              },
-              {
-                "file": "src/application/observe/handlers.ts",
-                "name": "observeLogHandler",
-                "fp": "8de2598b04fbba4b5abf47063eae5c9993d4a445"
-              }
-            ],
-            "files": [
-              {
-                "path": "src/application/observe/handlers.ts",
-                "content_hash": "318c3bb69a478651fc679bb6d0038acfa70db75d"
-              }
-            ],
-            "computed_at": "2026-10-21T20:26:22.725Z",
-            "basis": [
-              "declared"
-            ]
-          },
-          "release_reason": "陈旧租约 10h（原 owner=subagent:serve-split），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:01.506Z",
-          "node_id": "file_src_application_observe_handlers_ts"
-        }
+        "arch_layer": "api"
       },
       {
         "id": "file_src_application_observe_index_ts",
@@ -19167,21 +18798,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_plumbing_ts",
-          "summary": "【L1 待建构】核心层 · src/application — 13 个 API（导入自 2 个模块）（src/application/plumbing.ts） ← 节点 file_src_application_plumbing_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_plumbing_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:08.021Z",
-          "node_id": "file_src_application_plumbing_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_refactor_annotate_function_annotation_ts",
@@ -19213,21 +18830,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_refactor_deprecate_offline_deprecate_offline_ts",
-          "summary": "【L1 待建构】核心层 · src/application/refactor/deprecate_offline — 11 个 API（导入自 8 个模块）（src/application/refactor/deprecate_offline/deprecate_offline.ts） ← 节点 file_src_application_refactor_deprecate_offline_deprecate_offline_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_deprecate_offline_deprecate_offline_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "T356 已改完（补上此前完全缺失的身份/授权透传）；卡留在 candidate 供后续领",
-          "released_by": "t356-authorize",
-          "released_at": "2026-10-20T13:29:37.356Z",
-          "node_id": "file_src_application_refactor_deprecate_offline_deprecate_offline_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_refactor_diff_views_diff_views_ts",
@@ -19396,21 +18999,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_refactor_edit_apply_writes_ts",
-          "summary": "【L1 待建构】核心层 · src/application/refactor/edit — 3 个 API（导入自 5 个模块）（src/application/refactor/edit/apply_writes.ts） ← 节点 file_src_application_refactor_edit_apply_writes_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_apply_writes_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 21h（原 owner=agent-readset），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:01.592Z",
-          "node_id": "file_src_application_refactor_edit_apply_writes_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_refactor_edit_edit_code_ts",
@@ -19426,21 +19015,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_refactor_edit_edit_code_ts",
-          "summary": "【L1 待建构】核心层 · src/application/refactor/edit — 21 个 API（导入自 11 个模块）（src/application/refactor/edit/edit_code.ts） ← 节点 file_src_application_refactor_edit_edit_code_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_edit_code_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 21h（原 owner=agent-readset），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:01.679Z",
-          "node_id": "file_src_application_refactor_edit_edit_code_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_refactor_edit_remove_dead_imports_ts",
@@ -19537,21 +19112,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_refactor_find_field_refs_ts",
-          "summary": "【L1 待建构】核心层 · src/application/refactor/find — 14 个 API（导入自 4 个模块）（src/application/refactor/find/field_refs.ts） ← 节点 file_src_application_refactor_find_field_refs_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_find_field_refs_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 24h（原 owner=agent-v16），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:01.764Z",
-          "node_id": "file_src_application_refactor_find_field_refs_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_refactor_find_find_references_ts",
@@ -19615,21 +19176,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry",
-        "task": {
-          "id": "file_src_application_refactor_index_ts",
-          "summary": "【L1 待建构】入口层 · src/application/refactor — 1 个 API（导入自 34 个模块）（src/application/refactor/index.ts） ← 节点 file_src_application_refactor_index_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_index_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "annotate_functions / rules apply 的 actor 与 task_gate 均已在 index.ts 落定（tsc 0 error）；L1 卡无后证，release 不硬 complete",
-          "released_by": "agent-a7",
-          "released_at": "2026-10-21T08:57:36.672Z",
-          "node_id": "file_src_application_refactor_index_ts"
-        }
+        "arch_layer": "entry"
       },
       {
         "id": "file_src_application_refactor_parse_capability_parse_capability_ts",
@@ -19677,21 +19224,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_refactor_pipeline_refactor_pipeline_ts",
-          "summary": "【L1 待建构】核心层 · src/application/refactor/pipeline — 11 个 API（导入自 17 个模块）（src/application/refactor/pipeline/refactor_pipeline.ts） ← 节点 file_src_application_refactor_pipeline_refactor_pipeline_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_pipeline_refactor_pipeline_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "本轮补闸已完成并落盘（refactor_pipeline.ts + index.ts），不再占写权；早交回卡给下一个 owner",
-          "released_by": "codebuddy-dogfood",
-          "released_at": "2026-10-20T13:56:27.111Z",
-          "node_id": "file_src_application_refactor_pipeline_refactor_pipeline_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_refactor_pipeline_refactor_plan_ts",
@@ -19707,21 +19240,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_refactor_pipeline_refactor_plan_ts",
-          "summary": "【L1 待建构】核心层 · src/application/refactor/pipeline — 5 个 API（导入自 6 个模块）（src/application/refactor/pipeline/refactor_plan.ts） ← 节点 file_src_application_refactor_pipeline_refactor_plan_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_pipeline_refactor_plan_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "T356 已改完（applyRefactorPlan 透传）",
-          "released_by": "t356-authorize",
-          "released_at": "2026-10-20T13:29:36.977Z",
-          "node_id": "file_src_application_refactor_pipeline_refactor_plan_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_refactor_rename_move_domain_ts",
@@ -19753,21 +19272,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_refactor_rename_rename_file_ts",
-          "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 14 个 API（导入自 11 个模块）（src/application/refactor/rename/rename_file.ts） ← 节点 file_src_application_refactor_rename_rename_file_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_file_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "T356 已改完（内层闸透传）",
-          "released_by": "t356-authorize",
-          "released_at": "2026-10-20T13:29:37.139Z",
-          "node_id": "file_src_application_refactor_rename_rename_file_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_refactor_rename_rename_files_ts",
@@ -19783,21 +19288,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_refactor_rename_rename_files_ts",
-          "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 3 个 API（导入自 7 个模块）（src/application/refactor/rename/rename_files.ts） ← 节点 file_src_application_refactor_rename_rename_files_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_files_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "T356 已改完（批量闸 + 内层转发）",
-          "released_by": "t356-authorize",
-          "released_at": "2026-10-20T13:29:37.060Z",
-          "node_id": "file_src_application_refactor_rename_rename_files_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_refactor_rename_rename_local_ts",
@@ -19813,21 +19304,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_refactor_rename_rename_local_ts",
-          "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 1 个 API（导入自 6 个模块）（src/application/refactor/rename/rename_local.ts） ← 节点 file_src_application_refactor_rename_rename_local_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_local_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "renameLocals 入参已加 actor/authorize 并交给 applyWrites（rename_symbols scope=local 实测由放行变为拒绝）；L1 卡无后证，release 不硬 complete",
-          "released_by": "agent-a7",
-          "released_at": "2026-10-21T08:54:45.738Z",
-          "node_id": "file_src_application_refactor_rename_rename_local_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_refactor_rename_rename_symbols_ts",
@@ -19843,21 +19320,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_refactor_rename_rename_symbols_ts",
-          "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 14 个 API（导入自 12 个模块）（src/application/refactor/rename/rename_symbols.ts） ← 节点 file_src_application_refactor_rename_rename_symbols_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_symbols_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "scope=local 支已把 input.actor/authorize 传给 renameLocals；L1 卡无后证，release 不硬 complete",
-          "released_by": "agent-a7",
-          "released_at": "2026-10-21T08:54:45.814Z",
-          "node_id": "file_src_application_refactor_rename_rename_symbols_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_refactor_rename_symbol_move_ts",
@@ -19873,21 +19336,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_refactor_rename_symbol_move_ts",
-          "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 11 个 API（导入自 13 个模块）（src/application/refactor/rename/symbol_move.ts） ← 节点 file_src_application_refactor_rename_symbol_move_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_symbol_move_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "T356 已改完（闸透传）",
-          "released_by": "t356-authorize",
-          "released_at": "2026-10-20T13:29:37.212Z",
-          "node_id": "file_src_application_refactor_rename_symbol_move_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_application_refactor_rule_library_rule_apply_ts",
@@ -50022,21 +49471,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service",
-        "task": {
-          "id": "file_src_infrastructure_analysis_contract_gate_core_ts",
-          "summary": "【L1 待建构】服务层 · src/infrastructure/analysis/contract_gate — 10 个 API（导入自 7 个模块）（src/infrastructure/analysis/contract_gate/core.ts） ← 节点 file_src_infrastructure_analysis_contract_gate_core_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_contract_gate_core_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:08.259Z",
-          "node_id": "file_src_infrastructure_analysis_contract_gate_core_ts"
-        }
+        "arch_layer": "service"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_index_ts",
@@ -50164,21 +49599,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_analysis_contract_gate_languages_ts_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/contract_gate/languages — 0 个 API（导入自 2 个模块）（src/infrastructure/analysis/contract_gate/languages/ts.ts） ← 节点 file_src_infrastructure_analysis_contract_gate_languages_ts_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_contract_gate_languages_ts_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:08.372Z",
-          "node_id": "file_src_infrastructure_analysis_contract_gate_languages_ts_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_parts_ts",
@@ -50418,21 +49839,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry",
-        "task": {
-          "id": "file_src_infrastructure_analysis_health_index_ts",
-          "summary": "【L1 待建构】入口层 · src/infrastructure/analysis/health — 21 个 API（导入自 6 个模块）（src/infrastructure/analysis/health/index.ts） ← 节点 file_src_infrastructure_analysis_health_index_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_health_index_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "释放 file_src_infrastructure_analysis_health_index_ts：本轮活已由子代理完成，build + verify 已验收通过",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-21T02:42:51.234Z",
-          "node_id": "file_src_infrastructure_analysis_health_index_ts"
-        }
+        "arch_layer": "entry"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_diff_ts",
@@ -50464,21 +49871,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_analysis_impact_diff_impact_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/impact — 4 个 API（导入自 4 个模块）（src/infrastructure/analysis/impact/diff_impact.ts） ← 节点 file_src_infrastructure_analysis_impact_diff_impact_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_impact_diff_impact_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 24h（原 owner=agent-v16），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:01.934Z",
-          "node_id": "file_src_infrastructure_analysis_impact_diff_impact_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_impact_ledger_store_ts",
@@ -50526,21 +49919,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_analysis_observe_approve_gated_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 2 个 API（导入自 4 个模块）（src/infrastructure/analysis/observe/approve_gated.ts） ← 节点 file_src_infrastructure_analysis_observe_approve_gated_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_approve_gated_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:16.502Z",
-          "node_id": "file_src_infrastructure_analysis_observe_approve_gated_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_chain_ts",
@@ -50588,21 +49967,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_analysis_observe_decl_review_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 2 个 API（导入自 4 个模块）（src/infrastructure/analysis/observe/decl_review.ts） ← 节点 file_src_infrastructure_analysis_observe_decl_review_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_decl_review_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:16.622Z",
-          "node_id": "file_src_infrastructure_analysis_observe_decl_review_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_dsl_store_ts",
@@ -50858,21 +50223,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_analysis_observe_judge_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 5 个 API（导入自 1 个模块）（src/infrastructure/analysis/observe/judge.ts） ← 节点 file_src_infrastructure_analysis_observe_judge_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_judge_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:16.736Z",
-          "node_id": "file_src_infrastructure_analysis_observe_judge_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_judge_guard_ts",
@@ -51064,21 +50415,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_analysis_observe_trace_exec_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 22 个 API（导入自 6 个模块）（src/infrastructure/analysis/observe/trace_exec.ts） ← 节点 file_src_infrastructure_analysis_observe_trace_exec_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_trace_exec_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 27h（原 owner=codebuddy-params），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:02.023Z",
-          "node_id": "file_src_infrastructure_analysis_observe_trace_exec_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_verify_gate_ts",
@@ -51094,21 +50431,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_analysis_observe_verify_gate_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 9 个 API（导入自 4 个模块）（src/infrastructure/analysis/observe/verify_gate.ts） ← 节点 file_src_infrastructure_analysis_observe_verify_gate_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_verify_gate_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:16.851Z",
-          "node_id": "file_src_infrastructure_analysis_observe_verify_gate_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_core_ts",
@@ -51236,21 +50559,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry",
-        "task": {
-          "id": "file_src_infrastructure_analysis_project_root_index_ts",
-          "summary": "【L1 待建构】入口层 · src/infrastructure/analysis/project_root — 38 个 API（导入自 12 个模块）（src/infrastructure/analysis/project_root/index.ts） ← 节点 file_src_infrastructure_analysis_project_root_index_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_project_root_index_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:16.968Z",
-          "node_id": "file_src_infrastructure_analysis_project_root_index_ts"
-        }
+        "arch_layer": "entry"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_java_executor_ts",
@@ -51554,21 +50863,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_analysis_structure_analyze_monolith_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/structure — 11 个 API（导入自 2 个模块）（src/infrastructure/analysis/structure/analyze_monolith.ts） ← 节点 file_src_infrastructure_analysis_structure_analyze_monolith_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_structure_analyze_monolith_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "释放 file_src_infrastructure_analysis_structure_analyze_monolith_ts：本轮活已由子代理完成，build + verify 已验收通过",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-21T02:42:51.391Z",
-          "node_id": "file_src_infrastructure_analysis_structure_analyze_monolith_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_arch_layer_ts",
@@ -51728,21 +51023,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry",
-        "task": {
-          "id": "file_src_infrastructure_authoring_behavior_index_ts",
-          "summary": "【L1 待建构】入口层 · src/infrastructure/authoring/behavior — 28 个 API（导入自 9 个模块）（src/infrastructure/authoring/behavior/index.ts） ← 节点 file_src_infrastructure_authoring_behavior_index_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_behavior_index_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 27h（原 owner=codebuddy-r4），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:02.115Z",
-          "node_id": "file_src_infrastructure_authoring_behavior_index_ts"
-        }
+        "arch_layer": "entry"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_const_eval_ts",
@@ -51854,21 +51135,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_authoring_translate_project_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure/authoring/translate — 14 个 API（导入自 14 个模块）（src/infrastructure/authoring/translate/project.ts） ← 节点 file_src_infrastructure_authoring_translate_project_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_translate_project_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "释放 file_src_infrastructure_authoring_translate_project_ts：本轮活已由子代理完成，build + verify 已验收通过",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-21T02:42:51.549Z",
-          "node_id": "file_src_infrastructure_authoring_translate_project_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_prompts_ts",
@@ -51916,21 +51183,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "utility",
-        "task": {
-          "id": "file_src_infrastructure_authoring_translate_tool_ts",
-          "summary": "【L1 待建构】工具层 · src/infrastructure/authoring/translate — 2 个 API（导入自 7 个模块）（src/infrastructure/authoring/translate/tool.ts） ← 节点 file_src_infrastructure_authoring_translate_tool_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_translate_tool_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约(codebuddy-r4, 27h)，2026-10-22 会话清理",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:17:22.499Z",
-          "node_id": "file_src_infrastructure_authoring_translate_tool_ts"
-        }
+        "arch_layer": "utility"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_ts_codegen_ts",
@@ -52250,21 +51503,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_data_dir_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure — 0 个 API（导入自 0 个模块）（src/infrastructure/data_dir.ts） ← 节点 file_src_infrastructure_data_dir_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_data_dir_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:18.417Z",
-          "node_id": "file_src_infrastructure_data_dir_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_dictionary_ts",
@@ -52296,21 +51535,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_dogfood_coverage_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure — 3 个 API（导入自 1 个模块）（src/infrastructure/dogfood_coverage.ts） ← 节点 file_src_infrastructure_dogfood_coverage_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_dogfood_coverage_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:17.082Z",
-          "node_id": "file_src_infrastructure_dogfood_coverage_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_dogfood_stats_ts",
@@ -52326,25 +51551,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_dogfood_stats_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure — 8 个 API（导入自 5 个模块）（src/infrastructure/dogfood_stats.ts） ← 节点 file_src_infrastructure_dogfood_stats_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_dogfood_stats_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "reopened_at": null,
-          "release_reason": "补充已完成（unknown 说明 + 排序注释），tsc 0 error；先 release 才能 void（claimed 没有直达 void 的迁移）",
-          "released_by": "general-purpose-3",
-          "released_at": "2026-10-20T16:46:29.792Z",
-          "node_id": "file_src_infrastructure_dogfood_stats_ts",
-          "archived_at": "2026-10-22T17:01:15.281Z",
-          "archived_by": "subagent:deepseek-park-archive",
-          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_exec_guard_ts",
@@ -52392,21 +51599,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_graph_dead_deps_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure/graph — 9 个 API（导入自 5 个模块）（src/infrastructure/graph/dead_deps.ts） ← 节点 file_src_infrastructure_graph_dead_deps_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_dead_deps_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 24h（原 owner=agent-v16），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:02.200Z",
-          "node_id": "file_src_infrastructure_graph_dead_deps_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_graph_import_graph_ts",
@@ -52422,21 +51615,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_graph_import_graph_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure/graph — 1 个 API（导入自 4 个模块）（src/infrastructure/graph/import_graph.ts） ← 节点 file_src_infrastructure_graph_import_graph_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_import_graph_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 24h（原 owner=agent-v16），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:02.287Z",
-          "node_id": "file_src_infrastructure_graph_import_graph_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_graph_import_project_ts",
@@ -52452,34 +51631,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_graph_import_project_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure/graph — 12 个 API（导入自 16 个模块）（src/infrastructure/graph/import_project.ts） ← 节点 file_src_infrastructure_graph_import_project_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_import_project_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "read_set": {
-            "symbols": [],
-            "files": [
-              {
-                "path": "src/infrastructure/graph/import_project.ts",
-                "content_hash": "c23120a031be55010d92a0b3f59623b42faa3af7"
-              }
-            ],
-            "computed_at": "2026-10-21T19:58:53.155Z",
-            "basis": [
-              "declared"
-            ]
-          },
-          "release_reason": "label 改完：`${basename} · ${apiCount} APIs` → `${basename}`（见 import_project.ts:1434）；本轮不再改这个文件。",
-          "released_by": "subagent:chain-e",
-          "released_at": "2026-10-21T20:07:07.021Z",
-          "node_id": "file_src_infrastructure_graph_import_project_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_index_db_ts",
@@ -52495,21 +51647,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "data",
-        "task": {
-          "id": "file_src_infrastructure_index_db_ts",
-          "summary": "【L1 待建构】数据层 · src/infrastructure/index — 12 个 API（导入自 6 个模块）（src/infrastructure/index/db.ts） ← 节点 file_src_infrastructure_index_db_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_db_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 24h（原 owner=agent-v16），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:02.377Z",
-          "node_id": "file_src_infrastructure_index_db_ts"
-        }
+        "arch_layer": "data"
       },
       {
         "id": "file_src_infrastructure_index_file_facts_ts",
@@ -52525,21 +51663,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry",
-        "task": {
-          "id": "file_src_infrastructure_index_file_facts_ts",
-          "summary": "【L1 待建构】入口层 · src/infrastructure/index — 6 个 API（导入自 3 个模块）（src/infrastructure/index/file_facts.ts） ← 节点 file_src_infrastructure_index_file_facts_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_file_facts_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 27h（原 owner=codebuddy-params），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:02.484Z",
-          "node_id": "file_src_infrastructure_index_file_facts_ts"
-        }
+        "arch_layer": "entry"
       },
       {
         "id": "file_src_infrastructure_index_function_outline_ts",
@@ -52619,34 +51743,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry",
-        "task": {
-          "id": "file_src_infrastructure_index_live_render_ts",
-          "summary": "【L1 待建构】入口层 · src/infrastructure/index — 2 个 API（导入自 11 个模块）（src/infrastructure/index/live_render.ts） ← 节点 file_src_infrastructure_index_live_render_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_live_render_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "read_set": {
-            "symbols": [],
-            "files": [
-              {
-                "path": "src/infrastructure/index/live_render.ts",
-                "content_hash": "55d51f52800092254dffa19ee9103aa413f79b4b"
-              }
-            ],
-            "computed_at": "2026-10-21T19:58:53.295Z",
-            "basis": [
-              "declared"
-            ]
-          },
-          "release_reason": "label 改完：`${basename} · ${funcCount} APIs` → `${basename}`（见 live_render.ts:328）；本轮不再改这个文件。",
-          "released_by": "subagent:chain-e",
-          "released_at": "2026-10-21T20:07:07.100Z",
-          "node_id": "file_src_infrastructure_index_live_render_ts"
-        }
+        "arch_layer": "entry"
       },
       {
         "id": "file_src_infrastructure_index_registry_ts",
@@ -52678,34 +51775,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry",
-        "task": {
-          "id": "file_src_infrastructure_index_scan_rev_ts",
-          "summary": "【L1 待建构】入口层 · src/infrastructure/index — 1 个 API（导入自 2 个模块）（src/infrastructure/index/scan_rev.ts） ← 节点 file_src_infrastructure_index_scan_rev_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_scan_rev_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "read_set": {
-            "symbols": [],
-            "files": [
-              {
-                "path": "src/infrastructure/index/scan_rev.ts",
-                "content_hash": "255abf70ac846088018eb872b87f42c49ba03683"
-              }
-            ],
-            "computed_at": "2026-10-21T11:53:40.026Z",
-            "basis": [
-              "node-path"
-            ]
-          },
-          "release_reason": "B 组验收用的临时占位（claim 后已测 scanRev 不变），释放",
-          "released_by": "subagent:dsl-symbols-fixer",
-          "released_at": "2026-10-21T11:54:04.026Z",
-          "node_id": "file_src_infrastructure_index_scan_rev_ts"
-        }
+        "arch_layer": "entry"
       },
       {
         "id": "file_src_infrastructure_index_schema_ts",
@@ -52856,40 +51926,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry",
-        "task": {
-          "id": "file_src_infrastructure_index_symbols_ts",
-          "summary": "【L1 待建构】入口层 · src/infrastructure/index — 29 个 API（导入自 8 个模块）（src/infrastructure/index/symbols.ts） ← 节点 file_src_infrastructure_index_symbols_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_symbols_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "read_set": {
-            "symbols": [
-              {
-                "file": "src/infrastructure/index/symbols.ts",
-                "name": "applyParsedToIndex",
-                "fp": "e562414599724f5797424b40c2943e5fc60abdc1"
-              }
-            ],
-            "files": [
-              {
-                "path": "src/infrastructure/index/symbols.ts",
-                "content_hash": "93f8755c12b3d3526f20d260493e7aae9624333a"
-              }
-            ],
-            "computed_at": "2026-10-22T04:55:03.508Z",
-            "basis": [
-              "declared"
-            ]
-          },
-          "release_reason": "本轮改动已完成并验证（build + 全量重建 + t349~t359 + npm run verify 7 道），释放写权；★ 这张是 L1 建构卡，判据（decision.summary / 后态判据）仍缺，不是收口",
-          "released_by": null,
-          "released_at": "2026-10-22T04:55:16.513Z",
-          "node_id": "file_src_infrastructure_index_symbols_ts"
-        }
+        "arch_layer": "entry"
       },
       {
         "id": "file_src_infrastructure_index_watch_project_ts",
@@ -52921,21 +51958,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_llm_agnes_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure — 7 个 API（导入自 1 个模块）（src/infrastructure/llm_agnes.ts） ← 节点 file_src_infrastructure_llm_agnes_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_llm_agnes_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:17.581Z",
-          "node_id": "file_src_infrastructure_llm_agnes_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_llm_focus_ts",
@@ -52951,21 +51974,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_llm_focus_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure — 9 个 API（导入自 7 个模块）（src/infrastructure/llm_focus.ts） ← 节点 file_src_infrastructure_llm_focus_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_llm_focus_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:17.697Z",
-          "node_id": "file_src_infrastructure_llm_focus_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_llm_gateway_ts",
@@ -52981,21 +51990,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_llm_gateway_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure — 27 个 API（导入自 6 个模块）（src/infrastructure/llm_gateway.ts） ← 节点 file_src_infrastructure_llm_gateway_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_llm_gateway_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:17.814Z",
-          "node_id": "file_src_infrastructure_llm_gateway_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_llm_pool_ts",
@@ -53011,21 +52006,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_llm_pool_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure — 6 个 API（导入自 0 个模块）（src/infrastructure/llm_pool.ts） ← 节点 file_src_infrastructure_llm_pool_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_llm_pool_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:17.935Z",
-          "node_id": "file_src_infrastructure_llm_pool_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_packages_package_pins_ts",
@@ -53121,21 +52102,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_parse_comments_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure/parse — 2 个 API（导入自 3 个模块）（src/infrastructure/parse/comments.ts） ← 节点 file_src_infrastructure_parse_comments_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_parse_comments_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:18.053Z",
-          "node_id": "file_src_infrastructure_parse_comments_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_parse_fuzzy_match_ts",
@@ -53786,24 +52753,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_presentation_cli_cli_ts",
-          "summary": "【L1 待建构】核心层 · src/presentation/cli — 4 个 API（导入自 4 个模块）（src/presentation/cli/cli.ts） ← 节点 file_src_presentation_cli_cli_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_cli_cli_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "cli.ts:277 传 via='cli' 已交付；先 release 才能 void",
-          "released_by": "general-purpose-3",
-          "released_at": "2026-10-20T16:43:29.180Z",
-          "node_id": "file_src_presentation_cli_cli_ts",
-          "archived_at": "2026-10-22T17:01:15.281Z",
-          "archived_by": "subagent:deepseek-park-archive",
-          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_presentation_cli_diagnose_loop_cli_ts",
@@ -54102,21 +53052,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry",
-        "task": {
-          "id": "file_src_presentation_mcp_server_ts",
-          "summary": "【L1 待建构】入口层 · src/presentation/mcp — 4 个 API（导入自 12 个模块）（src/presentation/mcp/server.ts） ← 节点 file_src_presentation_mcp_server_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 24h（原 owner=workbuddy），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:02.841Z",
-          "node_id": "file_src_presentation_mcp_server_ts"
-        }
+        "arch_layer": "entry"
       },
       {
         "id": "file_src_presentation_mcp_server_registry_ts",
@@ -54132,21 +53068,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_presentation_mcp_server_registry_ts",
-          "summary": "【L1 待建构】核心层 · src/presentation/mcp — 25 个 API（导入自 26 个模块）（src/presentation/mcp/server_registry.ts） ← 节点 file_src_presentation_mcp_server_registry_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_registry_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "陈旧租约 20h（原 owner=subagent:account），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:02.931Z",
-          "node_id": "file_src_presentation_mcp_server_registry_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_presentation_mcp_tool_warnings_ts",
@@ -55891,45 +54813,7 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_scripts_impl-fixture_mjs",
-          "summary": "【L1 待建构】impl-fixture —— cardStanding 等判据实现的行为夹具（实现层变异的先决条件）（scripts/impl-fixture.mjs） ← 节点 file_scripts_impl-fixture_mjs",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_scripts_impl-fixture_mjs\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "read_set": {
-            "symbols": [],
-            "files": [
-              {
-                "path": "scripts/impl-fixture.mjs",
-                "content_hash": "9ac843a1771b41f0b21c04c92053b9096240b43d"
-              }
-            ],
-            "computed_at": "2026-10-22T17:40:07.487Z",
-            "basis": [
-              "node-path"
-            ]
-          },
-          "node_id": "file_scripts_impl-fixture_mjs",
-          "claimed_without_judge": {
-            "at": "2026-10-22T17:40:07.534Z",
-            "missing": [
-              "节点 file_scripts_impl-fixture_mjs 的 `decision.expectations` 里**后态判据（phase=post）0 条**（**一条判据都没有**）",
-              "要补 **2 条**：signature-matches + source-has —— 一个\"结构\"（`ROOT` 的签名就算证据）+ 一个\"行为/文本\"（关键写法必须在）",
-              "写到哪：`edit_dsl { type:'decision', op:'update', id:'file_scripts_impl-fixture_mjs', data:{ expectations:[…] } }`（判据**只住 decision**，不在卡上；卡上的是一张回滚快照）",
-              "补齐后：`edit_dsl { type:'task', op:'start', id:'file_scripts_impl-fixture_mjs', data:{ owner:'<你>' } }`（第二段：删快照 + state→claimed，**一次落盘**）",
-              "放弃：`release`（会按 `prepared_snapshot` 把判据**逐字还原** ⇒ 零残留）"
-            ]
-          },
-          "prepared_snapshot": null,
-          "release_reason": "量具更新已完成（迁移表加 t_prepare/t_start/t_abandon 三行）；该卡的 L1 建构（decision.summary + 后态判据）不属于本次，放回候选",
-          "released_by": "subagent:deepseek-two-phase",
-          "released_at": "2026-10-22T17:41:15.050Z"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_scripts_mutate_mjs",
@@ -56040,34 +54924,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_source_writer_ts",
-          "summary": "【L1 待建构】source_writer —— 改用户源码的唯一原语（写闸 / 快照 / 自写登记的唯一组合点）（src/application/source_writer.ts） ← 节点 file_src_application_source_writer_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_source_writer_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "read_set": {
-            "symbols": [],
-            "files": [
-              {
-                "path": "src/application/source_writer.ts",
-                "content_hash": "005add4af764cdebe2830de02c76022269f21fff"
-              }
-            ],
-            "computed_at": "2026-10-22T08:25:09.824Z",
-            "basis": [
-              "node-path"
-            ]
-          },
-          "release_reason": "src/application/source_writer.ts 的 anchor 卡本轮只当授权锚点用，用毕释放（owner=subagent:deepseek-writegate）",
-          "released_by": "subagent:deepseek-writegate",
-          "released_at": "2026-10-22T09:06:06.663Z",
-          "node_id": "file_src_application_source_writer_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_domain_actor_spec_ts",
@@ -56230,50 +55087,7 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core",
-        "task": {
-          "id": "file_src_infrastructure_authoring_translate_book_ts",
-          "summary": "【L1 待建构】book —— 翻译册的生成器（从 cache.db 派生 symbols / shapes，types / atoms 是人写的，不覆盖）（src/infrastructure/authoring/translate/book.ts） ← 节点 file_src_infrastructure_authoring_translate_book_ts",
-          "state": "void",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_translate_book_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "read_set": {
-            "symbols": [
-              {
-                "file": "src/infrastructure/authoring/translate/book.ts",
-                "name": "generateBook",
-                "fp": "6ada88a7b09a6bdaef49020d811a2f151225f74d"
-              },
-              {
-                "file": "src/infrastructure/authoring/translate/book.ts",
-                "name": "rebuildBook",
-                "fp": "a9bb2aaad6b82265fe3a0ac72b5bbee2ca9931ff"
-              },
-              {
-                "file": "src/infrastructure/authoring/translate/book.ts",
-                "name": "unmappedTypes",
-                "fp": "b5d8bb72a3582f0e01cb05481ed56efc7901ee4d"
-              }
-            ],
-            "files": [
-              {
-                "path": "src/infrastructure/authoring/translate/book.ts",
-                "content_hash": "e85d50cf4583743ee009307a9721c3f1cc1d8b96"
-              }
-            ],
-            "computed_at": "2026-10-21T19:26:35.276Z",
-            "basis": [
-              "declared"
-            ]
-          },
-          "release_reason": "陈旧租约 11h（原 owner=subagent:chain-e），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:03.105Z",
-          "node_id": "file_src_infrastructure_authoring_translate_book_ts"
-        }
+        "arch_layer": "core"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_go_tests_ts",
@@ -105382,11 +104196,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-23T06:57:58.014Z",
+    "saved_at": "2026-10-23T07:20:03.816Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 155155203,
+    "age": 156481005,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -107104,63 +105918,6 @@
       "archived_by": "subagent:deepseek-park-archive"
     },
     {
-      "id": "todo_D-invariant-0",
-      "summary": "不变量「任务=意图住设计侧」没有 check",
-      "state": "void",
-      "owner": null,
-      "node_id": "file_src_application_write_gate_ts",
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
-      "id": "todo_D-invariant-1",
-      "summary": "不变量「不落读数快照」—— ★ **DSL 自己违反了**（reading_now / block_readings 都是快照）",
-      "state": "void",
-      "owner": null,
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
-      "id": "todo_D-target-exists",
-      "summary": "t_claim 的「target 在 DB 存在」无执行者（全仓 0 处）",
-      "state": "void",
-      "owner": null,
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
-      "id": "todo_D-release-by",
-      "summary": "t_release 的「带 by」无执行者（releaseTask 是 input.agent ?? null）",
-      "state": "void",
-      "owner": null,
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
-      "id": "todo_D-dual-write",
-      "summary": "【已失效 · 2026-10-22 复核】dual_write 这个度量随 overlay 去掉 decision 一并消失：grep 全仓只剩 docs/DESIGN.md:58 一行记述，src/ scripts/ 0 命中 ⇒ 原卡列的三个前提（OverlayAnchor 无 updated_at / DriftReport 无 authority_unknown / …）已无对象，不必再做。★ 若将来重新引入 overlay 决策副本，再重新立卡。",
-      "state": "void",
-      "owner": null,
-      "history": [
-        {
-          "at": "2026-10-22T08:08:23.020Z",
-          "from": "dual_write 的三个前提都不存在（OverlayAnchor 无 updated_at / DriftReport 无 authority_unknown）",
-          "to": "【已失效 · 2026-10-22 复核】dual_write 这个度量随 overlay 去掉 decision 一并消失：grep 全仓只剩 docs/DESIGN.md:58 一行记述，src/ scripts/ 0 命中 ⇒ 原卡列的三个前提（OverlayAnchor 无 updated_at / DriftReport 无 authority_unknown / …）已无对象，不必再做。★ 若将来重新引入 overlay 决策副本，再重新立卡。",
-          "reason": "2026-10-22 复核：原卡描述的现状已变（grep/读数见 summary）。依据 = 2026-10-22 盘点 + 本代理复核",
-          "by": "subagent:deepseek-closeout"
-        }
-      ],
-      "retire_reason": "已失效（实测核实）：overlay 26 个锚点里 decision = 0 ⇒ dual_write 度量随 decision 一并消失",
-      "retired_at": "2026-10-22T15:26:17.558Z",
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
       "id": "todo_D-actor-entry",
       "summary": "【并发控制·账户】把 `actor` 从\"随手写的字符串\"变成**有规范的账户**，并在所有写路上强制（A7）。\n\n★ 2026-10-22 复核（subagent:account-line）—— 三条现状：\n（a）**命名规范：已闭环**。唯一实现 = `src/domain/actor_spec.ts`（`<kind>:<name>`，kind ∈ human|agent|subagent，name = `[a-z0-9_-]{1,40}`）；唯一落点 = `server_registry#invokeTool`（MCP / CLI / 证 / 扫射同一入口）⇒ 实测 4 条 admission 读数（合法 / 老格式归一化+留痕 / STRICT 不猜 / 非法逐条列因）+ 回执里\"已归一化\"那一行。\n（b）**每条写路生效：8 条实测 + 4 条静态**。实测口径 = 同一句调用只换 actor：卡主放行且真写盘 / 冒名拒且零字节落盘 / 不传放行（消融）。覆盖 edit_code（单 + 批量 targets）· rename_symbols（scope=local 与 module）· rename_files · move_symbol · apply_refactor_plan · remove_dead_imports · refactor_pipeline（dead_imports 步）· review_changes(approve，actor 取 c.submitter 而非拍板人)。静态已接同一条原语、运行时未跑：annotate_functions / rules(apply) / deprecate_offline / design_line(sync-signatures)。\n（c）**缺省值：已闭环**。无 actor ⇒ 提醒 + 放行；`AGENT_IO_ACTOR_STRICT=1` ⇒ 拒（报文给两条能过的路）。\n★ 顺带证伪 D-actor-entry：入口不再是\"没人负责设 AGENT_IO_ACTOR\" —— 2026-10-20 起 `actor` 是**逐调用的保留入参**（`server_registry.CALL_ACTOR_FIELD`，MCP 与 CLI 两面共用），env 只是兜底。\n\n★ 仍不在写闸上的源码写路（**本卡不做，已登记为下一环**）：observe_instrument / diagnose_loop / upgrade / derive_split。\n★ 明确**不算缺口**的两类：① rollback / restore（deprecate_offline 回滚、instrument 还原、revertPatches）—— 写回的是**已经被写过的字节**；② 生成物（translate/* 写 outDir）—— 不是同一棵树上的\"改源码\"。",
       "state": "done",
@@ -107195,44 +105952,6 @@
           "verdict": "pass"
         }
       ],
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
-      "id": "todo_D-validate-decision",
-      "summary": "validateDSL 不看 decision（M1）⇒ D3 的\"✓\"是假绿",
-      "state": "void",
-      "owner": null,
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
-      "id": "todo_D-kind-expressiveness",
-      "summary": "同 D8",
-      "state": "void",
-      "owner": null,
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
-      "id": "todo_D-anti-decoration",
-      "summary": "【已过期 · 2026-10-22 复核】装饰边已不存在：.agent-io/design/task-system-plan.dsl.json 的 1155 条边全部是 contains(633) / imports(522；\"imports ×N\" 只是调用次数后缀)，decision / 装饰边 0 条（geometry.edges 只有 label 一种关系字段，实测只有这两个值）⇒ 原卡「11/15 条边没有判据」不再成立：剩下的边都是机器可算的结构关系。",
-      "state": "void",
-      "owner": null,
-      "history": [
-        {
-          "at": "2026-10-22T08:08:23.112Z",
-          "from": "11/15 条边没有判据",
-          "to": "【已过期 · 2026-10-22 复核】装饰边已不存在：.agent-io/design/task-system-plan.dsl.json 的 1155 条边全部是 contains(633) / imports(522；\"imports ×N\" 只是调用次数后缀)，decision / 装饰边 0 条（geometry.edges 只有 label 一种关系字段，实测只有这两个值）⇒ 原卡「11/15 条边没有判据」不再成立：剩下的边都是机器可算的结构关系。",
-          "reason": "2026-10-22 复核：原卡描述的现状已变（grep/读数见 summary）。依据 = 2026-10-22 盘点 + 本代理复核",
-          "by": "subagent:deepseek-closeout"
-        }
-      ],
-      "retire_reason": "卡自己写着「已过期 · 2026-10-22 复核」：装饰边已不存在（1155 条边全部是 contains/imports，0 条空决策）⇒ 无需再做",
-      "retired_at": "2026-10-22T14:27:58.435Z",
       "archived_at": "2026-10-22T17:01:15.281Z",
       "archived_by": "subagent:deepseek-park-archive",
       "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
@@ -107328,15 +106047,6 @@
       "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
-      "id": "todo_D-gate-text",
-      "summary": "task_home.gate / what_a_card_proves.layers[*].gate —— 读起来像要求，但不是判据（gate 不在 CLAIM_KEYS）",
-      "state": "void",
-      "owner": null,
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
       "id": "todo_D-edge-id-unique",
       "summary": "validator.ts:73-85 只查 nodes.id 唯一、**不查 edges.id** ⇒ 重复 id 能过校验，而 overlay.edges 按 id 键控会串",
       "state": "done",
@@ -107389,26 +106099,6 @@
       "owner": null
     },
     {
-      "id": "todo_A6",
-      "summary": "【已删除 · 2026-10-22 复核】A6 闸随「task.expectations 去副本」一并删除：src/application/design/dsl_ops/node_ops.ts:344-351 明写「A6 闸已删除」——它防的是\"卡上挂旧判据、decision 已是新的\"，而 TaskSpec 现在没有 expectations 字段，做 A 验 B 在结构上不可能。★ 剩下的\"claimed 期间判据被改\"归读集 / assumption_check（src/application/read_set.ts:564 checkAssumptions）管，不在这里再写一道比较。",
-      "state": "void",
-      "owner": null,
-      "history": [
-        {
-          "at": "2026-10-22T08:08:23.200Z",
-          "from": "A6：已领卡的 decision 可静默漂移（node_ops.ts:419）—— claimed/done 的 L2 卡，decision 改了没人管（第四条死锁成因没有执行者）",
-          "to": "【已删除 · 2026-10-22 复核】A6 闸随「task.expectations 去副本」一并删除：src/application/design/dsl_ops/node_ops.ts:344-351 明写「A6 闸已删除」——它防的是\"卡上挂旧判据、decision 已是新的\"，而 TaskSpec 现在没有 expectations 字段，做 A 验 B 在结构上不可能。★ 剩下的\"claimed 期间判据被改\"归读集 / assumption_check（src/application/read_set.ts:564 checkAssumptions）管，不在这里再写一道比较。",
-          "reason": "2026-10-22 复核：原卡描述的现状已变（grep/读数见 summary）。依据 = 2026-10-22 盘点 + 本代理复核",
-          "by": "subagent:deepseek-closeout"
-        }
-      ],
-      "retire_reason": "已删除（今天查过）：task.expectations 副本已删，A6 防漂移闸随之删除",
-      "retired_at": "2026-10-22T15:26:17.652Z",
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
       "id": "todo_api_setNodeSemantic-dumbwrite",
       "summary": "api_ops.setNodeSemantic 现在是【空写】：只 saveDSL(dsl) 而不改任何字段（T328 留下的哑写）⇒ 调用方以为它在写，实际什么都没变。★ 子代理 2026-10-19 补设计时发现",
       "state": "done",
@@ -107434,27 +106124,6 @@
           "verdict": "pass"
         }
       ],
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
-      "id": "todo_run-cannot-load-module",
-      "summary": "run 契约的求值域【不加载业务函数】（只有 validateDSL/fs/path）⇒ \"调用 updateStatus 看它抛不抛\"这类【真行为契约】写不出来，只能钉\"闸的接线与顺序\"（grep 级）。★ 2026-10-19 子代理补 status_tools 设计时发现；它单独跑过 validateProgressEvidence(done, undefined) 确实拒，但没法写成 expectation",
-      "state": "void",
-      "owner": null,
-      "retire_reason": "不做：run 契约的求值域是**故意**不加载业务函数的——src/domain/expectation.ts:78-80 明写 expect 可用名字只有 input / root / validateDSL，\"它不是任意代码执行：求值域只在这个小池子里\"。开业务函数 = 在判定器里跑仓内任意代码，而真行为契约已由 behavior_baseline（src/application/observe/index.ts:306）与 run_tests（src/application/observe/index.ts:389）承担。⇒ 这是设计选择，不是待办。",
-      "retired_at": "2026-10-22T08:08:39.894Z",
-      "retired_by": "subagent:deepseek-closeout",
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
-      "id": "todo_symbol-exists-cannot-type-only",
-      "summary": "symbol-exists 只认 function/method —— 对【纯类型文件】（types.ts / contract.ts 那种全是 type/interface 的）会假红：实测 parseFileSymbols(types.ts) 只给 interface:DesignDSL，contract.ts 给 0 个 ⇒ 只能改用「行首锚定 export interface 块」的 run 冒充。★ 这是 D8（kind 表达力缺口）的活实例；2026-10-19 子代理补 domain 设计时发现",
-      "state": "void",
-      "owner": null,
       "archived_at": "2026-10-22T17:01:15.281Z",
       "archived_by": "subagent:deepseek-park-archive",
       "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
@@ -108624,30 +107293,6 @@
       "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
-      "id": "todo_db-补全-边元数据-edges-metadata-是个空壳-实测只有-cros",
-      "summary": "【DB 补全·边元数据】`edges.metadata` 是个空壳：实测只有 `{\"cross\":true}` 一个布尔，8 列里这列等于没用。★ 这条【先别填】—— 因为现在没有任何消费方，填了就是又造一个\"建好了没人读\"（`nodes.params` 昨天刚犯过）。要先回答的问题：谁会读 metadata？候选消费方与它需要的东西：① `impact_analysis` 要\"这次调用是不是跨进程/跨语言\" ② `translate` 要\"这个调用的接收者是什么类型\" ③ `reconcile_effects` 要\"这次调用是不是 IO\"。⇒ 本卡的动作是【定消费方】，定了再填；没定就先让它空着，别自欺。",
-      "state": "void",
-      "owner": null,
-      "retire_reason": "不做：edges.metadata 的消费方仍然只有 cross 一个布尔（src/application/meta/explore/query_feature.ts:253/259、src/infrastructure/index/function_outline.ts:134 都只读 .cross），补其它字段就是\"建好没人读\"（nodes.params 刚犯过）。⇒ 本卡的动作是「先定消费方再填」，而这件事没有排期、也不该占候选队列；将来真有消费方再重新立卡。",
-      "retired_at": "2026-10-22T08:08:39.984Z",
-      "retired_by": "subagent:deepseek-closeout",
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
-      "id": "todo_翻译-前提-dsl-摘掉-symbols-实测-200-个文件里-191-个有它",
-      "summary": "【翻译·前提】DSL 摘掉 `symbols[]`（实测 200 个文件里 191 个有它）—— 这是\"DSL 语言无关、可直接复用\"这条成立的前提。它装的是\"这个文件有哪些符号\"的名字清单（`live_render.ts:76 kindOf` 还把 function/method/const 一律折成 `type`），本质是代码事实的镜像，**换一门语言后完全无意义**（它列的是 TS 的函数名）。实测陈旧读数：DSL 3021 条 vs 库 8674 条 · 383 条 DSL 独有 · 2558/2649 条 kind 与库不同 · 20 个文件行数过期 · 27-30 个 DSL 文件盘上已不存在。★ 摘掉之后 DSL 剩下的才是真正语言无关的东西：gates（实测 149/226 个节点有）+ 意图/决策。机制已建好：`storage.ts:723 factsExternalized`（`_sync.facts=db`）+ `renderLiveFromDb` 现渲染补齐；现在 `_sync` 里没有 `facts` 键，所以还在册。★ 前置：先修 `overlay.ts:58 computeFileSignature` —— 它靠 `kind:name` 做 rename 认亲，而有损 kind 让\"函数\"和\"类型\"指纹相同（这本身是个 bug）。",
-      "state": "void",
-      "owner": null,
-      "retire_reason": "方向错误：用户裁定 DSL 是缩略版 DB、symbols[] 用于导航且是复制基线，不该摘；由最终判据卡取代",
-      "retired_at": "2026-10-21T08:25:15.846Z",
-      "retired_by": "workbuddy",
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
       "id": "todo_翻译-工作台-翻译册-feature-translate-json-它是-可以改",
       "summary": "【翻译·工作台】翻译册（`<feature>.translate.json`）：它是\"可以改的地方\" —— 源 DB 不能改（只读事实）、源码不能直接改（要先有指导），所以翻译决策必须落在中间层。★ 关键判据（用户 2026-10-21 定）：**DSL 层语言无关 ⇒ 直接复用不翻**；**DB 层往下逐层翻**，因为各层\"术语不一样\"。三层映射（从粗到细，每层都可先桩后实）：① 类型/术语层：`int ↔ number`、`[]T ↔ T[]`、`error ↔ throws/Result`、包/模块结构；② 函数层：签名形变（默认参数/多返回值/重载/可变参数）、惯用法（错误处理、迭代、并发）；③ 原子层：标识符风格（`snake_case ↔ camelCase`）、关键字（`if`/`for`/`defer`/`using`）、字面量。状态机：`pending → generating → stubbed → translated → verified → diff | blocked`。★ **\"一一对应\"在账上，不在文件上**：文件是最小可索引单位 ⇒ 未翻的符号先写桩（`throw new Error(\"TODO: not translated\")`），文件才可索引；本仓 `symbols.ts:568 ensureStub` 已是这个模式的先例，换个方向用。★ **翻译侧 DB 不\"翻译\"，是索引产生的**：目标源码写完跑一次 import_project 就有了 —— 若从源 DB 逐对翻，它和源码的行号/偏移必然对不上，会变成一个\"看起来像 DB 的假 DB\"（比没有更坏）。★ \"下一个翻谁\" = 查 `state=pending` 且指纹变了的那行 ⇒ 这个查询驱动整个循环（这就是\"工具主导\"的含义）。",
       "state": "done",
@@ -108673,39 +107318,6 @@
           "verdict": "pass"
         }
       ],
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
-      "id": "todo_更正-取代-dsl-摘-symbols-那条-不摘-symbols-改为-修它的",
-      "summary": "【更正·取代\"DSL 摘 symbols\"那条】**不摘 `symbols[]`**，改为**修它的质量**。\n★ 用户裁定（2026-10-21）：「DSL 是**预览版、缩略版的 DB** —— 直接全量读 DB 很难，而且让它选择性读，它也不知道要读什么。\n有这个缩略版才能**指引它读什么**，要更细的再去用工具读 DB。」⇒ **`symbols[]` 是导航/目录，不是\"代码事实的冗余副本\"**。\n（我上一条把它当副本，判断错了：书目录也抄章节名，但目录的价值在导航，不在重复正文。）\n\n**真正的病是\"有损\"和\"陈旧\"，不是\"存在\"**——实测：\n① 有损：`live_render.ts:76 kindOf` 把 function/method/const **一律折成 type** ⇒ 2649 条共有符号里 2558 条 kind 与库不同；\n   更糟的是 `overlay.ts:58 computeFileSignature` 靠 `kind:name` 认亲 ⇒ **函数与类型指纹相同**（rename 会误认）。\n② 陈旧：383 条 DSL 独有 · 20 个文件行数过期 · 27-30 个 DSL 文件盘上已不存在（DSL 比 DB 旧，但没人知道）。\n\n要修三件：\n（a）**kind 保真**：`kindOf` 不再归一，function/method/const/type/interface 保持原样；顺带修 `computeFileSignature`。\n（b）**陈旧可见**：DSL 带\"索引时刻 + 源 content_hash 摘要\"，让\"DSL 比 DB 旧\"能被查出来（不许静默用旧目录导航）。\n（c）**清幽灵**：27-30 个盘上已不存在的文件，从 DSL 里删掉（或标 `stale`）。\n\n★ 翻译场景**沿用用户的解法**：复制到译文侧时**只脱掉 `symbols[]`**（目标符号还不存在，带了就是假目录），\n源侧 DSL 保留它。⇒ 不需要为了翻译去动源侧 DSL 的形状。",
-      "state": "void",
-      "owner": null,
-      "retire_reason": "并入：本卡与 todo_dsl-符号表-最终判据 是同一件事的旧版——两张都写\"不摘 symbols，改修 kind 保真 + 清幽灵 + 基线可追溯\"，而后者已按其依据收口（src/infrastructure/index/live_render.ts:78-85 删掉本地 kindOf；task-system-plan.dsl.json 543 个 file 节点幽灵 0）。两张并存 = 同一判据两处权威，留旧版只会让人重做一遍。",
-      "retired_at": "2026-10-22T08:08:41.238Z",
-      "retired_by": "subagent:deepseek-closeout",
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
-      "id": "todo_摘-symbols-把符号表从设计-dsl-里摘掉",
-      "summary": "【已作废，被 todo_verify_keep_symbols 取代】摘 symbols[]（把符号表从设计 DSL 里摘掉）",
-      "state": "void",
-      "owner": null,
-      "history": [
-        {
-          "at": "2026-10-21T08:16:01.974Z",
-          "from": "摘 symbols[]（把符号表从设计 DSL 里摘掉）",
-          "to": "【已作废，被 todo_verify_keep_symbols 取代】摘 symbols[]（把符号表从设计 DSL 里摘掉）",
-          "reason": "方向被 todo_verify_keep_symbols 取代：不摘 symbols，改为修它的质量（kind 失真 + 陈旧）",
-          "by": "deepseek-v4.1-flash"
-        }
-      ],
-      "retire_reason": "被 todo_verify_keep_symbols 取代（不摘 symbols，改修质量）",
-      "retired_at": "2026-10-21T08:16:24.896Z",
-      "retired_by": "deepseek-v4.1-flash",
       "archived_at": "2026-10-22T17:01:15.281Z",
       "archived_by": "subagent:deepseek-park-archive",
       "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
@@ -108766,18 +107378,6 @@
           "verdict": "pass"
         }
       ],
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
-      "id": "todo_并发控制-闭包冲突-任务冲突按-可达闭包-算-两个任务要改的符号-其影响面-传递",
-      "summary": "【并发控制·闭包冲突】任务冲突按**可达闭包**算：两个任务要改的符号，其影响面（传递闭包）如果重叠 ⇒ 串行。\n★ 这是\"比文件级准\"的判据：改 `kernel.ts` 的 `parseFileFull` 会影响所有调用方，但文件级写闸只看到\"kernel.ts 被占了\"。\n\n做法（用已有的 `edges`）：\n· 任务闭包 = 该任务 claim 的节点所含符号 + 沿 `edges(kind IN ('call','type_ref'))` 的**反向传递闭包**（谁依赖我）。\n· 重叠判据 = 两个闭包的交集非空。\n\n★ 三个必须处理的坑：\n① **`import` 边必须排除** —— 它会让全仓近乎连通（一个 util 被 import 就全相关），冲突率会爆炸。只用 `call` / `type_ref`。\n② **成本**：13k+ 边算传递闭包，每次 claim 都算不可接受 ⇒ 缓存（按 `symbols.sym_hash` 失效）。\n③ **死锁**：A 等 B、B 等 A ⇒ 必须**按任务 id 字典序**固定加锁顺序，否则会互等。\n\n★ 形态建议：**claim 时报冲突，不自动排队**。\n   理由：自动排队 = 分布式锁（要持有、要超时、要防孤儿），单机场景成本远大于收益；\n   报冲突 + 让人决定（换任务 / 等 / 显式认领冲突）已经够用，而且**不引入新的隐蔽状态**。\n★ 不许\"自动降级为并行\" —— 冲突就是冲突，静默并行比排队更坏。",
-      "state": "void",
-      "owner": null,
-      "retire_reason": "被\"读集比对\"取代：可达闭包成本高（13k 边每次 claim 算）且精度低（import 边会全连通），而 STORM 证明\"读集 ∩ 写集\"既便宜又可精确判定",
-      "retired_at": "2026-10-21T09:17:17.509Z",
-      "retired_by": "workbuddy",
       "archived_at": "2026-10-22T17:01:15.281Z",
       "archived_by": "subagent:deepseek-park-archive",
       "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
@@ -108965,26 +107565,6 @@
       "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
-      "id": "todo_index-alias-reexport",
-      "summary": "【数字记错 · 已修 · 2026-10-22 复核】「别名再导出 92 条」是记错的数：真仓实测只有 1 条（commit a788fb46 记：69 处调用 / 新增 57 条边）。索引器（src/infrastructure/index/symbols.ts）现已覆盖别名再导出的 5 种形态 + 9 个原因标签 + 剥注释，回执同时报\"连上多少 / 跳过多少\"。★ 原判据「≥90/92」无对象，不再作为验收。",
-      "state": "void",
-      "owner": null,
-      "history": [
-        {
-          "at": "2026-10-22T08:08:24.742Z",
-          "from": "【索引质量 · 别名再导出 92 条】`import {x as y}; export {y}` 这种形态解析不出边。实测 re-export 185 条里连上 86，剩 94 里 92 条是这个形态。\n判据：索引器能解析「本地别名再导出」并为它建边；回执必须同时报 连上多少 / 跳过多少（不许只报成功数）；重扫后该形态连上 ≥ 90/92，剩余 2 条逐条说明为什么跳（不许静默）。\n落点：src/infrastructure/index/symbols.ts 的 re-export 抽取。",
-          "to": "【数字记错 · 已修 · 2026-10-22 复核】「别名再导出 92 条」是记错的数：真仓实测只有 1 条（commit a788fb46 记：69 处调用 / 新增 57 条边）。索引器（src/infrastructure/index/symbols.ts）现已覆盖别名再导出的 5 种形态 + 9 个原因标签 + 剥注释，回执同时报\"连上多少 / 跳过多少\"。★ 原判据「≥90/92」无对象，不再作为验收。",
-          "reason": "2026-10-22 复核：原卡描述的现状已变（grep/读数见 summary）。依据 = 2026-10-22 盘点 + 本代理复核",
-          "by": "subagent:deepseek-closeout"
-        }
-      ],
-      "retire_reason": "数字记错（实测核实）：别名再导出实际 1 条，不是 92 条",
-      "retired_at": "2026-10-22T15:26:17.743Z",
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
       "id": "todo_serve-split-orchestration",
       "summary": "【presentation 拆编排】src/presentation/http/serve.ts 3,345 行、56 个 import（infrastructure/analysis/observe ×10 / infrastructure/index ×5 / application/meta/view ×6）是编排器 + 路由表 + 序列化三合一。\n判据：serve.ts < 500 行；每个工具的能力 = 一条 use case（application/<lane>/<use_case>.ts），presentation 只做「解析入参 → 调 use case → 序列化」；拆完 HTTP 面与 MCP 面调的是同一条 use case（同一能力不许两处各写一遍）；tsc 绿 + verify 门全过。",
       "state": "candidate",
@@ -109046,27 +107626,6 @@
           "verdict": "pass"
         }
       ],
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
-      "id": "todo_five-state-cleanup",
-      "summary": "【已过期 · 2026-10-22 复核】已是四态且散文段已改：src/domain/task_schema.ts:43 TASK_STATES = candidate/claimed/done/void，:40 文件头明写「2026-10-22 更正：DSL 的 states 与 TASK_STATES 都是 4 值；原句写『五态』时两头都不成立」；superseded 只剩历史记述（src/domain/task_schema.ts:100/485），DSL 里 0 条 ⇒ 原卡记的「44 处写五态 / DSL 17 处 superseded」是当时的读数，现已清零。",
-      "state": "void",
-      "owner": null,
-      "follows": "todo_design-drift-transitions",
-      "history": [
-        {
-          "at": "2026-10-22T08:08:24.649Z",
-          "from": "【设计漂移 · 散文段】task_schema『五态』vs TASK_STATES 4 值：src/domain/task_schema.ts:43 只给 candidate / claimed / done / void 四值，文件里却 44 处写「五态」。\n★ 源头在设计册，不在 TS：.agent-io/design/task-system-plan.dsl.json 的 task_home.axis_dedup.problem 仍写「…|void|superseded，五轴」、derived_map 留着 superseded（全文 17 处）、task_plan.service_flow.states 写「旁支：失效(void)/被取代(superseded)」。\n判据：先清 DSL 的散文段（superseded 清零、五轴/五态改成四态），再改 task_schema.ts 里那几个「五」字；只改 TS 不算完（会把漂移藏起来）。改完 tsc 绿、DSL 校验绿、全册 grep superseded = 0。",
-          "to": "【已过期 · 2026-10-22 复核】已是四态且散文段已改：src/domain/task_schema.ts:43 TASK_STATES = candidate/claimed/done/void，:40 文件头明写「2026-10-22 更正：DSL 的 states 与 TASK_STATES 都是 4 值；原句写『五态』时两头都不成立」；superseded 只剩历史记述（src/domain/task_schema.ts:100/485），DSL 里 0 条 ⇒ 原卡记的「44 处写五态 / DSL 17 处 superseded」是当时的读数，现已清零。",
-          "reason": "2026-10-22 复核：原卡描述的现状已变（grep/读数见 summary）。依据 = 2026-10-22 盘点 + 本代理复核",
-          "by": "subagent:deepseek-closeout"
-        }
-      ],
-      "retire_reason": "已过期（今天查过）：TASK_STATES 现在是 4 态 candidate/claimed/done/void",
-      "retired_at": "2026-10-22T15:26:17.837Z",
       "archived_at": "2026-10-22T17:01:15.281Z",
       "archived_by": "subagent:deepseek-park-archive",
       "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
@@ -110150,53 +108709,6 @@
       "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
-      "id": "file_src_application_cross_index_ts",
-      "summary": "【L1 待建构】入口层 · src/application/cross — 0 个 API（导入自 9 个模块）（src/application/cross/index.ts） ← 节点 file_src_application_cross_index_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_cross_index_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "read_set": {
-        "symbols": [
-          {
-            "file": "src/application/cross/index.ts",
-            "name": "CROSS_TOOLS",
-            "fp": "4dc9bc97e23093432cf5e4ec0eb5b1af617e6892"
-          }
-        ],
-        "files": [
-          {
-            "path": "src/application/cross/index.ts",
-            "content_hash": "59615484606bfbd7e0b3b53399a54373997bdff1"
-          }
-        ],
-        "computed_at": "2026-10-21T19:26:16.248Z",
-        "basis": [
-          "declared"
-        ]
-      },
-      "release_reason": "陈旧租约 11h（原 owner=subagent:chain-e），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:00.659Z",
-      "node_id": "file_src_application_cross_index_ts"
-    },
-    {
-      "id": "file_src_application_design_derive_derive_split_ts",
-      "summary": "【L1 待建构】核心层 · src/application/design/derive — 30 个 API（导入自 8 个模块）（src/application/design/derive/derive_split.ts） ← 节点 file_src_application_design_derive_derive_split_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_derive_derive_split_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:06.593Z",
-      "node_id": "file_src_application_design_derive_derive_split_ts"
-    },
-    {
       "id": "file_src_application_design_dsl_ops_api_ops_ts",
       "summary": "DSL 的【文件契约】写入原语：`expected_apis` 的增 / 改 / 删（按签名逐字匹配）、`setExpectedApis`（整块重写，T160）与 `setNodeSemantic`（节点↔文件绑定）。★ 它只维护\"这个文件对外**承诺**哪些签名\"这一张清单：**不判签名写得对不对**（tsc 契约的事）、**不判实现有没有**（对拍的事）、**不写进度**（T328 后 `setNodeSemantic` 不再同步 status，进度归 `overlay.progress`）。",
       "state": "done",
@@ -110736,13 +109248,31 @@
           "observed": "探针 PASS=9 FAIL=0（A observed/command 逐字 · B 摘掉白名单里的 observed ⇒ A1 红而 A2 绿 · C hack/evil_field 被丢 · D why 落盘）；verify 8 道门全 PASS（exit=0）；complete 首行念出「★ 证据落盘（白名单内）：kind · at · by · agent · verdict · fingerprint · observed · command」。",
           "command": "npm run build && node certs/.work/probe-evidence-whitelist.mjs && npm run verify",
           "why": "src/application/design/dsl_ops/task_ops.ts 的 complete 已不再逐字段手写证据，改走 src/domain/task_schema.ts#pickTaskEvidence 白名单；本卡（该文件的文件卡）随之收口。"
+        },
+        {
+          "kind": "reading",
+          "at": "2026-10-23T07:20:03.712Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-task-history",
+          "verdict": "pass",
+          "fingerprint": {
+            "what": "node --experimental-sqlite 读 .agent-io/task-history.db + npm run verify",
+            "input": "c823849e0bed9fd3c01cdc7e9f37633eb9f501a8",
+            "code": "9ebda8054d55ece5672fbc912da32afcede8ab2a",
+            "covers": [
+              "src/application/design/dsl_ops/task_ops.ts",
+              "src/domain/task_machine.ts"
+            ]
+          },
+          "observed": "task_history 88 行（card_json 88/88 与迁移前逐字节一致）；todos 256→168 张（和=256 不丢卡）；import_project 重建 cache.db 后 history 仍 88 行；get_dsl query=todo 报 void 0 / 活 76；npm run verify 9/9 门 PASS；npm run build exit=0",
+          "command": "node --experimental-sqlite 读 .agent-io/task-history.db + npm run verify"
         }
       ],
-      "owner": "subagent:deepseek-evidence-fix",
-      "claimed_at": "2026-10-22T18:02:33.750Z",
-      "reopened_at": "2026-10-22T17:46:45.364Z",
-      "reopen_reason": "证据落盘丢 observed：completeTask 只落 kind/at/by/verdict，要为 reading/attestation 保留 observed/command/why（白名单式）",
-      "reopened_from": "subagent:deepseek-two-phase",
+      "owner": "subagent:deepseek-task-history",
+      "claimed_at": "2026-10-23T07:07:38.606Z",
+      "reopened_at": "2026-10-23T07:07:38.606Z",
+      "reopen_reason": "改 src/application/design/dsl_ops/task_ops.ts 加 todo.move_to_history（写 history 表后再出册），同批改 op_data_spec.ts / query_feature.ts / index.ts",
+      "reopened_from": "subagent:deepseek-evidence-fix",
       "read_set": {
         "symbols": [
           {
@@ -110783,7 +109313,7 @@
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
             "name": "completeTask",
-            "fp": "3c8cfb0056628f0449c75be4d57b0b7809eb98bb"
+            "fp": "598d489556e037d66bb5e0b54b70c982ca761a01"
           },
           {
             "file": "src/application/design/dsl_ops/task_ops.ts",
@@ -110843,12 +109373,25 @@
         ],
         "files": [
           {
+            "path": "src/application/design/dsl_ops/op_data_spec.ts",
+            "content_hash": "b84b94ce9f932b88e422abb58be8414cae419f28"
+          },
+          {
             "path": "src/application/design/dsl_ops/task_ops.ts",
-            "content_hash": "0340df238f6e1334994844d1aede00cd2d05caa8"
+            "content_hash": "e71e8da1e3cffe39f37f8f6bbaf5cbb4e146d63a"
+          },
+          {
+            "path": "src/application/design/index.ts",
+            "content_hash": "47c4f11a8907e308320fe880523301090e12bd3b"
+          },
+          {
+            "path": "src/application/meta/explore/query_feature.ts",
+            "content_hash": "d1c1cd63e34b54485755ca53437cc1aeef6dae43"
           }
         ],
-        "computed_at": "2026-10-22T18:02:33.700Z",
+        "computed_at": "2026-10-23T07:07:38.561Z",
         "basis": [
+          "declared",
           "expectations"
         ],
         "note": "1 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
@@ -110895,387 +109438,6 @@
       "node_id": "file_src_application_design_handlers_ts"
     },
     {
-      "id": "file_src_application_design_index_ts",
-      "summary": "【L1 待建构】入口层 · src/application/design — 0 个 API（导入自 20 个模块）（src/application/design/index.ts） ← 节点 file_src_application_design_index_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "read_set": {
-        "symbols": [],
-        "files": [
-          {
-            "path": "src/application/design/index.ts",
-            "content_hash": "baad39844b6b0dd03f293bd581027029165d2da5"
-          }
-        ],
-        "computed_at": "2026-10-22T13:54:56.246Z",
-        "basis": [
-          "node-path"
-        ]
-      },
-      "release_reason": "交给子代理改 edit_dsl 的工具描述",
-      "released_by": null,
-      "released_at": "2026-10-22T15:52:18.833Z",
-      "node_id": "file_src_application_design_index_ts"
-    },
-    {
-      "id": "file_src_application_design_intent_consistency_ts",
-      "summary": "【L1 待建构】核心层 · src/application/design/intent — 14 个 API（导入自 11 个模块）（src/application/design/intent/consistency.ts） ← 节点 file_src_application_design_intent_consistency_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_intent_consistency_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 26h（原 owner=codebuddy-v14-nodes-cols），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:00.758Z",
-      "node_id": "file_src_application_design_intent_consistency_ts"
-    },
-    {
-      "id": "file_src_application_design_workbench_code_workbench_ts",
-      "summary": "【L1 待建构】核心层 · src/application/design/workbench — 30 个 API（导入自 9 个模块）（src/application/design/workbench/code_workbench.ts） ← 节点 file_src_application_design_workbench_code_workbench_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_workbench_code_workbench_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "approveChange 三条委托写路已传 c.submitter，且 split_plan/edit_code 两条回执补回 task_gate；L1 卡无后证，release 不硬 complete",
-      "released_by": "agent-a7",
-      "released_at": "2026-10-21T08:54:45.884Z",
-      "node_id": "file_src_application_design_workbench_code_workbench_ts"
-    },
-    {
-      "id": "file_src_application_design_workbench_dag_layout_ts",
-      "summary": "【L1 待建构】核心层 · src/application/design/workbench — 10 个 API（导入自 3 个模块）（src/application/design/workbench/dag_layout.ts） ← 节点 file_src_application_design_workbench_dag_layout_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_workbench_dag_layout_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "read_set": {
-        "symbols": [],
-        "files": [
-          {
-            "path": "scripts/stat-raw-writes.mjs",
-            "content_hash": "c0526a607bfcd22eb8606fc831dfeaef6a4b01c8"
-          },
-          {
-            "path": "src/application/design/lifecycle/snapshot.ts",
-            "content_hash": "498dfaec6a3ccef283d616f2cfe68abab05320df"
-          },
-          {
-            "path": "src/application/design/workbench/dag_layout.ts",
-            "content_hash": "dccaac98617a81da010c8fae00e2a13741b6f4f1"
-          },
-          {
-            "path": "src/application/observe/reconcile/approval.ts",
-            "content_hash": "d08c87783e9f19bfe97029f3371bf7b32f5adb94"
-          },
-          {
-            "path": "src/application/write_gate.ts",
-            "content_hash": "b5e9f1ef7d075342e104ac375ecbd7fafe90988b"
-          },
-          {
-            "path": "src/infrastructure/analysis/structure/monolith.ts",
-            "content_hash": "68e2f1ebb1cbe1667bb5b48bb9267d27f906ac96"
-          }
-        ],
-        "computed_at": "2026-10-22T12:38:28.213Z",
-        "basis": [
-          "declared"
-        ]
-      },
-      "release_reason": "只当写闸 anchor 用（authorize=files:… 拉这 5 个文件），活不在这个节点上；L1 建构卡未完成（dag_layout.ts 节点无 decision.summary/后态判据），不假收口",
-      "released_by": "subagent:deepseek-raw-source",
-      "released_at": "2026-10-22T12:41:59.091Z",
-      "node_id": "file_src_application_design_workbench_dag_layout_ts"
-    },
-    {
-      "id": "file_src_application_harvest_harvest_closure_ts",
-      "summary": "【L1 待建构】核心层 · src/application/harvest — 5 个 API（导入自 6 个模块）（src/application/harvest/harvest_closure.ts） ← 节点 file_src_application_harvest_harvest_closure_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_harvest_harvest_closure_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 24h（原 owner=agent-v16），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:00.854Z",
-      "node_id": "file_src_application_harvest_harvest_closure_ts"
-    },
-    {
-      "id": "file_src_application_harvest_harvest_decisions_ts",
-      "summary": "【L1 待建构】核心层 · src/application/harvest — 32 个 API（导入自 14 个模块）（src/application/harvest/harvest_decisions.ts） ← 节点 file_src_application_harvest_harvest_decisions_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_harvest_harvest_decisions_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:06.945Z",
-      "node_id": "file_src_application_harvest_harvest_decisions_ts"
-    },
-    {
-      "id": "file_src_application_harvest_index_ts",
-      "summary": "【L1 待建构】入口层 · src/application/harvest — 0 个 API（导入自 10 个模块）（src/application/harvest/index.ts） ← 节点 file_src_application_harvest_index_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_harvest_index_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "释放 file_src_application_harvest_index_ts：本轮活已由子代理完成，build + verify 已验收通过",
-      "released_by": "workbuddy",
-      "released_at": "2026-10-21T02:42:50.832Z",
-      "node_id": "file_src_application_harvest_index_ts"
-    },
-    {
-      "id": "file_src_application_meta_explore_contract_page_ts",
-      "summary": "【L1 待建构】核心层 · src/application/meta/explore — 7 个 API（导入自 11 个模块）（src/application/meta/explore/contract_page.ts） ← 节点 file_src_application_meta_explore_contract_page_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_contract_page_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 25h（原 owner=agent-body-v15），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:00.954Z",
-      "node_id": "file_src_application_meta_explore_contract_page_ts"
-    },
-    {
-      "id": "file_src_application_meta_explore_explore_arg_spec_ts",
-      "summary": "【L1 待建构】核心层 · src/application/meta/explore — 3 个 API（导入自 0 个模块）（src/application/meta/explore/explore_arg_spec.ts） ← 节点 file_src_application_meta_explore_explore_arg_spec_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_explore_arg_spec_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 23h（原 owner=agent-facts-db），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:01.048Z",
-      "node_id": "file_src_application_meta_explore_explore_arg_spec_ts"
-    },
-    {
-      "id": "file_src_application_meta_explore_explore_code_ts",
-      "summary": "【L1 待建构】核心层 · src/application/meta/explore — 4 个 API（导入自 23 个模块）（src/application/meta/explore/explore_code.ts） ← 节点 file_src_application_meta_explore_explore_code_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_explore_code_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 23h（原 owner=agent-facts-db），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:01.139Z",
-      "node_id": "file_src_application_meta_explore_explore_code_ts"
-    },
-    {
-      "id": "file_src_application_meta_explore_query_feature_ts",
-      "summary": "【L1 待建构】核心层 · src/application/meta/explore — 9 个 API（导入自 20 个模块）（src/application/meta/explore/query_feature.ts） ← 节点 file_src_application_meta_explore_query_feature_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_query_feature_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "read_set": {
-        "symbols": [],
-        "files": [
-          {
-            "path": "src/application/meta/explore/query_feature.ts",
-            "content_hash": "7425ee5370e82da0e5d390a87d6a572b544c9ddf"
-          }
-        ],
-        "computed_at": "2026-10-22T14:44:24.073Z",
-        "basis": [
-          "node-path"
-        ]
-      },
-      "release_reason": "D-T8 接线已落盘并 verify 全绿；本卡要的 DSL 建构（decision + 后态判据）不在本卡范围，交回池里",
-      "released_by": null,
-      "released_at": "2026-10-22T14:56:43.663Z",
-      "node_id": "file_src_application_meta_explore_query_feature_ts"
-    },
-    {
-      "id": "file_src_application_meta_handlers_ts",
-      "summary": "【L1 待建构】API 层 · src/application/meta — 1 个 API（导入自 3 个模块）（src/application/meta/handlers.ts） ← 节点 file_src_application_meta_handlers_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_handlers_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 23h（原 owner=agent-facts-db），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:01.228Z",
-      "node_id": "file_src_application_meta_handlers_ts"
-    },
-    {
-      "id": "file_src_application_meta_index_ts",
-      "summary": "【L1 待建构】入口层 · src/application/meta — 2 个 API（导入自 36 个模块）（src/application/meta/index.ts） ← 节点 file_src_application_meta_index_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_index_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "read_set": {
-        "symbols": [],
-        "files": [
-          {
-            "path": "src/application/meta/index.ts",
-            "content_hash": "7ca4e420e75a6395e5201c23c2a431f1c09b85cf"
-          }
-        ],
-        "computed_at": "2026-10-22T13:53:42.254Z",
-        "basis": [
-          "node-path"
-        ]
-      },
-      "node_id": "file_src_application_meta_index_ts",
-      "prepared_snapshot": null,
-      "expired_from": {
-        "owner": "agent:main",
-        "claimed_at": "2026-10-22T13:53:42.296Z",
-        "age_hours": 13.1,
-        "ttl_ms": 7200000
-      },
-      "expired_at": "2026-10-23T02:58:22.489Z"
-    },
-    {
-      "id": "file_src_application_meta_registry_capability_map_ts",
-      "summary": "【L1 待建构】核心层 · src/application/meta/registry — 26 个 API（导入自 8 个模块）（src/application/meta/registry/capability_map.ts） ← 节点 file_src_application_meta_registry_capability_map_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_registry_capability_map_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:07.659Z",
-      "node_id": "file_src_application_meta_registry_capability_map_ts"
-    },
-    {
-      "id": "file_src_application_meta_registry_tool_faces_ts",
-      "summary": "【L1 待建构】核心层 · src/application/meta/registry — 3 个 API（导入自 2 个模块）（src/application/meta/registry/tool_faces.ts） ← 节点 file_src_application_meta_registry_tool_faces_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_registry_tool_faces_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:07.776Z",
-      "node_id": "file_src_application_meta_registry_tool_faces_ts"
-    },
-    {
-      "id": "file_src_application_meta_view_derive_mind_map_ts",
-      "summary": "【L1 待建构】UI 层 · src/application/meta/view — 50 个 API（导入自 14 个模块）（src/application/meta/view/derive_mind_map.ts） ← 节点 file_src_application_meta_view_derive_mind_map_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_view_derive_mind_map_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 27h（原 owner=codebuddy-params），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:01.412Z",
-      "node_id": "file_src_application_meta_view_derive_mind_map_ts"
-    },
-    {
-      "id": "file_src_application_observe_capture_trace_evidence_ts",
-      "summary": "【L1 待建构】核心层 · src/application/observe/capture — 6 个 API（导入自 4 个模块）（src/application/observe/capture/trace_evidence.ts） ← 节点 file_src_application_observe_capture_trace_evidence_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_observe_capture_trace_evidence_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:07.896Z",
-      "node_id": "file_src_application_observe_capture_trace_evidence_ts"
-    },
-    {
-      "id": "file_src_application_observe_handlers_ts",
-      "summary": "【L1 待建构】API 层 · src/application/observe — 1 个 API（导入自 17 个模块）（src/application/observe/handlers.ts） ← 节点 file_src_application_observe_handlers_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_observe_handlers_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "read_set": {
-        "symbols": [
-          {
-            "file": "src/application/observe/handlers.ts",
-            "name": "observeJudgeHandler",
-            "fp": "e67b4d711ea2673d25027572932aa54db9d96b0c"
-          },
-          {
-            "file": "src/application/observe/handlers.ts",
-            "name": "observeLogHandler",
-            "fp": "8de2598b04fbba4b5abf47063eae5c9993d4a445"
-          }
-        ],
-        "files": [
-          {
-            "path": "src/application/observe/handlers.ts",
-            "content_hash": "318c3bb69a478651fc679bb6d0038acfa70db75d"
-          }
-        ],
-        "computed_at": "2026-10-21T20:26:22.725Z",
-        "basis": [
-          "declared"
-        ]
-      },
-      "release_reason": "陈旧租约 10h（原 owner=subagent:serve-split），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:01.506Z",
-      "node_id": "file_src_application_observe_handlers_ts"
-    },
-    {
-      "id": "file_src_application_plumbing_ts",
-      "summary": "【L1 待建构】核心层 · src/application — 13 个 API（导入自 2 个模块）（src/application/plumbing.ts） ← 节点 file_src_application_plumbing_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_plumbing_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:08.021Z",
-      "node_id": "file_src_application_plumbing_ts"
-    },
-    {
-      "id": "file_src_application_refactor_deprecate_offline_deprecate_offline_ts",
-      "summary": "【L1 待建构】核心层 · src/application/refactor/deprecate_offline — 11 个 API（导入自 8 个模块）（src/application/refactor/deprecate_offline/deprecate_offline.ts） ← 节点 file_src_application_refactor_deprecate_offline_deprecate_offline_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_deprecate_offline_deprecate_offline_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "T356 已改完（补上此前完全缺失的身份/授权透传）；卡留在 candidate 供后续领",
-      "released_by": "t356-authorize",
-      "released_at": "2026-10-20T13:29:37.356Z",
-      "node_id": "file_src_application_refactor_deprecate_offline_deprecate_offline_ts"
-    },
-    {
       "id": "file_src_application_refactor_diff_views_diff_views_ts",
       "summary": "三方判定的冲突按【维度】成立：命名维度（label/description/status）· 结构维度（lines/symbols/apis/deps）· 符号维度（signature）。★ 同一维度两边都改且不同 ⇒ conflict；不同维度各自改 ⇒ both_moved（两条独立待裁项，不是冲突）。",
       "state": "candidate",
@@ -111293,34 +109455,6 @@
       "released_by": "workbuddy",
       "released_at": "2026-10-20T10:49:13.227Z",
       "node_id": "file_src_application_refactor_diff_views_diff_views_ts"
-    },
-    {
-      "id": "file_src_application_refactor_edit_apply_writes_ts",
-      "summary": "【L1 待建构】核心层 · src/application/refactor/edit — 3 个 API（导入自 5 个模块）（src/application/refactor/edit/apply_writes.ts） ← 节点 file_src_application_refactor_edit_apply_writes_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_apply_writes_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 21h（原 owner=agent-readset），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:01.592Z",
-      "node_id": "file_src_application_refactor_edit_apply_writes_ts"
-    },
-    {
-      "id": "file_src_application_refactor_edit_edit_code_ts",
-      "summary": "【L1 待建构】核心层 · src/application/refactor/edit — 21 个 API（导入自 11 个模块）（src/application/refactor/edit/edit_code.ts） ← 节点 file_src_application_refactor_edit_edit_code_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_edit_code_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 21h（原 owner=agent-readset），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:01.679Z",
-      "node_id": "file_src_application_refactor_edit_edit_code_ts"
     },
     {
       "id": "file_src_application_refactor_edit_remove_dead_imports_ts",
@@ -111342,132 +109476,6 @@
       "released_by": "agent-a7",
       "released_at": "2026-10-21T08:54:45.594Z",
       "node_id": "file_src_application_refactor_edit_remove_dead_imports_ts"
-    },
-    {
-      "id": "file_src_application_refactor_find_field_refs_ts",
-      "summary": "【L1 待建构】核心层 · src/application/refactor/find — 14 个 API（导入自 4 个模块）（src/application/refactor/find/field_refs.ts） ← 节点 file_src_application_refactor_find_field_refs_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_find_field_refs_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 24h（原 owner=agent-v16），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:01.764Z",
-      "node_id": "file_src_application_refactor_find_field_refs_ts"
-    },
-    {
-      "id": "file_src_application_refactor_index_ts",
-      "summary": "【L1 待建构】入口层 · src/application/refactor — 1 个 API（导入自 34 个模块）（src/application/refactor/index.ts） ← 节点 file_src_application_refactor_index_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_index_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "annotate_functions / rules apply 的 actor 与 task_gate 均已在 index.ts 落定（tsc 0 error）；L1 卡无后证，release 不硬 complete",
-      "released_by": "agent-a7",
-      "released_at": "2026-10-21T08:57:36.672Z",
-      "node_id": "file_src_application_refactor_index_ts"
-    },
-    {
-      "id": "file_src_application_refactor_pipeline_refactor_pipeline_ts",
-      "summary": "【L1 待建构】核心层 · src/application/refactor/pipeline — 11 个 API（导入自 17 个模块）（src/application/refactor/pipeline/refactor_pipeline.ts） ← 节点 file_src_application_refactor_pipeline_refactor_pipeline_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_pipeline_refactor_pipeline_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "本轮补闸已完成并落盘（refactor_pipeline.ts + index.ts），不再占写权；早交回卡给下一个 owner",
-      "released_by": "codebuddy-dogfood",
-      "released_at": "2026-10-20T13:56:27.111Z",
-      "node_id": "file_src_application_refactor_pipeline_refactor_pipeline_ts"
-    },
-    {
-      "id": "file_src_application_refactor_pipeline_refactor_plan_ts",
-      "summary": "【L1 待建构】核心层 · src/application/refactor/pipeline — 5 个 API（导入自 6 个模块）（src/application/refactor/pipeline/refactor_plan.ts） ← 节点 file_src_application_refactor_pipeline_refactor_plan_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_pipeline_refactor_plan_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "T356 已改完（applyRefactorPlan 透传）",
-      "released_by": "t356-authorize",
-      "released_at": "2026-10-20T13:29:36.977Z",
-      "node_id": "file_src_application_refactor_pipeline_refactor_plan_ts"
-    },
-    {
-      "id": "file_src_application_refactor_rename_rename_file_ts",
-      "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 14 个 API（导入自 11 个模块）（src/application/refactor/rename/rename_file.ts） ← 节点 file_src_application_refactor_rename_rename_file_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_file_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "T356 已改完（内层闸透传）",
-      "released_by": "t356-authorize",
-      "released_at": "2026-10-20T13:29:37.139Z",
-      "node_id": "file_src_application_refactor_rename_rename_file_ts"
-    },
-    {
-      "id": "file_src_application_refactor_rename_rename_files_ts",
-      "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 3 个 API（导入自 7 个模块）（src/application/refactor/rename/rename_files.ts） ← 节点 file_src_application_refactor_rename_rename_files_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_files_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "T356 已改完（批量闸 + 内层转发）",
-      "released_by": "t356-authorize",
-      "released_at": "2026-10-20T13:29:37.060Z",
-      "node_id": "file_src_application_refactor_rename_rename_files_ts"
-    },
-    {
-      "id": "file_src_application_refactor_rename_rename_local_ts",
-      "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 1 个 API（导入自 6 个模块）（src/application/refactor/rename/rename_local.ts） ← 节点 file_src_application_refactor_rename_rename_local_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_local_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "renameLocals 入参已加 actor/authorize 并交给 applyWrites（rename_symbols scope=local 实测由放行变为拒绝）；L1 卡无后证，release 不硬 complete",
-      "released_by": "agent-a7",
-      "released_at": "2026-10-21T08:54:45.738Z",
-      "node_id": "file_src_application_refactor_rename_rename_local_ts"
-    },
-    {
-      "id": "file_src_application_refactor_rename_rename_symbols_ts",
-      "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 14 个 API（导入自 12 个模块）（src/application/refactor/rename/rename_symbols.ts） ← 节点 file_src_application_refactor_rename_rename_symbols_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_symbols_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "scope=local 支已把 input.actor/authorize 传给 renameLocals；L1 卡无后证，release 不硬 complete",
-      "released_by": "agent-a7",
-      "released_at": "2026-10-21T08:54:45.814Z",
-      "node_id": "file_src_application_refactor_rename_rename_symbols_ts"
-    },
-    {
-      "id": "file_src_application_refactor_rename_symbol_move_ts",
-      "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 11 个 API（导入自 13 个模块）（src/application/refactor/rename/symbol_move.ts） ← 节点 file_src_application_refactor_rename_symbol_move_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_symbol_move_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "T356 已改完（闸透传）",
-      "released_by": "t356-authorize",
-      "released_at": "2026-10-20T13:29:37.212Z",
-      "node_id": "file_src_application_refactor_rename_symbol_move_ts"
     },
     {
       "id": "file_src_application_write_gate_ts",
@@ -112462,90 +110470,6 @@
       }
     },
     {
-      "id": "file_src_infrastructure_analysis_contract_gate_core_ts",
-      "summary": "【L1 待建构】服务层 · src/infrastructure/analysis/contract_gate — 10 个 API（导入自 7 个模块）（src/infrastructure/analysis/contract_gate/core.ts） ← 节点 file_src_infrastructure_analysis_contract_gate_core_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_contract_gate_core_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:08.259Z",
-      "node_id": "file_src_infrastructure_analysis_contract_gate_core_ts"
-    },
-    {
-      "id": "file_src_infrastructure_analysis_contract_gate_languages_ts_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/contract_gate/languages — 0 个 API（导入自 2 个模块）（src/infrastructure/analysis/contract_gate/languages/ts.ts） ← 节点 file_src_infrastructure_analysis_contract_gate_languages_ts_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_contract_gate_languages_ts_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:08.372Z",
-      "node_id": "file_src_infrastructure_analysis_contract_gate_languages_ts_ts"
-    },
-    {
-      "id": "file_src_infrastructure_analysis_health_index_ts",
-      "summary": "【L1 待建构】入口层 · src/infrastructure/analysis/health — 21 个 API（导入自 6 个模块）（src/infrastructure/analysis/health/index.ts） ← 节点 file_src_infrastructure_analysis_health_index_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_health_index_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "释放 file_src_infrastructure_analysis_health_index_ts：本轮活已由子代理完成，build + verify 已验收通过",
-      "released_by": "workbuddy",
-      "released_at": "2026-10-21T02:42:51.234Z",
-      "node_id": "file_src_infrastructure_analysis_health_index_ts"
-    },
-    {
-      "id": "file_src_infrastructure_analysis_impact_diff_impact_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/impact — 4 个 API（导入自 4 个模块）（src/infrastructure/analysis/impact/diff_impact.ts） ← 节点 file_src_infrastructure_analysis_impact_diff_impact_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_impact_diff_impact_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 24h（原 owner=agent-v16），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:01.934Z",
-      "node_id": "file_src_infrastructure_analysis_impact_diff_impact_ts"
-    },
-    {
-      "id": "file_src_infrastructure_analysis_observe_approve_gated_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 2 个 API（导入自 4 个模块）（src/infrastructure/analysis/observe/approve_gated.ts） ← 节点 file_src_infrastructure_analysis_observe_approve_gated_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_approve_gated_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:16.502Z",
-      "node_id": "file_src_infrastructure_analysis_observe_approve_gated_ts"
-    },
-    {
-      "id": "file_src_infrastructure_analysis_observe_decl_review_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 2 个 API（导入自 4 个模块）（src/infrastructure/analysis/observe/decl_review.ts） ← 节点 file_src_infrastructure_analysis_observe_decl_review_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_decl_review_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:16.622Z",
-      "node_id": "file_src_infrastructure_analysis_observe_decl_review_ts"
-    },
-    {
       "id": "file_src_infrastructure_analysis_observe_go_instrument_ts",
       "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 13 个 API（导入自 5 个模块）（src/infrastructure/analysis/observe/go_instrument.ts） ← 节点 file_src_infrastructure_analysis_observe_go_instrument_ts",
       "state": "done",
@@ -112630,301 +110554,6 @@
       "reopened_from": "subagent:deepseek-ports-infra"
     },
     {
-      "id": "file_src_infrastructure_analysis_observe_judge_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 5 个 API（导入自 1 个模块）（src/infrastructure/analysis/observe/judge.ts） ← 节点 file_src_infrastructure_analysis_observe_judge_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_judge_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:16.736Z",
-      "node_id": "file_src_infrastructure_analysis_observe_judge_ts"
-    },
-    {
-      "id": "file_src_infrastructure_analysis_observe_trace_exec_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 22 个 API（导入自 6 个模块）（src/infrastructure/analysis/observe/trace_exec.ts） ← 节点 file_src_infrastructure_analysis_observe_trace_exec_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_trace_exec_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 27h（原 owner=codebuddy-params），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:02.023Z",
-      "node_id": "file_src_infrastructure_analysis_observe_trace_exec_ts"
-    },
-    {
-      "id": "file_src_infrastructure_analysis_observe_verify_gate_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 9 个 API（导入自 4 个模块）（src/infrastructure/analysis/observe/verify_gate.ts） ← 节点 file_src_infrastructure_analysis_observe_verify_gate_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_verify_gate_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:16.851Z",
-      "node_id": "file_src_infrastructure_analysis_observe_verify_gate_ts"
-    },
-    {
-      "id": "file_src_infrastructure_analysis_project_root_index_ts",
-      "summary": "【L1 待建构】入口层 · src/infrastructure/analysis/project_root — 38 个 API（导入自 12 个模块）（src/infrastructure/analysis/project_root/index.ts） ← 节点 file_src_infrastructure_analysis_project_root_index_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_project_root_index_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:16.968Z",
-      "node_id": "file_src_infrastructure_analysis_project_root_index_ts"
-    },
-    {
-      "id": "file_src_infrastructure_analysis_structure_analyze_monolith_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/structure — 11 个 API（导入自 2 个模块）（src/infrastructure/analysis/structure/analyze_monolith.ts） ← 节点 file_src_infrastructure_analysis_structure_analyze_monolith_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_structure_analyze_monolith_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "释放 file_src_infrastructure_analysis_structure_analyze_monolith_ts：本轮活已由子代理完成，build + verify 已验收通过",
-      "released_by": "workbuddy",
-      "released_at": "2026-10-21T02:42:51.391Z",
-      "node_id": "file_src_infrastructure_analysis_structure_analyze_monolith_ts"
-    },
-    {
-      "id": "file_src_infrastructure_authoring_behavior_index_ts",
-      "summary": "【L1 待建构】入口层 · src/infrastructure/authoring/behavior — 28 个 API（导入自 9 个模块）（src/infrastructure/authoring/behavior/index.ts） ← 节点 file_src_infrastructure_authoring_behavior_index_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_behavior_index_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 27h（原 owner=codebuddy-r4），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:02.115Z",
-      "node_id": "file_src_infrastructure_authoring_behavior_index_ts"
-    },
-    {
-      "id": "file_src_infrastructure_authoring_translate_project_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure/authoring/translate — 14 个 API（导入自 14 个模块）（src/infrastructure/authoring/translate/project.ts） ← 节点 file_src_infrastructure_authoring_translate_project_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_translate_project_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "释放 file_src_infrastructure_authoring_translate_project_ts：本轮活已由子代理完成，build + verify 已验收通过",
-      "released_by": "workbuddy",
-      "released_at": "2026-10-21T02:42:51.549Z",
-      "node_id": "file_src_infrastructure_authoring_translate_project_ts"
-    },
-    {
-      "id": "file_src_infrastructure_authoring_translate_tool_ts",
-      "summary": "【L1 待建构】工具层 · src/infrastructure/authoring/translate — 2 个 API（导入自 7 个模块）（src/infrastructure/authoring/translate/tool.ts） ← 节点 file_src_infrastructure_authoring_translate_tool_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_translate_tool_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约(codebuddy-r4, 27h)，2026-10-22 会话清理",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:17:22.499Z",
-      "node_id": "file_src_infrastructure_authoring_translate_tool_ts"
-    },
-    {
-      "id": "file_src_infrastructure_data_dir_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure — 0 个 API（导入自 0 个模块）（src/infrastructure/data_dir.ts） ← 节点 file_src_infrastructure_data_dir_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_data_dir_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:18.417Z",
-      "node_id": "file_src_infrastructure_data_dir_ts"
-    },
-    {
-      "id": "file_src_infrastructure_dogfood_coverage_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure — 3 个 API（导入自 1 个模块）（src/infrastructure/dogfood_coverage.ts） ← 节点 file_src_infrastructure_dogfood_coverage_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_dogfood_coverage_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:17.082Z",
-      "node_id": "file_src_infrastructure_dogfood_coverage_ts"
-    },
-    {
-      "id": "file_src_infrastructure_dogfood_stats_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure — 8 个 API（导入自 5 个模块）（src/infrastructure/dogfood_stats.ts） ← 节点 file_src_infrastructure_dogfood_stats_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_dogfood_stats_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "reopened_at": null,
-      "release_reason": "补充已完成（unknown 说明 + 排序注释），tsc 0 error；先 release 才能 void（claimed 没有直达 void 的迁移）",
-      "released_by": "general-purpose-3",
-      "released_at": "2026-10-20T16:46:29.792Z",
-      "node_id": "file_src_infrastructure_dogfood_stats_ts",
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
-      "id": "file_src_infrastructure_graph_dead_deps_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure/graph — 9 个 API（导入自 5 个模块）（src/infrastructure/graph/dead_deps.ts） ← 节点 file_src_infrastructure_graph_dead_deps_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_dead_deps_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 24h（原 owner=agent-v16），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:02.200Z",
-      "node_id": "file_src_infrastructure_graph_dead_deps_ts"
-    },
-    {
-      "id": "file_src_infrastructure_graph_import_graph_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure/graph — 1 个 API（导入自 4 个模块）（src/infrastructure/graph/import_graph.ts） ← 节点 file_src_infrastructure_graph_import_graph_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_import_graph_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 24h（原 owner=agent-v16），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:02.287Z",
-      "node_id": "file_src_infrastructure_graph_import_graph_ts"
-    },
-    {
-      "id": "file_src_infrastructure_graph_import_project_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure/graph — 12 个 API（导入自 16 个模块）（src/infrastructure/graph/import_project.ts） ← 节点 file_src_infrastructure_graph_import_project_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_import_project_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "read_set": {
-        "symbols": [],
-        "files": [
-          {
-            "path": "src/infrastructure/graph/import_project.ts",
-            "content_hash": "c23120a031be55010d92a0b3f59623b42faa3af7"
-          }
-        ],
-        "computed_at": "2026-10-21T19:58:53.155Z",
-        "basis": [
-          "declared"
-        ]
-      },
-      "release_reason": "label 改完：`${basename} · ${apiCount} APIs` → `${basename}`（见 import_project.ts:1434）；本轮不再改这个文件。",
-      "released_by": "subagent:chain-e",
-      "released_at": "2026-10-21T20:07:07.021Z",
-      "node_id": "file_src_infrastructure_graph_import_project_ts"
-    },
-    {
-      "id": "file_src_infrastructure_index_db_ts",
-      "summary": "【L1 待建构】数据层 · src/infrastructure/index — 12 个 API（导入自 6 个模块）（src/infrastructure/index/db.ts） ← 节点 file_src_infrastructure_index_db_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_db_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 24h（原 owner=agent-v16），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:02.377Z",
-      "node_id": "file_src_infrastructure_index_db_ts"
-    },
-    {
-      "id": "file_src_infrastructure_index_file_facts_ts",
-      "summary": "【L1 待建构】入口层 · src/infrastructure/index — 6 个 API（导入自 3 个模块）（src/infrastructure/index/file_facts.ts） ← 节点 file_src_infrastructure_index_file_facts_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_file_facts_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 27h（原 owner=codebuddy-params），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:02.484Z",
-      "node_id": "file_src_infrastructure_index_file_facts_ts"
-    },
-    {
-      "id": "file_src_infrastructure_index_live_render_ts",
-      "summary": "【L1 待建构】入口层 · src/infrastructure/index — 2 个 API（导入自 11 个模块）（src/infrastructure/index/live_render.ts） ← 节点 file_src_infrastructure_index_live_render_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_live_render_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "read_set": {
-        "symbols": [],
-        "files": [
-          {
-            "path": "src/infrastructure/index/live_render.ts",
-            "content_hash": "55d51f52800092254dffa19ee9103aa413f79b4b"
-          }
-        ],
-        "computed_at": "2026-10-21T19:58:53.295Z",
-        "basis": [
-          "declared"
-        ]
-      },
-      "release_reason": "label 改完：`${basename} · ${funcCount} APIs` → `${basename}`（见 live_render.ts:328）；本轮不再改这个文件。",
-      "released_by": "subagent:chain-e",
-      "released_at": "2026-10-21T20:07:07.100Z",
-      "node_id": "file_src_infrastructure_index_live_render_ts"
-    },
-    {
-      "id": "file_src_infrastructure_index_scan_rev_ts",
-      "summary": "【L1 待建构】入口层 · src/infrastructure/index — 1 个 API（导入自 2 个模块）（src/infrastructure/index/scan_rev.ts） ← 节点 file_src_infrastructure_index_scan_rev_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_scan_rev_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "read_set": {
-        "symbols": [],
-        "files": [
-          {
-            "path": "src/infrastructure/index/scan_rev.ts",
-            "content_hash": "255abf70ac846088018eb872b87f42c49ba03683"
-          }
-        ],
-        "computed_at": "2026-10-21T11:53:40.026Z",
-        "basis": [
-          "node-path"
-        ]
-      },
-      "release_reason": "B 组验收用的临时占位（claim 后已测 scanRev 不变），释放",
-      "released_by": "subagent:dsl-symbols-fixer",
-      "released_at": "2026-10-21T11:54:04.026Z",
-      "node_id": "file_src_infrastructure_index_scan_rev_ts"
-    },
-    {
       "id": "file_src_infrastructure_index_schema_ts",
       "summary": "新建 identifiers 表：源码里每个标识符出现的【位置】（file_path / name / line / col / start_index / end_index / kind）。消费者四个：find_references（找引用）、field_refs（找字段）、rename_symbols（改名）、remove_dead_imports（找 import 语句）。★ 它们现在都用【正则】扫源码 —— 会漏（别名/解构/动态访问）也会误报（注释/字符串）。",
       "state": "candidate",
@@ -112946,109 +110575,6 @@
       "released_by": "subagent:lease-audit",
       "released_at": "2026-10-22T06:18:02.585Z",
       "node_id": "file_src_infrastructure_index_schema_ts"
-    },
-    {
-      "id": "file_src_infrastructure_index_symbols_ts",
-      "summary": "【L1 待建构】入口层 · src/infrastructure/index — 29 个 API（导入自 8 个模块）（src/infrastructure/index/symbols.ts） ← 节点 file_src_infrastructure_index_symbols_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_symbols_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "read_set": {
-        "symbols": [
-          {
-            "file": "src/infrastructure/index/symbols.ts",
-            "name": "applyParsedToIndex",
-            "fp": "e562414599724f5797424b40c2943e5fc60abdc1"
-          }
-        ],
-        "files": [
-          {
-            "path": "src/infrastructure/index/symbols.ts",
-            "content_hash": "93f8755c12b3d3526f20d260493e7aae9624333a"
-          }
-        ],
-        "computed_at": "2026-10-22T04:55:03.508Z",
-        "basis": [
-          "declared"
-        ]
-      },
-      "release_reason": "本轮改动已完成并验证（build + 全量重建 + t349~t359 + npm run verify 7 道），释放写权；★ 这张是 L1 建构卡，判据（decision.summary / 后态判据）仍缺，不是收口",
-      "released_by": null,
-      "released_at": "2026-10-22T04:55:16.513Z",
-      "node_id": "file_src_infrastructure_index_symbols_ts"
-    },
-    {
-      "id": "file_src_infrastructure_llm_agnes_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure — 7 个 API（导入自 1 个模块）（src/infrastructure/llm_agnes.ts） ← 节点 file_src_infrastructure_llm_agnes_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_llm_agnes_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:17.581Z",
-      "node_id": "file_src_infrastructure_llm_agnes_ts"
-    },
-    {
-      "id": "file_src_infrastructure_llm_focus_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure — 9 个 API（导入自 7 个模块）（src/infrastructure/llm_focus.ts） ← 节点 file_src_infrastructure_llm_focus_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_llm_focus_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:17.697Z",
-      "node_id": "file_src_infrastructure_llm_focus_ts"
-    },
-    {
-      "id": "file_src_infrastructure_llm_gateway_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure — 27 个 API（导入自 6 个模块）（src/infrastructure/llm_gateway.ts） ← 节点 file_src_infrastructure_llm_gateway_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_llm_gateway_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:17.814Z",
-      "node_id": "file_src_infrastructure_llm_gateway_ts"
-    },
-    {
-      "id": "file_src_infrastructure_llm_pool_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure — 6 个 API（导入自 0 个模块）（src/infrastructure/llm_pool.ts） ← 节点 file_src_infrastructure_llm_pool_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_llm_pool_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:17.935Z",
-      "node_id": "file_src_infrastructure_llm_pool_ts"
-    },
-    {
-      "id": "file_src_infrastructure_parse_comments_ts",
-      "summary": "【L1 待建构】核心层 · src/infrastructure/parse — 2 个 API（导入自 3 个模块）（src/infrastructure/parse/comments.ts） ← 节点 file_src_infrastructure_parse_comments_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_parse_comments_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-      "released_by": "comment-cleanup-bot",
-      "released_at": "2026-10-20T09:40:18.053Z",
-      "node_id": "file_src_infrastructure_parse_comments_ts"
     },
     {
       "id": "file_src_infrastructure_parse_kernel_ts",
@@ -113173,23 +110699,6 @@
       "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
-      "id": "file_src_presentation_cli_cli_ts",
-      "summary": "【L1 待建构】核心层 · src/presentation/cli — 4 个 API（导入自 4 个模块）（src/presentation/cli/cli.ts） ← 节点 file_src_presentation_cli_cli_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_cli_cli_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "cli.ts:277 传 via='cli' 已交付；先 release 才能 void",
-      "released_by": "general-purpose-3",
-      "released_at": "2026-10-20T16:43:29.180Z",
-      "node_id": "file_src_presentation_cli_cli_ts",
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
-    },
-    {
       "id": "file_src_presentation_http_serve_ts",
       "summary": "【L1 待建构】核心层 · src/presentation/http — 50 个 API（导入自 57 个模块）（src/presentation/http/serve.ts） ← 节点 file_src_presentation_http_serve_ts",
       "state": "claimed",
@@ -113230,34 +110739,6 @@
           "放弃：`release`（会按 `prepared_snapshot` 把判据**逐字还原** ⇒ 零残留）"
         ]
       }
-    },
-    {
-      "id": "file_src_presentation_mcp_server_ts",
-      "summary": "【L1 待建构】入口层 · src/presentation/mcp — 4 个 API（导入自 12 个模块）（src/presentation/mcp/server.ts） ← 节点 file_src_presentation_mcp_server_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 24h（原 owner=workbuddy），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:02.841Z",
-      "node_id": "file_src_presentation_mcp_server_ts"
-    },
-    {
-      "id": "file_src_presentation_mcp_server_registry_ts",
-      "summary": "【L1 待建构】核心层 · src/presentation/mcp — 25 个 API（导入自 26 个模块）（src/presentation/mcp/server_registry.ts） ← 节点 file_src_presentation_mcp_server_registry_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_registry_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "release_reason": "陈旧租约 20h（原 owner=subagent:account），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:02.931Z",
-      "node_id": "file_src_presentation_mcp_server_registry_ts"
     },
     {
       "id": "file_src_application_design_board_pool_ts",
@@ -113518,114 +110999,6 @@
       "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
     },
     {
-      "id": "file_scripts_impl-fixture_mjs",
-      "summary": "【L1 待建构】impl-fixture —— cardStanding 等判据实现的行为夹具（实现层变异的先决条件）（scripts/impl-fixture.mjs） ← 节点 file_scripts_impl-fixture_mjs",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_scripts_impl-fixture_mjs\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "read_set": {
-        "symbols": [],
-        "files": [
-          {
-            "path": "scripts/impl-fixture.mjs",
-            "content_hash": "9ac843a1771b41f0b21c04c92053b9096240b43d"
-          }
-        ],
-        "computed_at": "2026-10-22T17:40:07.487Z",
-        "basis": [
-          "node-path"
-        ]
-      },
-      "node_id": "file_scripts_impl-fixture_mjs",
-      "claimed_without_judge": {
-        "at": "2026-10-22T17:40:07.534Z",
-        "missing": [
-          "节点 file_scripts_impl-fixture_mjs 的 `decision.expectations` 里**后态判据（phase=post）0 条**（**一条判据都没有**）",
-          "要补 **2 条**：signature-matches + source-has —— 一个\"结构\"（`ROOT` 的签名就算证据）+ 一个\"行为/文本\"（关键写法必须在）",
-          "写到哪：`edit_dsl { type:'decision', op:'update', id:'file_scripts_impl-fixture_mjs', data:{ expectations:[…] } }`（判据**只住 decision**，不在卡上；卡上的是一张回滚快照）",
-          "补齐后：`edit_dsl { type:'task', op:'start', id:'file_scripts_impl-fixture_mjs', data:{ owner:'<你>' } }`（第二段：删快照 + state→claimed，**一次落盘**）",
-          "放弃：`release`（会按 `prepared_snapshot` 把判据**逐字还原** ⇒ 零残留）"
-        ]
-      },
-      "prepared_snapshot": null,
-      "release_reason": "量具更新已完成（迁移表加 t_prepare/t_start/t_abandon 三行）；该卡的 L1 建构（decision.summary + 后态判据）不属于本次，放回候选",
-      "released_by": "subagent:deepseek-two-phase",
-      "released_at": "2026-10-22T17:41:15.050Z"
-    },
-    {
-      "id": "file_src_application_source_writer_ts",
-      "summary": "【L1 待建构】source_writer —— 改用户源码的唯一原语（写闸 / 快照 / 自写登记的唯一组合点）（src/application/source_writer.ts） ← 节点 file_src_application_source_writer_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_source_writer_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "read_set": {
-        "symbols": [],
-        "files": [
-          {
-            "path": "src/application/source_writer.ts",
-            "content_hash": "005add4af764cdebe2830de02c76022269f21fff"
-          }
-        ],
-        "computed_at": "2026-10-22T08:25:09.824Z",
-        "basis": [
-          "node-path"
-        ]
-      },
-      "release_reason": "src/application/source_writer.ts 的 anchor 卡本轮只当授权锚点用，用毕释放（owner=subagent:deepseek-writegate）",
-      "released_by": "subagent:deepseek-writegate",
-      "released_at": "2026-10-22T09:06:06.663Z",
-      "node_id": "file_src_application_source_writer_ts"
-    },
-    {
-      "id": "file_src_infrastructure_authoring_translate_book_ts",
-      "summary": "【L1 待建构】book —— 翻译册的生成器（从 cache.db 派生 symbols / shapes，types / atoms 是人写的，不覆盖）（src/infrastructure/authoring/translate/book.ts） ← 节点 file_src_infrastructure_authoring_translate_book_ts",
-      "state": "void",
-      "discussion": {
-        "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_translate_book_ts\"].responsibility"
-      },
-      "owner": null,
-      "claimed_at": null,
-      "read_set": {
-        "symbols": [
-          {
-            "file": "src/infrastructure/authoring/translate/book.ts",
-            "name": "generateBook",
-            "fp": "6ada88a7b09a6bdaef49020d811a2f151225f74d"
-          },
-          {
-            "file": "src/infrastructure/authoring/translate/book.ts",
-            "name": "rebuildBook",
-            "fp": "a9bb2aaad6b82265fe3a0ac72b5bbee2ca9931ff"
-          },
-          {
-            "file": "src/infrastructure/authoring/translate/book.ts",
-            "name": "unmappedTypes",
-            "fp": "b5d8bb72a3582f0e01cb05481ed56efc7901ee4d"
-          }
-        ],
-        "files": [
-          {
-            "path": "src/infrastructure/authoring/translate/book.ts",
-            "content_hash": "e85d50cf4583743ee009307a9721c3f1cc1d8b96"
-          }
-        ],
-        "computed_at": "2026-10-21T19:26:35.276Z",
-        "basis": [
-          "declared"
-        ]
-      },
-      "release_reason": "陈旧租约 11h（原 owner=subagent:chain-e），2026-10-22 会话清理，无代码冲突证据",
-      "released_by": "subagent:lease-audit",
-      "released_at": "2026-10-22T06:18:03.105Z",
-      "node_id": "file_src_infrastructure_authoring_translate_book_ts"
-    },
-    {
       "id": "todo_迁移第②步-读端切到-todos-第①步已完成-104-张-nodes-task",
       "summary": "【迁移第②步 · 读端切到 todos[]】第①步已完成（104 张 nodes[].task 卡已逐字并入 todos[]，node_id=入口节点；读数：todos 142→246、B 判据 104 张逐一比对不一致 0、复跑新增 0；脚本 scripts/migrate-node-tasks-to-todos.mjs）。\n\n## 还没做的（本卡）\n· `loadTask`（src/application/design/dsl_ops/task_ops.ts）**节点优先** ⇒ 现在读的是 node.task；要改成读 todos[] 里 `node_id===节点id` 的活态卡\n· `listPool`（src/application/design/board/pool.ts）现在**两处都收** ⇒ 349 张（node 104 + todo 245）**同一批活被数了两遍**，切完应为 245\n· `claim_conflict` / `follows` / `expireTasks` / `patrol` 同样要跟\n· `node.task` 降为**派生只读**（`taskOf(node) = todos.find(t => t.node_id===node.id && 活态)`）\n\n## 验收（可证伪）\n· 9 个 task op 的**对外契约不变**：`edit_dsl {type:'task', op:'claim', id:'<节点id>'}` 仍可用\n· `query=pool` 的 total 从 349 回到 245（每张卡只数一次）\n· 同一节点连开两次卡 ⇒ todos 里**两条**历史（node.task 单数时做不到，这是本迁移的目的）\n· ★ 兼容层已铺好：写端 `writeTask` 现在**按卡的住处**写（节点卡写节点 + 同步 todos 镜像），\n  所以切读端时不会丢掉过渡期落的账；切完后把镜像那半去掉即可",
       "state": "done",
@@ -113733,6 +111106,13 @@
       "state": "candidate",
       "owner": null,
       "follows": "todo_p1-增量测试的选量-测试-文件映射-现状-run-tests-跑-npm-te"
+    },
+    {
+      "id": "todo_把剩余-92-张-done-卡也移入-task-history-db-先解-28",
+      "summary": "把剩余 92 张 done 卡也移入 task-history.db（★ 先解 28 条 follows：仍在册的卡把上一环指向 done 卡，一把梭会让 buildTodoChains 读成悬挂）",
+      "state": "candidate",
+      "owner": null,
+      "follows": "file_src_application_design_dsl_ops_task_ops_ts"
     }
   ],
   "_dsl_rev": 1294,

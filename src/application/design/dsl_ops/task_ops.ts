@@ -105,6 +105,9 @@ import {
 } from '../../../domain/task_schema.js';
 // ★ 2026-10-21：`todo.delete` 的**墓碑**（物理删是唯一让卡真的从册上消失的操作 ⇒ 必须有卡外留痕）。
 import { appendTodoTombstone, todoJournalFile } from '../board/todo_journal.js';
+// ★★★ 2026-10-23（history 表）：已了结卡**出册**的落点 —— 项目级**独立库**
+//   `.agent-io/task-history.db`（★ 不是 cache.db：那个库会被 import_project 重建 ⇒ 审计数据会被删光）。
+import { dropTaskHistoryBatch, getTaskHistoryFile, recordTaskHistory, type TaskHistoryRow } from '../../../infrastructure/task_history.js';
 // ★★★ 2026-10-21（跑环继任链）：链的**位置**（depth / total / children / broken）与**入口校验**
 //   （自指 / 悬挂 / 接作废卡 / 成环）**唯一住处** = `domain/todo_chain.ts` ——
 //   ★ 本文件只调它：读端（complete 的提示）与写端（add / follows）共读同一把尺，不各算一遍。
@@ -2849,6 +2852,164 @@ function deleteTodoCard(feature: string, id: string, data: Record<string, unknow
 }
 
 /**
+ * `todo.move_to_history` —— **已了结的卡出册入史**（`todos[]` 从此只放活卡）。
+ *
+ * ## 它回答的问题（用户 2026-10-23 原话）
+ * 「void 卡本身不是也应该被归档进历史里吗？为什么还放在 To Do 里？……给它单独建一张 history 的表，
+ *   然后给它归纳进去，要查的话你就搜索 history」
+ *
+ * ## 与 `archive` / `delete` 的三分（★ 别混：三个 op 回答三个不同的问题）
+ * | op | 卡还在 `todos[]` 吗 | 还能 claim / relaunch 吗 | 数据去哪 |
+ * |---|---|---|---|
+ * | `archive`（软归档） | 在 | 能（先 `unarchive`） | 册上，盖 `archived_at` |
+ * | `move_to_history`（本 op） | **不在** | **不能**（历史只读） | `.agent-io/task-history.db` 的 `task_history` |
+ * | `delete` | 不在 | 不能 | 墓碑 `<feature>.journal.jsonl`（只给"从未生效的误建"） |
+ *
+ * ## ★★★ 顺序（本 op 唯一的失败契约）
+ * **先写历史表成功，再从 `todos[]` 移除并落盘**；落盘失败 ⇒ **撤掉刚写的那一批行**
+ * （`dropTaskHistoryBatch`，按 `moved_at` 精确匹配）。
+ * ⇒ 任何一种失败都不会出现「册上没了、历史里也没有」（那才是真丢卡）；
+ *   最坏情形是「两边都有」—— 可重跑，因为历史 append-only 且每次 `moved_at` 不同。
+ *
+ * ## 判据（任一不过 ⇒ 整批不做）
+ * ① 每张卡都必须在 `todos[]` 里（清单里有一个错 id 就不猜其余几张）；
+ * ② 只有**已了结**（`isClosedTaskState`：done / void）的卡能入史 —— 活卡入史 = 让正在干的活消失；
+ * ③ **还有下一环挂在它下面** ⇒ 拒（与 `delete` 同一条纪律：入史后那些 `follows` 会指向册上不存在的 id）；
+ * ④ `data.reason` 必填（由 `OP_SPECS.required.move_to_history` 先拒）—— 理由**落库**，不只活在回执里。
+ *
+ * ## 它顺带做的一件事：摘掉 `node.task` 派生投影
+ * `todos[]` 是权威、`node.task` 只是投影（见 `withCardWritten` 的注释）。卡出册后若把投影留在节点上，
+ * `pool` 的 `todosForNode(node.id, todos).length === 0` 会让它**重新被当成节点卡数进池**
+ * ⇒ 那就是"移走了、To Do 里还在"。所以**同一个 id** 的投影必须一起摘掉（节点上另一张卡不动）。
+ *
+ * ## 边界（★ 如实写明）
+ * · 入史**不可逆**：`relaunch` / `reopen` 都按 id 在 `todos[]` 里找卡 ⇒ 出册后就找不到。
+ *   要重做 ⇒ `todo.add` 一张新卡（summary 里点名它接的是哪段历史）。
+ * · 本 op **不改 state**、**不改 card_json 一个字节** —— 它只是"换一张表"。
+ */
+function moveTodoCardsToHistory(feature: string, data: Record<string, unknown>, agent?: string): EditResult {
+  const raw = data.ids;
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw new Error(
+      `todo.move_to_history 需要 data.ids（**非空**数组：要入史哪几张，逐张列 id）。\n` +
+        `★ 与 todo.archive 同一条纪律：**没有**「把所有已了结的都移走」这种开关 —— 那种开关会在某天顺手吃掉别人刚 done 完的卡。`,
+    );
+  }
+  const ids = [...new Set(raw.map((x) => String(x).trim()).filter(Boolean))];
+  if (!ids.length) {
+    throw new Error('todo.move_to_history 的 data.ids 里没有任何有效 id（全是空串）⇒ 什么都不做，也不假装做了。');
+  }
+  const reason = String(data.reason ?? '').trim();
+  const dsl = getDesignSheet(feature);
+  if (!dsl) throw new Error(`feature "${feature}" 不存在 —— todo 住在设计 DSL 的顶层 todos[]。`);
+
+  const todos = dsl.todos ?? [];
+  const picked: TaskSpec[] = [];
+  for (const id of ids) {
+    const cur = todos.find((t) => t.id === id);
+    if (!cur) {
+      throw new Error(
+        `todo.move_to_history 被拒：todos[] 里没有 "${id}"（★ 整批不落盘 —— 清单里有一个错 id，就不猜其余几张要不要动）。\n` +
+          `★ 两条常见来路：① 它已经入史 ⇒ 用 \`get_dsl { query:'history', feature:'${feature}', card_id:'${id}' }\` 查；` +
+          `② id 记错了 ⇒ \`get_dsl query=todo state=all\` 拿一遍当前 id。`,
+      );
+    }
+    if (!isClosedTaskState(cur.state)) {
+      throw new Error(
+        `todo.move_to_history 被拒："${id}" 是 ${cur.state}（**未了结**）—— 只有已了结（done / void）的卡能入史。\n` +
+          `★ 活卡入史 = 让正在干的活从待办里消失（而且 claim / relaunch 都按 id 在 todos[] 里找卡 ⇒ 再也点不回来）。\n` +
+          `★ 真要收尾 ⇒ 先 complete / retire。`,
+      );
+    }
+    picked.push(cur);
+  }
+
+  // ★ 判据③：入史后不能留下悬挂的 follows（与 todo.delete 的"有下一环就不许删"同一条纪律）
+  const idSet = new Set(picked.map((c) => c.id));
+  const stillInBook = todos.filter((t) => !idSet.has(t.id));
+  const orphans = stillInBook.filter((t) => t.follows && idSet.has(t.follows));
+  if (orphans.length) {
+    throw new Error(
+      `todo.move_to_history 被拒：${orphans.length} 张仍在册的卡把 \`follows\` 指向本批要入史的卡（${orphans
+        .map((t) => `${t.id}→${t.follows}`)
+        .join(' / ')}）。\n` +
+        `★ 入史后它们的上一环就不在册上了（\`buildTodoChains\` 会把它读成**悬挂**，那是假警报）。\n` +
+        `★ 三条路：① 把这些下一环**一并**列进 data.ids（同批入史）；② 它们的上一环还有活着的环 ⇒ 先 todo.follows 重接；③ 留在册里（不列它）。`,
+    );
+  }
+
+  // ★ 投影清单**先算好**（纯读、不抛）—— 写表之后只剩「落盘」一件事，失败窗口最小
+  const nodes = dsl.geometry?.nodes ?? [];
+  const mirrored = nodes.filter((n) => n.task && idSet.has(String((n.task as TaskSpec).id)));
+
+  const movedAt = new Date().toISOString();
+  const rows: TaskHistoryRow[] = picked.map((card) => ({
+    id: card.id,
+    feature,
+    ...(card.node_id ? { node_id: card.node_id } : {}),
+    state: card.state,
+    summary: card.summary,
+    // ★ 整张卡原样：evidence / retire_reason / history[] / read_set 一个字节都不动（审计数据不许摘要化）
+    card_json: JSON.stringify(card),
+    moved_at: movedAt,
+    reason,
+  }));
+  // ★★★ 第一步：写历史表（失败 ⇒ 抛，todos[] 一个字节没动）
+  recordTaskHistory(rows);
+
+  // ★★★ 第二步：从册上移除（顺带摘掉同 id 的 node.task 投影）
+  //   ★★ **整段都在 try 里**：从「写表成功」到「落盘成功」之间任何一步抛都必须撤表。
+  //      实测（2026-10-23 消融）：把装 nextDsl 那几行漏在 try 外时，中途一抛就留下
+  //      「册上还在、历史里也有一条」的残行 —— 那不是"两边都没有"，但同样是脏账。
+  //      ⇒ 判据不写成"这几行不会抛"（改一行就破），而是**构造上就在同一段保护里**。
+  try {
+    let nextDsl: typeof dsl = { ...dsl, todos: stillInBook };
+    if (mirrored.length) {
+      const nextNodes = nodes.map((n) =>
+        n.task && idSet.has(String((n.task as TaskSpec).id)) ? { ...n, task: undefined } : n,
+      );
+      nextDsl = { ...nextDsl, geometry: { ...dsl.geometry!, nodes: nextNodes } };
+    }
+    const ov = loadOverlay(feature) ?? seedOverlayFromDsl(nextDsl);
+    saveDesignSheet(applyOverlay(nextDsl, ov));
+  } catch (e) {
+    // ★ 反向补偿：表已经写进去了，册没落下 ⇒ 撤掉这一批（两边都不留半截）
+    const dropped = dropTaskHistoryBatch(feature, movedAt);
+    throw new Error(
+      `todo.move_to_history 失败：历史表已写入 ${rows.length} 行，但**设计册落盘失败**（${(e as Error).message}）。\n` +
+        `★ 已按 moved_at=${movedAt} 撤掉刚写的 ${dropped} 行，todos[] 一个字节没动（不出现"两边都没有"）。`,
+    );
+  }
+
+  const byState: Record<string, number> = {};
+  for (const c of picked) byState[c.state] = (byState[c.state] ?? 0) + 1;
+  const dist = Object.entries(byState)
+    .map(([s, n]) => `${s} ${n}`)
+    .join(' · ');
+  return {
+    message:
+      `已把 ${picked.length} 张已了结卡移入历史（★ 出册：todos[] 里不再有它们）· ${dist}：\n` +
+      `  落点：${getTaskHistoryFile()} 的 task_history 表（feature=${feature} · moved_at=${movedAt}）\n` +
+      `  todos[]：${todos.length} → ${stillInBook.length} 张` +
+      (mirrored.length ? ` · 同时摘掉 ${mirrored.length} 个 node.task 派生投影` : '') +
+      `\n  为什么：${reason}${agent ? ` · 谁：${agent}` : ''}\n` +
+      `★ 之后：get_dsl query=todo **不再列**它们（不是被藏了，是换了一张表）；` +
+      `要查 ⇒ \`get_dsl { query:'history', feature:'${feature}' }\`（可按 card_id / state / search 过滤，card_json 是整张卡原样）。\n` +
+      `★ 历史**只读**：入史的卡不能再 claim / relaunch；要重做 ⇒ todo.add 一张新卡。`,
+    feature,
+    data: {
+      moved: picked.map((c) => c.id),
+      by_state: byState,
+      todos_before: todos.length,
+      todos_after: stillInBook.length,
+      node_projections_cleared: mirrored.map((n) => n.id),
+      moved_at: movedAt,
+      history_file: getTaskHistoryFile(),
+    },
+  };
+}
+
+/**
  * `todo.archive` / `todo.unarchive` —— **软归档**：卡留在册，只是**不再进活态**。
  *
  * ## 语义（一句话）
@@ -3079,9 +3240,12 @@ function applyTodoMutation(
       return applyArchiveOp(feature, data, agent, 'archive');
     case 'unarchive':
       return applyArchiveOp(feature, data, agent, 'unarchive');
+    // ★★★ 2026-10-23（history 表）：已了结卡**出册入史**（批量、按 data.ids —— 同 archive）
+    case 'move_to_history':
+      return moveTodoCardsToHistory(feature, data, agent);
     default:
       throw new Error(
-        `todo 不支持操作: ${op.op}（改/接链/作废/删分别是 update / follows / retire / delete；归档/恢复是 archive / unarchive）`,
+        `todo 不支持操作: ${op.op}（改/接链/作废/删分别是 update / follows / retire / delete；软归档/恢复是 archive / unarchive；出册入史是 move_to_history）`,
       );
   }
 }
@@ -3232,13 +3396,15 @@ export function applyTodoOp(
     op.op === 'delete' ||
     // ★★★ 2026-10-22（软归档）：归档/恢复也是「按清单动卡」，走同一处分发。
     op.op === 'archive' ||
-    op.op === 'unarchive'
+    op.op === 'unarchive' ||
+    // ★★★ 2026-10-23：入史也是「按清单动卡」⇒ 同一处分发
+    op.op === 'move_to_history'
   ) {
     return applyTodoMutation(feature, op, agent);
   }
 
   if (op.op !== 'add') {
-    throw new Error(`todo 仅支持 add / link / import / update / follows / retire / delete / archive / unarchive（收到 ${op.op}）`);
+    throw new Error(`todo 仅支持 add / link / import / update / follows / retire / delete / archive / unarchive / move_to_history（收到 ${op.op}）`);
   }
   const data = op.data ?? {};
   // ★ 2026-10-21：`todo.add 需要 data.summary` **不在这里判** —— 判据只有一处 = `OP_SPECS.required.add`
