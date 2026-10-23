@@ -233,5 +233,9 @@
       "from": "src/presentation/cli/cli.ts#readArgs",
       "to": "src/presentation/cli/cli.ts#die"
     }
+  ],
+  "reverse_calls": [
+    "src/presentation/cli/cli.ts#coerceKeyValues",
+    "src/presentation/cli/cli.ts#readArgs"
   ]
 }

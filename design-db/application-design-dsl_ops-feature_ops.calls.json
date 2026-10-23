@@ -39,7 +39,7 @@
     {
       "name": "CloneFeatureInput",
       "kind": "interface",
-      "line": 79,
+      "line": 78,
       "signature": "CloneFeatureInput()",
       "members": [
         {
@@ -65,7 +65,7 @@
     {
       "name": "CloneFeatureResult",
       "kind": "interface",
-      "line": 85,
+      "line": 84,
       "signature": "CloneFeatureResult()",
       "members": [
         {
@@ -103,7 +103,7 @@
     {
       "name": "cloneFeature",
       "kind": "function",
-      "line": 93,
+      "line": 92,
       "signature": "cloneFeature(input: CloneFeatureInput): CloneFeatureResult"
     }
   ],

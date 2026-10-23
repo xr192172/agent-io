@@ -226,5 +226,12 @@
       "from": "src/presentation/daemon/daemon.ts#main",
       "to": "src/presentation/daemon/server.ts#createDaemonServer"
     }
+  ],
+  "reverse_calls": [
+    "src/presentation/daemon/daemon.ts#dslWriteHandler",
+    "src/presentation/daemon/daemon.ts#main",
+    "src/presentation/daemon/daemon.ts#removePidfile",
+    "src/presentation/daemon/daemon.ts#scheduleLoopTrigger",
+    "src/presentation/daemon/daemon.ts#writePidfile"
   ]
 }

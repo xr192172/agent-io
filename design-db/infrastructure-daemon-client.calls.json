@@ -107,5 +107,17 @@
       "from": "src/infrastructure/daemon/client.ts#daemonBaseUrl",
       "to": "src/infrastructure/daemon/client.ts#daemonPort"
     }
+  ],
+  "reverse_calls": [
+    "src/application/dispatch.ts#collectPendingAlertText",
+    "src/application/dispatch.ts#dispatchDslEdit",
+    "src/application/dispatch.ts#dispatchWatch",
+    "src/application/dispatch.ts#isDaemonAvailable",
+    "src/infrastructure/daemon/client.ts#daemonBaseUrl",
+    "src/infrastructure/daemon/client.ts#fetchAlertsSince",
+    "src/infrastructure/daemon/client.ts#postDsl",
+    "src/infrastructure/daemon/client.ts#postWatch",
+    "src/infrastructure/daemon/client.ts#probeDaemon",
+    "src/presentation/daemon/daemon.ts#main"
   ]
 }

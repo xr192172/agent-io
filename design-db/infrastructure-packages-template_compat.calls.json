@@ -97,5 +97,16 @@
       "from": "src/infrastructure/packages/template_compat.ts#templateCompatFromPkgJson",
       "to": "src/infrastructure/packages/template_compat.ts#usesNanBinding"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/packages/template_compat.ts#templateCompatFromFacts",
+    "src/infrastructure/packages/template_compat.ts#templateCompatFromPkgJson",
+    "src/infrastructure/parse/lang_hint.ts#missingLanguageHint",
+    "src/infrastructure/parse/probe.ts#isLoadablePackage",
+    "src/infrastructure/parse/probe.ts#languagePackageStatus",
+    "src/presentation/cli/install_package_cli.ts#collect",
+    "src/presentation/cli/install_package_cli.ts#compatVerdict",
+    "src/presentation/cli/install_package_cli.ts#installPrecheck",
+    "src/presentation/cli/install_package_cli.ts#main"
   ]
 }

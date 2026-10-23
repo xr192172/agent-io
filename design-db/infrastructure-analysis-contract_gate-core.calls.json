@@ -373,5 +373,13 @@
       "from": "src/infrastructure/analysis/contract_gate/core.ts#renderContractSkips",
       "to": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/contract_gate/core.ts#cleanLine",
+    "src/infrastructure/analysis/contract_gate/core.ts#cleanSource",
+    "src/infrastructure/analysis/contract_gate/core.ts#contractGate",
+    "src/infrastructure/analysis/contract_gate/core.ts#diffContracts",
+    "src/infrastructure/analysis/contract_gate/core.ts#scanContracts",
+    "src/infrastructure/analysis/contract_gate/core.ts#scanOne"
   ]
 }

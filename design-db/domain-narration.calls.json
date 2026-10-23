@@ -89,5 +89,11 @@
       "from": "src/domain/narration.ts#buildScenes",
       "to": "src/domain/narration.ts#pinFacts"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+    "src/application/observe/capture/narrate_step.ts#narrateStepCore",
+    "src/domain/narration.ts#buildScenes",
+    "src/domain/narration.ts#pinFacts"
   ]
 }

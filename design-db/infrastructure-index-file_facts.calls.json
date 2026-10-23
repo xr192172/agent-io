@@ -145,5 +145,27 @@
       "from": "src/infrastructure/index/file_facts.ts#fileFacts",
       "to": "src/infrastructure/index/file_facts.ts#resolveFilePath"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/derive/opl.ts#llmDeclare",
+    "src/application/design/intent/consistency.ts#checkBaselineDrift",
+    "src/application/design/intent/expectations.ts#depFactsIncomplete",
+    "src/application/design/intent/expectations.ts#indexStaleFor",
+    "src/application/design/intent/expectations.ts#judgeExpectations",
+    "src/application/design/line/design_line.ts#briefReport",
+    "src/application/meta/explore/query_feature.ts#queryFeature",
+    "src/application/meta/view/derive_mind_map.ts#buildFileIndex",
+    "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+    "src/application/meta/view/overview.ts#llmSharedDesc",
+    "src/application/observe/capture/narrate_step.ts#factsig",
+    "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+    "src/application/refactor/diff_views/diff_views.ts#fileChanged",
+    "src/application/refactor/diff_views/diff_views.ts#structChanged",
+    "src/application/refactor/snapshot/file_snapshot.ts#createFileSnapshot",
+    "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact",
+    "src/infrastructure/graph/import_project.ts#importProject",
+    "src/infrastructure/index/file_facts.ts#apiSignaturesOf",
+    "src/infrastructure/index/file_facts.ts#fileFacts",
+    "src/infrastructure/index/file_facts.ts#mergedApis"
   ]
 }

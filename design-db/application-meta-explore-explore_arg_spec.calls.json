@@ -41,5 +41,9 @@
       "from": "src/application/meta/explore/explore_arg_spec.ts#assertExploreArgKeys",
       "to": "src/application/meta/explore/explore_arg_spec.ts#editDistance"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/explore_arg_spec.ts#assertExploreArgKeys",
+    "src/application/meta/explore/explore_code.ts#exploreCode"
   ]
 }

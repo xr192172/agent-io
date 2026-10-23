@@ -119,5 +119,9 @@
       "from": "src/infrastructure/authoring/version_upgrade/adapters/java.ts#javaRunProbe",
       "to": "src/infrastructure/authoring/version_upgrade/adapters/java.ts#isSelfContained"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/version_upgrade/adapters/java.ts#javaRunProbe",
+    "src/infrastructure/authoring/version_upgrade/adapters/java.ts#javacSingleFile"
   ]
 }

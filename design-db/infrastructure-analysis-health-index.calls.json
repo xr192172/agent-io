@@ -664,5 +664,16 @@
       "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
       "to": "src/infrastructure/scan_bounds.ts#boundsSkipFromExcluded"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#judgeSource",
+    "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+    "src/infrastructure/analysis/health/index.ts#collectImportBinds",
+    "src/infrastructure/analysis/health/index.ts#estimateComplexity",
+    "src/infrastructure/analysis/health/index.ts#extractNamedImports",
+    "src/infrastructure/analysis/health/index.ts#importBindingFactsFromRoot",
+    "src/infrastructure/analysis/health/index.ts#importBindingFactsSync",
+    "src/infrastructure/analysis/health/index.ts#unusedImportsIn",
+    "src/infrastructure/analysis/health/index.ts#unusedImportsInRegex"
   ]
 }

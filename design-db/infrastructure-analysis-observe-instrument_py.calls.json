@@ -345,5 +345,14 @@
       "from": "src/infrastructure/analysis/observe/instrument_py.ts#isInstrumentablePyFile",
       "to": "src/infrastructure/parse/source_exts.ts#isNoiseFileName"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/observe/instrument_py.ts#collectDefSites",
+    "src/infrastructure/analysis/observe/instrument_py.ts#collectLambdaSite",
+    "src/infrastructure/analysis/observe/instrument_py.ts#collectPySites",
+    "src/infrastructure/analysis/observe/instrument_py.ts#firstIdent",
+    "src/infrastructure/analysis/observe/instrument_py.ts#handleReturnSite",
+    "src/infrastructure/analysis/observe/instrument_py.ts#paramNames",
+    "src/infrastructure/analysis/observe/instrument_py.ts#scanFunctions"
   ]
 }

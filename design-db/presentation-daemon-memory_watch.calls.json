@@ -176,5 +176,9 @@
       "from": "src/presentation/daemon/memory_watch.ts#startMemoryWatch",
       "to": "src/presentation/daemon/memory_watch.ts#judgeLeak"
     }
+  ],
+  "reverse_calls": [
+    "src/presentation/daemon/daemon.ts#main",
+    "src/presentation/daemon/memory_watch.ts#startMemoryWatch"
   ]
 }

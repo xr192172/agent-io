@@ -274,5 +274,26 @@
       "from": "src/infrastructure/dictionary.ts#loadProjectDict",
       "to": "src/infrastructure/storage.ts#getDataHome"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/reconcile/proposal_approve.ts#approveObserveProposal",
+    "src/application/observe/reconcile/proposal_list.ts#listObserveProposals",
+    "src/application/observe/reconcile/proposal_reject.ts#rejectObserveProposal",
+    "src/infrastructure/dictionary.ts#buildDictionaryView",
+    "src/infrastructure/dictionary.ts#loadGlobalDict",
+    "src/infrastructure/dictionary.ts#loadProjectDict",
+    "src/infrastructure/dictionary.ts#saveGlobalEntry",
+    "src/infrastructure/dictionary.ts#saveProjectEntry",
+    "src/infrastructure/dictionary.ts#validateProjectRoot",
+    "src/presentation/http/dict_gen.ts#ingestTerm",
+    "src/presentation/http/dict_gen.ts#makeManualEntry",
+    "src/presentation/http/serve.ts#handleApiDictHighlight",
+    "src/presentation/http/serve.ts#handleApiDictIngest",
+    "src/presentation/http/serve.ts#handleApiDictQuery",
+    "src/presentation/http/serve.ts#handleApiDiffImpact",
+    "src/presentation/http/serve.ts#handleApiLanguageConcepts",
+    "src/presentation/http/serve.ts#handleApiMonolith",
+    "src/presentation/http/serve.ts#handleApiRevealFile",
+    "src/presentation/http/serve.ts#handleApiSemanticSearch"
   ]
 }

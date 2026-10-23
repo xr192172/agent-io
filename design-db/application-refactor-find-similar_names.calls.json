@@ -322,5 +322,12 @@
       "from": "src/application/refactor/find/similar_names.ts#findSimilarNames",
       "to": "src/infrastructure/parse/ast_rename.ts#analyzeLocals"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/find/similar_names.ts#confusable",
+    "src/application/refactor/find/similar_names.ts#describeReason",
+    "src/application/refactor/find/similar_names.ts#findSimilarNames",
+    "src/application/refactor/find/similar_names.ts#suggestDisambiguations",
+    "src/application/refactor/find/similar_names.ts#suggestDisambiguationsInFile"
   ]
 }

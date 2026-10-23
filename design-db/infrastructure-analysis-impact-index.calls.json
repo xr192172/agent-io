@@ -388,5 +388,13 @@
       "from": "src/infrastructure/analysis/impact/index.ts#analyzeHubs",
       "to": "src/infrastructure/scan_bounds.ts#boundsSkipFromExcluded"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/line/design_line.ts#briefReport",
+    "src/infrastructure/analysis/cross_repo/index.ts#buildProjectIndex",
+    "src/infrastructure/analysis/impact/index.ts#analyzeHubs",
+    "src/infrastructure/analysis/impact/index.ts#analyzeImpact",
+    "src/infrastructure/analysis/impact/index.ts#buildImpactGraph",
+    "src/infrastructure/analysis/impact/index.ts#computeImpact"
   ]
 }

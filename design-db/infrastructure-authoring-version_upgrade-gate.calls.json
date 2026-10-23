@@ -158,5 +158,8 @@
       "from": "src/infrastructure/authoring/version_upgrade/gate.ts#runDynamicGates",
       "to": "src/infrastructure/authoring/version_upgrade/detect.ts#filesForDeclarations"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/upgrade/upgrade.ts#runUpgradeScan"
   ]
 }

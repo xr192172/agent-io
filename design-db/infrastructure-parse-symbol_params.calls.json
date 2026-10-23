@@ -173,5 +173,13 @@
       "from": "src/infrastructure/parse/symbol_params.ts#parseChunkNode",
       "to": "src/infrastructure/parse/symbol_params.ts#topLevelIndex"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/intent/consistency.ts#expectedParamsOf",
+    "src/infrastructure/parse/kernel.ts#traverseAndExtract",
+    "src/infrastructure/parse/symbol_params.ts#paramsOf",
+    "src/infrastructure/parse/symbol_params.ts#paramsOfNode",
+    "src/infrastructure/parse/symbol_params.ts#parseChunkNode",
+    "src/infrastructure/parse/symbol_params.ts#parseChunkText"
   ]
 }

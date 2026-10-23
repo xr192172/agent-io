@@ -137,5 +137,12 @@
       "from": "src/infrastructure/analysis/observe/chain.ts#matchChainDecl",
       "to": "src/infrastructure/analysis/observe/chain.ts#subsequencePrefixLen"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+    "src/infrastructure/analysis/observe/chain.ts#isSubsequence",
+    "src/infrastructure/analysis/observe/chain.ts#matchChainDecl",
+    "src/infrastructure/analysis/observe/chain.ts#rebuildChains",
+    "src/infrastructure/analysis/observe/contract.ts#TSComparator.compare"
   ]
 }

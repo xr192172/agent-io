@@ -308,5 +308,12 @@
       "from": "src/domain/design_sheet.ts#diffDesignSheet",
       "to": "src/domain/overlay.ts#nodePath"
     }
+  ],
+  "reverse_calls": [
+    "src/domain/design_sheet.ts#designSheetPendingRefs",
+    "src/domain/design_sheet.ts#diffDesignSheet",
+    "src/domain/design_sheet.ts#goalPendingEntries",
+    "src/domain/design_sheet.ts#nodePendingEntries",
+    "src/domain/design_sheet.ts#pendingEntries"
   ]
 }

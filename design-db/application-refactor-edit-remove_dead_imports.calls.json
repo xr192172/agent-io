@@ -612,5 +612,22 @@
       "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsWithVerify",
       "to": "src/infrastructure/verify_refactor.ts#defaultVerifyCommands"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
+    "src/application/refactor/edit/remove_dead_imports.ts#applyCuts",
+    "src/application/refactor/edit/remove_dead_imports.ts#computeChanges",
+    "src/application/refactor/edit/remove_dead_imports.ts#hasRequireOf",
+    "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImports",
+    "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsCore",
+    "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsWithVerify",
+    "src/application/refactor/edit/remove_dead_imports.ts#removeGoImports",
+    "src/application/refactor/edit/remove_dead_imports.ts#removeImportsBySpans",
+    "src/application/refactor/edit/remove_dead_imports.ts#removeImportsFromSource",
+    "src/application/refactor/edit/remove_dead_imports.ts#removeTsImports",
+    "src/application/refactor/edit/remove_dead_imports.ts#spansForFile",
+    "src/application/refactor/edit/remove_dead_imports.ts#touchedOf",
+    "src/application/refactor/edit/remove_dead_imports.ts#tsImportRanges",
+    "src/application/refactor/pipeline/refactor_pipeline.ts#computeDeadImportsPlan"
   ]
 }

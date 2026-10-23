@@ -474,5 +474,15 @@
       "from": "src/application/refactor/rename/rename_file.ts#renameFileCore",
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/rename/rename_file.ts#collectImportLiterals",
+    "src/application/refactor/rename/rename_file.ts#collectPythonImportLiterals",
+    "src/application/refactor/rename/rename_file.ts#importSourceLiteral",
+    "src/application/refactor/rename/rename_file.ts#literalOfSpecifierArg",
+    "src/application/refactor/rename/rename_file.ts#renameFile",
+    "src/application/refactor/rename/rename_file.ts#renameFileCore",
+    "src/application/refactor/rename/rename_file.ts#walkProjectFiles",
+    "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule"
   ]
 }

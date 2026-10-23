@@ -1059,5 +1059,18 @@
       "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
       "to": "src/infrastructure/storage.ts#getDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/harvest/harvest_decisions.ts#accumulate",
+    "src/application/harvest/harvest_decisions.ts#askEvidenceBatch",
+    "src/application/harvest/harvest_decisions.ts#docTargets",
+    "src/application/harvest/harvest_decisions.ts#docsEvidence",
+    "src/application/harvest/harvest_decisions.ts#evidenceForSource",
+    "src/application/harvest/harvest_decisions.ts#harvestDecisions",
+    "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+    "src/application/harvest/harvest_decisions.ts#loadCfgOrNull",
+    "src/application/harvest/harvest_decisions.ts#readDocCorpus",
+    "src/application/harvest/harvest_decisions.ts#requireLlmConfig",
+    "src/application/harvest/harvest_decisions.ts#writeCandidates"
   ]
 }

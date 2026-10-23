@@ -82,5 +82,10 @@
       "from": "src/infrastructure/graph/import_graph.ts#buildImportGraph",
       "to": "src/infrastructure/graph/import_project.ts#resolveImport"
     }
+  ],
+  "reverse_calls": [
+    "src/application/harvest/extract_contracts.ts#extractContractsCore",
+    "src/application/harvest/harvest_closure.ts#harvestClosureCore",
+    "src/application/refactor/find/find_references.ts#indexCandidateFiles"
   ]
 }

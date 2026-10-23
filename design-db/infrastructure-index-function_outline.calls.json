@@ -376,5 +376,16 @@
       "from": "src/infrastructure/index/function_outline.ts#buildFunctionOutline",
       "to": "src/infrastructure/storage.ts#getDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/query_feature.ts#queryFeature",
+    "src/application/observe/capture/feature_line.ts#getFeatureLine",
+    "src/infrastructure/index/function_outline.ts#attachDocs",
+    "src/infrastructure/index/function_outline.ts#attachFunctionFeatures",
+    "src/infrastructure/index/function_outline.ts#buildFunctionOutline",
+    "src/infrastructure/index/function_outline.ts#fnDocAt",
+    "src/infrastructure/index/function_outline.ts#listFunctionDirs",
+    "src/infrastructure/index/function_outline.ts#queryFunctionOutline",
+    "src/presentation/http/serve.ts#handleApiFunctionOutline"
   ]
 }

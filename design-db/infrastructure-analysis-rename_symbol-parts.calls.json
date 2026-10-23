@@ -362,5 +362,14 @@
       "kind": "relative"
     }
   ],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/application/refactor/find/find_references.ts#findReferencesCore",
+    "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+    "src/infrastructure/analysis/rename_symbol/languages/c.ts#renameCSymbol",
+    "src/infrastructure/analysis/rename_symbol/languages/go.ts#renameGoSymbol",
+    "src/infrastructure/analysis/rename_symbol/languages/py.ts#renamePythonSymbol",
+    "src/infrastructure/analysis/rename_symbol/languages/ts.ts#renameTsSymbol",
+    "src/infrastructure/analysis/rename_symbol/namespace_family.ts#renameNamespaceSymbol"
+  ]
 }

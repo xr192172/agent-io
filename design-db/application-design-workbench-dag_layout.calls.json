@@ -349,5 +349,14 @@
       "from": "src/application/design/workbench/dag_layout.ts#gridAlign",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/update_feature.ts#applyLayoutOp",
+    "src/application/design/workbench/dag_layout.ts#countEdgeCrossings",
+    "src/application/design/workbench/dag_layout.ts#dagLayout",
+    "src/application/design/workbench/dag_layout.ts#dagLayoutCore",
+    "src/application/design/workbench/dag_layout.ts#forceLayout",
+    "src/application/design/workbench/dag_layout.ts#segmentsIntersect",
+    "src/presentation/http/serve.ts#handleApiLayout"
   ]
 }

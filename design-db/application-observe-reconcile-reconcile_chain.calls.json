@@ -396,5 +396,11 @@
       "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
       "to": "src/infrastructure/storage.ts#getDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/reconcile/reconcile_chain.ts#readDerivedChain",
+    "src/application/observe/reconcile/reconcile_chain.ts#reconcileChain",
+    "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+    "src/presentation/http/serve.ts#handleApiReconcileChain"
   ]
 }

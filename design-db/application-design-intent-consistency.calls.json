@@ -675,5 +675,13 @@
       "from": "src/application/design/intent/consistency.ts#overlayTombstones",
       "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/intent/consistency.ts#checkConsistencyReport",
+    "src/application/design/intent/consistency.ts#compareSignatures",
+    "src/application/design/intent/consistency.ts#expectedParamsOf",
+    "src/application/design/intent/consistency.ts#overlayTombstones",
+    "src/application/design/intent/detect_drift.ts#detectDriftCore",
+    "src/presentation/http/serve.ts#handleApiConsistency"
   ]
 }

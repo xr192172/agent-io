@@ -413,5 +413,8 @@
       "from": "src/infrastructure/analysis/observe/observe_langs.ts#ObserveLangRegistry.pickAll",
       "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#manifestPresent"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/observe/observe_langs.ts#ObserveLangRegistry.pickAll"
   ]
 }

@@ -581,5 +581,10 @@
       "from": "src/infrastructure/authoring/translate/project.ts#collectCallRefs",
       "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+    "src/infrastructure/authoring/translate/project.ts#verifyProjectTree",
+    "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler"
   ]
 }

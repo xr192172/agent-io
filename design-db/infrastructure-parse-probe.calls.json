@@ -218,5 +218,27 @@
       "from": "src/infrastructure/parse/probe.ts#resolvePackage",
       "to": "src/infrastructure/parse/probe.ts#toFsPath"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile",
+    "src/infrastructure/analysis/health/index.ts#unreadMark",
+    "src/infrastructure/parse/comments.ts#commentRangesSync",
+    "src/infrastructure/parse/kernel.ts#canParseFileSync",
+    "src/infrastructure/parse/kernel.ts#isSupported",
+    "src/infrastructure/parse/kernel.ts#listSupportedExtensions",
+    "src/infrastructure/parse/kernel.ts#listSupportedLanguages",
+    "src/infrastructure/parse/kernel.ts#parseFileFull",
+    "src/infrastructure/parse/kernel.ts#parseFileFullSync",
+    "src/infrastructure/parse/kernel.ts#parseTreeForFile",
+    "src/infrastructure/parse/kernel.ts#prewarmKernel",
+    "src/infrastructure/parse/lang_hint.ts#missingLanguageHint",
+    "src/infrastructure/parse/probe.ts#isExtSupported",
+    "src/infrastructure/parse/probe.ts#isLanguageInstalled",
+    "src/infrastructure/parse/probe.ts#isLoadablePackage",
+    "src/infrastructure/parse/probe.ts#languagePackageStatus",
+    "src/infrastructure/parse/probe.ts#listSupportedExts",
+    "src/infrastructure/parse/probe.ts#probeInstalledLanguages",
+    "src/infrastructure/parse/probe.ts#resolvePackage",
+    "src/infrastructure/parse/probe.ts#resolvedIsLoadable"
   ]
 }

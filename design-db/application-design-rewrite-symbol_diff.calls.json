@@ -264,5 +264,11 @@
       "from": "src/application/design/rewrite/symbol_diff.ts#diffSymbols",
       "to": "src/application/design/rewrite/symbol_diff.ts#sourceRelOf"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/rewrite/rewrite.ts#noWorkReason",
+    "src/application/design/rewrite/rewrite.ts#rewriteSymbols",
+    "src/application/design/rewrite/symbol_diff.ts#diffSymbols",
+    "src/application/design/rewrite/symbol_diff.ts#sourceRelOf"
   ]
 }

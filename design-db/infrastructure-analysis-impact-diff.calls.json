@@ -146,5 +146,8 @@
       "from": "src/infrastructure/analysis/impact/diff.ts#diffFeatures",
       "to": "src/infrastructure/storage.ts#getDSLByView"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/query_feature.ts#queryFeature"
   ]
 }

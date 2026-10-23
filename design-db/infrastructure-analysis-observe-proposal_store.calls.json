@@ -266,5 +266,16 @@
       "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.write",
       "to": "src/infrastructure/analysis/observe/proposal_store.ts#writeAtomic"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+    "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.create",
+    "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.get",
+    "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.reject",
+    "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.write",
+    "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.writeRaw",
+    "src/infrastructure/analysis/observe/proposal_store.ts#validateDecls",
+    "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+    "src/infrastructure/analysis/observe/verify_gate.ts#mergeLoopDecls"
   ]
 }

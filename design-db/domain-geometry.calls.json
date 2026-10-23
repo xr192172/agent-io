@@ -7,25 +7,25 @@
     {
       "name": "DiagramStatus",
       "kind": "type",
-      "line": 11,
+      "line": 12,
       "signature": "DiagramStatus()"
     },
     {
       "name": "resolveDiagramStatus",
       "kind": "function",
-      "line": 23,
+      "line": 24,
       "signature": "resolveDiagramStatus(dsl: { id?: string; status?: DiagramStatus }): DiagramStatus"
     },
     {
       "name": "NodeLayer",
       "kind": "type",
-      "line": 34,
+      "line": 35,
       "signature": "NodeLayer()"
     },
     {
       "name": "NodeStyle",
       "kind": "interface",
-      "line": 37,
+      "line": 38,
       "signature": "NodeStyle()",
       "members": [
         {
@@ -81,7 +81,7 @@
     {
       "name": "BlockStyle",
       "kind": "interface",
-      "line": 59,
+      "line": 60,
       "signature": "BlockStyle()",
       "members": [
         {
@@ -119,7 +119,7 @@
     {
       "name": "ContentBlock",
       "kind": "interface",
-      "line": 69,
+      "line": 70,
       "signature": "ContentBlock()",
       "members": [
         {
@@ -229,7 +229,7 @@
     {
       "name": "NodeContent",
       "kind": "interface",
-      "line": 107,
+      "line": 108,
       "signature": "NodeContent()",
       "members": [
         {
@@ -249,19 +249,19 @@
     {
       "name": "NODE_GATES",
       "kind": "const",
-      "line": 136,
+      "line": 137,
       "signature": "const NODE_GATES = ['gated', 'exempt'] as const"
     },
     {
       "name": "NodeGate",
       "kind": "type",
-      "line": 137,
+      "line": 138,
       "signature": "NodeGate()"
     },
     {
       "name": "Node",
       "kind": "interface",
-      "line": 140,
+      "line": 141,
       "signature": "Node()",
       "members": [
         {
@@ -413,19 +413,37 @@
           "type": ": DecisionHistoryEntry[]",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "intent",
+          "type": ": NodeIntent",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "overlay",
+          "type": ": OverlayAnchor",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
+      "name": "NodeIntent",
+      "kind": "type",
+      "line": 267,
+      "signature": "NodeIntent()"
+    },
+    {
       "name": "DecisionAuthor",
       "kind": "type",
-      "line": 252,
+      "line": 283,
       "signature": "DecisionAuthor()"
     },
     {
       "name": "NodeDecision",
       "kind": "interface",
-      "line": 255,
+      "line": 286,
       "signature": "NodeDecision()",
       "members": [
         {
@@ -529,7 +547,7 @@
     {
       "name": "DecisionDissent",
       "kind": "interface",
-      "line": 360,
+      "line": 391,
       "signature": "DecisionDissent()",
       "members": [
         {
@@ -555,7 +573,7 @@
     {
       "name": "DecisionHistoryEntry",
       "kind": "interface",
-      "line": 370,
+      "line": 401,
       "signature": "DecisionHistoryEntry()",
       "members": [
         {
@@ -593,7 +611,7 @@
     {
       "name": "EdgeStyle",
       "kind": "interface",
-      "line": 390,
+      "line": 421,
       "signature": "EdgeStyle()",
       "members": [
         {
@@ -613,7 +631,7 @@
     {
       "name": "Edge",
       "kind": "interface",
-      "line": 397,
+      "line": 428,
       "signature": "Edge()",
       "members": [
         {
@@ -675,7 +693,7 @@
     {
       "name": "Swimlane",
       "kind": "interface",
-      "line": 416,
+      "line": 447,
       "signature": "Swimlane()",
       "members": [
         {
@@ -719,7 +737,7 @@
     {
       "name": "Geometry",
       "kind": "interface",
-      "line": 431,
+      "line": 462,
       "signature": "Geometry()",
       "members": [
         {
@@ -781,7 +799,7 @@
     {
       "name": "ForceParams",
       "kind": "interface",
-      "line": 459,
+      "line": 490,
       "signature": "ForceParams()",
       "members": [
         {
@@ -832,7 +850,19 @@
       "source": "./task_schema.js",
       "kind": "relative",
       "type_only": true
+    },
+    {
+      "source": "./overlay.js",
+      "kind": "relative",
+      "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/application/design/lifecycle/snapshot.ts#listSnapshots",
+    "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",
+    "src/application/design/lifecycle/snapshot.ts#saveSnapshot",
+    "src/application/meta/explore/query_feature.ts#queryFeature",
+    "src/infrastructure/render/export.ts#exportMarkdown"
+  ]
 }

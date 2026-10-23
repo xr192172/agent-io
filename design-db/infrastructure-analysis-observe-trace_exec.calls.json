@@ -464,5 +464,19 @@
       "from": "src/infrastructure/analysis/observe/trace_exec.ts#traceExecChain",
       "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/observe/trace_exec.ts#exampleInputFor",
+    "src/infrastructure/analysis/observe/trace_exec.ts#execByLang",
+    "src/infrastructure/analysis/observe/trace_exec.ts#execGo",
+    "src/infrastructure/analysis/observe/trace_exec.ts#execPy",
+    "src/infrastructure/analysis/observe/trace_exec.ts#goTopTypes",
+    "src/infrastructure/analysis/observe/trace_exec.ts#paramNames",
+    "src/infrastructure/analysis/observe/trace_exec.ts#resolvePure",
+    "src/infrastructure/analysis/observe/trace_exec.ts#traceExecChain",
+    "src/presentation/http/serve.ts#handleApiChainExec",
+    "src/presentation/http/serve.ts#handleApiFunctionExample",
+    "src/presentation/http/serve.ts#handleApiFunctionRun",
+    "src/presentation/http/serve.ts#handleApiTraceExec"
   ]
 }

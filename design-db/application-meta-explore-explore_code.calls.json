@@ -889,5 +889,9 @@
       "from": "src/application/meta/explore/explore_code.ts#readCode",
       "to": "src/infrastructure/text/line_utils.ts#splitKeepEnds"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/explore_code.ts#exploreCode",
+    "src/application/meta/explore/explore_code.ts#readFacts"
   ]
 }

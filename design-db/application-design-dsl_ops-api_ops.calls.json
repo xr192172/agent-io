@@ -293,5 +293,9 @@
       "from": "src/application/design/dsl_ops/api_ops.ts#setExpectedApis",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/update_feature.ts#applyApiOp",
+    "src/application/design/dsl_ops/update_feature.ts#applyOperation"
   ]
 }

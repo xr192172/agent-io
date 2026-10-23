@@ -66,5 +66,10 @@
       "kind": "relative"
     }
   ],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/infrastructure/authoring/translate/fill.ts#buildFillContext",
+    "src/infrastructure/authoring/translate/llm.ts#createPooledBatchTranslator",
+    "src/infrastructure/authoring/translate/pairs.ts#translateGoToTs"
+  ]
 }

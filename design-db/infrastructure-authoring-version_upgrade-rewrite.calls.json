@@ -164,5 +164,10 @@
       "from": "src/infrastructure/authoring/version_upgrade/rewrite.ts#applyEdits",
       "to": "src/infrastructure/source_write_port.ts#commitSourceWrite"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
+    "src/application/meta/upgrade/upgrade.ts#scanAndPlan",
+    "src/infrastructure/authoring/version_upgrade/rewrite.ts#buildRewritePlan"
   ]
 }

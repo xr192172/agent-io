@@ -212,5 +212,13 @@
       "from": "src/infrastructure/analysis/package_migration/parts.ts#renamePackageDecl",
       "to": "src/infrastructure/analysis/package_migration/parts.ts#escapeRe"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/package_migration/core.ts#cleanAlias",
+    "src/infrastructure/analysis/package_migration/core.ts#computeMigrationPlan",
+    "src/infrastructure/analysis/package_migration/languages/go.ts#collectGoImportAliasEdits",
+    "src/infrastructure/analysis/package_migration/languages/ts.ts#collectTsBinds",
+    "src/infrastructure/analysis/package_migration/parts.ts#cleanAliasRegex",
+    "src/infrastructure/analysis/package_migration/parts.ts#renamePackageDecl"
   ]
 }

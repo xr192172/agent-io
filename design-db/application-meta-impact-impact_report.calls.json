@@ -266,5 +266,15 @@
       "from": "src/application/meta/impact/impact_report.ts#runImpactReport",
       "to": "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/impact/impact_report.ts#buildSummaryLine",
+    "src/application/meta/impact/impact_report.ts#listImpactReports",
+    "src/application/meta/impact/impact_report.ts#nextSeq",
+    "src/application/meta/impact/impact_report.ts#readImpactReport",
+    "src/application/meta/impact/impact_report.ts#reportPath",
+    "src/application/meta/impact/impact_report.ts#runImpactReport",
+    "src/application/observe/runtime/watch_project_tool.ts#doWork",
+    "src/application/observe/runtime/watch_project_tool.ts#impactWatch"
   ]
 }

@@ -180,5 +180,11 @@
       "from": "src/infrastructure/analysis/diagnosis/candidate_locator.ts#locateCandidates",
       "to": "src/infrastructure/index/symbols.ts#searchSymbols"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/contract_page.ts#contractPageCore",
+    "src/infrastructure/analysis/diagnosis/candidate_locator.ts#locateCandidates",
+    "src/infrastructure/analysis/diagnosis/candidate_locator.ts#probeCachePath",
+    "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis"
   ]
 }

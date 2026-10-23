@@ -429,5 +429,10 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/file_ops.ts#updateFile",
+    "src/application/design/intent/consistency.ts#checkConsistencyReport",
+    "src/application/meta/archive/archive_node.ts#archiveNodeCore"
+  ]
 }

@@ -150,5 +150,11 @@
       "from": "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile",
       "to": "src/infrastructure/parse/probe.ts#isExtSupported"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+    "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile",
+    "src/application/refactor/parse_capability/parse_capability.ts#renderGranularityNote",
+    "src/application/refactor/parse_capability/parse_capability.ts#summarizeLanguagesByTier"
   ]
 }

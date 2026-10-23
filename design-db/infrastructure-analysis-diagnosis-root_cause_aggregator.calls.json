@@ -318,5 +318,12 @@
       "from": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateRootCause",
       "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis",
+    "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateRootCause",
+    "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateRule",
+    "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateWithLlm",
+    "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#pickRoot"
   ]
 }

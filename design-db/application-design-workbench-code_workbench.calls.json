@@ -929,5 +929,23 @@
       "from": "src/application/design/workbench/code_workbench.ts#previewDslIntent",
       "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/workbench/code_workbench.ts#addReview",
+    "src/application/design/workbench/code_workbench.ts#approveChange",
+    "src/application/design/workbench/code_workbench.ts#executeDslRename",
+    "src/application/design/workbench/code_workbench.ts#findAndUpdate",
+    "src/application/design/workbench/code_workbench.ts#getChange",
+    "src/application/design/workbench/code_workbench.ts#listChanges",
+    "src/application/design/workbench/code_workbench.ts#loadChanges",
+    "src/application/design/workbench/code_workbench.ts#previewDslRename",
+    "src/application/design/workbench/code_workbench.ts#previewEditRange",
+    "src/application/design/workbench/code_workbench.ts#previewSplitPlan",
+    "src/application/design/workbench/code_workbench.ts#proposeChange",
+    "src/application/design/workbench/code_workbench.ts#pushReview",
+    "src/application/design/workbench/code_workbench.ts#rejectChange",
+    "src/application/design/workbench/code_workbench.ts#saveChanges",
+    "src/application/design/workbench/code_workbench.ts#storeFile",
+    "src/application/meta/llm/llm_decider.ts#decideCanvasNotes"
   ]
 }

@@ -96,5 +96,8 @@
       "from": "src/infrastructure/analysis/rename_symbol/languages/go.ts#analyzeGoSource",
       "to": "src/infrastructure/parse/loader.ts#getParser"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/rename_symbol/languages/go.ts#renameGoSymbol"
   ]
 }

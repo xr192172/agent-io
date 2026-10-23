@@ -268,5 +268,10 @@
       "from": "src/application/design/intent/detect_drift.ts#driftFile",
       "to": "src/infrastructure/storage.ts#getStorageRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/intent/detect_drift.ts#detectDrift",
+    "src/application/design/intent/detect_drift.ts#detectDriftCore",
+    "src/application/observe/runtime/watch_project_tool.ts#runDriftCheck"
   ]
 }

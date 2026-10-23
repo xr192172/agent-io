@@ -85,5 +85,8 @@
       "from": "src/infrastructure/authoring/version_upgrade/adapters/python.ts#parsePyproject",
       "to": "src/infrastructure/authoring/version_upgrade/adapters/python.ts#minVersionFromSpec"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/version_upgrade/adapters/python.ts#parsePyproject"
   ]
 }

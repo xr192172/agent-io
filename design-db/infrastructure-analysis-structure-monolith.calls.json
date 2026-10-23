@@ -518,5 +518,15 @@
       "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/explore_code.ts#exploreCode",
+    "src/infrastructure/analysis/structure/monolith.ts#analyzeFileContent",
+    "src/infrastructure/analysis/structure/monolith.ts#buildSplitPreviewDsl",
+    "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
+    "src/infrastructure/analysis/structure/monolith.ts#louvain",
+    "src/infrastructure/graph/import_project.ts#importProject",
+    "src/presentation/http/serve.ts#handleApiMonolith",
+    "src/presentation/http/serve.ts#handleApiSplitPlan"
   ]
 }

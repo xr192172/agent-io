@@ -414,5 +414,14 @@
       "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
       "to": "src/infrastructure/verify_refactor.ts#runVerification"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/deprecate_offline/deprecate_offline.ts#aggregateProjectSources",
+    "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOffline",
+    "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
+    "src/application/refactor/deprecate_offline/deprecate_offline.ts#goPackageOfFile",
+    "src/application/refactor/deprecate_offline/deprecate_offline.ts#hasActiveReference",
+    "src/application/refactor/deprecate_offline/deprecate_offline.ts#remainingImporters",
+    "src/application/refactor/deprecate_offline/deprecate_offline.ts#resolveConsumerSource"
   ]
 }

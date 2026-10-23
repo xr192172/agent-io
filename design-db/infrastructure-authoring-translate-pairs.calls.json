@@ -143,5 +143,9 @@
       "from": "src/infrastructure/authoring/translate/pairs.ts#translateGoToTs",
       "to": "src/infrastructure/authoring/translate/verify.ts#verifySkeletons"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+    "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler"
   ]
 }

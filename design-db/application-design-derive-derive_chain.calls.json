@@ -477,5 +477,19 @@
       "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+    "src/application/design/derive/derive_chain.ts#mapGoType",
+    "src/application/design/derive/derive_chain.ts#mapPyType",
+    "src/application/design/derive/derive_chain.ts#mapTsType",
+    "src/application/design/derive/derive_chain.ts#mapType",
+    "src/application/design/derive/derive_chain.ts#parseGoReturns",
+    "src/application/design/derive/derive_chain.ts#parseParams",
+    "src/application/design/derive/derive_chain.ts#pickEntry",
+    "src/application/design/derive/derive_chain.ts#signatureToShapes",
+    "src/application/meta/view/derive_anim_flow.ts#deriveAnimFlowCore",
+    "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+    "src/presentation/http/serve.ts#handleApiTraceExec"
   ]
 }

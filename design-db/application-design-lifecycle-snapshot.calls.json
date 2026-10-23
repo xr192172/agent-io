@@ -445,5 +445,17 @@
       "from": "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/update_feature.ts#applyLayoutOp",
+    "src/application/design/dsl_ops/update_feature.ts#applySnapshotOp",
+    "src/application/design/lifecycle/snapshot.ts#deleteSnapshot",
+    "src/application/design/lifecycle/snapshot.ts#latestSnapshotGeometrySignature",
+    "src/application/design/lifecycle/snapshot.ts#listSnapshots",
+    "src/application/design/lifecycle/snapshot.ts#pruneSnapshots",
+    "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",
+    "src/application/design/lifecycle/snapshot.ts#saveAutoSnapshot",
+    "src/application/design/lifecycle/snapshot.ts#saveSnapshot",
+    "src/application/meta/explore/query_feature.ts#queryFeature"
   ]
 }

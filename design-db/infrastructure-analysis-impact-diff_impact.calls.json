@@ -412,5 +412,12 @@
       "from": "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact",
       "to": "src/infrastructure/storage.ts#getDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/impact/impact_report.ts#runImpactReport",
+    "src/application/observe/runtime/watch_project_tool.ts#declareWatch",
+    "src/infrastructure/analysis/diagnosis/impact_analyzer.ts#analyzeImpact",
+    "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact",
+    "src/presentation/http/serve.ts#handleApiDiffImpact"
   ]
 }

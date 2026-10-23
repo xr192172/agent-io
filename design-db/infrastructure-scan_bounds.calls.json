@@ -76,5 +76,10 @@
     }
   ],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+    "src/infrastructure/analysis/impact/index.ts#analyzeHubs",
+    "src/infrastructure/analysis/impact/index.ts#computeImpact"
+  ]
 }

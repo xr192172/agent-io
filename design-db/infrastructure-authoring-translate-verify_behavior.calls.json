@@ -143,5 +143,10 @@
       "from": "src/infrastructure/authoring/translate/verify_behavior.ts#generateCasesFor",
       "to": "src/infrastructure/authoring/translate/verify_behavior.ts#zeroOf"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/translate/receipt.ts#verifyTranslation",
+    "src/infrastructure/authoring/translate/verify_behavior.ts#checkTranslationParity",
+    "src/infrastructure/authoring/translate/verify_behavior.ts#generateCasesFor"
   ]
 }

@@ -193,5 +193,10 @@
       "from": "src/application/design/intent/expectations.ts#judgeExpectations",
       "to": "src/infrastructure/parse/ast_parser.ts#parseFileSymbols"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/task_ops.ts#planEvidenceRerun",
+    "src/application/design/intent/expectations.ts#judgeExpectations",
+    "src/application/patrol/task_drift.ts#patrolDrift"
   ]
 }

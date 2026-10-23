@@ -235,5 +235,9 @@
       "from": "src/application/observe/capture/narrate_step.ts#narrateStepCore",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/capture/narrate_step.ts#narrateStep",
+    "src/application/observe/capture/narrate_step.ts#narrateStepCore"
   ]
 }

@@ -159,49 +159,49 @@
     {
       "name": "_toolDefs",
       "kind": "const",
-      "line": 363,
+      "line": 362,
       "signature": "const _toolDefs = null"
     },
     {
       "name": "bindToolDefs",
       "kind": "function",
-      "line": 369,
+      "line": 368,
       "signature": "bindToolDefs(defs: ToolDef[]): void"
     },
     {
       "name": "listToolDefs",
       "kind": "function",
-      "line": 379,
+      "line": 378,
       "signature": "listToolDefs(): ToolDef[]"
     },
     {
       "name": "_laneOf",
       "kind": "const",
-      "line": 391,
+      "line": 390,
       "signature": "const _laneOf = null"
     },
     {
       "name": "bindLaneOf",
       "kind": "function",
-      "line": 397,
+      "line": 396,
       "signature": "bindLaneOf(table: Readonly<Record<string, LaneAssign>>): void"
     },
     {
       "name": "resetLaneOfForTest",
       "kind": "function",
-      "line": 402,
+      "line": 401,
       "signature": "resetLaneOfForTest(): void"
     },
     {
       "name": "resolveAssign",
       "kind": "function",
-      "line": 414,
+      "line": 413,
       "signature": "resolveAssign(assign?: Readonly<Record<string, LaneAssign>>): Readonly<Record<string, LaneAssign>>"
     },
     {
       "name": "DomainNavView",
       "kind": "interface",
-      "line": 439,
+      "line": 438,
       "signature": "DomainNavView()",
       "members": [
         {
@@ -239,43 +239,43 @@
     {
       "name": "_domains",
       "kind": "const",
-      "line": 448,
+      "line": 447,
       "signature": "const _domains = null"
     },
     {
       "name": "bindDomains",
       "kind": "function",
-      "line": 459,
+      "line": 458,
       "signature": "bindDomains(domains: readonly DomainNavView[] | null): void"
     },
     {
       "name": "listDomains",
       "kind": "function",
-      "line": 464,
+      "line": 463,
       "signature": "listDomains(): readonly DomainNavView[] | null"
     },
     {
       "name": "resetDomainsForTest",
       "kind": "function",
-      "line": 469,
+      "line": 468,
       "signature": "resetDomainsForTest(): void"
     },
     {
       "name": "domainsOfLane",
       "kind": "function",
-      "line": 483,
+      "line": 482,
       "signature": "domainsOfLane(lane: LaneId, all: readonly DomainNavView[]): DomainNavView[]"
     },
     {
       "name": "renderDomainText",
       "kind": "function",
-      "line": 490,
+      "line": 489,
       "signature": "renderDomainText(lanes: readonly Lane[], all: readonly DomainNavView[] | null, why = ''): string"
     },
     {
       "name": "BuiltLanes",
       "kind": "interface",
-      "line": 520,
+      "line": 519,
       "signature": "BuiltLanes()",
       "members": [
         {
@@ -307,43 +307,43 @@
     {
       "name": "buildLanes",
       "kind": "function",
-      "line": 535,
+      "line": 534,
       "signature": "buildLanes(catalog: readonly ToolCatalogEntry[],\n  assign?: Readonly<Record<string, LaneAssign>>,): BuiltLanes"
     },
     {
       "name": "describeForNav",
       "kind": "function",
-      "line": 572,
+      "line": 571,
       "signature": "describeForNav(t: ToolCatalogEntry, max = 60): string"
     },
     {
       "name": "validateLanes",
       "kind": "function",
-      "line": 606,
+      "line": 605,
       "signature": "validateLanes(catalog: readonly ToolCatalogEntry[],\n  assign?: Readonly<Record<string, LaneAssign>>,): string[]"
     },
     {
       "name": "laneMaintenanceReport",
       "kind": "function",
-      "line": 631,
+      "line": 630,
       "signature": "laneMaintenanceReport(catalog: readonly ToolCatalogEntry[],\n  assign?: Readonly<Record<string, LaneAssign>>,): {\n  derived: string[];\n  curated: number;\n  unassigned: string[];\n  stale: string[];\n  staleWhen: string[];\n}"
     },
     {
       "name": "renderLaneText",
       "kind": "function",
-      "line": 658,
+      "line": 657,
       "signature": "renderLaneText(lanes: readonly Lane[], laneIds: readonly LaneId[] = []): string"
     },
     {
       "name": "renderUnassigned",
       "kind": "function",
-      "line": 674,
+      "line": 673,
       "signature": "renderUnassigned(unassigned: readonly ToolCatalogEntry[]): string"
     },
     {
       "name": "CapabilityMapInput",
       "kind": "interface",
-      "line": 685,
+      "line": 684,
       "signature": "CapabilityMapInput()",
       "members": [
         {
@@ -357,19 +357,19 @@
     {
       "name": "collectRequiredKeys",
       "kind": "function",
-      "line": 723,
+      "line": 722,
       "signature": "collectRequiredKeys(schema: unknown): string[]"
     },
     {
       "name": "collectInputKeys",
       "kind": "function",
-      "line": 734,
+      "line": 733,
       "signature": "collectInputKeys(schema: unknown): string[]"
     },
     {
       "name": "InputPath",
       "kind": "interface",
-      "line": 786,
+      "line": 785,
       "signature": "InputPath()",
       "members": [
         {
@@ -401,31 +401,31 @@
     {
       "name": "collectInputPaths",
       "kind": "function",
-      "line": 797,
+      "line": 796,
       "signature": "collectInputPaths(schema: unknown): InputPath[]"
     },
     {
       "name": "declaredRequiredMembersOf",
       "kind": "function",
-      "line": 885,
+      "line": 884,
       "signature": "declaredRequiredMembersOf(paths: readonly InputPath[]): InputPath[]"
     },
     {
       "name": "catalogOf",
       "kind": "function",
-      "line": 894,
+      "line": 893,
       "signature": "catalogOf(defs: readonly ToolDef[]): ToolCatalogEntry[]"
     },
     {
       "name": "objectInputsOf",
       "kind": "function",
-      "line": 905,
+      "line": 904,
       "signature": "objectInputsOf(name: string, catalog: readonly ToolCatalogEntry[]): readonly string[]"
     },
     {
       "name": "ChainHopVerdict",
       "kind": "interface",
-      "line": 912,
+      "line": 911,
       "signature": "ChainHopVerdict()",
       "members": [
         {
@@ -451,19 +451,19 @@
     {
       "name": "chainVerdictsOf",
       "kind": "function",
-      "line": 926,
+      "line": 925,
       "signature": "chainVerdictsOf(chain: Chain, catalog: readonly ToolCatalogEntry[]): readonly ChainHopVerdict[]"
     },
     {
       "name": "renderChainVerdicts",
       "kind": "function",
-      "line": 943,
+      "line": 942,
       "signature": "renderChainVerdicts(catalog: readonly ToolCatalogEntry[]): string"
     },
     {
       "name": "makeCapabilityMapHandler",
       "kind": "function",
-      "line": 975,
+      "line": 974,
       "signature": "makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogEntry[])"
     }
   ],
@@ -603,5 +603,26 @@
       "from": "src/application/meta/registry/capability_map.ts#renderVolumesNote",
       "to": "src/infrastructure/storage.ts#getDataHome"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/first_hop_args.ts#buildStart",
+    "src/application/meta/explore/first_hop_args.ts#firstHopArgs",
+    "src/application/meta/explore/first_hop_args.ts#pathsOfTool",
+    "src/application/meta/explore/next_hop_args.ts#buildHop",
+    "src/application/meta/explore/next_hop_args.ts#nextHopArgs",
+    "src/application/meta/index.ts#renderHandoffPanel",
+    "src/application/meta/registry/capability_map.ts#buildLanes",
+    "src/application/meta/registry/capability_map.ts#catalogOf",
+    "src/application/meta/registry/capability_map.ts#chainVerdictsOf",
+    "src/application/meta/registry/capability_map.ts#laneMaintenanceReport",
+    "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+    "src/application/meta/registry/capability_map.ts#renderChainVerdicts",
+    "src/application/meta/registry/capability_map.ts#renderDomainText",
+    "src/application/meta/registry/capability_map.ts#renderUnassigned",
+    "src/application/meta/registry/capability_map.ts#validateLanes",
+    "src/application/meta/registry/sync_contracts.ts#syncContractsCore",
+    "src/presentation/mcp/server_registry.ts#composedDefs",
+    "src/presentation/mcp/server_registry.ts#registerAtomicEntry",
+    "src/presentation/mcp/server_registry.ts#renderNextNote"
   ]
 }

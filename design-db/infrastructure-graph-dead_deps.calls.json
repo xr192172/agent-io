@@ -304,5 +304,16 @@
       "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
       "to": "src/infrastructure/index/symbols.ts#contentHash"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/deprecate_offline/deprecate_offline.ts#hasActiveReference",
+    "src/application/refactor/deprecate_offline/deprecate_offline.ts#remainingImporters",
+    "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#detectDeadImports",
+    "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#judgeSource",
+    "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+    "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty.activateDir",
+    "src/infrastructure/graph/dead_deps.ts#parseGoImportQualifiers",
+    "src/infrastructure/graph/dead_deps.ts#qualifierLines",
+    "src/infrastructure/graph/dead_deps.ts#qualifierMemberLines"
   ]
 }

@@ -110,5 +110,16 @@
       "from": "src/infrastructure/git.ts#gitRestoreFiles",
       "to": "src/infrastructure/git.ts#run"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+    "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
+    "src/infrastructure/git.ts#gitCommitAll",
+    "src/infrastructure/git.ts#gitCommitFiles",
+    "src/infrastructure/git.ts#gitDirty",
+    "src/infrastructure/git.ts#gitRestoreFiles",
+    "src/infrastructure/git.ts#gitStatus",
+    "src/infrastructure/git.ts#isGitRepo",
+    "src/presentation/cli/diagnose_loop_cli.ts#main"
   ]
 }

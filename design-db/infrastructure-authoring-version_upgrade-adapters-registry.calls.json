@@ -93,5 +93,17 @@
       "from": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts#adapterMissHint",
       "to": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/upgrade/upgrade.ts#renderUncovered",
+    "src/infrastructure/authoring/version_upgrade/detect.ts#declaredToFeatureVersion",
+    "src/infrastructure/authoring/version_upgrade/detect.ts#filesForDeclarations",
+    "src/infrastructure/authoring/version_upgrade/features.ts#rulesForExt",
+    "src/infrastructure/authoring/version_upgrade/gate.ts#runDynamicGates",
+    "src/infrastructure/authoring/version_upgrade/gate.ts#runStaticGates",
+    "src/infrastructure/authoring/version_upgrade/removed.ts#removedRulesForExt",
+    "src/infrastructure/authoring/version_upgrade/toolchain.ts#parseDeclarationFile",
+    "src/infrastructure/authoring/version_upgrade/toolchain.ts#parseToolchainVersion",
+    "src/infrastructure/authoring/version_upgrade/toolchain.ts#versionSatisfies"
   ]
 }

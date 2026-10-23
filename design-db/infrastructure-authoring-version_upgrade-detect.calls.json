@@ -190,5 +190,15 @@
       "from": "src/infrastructure/authoring/version_upgrade/detect.ts#collectSourceFiles",
       "to": "src/infrastructure/parse/source_exts.ts#skipDirSet"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/upgrade/upgrade.ts#runUpgradeScan",
+    "src/application/meta/upgrade/upgrade.ts#scanAndPlan",
+    "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+    "src/infrastructure/analysis/impact/index.ts#buildImpactGraph",
+    "src/infrastructure/authoring/version_upgrade/detect.ts#filesForDeclarations",
+    "src/infrastructure/authoring/version_upgrade/detect.ts#runContractScan",
+    "src/infrastructure/authoring/version_upgrade/gate.ts#runDynamicGates",
+    "src/infrastructure/authoring/version_upgrade/gate.ts#runStaticGates"
   ]
 }

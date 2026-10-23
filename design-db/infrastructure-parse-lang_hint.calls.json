@@ -162,5 +162,16 @@
       "from": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint",
       "to": "src/infrastructure/parse/probe.ts#languagePackageStatus"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/parse_capability/parse_capability.ts#granularityOf",
+    "src/infrastructure/analysis/contract_gate/core.ts#renderContractSkips",
+    "src/infrastructure/analysis/health/index.ts#unreadWhy",
+    "src/infrastructure/analysis/rename_symbol/core.ts#renameSymbolCore",
+    "src/infrastructure/analysis/rename_symbol/languages/ts.ts#renameTsSymbol",
+    "src/infrastructure/authoring/behavior/index.ts#langOfFile",
+    "src/infrastructure/authoring/version_upgrade/adapters/registry.ts#adapterMissHint",
+    "src/infrastructure/parse/kernel.ts#parseFileFull",
+    "src/infrastructure/parse/lang_hint.ts#missingLanguageHint"
   ]
 }

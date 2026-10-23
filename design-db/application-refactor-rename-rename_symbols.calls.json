@@ -562,5 +562,17 @@
       "from": "src/application/refactor/rename/rename_symbols.ts#scanLiteralOccurrences",
       "to": "src/infrastructure/parse/source_exts.ts#skipDirSet"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/contract_page.ts#contractPageCore",
+    "src/application/meta/explore/contract_page.ts#lookupTerm",
+    "src/application/refactor/find/find_references.ts#scanLiterals",
+    "src/application/refactor/rename/rename_symbols.ts#buildLiteralPlan",
+    "src/application/refactor/rename/rename_symbols.ts#renameSymbols",
+    "src/application/refactor/rename/rename_symbols.ts#renameSymbolsCore",
+    "src/application/refactor/rename/rename_symbols.ts#renameSymbolsLocal",
+    "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+    "src/application/refactor/rename/rename_symbols.ts#scanLiteralOccurrences",
+    "src/application/refactor/rename/rename_symbols.ts#scanLiteralOccurrences.walk"
   ]
 }

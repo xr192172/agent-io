@@ -187,5 +187,14 @@
       "from": "src/infrastructure/parse/type_members.ts#typeDeclFromSignature",
       "to": "src/infrastructure/parse/type_members.ts#typeMembersOf"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/intent/consistency.ts#checkConsistencyReport",
+    "src/application/design/intent/consistency.ts#compareTypeContractMembers",
+    "src/application/meta/explore/contract_page.ts#contractPageCore",
+    "src/infrastructure/parse/kernel.ts#traverseAndExtract",
+    "src/infrastructure/parse/type_members.ts#memberNamesOf",
+    "src/infrastructure/parse/type_members.ts#typeDeclFromSignature",
+    "src/infrastructure/parse/type_members.ts#typeMembersOf"
   ]
 }

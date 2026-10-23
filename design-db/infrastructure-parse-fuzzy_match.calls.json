@@ -219,5 +219,12 @@
       "from": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText",
       "to": "src/infrastructure/parse/fuzzy_match.ts#windowToMatch"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/edit/edit_code.ts#planReplaceText",
+    "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+    "src/infrastructure/parse/fuzzy_match.ts#keyWhitespace",
+    "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText",
+    "src/infrastructure/parse/fuzzy_match.ts#windowToMatch"
   ]
 }

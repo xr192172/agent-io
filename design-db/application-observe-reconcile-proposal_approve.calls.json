@@ -86,5 +86,8 @@
       "from": "src/application/observe/reconcile/proposal_approve.ts#approveObserveProposal",
       "to": "src/infrastructure/dictionary.ts#validateProjectRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/presentation/http/serve.ts#handleApiObserveApprove"
   ]
 }

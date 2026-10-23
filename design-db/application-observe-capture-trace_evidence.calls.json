@@ -171,5 +171,12 @@
       "from": "src/application/observe/capture/trace_evidence.ts#recordsFromEvents",
       "to": "src/infrastructure/analysis/observe/run_trace_replay.ts#loadRunTracesFromText"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/capture/trace_evidence.ts#buildTraceResolver",
+    "src/application/observe/capture/trace_evidence.ts#flatten",
+    "src/application/observe/capture/trace_evidence.ts#loadObservedTraceRecords",
+    "src/application/observe/capture/trace_evidence.ts#loadTraceRecords",
+    "src/application/observe/capture/trace_evidence.ts#recordsFromEvents"
   ]
 }

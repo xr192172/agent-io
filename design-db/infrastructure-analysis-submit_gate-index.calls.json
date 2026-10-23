@@ -132,5 +132,9 @@
       "from": "src/infrastructure/analysis/submit_gate/index.ts#checkEmbedSubmissions",
       "to": "src/infrastructure/analysis/submit_gate/index.ts#walkGoFiles"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline",
+    "src/infrastructure/analysis/submit_gate/index.ts#checkEmbedSubmissions"
   ]
 }

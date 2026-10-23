@@ -178,5 +178,12 @@
       "from": "src/application/observe/capture/observe_trace.ts#loadNeedles",
       "to": "src/infrastructure/analysis/observe/snapshot_needle.ts#sampleNeedles"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/capture/observe_trace.ts#loadEventsText",
+    "src/application/observe/capture/observe_trace.ts#loadNeedles",
+    "src/application/observe/capture/observe_trace.ts#needleToData",
+    "src/application/observe/capture/observe_trace.ts#observeTrace",
+    "src/application/observe/capture/trace_evidence.ts#loadObservedTraceRecords"
   ]
 }

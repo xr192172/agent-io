@@ -91,5 +91,8 @@
       "from": "src/infrastructure/analysis/rename_symbol/languages/py.ts#analyzePythonSource",
       "to": "src/infrastructure/parse/loader.ts#getParser"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/rename_symbol/languages/py.ts#renamePythonSymbol"
   ]
 }

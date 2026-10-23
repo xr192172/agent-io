@@ -137,5 +137,10 @@
       "from": "src/infrastructure/analysis/observe/judge_service.ts#judgeEventsWithLLM",
       "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/runtime/judge_observe_events.ts#judgeObserveEvents",
+    "src/infrastructure/analysis/observe/judge_service.ts#judgeEventsWithLLM",
+    "src/infrastructure/analysis/observe/run_loop.ts#runLoop"
   ]
 }

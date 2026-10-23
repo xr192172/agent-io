@@ -73,5 +73,11 @@
       "from": "src/infrastructure/text/arg_suggest.ts#unknownArgHints",
       "to": "src/infrastructure/text/arg_suggest.ts#suggestNames"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/explore_code.ts#factsFieldsOf",
+    "src/infrastructure/text/arg_suggest.ts#suggestNames",
+    "src/infrastructure/text/arg_suggest.ts#unknownArgHints",
+    "src/presentation/mcp/server_registry.ts#invokeTool"
   ]
 }

@@ -7,7 +7,7 @@
     {
       "name": "ThemeConfig",
       "kind": "interface",
-      "line": 109,
+      "line": 94,
       "signature": "ThemeConfig()",
       "members": [
         {
@@ -75,13 +75,13 @@
     {
       "name": "ThemeId",
       "kind": "type",
-      "line": 133,
+      "line": 118,
       "signature": "ThemeId()"
     },
     {
       "name": "ArchLayer",
       "kind": "interface",
-      "line": 136,
+      "line": 121,
       "signature": "ArchLayer()",
       "members": [
         {
@@ -131,7 +131,7 @@
     {
       "name": "FeatureCommunity",
       "kind": "interface",
-      "line": 154,
+      "line": 139,
       "signature": "FeatureCommunity()",
       "members": [
         {
@@ -175,7 +175,7 @@
     {
       "name": "FeatureNode",
       "kind": "interface",
-      "line": 170,
+      "line": 155,
       "signature": "FeatureNode()",
       "members": [
         {
@@ -207,7 +207,7 @@
     {
       "name": "CommunityDirDiffEntry",
       "kind": "interface",
-      "line": 188,
+      "line": 173,
       "signature": "CommunityDirDiffEntry()",
       "members": [
         {
@@ -251,7 +251,7 @@
     {
       "name": "FeatureTree",
       "kind": "interface",
-      "line": 204,
+      "line": 189,
       "signature": "FeatureTree()",
       "members": [
         {
@@ -283,7 +283,7 @@
     {
       "name": "DesignDSL",
       "kind": "interface",
-      "line": 216,
+      "line": 201,
       "signature": "DesignDSL()",
       "members": [
         {
@@ -359,18 +359,6 @@
           "member_kind": "property"
         },
         {
-          "name": "annotations",
-          "type": ": Annotation[]",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "canvas_notes",
-          "type": ": CanvasNote[]",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
           "name": "animations",
           "type": ": Animation[]",
           "optional": true,
@@ -405,19 +393,13 @@
           "type": ": FeatureTree",
           "optional": true,
           "member_kind": "property"
-        },
-        {
-          "name": "user_nodes",
-          "type": ": UserNode[]",
-          "optional": true,
-          "member_kind": "property"
         }
       ]
     },
     {
       "name": "UserNode",
       "kind": "interface",
-      "line": 266,
+      "line": 251,
       "signature": "UserNode()",
       "members": [
         {
@@ -465,11 +447,6 @@
       "type_only": true
     },
     {
-      "source": "./annotation.js",
-      "kind": "relative",
-      "type_only": true
-    },
-    {
       "source": "./animation.js",
       "kind": "relative",
       "type_only": true
@@ -481,11 +458,6 @@
     },
     {
       "source": "./reasoning.js",
-      "kind": "relative",
-      "type_only": true
-    },
-    {
-      "source": "./canvas_note.js",
       "kind": "relative",
       "type_only": true
     },
@@ -505,15 +477,6 @@
       "type_only": true
     },
     {
-      "source": "./annotation.js",
-      "kind": "relative",
-      "type_only": true
-    },
-    {
-      "source": "./annotation.js",
-      "kind": "relative"
-    },
-    {
       "source": "./animation.js",
       "kind": "relative",
       "type_only": true
@@ -525,11 +488,6 @@
     },
     {
       "source": "./reasoning.js",
-      "kind": "relative",
-      "type_only": true
-    },
-    {
-      "source": "./canvas_note.js",
       "kind": "relative",
       "type_only": true
     }

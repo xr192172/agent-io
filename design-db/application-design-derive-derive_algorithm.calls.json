@@ -186,5 +186,8 @@
       "from": "src/application/design/derive/derive_algorithm.ts#deriveAlgorithmCore",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/derive/derive_algorithm.ts#deriveAlgorithm"
   ]
 }

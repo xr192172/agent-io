@@ -601,5 +601,13 @@
       "from": "src/infrastructure/authoring/translate/receipt.ts#verifyTranslation",
       "to": "src/infrastructure/authoring/translate/verify_behavior.ts#typeSamples"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/translate/receipt.ts#buildKnown",
+    "src/infrastructure/authoring/translate/receipt.ts#buildUnknowns",
+    "src/infrastructure/authoring/translate/receipt.ts#methodWrapper",
+    "src/infrastructure/authoring/translate/receipt.ts#verifyTranslation",
+    "src/infrastructure/authoring/translate/tool.ts#projectReceipt",
+    "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler"
   ]
 }

@@ -146,5 +146,11 @@
       "from": "src/infrastructure/index/guided_tour.ts#guidedTour",
       "to": "src/infrastructure/storage.ts#getDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/explore_code.ts#exploreCode",
+    "src/application/meta/view/overview.ts#getOverview",
+    "src/infrastructure/index/guided_tour.ts#guidedTour",
+    "src/presentation/http/serve.ts#handleApiGuidedTour"
   ]
 }

@@ -65,5 +65,8 @@
       "from": "src/infrastructure/analysis/package_migration/languages/ts.ts#tsAliasEdits",
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/package_migration/languages/ts.ts#tsAliasEdits"
   ]
 }

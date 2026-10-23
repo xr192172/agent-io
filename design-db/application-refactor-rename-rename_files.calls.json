@@ -218,5 +218,9 @@
       "from": "src/application/refactor/rename/rename_files.ts#renameFilesCore",
       "to": "src/infrastructure/analysis/project_root/index.ts#resolveProjectRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/rename/move_domain.ts#moveDomain",
+    "src/application/refactor/rename/rename_files.ts#renameFiles"
   ]
 }

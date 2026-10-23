@@ -232,5 +232,8 @@
       "from": "src/application/design/dsl_ops/file_ops.ts#deleteFile",
       "to": "src/infrastructure/storage_overlay.ts#dropLifecycleFromOverlay"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/update_feature.ts#applyFileOp"
   ]
 }

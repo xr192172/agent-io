@@ -7,7 +7,7 @@
     {
       "name": "GoSite",
       "kind": "interface",
-      "line": 20,
+      "line": 19,
       "signature": "GoSite()",
       "members": [
         {
@@ -39,7 +39,7 @@
     {
       "name": "GoFileResult",
       "kind": "interface",
-      "line": 21,
+      "line": 20,
       "signature": "GoFileResult()",
       "members": [
         {
@@ -65,7 +65,7 @@
     {
       "name": "GoInstrumentOut",
       "kind": "interface",
-      "line": 22,
+      "line": 21,
       "signature": "GoInstrumentOut()",
       "members": [
         {
@@ -85,7 +85,7 @@
     {
       "name": "GoInstrumentOptions",
       "kind": "interface",
-      "line": 24,
+      "line": 23,
       "signature": "GoInstrumentOptions()",
       "members": [
         {
@@ -117,139 +117,79 @@
     {
       "name": "scanDir",
       "kind": "function",
-      "line": 43,
+      "line": 42,
       "signature": "scanDir(root: string): boolean"
     },
     {
       "name": "isGoProject",
       "kind": "function",
-      "line": 73,
+      "line": 72,
       "signature": "isGoProject(root: string): boolean"
     },
     {
       "name": "goObserveDir",
       "kind": "function",
-      "line": 89,
+      "line": 88,
       "signature": "goObserveDir(): string"
     },
     {
       "name": "runGo",
       "kind": "function",
-      "line": 104,
+      "line": 103,
       "signature": "runGo(moduleDir: string, args: string[], timeoutMs = 60000): Promise<string>"
     },
     {
       "name": "parseReport",
       "kind": "function",
-      "line": 134,
+      "line": 133,
       "signature": "parseReport(raw: string): GoInstrumentOut"
     },
     {
       "name": "VENDORED_PROBE_DIR",
       "kind": "const",
-      "line": 164,
+      "line": 163,
       "signature": "const VENDORED_PROBE_DIR = 'internal/camprobe'"
     },
     {
       "name": "readGoModuleName",
       "kind": "function",
-      "line": 167,
+      "line": 166,
       "signature": "readGoModuleName(root: string): string | null"
     },
     {
       "name": "vendorGoProbe",
       "kind": "function",
-      "line": 188,
+      "line": 187,
       "signature": "vendorGoProbe(root: string): string"
     },
     {
       "name": "unvendorGoProbe",
       "kind": "function",
-      "line": 211,
+      "line": 210,
       "signature": "unvendorGoProbe(root: string): boolean"
     },
     {
       "name": "instrumentGoProject",
       "kind": "function",
-      "line": 236,
+      "line": 235,
       "signature": "instrumentGoProject(root: string, opts: GoInstrumentOptions = {}): Promise<GoInstrumentOut>"
     },
     {
       "name": "restoreGoProject",
       "kind": "function",
-      "line": 264,
+      "line": 263,
       "signature": "restoreGoProject(root: string): Promise<number>"
     },
     {
       "name": "goReportSummary",
       "kind": "function",
-      "line": 274,
+      "line": 273,
       "signature": "goReportSummary(rep: GoInstrumentOut): { totalSites: number; instrumented: number; skipped: number; errors: number }"
-    },
-    {
-      "name": "GO_OBSERVE_MODULE",
-      "kind": "const",
-      "line": 296,
-      "signature": "const GO_OBSERVE_MODULE = 'github.com/xr192172/agent-io/observe-lang-go'"
-    },
-    {
-      "name": "GoDepsCheck",
-      "kind": "interface",
-      "line": 298,
-      "signature": "GoDepsCheck()",
-      "members": [
-        {
-          "name": "needs_replace",
-          "type": ": boolean",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "needs_require",
-          "type": ": boolean",
-          "optional": false,
-          "member_kind": "property"
-        },
-        {
-          "name": "require_line",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "replace_line",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "note",
-          "type": ": string",
-          "optional": true,
-          "member_kind": "property"
-        }
-      ]
-    },
-    {
-      "name": "checkGoObserveDeps",
-      "kind": "function",
-      "line": 311,
-      "signature": "checkGoObserveDeps(root: string, moduleDir?: string): GoDepsCheck"
-    },
-    {
-      "name": "ensureGoObserveIntegration",
-      "kind": "function",
-      "line": 343,
-      "signature": "ensureGoObserveIntegration(root: string, moduleDir?: string, write = false, commit?: SourceWriteHook): { changed: boolean; check: GoDepsCheck }"
     }
   ],
   "imports": [
     {
       "source": "../../data_dir.js",
-      "kind": "relative"
-    },
-    {
-      "source": "../../source_write_port.js",
       "kind": "relative"
     },
     {
@@ -271,10 +211,6 @@
   ],
   "calls": [
     {
-      "from": "src/infrastructure/analysis/observe/go_instrument.ts#ensureGoObserveIntegration",
-      "to": "src/infrastructure/analysis/observe/go_instrument.ts#checkGoObserveDeps"
-    },
-    {
       "from": "src/infrastructure/analysis/observe/go_instrument.ts#vendorGoProbe",
       "to": "src/infrastructure/analysis/observe/go_instrument.ts#goObserveDir"
     },
@@ -284,10 +220,6 @@
     },
     {
       "from": "src/infrastructure/analysis/observe/go_instrument.ts#restoreGoProject",
-      "to": "src/infrastructure/analysis/observe/go_instrument.ts#goObserveDir"
-    },
-    {
-      "from": "src/infrastructure/analysis/observe/go_instrument.ts#checkGoObserveDeps",
       "to": "src/infrastructure/analysis/observe/go_instrument.ts#goObserveDir"
     },
     {
@@ -329,10 +261,13 @@
     {
       "from": "src/infrastructure/analysis/observe/go_instrument.ts#instrumentGoProject",
       "to": "src/infrastructure/analysis/observe/go_instrument.ts#vendorGoProbe"
-    },
-    {
-      "from": "src/infrastructure/analysis/observe/go_instrument.ts#ensureGoObserveIntegration",
-      "to": "src/infrastructure/source_write_port.ts#commitSourceWrite"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/observe/go_instrument.ts#instrumentGoProject",
+    "src/infrastructure/analysis/observe/go_instrument.ts#isGoProject",
+    "src/infrastructure/analysis/observe/go_instrument.ts#restoreGoProject",
+    "src/infrastructure/analysis/observe/go_instrument.ts#scanDir",
+    "src/infrastructure/analysis/observe/go_instrument.ts#vendorGoProbe"
   ]
 }

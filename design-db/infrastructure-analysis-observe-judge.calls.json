@@ -144,5 +144,14 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+    "src/infrastructure/analysis/observe/contract.ts#TSComparator.compare",
+    "src/infrastructure/analysis/observe/judge_guard.ts#judgeGuardLog",
+    "src/infrastructure/analysis/observe/judge_service.ts#judgeEvents",
+    "src/infrastructure/analysis/observe/log_query.ts#queryObserveLog",
+    "src/infrastructure/analysis/observe/log_query.ts#toEntry",
+    "src/presentation/http/serve.ts#startServer"
+  ]
 }

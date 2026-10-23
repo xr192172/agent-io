@@ -185,5 +185,11 @@
       "from": "src/infrastructure/analysis/observe/run_trace_replay.ts#loadRunTracesFromText",
       "to": "src/infrastructure/analysis/observe/run_trace_replay.ts#parseRunTraces"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/capture/observe_trace.ts#loadNeedles",
+    "src/application/observe/capture/trace_evidence.ts#recordsFromEvents",
+    "src/infrastructure/analysis/observe/run_trace_replay.ts#loadRunTracesFromText",
+    "src/infrastructure/analysis/observe/run_trace_replay.ts#parseRunTraces"
   ]
 }

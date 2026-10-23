@@ -195,5 +195,9 @@
       "from": "src/presentation/daemon/server.ts#createDaemonServer",
       "to": "src/presentation/daemon/server.ts#hostAllowed"
     }
+  ],
+  "reverse_calls": [
+    "src/presentation/daemon/daemon.ts#main",
+    "src/presentation/daemon/server.ts#createDaemonServer"
   ]
 }

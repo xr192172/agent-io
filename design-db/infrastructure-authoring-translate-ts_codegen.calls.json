@@ -230,5 +230,15 @@
       "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTsSkeleton",
       "to": "src/infrastructure/authoring/translate/unit.ts#withConstraints"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/translate/pairs.ts#translateGoToTs",
+    "src/infrastructure/authoring/translate/project.ts#assembleModule",
+    "src/infrastructure/authoring/translate/receipt.ts#typeUnknowns",
+    "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+    "src/infrastructure/authoring/translate/ts_codegen.ts#mapParam",
+    "src/infrastructure/authoring/translate/ts_codegen.ts#renderFuncSkeleton",
+    "src/infrastructure/authoring/translate/ts_codegen.ts#renderTsSkeleton",
+    "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton"
   ]
 }

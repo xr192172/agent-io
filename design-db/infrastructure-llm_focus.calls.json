@@ -374,5 +374,37 @@
       "from": "src/infrastructure/llm_focus.ts#configFileReadPath",
       "to": "src/infrastructure/storage.ts#getDataHome"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/derive/opl.ts#llmDeclare",
+    "src/application/design/derive/opl.ts#llmImplement",
+    "src/application/design/derive/opl.ts#oplAutoImpl",
+    "src/application/harvest/harvest_decisions.ts#askEvidenceBatch",
+    "src/application/harvest/harvest_decisions.ts#loadCfgOrNull",
+    "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+    "src/application/meta/llm/llm_decider.ts#llmDecide",
+    "src/application/meta/llm/semantic_search.ts#loadEmbeddingConfig",
+    "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+    "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+    "src/application/meta/view/derive_mind_map.ts#llmSynthesizeCapabilities",
+    "src/application/refactor/annotate/function_annotation.ts#llmDescriptions",
+    "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
+    "src/application/refactor/find/ast_suggest.ts#defaultLlmCands",
+    "src/application/refactor/find/similar_names.ts#defaultLlmFor",
+    "src/infrastructure/analysis/diagnosis/repair.ts#generatePatch",
+    "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateRootCause",
+    "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateWithLlm",
+    "src/infrastructure/analysis/observe/decl_review.ts#reviewDeclsWithLLM",
+    "src/infrastructure/analysis/observe/judge_service.ts#judgeEventsWithLLM",
+    "src/infrastructure/analysis/structure/derive_feature_tree.ts#renameGroupsByLLM",
+    "src/infrastructure/analysis/structure/role_title.ts#generateFileRoleTitles",
+    "src/infrastructure/analysis/structure/role_title.ts#generateOne",
+    "src/infrastructure/llm_focus.ts#configFilePath",
+    "src/infrastructure/llm_focus.ts#configFileReadPath",
+    "src/infrastructure/llm_focus.ts#loadAgentConfig",
+    "src/infrastructure/llm_focus.ts#loadExplainConfig",
+    "src/infrastructure/llm_focus.ts#loadLlmConfig",
+    "src/infrastructure/llm_focus.ts#pickKeyNodes",
+    "src/presentation/http/serve.ts#handleApiFocus"
   ]
 }

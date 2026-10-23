@@ -240,5 +240,11 @@
       "from": "src/application/refactor/find/ast_suggest.ts#findSuggestCandidates",
       "to": "src/infrastructure/parse/ast_rename.ts#analyzeLocals"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/find/ast_suggest.ts#defaultLlmCands",
+    "src/application/refactor/find/ast_suggest.ts#findSuggestCandidates",
+    "src/application/refactor/find/ast_suggest.ts#suggestRenames",
+    "src/application/refactor/find/ast_suggest.ts#suggestRenamesInFile"
   ]
 }

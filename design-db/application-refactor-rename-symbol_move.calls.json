@@ -488,5 +488,11 @@
       "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
       "to": "src/infrastructure/text/line_utils.ts#splitKeepEnds"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/rename/symbol_move.ts#findNamedDeclInExport",
+    "src/application/refactor/rename/symbol_move.ts#findTopLevelDeclRange",
+    "src/application/refactor/rename/symbol_move.ts#moveSymbol",
+    "src/application/refactor/rename/symbol_move.ts#moveSymbolCore"
   ]
 }

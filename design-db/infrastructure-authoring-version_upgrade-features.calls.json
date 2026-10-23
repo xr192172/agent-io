@@ -138,5 +138,9 @@
       "from": "src/infrastructure/authoring/version_upgrade/features.ts#scanFeatureHits",
       "to": "src/infrastructure/authoring/version_upgrade/features.ts#rulesForExt"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/version_upgrade/detect.ts#runContractScan",
+    "src/infrastructure/authoring/version_upgrade/features.ts#scanFeatureHits"
   ]
 }

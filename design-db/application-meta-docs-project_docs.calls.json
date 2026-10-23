@@ -242,5 +242,14 @@
       "from": "src/application/meta/docs/project_docs.ts#docDirs",
       "to": "src/infrastructure/storage.ts#getStorageRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/docs/project_docs.ts#buildDocsPromptBlock",
+    "src/application/meta/docs/project_docs.ts#docMatches",
+    "src/application/meta/docs/project_docs.ts#listProjectDocs",
+    "src/application/meta/docs/project_docs.ts#matchDocsForTargets",
+    "src/application/meta/docs/project_docs.ts#parseFrontmatter",
+    "src/application/meta/docs/project_docs.ts#readProjectDoc",
+    "src/application/meta/llm/llm_decider.ts#decideCanvasNotes"
   ]
 }

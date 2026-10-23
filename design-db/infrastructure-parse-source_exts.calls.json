@@ -297,5 +297,32 @@
       "from": "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has",
       "to": "src/infrastructure/parse/source_exts.ts#shouldSkipDir"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+    "src/application/refactor/rename/move_domain.ts#untouchedEntries",
+    "src/application/refactor/rename/rename_symbols.ts#scanLiteralOccurrences",
+    "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+    "src/infrastructure/analysis/health/index.ts#judgesDeadCode",
+    "src/infrastructure/analysis/impact/index.ts#buildImpactGraph",
+    "src/infrastructure/analysis/observe/instrument.ts#isInstrumentableTsJsFile",
+    "src/infrastructure/analysis/observe/instrument.ts#isTsHost",
+    "src/infrastructure/analysis/observe/instrument.ts#moduleBase",
+    "src/infrastructure/analysis/observe/instrument_py.ts#isInstrumentablePyFile",
+    "src/infrastructure/analysis/observe/instrument_skeleton.ts#collectSourceFiles",
+    "src/infrastructure/analysis/project_root/index.ts#importsTargetFile",
+    "src/infrastructure/analysis/structure/structure_gap.ts#sourceFileNames",
+    "src/infrastructure/authoring/version_upgrade/detect.ts#collectSourceFiles",
+    "src/infrastructure/authoring/version_upgrade/detect.ts#runContractScan",
+    "src/infrastructure/graph/import_project.ts#importProject",
+    "src/infrastructure/graph/import_project.ts#walkFiles",
+    "src/infrastructure/index/symbols.ts#pruneDeletedFiles",
+    "src/infrastructure/index/watch_project.ts#shouldSyncRel",
+    "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has",
+    "src/infrastructure/parse/source_exts.ts#codeSourceExtSet",
+    "src/infrastructure/parse/source_exts.ts#excludedNonCodeExts",
+    "src/infrastructure/parse/source_exts.ts#isIndexSkippedFileName",
+    "src/infrastructure/parse/source_exts.ts#isUnderSkippedDir",
+    "src/infrastructure/parse/source_exts.ts#partitionByCodeLang"
   ]
 }

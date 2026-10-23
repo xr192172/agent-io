@@ -458,5 +458,12 @@
       "from": "src/infrastructure/analysis/refactor/refactor_langs.ts#RefactorLangRegistry.forProject",
       "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#dirHasSource"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
+    "src/application/refactor/pipeline/refactor_pipeline.ts#dominantExecutor",
+    "src/infrastructure/analysis/observe/observe_langs.ts#ObserveLangRegistry.pick",
+    "src/infrastructure/analysis/observe/observe_langs.ts#ObserveLangRegistry.pickAll",
+    "src/infrastructure/analysis/refactor/refactor_langs.ts#RefactorLangRegistry.forProject"
   ]
 }

@@ -464,5 +464,22 @@
       "from": "src/infrastructure/authoring/translate/go_extractor.ts#extractGo",
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/translate/go_extractor.ts#boundFromConstraint",
+    "src/infrastructure/authoring/translate/go_extractor.ts#collect",
+    "src/infrastructure/authoring/translate/go_extractor.ts#constDeclFromSpec",
+    "src/infrastructure/authoring/translate/go_extractor.ts#detectDecision",
+    "src/infrastructure/authoring/translate/go_extractor.ts#extractGo",
+    "src/infrastructure/authoring/translate/go_extractor.ts#extractGoFromFile",
+    "src/infrastructure/authoring/translate/go_extractor.ts#extractInterfaceMethods",
+    "src/infrastructure/authoring/translate/go_extractor.ts#extractParamList",
+    "src/infrastructure/authoring/translate/go_extractor.ts#extractTypeConstraints",
+    "src/infrastructure/authoring/translate/go_extractor.ts#extractTypeParamBounds",
+    "src/infrastructure/authoring/translate/go_extractor.ts#extractTypeParams",
+    "src/infrastructure/authoring/translate/go_extractor.ts#methodFromElem",
+    "src/infrastructure/authoring/translate/go_extractor.ts#unitFromFunc",
+    "src/infrastructure/authoring/translate/go_extractor.ts#unitFromTypeSpec",
+    "src/infrastructure/authoring/translate/pairs.ts#translateGoToTs"
   ]
 }

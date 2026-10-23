@@ -481,5 +481,10 @@
       "from": "src/application/refactor/find/find_references.ts#indexCandidateFiles",
       "to": "src/infrastructure/text/refs_text.ts#scanTextMentions"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/contract_page.ts#contractPageCore",
+    "src/application/refactor/find/find_references.ts#findReferences",
+    "src/application/refactor/find/find_references.ts#findReferencesCore"
   ]
 }

@@ -7,7 +7,7 @@
     {
       "name": "RawExpectation",
       "kind": "type",
-      "line": 58,
+      "line": 59,
       "signature": "RawExpectation()",
       "members": [
         {
@@ -87,7 +87,7 @@
     {
       "name": "AnyNode",
       "kind": "type",
-      "line": 73,
+      "line": 74,
       "signature": "AnyNode()",
       "members": [
         {
@@ -113,25 +113,25 @@
     {
       "name": "norm",
       "kind": "const",
-      "line": 79,
+      "line": 80,
       "signature": "const norm = (s: unknown): string => String(s ?? '').replace(/\\\\/g, '/')"
     },
     {
       "name": "outNameOf",
       "kind": "const",
-      "line": 82,
+      "line": 83,
       "signature": "const outNameOf = (rel: string): string => rel.replace(/^src\\//, '').replac…"
     },
     {
       "name": "designDbDir",
       "kind": "const",
-      "line": 93,
+      "line": 94,
       "signature": "const designDbDir = (root: string): string => path.join(root, 'design-db')"
     },
     {
       "name": "DesignDbHolder",
       "kind": "interface",
-      "line": 96,
+      "line": 97,
       "signature": "DesignDbHolder()",
       "members": [
         {
@@ -157,7 +157,7 @@
     {
       "name": "DesignDbPlanItem",
       "kind": "interface",
-      "line": 105,
+      "line": 106,
       "signature": "DesignDbPlanItem()",
       "members": [
         {
@@ -189,7 +189,7 @@
     {
       "name": "DesignDbConflict",
       "kind": "interface",
-      "line": 131,
+      "line": 132,
       "signature": "DesignDbConflict()",
       "members": [
         {
@@ -215,37 +215,37 @@
     {
       "name": "expectationKey",
       "kind": "const",
-      "line": 139,
+      "line": 140,
       "signature": "const expectationKey = (e: RawExpectation): string => JSON.stringify([ e.kind ??…"
     },
     {
       "name": "conflictsOf",
       "kind": "function",
-      "line": 155,
+      "line": 156,
       "signature": "conflictsOf(rel: string, holders: DesignDbHolder[]): DesignDbConflict[]"
     },
     {
       "name": "planDesignDb",
       "kind": "function",
-      "line": 221,
+      "line": 222,
       "signature": "planDesignDb(root: string,\n  opts: { feature?: string } = {},): {\n  features: string[];\n  nodes: number;\n  items: Map<string, DesignDbPlanItem>;\n  conflicts: DesignDbConflict[];\n  missingDir: boolean;\n}"
     },
     {
       "name": "requirementsOf",
       "kind": "function",
-      "line": 284,
+      "line": 285,
       "signature": "requirementsOf(item: DesignDbPlanItem): Array<Record<string, unknown>>"
     },
     {
       "name": "requirementCallsOf",
       "kind": "function",
-      "line": 294,
+      "line": 295,
       "signature": "requirementCallsOf(item: DesignDbPlanItem): Array<{ from: string; target: string; why?: string }>"
     },
     {
       "name": "GenDesignDbOptions",
       "kind": "interface",
-      "line": 304,
+      "line": 305,
       "signature": "GenDesignDbOptions()",
       "members": [
         {
@@ -265,7 +265,7 @@
     {
       "name": "GenDesignDbResult",
       "kind": "interface",
-      "line": 311,
+      "line": 312,
       "signature": "GenDesignDbResult()",
       "members": [
         {
@@ -333,19 +333,19 @@
     {
       "name": "renderConflict",
       "kind": "const",
-      "line": 335,
+      "line": 336,
       "signature": "const renderConflict = (c: DesignDbConflict): string => `${c.path}: ${c.detail} …"
     },
     {
       "name": "genDesignDb",
       "kind": "function",
-      "line": 346,
+      "line": 347,
       "signature": "genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDesignDbResult"
     },
     {
       "name": "DesignDbStructureResult",
       "kind": "interface",
-      "line": 480,
+      "line": 501,
       "signature": "DesignDbStructureResult()",
       "members": [
         {
@@ -395,7 +395,7 @@
     {
       "name": "checkDesignDbStructure",
       "kind": "function",
-      "line": 510,
+      "line": 531,
       "signature": "checkDesignDbStructure(root: string): DesignDbStructureResult"
     }
   ],
@@ -459,6 +459,18 @@
       "to": "src/application/design/db/gen_design_db.ts#norm"
     },
     {
+      "from": "src/application/design/db/gen_design_db.ts#genDesignDb",
+      "to": "src/application/design/db/gen_design_db.ts#norm"
+    },
+    {
+      "from": "src/application/design/db/gen_design_db.ts#genDesignDb",
+      "to": "src/application/design/db/gen_design_db.ts#norm"
+    },
+    {
+      "from": "src/application/design/db/gen_design_db.ts#genDesignDb",
+      "to": "src/application/design/db/gen_design_db.ts#norm"
+    },
+    {
       "from": "src/application/design/db/gen_design_db.ts#checkDesignDbStructure",
       "to": "src/application/design/db/gen_design_db.ts#norm"
     },
@@ -502,5 +514,13 @@
       "from": "src/application/design/db/gen_design_db.ts#checkDesignDbStructure",
       "to": "src/application/design/db/gen_design_db.ts#requirementsOf"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/db/gen_design_db.ts#checkDesignDbStructure",
+    "src/application/design/db/gen_design_db.ts#conflictsOf",
+    "src/application/design/db/gen_design_db.ts#genDesignDb",
+    "src/application/design/db/gen_design_db.ts#planDesignDb",
+    "src/application/design/db/gen_design_db.ts#requirementCallsOf",
+    "src/application/design/line/design_line.ts#lineReport"
   ]
 }

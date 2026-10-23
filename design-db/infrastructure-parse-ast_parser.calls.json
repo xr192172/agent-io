@@ -41,5 +41,9 @@
       "from": "src/infrastructure/parse/ast_parser.ts#parseFileSymbols",
       "to": "src/infrastructure/parse/kernel.ts#parseFile"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/intent/consistency.ts#checkConsistencyReport",
+    "src/application/design/intent/expectations.ts#judgeExpectations"
   ]
 }

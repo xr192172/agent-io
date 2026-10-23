@@ -380,5 +380,12 @@
       "from": "src/infrastructure/analysis/structure/structure_gap.ts#sourceFileNames",
       "to": "src/infrastructure/parse/source_exts.ts#isSourceExt"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/rename/move_domain.ts#moveDomain",
+    "src/infrastructure/analysis/structure/structure_gap.ts#computeStructureGap",
+    "src/infrastructure/analysis/structure/structure_gap.ts#readStructureConfig",
+    "src/infrastructure/analysis/structure/structure_gap.ts#siblingSourceFile",
+    "src/infrastructure/analysis/structure/structure_gap.ts#structureGap"
   ]
 }

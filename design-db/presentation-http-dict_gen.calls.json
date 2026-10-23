@@ -198,5 +198,10 @@
       "from": "src/presentation/http/dict_gen.ts#ingestTerm",
       "to": "src/presentation/http/dict_gen.ts#generateDictEntry"
     }
+  ],
+  "reverse_calls": [
+    "src/presentation/http/dict_gen.ts#ingestTerm",
+    "src/presentation/http/serve.ts#handleApiDictGenerate",
+    "src/presentation/http/serve.ts#handleApiDictIngest"
   ]
 }

@@ -21,5 +21,9 @@
       "kind": "package"
     }
   ],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+    "src/presentation/cli/diagnose_loop_cli.ts#main"
+  ]
 }

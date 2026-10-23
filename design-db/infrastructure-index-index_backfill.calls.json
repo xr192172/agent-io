@@ -262,5 +262,13 @@
       "from": "src/infrastructure/index/index_backfill.ts#scheduleBackfill",
       "to": "src/infrastructure/project_view.ts#getProjectView"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/explore_code.ts#exploreCode",
+    "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+    "src/infrastructure/index/index_backfill.ts#isBackfillRunning",
+    "src/presentation/mcp/server_registry.ts#backfillProgressNote",
+    "src/presentation/mcp/server_registry.ts#firstContactBackfill",
+    "src/presentation/mcp/server_registry.ts#invokeTool"
   ]
 }

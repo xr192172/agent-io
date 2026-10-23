@@ -30,5 +30,8 @@
       "from": "src/infrastructure/analysis/observe/run_sentinel.ts#enableObserveFromEnv",
       "to": "src/infrastructure/analysis/observe/probe.ts#setGlobalProbeSink"
     }
+  ],
+  "reverse_calls": [
+    "src/presentation/http/serve.ts#startServer"
   ]
 }

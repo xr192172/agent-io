@@ -132,5 +132,8 @@
       "from": "src/infrastructure/dogfood_coverage.ts#computeDogfoodCoverage",
       "to": "src/infrastructure/dogfood_stats.ts#snapshotDogfoodStats"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/dogfood_coverage.ts#renderDogfoodCoverage"
   ]
 }

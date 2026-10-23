@@ -33,5 +33,9 @@
       "from": "src/infrastructure/authoring/translate/fixers.ts#applyDeterministicFixers",
       "to": "src/infrastructure/authoring/translate/fixers.ts#squashImports"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/translate/fixers.ts#applyDeterministicFixers",
+    "src/infrastructure/authoring/translate/project.ts#assembleModule"
   ]
 }

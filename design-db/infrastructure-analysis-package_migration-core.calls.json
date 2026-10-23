@@ -97,5 +97,9 @@
       "from": "src/infrastructure/analysis/package_migration/core.ts#computeMigrationPlan",
       "to": "src/infrastructure/analysis/package_migration/parts.ts#rewriteImportPaths"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
+    "src/infrastructure/analysis/package_migration/core.ts#computeMigrationPlan"
   ]
 }

@@ -174,5 +174,16 @@
       "from": "src/domain/scope.ts#resolveScope",
       "to": "src/domain/scope.ts#uniqSorted"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite",
+    "src/application/meta/explore/query_feature.ts#queryFeature",
+    "src/application/write_gate.ts#evaluateRunAuthorize",
+    "src/application/write_gate.ts#evaluateTaskGate",
+    "src/domain/diff_blocks.ts#buildDiffBlocks",
+    "src/domain/scope.ts#formatScope",
+    "src/domain/scope.ts#parseScope",
+    "src/domain/scope.ts#resolveScope",
+    "src/domain/scope.ts#resolveScopeText"
   ]
 }

@@ -131,5 +131,14 @@
       "from": "src/application/design/dsl_ops/status_tools.ts#updateStatus",
       "to": "src/infrastructure/storage_overlay.ts#saveOverlay"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/file_ops.ts#addFile",
+    "src/application/design/dsl_ops/file_ops.ts#updateFile",
+    "src/application/design/dsl_ops/node_ops.ts#addNode",
+    "src/application/design/dsl_ops/node_ops.ts#updateNode",
+    "src/application/design/dsl_ops/status_tools.ts#updateStatus",
+    "src/application/design/dsl_ops/task_ops.ts#completeTask",
+    "src/application/design/dsl_ops/update_feature.ts#applyOperation"
   ]
 }

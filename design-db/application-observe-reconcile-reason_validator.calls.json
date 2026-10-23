@@ -167,5 +167,8 @@
       "from": "src/application/observe/reconcile/reason_validator.ts#validateReason",
       "to": "src/application/observe/reconcile/reason_validator.ts#matchesConcreteEntity"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/reconcile/reason_validator.ts#validateReason"
   ]
 }

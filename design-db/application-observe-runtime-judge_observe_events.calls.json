@@ -82,5 +82,8 @@
       "from": "src/application/observe/runtime/judge_observe_events.ts#judgeObserveEvents",
       "to": "src/infrastructure/analysis/observe/judge_service.ts#renderJudgeReport"
     }
+  ],
+  "reverse_calls": [
+    "src/presentation/http/serve.ts#handleApiObserveJudge"
   ]
 }

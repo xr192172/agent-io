@@ -109,5 +109,10 @@
       "from": "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis",
       "to": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+    "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis",
+    "src/presentation/cli/diagnose_loop_cli.ts#main"
   ]
 }

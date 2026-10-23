@@ -389,5 +389,24 @@
       "from": "src/infrastructure/analysis/observe/probe.ts#scrub",
       "to": "src/infrastructure/analysis/observe/probe.ts#summarize"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+    "src/application/observe/runtime/watch_project_tool.ts#declareWatch",
+    "src/application/observe/runtime/watch_project_tool.ts#doWork",
+    "src/application/observe/runtime/watch_project_tool.ts#ensureObserveSink",
+    "src/infrastructure/analysis/observe/log_query.ts#queryObserveLog",
+    "src/infrastructure/analysis/observe/probe.ts#TSProbeCapture.emit",
+    "src/infrastructure/analysis/observe/probe.ts#captureProbe",
+    "src/infrastructure/analysis/observe/probe.ts#catchScope",
+    "src/infrastructure/analysis/observe/probe.ts#emitFrame",
+    "src/infrastructure/analysis/observe/probe.ts#enterScope",
+    "src/infrastructure/analysis/observe/probe.ts#estimateJsonLength",
+    "src/infrastructure/analysis/observe/probe.ts#exitScope",
+    "src/infrastructure/analysis/observe/probe.ts#hasGlobalProbeSink",
+    "src/infrastructure/analysis/observe/probe.ts#scrub",
+    "src/infrastructure/analysis/observe/probe.ts#serializeSafe",
+    "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+    "src/infrastructure/analysis/observe/run_sentinel.ts#enableObserveFromEnv"
   ]
 }

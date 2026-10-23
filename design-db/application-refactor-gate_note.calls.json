@@ -44,5 +44,17 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/application/design/rewrite/rewrite.ts#rewriteSymbols",
+    "src/application/design/workbench/code_workbench.ts#approveChange",
+    "src/application/refactor/edit/apply_writes.ts#applyWritesCore",
+    "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+    "src/application/refactor/rename/rename_file.ts#renameFileCore",
+    "src/application/refactor/rename/rename_files.ts#renameFilesCore",
+    "src/application/refactor/rename/rename_local.ts#renameLocals",
+    "src/application/refactor/rename/rename_symbols.ts#renameSymbolsLocal",
+    "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+    "src/application/refactor/rename/symbol_move.ts#moveSymbolCore"
+  ]
 }

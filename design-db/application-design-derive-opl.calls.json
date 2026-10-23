@@ -219,55 +219,55 @@
     {
       "name": "oplLocate",
       "kind": "function",
-      "line": 127,
+      "line": 128,
       "signature": "oplLocate(feature: string, id: string): Promise<OplState>"
     },
     {
       "name": "langFromPath",
       "kind": "function",
-      "line": 144,
+      "line": 145,
       "signature": "langFromPath(p: string): OplDeclFile['lang']"
     },
     {
       "name": "assertContractNotFromCode",
       "kind": "function",
-      "line": 169,
+      "line": 170,
       "signature": "assertContractNotFromCode(codeSignaturesFedAsContext: readonly string[]): void"
     },
     {
       "name": "oplDeclare",
       "kind": "function",
-      "line": 186,
+      "line": 187,
       "signature": "oplDeclare(feature: string,\n  id: string,\n  overrides?: { files?: OplDeclFile[]; declCodeContext?: string[] },): OplState"
     },
     {
       "name": "oplImplement",
       "kind": "function",
-      "line": 214,
+      "line": 215,
       "signature": "oplImplement(feature: string, id: string): OplState"
     },
     {
       "name": "extractApis",
       "kind": "function",
-      "line": 222,
+      "line": 223,
       "signature": "extractApis(src: string): Map<string, string>"
     },
     {
       "name": "sha1",
       "kind": "function",
-      "line": 244,
+      "line": 245,
       "signature": "sha1(s: string): string"
     },
     {
       "name": "opSignatureCacheFile",
       "kind": "const",
-      "line": 247,
+      "line": 248,
       "signature": "const opSignatureCacheFile = (feature: string) => path.join(oplRoot(feature), '_cache'…"
     },
     {
       "name": "SignatureCacheEntry",
       "kind": "interface",
-      "line": 248,
+      "line": 249,
       "signature": "SignatureCacheEntry()",
       "members": [
         {
@@ -287,73 +287,73 @@
     {
       "name": "SignatureCache",
       "kind": "type",
-      "line": 252,
+      "line": 253,
       "signature": "SignatureCache()"
     },
     {
       "name": "fileApisWithCache",
       "kind": "function",
-      "line": 255,
+      "line": 256,
       "signature": "fileApisWithCache(feature: string,\n  relPath: string,\n  abs: string,): { apis: Map<string, string>; viaCache: boolean }"
     },
     {
       "name": "signaturesEqual",
       "kind": "function",
-      "line": 280,
+      "line": 281,
       "signature": "signaturesEqual(actual: string, expected: string): boolean"
     },
     {
       "name": "oplCheck",
       "kind": "function",
-      "line": 322,
+      "line": 323,
       "signature": "oplCheck(feature: string, id: string): OplState"
     },
     {
       "name": "oplIntegrate",
       "kind": "function",
-      "line": 357,
+      "line": 358,
       "signature": "oplIntegrate(feature: string, id: string): Promise<OplState>"
     },
     {
       "name": "oplList",
       "kind": "function",
-      "line": 421,
+      "line": 422,
       "signature": "oplList(feature: string): Array<{ id: string; title: string; idea: string; status: OplStatus; parentFeat?: string; integrated: boolean; updated: string }>"
     },
     {
       "name": "oplGet",
       "kind": "function",
-      "line": 439,
+      "line": 440,
       "signature": "oplGet(feature: string, id: string): OplState"
     },
     {
       "name": "parseLlmJson",
       "kind": "function",
-      "line": 448,
+      "line": 449,
       "signature": "parseLlmJson(raw: string): unknown"
     },
     {
       "name": "llmDeclare",
       "kind": "function",
-      "line": 459,
+      "line": 460,
       "signature": "llmDeclare(feature: string,\n  s: OplState,\n  cfg: ReturnType<typeof loadLlmConfig>,): Promise<{ files: OplDeclFile[]; fedSignatures: string[] } | null>"
     },
     {
       "name": "llmImplement",
       "kind": "function",
-      "line": 510,
+      "line": 511,
       "signature": "llmImplement(feature: string,\n  s: OplState,\n  cfg: ReturnType<typeof loadLlmConfig>,): Promise<Record<string, string> | null>"
     },
     {
       "name": "oplAuto",
       "kind": "function",
-      "line": 549,
+      "line": 550,
       "signature": "oplAuto(feature: string, id?: string, idea?: string): Promise<OplState>"
     },
     {
       "name": "oplAutoImpl",
       "kind": "function",
-      "line": 554,
+      "line": 555,
       "signature": "oplAutoImpl(feature: string, id: string, s0: OplState): Promise<OplState>"
     }
   ],
@@ -585,10 +585,6 @@
       "to": "src/application/meta/view/derive_mind_map.ts#placeProposals"
     },
     {
-      "from": "src/application/design/derive/opl.ts#oplAdd",
-      "to": "src/infrastructure/dsl_write_scope.ts#runDslWriteScope"
-    },
-    {
       "from": "src/application/design/derive/opl.ts#oplIntegrate",
       "to": "src/infrastructure/dsl_write_scope.ts#runDslWriteScope"
     },
@@ -621,12 +617,26 @@
       "to": "src/infrastructure/storage.ts#getDSL"
     },
     {
-      "from": "src/application/design/derive/opl.ts#oplAdd",
-      "to": "src/infrastructure/storage.ts#saveDSL"
-    },
-    {
       "from": "src/application/design/derive/opl.ts#oplIntegrate",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/derive/opl.ts#fileApisWithCache",
+    "src/application/design/derive/opl.ts#llmDeclare",
+    "src/application/design/derive/opl.ts#llmImplement",
+    "src/application/design/derive/opl.ts#oplAdd",
+    "src/application/design/derive/opl.ts#oplAuto",
+    "src/application/design/derive/opl.ts#oplAutoImpl",
+    "src/application/design/derive/opl.ts#oplCheck",
+    "src/application/design/derive/opl.ts#oplDeclare",
+    "src/application/design/derive/opl.ts#oplGet",
+    "src/application/design/derive/opl.ts#oplImplement",
+    "src/application/design/derive/opl.ts#oplIntegrate",
+    "src/application/design/derive/opl.ts#oplList",
+    "src/application/design/derive/opl.ts#oplLocate",
+    "src/application/design/derive/opl.ts#readState",
+    "src/application/design/derive/opl.ts#writeState",
+    "src/presentation/http/serve.ts#handleApiOpl"
   ]
 }

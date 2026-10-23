@@ -181,5 +181,14 @@
       "from": "src/infrastructure/analysis/observe/ledger_fold.ts#knownSpreadIndex",
       "to": "src/infrastructure/analysis/observe/ledger_fold.ts#parseKnownSpread"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/observe/contract.ts#TSComparator.compare",
+    "src/infrastructure/analysis/observe/ledger_fold.ts#analyzeLedger",
+    "src/infrastructure/analysis/observe/ledger_fold.ts#joinQuoted",
+    "src/infrastructure/analysis/observe/ledger_fold.ts#knownSpreadDecl",
+    "src/infrastructure/analysis/observe/ledger_fold.ts#knownSpreadIndex",
+    "src/infrastructure/analysis/observe/proposal_store.ts#declKey",
+    "src/infrastructure/analysis/observe/run_loop.ts#runLoop"
   ]
 }

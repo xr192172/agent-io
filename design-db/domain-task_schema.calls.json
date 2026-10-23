@@ -7,67 +7,67 @@
     {
       "name": "TASK_STATES",
       "kind": "const",
-      "line": 53,
+      "line": 55,
       "signature": "const TASK_STATES = ['candidate', 'preparing', 'claimed', 'done', 'void'] as …"
     },
     {
       "name": "TaskState",
       "kind": "type",
-      "line": 56,
+      "line": 58,
       "signature": "TaskState()"
     },
     {
       "name": "CLOSED_TASK_STATES",
       "kind": "const",
-      "line": 71,
+      "line": 73,
       "signature": "const CLOSED_TASK_STATES = ['done', 'void'] as const"
     },
     {
       "name": "isTaskState",
       "kind": "function",
-      "line": 78,
+      "line": 80,
       "signature": "isTaskState(v: unknown): v is TaskState"
     },
     {
       "name": "isClosedTaskState",
       "kind": "function",
-      "line": 89,
+      "line": 91,
       "signature": "isClosedTaskState(s: TaskState): boolean"
     },
     {
       "name": "isArchivedTask",
       "kind": "function",
-      "line": 100,
+      "line": 102,
       "signature": "isArchivedTask(t: { archived_at?: string | null } | null | undefined): boolean"
     },
     {
       "name": "liveTasks",
       "kind": "function",
-      "line": 115,
+      "line": 117,
       "signature": "liveTasks(tasks: readonly T[] | null | undefined): T[]"
     },
     {
       "name": "archivedTasks",
       "kind": "function",
-      "line": 125,
+      "line": 127,
       "signature": "archivedTasks(tasks: readonly T[] | null | undefined): T[]"
     },
     {
       "name": "PROGRESS_BY_STATE",
       "kind": "const",
-      "line": 158,
+      "line": 160,
       "signature": "const PROGRESS_BY_STATE = { candidate: 'draft', // ★ `preparing` = 领了但**还不能干**（判据没补…"
     },
     {
       "name": "progressOf",
       "kind": "function",
-      "line": 168,
+      "line": 170,
       "signature": "progressOf(task: Pick<TaskSpec, 'state'> | null | undefined): DiagramStatus | undefined"
     },
     {
       "name": "NodeProgress",
       "kind": "interface",
-      "line": 204,
+      "line": 206,
       "signature": "NodeProgress()",
       "members": [
         {
@@ -99,25 +99,25 @@
     {
       "name": "todosForNode",
       "kind": "function",
-      "line": 227,
+      "line": 229,
       "signature": "todosForNode(nodeId: string | undefined, todos?: readonly TaskSpec[] | null): TaskSpec[]"
     },
     {
       "name": "taskOfNode",
       "kind": "function",
-      "line": 233,
+      "line": 235,
       "signature": "taskOfNode(node: { id?: string; task?: TaskSpec | null } | null | undefined,\n  todos?: readonly TaskSpec[] | null,): TaskSpec | undefined"
     },
     {
       "name": "progressOfNode",
       "kind": "function",
-      "line": 245,
+      "line": 247,
       "signature": "progressOfNode(node: { id?: string; task?: TaskSpec | null } | null | undefined,\n  anchor: { progress?: DiagramStatus } | null | undefined,\n  todos?: readonly TaskSpec[] | null,): NodeProgress"
     },
     {
       "name": "TaskDiscussion",
       "kind": "interface",
-      "line": 284,
+      "line": 286,
       "signature": "TaskDiscussion()",
       "members": [
         {
@@ -161,7 +161,7 @@
     {
       "name": "TaskEvidenceRecord",
       "kind": "interface",
-      "line": 306,
+      "line": 316,
       "signature": "TaskEvidenceRecord()",
       "members": [
         {
@@ -189,6 +189,24 @@
           "member_kind": "property"
         },
         {
+          "name": "observed",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "command",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "why",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
           "name": "verdict",
           "type": ": 'pass' | 'fail' | 'unsupported'",
           "optional": false,
@@ -203,15 +221,33 @@
       ]
     },
     {
+      "name": "TASK_EVIDENCE_KEYS",
+      "kind": "const",
+      "line": 354,
+      "signature": "const TASK_EVIDENCE_KEYS = [ 'kind', 'at', 'by', 'agent', 'verdict', 'fingerprint', …"
+    },
+    {
+      "name": "TaskEvidenceKey",
+      "kind": "type",
+      "line": 368,
+      "signature": "TaskEvidenceKey()"
+    },
+    {
+      "name": "pickTaskEvidence",
+      "kind": "function",
+      "line": 378,
+      "signature": "pickTaskEvidence(raw: Readonly<Record<string, unknown>>): TaskEvidenceRecord"
+    },
+    {
       "name": "ABSENT_FILE_HASH",
       "kind": "const",
-      "line": 332,
+      "line": 400,
       "signature": "const ABSENT_FILE_HASH = '<absent>'"
     },
     {
       "name": "TaskEvidenceFingerprint",
       "kind": "interface",
-      "line": 355,
+      "line": 423,
       "signature": "TaskEvidenceFingerprint()",
       "members": [
         {
@@ -243,31 +279,31 @@
     {
       "name": "fingerprintOf",
       "kind": "function",
-      "line": 375,
+      "line": 443,
       "signature": "fingerprintOf(parts: readonly string[]): string"
     },
     {
       "name": "codeFingerprintOf",
       "kind": "function",
-      "line": 383,
+      "line": 451,
       "signature": "codeFingerprintOf(entries: ReadonlyArray<{ path: string; hash: string }>,): { code: string; covers: string[] }"
     },
     {
       "name": "EvidenceFreshness",
       "kind": "type",
-      "line": 392,
+      "line": 460,
       "signature": "EvidenceFreshness()"
     },
     {
       "name": "evidenceFreshness",
       "kind": "function",
-      "line": 415,
+      "line": 483,
       "signature": "evidenceFreshness(rec: Pick<TaskEvidenceRecord, 'fingerprint'>,\n  current: { code: string; covers: readonly string[]; input?: string } | null | undefined,): EvidenceFreshness"
     },
     {
       "name": "TaskHistoryEntry",
       "kind": "interface",
-      "line": 448,
+      "line": 516,
       "signature": "TaskHistoryEntry()",
       "members": [
         {
@@ -305,7 +341,7 @@
     {
       "name": "TaskReadSetSymbol",
       "kind": "interface",
-      "line": 495,
+      "line": 563,
       "signature": "TaskReadSetSymbol()",
       "members": [
         {
@@ -331,7 +367,7 @@
     {
       "name": "TaskReadSetFile",
       "kind": "interface",
-      "line": 505,
+      "line": 573,
       "signature": "TaskReadSetFile()",
       "members": [
         {
@@ -351,13 +387,13 @@
     {
       "name": "TaskReadSetBasis",
       "kind": "type",
-      "line": 518,
+      "line": 586,
       "signature": "TaskReadSetBasis()"
     },
     {
       "name": "TaskReadSet",
       "kind": "interface",
-      "line": 521,
+      "line": 589,
       "signature": "TaskReadSet()",
       "members": [
         {
@@ -395,7 +431,7 @@
     {
       "name": "PreparedSnapshot",
       "kind": "interface",
-      "line": 551,
+      "line": 619,
       "signature": "PreparedSnapshot()",
       "members": [
         {
@@ -421,7 +457,7 @@
     {
       "name": "TaskSpec",
       "kind": "interface",
-      "line": 560,
+      "line": 628,
       "signature": "TaskSpec()",
       "members": [
         {
@@ -621,7 +657,7 @@
     {
       "name": "CriteriaHome",
       "kind": "interface",
-      "line": 826,
+      "line": 894,
       "signature": "CriteriaHome()",
       "members": [
         {
@@ -635,13 +671,13 @@
     {
       "name": "expectationsOf",
       "kind": "function",
-      "line": 830,
+      "line": 898,
       "signature": "expectationsOf(home: CriteriaHome | null | undefined): Expectation[]"
     },
     {
       "name": "taskLevel",
       "kind": "function",
-      "line": 838,
+      "line": 906,
       "signature": "taskLevel(expectations: readonly Expectation[]): 'L1' | 'L2'"
     }
   ],
@@ -707,5 +743,45 @@
       "from": "src/domain/task_schema.ts#progressOfNode",
       "to": "src/domain/task_schema.ts#todosForNode"
     }
+  ],
+  "reverse_calls": [
+    "src/application/claim_conflict.ts#collectActiveClaims",
+    "src/application/design/board/pool.ts#listPool",
+    "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+    "src/application/design/dsl_ops/task_ops.ts#applyTaskPlanOp",
+    "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+    "src/application/design/dsl_ops/task_ops.ts#assertCardWritable",
+    "src/application/design/dsl_ops/task_ops.ts#claimTask",
+    "src/application/design/dsl_ops/task_ops.ts#codeFingerprintAt",
+    "src/application/design/dsl_ops/task_ops.ts#completeTask",
+    "src/application/design/dsl_ops/task_ops.ts#expireTasks",
+    "src/application/design/dsl_ops/task_ops.ts#fingerprintEvidence",
+    "src/application/design/dsl_ops/task_ops.ts#followTodoCard",
+    "src/application/design/dsl_ops/task_ops.ts#importTodoCards",
+    "src/application/design/dsl_ops/task_ops.ts#loadTask",
+    "src/application/design/dsl_ops/task_ops.ts#moveTodoCardsToHistory",
+    "src/application/design/dsl_ops/task_ops.ts#planEvidenceRerun",
+    "src/application/design/dsl_ops/task_ops.ts#publishTask",
+    "src/application/design/dsl_ops/task_ops.ts#relaunchTask",
+    "src/application/design/dsl_ops/task_ops.ts#releaseTask",
+    "src/application/design/dsl_ops/task_ops.ts#reopenTask",
+    "src/application/design/dsl_ops/task_ops.ts#retireTodoCard",
+    "src/application/design/dsl_ops/task_ops.ts#startTask",
+    "src/application/design/dsl_ops/task_ops.ts#todoChainNote",
+    "src/application/design/dsl_ops/task_ops.ts#updateTodoCard",
+    "src/application/design/dsl_ops/task_ops.ts#voidTask",
+    "src/application/meta/explore/query_feature.ts#computePendingDebts",
+    "src/application/meta/explore/query_feature.ts#queryFeature",
+    "src/application/patrol/task_drift.ts#patrolDrift",
+    "src/application/write_gate.ts#collectGateCoverage",
+    "src/application/write_gate.ts#evaluateTaskGate",
+    "src/domain/overlay.ts#applyOverlay",
+    "src/domain/task_machine.ts#releaseIfExpired",
+    "src/domain/task_schema.ts#archivedTasks",
+    "src/domain/task_schema.ts#codeFingerprintOf",
+    "src/domain/task_schema.ts#liveTasks",
+    "src/domain/task_schema.ts#progressOf",
+    "src/domain/task_schema.ts#progressOfNode",
+    "src/domain/task_schema.ts#taskOfNode"
   ]
 }

@@ -156,5 +156,37 @@
     }
   ],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/application/design/derive/derive_algorithm.ts#deriveAlgorithm",
+    "src/application/design/derive/derive_split.ts#deriveSplit",
+    "src/application/design/dsl_ops/update_feature.ts#updateFeature",
+    "src/application/design/intent/detect_drift.ts#detectDrift",
+    "src/application/design/intent/set_design_intent.ts#setDesignIntent",
+    "src/application/design/workbench/dag_layout.ts#dagLayout",
+    "src/application/harvest/extract_contracts.ts#extractContracts",
+    "src/application/harvest/harvest_closure.ts#harvestClosure",
+    "src/application/harvest/harvest_decisions.ts#harvestDecisions",
+    "src/application/meta/archive/archive_node.ts#archiveNode",
+    "src/application/meta/explore/contract_page.ts#contractPage",
+    "src/application/meta/integrity/index_integrity.ts#indexIntegrity",
+    "src/application/meta/llm/semantic_search.ts#semanticSearch",
+    "src/application/meta/registry/sync_contracts.ts#syncContracts",
+    "src/application/meta/view/derive_anim_flow.ts#deriveAnimFlow",
+    "src/application/meta/view/derive_mind_map.ts#deriveMindMap",
+    "src/application/observe/capture/narrate_step.ts#narrateStep",
+    "src/application/observe/reconcile/reconcile_chain.ts#reconcileChain",
+    "src/application/observe/reconcile/reconcile_effects.ts#reconcileEffects",
+    "src/application/observe/runtime/watch_project_tool.ts#watchProjectTool",
+    "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOffline",
+    "src/application/refactor/diff_views/diff_views.ts#diffViews",
+    "src/application/refactor/edit/apply_writes.ts#applyWrites",
+    "src/application/refactor/edit/edit_code.ts#editCode",
+    "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImports",
+    "src/application/refactor/find/find_references.ts#findReferences",
+    "src/application/refactor/rename/rename_file.ts#renameFile",
+    "src/application/refactor/rename/rename_files.ts#renameFiles",
+    "src/application/refactor/rename/rename_symbols.ts#renameSymbols",
+    "src/infrastructure/analysis/rename_symbol/core.ts#renameSymbol"
+  ]
 }

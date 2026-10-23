@@ -198,5 +198,9 @@
       "from": "src/application/design/line/design_diff.ts#designDiff",
       "to": "src/application/design/line/design_line.ts#mustHaveFor"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/line/design_diff.ts#designDiff",
+    "src/application/design/line/design_diff.ts#designDiff.checkEdgeInSource"
   ]
 }

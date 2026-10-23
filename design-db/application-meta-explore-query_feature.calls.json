@@ -7,12 +7,12 @@
     {
       "name": "QueryFeatureInput",
       "kind": "interface",
-      "line": 97,
+      "line": 98,
       "signature": "QueryFeatureInput()",
       "members": [
         {
           "name": "query",
-          "type": ":\n    | 'dsl'\n    | 'features'\n    | 'nodes'\n    | 'edges'\n    | 'node'\n    | 'decisions'\n    | 'files'\n    | 'file'\n    | 'digest'\n    | 'scope'\n    | 'calls'\n    | 'functions'\n    | 'annotations'\n    | 'approvals'\n    | 'approval_history'\n    | 'snapshots'\n    | 'simulation_state'\n    | 'diff'\n    | 'goals'\n    | 'edge_intents'\n    | 'tag'\n    | 'pool'\n    // ★ 2026-10-21：todo 的**待办读端**（含按 state 过滤 + 墓碑）。\n    | 'todo'\n    | 'pending'",
+          "type": ":\n    | 'dsl'\n    | 'features'\n    | 'nodes'\n    | 'edges'\n    | 'node'\n    | 'decisions'\n    | 'files'\n    | 'file'\n    | 'digest'\n    | 'scope'\n    | 'calls'\n    | 'functions'\n    | 'snapshots'\n    | 'simulation_state'\n    | 'diff'\n    | 'goals'\n    | 'edge_intents'\n    | 'tag'\n    | 'pool'\n    // ★ 2026-10-21：todo 的**待办读端**（含按 state 过滤 + 墓碑）。\n    | 'todo'\n    // ★★★ 2026-10-23：已了结卡的**历史读端**（`.agent-io/task-history.db` 的 task_history 表）\n    | 'history'\n    | 'pending'\n    | 'overview'",
           "optional": false,
           "member_kind": "property"
         },
@@ -31,6 +31,30 @@
         {
           "name": "chain",
           "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "card_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "detail",
+          "type": ": boolean",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "search",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "limit",
+          "type": ": number",
           "optional": true,
           "member_kind": "property"
         },
@@ -165,7 +189,7 @@
     {
       "name": "QueryFeatureResult",
       "kind": "interface",
-      "line": 200,
+      "line": 212,
       "signature": "QueryFeatureResult()",
       "members": [
         {
@@ -183,9 +207,15 @@
       ]
     },
     {
+      "name": "computePendingDebts",
+      "kind": "function",
+      "line": 227,
+      "signature": "computePendingDebts(feature: string)"
+    },
+    {
       "name": "DSLWithMeta",
       "kind": "interface",
-      "line": 207,
+      "line": 256,
       "signature": "DSLWithMeta()",
       "members": [
         {
@@ -199,61 +229,61 @@
     {
       "name": "requireFeature",
       "kind": "function",
-      "line": 211,
+      "line": 260,
       "signature": "requireFeature(input: QueryFeatureInput): string"
     },
     {
       "name": "loadDSL",
       "kind": "function",
-      "line": 218,
+      "line": 267,
       "signature": "loadDSL(input: QueryFeatureInput)"
     },
     {
       "name": "queryFileCalls",
       "kind": "function",
-      "line": 237,
+      "line": 286,
       "signature": "queryFileCalls(db: Database, relPath: string): { incoming: Array<{ caller: string; callee: string; line: number; cross: boolean }>; outgoing: Array<{ caller: string; callee: string; line: number; cross: boolean }> }"
     },
     {
       "name": "symbolNameFromId",
       "kind": "function",
-      "line": 276,
+      "line": 325,
       "signature": "symbolNameFromId(nodeId: string): string"
     },
     {
       "name": "filePathFromId",
       "kind": "function",
-      "line": 282,
+      "line": 331,
       "signature": "filePathFromId(nodeId: string): string"
     },
     {
       "name": "dedupePreserve",
       "kind": "function",
-      "line": 294,
+      "line": 343,
       "signature": "dedupePreserve(xs: string[]): string[]"
     },
     {
       "name": "compactList",
       "kind": "function",
-      "line": 306,
+      "line": 355,
       "signature": "compactList(xs: string[], cap = 5): string"
     },
     {
       "name": "contractHint",
       "kind": "function",
-      "line": 311,
+      "line": 360,
       "signature": "contractHint(c: BrickContract): string"
     },
     {
       "name": "renderTodoChains",
       "kind": "function",
-      "line": 342,
+      "line": 391,
       "signature": "renderTodoChains(cards: readonly TaskSpec[],\n  idx: ReturnType<typeof buildTodoChains>,\n  picked: readonly TaskSpec[],): string[]"
     },
     {
       "name": "queryFeature",
       "kind": "function",
-      "line": 417,
+      "line": 466,
       "signature": "queryFeature(input: QueryFeatureInput): QueryFeatureResult"
     }
   ],
@@ -288,14 +318,6 @@
       "type_only": true
     },
     {
-      "source": "../../design/dsl_ops/annotation_tools.js",
-      "kind": "relative"
-    },
-    {
-      "source": "../../observe/reconcile/approval.js",
-      "kind": "relative"
-    },
-    {
       "source": "../../design/lifecycle/snapshot.js",
       "kind": "relative"
     },
@@ -305,6 +327,10 @@
     },
     {
       "source": "../../design/board/pool.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/task_history.js",
       "kind": "relative"
     },
     {
@@ -376,10 +402,6 @@
     },
     {
       "from": "src/application/meta/explore/query_feature.ts#queryFeature",
-      "to": "src/application/design/dsl_ops/annotation_tools.ts#listAnnotations"
-    },
-    {
-      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
       "to": "src/application/design/lifecycle/simulation.ts#getSimulationState"
     },
     {
@@ -401,6 +423,14 @@
     {
       "from": "src/application/meta/explore/query_feature.ts#contractHint",
       "to": "src/application/meta/explore/query_feature.ts#compactList"
+    },
+    {
+      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
+      "to": "src/application/meta/explore/query_feature.ts#computePendingDebts"
+    },
+    {
+      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
+      "to": "src/application/meta/explore/query_feature.ts#computePendingDebts"
     },
     {
       "from": "src/application/meta/explore/query_feature.ts#queryFeature",
@@ -508,14 +538,6 @@
     },
     {
       "from": "src/application/meta/explore/query_feature.ts#queryFeature",
-      "to": "src/application/meta/explore/query_feature.ts#requireFeature"
-    },
-    {
-      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
-      "to": "src/application/meta/explore/query_feature.ts#requireFeature"
-    },
-    {
-      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
       "to": "src/application/meta/explore/query_feature.ts#symbolNameFromId"
     },
     {
@@ -529,14 +551,6 @@
     {
       "from": "src/application/meta/explore/query_feature.ts#queryFeature",
       "to": "src/application/meta/explore/query_feature.ts#symbolNameFromId"
-    },
-    {
-      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
-      "to": "src/application/observe/reconcile/approval.ts#getApprovalHistory"
-    },
-    {
-      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
-      "to": "src/application/observe/reconcile/approval.ts#listApprovals"
     },
     {
       "from": "src/application/meta/explore/query_feature.ts#queryFeature",
@@ -591,7 +605,7 @@
       "to": "src/domain/task_schema.ts#liveTasks"
     },
     {
-      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
+      "from": "src/application/meta/explore/query_feature.ts#computePendingDebts",
       "to": "src/domain/task_schema.ts#progressOfNode"
     },
     {
@@ -627,7 +641,7 @@
       "to": "src/infrastructure/index/function_outline.ts#buildFunctionOutline"
     },
     {
-      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
+      "from": "src/application/meta/explore/query_feature.ts#computePendingDebts",
       "to": "src/infrastructure/storage.ts#getDSL"
     },
     {
@@ -639,8 +653,26 @@
       "to": "src/infrastructure/storage.ts#getDSLByView"
     },
     {
-      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
+      "from": "src/application/meta/explore/query_feature.ts#computePendingDebts",
       "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    },
+    {
+      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
+      "to": "src/infrastructure/task_history.ts#countTaskHistory"
+    },
+    {
+      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
+      "to": "src/infrastructure/task_history.ts#getTaskHistoryFile"
+    },
+    {
+      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
+      "to": "src/infrastructure/task_history.ts#queryTaskHistory"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/intent/expectations.ts#judgeExpectations",
+    "src/application/meta/explore/query_feature.ts#contractHint",
+    "src/application/meta/explore/query_feature.ts#loadDSL",
+    "src/application/meta/explore/query_feature.ts#queryFeature"
   ]
 }

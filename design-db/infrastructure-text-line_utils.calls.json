@@ -24,5 +24,16 @@
     }
   ],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/application/meta/explore/explore_code.ts#readCode",
+    "src/application/read_set.ts#factsFromDisk",
+    "src/application/refactor/edit/edit_code.ts#editCodeBatch",
+    "src/application/refactor/edit/edit_code.ts#editCodeInner",
+    "src/application/refactor/edit/edit_code.ts#squeezeBlankRuns",
+    "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+    "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+    "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+    "src/application/refactor/rename/symbol_move.ts#squeezeBlankRuns"
+  ]
 }

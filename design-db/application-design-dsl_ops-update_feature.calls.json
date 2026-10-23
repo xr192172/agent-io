@@ -7,7 +7,7 @@
     {
       "name": "FeatureOperation",
       "kind": "interface",
-      "line": 58,
+      "line": 56,
       "signature": "FeatureOperation()",
       "members": [
         {
@@ -18,7 +18,7 @@
         },
         {
           "name": "type",
-          "type": ":\n    | 'node'\n    | 'edge'\n    | 'file'\n    | 'api'\n    | 'binding'\n    | 'status'\n    | 'annotation'\n    | 'approval'\n    | 'snapshot'\n    | 'layout'\n    | 'simulation'\n    | 'tag'\n    | 'decision'\n    | 'task'\n    | 'task_plan'\n    | 'todo'",
+          "type": ":\n    | 'node'\n    | 'edge'\n    | 'file'\n    | 'api'\n    | 'binding'\n    | 'status'\n    | 'snapshot'\n    | 'layout'\n    | 'simulation'\n    | 'tag'\n    | 'decision'\n    | 'task'\n    | 'task_plan'\n    | 'todo'",
           "optional": false,
           "member_kind": "property"
         },
@@ -39,7 +39,7 @@
     {
       "name": "UpdateFeatureInput",
       "kind": "interface",
-      "line": 134,
+      "line": 130,
       "signature": "UpdateFeatureInput()",
       "members": [
         {
@@ -71,67 +71,55 @@
     {
       "name": "updateFeatureCore",
       "kind": "function",
-      "line": 177,
+      "line": 173,
       "signature": "updateFeatureCore(input: UpdateFeatureInput): Promise<EditResult>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 332,
+      "line": 328,
       "signature": "touchedOf(input: UpdateFeatureInput): Touched"
     },
     {
       "name": "touchedNodeIds",
       "kind": "function",
-      "line": 370,
+      "line": 366,
       "signature": "touchedNodeIds(input: UpdateFeatureInput): string[]"
     },
     {
       "name": "updateFeature",
       "kind": "function",
-      "line": 408,
+      "line": 404,
       "signature": "updateFeature(input: UpdateFeatureInput): Promise<TouchedProduct<EditResult>>"
     },
     {
       "name": "applyOperation",
       "kind": "function",
-      "line": 462,
+      "line": 458,
       "signature": "applyOperation(feature: string,\n  rawOp: FeatureOperation,\n  agent?: string,\n  changeReason?: string,): Promise<EditResult>"
-    },
-    {
-      "name": "applyAnnotationOp",
-      "kind": "function",
-      "line": 542,
-      "signature": "applyAnnotationOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult"
-    },
-    {
-      "name": "applyApprovalOp",
-      "kind": "function",
-      "line": 573,
-      "signature": "applyApprovalOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult"
     },
     {
       "name": "applySnapshotOp",
       "kind": "function",
-      "line": 606,
+      "line": 541,
       "signature": "applySnapshotOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult"
     },
     {
       "name": "applyLayoutOp",
       "kind": "function",
-      "line": 634,
+      "line": 569,
       "signature": "applyLayoutOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult"
     },
     {
       "name": "applySimulationOp",
       "kind": "function",
-      "line": 688,
+      "line": 623,
       "signature": "applySimulationOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult"
     },
     {
       "name": "DslWithMeta",
       "kind": "interface",
-      "line": 701,
+      "line": 636,
       "signature": "DslWithMeta()",
       "members": [
         {
@@ -145,25 +133,25 @@
     {
       "name": "resolveMemberFiles",
       "kind": "function",
-      "line": 709,
+      "line": 644,
       "signature": "resolveMemberFiles(dsl: DesignDSL, inputs: string[]): { resolved: string[]; unresolved: string[] }"
     },
     {
       "name": "applyTagOp",
       "kind": "function",
-      "line": 732,
+      "line": 667,
       "signature": "applyTagOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult"
     },
     {
       "name": "normRel",
       "kind": "function",
-      "line": 838,
+      "line": 773,
       "signature": "normRel(s: string): string"
     },
     {
       "name": "DecisionTarget",
       "kind": "interface",
-      "line": 843,
+      "line": 778,
       "signature": "DecisionTarget()",
       "members": [
         {
@@ -183,55 +171,55 @@
     {
       "name": "findDecisionTargetNode",
       "kind": "function",
-      "line": 861,
+      "line": 796,
       "signature": "findDecisionTargetNode(dsl: DesignDSL, raw: string): DecisionTarget['node'] | undefined"
     },
     {
       "name": "resolveDecisionTarget",
       "kind": "function",
-      "line": 878,
+      "line": 813,
       "signature": "resolveDecisionTarget(dsl: DesignDSL, id: string | undefined, data: Record<string, unknown>): DecisionTarget"
     },
     {
       "name": "parseAlternatives",
       "kind": "function",
-      "line": 898,
+      "line": 833,
       "signature": "parseAlternatives(v: unknown): { option: string; rejected_because: string }[]"
     },
     {
       "name": "parseDissent",
       "kind": "function",
-      "line": 917,
+      "line": 852,
       "signature": "parseDissent(v: unknown): DecisionDissent[]"
     },
     {
       "name": "applyDecisionOp",
       "kind": "function",
-      "line": 939,
+      "line": 874,
       "signature": "applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>, agent?: string, changeReason?: string): EditResult"
     },
     {
       "name": "applyNodeOp",
       "kind": "function",
-      "line": 1142,
+      "line": 1077,
       "signature": "applyNodeOp(feature: string, op: CheckedOperation<FeatureOperation>, agent?: string): EditResult"
     },
     {
       "name": "applyEdgeOp",
       "kind": "function",
-      "line": 1176,
+      "line": 1111,
       "signature": "applyEdgeOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult"
     },
     {
       "name": "applyFileOp",
       "kind": "function",
-      "line": 1211,
+      "line": 1146,
       "signature": "applyFileOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult"
     },
     {
       "name": "applyApiOp",
       "kind": "function",
-      "line": 1235,
+      "line": 1170,
       "signature": "applyApiOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult"
     }
   ],
@@ -318,14 +306,6 @@
       "type_only": true
     },
     {
-      "source": "./annotation_tools.js",
-      "kind": "relative"
-    },
-    {
-      "source": "../../observe/reconcile/approval.js",
-      "kind": "relative"
-    },
-    {
       "source": "../lifecycle/snapshot.js",
       "kind": "relative"
     },
@@ -348,14 +328,6 @@
     }
   ],
   "calls": [
-    {
-      "from": "src/application/design/dsl_ops/update_feature.ts#applyAnnotationOp",
-      "to": "src/application/design/dsl_ops/annotation_tools.ts#addAnnotationByTool"
-    },
-    {
-      "from": "src/application/design/dsl_ops/update_feature.ts#applyAnnotationOp",
-      "to": "src/application/design/dsl_ops/annotation_tools.ts#resolveAnnotation"
-    },
     {
       "from": "src/application/design/dsl_ops/update_feature.ts#applyApiOp",
       "to": "src/application/design/dsl_ops/api_ops.ts#addExpectedApi"
@@ -442,15 +414,7 @@
     },
     {
       "from": "src/application/design/dsl_ops/update_feature.ts#applyOperation",
-      "to": "src/application/design/dsl_ops/update_feature.ts#applyAnnotationOp"
-    },
-    {
-      "from": "src/application/design/dsl_ops/update_feature.ts#applyOperation",
       "to": "src/application/design/dsl_ops/update_feature.ts#applyApiOp"
-    },
-    {
-      "from": "src/application/design/dsl_ops/update_feature.ts#applyOperation",
-      "to": "src/application/design/dsl_ops/update_feature.ts#applyApprovalOp"
     },
     {
       "from": "src/application/design/dsl_ops/update_feature.ts#applyOperation",
@@ -573,14 +537,6 @@
       "to": "src/application/design/workbench/dag_layout.ts#gridAlign"
     },
     {
-      "from": "src/application/design/dsl_ops/update_feature.ts#applyApprovalOp",
-      "to": "src/application/observe/reconcile/approval.ts#reviewAnnotation"
-    },
-    {
-      "from": "src/application/design/dsl_ops/update_feature.ts#applyApprovalOp",
-      "to": "src/application/observe/reconcile/approval.ts#submitApproval"
-    },
-    {
       "from": "src/application/design/dsl_ops/update_feature.ts#updateFeature",
       "to": "src/domain/b_terms.ts#withTouched"
     },
@@ -660,5 +616,19 @@
       "from": "src/application/design/dsl_ops/update_feature.ts#updateFeature",
       "to": "src/infrastructure/storage_overlay.ts#syncTagsToOverlay"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/update_feature.ts#applyDecisionOp",
+    "src/application/design/dsl_ops/update_feature.ts#applyOperation",
+    "src/application/design/dsl_ops/update_feature.ts#applyTagOp",
+    "src/application/design/dsl_ops/update_feature.ts#findDecisionTargetNode",
+    "src/application/design/dsl_ops/update_feature.ts#resolveDecisionTarget",
+    "src/application/design/dsl_ops/update_feature.ts#touchedNodeIds",
+    "src/application/design/dsl_ops/update_feature.ts#touchedOf",
+    "src/application/design/dsl_ops/update_feature.ts#updateFeature",
+    "src/application/design/dsl_ops/update_feature.ts#updateFeatureCore",
+    "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+    "src/application/harvest/harvest_decisions.ts#makeLandable",
+    "src/presentation/daemon/daemon.ts#dslWriteHandler"
   ]
 }

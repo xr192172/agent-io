@@ -53,27 +53,15 @@
       "signature": "const mindMapResp = apiVersion .extend({ success: z.literal(true), mind_map: …"
     },
     {
-      "name": "archifyDemoItem",
-      "kind": "const",
-      "line": 79,
-      "signature": "const archifyDemoItem = z .object({ type: z.enum(['architecture', 'workflow', 'se…"
-    },
-    {
-      "name": "archifyDemoResp",
-      "kind": "const",
-      "line": 88,
-      "signature": "const archifyDemoResp = apiVersion .extend({ delivered: z.boolean(), manifest: z.…"
-    },
-    {
       "name": "schemas",
       "kind": "const",
-      "line": 96,
+      "line": 81,
       "signature": "const schemas = { features: featuresResp, save: saveResp, overview: overv…"
     },
     {
       "name": "ResponseSchemaKey",
       "kind": "type",
-      "line": 105,
+      "line": 89,
       "signature": "ResponseSchemaKey()"
     }
   ],

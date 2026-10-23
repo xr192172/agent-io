@@ -85,5 +85,9 @@
       "kind": "relative"
     }
   ],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/infrastructure/analysis/rename_symbol/namespace_family.ts#makeNamespaceAnalyzer",
+    "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource"
+  ]
 }

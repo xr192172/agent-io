@@ -7,7 +7,7 @@
     {
       "name": "WriteThroughOutcome",
       "kind": "interface",
-      "line": 97,
+      "line": 96,
       "signature": "WriteThroughOutcome()",
       "members": [
         {
@@ -99,61 +99,61 @@
     {
       "name": "EMPTY_CROSS",
       "kind": "const",
-      "line": 147,
+      "line": 146,
       "signature": "const EMPTY_CROSS = { total: 0, resolved: 0, external: 0, failed: 0 }"
     },
     {
       "name": "hasLiveIndex",
       "kind": "function",
-      "line": 161,
+      "line": 160,
       "signature": "hasLiveIndex(projectRoot: string): boolean"
     },
     {
       "name": "SELF_WRITE_MAX",
       "kind": "const",
-      "line": 182,
+      "line": 181,
       "signature": "const SELF_WRITE_MAX = 500"
     },
     {
       "name": "writeSelfWrites",
       "kind": "function",
-      "line": 184,
+      "line": 183,
       "signature": "writeSelfWrites(root: string, list: SelfWriteEntry[]): void"
     },
     {
       "name": "recordSelfWrite",
       "kind": "function",
-      "line": 211,
+      "line": 210,
       "signature": "recordSelfWrite(projectRoot: string, files: readonly string[], note?: string): number"
     },
     {
       "name": "syncSelfWrites",
       "kind": "function",
-      "line": 242,
+      "line": 241,
       "signature": "syncSelfWrites(projectRoot: string,\n  files: readonly string[],\n  opts: { syncIndex?: boolean; onFile?: (rel: string, status: SyncStatus) => void } = {},): Promise<WriteThroughOutcome | null>"
     },
     {
       "name": "resolveRefsAfterWrite",
       "kind": "function",
-      "line": 330,
+      "line": 329,
       "signature": "resolveRefsAfterWrite(db: Database,\n  root: string,\n  rels: readonly string[],\n  keepPending: boolean,): { refsReopened: number; refsReopenedFiles: number; cross: CrossFileResolveStats }"
     },
     {
       "name": "finishWriteThrough",
       "kind": "function",
-      "line": 360,
+      "line": 359,
       "signature": "finishWriteThrough(db: Database,\n  root: string,\n  rels: readonly string[],\n  out: WriteThroughOutcome,\n  errors: string[],\n  keepPending: boolean,): void"
     },
     {
       "name": "syncSelfWritesSync",
       "kind": "function",
-      "line": 413,
+      "line": 412,
       "signature": "syncSelfWritesSync(projectRoot: string,\n  files: readonly string[],\n  opts: {\n    syncIndex?: boolean;\n    /**\n     * 逐文件回报索引同步结果（`SyncStatus`）—— 与 async 版的 `onFile` **同名同义**。\n     * ★ 2026-10-22：给 `source_writer` 的调用方用（`apply_writes` 的 `index_synced` 要逐文件 `updated`）。\n     *   它只是**读数**，不改判据、不改写盘顺序 —— 不是绕过口。\n     */\n    onFile?: (rel: string, status: SyncStatus) => void;\n  } = {},): WriteThroughOutcome | null"
     },
     {
       "name": "TaskGateOutcome",
       "kind": "interface",
-      "line": 516,
+      "line": 515,
       "signature": "TaskGateOutcome()",
       "members": [
         {
@@ -197,49 +197,43 @@
     {
       "name": "WriteSubject",
       "kind": "type",
-      "line": 591,
+      "line": 590,
       "signature": "WriteSubject()"
     },
     {
       "name": "PRODUCT_TOP_DIRS",
       "kind": "const",
-      "line": 594,
+      "line": 593,
       "signature": "const PRODUCT_TOP_DIRS = new Set(['.agent-io', '.agent', 'design-db', 'dist', 'nod…"
-    },
-    {
-      "name": "PRODUCT_TOP_FILES",
-      "kind": "const",
-      "line": 600,
-      "signature": "const PRODUCT_TOP_FILES = new Set(['agent-io.json'])"
     },
     {
       "name": "classifyWriteSubject",
       "kind": "function",
-      "line": 603,
+      "line": 596,
       "signature": "classifyWriteSubject(root: string, abs: string): { subject: WriteSubject; why: string }"
     },
     {
       "name": "GATE_REJECTION_PREFIX",
       "kind": "const",
-      "line": 622,
+      "line": 614,
       "signature": "const GATE_REJECTION_PREFIX = '拒绝落盘'"
     },
     {
       "name": "isGateRejection",
       "kind": "function",
-      "line": 625,
+      "line": 617,
       "signature": "isGateRejection(err: unknown): boolean"
     },
     {
       "name": "TaskGateBasis",
       "kind": "type",
-      "line": 631,
+      "line": 623,
       "signature": "TaskGateBasis()"
     },
     {
       "name": "GateCoverageFeature",
       "kind": "interface",
-      "line": 641,
+      "line": 633,
       "signature": "GateCoverageFeature()",
       "members": [
         {
@@ -277,7 +271,7 @@
     {
       "name": "GateExemption",
       "kind": "interface",
-      "line": 669,
+      "line": 661,
       "signature": "GateExemption()",
       "members": [
         {
@@ -297,7 +291,7 @@
     {
       "name": "GateCoverage",
       "kind": "interface",
-      "line": 685,
+      "line": 677,
       "signature": "GateCoverage()",
       "members": [
         {
@@ -329,85 +323,85 @@
     {
       "name": "nodeFilePath",
       "kind": "function",
-      "line": 709,
+      "line": 701,
       "signature": "nodeFilePath(n: { type?: string; description?: string } & { path?: string },\n  sep: string,): string | undefined"
     },
     {
       "name": "collectGateCoverage",
       "kind": "function",
-      "line": 741,
+      "line": 733,
       "signature": "collectGateCoverage(rootArg: string): GateCoverage"
     },
     {
       "name": "recordUnaddressableWarnings",
       "kind": "function",
-      "line": 824,
+      "line": 816,
       "signature": "recordUnaddressableWarnings(items: GateCoverage['unaddressable'],\n  rels: readonly string[],): string[]"
     },
     {
       "name": "exemptionLines",
       "kind": "function",
-      "line": 890,
+      "line": 854,
       "signature": "exemptionLines(exempted: readonly GateExemption[]): string"
     },
     {
       "name": "WriteActor",
       "kind": "type",
-      "line": 965,
+      "line": 929,
       "signature": "WriteActor()"
     },
     {
       "name": "resolveActor",
       "kind": "function",
-      "line": 979,
+      "line": 943,
       "signature": "resolveActor(explicit?: WriteActor | null): WriteActor | null"
     },
     {
       "name": "actorStrict",
       "kind": "function",
-      "line": 1003,
+      "line": 967,
       "signature": "actorStrict(): boolean"
     },
     {
       "name": "evaluateRunAuthorize",
       "kind": "function",
-      "line": 1040,
+      "line": 1004,
       "signature": "evaluateRunAuthorize(args: {\n  scope: Scope;\n  rels: readonly string[];\n  covering: readonly GateCoverageFeature[];\n  actor: WriteActor | null;\n}): | { ok: true; feature: string; scopeText: string; nodeCount: number; allowedCount: number; anchor: { nodeId: string; owner: string } }\n  | { ok: false; reason: string }"
     },
     {
       "name": "assertSourceWriteRegisteredFor",
       "kind": "function",
-      "line": 1130,
+      "line": 1094,
       "signature": "assertSourceWriteRegisteredFor(projectRoot: string,\n  files: readonly string[],\n  actor?: WriteActor | null,\n  authorize?: string | null,\n  symbols?: readonly AssumptionTarget[],): TaskGateOutcome"
     },
     {
       "name": "assertSourceWriteRegistered",
       "kind": "function",
-      "line": 1150,
+      "line": 1114,
       "signature": "assertSourceWriteRegistered(projectRoot: string,\n  files: readonly string[],\n  /**\n   * ★★★ T356：`authorize` = **按 run 授权**（一个 scope 一次授权一批文件）——\n   * 值 = `domain/scope.ts` 的**现成文法**（`files:` / `nodes:` / `subtree:` / `layer:` / `swimlane:` / `arch_layer:`）。\n   * ★ 它**只影响本次调用**：不写库、不新增路径事实（理由见 `evaluateRunAuthorize` 的注释）。\n   * ★ 2026-10-21：`symbols` = 本次要写的符号（假设检定的符号级粒度；不给 ⇒ 文件级）。\n   */\n  opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[] },): TaskGateOutcome"
     },
     {
       "name": "evaluateTaskGate",
       "kind": "function",
-      "line": 1176,
+      "line": 1140,
       "signature": "evaluateTaskGate(projectRoot: string,\n  files: readonly string[],\n  opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[] },): TaskGateOutcome"
     },
     {
       "name": "reopenAndResolveAfterWrite",
       "kind": "function",
-      "line": 1679,
+      "line": 1643,
       "signature": "reopenAndResolveAfterWrite(projectRoot: string,\n  files: readonly string[],): Promise<{\n  refsReopened: number;\n  refsReopenedFiles: number;\n  cross: { total: number; resolved: number; external: number; failed: number };\n  error?: string;\n}>"
     },
     {
       "name": "reopenNote",
       "kind": "function",
-      "line": 1707,
+      "line": 1671,
       "signature": "reopenNote(r: { refsReopened: number; error?: string }): string"
     },
     {
       "name": "writeThroughLine",
       "kind": "function",
-      "line": 1726,
+      "line": 1690,
       "signature": "writeThroughLine(index: WriteThroughOutcome | null): string"
     }
   ],
@@ -455,11 +449,6 @@
     {
       "source": "../infrastructure/storage_overlay.js",
       "kind": "relative"
-    },
-    {
-      "source": "../domain/annotation.js",
-      "kind": "relative",
-      "type_only": true
     },
     {
       "source": "../domain/geometry.js",
@@ -725,20 +714,12 @@
       "to": "src/infrastructure/parse/kernel.ts#canParseFileSync"
     },
     {
-      "from": "src/application/write_gate.ts#recordUnaddressableWarnings",
-      "to": "src/infrastructure/storage.ts#getDSL"
-    },
-    {
       "from": "src/application/write_gate.ts#evaluateRunAuthorize",
       "to": "src/infrastructure/storage.ts#getDSL"
     },
     {
       "from": "src/application/write_gate.ts#collectGateCoverage",
       "to": "src/infrastructure/storage.ts#listDesignSheets"
-    },
-    {
-      "from": "src/application/write_gate.ts#recordUnaddressableWarnings",
-      "to": "src/infrastructure/storage.ts#saveDSL"
     },
     {
       "from": "src/application/write_gate.ts#evaluateTaskGate",
@@ -748,5 +729,31 @@
       "from": "src/application/write_gate.ts#evaluateTaskGate",
       "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+    "src/application/refactor/edit/edit_code.ts#editCodeBatch",
+    "src/application/refactor/edit/edit_code.ts#editCodeCore",
+    "src/application/refactor/edit/edit_code.ts#editCodeInner",
+    "src/application/refactor/find/find_references.ts#indexCandidateFiles",
+    "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline.runStage",
+    "src/application/refactor/rename/rename_file.ts#renameFileCore",
+    "src/application/refactor/rename/rename_files.ts#renameFilesCore",
+    "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+    "src/application/source_writer.ts#openSourceWrite",
+    "src/application/source_writer.ts#openSourceWrite.close",
+    "src/application/write_gate.ts#assertSourceWriteRegistered",
+    "src/application/write_gate.ts#assertSourceWriteRegisteredFor",
+    "src/application/write_gate.ts#collectGateCoverage",
+    "src/application/write_gate.ts#evaluateTaskGate",
+    "src/application/write_gate.ts#finishWriteThrough",
+    "src/application/write_gate.ts#recordSelfWrite",
+    "src/application/write_gate.ts#reopenAndResolveAfterWrite",
+    "src/application/write_gate.ts#syncSelfWrites",
+    "src/application/write_gate.ts#syncSelfWritesSync",
+    "src/presentation/mcp/server_registry.ts#firstContactBackfill",
+    "src/presentation/mcp/server_registry.ts#invokeTool",
+    "src/presentation/mcp/server_registry.ts#staleIndexWarning",
+    "src/presentation/mcp/server_registry.ts#trustNoteFor"
   ]
 }

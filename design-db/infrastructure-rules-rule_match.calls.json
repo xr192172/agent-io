@@ -300,5 +300,15 @@
       "from": "src/infrastructure/rules/rule_match.ts#instantiateReplace",
       "to": "src/infrastructure/rules/rule_tokens.ts#splitLines"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/rule_library/rule_apply.ts#applyRuleToContent",
+    "src/application/refactor/rule_library/rule_apply.ts#runFixtures",
+    "src/application/refactor/rule_library/rule_extract.ts#validateRule",
+    "src/infrastructure/rules/rule_match.ts#applyMatch",
+    "src/infrastructure/rules/rule_match.ts#indexFile",
+    "src/infrastructure/rules/rule_match.ts#matchLine",
+    "src/infrastructure/rules/rule_match.ts#matchLiteral",
+    "src/infrastructure/rules/rule_match.ts#matchRule"
   ]
 }

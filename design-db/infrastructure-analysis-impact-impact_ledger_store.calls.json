@@ -276,5 +276,21 @@
       "from": "src/infrastructure/analysis/impact/impact_ledger_store.ts#resolveViolation",
       "to": "src/infrastructure/analysis/impact/impact_ledger_store.ts#saveLedger"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/runtime/watch_project_tool.ts#declareWatch",
+    "src/application/observe/runtime/watch_project_tool.ts#doWork",
+    "src/application/observe/runtime/watch_project_tool.ts#ledgerWatch",
+    "src/application/observe/runtime/watch_project_tool.ts#startWatch",
+    "src/application/observe/runtime/watch_project_tool.ts#statusWatch",
+    "src/infrastructure/analysis/impact/impact_ledger_store.ts#appendDeclaration",
+    "src/infrastructure/analysis/impact/impact_ledger_store.ts#countOpenViolations",
+    "src/infrastructure/analysis/impact/impact_ledger_store.ts#listLedger",
+    "src/infrastructure/analysis/impact/impact_ledger_store.ts#loadLedger",
+    "src/infrastructure/analysis/impact/impact_ledger_store.ts#markConsumed",
+    "src/infrastructure/analysis/impact/impact_ledger_store.ts#recoverPending",
+    "src/infrastructure/analysis/impact/impact_ledger_store.ts#resolveViolation",
+    "src/infrastructure/analysis/impact/impact_ledger_store.ts#saveLedger",
+    "src/infrastructure/analysis/observe/ledger_fold.ts#analyzeLedger"
   ]
 }

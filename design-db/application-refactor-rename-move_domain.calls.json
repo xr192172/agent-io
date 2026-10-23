@@ -203,5 +203,8 @@
       "from": "src/application/refactor/rename/move_domain.ts#untouchedEntries",
       "to": "src/infrastructure/parse/source_exts.ts#isSourceExt"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/rename/move_domain.ts#moveDomain"
   ]
 }

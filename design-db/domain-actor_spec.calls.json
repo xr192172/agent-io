@@ -207,5 +207,26 @@
       "from": "src/domain/actor_spec.ts#invalidError",
       "to": "src/domain/actor_spec.ts#suggestLine"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+    "src/application/design/dsl_ops/task_ops.ts#claimTask",
+    "src/application/design/dsl_ops/task_ops.ts#completeTask",
+    "src/application/design/dsl_ops/task_ops.ts#releaseTask",
+    "src/application/design/dsl_ops/task_ops.ts#renewTask",
+    "src/application/design/dsl_ops/task_ops.ts#reopenTask",
+    "src/application/design/dsl_ops/task_ops.ts#retireTodoCard",
+    "src/application/design/dsl_ops/task_ops.ts#signTaskActor",
+    "src/application/design/dsl_ops/task_ops.ts#startTask",
+    "src/application/write_gate.ts#actorStrict",
+    "src/application/write_gate.ts#evaluateRunAuthorize",
+    "src/application/write_gate.ts#evaluateTaskGate",
+    "src/application/write_gate.ts#resolveActor",
+    "src/domain/actor_spec.ts#actorKey",
+    "src/domain/actor_spec.ts#admitActor",
+    "src/domain/actor_spec.ts#invalidError",
+    "src/domain/actor_spec.ts#sameActor",
+    "src/domain/actor_spec.ts#suggestLine",
+    "src/presentation/mcp/server_registry.ts#invokeTool"
   ]
 }

@@ -540,5 +540,17 @@
       "from": "src/application/refactor/find/field_refs.ts#collectTypeConstructCandidates",
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/find/field_refs.ts#bracketReadOffsets",
+    "src/application/refactor/find/field_refs.ts#captureReads",
+    "src/application/refactor/find/field_refs.ts#classifyKeyOffsets",
+    "src/application/refactor/find/field_refs.ts#classifyOffset",
+    "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+    "src/application/refactor/find/field_refs.ts#collectTypeConstructCandidates",
+    "src/application/refactor/find/field_refs.ts#extractTypeMembers",
+    "src/application/refactor/find/field_refs.ts#lineText",
+    "src/application/refactor/find/field_refs.ts#ofTypeDeclFiles",
+    "src/application/refactor/find/find_references.ts#findReferencesCore"
   ]
 }

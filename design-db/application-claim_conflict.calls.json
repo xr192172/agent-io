@@ -306,5 +306,10 @@
       "from": "src/application/claim_conflict.ts#collectActiveClaims",
       "to": "src/infrastructure/storage.ts#listDesignSheets"
     }
+  ],
+  "reverse_calls": [
+    "src/application/claim_conflict.ts#claimConflictMessage",
+    "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
+    "src/application/design/dsl_ops/task_ops.ts#claimTask"
   ]
 }

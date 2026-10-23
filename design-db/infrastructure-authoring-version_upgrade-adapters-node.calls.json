@@ -98,5 +98,8 @@
       "from": "src/infrastructure/authoring/version_upgrade/adapters/node.ts#nodeRunProbe",
       "to": "src/infrastructure/authoring/version_upgrade/adapters/node.ts#nodeRunMode"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/version_upgrade/adapters/node.ts#nodeRunProbe"
   ]
 }

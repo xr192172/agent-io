@@ -7,13 +7,13 @@
     {
       "name": "EditCodeOp",
       "kind": "type",
-      "line": 64,
+      "line": 68,
       "signature": "EditCodeOp()"
     },
     {
       "name": "EditCodeArgs",
       "kind": "interface",
-      "line": 66,
+      "line": 70,
       "signature": "EditCodeArgs()",
       "members": [
         {
@@ -123,7 +123,7 @@
     {
       "name": "EditBatchItem",
       "kind": "interface",
-      "line": 123,
+      "line": 127,
       "signature": "EditBatchItem()",
       "members": [
         {
@@ -179,7 +179,7 @@
     {
       "name": "LineOp",
       "kind": "interface",
-      "line": 142,
+      "line": 146,
       "signature": "LineOp()",
       "members": [
         {
@@ -205,103 +205,103 @@
     {
       "name": "normalizeCode",
       "kind": "function",
-      "line": 150,
+      "line": 154,
       "signature": "normalizeCode(code: string, eol: string): string[]"
     },
     {
       "name": "hasSyntaxError",
       "kind": "function",
-      "line": 162,
+      "line": 166,
       "signature": "hasSyntaxError(filePath: string, content: string): Promise<boolean>"
     },
     {
       "name": "matchSymbols",
       "kind": "function",
-      "line": 168,
+      "line": 172,
       "signature": "matchSymbols(symbols: ParsedSymbol[], symbol: string, parent?: string): {\n  qnHits: ParsedSymbol[];\n  nameHits: ParsedSymbol[];\n}"
     },
     {
       "name": "describeSymbol",
       "kind": "function",
-      "line": 181,
+      "line": 185,
       "signature": "describeSymbol(s: ParsedSymbol): string"
     },
     {
       "name": "squeezeBlankRuns",
       "kind": "function",
-      "line": 186,
+      "line": 190,
       "signature": "squeezeBlankRuns(lines: string[]): string[]"
     },
     {
       "name": "buildRangePreview",
       "kind": "function",
-      "line": 196,
+      "line": 200,
       "signature": "buildRangePreview(start: number,\n  end: number,\n  total: number,\n  removed: string[],\n  added: string[],\n  overlapped: ParsedSymbol[],\n  quiet?: boolean,): string"
     },
     {
       "name": "buildGenericDiff",
       "kind": "function",
-      "line": 230,
+      "line": 234,
       "signature": "buildGenericDiff(header: string, removed: string[], added: string[]): string"
     },
     {
       "name": "findBodyRange",
       "kind": "function",
-      "line": 246,
+      "line": 250,
       "signature": "findBodyRange(absPath: string,\n  content: string,\n  symbol: string,\n  parent?: string,): Promise<{ startIndex: number; endIndex: number; startLine: number; endLine: number } | null>"
     },
     {
       "name": "leadingSpaces",
       "kind": "function",
-      "line": 289,
+      "line": 293,
       "signature": "leadingSpaces(line: string): number"
     },
     {
       "name": "leadingWhitespaceOfLine",
       "kind": "function",
-      "line": 295,
+      "line": 299,
       "signature": "leadingWhitespaceOfLine(content: string, line: number): string"
     },
     {
       "name": "realignCode",
       "kind": "function",
-      "line": 308,
+      "line": 312,
       "signature": "realignCode(lines: string[], refIndent: string): string[]"
     },
     {
       "name": "DECL_PREFIXES",
       "kind": "const",
-      "line": 316,
+      "line": 320,
       "signature": "const DECL_PREFIXES = [ 'function ', 'class ', 'interface ', 'enum ', 'type ', …"
     },
     {
       "name": "looksLikeBareBody",
       "kind": "function",
-      "line": 322,
+      "line": 326,
       "signature": "looksLikeBareBody(code: string): boolean"
     },
     {
       "name": "subBodyHint",
       "kind": "function",
-      "line": 330,
+      "line": 334,
       "signature": "subBodyHint(targetKind: string | undefined): string"
     },
     {
       "name": "describeSymbolCtx",
       "kind": "function",
-      "line": 339,
+      "line": 343,
       "signature": "describeSymbolCtx(s: ParsedSymbol, lines: string[]): string"
     },
     {
       "name": "buildAmbiguityError",
       "kind": "function",
-      "line": 349,
+      "line": 353,
       "signature": "buildAmbiguityError(hits: ParsedSymbol[], symbol: string, lines: string[]): string"
     },
     {
       "name": "EditReceipt",
       "kind": "interface",
-      "line": 366,
+      "line": 370,
       "signature": "EditReceipt()",
       "members": [
         {
@@ -405,7 +405,7 @@
     {
       "name": "ReplaceTextPlan",
       "kind": "interface",
-      "line": 411,
+      "line": 415,
       "signature": "ReplaceTextPlan()",
       "members": [
         {
@@ -449,13 +449,13 @@
     {
       "name": "planReplaceText",
       "kind": "function",
-      "line": 438,
+      "line": 442,
       "signature": "planReplaceText(absPath: string,\n  content: string,\n  eol: string,\n  oldText: string,\n  newText: string,): Promise<ReplaceTextPlan>"
     },
     {
       "name": "GateReceipt",
       "kind": "interface",
-      "line": 503,
+      "line": 507,
       "signature": "GateReceipt()",
       "members": [
         {
@@ -481,31 +481,31 @@
     {
       "name": "editCodeInner",
       "kind": "function",
-      "line": 510,
+      "line": 514,
       "signature": "editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise<{ message: string; data?: unknown }>"
     },
     {
       "name": "editCodeBatch",
       "kind": "function",
-      "line": 973,
+      "line": 977,
       "signature": "editCodeBatch(args: EditCodeArgs): Promise<{ message: string; data: EditReceipt }>"
     },
     {
       "name": "editCodeCore",
       "kind": "function",
-      "line": 1177,
+      "line": 1181,
       "signature": "editCodeCore(args: EditCodeArgs): Promise<{ message: string; data: EditReceipt }>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 1219,
+      "line": 1223,
       "signature": "touchedOf(args: EditCodeArgs, r: { message: string; data: EditReceipt }): Touched"
     },
     {
       "name": "editCode",
       "kind": "function",
-      "line": 1246,
+      "line": 1250,
       "signature": "editCode(args: EditCodeArgs): Promise<TouchedProduct<{ message: string; data: EditReceipt }>>"
     }
   ],
@@ -972,5 +972,20 @@
       "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
       "to": "src/infrastructure/text/line_utils.ts#splitKeepEnds"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/workbench/code_workbench.ts#approveChange",
+    "src/application/meta/explore/explore_code.ts#readCode",
+    "src/application/refactor/edit/edit_code.ts#buildAmbiguityError",
+    "src/application/refactor/edit/edit_code.ts#buildRangePreview",
+    "src/application/refactor/edit/edit_code.ts#describeSymbolCtx",
+    "src/application/refactor/edit/edit_code.ts#editCode",
+    "src/application/refactor/edit/edit_code.ts#editCodeBatch",
+    "src/application/refactor/edit/edit_code.ts#editCodeCore",
+    "src/application/refactor/edit/edit_code.ts#editCodeInner",
+    "src/application/refactor/edit/edit_code.ts#planReplaceText",
+    "src/application/refactor/edit/edit_code.ts#realignCode",
+    "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+    "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan"
   ]
 }

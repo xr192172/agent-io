@@ -331,5 +331,18 @@
       "from": "src/infrastructure/render/anim_core.ts#validateValueSchema.walk",
       "to": "src/infrastructure/render/anim_core.ts#validateValueSchema.walk"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/render/anim_core.ts#applyInputMapping",
+    "src/infrastructure/render/anim_core.ts#applyOutputMapping",
+    "src/infrastructure/render/anim_core.ts#buildPresetValue",
+    "src/infrastructure/render/anim_core.ts#classifyError",
+    "src/infrastructure/render/anim_core.ts#matchError",
+    "src/infrastructure/render/anim_core.ts#pickBranch",
+    "src/infrastructure/render/anim_core.ts#presetCandidates",
+    "src/infrastructure/render/anim_core.ts#validateValueSchema",
+    "src/infrastructure/render/anim_core.ts#validateValueSchema.walk",
+    "src/infrastructure/render/inject_replay.ts#checkShape",
+    "src/infrastructure/render/inject_replay.ts#injectReplay"
   ]
 }

@@ -68,5 +68,9 @@
       "from": "src/infrastructure/parse/comments.ts#commentRangesSync",
       "to": "src/infrastructure/parse/probe.ts#isExtSupported"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/derive/derive_split.ts#referNames",
+    "src/infrastructure/parse/comments.ts#stripCommentsSync"
   ]
 }

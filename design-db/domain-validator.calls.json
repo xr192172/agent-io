@@ -95,25 +95,25 @@
     {
       "name": "validateReasoningIntegrity",
       "kind": "function",
-      "line": 148,
+      "line": 137,
       "signature": "validateReasoningIntegrity(dsl: DesignDSL): ValidationErrorItem[]"
     },
     {
       "name": "validateNoReadingSnapshots",
       "kind": "function",
-      "line": 235,
+      "line": 224,
       "signature": "validateNoReadingSnapshots(dsl: DesignDSL): ValidationErrorItem[]"
     },
     {
       "name": "validateDSL",
       "kind": "function",
-      "line": 263,
+      "line": 252,
       "signature": "validateDSL(dsl: unknown): ValidationResult"
     },
     {
       "name": "validateDSLJson",
       "kind": "function",
-      "line": 291,
+      "line": 280,
       "signature": "validateDSLJson(json: string): ValidationResult & { dsl?: DesignDSL }"
     }
   ],
@@ -177,6 +177,11 @@
       "from": "src/domain/validator.ts#validateDSL",
       "to": "src/domain/validator.ts#validateSemanticAnchoring"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/update_feature.ts#updateFeatureCore",
+    "src/domain/validator.ts#validateDSL",
+    "src/domain/validator.ts#validateDSLJson"
   ],
   "requirements": [
     {

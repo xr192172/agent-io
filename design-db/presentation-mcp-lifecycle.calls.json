@@ -135,5 +135,10 @@
       "from": "src/presentation/mcp/lifecycle.ts#createLifecycleHandlers",
       "to": "src/presentation/mcp/lifecycle.ts#describeError"
     }
+  ],
+  "reverse_calls": [
+    "src/presentation/mcp/lifecycle.ts#createLifecycleHandlers",
+    "src/presentation/mcp/lifecycle.ts#installLifecycle",
+    "src/presentation/mcp/server.ts#main"
   ]
 }

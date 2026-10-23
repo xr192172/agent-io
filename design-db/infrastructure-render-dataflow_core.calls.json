@@ -367,5 +367,10 @@
       "from": "src/infrastructure/render/dataflow_core.ts#buildDataTrace",
       "to": "src/infrastructure/render/dataflow_core.ts#mockValue"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/render/dataflow_core.ts#applyJudgements",
+    "src/infrastructure/render/dataflow_core.ts#buildDataTrace",
+    "src/infrastructure/render/dataflow_core.ts#mockValue"
   ]
 }

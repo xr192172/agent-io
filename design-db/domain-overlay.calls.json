@@ -7,55 +7,55 @@
     {
       "name": "hasAnchorPayload",
       "kind": "function",
-      "line": 35,
+      "line": 34,
       "signature": "hasAnchorPayload(a: OverlayAnchor): boolean"
     },
     {
       "name": "SIG_PREFIX",
       "kind": "const",
-      "line": 51,
+      "line": 49,
       "signature": "const SIG_PREFIX = 'v2:'"
     },
     {
       "name": "computeFileSignature",
       "kind": "function",
-      "line": 65,
+      "line": 63,
       "signature": "computeFileSignature(apis: ExpectedApi[],\n  nonFuncSymbols: Symbol[],\n  lineCount: number,): string"
     },
     {
       "name": "ProgressEvidence",
       "kind": "type",
-      "line": 98,
+      "line": 96,
       "signature": "ProgressEvidence()"
     },
     {
       "name": "validateProgressEvidence",
       "kind": "function",
-      "line": 121,
+      "line": 119,
       "signature": "validateProgressEvidence(progress: DiagramStatus | undefined,\n  evidence: ProgressEvidence | undefined,): { ok: true } | { ok: false; reason: string }"
     },
     {
       "name": "validateEvidenceShape",
       "kind": "function",
-      "line": 150,
+      "line": 148,
       "signature": "validateEvidenceShape(evidence: ProgressEvidence): { ok: true } | { ok: false; reason: string }"
     },
     {
       "name": "nonEmpty",
       "kind": "function",
-      "line": 178,
+      "line": 176,
       "signature": "nonEmpty(v: unknown): boolean"
     },
     {
       "name": "attestationAppliesTo",
       "kind": "function",
-      "line": 205,
+      "line": 203,
       "signature": "attestationAppliesTo(att: Extract<ProgressEvidence, { kind: 'attestation' }>,\n  currentNodeId: string,): boolean"
     },
     {
       "name": "OverlayAnchor",
       "kind": "interface",
-      "line": 216,
+      "line": 214,
       "signature": "OverlayAnchor()",
       "members": [
         {
@@ -79,12 +79,6 @@
         {
           "name": "attributes",
           "type": ": Record<string, string | number | boolean>",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "annotations",
-          "type": ": Annotation[]",
           "optional": true,
           "member_kind": "property"
         },
@@ -129,7 +123,7 @@
     {
       "name": "OverlayGlobal",
       "kind": "interface",
-      "line": 276,
+      "line": 273,
       "signature": "OverlayGlobal()",
       "members": [
         {
@@ -141,12 +135,6 @@
         {
           "name": "theme",
           "type": ": ThemeId",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
-          "name": "annotations",
-          "type": ": Annotation[]",
           "optional": true,
           "member_kind": "property"
         },
@@ -179,7 +167,7 @@
     {
       "name": "OverlayGoal",
       "kind": "interface",
-      "line": 310,
+      "line": 306,
       "signature": "OverlayGoal()",
       "members": [
         {
@@ -211,7 +199,7 @@
     {
       "name": "OverlayEdgeIntent",
       "kind": "interface",
-      "line": 319,
+      "line": 315,
       "signature": "OverlayEdgeIntent()",
       "members": [
         {
@@ -245,12 +233,6 @@
           "member_kind": "property"
         },
         {
-          "name": "annotations",
-          "type": ": Annotation[]",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
           "name": "status",
           "type": ": 'open' | 'resolved'",
           "optional": true,
@@ -273,7 +255,7 @@
     {
       "name": "DesignOverlay",
       "kind": "interface",
-      "line": 352,
+      "line": 347,
       "signature": "DesignOverlay()",
       "members": [
         {
@@ -311,7 +293,7 @@
     {
       "name": "AnchorCandidate",
       "kind": "interface",
-      "line": 363,
+      "line": 358,
       "signature": "AnchorCandidate()",
       "members": [
         {
@@ -343,7 +325,7 @@
     {
       "name": "ReconcileStats",
       "kind": "interface",
-      "line": 372,
+      "line": 367,
       "signature": "ReconcileStats()",
       "members": [
         {
@@ -375,25 +357,25 @@
     {
       "name": "nodePath",
       "kind": "function",
-      "line": 388,
+      "line": 383,
       "signature": "nodePath(n: { id: string; type?: string; description?: string; path?: string }): string"
     },
     {
       "name": "decodeDirId",
       "kind": "function",
-      "line": 397,
+      "line": 392,
       "signature": "decodeDirId(id: string): string"
     },
     {
       "name": "buildCandidates",
       "kind": "function",
-      "line": 403,
+      "line": 398,
       "signature": "buildCandidates(dsl: DesignDSL): AnchorCandidate[]"
     },
     {
       "name": "EdgeCandidate",
       "kind": "interface",
-      "line": 424,
+      "line": 419,
       "signature": "EdgeCandidate()",
       "members": [
         {
@@ -419,55 +401,55 @@
     {
       "name": "buildEdgeCandidates",
       "kind": "function",
-      "line": 431,
+      "line": 426,
       "signature": "buildEdgeCandidates(base: DesignDSL): EdgeCandidate[]"
     },
     {
       "name": "reconcileOverlay",
       "kind": "function",
-      "line": 436,
+      "line": 431,
       "signature": "reconcileOverlay(old: DesignOverlay,\n  newCandidates: AnchorCandidate[],\n  newEdgeCandidates?: EdgeCandidate[],): { overlay: DesignOverlay; stats: ReconcileStats }"
     },
     {
       "name": "mergeById",
       "kind": "function",
-      "line": 543,
+      "line": 538,
       "signature": "mergeById(list: T[], add: T[]): T[]"
     },
     {
       "name": "applyOverlay",
       "kind": "function",
-      "line": 555,
+      "line": 550,
       "signature": "applyOverlay(base: DesignDSL, overlay: DesignOverlay): DesignDSL"
     },
     {
       "name": "seedOverlayFromDsl",
       "kind": "function",
-      "line": 660,
+      "line": 659,
       "signature": "seedOverlayFromDsl(dsl: DesignDSL | null): DesignOverlay"
     },
     {
       "name": "nodePathKind",
       "kind": "function",
-      "line": 762,
+      "line": 750,
       "signature": "nodePathKind(n: { id: string; type?: string }): OverlayAnchor['kind']"
     },
     {
       "name": "mergeTagsIntoOverlay",
       "kind": "function",
-      "line": 819,
+      "line": 807,
       "signature": "mergeTagsIntoOverlay(ov: DesignOverlay,\n  dsl: DesignDSL,): { overlay: DesignOverlay; tags: Record<string, string[]> | undefined; written: number; cleared: boolean }"
     },
     {
       "name": "mergeLifecycleIntoOverlay",
       "kind": "function",
-      "line": 876,
+      "line": 864,
       "signature": "mergeLifecycleIntoOverlay(ov: DesignOverlay,\n  dsl: DesignDSL,): { overlay: DesignOverlay; written: number; cleared: number; notes: string[] }"
     },
     {
       "name": "statsLine",
       "kind": "function",
-      "line": 947,
+      "line": 935,
       "signature": "statsLine(stats: ReconcileStats): string"
     }
   ],
@@ -483,11 +465,6 @@
     },
     {
       "source": "./geometry.js",
-      "kind": "relative",
-      "type_only": true
-    },
-    {
-      "source": "./annotation.js",
       "kind": "relative",
       "type_only": true
     },
@@ -518,14 +495,6 @@
     {
       "from": "src/domain/overlay.ts#mergeLifecycleIntoOverlay",
       "to": "src/domain/overlay.ts#hasAnchorPayload"
-    },
-    {
-      "from": "src/domain/overlay.ts#applyOverlay",
-      "to": "src/domain/overlay.ts#mergeById"
-    },
-    {
-      "from": "src/domain/overlay.ts#applyOverlay",
-      "to": "src/domain/overlay.ts#mergeById"
     },
     {
       "from": "src/domain/overlay.ts#buildCandidates",
@@ -579,5 +548,31 @@
       "from": "src/domain/overlay.ts#applyOverlay",
       "to": "src/domain/task_schema.ts#progressOfNode"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/board/pool.ts#listPool",
+    "src/application/design/dsl_ops/status_tools.ts#updateStatus",
+    "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+    "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+    "src/application/design/dsl_ops/task_ops.ts#completeTask",
+    "src/application/design/dsl_ops/task_ops.ts#deleteTodoCard",
+    "src/application/design/dsl_ops/task_ops.ts#importTodoCards",
+    "src/application/design/dsl_ops/task_ops.ts#moveTodoCardsToHistory",
+    "src/application/design/dsl_ops/task_ops.ts#writeTask",
+    "src/application/design/dsl_ops/task_ops.ts#writeTaskAndRestoreSnapshot",
+    "src/application/design/intent/set_design_intent.ts#setDesignIntentCore",
+    "src/application/design/workbench/code_workbench.ts#previewDslIntent",
+    "src/domain/design_sheet.ts#diffDesignSheet",
+    "src/domain/overlay.ts#attestationAppliesTo",
+    "src/domain/overlay.ts#buildCandidates",
+    "src/domain/overlay.ts#mergeLifecycleIntoOverlay",
+    "src/domain/overlay.ts#nodePath",
+    "src/domain/overlay.ts#seedOverlayFromDsl",
+    "src/domain/overlay.ts#validateEvidenceShape",
+    "src/domain/overlay.ts#validateProgressEvidence",
+    "src/infrastructure/storage_overlay.ts#dropLifecycleFromOverlay",
+    "src/infrastructure/storage_overlay.ts#mergeDesignLayer",
+    "src/infrastructure/storage_overlay.ts#syncLifecycleToOverlay",
+    "src/infrastructure/storage_overlay.ts#syncTagsToOverlay"
   ]
 }

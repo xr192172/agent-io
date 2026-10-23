@@ -794,5 +794,17 @@
       "from": "src/infrastructure/authoring/translate/book.ts#rebuildBook",
       "to": "src/infrastructure/authoring/translate/book.ts#writeBook"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/translate/book.ts#classifyShape",
+    "src/infrastructure/authoring/translate/book.ts#generateBook",
+    "src/infrastructure/authoring/translate/book.ts#genericNames",
+    "src/infrastructure/authoring/translate/book.ts#goInternalName",
+    "src/infrastructure/authoring/translate/book.ts#goSymbolName",
+    "src/infrastructure/authoring/translate/book.ts#rebuildBook",
+    "src/infrastructure/authoring/translate/book.ts#shapeStats",
+    "src/infrastructure/authoring/translate/book.ts#typeExpressions",
+    "src/infrastructure/authoring/translate/book.ts#unmappedTypes",
+    "src/infrastructure/authoring/translate/book.ts#writeBook"
   ]
 }

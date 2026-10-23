@@ -199,5 +199,12 @@
       "from": "src/application/meta/registry/sync_contracts.ts#syncContractsCore",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/registry/sync_contracts.ts#findUnder",
+    "src/application/meta/registry/sync_contracts.ts#resolveImplPath",
+    "src/application/meta/registry/sync_contracts.ts#syncContracts",
+    "src/application/meta/registry/sync_contracts.ts#syncContractsCore",
+    "src/application/meta/registry/sync_contracts.ts#zodToTs"
   ]
 }

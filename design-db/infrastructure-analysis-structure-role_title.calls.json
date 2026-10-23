@@ -116,5 +116,9 @@
       "from": "src/infrastructure/analysis/structure/role_title.ts#generateFileRoleTitles",
       "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/structure/role_title.ts#generateFileRoleTitles",
+    "src/infrastructure/graph/import_project.ts#importProject"
   ]
 }

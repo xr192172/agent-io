@@ -376,5 +376,12 @@
       "from": "src/application/meta/view/overview.ts#sharedDescCacheFile",
       "to": "src/infrastructure/storage.ts#getStorageRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/view/overview.ts#enrichSharedDesc",
+    "src/application/meta/view/overview.ts#getOverview",
+    "src/application/meta/view/overview.ts#readCachedSummary",
+    "src/application/meta/view/overview.ts#writeCachedSummary",
+    "src/presentation/http/serve.ts#handleApiOverview"
   ]
 }

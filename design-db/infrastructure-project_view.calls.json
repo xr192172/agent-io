@@ -110,5 +110,16 @@
       "from": "src/infrastructure/project_view.ts#getProjectView",
       "to": "src/infrastructure/text/refs_text.ts#walkSourceFiles"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+    "src/application/refactor/find/find_references.ts#indexCandidateFiles",
+    "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
+    "src/infrastructure/index/index_backfill.ts#backfillChunk",
+    "src/infrastructure/index/index_backfill.ts#scheduleBackfill",
+    "src/infrastructure/index/index_freshness.ts#ensureIndexAround",
+    "src/infrastructure/index/symbols.ts#syncFile",
+    "src/infrastructure/index/symbols.ts#syncFileSync",
+    "src/infrastructure/index/watch_project.ts#watchProject"
   ]
 }

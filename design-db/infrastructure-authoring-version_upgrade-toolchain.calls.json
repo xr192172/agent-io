@@ -277,5 +277,12 @@
       "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#matchRuntimes",
       "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#versionSatisfies"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/version_upgrade/detect.ts#runContractScan",
+    "src/infrastructure/authoring/version_upgrade/toolchain.ts#matchRuntimes",
+    "src/infrastructure/authoring/version_upgrade/toolchain.ts#probeLocalRuntimes",
+    "src/infrastructure/authoring/version_upgrade/toolchain.ts#scanToolchainDeclarations",
+    "src/infrastructure/authoring/version_upgrade/toolchain.ts#scanToolchains"
   ]
 }

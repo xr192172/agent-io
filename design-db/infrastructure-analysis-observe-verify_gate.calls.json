@@ -171,5 +171,12 @@
       "from": "src/infrastructure/analysis/observe/verify_gate.ts#regressionEvidence",
       "to": "src/infrastructure/analysis/observe/verify_gate.ts#regressionSummary"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+    "src/infrastructure/analysis/observe/verify_gate.ts#finalizeDecls",
+    "src/infrastructure/analysis/observe/verify_gate.ts#regressionEvidence",
+    "src/infrastructure/analysis/observe/verify_gate.ts#rejectedByReview",
+    "src/infrastructure/analysis/observe/verify_gate.ts#verifyRuleRegression"
   ]
 }

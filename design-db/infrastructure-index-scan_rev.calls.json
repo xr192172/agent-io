@@ -58,5 +58,9 @@
       "from": "src/infrastructure/index/scan_rev.ts#scanRevOf",
       "to": "src/infrastructure/index/db.ts#findCacheDb"
     }
+  ],
+  "reverse_calls": [
+    "src/application/patrol/task_drift.ts#patrolDrift",
+    "src/infrastructure/storage.ts#buildSyncMeta"
   ]
 }

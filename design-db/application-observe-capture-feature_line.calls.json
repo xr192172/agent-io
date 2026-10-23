@@ -154,5 +154,10 @@
       "from": "src/application/observe/capture/feature_line.ts#getFeatureLine",
       "to": "src/infrastructure/index/function_outline.ts#buildFunctionOutline"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/capture/feature_line.ts#deriveLineFromFunctions",
+    "src/application/observe/capture/feature_line.ts#getFeatureLine",
+    "src/presentation/http/serve.ts#handleApiFeatureLine"
   ]
 }

@@ -464,5 +464,17 @@
       "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#rewriteJavaFile",
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/refactor/langs/java/executor.ts#computeSpringMvcLayeringPlan",
+    "src/infrastructure/analysis/refactor/langs/java/executor.ts#dirHasJava",
+    "src/infrastructure/analysis/refactor/langs/java/layering.ts#analyzeJavaRefs",
+    "src/infrastructure/analysis/refactor/langs/java/layering.ts#buildSpringMvcLayeringPlan",
+    "src/infrastructure/analysis/refactor/langs/java/layering.ts#collectAnnotations",
+    "src/infrastructure/analysis/refactor/langs/java/layering.ts#collectImportEdits",
+    "src/infrastructure/analysis/refactor/langs/java/layering.ts#extractJavaTypes",
+    "src/infrastructure/analysis/refactor/langs/java/layering.ts#planSpringLayering",
+    "src/infrastructure/analysis/refactor/langs/java/layering.ts#rewriteJavaFile",
+    "src/infrastructure/analysis/refactor/langs/java/layering.ts#springMvcLayeringHandler"
   ]
 }

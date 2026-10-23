@@ -242,5 +242,9 @@
       "from": "src/infrastructure/analysis/capability/language_concepts.ts#languageConcepts",
       "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/capability/language_concepts.ts#languageConcepts",
+    "src/presentation/http/serve.ts#handleApiLanguageConcepts"
   ]
 }

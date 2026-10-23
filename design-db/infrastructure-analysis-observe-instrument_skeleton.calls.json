@@ -385,5 +385,26 @@
       "from": "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentFileWithHooks",
       "to": "src/infrastructure/source_write_port.ts#commitSourceWrite"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/observe/instrument.ts#collectDeepSites",
+    "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+    "src/infrastructure/analysis/observe/instrument.ts#collectTsFiles",
+    "src/infrastructure/analysis/observe/instrument.ts#handleReturn",
+    "src/infrastructure/analysis/observe/instrument.ts#instrumentFile",
+    "src/infrastructure/analysis/observe/instrument.ts#instrumentProject",
+    "src/infrastructure/analysis/observe/instrument.ts#isBracelessGuardReturn",
+    "src/infrastructure/analysis/observe/instrument_java.ts#collectJavaFiles",
+    "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+    "src/infrastructure/analysis/observe/instrument_java.ts#instrumentJavaProject",
+    "src/infrastructure/analysis/observe/instrument_py.ts#collectDefSites",
+    "src/infrastructure/analysis/observe/instrument_py.ts#collectLambdaSite",
+    "src/infrastructure/analysis/observe/instrument_py.ts#collectPyFiles",
+    "src/infrastructure/analysis/observe/instrument_py.ts#handleReturnSite",
+    "src/infrastructure/analysis/observe/instrument_py.ts#instrumentPyProject",
+    "src/infrastructure/analysis/observe/instrument_skeleton.ts#backupOriginal",
+    "src/infrastructure/analysis/observe/instrument_skeleton.ts#countFunctionNodes",
+    "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentFileWithHooks",
+    "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentProjectWithHooks"
   ]
 }

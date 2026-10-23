@@ -349,5 +349,10 @@
       "from": "src/application/meta/explore/next_hop_args.ts#nextHopArgs",
       "to": "src/domain/chain_wiring.ts#universalHopsOf"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/first_hop_args.ts#buildStart",
+    "src/application/meta/explore/next_hop_args.ts#buildHop",
+    "src/application/meta/explore/next_hop_args.ts#nextHopArgs"
   ]
 }

@@ -750,5 +750,27 @@
       "from": "src/infrastructure/parse/ast_rename.ts#build",
       "to": "src/infrastructure/parse/loader.ts#getParser"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/find/ast_suggest.ts#findSuggestCandidates",
+    "src/application/refactor/find/similar_names.ts#findSimilarNames",
+    "src/application/refactor/rename/rename_local.ts#renameLocals",
+    "src/infrastructure/parse/ast_rename.ts#analyzeLocals",
+    "src/infrastructure/parse/ast_rename.ts#analyzeScopes",
+    "src/infrastructure/parse/ast_rename.ts#build",
+    "src/infrastructure/parse/ast_rename.ts#build.scanFn",
+    "src/infrastructure/parse/ast_rename.ts#build.tr",
+    "src/infrastructure/parse/ast_rename.ts#build.trValue",
+    "src/infrastructure/parse/ast_rename.ts#buildRaw",
+    "src/infrastructure/parse/ast_rename.ts#built",
+    "src/infrastructure/parse/ast_rename.ts#collectDeclaratorDecls",
+    "src/infrastructure/parse/ast_rename.ts#deleteDeadLocals",
+    "src/infrastructure/parse/ast_rename.ts#forEachIdentifier",
+    "src/infrastructure/parse/ast_rename.ts#renameLocal",
+    "src/infrastructure/parse/ast_rename.ts#renameMany",
+    "src/infrastructure/parse/ast_rename.ts#resolveLocalAddress",
+    "src/infrastructure/parse/ast_rename.ts#scanCall",
+    "src/infrastructure/parse/ast_rename.ts#subtreeHasCall",
+    "src/infrastructure/parse/ast_rename.ts#walkIds"
   ]
 }

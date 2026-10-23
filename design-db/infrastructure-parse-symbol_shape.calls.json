@@ -389,5 +389,14 @@
       "from": "src/infrastructure/parse/symbol_shape.ts#shapeOf",
       "to": "src/infrastructure/parse/symbol_shape.ts#typeParamsOf"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/parse/kernel.ts#traverseAndExtract",
+    "src/infrastructure/parse/symbol_shape.ts#modifiersOf",
+    "src/infrastructure/parse/symbol_shape.ts#parseTypeParamText",
+    "src/infrastructure/parse/symbol_shape.ts#returnTypeOfNode",
+    "src/infrastructure/parse/symbol_shape.ts#shapeOf",
+    "src/infrastructure/parse/symbol_shape.ts#typeParamFromNode",
+    "src/infrastructure/parse/symbol_shape.ts#typeParamsOf"
   ]
 }

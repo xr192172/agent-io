@@ -177,5 +177,10 @@
       "from": "src/presentation/mcp/tool_warnings.ts#emitWarnings",
       "to": "src/presentation/mcp/tool_warnings.ts#warningBlock"
     }
+  ],
+  "reverse_calls": [
+    "src/presentation/mcp/server_registry.ts#invokeTool",
+    "src/presentation/mcp/tool_warnings.ts#emitWarnings",
+    "src/presentation/mcp/tool_warnings.ts#tierWarnings"
   ]
 }

@@ -266,5 +266,11 @@
       "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
       "to": "src/infrastructure/storage.ts#getDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/patrol/task_drift.ts#patrolDrift",
+    "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+    "src/infrastructure/storage.ts#getLiveFeatureResolved",
+    "src/infrastructure/storage.ts#withFacts"
   ]
 }

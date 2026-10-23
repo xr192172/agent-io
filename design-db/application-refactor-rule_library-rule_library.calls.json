@@ -334,5 +334,15 @@
       "from": "src/application/refactor/rule_library/rule_library.ts#writeRule",
       "to": "src/application/refactor/rule_library/rule_library.ts#serializeRule"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/rule_library/rule_apply.ts#loadBaseline",
+    "src/application/refactor/rule_library/rule_apply.ts#runAllFixtures",
+    "src/application/refactor/rule_library/rule_apply.ts#writeBaseline",
+    "src/application/refactor/rule_library/rule_library.ts#baselinePath",
+    "src/application/refactor/rule_library/rule_library.ts#loadRules",
+    "src/application/refactor/rule_library/rule_library.ts#parseRule",
+    "src/application/refactor/rule_library/rule_library.ts#serializeRule",
+    "src/application/refactor/rule_library/rule_library.ts#writeRule"
   ]
 }

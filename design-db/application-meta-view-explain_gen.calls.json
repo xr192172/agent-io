@@ -104,5 +104,21 @@
       "from": "src/application/meta/view/explain_gen.ts#getExplainGenFile",
       "to": "src/infrastructure/storage.ts#getStorageRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+    "src/application/meta/view/derive_mind_map.ts#llmEnrichDescriptions",
+    "src/application/meta/view/derive_mind_map.ts#llmSynthesizeCapabilities",
+    "src/application/meta/view/derive_mind_map.ts#llmTeachFeature",
+    "src/application/meta/view/derive_mind_map.ts#placeProposals",
+    "src/application/meta/view/explain_gen.ts#generateModuleNarrations",
+    "src/application/meta/view/explain_gen.ts#loadGeneratedNarrations",
+    "src/application/meta/view/explain_gen.ts#saveGeneratedNarrations",
+    "src/application/meta/view/overview.ts#llmSharedDesc",
+    "src/application/meta/view/overview.ts#llmSummary",
+    "src/presentation/http/dict_gen.ts#classifyTerm",
+    "src/presentation/http/dict_gen.ts#generateDictEntry",
+    "src/presentation/http/serve.ts#handleApiExplain",
+    "src/presentation/http/serve.ts#handleApiExplainGenerate"
   ]
 }

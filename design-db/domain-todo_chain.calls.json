@@ -136,5 +136,11 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+    "src/application/design/dsl_ops/task_ops.ts#followTodoCard",
+    "src/application/design/dsl_ops/task_ops.ts#todoChainNote",
+    "src/application/meta/explore/query_feature.ts#queryFeature"
+  ]
 }

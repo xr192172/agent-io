@@ -292,5 +292,21 @@
       "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.writeDoc",
       "to": "src/infrastructure/analysis/observe/dsl_store.ts#writeAtomic"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/reconcile/proposal_approve.ts#approveObserveProposal",
+    "src/application/observe/reconcile/proposal_list.ts#listObserveProposals",
+    "src/application/observe/reconcile/proposal_reject.ts#rejectObserveProposal",
+    "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.appendHistory",
+    "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.constructor",
+    "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.history",
+    "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.load",
+    "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.loadOrThrow",
+    "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.rollback",
+    "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.save",
+    "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.seedDefault",
+    "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.writeDoc",
+    "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.constructor",
+    "src/infrastructure/analysis/observe/run_loop.ts#runLoop"
   ]
 }

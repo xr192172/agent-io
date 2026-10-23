@@ -144,5 +144,8 @@
       "from": "src/application/observe/runtime/stale_check.ts#checkStaleBuild",
       "to": "src/application/observe/runtime/stale_check.ts#walkSrcSources"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/runtime/stale_check.ts#checkStaleBuild"
   ]
 }

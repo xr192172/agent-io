@@ -356,5 +356,12 @@
       "from": "src/application/refactor/annotate/function_annotation.ts#scanFileAnnotations",
       "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/annotate/function_annotation.ts#classify",
+    "src/application/refactor/annotate/function_annotation.ts#docBlock",
+    "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
+    "src/application/refactor/annotate/function_annotation.ts#scanFileAnnotations",
+    "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs"
   ]
 }

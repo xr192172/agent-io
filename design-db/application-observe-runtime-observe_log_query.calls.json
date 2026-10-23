@@ -48,5 +48,8 @@
       "from": "src/application/observe/runtime/observe_log_query.ts#queryObserveLogUseCase",
       "to": "src/infrastructure/analysis/observe/log_query.ts#queryObserveLog"
     }
+  ],
+  "reverse_calls": [
+    "src/presentation/http/serve.ts#handleApiObserveLog"
   ]
 }

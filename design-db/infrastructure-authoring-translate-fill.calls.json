@@ -277,5 +277,15 @@
       "from": "src/infrastructure/authoring/translate/fill.ts#fillUnitsBatched",
       "to": "src/infrastructure/authoring/translate/verify.ts#verifySkeletons"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/translate/fill.ts#fillUnit",
+    "src/infrastructure/authoring/translate/fill.ts#fillUnitWithRetry",
+    "src/infrastructure/authoring/translate/fill.ts#fillUnits",
+    "src/infrastructure/authoring/translate/fill.ts#fillUnitsBatched",
+    "src/infrastructure/authoring/translate/fill.ts#fillUnitsWithRetry",
+    "src/infrastructure/authoring/translate/fill.ts#spliceBody",
+    "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+    "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler"
   ]
 }

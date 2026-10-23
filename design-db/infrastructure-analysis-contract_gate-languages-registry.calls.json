@@ -54,5 +54,9 @@
       "kind": "relative"
     }
   ],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/infrastructure/analysis/contract_gate/core.ts#scanContracts",
+    "src/infrastructure/analysis/contract_gate/core.ts#scanOne"
+  ]
 }

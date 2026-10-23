@@ -201,5 +201,10 @@
       "from": "src/infrastructure/authoring/translate/const_eval.ts#applyBinary",
       "to": "src/infrastructure/authoring/translate/const_eval.ts#toBig"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/translate/const_eval.ts#applyBinary",
+    "src/infrastructure/authoring/translate/const_eval.ts#evalConstExpr",
+    "src/infrastructure/authoring/translate/go_extractor.ts#extractGo"
   ]
 }

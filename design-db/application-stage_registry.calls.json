@@ -334,5 +334,12 @@
       "from": "src/application/stage_registry.ts#ensureStage",
       "to": "src/application/stage_registry.ts#produceWithRetry"
     }
+  ],
+  "reverse_calls": [
+    "src/application/stage_registry.ts#assertAcyclic",
+    "src/application/stage_registry.ts#ensureStage",
+    "src/application/stage_registry.ts#ensureUpstream",
+    "src/application/stage_registry.ts#isFresh",
+    "src/presentation/mcp/server_registry.ts#invokeTool"
   ]
 }

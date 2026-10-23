@@ -184,5 +184,12 @@
       "from": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#detectDeadPyImports",
       "to": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#stripPyImports"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#detectDeadPyImports",
+    "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#enumeratePyImports",
+    "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#removePyImportsFromSource",
+    "src/infrastructure/analysis/refactor/langs/python/index.ts#computePyDeadImportsPlan",
+    "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap"
   ]
 }

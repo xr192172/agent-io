@@ -548,5 +548,11 @@
       "from": "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
       "to": "src/infrastructure/verify_refactor.ts#defaultVerifyCommands"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
+    "src/application/refactor/pipeline/refactor_pipeline.ts#dominantVerifyCommands",
+    "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline",
+    "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline.runStage"
   ]
 }

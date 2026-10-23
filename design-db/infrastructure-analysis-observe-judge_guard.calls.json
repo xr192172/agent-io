@@ -37,5 +37,9 @@
       "from": "src/infrastructure/analysis/observe/judge_guard.ts#judgeGuardLog",
       "to": "src/infrastructure/analysis/observe/judge_guard.ts#judgeGuardEnabled"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/observe/judge_guard.ts#judgeGuardLog",
+    "src/presentation/http/serve.ts#startServer"
   ]
 }

@@ -705,5 +705,27 @@
       "from": "src/infrastructure/graph/import_project.ts#importProject",
       "to": "src/infrastructure/storage_overlay.ts#mergeDesignLayer"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+    "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+    "src/application/observe/runtime/watch_project_tool.ts#doWork",
+    "src/infrastructure/analysis/project_root/index.ts#expandClosureDetailed",
+    "src/infrastructure/analysis/project_root/index.ts#tryIndexedExpandClosure",
+    "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+    "src/infrastructure/graph/import_graph.ts#buildImportGraph",
+    "src/infrastructure/graph/import_project.ts#importProject",
+    "src/infrastructure/graph/import_project.ts#isGitignored",
+    "src/infrastructure/graph/import_project.ts#layoutGroup",
+    "src/infrastructure/graph/import_project.ts#readGoModules",
+    "src/infrastructure/graph/import_project.ts#walkFiles",
+    "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+    "src/infrastructure/index/index_freshness.ts#indexCoversDisk",
+    "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+    "src/presentation/cli/diagnose_loop_cli.ts#main",
+    "src/presentation/http/serve.ts#handleApiImport",
+    "src/presentation/http/serve.ts#handleApiLiveRebuild",
+    "src/presentation/http/serve.ts#startServer",
+    "src/presentation/mcp/server.ts#runAutoWatchHook"
   ]
 }

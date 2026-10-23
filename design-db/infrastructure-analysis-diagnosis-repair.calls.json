@@ -279,5 +279,13 @@
       "from": "src/infrastructure/analysis/diagnosis/repair.ts#applyPatches",
       "to": "src/infrastructure/source_write_port.ts#commitSourceWrite"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+    "src/infrastructure/analysis/diagnosis/repair.ts#allowedPatchFiles",
+    "src/infrastructure/analysis/diagnosis/repair.ts#applyPatches",
+    "src/infrastructure/analysis/diagnosis/repair.ts#buildRepairPrompt",
+    "src/infrastructure/analysis/diagnosis/repair.ts#generatePatch",
+    "src/presentation/cli/diagnose_loop_cli.ts#main"
   ]
 }

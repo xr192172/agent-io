@@ -544,5 +544,27 @@
       "from": "src/infrastructure/index/index_freshness.ts#ensureIndexAround",
       "to": "src/infrastructure/text/refs_text.ts#importLookupKeys"
     }
+  ],
+  "reverse_calls": [
+    "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+    "src/application/meta/explore/contract_page.ts#contractPageCore",
+    "src/application/meta/explore/explore_code.ts#exploreCode",
+    "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+    "src/application/meta/integrity/index_integrity.ts#repairStaleResolvedRefs",
+    "src/application/meta/llm/semantic_search.ts#semanticSearchCore",
+    "src/application/refactor/find/find_references.ts#findReferencesCore",
+    "src/application/write_gate.ts#reopenAndResolveAfterWrite",
+    "src/application/write_gate.ts#syncSelfWrites",
+    "src/application/write_gate.ts#syncSelfWritesSync",
+    "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis",
+    "src/infrastructure/index/index_backfill.ts#backfillChunk",
+    "src/infrastructure/index/index_backfill.ts#scheduleBackfill",
+    "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+    "src/infrastructure/index/index_freshness.ts#ensureIndexAround",
+    "src/infrastructure/index/index_freshness.ts#ensureIndexAroundSeed",
+    "src/infrastructure/index/index_freshness.ts#ensureProjectIndex",
+    "src/infrastructure/index/index_freshness.ts#indexCoversDisk",
+    "src/infrastructure/index/watch_project.ts#flushBatch",
+    "src/presentation/mcp/server_registry.ts#staleIndexWarning"
   ]
 }

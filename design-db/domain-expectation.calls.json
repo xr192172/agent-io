@@ -139,5 +139,29 @@
       "from": "src/domain/expectation.ts#expectationPaths",
       "to": "src/domain/expectation.ts#normPath"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/node_ops.ts#addNode",
+    "src/application/design/dsl_ops/node_ops.ts#assertDecisionFieldShapes",
+    "src/application/design/dsl_ops/task_ops.ts#claimTask",
+    "src/application/design/dsl_ops/task_ops.ts#constructionVerdict",
+    "src/application/design/dsl_ops/task_ops.ts#criteriaGap",
+    "src/application/design/dsl_ops/task_ops.ts#fingerprintEvidence",
+    "src/application/design/dsl_ops/task_ops.ts#planEvidenceRerun",
+    "src/application/design/dsl_ops/task_ops.ts#publishTask",
+    "src/application/design/dsl_ops/task_ops.ts#startTask",
+    "src/application/design/dsl_ops/update_feature.ts#applyDecisionOp",
+    "src/application/design/handlers.ts#groupExpectationFails",
+    "src/application/design/handlers.ts#renderExpectationsSection",
+    "src/application/design/intent/expectations.ts#findExpectationConflicts",
+    "src/application/design/intent/expectations.ts#indexStaleFor",
+    "src/application/design/intent/expectations.ts#judgeExpectations",
+    "src/application/patrol/task_drift.ts#patrolDrift",
+    "src/domain/expectation.ts#describeExpectation",
+    "src/domain/expectation.ts#expectationPaths",
+    "src/domain/expectation.ts#expectationSubjectPath",
+    "src/domain/expectation.ts#postExpectations",
+    "src/domain/task_machine.ts#cardStanding",
+    "src/domain/task_schema.ts#taskLevel"
   ]
 }

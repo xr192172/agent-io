@@ -182,5 +182,16 @@
       "from": "src/infrastructure/index/registry.ts#registryFilePath",
       "to": "src/infrastructure/storage.ts#getDataHome"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/index/registry.ts#readRegistry",
+    "src/infrastructure/index/registry.ts#registerArtifact",
+    "src/infrastructure/index/registry.ts#registerArtifactTo",
+    "src/infrastructure/index/registry.ts#updateArtifact",
+    "src/infrastructure/index/registry.ts#writeRegistry",
+    "src/presentation/http/serve.ts#handleApiFeatureMeta",
+    "src/presentation/http/serve.ts#handleApiRegistry",
+    "src/presentation/http/serve.ts#handleApiTour",
+    "src/presentation/http/serve.ts#handleExplainPage"
   ]
 }

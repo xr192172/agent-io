@@ -60,5 +60,8 @@
     }
   ],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/infrastructure/llm_agnes.ts#resolveAgnesKeys"
+  ]
 }

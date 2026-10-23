@@ -569,5 +569,9 @@
       "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
       "to": "src/infrastructure/parse/type_members.ts#memberNamesOf"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/contract_page.ts#contractPage",
+    "src/application/meta/explore/contract_page.ts#contractPageCore"
   ]
 }

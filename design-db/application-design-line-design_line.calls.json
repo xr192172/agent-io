@@ -7,7 +7,7 @@
     {
       "name": "LineStep",
       "kind": "interface",
-      "line": 30,
+      "line": 32,
       "signature": "LineStep()",
       "members": [
         {
@@ -45,7 +45,7 @@
     {
       "name": "LineReport",
       "kind": "interface",
-      "line": 43,
+      "line": 45,
       "signature": "LineReport()",
       "members": [
         {
@@ -71,25 +71,25 @@
     {
       "name": "n",
       "kind": "const",
-      "line": 50,
+      "line": 52,
       "signature": "const n = (x: number): string => x.toLocaleString('en-US')"
     },
     {
       "name": "lineReport",
       "kind": "function",
-      "line": 53,
+      "line": 55,
       "signature": "lineReport(root: string, feature: string): LineReport"
     },
     {
       "name": "designLineHandler",
       "kind": "function",
-      "line": 198,
+      "line": 200,
       "signature": "designLineHandler(input: { project_dir: string; feature: string }): {\n  message: string;\n  data: LineReport;\n}"
     },
     {
       "name": "MustHaveSymbol",
       "kind": "interface",
-      "line": 241,
+      "line": 243,
       "signature": "MustHaveSymbol()",
       "members": [
         {
@@ -139,7 +139,7 @@
     {
       "name": "MustHaveReport",
       "kind": "interface",
-      "line": 258,
+      "line": 260,
       "signature": "MustHaveReport()",
       "members": [
         {
@@ -183,29 +183,131 @@
     {
       "name": "AnyDesignNode",
       "kind": "type",
-      "line": 272,
+      "line": 274,
       "signature": "AnyDesignNode()"
     },
     {
       "name": "mhNorm",
       "kind": "const",
-      "line": 275,
+      "line": 277,
       "signature": "const mhNorm = (p: string): string => String(p).replace(/\\\\/g, '/').repl…"
     },
     {
       "name": "mhPathOf",
       "kind": "function",
-      "line": 278,
+      "line": 280,
       "signature": "mhPathOf(node: AnyDesignNode): string | null"
     },
     {
       "name": "mustHaveFor",
       "kind": "function",
-      "line": 295,
+      "line": 297,
       "signature": "mustHaveFor(design: unknown, onlyDesignIds: string[]): MustHaveReport[]"
+    },
+    {
+      "name": "BriefSymbol",
+      "kind": "interface",
+      "line": 449,
+      "signature": "BriefSymbol()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "kind",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "signature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "BriefReport",
+      "kind": "interface",
+      "line": 456,
+      "signature": "BriefReport()",
+      "members": [
+        {
+          "name": "target",
+          "type": ": { node_id?: string; path?: string }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "design",
+          "type": ": {\n    summary?: string;\n    acceptance?: string;\n    must_have: MustHaveSymbol[];\n    /** ★ 设计要求**原文**（decision.expectations）。★ 不是「未满足」—— 本函数不判满没满，别拿它当验收结论 */\n    expectations: Array<{ kind: string; [k: string]: unknown }>;\n    why_empty?: string;\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "design_db",
+          "type": ": { available: boolean; symbols: BriefSymbol[]; imports: number; calls: number }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "live",
+          "type": ": { symbols: BriefSymbol[]; indexed: boolean }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "impact",
+          "type": ": { total: number; direct: number; high_risk: number; top: string[] }",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "gap",
+          "type": ": { missing_symbols: MustHaveSymbol[]; expectation_count: number }",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "briefFrom",
+      "kind": "function",
+      "line": 475,
+      "signature": "briefFrom(dsl: unknown, target: { node_id?: string; path?: string }): BriefReport['design'] & { nodePath?: string }"
+    },
+    {
+      "name": "briefReport",
+      "kind": "function",
+      "line": 512,
+      "signature": "briefReport(root: string,\n  feature: string,\n  target: { node_id?: string; path?: string },\n  /**\n   * `skip_impact`：不算影响面。\n   * ★ 2026-10-23 实测必要性：`analyzeImpact` 每次都会 `buildImpactGraph`（全仓依赖图）。\n   *   批量扫 84 张卡时 4 分 56 秒还没跑完 ⇒ 逐卡算影响面是 O(cards × 全仓图)。\n   *   只要符号差时应该能跳过它（符号差查 cache.db，毫秒级）。\n   */\n  opts: { skip_impact?: boolean } = {},): Promise<BriefReport>"
+    },
+    {
+      "name": "briefHandler",
+      "kind": "function",
+      "line": 647,
+      "signature": "briefHandler(input: { project_dir: string; feature: string; node_id?: string; path?: string }): Promise<{\n  message: string;\n  data: BriefReport;\n}>"
     }
   ],
   "imports": [
+    {
+      "source": "../../../infrastructure/index/file_facts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/impact/index.js",
+      "kind": "relative"
+    },
     {
       "source": "node:fs",
       "kind": "package"
@@ -227,6 +329,14 @@
     {
       "from": "src/application/design/line/design_line.ts#lineReport",
       "to": "src/application/design/db/gen_design_db.ts#designDbDir"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#briefReport",
+      "to": "src/application/design/line/design_line.ts#briefFrom"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#briefHandler",
+      "to": "src/application/design/line/design_line.ts#briefReport"
     },
     {
       "from": "src/application/design/line/design_line.ts#designLineHandler",
@@ -269,8 +379,12 @@
       "to": "src/application/design/line/design_line.ts#mhPathOf"
     },
     {
-      "from": "src/application/design/line/design_line.ts#lineReport",
-      "to": "src/application/design/line/design_line.ts#n"
+      "from": "src/application/design/line/design_line.ts#briefReport",
+      "to": "src/application/design/line/design_line.ts#mustHaveFor"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#briefReport",
+      "to": "src/application/design/line/design_line.ts#mustHaveFor"
     },
     {
       "from": "src/application/design/line/design_line.ts#lineReport",
@@ -295,6 +409,26 @@
     {
       "from": "src/application/design/line/design_line.ts#lineReport",
       "to": "src/application/design/line/design_line.ts#n"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#lineReport",
+      "to": "src/application/design/line/design_line.ts#n"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#briefReport",
+      "to": "src/infrastructure/analysis/impact/index.ts#analyzeImpact"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#briefReport",
+      "to": "src/infrastructure/index/file_facts.ts#fileFacts"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/line/design_diff.ts#designDiff",
+    "src/application/design/line/design_line.ts#briefHandler",
+    "src/application/design/line/design_line.ts#briefReport",
+    "src/application/design/line/design_line.ts#designLineHandler",
+    "src/application/design/line/design_line.ts#lineReport",
+    "src/application/design/line/design_line.ts#mustHaveFor"
   ]
 }

@@ -589,5 +589,18 @@
       "from": "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg",
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/derive/derive_algorithm.ts#deriveAlgorithmCore",
+    "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+    "src/application/meta/view/derive_anim_flow.ts#deriveAnimFlowCore",
+    "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+    "src/infrastructure/analysis/structure/cfg.ts#condText",
+    "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg",
+    "src/infrastructure/analysis/structure/cfg.ts#findFuncNode",
+    "src/infrastructure/analysis/structure/cfg.ts#headText",
+    "src/infrastructure/analysis/structure/cfg.ts#stmtsOf",
+    "src/infrastructure/analysis/structure/cfg.ts#summarize",
+    "src/infrastructure/analysis/structure/cfg.ts#unwrapElse"
   ]
 }

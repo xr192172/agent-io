@@ -353,5 +353,10 @@
       "from": "src/application/refactor/rule_library/rule_extract.ts#extractRule",
       "to": "src/infrastructure/rules/rule_tokens.ts#splitLines"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/rule_library/rule_extract.ts#abstractableIdents",
+    "src/application/refactor/rule_library/rule_extract.ts#extractRule",
+    "src/application/refactor/rule_library/rule_extract.ts#generalizeChange"
   ]
 }

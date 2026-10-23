@@ -94,5 +94,8 @@
       "from": "src/application/meta/registry/cli_extract.ts#extractCliCommands",
       "to": "src/application/meta/registry/cli_extract.ts#extractImportMap"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/registry/cli_extract.ts#extractCliCommands"
   ]
 }

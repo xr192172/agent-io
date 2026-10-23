@@ -332,5 +332,13 @@
       "from": "src/infrastructure/dogfood_stats.ts#dogfoodLogDir",
       "to": "src/infrastructure/storage.ts#getDataHome"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/dogfood_coverage.ts#computeDogfoodCoverage",
+    "src/infrastructure/dogfood_stats.ts#logFile",
+    "src/infrastructure/dogfood_stats.ts#recordDogfoodUsage",
+    "src/infrastructure/dogfood_stats.ts#runDogfoodCLI",
+    "src/infrastructure/dogfood_stats.ts#snapshotDogfoodStats",
+    "src/presentation/mcp/server_registry.ts#invokeTool"
   ]
 }

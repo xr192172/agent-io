@@ -406,5 +406,9 @@
       "from": "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap",
       "to": "src/infrastructure/analysis/structure/layer_detect.ts#matchLayer"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap",
+    "src/infrastructure/analysis/structure/feature_map.ts#detectRepeatedFamilies"
   ]
 }

@@ -235,5 +235,13 @@
       "from": "src/application/design/lifecycle/simulation.ts#resetSimulation",
       "to": "src/infrastructure/storage.ts#getDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/update_feature.ts#applySimulationOp",
+    "src/application/design/lifecycle/simulation.ts#getSimulationState",
+    "src/application/design/lifecycle/simulation.ts#resetSimulation",
+    "src/application/design/lifecycle/simulation.ts#runSimulation",
+    "src/application/meta/explore/explore_code.ts#exploreCode",
+    "src/application/meta/explore/query_feature.ts#queryFeature"
   ]
 }

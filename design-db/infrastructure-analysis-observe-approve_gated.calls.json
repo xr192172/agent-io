@@ -140,5 +140,9 @@
       "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
       "to": "src/infrastructure/analysis/observe/verify_gate.ts#verifyRuleRegression"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/reconcile/proposal_approve.ts#approveObserveProposal",
+    "src/infrastructure/analysis/observe/approve_gated.ts#approveGated"
   ]
 }

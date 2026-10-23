@@ -226,5 +226,10 @@
       "from": "src/infrastructure/analysis/cross_repo/index.ts#buildProjectIndex",
       "to": "src/infrastructure/analysis/impact/index.ts#buildImpactGraph"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/cross_repo/index.ts#compareProjects",
+    "src/infrastructure/analysis/cross_repo/index.ts#defFingerprint",
+    "src/infrastructure/analysis/cross_repo/index.ts#isDuplicate"
   ]
 }

@@ -49,5 +49,15 @@
       "from": "src/infrastructure/rules/rule_tokens.ts#countLines",
       "to": "src/infrastructure/rules/rule_tokens.ts#splitLines"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/rule_library/rule_apply.ts#insertTodo",
+    "src/application/refactor/rule_library/rule_extract.ts#extractRule",
+    "src/infrastructure/rules/rule_match.ts#indexFile",
+    "src/infrastructure/rules/rule_match.ts#instantiateReplace",
+    "src/infrastructure/rules/rule_match.ts#matchRule",
+    "src/infrastructure/rules/rule_match.ts#tokenizePattern",
+    "src/infrastructure/rules/rule_tokens.ts#countLines",
+    "src/infrastructure/rules/rule_tokens.ts#keyedLines"
   ]
 }

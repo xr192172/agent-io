@@ -217,5 +217,14 @@
       "from": "src/infrastructure/analysis/structure/layer_detect.ts#parseImportsLight",
       "to": "src/infrastructure/analysis/structure/layer_detect.ts#pyRelToPath"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+    "src/infrastructure/analysis/structure/arch_layer.ts#scanImportEdges",
+    "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap",
+    "src/infrastructure/analysis/structure/layer_detect.ts#detectArchLayers",
+    "src/infrastructure/analysis/structure/layer_detect.ts#parseImportsLight",
+    "src/infrastructure/graph/import_project.ts#importProject",
+    "src/infrastructure/index/live_render.ts#renderLiveFromDb"
   ]
 }

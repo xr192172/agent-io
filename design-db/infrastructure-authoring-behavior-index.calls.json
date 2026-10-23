@@ -816,5 +816,17 @@
       "from": "src/infrastructure/authoring/behavior/index.ts#langOfFile",
       "to": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/behavior/index.ts#cHarnessSource",
+    "src/infrastructure/authoring/behavior/index.ts#captureBaseline",
+    "src/infrastructure/authoring/behavior/index.ts#csRunnerSource",
+    "src/infrastructure/authoring/behavior/index.ts#javaRunnerSource",
+    "src/infrastructure/authoring/behavior/index.ts#runHarness",
+    "src/infrastructure/authoring/behavior/index.ts#runWithLangPack",
+    "src/infrastructure/authoring/behavior/index.ts#toolAvailable",
+    "src/infrastructure/authoring/behavior/index.ts#verifyBaseline",
+    "src/infrastructure/authoring/translate/verify_behavior.ts#checkTranslationParity",
+    "src/infrastructure/authoring/version_upgrade/adapters/node.ts#nodeRunProbe"
   ]
 }

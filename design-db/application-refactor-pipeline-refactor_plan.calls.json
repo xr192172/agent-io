@@ -426,5 +426,11 @@
       "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
       "to": "src/infrastructure/text/line_utils.ts#detectEol"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/rewrite/rewrite.ts#rewriteSymbols",
+    "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+    "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+    "src/application/refactor/pipeline/refactor_plan.ts#computePlanId"
   ]
 }

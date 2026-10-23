@@ -858,5 +858,20 @@
       "from": "src/application/design/derive/derive_split.ts#splitOnce",
       "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/derive/derive_split.ts#buildWiring",
+    "src/application/design/derive/derive_split.ts#collectGoImportSpecs",
+    "src/application/design/derive/derive_split.ts#deriveSplit",
+    "src/application/design/derive/derive_split.ts#deriveSplitCore",
+    "src/application/design/derive/derive_split.ts#pruneGoImports",
+    "src/application/design/derive/derive_split.ts#prunePythonImports",
+    "src/application/design/derive/derive_split.ts#pruneUnusedImports",
+    "src/application/design/derive/derive_split.ts#referNames",
+    "src/application/design/derive/derive_split.ts#runCompile",
+    "src/application/design/derive/derive_split.ts#runShell",
+    "src/application/design/derive/derive_split.ts#runSubSplit",
+    "src/application/design/derive/derive_split.ts#runTest",
+    "src/application/design/derive/derive_split.ts#splitOnce"
   ]
 }

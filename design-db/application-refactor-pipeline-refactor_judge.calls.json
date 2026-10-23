@@ -200,5 +200,8 @@
       "from": "src/application/refactor/pipeline/refactor_judge.ts#pushEscalation",
       "to": "src/infrastructure/alert_inbox.ts#pushAlert"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/pipeline/refactor_judge.ts#runRefactorJudge"
   ]
 }

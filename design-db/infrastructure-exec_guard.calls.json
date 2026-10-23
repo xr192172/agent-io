@@ -68,5 +68,12 @@
       "from": "src/infrastructure/exec_guard.ts#commandAvailable",
       "to": "src/infrastructure/exec_guard.ts#findOnPath"
     }
+  ],
+  "reverse_calls": [
+    "src/application/harvest/harvest_decisions.ts#isGitRepo",
+    "src/infrastructure/analysis/project_root/index.ts#gitRootOf",
+    "src/infrastructure/exec_guard.ts#commandAvailable",
+    "src/infrastructure/exec_guard.ts#findOnPath",
+    "src/infrastructure/exec_guard.ts#gitAvailable"
   ]
 }

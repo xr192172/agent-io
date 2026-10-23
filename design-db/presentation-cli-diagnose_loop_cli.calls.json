@@ -367,5 +367,8 @@
       "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
       "to": "src/presentation/cli/diagnose_loop_cli.ts#readArg"
     }
+  ],
+  "reverse_calls": [
+    "src/presentation/cli/diagnose_loop_cli.ts#main"
   ]
 }

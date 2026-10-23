@@ -130,5 +130,9 @@
       "from": "src/application/meta/registry/registry_extract.ts#extractRegistryTools",
       "to": "src/application/meta/registry/registry_extract.ts#handlerDefBody"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/registry/registry_extract.ts#extractRegistryTools",
+    "src/application/meta/registry/registry_extract.ts#extractRegistryToolsFromFile"
   ]
 }

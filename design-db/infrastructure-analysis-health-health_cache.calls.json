@@ -108,5 +108,12 @@
       "from": "src/infrastructure/analysis/health/health_cache.ts#writeHealthCache",
       "to": "src/infrastructure/analysis/health/health_cache.ts#pruneHealthCache"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/health/health_cache.ts#pruneHealthCache",
+    "src/infrastructure/analysis/health/health_cache.ts#readHealthCache",
+    "src/infrastructure/analysis/health/health_cache.ts#writeHealthCache",
+    "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+    "src/infrastructure/analysis/structure/monolith.ts#checkMonolith"
   ]
 }

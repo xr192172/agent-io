@@ -404,5 +404,11 @@
       "from": "src/application/refactor/rule_library/rule_apply.ts#insertTodo",
       "to": "src/infrastructure/rules/rule_tokens.ts#splitLines"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/rule_library/rule_apply.ts#applyRuleToContent",
+    "src/application/refactor/rule_library/rule_apply.ts#applyRulesToFiles",
+    "src/application/refactor/rule_library/rule_apply.ts#ratchetDelta",
+    "src/application/refactor/rule_library/rule_apply.ts#writeBaseline"
   ]
 }

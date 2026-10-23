@@ -226,5 +226,17 @@
       "from": "src/infrastructure/parse/import_resolve.ts#completionCandidates",
       "to": "src/infrastructure/parse/import_resolve.ts#literalCandidates"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/health/index.ts#resolveImportFile",
+    "src/infrastructure/analysis/impact/index.ts#resolveImportTarget",
+    "src/infrastructure/analysis/project_root/index.ts#resolveToFile",
+    "src/infrastructure/graph/import_project.ts#resolveImport",
+    "src/infrastructure/index/symbols.ts#resolveImportTarget",
+    "src/infrastructure/parse/import_resolve.ts#completionCandidates",
+    "src/infrastructure/parse/import_resolve.ts#importPathCandidates",
+    "src/infrastructure/parse/import_resolve.ts#resolveExistingPath",
+    "src/infrastructure/parse/import_resolve.ts#resolveImportPath",
+    "src/infrastructure/parse/import_resolve.ts#resolveProjectImport"
   ]
 }

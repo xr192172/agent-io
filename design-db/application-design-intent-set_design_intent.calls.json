@@ -209,5 +209,9 @@
       "from": "src/application/design/intent/set_design_intent.ts#setDesignIntentCore",
       "to": "src/infrastructure/storage_overlay.ts#saveOverlay"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/intent/set_design_intent.ts#setDesignIntent",
+    "src/application/design/workbench/code_workbench.ts#executeDslIntent"
   ]
 }

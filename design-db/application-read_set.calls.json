@@ -660,5 +660,21 @@
       "from": "src/application/read_set.ts#factsFromDisk",
       "to": "src/infrastructure/text/line_utils.ts#splitKeepEnds"
     }
+  ],
+  "reverse_calls": [
+    "src/application/claim_conflict.ts#computeClaimReadSet",
+    "src/application/read_set.ts#assumptionLines",
+    "src/application/read_set.ts#checkAssumptions",
+    "src/application/read_set.ts#factsFromDisk",
+    "src/application/read_set.ts#loadFileFacts",
+    "src/application/read_set.ts#oneHopDeps",
+    "src/application/read_set.ts#recordRead",
+    "src/application/read_set.ts#recordReadFromInvocation",
+    "src/application/read_set.ts#refreshAfterOwnWrite",
+    "src/application/refactor/edit/edit_code.ts#editCodeBatch",
+    "src/application/refactor/edit/edit_code.ts#editCodeCore",
+    "src/application/source_writer.ts#openSourceWrite.close",
+    "src/application/write_gate.ts#assertSourceWriteRegistered",
+    "src/presentation/mcp/server_registry.ts#invokeTool"
   ]
 }

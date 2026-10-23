@@ -92,5 +92,14 @@
       "from": "src/infrastructure/llm_agnes.ts#resolveAgnesKeys",
       "to": "src/infrastructure/llm_pool.ts#loadKeys"
     }
+  ],
+  "reverse_calls": [
+    "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+    "src/application/harvest/harvest_decisions.ts#requireLlmConfig",
+    "src/infrastructure/llm_agnes.ts#agnesApiBaseUrl",
+    "src/infrastructure/llm_agnes.ts#resolveAgnesApiBaseUrl",
+    "src/infrastructure/llm_agnes.ts#resolveAgnesUpstreamBase",
+    "src/infrastructure/llm_focus.ts#loadAgentConfig",
+    "src/infrastructure/llm_gateway.ts#providerFromEnv"
   ]
 }

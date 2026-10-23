@@ -97,5 +97,29 @@
       "from": "src/infrastructure/parse/languages.ts#moduleSpecOfPkg",
       "to": "src/infrastructure/parse/languages.ts#languageModuleSpec"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile",
+    "src/application/refactor/rename/rename_local.ts#renameLocals",
+    "src/infrastructure/analysis/rename_symbol/languages/c.ts#analyzeCLanguage",
+    "src/infrastructure/analysis/rename_symbol/languages/go.ts#analyzeGoSource",
+    "src/infrastructure/analysis/rename_symbol/languages/py.ts#analyzePythonSource",
+    "src/infrastructure/analysis/rename_symbol/namespace_family.ts#makeNamespaceAnalyzer",
+    "src/infrastructure/parse/ast_rename.ts#build",
+    "src/infrastructure/parse/kernel.ts#parseAstRoot",
+    "src/infrastructure/parse/kernel.ts#parseAstRootSync",
+    "src/infrastructure/parse/lang_hint.ts#missingLanguageHint",
+    "src/infrastructure/parse/languages.ts#moduleSpecOfPkg",
+    "src/infrastructure/parse/loader.ts#loadLanguage",
+    "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+    "src/infrastructure/parse/probe.ts#isExtSupported",
+    "src/infrastructure/parse/probe.ts#isLanguageInstalled",
+    "src/infrastructure/parse/source_exts.ts#describeUnmatchedExt",
+    "src/presentation/cli/install_package_cli.ts#checkPrebuild",
+    "src/presentation/cli/install_package_cli.ts#collect",
+    "src/presentation/cli/install_package_cli.ts#hasHostPrebuild",
+    "src/presentation/cli/install_package_cli.ts#isInstalled",
+    "src/presentation/cli/install_package_cli.ts#readLangPkgJson",
+    "src/presentation/cli/install_package_cli.ts#registryInstallScript"
   ]
 }

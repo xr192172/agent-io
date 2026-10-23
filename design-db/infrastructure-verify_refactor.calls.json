@@ -177,5 +177,11 @@
       "kind": "package"
     }
   ],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
+    "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
+    "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsWithVerify",
+    "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs"
+  ]
 }

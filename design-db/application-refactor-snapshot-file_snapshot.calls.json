@@ -268,7 +268,19 @@
     },
     {
       "from": "src/application/refactor/snapshot/file_snapshot.ts#createFileSnapshot",
-      "to": "src/infrastructure/storage.ts#listFeatures"
+      "to": "src/infrastructure/storage.ts#listDesignSheets"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/query_feature.ts#queryFeature",
+    "src/application/refactor/rename/rename_files.ts#renameFilesCore",
+    "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+    "src/application/refactor/snapshot/file_snapshot.ts#createFileSnapshot",
+    "src/application/refactor/snapshot/file_snapshot.ts#getFileSnapshot",
+    "src/application/refactor/snapshot/file_snapshot.ts#listFileSnapshots",
+    "src/application/refactor/snapshot/file_snapshot.ts#pruneFileSnapshots",
+    "src/application/refactor/snapshot/file_snapshot.ts#rollbackFileSnapshot",
+    "src/application/refactor/snapshot/file_snapshot.ts#snapshotBeforeWrite",
+    "src/application/source_writer.ts#openSourceWrite"
   ]
 }

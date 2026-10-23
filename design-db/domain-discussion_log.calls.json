@@ -123,5 +123,8 @@
       "from": "src/domain/discussion_log.ts#shouldExpand",
       "to": "src/domain/discussion_log.ts#matchedExpandTriggers"
     }
+  ],
+  "reverse_calls": [
+    "src/domain/discussion_log.ts#shouldExpand"
   ]
 }

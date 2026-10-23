@@ -307,5 +307,25 @@
       "from": "src/domain/chain_wiring.ts#hopsOf",
       "to": "src/domain/chain_wiring.ts#verifiedEdgesBetween"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/contract_page.ts#relatedEdges",
+    "src/application/meta/explore/first_hop_args.ts#firstHopArgs",
+    "src/application/meta/explore/first_hop_args.ts#hopsOfChain",
+    "src/application/meta/explore/next_hop_args.ts#buildHop",
+    "src/application/meta/explore/next_hop_args.ts#nextHopArgs",
+    "src/application/meta/index.ts#renderHandoffPanel",
+    "src/application/meta/registry/capability_map.ts#chainVerdictsOf",
+    "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+    "src/application/meta/registry/tool_faces.ts#facesOf",
+    "src/application/meta/registry/tool_faces.ts#renderFaces",
+    "src/domain/chain_wiring.ts#applyChainEdge",
+    "src/domain/chain_wiring.ts#hopsOf",
+    "src/domain/chain_wiring.ts#renderChainWiring",
+    "src/domain/chain_wiring.ts#renderChains",
+    "src/domain/chain_wiring.ts#renderDerivedChains",
+    "src/domain/chain_wiring.ts#renderNextHops",
+    "src/presentation/mcp/server_registry.ts#invokeTool",
+    "src/presentation/mcp/server_registry.ts#renderNextNote"
   ]
 }

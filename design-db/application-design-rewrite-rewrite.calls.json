@@ -240,5 +240,8 @@
       "from": "src/application/design/rewrite/rewrite.ts#rewriteSymbols",
       "to": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/rewrite/rewrite.ts#rewriteSymbols"
   ]
 }

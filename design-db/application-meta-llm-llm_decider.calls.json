@@ -5,15 +5,53 @@
   "path": "src/application/meta/llm/llm_decider.ts",
   "symbols": [
     {
+      "name": "ResolvedNoteStub",
+      "kind": "type",
+      "line": 24,
+      "signature": "ResolvedNoteStub()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "status",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "text",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "target_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
       "name": "DecideAction",
       "kind": "type",
-      "line": 35,
+      "line": 39,
       "signature": "DecideAction()"
     },
     {
       "name": "NoteDecisionResult",
       "kind": "interface",
-      "line": 38,
+      "line": 42,
       "signature": "NoteDecisionResult()",
       "members": [
         {
@@ -81,7 +119,7 @@
     {
       "name": "DecideCanvasNotesInput",
       "kind": "interface",
-      "line": 60,
+      "line": 64,
       "signature": "DecideCanvasNotesInput()",
       "members": [
         {
@@ -113,7 +151,7 @@
     {
       "name": "DecideCanvasNotesResult",
       "kind": "interface",
-      "line": 70,
+      "line": 74,
       "signature": "DecideCanvasNotesResult()",
       "members": [
         {
@@ -175,7 +213,7 @@
     {
       "name": "FileExcerpt",
       "kind": "interface",
-      "line": 92,
+      "line": 96,
       "signature": "FileExcerpt()",
       "members": [
         {
@@ -207,25 +245,25 @@
     {
       "name": "safeRel",
       "kind": "function",
-      "line": 100,
+      "line": 104,
       "signature": "safeRel(rel: string): string | null"
     },
     {
       "name": "readFileExcerpt",
       "kind": "function",
-      "line": 108,
+      "line": 112,
       "signature": "readFileExcerpt(project_dir: string, rel: string, maxLines: number): FileExcerpt | null"
     },
     {
       "name": "targetFileRel",
       "kind": "function",
-      "line": 122,
-      "signature": "targetFileRel(n: ResolvedCanvasNote): string | null"
+      "line": 126,
+      "signature": "targetFileRel(n: ResolvedNoteStub): string | null"
     },
     {
       "name": "RawDecision",
       "kind": "interface",
-      "line": 132,
+      "line": 136,
       "signature": "RawDecision()",
       "members": [
         {
@@ -251,55 +289,55 @@
     {
       "name": "extractJson",
       "kind": "function",
-      "line": 139,
+      "line": 143,
       "signature": "extractJson(text: string): Record<string, unknown> | null"
     },
     {
       "name": "normalizeChangeOp",
       "kind": "function",
-      "line": 153,
+      "line": 157,
       "signature": "normalizeChangeOp(change: RawDecision['change']): { kind: ChangeKind; op: ChangeOp } | null"
     },
     {
       "name": "parseRawDecision",
       "kind": "function",
-      "line": 181,
+      "line": 185,
       "signature": "parseRawDecision(text: string): RawDecision | null"
     },
     {
       "name": "decideMode",
       "kind": "function",
-      "line": 198,
+      "line": 202,
       "signature": "decideMode(cfg: LlmConfig | null): { mode: 'llm' | 'mock' | 'off'; cfg: LlmConfig | null; note: string }"
     },
     {
       "name": "mockDecide",
       "kind": "function",
-      "line": 212,
-      "signature": "mockDecide(n: ResolvedCanvasNote, file: FileExcerpt | null): { action: DecideAction; reason: string; change?: { kind: ChangeKind; op: ChangeOp } }"
+      "line": 216,
+      "signature": "mockDecide(n: ResolvedNoteStub, file: FileExcerpt | null): { action: DecideAction; reason: string; change?: { kind: ChangeKind; op: ChangeOp } }"
     },
     {
       "name": "collectBatchTargets",
       "kind": "function",
-      "line": 232,
-      "signature": "collectBatchTargets(notes: ResolvedCanvasNote[]): DocTargetSet"
+      "line": 236,
+      "signature": "collectBatchTargets(notes: ResolvedNoteStub[]): DocTargetSet"
     },
     {
       "name": "buildNotePrompt",
       "kind": "function",
-      "line": 245,
-      "signature": "buildNotePrompt(n: ResolvedCanvasNote, file: FileExcerpt | null, docsBlock: string): ChatMessage[]"
+      "line": 249,
+      "signature": "buildNotePrompt(n: ResolvedNoteStub, file: FileExcerpt | null, docsBlock: string): ChatMessage[]"
     },
     {
       "name": "llmDecide",
       "kind": "function",
-      "line": 274,
-      "signature": "llmDecide(cfg: LlmConfig | null, n: ResolvedCanvasNote, file: FileExcerpt | null, docsBlock: string): Promise<{ action: DecideAction; reason: string; change?: { kind: ChangeKind; op: ChangeOp }; llm: boolean }>"
+      "line": 278,
+      "signature": "llmDecide(cfg: LlmConfig | null, n: ResolvedNoteStub, file: FileExcerpt | null, docsBlock: string): Promise<{ action: DecideAction; reason: string; change?: { kind: ChangeKind; op: ChangeOp }; llm: boolean }>"
     },
     {
       "name": "decideCanvasNotes",
       "kind": "function",
-      "line": 303,
+      "line": 307,
       "signature": "decideCanvasNotes(input: DecideCanvasNotesInput): Promise<DecideCanvasNotesResult>"
     }
   ],
@@ -318,10 +356,6 @@
     },
     {
       "source": "../../../infrastructure/llm_focus.js",
-      "kind": "relative"
-    },
-    {
-      "source": "../view/derive_mind_map.js",
       "kind": "relative"
     },
     {
@@ -395,14 +429,6 @@
       "to": "src/application/meta/llm/llm_decider.ts#targetFileRel"
     },
     {
-      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
-      "to": "src/application/meta/view/derive_mind_map.ts#markCanvasNotesStatus"
-    },
-    {
-      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
-      "to": "src/application/meta/view/derive_mind_map.ts#resolveCanvasNoteTargets"
-    },
-    {
       "from": "src/application/meta/llm/llm_decider.ts#llmDecide",
       "to": "src/infrastructure/llm_focus.ts#callChat"
     },
@@ -429,10 +455,12 @@
     {
       "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
       "to": "src/infrastructure/storage.ts#getDSL"
-    },
-    {
-      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
-      "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+    "src/application/meta/llm/llm_decider.ts#llmDecide",
+    "src/application/meta/llm/llm_decider.ts#parseRawDecision",
+    "src/application/meta/llm/llm_decider.ts#readFileExcerpt"
   ]
 }

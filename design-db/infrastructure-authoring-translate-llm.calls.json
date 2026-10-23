@@ -121,5 +121,11 @@
       "from": "src/infrastructure/authoring/translate/llm.ts#buildChat",
       "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/translate/llm.ts#createPooledBatchTranslator",
+    "src/infrastructure/authoring/translate/llm.ts#createPooledHoleTranslator",
+    "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+    "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler"
   ]
 }

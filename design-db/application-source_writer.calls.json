@@ -300,5 +300,26 @@
       "from": "src/application/source_writer.ts#relOf",
       "to": "src/infrastructure/index/symbols.ts#toIndexKey"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/derive/derive_split.ts#splitOnce",
+    "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+    "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
+    "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
+    "src/application/refactor/edit/apply_writes.ts#applyWritesCore",
+    "src/application/refactor/edit/edit_code.ts#editCodeBatch",
+    "src/application/refactor/edit/edit_code.ts#editCodeInner",
+    "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsCore",
+    "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsWithVerify",
+    "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline.runStage",
+    "src/application/refactor/rename/rename_file.ts#renameFileCore",
+    "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+    "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+    "src/application/source_writer.ts#openSourceWrite",
+    "src/application/source_writer.ts#openSourceWrite.commit",
+    "src/application/source_writer.ts#openSourceWrite.move",
+    "src/application/source_writer.ts#openSourceWrite.remove",
+    "src/application/source_writer.ts#writeSourceBatch",
+    "src/application/source_writer.ts#writeSourceFile"
   ]
 }

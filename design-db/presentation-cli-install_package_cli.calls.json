@@ -452,5 +452,20 @@
       "from": "src/presentation/cli/install_package_cli.ts#main",
       "to": "src/presentation/cli/install_package_cli.ts#verifyAbi"
     }
+  ],
+  "reverse_calls": [
+    "src/presentation/cli/install_package_cli.ts#checkPrebuild",
+    "src/presentation/cli/install_package_cli.ts#collect",
+    "src/presentation/cli/install_package_cli.ts#coreTreeSitterVersion",
+    "src/presentation/cli/install_package_cli.ts#hasHostPrebuild",
+    "src/presentation/cli/install_package_cli.ts#installPrecheck",
+    "src/presentation/cli/install_package_cli.ts#isInstalled",
+    "src/presentation/cli/install_package_cli.ts#main",
+    "src/presentation/cli/install_package_cli.ts#rangeOk",
+    "src/presentation/cli/install_package_cli.ts#readLangPkgJson",
+    "src/presentation/cli/install_package_cli.ts#readPkgJson",
+    "src/presentation/cli/install_package_cli.ts#registryInstallScript",
+    "src/presentation/cli/install_package_cli.ts#runNpm",
+    "src/presentation/cli/install_package_cli.ts#verifyAbi"
   ]
 }

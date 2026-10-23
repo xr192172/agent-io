@@ -158,5 +158,15 @@
       "from": "src/infrastructure/analysis/refactor/protect.ts#createProtectGuard",
       "to": "src/infrastructure/analysis/refactor/protect.ts#loadRenameProtect"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/rename/rename_file.ts#renameFileCore",
+    "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+    "src/infrastructure/analysis/refactor/protect.ts#createProtectGuard",
+    "src/infrastructure/analysis/rename_symbol/languages/c.ts#renameCSymbol",
+    "src/infrastructure/analysis/rename_symbol/languages/go.ts#renameGoSymbol",
+    "src/infrastructure/analysis/rename_symbol/languages/py.ts#renamePythonSymbol",
+    "src/infrastructure/analysis/rename_symbol/languages/ts.ts#renameTsSymbol",
+    "src/infrastructure/analysis/rename_symbol/namespace_family.ts#renameNamespaceSymbol"
   ]
 }

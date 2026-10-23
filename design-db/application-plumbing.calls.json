@@ -121,5 +121,19 @@
       "from": "src/application/plumbing.ts#optionalBool",
       "to": "src/application/plumbing.ts#shapeErr"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/explore_code.ts#exploreCode",
+    "src/application/plumbing.ts#optionalBool",
+    "src/application/plumbing.ts#optionalNum",
+    "src/application/plumbing.ts#optionalStr",
+    "src/application/plumbing.ts#wrap",
+    "src/application/plumbing.ts#wrapData",
+    "src/presentation/http/serve.ts#handleApiTool",
+    "src/presentation/mcp/server_registry.ts#argValidatorOf",
+    "src/presentation/mcp/server_registry.ts#invokeTool",
+    "src/presentation/mcp/server_registry.ts#registerAllTools",
+    "src/presentation/mcp/server_registry.ts#registerAtomicEntry",
+    "src/presentation/mcp/server_registry.ts#renderNextNote"
   ]
 }

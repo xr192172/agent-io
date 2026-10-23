@@ -183,5 +183,11 @@
       "from": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#extractKeywords",
       "to": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#stripAbsPaths"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis",
+    "src/infrastructure/analysis/diagnosis/symptom_parser.ts#extractKeywords",
+    "src/infrastructure/analysis/diagnosis/symptom_parser.ts#extractLocations",
+    "src/infrastructure/analysis/diagnosis/symptom_parser.ts#parseSymptom"
   ]
 }

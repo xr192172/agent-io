@@ -78,5 +78,15 @@
       "from": "src/infrastructure/index/self_writes.ts#readSelfWrites",
       "to": "src/infrastructure/index/self_writes.ts#selfWritesPath"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+    "src/application/write_gate.ts#recordSelfWrite",
+    "src/application/write_gate.ts#writeSelfWrites",
+    "src/infrastructure/graph/import_project.ts#importProject",
+    "src/infrastructure/index/index_freshness.ts#detectStaleIndex",
+    "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+    "src/infrastructure/index/self_writes.ts#pendingSelfWrites",
+    "src/infrastructure/index/self_writes.ts#readSelfWrites"
   ]
 }

@@ -40,5 +40,8 @@
       "from": "src/application/observe/reconcile/proposal_list.ts#listObserveProposals",
       "to": "src/infrastructure/dictionary.ts#validateProjectRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/presentation/http/serve.ts#handleApiObserveProposals"
   ]
 }

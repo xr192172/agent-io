@@ -3143,7 +3143,13 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "intent": "retired",
+        "decision": {
+          "summary": "★ 2026-10-23 标 to_delete：文件已不存在（src/application/design/dsl_ops/annotation_tools.ts）",
+          "expectations": [],
+          "updated_at": "2026-10-23"
+        }
       },
       {
         "id": "file_src_application_design_dsl_ops_api_ops_ts",
@@ -3420,30 +3426,85 @@
         "task": {
           "id": "file_src_application_design_index_ts",
           "summary": "【L1 待建构】入口层 · src/application/design — 0 个 API（导入自 20 个模块）（src/application/design/index.ts） ← 节点 file_src_application_design_index_ts",
-          "state": "candidate",
+          "state": "done",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
+          "owner": "agent:workbuddy-glm5",
+          "claimed_at": "2026-10-23T17:44:10.206Z",
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "99f122ec754f5f50eedb154d6fbe78f83b8ce753"
+                "content_hash": "b6a76b3b7de47c607c927589899c076a87066c52"
               }
             ],
-            "computed_at": "2026-10-22T04:00:50.686Z",
+            "computed_at": "2026-10-23T17:44:10.145Z",
             "basis": [
-              "node-path"
+              "declared"
             ]
           },
-          "release_reason": "本轮活已完（src/application/design/index.ts:466-467 传 actor/authorize、:527 gateHumanLines；夹具 15/0），但该节点 L1 建构不完整（无 decision.summary / 0 条后态判据）⇒ 只 release，不冒充 done",
-          "released_by": "subagent:codebuddy",
-          "released_at": "2026-10-22T04:11:21.049Z"
+          "claimed_without_judge": {
+            "at": "2026-10-23T17:44:10.206Z",
+            "missing": [
+              "节点 file_src_application_design_index_ts 的 `decision.expectations` 里**后态判据（phase=post）0 条**（**一条判据都没有**）",
+              "要补 **2 条**：signature-matches + source-has —— 一个\"结构\"（`DESIGN_TOOLS` 的签名就算证据）+ 一个\"行为/文本\"（关键写法必须在）",
+              "写到哪：`edit_dsl { type:'decision', op:'update', id:'file_src_application_design_index_ts', data:{ expectations:[…] } }`（判据**只住 decision**，不在卡上；卡上的是一张回滚快照）",
+              "补齐后：`edit_dsl { type:'task', op:'start', id:'file_src_application_design_index_ts', data:{ owner:'<你>' } }`（第二段：删快照 + state→claimed，**一次落盘**）",
+              "放弃：`release`（会按 `prepared_snapshot` 把判据**逐字还原** ⇒ 零残留）"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-23T17:50:55.774Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify（含 MCP 工具签名门）",
+                "input": "3c94a0062f9d7fd1a5eb1290010139a7fcaf13fe",
+                "code": "f0a5a4dcd8e823814f9cd510cedf41e1cadaea4d",
+                "covers": [
+                  "src/application/design/index.ts"
+                ]
+              },
+              "observed": "9/9 道门全过：zod schema 的 detail 参与枚举均与实现接线（工具签名门真调验证）；设计 DB 投影重跑后陈旧 0",
+              "command": "npm run verify（含 MCP 工具签名门）"
+            }
+          ]
         },
-        "status": "draft"
+        "status": "done",
+        "decision": {
+          "summary": "get_dsl 工具 schema 扩展：query 枚举加 overview，新增 detail 参数（query=history 概览/详情两级）。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "'overview'",
+                "detail: z.boolean().optional()"
+              ],
+              "path": "src/application/design/index.ts",
+              "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明——否则 schema 与实现脱节（工具签名门会拦）"
+            }
+          ],
+          "rationale": "task-system-plan 侧改造 query=history 为概览/详情两级并新增 query=overview，schema 住在本文件；跨 feature 同一施工的 schema 侧。",
+          "acceptance": "npm run verify 过（含 MCP 工具签名门：zod 与实现接线）",
+          "thread": "history",
+          "updated_at": "2026-10-23T17:50:47.023Z",
+          "author": "llm"
+        },
+        "overlay": {
+          "path": "src/application/design/index.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-24T01:55:00+08:00",
+            "command": "npm run verify（含 MCP 工具签名门）",
+            "kind": "reading",
+            "observed": "9/9 道门全过：zod schema 的 detail 参与枚举均与实现接线（工具签名门真调验证）；设计 DB 投影重跑后陈旧 0"
+          }
+        }
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -19799,6 +19860,27 @@
             "line": 150,
             "end_line": 150,
             "signature": "const nFiles = sections.reduce((a, s) => a + s.lines.length, 0)"
+          },
+          {
+            "name": "computeSections",
+            "kind": "function",
+            "line": 90,
+            "end_line": 95,
+            "signature": "computeSections()"
+          },
+          {
+            "name": "renderCognition",
+            "kind": "function",
+            "line": 97,
+            "end_line": 118,
+            "signature": "renderCognition(sections)"
+          },
+          {
+            "name": "checkCognition",
+            "kind": "function",
+            "line": 121,
+            "end_line": 133,
+            "signature": "checkCognition()"
           }
         ],
         "lines": 151,
@@ -19950,6 +20032,20 @@
             "line": 183,
             "end_line": 183,
             "signature": "const r = checkManifest()"
+          },
+          {
+            "name": "renderManifest",
+            "kind": "function",
+            "line": 117,
+            "end_line": 143,
+            "signature": "renderManifest()"
+          },
+          {
+            "name": "checkManifest",
+            "kind": "function",
+            "line": 152,
+            "end_line": 173,
+            "signature": "checkManifest()"
           }
         ],
         "lines": 195,
@@ -21715,6 +21811,13 @@
             "line": 234,
             "end_line": 234,
             "signature": "const rep = await runMutate(FEATURE)"
+          },
+          {
+            "name": "runMutate",
+            "kind": "function",
+            "line": 183,
+            "end_line": 230,
+            "signature": "runMutate(feature, root = process.cwd())"
           }
         ],
         "lines": 257,
@@ -25255,7 +25358,16 @@
         "path": "src/application/design/api_signature.ts",
         "responsibility": "核心层 · src/application/design — 1 个 API（导入自 0 个模块）",
         "lines": 21,
-        "layer": "core"
+        "layer": "core",
+        "symbols": [
+          {
+            "name": "extractFuncName",
+            "kind": "function",
+            "line": 18,
+            "end_line": 21,
+            "signature": "extractFuncName(sig: string): string"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_board_pool_ts",
@@ -25275,6 +25387,13 @@
             "line": 31,
             "end_line": 55,
             "signature": "BoardView()"
+          },
+          {
+            "name": "listPool",
+            "kind": "function",
+            "line": 162,
+            "end_line": 232,
+            "signature": "listPool(feature: string, nowMs: number = Date.now()): BoardView"
           }
         ],
         "lines": 84,
@@ -25319,6 +25438,13 @@
             "line": 66,
             "end_line": 66,
             "signature": "const ROW_GAP = 104"
+          },
+          {
+            "name": "deriveAlgorithm",
+            "kind": "function",
+            "line": 205,
+            "end_line": 208,
+            "signature": "deriveAlgorithm(input: DeriveAlgorithmInput): Promise<TouchedProduct<DeriveAlgorithmResult>>"
           }
         ],
         "lines": 208,
@@ -25377,6 +25503,34 @@
             "line": 383,
             "end_line": 383,
             "signature": "const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫']"
+          },
+          {
+            "name": "buildCallGraph",
+            "kind": "function",
+            "line": 342,
+            "end_line": 362,
+            "signature": "buildCallGraph(symbols: ParsedSymbol[],\n  calls: ParsedCall[],): Map<string, CallEdge[]>"
+          },
+          {
+            "name": "pickEntry",
+            "kind": "function",
+            "line": 365,
+            "end_line": 377,
+            "signature": "pickEntry(symbols: ParsedSymbol[], graph: Map<string, CallEdge[]>): ParsedSymbol"
+          },
+          {
+            "name": "walkChain",
+            "kind": "function",
+            "line": 380,
+            "end_line": 399,
+            "signature": "walkChain(entry: ParsedSymbol,\n  symbols: ParsedSymbol[],\n  graph: Map<string, CallEdge[]>,): ParsedSymbol[]"
+          },
+          {
+            "name": "deriveDetailChain",
+            "kind": "function",
+            "line": 415,
+            "end_line": 827,
+            "signature": "deriveDetailChain(input: DeriveChainInput): Promise<DeriveChainResult>"
           }
         ],
         "lines": 805,
@@ -25457,6 +25611,13 @@
             "line": 474,
             "end_line": 480,
             "signature": "GoImportSpec()"
+          },
+          {
+            "name": "deriveSplit",
+            "kind": "function",
+            "line": 1290,
+            "end_line": 1293,
+            "signature": "deriveSplit(input: DeriveSplitInput): Promise<TouchedProduct<DeriveSplitResult>>"
           }
         ],
         "lines": 1277,
@@ -25550,6 +25711,76 @@
             "line": 250,
             "end_line": 250,
             "signature": "SignatureCache()"
+          },
+          {
+            "name": "oplAdd",
+            "kind": "function",
+            "line": 103,
+            "end_line": 125,
+            "signature": "oplAdd(feature: string, idea: string): OplState"
+          },
+          {
+            "name": "oplLocate",
+            "kind": "function",
+            "line": 128,
+            "end_line": 143,
+            "signature": "oplLocate(feature: string, id: string): Promise<OplState>"
+          },
+          {
+            "name": "assertContractNotFromCode",
+            "kind": "function",
+            "line": 170,
+            "end_line": 184,
+            "signature": "assertContractNotFromCode(codeSignaturesFedAsContext: readonly string[]): void"
+          },
+          {
+            "name": "oplDeclare",
+            "kind": "function",
+            "line": 187,
+            "end_line": 212,
+            "signature": "oplDeclare(feature: string,\n  id: string,\n  overrides?: { files?: OplDeclFile[]; declCodeContext?: string[] },): OplState"
+          },
+          {
+            "name": "oplImplement",
+            "kind": "function",
+            "line": 215,
+            "end_line": 219,
+            "signature": "oplImplement(feature: string, id: string): OplState"
+          },
+          {
+            "name": "oplCheck",
+            "kind": "function",
+            "line": 323,
+            "end_line": 355,
+            "signature": "oplCheck(feature: string, id: string): OplState"
+          },
+          {
+            "name": "oplIntegrate",
+            "kind": "function",
+            "line": 358,
+            "end_line": 419,
+            "signature": "oplIntegrate(feature: string, id: string): Promise<OplState>"
+          },
+          {
+            "name": "oplList",
+            "kind": "function",
+            "line": 422,
+            "end_line": 437,
+            "signature": "oplList(feature: string): Array<{ id: string; title: string; idea: string; status: OplStatus; parentFeat?: string; integrated: boolean; updated: string }>"
+          },
+          {
+            "name": "oplGet",
+            "kind": "function",
+            "line": 440,
+            "end_line": 442,
+            "signature": "oplGet(feature: string, id: string): OplState"
+          },
+          {
+            "name": "oplAuto",
+            "kind": "function",
+            "line": 550,
+            "end_line": 553,
+            "signature": "oplAuto(feature: string, id?: string, idea?: string): Promise<OplState>"
           }
         ],
         "lines": 597,
@@ -25638,6 +25869,41 @@
             "line": 217,
             "end_line": 222,
             "signature": "SetNodeSemanticInput()"
+          },
+          {
+            "name": "addExpectedApi",
+            "kind": "function",
+            "line": 19,
+            "end_line": 36,
+            "signature": "addExpectedApi(input: AddExpectedApiInput): EditResult"
+          },
+          {
+            "name": "updateExpectedApi",
+            "kind": "function",
+            "line": 50,
+            "end_line": 67,
+            "signature": "updateExpectedApi(input: UpdateExpectedApiInput): EditResult"
+          },
+          {
+            "name": "deleteExpectedApi",
+            "kind": "function",
+            "line": 79,
+            "end_line": 98,
+            "signature": "deleteExpectedApi(input: DeleteExpectedApiInput): EditResult"
+          },
+          {
+            "name": "setExpectedApis",
+            "kind": "function",
+            "line": 159,
+            "end_line": 211,
+            "signature": "setExpectedApis(input: SetExpectedApisInput): EditResult & { data: SetExpectedApisData }"
+          },
+          {
+            "name": "setNodeSemantic",
+            "kind": "function",
+            "line": 224,
+            "end_line": 272,
+            "signature": "setNodeSemantic(input: SetNodeSemanticInput): EditResult"
           }
         ],
         "lines": 255,
@@ -25661,6 +25927,20 @@
             "line": 72,
             "end_line": 75,
             "signature": "DeleteEdgeInput()"
+          },
+          {
+            "name": "addEdge",
+            "kind": "function",
+            "line": 24,
+            "end_line": 66,
+            "signature": "addEdge(input: AddEdgeInput): EditResult"
+          },
+          {
+            "name": "deleteEdge",
+            "kind": "function",
+            "line": 77,
+            "end_line": 107,
+            "signature": "deleteEdge(input: DeleteEdgeInput): EditResult"
           }
         ],
         "lines": 107,
@@ -25707,6 +25987,20 @@
             "line": 85,
             "end_line": 91,
             "signature": "CloneFeatureResult()"
+          },
+          {
+            "name": "createFeature",
+            "kind": "function",
+            "line": 19,
+            "end_line": 72,
+            "signature": "createFeature(input: CreateFeatureInput): EditResult"
+          },
+          {
+            "name": "cloneFeature",
+            "kind": "function",
+            "line": 92,
+            "end_line": 128,
+            "signature": "cloneFeature(input: CloneFeatureInput): CloneFeatureResult"
           }
         ],
         "lines": 129,
@@ -25737,6 +26031,27 @@
             "line": 145,
             "end_line": 148,
             "signature": "DeleteFileInput()"
+          },
+          {
+            "name": "addFile",
+            "kind": "function",
+            "line": 33,
+            "end_line": 79,
+            "signature": "addFile(input: AddFileInput): EditResult"
+          },
+          {
+            "name": "updateFile",
+            "kind": "function",
+            "line": 107,
+            "end_line": 143,
+            "signature": "updateFile(input: UpdateFileInput): EditResult"
+          },
+          {
+            "name": "deleteFile",
+            "kind": "function",
+            "line": 166,
+            "end_line": 200,
+            "signature": "deleteFile(input: DeleteFileInput): EditResult"
           }
         ],
         "lines": 196,
@@ -25781,6 +26096,34 @@
             "line": 502,
             "end_line": 505,
             "signature": "DeleteNodeInput()"
+          },
+          {
+            "name": "addNode",
+            "kind": "function",
+            "line": 162,
+            "end_line": 264,
+            "signature": "addNode(input: AddNodeInput): EditResult"
+          },
+          {
+            "name": "applyDecisionWrite",
+            "kind": "function",
+            "line": 364,
+            "end_line": 432,
+            "signature": "applyDecisionWrite(prevDecision: NodeDecision | undefined,\n  history: DecisionHistoryEntry[] | undefined,\n  next: NodeDecision | null | undefined,\n  opts?: { author?: DecisionAuthor; agent?: string; note?: string; now?: string },): { decision: NodeDecision | undefined; decision_history: DecisionHistoryEntry[] | undefined }"
+          },
+          {
+            "name": "updateNode",
+            "kind": "function",
+            "line": 434,
+            "end_line": 547,
+            "signature": "updateNode(input: UpdateNodeInput): EditResult"
+          },
+          {
+            "name": "deleteNode",
+            "kind": "function",
+            "line": 558,
+            "end_line": 588,
+            "signature": "deleteNode(input: DeleteNodeInput): EditResult"
           }
         ],
         "lines": 537,
@@ -25994,6 +26337,20 @@
             "line": 412,
             "end_line": 417,
             "signature": "FeatureOperationLike()"
+          },
+          {
+            "name": "checkOpSpec",
+            "kind": "function",
+            "line": 570,
+            "end_line": 621,
+            "signature": "checkOpSpec(op: T): CheckedOperation<T>"
+          },
+          {
+            "name": "renderOpSpecs",
+            "kind": "function",
+            "line": 627,
+            "end_line": 647,
+            "signature": "renderOpSpecs(): string"
           }
         ],
         "lines": 495,
@@ -26018,6 +26375,20 @@
             "line": 58,
             "end_line": 61,
             "signature": "StatusResult()"
+          },
+          {
+            "name": "updateStatus",
+            "kind": "function",
+            "line": 84,
+            "end_line": 182,
+            "signature": "updateStatus(input: UpdateStatusInput): StatusResult"
+          },
+          {
+            "name": "computeFeatureStatus",
+            "kind": "function",
+            "line": 194,
+            "end_line": 202,
+            "signature": "computeFeatureStatus(nodes: Array<{ status?: DiagramStatus }>): DiagramStatus"
           }
         ],
         "lines": 173,
@@ -26055,6 +26426,125 @@
             "line": 190,
             "end_line": 195,
             "signature": "ConstructBasis()"
+          },
+          {
+            "name": "codeFingerprintAt",
+            "kind": "function",
+            "line": 548,
+            "end_line": 560,
+            "signature": "codeFingerprintAt(root: string, rels: readonly string[]): { code: string; covers: string[] }"
+          },
+          {
+            "name": "fingerprintEvidence",
+            "kind": "function",
+            "line": 573,
+            "end_line": 594,
+            "signature": "fingerprintEvidence(expectations: readonly Expectation[],\n  sourceRoot: string | undefined,\n  nodeId: string,\n  ev: EvidenceWhatSource,): TaskEvidenceFingerprint"
+          },
+          {
+            "name": "planEvidenceRerun",
+            "kind": "function",
+            "line": 673,
+            "end_line": 739,
+            "signature": "planEvidenceRerun(root: string | undefined,\n  cards: readonly EvidencePlanCard[],\n  opts?: { changed?: readonly string[] },): { rerun: EvidencePlanItem[]; skip: EvidencePlanItem[]; unknown: EvidencePlanItem[] }"
+          },
+          {
+            "name": "publishTask",
+            "kind": "function",
+            "line": 897,
+            "end_line": 1179,
+            "signature": "publishTask(input: TaskOpInput): EditResult"
+          },
+          {
+            "name": "claimTask",
+            "kind": "function",
+            "line": 1233,
+            "end_line": 1665,
+            "signature": "claimTask(input: TaskOpInput): Promise<EditResult>"
+          },
+          {
+            "name": "renewTask",
+            "kind": "function",
+            "line": 1694,
+            "end_line": 1736,
+            "signature": "renewTask(input: TaskOpInput): Promise<EditResult>"
+          },
+          {
+            "name": "expireTasks",
+            "kind": "function",
+            "line": 1760,
+            "end_line": 1829,
+            "signature": "expireTasks(input: TaskOpInput): Promise<EditResult>"
+          },
+          {
+            "name": "releaseTask",
+            "kind": "function",
+            "line": 1833,
+            "end_line": 1890,
+            "signature": "releaseTask(input: TaskOpInput): Promise<EditResult>"
+          },
+          {
+            "name": "completeTask",
+            "kind": "function",
+            "line": 1909,
+            "end_line": 2105,
+            "signature": "completeTask(input: TaskOpInput): Promise<EditResult>"
+          },
+          {
+            "name": "reopenTask",
+            "kind": "function",
+            "line": 2134,
+            "end_line": 2177,
+            "signature": "reopenTask(input: TaskOpInput): Promise<EditResult>"
+          },
+          {
+            "name": "relaunchTask",
+            "kind": "function",
+            "line": 2206,
+            "end_line": 2242,
+            "signature": "relaunchTask(input: TaskOpInput): EditResult"
+          },
+          {
+            "name": "startTask",
+            "kind": "function",
+            "line": 2265,
+            "end_line": 2337,
+            "signature": "startTask(input: TaskOpInput): EditResult"
+          },
+          {
+            "name": "applyTaskPlanOp",
+            "kind": "function",
+            "line": 2360,
+            "end_line": 2462,
+            "signature": "applyTaskPlanOp(feature: string, op: TaskOpRequest): EditResult"
+          },
+          {
+            "name": "applyTaskOp",
+            "kind": "function",
+            "line": 2464,
+            "end_line": 2515,
+            "signature": "applyTaskOp(feature: string,\n  op: TaskOpRequest,\n  agent?: string,): Promise<EditResult>"
+          },
+          {
+            "name": "publishFromDiff",
+            "kind": "function",
+            "line": 2540,
+            "end_line": 2547,
+            "signature": "publishFromDiff(feature: string, nodeId: string): EditResult"
+          },
+          {
+            "name": "voidTask",
+            "kind": "function",
+            "line": 2575,
+            "end_line": 2597,
+            "signature": "voidTask(input: TaskOpInput): EditResult"
+          },
+          {
+            "name": "applyTodoOp",
+            "kind": "function",
+            "line": 3336,
+            "end_line": 3478,
+            "signature": "applyTodoOp(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
           }
         ],
         "lines": 913,
@@ -26093,6 +26583,27 @@
             "line": 826,
             "end_line": 827,
             "signature": "DecisionTarget()"
+          },
+          {
+            "name": "updateFeature",
+            "kind": "function",
+            "line": 404,
+            "end_line": 452,
+            "signature": "updateFeature(input: UpdateFeatureInput): Promise<TouchedProduct<EditResult>>"
+          },
+          {
+            "name": "normRel",
+            "kind": "function",
+            "line": 773,
+            "end_line": 775,
+            "signature": "normRel(s: string): string"
+          },
+          {
+            "name": "findDecisionTargetNode",
+            "kind": "function",
+            "line": 796,
+            "end_line": 806,
+            "signature": "findDecisionTargetNode(dsl: DesignDSL, raw: string): DecisionTarget['node'] | undefined"
           }
         ],
         "lines": 1258,
@@ -26171,7 +26682,7 @@
         ],
         "lines": 866,
         "layer": "entry",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -26261,6 +26772,41 @@
             "line": 425,
             "end_line": 425,
             "signature": "const MISSING_FUNC_REASON = '代码中未找到该函数'"
+          },
+          {
+            "name": "checkBaselineDrift",
+            "kind": "function",
+            "line": 86,
+            "end_line": 116,
+            "signature": "checkBaselineDrift(feature: string, codeDir: string): BaselineDrift"
+          },
+          {
+            "name": "comparisonState",
+            "kind": "function",
+            "line": 170,
+            "end_line": 173,
+            "signature": "comparisonState(compared: number, drifted: number): ComparisonState"
+          },
+          {
+            "name": "retireStage",
+            "kind": "function",
+            "line": 269,
+            "end_line": 271,
+            "signature": "retireStage(exists: boolean): RetireStage"
+          },
+          {
+            "name": "retireMarksOf",
+            "kind": "function",
+            "line": 290,
+            "end_line": 296,
+            "signature": "retireMarksOf(entries: readonly RetireFlowEntry[]): Map<string, NonNullable<FileDiffRetire>>"
+          },
+          {
+            "name": "checkConsistencyReport",
+            "kind": "function",
+            "line": 830,
+            "end_line": 1373,
+            "signature": "checkConsistencyReport(input: ConsistencyInput): Promise<ConsistencyResult>"
           }
         ],
         "lines": 1186,
@@ -26298,6 +26844,13 @@
             "line": 107,
             "end_line": 107,
             "signature": "const norm = (p: string): string => path.resolve(p).toLowerCase()"
+          },
+          {
+            "name": "detectDrift",
+            "kind": "function",
+            "line": 286,
+            "end_line": 289,
+            "signature": "detectDrift(input: DetectDriftInput): Promise<TouchedProduct<DriftData & { message: string }>>"
           }
         ],
         "lines": 289,
@@ -26335,6 +26888,27 @@
             "line": 70,
             "end_line": 75,
             "signature": "ExpectationConflict()"
+          },
+          {
+            "name": "findExpectationConflicts",
+            "kind": "function",
+            "line": 63,
+            "end_line": 103,
+            "signature": "findExpectationConflicts(items: readonly JudgeItem[],): ExpectationConflict[]"
+          },
+          {
+            "name": "indexStaleFor",
+            "kind": "function",
+            "line": 120,
+            "end_line": 142,
+            "signature": "indexStaleFor(root: string, rels: readonly string[]): string | null"
+          },
+          {
+            "name": "judgeExpectations",
+            "kind": "function",
+            "line": 177,
+            "end_line": 430,
+            "signature": "judgeExpectations(root: string,\n  items: readonly JudgeItem[],): Promise<ExpectationsReport>"
           }
         ],
         "lines": 453,
@@ -26373,14 +26947,18 @@
     }
   ],
   "annotations": [],
-  "_dsl_rev": 180,
+  "_dsl_rev": 182,
   "_sync": {
-    "saved_at": "2026-10-22T04:11:21.055Z",
+    "saved_at": "2026-10-23T17:50:55.816Z",
     "source": "design_sheet",
     "feature": "design-canvas",
     "scanRev": 1792582983534,
-    "age": 59297521,
-    "dbSchemaVersion": 16
+    "age": 194872282,
+    "dbSchemaVersion": 16,
+    "via": "edit_dsl:edit_dsl"
   },
-  "todos": []
+  "todos": [],
+  "overlay_global": {
+    "title": "design-canvas"
+  }
 }

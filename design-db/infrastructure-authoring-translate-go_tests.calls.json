@@ -232,5 +232,13 @@
       "from": "src/infrastructure/authoring/translate/go_tests.ts#harvestForUnits",
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/translate/go_tests.ts#absorbNested",
+    "src/infrastructure/authoring/translate/go_tests.ts#harvestForUnits",
+    "src/infrastructure/authoring/translate/go_tests.ts#harvestFromTest",
+    "src/infrastructure/authoring/translate/go_tests.ts#structFieldNames",
+    "src/infrastructure/authoring/translate/go_tests.ts#walkType",
+    "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler"
   ]
 }

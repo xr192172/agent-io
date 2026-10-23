@@ -233,5 +233,8 @@
       "from": "src/application/meta/archive/archive_node.ts#archiveNodeCore",
       "to": "src/infrastructure/storage_overlay.ts#syncLifecycleToOverlay"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/archive/archive_node.ts#archiveNode"
   ]
 }

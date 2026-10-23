@@ -45,5 +45,10 @@
       "from": "src/infrastructure/authoring/translate/referenced.ts#collectExternalTypeRefs",
       "to": "src/infrastructure/authoring/translate/referenced.ts#localNames"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/translate/project.ts#buildProjectCallNote",
+    "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+    "src/infrastructure/authoring/translate/referenced.ts#collectExternalTypeRefs"
   ]
 }

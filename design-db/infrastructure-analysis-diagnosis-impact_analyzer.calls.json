@@ -53,5 +53,8 @@
       "from": "src/infrastructure/analysis/diagnosis/impact_analyzer.ts#analyzeImpact",
       "to": "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis"
   ]
 }

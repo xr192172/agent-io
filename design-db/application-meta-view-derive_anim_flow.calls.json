@@ -298,5 +298,9 @@
       "from": "src/application/meta/view/derive_anim_flow.ts#deriveAnimFlowCore",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/view/derive_anim_flow.ts#deriveAnimFlow",
+    "src/application/meta/view/derive_anim_flow.ts#deriveAnimFlowCore"
   ]
 }

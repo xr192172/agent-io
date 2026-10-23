@@ -129,5 +129,11 @@
       "from": "src/infrastructure/parse/symbol_docstring.ts#leadingDocOf",
       "to": "src/infrastructure/parse/symbol_docstring.ts#trimOrUndef"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/parse/kernel.ts#traverseAndExtract",
+    "src/infrastructure/parse/symbol_docstring.ts#bodyDocOf",
+    "src/infrastructure/parse/symbol_docstring.ts#docstringOf",
+    "src/infrastructure/parse/symbol_docstring.ts#leadingDocOf"
   ]
 }

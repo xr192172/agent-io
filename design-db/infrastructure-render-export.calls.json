@@ -199,5 +199,11 @@
       "from": "src/infrastructure/render/export.ts#exportMarkdown",
       "to": "src/infrastructure/storage.ts#getDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/render/export.ts#exportMarkdown",
+    "src/infrastructure/render/export.ts#exportSvg",
+    "src/infrastructure/render/export.ts#renderEdgeSvg",
+    "src/infrastructure/render/export.ts#renderNodeSvg"
   ]
 }

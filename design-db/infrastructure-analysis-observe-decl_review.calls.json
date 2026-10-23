@@ -76,5 +76,9 @@
       "from": "src/infrastructure/analysis/observe/decl_review.ts#reviewDeclsWithLLM",
       "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+    "src/infrastructure/analysis/observe/decl_review.ts#reviewDeclsWithLLM"
   ]
 }

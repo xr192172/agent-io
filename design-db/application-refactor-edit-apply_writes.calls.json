@@ -160,5 +160,9 @@
       "from": "src/application/refactor/edit/apply_writes.ts#applyWritesCore",
       "to": "src/infrastructure/index/symbols.ts#toIndexKey"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/edit/apply_writes.ts#applyWrites",
+    "src/application/refactor/rename/rename_local.ts#renameLocals"
   ]
 }

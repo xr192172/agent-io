@@ -305,5 +305,15 @@
       "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#persistFeatureTree",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/view/overview.ts#tryDeriveFeatureTree",
+    "src/infrastructure/analysis/structure/derive_feature_tree.ts#communityKeyOf",
+    "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+    "src/infrastructure/analysis/structure/derive_feature_tree.ts#dirFallbackTree",
+    "src/infrastructure/analysis/structure/derive_feature_tree.ts#fileKeyOf",
+    "src/infrastructure/analysis/structure/derive_feature_tree.ts#groupByDir",
+    "src/infrastructure/analysis/structure/derive_feature_tree.ts#isTestPath",
+    "src/infrastructure/analysis/structure/derive_feature_tree.ts#renameGroupsByLLM"
   ]
 }

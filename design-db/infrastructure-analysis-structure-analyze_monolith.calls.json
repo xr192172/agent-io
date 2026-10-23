@@ -500,5 +500,13 @@
       "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
       "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+    "src/infrastructure/analysis/structure/analyze_monolith.ts#assessCommunitySubSplit",
+    "src/infrastructure/analysis/structure/analyze_monolith.ts#buildCallGraphFromCache",
+    "src/infrastructure/analysis/structure/analyze_monolith.ts#scoreAnchors",
+    "src/infrastructure/analysis/structure/analyze_monolith.ts#splitOversizedGroups",
+    "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree"
   ]
 }

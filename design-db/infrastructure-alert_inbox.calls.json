@@ -145,5 +145,17 @@
       "from": "src/infrastructure/alert_inbox.ts#appendPendingAlerts",
       "to": "src/infrastructure/alert_inbox.ts#takeAlerts"
     }
+  ],
+  "reverse_calls": [
+    "src/application/dispatch.ts#collectPendingAlertText",
+    "src/application/observe/runtime/watch_project_tool.ts#doWork",
+    "src/application/observe/runtime/watch_project_tool.ts#runDriftCheck",
+    "src/application/refactor/pipeline/refactor_judge.ts#pushEscalation",
+    "src/infrastructure/alert_inbox.ts#appendPendingAlerts",
+    "src/infrastructure/alert_inbox.ts#pushAlert",
+    "src/presentation/daemon/daemon.ts#dslWriteHandler",
+    "src/presentation/daemon/daemon.ts#main",
+    "src/presentation/daemon/daemon.ts#scheduleLoopTrigger",
+    "src/presentation/daemon/memory_watch.ts#startMemoryWatch"
   ]
 }

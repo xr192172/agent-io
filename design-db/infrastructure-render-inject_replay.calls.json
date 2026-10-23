@@ -257,5 +257,8 @@
       "from": "src/infrastructure/render/inject_replay.ts#injectReplay",
       "to": "src/infrastructure/storage.ts#getDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/render/inject_replay.ts#injectReplay"
   ]
 }

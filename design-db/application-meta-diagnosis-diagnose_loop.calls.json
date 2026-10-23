@@ -218,5 +218,8 @@
       "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
       "to": "src/infrastructure/index/symbols.ts#syncProject"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoop"
   ]
 }

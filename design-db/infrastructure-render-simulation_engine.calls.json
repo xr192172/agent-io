@@ -265,5 +265,16 @@
       "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.constructor",
       "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.reset"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/render/simulation_engine.ts#SimulationEngine.constructor",
+    "src/infrastructure/render/simulation_engine.ts#SimulationEngine.executeAction",
+    "src/infrastructure/render/simulation_engine.ts#SimulationEngine.getState",
+    "src/infrastructure/render/simulation_engine.ts#SimulationEngine.interpolateObject",
+    "src/infrastructure/render/simulation_engine.ts#SimulationEngine.mapStateToNodes",
+    "src/infrastructure/render/simulation_engine.ts#SimulationEngine.processEvent",
+    "src/infrastructure/render/simulation_engine.ts#SimulationEngine.recordTrace",
+    "src/infrastructure/render/simulation_engine.ts#SimulationEngine.reset",
+    "src/infrastructure/render/simulation_engine.ts#SimulationEngine.run"
   ]
 }

@@ -115,5 +115,12 @@
       "from": "src/application/dispatch.ts#isDaemonAvailable",
       "to": "src/infrastructure/daemon/client.ts#probeDaemon"
     }
+  ],
+  "reverse_calls": [
+    "src/application/dispatch.ts#collectPendingAlertText",
+    "src/application/dispatch.ts#dispatchDslEdit",
+    "src/application/dispatch.ts#dispatchWatch",
+    "src/application/meta/explore/explore_code.ts#exploreCode",
+    "src/presentation/mcp/server_registry.ts#invokeTool"
   ]
 }

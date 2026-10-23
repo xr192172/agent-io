@@ -344,5 +344,14 @@
       "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
       "to": "src/application/observe/capture/memory_observe.ts#snapshotToFile"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/capture/memory_observe.ts#connectCdp",
+    "src/application/observe/capture/memory_observe.ts#fmt",
+    "src/application/observe/capture/memory_observe.ts#getWsCtor",
+    "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+    "src/application/observe/capture/memory_observe.ts#sample",
+    "src/application/observe/capture/memory_observe.ts#sampleRemote",
+    "src/presentation/daemon/memory_watch.ts#startMemoryWatch"
   ]
 }

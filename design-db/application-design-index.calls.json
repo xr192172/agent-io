@@ -7,7 +7,7 @@
     {
       "name": "DESIGN_TOOLS",
       "kind": "const",
-      "line": 74,
+      "line": 73,
       "signature": "const DESIGN_TOOLS = [ { name: 'get_dsl', title: 'Query feature data', descrip…"
     }
   ],
@@ -26,10 +26,6 @@
     },
     {
       "source": "./dsl_ops/op_data_spec.js",
-      "kind": "relative"
-    },
-    {
-      "source": "../../domain/types.js",
       "kind": "relative"
     },
     {

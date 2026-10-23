@@ -401,5 +401,11 @@
       "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
       "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/observe/instrument_java.ts#bodyOf",
+    "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+    "src/infrastructure/analysis/observe/instrument_java.ts#probeCall",
+    "src/infrastructure/analysis/observe/instrument_java.ts#scanFunctions"
   ]
 }

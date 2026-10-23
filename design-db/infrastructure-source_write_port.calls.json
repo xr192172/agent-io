@@ -18,5 +18,10 @@
     }
   ],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/infrastructure/analysis/diagnosis/repair.ts#applyPatches",
+    "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentFileWithHooks",
+    "src/infrastructure/authoring/version_upgrade/rewrite.ts#applyEdits"
+  ]
 }

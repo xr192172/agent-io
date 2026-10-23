@@ -113,5 +113,12 @@
       "from": "src/infrastructure/authoring/translate/verify.ts#verifySkeletons",
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/authoring/translate/fill.ts#fillUnit",
+    "src/infrastructure/authoring/translate/fill.ts#fillUnitsBatched",
+    "src/infrastructure/authoring/translate/pairs.ts#translateGoToTs",
+    "src/infrastructure/authoring/translate/verify.ts#structureCheck",
+    "src/infrastructure/authoring/translate/verify.ts#verifySkeletons"
   ]
 }

@@ -229,5 +229,8 @@
       "from": "src/application/refactor/rename/rename_local.ts#renameLocals",
       "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/rename/rename_symbols.ts#renameSymbolsLocal"
   ]
 }

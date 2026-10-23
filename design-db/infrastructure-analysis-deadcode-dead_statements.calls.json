@@ -222,5 +222,15 @@
       "from": "src/infrastructure/analysis/deadcode/dead_statements.ts#detectUnreachableRunsInSource",
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/pipeline/refactor_pipeline.ts#computeDeadStatementsPlan",
+    "src/infrastructure/analysis/deadcode/dead_statements.ts#collectDeclaredNames",
+    "src/infrastructure/analysis/deadcode/dead_statements.ts#detectInBlock",
+    "src/infrastructure/analysis/deadcode/dead_statements.ts#detectUnreachableRunsInSource",
+    "src/infrastructure/analysis/deadcode/dead_statements.ts#flagDeadStatements",
+    "src/infrastructure/analysis/deadcode/dead_statements.ts#isDeletable",
+    "src/infrastructure/analysis/deadcode/dead_statements.ts#namesUnreferencedOutside",
+    "src/infrastructure/analysis/deadcode/dead_statements.ts#subtreeHas"
   ]
 }

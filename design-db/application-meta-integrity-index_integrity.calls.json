@@ -406,5 +406,9 @@
       "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
       "to": "src/infrastructure/project_view.ts#getProjectView"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/integrity/index_integrity.ts#indexIntegrity",
+    "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore"
   ]
 }

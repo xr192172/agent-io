@@ -588,5 +588,14 @@
       "from": "src/application/design/dsl_ops/node_ops.ts#deleteNode",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/node_ops.ts#addNode",
+    "src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite",
+    "src/application/design/dsl_ops/node_ops.ts#assertValidSchema",
+    "src/application/design/dsl_ops/node_ops.ts#assertValidShapes",
+    "src/application/design/dsl_ops/node_ops.ts#updateNode",
+    "src/application/design/dsl_ops/update_feature.ts#applyDecisionOp",
+    "src/application/design/dsl_ops/update_feature.ts#applyNodeOp"
   ]
 }

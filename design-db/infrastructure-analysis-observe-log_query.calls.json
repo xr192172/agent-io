@@ -186,5 +186,11 @@
       "from": "src/infrastructure/analysis/observe/log_query.ts#queryObserveLog",
       "to": "src/infrastructure/analysis/observe/probe.ts#loadTSEvents"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+    "src/application/observe/runtime/observe_log_query.ts#queryObserveLogUseCase",
+    "src/infrastructure/analysis/observe/log_query.ts#matchesFile",
+    "src/infrastructure/analysis/observe/log_query.ts#queryObserveLog"
   ]
 }

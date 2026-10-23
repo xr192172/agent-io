@@ -385,5 +385,10 @@
       "from": "src/application/meta/explore/first_hop_args.ts#hopsOfChain",
       "to": "src/domain/chain_wiring.ts#hopsOf"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/first_hop_args.ts#buildStart",
+    "src/application/meta/explore/first_hop_args.ts#firstHopArgs",
+    "src/application/meta/explore/first_hop_args.ts#prerequisiteOf"
   ]
 }

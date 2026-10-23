@@ -336,5 +336,16 @@
       "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#judgeSource",
       "to": "src/infrastructure/graph/dead_deps.ts#qualifierLines"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
+    "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
+    "src/application/refactor/pipeline/refactor_pipeline.ts#computeDeadImportsPlan",
+    "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#detectDeadImports",
+    "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#enumerateTsSources",
+    "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#gatedByLoadEffects",
+    "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#hasLoadEffects",
+    "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#scanProjectSourceFiles",
+    "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap"
   ]
 }

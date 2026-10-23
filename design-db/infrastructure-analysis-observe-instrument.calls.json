@@ -897,5 +897,25 @@
       "from": "src/infrastructure/analysis/observe/instrument.ts#moduleBase",
       "to": "src/infrastructure/parse/source_exts.ts#isTsJsExt"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/capture/observe_points.ts#recommendObservePoints",
+    "src/infrastructure/analysis/observe/instrument.ts#clearProbeLedger",
+    "src/infrastructure/analysis/observe/instrument.ts#collectDeepSites",
+    "src/infrastructure/analysis/observe/instrument.ts#collectPatternNames",
+    "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+    "src/infrastructure/analysis/observe/instrument.ts#containsFunctionLike",
+    "src/infrastructure/analysis/observe/instrument.ts#deepProbeName",
+    "src/infrastructure/analysis/observe/instrument.ts#detectEnclosingFunction",
+    "src/infrastructure/analysis/observe/instrument.ts#detectModuleSystem",
+    "src/infrastructure/analysis/observe/instrument.ts#extractParamNames",
+    "src/infrastructure/analysis/observe/instrument.ts#firstIdentifier",
+    "src/infrastructure/analysis/observe/instrument.ts#handleReturn",
+    "src/infrastructure/analysis/observe/instrument.ts#isSideEffectFreeExpr",
+    "src/infrastructure/analysis/observe/instrument.ts#isSimpleExpr",
+    "src/infrastructure/analysis/observe/instrument.ts#loadProbeLedger",
+    "src/infrastructure/analysis/observe/instrument.ts#parenInner",
+    "src/infrastructure/analysis/observe/instrument.ts#restoreInstrumented",
+    "src/infrastructure/analysis/observe/instrument.ts#saveProbeLedger"
   ]
 }

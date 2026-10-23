@@ -301,5 +301,10 @@
       "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/explore_code.ts#exploreCode",
+    "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+    "src/presentation/http/serve.ts#handleApiArchLayer"
   ]
 }

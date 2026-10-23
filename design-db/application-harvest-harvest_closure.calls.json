@@ -292,5 +292,9 @@
       "from": "src/application/harvest/harvest_closure.ts#harvestClosureCore",
       "to": "src/infrastructure/storage.ts#getDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/harvest/harvest_closure.ts#harvestClosure",
+    "src/application/harvest/harvest_closure.ts#harvestClosureCore"
   ]
 }

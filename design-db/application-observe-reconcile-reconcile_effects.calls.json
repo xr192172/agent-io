@@ -357,5 +357,11 @@
       "from": "src/application/observe/reconcile/reconcile_effects.ts#reconcileEffectsCore",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/reconcile/reconcile_effects.ts#discoverEventFiles",
+    "src/application/observe/reconcile/reconcile_effects.ts#legacyEventFiles",
+    "src/application/observe/reconcile/reconcile_effects.ts#reconcileEffects",
+    "src/application/observe/reconcile/reconcile_effects.ts#reconcileEffectsCore"
   ]
 }

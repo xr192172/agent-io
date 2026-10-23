@@ -103,5 +103,8 @@
       "from": "src/infrastructure/analysis/rename_symbol/languages/c.ts#analyzeCLanguage",
       "to": "src/infrastructure/parse/loader.ts#getParser"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/rename_symbol/languages/c.ts#renameCSymbol"
   ]
 }

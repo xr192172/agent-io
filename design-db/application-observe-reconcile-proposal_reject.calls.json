@@ -72,5 +72,8 @@
       "from": "src/application/observe/reconcile/proposal_reject.ts#rejectObserveProposal",
       "to": "src/infrastructure/dictionary.ts#validateProjectRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/presentation/http/serve.ts#handleApiObserveReject"
   ]
 }

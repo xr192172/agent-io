@@ -99,5 +99,13 @@
       "from": "src/application/design/board/todo_journal.ts#todoJournalFile",
       "to": "src/infrastructure/storage.ts#getDesignSheetFile"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/board/todo_journal.ts#appendTodoTombstone",
+    "src/application/design/board/todo_journal.ts#readTodoTombstones",
+    "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+    "src/application/design/dsl_ops/task_ops.ts#deleteTodoCard",
+    "src/application/design/dsl_ops/task_ops.ts#findTodoCard",
+    "src/application/meta/explore/query_feature.ts#queryFeature"
   ]
 }

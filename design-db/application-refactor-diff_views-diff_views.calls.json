@@ -777,5 +777,16 @@
       "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
       "to": "src/infrastructure/storage.ts#getLiveFeatureResolved"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/runtime/watch_project_tool.ts#doWork",
+    "src/application/refactor/diff_views/diff_views.ts#diffSymbols",
+    "src/application/refactor/diff_views/diff_views.ts#diffViews",
+    "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+    "src/application/refactor/diff_views/diff_views.ts#fileChanged",
+    "src/application/refactor/diff_views/diff_views.ts#metaChanged",
+    "src/application/refactor/diff_views/diff_views.ts#structChanged",
+    "src/application/refactor/diff_views/diff_views.ts#symbolsSemanticallyEqual",
+    "src/presentation/http/serve.ts#handleApiDiffViews"
   ]
 }

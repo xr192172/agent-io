@@ -25,121 +25,121 @@
     {
       "name": "beginBatch",
       "kind": "function",
-      "line": 47,
+      "line": 72,
       "signature": "beginBatch(db: Database): void"
     },
     {
       "name": "endBatch",
       "kind": "function",
-      "line": 55,
+      "line": 80,
       "signature": "endBatch(db: Database, rollback = false): void"
     },
     {
       "name": "SCHEMA_VERSION",
       "kind": "const",
-      "line": 66,
+      "line": 91,
       "signature": "const SCHEMA_VERSION = 16"
     },
     {
       "name": "getDbFile",
       "kind": "function",
-      "line": 69,
+      "line": 94,
       "signature": "getDbFile(): string"
     },
     {
       "name": "projectCacheDbPath",
       "kind": "function",
-      "line": 104,
+      "line": 129,
       "signature": "projectCacheDbPath(root: string): string"
     },
     {
       "name": "featureCacheDbPath",
       "kind": "function",
-      "line": 109,
+      "line": 134,
       "signature": "featureCacheDbPath(feature: string): string"
     },
     {
       "name": "findCacheDb",
       "kind": "function",
-      "line": 128,
+      "line": 153,
       "signature": "findCacheDb(opts: { feature?: string; sourceRoot?: string } = {}): string | null"
     },
     {
       "name": "nearestCacheDb",
       "kind": "function",
-      "line": 144,
+      "line": 169,
       "signature": "nearestCacheDb(dir: string): string | null"
     },
     {
       "name": "tableExists",
       "kind": "function",
-      "line": 163,
+      "line": 188,
       "signature": "tableExists(db: Database, name: string): boolean"
     },
     {
       "name": "hasColumn",
       "kind": "function",
-      "line": 167,
+      "line": 192,
       "signature": "hasColumn(db: Database, table: string, column: string): boolean"
     },
     {
       "name": "readSchemaVersion",
       "kind": "function",
-      "line": 173,
+      "line": 198,
       "signature": "readSchemaVersion(db: Database): number | null"
     },
     {
       "name": "V16_TABLES",
       "kind": "const",
-      "line": 180,
+      "line": 205,
       "signature": "const V16_TABLES = ['identifiers', 'imports', 'unresolved_refs', 'symbol_dif…"
     },
     {
       "name": "V16_INDEXES",
       "kind": "const",
-      "line": 183,
+      "line": 208,
       "signature": "const V16_INDEXES = [ 'idx_identifiers_name', 'idx_imports_file', 'idx_unreso…"
     },
     {
       "name": "migrateV15ToV16",
       "kind": "function",
-      "line": 205,
+      "line": 230,
       "signature": "migrateV15ToV16(db: Database): string"
     },
     {
       "name": "migrateCacheIfNeeded",
       "kind": "function",
-      "line": 285,
+      "line": 310,
       "signature": "migrateCacheIfNeeded(db: Database): string"
     },
     {
       "name": "openDb",
       "kind": "function",
-      "line": 311,
+      "line": 336,
       "signature": "openDb(dbFile: string = getDbFile()): Database"
     },
     {
       "name": "projectCachePool",
       "kind": "const",
-      "line": 409,
+      "line": 434,
       "signature": "const projectCachePool = new Map<string, Database>()"
     },
     {
       "name": "getProjectCacheDb",
       "kind": "function",
-      "line": 418,
+      "line": 443,
       "signature": "getProjectCacheDb(projectRoot: string): Database"
     },
     {
       "name": "closeAllProjectCacheDbs",
       "kind": "function",
-      "line": 429,
+      "line": 454,
       "signature": "closeAllProjectCacheDbs(): void"
     },
     {
       "name": "closeProjectCacheDb",
       "kind": "function",
-      "line": 441,
+      "line": 466,
       "signature": "closeProjectCacheDb(projectRoot: string): void"
     }
   ],
@@ -218,5 +218,71 @@
       "from": "src/infrastructure/index/db.ts#featureCacheDbPath",
       "to": "src/infrastructure/storage.ts#getStorageRoot"
     }
+  ],
+  "reverse_calls": [
+    "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+    "src/application/design/intent/expectations.ts#depFactsIncomplete",
+    "src/application/design/intent/expectations.ts#indexStaleFor",
+    "src/application/design/intent/expectations.ts#judgeExpectations",
+    "src/application/harvest/extract_contracts.ts#extractContractsCore",
+    "src/application/harvest/harvest_closure.ts#harvestClosureCore",
+    "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+    "src/application/meta/explore/explore_code.ts#readFacts",
+    "src/application/meta/explore/query_feature.ts#queryFeature",
+    "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+    "src/application/meta/integrity/index_integrity.ts#readRawSchemaVersion",
+    "src/application/meta/llm/semantic_search.ts#semanticSearchCore",
+    "src/application/meta/view/derive_anim_flow.ts#readCrossCalls",
+    "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+    "src/application/meta/view/overview.ts#tryDeriveFeatureTree",
+    "src/application/observe/runtime/watch_project_tool.ts#doWork",
+    "src/application/observe/runtime/watch_project_tool.ts#startWatch",
+    "src/application/read_set.ts#loadFileFacts",
+    "src/application/read_set.ts#oneHopDeps",
+    "src/application/read_set.ts#recordReadFromInvocation",
+    "src/application/refactor/edit/edit_code.ts#editCodeBatch",
+    "src/application/refactor/edit/edit_code.ts#editCodeInner",
+    "src/application/refactor/edit/remove_dead_imports.ts#openIndexDb",
+    "src/application/refactor/find/field_refs.ts#openIdentDb",
+    "src/application/refactor/find/find_references.ts#indexCandidateFiles",
+    "src/application/refactor/rename/rename_file.ts#renameFileCore",
+    "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+    "src/application/write_gate.ts#hasLiveIndex",
+    "src/application/write_gate.ts#reopenAndResolveAfterWrite",
+    "src/application/write_gate.ts#syncSelfWrites",
+    "src/application/write_gate.ts#syncSelfWritesSync",
+    "src/infrastructure/analysis/capability/language_concepts.ts#languageConcepts",
+    "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis",
+    "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact",
+    "src/infrastructure/analysis/project_root/index.ts#tryIndexedExpandClosure",
+    "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+    "src/infrastructure/index/db.ts#findCacheDb",
+    "src/infrastructure/index/db.ts#getProjectCacheDb",
+    "src/infrastructure/index/db.ts#migrateCacheIfNeeded",
+    "src/infrastructure/index/db.ts#openDb",
+    "src/infrastructure/index/db.ts#readSchemaVersion",
+    "src/infrastructure/index/file_facts.ts#fileFacts",
+    "src/infrastructure/index/file_facts.ts#pickDb",
+    "src/infrastructure/index/function_outline.ts#buildFunctionOutline",
+    "src/infrastructure/index/function_outline.ts#withCacheDb",
+    "src/infrastructure/index/index_backfill.ts#backfillChunk",
+    "src/infrastructure/index/index_backfill.ts#scheduleBackfill",
+    "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+    "src/infrastructure/index/index_freshness.ts#ensureIndexAroundSeed",
+    "src/infrastructure/index/index_freshness.ts#ensureProjectIndex",
+    "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+    "src/infrastructure/index/scan_rev.ts#scanRevOf",
+    "src/infrastructure/index/symbols.ts#applyParsedToIndex",
+    "src/infrastructure/index/symbols.ts#pruneDeletedFiles",
+    "src/infrastructure/index/symbols.ts#reopenRefsTo",
+    "src/infrastructure/index/symbols.ts#resolveCrossFileCalls",
+    "src/presentation/cli/diagnose_loop_cli.ts#main",
+    "src/presentation/http/serve.ts#handleApiImport",
+    "src/presentation/http/serve.ts#handleApiLiveRebuild",
+    "src/presentation/http/serve.ts#startServer",
+    "src/presentation/mcp/server.ts#main",
+    "src/presentation/mcp/server.ts#runAutoWatchHook",
+    "src/presentation/mcp/server_registry.ts#staleIndexWarning",
+    "src/presentation/mcp/server_registry.ts#trustNoteFor"
   ]
 }

@@ -459,5 +459,16 @@
       "from": "src/infrastructure/index/watch_project.ts#watchProject",
       "to": "src/infrastructure/project_view.ts#invalidateProjectView"
     }
+  ],
+  "reverse_calls": [
+    "src/application/observe/runtime/watch_project_tool.ts#startWatch",
+    "src/infrastructure/index/watch_project.ts#flushBatch",
+    "src/infrastructure/index/watch_project.ts#handleWatchEvent",
+    "src/infrastructure/index/watch_project.ts#reconcileProject",
+    "src/infrastructure/index/watch_project.ts#scanSyncFiles",
+    "src/infrastructure/index/watch_project.ts#shouldSyncRel",
+    "src/infrastructure/index/watch_project.ts#walkDirs",
+    "src/infrastructure/index/watch_project.ts#watchProject",
+    "src/presentation/http/serve.ts#startServer"
   ]
 }

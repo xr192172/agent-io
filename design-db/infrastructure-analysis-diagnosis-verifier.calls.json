@@ -105,5 +105,11 @@
       "from": "src/infrastructure/analysis/diagnosis/verifier.ts#suggestVerification",
       "to": "src/infrastructure/analysis/diagnosis/verifier.ts#detectKind"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+    "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis",
+    "src/infrastructure/analysis/diagnosis/verifier.ts#suggestVerification",
+    "src/presentation/cli/diagnose_loop_cli.ts#main"
   ]
 }

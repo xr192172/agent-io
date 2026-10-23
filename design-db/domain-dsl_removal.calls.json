@@ -49,5 +49,9 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/file_ops.ts#deleteFile",
+    "src/application/meta/archive/archive_node.ts#archiveNodeCore"
+  ]
 }

@@ -585,5 +585,15 @@
       "from": "src/application/harvest/extract_contracts.ts#extractContractsCore",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "reverse_calls": [
+    "src/application/harvest/extract_contracts.ts#classifyRoles",
+    "src/application/harvest/extract_contracts.ts#collectModuleVars",
+    "src/application/harvest/extract_contracts.ts#extractContracts",
+    "src/application/harvest/extract_contracts.ts#extractContractsCore",
+    "src/application/harvest/extract_contracts.ts#extractShapes",
+    "src/application/harvest/extract_contracts.ts#parseShapeFields",
+    "src/application/harvest/extract_contracts.ts#scanConfigKeys",
+    "src/application/harvest/extract_contracts.ts#scanEffectCandidates"
   ]
 }

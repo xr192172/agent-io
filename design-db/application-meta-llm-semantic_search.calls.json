@@ -440,5 +440,12 @@
       "from": "src/application/meta/llm/semantic_search.ts#loadEmbeddingConfig",
       "to": "src/infrastructure/llm_focus.ts#configFileReadPath"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/explore/explore_code.ts#exploreCode",
+    "src/application/meta/llm/semantic_search.ts#embedTexts",
+    "src/application/meta/llm/semantic_search.ts#semanticSearch",
+    "src/application/meta/llm/semantic_search.ts#semanticSearchCore",
+    "src/presentation/http/serve.ts#handleApiSemanticSearch"
   ]
 }

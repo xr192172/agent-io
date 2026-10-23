@@ -202,5 +202,8 @@
       "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
       "to": "src/infrastructure/analysis/observe/run_loop.ts#withDefaults"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/observe/run_loop.ts#runLoop"
   ]
 }

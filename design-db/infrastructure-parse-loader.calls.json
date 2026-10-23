@@ -101,5 +101,25 @@
       "from": "src/infrastructure/parse/loader.ts#getParser",
       "to": "src/infrastructure/parse/loader.ts#loadLanguage"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/rename_symbol/languages/c.ts#analyzeCLanguage",
+    "src/infrastructure/analysis/rename_symbol/languages/go.ts#analyzeGoSource",
+    "src/infrastructure/analysis/rename_symbol/languages/py.ts#analyzePythonSource",
+    "src/infrastructure/analysis/rename_symbol/namespace_family.ts#makeNamespaceAnalyzer",
+    "src/infrastructure/parse/ast_rename.ts#build",
+    "src/infrastructure/parse/comments.ts#commentRangesSync",
+    "src/infrastructure/parse/kernel.ts#_reset",
+    "src/infrastructure/parse/kernel.ts#canParseFileSync",
+    "src/infrastructure/parse/kernel.ts#parseAstRoot",
+    "src/infrastructure/parse/kernel.ts#parseAstRootSync",
+    "src/infrastructure/parse/kernel.ts#parseFileFull",
+    "src/infrastructure/parse/kernel.ts#parseFileFullSync",
+    "src/infrastructure/parse/kernel.ts#parseTreeForFile",
+    "src/infrastructure/parse/kernel.ts#parserReadyForFile",
+    "src/infrastructure/parse/kernel.ts#prewarmKernel",
+    "src/infrastructure/parse/loader.ts#getParser",
+    "src/infrastructure/parse/loader.ts#loadLanguage",
+    "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource"
   ]
 }

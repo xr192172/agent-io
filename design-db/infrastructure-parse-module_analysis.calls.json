@@ -266,5 +266,14 @@
       "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
       "to": "src/infrastructure/parse/module_analysis.ts#isRefType"
     }
+  ],
+  "reverse_calls": [
+    "src/application/refactor/find/find_references.ts#findReferencesCore",
+    "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+    "src/infrastructure/analysis/project_root/index.ts#expandClosureDetailed",
+    "src/infrastructure/analysis/project_root/index.ts#expandOneFileOnTheFly",
+    "src/infrastructure/analysis/project_root/index.ts#importsTargetFile",
+    "src/infrastructure/analysis/rename_symbol/languages/ts.ts#renameTsSymbol",
+    "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource"
   ]
 }

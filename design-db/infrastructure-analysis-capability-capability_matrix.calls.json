@@ -222,5 +222,11 @@
       "from": "src/infrastructure/analysis/capability/capability_matrix.ts#diagnoseCapabilities",
       "to": "src/infrastructure/analysis/capability/capability_matrix.ts#levelFor"
     }
+  ],
+  "reverse_calls": [
+    "src/infrastructure/analysis/capability/capability_matrix.ts#diagnoseCapabilities",
+    "src/infrastructure/analysis/capability/capability_matrix.ts#diagnoseCapabilitiesByEntries",
+    "src/infrastructure/parse/lang_hint.ts#capabilityGaps",
+    "src/infrastructure/parse/lang_hint.ts#levelClause"
   ]
 }

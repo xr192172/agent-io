@@ -125,5 +125,12 @@
       "from": "src/application/meta/registry/tool_faces.ts#renderFaces",
       "to": "src/domain/chain_wiring.ts#deriveObjectChains"
     }
+  ],
+  "reverse_calls": [
+    "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+    "src/application/meta/registry/tool_faces.ts#facesOf",
+    "src/application/meta/registry/tool_faces.ts#renderFaces",
+    "src/presentation/mcp/server_registry.ts#composedDefs",
+    "src/presentation/mcp/server_registry.ts#registerAllTools"
   ]
 }
