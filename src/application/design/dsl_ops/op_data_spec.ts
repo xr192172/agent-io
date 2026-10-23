@@ -151,7 +151,7 @@ export const OP_SPECS: readonly OpSpec[] = [
     required: { submit: ['annotation_id'], review: ['annotation_id', 'decision', 'reviewer'] },
     // ★★ 2026-10-12 T198：值域此前**不在任何 MCP 描述里** ⇒ 读者只能试错
     //   （实测：`data.decision="approved"` ⇒ `未知决策: approved`）。
-    //   ★ 这里把【动作词】的合法值写清；★★ 值域**唯一住处** = `observe/reconcile/approval.ts` 的
+    //   ★ 这里把【动作词】的合法值写清；★★ 值域**唯一住处**（已随批注层删除）原本 = `observe/reconcile/approval.ts` 的
     // ★★★ 2026-10-23（批注层退场）：approval 的 note 随 approval 能力一并删除（APPROVAL_DECISIONS 已不存在）。
   },
   {

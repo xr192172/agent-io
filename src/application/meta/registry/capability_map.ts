@@ -328,7 +328,6 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   // ★ 2026-10-05 更正：第一轮实测发现这条写的是 capability_audit 的活（"诊断能力缺口（多语言矩阵）"）⇒
   //   agent 照它去选 diagnose 会得到完全无关的结果。正确口径 = diagnosis 域 note 的第一句。
   diagnose: '症状 → 根因 + 证据链 + 影响面 + 修复建议（不知道是哪条线坏了时先用它定位）',
-  canvas_notes: '画布人审标注的读取/渲染',
   archive: '下线库统一入口（action=node/list）—— node：把文件下线归档（写，不可逆，立即落盘，无 dry_run，重复归档被拒）+ 合并记录；list：列某 feature 的下线库归档条目（只读）',
   // ★ 2026-10-12（T186）：PR 的确认人是**下一个接手的 Agent**（不是人）。
   //   ★ 策展文本要**点明"谁用"** —— 否则接手方不会想到"先来看这里有没有别人提的 PR"，
