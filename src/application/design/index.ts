@@ -572,7 +572,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         const feature = a.feature ? String(a.feature) : '';
         if (!feature) throw new Error('design_line action=brief 需要 feature');
         if (!a.node_id && !a.path) throw new Error('design_line action=brief 需要 node_id 或 path（要看哪个节点/文件）');
-        return briefHandler({
+        return await briefHandler({
           project_dir: String(a.project_dir),
           feature,
           ...(a.node_id ? { node_id: String(a.node_id) } : {}),

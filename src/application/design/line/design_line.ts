@@ -22,6 +22,7 @@
  *   ⇒ 判据能单测，不用起 MCP。
  */
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
+import { analyzeImpact } from '../../../infrastructure/analysis/impact/index.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -463,6 +464,8 @@ export interface BriefReport {
     why_empty?: string;
   };
   live: { symbols: BriefSymbol[]; indexed: boolean };
+  /** ★ 第 4 条：改这个文件会波及谁（`analyzeImpact` 的读数，不新造判据） */
+  impact?: { total: number; direct: number; high_risk: number; top: string[] };
   gap: { missing_symbols: MustHaveSymbol[]; expectation_count: number };
 }
 
@@ -504,11 +507,11 @@ export function briefFrom(dsl: unknown, target: { node_id?: string; path?: strin
  *   ② `mustHaveFor`（设计侧"该有什么"—— 判据在它那里）
  *   ③ `fileFacts`（实际侧"有什么"—— 事实在 cache.db）
  */
-export function briefReport(
+export async function briefReport(
   root: string,
   feature: string,
   target: { node_id?: string; path?: string },
-): BriefReport {
+): Promise<BriefReport> {
   // ★ 与 lineReport 同口径：直接读 `.agent-io/design/<f>.dsl.json`（不引入第二套读法）
   const designFile = path.join(root, '.agent-io', 'design', `${feature}.dsl.json`);
   const dsl = (fs.existsSync(designFile) ? JSON.parse(fs.readFileSync(designFile, 'utf-8')) : null) as unknown;
@@ -569,6 +572,18 @@ export function briefReport(
   const liveNames = new Set(live.map((l) => l.name));
   const missing = must.filter((m) => !liveNames.has(m.name));
 
+  // 影响面：只给"改这个文件会炸谁"的规模 + 前 5 个（★ 不贴整份报告 —— 那是 impact_analysis 的活）
+  let impact: BriefReport['impact'];
+  if (filePath) {
+    try {
+      const r = await analyzeImpact(root, [{ file: filePath as string }]);
+      impact = { total: r.total, direct: r.direct, high_risk: r.high_risk, top: r.files.slice(0, 5).map((f) => f.file) };
+    } catch {
+      // ★ 影响面算不出来**不阻断简报**（它只是第 4 条信息）；但也不静默 —— 留 undefined，渲染层明说"未算"
+      impact = undefined;
+    }
+  }
+
   return {
     target: { ...(nodeId ? { node_id: nodeId } : {}), ...(filePath ? { path: filePath as string } : {}) },
     design: {
@@ -579,16 +594,17 @@ export function briefReport(
       ...(whyEmpty ? { why_empty: whyEmpty } : {}),
     },
     live: { symbols: live, indexed },
+    ...(impact ? { impact } : {}),
     gap: { missing_symbols: missing, expectation_count: base.expectations.length },
   };
 }
 
 /** MCP handler：只做渲染（首行自足 —— 本仓硬纪律） */
-export function briefHandler(input: { project_dir: string; feature: string; node_id?: string; path?: string }): {
+export async function briefHandler(input: { project_dir: string; feature: string; node_id?: string; path?: string }): Promise<{
   message: string;
   data: BriefReport;
-} {
-  const r = briefReport(input.project_dir, input.feature, {
+}> {
+  const r = await briefReport(input.project_dir, input.feature, {
     ...(input.node_id ? { node_id: input.node_id } : {}),
     ...(input.path ? { path: input.path } : {}),
   });
@@ -615,6 +631,12 @@ export function briefHandler(input: { project_dir: string; feature: string; node
     if (r.gap.missing_symbols.length > 12) lines.push(`    … 另 ${r.gap.missing_symbols.length - 12} 个`);
   } else if (r.design.must_have.length > 0) {
     lines.push(`  必含 ${r.design.must_have.length} 个符号【全都在】`);
+  }
+  if (r.impact) {
+    const { total, direct, high_risk, top } = r.impact;
+    lines.push(`  改它会波及 ${total} 个文件（直接 ${direct} · 高风险 ${high_risk}）${top.length ? `：${top.slice(0, 5).join('、')}${total > 5 ? ' …' : ''}` : ''}`);
+  } else if (r.target.path) {
+    lines.push(`  ⚠ 影响面未算（analyzeImpact 失败或未建索引）—— 要精确读数用 impact_analysis`);
   }
   lines.push(`  ★ 判据原文在 decision.expectations（本简报不复制语义）；源码全文用 explore_code / Read。`);
   return { message: lines.join(String.fromCharCode(10)), data: r };
