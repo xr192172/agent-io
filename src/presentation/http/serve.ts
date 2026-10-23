@@ -59,8 +59,6 @@ import { ingestTerm, generateDictEntry } from './dict_gen.js';
 import { readRegistry, updateArtifact } from '../../infrastructure/index/registry.js';
 import { checkMonolith } from '../../infrastructure/analysis/structure/monolith.js';
 import type { FileMonolithReport } from '../../infrastructure/analysis/structure/monolith.js';
-import { runArchifyPipeline } from './archify/archify_pipeline.js';
-import { adaptIRTree } from './archify/archify_project.js';
 import { buildFunctionOutline, listFunctionDirs } from '../../infrastructure/index/function_outline.js';
 import { getFeatureLine } from '../../application/observe/capture/feature_line.js';
 import { exampleInputFor } from '../../infrastructure/analysis/observe/trace_exec.js';
@@ -880,36 +878,8 @@ async function handleApiReconcileChain(req: http.IncomingMessage, res: http.Serv
   }
 }
 
-/** POST /api/archify-demo：演示模式多类型生产——把前端编辑 IR 树适配成数据层契约，
- *  以 Archify 为内置能力，一次产出 5 类 showcase 图各一张（architecture/workflow/
- *  sequence/dataflow/lifecycle），每类独立 validate+deliver。派生只读，不写回编辑真源；
- *  某类型 validate 不达 showcase 时诚实返回诊断，不加自造几何。
- *  body: { ir: 编辑 IR 树（IRView/IRNode 渲染形状），feature?, archify_root?, out_dir? } */
-async function handleApiArchifyDemo(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  try {
-    const body = await readBody(req);
-    const params = JSON.parse(body.toString('utf-8') || '{}');
-    const raw = params.ir;
-    if (!raw || typeof raw.id !== 'string' || !raw.label || !(raw.children || Array.isArray(raw.nodes))) {
-      sendError(res, 400, '缺参数 "ir"（编辑 IR 树，至少含 id/label 且含 children 或 nodes[]）');
-      return;
-    }
-    // 适配：前端 workbench 的编辑 IR（IRView/IRNode）→ Archify 数据层契约形状（ArchifyTreeNode）
-    const ir = adaptIRTree(raw);
-    const archifyRoot = typeof params.archify_root === 'string' ? params.archify_root : undefined;
-    const outDir = typeof params.out_dir === 'string' ? params.out_dir : undefined;
-    // 真实上下游依赖藏在文件 API 签名里：按 feature 回查项目 DSL，建文件索引供语义提炼
-    let fileIndex;
-    if (typeof params.feature === 'string' && params.feature) {
-      const dsl = getDSL(params.feature);
-      if (dsl) fileIndex = buildFileIndex(dsl);
-    }
-    const result = runArchifyPipeline({ ir, fileIndex, archifyRoot, outDir });
-    guard(res, '/api/archify-demo', 'archify-demo', result);
-  } catch (e) {
-    sendError(res, 400, (e as Error).message);
-  }
-}
+// ★★★ 2026-10-23（前端切割）：`/api/archify-demo` 与其整条 archify 管线**已删除**。
+//   它是「把前端编辑 IR 树渲染成 5 类 showcase HTML」—— 前端只做只读显示屏的裁定下，这条不需要。
 
 /** GET /api/function-outline?feature=<feature>[&project_dir=<root>]：函数级大纲
  *  （目录 → 文件 → 函数 + 调用/被调用/回环），数据源 = import_cache_<feature>.db 或
@@ -2824,7 +2794,6 @@ const ROUTES: readonly HttpRoute[] = [
   // L3200
   { path: '/api/focus', methods: ['POST'], handler: handleApiFocus },
   // L3205
-  { path: '/api/archify-demo', methods: ['POST'], handler: handleApiArchifyDemo },
   // L3210
   { path: '/api/function-outline', methods: ['GET'], handler: handleApiFunctionOutline },
   // L3218  ★ INLINE

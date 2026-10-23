@@ -51,7 +51,7 @@ export const saveResp = apiVersion
   .passthrough();
 
 /* ─────────────────────────────────────────────────────────────
-   派生端点（漂移风险最高：overview / mind-map-teach / mind-map / archify-demo）
+   派生端点（漂移风险最高：overview / mind-map-teach / mind-map）
    ───────────────────────────────────────────────────────────── */
 
 /** GET/POST /api/overview —— 小白视图数据（摘要 + 功能树 + 上手步骤） */
@@ -75,22 +75,7 @@ export const mindMapResp = apiVersion
   .extend({ success: z.literal(true), mind_map: z.unknown() })
   .passthrough();
 
-/** POST /api/archify-demo —— 5 类 showcase 图交付清单 */
-const archifyDemoItem = z
-  .object({
-    type: z.enum(['architecture', 'workflow', 'sequence', 'dataflow', 'lifecycle']),
-    delivered: z.boolean(),
-    htmlPath: z.string().optional(),
-    note: z.string().optional(),
-  })
-  .passthrough();
-
-export const archifyDemoResp = apiVersion
-  .extend({
-    delivered: z.boolean(),
-    manifest: z.array(archifyDemoItem),
-  })
-  .passthrough();
+// ★★★ 2026-10-23（前端切割）：`/api/archify-demo` 的响应契约随端点一并删除。
 
 /** 路径键 → zod schema：guard 与 gen schema 共用同一份映射 */
 export const schemas = {
@@ -99,7 +84,6 @@ export const schemas = {
   overview: overviewResp,
   'mind-map': mindMapResp,
   'mind-map-teach': mindMapResp,
-  'archify-demo': archifyDemoResp,
 } as const satisfies Record<string, z.ZodType>;
 
 export type ResponseSchemaKey = keyof typeof schemas;
