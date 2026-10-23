@@ -117,7 +117,7 @@ export function findExpectationConflicts(
  *   假红是"该绿却红"，而人会先把活儿重做一遍再说）。
  * ★ 附：提示里必须给**可执行的修复动作**（下面那句就是）—— 只说"判不了"等于把问题丢回给用户。
  */
-function indexStaleFor(root: string, rels: readonly string[]): string | null {
+export function indexStaleFor(root: string, rels: readonly string[]): string | null {
   const db = getProjectCacheDb(root);
   for (const relInput of rels) {
     const rel = normPath(relInput);

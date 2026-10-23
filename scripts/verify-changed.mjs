@@ -16,6 +16,15 @@
  *      `judgeExpectations`，★ 不新造第二把尺）；
  *   ③ ★ **证其次**：扫 `certs/t*.mjs` 里的 **`touches:` 声明**，命中改动文件的证才跑（★ **不跑 run-all**）。
  *
+ * ## ★★★ 2026-10-23（增量测试 · 选量）：第②步命中之后，**已有证据仍作数的就不重判**
+ * 真正回答“这条还作数吗”的只有一把尺：`evidenceFreshness`（`src/domain/task_schema.ts`）——
+ * 它判 `valid` / `stale` / `unverifiable`。本脚本不自己比指纹，只调 `planEvidenceRerun`
+ * （`src/application/design/dsl_ops/task_ops.ts`）把它变成 `skip` / `rerun` / `unknown`，然后**不判** skip 那些。
+ * ★ 为什么不是“第二套选量”：第②步的路径口径仍是 `expectationPaths` 一把；这一层只回答
+ * “命中了、但**还没失效**的能不能省”—— 覆盖集也只有一处（证据里落的 `covers`）。
+ * ★★ `unverifiable` **进 `rerun`**（不许当有效）；正在被领的卡（`claimed` / `preparing`）**不复用**。
+ * ★ 逃生门 `--no-reuse`：一条都不复用（= 旧行为）。怀疑“它藏了红”就拿它复核一遍。
+ *
  * ## 判据 / 退出码
  *   · 有红（★ 证 FAIL>0 / 证崩 / 契约 expectation fail）⇒ **1**；
  *   · 全绿 ⇒ **0**；
@@ -64,6 +73,8 @@ const CERTS = `${ROOT}/certs`;
 
 const argv = process.argv.slice(2);
 const NO_RUN = argv.includes('--no-run');
+// ★ 2026-10-23：`--no-reuse` = 不用已有效证据（旧行为：命中就判）—— 复核“复用是不是藏了红”时用
+const NO_REUSE = argv.includes('--no-reuse');
 const JSON_OUT = argv.includes('--json');
 const named = argv.filter((a) => !a.startsWith('--'));
 
@@ -141,6 +152,55 @@ for (const n of plan?.geometry?.nodes ?? []) {
     }
   }
 }
+
+// ════════════════════════════════════════════════════════════════════
+// ②.5 ★★★ 2026-10-23（增量测试 · 选量）：**已有证据仍作数 ⇒ 不重判**
+//
+// 判据**不在本脚本里**：`evidenceFreshness` 判 valid / stale / unverifiable，
+// `planEvidenceRerun`（`task_ops.ts`）把它变成 skip / rerun / unknown。本脚本只做两件事：
+// ① 把第②步命中的节点交给它；② **不判** skip 那些。
+// ★ `unverifiable` 落在 `rerun`（卡上写死的判据：不许让历史证据冒充通过）。
+let evidencePlan = null;
+if (!NO_REUSE) {
+  let P = null;
+  try {
+    P = await import('../dist/src/application/design/dsl_ops/task_ops.js');
+  } catch {
+    P = null;
+  }
+  if (P) {
+    // 卡的**权威住处**是 `todos[]`（2026-10-22 迁移）；节点那份 `task` 只在无对应 todo 时用。
+    const cardByNode = new Map();
+    for (const t of plan?.todos ?? []) {
+      if (!t.node_id || !(t.evidence ?? []).length) continue;
+      // ★ 正在被领的卡**不复用**：它此刻可能正在改判据/代码，旧证据的 “valid” 是过去式
+      if (t.state === 'claimed' || t.state === 'preparing') continue;
+      cardByNode.set(t.node_id, { card_id: t.id, evidence: t.evidence });
+    }
+    for (const n of plan?.geometry?.nodes ?? []) {
+      if (cardByNode.has(n.id) || !(n.task?.evidence ?? []).length) continue;
+      if (n.task.state === 'claimed' || n.task.state === 'preparing') continue;
+      cardByNode.set(n.id, { card_id: n.id, evidence: n.task.evidence });
+    }
+    const nodeById = new Map((plan?.geometry?.nodes ?? []).map((n) => [n.id, n]));
+    const cards = [];
+    for (const h of expHits) {
+      const c = cardByNode.get(h.node_id);
+      if (!c) continue; // 没证据 ⇒ 没得复用（照旧判）
+      cards.push({
+        id: c.card_id,
+        feature: 'task-system-plan',
+        node_id: h.node_id,
+        expectations: nodeById.get(h.node_id)?.decision?.expectations ?? [],
+        evidence: c.evidence,
+      });
+    }
+    evidencePlan = P.planEvidenceRerun(ROOT, cards, { changed });
+  }
+}
+/** ★ 这一步的**唯一输出**：哪几个节点不判（其余一律判） */
+const reuseNodes = new Set((evidencePlan?.skip ?? []).map((i) => i.node_id));
+const hitsToJudge = expHits.filter((h) => !reuseNodes.has(h.node_id));
 
 // ════════════════════════════════════════════════════════════════════
 // ③ 证：`touches:` 命中改动文件（★ 另加一条：改的就是某张证 ⇒ 它自己必跑）
@@ -305,9 +365,10 @@ if (!NO_RUN) {
 }
 
 let expReport = null;
-if (!NO_RUN && expHits.length > 0 && judge) {
+if (!NO_RUN && hitsToJudge.length > 0 && judge) {
   // ★ 判据复用既有判定器（★ 不新造第二把尺）；`node_label` 由 DSL 给，缺了用 id
-  expReport = await judge(ROOT, expHits.map(({ node_id, node_label, expectation }) => ({ node_id, node_label, expectation })));
+  // ★ 2026-10-23：入参换成 `hitsToJudge` —— 证据仍作数的那几条不进判定器（见 ②.5）
+  expReport = await judge(ROOT, hitsToJudge.map(({ node_id, node_label, expectation }) => ({ node_id, node_label, expectation })));
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -344,6 +405,19 @@ if (JSON_OUT) {
     certs: certHits.map((c) => ({ file: c.file, touches: c.touches, kind: c.kind ?? 'touches' })),
     certs_precise: certHits.filter((c) => c.kind !== 'full-run').length,
     certs_full_run: certHits.filter((c) => c.kind === 'full-run').length,
+    // ★★★ 2026-10-23（选量）：`evidenceFreshness` 的读数 —— `skip` = 已有证据仍作数 ⇒ 这次**没判**。
+    //   ★ `null` = 没算（`--no-reuse` 或 dist 里没有 `planEvidenceRerun`）—— 与“算了但一条都没复用”必须能分开读。
+    evidence_plan: evidencePlan
+      ? {
+          skipped: evidencePlan.skip.length,
+          rerun: evidencePlan.rerun.length,
+          unknown: evidencePlan.unknown.length,
+          skip: evidencePlan.skip.map((i) => ({ node_id: i.node_id, card_id: i.card_id, freshness: i.freshness, covers: i.covers.length, why: i.why })),
+          rerun_items: evidencePlan.rerun.map((i) => ({ node_id: i.node_id, card_id: i.card_id, freshness: i.freshness, why: i.why })),
+        }
+      : null,
+    // ★ 与 `expectations`（第②步的**命中集**）刻意分开：命中 ≠ 要判，差值就是上面 `skip` 那些
+    judged: hitsToJudge.map((h) => h.node_id),
     ran: {
       certs: certRuns.map((r) => ({ file: r.file, rc: r.rc, pass: r.pass, fail: r.fail, kind: r.kind, ms: r.ms })),
       expectations: expReport ? { checked: expReport.checked, passed: expReport.passed, failed: expReport.failed, unsupported: expReport.unsupported } : null,
@@ -375,7 +449,8 @@ const verdict = red
     ? '★ 没验：命中 0 条契约 / 0 张证（★ 这不是绿）'
     : NO_RUN
       ? `★ 只算集合（--no-run）：命中 ${expHits.length} 条契约 / ${certHits.length} 张证（★ 一个都没跑）`
-      : `★ 全绿：跑了 ${certRuns.length} 张证 / ${expHits.length} 条期望`;
+      : `★ 全绿：跑了 ${certRuns.length} 张证 / ${hitsToJudge.length} 条期望` +
+        (reuseNodes.size ? `（另 ${reuseNodes.size} 条已有证据仍作数 ⇒ 没重判）` : '');
 console.log(`${verdict}`);
 console.log(`  （改动 ${changed.length} 个文件 · 命中契约 ${expHits.length} 条 · 命中证 ${certHits.length} 张${NO_RUN ? ' · --no-run：只算不跑' : ''}）`);
 
@@ -389,6 +464,23 @@ for (const h of expHits) {
   if (typeof h.expectation.why === 'string' && h.expectation.why.trim()) console.log(`       摘要：${h.expectation.why}`);
 }
 if (expHits.length === 0) console.log('   （无：没有任何 expectation 的 path 命中改动文件）');
+
+// ★★★ 2026-10-23（选量）：命中之后**哪些不判** —— 这一节是 `evidenceFreshness` 的**唯一可见读数**
+console.log(
+  `\n★ 证据复用（evidenceFreshness）：复用 ${evidencePlan?.skip.length ?? 0} 条（不重判）· 需重判 ${hitsToJudge.length} 条` +
+    `· 其中不知道（无代码指纹）${evidencePlan?.unknown.length ?? 0} 条`,
+);
+for (const i of evidencePlan?.skip ?? []) {
+  console.log(`   ✓ 复用 ${i.node_id}（${i.freshness} · covers ${i.covers.length}）  ${i.why}`);
+}
+for (const i of evidencePlan?.rerun ?? []) {
+  console.log(`   ✗ 重判 ${i.node_id}（${i.freshness}）  ${i.why}`);
+}
+if (evidencePlan === null) {
+  console.log('   （没算：`--no-reuse` 或 dist 里没有 `planEvidenceRerun` ⇒ 本次全部按旧行为重判）');
+} else if (evidencePlan.skip.length === 0 && expHits.length > 0) {
+  console.log('   （一条也没复用：命中的卡要么没证据，要么证据已陈旧/没指纹 ⇒ 这次省不了）');
+}
 
 console.log(`\n★ 命中证：${certHits.length} 张`);
 for (const c of certHits) console.log(`   · ${c.file}   （${c.why}）`);
@@ -407,7 +499,7 @@ if (designCheckRun) {
   console.log('   （--no-run：只算不跑）');
 }
 
-console.log(`\n★ 实际跑了：${NO_RUN ? 0 : certRuns.length} 张证 / ${NO_RUN ? 0 : expHits.length} 条期望`);
+console.log(`\n★ 实际跑了：${NO_RUN ? 0 : certRuns.length} 张证 / ${NO_RUN ? 0 : hitsToJudge.length} 条期望`);
 for (const r of certRuns) {
   const tag = r.kind === 'red' ? `★ 有红（FAIL=${r.fail}）` : r.kind === 'crash' ? `★ 崩（exit=${r.rc}）` : r.kind === 'nosummary' ? '○ 无汇总' : '✓';
   console.log(`   ${tag}  ${r.file}  ${r.pass ?? '?'}/${r.fail ?? '?'}  ${(r.ms / 1000).toFixed(1)}s`);

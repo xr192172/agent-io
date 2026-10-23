@@ -60,7 +60,9 @@ import {
 } from '../../../domain/task_machine.js';
 // ★ 2026-10-21（D-judge-port）：判定器的**实现**住 application，由这里**注入**给 domain 的状态机
 //   （`cardStanding` / `isSatisfied` 的 `opts.judge`）—— domain 不再向上 import application。
-import { judgeExpectations } from '../intent/expectations.js';
+// ★ 2026-10-23（增量测试 · 选量）：`indexStaleFor` = 「索引是否与源码一致」的**既有那一把尺** ——
+//   选量（`planEvidenceRerun`）的第三个复用条件读它，不另写一个"索引新不新"。
+import { indexStaleFor, judgeExpectations } from '../intent/expectations.js';
 import { expectationPaths, expectationPhase, postExpectations, type Expectation } from '../../../domain/expectation.js';
 import {
   ABSENT_FILE_HASH,
@@ -91,6 +93,10 @@ import {
   todosForNode,
   type TaskDiscussion,
   type TaskEvidenceFingerprint,
+  // ★ 2026-10-23（增量测试 · 选量）：证据"还作数吗"的唯一判据 + 它要的两种形状
+  evidenceFreshness,
+  type EvidenceFreshness,
+  type TaskEvidenceRecord,
   type TaskHistoryEntry,
   type PreparedSnapshot,
   type TaskReadSet,
@@ -565,14 +571,16 @@ export function fingerprintEvidence(
   expectations: readonly Expectation[],
   sourceRoot: string | undefined,
   nodeId: string,
-  ev: ProgressEvidence,
+  ev: EvidenceWhatSource,
 ): TaskEvidenceFingerprint {
   const exp = expectations;
   const what =
     ev.kind === 'expectations'
       ? `judgeExpectations:${nodeId}（${exp.length} 条判据）`
       : ev.kind === 'reading'
-        ? ev.command
+        ? // ★ 2026-10-23：`command` 在**读端**可能是缺的（历史证据 / 白名单上线前的记录）——
+          //   缺就写清“没记”，不拿 `` 冒充“跑了个空命令”。`what` 不参与 `evidenceFreshness` 的比较。
+          ev.command ?? 'reading（未记命令原文）'
         : `attestation:${ev.by}`;
   const base: TaskEvidenceFingerprint = { what, input: fingerprintOf([canonCriteria(exp)]) };
   const covers = [...new Set(exp.flatMap((e) => expectationPaths(e)))];
@@ -580,6 +588,151 @@ export function fingerprintEvidence(
   if (!covers.length || !root) return base;
   const { code, covers: sorted } = codeFingerprintAt(root, covers);
   return { ...base, code, covers: sorted };
+}
+
+/**
+ * ★★★ 2026-10-23（增量测试 · 选量）：**这条证据现在还要不要重跑** —— `evidenceFreshness` 的第一个读端。
+ *
+ * ## 它回答的问题
+ * 「`covers` 这批文件 ⇒ 该重跑哪些证」。给定卡上已有的证据逐条问“还作数吗”，分三桶：
+ * `skip`（按设计**不重跑**）· `rerun`（要重跑）· `unknown`（**不知道** ⇒ 必须重跑）。
+ *
+ * ## ★★ 为什么 `unknown ⊆ rerun`（不是第四个“通过”桶）
+ * `unverifiable` = 没有指纹（历史证据）或覆盖集算不出。单列出来是**为了读数**（让人看见
+ * “这批里有多少是当年没记指纹”），但**不许**停在“不跑”那一侧 —— 那正是卡上写死的判据：
+ * 「`unverifiable` 必须进 `rerun` —— 否则历史证据会永远冒充通过」。
+ *
+ * ## ★★★ 复用的三个条件（少一个都不许 skip）
+ * ① `evidenceFreshness === 'valid'` —— 判据指纹 / 代码指纹 / 覆盖集三样都与此刻相同
+ *    （**唯一判据**；本函数不自比、不重定义“什么算变了”）；
+ * ② 这张卡必须是 **L2**（`postExpectations` 非空）—— 因为**只有 L2 的 `complete` 会跑 `isSatisfied`**
+ *    （见本文件 L1220 那张两级表：L1 的收口判据是「DSL 建构完整」，**一条判据都没判过**）。
+ *    ⇒ 证据档是 `reading` 还是 `attestation` **不影响**：只要这张卡是 L2，那条证据就是
+ *    “`isSatisfied` 全绿之后落的”，它的 `code` 就是“判过的那版代码”。
+ *    ★ 反过来，L1 卡的证据哪怕指纹一字不差也**不可复用** —— 它的“完成”本来就不含判据结论。
+ * ③ 覆盖集上的**索引**不许陈旧（`indexStaleFor`）—— 依判据只看索引；代码一字未改而索引旧，
+ *    重判会红、复用会把它**藏起来**（假绿）。
+ *
+ * ## 它**不是**第二套“受影响集合”
+ * 覆盖集只有一处定义：写指纹时 `fingerprintEvidence` 用 `expectationPaths` 算出的 `covers`；
+ * 本函数**现算**也调同一个 `fingerprintEvidence`（不重算路径、不另写 sha1）⇒
+ * “写进去的指纹”与“用来比的指纹”天然同一把尺。
+ * `opts.changed` 只用来**标**“覆盖集里哪几个文件在本次改动里”（读数用），**不参与判定**。
+ */
+export type EvidencePlanBucket = 'rerun' | 'skip' | 'unknown';
+
+/** 规划的一行（★ 每个字段都能直接读，不要求读端回查卡） */
+export interface EvidencePlanItem {
+  card_id: string;
+  node_id: string;
+  /** 证据档（`expectations` / `reading` / `attestation`）—— 决定能不能复用的第二条件 */
+  kind: TaskEvidenceRecord['kind'];
+  at: string;
+  /** ★ 唯一判据的读数（`evidenceFreshness` 的返回值，不在本文件重算） */
+  freshness: EvidenceFreshness;
+  bucket: EvidencePlanBucket;
+  /** 记录里的覆盖集（★ 空 = 当年没记 ⇒ 复算不了） */
+  covers: string[];
+  /** 覆盖集里**落在本次改动**的那几个（`opts.changed` 给了才有；★ 只做读数，不进判据） */
+  hits: string[];
+  why: string;
+}
+
+/** 规划的一行输入：一张卡 + 它的判据 + 它的证据（★ 判据只从 `decision` 现取，不从卡上副本取） */
+export interface EvidencePlanCard {
+  id: string;
+  feature?: string;
+  node_id: string;
+  expectations: readonly Expectation[];
+  evidence?: readonly TaskEvidenceRecord[];
+}
+
+/**
+ * `fingerprintEvidence` 建 `what` 所需的**最小输入**（不是整套证据）。
+ *
+ * ★ 2026-10-23（选量）：本函数现在有**两个**调用方 —— 写端（`complete`）手里是 `ProgressEvidence`，
+ *   读端（`planEvidenceRerun`）手里只有落盘的 `TaskEvidenceRecord`。两者形状不同、需要的三个字段相同
+ *   ⇒ 参数按需收窄；否则读端只能**重造**一条假 `ProgressEvidence`（那是“为了过类型编数据”）。
+ */
+export type EvidenceWhatSource = {
+  kind: ProgressEvidence['kind'];
+  command?: string;
+  by?: 'human' | 'llm';
+};
+
+/**
+ * 把一批卡上的证据分成 `skip` / `rerun` / `unknown`。
+ *
+ * @param root 被分析项目的根（feature 的 `source_root`）；缺省 ⇒ 全判 `unverifiable`（不静默当有效）
+ * @param cards 卡 + 判据 + 证据
+ * @param opts.changed 本次改动文件（★ 只做 `hits` 读数）
+ */
+export function planEvidenceRerun(
+  root: string | undefined,
+  cards: readonly EvidencePlanCard[],
+  opts?: { changed?: readonly string[] },
+): { rerun: EvidencePlanItem[]; skip: EvidencePlanItem[]; unknown: EvidencePlanItem[] } {
+  const changed = new Set((opts?.changed ?? []).map((p) => p.replace(/\\/g, '/').replace(/^\.\//, '')));
+  const atRoot = typeof root === 'string' && root.trim() ? root : null;
+  const rerun: EvidencePlanItem[] = [];
+  const skip: EvidencePlanItem[] = [];
+  const unknown: EvidencePlanItem[] = [];
+  for (const c of cards) {
+    const recs = c.evidence ?? [];
+    // ★ 没证据 ⇒ 没有可选的东西（既不“有效”也不“要重跑”，不能凭空造一行）
+    if (!recs.length) continue;
+    // ★ 只看**最新一条**（证据是压栈的：newest last）
+    const rec = recs[recs.length - 1];
+    const covers = [...(rec.fingerprint?.covers ?? [])];
+    const hits = covers.filter((p) => changed.has(p));
+    // ★★ 现算 = 写端那一把尺（`fingerprintEvidence`）：不另算覆盖集 / 不另算输入指纹
+    let current: { code: string; covers: readonly string[]; input?: string } | null = null;
+    if (atRoot) {
+      const fp = fingerprintEvidence(c.expectations, atRoot, c.node_id, rec);
+      if (fp.code && fp.covers?.length) current = { code: fp.code, covers: fp.covers, input: fp.input };
+    }
+    const freshness = evidenceFreshness(rec, current);
+    let bucket: EvidencePlanBucket;
+    let why: string;
+    if (freshness === 'unverifiable') {
+      bucket = 'unknown';
+      why = !atRoot
+        ? '没给 root ⇒ 覆盖集算不出来（★ 不许当有效）'
+        : !rec.fingerprint?.code || !covers.length
+          ? '当年没记代码指纹（`fingerprint.code`/`covers` 缺）⇒ 不知道还算不算数（★ 不许当有效）'
+          : '此刻算不出代码指纹（判据没点名文件 / 文件全读不到）⇒ 不知道还算不算数';
+    } else if (freshness === 'stale') {
+      bucket = 'rerun';
+      why = '判据换了 / 代码动过 / 覆盖集变了 ⇒ 这条读数属于**旧代码**';
+    } else if (postExpectations(c.expectations).length === 0) {
+      bucket = 'rerun';
+      why = '指纹相同，但这张卡没有**后态判据**（L1 建构卡）⇒ 收口只判过「DSL 建构完整」，判据一条没判 ⇒ 不能复用';
+    } else {
+      const stale = atRoot ? indexStaleFor(atRoot, covers) : '没有 root';
+      if (stale) {
+        bucket = 'rerun';
+        why = `指纹相同，但索引与源码不一致 ⇒ 重判会读到旧事实：${String(stale).split('\n')[0]}`;
+      } else {
+        bucket = 'skip';
+        why = '判据指纹 + 代码指纹 + 覆盖集三样都与此刻相同，且索引不陈旧 ⇒ 按设计不重跑';
+      }
+    }
+    const item: EvidencePlanItem = {
+      card_id: c.id,
+      node_id: c.node_id,
+      kind: rec.kind,
+      at: rec.at,
+      freshness,
+      bucket,
+      covers,
+      hits,
+      why: c.feature ? `[${c.feature}] ${why}` : why,
+    };
+    if (bucket === 'skip') skip.push(item);
+    else rerun.push(item);
+    if (bucket === 'unknown') unknown.push(item);
+  }
+  return { rerun, skip, unknown };
 }
 
 /**

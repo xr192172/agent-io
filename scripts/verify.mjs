@@ -193,6 +193,27 @@ const GATES = [
   //   ★ 更值得记的是它暴露了什么：昨天我**只跑了自己挑的 4 道门**（tsc/calls/design:check/mutate）
   //     就宣布「全绿」，而**总门 `npm run verify` 一直是红的** —— 「没报错」与「没跑」长得一样。
 
+  // ★★★ 2026-10-23（第九道）：**增量选量** —— `evidenceFreshness` 终于是“有人调”的函数
+  //   为何算门：`evidenceFreshness` 2026-10-21 就能判 valid / stale / unverifiable，但**外部调用者 0 个**
+  //   （`grep -rn --include=*.ts evidenceFreshness src/ | grep -v task_schema.ts` ⇒ 0 行）⇒ 指纹只是数据。
+  //   现在它经 `planEvidenceRerun` 接在 `scripts/verify-changed.mjs` 第②.5 步：
+  //   “命中了的契约，如果它的证据还作数，就不重判”。
+  //   ★ 这条链的**判断力**（而不是“参数存在”）只有行为夹具能钉：valid⇒skip · 改指纹⇒rerun ·
+  //     unverifiable⇒必须重跑 · L1 卡不复用 —— 四条哪一条坏掉，`tsc` 都一声不响。
+  //   ★ 消融（本笔实测，改 dist 再还原）：删掉 `postExpectations` 那一支 ⇒ ⑤ 红；
+  //     把判定器实参换回 `expHits` ⇒ ⑧g 红（`judged ∩ skip` 那格只能抓输出，抓不到"算了没应用"）。
+  {
+    name: '证据选量',
+    kind: 'gate',
+    cmd: 'node',
+    args: ['certs/t366-evidence-plan-cert.mjs'],
+    why:
+      '★ 13 条断言，~2s，不写盘：`evidenceFreshness` 的四个分桶（valid→skip / stale→rerun / ' +
+      'unverifiable→rerun / L1 不复用）+ `verify-changed` 的分区性质（judged ∩ skip = ∅，' +
+      'judged + skipped = 命中数）+ `--no-reuse` 能退回旧行为。' +
+      '★ 它挡的事故：「建了没接」再发生一次 —— 函数全绿、没人调，而代码读起来完全正常。',
+  },
+
 ];
 
 const has = (b) => { try { return spawnSync(b, ['version'], { encoding: 'utf8', shell: process.platform === 'win32' }).status === 0; } catch { return false; } };
