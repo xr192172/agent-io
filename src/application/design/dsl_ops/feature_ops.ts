@@ -56,7 +56,6 @@ export function createFeature(input: CreateFeatureInput): EditResult {
       files: [],
       multi_file_invariants: [],
     },
-    annotations: [],
   };
 
   const file = saveDSL(dsl);

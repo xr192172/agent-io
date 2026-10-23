@@ -128,18 +128,7 @@ function validateSemanticAnchoring(dsl: DesignDSL): ValidationErrorItem[] {
     }
   }
 
-  // 4. annotations.target_id 应指向 node.id 或 edge.id（警告级别，不阻断）
-  //    这里以 error 形式报，方便发现拼写错误
-  const edgeIds = new Set((dsl.geometry.edges ?? []).map((e) => e.id));
-  for (const anno of dsl.annotations ?? []) {
-    const target = anno.target_id || anno.node_id;
-    if (target && !nodeIds.has(target) && !edgeIds.has(target)) {
-      errors.push({
-        key: `dangling_annotation:annotation:${anno.id}`,
-        message: `[dangling_annotation] annotation "${anno.id}".target_id "${target}" 既不在 nodes 也不在 edges 中`,
-      });
-    }
-  }
+  // ★★★ 2026-10-23：`dangling_annotation` 判据随画布一起删除 —— 画布不再是设计 DSL 的一部分。
 
   return errors;
 }

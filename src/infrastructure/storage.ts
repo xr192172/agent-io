@@ -204,7 +204,8 @@ export function buildSyncMeta(input: {
    */
   refreshScanRev?: boolean;
   /**
-   * ★★ 2026-10-22：**这次写是谁授权的**（`edit_dsl:<…>` / `import:<…>` / `tool:<…>` / `sandbox` / `canvas-patch`）。
+   * ★★ 2026-10-22：**这次写是谁授权的**（`edit_dsl:<…>` / `import:<…>` / `tool:<…>` / `sandbox`）。
+   * ★ 2026-10-23：`canvas-patch` 这个值**已退场** —— 画布那三格搬去了 `canvas_store.ts`，不再走 `saveDSL`。
    * 由 `saveDSL` 从 `dsl_write_scope` 取；**不传则继承上一份** —— `saveDesignSheet` / `saveLiveFeature`
    * 这类不经过 `saveDSL` 的落盘口不该把别人的留痕冲掉。
    */
@@ -785,34 +786,23 @@ export function onDslChange(cb: DslChangeCallback): void {
 // ⇒ `checkOpSpec`（键闸）/ `validateDSL`（结构闸）/ `rev`（乐观锁）**全可绕过**。
 // 实测 2026-10-22 当天：41 次 DSL 改动**一道校验都没过**。
 //
-// ## 判据（三条，按序短路；`assertDslWriteAllowed` 是**唯一**住处，别在别处再判一次）
+// ## 判据（两条，按序短路；`assertDslWriteAllowed` 是**唯一**住处，别在别处再判一次）
 // ① `dsl_write_scope` 里有授权 ⇒ 放行，并把 `via` 写进 `_sync`（留痕）；
 // ② **沙盒**：`getDataHome() !== getPackageRoot()`（`AGENT_IO_HOME` 指到包根之外）
 //    ⇒ 放行 —— 它写的**不是真设计册**，写坏也没人受损（certs / mcp_scan 靠这条，30 张证一行都不用改）；
-// ③ **画布补丁**：与磁盘那份比，**只有** `annotations` / `user_nodes` / `canvas_notes` 变了
-//    ⇒ 放行（人手在浏览器上批注，不是改设计结构）。★ 结构 / 决策 / 待办错一格就回到 ④；
-// ④ 其它 ⇒ **抛**。
+// ③ 其它 ⇒ **抛**。
+//
+// ## ★★★ 2026-10-23：**原第三条「画布补丁」已删**（用户裁定：「我们本身是要和那个做切割的呀」）
+// 昨天那条是：与磁盘比**只**动了 `annotations` / `user_nodes` / `canvas_notes` ⇒ 放行。
+// ★ 它是**为了让浏览器画布不断而开的洞**（昨天那位 subagent 的原话：「serve.ts 那 5 个写点靠 ③ 兜住」）。
+// ⇒ 现在这三格**整体搬出设计 DSL**（`src/infrastructure/canvas_store.ts`，落 `.agent-io/canvas/<f>.json`）：
+//   画布写**不再经过 `saveDSL`** ⇒ 这里**不需要**为它开洞。
+// ★ 以后若有人想再开一条「某某字段不算设计」的短路 ⇒ 正确的做法是**把那个字段搬走**，不是在这里加分支。
 //
 // ## ★ 为什么不给 `--allow-raw-write` 后门
 // 那等于把刚焊上的门再拆下来，而且"迁移期出口"在本仓**没有一个按时退休过**（`catch {}` / 临时开关）。
 // 真要写系统派生 ⇒ 包一层 `runDslWriteScope`，**留下一行能被 grep 和审阅点名的声明**。
 // ─────────────────────────────────────────────────────────────
-
-/** 画布面只允许动的三格（`serve.ts` 的 annotations / user_nodes / canvas_notes 端点） */
-const CANVAS_ONLY_FIELDS = ['annotations', 'user_nodes', 'canvas_notes'] as const;
-
-/** 只有这三格变了 ⇒ 这次写是"画布批注"，不是"改设计"。比的是**去掉三格 + 元数据**之后的整份 JSON。 */
-function canvasPatchOnly(dsl: DesignDSL, prev: DesignDSL | null): boolean {
-  if (!prev) return false;
-  const strip = (d: DesignDSL): string => {
-    const o: Record<string, unknown> = { ...(d as unknown as Record<string, unknown>) };
-    for (const k of CANVAS_ONLY_FIELDS) delete o[k];
-    delete o._sync;
-    delete o._dsl_rev;
-    return JSON.stringify(o);
-  };
-  return strip(dsl) === strip(prev);
-}
 
 /** `AGENT_IO_HOME` 指到包根之外 = 沙盒（certs / mcp_scan 的临时 home）⇒ 写的不是真设计册。 */
 function isSandboxDataHome(): boolean {
@@ -827,7 +817,6 @@ function assertDslWriteAllowed(dsl: DesignDSL, where: string): string {
   const scope = currentDslWriteScope();
   if (scope) return `${scope.via}:${scope.who}`;
   if (isSandboxDataHome()) return 'sandbox';
-  if (canvasPatchOnly(dsl, readDSLRaw(dsl.feature))) return 'canvas-patch';
   throw new Error(
     `拒绝写入设计 DSL（${where}，feature "${dsl.feature}"）：**没有写授权**。\n` +
       `★ 这条闸的由来（用户原话）：「我做设计 DSL 出来的理由就是为了**不让你直接在实际 DSL 上面改**，` +

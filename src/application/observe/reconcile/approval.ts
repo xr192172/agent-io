@@ -7,7 +7,9 @@
  * - get_approval_history: 获取单条审批的完整审计日志
  */
 
-import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
+import { getDSL } from '../../../infrastructure/storage.js';
+// ★ 2026-10-23：批注（含审批状态/历史）已搬出设计 DSL ⇒ 读写走 `canvas_store`。
+import { readCanvas, writeCanvas } from '../../../infrastructure/canvas_store.js';
 import type { Annotation, ApprovalStatus, ApprovalHistoryEntry } from '../../../domain/types.js';
 // ★ T198：状态**值**表（运行时）—— 用于把合法值渲染进报错/描述，并在 `listApprovals` 里**校验**。
 import { APPROVAL_STATUSES } from '../../../domain/types.js';
@@ -68,9 +70,10 @@ export interface SubmitApprovalResult {
 export function submitApproval(input: SubmitApprovalInput): SubmitApprovalResult {
   const dsl = getDSL(input.feature);
   if (!dsl) throw new Error(`feature "${input.feature}" 不存在`);
-  if (!dsl.annotations) throw new Error('该 feature 没有标注');
+  const anns = readCanvas(input.feature).annotations;
+  if (anns.length === 0) throw new Error('该 feature 没有标注');
 
-  const ann = dsl.annotations.find(a => a.id === input.annotation_id);
+  const ann = anns.find(a => a.id === input.annotation_id);
   if (!ann) throw new Error(`标注 "${input.annotation_id}" 不存在`);
 
   if (ann.approval_status === 'pending_review') {
@@ -82,7 +85,7 @@ export function submitApproval(input: SubmitApprovalInput): SubmitApprovalResult
   }
 
   addHistory(ann, 'submit', 'pending_review', input.submitter ?? 'llm', input.comment);
-  saveDSL(dsl, 'approval');
+  writeCanvas(input.feature, { annotations: anns }, 'approval.submit');
 
   return {
     message: `已提交审批：${ann.id}\n状态: pending_review\n指派人: ${ann.assignee ?? '(未指派)'}`,
@@ -145,9 +148,10 @@ export interface ReviewAnnotationResult {
 export function reviewAnnotation(input: ReviewAnnotationInput): ReviewAnnotationResult {
   const dsl = getDSL(input.feature);
   if (!dsl) throw new Error(`feature "${input.feature}" 不存在`);
-  if (!dsl.annotations) throw new Error('该 feature 没有标注');
+  const anns = readCanvas(input.feature).annotations;
+  if (anns.length === 0) throw new Error('该 feature 没有标注');
 
-  const ann = dsl.annotations.find(a => a.id === input.annotation_id);
+  const ann = anns.find(a => a.id === input.annotation_id);
   if (!ann) throw new Error(`标注 "${input.annotation_id}" 不存在`);
 
   if (ann.approval_status !== 'pending_review') {
@@ -167,7 +171,7 @@ export function reviewAnnotation(input: ReviewAnnotationInput): ReviewAnnotation
   }
 
   addHistory(ann, effect.action, effect.status, input.reviewer, input.comment);
-  saveDSL(dsl, 'approval');
+  writeCanvas(input.feature, { annotations: anns }, 'approval.review');
 
   const statusLabel = effect.label;
 
@@ -207,7 +211,7 @@ export function listApprovals(input: ListApprovalsInput): ListApprovalsResult {
   const dsl = getDSL(input.feature);
   if (!dsl) throw new Error(`feature "${input.feature}" 不存在`);
 
-  const annotations = dsl.annotations ?? [];
+  const annotations = readCanvas(input.feature).annotations;
   let filtered = annotations;
 
   if (input.status) {
@@ -283,9 +287,10 @@ export interface GetApprovalHistoryResult {
 export function getApprovalHistory(input: GetApprovalHistoryInput): GetApprovalHistoryResult {
   const dsl = getDSL(input.feature);
   if (!dsl) throw new Error(`feature "${input.feature}" 不存在`);
-  if (!dsl.annotations) throw new Error('该 feature 没有标注');
+  const anns = readCanvas(input.feature).annotations;
+  if (anns.length === 0) throw new Error('该 feature 没有标注');
 
-  const ann = dsl.annotations.find(a => a.id === input.annotation_id);
+  const ann = anns.find(a => a.id === input.annotation_id);
   if (!ann) throw new Error(`标注 "${input.annotation_id}" 不存在`);
 
   const history = ann.approval_history ?? [];

@@ -6,6 +6,7 @@
  */
 
 import fs from 'node:fs';
+import { readCanvas } from '../canvas_store.js';
 import path from 'node:path';
 import { getDSL } from '../storage.js';
 import type { DesignDSL, Node, Edge } from '../../domain/types.js';
@@ -279,11 +280,12 @@ export function exportMarkdown(input: ExportMarkdownInput): ExportMarkdownResult
     lines.push('');
   }
 
-  // 标注
-  if (dsl.annotations && dsl.annotations.length > 0) {
+  // 标注（★ 2026-10-23：画布已搬出 DSL ⇒ 从 canvas_store 读；仍叫「人审标注」是因为它的 author 是人）
+  const canvasAnns = readCanvas(input.feature).annotations;
+  if (canvasAnns.length > 0) {
     lines.push('## 人审标注');
     lines.push('');
-    for (const a of dsl.annotations) {
+    for (const a of canvasAnns) {
       const status = a.resolved ? '✅ 已解决' : '⏳ 待处理';
       lines.push(`### [${status}] ${a.node_id ?? a.target_id ?? '全局'} — ${a.type ?? 'comment'}`);
       lines.push(a.text);

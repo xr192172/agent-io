@@ -624,19 +624,14 @@ export function applyOverlay(base: DesignDSL, overlay: DesignOverlay): DesignDSL
     out.geometry = { ...out.geometry, edges };
   }
 
-  // 标注：锚点内 + 全局，按 id 去重合回
-  let anns: Annotation[] = out.annotations ?? [];
-  for (const a of Object.values(overlay.anchors)) {
-    if (a.annotations?.length) anns = mergeById(anns, a.annotations);
-  }
-  if (overlay.global?.annotations?.length) anns = mergeById(anns, overlay.global.annotations);
-  out.annotations = anns;
+  // ★★★ 2026-10-23（和前端切割）：**画布三格（annotations / user_nodes / canvas_notes）已搬出设计 DSL**
+  //   ⇒ overlay 不再参与它们的合并/回填。overlay 只管【语义/几何/运行时】，画布是第四数据面。
+  //   （用户裁定：「我们本身是要和那个做切割的呀」；数据实测全空，零损失。）
 
   const g = overlay.global;
   if (g) {
     if (g.title) out.title = g.title;
     if (g.theme) out.theme = g.theme;
-    if (g.user_nodes?.length) out.user_nodes = g.user_nodes;
     if (g.storyboard !== undefined || g.goals !== undefined || g.function_tags !== undefined) {
       const rec = out as unknown as { meta?: Record<string, unknown> };
       rec.meta = {
@@ -661,17 +656,8 @@ export function seedOverlayFromDsl(dsl: DesignDSL | null): DesignOverlay {
   const anchors: Record<string, OverlayAnchor> = {};
   const global: OverlayGlobal = {};
 
-  const annIndex = new Map<string, Annotation[]>();
-  for (const a of dsl?.annotations ?? []) {
-    const key = a.node_id ?? a.target_id;
-    if (!key) {
-      (global.annotations ??= []).push(a);
-      continue;
-    }
-    const arr = annIndex.get(key) ?? [];
-    arr.push(a);
-    annIndex.set(key, arr);
-  }
+  // ★★★ 2026-10-23：画布不再是 DSL 字段 ⇒ 首次迁移不再从 `dsl.annotations` 建索引。
+  //   （字段本身已从 `DesignDSL` 删除；画布的读写统一走 `infrastructure/canvas_store.ts`。）
 
   // ★★ T182：文件级 `lifecycle` 的锚点 id = `semantic.files[].id`（与同名几何节点同 id）
   //   ⇒ 先建索引，铺完几何节点后**合并进同一锚点**（不能直接覆盖：决策卡也挂同一个 id）。
@@ -699,19 +685,17 @@ export function seedOverlayFromDsl(dsl: DesignDSL | null): DesignOverlay {
   }
 
   for (const n of dsl?.geometry?.nodes ?? []) {
-    const anns = annIndex.get(n.id);
     const lc = lifecycleById.get(n.id);
     const pg = progressById.get(n.id);
     // ★ 判据加了 `lc`（T182）与 `pg`（进度轴）：否则"只有 lifecycle / 只有进度、没有决策"的文件
     //   会被 `continue` 跳过 ⇒ 首次迁移就漏掉它。
-    if (!n.attributes && !anns?.length && !lc && !pg) continue;
+    if (!n.attributes && !lc && !pg) continue;
     const a: OverlayAnchor = { path: nodePath(n), kind: nodePathKind(n) };
     // ★★★ 2026-10-19（设计只住一处）：**不再 seed decision**。
     //   decision / decision_history 只住 design/<f>.dsl.json（DESIGN.md:300 的「唯一权威」）；
     //   applyOverlay 也不再回填。overlay 从此只持有【运行时】：status / progress / evidence / attributes。
     //   ★ 需要「决策历史」去 git（design/ 进 git，overlay 不进）。
     if (n.attributes) a.attributes = n.attributes;
-    if (anns?.length) a.annotations = anns;
     if (lc) a.lifecycle = lc;
     if (pg) a.progress = pg;
     anchors[n.id] = a as OverlayAnchor;
@@ -731,7 +715,7 @@ export function seedOverlayFromDsl(dsl: DesignDSL | null): DesignOverlay {
 
   if (dsl?.title) global.title = dsl.title;
   if (dsl?.theme) global.theme = dsl.theme;
-  if (dsl?.user_nodes) global.user_nodes = dsl.user_nodes;
+  // ★★★ 2026-10-23：`dsl.user_nodes` 已不在设计 DSL 上（画布搬去 canvas_store）⇒ 不再播种。
   const meta = (dsl as unknown as { meta?: { storyboard?: unknown; goals?: OverlayGoal[]; function_tags?: Record<string, string[]> } } | null)?.meta;
   if (meta?.storyboard) global.storyboard = meta.storyboard;
   if (meta?.goals && meta.goals.length > 0) global.goals = meta.goals;

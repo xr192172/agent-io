@@ -25,6 +25,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL, getStorageRoot, getPackageRoot } from '../../../infrastructure/storage.js';
+// ★ 2026-10-23：画布三格（annotations / user_nodes / canvas_notes）已搬出设计 DSL，
+//   读端跟到**新的唯一住家**（`canvas_store`）—— 否则导图上主人写的批注/构想会“看不见了”。
+import { readCanvas } from '../../../infrastructure/canvas_store.js';
 import { extractJsonObject } from './explain_gen.js';
 import { loadAgentConfig, callChat } from '../../../infrastructure/llm_focus.js';
 import type { ChatMessage } from '../../../infrastructure/llm_focus.js';
@@ -1608,10 +1611,12 @@ async function buildTeachMindMap(
   db?.close();
 
   // 主人批注分拣：导图节点 id f{i}（目录分组）/ f{i}:{j}（步骤），target_id 前缀匹配
-  const humanNotes = (dsl.annotations ?? []).filter((a) => a.author === 'human' && !a.resolved && a.text);
+  // ★ 2026-10-23：改读 `canvas_store`（`.agent-io/canvas/<f>.json`）—— 画布已搬出设计 DSL。
+  const canvasDoc = readCanvas(feature);
+  const humanNotes = canvasDoc.annotations.filter((a) => a.author === 'human' && !a.resolved && a.text);
   // 用户手写节点（人机共笔）：挂目录分组/步骤下的整棵子树（含嵌套）作为该目录分组的理解补充；
   // 挂 root 的作为项目级理解，进所有目录分组材料。parent_id 索引漂移时按 parent_label 匹配分组名兜底。
-  const userNodes = dsl.user_nodes ?? [];
+  const userNodes = canvasDoc.user_nodes;
   const uChildren = new Map<string, string[]>();
   for (const u of userNodes) {
     const arr = uChildren.get(u.parent_id) ?? [];
@@ -2052,7 +2057,7 @@ export interface PlaceProposalsResult {
 export async function placeProposals(feature: string): Promise<PlaceProposalsResult> {
   const dsl = getDSL(feature);
   if (!dsl) throw new Error(`feature "${feature}" 不存在`);
-  const ideas = (dsl.user_nodes ?? []).filter((u) => u.parent_id === 'root' && (u.text ?? '').trim());
+  const ideas = readCanvas(feature).user_nodes.filter((u) => u.parent_id === 'root' && (u.text ?? '').trim());
   const teachFile = getMindMapFile(feature, 'teach');
   let mindMap: MindMap;
   if (fs.existsSync(teachFile)) {
@@ -2188,7 +2193,9 @@ async function deriveMindMapCore(input: DeriveMindMapInput): Promise<DeriveMindM
   // AI 设计标注索引（node_id → 标注文本）：DSL 里挂的借鉴/决策标注，
   // 作为文件描述的"增量"段拼进导图——每个模块不只说"是什么"，还说"要变什么"
   const aiNotesByNode = new Map<string, string>();
-  for (const a of dsl.annotations ?? []) {
+  // ★ 2026-10-23：AI/系统标注也住在画布层（annotations 整体搬走，不挑 author 拆两处）。
+  const canvasDoc = readCanvas(feature);
+  for (const a of canvasDoc.annotations) {
     if (!a.node_id || a.resolved) continue;
     if (aiNotesByNode.has(a.node_id)) continue; // 每节点取第一条，避免描述爆炸
     aiNotesByNode.set(a.node_id, a.text);
@@ -2652,20 +2659,20 @@ interface NoteCtx {
   featureNames: Map<string, string>;
 }
 
-/** 批注语义化解析主入口：dsl.canvas_notes → 语义工单列表（纯函数，不写盘）
- *  实际生产路径：feature 名 → getDSL → 纯解析。 */
+/** 批注语义化解析主入口：canvas_store 的 `canvas_notes` → 语义工单列表（纯函数，不写盘）
+ *  ★ 2026-10-23：`canvas_notes` 已搬出设计 DSL（`.agent-io/canvas/<f>.json`）⇒ 本入口改为
+ *    "feature 名 → getDSL（要节点/文件上下文）+ readCanvas（要批注本体）"。 */
 export function resolveCanvasNoteTargets(feature: string): ResolvedCanvasNote[] {
   const dsl = getDSL(feature);
   // §21 规矩③（2026-09-28 修剪）：feature 不存在 = 数据源不可用，原来 `return []` 把它降级成
   // "看起来正常的空工单"（调用方 canvas_notes/notes 资源会静默报 0 条）⇒ 改为硬失败，
   // 与本文件 deriveMindMap / placeProposals 的 `feature 不存在` 口径一致。
   if (!dsl) throw new Error(`feature "${feature}" 不存在`);
-  return resolveCanvasNotesFromDSL(dsl, feature);
+  return resolveCanvasNotesFromDSL(dsl, readCanvas(feature).canvas_notes, feature);
 }
 
-/** 纯解析（与 I/O 解耦，便于 probe/单测直接喂 DSL）：canvas_notes → 语义工单列表 */
-export function resolveCanvasNotesFromDSL(dsl: DesignDSL, feature: string): ResolvedCanvasNote[] {
-  const notes = dsl.canvas_notes ?? [];
+/** 纯解析（与 I/O 解耦，便于 probe/单测直接喂数据）：`notes`（画布本体）+ `dsl`（节点/文件上下文）→ 语义工单 */
+export function resolveCanvasNotesFromDSL(dsl: DesignDSL, notes: CanvasNote[], feature: string): ResolvedCanvasNote[] {
   if (notes.length === 0) return [];
 
   const fileIndex = buildFileIndex(dsl);
@@ -3065,9 +3072,9 @@ export function renderCanvasNotesDigest(feature: string, notes: ResolvedCanvasNo
   };
 }
 
-/** 批量更新批注状态（纯函数）：按 id/groupId 更新 status，返回更新后的 notes 数组（由调用方持久化） */
-export function markCanvasNotesStatus(dsl: DesignDSL, updates: Array<{ id: string; status: 'open' | 'done' | 'rejected' }>): CanvasNote[] {
-  const notes = dsl.canvas_notes ?? [];
+/** 批量更新批注状态（纯函数）：按 id/groupId 更新 status，返回更新后的 notes 数组（由调用方持久化）
+ *  ★ 2026-10-23：第一参数从**整份 DSL** 改成**纯数组** —— 它本来就只读 `canvas_notes`。 */
+export function markCanvasNotesStatus(notes: CanvasNote[], updates: Array<{ id: string; status: 'open' | 'done' | 'rejected' }>): CanvasNote[] {
   if (updates.length === 0) return notes;
   const byId = new Map<string, 'open' | 'done' | 'rejected'>();
   for (const u of updates) byId.set(u.id, u.status);

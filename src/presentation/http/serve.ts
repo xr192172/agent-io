@@ -17,7 +17,10 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, exec } from 'node:child_process';
-import { saveDSL, getDSL, getDesignSheetFile, getLiveDslFile, getLiveFeature, onDslChange, getStorageRoot, getFeaturesDir } from '../../infrastructure/storage.js';
+import { getDSL, getDesignSheetFile, getLiveDslFile, getLiveFeature, onDslChange, getStorageRoot, getFeaturesDir } from '../../infrastructure/storage.js';
+// ★★★ 2026-10-23：画布（annotations / user_nodes / canvas_notes）搬出设计 DSL 后的唯一读写口。
+//   serve 的 4 个画布端点只碰它，**不再** import `saveDSL` —— 这是「和前端切割」的接线点。
+import { readCanvas, writeCanvas, onCanvasChange } from '../../infrastructure/canvas_store.js';
 import { enableObserveFromEnv } from '../../infrastructure/analysis/observe/run_sentinel.js';
 import { judgeEvent } from '../../infrastructure/analysis/observe/judge.js';
 import { judgeGuardLog } from '../../infrastructure/analysis/observe/judge_guard.js';
@@ -30,8 +33,7 @@ import { approveObserveProposal } from '../../application/observe/reconcile/prop
 import { rejectObserveProposal } from '../../application/observe/reconcile/proposal_reject.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';
 import { getProjectCacheDb, openDb, featureCacheDbPath } from '../../infrastructure/index/db.js';
-import { validateDSLJson } from '../../domain/validator.js';
-import { saveAutoSnapshot, pruneSnapshots } from '../../application/design/lifecycle/snapshot.js';
+import type { CanvasNote } from '../../domain/canvas_note.js';
 import { dagLayout, forceLayout, gridAlign } from '../../application/design/workbench/dag_layout.js';
 import { checkConsistencyReport } from '../../application/design/intent/consistency.js';
 import { diffImpact } from '../../infrastructure/analysis/impact/diff_impact.js';
@@ -76,7 +78,6 @@ import { traceExecChain, type TraceStepSpec } from '../../infrastructure/analysi
 import { schemas, RESPONSE_SCHEMA_AT, API_VERSION, type ResponseSchemaKey } from './contract.js';
 import { deriveDetailChain } from '../../application/design/derive/derive_chain.js';
 import { reconcileChain } from '../../application/observe/reconcile/reconcile_chain.js';
-import type { DesignDSL } from '../../domain/types.js';
 import { loadLlmConfig, pickKeyNodes, type ChainNodeInfo } from '../../infrastructure/llm_focus.js';
 import {
   generateModuleNarrations,
@@ -189,6 +190,12 @@ function guard(
 /**
  * POST /api/save —— **浏览器画布存盘**（serve 侧的写口）。
  *
+ * ## ★★★ 2026-10-23：**已退役（410）** —— 不再是「进入名单」，是「已经关了」。
+ * 依据：① 自己的 2026-10-06 决定早就把它列进退役名单（"确认新前端不再用它之后，本路径可整体删除"）；
+ *      ② 它写的是**整册设计 DSL**，与「画布要和设计切割」直接冲突（用户 2026-10-23 裁定）；
+ *      ③ 写闸（`assertDslWriteAllowed`）已不允许无授权整册写 ⇒ 留着它只会是一条 **500**（更坏的形状：
+ *         "崩了"与"停了"在日志里长得一样）。⇒ 现在**明确回 410**，报文里指路正确入口。
+ *
  * ## ★ 2026-10-06 决定：本路径**进入退役名单**
  * 依据：那份前端（`output/`）**也该退役了** —— 有更好的产品形式，后续会重新开发。
  * ⇒ 因此**不再为它做契约改造** —— 例如把 `_dsl_rev` 改成必填（那要前端配合，
@@ -214,57 +221,34 @@ function guard(
  *   传 `'browser'` source：冲突分支在 `saveDSL` 抛错前不触发 SSE reload，且成功后以
  *   `'browser'` 回调，浏览器据此跳过自身刷新。
  */
-async function handleApiSave(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  try {
-    const body = await readBody(req);
-    const dslJson = body.toString('utf-8');
-
-    const result = validateDSLJson(dslJson);
-    if (!result.valid || !result.dsl) {
-      sendError(res, 400, `DSL 校验失败：\n${result.errors.join('\n')}`);
-      return;
-    }
-
-    const baseRev = result.dsl._dsl_rev;
-    // ★ 不静默（2026-10-06）：未带 `_dsl_rev` ⇒ 本次是**无并发校验的直写**，可能与 MCP 编辑
-    //   互相覆盖。不改行为（前端待退役、不做契约改造），但让它**在日志里可见** ——
-    //   "出问题时能查" 与 "什么都看不见" 是两回事（本仓一贯的"不许静默"）。
-    if (baseRev === undefined) {
-      console.warn(
-        `[/api/save] feature "${result.dsl.feature}" 未携带 _dsl_rev ⇒ 无并发校验直写` +
-          `（可能与 MCP/edit_dsl 的改动互相覆盖；该路径已在退役名单上）`,
-      );
-    }
-    try {
-      saveDSL(result.dsl, 'browser', baseRev);
-    } catch (e) {
-      const cur = getDSL(result.dsl.feature)?._dsl_rev ?? 0;
-      sendJson(res, 409, {
-        success: false,
-        conflict: true,
-        current_rev: cur,
-        message: (e as Error).message,
-      });
-      return;
-    }
-    // 坐标归版本：浏览端保存的坐标已在服务端落盘，随之自动纳管一个带坐标的可回滚版本
-    // （与最近快照几何一致则去重跳过），并裁剪旧快照防堆积。
-    try {
-      const snap = saveAutoSnapshot(result.dsl.feature, '保存');
-      if (snap) pruneSnapshots(result.dsl.feature);
-    } catch {
-      // 纳管失败不阻断保存
-    }
-    guard(res, '/api/save', 'save', {
-      success: true,
-      message: 'DSL 已保存',
-      feature: result.dsl.feature,
-      saved_at: new Date().toISOString(),
-      rev: result.dsl._dsl_rev,
-    });
-  } catch (e) {
-    sendError(res, 500, (e as Error).message);
-  }
+async function handleApiSave(_req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  // ★★★ 2026-10-23：**退役**（不是"暂时关掉"，也不是"崩掉"）。
+  //   原来这里调 `saveDSL(result.dsl, 'browser', baseRev)` —— 写的是**整册设计 DSL**。
+  //   现在写闸不允许无授权整册写 ⇒ 留着它只会是一条 500（"崩了"与"停了"在日志里长得一样）。
+  //   ⇒ 明确回 410（Gone）：调得通、答得清楚、指路到现在的正确入口。
+  sendJson(res, 410, {
+    success: false,
+    retired: true,
+    error: 'POST /api/save 已退役（2026-10-23）：本路径写的是**整册设计 DSL**，已关闭。',
+    why: [
+      '它自己的注释 2026-10-06 就把它列进退役名单（"确认新前端不再用它之后，本路径可整体删除"）。',
+      '它写整册 DSL，与「画布要和设计切割」直接冲突（用户 2026-10-23：「我们本身是要和那个做切割的呀」）。',
+      '写闸 assertDslWriteAllowed 不允许无授权整册写 ⇒ 保留它只会返回 500。',
+    ],
+    replace_with: {
+      design: [
+        'POST /api/dsl（daemon 串行队列，ops 形态：单写者 + 依赖区域分桶 + 乐观锁）',
+        'edit_dsl（MCP / CLI，自带键闸 + 结构闸 + 乐观锁）',
+      ],
+      canvas: [
+        'POST /api/annotations（annotations）',
+        'POST /api/user_nodes（user_nodes）',
+        'POST /api/canvas-notes ｜ POST /api/canvas-notes/status（canvas_notes）',
+        '★ 画布三格已搬离设计 DSL：落 .agent-io/canvas/<feature>.json（infrastructure/canvas_store.ts）',
+      ],
+    },
+    saved_at: new Date().toISOString(),
+  });
 }
 
 function handleApiLoad(_req: http.IncomingMessage, res: http.ServerResponse): void {
@@ -1308,10 +1292,12 @@ async function handleApiOverview(
   }
 }
 
-/** GET/POST /api/annotations：思维导图人工批注（写回 DSL.annotations，author=human）
+/** GET/POST /api/annotations：思维导图人工批注
  *  GET ?feature=X —— 返回该 feature 全部 annotations（前端只渲染 human 便签）
  *  POST {feature, notes:[{id,target_id,text,pos}]} —— 全量替换 human 注解
- *  （llm/系统注解保留不动）；saveDSL 推 rev 并 SSE 广播，LLM 再生成 teach 分镜时读到 */
+ *  （llm/系统注解保留不动）。
+ *  ★★★ 2026-10-23：落点从 `DSL.annotations` 改为 `canvas_store`（`.agent-io/canvas/<f>.json`）——
+ *  画布与设计 DSL 已切割（用户裁定：「我们本身是要和那个做切割的呀」）。行为（形状/过滤/截断）不变。 */
 async function handleApiAnnotations(
   req: http.IncomingMessage,
   res: http.ServerResponse,
@@ -1326,15 +1312,14 @@ async function handleApiAnnotations(
         sendError(res, 400, '缺少 feature 参数');
         return;
       }
-      const dsl = getDSL(feature);
-      if (!dsl) {
+      if (!getDSL(feature)) {
         sendError(res, 404, `feature "${feature}" 不存在`);
         return;
       }
-      sendJson(res, 200, { success: true, annotations: dsl.annotations ?? [] });
+      sendJson(res, 200, { success: true, annotations: readCanvas(feature).annotations });
       return;
     }
-    // POST：全量替换 human 注解
+    // POST：全量替换 human 注解（★ 2026-10-23：写 `canvas_store`，**不写设计 DSL**）
     const body = await readBody(req);
     const params = JSON.parse(body.toString('utf-8') || '{}');
     feature = String(params.feature || '').trim();
@@ -1342,8 +1327,7 @@ async function handleApiAnnotations(
       sendError(res, 400, '缺少 feature 参数');
       return;
     }
-    const dsl = getDSL(feature);
-    if (!dsl) {
+    if (!getDSL(feature)) {
       sendError(res, 404, `feature "${feature}" 不存在`);
       return;
     }
@@ -1363,8 +1347,8 @@ async function handleApiAnnotations(
             ? { x: (n.pos as { x: number }).x, y: (n.pos as { y: number }).y }
             : undefined,
       }));
-    dsl.annotations = [...(dsl.annotations ?? []).filter((a) => a.author !== 'human'), ...humanized];
-    saveDSL(dsl, 'browser');
+    const prev = readCanvas(feature).annotations;
+    writeCanvas(feature, { annotations: [...prev.filter((a) => a.author !== 'human'), ...humanized] }, 'annotations');
     sendJson(res, 200, { success: true, count: humanized.length });
   } catch (e) {
     sendError(res, 500, (e as Error).message);
@@ -1373,8 +1357,8 @@ async function handleApiAnnotations(
 
 /** GET/POST /api/user_nodes：思维导图上用户手写的节点（人机共笔的结构性扩展）
  *  GET ?feature=X —— 返回该 feature 全部 user_nodes
- *  POST {feature, nodes:[{id,parent_id,parent_label,text}]} —— 全量替换；
- *  saveDSL 推 rev 并 SSE 广播，LLM 再生成 teach 分镜时作为【主人批注】材料读入 */
+ *  POST {feature, nodes:[{id,parent_id,parent_label,text}]} —— 全量替换。
+ *  ★★★ 2026-10-23：落点从 `DSL.user_nodes` 改为 `canvas_store`（`.agent-io/canvas/<f>.json`）。 */
 async function handleApiUserNodes(
   req: http.IncomingMessage,
   res: http.ServerResponse,
@@ -1389,15 +1373,14 @@ async function handleApiUserNodes(
         sendError(res, 400, '缺少 feature 参数');
         return;
       }
-      const dsl = getDSL(feature);
-      if (!dsl) {
+      if (!getDSL(feature)) {
         sendError(res, 404, `feature "${feature}" 不存在`);
         return;
       }
-      sendJson(res, 200, { success: true, user_nodes: dsl.user_nodes ?? [] });
+      sendJson(res, 200, { success: true, user_nodes: readCanvas(feature).user_nodes });
       return;
     }
-    // POST：全量替换
+    // POST：全量替换（★ 2026-10-23：写 `canvas_store`，**不写设计 DSL**）
     const body = await readBody(req);
     const params = JSON.parse(body.toString('utf-8') || '{}');
     feature = String(params.feature || '').trim();
@@ -1405,8 +1388,7 @@ async function handleApiUserNodes(
       sendError(res, 400, '缺少 feature 参数');
       return;
     }
-    const dsl = getDSL(feature);
-    if (!dsl) {
+    if (!getDSL(feature)) {
       sendError(res, 404, `feature "${feature}" 不存在`);
       return;
     }
@@ -1421,8 +1403,7 @@ async function handleApiUserNodes(
         text: n.text.trim().slice(0, 300),
         created: now,
       }));
-    dsl.user_nodes = cleaned;
-    saveDSL(dsl, 'browser');
+    writeCanvas(feature, { user_nodes: cleaned }, 'user_nodes');
     sendJson(res, 200, { success: true, count: cleaned.length });
   } catch (e) {
     sendError(res, 500, (e as Error).message);
@@ -1559,7 +1540,8 @@ function handleApiFeatureDsl(req: http.IncomingMessage, res: http.ServerResponse
   }
 }
 
-/** GET /api/canvas-notes?feature=<name>：返回某 feature 的批注层数据（canvas_notes 字段，读 live DSL，缺失返回空数组） */
+/** GET /api/canvas-notes?feature=<name>：返回某 feature 的批注层数据
+ *  ★ 2026-10-23：读 `canvas_store`（`.agent-io/canvas/<f>.json`），缺失返回空数组。 */
 function handleApiCanvasNotesGet(req: http.IncomingMessage, res: http.ServerResponse): void {
   try {
     const url = new URL(req.url!, 'http://localhost');
@@ -1568,12 +1550,11 @@ function handleApiCanvasNotesGet(req: http.IncomingMessage, res: http.ServerResp
       sendError(res, 400, '缺少 feature');
       return;
     }
-    const dsl = getDSL(feature);
-    if (!dsl) {
+    if (!getDSL(feature)) {
       sendError(res, 404, `feature "${feature}" 不存在`);
       return;
     }
-    sendJson(res, 200, { feature, canvas_notes: dsl.canvas_notes || [] });
+    sendJson(res, 200, { feature, canvas_notes: readCanvas(feature).canvas_notes });
   } catch (e) {
     sendError(res, 500, (e as Error).message);
   }
@@ -1589,14 +1570,15 @@ async function handleApiCanvasNotesSave(req: http.IncomingMessage, res: http.Ser
       sendError(res, 400, '缺少 feature');
       return;
     }
-    const dsl = getDSL(feature);
-    if (!dsl) {
+    if (!getDSL(feature)) {
       sendError(res, 404, `feature "${feature}" 不存在`);
       return;
     }
-    const notes: unknown[] = Array.isArray(params.canvas_notes) ? params.canvas_notes : [];
-    dsl.canvas_notes = notes as DesignDSL['canvas_notes'];
-    saveDSL(dsl, 'frontend');
+    const notes: CanvasNote[] = Array.isArray(params.canvas_notes) ? (params.canvas_notes as CanvasNote[]) : [];
+    // ★ 2026-10-23：写 `canvas_store`（`.agent-io/canvas/<f>.json`），**不再碰设计 DSL**。
+    //   “只动 canvas_notes”这个意图现在由**存储位置**保证（这本来就是它该在的地方）；
+    //   所以 `assertDslWriteAllowed` 里那条 "只动三格就放行" 的洞才能删掉。
+    writeCanvas(feature, { canvas_notes: notes }, 'frontend');
     sendJson(res, 200, {
       success: true,
       feature,
@@ -1654,19 +1636,19 @@ async function handleApiCanvasNotesStatus(req: http.IncomingMessage, res: http.S
       sendError(res, 400, 'updates 需为 [{id,status}]，status ∈ open|done|rejected');
       return;
     }
-    const dsl = getDSL(feature);
-    if (!dsl) {
+    if (!getDSL(feature)) {
       sendError(res, 404, `feature "${feature}" 不存在`);
       return;
     }
-    const before = (dsl.canvas_notes ?? []).length;
-    dsl.canvas_notes = markCanvasNotesStatus(dsl, valid);
-    saveDSL(dsl, 'status');
+    const before = readCanvas(feature).canvas_notes;
+    // ★ 2026-10-23：`markCanvasNotesStatus` 现在接**纯数组**（不再接整份 DSL）——
+    //   它的本职就是"给一批批注改状态"，和设计 DSL 一点关系都没有（这是本次切割顺带拧直的一处）。
+    writeCanvas(feature, { canvas_notes: markCanvasNotesStatus(before, valid) }, 'status');
     sendJson(res, 200, {
       success: true,
       feature,
       updated: valid.length,
-      notes: before,
+      notes: before.length,
       saved_at: new Date().toISOString(),
     });
   } catch (e) {
@@ -3097,6 +3079,13 @@ export async function startServer(port?: number): Promise<void> {
   // 注册 DSL 变更回调：MCP saveDSL → SSE 广播
   onDslChange((feature, source) => {
     notifyDslChange(feature, source);
+  });
+
+  // ★★★ 2026-10-23：画布变更回调 —— 画布不再走 saveDSL，所以上面那条广播**接不到它**。
+  //   不接这一条 ⇒ 浏览器改完批注后其他窗口不会刷新（静默的“看着没坏”）。
+  //   事件名单独一个：前端据此只重取画布三格，不用重拉整册 DSL。
+  onCanvasChange((feature, source) => {
+    broadcastSSE('canvas-changed', { feature, source, timestamp: new Date().toISOString() });
   });
 
   // 安全：默认仅绑定本机回环，避免局域网/公网暴露；如需跨机访问，显式设 AGENT_IO_BIND=0.0.0.0

@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { getDSL, saveDSL, getStorageRoot } from '../../../infrastructure/storage.js';
+import { readCanvas, writeCanvas } from '../../../infrastructure/canvas_store.js';
 // ★★ 2026-10-22（A1）：OPL 流水线是**派生写端**（serve.ts 的 /api/opl 直接 import 本模块）。
 import { runDslWriteScope } from '../../../infrastructure/dsl_write_scope.js';
 import { placeProposals, deriveMindMap } from '../../meta/view/derive_mind_map.js';
@@ -105,9 +106,12 @@ export function oplAdd(feature: string, idea: string): OplState {
   if (!dsl) throw new Error(`feature "${feature}" 不存在`);
   const now = new Date().toISOString();
   const id = `op_${randomUUID().slice(0, 8)}`;
-  dsl.user_nodes = dsl.user_nodes ?? [];
-  dsl.user_nodes.push({ id, parent_id: 'root', text: idea.trim().slice(0, 300), created: now });
-  runDslWriteScope({ via: 'derived', who: 'opl' }, () => saveDSL(dsl, 'browser'));
+  // ★★★ 2026-10-23（和前端切割）：`user_nodes` 已搬出设计 DSL ⇒ 走画布层（`canvas_store`），
+  //   不再 `saveDSL`（那会把整册含画布一起写，且写闸会拒）。
+  const canvas = readCanvas(feature);
+  canvas.user_nodes = canvas.user_nodes ?? [];
+  canvas.user_nodes.push({ id, parent_id: 'root', text: idea.trim().slice(0, 300), created: now });
+  writeCanvas(feature, { user_nodes: canvas.user_nodes }, 'opl');
   const s: OplState = {
     id,
     idea: idea.trim(),

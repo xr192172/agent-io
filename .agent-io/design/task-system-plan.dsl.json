@@ -18193,12 +18193,12 @@
         "task": {
           "id": "file_src_application_meta_index_ts",
           "summary": "【L1 待建构】入口层 · src/application/meta — 2 个 API（导入自 36 个模块）（src/application/meta/index.ts） ← 节点 file_src_application_meta_index_ts",
-          "state": "claimed",
+          "state": "candidate",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_index_ts\"].responsibility"
           },
-          "owner": "agent:main",
-          "claimed_at": "2026-10-22T13:53:42.296Z",
+          "owner": null,
+          "claimed_at": null,
           "read_set": {
             "symbols": [],
             "files": [
@@ -18211,9 +18211,18 @@
             "basis": [
               "node-path"
             ]
-          }
+          },
+          "node_id": "file_src_application_meta_index_ts",
+          "prepared_snapshot": null,
+          "expired_from": {
+            "owner": "agent:main",
+            "claimed_at": "2026-10-22T13:53:42.296Z",
+            "age_hours": 13.1,
+            "ttl_ms": 7200000
+          },
+          "expired_at": "2026-10-23T02:58:22.489Z"
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_integrity_index_integrity_ts",
@@ -39343,9 +39352,9 @@
         "task": {
           "id": "file_src_domain_overlay_ts",
           "summary": "**overlay 的唯一读写口**（领域侧）：overlay 文档/锚点/边意图/全局件的**类型与全部读写语义**都从这里出 —— 首次迁移 `seedOverlayFromDsl`、对账 `reconcileOverlay`、投影回 base `applyOverlay`、三个收口同步 `mergeDecisionsIntoOverlay` / `mergeTagsIntoOverlay` / `mergeLifecycleIntoOverlay`，以及锚点“有内容”的唯一判据 `hasAnchorPayload`。★★ `validateProgressEvidence` 是**「done 必带证据」的唯一一把尺**（三档 evidence，形状与拒绝理由都在这里；`updateStatus` / `task_ops.complete` 只调它，不另写第二套）。★ 它**不做**：不做 IO（`<feature>.overlay.json` 的读写住 `storage_overlay.ts`，那里只搬字节、不立判据）；不重建 base（`import_project`）；不定义决策卡字段（`geometry.ts`）；不校验整份 DSL（`validator.ts`）。",
-          "state": "candidate",
-          "owner": null,
-          "claimed_at": null,
+          "state": "claimed",
+          "owner": "agent:main",
+          "claimed_at": "2026-10-23T03:40:26.585Z",
           "evidence": [
             {
               "kind": "attestation",
@@ -39424,7 +39433,7 @@
               {
                 "file": "src/domain/overlay.ts",
                 "name": "applyOverlay",
-                "fp": "5886b23ee2e1fed22f4ea855b4e95be2f4ce8c92"
+                "fp": "6bff24693f767ae925ae6e1453127aa317163f98"
               },
               {
                 "file": "src/domain/overlay.ts",
@@ -39444,7 +39453,7 @@
               {
                 "file": "src/domain/overlay.ts",
                 "name": "computeFileSignature",
-                "fp": "fa622e96ddf67968a157bc79807045661cdfc2ff"
+                "fp": "b7166ceac91591b2e42ba8b194d1aaf80fb6bf5e"
               },
               {
                 "file": "src/domain/overlay.ts",
@@ -39489,7 +39498,7 @@
               {
                 "file": "src/domain/overlay.ts",
                 "name": "reconcileOverlay",
-                "fp": "e053c02116b069de294ae03018fcd30e46b80c80"
+                "fp": "9ce2ed085699f82f4515548223dcf4afc42e113f"
               },
               {
                 "file": "src/domain/overlay.ts",
@@ -39515,19 +39524,17 @@
             "files": [
               {
                 "path": "src/domain/overlay.ts",
-                "content_hash": "150beb28ab0543e4a7132885d889ee757dad82e3"
+                "content_hash": "ea58bb674b896453f09d3df554e158979bf9e3b0"
               }
             ],
-            "computed_at": "2026-10-21T11:24:05.369Z",
+            "computed_at": "2026-10-23T03:40:26.540Z",
             "basis": [
               "expectations"
             ]
           },
-          "release_reason": "computeFileSignature 指纹换代改动已落盘，释放写权",
-          "released_by": "subagent:dsl-symbols-fixer",
-          "released_at": "2026-10-21T11:34:10.751Z"
+          "node_id": "file_src_domain_overlay_ts"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_domain_reasoning_ts",
@@ -48244,9 +48251,91 @@
         "task": {
           "id": "file_src_domain_validator_ts",
           "summary": "DSL 的【结构自洽】校验器：ajv schema + **三项** schema 表达不了的语义（nodes.id 唯一 / semantic.files.id 必须能在 nodes 里找到 / ★ **读数快照不许落盘**）。★★ 它**不判决策卡**（decision 根本不在 schema 里）—— 那是【tsc 契约】的事（设计侧符号级，certs/design-contracts）。★ 范围仍是【有意收窄】的：**结构错看得见，意图错看不见**；后者靠 tsc + 对拍 + 影响面。",
-          "state": "candidate"
+          "state": "claimed",
+          "node_id": "file_src_domain_validator_ts",
+          "owner": "agent:main",
+          "claimed_at": "2026-10-23T03:40:35.198Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/validator.ts",
+                "name": "AddFormatsFn",
+                "fp": "c3d9a9dd21286d52a6a4d7e1af00c7fea97a1358"
+              },
+              {
+                "file": "src/domain/validator.ts",
+                "name": "ValidationErrorItem",
+                "fp": "23f480a16428c4173511ea7e206edd66439ad0f2"
+              },
+              {
+                "file": "src/domain/validator.ts",
+                "name": "ValidationResult",
+                "fp": "17bd0f05d584ab9e1be9c92bfc28814ed8104167"
+              },
+              {
+                "file": "src/domain/validator.ts",
+                "name": "addFormats",
+                "fp": "70d00fe9c6efdccdada52b34a5f4db110d209dc6"
+              },
+              {
+                "file": "src/domain/validator.ts",
+                "name": "ajv",
+                "fp": "c097d88607115a010ad67aeafd9e898281d3544f"
+              },
+              {
+                "file": "src/domain/validator.ts",
+                "name": "formatAjvErrors",
+                "fp": "4b076a3b114a9e6e8c24797f96e98dce7834db20"
+              },
+              {
+                "file": "src/domain/validator.ts",
+                "name": "toResult",
+                "fp": "1085ca90fca6202e5e9d3e85bdf182849487fea7"
+              },
+              {
+                "file": "src/domain/validator.ts",
+                "name": "validateDSL",
+                "fp": "485cea33e95888c1671936eb59db2653b25ca17f"
+              },
+              {
+                "file": "src/domain/validator.ts",
+                "name": "validateDSLJson",
+                "fp": "f4382df6a731b394ac542aa91ed95af4dfd14185"
+              },
+              {
+                "file": "src/domain/validator.ts",
+                "name": "validateNoReadingSnapshots",
+                "fp": "63de4bbc5d458033d0c80f7143255cf131cb4d97"
+              },
+              {
+                "file": "src/domain/validator.ts",
+                "name": "validateReasoningIntegrity",
+                "fp": "05d7366cccd0e4cb26bd15f7a30e3a5f38fdeacd"
+              },
+              {
+                "file": "src/domain/validator.ts",
+                "name": "validateSchema",
+                "fp": "889406f369d9e7aa3ce46cbf18c9a4c1b2d04270"
+              },
+              {
+                "file": "src/domain/validator.ts",
+                "name": "validateSemanticAnchoring",
+                "fp": "4941804748a95356eb5dab6bdceb6237346a703d"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/validator.ts",
+                "content_hash": "5b908a4100c05ed41fb9bcda4a500ad1bc4cb1b7"
+              }
+            ],
+            "computed_at": "2026-10-23T03:40:35.154Z",
+            "basis": [
+              "expectations"
+            ]
+          }
         },
-        "status": "draft",
+        "status": "in_progress",
         "decision_history": [
           {
             "at": "2026-10-18T12:39:57.521Z",
@@ -53866,18 +53955,37 @@
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_http_serve_ts\"].responsibility"
           },
           "owner": "agent:main",
-          "claimed_at": "2026-10-22T14:13:03.756Z",
+          "claimed_at": "2026-10-23T03:40:00.886Z",
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/presentation/http/serve.ts",
-                "content_hash": "d07facf1e8ca215964ae178ab7a718a66a3ef879"
+                "content_hash": "a8c3fccd709e84dc45d579da4da7923382e0d249"
               }
             ],
-            "computed_at": "2026-10-22T14:13:03.713Z",
+            "computed_at": "2026-10-23T03:40:00.829Z",
             "basis": [
               "node-path"
+            ]
+          },
+          "node_id": "file_src_presentation_http_serve_ts",
+          "prepared_snapshot": null,
+          "expired_from": {
+            "owner": "subagent:deepseek-frontend-split",
+            "claimed_at": "2026-10-23T02:58:30.463Z",
+            "age_hours": 0.7,
+            "ttl_ms": 180000
+          },
+          "expired_at": "2026-10-23T03:39:49.713Z",
+          "claimed_without_judge": {
+            "at": "2026-10-23T03:40:00.886Z",
+            "missing": [
+              "节点 file_src_presentation_http_serve_ts 的 `decision.expectations` 里**后态判据（phase=post）0 条**（**一条判据都没有**）",
+              "要补 **2 条**：signature-matches + source-has —— 一个\"结构\"（`PORT` 的签名就算证据）+ 一个\"行为/文本\"（关键写法必须在）",
+              "写到哪：`edit_dsl { type:'decision', op:'update', id:'file_src_presentation_http_serve_ts', data:{ expectations:[…] } }`（判据**只住 decision**，不在卡上；卡上的是一张回滚快照）",
+              "补齐后：`edit_dsl { type:'task', op:'start', id:'file_src_presentation_http_serve_ts', data:{ owner:'<你>' } }`（第二段：删快照 + state→claimed，**一次落盘**）",
+              "放弃：`release`（会按 `prepared_snapshot` 把判据**逐字还原** ⇒ 零残留）"
             ]
           }
         },
@@ -85764,7 +85872,7 @@
         ],
         "lines": 1356,
         "layer": "entry",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_integrity_index_integrity_ts",
@@ -89744,7 +89852,7 @@
         ],
         "lines": 984,
         "layer": "service",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_domain_reasoning_ts",
@@ -90282,7 +90390,7 @@
         ],
         "lines": 243,
         "layer": "service",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_alert_inbox_ts",
@@ -105261,11 +105369,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-22T18:02:33.900Z",
+    "saved_at": "2026-10-23T03:40:35.241Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 108631089,
+    "age": 143312430,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -108184,23 +108292,47 @@
     {
       "id": "todo_静默失效-翻译线-runparityonfilled-恒空转-slice-0-5",
       "summary": "【静默失效·翻译线】`runParityOnFilled` 恒空转 + `slice(0,5)` 静默截断：前者的过滤条件 `!u.bodyHole` 在 fill 之后恒为 true（fill 会把 bodyHole 留在 units 上），所以\"可对拍单元\"永远是空集，而且它比的是未填的空壳；后者让 20 个单元只测 5 个却不报。要做的：删掉那条过滤（用\"是否有可执行体\"判，不是 `bodyHole`）；slice 改成显式分页 + 回执写\"已测 N/M\"。判据：造 10 个单元的夹具，回执里必须出现 10 条（或明写\"分页 5/10\"），且不是\"无可对拍\"。",
-      "state": "claimed",
-      "owner": "codebuddy-r4",
-      "claimed_at": "2026-10-21T03:00:52.119Z"
+      "state": "candidate",
+      "owner": null,
+      "claimed_at": null,
+      "prepared_snapshot": null,
+      "expired_from": {
+        "owner": "codebuddy-r4",
+        "claimed_at": "2026-10-21T03:00:52.119Z",
+        "age_hours": 48,
+        "ttl_ms": 7200000
+      },
+      "expired_at": "2026-10-23T02:58:22.489Z"
     },
     {
       "id": "todo_静默失效-behavior-node-runner-用裸名-require-ta",
       "summary": "【静默失效·behavior】node runner 用裸名 `require('target.cjs')` ⇒ 必报 Cannot find module，还被 catch 伪装成\"跨文件 import 边界\"⇒ node 侧对拍【从来没跑通过】。要做的：require 走绝对路径（path.resolve）；catch 里不许再把\"模块找不到\"解释成别的语义 —— 报错就是报错，缺什么写什么。判据：造一个 node 夹具，对拍必须真跑出 same/diff，而不是\"边界跳过\"。",
-      "state": "claimed",
-      "owner": "codebuddy-r4",
-      "claimed_at": "2026-10-21T03:00:52.257Z"
+      "state": "candidate",
+      "owner": null,
+      "claimed_at": null,
+      "prepared_snapshot": null,
+      "expired_from": {
+        "owner": "codebuddy-r4",
+        "claimed_at": "2026-10-21T03:00:52.257Z",
+        "age_hours": 48,
+        "ttl_ms": 7200000
+      },
+      "expired_at": "2026-10-23T02:58:22.489Z"
     },
     {
       "id": "todo_静默失效-项目模式-verify-文档说-等于-tsc-但-handler-只读",
       "summary": "【静默失效·项目模式】`verify` 文档说\"等于 tsc\"，但 handler 只读隐藏的 `tscVerify` ⇒ `verify=true` 恒不生效。要做的：统一成一个入口（`verify`），文档与实现对齐；如果两个字段都有意义，写清各自语义并在回执里分开报。判据：`verify=true` 时必须真的产出 tsc 读数，且回执能看出是哪一个字段生效的。",
-      "state": "claimed",
-      "owner": "codebuddy-r4",
-      "claimed_at": "2026-10-21T03:00:52.381Z"
+      "state": "candidate",
+      "owner": null,
+      "claimed_at": null,
+      "prepared_snapshot": null,
+      "expired_from": {
+        "owner": "codebuddy-r4",
+        "claimed_at": "2026-10-21T03:00:52.381Z",
+        "age_hours": 48,
+        "ttl_ms": 7200000
+      },
+      "expired_at": "2026-10-23T02:58:22.489Z"
     },
     {
       "id": "todo_静默失效-health-java-分支先-replace-s-import-s-",
@@ -109382,19 +109514,27 @@
     },
     {
       "type": "todo",
-      "state": "claimed",
+      "state": "candidate",
       "id": "todo_已完成的卡不该留在活态-224-张里-94-张是-done-void-该进-archive-可查但不占池",
       "summary": "【实测 2026-10-22：活态共 **224 张**卡（`nodes[].task` 103 + `todos[]` 121），其中 done 78 + void 16 = **94 张（42%）已完成却仍挂在\"待办池\"里**】\n★ 这不是打扫问题，是**容器混装**：已完成的和待办的住在同一个数组里 ⇒ 每次读册子都要过滤，每次盘都会把 done 当\"待办\"看（今天盘点 73 张里 34 张就是这么来的）。\n\n## 为什么不能\"直接搬走\"（先量过）\n读端有三处**会断**：\n  ① `task_ops.ts:209 loadTask` 按 id 找 todo ⇒ 归档后\"再开这张卡\"会找不到\n  ② `task_ops.ts:1962/2003` 的 `follows` 链（子卡查父卡）⇒ 父卡归档后链断\n     （链跨代：`todoChainNote` 要一路读回去，这是读**历史**的正当用途，不能一刀切）\n  ③ `claim_conflict.ts:363` 扫全量算读集冲突 ⇒ 归档的卡不该参与，但**当前**它参与了\n\n## 判据（选一条并说明取舍，不许\"直接删\"）\n  A. **软归档**：加 `archived_at`，活态口径 = `!archived_at`（`liveTasks(dsl)` 唯一住处）；\n     `loadTask` / `follows` **照样能查到**（它们按 id 找，历史正当）；展示层（`pool.ts` 已有 `folded` 计数）\n     只统计活态。★ 好处：零迁移风险、可回滚；坏处：文件体积不减。\n  B. **物理分家**：`dsl.archive[]` 单独一组，读端改成\"先活后史\"。\n     ★ 好处：体积真减；坏处：三处读端都要改，且 `follows` 链要跨容器。\n  C. **B + 按年分片**（`archive/2026.json` 之类）⇒ 册子不随年头变胖。\n★ **建议先 A 再 C**：A 立刻把\"池子\"从 224 降到 130，且不改任何功能语义；C 是长期。\n\n## 与\"卡独立化\"的关系（★ 读这张卡前先读那张）\n归档只是**症状**。根因是 `node.task` 是**单数** ⇒ 一个节点只能有**一张**卡 ⇒ 历史只能靠原地覆盖（`reopened_from` 只记上一次）。⇒ 见下一环卡 `todo_决策卡应该记节点而不是节点记决策卡`。\n★ 如果先做那张（`tasks[]`），本卡的归档就是**天然的**（按 state 过滤即可）—— 所以**顺序**：\n   要么先 A 止血、再做结构；要么直接做结构。**别先做 B 再做结构**（会做两遍）。",
       "created_at": "2026-10-22T09:44:49.354Z",
-      "owner": "subagent:deepseek-park-archive",
-      "claimed_at": "2026-10-22T16:54:12.328Z",
+      "owner": null,
+      "claimed_at": null,
       "read_set": {
         "symbols": [],
         "files": [],
         "computed_at": "2026-10-22T16:54:12.285Z",
         "basis": [],
         "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
-      }
+      },
+      "prepared_snapshot": null,
+      "expired_from": {
+        "owner": "subagent:deepseek-park-archive",
+        "claimed_at": "2026-10-22T16:54:12.328Z",
+        "age_hours": 10.1,
+        "ttl_ms": 7200000
+      },
+      "expired_at": "2026-10-23T02:58:22.489Z"
     },
     {
       "type": "todo",
@@ -110873,12 +111013,12 @@
     {
       "id": "file_src_application_meta_index_ts",
       "summary": "【L1 待建构】入口层 · src/application/meta — 2 个 API（导入自 36 个模块）（src/application/meta/index.ts） ← 节点 file_src_application_meta_index_ts",
-      "state": "claimed",
+      "state": "candidate",
       "discussion": {
         "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_index_ts\"].responsibility"
       },
-      "owner": "agent:main",
-      "claimed_at": "2026-10-22T13:53:42.296Z",
+      "owner": null,
+      "claimed_at": null,
       "read_set": {
         "symbols": [],
         "files": [
@@ -110892,7 +111032,15 @@
           "node-path"
         ]
       },
-      "node_id": "file_src_application_meta_index_ts"
+      "node_id": "file_src_application_meta_index_ts",
+      "prepared_snapshot": null,
+      "expired_from": {
+        "owner": "agent:main",
+        "claimed_at": "2026-10-22T13:53:42.296Z",
+        "age_hours": 13.1,
+        "ttl_ms": 7200000
+      },
+      "expired_at": "2026-10-23T02:58:22.489Z"
     },
     {
       "id": "file_src_application_meta_registry_capability_map_ts",
@@ -111552,9 +111700,9 @@
     {
       "id": "file_src_domain_overlay_ts",
       "summary": "**overlay 的唯一读写口**（领域侧）：overlay 文档/锚点/边意图/全局件的**类型与全部读写语义**都从这里出 —— 首次迁移 `seedOverlayFromDsl`、对账 `reconcileOverlay`、投影回 base `applyOverlay`、三个收口同步 `mergeDecisionsIntoOverlay` / `mergeTagsIntoOverlay` / `mergeLifecycleIntoOverlay`，以及锚点“有内容”的唯一判据 `hasAnchorPayload`。★★ `validateProgressEvidence` 是**「done 必带证据」的唯一一把尺**（三档 evidence，形状与拒绝理由都在这里；`updateStatus` / `task_ops.complete` 只调它，不另写第二套）。★ 它**不做**：不做 IO（`<feature>.overlay.json` 的读写住 `storage_overlay.ts`，那里只搬字节、不立判据）；不重建 base（`import_project`）；不定义决策卡字段（`geometry.ts`）；不校验整份 DSL（`validator.ts`）。",
-      "state": "candidate",
-      "owner": null,
-      "claimed_at": null,
+      "state": "claimed",
+      "owner": "agent:main",
+      "claimed_at": "2026-10-23T03:40:26.585Z",
       "evidence": [
         {
           "kind": "attestation",
@@ -111633,7 +111781,7 @@
           {
             "file": "src/domain/overlay.ts",
             "name": "applyOverlay",
-            "fp": "5886b23ee2e1fed22f4ea855b4e95be2f4ce8c92"
+            "fp": "6bff24693f767ae925ae6e1453127aa317163f98"
           },
           {
             "file": "src/domain/overlay.ts",
@@ -111653,7 +111801,7 @@
           {
             "file": "src/domain/overlay.ts",
             "name": "computeFileSignature",
-            "fp": "fa622e96ddf67968a157bc79807045661cdfc2ff"
+            "fp": "b7166ceac91591b2e42ba8b194d1aaf80fb6bf5e"
           },
           {
             "file": "src/domain/overlay.ts",
@@ -111698,7 +111846,7 @@
           {
             "file": "src/domain/overlay.ts",
             "name": "reconcileOverlay",
-            "fp": "e053c02116b069de294ae03018fcd30e46b80c80"
+            "fp": "9ce2ed085699f82f4515548223dcf4afc42e113f"
           },
           {
             "file": "src/domain/overlay.ts",
@@ -111724,17 +111872,14 @@
         "files": [
           {
             "path": "src/domain/overlay.ts",
-            "content_hash": "150beb28ab0543e4a7132885d889ee757dad82e3"
+            "content_hash": "ea58bb674b896453f09d3df554e158979bf9e3b0"
           }
         ],
-        "computed_at": "2026-10-21T11:24:05.369Z",
+        "computed_at": "2026-10-23T03:40:26.540Z",
         "basis": [
           "expectations"
         ]
       },
-      "release_reason": "computeFileSignature 指纹换代改动已落盘，释放写权",
-      "released_by": "subagent:dsl-symbols-fixer",
-      "released_at": "2026-10-21T11:34:10.751Z",
       "node_id": "file_src_domain_overlay_ts"
     },
     {
@@ -112121,8 +112266,89 @@
     {
       "id": "file_src_domain_validator_ts",
       "summary": "DSL 的【结构自洽】校验器：ajv schema + **三项** schema 表达不了的语义（nodes.id 唯一 / semantic.files.id 必须能在 nodes 里找到 / ★ **读数快照不许落盘**）。★★ 它**不判决策卡**（decision 根本不在 schema 里）—— 那是【tsc 契约】的事（设计侧符号级，certs/design-contracts）。★ 范围仍是【有意收窄】的：**结构错看得见，意图错看不见**；后者靠 tsc + 对拍 + 影响面。",
-      "state": "candidate",
-      "node_id": "file_src_domain_validator_ts"
+      "state": "claimed",
+      "node_id": "file_src_domain_validator_ts",
+      "owner": "agent:main",
+      "claimed_at": "2026-10-23T03:40:35.198Z",
+      "read_set": {
+        "symbols": [
+          {
+            "file": "src/domain/validator.ts",
+            "name": "AddFormatsFn",
+            "fp": "c3d9a9dd21286d52a6a4d7e1af00c7fea97a1358"
+          },
+          {
+            "file": "src/domain/validator.ts",
+            "name": "ValidationErrorItem",
+            "fp": "23f480a16428c4173511ea7e206edd66439ad0f2"
+          },
+          {
+            "file": "src/domain/validator.ts",
+            "name": "ValidationResult",
+            "fp": "17bd0f05d584ab9e1be9c92bfc28814ed8104167"
+          },
+          {
+            "file": "src/domain/validator.ts",
+            "name": "addFormats",
+            "fp": "70d00fe9c6efdccdada52b34a5f4db110d209dc6"
+          },
+          {
+            "file": "src/domain/validator.ts",
+            "name": "ajv",
+            "fp": "c097d88607115a010ad67aeafd9e898281d3544f"
+          },
+          {
+            "file": "src/domain/validator.ts",
+            "name": "formatAjvErrors",
+            "fp": "4b076a3b114a9e6e8c24797f96e98dce7834db20"
+          },
+          {
+            "file": "src/domain/validator.ts",
+            "name": "toResult",
+            "fp": "1085ca90fca6202e5e9d3e85bdf182849487fea7"
+          },
+          {
+            "file": "src/domain/validator.ts",
+            "name": "validateDSL",
+            "fp": "485cea33e95888c1671936eb59db2653b25ca17f"
+          },
+          {
+            "file": "src/domain/validator.ts",
+            "name": "validateDSLJson",
+            "fp": "f4382df6a731b394ac542aa91ed95af4dfd14185"
+          },
+          {
+            "file": "src/domain/validator.ts",
+            "name": "validateNoReadingSnapshots",
+            "fp": "63de4bbc5d458033d0c80f7143255cf131cb4d97"
+          },
+          {
+            "file": "src/domain/validator.ts",
+            "name": "validateReasoningIntegrity",
+            "fp": "05d7366cccd0e4cb26bd15f7a30e3a5f38fdeacd"
+          },
+          {
+            "file": "src/domain/validator.ts",
+            "name": "validateSchema",
+            "fp": "889406f369d9e7aa3ce46cbf18c9a4c1b2d04270"
+          },
+          {
+            "file": "src/domain/validator.ts",
+            "name": "validateSemanticAnchoring",
+            "fp": "4941804748a95356eb5dab6bdceb6237346a703d"
+          }
+        ],
+        "files": [
+          {
+            "path": "src/domain/validator.ts",
+            "content_hash": "5b908a4100c05ed41fb9bcda4a500ad1bc4cb1b7"
+          }
+        ],
+        "computed_at": "2026-10-23T03:40:35.154Z",
+        "basis": [
+          "expectations"
+        ]
+      }
     },
     {
       "id": "file_src_infrastructure_analysis_contract_gate_core_ts",
@@ -112821,21 +113047,39 @@
         "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_http_serve_ts\"].responsibility"
       },
       "owner": "agent:main",
-      "claimed_at": "2026-10-22T14:13:03.756Z",
+      "claimed_at": "2026-10-23T03:40:00.886Z",
       "read_set": {
         "symbols": [],
         "files": [
           {
             "path": "src/presentation/http/serve.ts",
-            "content_hash": "d07facf1e8ca215964ae178ab7a718a66a3ef879"
+            "content_hash": "a8c3fccd709e84dc45d579da4da7923382e0d249"
           }
         ],
-        "computed_at": "2026-10-22T14:13:03.713Z",
+        "computed_at": "2026-10-23T03:40:00.829Z",
         "basis": [
           "node-path"
         ]
       },
-      "node_id": "file_src_presentation_http_serve_ts"
+      "node_id": "file_src_presentation_http_serve_ts",
+      "prepared_snapshot": null,
+      "expired_from": {
+        "owner": "subagent:deepseek-frontend-split",
+        "claimed_at": "2026-10-23T02:58:30.463Z",
+        "age_hours": 0.7,
+        "ttl_ms": 180000
+      },
+      "expired_at": "2026-10-23T03:39:49.713Z",
+      "claimed_without_judge": {
+        "at": "2026-10-23T03:40:00.886Z",
+        "missing": [
+          "节点 file_src_presentation_http_serve_ts 的 `decision.expectations` 里**后态判据（phase=post）0 条**（**一条判据都没有**）",
+          "要补 **2 条**：signature-matches + source-has —— 一个\"结构\"（`PORT` 的签名就算证据）+ 一个\"行为/文本\"（关键写法必须在）",
+          "写到哪：`edit_dsl { type:'decision', op:'update', id:'file_src_presentation_http_serve_ts', data:{ expectations:[…] } }`（判据**只住 decision**，不在卡上；卡上的是一张回滚快照）",
+          "补齐后：`edit_dsl { type:'task', op:'start', id:'file_src_presentation_http_serve_ts', data:{ owner:'<你>' } }`（第二段：删快照 + state→claimed，**一次落盘**）",
+          "放弃：`release`（会按 `prepared_snapshot` 把判据**逐字还原** ⇒ 零残留）"
+        ]
+      }
     },
     {
       "id": "file_src_presentation_mcp_server_ts",
@@ -113273,7 +113517,23 @@
       "summary": "【2026-10-22 收 DSL 写端的残留洞·等 serve.ts 卡释放】saveDSL 现在无写授权即抛，但 src/presentation/http/serve.ts 的 5 个写点只靠一条「内容判据」兜着 4 个，第 5 个会被拒：\n\n1. serve.ts:239 `/api/save`（saveDSL(result.dsl,'browser',baseRev)）—— **整册**写 ⇒ 不是画布补丁 ⇒ 现在 500。它自己的注释写着「该路径已在退役名单上」，但若还有老前端在用就会坏。另外 4 个（1367 annotations / 1425 user_nodes / 1599+1664 canvas_notes）只动 annotations/user_nodes/canvas_notes 三格 ⇒ 走 storage.ts#assertDslWriteAllowed 的 canvas-patch 分支放行。\n\n★ 为什么没直接改 serve.ts：2026-10-22 16:00 它被 agent:main claim 着（<2h，租约未熔断）⇒ 按纪律不碰。\n★ 要做的：等卡释放 ⇒ 这 5 处包 runDslWriteScope({via:'canvas',who:'serve:/api/xxx'})，然后**删掉 storage.ts 的 canvas-patch 豁免**（豁免常驻 = 后门）；/api/save 若确认没人用就直接删端点。\n★ 判据：删掉 canvas-patch 分支后 annotations/user_nodes/canvas_notes 三端点仍 200，且裸 saveDSL(dsl) 仍抛。",
       "state": "candidate",
       "owner": null,
-      "follows": "todo_设计-DSL-有多个写端-saveDSL-谁都能调-所以校验和留痕全可绕过-baseline-也从不更新"
+      "follows": "todo_设计-DSL-有多个写端-saveDSL-谁都能调-所以校验和留痕全可绕过-baseline-也从不更新",
+      "claimed_at": null,
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-23T02:58:06.372Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "prepared_snapshot": null,
+      "expired_from": {
+        "owner": "subagent:deepseek-frontend-split",
+        "claimed_at": "2026-10-23T02:58:06.413Z",
+        "age_hours": 0.7,
+        "ttl_ms": 180000
+      },
+      "expired_at": "2026-10-23T03:39:49.713Z"
     },
     {
       "id": "todo_2026-10-22-收-dsl-写端的残留洞-租约冲突-src-applica",

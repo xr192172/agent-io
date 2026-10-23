@@ -50,6 +50,8 @@ import { diagnoseLoop } from './diagnosis/diagnose_loop.js';
 import type { DiagnoseInput } from '../../infrastructure/analysis/diagnosis/contract.js';
 import { formatDiagnoseText, runDiagnosis } from '../../infrastructure/analysis/diagnosis/diagnose.js';
 import { getDSL, saveDSL, requireProjectRoot } from '../../infrastructure/storage.js';
+// ★ 2026-10-23：画布三格已搬出设计 DSL ⇒ `canvas_notes` 的读写走 `canvas_store`。
+import { readCanvas, writeCanvas } from '../../infrastructure/canvas_store.js';
 import { readStructureConfig } from '../../infrastructure/analysis/structure/structure_gap.js';
 import { archiveNode, listArchive } from './archive/archive_node.js';
 // ★ T186（2026-10-12）：「待确认的 PR」的读与定 —— ★ **PR 的确认人是下一个接手的 Agent**，不是人
@@ -530,14 +532,14 @@ export const META_TOOLS: ToolDef[] = [
       if (action === 'mark') {
         const updates = Array.isArray(a.updates) ? (a.updates as Array<{ id: string; status: 'open' | 'done' | 'rejected' }>) : [];
         if (updates.length === 0) return { message: '缺少 updates', isError: true };
-        const dsl = getDSL(feature);
-        if (!dsl) return { message: `feature "${feature}" 不存在`, isError: true };
-        const before = (dsl.canvas_notes ?? []).length;
-        dsl.canvas_notes = markCanvasNotesStatus(dsl, updates);
-        saveDSL(dsl, 'status');
+        // ★ 2026-10-23：读/写都走 `canvas_store`（不再是 `dsl.canvas_notes` + `saveDSL`）。
+        //   仍先校 feature 存在：与原来同口径（404 语义不变）。
+        if (!getDSL(feature)) return { message: `feature "${feature}" 不存在`, isError: true };
+        const before = readCanvas(feature).canvas_notes;
+        writeCanvas(feature, { canvas_notes: markCanvasNotesStatus(before, updates) }, 'canvas_notes.mark');
         return {
-          message: `已更新 ${updates.length} 条批注状态（feature=${feature}，批注数 ${before}）`,
-          data: { feature, updated: updates.length, notes: before },
+          message: `已更新 ${updates.length} 条批注状态（feature=${feature}，批注数 ${before.length}）`,
+          data: { feature, updated: updates.length, notes: before.length },
         };
       }
 

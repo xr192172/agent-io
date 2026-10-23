@@ -21,7 +21,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
+import { getDSL } from '../../../infrastructure/storage.js';
+// ★ 2026-10-23：`canvas_notes` 已搬出设计 DSL ⇒ 状态回写走 `canvas_store`。
+import { readCanvas, writeCanvas } from '../../../infrastructure/canvas_store.js';
 import { loadLlmConfig, callChat, type LlmConfig, type ChatMessage } from '../../../infrastructure/llm_focus.js';
 import { resolveCanvasNoteTargets, markCanvasNotesStatus, type ResolvedCanvasNote } from '../view/derive_mind_map.js';
 import { proposeChange, type ChangeKind, type ChangeOp } from '../../design/workbench/code_workbench.js';
@@ -388,8 +390,9 @@ export async function decideCanvasNotes(input: DecideCanvasNotesInput): Promise<
   // 3) 落批注状态（done/reject；change 保持 open 等审批；dry_run 不落）
   let applied: Array<{ id: string; status: 'done' | 'rejected' }> = [];
   if (!dryRun && statusUpdates.length > 0 && dsl) {
-    dsl.canvas_notes = markCanvasNotesStatus(dsl, statusUpdates);
-    saveDSL(dsl, 'decide');
+    // ★ 2026-10-23：回写画布层（不再是 `dsl.canvas_notes` + `saveDSL`）。
+    const notes = readCanvas(feature).canvas_notes;
+    writeCanvas(feature, { canvas_notes: markCanvasNotesStatus(notes, statusUpdates) }, 'decide');
     applied = statusUpdates;
   }
 

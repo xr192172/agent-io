@@ -14,7 +14,6 @@ import type { Annotation } from './annotation.js';
 import type { Animation, AnimationSystem } from './animation.js';
 import type { Simulation } from './simulation.js';
 import type { ReasoningSystem } from './reasoning.js';
-import type { CanvasNote } from './canvas_note.js';
 
 export type {
   DiagramStatus,
@@ -242,10 +241,12 @@ export interface DesignDSL {
   geometry: Geometry;
   /** 语义层（无则纯示意图） */
   semantic?: Semantic;
-  annotations?: Annotation[];
-  /** 批注层数据（阶段 C）：画布手绘批注覆盖层（高亮/箭头/便签/文本），
-   * 独立于语义模型，仅前端渲染与协作，不参与 get_dsl 语义/代码侧逻辑 */
-  canvas_notes?: CanvasNote[];
+  /**
+   * ★★★ 2026-10-23：`annotations` / `canvas_notes` / `user_nodes` 三格**已搬出设计 DSL**
+   * （用户裁定：「我们本身是要和那个做切割的呀」）。它们的住家 = `infrastructure/canvas_store.ts`
+   * （`.agent-io/canvas/<f>.json`，结构逐字照抄）。
+   * ★ 别把它们加回来：它们是**批注层**，不是设计内容；加回来就得再给写闸开一个洞。
+   */
   /** 动画序列（旧版阶段快照式，保留向后兼容） */
   animations?: Animation[];
   /** 动画系统 V2（分层精度 L0-L5，声明式数据流可视化，详见 docs/animation-design.md） */
@@ -258,8 +259,6 @@ export interface DesignDSL {
   layers?: ArchLayer[];
   /** 功能树（项目 → 功能 → 社区 → 文件）：逐级下钻导航数据 */
   feature_tree?: FeatureTree;
-  /** 思维导图上用户手写的节点（人机共笔：人在 AI 生成的树上新增分支） */
-  user_nodes?: UserNode[];
 }
 
 /** 用户在思维导图上新增的节点（挂在 AI 生成树的任意节点下，可嵌套） */

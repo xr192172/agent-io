@@ -12,6 +12,7 @@
  */
 
 import path from 'node:path';
+import { readCanvas } from '../../infrastructure/canvas_store.js';
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerAllTools } from './server_registry.js';
@@ -97,12 +98,12 @@ server.resource(
   new ResourceTemplate('agent-io://{feature}/notes', {
     list: async () => {
       const resources = listFeatures()
-        .filter((d) => (d.canvas_notes ?? []).length > 0)
+        .filter((d) => readCanvas(d.feature).canvas_notes.length > 0)
         .map((d) => ({
           uri: `agent-io://${d.feature}/notes`,
           name: `批注工单 · ${d.feature}`,
           mimeType: 'text/markdown',
-          description: `${d.feature} 的画布批注语义工单（${(d.canvas_notes ?? []).length} 条图元）`,
+          description: `${d.feature} 的画布批注语义工单（${readCanvas(d.feature).canvas_notes.length} 条图元）`,
         }));
       return { resources };
     },

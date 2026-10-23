@@ -6,7 +6,8 @@
  *
  * 工作流：
  *   1. 人类在浏览器双击节点 → 弹窗输入标注
- *   2. 标注自动保存到 dsl.annotations[] + localStorage
+ *   2. 标注自动保存到画布层（`canvas_store`，`.agent-io/canvas/<f>.json`）+ localStorage
+ *      ★ 2026-10-23：原先存在 `dsl.annotations[]` —— 已搬出设计 DSL（用户裁定：画布与前端切割）。
  *   3. LLM 读所有标注 —— ★ T196：**真入口是 `canvas_notes`（action=list）**；
  *      ★ 原写「LLM 调用 `list_annotations`」——**那个工具不存在**（是合并进 `canvas_notes` 之前的旧世界），
  *      读者照着去找会撞墙。
@@ -14,7 +15,9 @@
  *   5. LLM 关闭已解决的标注 —— ★ 真入口是 `canvas_notes`（resolve）；★ 原写 `resolve_annotation`（不存在）。
  */
 
-import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
+import { getDSL } from '../../../infrastructure/storage.js';
+// ★ 2026-10-23：`annotations` 已搬出设计 DSL ⇒ 读写都走 `canvas_store`（唯一住家）。
+import { readCanvas, writeCanvas } from '../../../infrastructure/canvas_store.js';
 
 // ─────────────────────────────────────────────────────────────
 // list_annotations：列出所有标注
@@ -49,7 +52,7 @@ export function listAnnotations(input: ListAnnotationsInput): { message: string;
     throw new Error(`feature "${feature}" 不存在`);
   }
 
-  let annotations = dsl.annotations || [];
+  let annotations = readCanvas(feature).annotations;
 
   if (node_id) {
     annotations = annotations.filter(a => a.node_id === node_id);
@@ -109,11 +112,9 @@ export function resolveAnnotation(input: ResolveAnnotationInput): { message: str
     throw new Error(`feature "${feature}" 不存在`);
   }
 
-  if (!dsl.annotations) {
-    throw new Error(`feature "${feature}" 没有标注`);
-  }
-
-  const anno = dsl.annotations.find(a => a.id === annotation_id);
+  // ★ 2026-10-23：从 `canvas_store` 取（不再是 `dsl.annotations`）；`resolved` 仍在同一个数组里改。
+  const anns = readCanvas(feature).annotations;
+  const anno = anns.find(a => a.id === annotation_id);
   if (!anno) {
     throw new Error(`标注 "${annotation_id}" 不存在`);
   }
@@ -124,7 +125,7 @@ export function resolveAnnotation(input: ResolveAnnotationInput): { message: str
     anno.resolution_note = resolution_note;
   }
 
-  saveDSL(dsl);
+  writeCanvas(feature, { annotations: anns }, 'annotation.resolve');
 
   return {
     message: `已标记标注 ${annotation_id} 为已解决${resolution_note ? '\n说明: ' + resolution_note : ''}`,
@@ -154,9 +155,10 @@ export function addAnnotationByTool(input: AddAnnotationInput): { message: strin
 
   const id = 'anno_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
 
-  if (!dsl.annotations) dsl.annotations = [];
+  // ★ 2026-10-23：写进 `canvas_store`（不再是 `dsl.annotations`）。
+  const anns = readCanvas(feature).annotations;
 
-  dsl.annotations.push({
+  anns.push({
     id,
     node_id,
     text,
@@ -167,7 +169,7 @@ export function addAnnotationByTool(input: AddAnnotationInput): { message: strin
     resolved: false,
   });
 
-  saveDSL(dsl);
+  writeCanvas(feature, { annotations: anns }, 'annotation.add');
 
   return {
     message: `已添加标注 ${id} (${type || 'comment'}/${severity || 'info'}) ${node_id || '通用'}: ${text}`,

@@ -51,6 +51,7 @@
  *     （索引是增强，不是写盘的前提）。
  */
 
+import { readCanvas, writeCanvas } from '../infrastructure/canvas_store.js';
 import { selfWritesPath, SELF_WRITE_TTL_MS, readSelfWrites, type SelfWriteEntry } from '../infrastructure/index/self_writes.js';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -845,7 +846,8 @@ function recordUnaddressableWarnings(
       if (!dsl) {
         where = `★ 留痕失败：feature "${u.feature}" 读不到（没有落点）`;
       } else {
-        const anns: Annotation[] = dsl.annotations ?? [];
+        // ★★★ 2026-10-23（和前端切割）：留痕属于画布层 ⇒ 读写都走 canvas_store，不再碰设计 DSL。
+        const anns: Annotation[] = readCanvas(u.feature).annotations;
         const exist = anns.find((a) => a.id === id);
         if (exist) {
           where = exist.resolved
@@ -863,8 +865,7 @@ function recordUnaddressableWarnings(
             timestamp: now,
             resolved: false,
           });
-          dsl.annotations = anns;
-          saveDSL(dsl, 'write_gate');
+          writeCanvas(u.feature, { annotations: anns }, 'write_gate');
           where = `留痕已写入 feature "${u.feature}" 的 annotations（id=${id}，severity=warning，unresolved）`;
         }
       }
