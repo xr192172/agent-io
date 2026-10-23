@@ -20,7 +20,6 @@ import { spawn, exec } from 'node:child_process';
 import { getDSL, getDesignSheetFile, getLiveDslFile, getLiveFeature, onDslChange, getStorageRoot, getFeaturesDir } from '../../infrastructure/storage.js';
 // ★★★ 2026-10-23：画布（annotations / user_nodes / canvas_notes）搬出设计 DSL 后的唯一读写口。
 //   serve 的 4 个画布端点只碰它，**不再** import `saveDSL` —— 这是「和前端切割」的接线点。
-import { readCanvas, writeCanvas, onCanvasChange } from '../../infrastructure/canvas_store.js';
 import { enableObserveFromEnv } from '../../infrastructure/analysis/observe/run_sentinel.js';
 import { judgeEvent } from '../../infrastructure/analysis/observe/judge.js';
 import { judgeGuardLog } from '../../infrastructure/analysis/observe/judge_guard.js';
@@ -33,7 +32,6 @@ import { approveObserveProposal } from '../../application/observe/reconcile/prop
 import { rejectObserveProposal } from '../../application/observe/reconcile/proposal_reject.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';
 import { getProjectCacheDb, openDb, featureCacheDbPath } from '../../infrastructure/index/db.js';
-import type { CanvasNote } from '../../domain/canvas_note.js';
 import { dagLayout, forceLayout, gridAlign } from '../../application/design/workbench/dag_layout.js';
 import { checkConsistencyReport } from '../../application/design/intent/consistency.js';
 import { diffImpact } from '../../infrastructure/analysis/impact/diff_impact.js';
@@ -71,7 +69,6 @@ import { deriveMindMap, buildFileIndex } from '../../application/meta/view/deriv
 import { placeProposals } from '../../application/meta/view/derive_mind_map.js';
 import { getOverview } from '../../application/meta/view/overview.js';
 import { getMindMapFile } from '../../application/meta/view/derive_mind_map.js';
-import { resolveCanvasNoteTargets, renderCanvasNotesDigest, markCanvasNotesStatus } from '../../application/meta/view/derive_mind_map.js';
 import type { MindMap } from '../../domain/mindmap.js';
 import { oplAdd, oplLocate, oplDeclare, oplImplement, oplCheck, oplIntegrate, oplList, oplGet, oplAuto } from '../../application/design/derive/opl.js';
 import { traceExecChain, type TraceStepSpec } from '../../infrastructure/analysis/observe/trace_exec.js';
@@ -2887,9 +2884,6 @@ export async function startServer(port?: number): Promise<void> {
   // ★★★ 2026-10-23：画布变更回调 —— 画布不再走 saveDSL，所以上面那条广播**接不到它**。
   //   不接这一条 ⇒ 浏览器改完批注后其他窗口不会刷新（静默的“看着没坏”）。
   //   事件名单独一个：前端据此只重取画布三格，不用重拉整册 DSL。
-  onCanvasChange((feature, source) => {
-    broadcastSSE('canvas-changed', { feature, source, timestamp: new Date().toISOString() });
-  });
 
   // 安全：默认仅绑定本机回环，避免局域网/公网暴露；如需跨机访问，显式设 AGENT_IO_BIND=0.0.0.0
   const bindHost = process.env.AGENT_IO_BIND || '127.0.0.1';

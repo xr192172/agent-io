@@ -43,8 +43,6 @@ import { applyTodoOp, applyTaskOp, applyTaskPlanOp } from './task_ops.js';
 import { validateDSL } from '../../../domain/validator.js';
 // ★ T334：`status` op 的 `data.evidence` 形状 —— ★ **类型引用**（不新增判据；判据在 `domain/overlay.ts`）。
 import type { ProgressEvidence } from '../../../domain/overlay.js';
-import { addAnnotationByTool, resolveAnnotation } from './annotation_tools.js';
-import { submitApproval, reviewAnnotation, type ApprovalDecision } from '../../observe/reconcile/approval.js';
 import { saveSnapshot, rollbackSnapshot, deleteSnapshot, saveAutoSnapshot, pruneSnapshots } from '../lifecycle/snapshot.js';
 import { dagLayout, forceLayout, gridAlign } from '../workbench/dag_layout.js';
 import { resetSimulation } from '../lifecycle/simulation.js';
@@ -115,8 +113,6 @@ export interface FeatureOperation {
     | 'api'
     | 'binding'
     | 'status'
-    | 'annotation'
-    | 'approval'
     | 'snapshot'
     | 'layout'
     | 'simulation'
@@ -506,10 +502,6 @@ async function applyOperation(
         evidence: op.data!.evidence as ProgressEvidence | undefined,
       });
     }
-    case 'annotation':
-      return applyAnnotationOp(feature, op);
-    case 'approval':
-      return applyApprovalOp(feature, op);
     case 'snapshot':
       return applySnapshotOp(feature, op);
     case 'layout':
@@ -539,65 +531,8 @@ async function applyOperation(
 // annotation：op=add 加标注 / op=resolve 关闭标注
 // ─────────────────────────────────────────────────────────────
 
-function applyAnnotationOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult {
-  const data = op.data ?? {};
-  switch (op.op) {
-    case 'add': {
-      const r = addAnnotationByTool({
-        feature,
-        text: data.text as string,
-        node_id: data.node_id as string | undefined,
-        type: data.type as 'comment' | 'question' | 'issue' | 'suggestion' | 'approval' | undefined,
-        severity: data.severity as 'info' | 'warning' | 'critical' | undefined,
-        author: data.author as string | undefined,
-      });
-      return { message: r.message, feature };
-    }
-    case 'resolve': {
-      const r = resolveAnnotation({
-        feature,
-        annotation_id: data.annotation_id as string,
-        resolution_note: data.resolution_note as string | undefined,
-      });
-      return { message: r.message, feature };
-    }
-    default:
-      throw new Error(`annotation 不支持操作: ${op.op}`);
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// approval：op=submit 提交审批 / op=review 审批决策
-// ─────────────────────────────────────────────────────────────
-
-function applyApprovalOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult {
-  const data = op.data ?? {};
-  switch (op.op) {
-    case 'submit': {
-      const r = submitApproval({
-        feature,
-        annotation_id: data.annotation_id as string,
-        assignee: data.assignee as string | undefined,
-        submitter: data.submitter as string | undefined,
-        comment: data.comment as string | undefined,
-      });
-      return { message: r.message, feature };
-    }
-    case 'review': {
-      const r = reviewAnnotation({
-        feature,
-        annotation_id: data.annotation_id as string,
-        // ★ T198：值域**不在这里手写** —— 用 `approval.ts` 的 `ApprovalDecision`（唯一住处）。
-        decision: data.decision as ApprovalDecision,
-        reviewer: data.reviewer as string,
-        comment: data.comment as string | undefined,
-      });
-      return { message: r.message, feature };
-    }
-    default:
-      throw new Error(`approval 不支持操作: ${op.op}`);
-  }
-}
+// ★★★ 2026-10-23（批注层退场）：applyAnnotationOp / applyApprovalOp **整段删除**。
+//   批注（annotation）与基于批注的审批（approval）随「前端只是显示屏」的裁定退场。
 
 // ─────────────────────────────────────────────────────────────
 // snapshot：op=save 保存 / op=rollback 回滚 / op=delete 删除

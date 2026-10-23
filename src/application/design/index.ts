@@ -50,8 +50,7 @@ import {
 } from './derive/opl.js';
 // ★ T170：`operations[]` 各 type 的 data 契约表（**唯一判据**）—— edit_dsl 描述里那段就是它的渲染。
 import { renderOpSpecs } from './dsl_ops/op_data_spec.js';
-// ★ T198：审批**状态值表** —— ★ 描述里**从它渲染**合法值（不手抄 ⇒ 不会与实现漂）。
-import { APPROVAL_STATUSES } from '../../domain/types.js';
+// ★★★ 2026-10-23（批注层退场）：`APPROVAL_STATUSES` / 审批能力一并删除。
 import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
@@ -155,10 +154,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       status: z
         .string()
         .optional()
-        .describe(
-          `query=approvals 时：按审批状态过滤。合法值：${APPROVAL_STATUSES.join(' / ')}。` +
-            '★ 注：`draft` = 尚未提交审批（★ **默认不过滤时也会列出来**）；`pending_review` = 待审批。',
-        ),
+        .describe('★ 2026-10-23（批注层退场）：query=approvals 已删除，本字段不再有用。'),
       assignee: z.string().optional().describe('query=approvals 时：按指派人（assignee）过滤'),
       annotation_id: z.string().optional().describe('query=approval_history 时：标注 ID'),
       feature_a: z.string().optional().describe('query=diff 时：源 feature'),

@@ -5,7 +5,6 @@ import type { AddEdgeInput } from './edge_ops.js';
 // ★★ T198：`approval.review` 的 `data.decision` 值域 —— ★ **值导入**（不是 type）：
 //   描述里要把它**渲染出来**，而渲染就必须读值。★ 值域**唯一住处**在该实现里，这里只是**引用**它
 //   （★ 这正是本表"判据一处"的做法：不手抄第二份，改了实现描述自动跟）。
-import { APPROVAL_DECISIONS } from '../../observe/reconcile/approval.js';
 
 /**
  * `edit_dsl` 各 `type`/`op` 的 **data 契约表**（唯一判据）。
@@ -153,16 +152,7 @@ export const OP_SPECS: readonly OpSpec[] = [
     // ★★ 2026-10-12 T198：值域此前**不在任何 MCP 描述里** ⇒ 读者只能试错
     //   （实测：`data.decision="approved"` ⇒ `未知决策: approved`）。
     //   ★ 这里把【动作词】的合法值写清；★★ 值域**唯一住处** = `observe/reconcile/approval.ts` 的
-    //   `APPROVAL_DECISIONS` —— 下面这句是它的**渲染**（不是第二份判据）⇒ 改了实现，描述自动跟。
-    note:
-      '★ `data.decision`（op=review 必填）= **动作词**（★ **不是状态词** —— 填 `approved`/`rejected` 会被拒，' +
-      '报「未知决策」）。合法值恰为 ' +
-      APPROVAL_DECISIONS.length +
-      ' 个：`' +
-      APPROVAL_DECISIONS.join('` / `') +
-      '`（★ 值域唯一住处 = `observe/reconcile/approval.ts` 的 `APPROVAL_DECISIONS`）。' +
-      '另 `data.reviewer`（op=review 必填，审批人名称）· `data.comment`（可选，审批意见）。' +
-      '★ op=submit 另可选 `data.assignee` / `data.submitter`。',
+    // ★★★ 2026-10-23（批注层退场）：approval 的 note 随 approval 能力一并删除（APPROVAL_DECISIONS 已不存在）。
   },
   {
     type: 'snapshot',

@@ -51,7 +51,6 @@
  *     （索引是增强，不是写盘的前提）。
  */
 
-import { readCanvas, writeCanvas } from '../infrastructure/canvas_store.js';
 import { selfWritesPath, SELF_WRITE_TTL_MS, readSelfWrites, type SelfWriteEntry } from '../infrastructure/index/self_writes.js';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -66,7 +65,6 @@ import { indexCoversDisk } from '../infrastructure/index/index_freshness.js';
 //     那条路已在本仓跑过（它记"写前那一刻的决策"），此处**复用同一把尺**，不另立一套。
 import { listDesignSheets, getDSL, saveDSL } from '../infrastructure/storage.js';
 import { loadOverlay } from '../infrastructure/storage_overlay.js';
-import type { Annotation } from '../domain/annotation.js';
 // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：豁免判据的**取值域**住 `domain/geometry.ts`，
 //   本文件**只读**它（`nodes[].gate`）—— **不按路径前缀判**（路径前缀 = 本仓头号病根）。
 import type { DiagramStatus, NodeGate } from '../domain/geometry.js';

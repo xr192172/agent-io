@@ -67,8 +67,6 @@ import { loadOverlay } from '../../../infrastructure/storage_overlay.js';
 // ★ T90：**「最后实现过的决策」** 来源 = 重写前那份快照的 `intents`（不再是 overlay 最新）
 import { listFileSnapshots } from '../../refactor/snapshot/file_snapshot.js';
 import type { DSLView } from '../../../infrastructure/storage.js';
-import { listAnnotations } from '../../design/dsl_ops/annotation_tools.js';
-import { listApprovals, getApprovalHistory } from '../../observe/reconcile/approval.js';
 import { listSnapshots } from '../../design/lifecycle/snapshot.js';
 import { getSimulationState } from '../../design/lifecycle/simulation.js';
 // ★★★ 2026-10-19：**任务池的读端**（`board/pool.ts` 的 `listPool`）。
@@ -109,9 +107,6 @@ export interface QueryFeatureInput {
     | 'scope'
     | 'calls'
     | 'functions'
-    | 'annotations'
-    | 'approvals'
-    | 'approval_history'
     | 'snapshots'
     | 'simulation_state'
     | 'diff'
@@ -1276,29 +1271,8 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       };
     }
 
-    case 'annotations': {
-      const feature = requireFeature(input);
-      const r = listAnnotations({
-        feature,
-        node_id: input.annotation_node_id,
-        severity: input.severity,
-        unresolved_only: input.unresolved_only,
-      });
-      return { message: r.message, data: r.annotations };
-    }
-
-    case 'approvals': {
-      const feature = requireFeature(input);
-      const r = listApprovals({ feature, status: input.status, assignee: input.assignee });
-      return { message: r.message, data: r.annotations };
-    }
-
-    case 'approval_history': {
-      const feature = requireFeature(input);
-      if (!input.annotation_id) throw new Error('query "approval_history" 需要 annotation_id 参数');
-      const r = getApprovalHistory({ feature, annotation_id: input.annotation_id });
-      return { message: r.message, data: { current_status: r.current_status, history: r.history } };
-    }
+    // ★★★ 2026-10-23（批注层退场）：query=annotations / approvals / approval_history **三个 case 删除**。
+    //   批注与基于批注的审批随「前端只是显示屏」的裁定退场。
 
     case 'snapshots': {
       const feature = requireFeature(input);

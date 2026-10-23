@@ -12,7 +12,6 @@
  */
 
 import path from 'node:path';
-import { readCanvas } from '../../infrastructure/canvas_store.js';
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerAllTools } from './server_registry.js';
@@ -20,7 +19,6 @@ import { importProject } from '../../infrastructure/graph/import_project.js';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { watchProjectTool } from '../../application/observe/runtime/watch_project_tool.js';
 import { listFeatures, getDSL } from '../../infrastructure/storage.js';
-import { resolveCanvasNoteTargets, renderCanvasNotesDigest } from '../../application/meta/view/derive_mind_map.js';
 import { listProjectDocs } from '../../application/meta/docs/project_docs.js';
 import { installLifecycle } from './lifecycle.js';
 import { closeAllActiveWatches } from '../../application/observe/runtime/watch_project_tool.js';

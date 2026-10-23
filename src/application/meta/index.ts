@@ -51,7 +51,6 @@ import type { DiagnoseInput } from '../../infrastructure/analysis/diagnosis/cont
 import { formatDiagnoseText, runDiagnosis } from '../../infrastructure/analysis/diagnosis/diagnose.js';
 import { getDSL, saveDSL, requireProjectRoot } from '../../infrastructure/storage.js';
 // ★ 2026-10-23：画布三格已搬出设计 DSL ⇒ `canvas_notes` 的读写走 `canvas_store`。
-import { readCanvas, writeCanvas } from '../../infrastructure/canvas_store.js';
 import { readStructureConfig } from '../../infrastructure/analysis/structure/structure_gap.js';
 import { archiveNode, listArchive } from './archive/archive_node.js';
 // ★ T186（2026-10-12）：「待确认的 PR」的读与定 —— ★ **PR 的确认人是下一个接手的 Agent**，不是人
@@ -89,7 +88,6 @@ import {
 // ★ 触发默认登记（**side-effect import**，确保矩阵被填充）—— 与 `capability_cli` 同款；
 //   漏了它会报"空矩阵"（`allCapabilities().length === 0`），那是**静默少报**而不是报错。
 import '../../infrastructure/analysis/capability/register_capabilities.js';
-import { markCanvasNotesStatus, renderCanvasNotesDigest, resolveCanvasNoteTargets } from './view/derive_mind_map.js';
 import { EXPLORE_ACTIONS } from './explore/explore_code.js';
 // ★ 契约页 / 类型页（2026-10-11）：给定符号名一次给全（定义/成员/产者/消费者/接法边/词表口径）——
 //   聚合既有权威（内核 AST · find_references · CHAIN_EDGES · b_terms），**不新算**。
@@ -478,88 +476,8 @@ export const META_TOOLS: ToolDef[] = [
     }),
   },
 
-  {
-    name: 'canvas_notes',
-    title: 'Manage canvas notes: read as work orders / update status / LLM decide',
-    description:
-      '画布批注统一入口（收敛 read/mark/decide_canvas_notes 三工具为 1 入口，action 分派）。' +
-      'action=read 读某 feature 的画布批注，解析成 agent 工单（Markdown/JSON，按 open/done/rejected 分组）——定位待办；' +
-      'action=mark 批量更新批注处理状态（updates=[{id,status}]，status ∈ open|done|rejected）——闭环"工单→处理→标记"；' +
-      'action=decide 内置 LLM 决策器：读 open 批注逐单决策（change/done/reject），将"批注→改动提案"自动化（LLM 经网关 Key 池调度，未配置则停用）。',
-    inputSchema: {
-      action: z.enum(['read', 'mark', 'decide']).describe('read=读批注成工单 | mark=更新批注状态 | decide=LLM 决策批注并出提案'),
-      feature: z.string().describe('feature 名（如 agent-io）'),
-      format: z.enum(['markdown', 'json']).default('markdown').optional().describe('read 用：markdown=工单文档（默认）/ json=结构化 JSON'),
-      updates: z
-        .array(
-          z.object({
-            id: z.string().describe('批注图元 id 或批注套 groupId'),
-            status: z.enum(['open', 'done', 'rejected']).describe('目标状态'),
-          }),
-        )
-        .optional()
-        .describe('mark 用：待更新状态列表'),
-      project_dir: z.string().optional().describe('decide 用：项目根目录（缺省用 dsl.source_root；目标文件相对此解析）'),
-      max_file_lines: z.number().optional().describe('decide 用：喂给 LLM 的目标文件最大行数（默认 300）'),
-      dry_run: z.boolean().optional().describe('decide 用：true=只出决策与提案，不落批注状态'),
-    },
-    handler: wrapData(async (a) => {
-      const action = a.action as 'read' | 'mark' | 'decide';
-      const feature = typeof a.feature === 'string' ? a.feature : '';
-      if (!feature) return { message: '缺少 feature', isError: true };
-
-      if (action === 'read') {
-        const resolved = resolveCanvasNoteTargets(feature);
-        const digest = renderCanvasNotesDigest(feature, resolved);
-        const format = a.format === 'json' ? 'json' : 'markdown';
-        return {
-          message:
-            format === 'json'
-              ? digest.json
-              : `${digest.markdown}\n\n（结构 JSON 见 data.notes / 传 format=json 直接取 JSON）`,
-          data: {
-            feature: digest.feature,
-            generated_at: digest.generated_at,
-            total: digest.total,
-            open: digest.open,
-            done: digest.done,
-            rejected: digest.rejected,
-            notes: JSON.parse(digest.json).items,
-          },
-        };
-      }
-
-      if (action === 'mark') {
-        const updates = Array.isArray(a.updates) ? (a.updates as Array<{ id: string; status: 'open' | 'done' | 'rejected' }>) : [];
-        if (updates.length === 0) return { message: '缺少 updates', isError: true };
-        // ★ 2026-10-23：读/写都走 `canvas_store`（不再是 `dsl.canvas_notes` + `saveDSL`）。
-        //   仍先校 feature 存在：与原来同口径（404 语义不变）。
-        if (!getDSL(feature)) return { message: `feature "${feature}" 不存在`, isError: true };
-        const before = readCanvas(feature).canvas_notes;
-        writeCanvas(feature, { canvas_notes: markCanvasNotesStatus(before, updates) }, 'canvas_notes.mark');
-        return {
-          message: `已更新 ${updates.length} 条批注状态（feature=${feature}，批注数 ${before.length}）`,
-          data: { feature, updated: updates.length, notes: before.length },
-        };
-      }
-
-      // decide
-      const r = await decideCanvasNotes({
-        feature,
-        project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
-        max_file_lines: typeof a.max_file_lines === 'number' ? a.max_file_lines : undefined,
-        dry_run: a.dry_run === true,
-      });
-      const summary =
-        `open 工单 ${r.open} 条 → 决策完成：` +
-        r.decisions.map((d) => `${d.note_id}=${d.action}${d.pending_change_id ? `(提案 ${d.pending_change_id})` : ''}`).join('、') +
-        `；已提提案 ${r.proposed} 条，落状态 ${r.applied_statuses.length} 条。`;
-      return {
-        message: `${summary}\n（模式：${r.note}）`,
-        data: r,
-      };
-    }),
-  },
+  // ★★★ 2026-10-23（批注层退场）：`canvas_notes` 工具（read/mark/decide 三 action）**已删除**。
+  //   用户裁定：前端只是显示屏、人不直接插手 ⇒ 批注这条路整个退场。
 
   {
     name: 'gateway_provider',

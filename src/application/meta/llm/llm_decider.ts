@@ -2,7 +2,7 @@
  * llm_decider —— 批注工单 → LLM 决策 → 审批流闭环（阶段 C · 内置 LLM 作为"工具"）
  *
  * 角色定位：内置 LLM 是工具，主消费者是外部 agent。本模块 = 该工具的决策内核：
- *   读某 feature 的 open 批注工单（ResolvedCanvasNote[]，含 L1-L4 上下文）
+ *   读某 feature 的 open 批注工单（ResolvedNoteStub[]，含 L1-L4 上下文）
  *   → 逐单交给 LLM 决策 → 产出三类结论：
  *     change ：产出一个具体改动方案（edit_code / dsl_rename / rename_file）
  *              → 映射到 code_workbench 审批流（proposeChange，propose 只出干跑预览不写源文件）
@@ -19,13 +19,15 @@
  *       真正写盘由审批流 approve 决定（人工/agent 介入点）。
  */
 
+/** ★★★ 2026-10-23（批注层退场）：原 `ResolvedCanvasNote` 已随批注层删除；这里留一个最小占位类型，
+ *  让这条决策链的签名不用改（输入恒为空数组）。等 Laya 接管决策器时一并重写。 */
+type ResolvedNoteStub = { id?: string; status?: string; text?: string; node_id?: string; target_id?: string; [k: string]: any };
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL } from '../../../infrastructure/storage.js';
 // ★ 2026-10-23：`canvas_notes` 已搬出设计 DSL ⇒ 状态回写走 `canvas_store`。
-import { readCanvas, writeCanvas } from '../../../infrastructure/canvas_store.js';
 import { loadLlmConfig, callChat, type LlmConfig, type ChatMessage } from '../../../infrastructure/llm_focus.js';
-import { resolveCanvasNoteTargets, markCanvasNotesStatus, type ResolvedCanvasNote } from '../view/derive_mind_map.js';
 import { proposeChange, type ChangeKind, type ChangeOp } from '../../design/workbench/code_workbench.js';
 import { listProjectDocs, buildDocsPromptBlock, type DocTargetSet } from '../docs/project_docs.js';
 import { hasEnabledProvider, chatViaGateway } from '../../../infrastructure/llm_gateway.js';
@@ -121,7 +123,7 @@ function readFileExcerpt(project_dir: string, rel: string, maxLines: number): Fi
 }
 
 /** 取工单目标文件路径（仅 file 目标有） */
-function targetFileRel(n: ResolvedCanvasNote): string | null {
+function targetFileRel(n: ResolvedNoteStub): string | null {
   const t = n.target;
   if (t?.kind === 'file' && t.file?.path) return t.file.path;
   return null;
@@ -211,7 +213,7 @@ function decideMode(cfg: LlmConfig | null): { mode: 'llm' | 'mock' | 'off'; cfg:
 }
 
 /** mock 决策：确定性产出（仅 LLM_DECIDER_MOCK=1 时启用）——有文件目标的"待评估"→ 提一个阈值上调提案 */
-function mockDecide(n: ResolvedCanvasNote, file: FileExcerpt | null): { action: DecideAction; reason: string; change?: { kind: ChangeKind; op: ChangeOp } } {
+function mockDecide(n: ResolvedNoteStub, file: FileExcerpt | null): { action: DecideAction; reason: string; change?: { kind: ChangeKind; op: ChangeOp } } {
   const text = (n.text ?? '').trim();
   if (text.includes('待评估') && file) {
     // 定位阈值常量行，产出一个行区间有效的 edit_code（propose 只干跑预览，不写盘）
@@ -231,7 +233,7 @@ function mockDecide(n: ResolvedCanvasNote, file: FileExcerpt | null): { action: 
 }
 
 /** 汇总一批工单涉及的功能/步骤/文件（按批关联注入的匹配目标集） */
-function collectBatchTargets(notes: ResolvedCanvasNote[]): DocTargetSet {
+function collectBatchTargets(notes: ResolvedNoteStub[]): DocTargetSet {
   const t: DocTargetSet = { features: [], steps: [], files: [] };
   for (const n of notes) {
     const tg = n.target;
@@ -244,7 +246,7 @@ function collectBatchTargets(notes: ResolvedCanvasNote[]): DocTargetSet {
 }
 
 /** 构建单条工单的 LLM prompt（系统约束 + 工单 + 目标文件内容 + 批内命中的项目文档） */
-function buildNotePrompt(n: ResolvedCanvasNote, file: FileExcerpt | null, docsBlock: string): ChatMessage[] {
+function buildNotePrompt(n: ResolvedNoteStub, file: FileExcerpt | null, docsBlock: string): ChatMessage[] {
   const system =
     '你是代码批注工单的自动决策器。用户在画布上对代码工程画了批注，每条批注是一条"工单"，捆绑了功能/步骤/文件/契约上下文。' +
     '请判断对每条工单应如何处理，只输出一个 JSON 对象（不要 markdown，不要注释）：\n' +
@@ -273,7 +275,7 @@ function buildNotePrompt(n: ResolvedCanvasNote, file: FileExcerpt | null, docsBl
 }
 
 /** LLM 决策单条：优先经小网关 Key 池（统一供应商管理）；无网关 provider 才回退 legacy 直连；解析失败/调用失败 → reject（不伪造） */
-async function llmDecide(cfg: LlmConfig | null, n: ResolvedCanvasNote, file: FileExcerpt | null, docsBlock: string): Promise<{ action: DecideAction; reason: string; change?: { kind: ChangeKind; op: ChangeOp }; llm: boolean }> {
+async function llmDecide(cfg: LlmConfig | null, n: ResolvedNoteStub, file: FileExcerpt | null, docsBlock: string): Promise<{ action: DecideAction; reason: string; change?: { kind: ChangeKind; op: ChangeOp }; llm: boolean }> {
   try {
     const messages = buildNotePrompt(n, file, docsBlock);
     const raw = hasEnabledProvider()
@@ -312,8 +314,9 @@ export async function decideCanvasNotes(input: DecideCanvasNotesInput): Promise<
     return { feature, project_dir: '', llm: false, note: `feature "${feature}" 不存在`, open: 0, decisions: [], applied_statuses: [], proposed: 0 };
   }
   const projectDir = input.project_dir || dsl.source_root || '';
-  const resolved = resolveCanvasNoteTargets(feature);
-  const open = resolved.filter((n) => n.status === 'open');
+  // ★★★ 2026-10-23（批注层退场）：批注工单已无来源 ⇒ 恒为空（这条决策链的输入没了，但函数签名保留）。
+  const resolved: ResolvedNoteStub[] = [];
+  const open: ResolvedNoteStub[] = [];
 
   // 按批关联注入：汇总批内工单涉及节点 → 只取命中的项目文档（TOC 全量 + 正文封顶）
   const docMan = listProjectDocs(projectDir, feature);
@@ -356,7 +359,7 @@ export async function decideCanvasNotes(input: DecideCanvasNotesInput): Promise<
     }
 
     // 2) 映射到审批流 / 状态
-    const d: NoteDecisionResult = { note_id: n.id, action: raw.action, reason: raw.reason, llm: raw.llm };
+    const d: NoteDecisionResult = { note_id: n.id ?? '', action: raw.action, reason: raw.reason, llm: raw.llm };
     if (raw.action === 'change' && raw.change) {
       if (!projectDir) {
         d.action = 'reject';
@@ -382,18 +385,15 @@ export async function decideCanvasNotes(input: DecideCanvasNotesInput): Promise<
         }
       }
     }
-    if (d.action === 'done') statusUpdates.push({ id: n.id, status: 'done' });
-    if (d.action === 'reject') statusUpdates.push({ id: n.id, status: 'rejected' });
+    if (d.action === 'done') statusUpdates.push({ id: n.id ?? '', status: 'done' });
+    if (d.action === 'reject') statusUpdates.push({ id: n.id ?? '', status: 'rejected' });
     decisions.push(d);
   }
 
   // 3) 落批注状态（done/reject；change 保持 open 等审批；dry_run 不落）
   let applied: Array<{ id: string; status: 'done' | 'rejected' }> = [];
   if (!dryRun && statusUpdates.length > 0 && dsl) {
-    // ★ 2026-10-23：回写画布层（不再是 `dsl.canvas_notes` + `saveDSL`）。
-    const notes = readCanvas(feature).canvas_notes;
-    writeCanvas(feature, { canvas_notes: markCanvasNotesStatus(notes, statusUpdates) }, 'decide');
-    applied = statusUpdates;
+    // ★★★ 2026-10-23（批注层退场）：原先这里回写批注状态；批注没了 ⇒ 不再回写（applied 保持空）。
   }
 
   return {

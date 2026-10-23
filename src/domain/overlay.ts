@@ -14,7 +14,6 @@
 import { createHash } from 'node:crypto';
 import type { DesignDSL } from './types.js';
 import type { DiagramStatus, NodeDecision, DecisionHistoryEntry } from './geometry.js';
-import type { Annotation } from './annotation.js';
 import type { ThemeId, UserNode } from './types.js';
 import type { ExpectedApi, Symbol, FileLifecycle } from './semantic.js';
 // ★★★ 2026-10-17（task_home）：有 task 的节点，进度是**派生值**（`task.state ⇒ 三轴`）。
@@ -42,8 +41,7 @@ export function hasAnchorPayload(a: OverlayAnchor): boolean {
     a.progress_evidence ||
     a.signature ||
     a.stale ||
-    a.orphaned ||
-    (a.annotations?.length ?? 0) > 0
+    a.orphaned
   );
 }
 
@@ -224,7 +222,6 @@ export interface OverlayAnchor {
   /** 决策卡·参数表 */
   attributes?: Record<string, string | number | boolean>;
   /** 挂在该节点上的标注 */
-  annotations?: Annotation[];
   /** 对账标记：真相面路径在、签名变 → 设计可能过期，需复核（不丢弃） */
   stale?: boolean;
   /** 对账标记：真相面已删除该锚点 → 设计暂存待决（不静默丢） */
@@ -278,7 +275,6 @@ export interface OverlayGlobal {
   title?: string;
   theme?: ThemeId;
   /** 顶层标注（未归属到单节点的） */
-  annotations?: Annotation[];
   /** 人机共笔枝：用户在 AI 生成树上新增的分支 */
   user_nodes?: UserNode[];
   /** 科普分镜 meta.storyboard */
@@ -339,7 +335,6 @@ export interface OverlayEdgeIntent {
    */
   requires?: string[];
   /** 挂在边上的标注 */
-  annotations?: Annotation[];
   /** 意图存活状态 */
   status?: 'open' | 'resolved';
   /** 对账标记：真相面已删该边 → 意图暂存待决（不静默丢） */

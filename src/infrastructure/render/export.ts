@@ -6,7 +6,6 @@
  */
 
 import fs from 'node:fs';
-import { readCanvas } from '../canvas_store.js';
 import path from 'node:path';
 import { getDSL } from '../storage.js';
 import type { DesignDSL, Node, Edge } from '../../domain/types.js';
