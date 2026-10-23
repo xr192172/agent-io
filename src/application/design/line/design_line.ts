@@ -463,6 +463,8 @@ export interface BriefReport {
     expectations: Array<{ kind: string; [k: string]: unknown }>;
     why_empty?: string;
   };
+  /** ★ 设计侧 DB（`design-db/<rel>.calls.json`）—— 与 `live` 同构，可直接对拍 */
+  design_db?: { available: boolean; symbols: BriefSymbol[]; imports: number; calls: number };
   live: { symbols: BriefSymbol[]; indexed: boolean };
   /** ★ 第 4 条：改这个文件会波及谁（`analyzeImpact` 的读数，不新造判据） */
   impact?: { total: number; direct: number; high_risk: number; top: string[] };
@@ -572,6 +574,40 @@ export async function briefReport(
   const liveNames = new Set(live.map((l) => l.name));
   const missing = must.filter((m) => !liveNames.has(m.name));
 
+  // 设计侧 DB：`design-db/<rel>.calls.json`（gen-design-db 的产物，与实际 DB 同构）
+  // ★ 文件名规则：路径去 `src/` 前缀、`/` 换 `-`，后缀 `.calls.json`（实测 359 份都是这个名字）
+  // ★ 读不到就说 available:false，**不伪造空符号表**（空表会被误读成"设计侧什么都没有"）
+  let designDb: BriefReport['design_db'];
+  if (filePath) {
+    // ★ 实测文件名：`src/domain/task_schema.ts` → `design-db/domain-task_schema.calls.json`
+    //   （去 `src/` 前缀、**去扩展名**、`/` 换 `-`、后缀 `.calls.json`）
+    const rel = String(filePath)
+      .replace(/^src\//, '')
+      .replace(/\.[A-Za-z0-9]+$/, '')
+      .replace(/\//g, '-');
+    const f = path.join(root, 'design-db', `${rel}.calls.json`);
+    if (fs.existsSync(f)) {
+      const j = JSON.parse(fs.readFileSync(f, 'utf-8')) as {
+        symbols?: Array<{ name?: string; kind?: string; line?: number; signature?: string }>;
+        imports?: unknown[];
+        calls?: unknown[];
+      };
+      designDb = {
+        available: true,
+        symbols: (j.symbols ?? []).map((x) => ({
+          name: String(x.name ?? '?'),
+          ...(x.kind ? { kind: x.kind } : {}),
+          ...(typeof x.line === 'number' ? { line: x.line } : {}),
+          ...(x.signature ? { signature: x.signature } : {}),
+        })),
+        imports: (j.imports ?? []).length,
+        calls: (j.calls ?? []).length,
+      };
+    } else {
+      designDb = { available: false, symbols: [], imports: 0, calls: 0 };
+    }
+  }
+
   // 影响面：只给"改这个文件会炸谁"的规模 + 前 5 个（★ 不贴整份报告 —— 那是 impact_analysis 的活）
   let impact: BriefReport['impact'];
   if (filePath) {
@@ -593,6 +629,7 @@ export async function briefReport(
       expectations: base.expectations,
       ...(whyEmpty ? { why_empty: whyEmpty } : {}),
     },
+    ...(designDb ? { design_db: designDb } : {}),
     live: { symbols: live, indexed },
     ...(impact ? { impact } : {}),
     gap: { missing_symbols: missing, expectation_count: base.expectations.length },
@@ -631,6 +668,14 @@ export async function briefHandler(input: { project_dir: string; feature: string
     if (r.gap.missing_symbols.length > 12) lines.push(`    … 另 ${r.gap.missing_symbols.length - 12} 个`);
   } else if (r.design.must_have.length > 0) {
     lines.push(`  必含 ${r.design.must_have.length} 个符号【全都在】`);
+  }
+  if (r.design_db) {
+    const d = r.design_db;
+    lines.push(
+      d.available
+        ? `  设计 DB（gen-design-db 的投影）：${d.symbols.length} 符号 · ${d.imports} import · ${d.calls} 调用`
+        : `  设计 DB：**没有这份文件的副本**（design-db/ 里找不到）—— 设计侧还没声明它`,
+    );
   }
   if (r.impact) {
     const { total, direct, high_risk, top } = r.impact;
