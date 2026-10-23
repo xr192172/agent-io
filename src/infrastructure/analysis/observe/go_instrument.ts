@@ -6,12 +6,11 @@
  * 本模块把它接上：检测是否 Go 工程 → 驱动 `go run ./cmd/instrument`（observe-lang-go）→
  * 解析统一报告 {files:[{file,sites:[{line,kind,level,probe}]}], restored}。
  *
- * 运行前提：被测 Go 工程须能编译含 `import camprobe "observe-lang-go/probe"` 的代码，
- * 即需在其 go.mod 加 replace/require 指向 observe-lang-go（插桩本身不校验，编译时见）。
+ * 运行前提：目标工程是一个 Go module（有 go.mod）。探针包由 `vendorGoProbe` **拷进**被测工程
+ * `internal/camprobe/`，注入的 import 指向它 ⇒ **被测工程的 go.mod 一字不改**（T268；文件尾有旧路说明）。
  */
 
 import { DATA_DIR_NAME } from '../../data_dir.js';
-import { commitSourceWrite, type SourceWriteHook } from '../../source_write_port.js';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -282,78 +281,16 @@ export function goReportSummary(rep: GoInstrumentOut): { totalSites: number; ins
 }
 
 // ─────────────────────────────────────────────
-// 被测 Go 工程接 observe-lang-go（go.mod replace/require）—— ★★ **T268 起不再是前置**
+// 旧路已删（2026-10-23）：go.mod 的 require/replace 补桥
 //
-// ★★★ 2026-10-14（T268）：下面这套「改 go.mod」的检查/补齐**已不再被插桩流程调用**。
-//   原因（实测）：它要求在**被测工程**的 go.mod 里写一条指向 agent-io **本机绝对路径**的
-//   `replace` ⇒ 换机器 / 换目录即失效，且会被提交进被测项目的受版本管理文件。
-//   ⇒ 现在改为**把探针包拷进被测工程**（`vendorGoProbe`，落点 `internal/camprobe/`），
-//     注入的 import 指向 `<被测 module>/internal/camprobe` ⇒ **被测工程零改动**。
-//   ★ 本函数**保留导出**：给"确实想走 go.mod 那条路"的调用方（如被测工程希望探针包由
-//     自己的 module 管理）用；但它**不是插桩的前置条件**。
+// ★ T268（2026-10-14）起，「改被测工程 go.mod」不再是插桩前置 —— 探针包改为**拷进**被测工程
+//   （{@link vendorGoProbe}，落点 internal/camprobe/），注入的 import 指向
+//   「<被测 module>/internal/camprobe」⇒ **被测工程零改动**。原路要求在 go.mod 里写一条指向
+//   agent-io **本机绝对路径**的 replace：换机器 / 换目录即失效，且会被提交进被测项目的受版本管理文件。
+//
+// ★ 2026-10-23 复核（全仓 grep + 消融）：checkGoObserveDeps / ensureGoObserveIntegration /
+//   GoDepsCheck / GO_OBSERVE_MODULE 的**唯一调用者就是它们自己** ⇒ 0 下游；且后者要求注入
+//   commitSourceWrite 的 commit，而没有任何调用方注入 ⇒ 真调必抛。
+//   ⇒ 没有下游就不要兼容层：已删（含 GoDepsCheck 接口与 GO_OBSERVE_MODULE 常量），
+//     不再提供「想走 go.mod 那条路」的入口。
 // ─────────────────────────────────────────────
-
-const GO_OBSERVE_MODULE = 'github.com/xr192172/agent-io/observe-lang-go';
-
-export interface GoDepsCheck {
-  /** 是否需要补 replace（false=工程已能解析 observe-lang-go） */
-  needs_replace: boolean;
-  /** 是否需要补 require */
-  needs_require: boolean;
-  /** 若需补，写入的前缀行（require/replace），已在行内带路径 */ 
-  require_line?: string;
-  replace_line?: string;
-  /** 若已就绪，简要说明 */
-  note?: string;
-}
-
-/** 检查被测工程 go.mod 是否已能解析 observe-lang-go（有 require + 有 replace 指向 observe-lang-go）。 */
-export function checkGoObserveDeps(root: string, moduleDir?: string): GoDepsCheck {
-  const modPath = path.join(root, 'go.mod');
-  let src = '';
-  try { src = fs.readFileSync(modPath, 'utf-8'); } catch {
-    return { needs_replace: true, needs_require: true, require_line: `require ${GO_OBSERVE_MODULE} v0.0.0`, replace_line: `// 无 go.mod：${modPath}`, note: '目标目录缺少 go.mod，插桩需先有可编译的 Go 工程' };
-  }
-  const hasRequire = new RegExp(`(^|\\s)require\\s+${GO_OBSERVE_MODULE}\\b`, 'm').test(src);
-  const hasBlockRequire = new RegExp(`require\\s*\\([^)]*${GO_OBSERVE_MODULE}`, 's').test(src);
-  const needsRequire = !(hasRequire || hasBlockRequire);
-  const hasReplace = new RegExp(`replace\\s+${GO_OBSERVE_MODULE}\\s*=>`).test(src);
-  const needsReplace = !hasReplace;
-  if (!needsRequire && !needsReplace) {
-    return { needs_replace: false, needs_require: false, note: 'go.mod 已含 observe-lang-go 的 require 与 replace，可直接编译插桩后代码' };
-  }
-  const goDir = moduleDir ?? (() => { try { return goObserveDir(); } catch { return ''; } })();
-  const replacePath = goDir ? JSON.stringify(goDir.replace(/\\/g, '/')) : `<observe-lang-go 模块目录>`;
-  return {
-    needs_replace: needsReplace,
-    needs_require: needsRequire,
-    require_line: `require ${GO_OBSERVE_MODULE} v0.0.0`,
-    replace_line: `replace ${GO_OBSERVE_MODULE} => ${replacePath}`,
-    note: `待补 require + replace（指向 ${goDir || 'observe-lang-go 模块目录'}）`,
-  };
-}
-
-/** 补桥：把 observe-lang-go 的 require/replace 追加到被测工程 go.mod（默认 dry-run 只返回将写内容）。
- *  返回是否实际写盘 changed。
- *  ★★ 2026-10-22（写原语收口）：`go.mod` 按 `write_gate#classifyWriteSubject` 是 **source**
- *  —— 它是被测工程**受版本管理的模块声明**，改它就是改用户源码 ⇒ 必须过闸。
- *  `commit` = 写闸事务的 `commit`（应用层注 `txn.commit`）：缺注入 ⇒ `commitSourceWrite` **抛**，
- *  不回落裸 `fs.writeFileSync`；闸拒也**原样上抛**（原先这里把写盘失败吞成 `changed:false`，
- *  会让调用方把“没写成”读成“无需改” —— 静默降级正是本仓点名的病灶）。 */
-export function ensureGoObserveIntegration(root: string, moduleDir?: string, write = false, commit?: SourceWriteHook): { changed: boolean; check: GoDepsCheck } {
-  const check = checkGoObserveDeps(root, moduleDir);
-  if (!check.needs_require && !check.needs_replace) return { changed: false, check };
-  if (!write) return { changed: false, check };
-  const modPath = path.join(root, 'go.mod');
-  let src = '';
-  try { src = fs.readFileSync(modPath, 'utf-8'); } catch { return { changed: false, check }; }
-  const adds: string[] = [];
-  if (check.needs_require && check.require_line) adds.push(check.require_line);
-  if (check.needs_replace && check.replace_line && !check.replace_line.startsWith('//')) adds.push(check.replace_line);
-  if (adds.length === 0) return { changed: false, check };
-  const sep = src.endsWith('\n') ? '' : '\n';
-  const next = src + sep + '\n' + adds.join('\n') + '\n';
-  // ★ 与搬前**逐字一致**的只有内容与路径：`next` 拼法、`modPath`、utf-8 都没动 —— 换的只是“谁来落盘”。
-  commitSourceWrite(commit, modPath, next);
-  return { changed: true, check };
-}

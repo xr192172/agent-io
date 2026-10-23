@@ -50628,17 +50628,38 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_go_instrument_ts\"].responsibility"
           },
-          "owner": "subagent:deepseek-ports-infra",
-          "claimed_at": "2026-10-22T09:17:43.814Z",
+          "owner": "subagent:deepseek-go-instrument",
+          "claimed_at": "2026-10-23T03:55:54.089Z",
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/infrastructure/analysis/observe/go_instrument.ts",
+                "name": "checkGoObserveDeps",
+                "fp": "39bcddfeb8d4c9b28256f7ddd47bb8357acf8543"
+              },
+              {
+                "file": "src/infrastructure/analysis/observe/go_instrument.ts",
+                "name": "ensureGoObserveIntegration",
+                "fp": "e65942d89928cb56a5f43bc3a77009bfbd3e904c"
+              },
+              {
+                "file": "src/infrastructure/analysis/observe/go_instrument.ts",
+                "name": "unvendorGoProbe",
+                "fp": "213dc801143360a6b73b20e448b4c5909ba6cb65"
+              },
+              {
+                "file": "src/infrastructure/analysis/observe/go_instrument.ts",
+                "name": "vendorGoProbe",
+                "fp": "a8d8829bf3509b7f34f274642580b224686307a3"
+              }
+            ],
             "files": [
               {
                 "path": "src/infrastructure/analysis/observe/go_instrument.ts",
-                "content_hash": "c08f3434e27ca5499513b33a150f03658fa7450d"
+                "content_hash": "8d04b6ef16a6ea9d2faa7ee765dbb65c64ba9643"
               }
             ],
-            "computed_at": "2026-10-22T09:17:43.781Z",
+            "computed_at": "2026-10-23T03:55:54.038Z",
             "basis": [
               "declared"
             ]
@@ -50659,29 +50680,75 @@
                 ]
               },
               "verdict": "pass"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-23T04:01:58.533Z",
+              "by": "llm",
+              "agent": "subagent:deepseek-go-instrument",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "grep -rn --include=*.ts --include=*.mjs --include=*.js -e vendorGoProbe -e unvendorGoProbe -e ensureGoObserveIntegration -e checkGoObserveDeps -e goReportSummary src scripts dogfood examples scaffold vendor ; npx tsc --noEmit（3 行调用者消融）; npm run build; npm run verify",
+                "input": "d19955cc257d71c18597c8297af6e08dd30a16d7",
+                "code": "67d727ae92f2ea8e1d9c6e27646f148c509d4d51",
+                "covers": [
+                  "src/infrastructure/analysis/observe/go_instrument.ts"
+                ]
+              },
+              "observed": "外部调用数：vendorGoProbe=0/unvendorGoProbe=0/ensureGoObserveIntegration=0/checkGoObserveDeps=0；内部生产调用：vendorGoProbe@instrumentGoProject、unvendorGoProbe@restoreGoProject 各 1 处 ⇒ 只删 go.mod 补桥 4 符号（ensureGoObserveIntegration/checkGoObserveDeps/GoDepsCheck/GO_OBSERVE_MODULE，文件 359→296 行）；消融：3 行调用者 tsc exit=2(TS2305)，把 vendorGoProbe 定义改名 ⇒ tsc exit=2(TS2552 指向调用点 L254)；build exit=0、verify 8/8 PASS exit=0",
+              "command": "grep -rn --include=*.ts --include=*.mjs --include=*.js -e vendorGoProbe -e unvendorGoProbe -e ensureGoObserveIntegration -e checkGoObserveDeps -e goReportSummary src scripts dogfood examples scaffold vendor ; npx tsc --noEmit（3 行调用者消融）; npm run build; npm run verify"
             }
           ],
           "node_id": "file_src_infrastructure_analysis_observe_go_instrument_ts",
-          "archived_at": "2026-10-22T17:01:15.281Z",
-          "archived_by": "subagent:deepseek-park-archive",
-          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
+          "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）",
+          "reopened_at": "2026-10-23T03:55:54.089Z",
+          "reopen_reason": "同一文件 src/infrastructure/analysis/observe/go_instrument.ts 的写权：删 ensureGoObserveIntegration 与 checkGoObserveDeps",
+          "reopened_from": "subagent:deepseek-ports-infra"
         },
         "status": "done",
         "decision": {
-          "summary": "go 侧插桩的桥：把本仓探针包 vendor 进被测工程，并按需补 go.mod（本轮把 go.mod 写收进写原语）",
+          "summary": "go 侧插桩的桥：把本仓探针包 vendor 进被测工程、uninstrument 时连目录删；T268 起**不再改被测工程 go.mod**（go.mod 补桥 2026-10-23 已删）",
           "expectations": [
             {
               "kind": "symbol-exists",
               "path": "src/infrastructure/analysis/observe/go_instrument.ts",
-              "symbol": "ensureGoObserveIntegration",
-              "why": "它是本文件唯一真正改用户源码的入口，必须在（且已改走 commitSourceWrite）"
+              "symbol": "vendorGoProbe",
+              "why": "它是 Go 插桩的唯一落盘入口：instrumentGoProject 调它把探针包拷进被测工程 internal/camprobe"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/analysis/observe/go_instrument.ts",
+              "symbol": "instrumentGoProject",
+              "why": "goObservePack.instrument 唯一入口（observe_langs.ts:351），删了 Go 插桩就没有路"
             }
           ],
-          "rationale": "被测 Go 工程零配置是设计目标；而改 go.mod 就是改用户源码，必须有闸",
-          "acceptance": "go.mod 写经 commitSourceWrite（缺注入即抛）；vendor / unvendor 的分类与缺口写进注释与 docs",
-          "updated_at": "2026-10-22T09:33:56.282Z",
-          "agent": "subagent:deepseek-ports-infra"
-        }
+          "rationale": "被测 Go 工程零配置是设计目标：探针包拷进 internal/camprobe、注入 import 指向它 ⇒ go.mod 一字不改。改 go.mod 那条老路要求写本机绝对路径 replace（换机器即废）且全仓无人调用。",
+          "acceptance": "vendor/unvendor 是 Go 插桩的唯一落盘路径（instrumentGoProject / restoreGoProject 各一处调用）；go.mod 补桥（ensureGoObserveIntegration + checkGoObserveDeps + GoDepsCheck + GO_OBSERVE_MODULE）已删，文件尾留了旧路说明。",
+          "updated_at": "2026-10-23T04:00:53.229Z",
+          "agent": "subagent:deepseek-go-instrument"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-23T04:00:53.229Z",
+            "decision": {
+              "summary": "go 侧插桩的桥：把本仓探针包 vendor 进被测工程，并按需补 go.mod（本轮把 go.mod 写收进写原语）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/analysis/observe/go_instrument.ts",
+                  "symbol": "ensureGoObserveIntegration",
+                  "why": "它是本文件唯一真正改用户源码的入口，必须在（且已改走 commitSourceWrite）"
+                }
+              ],
+              "rationale": "被测 Go 工程零配置是设计目标；而改 go.mod 就是改用户源码，必须有闸",
+              "acceptance": "go.mod 写经 commitSourceWrite（缺注入即抛）；vendor / unvendor 的分类与缺口写进注释与 docs",
+              "updated_at": "2026-10-22T09:33:56.282Z",
+              "agent": "subagent:deepseek-ports-infra"
+            },
+            "note": "复核后发现 go_instrument.ts 的 ensureGoObserveIntegration 全仓 0 调用已删 ⇒ 决策卡上的 symbol-exists 判据（点它）必须改指真实入口 vendorGoProbe，否则设计侧仍要求一个不存在的符号",
+            "agent": "subagent:deepseek-go-instrument"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_analysis_observe_index_ts",
@@ -105369,11 +105436,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-23T03:40:35.241Z",
+    "saved_at": "2026-10-23T04:02:31.194Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 143312430,
+    "age": 144628383,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -109508,9 +109575,32 @@
     {
       "id": "todo_下一环-②-go-instrument-ts-的-3-个导出-全仓-0-调用-v",
       "summary": "下一环 ②：`go_instrument.ts` 的 3 个导出**全仓 0 调用** —— `vendorGoProbe` / `unvendorGoProbe` / `ensureGoObserveIntegration`（grep `--include=*.ts --include=*.mjs` 全仓，除定义文件自身 0 命中；文件内注释也说 T268 起不再是插桩前置）。后果有两件：① 本轮把 go.mod 写改走 `commitSourceWrite`（要求注入 `txn.commit`）后，**没有任何调用方**会注入 ⇒ 真调它必抛；② \"Go 侧插桩\"实际跑的是 Go 子进程那条路，TS 侧这三个函数等于**摆设 API**。判据：要么把它们接回 `observe_langs`/`handlers`（并注入 `txn.commit`），要么按“没有下游就不要兼容层”删掉（`data_dir.ts` 头注同一纪律）。禁：留着导出不接线还当成\"已支持\"。",
-      "state": "candidate",
-      "owner": null,
-      "follows": "todo_写原语已能覆盖-写-移-删-追加-四类-sourcewritetxn-commi"
+      "state": "done",
+      "owner": "subagent:deepseek-go-instrument",
+      "follows": "todo_写原语已能覆盖-写-移-删-追加-四类-sourcewritetxn-commi",
+      "claimed_at": "2026-10-23T04:02:19.706Z",
+      "read_set": {
+        "symbols": [],
+        "files": [],
+        "computed_at": "2026-10-23T04:02:19.663Z",
+        "basis": [],
+        "note": "读集**为空**（卡上没有能定位到文件/符号的判据，节点也没有路径，调用方也没声明）⇒ 这次**没有可比的东西**，不代表“与别人不冲突”"
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-23T04:02:19.819Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-go-instrument",
+          "verdict": "pass",
+          "fingerprint": {
+            "what": "grep -rn --include=*.ts --include=*.mjs --include=*.js <symbol> src scripts dogfood examples scaffold vendor（逐个导出）; npx tsc --noEmit（两处消融）; npm run build; npm run verify",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "observed": "外部调用：vendorGoProbe 0 / unvendorGoProbe 0 / ensureGoObserveIntegration 0；但前两者各有 1 处**文件内生产调用**（go_instrument.ts:254 instrumentGoProject→vendorGoProbe、:268 restoreGoProject→unvendorGoProbe）⇒ 它们不是死代码、是 goObservePack 唯一那条 Go 插桩路的实现；消融把 vendorGoProbe 定义改名 ⇒ tsc exit=2 报 L254；ensureGoObserveIntegration 内外皆 0（唯一调用者是 checkGoObserveDeps 而它只被前者调）⇒ 已删（连同 checkGoObserveDeps/GoDepsCheck/GO_OBSERVE_MODULE，共 4 符号，文件 359→296 行），3 行调用者消融 tsc exit=2(TS2305)；决策卡判据改指 vendorGoProbe+instrumentGoProject；build exit=0、verify 8/8 PASS exit=0",
+          "command": "grep -rn --include=*.ts --include=*.mjs --include=*.js <symbol> src scripts dogfood examples scaffold vendor（逐个导出）; npx tsc --noEmit（两处消融）; npm run build; npm run verify"
+        }
+      ]
     },
     {
       "type": "todo",
@@ -112441,17 +112531,38 @@
       "discussion": {
         "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_go_instrument_ts\"].responsibility"
       },
-      "owner": "subagent:deepseek-ports-infra",
-      "claimed_at": "2026-10-22T09:17:43.814Z",
+      "owner": "subagent:deepseek-go-instrument",
+      "claimed_at": "2026-10-23T03:55:54.089Z",
       "read_set": {
-        "symbols": [],
+        "symbols": [
+          {
+            "file": "src/infrastructure/analysis/observe/go_instrument.ts",
+            "name": "checkGoObserveDeps",
+            "fp": "39bcddfeb8d4c9b28256f7ddd47bb8357acf8543"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/go_instrument.ts",
+            "name": "ensureGoObserveIntegration",
+            "fp": "e65942d89928cb56a5f43bc3a77009bfbd3e904c"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/go_instrument.ts",
+            "name": "unvendorGoProbe",
+            "fp": "213dc801143360a6b73b20e448b4c5909ba6cb65"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/go_instrument.ts",
+            "name": "vendorGoProbe",
+            "fp": "a8d8829bf3509b7f34f274642580b224686307a3"
+          }
+        ],
         "files": [
           {
             "path": "src/infrastructure/analysis/observe/go_instrument.ts",
-            "content_hash": "c08f3434e27ca5499513b33a150f03658fa7450d"
+            "content_hash": "8d04b6ef16a6ea9d2faa7ee765dbb65c64ba9643"
           }
         ],
-        "computed_at": "2026-10-22T09:17:43.781Z",
+        "computed_at": "2026-10-23T03:55:54.038Z",
         "basis": [
           "declared"
         ]
@@ -112472,12 +112583,30 @@
             ]
           },
           "verdict": "pass"
+        },
+        {
+          "kind": "reading",
+          "at": "2026-10-23T04:01:58.533Z",
+          "by": "llm",
+          "agent": "subagent:deepseek-go-instrument",
+          "verdict": "pass",
+          "fingerprint": {
+            "what": "grep -rn --include=*.ts --include=*.mjs --include=*.js -e vendorGoProbe -e unvendorGoProbe -e ensureGoObserveIntegration -e checkGoObserveDeps -e goReportSummary src scripts dogfood examples scaffold vendor ; npx tsc --noEmit（3 行调用者消融）; npm run build; npm run verify",
+            "input": "d19955cc257d71c18597c8297af6e08dd30a16d7",
+            "code": "67d727ae92f2ea8e1d9c6e27646f148c509d4d51",
+            "covers": [
+              "src/infrastructure/analysis/observe/go_instrument.ts"
+            ]
+          },
+          "observed": "外部调用数：vendorGoProbe=0/unvendorGoProbe=0/ensureGoObserveIntegration=0/checkGoObserveDeps=0；内部生产调用：vendorGoProbe@instrumentGoProject、unvendorGoProbe@restoreGoProject 各 1 处 ⇒ 只删 go.mod 补桥 4 符号（ensureGoObserveIntegration/checkGoObserveDeps/GoDepsCheck/GO_OBSERVE_MODULE，文件 359→296 行）；消融：3 行调用者 tsc exit=2(TS2305)，把 vendorGoProbe 定义改名 ⇒ tsc exit=2(TS2552 指向调用点 L254)；build exit=0、verify 8/8 PASS exit=0",
+          "command": "grep -rn --include=*.ts --include=*.mjs --include=*.js -e vendorGoProbe -e unvendorGoProbe -e ensureGoObserveIntegration -e checkGoObserveDeps -e goReportSummary src scripts dogfood examples scaffold vendor ; npx tsc --noEmit（3 行调用者消融）; npm run build; npm run verify"
         }
       ],
       "node_id": "file_src_infrastructure_analysis_observe_go_instrument_ts",
-      "archived_at": "2026-10-22T17:01:15.281Z",
-      "archived_by": "subagent:deepseek-park-archive",
-      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）"
+      "archived_reason": "存量清理：这批卡已 done/void 多日，留在 todos[] 里让 pool.ts 把 107 张已了结卡当活态（池 250 张里 42% 已结束）",
+      "reopened_at": "2026-10-23T03:55:54.089Z",
+      "reopen_reason": "同一文件 src/infrastructure/analysis/observe/go_instrument.ts 的写权：删 ensureGoObserveIntegration 与 checkGoObserveDeps",
+      "reopened_from": "subagent:deepseek-ports-infra"
     },
     {
       "id": "file_src_infrastructure_analysis_observe_judge_ts",
@@ -113562,9 +113691,16 @@
       "state": "candidate",
       "owner": null,
       "follows": "todo_证据落盘丢字段-reading-证据的-observed-被静默丢弃-compl"
+    },
+    {
+      "id": "todo_下一环-③-go-instrument-ts-的-goreportsummary",
+      "summary": "下一环 ③：go_instrument.ts 的 goReportSummary（统计展示：totalSites/instrumented/skipped/errors）**全仓 0 调用** —— 同类病与刚删的 go.mod 补桥一样，只是它不属于「3 个导出」那张卡的范围。实测：grep 该符号在 src/scripts/dogfood/examples/scaffold/vendor 只命中定义行（go_instrument.ts:273）；Go 侧真实回执由 observe_langs.ts 的 goObservePack 自己拼（见 observe_langs.ts:363-397，不经过它）⇒ 它是摆设。判据：① 要么接进 observe_langs 的 Go 回执（让它与 TS 侧的统计口径一致），要么按「没有下游就不要兼容层」删掉；② 消融：随手写 3 行调用者 ⇒ tsc 必须报 TS2305。禁：留着导出不接线还当成「已支持统计」。",
+      "state": "candidate",
+      "owner": null,
+      "follows": "todo_下一环-②-go-instrument-ts-的-3-个导出-全仓-0-调用-v"
     }
   ],
-  "_dsl_rev": 1293,
+  "_dsl_rev": 1294,
   "feature_tree": {
     "features": [
       {
