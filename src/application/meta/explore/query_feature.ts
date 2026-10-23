@@ -44,7 +44,7 @@
  */
 
 // ★ 2026-10-21：`query=todo` 要**设计侧原样**（todos[] 不在扫描产物里）⇒ 直取 `getDSL`。
-import { getDSL, getDSLByView, listFeatures as listStoredFeatures } from '../../../infrastructure/storage.js';
+import { getDSL, getDSLByView, listDesignSheets as listStoredFeatures } from '../../../infrastructure/storage.js';
 // ★ 2026-10-21：todo 的**状态判据**（`isClosedTaskState` = 唯一那把尺）与**墓碑**（物理删的留痕）。
 //   ★ 前者不在这里重写（done/void 两个名字只住 `task_schema.ts`）；后者不在这里重读（读端也只有一处）。
 import {
@@ -78,7 +78,7 @@ import { getSimulationState } from '../../design/lifecycle/simulation.js';
 import { listPool } from '../../design/board/pool.js';
 // ★★★ 2026-10-23（history 表）：已了结卡出册后的**唯一读端** —— 住独立库（不参与索引重建），
 //   所以读它**不走 DSL**（`todos[]` 里已经没有这些卡了）。
-import { getTaskHistoryFile, queryTaskHistory } from '../../../infrastructure/task_history.js';
+import { countTaskHistory, getTaskHistoryFile, queryTaskHistory } from '../../../infrastructure/task_history.js';
 // ★ 2026-10-22（D-T8 上架读端）：在挂的卡要报「挂了多久 / 租约过没过」⇒ TTL 取 domain 的唯一那份定义，
 //   本文件不写 2h 这个数（写死一处就等着两处不一致）。
 import { LEASE_TTL_MS } from '../../../domain/task_machine.js';
@@ -121,7 +121,8 @@ export interface QueryFeatureInput {
     | 'todo'
     // ★★★ 2026-10-23：已了结卡的**历史读端**（`.agent-io/task-history.db` 的 task_history 表）
     | 'history'
-    | 'pending';
+    | 'pending'
+    | 'overview';
   /** feature 名（dsl/nodes/edges/node/decisions/files/file/digest/annotations/approvals/approval_history/snapshots/simulation_state 必填；features/templates 忽略；diff 用 feature_a/feature_b） */
   feature?: string;
   /**
@@ -147,6 +148,8 @@ export interface QueryFeatureInput {
    * ★ 与 `search` 分工：这个是「我就要那一张」，`search` 是「我记得里面有个词」。
    */
   card_id?: string;
+  /** query=history 时：true = data.items[] 附**整卡原样** card（缺省只给概览行；card_id 精查时总是给） */
+  detail?: boolean;
   /** ★★★ 2026-10-23（history）：在 `summary` / `card_json` 里做**子串**匹配（用户原话：「要查的话你就搜索 history」） */
   search?: string;
   /** ★★★ 2026-10-23（history）：最多返回几条（默认 20，上限 500）—— 历史是 append-only，默认不许全量倒出来 */
@@ -213,6 +216,43 @@ export interface QueryFeatureResult {
 }
 
 /** DesignDSL 顶层类型未声明 meta（overlay 把结构化目标/功能标记落进 base meta），读取时按显式类型收窄 */
+/**
+ * computePendingDebts —— **欠账计算的唯一口径**（2026-10-24 从 `case 'pending'` 原样抽出）。
+ * ★ 为什么抽：`query=overview` 也要数欠账 —— 把判据抄一份过去 = 同一判据住两处（本仓头号病）。
+ *   ⇒ `query=pending`（渲染明细）与 `query=overview`（只计数）共用这一个函数。
+ * 口径不变：欠账 = 锚点**已登记** progress（!==undefined）且 `progressOfNode` 现读 !== 'done'；
+ *   未登记 progress 的锚点不算欠账（没人认领 ⇒ 不欠）。
+ * 返回 null = 该 feature 无 overlay（没有任何锚点 / 进度登记）。
+ */
+function computePendingDebts(feature: string) {
+  const ov = loadOverlay(feature);
+  if (!ov) return null;
+  const allAnchors = Object.entries(ov.anchors);
+  const dsl = getDSL(feature);
+  const nodeById = new Map((dsl?.geometry?.nodes ?? []).map((n) => [n.id, n] as const));
+  const debts = allAnchors
+    .filter(([, a]) => a.progress !== undefined)
+    .map(([id, a]) => {
+      const reading = progressOfNode(nodeById.get(id) ?? { id }, a, dsl?.todos);
+      return {
+        id,
+        path: a.path,
+        progress: reading.status,
+        progress_source: reading.source,
+        possibly_stale: reading.possibly_stale,
+        progress_evidence: a.progress_evidence,
+      };
+    })
+    // ★ `undefined`（`void` 卡 / 什么都没有）= 「这一轴没有值」⇒ **不算欠账**（不硬塞 draft）
+    .filter((x) => x.progress !== undefined && x.progress !== 'done')
+    .sort((x, y) => x.id.localeCompare(y.id));
+  return {
+    debts,
+    anchors_total: allAnchors.length,
+    registered: allAnchors.filter(([, a]) => a.progress !== undefined).length,
+  };
+}
+
 interface DSLWithMeta {
   meta?: { goals?: OverlayGoal[]; function_tags?: Record<string, string[]> };
 }
@@ -1694,22 +1734,83 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           lines.push('', `  ★ 还有 ${total - rows.length} 条没列出（limit=${rows.length}）—— 加 limit，或用 state / card_id / search 收窄。`);
         }
       }
+      // ★★★ 2026-10-24（概览/详情两级）：**概览级每卡一行**，整卡原样按需取。
+      //   实测：搬迁 93 张后首次查询回执 231,951 字符 —— data.items[].card（整卡解析）是负重主源。
+      //   ★ 缺省 data.items 只给概览行（id/state/moved_at/summary 首行/node_id/reason）；
+      //     `detail=true` 或 `card_id` 精查时才附 `card`（整卡解析，evidence/修订史都在里面）。
+      //   ★ 文本行（上面）本就是概览形状，不动；只收窄 data 的负重。与 digest 的「只读派生」同族。
+      const wantDetail = input.detail === true || Boolean(input.card_id);
       return {
         message: lines.join('\n'),
         data: {
           feature,
           total,
           returned: rows.length,
+          detail: wantDetail,
           items: rows.map((r) => ({
             id: r.id,
             state: r.state,
             node_id: r.node_id ?? null,
             moved_at: r.moved_at,
             reason: r.reason,
-            card: r.card,
+            summary_first_line: r.summary.split('\n')[0] ?? '',
+            ...(wantDetail ? { card: r.card } : {}),
           })),
         },
       };
+    }
+
+    // ── 跨库总账（一眼全貌 · 只读派生 · 不落盘）─────────────────────────────
+    //
+    // ★★★ 2026-10-24（用户裁定「一眼全貌 + 过滤」）：每个 feature 一行 —— 活卡/终态/归档/history/欠账。
+    //   ★ 口径全部借现成唯一住处，本分支**不重算判据**：
+    //     活卡/终态 = todos[] 按 `TASK_STATES` 现算（与 `case 'todo'` 同一来源字段）；
+    //     history = `countTaskHistory`（infrastructure 唯一读口）；
+    //     欠账 = `computePendingDebts`（与 `query=pending` **同一个函数**，判据只住一处）。
+    //   ★ 本分支**只计数**，不列明细 —— 明细各有专属查询（todo/history/pending）。
+    case 'overview': {
+      const dsls = listStoredFeatures();
+      if (dsls.length === 0) return { message: '尚无已设计的 feature ⇒ 总账为空', data: [] };
+      const rows = dsls.map((d) => {
+        const feature = d.feature;
+        const byState: Record<string, number> = {};
+        for (const s of TASK_STATES) byState[s] = 0;
+        for (const t of d.todos ?? []) if (t.state in byState) byState[t.state]++;
+        const pd = computePendingDebts(feature);
+        return {
+          feature,
+          todo_live: (byState.candidate ?? 0) + (byState.preparing ?? 0) + (byState.claimed ?? 0),
+          todo_done: byState.done ?? 0,
+          todo_void: byState.void ?? 0,
+          todo_archived: (d.todos ?? []).filter((t) => t.archived_at).length,
+          history: countTaskHistory(feature),
+          pending_debts: pd ? pd.debts.length : 0,
+          ...(pd ? {} : { pending_note: '无 overlay' }),
+        };
+      });
+      const totals = rows.reduce(
+        (a, r) => ({
+          todo_live: a.todo_live + r.todo_live,
+          history: a.history + r.history,
+          pending_debts: a.pending_debts + r.pending_debts,
+        }),
+        { todo_live: 0, history: 0, pending_debts: 0 },
+      );
+      const lines: string[] = [
+        `══ 跨库总账（一眼全貌）${viewTag} ══`,
+        '',
+        `  口径：活卡 = todos[] 里 candidate+preparing+claimed；history = task-history.db 按 feature 计数；`,
+        `  欠账 = overlay 已登记 progress 且现读 ≠ done（与 query=pending 同一函数同一口径）。★ 只读派生，不落盘。`,
+        '',
+        '  feature                活卡  done  void  归档  history  欠账',
+      ];
+      for (const r of rows) {
+        lines.push(
+          `  ${r.feature.padEnd(22)} ${String(r.todo_live).padStart(4)} ${String(r.todo_done).padStart(5)} ${String(r.todo_void).padStart(5)} ${String(r.todo_archived).padStart(4)} ${String(r.history).padStart(8)} ${String(r.pending_debts).padStart(4)}`,
+        );
+      }
+      lines.push('', `  合计：活卡 ${totals.todo_live} · history ${totals.history} · 欠账 ${totals.pending_debts}`);
+      return { message: lines.join('\n'), data: { rows, totals } };
     }
 
     case 'pool': {
@@ -1743,42 +1844,19 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
     //   （那是下游结果，且不带 evidence）；每次**现算**、**不落盘**。
     case 'pending': {
       const feature = requireFeature(input);
-      const ov = loadOverlay(feature);
-      if (!ov) {
+      // ★ 2026-10-24：欠账计算抽到 `computePendingDebts`（与 query=overview 共用同一口径，判据只住一处）。
+      //   2026-10-22（progress 权威归一）的口径未变：唯一入口 `progressOfNode`；
+      //   候选只收「锚点**登记过** progress」的（没人认领 ⇒ 不欠）。
+      const pd = computePendingDebts(feature);
+      if (!pd) {
         return {
           message:
             `feature "${feature}" 无 overlay（没有任何锚点 / 进度登记）⇒ 欠账 0 条 ${viewTag}`,
           data: [],
         };
       }
-      const allAnchors = Object.entries(ov.anchors);
-      // ★★★ 2026-10-22（progress 权威归一）：**进度值不再在这里自己读 `a.progress`** —— 调唯一入口。
-      //   ★ 以前是 `a.progress !== 'done'`，而投影（`applyOverlay`）用 `task.state` 派生 ⇒ 同一个节点两个答案：
-      //     实测 task-system-plan 11 个节点 overlay 说 `done`、卡是 `candidate` ⇒ 投影显示 draft（老实），
-      //     本视图却**不报欠账**（漏报）。现在两边同一把尺。
-      //   ★ 口径未变：候选只收「锚点**登记过** progress」的（没人认领 ⇒ 不欠）；变的只是**那个值从哪来**。
-      const dsl = getDSL(feature);
-      const nodeById = new Map((dsl?.geometry?.nodes ?? []).map((n) => [n.id, n] as const));
-      const debts = allAnchors
-        .filter(([, a]) => a.progress !== undefined)
-        .map(([id, a]) => {
-          const reading = progressOfNode(nodeById.get(id) ?? { id }, a, dsl?.todos);
-          return {
-            id,
-            path: a.path,
-            progress: reading.status,
-            progress_source: reading.source,
-            possibly_stale: reading.possibly_stale,
-            progress_evidence: a.progress_evidence,
-            // ★★★ 2026-10-19（设计只住一处）：overlay 不再持有 decision ⇒ 这里不再带 decision_scope。
-            //   若要 decision.scope，读 design/<f>.dsl.json 的节点（getDSL）。
-          };
-        })
-        // ★ `undefined`（`void` 卡 / 什么都没有）= 「这一轴没有值」⇒ **不算欠账**（不硬塞 draft）
-        .filter((x) => x.progress !== undefined && x.progress !== 'done')
-        .sort((x, y) => x.id.localeCompare(y.id));
-
-      const registered = allAnchors.filter(([, a]) => a.progress !== undefined).length;
+      const debts = pd.debts;
+      const registered = pd.registered;
       const lines: string[] = [
         `══ feature "${feature}" 欠账（未完成锚点）${viewTag} ══`,
         '',
@@ -1786,7 +1864,7 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           `★ **未登记 progress 的锚点不算欠账**（没人认领 ⇒ 不欠）。`,
         `  来源：progress 值走**唯一入口** \`progressOfNode\`（有卡 ⇒ \`task.state\` 派生；` +
           `没卡 ⇒ 回落 overlay.progress 并标「可能过期」）；证据只能读 \`${feature}.overlay.json\`（不投影）；每次现算、不落盘。`,
-        `  欠账 ${debts.length} 条（锚点总数 ${allAnchors.length} · 已登记进度 ${registered}）`,
+        `  欠账 ${debts.length} 条（锚点总数 ${pd.anchors_total} · 已登记进度 ${registered}）`,
       ];
       if (debts.length === 0) {
         lines.push('', '  （无欠账：所有已登记进度的锚点都是 done）');
