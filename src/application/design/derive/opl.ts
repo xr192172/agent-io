@@ -16,7 +16,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { getDSL, saveDSL, getStorageRoot } from '../../../infrastructure/storage.js';
-import { readCanvas, writeCanvas } from '../../../infrastructure/canvas_store.js';
 // ★★ 2026-10-22（A1）：OPL 流水线是**派生写端**（serve.ts 的 /api/opl 直接 import 本模块）。
 import { runDslWriteScope } from '../../../infrastructure/dsl_write_scope.js';
 import { placeProposals, deriveMindMap } from '../../meta/view/derive_mind_map.js';
@@ -100,18 +99,16 @@ function writeState(s: OplState, feature: string): OplState {
   return s;
 }
 
-// ── 阶段 2 ADD：人加待改进 → 写入设计 DSL user_nodes（挂 root=新功能构想）──
+// ── 阶段 2 ADD：加一条待改进（★ 状态自己落 `.agent-io/opl/`，不依赖任何画布）──
 export function oplAdd(feature: string, idea: string): OplState {
   const dsl = getDSL(feature);
   if (!dsl) throw new Error(`feature "${feature}" 不存在`);
   const now = new Date().toISOString();
   const id = `op_${randomUUID().slice(0, 8)}`;
-  // ★★★ 2026-10-23（和前端切割）：`user_nodes` 已搬出设计 DSL ⇒ 走画布层（`canvas_store`），
-  //   不再 `saveDSL`（那会把整册含画布一起写，且写闸会拒）。
-  const canvas = readCanvas(feature);
-  canvas.user_nodes = canvas.user_nodes ?? [];
-  canvas.user_nodes.push({ id, parent_id: 'root', text: idea.trim().slice(0, 300), created: now });
-  writeCanvas(feature, { user_nodes: canvas.user_nodes }, 'opl');
+  // ★★★ 2026-10-23（和前端切割·第二步）：原先这里会把构想挂成 `user_nodes`（思维导图上"用户新分支"）。
+  //   批注层整个退场后**没有那个挂点了** —— 但这条待改进本身不依赖它：
+  //   状态就落在 `.agent-io/opl/<feature>/<id>.json`（下面 writeState）。挂图那一步删除，不是换地方存。
+  void id;
   const s: OplState = {
     id,
     idea: idea.trim(),

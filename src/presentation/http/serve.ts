@@ -1298,117 +1298,17 @@ async function handleApiOverview(
  *  （llm/系统注解保留不动）。
  *  ★★★ 2026-10-23：落点从 `DSL.annotations` 改为 `canvas_store`（`.agent-io/canvas/<f>.json`）——
  *  画布与设计 DSL 已切割（用户裁定：「我们本身是要和那个做切割的呀」）。行为（形状/过滤/截断）不变。 */
-async function handleApiAnnotations(
-  req: http.IncomingMessage,
-  res: http.ServerResponse,
-  method: string,
-): Promise<void> {
-  try {
-    let feature = '';
-    if (method === 'GET') {
-      const url = new URL(req.url || '/', 'http://localhost');
-      feature = (url.searchParams.get('feature') || '').trim();
-      if (!feature) {
-        sendError(res, 400, '缺少 feature 参数');
-        return;
-      }
-      if (!getDSL(feature)) {
-        sendError(res, 404, `feature "${feature}" 不存在`);
-        return;
-      }
-      sendJson(res, 200, { success: true, annotations: readCanvas(feature).annotations });
-      return;
-    }
-    // POST：全量替换 human 注解（★ 2026-10-23：写 `canvas_store`，**不写设计 DSL**）
-    const body = await readBody(req);
-    const params = JSON.parse(body.toString('utf-8') || '{}');
-    feature = String(params.feature || '').trim();
-    if (!feature) {
-      sendError(res, 400, '缺少 feature 参数');
-      return;
-    }
-    if (!getDSL(feature)) {
-      sendError(res, 404, `feature "${feature}" 不存在`);
-      return;
-    }
-    const notes = Array.isArray(params.notes) ? params.notes : [];
-    const now = new Date().toISOString();
-    const humanized = notes
-      .filter((n: { target_id?: unknown; text?: unknown }) => n && typeof n.text === 'string' && typeof n.target_id === 'string' && n.text.trim())
-      .map((n: { id?: unknown; target_id: string; text: string; pos?: unknown }) => ({
-        id: typeof n.id === 'string' && n.id ? n.id : `note_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-        target_id: n.target_id,
-        text: n.text.trim().slice(0, 500),
-        type: 'comment' as const,
-        author: 'human',
-        created: now,
-        pos:
-          n.pos && typeof (n.pos as { x?: unknown }).x === 'number' && typeof (n.pos as { y?: unknown }).y === 'number'
-            ? { x: (n.pos as { x: number }).x, y: (n.pos as { y: number }).y }
-            : undefined,
-      }));
-    const prev = readCanvas(feature).annotations;
-    writeCanvas(feature, { annotations: [...prev.filter((a) => a.author !== 'human'), ...humanized] }, 'annotations');
-    sendJson(res, 200, { success: true, count: humanized.length });
-  } catch (e) {
-    sendError(res, 500, (e as Error).message);
-  }
-}
+// ★★★ 2026-10-23（和前端切割·第二步）：画布端点（annotations / user_nodes / canvas-notes）**已删除**。
+//   用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」。
+//   ⇒ 这些是【人往回写】的入口，人不直接插手了，它们就没有存在的理由（不是改成只读，是退场）。
 
 /** GET/POST /api/user_nodes：思维导图上用户手写的节点（人机共笔的结构性扩展）
  *  GET ?feature=X —— 返回该 feature 全部 user_nodes
  *  POST {feature, nodes:[{id,parent_id,parent_label,text}]} —— 全量替换。
  *  ★★★ 2026-10-23：落点从 `DSL.user_nodes` 改为 `canvas_store`（`.agent-io/canvas/<f>.json`）。 */
-async function handleApiUserNodes(
-  req: http.IncomingMessage,
-  res: http.ServerResponse,
-  method: string,
-): Promise<void> {
-  try {
-    let feature = '';
-    if (method === 'GET') {
-      const url = new URL(req.url || '/', 'http://localhost');
-      feature = (url.searchParams.get('feature') || '').trim();
-      if (!feature) {
-        sendError(res, 400, '缺少 feature 参数');
-        return;
-      }
-      if (!getDSL(feature)) {
-        sendError(res, 404, `feature "${feature}" 不存在`);
-        return;
-      }
-      sendJson(res, 200, { success: true, user_nodes: readCanvas(feature).user_nodes });
-      return;
-    }
-    // POST：全量替换（★ 2026-10-23：写 `canvas_store`，**不写设计 DSL**）
-    const body = await readBody(req);
-    const params = JSON.parse(body.toString('utf-8') || '{}');
-    feature = String(params.feature || '').trim();
-    if (!feature) {
-      sendError(res, 400, '缺少 feature 参数');
-      return;
-    }
-    if (!getDSL(feature)) {
-      sendError(res, 404, `feature "${feature}" 不存在`);
-      return;
-    }
-    const nodes = Array.isArray(params.nodes) ? params.nodes : [];
-    const now = new Date().toISOString();
-    const cleaned = nodes
-      .filter((n: { parent_id?: unknown; text?: unknown }) => n && typeof n.text === 'string' && typeof n.parent_id === 'string' && n.text.trim())
-      .map((n: { id?: unknown; parent_id: string; parent_label?: unknown; text: string }) => ({
-        id: typeof n.id === 'string' && n.id ? n.id : `u_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-        parent_id: n.parent_id,
-        parent_label: typeof n.parent_label === 'string' ? n.parent_label.slice(0, 200) : undefined,
-        text: n.text.trim().slice(0, 300),
-        created: now,
-      }));
-    writeCanvas(feature, { user_nodes: cleaned }, 'user_nodes');
-    sendJson(res, 200, { success: true, count: cleaned.length });
-  } catch (e) {
-    sendError(res, 500, (e as Error).message);
-  }
-}
+// ★★★ 2026-10-23（和前端切割·第二步）：画布端点（annotations / user_nodes / canvas-notes）**已删除**。
+//   用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」。
+//   ⇒ 这些是【人往回写】的入口，人不直接插手了，它们就没有存在的理由（不是改成只读，是退场）。
 
 /** POST /api/opl：待改进闭环流水线（人加待改进→下探→设计DSL→改真实文件→真DSL比较→接入导图）
  *  op: add | locate | declare | implement | check | integrate | list | get */
@@ -1542,119 +1442,24 @@ function handleApiFeatureDsl(req: http.IncomingMessage, res: http.ServerResponse
 
 /** GET /api/canvas-notes?feature=<name>：返回某 feature 的批注层数据
  *  ★ 2026-10-23：读 `canvas_store`（`.agent-io/canvas/<f>.json`），缺失返回空数组。 */
-function handleApiCanvasNotesGet(req: http.IncomingMessage, res: http.ServerResponse): void {
-  try {
-    const url = new URL(req.url!, 'http://localhost');
-    const feature = url.searchParams.get('feature') || '';
-    if (!feature) {
-      sendError(res, 400, '缺少 feature');
-      return;
-    }
-    if (!getDSL(feature)) {
-      sendError(res, 404, `feature "${feature}" 不存在`);
-      return;
-    }
-    sendJson(res, 200, { feature, canvas_notes: readCanvas(feature).canvas_notes });
-  } catch (e) {
-    sendError(res, 500, (e as Error).message);
-  }
-}
+// ★★★ 2026-10-23（和前端切割·第二步）：画布端点（annotations / user_nodes / canvas-notes）**已删除**。
+//   用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」。
+//   ⇒ 这些是【人往回写】的入口，人不直接插手了，它们就没有存在的理由（不是改成只读，是退场）。
 
 /** POST /api/canvas-notes：写回某 feature 的批注层数据（只动 canvas_notes 字段，不动语义模型） */
-async function handleApiCanvasNotesSave(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  try {
-    const body = await readBody(req);
-    const params = JSON.parse(body.toString('utf-8'));
-    const feature = params.feature || '';
-    if (!feature) {
-      sendError(res, 400, '缺少 feature');
-      return;
-    }
-    if (!getDSL(feature)) {
-      sendError(res, 404, `feature "${feature}" 不存在`);
-      return;
-    }
-    const notes: CanvasNote[] = Array.isArray(params.canvas_notes) ? (params.canvas_notes as CanvasNote[]) : [];
-    // ★ 2026-10-23：写 `canvas_store`（`.agent-io/canvas/<f>.json`），**不再碰设计 DSL**。
-    //   “只动 canvas_notes”这个意图现在由**存储位置**保证（这本来就是它该在的地方）；
-    //   所以 `assertDslWriteAllowed` 里那条 "只动三格就放行" 的洞才能删掉。
-    writeCanvas(feature, { canvas_notes: notes }, 'frontend');
-    sendJson(res, 200, {
-      success: true,
-      feature,
-      count: notes.length,
-      saved_at: new Date().toISOString(),
-    });
-  } catch (e) {
-    sendError(res, 500, (e as Error).message);
-  }
-}
+// ★★★ 2026-10-23（和前端切割·第二步）：画布端点（annotations / user_nodes / canvas-notes）**已删除**。
+//   用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」。
+//   ⇒ 这些是【人往回写】的入口，人不直接插手了，它们就没有存在的理由（不是改成只读，是退场）。
 
 /** GET /api/canvas-notes/digest?feature=<name>：批注语义文档（Markdown 工单 + JSON），外部 agent 消费 */
-function handleApiCanvasNotesDigest(req: http.IncomingMessage, res: http.ServerResponse): void {
-  try {
-    const url = new URL(req.url!, 'http://localhost');
-    const feature = url.searchParams.get('feature') || '';
-    if (!feature) {
-      sendError(res, 400, '缺少 feature');
-      return;
-    }
-    const resolved = resolveCanvasNoteTargets(feature);
-    const digest = renderCanvasNotesDigest(feature, resolved);
-    sendJson(res, 200, {
-      feature: digest.feature,
-      generated_at: digest.generated_at,
-      total: digest.total,
-      open: digest.open,
-      done: digest.done,
-      rejected: digest.rejected,
-      markdown: digest.markdown,
-      notes: JSON.parse(digest.json).items,
-    });
-  } catch (e) {
-    sendError(res, 500, (e as Error).message);
-  }
-}
+// ★★★ 2026-10-23（和前端切割·第二步）：画布端点（annotations / user_nodes / canvas-notes）**已删除**。
+//   用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」。
+//   ⇒ 这些是【人往回写】的入口，人不直接插手了，它们就没有存在的理由（不是改成只读，是退场）。
 
 /** POST /api/canvas-notes/status：批量更新批注状态（body: { feature, updates:[{id,status}] }） */
-async function handleApiCanvasNotesStatus(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  try {
-    const body = await readBody(req);
-    const params = JSON.parse(body.toString('utf-8'));
-    const feature = params.feature || '';
-    const updates = Array.isArray(params.updates) ? params.updates : [];
-    if (!feature) {
-      sendError(res, 400, '缺少 feature');
-      return;
-    }
-    const valid = updates.filter(
-      (u: unknown): u is { id: string; status: 'open' | 'done' | 'rejected' } =>
-        !!u && typeof (u as { id?: unknown }).id === 'string' &&
-        ['open', 'done', 'rejected'].includes((u as { status?: unknown }).status as string),
-    );
-    if (valid.length === 0) {
-      sendError(res, 400, 'updates 需为 [{id,status}]，status ∈ open|done|rejected');
-      return;
-    }
-    if (!getDSL(feature)) {
-      sendError(res, 404, `feature "${feature}" 不存在`);
-      return;
-    }
-    const before = readCanvas(feature).canvas_notes;
-    // ★ 2026-10-23：`markCanvasNotesStatus` 现在接**纯数组**（不再接整份 DSL）——
-    //   它的本职就是"给一批批注改状态"，和设计 DSL 一点关系都没有（这是本次切割顺带拧直的一处）。
-    writeCanvas(feature, { canvas_notes: markCanvasNotesStatus(before, valid) }, 'status');
-    sendJson(res, 200, {
-      success: true,
-      feature,
-      updated: valid.length,
-      notes: before.length,
-      saved_at: new Date().toISOString(),
-    });
-  } catch (e) {
-    sendError(res, 500, (e as Error).message);
-  }
-}
+// ★★★ 2026-10-23（和前端切割·第二步）：画布端点（annotations / user_nodes / canvas-notes）**已删除**。
+//   用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」。
+//   ⇒ 这些是【人往回写】的入口，人不直接插手了，它们就没有存在的理由（不是改成只读，是退场）。
 
 //   本仓既有先例正是 `code_workbench` 的 `/api/code/approve|reject`（LLM 起草 → **人**批准），
 //   而 observe 的提案三态（propose / approve / reject）与它一一对应。
@@ -2976,9 +2781,7 @@ const ROUTES: readonly HttpRoute[] = [
   // L3013
   { path: '/api/overview', methods: ['GET', 'POST'], handler: (req, res, ctx) => handleApiOverview(req, res, ctx.method) },
   // L3018
-  { path: '/api/user_nodes', methods: ['GET', 'POST'], handler: (req, res, ctx) => handleApiUserNodes(req, res, ctx.method) },
   // L3022
-  { path: '/api/annotations', methods: ['GET', 'POST'], handler: (req, res, ctx) => handleApiAnnotations(req, res, ctx.method) },
   // L3026
   { path: '/api/opl', methods: ['POST'], handler: handleApiOpl },
   // L3031

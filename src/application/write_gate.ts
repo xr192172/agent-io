@@ -840,38 +840,10 @@ function recordUnaddressableWarnings(
       `★ 怎么消掉这条：给该节点补 \`path\`（仓库相对路径，推荐）或 \`description\`（老写法，仅 file/doc 节点）：\n` +
       `  edit_dsl { feature:'${u.feature}', reason:'补文件指针', operations:[{ type:'node', op:'update', id:'${u.nodeId}', data:{ path:'<仓库相对路径>' } }] }\n` +
       `  或若它确实不指文件（聚合/概念节点）⇒ 把 type 改成非 file/doc。`;
-    let where: string;
-    try {
-      const dsl = getDSL(u.feature);
-      if (!dsl) {
-        where = `★ 留痕失败：feature "${u.feature}" 读不到（没有落点）`;
-      } else {
-        // ★★★ 2026-10-23（和前端切割）：留痕属于画布层 ⇒ 读写都走 canvas_store，不再碰设计 DSL。
-        const anns: Annotation[] = readCanvas(u.feature).annotations;
-        const exist = anns.find((a) => a.id === id);
-        if (exist) {
-          where = exist.resolved
-            ? `同日留痕已存在且**已被 resolve**（id=${id}）⇒ 不重开`
-            : `同日留痕已在（id=${id}，unresolved）⇒ 不重复写`;
-        } else {
-          anns.push({
-            id,
-            node_id: u.nodeId,
-            text,
-            type: 'issue',
-            severity: 'warning',
-            author: 'write_gate',
-            created: now,
-            timestamp: now,
-            resolved: false,
-          });
-          writeCanvas(u.feature, { annotations: anns }, 'write_gate');
-          where = `留痕已写入 feature "${u.feature}" 的 annotations（id=${id}，severity=warning，unresolved）`;
-        }
-      }
-    } catch (e) {
-      where = `★ 留痕失败：${(e as Error).message}`;
-    }
+    // ★★★ 2026-10-23（和前端切割·第二步）：**不再落盘留痕**。
+    //   用户裁定「前端只是一个显示屏…给前端用的这些都不需要」⇒ 批注层整个退场。
+    //   这些提示仍然有用，但它们是**给 Agent 的回执**，不是要人来看的画布数据 ⇒ 只进回执。
+    const where = `★ 这条要在本轮回执里看到（不再写进任何画布文件）。`;
     out.push(
       `· 节点 ${u.nodeId}（feature=${u.feature}，type=${u.type ?? '?'}）**既无 path 也无 description**；${where}\n` +
         `  ★ 读它：query_feature { query:'annotations', feature:'${u.feature}', unresolved_only:true }`,

@@ -2192,14 +2192,9 @@ async function deriveMindMapCore(input: DeriveMindMapInput): Promise<DeriveMindM
 
   // AI 设计标注索引（node_id → 标注文本）：DSL 里挂的借鉴/决策标注，
   // 作为文件描述的"增量"段拼进导图——每个模块不只说"是什么"，还说"要变什么"
+  // ★★★ 2026-10-23（和前端切割·第二步）：**批注层整个退场** ⇒ 不再有「AI 标注」来源。
+  //   保留空 Map 是因为下游 fileDesc 的增量段仍在读它（现在是空 ⇒ 增量段自然为空，不报错）。
   const aiNotesByNode = new Map<string, string>();
-  // ★ 2026-10-23：AI/系统标注也住在画布层（annotations 整体搬走，不挑 author 拆两处）。
-  const canvasDoc = readCanvas(feature);
-  for (const a of canvasDoc.annotations) {
-    if (!a.node_id || a.resolved) continue;
-    if (aiNotesByNode.has(a.node_id)) continue; // 每节点取第一条，避免描述爆炸
-    aiNotesByNode.set(a.node_id, a.text);
-  }
 
   /** 规则合成文件描述：API 摘要（干瘪统计 → 具体函数名）+ AI 增量段（→ 借鉴：…） */
   const fileDesc = (f: { id: string; path?: string; responsibility?: string; expected_apis?: Array<{ signature: string }> }): string => {

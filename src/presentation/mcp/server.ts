@@ -93,33 +93,8 @@ registerAllTools(server);
 //   （注册表里的真名是 `canvas_notes`）。★ 这类"**指路到不存在的工具**"最坑：
 //   读到它的人会去调一个没有的工具，而报错来自"工具不存在"，**看不出是注释写错了**。
 // ─────────────────────────────────────────────────────────────
-server.resource(
-  'canvas-notes',
-  new ResourceTemplate('agent-io://{feature}/notes', {
-    list: async () => {
-      const resources = listFeatures()
-        .filter((d) => readCanvas(d.feature).canvas_notes.length > 0)
-        .map((d) => ({
-          uri: `agent-io://${d.feature}/notes`,
-          name: `批注工单 · ${d.feature}`,
-          mimeType: 'text/markdown',
-          description: `${d.feature} 的画布批注语义工单（${readCanvas(d.feature).canvas_notes.length} 条图元）`,
-        }));
-      return { resources };
-    },
-  }),
-  async (_uri, variables) => {
-    const feature = String(variables.feature ?? '').replace(/[^a-zA-Z0-9_-]/g, '');
-    if (!feature) {
-      return { contents: [{ uri: 'agent-io:///notes', mimeType: 'text/markdown', text: '缺少 feature 参数。' }] };
-    }
-    const resolved = resolveCanvasNoteTargets(feature);
-    const digest = renderCanvasNotesDigest(feature, resolved);
-    return {
-      contents: [{ uri: `agent-io://${feature}/notes`, mimeType: 'text/markdown', text: digest.markdown }],
-    };
-  },
-);
+// ★★★ 2026-10-23（和前端切割·第二步）：`agent-io://{feature}/notes` 这个 MCP 资源**已删除**。
+//   它读的是画布批注（canvas_notes）—— 用户裁定前端只是显示屏、人不直接插手，批注层整个退场。
 
 // Resource：项目文档清单（订阅式返回给外部 agent；正文按需用 read_project_docs 工具显式读）
 // 与 read_project_docs 工具互为双通道，风格对齐 notes Resource。

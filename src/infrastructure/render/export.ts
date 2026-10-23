@@ -280,18 +280,8 @@ export function exportMarkdown(input: ExportMarkdownInput): ExportMarkdownResult
     lines.push('');
   }
 
-  // 标注（★ 2026-10-23：画布已搬出 DSL ⇒ 从 canvas_store 读；仍叫「人审标注」是因为它的 author 是人）
-  const canvasAnns = readCanvas(input.feature).annotations;
-  if (canvasAnns.length > 0) {
-    lines.push('## 人审标注');
-    lines.push('');
-    for (const a of canvasAnns) {
-      const status = a.resolved ? '✅ 已解决' : '⏳ 待处理';
-      lines.push(`### [${status}] ${a.node_id ?? a.target_id ?? '全局'} — ${a.type ?? 'comment'}`);
-      lines.push(a.text);
-      lines.push('');
-    }
-  }
+  // ★★★ 2026-10-23（和前端切割·第二步）：**批注层整个退场** —— 用户裁定前端只是显示屏、人不直接插手，
+  //   于是「人审标注」这个导出段没有意义了（它的内容只可能来自人）。整段删除，不是改成从别处读。
 
   const md = lines.join('\n');
   const file = path.resolve(input.output_path ?? `output/${input.feature}.md`);
