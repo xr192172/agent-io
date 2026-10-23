@@ -1943,8 +1943,21 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   //   ⇒ 它只凭 `evidence`（`attestation`：谁、何时、为什么算完成）——那正是"人负责"的形态。
   const isTodo = (dsl.todos ?? []).some((t) => t.id === node_id);
   if (isTodo) {
-    if (card.state !== 'claimed') {
-      throw new Error(`complete 被拒：todo 的 state=${card.state}，只有 claimed 才能收口（先 claim）。`);
+    // ★★★ 2026-10-23（僵尸格）：**candidate + 一出生就满足** 的 todo 卡曾死锁 ——
+    //   complete 要求 claimed，而 claim 又说 satisfied 只可收口（要用 intent:modify 才绕得过去）。
+    //   ★ 状态机层【早就】备了这条路（`t_done_from_candidate`，2026-10-20 OQ1 的「不领也能收口」），
+    //   只是本文件的代码没跟 ⇒ 这里放开：todo 卡可以从 candidate 直接收口（★ 仍要求 agent 署名）。
+    if (card.state !== 'claimed' && card.state !== 'candidate') {
+      throw new Error(
+        `complete 被拒：todo 的 state=${card.state}，只有 claimed / candidate 才能收口。` +
+          `（preparing ⇒ 先 start；done ⇒ 已完成；void ⇒ 先 relaunch）`,
+      );
+    }
+    if (card.state === 'candidate' && !input.agent) {
+      throw new Error(
+        'complete 被拒：从 candidate 直接收口必须给 `agent`（谁干的）—— ' +
+          '这张卡没被领过，署名只能来自这次调用；★ 不替你编一个署名。',
+      );
     }
     assertTransition(card.state, 'done', 'complete');
     closeNote = 'todo 完成（无判据）—— ★ 只凭 attestation 证据：谁、何时、为什么算完成';

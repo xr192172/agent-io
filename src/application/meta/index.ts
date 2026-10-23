@@ -308,7 +308,7 @@ export const META_TOOLS: ToolDef[] = [
     },
     handler: wrapData(async (a) => {
       const action = (a.action as 'list' | 'show' | 'approve' | 'reject' | undefined) ?? 'list';
-      // ★ 定位：project_dir 优先，否则由 feature 的 source_root 推（与 `review_changes` / `design_intent` 同口径）
+      // ★ 定位：project_dir 优先，否则由 feature 的 source_root 推（与 `design_intent` 同口径）
       let projectRoot = typeof a.project_dir === 'string' && a.project_dir.trim() ? a.project_dir.trim() : '';
       if (!projectRoot) {
         const feature = typeof a.feature === 'string' && a.feature.trim() ? a.feature.trim() : '';

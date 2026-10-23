@@ -105451,11 +105451,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-23T04:25:31.514Z",
+    "saved_at": "2026-10-23T05:41:14.581Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 146008703,
+    "age": 150551770,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -110010,8 +110010,22 @@
     {
       "id": "todo_pr-式退役-剩余两个消费者-2026-10-22-已删-review-chan",
       "summary": "【PR 式退役 · 剩余两个消费者（2026-10-22 已删 review_changes 与 set_design_intent 的 propose 分支）】\n\n已删：\n· src/application/meta/index.ts 的 review_changes（144 行工具定义 + import）\n· src/application/design/index.ts 的 propose 分支（44 行）+ 类型收窄 + import\n⇒ 7 门 PASS\n\n剩余 2 个消费者（★ 不许「保留入口但换实现」，那是换皮）：\n\n① src/application/meta/llm/llm_decider.ts:27\n   import proposeChange —— 它整个是「LLM 决策 → 产 PR → 等人/下一 agent 批」\n   ⇒ 正确形态：LLM 决策应产出【卡】（publish），不是 PR\n   ⇒ 判据：decideCanvasNotes 的产出里不许有 status=pending/approved；只有「立卡」或「不改」\n\n② src/presentation/http/serve.ts:60\n   import proposeChange / listChanges / approveChange / rejectChange —— HTTP 面的 /api/code/* 路由\n   ⇒ 那是「人的代码审批页面」那套（review_changes 文档原文：PR 不挂在人的审批页面上）\n   ⇒ 判据：删路由后 /api/code/* 返回 404（不是返回 410 —— 那还是活着）\n\n★ 两者删完后 code_workbench.ts（852 行）才能删\n★ 最终反证：grep -rn 'approveChange|proposeChange' src/ = 0，且「完成」只剩 cardStanding 一个裁判",
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": null,
+      "evidence": [
+        {
+          "kind": "attestation",
+          "at": "2026-10-23T05:41:14.539Z",
+          "by": "llm",
+          "agent": "agent:main",
+          "verdict": "pass",
+          "fingerprint": {
+            "what": "attestation:llm",
+            "input": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          },
+          "why": "grep 实测 review_changes 只剩 2 处注释提及（工具定义 144 行已删）、propose 分支 0 命中；这 2 处注释本轮也一并改成不指向已删工具"
+        }
+      ]
     },
     {
       "id": "todo_用户-2026-10-22-提出-内置-laya-0-4b-决策器-作为任务系统",

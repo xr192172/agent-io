@@ -53,6 +53,10 @@ import { assertSourceWriteRegistered, reopenAndResolveAfterWrite, reopenNote, re
 // ★★ 2026-10-22：落盘改走**唯一写原语**（`openSourceWrite` 事务：整批判一次闸 + 一份写前快照 + 逐文件 commit）。
 //   ★ 本工具**不调 `close()`**：它的索引写穿走自己的 `syncFile`（要 `symbol_diff` 读数）+ `reopenAndResolveAfterWrite`；
 //     `close()` 里的『登记自写 + 写穿 + 基线刷新』是给没有 async 索引通道的同步写路的替代品。
+// ★★★ 2026-10-23（澄清一处误判）：有人说「self-writes.json 自 10-13 起就是空的 ⇒ recordSelfWrite 没接到 edit_code」。
+//   **那不是缺陷，是设计**：① 本文件逐分支 `txn.commit()` 落盘后立刻 `await syncFile(...)`（:587/652/712/758/916/1076），
+//   索引当场就新了 ⇒ 不需要「待消费登记」；② `pendingSelfWrites` 自带 TTL（`now - at >= SELF_WRITE_TTL_MS ⇒ skip`）
+//   ⇒ 旧记录自动过期，不会产生假信号。⇒ 别为了「让它看起来接上了」去调 close()（那会多建一次索引）。
 import { openSourceWrite, type SourceWriteTxn } from '../../source_writer.js';
 // ★★★ 2026-10-21（并发控制·读集比对）：回执里的**假设检定**（与 `task_gate` 两件事）。
 //   ★ 判定在写闸（`write_gate` 是唯一判据处），这里只**带出**读数 + 写后刷新写者自己的基线。
