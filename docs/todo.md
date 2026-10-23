@@ -2,6 +2,52 @@
 
 > 只有未做的。做完的删掉；标题只剩半句的，正文在 git。
 
+---
+
+## 〇、2026-10-23 交接（新会话从这里读起）
+
+**今天做完的三条线**（提交 `d775381c` … `7ab953f0`）：
+
+| 线 | 结果 |
+|---|---|
+| **① 卡模型** | `intent:modify` 可领 satisfied 卡；`candidate` 可直接收口（`t_done_from_candidate` 早就有，代码没接） |
+| **② 前端切割** | 批注层整体退场（622 行 5 文件）+ archify 自包含 HTML 管线（1151 行 + 2.4MB） |
+| **③ 写路接线** | `self-writes` 澄清为设计使然（不是缺陷）；`edit_code` 真因是"开了事务没 close" |
+
+**新加的两个读数工具**（`design_line` 的 action）：
+
+| action | 给什么 |
+|---|---|
+| `brief` | **一个节点/文件**：设计要什么 + 缺哪个符号 + 设计 DB 投影 + 改它波及多少文件 |
+| `report` | 六步读数（①②③④⑤⑥ 各自 ok/missing/pending + 带数字的读数） |
+
+**任务历史已独立成库**：`.agent-io/task-history.db`（**不是** `cache.db` —— 那个可重建）
+`edit_dsl todo.move_to_history` 移入；`get_dsl query=history` 查。
+
+### 下一步（按依赖顺序）
+
+1. **剩余 93 张 done 卡**：`todo_把剩余-92-张-done-卡也移入-task-history-db-先解-28` —— 先解 28 张卡对它们的 `follows` 引用（否则 `buildTodoChains` 读成悬挂）
+2. **`brief` 挂到 `edit_code` 前面**：只挂**符号差**（毫秒级），**别挂影响面** —— 实测逐卡算影响面 = O(卡数 × 全仓图)，84 张跑 4 分 56 秒没完
+3. **`analyzeImpact` 全量重算**：`buildImpactGraph` 每次 `Promise.all(files.map(parseFileFull))` —— **重新解析全仓**，而 `cache.db` 里早有 symbols/calls/imports ⇒ 同一判据住两处
+4. **`constructBasis` 的 L1 建卡该关掉**：它把"67 个目录的 responsibility 是机器串"翻译成了 67 张卡（已置 void 并移入 history）；缺口应该只在 `design_line report` 里当一个读数
+5. **`brief` 报"缺"的 4 个待修**：`handlers.ts`(`manageFeatureHandler`) / `derive_mind_map.ts`(批注层 6 个) / `write_gate.ts`(`writeSourceFiles` 等 3 个) / `server.ts`(`resolved`,`digest`) —— 都是**设计册写了个已不存在的符号**
+
+### 关键文件在哪
+
+```
+设计册（人机共写）      .agent-io/design/task-system-plan.dsl.json
+设计 DB 投影            design-db/<rel>.calls.json       （gen-design-db 生成，别手改）
+实际索引（可重建）      .agent-io/cache.db
+任务历史（不可重建）    .agent-io/task-history.db        ← 今天新建
+设计线读数/简报         src/application/design/line/design_line.ts（briefReport / mustHaveFor）
+卡状态机               src/domain/task_machine.ts（TRANSITIONS / isClaimable / cardStanding）
+卡的 op                src/application/design/dsl_ops/task_ops.ts
+```
+
+★ **纪律提醒**：`brief` 里的 `expectations` 是**设计要求原文**，**不是**"未满足"（这个函数不判满没满）；验收归 `edit_dsl` 收口闸。
+
+---
+
 ## 一、任务系统
 
 | 编号 | 待办 | 在哪 | 状态 |
