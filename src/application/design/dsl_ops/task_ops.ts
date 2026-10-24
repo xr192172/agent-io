@@ -1252,17 +1252,17 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     );
   }
   const owner = ownerAdm.actor;
-  // ★★★ 2026-10-20（A7 闭环 · c）：**actor 与 owner 必须一致**。
+  // ★★★ 2026-10-20（**写闸授权检查**（内部编号 `A7`）闭环 · c）：**actor 与 owner 必须一致**。
   //
   // ## 补的是什么洞
-  // A7 在写侧摊：“卡 owner ≠ 本次 actor ⇒ 拒”。但**领卡侧根本没看 actor** ——
+  // 写闸授权检查在写侧摊：“卡 owner ≠ 本次 actor ⇒ 拒”。但**领卡侧根本没看 actor** ——
   // 顶层 `agent` 只拿去署名（decision.agent / released_by / evidence.agent），
   // owner 只从 `data.owner` 来 ⇒ ⇒ **两个人可以用同一个 actor 各自领卡、或帮别人领一卡**，
   // 写闸那条判据就变成一个“自己跟自己比”的空转。
   // ⇒ 领卡这一步就对：**你只能说“我是谁”**，不能说“这张卡是他的”。
   //
   // ## 为什么只在“两个都给了且不一致”时拒
-  // · 只给 owner、没给 agent（老调用方）：行为**不变**（自报体系下“不报”仍是合法用法，只是 A7 在写侧
+  // · 只给 owner、没给 agent（老调用方）：行为**不变**（自报体系下“不报”仍是合法用法，只是写闸授权检查在写侧
   //   就只能“提醒 + 放行”）—— ★ 一刀切会把现有工作流全卡死。
   // · 只给 agent、不给 owner：**不派生**（`data.owner` 仍是必填，见 `op_data_spec` 的
   //   `required.claim`）；派生的代价是改那份契约，收益只是少写一个键。
@@ -1684,7 +1684,7 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
  *
  * ## 三条必须拒的
  * 1. `state !== 'claimed'` ⇒ 没在办，无从续
- * 2. **不是你的卡** ⇒ 别人不能替你续命（`sameActor` 折算，与 A7 同一套）
+ * 2. **不是你的卡** ⇒ 别人不能替你续命（`sameActor` 折算，与写闸授权检查同一套）
  * 3. **租约已经过期** ⇒ **不许自己续活** —— 那是熔断的反面（过期后唯一的出路是 `claim` 接管，
  *    接管会记 `taken_over_from`，留痕）。
  *

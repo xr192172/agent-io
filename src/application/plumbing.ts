@@ -18,12 +18,12 @@ export function textOut(text: string, isError = false) {
 }
 
 /**
- * 合成 [B] 产物的**机器可读载荷**（含 `touched` 小票）。
+ * 合成**受控操作契约**（tool input contract，内部标记 `[B]`）产物的**机器可读载荷**（含 `touched` 小票）。
  *
  * ★★ 为什么两个包装器都必须走这里（2026-10-05，**实测的真缺陷**，不是风格问题）：
- *   `Touched`（"本次动了什么"）是**跨 [B] 的统一契约**（`domain/b_terms.ts`），但它挂在 [B] 产物的**顶层**；
+ *   `Touched`（"本次动了什么"）是**跨受控操作契约的统一契约**（`domain/b_terms.ts`），但它挂在受控操作契约产物的**顶层**；
  *   而 `wrap` 只回 `message`、`wrapData` 只序列化 `r.data` ⇒ 产物顶层的 `touched` 会在 **[C] 层静默丢掉**。
- *   **实测**：`detect_drift` / `edit_dsl` 用裸 `wrap` ⇒ 子代理刚给它们的 [B] 接上的 `touched`
+ *   **实测**：`detect_drift` / `edit_dsl` 用裸 `wrap` ⇒ 子代理刚给它们的受控操作契约接上的 `touched`
  *   **压根没出现在输出里**（同一批里用 `wrapData` + `data: r` 的工具则正常）。
  *   ⇒ 处置：**在两个出口处统一合成**（结构保证）——**不是**"要求每个 handler 记得 `data: r`"（那是自觉）。
  *
@@ -158,7 +158,7 @@ export function wrapData(
  *   ★ 2026-10-07：原写「G4（`tests/single_source.test.ts` 同族副本棘轮）」—— **该棘轮已不存在**
  *     （2026-10-03 有意删除：免疫系统无法自我修正、维护无休止 ⇒ 不要重建）。别再引用它当兜底。
  *   ⇒ 上提到**跨 lane 共用的基础设施**（本文件与 `types.ts` / `handlers.ts` 同层）。
- *   ★ 未收编的第三份：`src/application/meta/explore/explore_code.ts` 里有一个同名私有实现 —— 它在 `[B]` 层，
+ *   ★ 未收编的第三份：`src/application/meta/explore/explore_code.ts` 里有一个同名私有实现 —— 它在受控操作契约层，
  *     不在本笔（只改 `src/registry/**`）的边界内，**登记但不改**（见 commit message「没验什么」）。
  */
 export function requireStr(a: Record<string, unknown>, key: string): string {
@@ -211,7 +211,7 @@ export function optionalArr(a: Record<string, unknown>, key: string, hint: strin
  *
  * ## 为什么要有它（T191 —— 与 `optionalArr` 同一条命，另两个类型）
  * `explore_code` 这类"action 分发"工具的入参是 **`z.record(z.string(), z.unknown())` 一个自由袋子**
- * ⇒ ★ **zod 对它一个字都不校验**；而 [B] 里过去写的是**宽松**取值：
+ * ⇒ ★ **zod 对它一个字都不校验**；而受控操作契约里过去写的是**宽松**取值：
  *   `typeof v === 'string' ? v : undefined` ⇒ ★ **形状错 = 静默当没给**（§2.3「不报错的错」）。
  * ★ 后果不是"少报一条"：`{ max_depth: "3" }`（字符串）会被**当成没给**、于是用默认值 ——
  *   而调用方**以为自己的要求生效了**（他看到的是一份"正常"的结果）。
@@ -270,7 +270,7 @@ export function looseInputSchema(shape: Record<string, unknown>): unknown {
 // ─────────────────────────────────────────────────────────────
 
 /**
- * ★★★ 2026-10-20（A7 闭合 · 逐调用自报）：**跨工具的保留入参 `actor`**（调用方身份）。
+ * ★★★ 2026-10-20（**写闸授权检查**（内部编号 `A7`）闭合 · 逐调用自报）：**跨工具的保留入参 `actor`**（调用方身份）。
  *
  * ★ 2026-10-24：定义**从 `presentation/mcp/server_registry.ts` 搬到本文件**（唯一处）——
  *   refactor 线的 5 个写源码工具（edit_code / rename_symbols / move_symbol /

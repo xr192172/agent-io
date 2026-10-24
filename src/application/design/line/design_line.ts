@@ -488,10 +488,10 @@ export function briefFrom(dsl: unknown, target: { node_id?: string; path?: strin
   };
   const nodes = d.geometry?.nodes ?? [];
   const node = target.node_id ? nodes.find((n) => n.id === target.node_id) : undefined;
-  // ★★★ 2026-10-23（假红修正）：**文件节点的路径住在 `description`，不是 `path`**。
+  // ★★★ 2026-10-23（误报修正）：**文件节点的路径住在 `description`，不是 `path`**。
   //   实测 `get_dsl node` 的输出：{"type":"file","description":"src/domain/task_schema.ts"}（无 path 字段）。
   //   ★ 只认 `path` 会让 briefReport 拿不到文件 ⇒ fileFacts 不查 ⇒ 报「实际 0 符号（未索引）」
-  //     ⇒ **13 个明明存在的符号被全部报成"缺"** —— 一个典型的假红（比不报更坏）。
+  //     ⇒ **13 个明明存在的符号被全部报成"缺"** —— 一个典型的误报（比不报更坏）。
   const filePath =
     target.path ??
     (typeof node?.path === 'string' ? node.path : typeof (node as { description?: unknown } | undefined)?.description === 'string'
@@ -554,10 +554,10 @@ export async function briefReport(
   }
 
   // 实际侧：该文件现有符号
-  // ★★★ 2026-10-23（假红修正第二处）：**不能只用 `fileFacts.apis`** —— 它只收"可调用的顶层 API"
+  // ★★★ 2026-10-23（误报修正第二处）：**不能只用 `fileFacts.apis`** —— 它只收"可调用的顶层 API"
   //   （声明见 file_facts.ts:38 的原话），**没有 type / interface / const**。
   //   实测后果：`TaskState`（type）/ `TASK_STATES`（const）明明在文件里，却被报成"缺"
-  //   ⇒ 8 条假红（比不报更坏：Agent 会去"补"一个已经存在的符号）。
+  //   ⇒ 8 条误报（比不报更坏：Agent 会去"补"一个已经存在的符号）。
   //   ⇒ 用 cache.db 的 `nodes` 表（`kind != 'file'` 的行 = 该文件所有顶层符号）判"在不在"；
   //     `fileFacts` 仍用来补**签名**（它那份情报更细，但覆盖面窄）。
   let live: BriefSymbol[] = [];

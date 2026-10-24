@@ -14,7 +14,7 @@
  *    · 依赖边表**按设计只记 `relative` 且非 `type_only`**（`infrastructure/index/symbols.ts:388-390`）
  *      ⇒ 含包导入（Go/Python）的文件，"依赖事实"**不完整**；`import type` 的边**按设计不存在**；
  *    · 依赖边**只能取自索引**（符号能现解析，依赖不能）⇒ 源文件**比索引新**时，事实可能过期。
- *    ★ 三条都是"**没查到 ≠ 不存在**"的形态 —— 判成 fail 是假红，判成 pass 是假绿，所以**单列一类**。
+ *    ★ 三条都是"**没查到 ≠ 不存在**"的形态 —— 判成 fail 是误报，判成 pass 是假绿，所以**单列一类**。
  * 3. ★ **`unsupported` 不许混进"通过"**：那等于用"判不了"冒充"没问题"（本仓最忌的那类绿）。
  * 4. ★ **不新造解析**：符号走 `parseFileSymbols`，依赖走 `fileFacts.deps` + `getRawImportsOfFile`，
  *    全是既有入口；本文件只把它们按"五种检查项"编排一遍。
@@ -111,14 +111,14 @@ export function findExpectationConflicts(
  *
  * ★★★ 2026-10-09 **判据换过一次，这次是换掉一个错判据** —— 起因是"真跑一遍试用"：
  *   在真夹具上把 `format.ts` 改对之后，`fileFacts('src/format.ts').deps` **已经是 `['src/math.ts']`**
- *   （索引确实更新了、设计确实满足了），而旧判据仍报「**索引比源码旧 ⇒ 判不了**」⇒ **假红**。
+ *   （索引确实更新了、设计确实满足了），而旧判据仍报「**索引比源码旧 ⇒ 判不了**」⇒ **误报**。
  *   根因两条：① 旧判据比的是 **mtime**，而索引库是 **WAL** 模式 ⇒ **写的是 `cache.db-wal`/`-shm`，
  *   主库 `cache.db` 的 mtime 根本不更新**（实测：主库停在 10-08 21:58，而源文件是 10-09 10:55）；
  *   ② 即使不是 WAL，"谁的 mtime 大"也只是**代理**，而 `files.content_hash` 是**事实**。
  *   ⇒ 换成**按内容比对**：读源文件算 `contentHash`（**复用 `index/symbols.ts` 那一份，不另写 sha1**），
  *     与索引里该文件的 `content_hash` 比。**这才叫"索引是否反映此刻的代码"。**
- * ★ 为什么假红也危险：它会让**干对了的人以为没干对** —— 比假绿更难察（假绿是"不该绿却绿"，
- *   假红是"该绿却红"，而人会先把活儿重做一遍再说）。
+ * ★ 为什么误报也危险：它会让**干对了的人以为没干对** —— 比假绿更难察（假绿是"不该绿却绿"，
+ *   误报是"该绿却红"，而人会先把活儿重做一遍再说）。
  * ★ 附：提示里必须给**可执行的修复动作**（下面那句就是）—— 只说"判不了"等于把问题丢回给用户。
  */
 export function indexStaleFor(root: string, rels: readonly string[]): string | null {
@@ -205,8 +205,8 @@ async function judgeSymbolOrSignature(
   //   实测后果：`const` / `type` / `interface` / 接口字段类断言**结构上无法表达**
   //   （`parseFileSymbols` 把 `const`/`arrow const` 判成 `const`/`type`，`interface`/`type` 判成
   //   `interface`/`type`）⇒ 取不到 ⇒ 判 **fail**。
-  //   ★★ 那是**假红**：把“**我表达不了**”读成“**代码里没有**” —— 比 unsupported 更坏
-  //   （unsupported 至少诚实；假红会让人去改没坏的东西）。实测至少 4 张决策卡死于此
+  //   ★★ 那是**误报**：把“**我表达不了**”读成“**代码里没有**” —— 比 unsupported 更坏
+  //   （unsupported 至少诚实；误报会让人去改没坏的东西）。实测至少 4 张决策卡死于此
   //   （`arc_6` 的 const / `tcc_6` 的接口字段 / `tcc_9` 的 type / `tcc_3` 的类型本体）。
   //   ⇒ 现在**不按 kind 过滤**：问的是“**这个符号在不在**”，就不该替调用方挑 kind。
   const hit = syms.find((s) => s.name === e.symbol || s.qualified_name === e.symbol);
@@ -382,11 +382,11 @@ export async function judgeExpectations(
         //   索引 `nodes` / `edges` 里符号 id 是 **`<仓库相对路径>#<符号名>`**
         //   （实测：`src/format.ts#total → src/math.ts#add`），
         //   **不是** DSL 的 `file_src_format_ts#total`。
-        //   ★ 我初版按 DSL 的 file id 拼 ⇒ 查不到 ⇒ 把"已实现"判成 fail（**假红**）。
+        //   ★ 我初版按 DSL 的 file id 拼 ⇒ 查不到 ⇒ 把"已实现"判成 fail（**误报**）。
         //   ★★ 顺带修掉了 `get_dsl query=calls`（同一个拼错 id 的根因，见 T80）。
         const callerId = `${p}#${e.symbol}`;
         const mine = outgoing.filter((x) => x.caller === callerId);
-        // ★★ 守卫（防**假绿**，但不能变成假红）：只有当**整个索引里一条调用边都没有**时，
+        // ★★ 守卫（防**假绿**，但不能变成误报）：只有当**整个索引里一条调用边都没有**时，
         //   才说"判不了"（那时是"调用抽取没产出"，不是"这个符号没调用"）。
         //   ★ 初版守卫写的是"该文件一条出调用都没有 ⇒ 判不了" —— **太保守**：
         //     文件本来就不做任何项目内调用是完全正常的状态（实测夹具里 `total` 只调用 `Array.reduce`），
@@ -495,11 +495,11 @@ export async function judgeExpectations(
           //     —— 两个子句**都是死代码**：`to` 是 `.../task_schema.ts`（带 `.ts`），而 raw import 的
           //     `r.source` 是 `'./task_schema.js'`（带 `.js`；**本仓 ESM/NodeNext 约定：源码写 `.js`、
           //     真实文件是 `.ts`**）⇒ `includes('task_schema.ts')` **永不命中**
-          //     ⇒ 整段 type-only 冤案排解对本仓是死的 ⇒ 把合法的 `import type` 读成"不存在" ⇒ **假红**
+          //     ⇒ 整段 type-only 冤案排解对本仓是死的 ⇒ 把合法的 `import type` 读成"不存在" ⇒ **误报**
           //     （实测：`edge-exists discussion_log→task_schema` 判 **fail**，而正确判定是"按设计不建边 ⇒ 判不了"）。
           //   · 修法（§83.3 给的补丁）：两侧都取 **basename 并去掉扩展名** 再比 ⇒ `task_schema.ts` ↔ `task_schema.js` 命中。
           //   ★ 已知限度（如实声明）：只比 basename ⇒ 若 `to` 与某条 **type-only 导入同名不同目录**，
-          //     会误判成"判不了"（= 假 unsupported；比假红轻，但仍是错）。本分支**只在 `has===false`
+          //     会误判成"判不了"（= 假 unsupported；比误报轻，但仍是错）。本分支**只在 `has===false`
           //     且仅用于区分 fail/unsupported**，不判"存在"⇒ 最坏也只是把一条"该红"读成"判不了"。
           const baseNoExt = (s: string): string => {
             const base = normPath(s).split('/').pop() ?? '';

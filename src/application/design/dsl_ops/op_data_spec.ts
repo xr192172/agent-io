@@ -21,13 +21,13 @@ import type { AddEdgeInput } from './edge_ops.js';
  * ## 判据一处（照本仓头号纪律）
  * 本表是**唯一来源**，两个出口都从它派生：
  *   1. **`checkOpSpec(op)`** —— `applyOperation` 的入口校验（**CLI 面也走这里**，见 `plumbing` 的说明：
- *      "CLI 不做 zod 校验" ⇒ 所以守卫必须在 [B]，不能只放在 zod schema 里）；
+ *      "CLI 不做 zod 校验" ⇒ 所以守卫必须在**受控操作契约**（tool input contract，内部标记 `[B]`），不能只放在 zod schema 里）；
  *   2. **`renderOpSpecs()`** —— 渲染进 `edit_dsl` 的 `description`（**LLM 一定会看到的地方**）。
  * ★ **不许**再在别处写"某 type 需要某字段"的第二份清单（那正是本仓头号病根）。
  *
  * ## 范围（★ 说清不做什么，免得读端以为"全在这"）
  * · 本表管**形状**（该给哪些键、哪个键必须非空）——
- *   ★ **不管语义**（"这个 node_id 存在吗" / "这个 status 值合法吗" 仍在各自的 `[B]` 里）。
+ *   ★ **不管语义**（"这个 node_id 存在吗" / "这个 status 值合法吗" 仍在各自的受控操作契约里）。
  * · ★★ **不管"可选字段字典"**：`node.add` 的领域字段（`label`/`type`/`status`/`decision`/`shapes`…）
  *   大多**可选** ⇒ 它们的问题不是"必需"而是"**有哪些**" ⇒ ★ 那一半**本表没覆盖**，
  *   记为下一笔（见 `docs/todo.md` T170）。本表在 `note` 里给出**指路**。

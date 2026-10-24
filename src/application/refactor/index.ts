@@ -8,7 +8,7 @@
  *   ⇒ **把工具挪出本线 = 把它从本数组移到另一条线的数组，一处改动**（不再有第二处要同步）。
  * ★ 2026-09-29（本笔）：本线 21 → 20 —— 「文件内局部变量批量改名」并入 `rename_symbols`
  *   （两品是同一操作对象「标识符改名」的两个**作用域粒度**，按 `docs/tool-convergence.md` §2.0 的
- *   「按操作对象聚合」口径合一；合一方式是 [B] 内部按「作用域 × 语言」路由 + 共享一份落盘内核，
+ *   「按操作对象聚合」口径合一；合一方式是**受控操作契约**（tool input contract，内部标记 `[B]`）内部按「作用域 × 语言」路由 + 共享一份落盘内核，
  *   **不是**外面再包一个 action 分发壳）。对外工具数 69 → 68。
  *
  * 为什么能切了：依赖已先行抽到 `registry/{types,plumbing,handlers}.ts`（P1a）——
@@ -17,11 +17,11 @@
  * ★ 2026-09-29（回执通道清扫本笔）：本线 **8 个 `wrap` → `wrapData`** ——
  *   `rename_files` / `move_symbol` / `find_references` / `impact_analysis` /
  *   `remove_dead_imports` / `annotate_functions` / `refactor_pipeline` / `refactor_judge`。
- *   判据（逐处人读 [B] 的返回类型，不是按名字猜）：它们的 [C] 都已经在回 `data: r`
+ *   判据（逐处人读受控操作契约的返回类型，不是按名字猜）：它们的 [C] 都已经在回 `data: r`
  *   （或已构造 data 对象），而 `src/registry/plumbing.ts` 的 `wrap()` 只取 `r.message` ⇒
  *   **结构化产物（逐项 preview/applied、引用点/行号、影响面文件表、失效清单、逐阶段 outcome、
  *   裁决台账 …）在传输层丢失**，agent 只能正则解析散文。8 处的理由是同一条，故不逐处重写注释。
- *   ★ 两处**刻意例外**（不在本线，见 handlers.ts 的逐处说明）：`edit_dsl`（[B] 的 EditResult 只有
+ *   ★ 两处**刻意例外**（不在本线，见 handlers.ts 的逐处说明）：`edit_dsl`（受控操作契约的 EditResult 只有
  *   `{message, feature}`，压根没有 data）、`render_design` / `observe_judge`（data 与 message 逐字重复）。
  */
 import { z } from 'zod';
@@ -187,12 +187,12 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       project_dir: z.string().describe('项目根目录（索引归属；编辑后重建该文件索引）'),
       // ★★ 2026-10-11（T173）：`file` 原先写成 `z.string()`（**无条件必填**），
       //   而**同一份描述**里写着「传 `targets` 时忽略 `file`/`op` 等单文件参数」，
-      //   且 `[B]` 里**早就**是条件必填（`if (!Array.isArray(a.targets)) requireStr(a, 'file')`）
+      //   且受控操作契约里**早就**是条件必填（`if (!Array.isArray(a.targets)) requireStr(a, 'file')`）
       //   ⇒ ★ **两处两套口径**，而 zod 在最前面 ⇒ **批量路径被白要一个用不上的参数**：
       //     实测（黑盒第三轮）代理读了描述、**只给 `targets`** ⇒ 被 zod 拒
       //     `Invalid input: expected string, received undefined`（★ **一条 schema 级冷错误**，
-      //     而不是 `[B]` 的人话「缺参数 file」）。
-      //   ⇒ 改成 `.optional()`，把「何时必填」**交回 `[B]` 的 `requireStr`**（★ 判据一处；CLI 面也走得到）
+      //     而不是受控操作契约的人话「缺参数 file」）。
+      //   ⇒ 改成 `.optional()`，把「何时必填」**交回受控操作契约的 `requireStr`**（★ 判据一处；CLI 面也走得到）
       file: z.string().optional().describe('目标文件（相对 project_dir 或绝对路径）。★ **单文件路径必填**；传了非空 `targets` 时可省（那时忽略它）'),
       op: z.enum(['replace', 'insert', 'delete', 'range', 'replace_text']).optional().describe('replace=替换符号；insert=插入新符号；delete=删除符号；range=显式行区间替换；replace_text=唯一文本替换（不依赖符号索引/行号；4 级模糊级联：逐字→空白归一→缩进弹性→省略号占位，回执明示级别）。★ **单文件路径必填**；传了非空 targets 时可省（那时忽略 file/op 等单文件参数）'),
       symbol: z
@@ -297,7 +297,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         dry_run: a.dry_run === true,
         report_literals: a.report_literals === true,
         // ★★★ T356（2026-10-20）：本入口**原本一个人身份维度都没传**（`rename_symbols` 的 `actor`
-        //   形参自 A7 加起就没人给 ⇒ 那条写路的 A7 永远走"提醒 + 放行"）—— 这一笔把两个都带上。
+        //   形参自**写闸授权检查**（内部编号 `A7`）加起就没人给 ⇒ 那条写路的写闸授权检查永远走"提醒 + 放行"）—— 这一笔把两个都带上。
         actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
         authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
       });
@@ -508,9 +508,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
         renames: renames.map((x) => ({ from: String(x.from), to: String(x.to) })),
         dry_run: a.dry_run === true,
-        // ★★★ 2026-10-20（A7 闭合）：入口把逐调用 `actor` 往下传（与 `edit_code` 同一把尺）。
+        // ★★★ 2026-10-20（写闸授权检查闭合）：入口把逐调用 `actor` 往下传（与 `edit_code` 同一把尺）。
         //   ★ `actor` 是**跨工具保留键**（`server_registry#CALL_ACTOR_FIELD` 注入 schema），本工具不必再声明一次；
-        //     这里只做"把入参交给 [B]"，不在这里解释身份。
+        //     这里只做"把入参交给受控操作契约"，不在这里解释身份。
         actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
         // ★★★ T356：按 run 授权（与 actor 同一行写法 —— 只交上去，不在入口解释 scope）
         authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
@@ -587,7 +587,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       dry_run: z.boolean().optional().describe('true=只算影响面预览、不落盘（默认 false）'),
     },
     handler: wrapData(async (a) => {
-      // ★ [C] 只转发：读域表/清单（structure_gap）+ 搬（rename_files）全在 [B]
+      // ★ [C] 只转发：读域表/清单（structure_gap）+ 搬（rename_files）全在受控操作契约
       const project_dir = requireStr(a, 'project_dir');
       const r = await moveDomain({
         project_dir,
@@ -631,7 +631,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         to_file,
         to_symbol: typeof a.to_symbol === 'string' && a.to_symbol ? a.to_symbol : undefined,
         dry_run: a.dry_run === true,
-        // ★★★ 2026-10-20（A7 闭合）：同上 —— 逐调用 `actor` 交 [B]，不要在入口解释身份。
+        // ★★★ 2026-10-20（写闸授权检查闭合）：同上 —— 逐调用 `actor` 交受控操作契约，不要在入口解释身份。
         actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
         // ★★★ T356：按 run 授权（同一行写法）—— 同样不在入口解释 scope
         authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
@@ -696,7 +696,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       // ★ §16.4 P-D：file/symbol/field 是「模式相关必填」，schema 里只能 optional。
       //   这里**不做 `String(a.x)` 强转**——`String(undefined)==='undefined'` 会把缺参变成
       //   一个合法字符串，静默去查名叫 "undefined" 的符号或拼出 `...\undefined` 路径。
-      //   原样透传 undefined，由 findReferences 体（[B]）前置校验 throw「缺什么 + 怎么给」。
+      //   原样透传 undefined，由 findReferences 体（受控操作契约）前置校验 throw「缺什么 + 怎么给」。
       const optStr = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() !== '' ? v : undefined);
       const common = {
         project_dir: optStr(a.project_dir),
@@ -870,7 +870,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       project_dir: z.string().describe('目标项目根目录（绝对路径）—— 读它根下的 structure.domains.json 作为"结构意图"'),
     },
     handler: wrapData(async (a) => {
-      // ★ [C] 只转发：读配置（ENOENT⇒null / 坏⇒抛）+ 对账 全在 [B]（structureGap）
+      // ★ [C] 只转发：读配置（ENOENT⇒null / 坏⇒抛）+ 对账 全在受控操作契约（structureGap）
       const r = structureGap(requireStr(a, 'project_dir'));
       if (!r.configured) {
         return {
@@ -1027,7 +1027,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         project_dir,
         dead,
         verify: verify as RemoveDeadImportsVerifyOptions['verify'] | undefined,
-        // ★★★ 2026-10-20（A7 闭合 · 补漏口）：身份一路传给 `snapshotAndRecordSelfWrite`。
+        // ★★★ 2026-10-20（写闸授权检查闭合 · 补漏口）：身份一路传给 `snapshotAndRecordSelfWrite`。
         //   此前这里**没有这个字段**，而那条路连形参都没有 ⇒ 闸只能"提醒 + 放行"。
         actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
         // ★★★ T356：按 run 授权（同一行写法）
@@ -1052,7 +1052,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         const detail = f.removals.filter((x) => x.changed).map((x) => `${x.source}×${x.removed}`).join('、') || '无变更';
         parts.push(`\t- ${f.file}（${f.lang}）：${detail}`);
       }
-      // ★★★ 2026-10-21（A7 回执闭合）：闸的读数**人读那一份**。机器侧 `data.task_gate` 由
+      // ★★★ 2026-10-21（写闸授权检查回执闭合）：闸的读数**人读那一份**。机器侧 `data.task_gate` 由
       //   `RemoveDeadImportsVerifyResult` 顶层带出（判据只住写闸，本层不重判，只搬话）。
       const gateLine = gateHumanLines(r.task_gate);
       if (gateLine) parts.push(gateLine);
@@ -1082,7 +1082,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       const project_dir = requireStr(a, 'project_dir');
       const mode = (a.mode as string | undefined) || 'apply';
       const files = Array.isArray(a.files) ? a.files.map((f) => String(f)) : undefined;
-      // ★ 不再在 [C] 里 existsSync 过滤：`planFunctionAnnotation`（[B]）逐文件已有**同一道**存在性检查，
+      // ★ 不再在 [C] 里 existsSync 过滤：`planFunctionAnnotation`（受控操作契约）逐文件已有**同一道**存在性检查，
       //   在这里再过滤一遍 = 第二份判据（两边口径一旦分叉就静默不一致）。本层只做"路径归一 + 转发"。
       const absFiles = files
         ? files.map((f) => (path.isAbsolute(f) ? path.resolve(f) : path.resolve(project_dir, f)))
@@ -1098,8 +1098,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
           [...r.absToNew].map(([abs, content]) => ({ file: abs, content })),
           {
             note: 'annotate_functions',
-            // ★★★ 2026-10-21（A7 闭合 · 补漏口）：本工具是**真落盘的 MCP 工具**，`actor` 却在入口断了 ——
-            //   `applyWrites` 早就有 `actor` 形参，这里**没传** ⇒ 闸只能读 env（stdio 面恒空）⇒ A7 恒放行。
+            // ★★★ 2026-10-21（写闸授权检查闭合 · 补漏口）：本工具是**真落盘的 MCP 工具**，`actor` 却在入口断了 ——
+            //   `applyWrites` 早就有 `actor` 形参，这里**没传** ⇒ 闸只能读 env（stdio 面恒空）⇒ 写闸授权检查恒放行。
             //   ★ 只交上去，不在这里判：判据仍只在 `write_gate#assertSourceWriteRegistered` 一处。
             actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
             authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
@@ -1124,7 +1124,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         // ★ 2026-10-20：闸的放行读数/豁免点名（`applyWrites` 回执已带上，这里只往人读消息里搬）
         const gateLine = gateHumanLines(receipt.task_gate);
         if (gateLine) parts.push(gateLine);
-        // ★★★ 2026-10-21（A7 回执闭合）：闸读数**机器侧也要有**（此前只进了上面的 message）——
+        // ★★★ 2026-10-21（写闸授权检查回执闭合）：闸读数**机器侧也要有**（此前只进了上面的 message）——
         //   来源就是 `applyWrites` 回执的 `task_gate`，本层不重判。
         return {
           message: parts.join('\n'),
@@ -1376,7 +1376,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         minLen: typeof a.min_len === 'number' ? a.min_len : undefined,
         llm: a.use_llm === false ? null : undefined,
       };
-      // ★ [C] 只转发：解析 file → 读源码 → 建议 全在 [B]（suggestRenamesInFile）
+      // ★ [C] 只转发：解析 file → 读源码 → 建议 全在受控操作契约（suggestRenamesInFile）
       const result = await suggestRenamesInFile({
         project_dir,
         file,
@@ -1417,7 +1417,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         maxClusters: typeof a.max_clusters === 'number' ? a.max_clusters : undefined,
         llm: a.use_llm === false ? null : undefined,
       };
-      // ★ [C] 只转发：解析 file → 读源码 → 聚类+消歧 全在 [B]（suggestDisambiguationsInFile）
+      // ★ [C] 只转发：解析 file → 读源码 → 聚类+消歧 全在受控操作契约（suggestDisambiguationsInFile）
       const result = await suggestDisambiguationsInFile({
         project_dir,
         file,
@@ -1695,14 +1695,14 @@ export const REFACTOR_TOOLS: ToolDef[] = [
             (o) => (o.state === 'applied' || o.state === 'todo') && o.after !== undefined && o.before !== o.after,
           );
           // ★ 落盘走共享内核：此前是"动态 import 写闸 + 在 mutate 回调里裸 writeFileSync"——
-          //   回调里的 fs 调用即 [C] 自己落盘。[B]（applyRulesToFiles）已算好 before/after，
+          //   回调里的 fs 调用即 [C] 自己落盘。受控操作契约（applyRulesToFiles）已算好 before/after，
           //   本层只需把 {file, content} 交给内核（快照一次 + 逐文件写 + 索引写穿）。
           const receipt = await applyWrites(
             root,
             writes.map((o) => ({ file: o.file, content: o.after as string })),
             {
               note: `rules(apply:${use.map((r) => r.id).join(',')})`,
-              // ★★★ 2026-10-21（A7 闭合 · 补漏口）：同 `annotate_functions` —— 真落盘却把 `actor` 丢在入口。
+              // ★★★ 2026-10-21（写闸授权检查闭合 · 补漏口）：同 `annotate_functions` —— 真落盘却把 `actor` 丢在入口。
               //   ★ 只交上去，不在这里判（判据只住写闸一处）。
               actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
               authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
@@ -1863,9 +1863,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         project_dir,
         plan: plan as RefactorPlan,
         atomic: a.atomic === true,
-        // ★★★ 2026-10-20（A7 闭合 · 第 4 条写路）：身份交给 [B]，再由它传给唯一落盘的 `editCode`。
+        // ★★★ 2026-10-20（写闸授权检查闭合 · 第 4 条写路）：身份交给受控操作契约，再由它传给唯一落盘的 `editCode`。
         actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
-        // ★★★ T356：授权同样交给 [B]（它一路传到 `editCode` 的写闸）
+        // ★★★ T356：授权同样交给受控操作契约（它一路传到 `editCode` 的写闸）
         authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
       });
       const lines: string[] = [];
@@ -1886,7 +1886,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
           lines.push(`  ✗ ${it.file}：${it.error ?? '未知失败'}`);
         }
       }
-      // ★★★ 2026-10-20（A7 闭合 · 回执线）：闸读数进**人读消息**
+      // ★★★ 2026-10-20（写闸授权检查闭合 · 回执线）：闸读数进**人读消息**
       //   —— 与其它三条写路（rename_files / symbol_move / edit_code）**同一句话**（`gateHumanLines`，不另写渲染）。
       //   机器侧字段仍是 `task_gate`（已随 `data: r` 原样带出）。
       const gateLine = gateHumanLines(r.task_gate);

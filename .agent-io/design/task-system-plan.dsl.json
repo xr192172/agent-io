@@ -19757,17 +19757,65 @@
           "summary": "5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的 inputSchema **显式展开** CALL_ACTOR_FIELD —— 调用方身份（`<kind>:<name>`，规范见 domain/actor_spec.ts）从 MCP 入参进，落到写闸 admitActor 的 explicit 位；env 只作回退。兑现 file_src_application_write_gate_ts 节点 run 判据的 flipped 断言（5 个注册块计 5 命中）。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:subagent-colloquial-clean",
-          "claimed_at": "2026-10-24T09:16:15.287Z",
+          "owner": "agent:subagent-terminology-r1",
+          "claimed_at": "2026-10-24T10:06:20.077Z",
           "read_set": {
             "symbols": [],
             "files": [
               {
+                "path": "src/application/design/db/gen_design_db.ts",
+                "content_hash": "944b14c2701e7f6b9db7dbf70be1f8eb9f352e07"
+              },
+              {
+                "path": "src/application/design/dsl_ops/op_data_spec.ts",
+                "content_hash": "5551171bcc4531cbf684d55d540572ffebb473d4"
+              },
+              {
+                "path": "src/application/design/dsl_ops/task_ops.ts",
+                "content_hash": "31947e0072735ff08282edd9eb9bcdd452596c06"
+              },
+              {
+                "path": "src/application/design/dsl_ops/update_feature.ts",
+                "content_hash": "524c5cf4b8bdd63a3ad523f22f62e903143ff18b"
+              },
+              {
+                "path": "src/application/design/intent/expectations.ts",
+                "content_hash": "80d728c0f8b6a80e766bafdb6d999b041da76fc3"
+              },
+              {
+                "path": "src/application/design/intent/judge_cache.ts",
+                "content_hash": "37e4ce552843cd277d94238b3215f94395f18883"
+              },
+              {
+                "path": "src/application/design/line/design_line.ts",
+                "content_hash": "752f6451044529a03e186fd9ac5e11df1e81b37f"
+              },
+              {
+                "path": "src/application/meta/explore/query_feature.ts",
+                "content_hash": "bff2da55a1dec747d8d59fbc6f939cb2e9eafc0a"
+              },
+              {
+                "path": "src/application/plumbing.ts",
+                "content_hash": "10142f675bd61f59950e0af2b6acbb486d5a08ca"
+              },
+              {
                 "path": "src/application/refactor/index.ts",
-                "content_hash": "e31f54bcda19f0710636e026c672e095c42ba0c3"
+                "content_hash": "1a6d4d3382edff39c6047c377f3af5f53db6799c"
+              },
+              {
+                "path": "src/domain/expectation.ts",
+                "content_hash": "bd1ba04a0b6865740bc55bc0879f75aea8b44ab5"
+              },
+              {
+                "path": "src/domain/judge_port.ts",
+                "content_hash": "7541654eb54ceee9833e1aa0010888dfda7d7b1b"
+              },
+              {
+                "path": "src/presentation/mcp/server.ts",
+                "content_hash": "5fa81b42fa523e90812f6bd8b15384505ce42bd9"
               }
             ],
-            "computed_at": "2026-10-24T09:16:15.253Z",
+            "computed_at": "2026-10-24T10:06:20.037Z",
             "basis": [
               "declared"
             ]
@@ -19821,10 +19869,26 @@
               },
               "observed": "build 退出码 0；verify 全部 9 道门通过。refactor/index.ts 仅改 1 处描述串字面量（可入账→可落地），无逻辑变更",
               "command": "npm run build && npm run verify"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-24T10:17:10.740Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node 直调 dist judgeExpectations('D:/project_develop/design-canvas', collectExpectations(task-system-plan DSL))（参照 _design-canvas-labs/find-pending.mjs 口径）",
+                "input": "00adde5e6c4c34a23b71b133f36858e6a4f2c871",
+                "code": "9abc97f18b329efa7733f6efb440015f82276c1f",
+                "covers": [
+                  "src/application/refactor/index.ts"
+                ]
+              },
+              "observed": "术语全名化第一批（54 处注释替换）后 verdict 分布 {pass:711}，fail/pending/unsupported 均 0，无新增 fail；npm run build 通过、npm run verify 全部 9 道门通过（exit=0）",
+              "command": "node 直调 dist judgeExpectations('D:/project_develop/design-canvas', collectExpectations(task-system-plan DSL))（参照 _design-canvas-labs/find-pending.mjs 口径）"
             }
           ],
-          "reopened_at": "2026-10-24T09:16:15.287Z",
-          "reopen_reason": "口语清洗第二批（refactor/index.ts）：清洗 plan_refactor 描述串里的入账等随意口语（1778 行可入账→可落地），只改字符串字面量、不改任何代码逻辑",
+          "reopened_at": "2026-10-24T10:06:20.077Z",
+          "reopen_reason": "术语全名化第一批（docs/TERMINOLOGY.md 映射表执行项）：重开该文件节点卡取写权，本批只改注释文本，不动判据与字符串字面量；涉及 13 个近期主控产出文件（含锚点 src/application/refactor/index.ts）",
           "reopened_from": "agent:subagent-colloquial-clean"
         },
         "status": "done",
@@ -19833,10 +19897,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T09:17:38Z",
-            "command": "npm run build && npm run verify",
+            "at": "2026-10-24T10:16:30.000Z",
+            "command": "node 直调 dist judgeExpectations('D:/project_develop/design-canvas', collectExpectations(task-system-plan DSL))（参照 _design-canvas-labs/find-pending.mjs 口径）",
             "kind": "reading",
-            "observed": "build 退出码 0；verify 全部 9 道门通过。refactor/index.ts 仅改 1 处描述串字面量（可入账→可落地），无逻辑变更"
+            "observed": "术语全名化第一批（54 处注释替换）后 verdict 分布 {pass:711}，fail/pending/unsupported 均 0，无新增 fail；npm run build 通过、npm run verify 全部 9 道门通过（exit=0）"
           }
         }
       },
@@ -118915,11 +118979,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T09:18:53.672Z",
+    "saved_at": "2026-10-24T10:17:11.107Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 250010861,
+    "age": 253508296,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -121903,9 +121967,15 @@
       "summary": "【二环】测试↔文件映射的真缺口两个：① `certs/` 里 12 张证派生不到任何源文件（`node scripts/derive-touches.mjs --check`：89 张里 77 张有、12 张零命中）⇒ 改了代码它们只能全跑；② 本仓 `package.json` 没有 `scripts.test`，`run_tests` 一律 `ok=false`（实得：目标项目 … 没有 scripts.test）⇒ 要么把 `certs/run-all-certs.mjs` 挂成 `scripts.test`，要么在 `run_tests` 里明写本仓的测试入口。★ 不许新建第三套映射：已有 `certs/.touches.json` 就是那份映射。",
       "state": "candidate",
       "owner": null
+    },
+    {
+      "id": "todo_术语全名化第二批-docs-terminology-md-映射表-本批-r1-已",
+      "summary": "术语全名化第二批（docs/TERMINOLOGY.md 映射表）：本批（r1）已清 6 个文件注释内的 [B]/A7/假红 共 54 处；仍余 [B] 在范围外文件注释内（src/application/refactor/handlers.ts、find/similar_names.ts、find/ast_suggest.ts、edit/edit_code.ts、edit/apply_writes.ts、pipeline/refactor_plan.ts、rename/rename_local.ts、rename/rename_symbols.ts、rename/move_domain.ts、diff_views/diff_views.ts、deprecate_offline/deprecate_offline.ts、application/cross/index.ts、application/dispatch.ts、application/observe/**、application/meta/**、application/harvest/**、application/design/index.ts、design/handlers.ts、design/intent/consistency.ts、design/dsl_ops/file_ops.ts 等）。同规则：只改注释，字符串字面量与判据数据不动；每文件首次出现给全名（含内部标记 [B]）。",
+      "state": "candidate",
+      "owner": null
     }
   ],
-  "_dsl_rev": 1429,
+  "_dsl_rev": 1430,
   "feature_tree": {
     "features": [
       {
