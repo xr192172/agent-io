@@ -17465,91 +17465,6 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "task": {
-          "id": "file_src_application_meta_explore_query_feature_ts",
-          "summary": "【L1 待建构】核心层 · src/application/meta/explore — 9 个 API（导入自 20 个模块）（src/application/meta/explore/query_feature.ts） ← 节点 file_src_application_meta_explore_query_feature_ts",
-          "state": "done",
-          "judge_gate": "strict",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_query_feature_ts\"].responsibility"
-          },
-          "owner": "agent:workbuddy-glm5",
-          "claimed_at": "2026-10-24T01:08:14.416Z",
-          "prepared_snapshot": null,
-          "read_set": {
-            "symbols": [
-              {
-                "file": "src/application/meta/explore/query_feature.ts",
-                "name": "computePendingDebts",
-                "fp": "4c07f3dda9c73aa908ea48eb6faeff8c14e7535f"
-              }
-            ],
-            "files": [
-              {
-                "path": "src/application/meta/explore/query_feature.ts",
-                "content_hash": "4bfcc943cd48b295ee22b4c5f59affaeb499b392"
-              }
-            ],
-            "computed_at": "2026-10-24T01:08:14.378Z",
-            "basis": [
-              "declared",
-              "expectations"
-            ]
-          },
-          "evidence": [
-            {
-              "kind": "reading",
-              "at": "2026-10-23T17:48:35.508Z",
-              "by": "llm",
-              "verdict": "pass",
-              "fingerprint": {
-                "what": "npm run verify && node _design-canvas-labs/verify-overview.mjs（真调 dist query_feature）",
-                "input": "fd12fb355b525cc91280e2908f70740cda4079e0",
-                "code": "4fe5498c2ec339c83f1d3df12cbb29f5154de52b",
-                "covers": [
-                  "src/application/meta/explore/query_feature.ts"
-                ]
-              },
-              "observed": "verify 9/9 道门全过（ts 类型/MCP 工具签名/Go×2/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）；history 缺省 50 项 data 27KB 且无整卡字段；detail=true 与 card_id 精查均附整卡；query=overview 出 2 行（design-canvas 0/0，task-system-plan 活卡 76/history 181/欠账 11）；query=pending 回归正常（同一 computePendingDebts 口径）",
-              "command": "npm run verify && node _design-canvas-labs/verify-overview.mjs（真调 dist query_feature）"
-            },
-            {
-              "kind": "reading",
-              "at": "2026-10-24T00:57:54.535Z",
-              "by": "llm",
-              "verdict": "pass",
-              "fingerprint": {
-                "what": "npm run verify && node _design-canvas-labs/measure-read-layers.mjs",
-                "input": "fd12fb355b525cc91280e2908f70740cda4079e0",
-                "code": "a6a4a555d4835f46d4c7d0ceea4eced100cf4ad4",
-                "covers": [
-                  "src/application/meta/explore/query_feature.ts"
-                ]
-              },
-              "observed": "verify 9/9；概览层实测：todo 111→59KB、decisions 218→70KB、history 213→80KB（reason/summary 单行长文本，split 换行截不住 → briefText 按字符截 80）；全貌套餐（overview+digest+todo+history+decisions）≈365KB，1M 上下文内",
-              "command": "npm run verify && node _design-canvas-labs/measure-read-layers.mjs"
-            },
-            {
-              "kind": "reading",
-              "at": "2026-10-24T01:09:44.283Z",
-              "by": "llm",
-              "verdict": "pass",
-              "fingerprint": {
-                "what": "npm run build && npm run verify && node _design-canvas-labs/show-overview.mjs",
-                "input": "fd12fb355b525cc91280e2908f70740cda4079e0",
-                "code": "6192d177c9f3902edb26453b6e2db56c021a80d6",
-                "covers": [
-                  "src/application/meta/explore/query_feature.ts"
-                ]
-              },
-              "observed": "verify 9/9；overview 仍 3KB，但含每 feature 的 next_up（claimed 优先前 5，带截断 summary）与 recently_closed（入史前 3）——任务日志屏成型，实测输出见回执",
-              "command": "npm run build && npm run verify && node _design-canvas-labs/show-overview.mjs"
-            }
-          ],
-          "reopened_at": "2026-10-24T01:08:14.416Z",
-          "reopen_reason": "overview 升级为完整任务日志屏：每 feature 补 next_up（claimed→candidate 前 5，含 summary 首行）与 recently_closed（history 最近 3 条）——现在只有计数栏，打开看不出『接下来该干什么』",
-          "reopened_from": "agent:workbuddy-glm5"
-        },
         "status": "done",
         "decision": {
           "summary": "query=history 出概览/详情两级（缺省概览行，detail=true 或 card_id 精查才附整卡）；新增 query=overview 跨库总账（features×活卡/done/void/归档/history/欠账，只读派生不落盘）；欠账口径抽 computePendingDebts 与 pending 共用。",
@@ -17582,11 +17497,57 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T09:12:00+08:00",
+            "at": "2026-10-24T10:22:00+08:00",
             "command": "npm run build && npm run verify && node _design-canvas-labs/show-overview.mjs",
             "kind": "reading",
-            "observed": "verify 9/9；overview 仍 3KB，但含每 feature 的 next_up（claimed 优先前 5，带截断 summary）与 recently_closed（入史前 3）——任务日志屏成型，实测输出见回执"
+            "observed": "verify 9/9；overview 4KB 且每 feature 带判据全量求值读数（task-system-plan 648 条：pass 640/fail 7/pending 1，fail 点名 storage.ts 的 clearAllFeatures/deleteFeature/getFeatureFile 僵尸判据——机制首日即抓到真僵尸）"
           }
+        },
+        "task": {
+          "id": "file_src_application_meta_explore_query_feature_ts",
+          "summary": "query=history 出概览/详情两级（缺省概览行，detail=true 或 card_id 精查才附整卡）；新增 query=overview 跨库总账（features×活卡/done/void/归档/history/欠账，只读派生不落盘）；欠账口径抽 computePendingDebts 与 pending 共用。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:workbuddy-glm5",
+          "claimed_at": "2026-10-24T02:18:10.781Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/meta/explore/query_feature.ts",
+                "name": "computePendingDebts",
+                "fp": "4c07f3dda9c73aa908ea48eb6faeff8c14e7535f"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/meta/explore/query_feature.ts",
+                "content_hash": "8fddb31bddc5b5c2cdc54ff57b21ea95b2c7c9ef"
+              }
+            ],
+            "computed_at": "2026-10-24T02:18:10.746Z",
+            "basis": [
+              "declared",
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-24T02:22:46.809Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify && node _design-canvas-labs/show-overview.mjs",
+                "input": "fd12fb355b525cc91280e2908f70740cda4079e0",
+                "code": "cef643573240a76ca7c208f46fef83a4ec47e40f",
+                "covers": [
+                  "src/application/meta/explore/query_feature.ts"
+                ]
+              },
+              "observed": "verify 9/9；overview 4KB 且每 feature 带判据全量求值读数（task-system-plan 648 条：pass 640/fail 7/pending 1，fail 点名 storage.ts 的 clearAllFeatures/deleteFeature/getFeatureFile 僵尸判据——机制首日即抓到真僵尸）",
+              "command": "npm run build && npm run verify && node _design-canvas-labs/show-overview.mjs"
+            }
+          ]
         }
       },
       {
@@ -52825,49 +52786,6 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "task": {
-          "id": "file_src_presentation_mcp_server_ts",
-          "summary": "【L1 待建构】入口层 · src/presentation/mcp — 4 个 API（导入自 12 个模块）（src/presentation/mcp/server.ts） ← 节点 file_src_presentation_mcp_server_ts",
-          "state": "done",
-          "judge_gate": "strict",
-          "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_ts\"].responsibility"
-          },
-          "owner": "agent:workbuddy-glm5",
-          "claimed_at": "2026-10-24T01:50:59.893Z",
-          "prepared_snapshot": null,
-          "read_set": {
-            "symbols": [],
-            "files": [
-              {
-                "path": "src/presentation/mcp/server.ts",
-                "content_hash": "47a81721de56eee549b4817a1aceca165cc3d37c"
-              }
-            ],
-            "computed_at": "2026-10-24T01:49:39.146Z",
-            "basis": [
-              "declared"
-            ]
-          },
-          "evidence": [
-            {
-              "kind": "reading",
-              "at": "2026-10-24T01:55:07.755Z",
-              "by": "llm",
-              "verdict": "pass",
-              "fingerprint": {
-                "what": "npm run build && npm run verify",
-                "input": "501e45d3fd21811d883ad77f076dd60462b8df42",
-                "code": "762591367c8891b50488a16a50b8d9f33b3098db",
-                "covers": [
-                  "src/presentation/mcp/server.ts"
-                ]
-              },
-              "observed": "verify 9/9；设计 DB 自动保鲜已挂 runAutoWatchHook 初始导入后（check 无 drift 不落盘，有 drift 才真跑），工作项 B 落地",
-              "command": "npm run build && npm run verify"
-            }
-          ]
-        },
         "status": "done",
         "decision": {
           "summary": "get_dsl 启动钩子接设计 DB 自动保鲜：初始导入后 check（无 drift 不落盘）+ gen（幂等重生成），设计册或 cache.db 一变，投影跟着新鲜。",
@@ -54021,59 +53939,6 @@
           "updated_at": "2026-10-20T03:31:18.887Z",
           "author": "llm",
           "agent": "workbuddy"
-        },
-        "task": {
-          "id": "file_src_application_design_line_design_line_ts",
-          "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
-          "state": "done",
-          "judge_gate": "strict",
-          "reopened_at": "2026-10-20T06:28:37.710Z",
-          "node_id": "file_src_application_design_line_design_line_ts",
-          "owner": "agent:workbuddy-glm5",
-          "claimed_at": "2026-10-24T01:49:38.910Z",
-          "read_set": {
-            "symbols": [
-              {
-                "file": "src/application/design/line/design_line.ts",
-                "name": "designLineHandler",
-                "fp": "fd39cdcff8dc0b18baa3f4dc38782ea87073f493"
-              },
-              {
-                "file": "src/application/design/line/design_line.ts",
-                "name": "lineReport",
-                "fp": "c5dcc8ee0cb84e72142b1f3a7842a3145ea11d89"
-              }
-            ],
-            "files": [
-              {
-                "path": "src/application/design/line/design_line.ts",
-                "content_hash": "fd6c4500112c46ff46ae2353e4081d829d46b45c"
-              }
-            ],
-            "computed_at": "2026-10-24T01:49:38.872Z",
-            "basis": [
-              "declared",
-              "expectations"
-            ]
-          },
-          "evidence": [
-            {
-              "kind": "reading",
-              "at": "2026-10-24T01:54:28.531Z",
-              "by": "llm",
-              "verdict": "pass",
-              "fingerprint": {
-                "what": "npm run build && npm run verify && node _design-canvas-labs/run-gen-db.mjs",
-                "input": "956602cfa0e08ec0da92c47d4e96662b6e963434",
-                "code": "d2fe586ddbe649dbe998f41042164d689a019f38",
-                "covers": [
-                  "src/application/design/line/design_line.ts"
-                ]
-              },
-              "observed": "verify 9/9；design_line report ⑥ 读数已把沉默缺口清单化（实测未覆盖含 dsl_write_scope.ts / task_history.ts，逐个裁纳入/排除不自动建节点）",
-              "command": "npm run build && npm run verify && node _design-canvas-labs/run-gen-db.mjs"
-            }
-          ]
         },
         "status": "done",
         "decision_history": [
@@ -113261,11 +113126,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T02:06:50.218Z",
+    "saved_at": "2026-10-24T02:22:47.054Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 224087407,
+    "age": 225044243,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -116162,59 +116027,6 @@
       "released_at": "2026-10-22T16:47:47.719Z"
     },
     {
-      "id": "file_src_application_design_line_design_line_ts",
-      "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
-      "state": "done",
-      "judge_gate": "strict",
-      "reopened_at": "2026-10-20T06:28:37.710Z",
-      "node_id": "file_src_application_design_line_design_line_ts",
-      "owner": "agent:workbuddy-glm5",
-      "claimed_at": "2026-10-24T01:49:38.910Z",
-      "read_set": {
-        "symbols": [
-          {
-            "file": "src/application/design/line/design_line.ts",
-            "name": "designLineHandler",
-            "fp": "fd39cdcff8dc0b18baa3f4dc38782ea87073f493"
-          },
-          {
-            "file": "src/application/design/line/design_line.ts",
-            "name": "lineReport",
-            "fp": "c5dcc8ee0cb84e72142b1f3a7842a3145ea11d89"
-          }
-        ],
-        "files": [
-          {
-            "path": "src/application/design/line/design_line.ts",
-            "content_hash": "fd6c4500112c46ff46ae2353e4081d829d46b45c"
-          }
-        ],
-        "computed_at": "2026-10-24T01:49:38.872Z",
-        "basis": [
-          "declared",
-          "expectations"
-        ]
-      },
-      "evidence": [
-        {
-          "kind": "reading",
-          "at": "2026-10-24T01:54:28.531Z",
-          "by": "llm",
-          "verdict": "pass",
-          "fingerprint": {
-            "what": "npm run build && npm run verify && node _design-canvas-labs/run-gen-db.mjs",
-            "input": "956602cfa0e08ec0da92c47d4e96662b6e963434",
-            "code": "d2fe586ddbe649dbe998f41042164d689a019f38",
-            "covers": [
-              "src/application/design/line/design_line.ts"
-            ]
-          },
-          "observed": "verify 9/9；design_line report ⑥ 读数已把沉默缺口清单化（实测未覆盖含 dsl_write_scope.ts / task_history.ts，逐个裁纳入/排除不自动建节点）",
-          "command": "npm run build && npm run verify && node _design-canvas-labs/run-gen-db.mjs"
-        }
-      ]
-    },
-    {
       "id": "file_src_application_design_rewrite_symbol_diff_ts",
       "summary": "「设计 DB vs 源码」的**符号级判据**，全仓唯一一份。三条纪律：① 可比性由 kind 决定（function 比 signature；class/type/interface/const 不可比）；② uncompared 必须显式报数（算进一致是最坏的谎）；③ 配对不能只用 name（同名多义按 line 距离最近配，配不上进 unpaired）。",
       "state": "candidate",
@@ -116304,7 +116116,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1306,
+  "_dsl_rev": 1307,
   "feature_tree": {
     "features": [
       {

@@ -79,6 +79,8 @@ import { listPool } from '../../design/board/pool.js';
 // ★★★ 2026-10-23（history 表）：已了结卡出册后的**唯一读端** —— 住独立库（不参与索引重建），
 //   所以读它**不走 DSL**（`todos[]` 里已经没有这些卡了）。
 import { countTaskHistory, getTaskHistoryFile, queryTaskHistory } from '../../../infrastructure/task_history.js';
+import { judgeExpectations } from '../../design/intent/expectations.js';
+import { collectExpectations } from '../../../domain/expectation.js';
 // ★ 2026-10-22（D-T8 上架读端）：在挂的卡要报「挂了多久 / 租约过没过」⇒ TTL 取 domain 的唯一那份定义，
 //   本文件不写 2h 这个数（写死一处就等着两处不一致）。
 import { LEASE_TTL_MS } from '../../../domain/task_machine.js';
@@ -473,7 +475,7 @@ function renderTodoChains(
   return out;
 }
 
-export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
+export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatureResult> {
   const currentView = input.view ?? 'design';
   const viewTag = `(视图: ${currentView})`;
 
@@ -1800,12 +1802,53 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
     case 'overview': {
       const dsls = listStoredFeatures();
       if (dsls.length === 0) return { message: '尚无已设计的 feature ⇒ 总账为空', data: [] };
-      const rows = dsls.map((d) => {
+      // ★★★ 2026-10-24（判据全量求值常规化，v3 §3 教训）：overview 是最常开的屏 ⇒ 求值挂这里，
+      //   僵尸判据当天现形（[23] 22 条红了一整天没人知道，唯一原因是「从没人跑全量」）。
+      type OverviewJudge = {
+        checked: number;
+        passed: number;
+        failed: number;
+        unsupported: number;
+        pending: number;
+        fails: Array<{ node: string; detail: string }>;
+      };
+      type OverviewRow = {
+        feature: string;
+        todo_live: number;
+        todo_done: number;
+        todo_void: number;
+        todo_archived: number;
+        history: number;
+        pending_debts: number;
+        judge: OverviewJudge | null;
+        pending_note?: string;
+        next_up: Array<{ id: string; state: string; owner: string | null; summary: string }>;
+        recently_closed: Array<{ id: string; state: string; moved_at: string; summary: string }>;
+      };
+      const rows: OverviewRow[] = [];
+      for (const d of dsls) {
         const feature = d.feature;
         const byState: Record<string, number> = {};
         for (const s of TASK_STATES) byState[s] = 0;
         for (const t of d.todos ?? []) if (t.state in byState) byState[t.state]++;
         const pd = computePendingDebts(feature);
+        // ★ 求值根 = DSL 自带的 source_root（import_project 保证写入）；缺则退回显式 project_dir
+        const judgeRoot = (d as { source_root?: string }).source_root ?? input.project_dir;
+        let judge: OverviewJudge | null = null;
+        if (judgeRoot) {
+          const report = await judgeExpectations(judgeRoot, collectExpectations(d as Parameters<typeof collectExpectations>[0]));
+          judge = {
+            checked: report.checked,
+            passed: report.passed,
+            failed: report.failed,
+            unsupported: report.unsupported,
+            pending: report.pending,
+            fails: report.items
+              .filter((it) => it.verdict === 'fail')
+              .slice(0, 3)
+              .map((it) => ({ node: it.node_label, detail: it.detail })),
+          };
+        }
         // ★ 2026-10-24（任务日志屏）：总账只给计数，看不出「接下来该干什么」⇒ 每栏目带 top N 概览行
         const nextUp = (d.todos ?? [])
           .filter((t) => !isClosedTaskState(t.state))
@@ -1818,7 +1861,7 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           moved_at: r.moved_at,
           summary: briefText(r.summary),
         }));
-        return {
+        rows.push({
           feature,
           todo_live: (byState.candidate ?? 0) + (byState.preparing ?? 0) + (byState.claimed ?? 0),
           todo_done: byState.done ?? 0,
@@ -1826,11 +1869,13 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           todo_archived: (d.todos ?? []).filter((t) => t.archived_at).length,
           history: countTaskHistory(feature),
           pending_debts: pd ? pd.debts.length : 0,
+          judge,
+          ...(judge ? {} : { judge_note: '无 source_root/project_dir，判据未求值' }),
           next_up: nextUp,
           recently_closed: recentlyClosed,
           ...(pd ? {} : { pending_note: '无 overlay' }),
-        };
-      });
+        });
+      }
       const totals = rows.reduce(
         (a, r) => ({
           todo_live: a.todo_live + r.todo_live,
@@ -1851,6 +1896,13 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         lines.push(
           `  ${r.feature.padEnd(22)} ${String(r.todo_live).padStart(4)} ${String(r.todo_done).padStart(5)} ${String(r.todo_void).padStart(5)} ${String(r.todo_archived).padStart(4)} ${String(r.history).padStart(8)} ${String(r.pending_debts).padStart(4)}`,
         );
+        // ★ 判据全量求值读数（每 feature 一行 + fail 点名）——僵尸判据当天现形
+        if (r.judge) {
+          lines.push(
+            `    判据 ${r.judge.checked}：pass ${r.judge.passed} · fail ${r.judge.failed} · unsupported ${r.judge.unsupported} · pending ${r.judge.pending}`,
+          );
+          for (const f of r.judge.fails) lines.push(`      ★ ${f.node}: ${f.detail.slice(0, 120)}`);
+        }
       }
       lines.push('', `  合计：活卡 ${totals.todo_live} · history ${totals.history} · 欠账 ${totals.pending_debts}`);
       // ★ 2026-10-24（任务日志屏）：每个 feature 的「接下来该干什么」（claimed 优先，前 5）+ 刚收口的
