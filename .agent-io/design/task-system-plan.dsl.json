@@ -58266,7 +58266,25 @@
         "height": 64,
         "type": "file",
         "description": "src/infrastructure/dsl_write_scope.ts",
-        "style": {}
+        "style": {},
+        "decision": {
+          "summary": "基础设施 · 设计册写端的授权作用域（runDslWriteScope 的家）——设计侧写操作在这里判定「谁经什么通道写」",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/dsl_write_scope.ts",
+              "symbol": "runDslWriteScope",
+              "why": "设计册写端的授权作用域入口：写闸的 DSL 侧判定"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/dsl_write_scope.ts",
+              "symbol": "currentDslWriteScope",
+              "why": "当前作用域读取：事务重定向依赖它"
+            }
+          ],
+          "updated_at": "2026-10-24T03:35:06.889Z"
+        }
       },
       {
         "id": "file_src_infrastructure_task_history_ts",
@@ -58277,7 +58295,25 @@
         "height": 64,
         "type": "file",
         "description": "src/infrastructure/task_history.ts",
-        "style": {}
+        "style": {},
+        "decision": {
+          "summary": "基础设施 · 已了结任务卡归档库（task-history.db 唯一读写口，append-only 审计；独立于可重建的 cache.db）",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/task_history.ts",
+              "symbol": "recordTaskHistory",
+              "why": "入史唯一写口：先写表后改册的顺序契约在此"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/task_history.ts",
+              "symbol": "queryTaskHistory",
+              "why": "入史唯一读口：get_dsl query=history 的底座"
+            }
+          ],
+          "updated_at": "2026-10-24T03:35:06.984Z"
+        }
       },
       {
         "id": "file_observe_lang_go_cmd_instrument_main_go",
@@ -58288,7 +58324,25 @@
         "height": 64,
         "type": "file",
         "description": "observe-lang-go/cmd/instrument/main.go",
-        "style": {}
+        "style": {},
+        "decision": {
+          "summary": "observe-lang-go · instrument 命令行入口：从源码生成探针插桩（probeFromCode 驱动）",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/cmd/instrument/main.go",
+              "symbol": "probeFromCode",
+              "why": "命令行入口的驱动力：没有它插桩无从事发"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/cmd/instrument/main.go",
+              "symbol": "main",
+              "why": "CLI 入口本体"
+            }
+          ],
+          "updated_at": "2026-10-24T03:33:00.098Z"
+        }
       },
       {
         "id": "file_observe_lang_go_cmd_observev2_demo_main_go",
@@ -58299,7 +58353,25 @@
         "height": 64,
         "type": "file",
         "description": "observe-lang-go/cmd/observev2-demo/main.go",
-        "style": {}
+        "style": {},
+        "decision": {
+          "summary": "observe-lang-go · observev2 演示入口：跑下单/支付链路演示探针采集",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/cmd/observev2-demo/main.go",
+              "symbol": "placeOrder",
+              "why": "演示链路的业务动作：探针采集的目标"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/cmd/observev2-demo/main.go",
+              "symbol": "chargePayment",
+              "why": "演示链路的支付动作：与 placeOrder 构成完整链路"
+            }
+          ],
+          "updated_at": "2026-10-24T03:33:00.191Z"
+        }
       },
       {
         "id": "file_observe_lang_go_cmd_observev2_record_main_go",
@@ -58310,7 +58382,25 @@
         "height": 64,
         "type": "file",
         "description": "observe-lang-go/cmd/observev2-record/main.go",
-        "style": {}
+        "style": {},
+        "decision": {
+          "summary": "observe-lang-go · observev2 录制入口：录制链路运行产出基线事件",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/cmd/observev2-record/main.go",
+              "symbol": "mark",
+              "why": "录制标记点：演示链路的采集锚"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/cmd/observev2-record/main.go",
+              "symbol": "placeOrder",
+              "why": "录制链路的业务动作"
+            }
+          ],
+          "updated_at": "2026-10-24T03:33:20.747Z"
+        }
       },
       {
         "id": "file_observe_lang_go_internal_instrument_contract_go",
@@ -58321,7 +58411,25 @@
         "height": 64,
         "type": "file",
         "description": "observe-lang-go/internal/instrument/contract.go",
-        "style": {}
+        "style": {},
+        "decision": {
+          "summary": "observe-lang-go · 插桩契约层：包过滤与探针命名（PackageFilter/MatchProbe）",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/internal/instrument/contract.go",
+              "symbol": "packageFromProbe",
+              "why": "探针名到包名的换算：契约层的核心映射"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/internal/instrument/contract.go",
+              "symbol": "MatchProbe",
+              "why": "包过滤匹配：决定哪些包被插桩"
+            }
+          ],
+          "updated_at": "2026-10-24T03:33:20.840Z"
+        }
       },
       {
         "id": "file_observe_lang_go_internal_instrument_effects_go",
@@ -58332,7 +58440,25 @@
         "height": 64,
         "type": "file",
         "description": "observe-lang-go/internal/instrument/effects.go",
-        "style": {}
+        "style": {},
+        "decision": {
+          "summary": "observe-lang-go · 插桩副作用分析：语句级效果判定（effectInStmt/effectTargetOfLHS）",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/internal/instrument/effects.go",
+              "symbol": "effectInStmt",
+              "why": "语句级效果判定：决定哪里需要插桩"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/internal/instrument/effects.go",
+              "symbol": "effectTargetOfLHS",
+              "why": "赋值左侧的效果目标分析"
+            }
+          ],
+          "updated_at": "2026-10-24T03:33:40.259Z"
+        }
       },
       {
         "id": "file_observe_lang_go_internal_instrument_instrument_go",
@@ -58343,7 +58469,25 @@
         "height": 64,
         "type": "file",
         "description": "observe-lang-go/internal/instrument/instrument.go",
-        "style": {}
+        "style": {},
+        "decision": {
+          "summary": "observe-lang-go · 插桩引擎核心：文件收集/备份/改写（37 符号的最大件）",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/internal/instrument/instrument.go",
+              "symbol": "collectGoFiles",
+              "why": "文件收集：插桩范围的入口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/internal/instrument/instrument.go",
+              "symbol": "backupOriginal",
+              "why": "备份原文件：插桩可回退的前提"
+            }
+          ],
+          "updated_at": "2026-10-24T03:33:40.355Z"
+        }
       },
       {
         "id": "file_observe_lang_go_probe_export_go",
@@ -58354,7 +58498,25 @@
         "height": 64,
         "type": "file",
         "description": "observe-lang-go/probe/export.go",
-        "style": {}
+        "style": {},
+        "decision": {
+          "summary": "observe-lang-go · 探针导出门：事件分流与直方图过滤",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/probe/export.go",
+              "symbol": "newExportGate",
+              "why": "导出门：事件分流的入口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/probe/export.go",
+              "symbol": "filterHistos",
+              "why": "直方图过滤：导出侧的降噪"
+            }
+          ],
+          "updated_at": "2026-10-24T03:33:55.799Z"
+        }
       },
       {
         "id": "file_observe_lang_go_probe_global_go",
@@ -58365,7 +58527,25 @@
         "height": 64,
         "type": "file",
         "description": "observe-lang-go/probe/global.go",
-        "style": {}
+        "style": {},
+        "decision": {
+          "summary": "observe-lang-go · 探针全局状态：全局 sink 与错误上报",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/probe/global.go",
+              "symbol": "SetGlobalSink",
+              "why": "全局 sink 装配点：探针输出的汇聚口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/probe/global.go",
+              "symbol": "reportProbeError",
+              "why": "探针错误上报：观测系统自身不能静默失败"
+            }
+          ],
+          "updated_at": "2026-10-24T03:33:55.893Z"
+        }
       },
       {
         "id": "file_observe_lang_go_probe_probe_go",
@@ -58376,7 +58556,25 @@
         "height": 64,
         "type": "file",
         "description": "observe-lang-go/probe/probe.go",
-        "style": {}
+        "style": {},
+        "decision": {
+          "summary": "observe-lang-go · 探针核心：sink 构造/字段消毒/限流（newRateLimiter）",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/probe/probe.go",
+              "symbol": "NewSink",
+              "why": "sink 构造：探针输出的起点"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/probe/probe.go",
+              "symbol": "sanitizeFields",
+              "why": "字段消毒：观测数据不能泄敏感值"
+            }
+          ],
+          "updated_at": "2026-10-24T03:34:11.082Z"
+        }
       },
       {
         "id": "file_observe_lang_go_probe_run_recorder_go",
@@ -58387,7 +58585,19 @@
         "height": 64,
         "type": "file",
         "description": "observe-lang-go/probe/run_recorder.go",
-        "style": {}
+        "style": {},
+        "decision": {
+          "summary": "observe-lang-go · 运行录制器：录 (args, ret) 供行为基线",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/probe/run_recorder.go",
+              "symbol": "newRunRecorder",
+              "why": "运行录制器构造：差分测试的基线来源"
+            }
+          ],
+          "updated_at": "2026-10-24T03:34:11.178Z"
+        }
       },
       {
         "id": "file_observe_lang_go_probe_tiered_go",
@@ -58398,7 +58608,25 @@
         "height": 64,
         "type": "file",
         "description": "observe-lang-go/probe/tiered.go",
-        "style": {}
+        "style": {},
+        "decision": {
+          "summary": "observe-lang-go · 分层探针：环形缓冲预算 + 全量 sink（17 符号的最大件）",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/probe/tiered.go",
+              "symbol": "newRingBuf",
+              "why": "环形缓冲：分层预算的核心结构"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/probe/tiered.go",
+              "symbol": "WithFullSink",
+              "why": "全量 sink 选项：分层策略的另一端"
+            }
+          ],
+          "updated_at": "2026-10-24T03:34:26.458Z"
+        }
       },
       {
         "id": "file_observe_lang_go_probe_trace_go",
@@ -58409,7 +58637,25 @@
         "height": 64,
         "type": "file",
         "description": "observe-lang-go/probe/trace.go",
-        "style": {}
+        "style": {},
+        "decision": {
+          "summary": "observe-lang-go · 追踪探针：Enter/TraceID/作用域（TraceIDFromContext）",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/probe/trace.go",
+              "symbol": "Enter",
+              "why": "函数进入探针：trace 链的起点"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "observe-lang-go/probe/trace.go",
+              "symbol": "TraceIDFromContext",
+              "why": "从 context 取 TraceID：跨函数串联的关键"
+            }
+          ],
+          "updated_at": "2026-10-24T03:34:26.552Z"
+        }
       },
       {
         "id": "file_observe_lang_java_observe_probe_Camprobe_java",
@@ -58420,7 +58666,21 @@
         "height": 64,
         "type": "file",
         "description": "observe-lang-java/observe/probe/Camprobe.java",
-        "style": {}
+        "style": {},
+        "decision": {
+          "summary": "observe-lang-java · Camprobe 探针（java 侧唯一探针类，单符号）",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "Camprobe"
+              ],
+              "path": "observe-lang-java/observe/probe/Camprobe.java",
+              "why": "java 侧探针类本体（java 不走 TS 解析器，符号判不了 ⇒ 用文本判据，unsupported 不冒充）"
+            }
+          ],
+          "updated_at": "2026-10-24T03:34:50.839Z"
+        }
       },
       {
         "id": "file_observe_lang_py_camprobe_py",
@@ -58431,7 +58691,22 @@
         "height": 64,
         "type": "file",
         "description": "observe-lang-py/camprobe.py",
-        "style": {}
+        "style": {},
+        "decision": {
+          "summary": "observe-lang-py · Camprobe 探针（9 符号：全局 sink/捕获/lambda 包装）",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "def set_global_probe_sink",
+                "def capture_probe"
+              ],
+              "path": "observe-lang-py/camprobe.py",
+              "why": "py 侧两个关键写法：全局 sink 装配 + 探针捕获函数（py 符号级判据天花板 heuristic ⇒ 文本判据更诚实）"
+            }
+          ],
+          "updated_at": "2026-10-24T03:34:50.933Z"
+        }
       }
     ],
     "edges": [
@@ -116313,11 +116588,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T03:24:22.309Z",
+    "saved_at": "2026-10-24T03:35:07.016Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 228739498,
+    "age": 229384205,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -119303,7 +119578,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1367,
+  "_dsl_rev": 1383,
   "feature_tree": {
     "features": [
       {
