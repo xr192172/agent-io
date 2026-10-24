@@ -18810,7 +18810,90 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "decision": {
+          "summary": "跨工具保留入参 `actor`（调用方身份）的 zod 字段定义**迁到本文件**（唯一处）：presentation/mcp/server_registry 的注入机制（withCallActor）与 application/refactor 线 5 个写源码工具的显式 schema 声明共用同一份 —— 不许出现第二份定义。本仓头号病根是「第二份判据」。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/plumbing.ts",
+              "symbol": "CALL_ACTOR_FIELD",
+              "why": "★ 跨工具保留入参 `actor` 的 zod 字段唯一定义（application 层，presentation 注入与 refactor 线 5 个写源码工具的显式声明共用）"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "export const CALL_ACTOR_FIELD",
+                "actor: z"
+              ],
+              "path": "src/application/plumbing.ts",
+              "why": "它是导出的 zod shape（含 `actor` 字段）—— presentation/mcp/server_registry 与 application/refactor/index 两层都能 import"
+            }
+          ],
+          "acceptance": "src/application/plumbing.ts 导出 CALL_ACTOR_FIELD（zod shape，含 actor 字段）；server_registry 与 refactor/index 都从它 import。",
+          "updated_at": "2026-10-24T04:29:17.588Z",
+          "author": "llm"
+        },
+        "task": {
+          "id": "file_src_application_plumbing_ts",
+          "summary": "跨工具保留入参 `actor`（调用方身份）的 zod 字段定义**迁到本文件**（唯一处）：presentation/mcp/server_registry 的注入机制（withCallActor）与 application/refactor 线 5 个写源码工具的显式 schema 声明共用同一份 —— 不许出现第二份定义。本仓头号病根是「第二份判据」。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:subagent-dsh-actor-param",
+          "claimed_at": "2026-10-24T04:29:17.876Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/plumbing.ts",
+                "name": "CALL_ACTOR_FIELD",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/plumbing.ts",
+                "content_hash": "102954af7ebb1041a37108bf77cc4c599dce48c3"
+              }
+            ],
+            "computed_at": "2026-10-24T04:29:17.840Z",
+            "basis": [
+              "declared",
+              "expectations"
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/plumbing.ts#CALL_ACTOR_FIELD"
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-24T04:37:17.517Z",
+              "by": "llm",
+              "agent": "agent:subagent-dsh-actor-param",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node -e collectExpectations(task-system-plan.dsl.json) → judgeExpectations('.', 6 items)（cwd=仓根，dist 为新构建）",
+                "input": "67f0c36ef928a2880f3d48051638f1e6488691df",
+                "code": "b3447e2d089db074df93992e83c98cffa3e22991",
+                "covers": [
+                  "src/application/plumbing.ts"
+                ]
+              },
+              "observed": "file_src_application_plumbing_ts 2/2 pass（symbol-exists CALL_ACTOR_FIELD ✓ ｜ source-has export const CALL_ACTOR_FIELD + actor: z ✓）",
+              "command": "node -e collectExpectations(task-system-plan.dsl.json) → judgeExpectations('.', 6 items)（cwd=仓根，dist 为新构建）"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/plumbing.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-24T04:38:00.000Z",
+            "command": "node -e collectExpectations(task-system-plan.dsl.json) → judgeExpectations('.', 6 items)（cwd=仓根，dist 为新构建）",
+            "kind": "reading",
+            "observed": "file_src_application_plumbing_ts 2/2 pass（symbol-exists CALL_ACTOR_FIELD ✓ ｜ source-has export const CALL_ACTOR_FIELD + actor: z ✓）"
+          }
+        }
       },
       {
         "id": "file_src_application_refactor_annotate_function_annotation_ts",
@@ -19208,7 +19291,80 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "decision": {
+          "summary": "5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的 inputSchema **显式展开** CALL_ACTOR_FIELD —— 调用方身份（`<kind>:<name>`，规范见 domain/actor_spec.ts）从 MCP 入参进，落到写闸 admitActor 的 explicit 位；env 只作回退。兑现 file_src_application_write_gate_ts 节点 run 判据的 flipped 断言（5 个注册块计 5 命中）。",
+          "expectations": [
+            {
+              "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
+              "kind": "run",
+              "why": "★ 机器可判（grep 型）：5 个写源码工具的注册块各含 `...CALL_ACTOR_FIELD`（身份参数显式声明）且含 inputSchema ⇒ 计 5 命中"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "...CALL_ACTOR_FIELD"
+              ],
+              "path": "src/application/refactor/index.ts",
+              "why": "身份参数在本文件**显式声明**（可发现性），不再纯靠 server_registry 注入的隐式约定"
+            }
+          ],
+          "acceptance": "src/application/refactor/index.ts 里 edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files 五个注册块各含 ...CALL_ACTOR_FIELD；调用链 a.actor → 写闸 admitActor explicit 位不变，env（AGENT_IO_ACTOR）仅作回退。",
+          "updated_at": "2026-10-24T04:29:18.498Z",
+          "author": "llm"
+        },
+        "task": {
+          "id": "file_src_application_refactor_index_ts",
+          "summary": "5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的 inputSchema **显式展开** CALL_ACTOR_FIELD —— 调用方身份（`<kind>:<name>`，规范见 domain/actor_spec.ts）从 MCP 入参进，落到写闸 admitActor 的 explicit 位；env 只作回退。兑现 file_src_application_write_gate_ts 节点 run 判据的 flipped 断言（5 个注册块计 5 命中）。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:subagent-dsh-actor-param",
+          "claimed_at": "2026-10-24T04:29:18.766Z",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/refactor/index.ts",
+                "content_hash": "84089a01ab21e49ae080a2ba24991aaa4e66f4c7"
+              }
+            ],
+            "computed_at": "2026-10-24T04:29:18.732Z",
+            "basis": [
+              "declared"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-24T04:37:18.288Z",
+              "by": "llm",
+              "agent": "agent:subagent-dsh-actor-param",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "同上 judge 读数 + npm run build && npm run verify（退出 0）",
+                "input": "00adde5e6c4c34a23b71b133f36858e6a4f2c871",
+                "code": "2ff7c0acbbc82a1784b956a4ae1133a762108215",
+                "covers": [
+                  "src/application/refactor/index.ts"
+                ]
+              },
+              "observed": "file_src_application_refactor_index_ts 2/2 pass（run 断言 5 注册块 ...CALL_ACTOR_FIELD + inputSchema 计 5 命中 ✓ ｜ source-has ...CALL_ACTOR_FIELD ✓）；verify 9/9 全 PASS",
+              "command": "同上 judge 读数 + npm run build && npm run verify（退出 0）"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/refactor/index.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-24T04:38:00.000Z",
+            "command": "同上 judge 读数 + npm run build && npm run verify（退出 0）",
+            "kind": "reading",
+            "observed": "file_src_application_refactor_index_ts 2/2 pass（run 断言 5 注册块 ...CALL_ACTOR_FIELD + inputSchema 计 5 命中 ✓ ｜ source-has ...CALL_ACTOR_FIELD ✓）；verify 9/9 全 PASS"
+          }
+        }
       },
       {
         "id": "file_src_application_refactor_parse_capability_parse_capability_ts",
@@ -19531,9 +19687,8 @@
             },
             {
               "kind": "run",
-              "expect": "(() => {\n    const dirs = ['src/application', 'src/presentation', 'src/infrastructure', 'src/domain'];\n    let hit = 0;\n    const walk = (d) => {\n      for (const f of fs.readdirSync(path.join(root, d), { withFileTypes: true })) {\n        const p = path.join(d, f.name);\n        if (f.isDirectory()) { walk(p); continue; }\n        if (!/.(ts|mjs|js)$/.test(f.name)) continue;\n        if (/process.env.AGENT_IO_ACTORs*=[^=]/.test(fs.readFileSync(path.join(root, p), 'utf8'))) hit++;\n      }\n    };\n    for (const d of dirs) walk(d);\n    return hit >= 1;\n  })()",
-              "blocked_by": "等 5 个写源码的工具加 agent 参数（★ actor 该从调用方进，不是从 env）",
-              "why": "★ D-actor-entry：闸要判「卡是不是你的」，而 actor 现在没有可靠来源"
+              "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
+              "why": "★ D-actor-entry（2026-10-24 翻转）：身份参数从**调用方**进 —— 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的注册块各显式展开 CALL_ACTOR_FIELD（唯一定义住 application/plumbing.ts，server_registry#withCallActor 注入保留），经 a.actor 传到 write_gate#resolveActor → admitActor(explicit, env) 的 explicit 位；env（AGENT_IO_ACTOR）只作回退。原断言（扫 src/{application,presentation,infrastructure,domain} 里 process.env.AGENT_IO_ACTOR 的赋值 hit>=1）随「actor 该从调用方进」作废（实测 src/ 里该赋值 0 处）"
             },
             {
               "kind": "symbol-exists",
@@ -19733,8 +19888,8 @@
             "to": "design",
             "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
           },
-          "updated_at": "2026-10-20T05:07:11.163Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-24T04:34:35.401Z",
+          "agent": "agent:subagent-dsh-actor-param"
         },
         "task": {
           "id": "file_src_application_write_gate_ts",
@@ -23240,6 +23395,250 @@
               "agent": "all-externalize"
             },
             "note": "file_src_application_write_gate_ts：覆盖率采集必须读设计侧 design/，否则闸看不见任何 feature"
+          },
+          {
+            "at": "2026-10-24T04:34:35.401Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "WriteActor",
+                  "why": "★ 写闸要知道\"谁在写\" —— 现在 assertSourceWriteRegistered(projectRoot, files) 签名里没有身份维度"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "assertSourceWriteRegisteredFor",
+                  "why": "★ 按 actor 判定的入口：要求\"覆盖该文件的节点上存在 claimed 卡，且 owner === actor\"（现在只要求\"存在 claimed 卡\"）"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/write_gate.ts",
+                  "why": "节点地址（已存在，作为基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "resolveActor",
+                  "why": "★ actor 的解析只许一处（读 AGENT_IO_ACTOR）；claim 与写共用同一个解析 ⇒ 才保证 owner === actor 这条判据成立"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n    const dirs = ['src/application', 'src/presentation', 'src/infrastructure', 'src/domain'];\n    let hit = 0;\n    const walk = (d) => {\n      for (const f of fs.readdirSync(path.join(root, d), { withFileTypes: true })) {\n        const p = path.join(d, f.name);\n        if (f.isDirectory()) { walk(p); continue; }\n        if (!/.(ts|mjs|js)$/.test(f.name)) continue;\n        if (/process.env.AGENT_IO_ACTORs*=[^=]/.test(fs.readFileSync(path.join(root, p), 'utf8'))) hit++;\n      }\n    };\n    for (const d of dirs) walk(d);\n    return hit >= 1;\n  })()",
+                  "blocked_by": "等 5 个写源码的工具加 agent 参数（★ actor 该从调用方进，不是从 env）",
+                  "why": "★ D-actor-entry：闸要判「卡是不是你的」，而 actor 现在没有可靠来源"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "EMPTY_CROSS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "GateCoverage",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "GateCoverageFeature",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "SELF_WRITE_MAX",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/source_writer.ts",
+                  "symbol": "SourceWriteReceipt",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余｜★ 2026-10-23 repoint：随 source_writer 重构改名（原 write_gate.ts#SourceWriteReport）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "TaskGateBasis",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "TaskGateOutcome",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "WriteThroughOutcome",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "assertSourceWriteRegistered",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "collectGateCoverage",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "finishWriteThrough",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "hasLiveIndex",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "nodeFilePath",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "recordSelfWrite",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "recordUnaddressableWarnings",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "reopenAndResolveAfterWrite",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "reopenNote",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "resolveRefsAfterWrite",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "syncSelfWrites",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "syncSelfWritesSync",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "writeSelfWrites",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/source_writer.ts",
+                  "symbol": "writeSourceFile",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余｜★ 2026-10-23 repoint：随 source_writer 重构改名（原 write_gate.ts#writeSourceFiles）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "writeThroughLine",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/write_gate.ts",
+                  "must": [
+                    "listDesignSheets"
+                  ],
+                  "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "classifyWriteSubject",
+                  "why": "★ 2026-10-22 实测：\"51 处待搬\"是错的 —— 真改用户源码的只有 **1 处**，其余是 product(53)/temp(15)/回滚(2)。没有这个分类，就只剩两种笨办法：全搬（给产物/临时文件白加闸）或全不搬（源码裸写）。★ 顺序即判据：`temp` 必须在 `outside-root` **之前**判（系统临时目录本来就在根外）。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "GATE_REJECTION_PREFIX",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "actorStrict",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "exemptionLines",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "isGateRejection",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "GateExemption",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "WriteSubject",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-10-20T05:07:11.163Z",
+              "agent": "all-externalize"
+            },
+            "note": "只翻 run 这一条（原断言扫 src/{application,presentation,infrastructure,domain} 里 process.env.AGENT_IO_ACTOR 的赋值 hit>=1，blocked_by「等 5 个写源码的工具加 agent 参数」）：施工已完成（plumbing#CALL_ACTOR_FIELD 唯一定义 + refactor/index 5 个注册块显式展开 + withCallActor 注入保留），断言改为「5 个注册块各含 ...CALL_ACTOR_FIELD 且含 inputSchema 计 5 命中」（机器可判，grep 型），blocked_by 清空；其余 35 条判据逐字原样保留。",
+            "agent": "agent:subagent-dsh-actor-param"
           }
         ],
         "status": "draft",
@@ -55699,7 +56098,91 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "decision": {
+          "summary": "withCallActor 注入机制保留（每个工具注册 schema 仍含 actor/authorize），但 CALL_ACTOR_FIELD 的定义改为 import 自 application/plumbing —— 本文件不再持第二份身份字段定义。task-system-plan 节点 file_src_application_write_gate_ts 的 run 判据（等 5 个写源码的工具加 agent 参数）由此兑现一半：注入在，定义唯一。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/presentation/mcp/server_registry.ts",
+              "symbol": "withCallActor",
+              "why": "★ 注入机制保留：注册面（registerTool + argValidatorOf）仍给每个工具补 actor/authorize —— 5 个写源码工具在 tools/list 里看得见身份参数"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "CALL_ACTOR_FIELD"
+              ],
+              "mustNot": [
+                "const CALL_ACTOR_FIELD = {"
+              ],
+              "path": "src/presentation/mcp/server_registry.ts",
+              "why": "本文件只 import 不再定义 —— 防「第二份身份定义」回归（定义住 application/plumbing#CALL_ACTOR_FIELD）"
+            }
+          ],
+          "acceptance": "server_registry 只 import CALL_ACTOR_FIELD 不再本地定义；withCallActor / CALL_RESERVED_KEYS 行为不变。",
+          "updated_at": "2026-10-24T04:29:18.007Z",
+          "author": "llm"
+        },
+        "task": {
+          "id": "file_src_presentation_mcp_server_registry_ts",
+          "summary": "withCallActor 注入机制保留（每个工具注册 schema 仍含 actor/authorize），但 CALL_ACTOR_FIELD 的定义改为 import 自 application/plumbing —— 本文件不再持第二份身份字段定义。task-system-plan 节点 file_src_application_write_gate_ts 的 run 判据（等 5 个写源码的工具加 agent 参数）由此兑现一半：注入在，定义唯一。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:subagent-dsh-actor-param",
+          "claimed_at": "2026-10-24T04:29:18.373Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/presentation/mcp/server_registry.ts",
+                "name": "withCallActor",
+                "fp": "c899155663dc45096f972e2449eb9993ab8dc020"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/presentation/mcp/server_registry.ts",
+                "content_hash": "576339e29e16386111bf1459edcf83443951fec9"
+              }
+            ],
+            "computed_at": "2026-10-24T04:29:18.330Z",
+            "basis": [
+              "declared",
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-24T04:37:17.948Z",
+              "by": "llm",
+              "agent": "agent:subagent-dsh-actor-param",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "同上 judge 读数 + grep",
+                "input": "934bc19f6fce6bb78a45d13ef12ff2a57d6ec37d",
+                "code": "13ab68412a4b6ba63c4cf4bce965366f86ef7675",
+                "covers": [
+                  "src/presentation/mcp/server_registry.ts"
+                ]
+              },
+              "observed": "file_src_presentation_mcp_server_registry_ts 2/2 pass（symbol-exists withCallActor ✓ ｜ source-has 含 CALL_ACTOR_FIELD 且无 const CALL_ACTOR_FIELD = { ✓，定义已改 import 自 application/plumbing）",
+              "command": "同上 judge 读数 + grep"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/presentation/mcp/server_registry.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-24T04:38:00.000Z",
+            "command": "同上 judge 读数 + grep",
+            "kind": "reading",
+            "observed": "file_src_presentation_mcp_server_registry_ts 2/2 pass（symbol-exists withCallActor ✓ ｜ source-has 含 CALL_ACTOR_FIELD 且无 const CALL_ACTOR_FIELD = { ✓，定义已改 import 自 application/plumbing）"
+          }
+        }
       },
       {
         "id": "file_src_presentation_mcp_tool_warnings_ts",
@@ -91358,7 +91841,8 @@
           }
         ],
         "lines": 257,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_refactor_annotate_function_annotation_ts",
@@ -92182,7 +92666,8 @@
           }
         ],
         "lines": 1772,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "done"
       },
       {
         "id": "file_src_application_refactor_parse_capability_parse_capability_ts",
@@ -110141,7 +110626,8 @@
           }
         ],
         "lines": 988,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_presentation_mcp_tool_warnings_ts",
@@ -116588,11 +117074,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T03:35:07.016Z",
+    "saved_at": "2026-10-24T04:37:18.551Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 229384205,
+    "age": 233115740,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -119578,7 +120064,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1383,
+  "_dsl_rev": 1390,
   "feature_tree": {
     "features": [
       {

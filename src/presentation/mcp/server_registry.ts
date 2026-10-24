@@ -578,7 +578,7 @@ export function trustNoteFor(rawRoot: string | null): string {
 // ─────────────────────────────────────────────────────────────
 
 import type { ToolDef } from '../../application/types.js';
-import { looseInputSchema, textOut, wrap, wrapData } from '../../application/plumbing.js';
+import { CALL_ACTOR_FIELD, looseInputSchema, textOut, wrap, wrapData } from '../../application/plumbing.js';
 import { emitWarnings, type ToolWarning } from './tool_warnings.js';
 
 // 对外仍从本模块导出（原 `export interface ToolDef` 的公开 API 位置不变）
@@ -678,19 +678,13 @@ interface ArgValidator {
  * 它是**自报**：stdio 侧的 MCP server 拿不到宿主可信身份（宿主只给 HTTP connector 注
  * `X-WorkBuddy-MCP-Context`，stdio 只注入目录变量）⇒ 能买到的只是**协作防撞**，不是**防冒充**。
  */
-const CALL_ACTOR_FIELD = {
-  actor: z
-    .string()
-    .optional()
-    .describe(
-      '★ 本次调用的**身份**（A7 写闸用）：与 claim 时 `data.owner` **同一个值**。' +
-        '写工具（edit_code / rename_symbols 等）靠它判「这张卡是不是你领的」；只读工具用它给读集分桶。' +
-        '★ 规范：`<kind>:<name>`，kind ∈ {human, agent, subagent}；name 只许小写字母/数字/-/_，长度 1..40 —— ' +
-        '例 `human:admin` / `agent:workbuddy` / `subagent:a7`（唯一定义：`domain/actor_spec.ts`）。' +
-        '★ 无前缀的老格式（`workbuddy`）⇒ **归一化为 `agent:workbuddy` 并在回执里明说**；含空格/中文/大写/超长的**直接拒**。' +
-        '★ 不传 ⇒ 落回 AGENT_IO_ACTOR ⇒ 都没有就「提醒 + 放行」（要改拒绝：AGENT_IO_ACTOR_STRICT=1）。',
-    ),
-};
+/**
+ * ★ 2026-10-24：`CALL_ACTOR_FIELD` 的**定义搬到 `application/plumbing.ts`**（唯一处）——
+ *   refactor 线 5 个写源码工具（edit_code / rename_symbols / move_symbol /
+ *   apply_refactor_plan / rename_files）的 inputSchema 要**显式展开**它，
+ *   而 application 层不能 import presentation ⇒ 定义必须住在两层都够得着的地方。
+ *   注入机制（下面 `withCallActor`）不变 —— 现在注入与显式声明是**同一个对象**，不是两份定义。
+ */
 
 /**
  * ★★★ T356（2026-10-20）：**跨工具的保留入参 `authorize`（按 run 授权）** —— 与 `actor` 同一处注入。

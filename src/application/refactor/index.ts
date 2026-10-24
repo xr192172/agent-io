@@ -25,7 +25,7 @@
  *   `{message, feature}`，压根没有 data）、`render_design` / `observe_judge`（data 与 message 逐字重复）。
  */
 import { z } from 'zod';
-import { requireArr, requireStr, wrapData } from '../plumbing.js';
+import { CALL_ACTOR_FIELD, requireArr, requireStr, wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { analyzeHubs, analyzeImpact } from '../../infrastructure/analysis/impact/index.js';
 import type { ImpactChangePoint } from '../../infrastructure/analysis/impact/index.js';
@@ -181,6 +181,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '★ 实测（2026-10-22）：极坏文件（`export function a( {`）上 replace_text / range 均成功，replace 报「符号未找到」；' +
       '好文件 + 真语法错（`return (1;`）⇒ 拒且不写盘。',
     inputSchema: {
+      // ★ 调用方身份（跨工具保留键）：显式展开与 server_registry#withCallActor 注入的是**同一份**（application/plumbing#CALL_ACTOR_FIELD）；
+      //   经 a.actor 一路传到写闸 admitActor 的 explicit 位，env（AGENT_IO_ACTOR）只作回退。
+      ...CALL_ACTOR_FIELD,
       project_dir: z.string().describe('项目根目录（索引归属；编辑后重建该文件索引）'),
       // ★★ 2026-10-11（T173）：`file` 原先写成 `z.string()`（**无条件必填**），
       //   而**同一份描述**里写着「传 `targets` 时忽略 `file`/`op` 等单文件参数」，
@@ -244,6 +247,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       'report_literals=true（仅 scope=module）：额外扫描每个旧符号 snake 变体在项目文本里的字面量引用（如工具名 render_dsl 出现在错误提示/README 里的串），按 kind 分治（契约/历史/文档/测试/代码），仅报告不改动。' +
       '★ 与 rename_files 是**两个对象**（那个改文件系统路径 + 全仓 import 源），不聚合；suggest_renames / find_similar_names 是它的上游只读分析层。',
     inputSchema: {
+      // ★ 调用方身份（跨工具保留键）：显式展开与 server_registry#withCallActor 注入的是**同一份**（application/plumbing#CALL_ACTOR_FIELD）；
+      //   经 a.actor 一路传到写闸 admitActor 的 explicit 位，env（AGENT_IO_ACTOR）只作回退。
+      ...CALL_ACTOR_FIELD,
       project_dir: z.string().optional().describe('目标项目根（可选；缺省按条目自动定位；统一定位时传）'),
       scope: z
         .enum(['module', 'local'])
@@ -485,6 +491,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '⇒ 该不该分批的预判依据是**这些文件被多少处 import 引用**（不是 renames 有几条）；' +
       '引用面大时（几十处）单批就可能跑几十秒到数分钟 ⇒ 请留足超时。',
     inputSchema: {
+      // ★ 调用方身份（跨工具保留键）：显式展开与 server_registry#withCallActor 注入的是**同一份**（application/plumbing#CALL_ACTOR_FIELD）；
+      //   经 a.actor 一路传到写闸 admitActor 的 explicit 位，env（AGENT_IO_ACTOR）只作回退。
+      ...CALL_ACTOR_FIELD,
       project_dir: z.string().optional().describe('目标项目根（可选；缺省按第一条 from 自动定位，兜底 cwd）'),
       renames: z
         .array(z.object({ from: z.string().describe('源文件：相对 project_dir 或绝对路径'), to: z.string().describe('目标文件：相对 project_dir 或绝对路径') }))
@@ -599,6 +608,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '防护（任一触发→整体不落盘并说明）：目标文件撞同名 / namespace import / export * 转发 / 一条 import 同时引入其它符号 / 非模块级符号 / 源文件是 import 绑定。' +
       'v1 仅 TS/JS 模块级符号；to_symbol 改名未启用（改名著 safe_rename）。',
     inputSchema: {
+      // ★ 调用方身份（跨工具保留键）：显式展开与 server_registry#withCallActor 注入的是**同一份**（application/plumbing#CALL_ACTOR_FIELD）；
+      //   经 a.actor 一路传到写闸 admitActor 的 explicit 位，env（AGENT_IO_ACTOR）只作回退。
+      ...CALL_ACTOR_FIELD,
       project_dir: z.string().optional().describe('目标项目根（可选；缺省按 file 自动定位）'),
       file: z.string().describe('定义符号的源文件（相对 project_dir 或绝对路径）'),
       symbol: z.string().describe('要移动的模块级符号名'),
@@ -1831,6 +1843,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '空清单（items=[]）⇒ 合法 no-op（ok=true / written=false）。' +
       '★★ **同 plan_refactor：本族是【补丁族】**（逐项唯一文本替换）⇒ **重构主路请走整块族**（见 plan_refactor 的描述末段）。',
     inputSchema: {
+      // ★ 调用方身份（跨工具保留键）：显式展开与 server_registry#withCallActor 注入的是**同一份**（application/plumbing#CALL_ACTOR_FIELD）；
+      //   经 a.actor 一路传到写闸 admitActor 的 explicit 位，env（AGENT_IO_ACTOR）只作回退。
+      ...CALL_ACTOR_FIELD,
       project_dir: z.string().describe('项目根目录（清单里的相对路径以此为锚点）'),
       plan: refactorPlanSchema.describe('plan_refactor 的 data 原样传入（含 plan_id / items / files / summary）'),
       atomic: z

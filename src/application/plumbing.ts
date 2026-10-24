@@ -263,3 +263,40 @@ export function looseInputSchema(shape: Record<string, unknown>): unknown {
   if (typeof anyZ.looseObject === 'function') return anyZ.looseObject(shape);
   return (z.object(shape as never) as unknown as { passthrough: () => unknown }).passthrough();
 }
+
+
+// ─────────────────────────────────────────────────────────────
+// 跨工具保留入参（调用方身份）
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * ★★★ 2026-10-20（A7 闭合 · 逐调用自报）：**跨工具的保留入参 `actor`**（调用方身份）。
+ *
+ * ★ 2026-10-24：定义**从 `presentation/mcp/server_registry.ts` 搬到本文件**（唯一处）——
+ *   refactor 线的 5 个写源码工具（edit_code / rename_symbols / move_symbol /
+ *   apply_refactor_plan / rename_files）的 inputSchema 要**显式展开**它，
+ *   而 application 层不能 import presentation ⇒ 定义必须住在两层都够得着的 application/plumbing。
+ *   `server_registry#withCallActor` 仍对全部工具注入 —— 现在注入与显式声明是**同一个对象**，不是两份定义。
+ *
+ * ## 病（实测，历史）
+ * 写闸的判据（`write_gate#assertSourceWriteRegistered` 里 `owner !== actor ⇒ 拒`）早就写好了，
+ * 但没人传 actor：安装配置都没设 `AGENT_IO_ACTOR` ⇒ `resolveActor()` 恒 `null` ⇒
+ * 闸永远走"提醒 + 放行"（判据在、代码在、**入口没接**）。
+ *
+ * ## 边界（别包装）
+ * 它是**自报**：stdio 侧的 MCP server 拿不到宿主可信身份 ⇒ 能买到的只是**协作防撞**，不是**防冒充**。
+ * ★ 身份文法（`<kind>:<name>`）唯一定义在 `domain/actor_spec.ts`；本字段只把"调用方怎么传"表达成 schema。
+ */
+export const CALL_ACTOR_FIELD = {
+  actor: z
+    .string()
+    .optional()
+    .describe(
+      '★ 本次调用的**身份**（A7 写闸用）：与 claim 时 `data.owner` **同一个值**。' +
+        '写工具（edit_code / rename_symbols 等）靠它判「这张卡是不是你领的」；只读工具用它给读集分桶。' +
+        '★ 规范：`<kind>:<name>`，kind ∈ {human, agent, subagent}；name 只许小写字母/数字/-/_，长度 1..40 —— ' +
+        '例 `human:admin` / `agent:workbuddy` / `subagent:a7`（唯一定义：`domain/actor_spec.ts`）。' +
+        '★ 无前缀的老格式（`workbuddy`）⇒ **归一化为 `agent:workbuddy` 并在回执里明说**；含空格/中文/大写/超长的**直接拒**。' +
+        '★ 不传 ⇒ 落回 AGENT_IO_ACTOR ⇒ 都没有就「提醒 + 放行」（要改拒绝：AGENT_IO_ACTOR_STRICT=1）。',
+    ),
+};
