@@ -291,6 +291,16 @@ export const OP_SPECS: readonly OpSpec[] = [
       '★ 写完记得 `design_line { action:\'gen-db\' }`（design-db 是契约门的输入，旧了就成了假门）。',
   },
   {
+    // ★★★ 2026-10-24：设计册 `excluded`（**排除清单**）的唯一写端 —— 沉默缺口判据的另一半：
+    //   “盘上有 ∧ 册上无 ∧ 不在排除清单”才算缺口。path 支持目录前缀（如 “certs/”）。
+    type: 'excluded',
+    ops: ['update'],
+    idRequired: false,
+    required: { update: ['excluded'] },
+    note:
+      '★ `data.excluded` = `[{path, reason}]`（path 支持目录前缀；reason 必填——排除是管辖范围声明，说清为什么不管）。',
+  },
+  {
     type: 'task',
     // ★ 2026-10-20：加 relaunch（void → candidate，重新立卡；判据由 publish 重给）
     // ★★★ 2026-10-22：加 renew（续租）/ expire（自己过期回 candidate）——
@@ -474,6 +484,7 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
   //   **"置 done 必带证据"这道闸在真实路径上根本进不去**（传 ⇒ 键不认；不传 ⇒ 闸拒）。
   //   ★ 键集仍**从实现读出**：`update_feature.ts` 的 `case 'status'` 现在读 `op.data.evidence`。
   status: ['status', 'evidence'],
+  excluded: ['excluded'],
   annotation: ['text', 'annotation_id', 'node_id', 'author', 'resolution_note', 'severity'],
   approval: ['annotation_id', 'assignee', 'comment', 'decision', 'reviewer', 'submitter'],
   snapshot: ['label', 'description', 'snapshot_id'],

@@ -37,7 +37,7 @@ import { addExpectedApi, updateExpectedApi, deleteExpectedApi, setExpectedApis, 
 import { updateStatus } from './status_tools.js';
 // ★★★ 2026-10-17（task_home）：任务格的**唯一写端**（claim / release / complete）。
 //   ★ 本文件只做**路由**；任务态的迁移与判定住 `task_ops.ts`（不在别处直接改 state）。
-import { applyTodoOp, applyTaskOp, applyTaskPlanOp } from './task_ops.js';
+import { applyExcludedOp, applyTodoOp, applyTaskOp, applyTaskPlanOp } from './task_ops.js';
 // ★★★ T340：**自洽性闸** —— 改设计即校验自洽。判据是现成的 `validateDSL`（`domain/validator.ts:159`，
 //   查 dangling_edge / duplicate_id / anchor_broken / reasoning 引用），**本处只调不改**（判定与 schema 都不动）。
 import { validateDSL } from '../../../domain/validator.js';
@@ -105,6 +105,8 @@ export interface FeatureOperation {
    *   ★ publish 的内容来自该节点的 `decision`，**不收** data 里的手写描述）
    * - task_plan：**设计册 `task_plan.state_machine` 的唯一写端**（op=update；`data.states` 必须 === `TASK_STATES`，
    *   `data.transition` 按 id upsert。此前它没有写入口 ⇒ 只能手改 JSON = 绕过唯一写端）
+   * - excluded：**设计册排除清单的唯一写端**（op=update；`data.excluded` = `[{path, reason}]`，path 支持目录前缀。
+   *   沉默缺口判据的另一半：盘上有 ∧ 册上无 ∧ 不在排除清单才算缺口）
    */
   type:
     | 'node'
@@ -120,6 +122,7 @@ export interface FeatureOperation {
     | 'decision'
     | 'task'
     | 'task_plan'
+    | 'excluded'
     | 'todo';
   /** 目标 ID：node_id / edge_id / file_id（api 类型为所属 file_id）；annotation/approval/snapshot/layout/simulation 用 data 传参，本字段可空 */
   id?: string;
@@ -522,6 +525,10 @@ async function applyOperation(
       // ★★★ 2026-10-23：设计册 `task_plan.state_machine` 的**唯一写端**（此前这个字段只能手改 JSON
       //   = 绕过唯一写端 —— `task_schema.ts` 里记着这条债）。见 `task_ops#applyTaskPlanOp`。
       return applyTaskPlanOp(feature, op);
+    case 'excluded':
+      // ★★★ 2026-10-24：设计册 `excluded`（排除清单）的唯一写端 —— 沉默缺口判据的另一半。
+      //   见 `task_ops#applyExcludedOp`。
+      return applyExcludedOp(feature, op.data ?? {});
     default:
       throw new Error(`未知操作类型: ${op.type satisfies never}`);
   }

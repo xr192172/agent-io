@@ -91,6 +91,8 @@ export function lineReport(root: string, feature: string): LineReport {
   }
 
   // ── ③ / ④ 设计 DSL（人写意图）= ③ 的产物 ──
+  /** 设计册 `excluded`（排除清单，2026-10-24 裁 A）：显式排除的路径不是沉默缺口，是管辖范围声明 */
+  let excludedList: Array<{ path: string; reason: string }> = [];
   let dNodes = 0;
   let dDecisions = 0;
   let dReqs = 0;
@@ -104,6 +106,7 @@ export function lineReport(root: string, feature: string): LineReport {
       0,
     );
     dTodos = (j.todos ?? []).length;
+    excludedList = (j.excluded ?? []) as Array<{ path: string; reason: string }>;
   }
 
   // ── ⑤ 设计 DSL → 设计 DB ──
@@ -133,7 +136,9 @@ export function lineReport(root: string, feature: string): LineReport {
   }
 
   // ── ⑥ 设计 DB → 源码：★ 真读数（覆盖差），不是"未实现" ──
-  const uncovered = sourceFiles.filter((s) => !covered.has(s));
+  // ★ 2026-10-24：显式排除（设计册 excluded，path 支持目录前缀）——排除的不是缺口，是管辖范围声明
+  const isExcludedPath = (p: string) => excludedList.some((x) => p === x.path || p.startsWith(x.path));
+  const uncovered = sourceFiles.filter((s) => !covered.has(s) && !isExcludedPath(s));
   const coverRate = sourceFiles.length > 0 ? ((covered.size / sourceFiles.length) * 100).toFixed(1) : '0.0';
 
   const steps: LineStep[] = [
@@ -186,7 +191,7 @@ export function lineReport(root: string, feature: string): LineReport {
       reading:
         dbCount && sourceFiles.length
           ? `覆盖：设计 DB ${dbCount} 份 / 源码 ${n(sourceFiles.length)} 文件 = ${coverRate}%；` +
-            `★ 沉默缺口（盘上有 ∧ 册上无 ∧ 无 excluded_reason）${n(uncovered.length)} 个` +
+            `★ 沉默缺口（盘上有 ∧ 册上无 ∧ 无 excluded_reason ∧ 不在排除清单）${n(uncovered.length)} 个（显式排除 ${excludedList.length} 条）` +
             (uncovered.length
               ? `：${uncovered.slice(0, 10).join(' ; ')}${uncovered.length > 10 ? ' …' : ''}` +
                 ` —— 逐个裁「纳入/显式排除」（意图推不出来，不自动建节点；纳入后走 L1 建构卡）`

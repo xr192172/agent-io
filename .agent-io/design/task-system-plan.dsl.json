@@ -10645,12 +10645,207 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "kind": "attestation",
-            "by": "llm",
-            "at": "2026-10-21T08:20:10.000Z",
-            "why": "op_data_spec.ts：todo.ops 加 update/retire/delete；required 加 update[summary,reason]/retire[reason]/delete[reason]；新增 opsRequiringId 并按 op 判 id；TYPE_KNOWN_KEYS.todo 加 reason；renderOpSpecs 渲染已核对。实测 npx tsc --noEmit = 0 error",
-            "source_node_id": "file_src_application_design_dsl_ops_op_data_spec_ts"
+            "at": "2026-10-24T10:55:00+08:00",
+            "command": "npm run build && npm run verify && excluded.update 实测 + design_line report 复测",
+            "kind": "reading",
+            "observed": "verify 9/9；excluded.update 落 5 条排除声明（certs//scripts//dogfood//.tmp-/translate.json）；沉默缺口 122→16（剩余=observe-lang 14+src 2，全部是真待纳入）"
           }
+        },
+        "task": {
+          "id": "file_src_application_design_dsl_ops_op_data_spec_ts",
+          "summary": "edit_dsl 各 type/op 的 data 键集（NODE_DATA_KEYS / OP_SPECS），由类型级断言防漂移",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:workbuddy-glm5",
+          "claimed_at": "2026-10-24T02:56:47.320Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "BY_TYPE",
+                "fp": "d4c32e3a249699bc23de730197a0ef9e7d130cda"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "CheckedOperation",
+                "fp": "598fc2ecaaf0e1b30c672062732f8b64a02b10d3"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "EDGE_DATA_KEYS",
+                "fp": "2d91941a8584caaad7880f7593b5b951e8a3c6fb"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "EdgeKeysExtra",
+                "fp": "aa6be5490e306d112a1c7545ffa64943be73f228"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "EdgeKeysMissing",
+                "fp": "1a333b4e17370735dca7b112bd2510e84aa8e1fc"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "EdgeOwnedKeys",
+                "fp": "1b9b578756a3eda0b3bba38f178a7b599761ff6d"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "FILE_DATA_KEYS",
+                "fp": "ceb2a33c9e4a78a28bf0b1eb536d27572f773652"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "FeatureOperationLike",
+                "fp": "3d96a0b3a54f11f1c68a91c58766fb2d2b3ebd58"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "FileKeysExtra",
+                "fp": "b4e563205de5275b592ae5700d9ed934234cbdce"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "FileKeysMissing",
+                "fp": "78f7027a641e9dadc273331bfe812d1dad2f266a"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "FileOwnedKeys",
+                "fp": "14293984e3c9922cccee49f271ed7e96cd4bc3cd"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "KnownKeysExtraTypes",
+                "fp": "121efb3b7c0a210f33cdfd86f7016d1ec08c85ca"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "KnownKeysMissingTypes",
+                "fp": "153dec3f1317a1fddb80f0c839182243c13536a3"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "NODE_DATA_KEYS",
+                "fp": "4b1e054cbc9f6e1c2b3d5f3e66f8f293986b001d"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "NodeKeysExtraInList",
+                "fp": "408112f0daba3d8b79a774b59d9c6614b81e02d3"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "NodeKeysMissingFromList",
+                "fp": "fd3868b162ae814ee3267cc45d55df2502f83db5"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "NodeNonDataKeys",
+                "fp": "9efb58647bc966db2cce7c006b18d4483b966a29"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "NodeOwnedKeys",
+                "fp": "8a1b9dc18712a5964965afca71f06faa70ef0f13"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "OP_SPECS",
+                "fp": "564b55abe5a03318166847df0282a31c45c65c8e"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "OpSpec",
+                "fp": "5039769e742dc01a02e77f202b24eb4feb94a771"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "TYPE_KNOWN_KEYS",
+                "fp": "90eb11383fc823baa081f3952c25832105c5f5c7"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "_assertEdgeNoExtra",
+                "fp": "bfe0575f7db203138c655dac82f45c123e583c87"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "_assertEdgeNoMissing",
+                "fp": "8fed76ca06159d1f6b31e5143d4fc32332d4fe27"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "_assertFileNoExtra",
+                "fp": "67ea25a8520cfefb81d97dd0b486b44b82b4a82e"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "_assertFileNoMissing",
+                "fp": "724682e23bb22df80209605779b183754ab92035"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "_assertKnownKeysCoverAll",
+                "fp": "664434e9d5121f6503fb33f6a64b3a1a97fc32f0"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "_assertKnownKeysNoExtraType",
+                "fp": "931e1bc7ab36618c043b9dc07f6abb3ad1e8cb80"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "_assertNodeKeysNoExtra",
+                "fp": "e9f86fb898dd1d68d141c7c43b52eb8bcbb0353f"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "_assertNodeKeysNoMissing",
+                "fp": "6898856caebd3ebb06442dc906da076b345bd953"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "checkOpSpec",
+                "fp": "9cb9530778326278ece43bdaf5275484a2edf354"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "renderOpSpecs",
+                "fp": "43d7b2f7f96b1c1dfc7eedb9e3178b0f2cdda334"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/dsl_ops/op_data_spec.ts",
+                "content_hash": "c618c47a840c88e9a9f911994a59753a1720f9e2"
+              }
+            ],
+            "computed_at": "2026-10-24T02:56:47.258Z",
+            "basis": [
+              "declared",
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-24T03:06:16.911Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify && excluded.update 实测 + design_line report 复测",
+                "input": "266b0b67491a87cfc7019eca90f5eb9d5eee77ff",
+                "code": "db5a54ac600127f325e5c32972c88d546e8edcee",
+                "covers": [
+                  "src/application/design/dsl_ops/op_data_spec.ts"
+                ]
+              },
+              "observed": "verify 9/9；excluded.update 落 5 条排除声明（certs//scripts//dogfood//.tmp-/translate.json）；沉默缺口 122→16（剩余=observe-lang 14+src 2，全部是真待纳入）",
+              "command": "npm run build && npm run verify && excluded.update 实测 + design_line report 复测"
+            }
+          ]
         }
       },
       {
@@ -12929,7 +13124,7 @@
             "author": "llm"
           }
         ],
-        "status": "done",
+        "status": "in_progress",
         "overlay": {
           "path": "src/application/design/dsl_ops/task_ops.ts",
           "kind": "file",
@@ -12944,10 +13139,10 @@
         "task": {
           "id": "file_src_application_design_dsl_ops_task_ops_ts",
           "summary": "history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
           "owner": "agent:workbuddy-glm5",
-          "claimed_at": "2026-10-24T02:04:37.416Z",
+          "claimed_at": "2026-10-24T03:01:18.255Z",
           "read_set": {
             "symbols": [
               {
@@ -13049,10 +13244,10 @@
             "files": [
               {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "deeb1aa73228ff977538dfdefb68442907e78145"
+                "content_hash": "5e0c5a8c71d43f72e23d571d3143facabad19f85"
               }
             ],
-            "computed_at": "2026-10-24T02:04:37.382Z",
+            "computed_at": "2026-10-24T03:01:18.188Z",
             "basis": [
               "declared",
               "expectations"
@@ -13077,7 +13272,10 @@
               "observed": "verify 9/9；moveTodoCardsToHistory 两处找卡（todos[] ∪ geometry.nodes[].task），节点卡入史通道打通；功能验收待 server 重启后实测（3 张 done 节点卡待搬）",
               "command": "npm run build && npm run verify"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-24T03:01:18.255Z",
+          "reopen_reason": "排除清单机制（裁 A）施工：src/application/design/dsl_ops/task_ops.ts 加 applyExcludedOp（排除清单唯一写端，沉默缺口判据的另一半）",
+          "reopened_from": "agent:workbuddy-glm5"
         }
       },
       {
@@ -16953,7 +17151,180 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_application_design_dsl_ops_update_feature_ts",
+          "summary": "`edit_dsl` 的**唯一写入口**（`updateFeature`）：node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag/decision/todo/task 全部写操作都从这一处收口。它只做三件事且顺序固定：①**逐 op 应用**（先过 `checkOpSpec` 的 data 契约，再路由到各自原子实现）；②**自洽性闸**（全部 op 落定后回读 DSL 跑 `validateDSL`，只把 `after.keys − baseline.keys` —— **本次新引入**的错 —— 判为失败）；③**失败回滚到调用前字节**（任一 op 抛错或闸判红，就用调用前的原始文件字节覆盖回去 —— 不是 `saveDSL(backup)`，`_dsl_rev` / `_sync` 原样不动）。★ 边界（它不做什么）：**不判业务对错**（一条边该不该有、决策该怎么写，是各 op 与人的设计结论）；**不改 schema、不改 `validateDSL` 判定**；**不做重试/补偿**（失败就是全回滚，没有半成功）；**不是任务态写端**（task 的 claim/complete 只经 `task_ops`）；也**不把决策搬进 overlay**（那是收口后的 `syncDecisionsToOverlay`，本函数只是调用它）。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:workbuddy-glm5",
+          "claimed_at": "2026-10-24T02:56:53.403Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "DecisionTarget",
+                "fp": "0296cda0d49ca4155d8cbb5904542f7dbda35508"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "DslWithMeta",
+                "fp": "a238948ba9ab0a8248002849886d3d5badb6f5a7"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "FeatureOperation",
+                "fp": "fd5cd9828656b1bfea9d6a6ee1528aa3a8550f8c"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "UpdateFeatureInput",
+                "fp": "e8cec45a48a60b6f242471d434a4c8f9f59ea1b6"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "applyApiOp",
+                "fp": "ed746e84e266794ec91ed44722d7da3d42316d49"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "applyDecisionOp",
+                "fp": "210a30f738f80d468efefd26c30871a9b659701c"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "applyEdgeOp",
+                "fp": "6071c9854385221bbd680059e3d15a66ecb1cd3c"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "applyFileOp",
+                "fp": "53c04c0e941e7baa2e5847befdd75488616bd3af"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "applyLayoutOp",
+                "fp": "cdf99160ee982dea28ac088dfe465a6af2ef9587"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "applyNodeOp",
+                "fp": "e25c2378a2b90ad8cb38c5e5be0130fb78d9f609"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "applyOperation",
+                "fp": "465ba803b40251786353d6f137e8cdfc3becbf50"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "applySimulationOp",
+                "fp": "c1e5821b8a615800b0cadf658ef4c786cf773c33"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "applySnapshotOp",
+                "fp": "cf9cf03f3bec4e8d5d1ac5a1fb7f0ac3322bb037"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "applyTagOp",
+                "fp": "91b1b9da48f773778ca45af63be3c099e9aa8bd0"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "findDecisionTargetNode",
+                "fp": "a838889e0df3c0cdca5941939f4a2c2e3a1491b8"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "normRel",
+                "fp": "54fa2d824671ed7699b9b66c1093a751b1d32ec9"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "parseAlternatives",
+                "fp": "38c97f65a616c5248c83ca229f1acb7959ee4153"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "parseDissent",
+                "fp": "af34b4fdc474b9375e3598746625172e25cc5baa"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "resolveDecisionTarget",
+                "fp": "82c569f72fd812e55e925169d4950f380942cd5c"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "resolveMemberFiles",
+                "fp": "2eb83fd5bc5eb73114480d215261f4d92d346f03"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "touchedNodeIds",
+                "fp": "fb1ac245fe6a6fe0b7fa8d6e09543963adf6031a"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "touchedOf",
+                "fp": "1e88a0ae0c2afb47952e453411bd41c9cd504b2d"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "updateFeature",
+                "fp": "1cd408a34b27a53af9ecdd75b4be8465de82e4dd"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "updateFeatureCore",
+                "fp": "650df528a8f1fc267c8097867f928bb872c4f470"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/dsl_ops/update_feature.ts",
+                "content_hash": "79b948beca4eb60f585ffb712122630340b9696b"
+              }
+            ],
+            "computed_at": "2026-10-24T02:56:53.346Z",
+            "basis": [
+              "declared",
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-24T03:07:28.711Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify && excluded.update 实测",
+                "input": "5d64d47a61b78113d041df622ecf18c92b164f2d",
+                "code": "3342634e85dcdb66c3d193003b5856e46589c713",
+                "covers": [
+                  "src/application/design/dsl_ops/update_feature.ts"
+                ]
+              },
+              "observed": "verify 9/9；case excluded 分派 + applyExcludedOp 接线完成；excluded.update 落 5 条排除声明实测通过",
+              "command": "npm run build && npm run verify && excluded.update 实测"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/design/dsl_ops/update_feature.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-24T10:55:00+08:00",
+            "command": "npm run build && npm run verify && excluded.update 实测",
+            "kind": "reading",
+            "observed": "verify 9/9；case excluded 分派 + applyExcludedOp 接线完成；excluded.update 落 5 条排除声明实测通过"
+          }
+        }
       },
       {
         "id": "file_src_application_design_handlers_ts",
@@ -56473,10 +56844,62 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "kind": "expectations",
-            "all_green": true,
-            "unsupported": 0
+            "at": "2026-10-24T10:55:00+08:00",
+            "command": "npm run build && npm run verify && design_line report 复测",
+            "kind": "reading",
+            "observed": "verify 9/9；⑥ 沉默缺口读数接入排除清单过滤（口径升级为『∧ 不在排除清单』+显式排除计数），实测 122→16（剩余=observe-lang 14+src 2）"
           }
+        },
+        "task": {
+          "id": "file_src_application_design_line_design_line_ts",
+          "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:workbuddy-glm5",
+          "claimed_at": "2026-10-24T02:56:54.218Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/line/design_line.ts",
+                "name": "designLineHandler",
+                "fp": "fd39cdcff8dc0b18baa3f4dc38782ea87073f493"
+              },
+              {
+                "file": "src/application/design/line/design_line.ts",
+                "name": "lineReport",
+                "fp": "2f7e4cb10992dbe2fe2852bd8a6ecb7999a390c2"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/line/design_line.ts",
+                "content_hash": "f6053a04865033b36e2b027390866f10776bf9dd"
+              }
+            ],
+            "computed_at": "2026-10-24T02:56:54.157Z",
+            "basis": [
+              "declared",
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-24T03:08:54.075Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify && design_line report 复测",
+                "input": "956602cfa0e08ec0da92c47d4e96662b6e963434",
+                "code": "69dc988435d80143aae88630e49ebd8bf1296aca",
+                "covers": [
+                  "src/application/design/line/design_line.ts"
+                ]
+              },
+              "observed": "verify 9/9；⑥ 沉默缺口读数接入排除清单过滤（口径升级为『∧ 不在排除清单』+显式排除计数），实测 122→16（剩余=observe-lang 14+src 2）",
+              "command": "npm run build && npm run verify && design_line report 复测"
+            }
+          ]
         }
       },
       {
@@ -86158,7 +86581,7 @@
         ],
         "lines": 670,
         "layer": "core",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -86216,7 +86639,8 @@
           }
         ],
         "lines": 1210,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_design_handlers_ts",
@@ -115616,11 +116040,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T02:32:08.812Z",
+    "saved_at": "2026-10-24T03:08:54.501Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 225606001,
+    "age": 227811690,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -118606,7 +119030,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1315,
+  "_dsl_rev": 1318,
   "feature_tree": {
     "features": [
       {
@@ -125978,5 +126402,27 @@
   },
   "overlay_global": {
     "title": "任务系统（设计 fork 自实际）"
-  }
+  },
+  "excluded": [
+    {
+      "path": "certs/",
+      "reason": "证与夹具——量具，不属产品面（91 个文件，设计册只管产品面）"
+    },
+    {
+      "path": "scripts/",
+      "reason": "脚本与探针——量具（63 个文件；report 口径本就排除）"
+    },
+    {
+      "path": "dogfood/",
+      "reason": "试验场（4 个文件）"
+    },
+    {
+      "path": ".tmp-",
+      "reason": "临时物（.tmp-audit2.mjs / .tmp-readend.mjs）"
+    },
+    {
+      "path": ".agent-io/design/task-system-plan.translate.json",
+      "reason": "自家生成物——设计册不索引自家数据目录"
+    }
+  ]
 }

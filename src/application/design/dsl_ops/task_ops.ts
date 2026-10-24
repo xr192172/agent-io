@@ -2887,6 +2887,45 @@ function deleteTodoCard(feature: string, id: string, data: Record<string, unknow
  *   要重做 ⇒ `todo.add` 一张新卡（summary 里点名它接的是哪段历史）。
  * · 本 op **不改 state**、**不改 card_json 一个字节** —— 它只是"换一张表"。
  */
+/**
+ * `excluded.update` —— **设计册排除清单的唯一写端**（2026-10-24，裁 A）。
+ *
+ * ## 它回答的问题
+ * 沉默缺口 = 「盘上有 ∧ 册上无 ∧ 无 excluded_reason」。册上无的文件连节点都没有 ⇒
+ * `excluded_reason` 挂不上 ⇒ 排除**没有落点**（实测 176 个缺口里 ~160 个是量具/夹具，
+ * 它们本来就不该进设计册——该走的是册子级声明，不是批量建壳节点）。
+ *
+ * ## 形状
+ * `dsl.excluded = [{path, reason}]`，path 支持目录前缀（如 `"certs/"`）。
+ * 读端：`design_line report` ⑥（沉默缺口过滤）、未来的对账读数 —— 一处声明，处处引用。
+ */
+export function applyExcludedOp(feature: string, data: Record<string, unknown>): EditResult {
+  const raw = data.excluded;
+  if (!Array.isArray(raw)) {
+    throw new Error('excluded.update 需要 data.excluded（数组：[{path, reason}]，path 支持目录前缀如 "certs/"）');
+  }
+  const normalized = raw.map((e) => {
+    const p = typeof (e as { path?: unknown }).path === 'string' ? String((e as { path: string }).path).trim() : '';
+    const r = typeof (e as { reason?: unknown }).reason === 'string' ? String((e as { reason: string }).reason).trim() : '';
+    if (!p) throw new Error(`excluded.update 的每条都要有非空 path（收到 ${JSON.stringify(e)}）`);
+    if (!r) throw new Error(`excluded.update 的每条都要有非空 reason（排除是管辖范围声明，要说清为什么不管——${p}）`);
+    return { path: p, reason: r };
+  });
+  const dsl = getDesignSheet(feature);
+  if (!dsl) throw new Error(`feature "${feature}" 不存在`);
+  const next = { ...dsl, excluded: normalized } as typeof dsl;
+  const ov = loadOverlay(feature) ?? seedOverlayFromDsl(next);
+  saveDesignSheet(applyOverlay(next, ov));
+  return {
+    message:
+      `已把 feature "${feature}" 的排除清单更新为 ${normalized.length} 条（path 支持目录前缀）：\n` +
+      normalized.map((e) => `  · ${e.path} —— ${e.reason}`).join('\n') +
+      `\n★ 之后：design_line report 的沉默缺口、未来的对账读数都会跳过这些路径（显式排除 = 账面声明，不再是沉默缺口）。`,
+    feature,
+    data: { excluded: normalized },
+  };
+}
+
 function moveTodoCardsToHistory(feature: string, data: Record<string, unknown>, agent?: string): EditResult {
   const raw = data.ids;
   if (!Array.isArray(raw) || raw.length === 0) {
