@@ -61087,6 +61087,38 @@
           ],
           "updated_at": "2026-10-24T08:29:06.055Z"
         }
+      },
+      {
+        "id": "project_task-system-plan",
+        "label": "📋 项目卡 · task-system-plan（主册）",
+        "x": 120,
+        "y": -80,
+        "width": 260,
+        "height": 72,
+        "type": "doc",
+        "decision": {
+          "summary": "项目卡 · task-system-plan（active·主册）：agent-io 本体开发，根路径 D:/project_develop/design-canvas。本项目同时是『项目管理体系』的承载册——全部项目卡的跨项目总览读端在此实现（§11）。验收判据：npm run verify 9/9 + 判据全量求值全绿。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "judgeExpectations",
+                "recordTaskHistory"
+              ],
+              "path": "src/application/design/intent/expectations.ts",
+              "why": "主工程的核心机制锚：判据求值器与入史（各项目卡依赖的能力在本仓实现）"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "PROJECT_KINDS"
+              ],
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "why": "项目状态机（lab/active/archived）需在 op 词表登记后才可流转"
+            }
+          ],
+          "updated_at": "2026-10-24T12:55:24.165Z"
+        }
       }
     ],
     "edges": [
@@ -118979,11 +119011,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T10:17:11.107Z",
+    "saved_at": "2026-10-24T12:55:24.196Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 253508296,
+    "age": 263001385,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -121975,7 +122007,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1430,
+  "_dsl_rev": 1432,
   "feature_tree": {
     "features": [
       {

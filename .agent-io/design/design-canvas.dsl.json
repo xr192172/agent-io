@@ -3572,6 +3572,37 @@
           "borderRadius": 4
         },
         "arch_layer": "core"
+      },
+      {
+        "id": "project_design-canvas",
+        "label": "📋 项目卡 · design-canvas",
+        "x": 120,
+        "y": -80,
+        "width": 260,
+        "height": 72,
+        "type": "doc",
+        "decision": {
+          "summary": "项目卡 · design-canvas（active·母册）：设计画布本册——agent-io 的诞生地与设计侧母体；可视化由 dsl-workbench 独立仓承担。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "render_design"
+              ],
+              "path": "AGENTS.md",
+              "why": "母 feature 的定位锚：设计册可视化入口（render_design）"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "dsl-workbench"
+              ],
+              "path": "README.md",
+              "why": "可视化前端是独立仓库，本册只记账（README 在案）"
+            }
+          ],
+          "updated_at": "2026-10-24T12:55:47.409Z"
+        }
       }
     ],
     "edges": [
@@ -26966,13 +26997,13 @@
     }
   ],
   "annotations": [],
-  "_dsl_rev": 183,
+  "_dsl_rev": 185,
   "_sync": {
-    "saved_at": "2026-10-24T00:58:06.446Z",
+    "saved_at": "2026-10-24T12:55:47.413Z",
     "source": "design_sheet",
     "feature": "design-canvas",
     "scanRev": 1792582983534,
-    "age": 220502912,
+    "age": 263563879,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },

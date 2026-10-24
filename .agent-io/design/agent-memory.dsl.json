@@ -1,0 +1,2341 @@
+{
+  "id": "imported_agent-memory",
+  "type": "feature_diagram",
+  "feature": "agent-memory",
+  "version": "1.0.0",
+  "title": "agent-memory 记忆图谱独立仓",
+  "source_root": "D:\\project_develop\\agent-memory",
+  "geometry": {
+    "layout": "free",
+    "width": 1490,
+    "height": 1602,
+    "nodes": [
+      {
+        "id": "dir_logging",
+        "label": "📁 logging",
+        "x": 60,
+        "y": 60,
+        "width": 280,
+        "height": 446,
+        "type": "module",
+        "style": {
+          "bg": "#152141",
+          "color": "#90caf9",
+          "borderRadius": 8
+        }
+      },
+      {
+        "id": "file_builder_go",
+        "label": "builder.go",
+        "x": 450,
+        "y": 60,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "builder.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_compat_types_go",
+        "label": "compat_types.go",
+        "x": 800,
+        "y": 60,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "compat_types.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_embedder_go",
+        "label": "embedder.go",
+        "x": 1150,
+        "y": 60,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "embedder.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_explorer_go",
+        "label": "explorer.go",
+        "x": 60,
+        "y": 546,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "explorer.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_gate_go",
+        "label": "gate.go",
+        "x": 410,
+        "y": 546,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "gate.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_gate_policy_go",
+        "label": "gate_policy.go",
+        "x": 760,
+        "y": 546,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "gate_policy.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_graph_cache_go",
+        "label": "graph_cache.go",
+        "x": 1110,
+        "y": 546,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "graph_cache.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_graph_writer_go",
+        "label": "graph_writer.go",
+        "x": 60,
+        "y": 650,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "graph_writer.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_gravity_field_go",
+        "label": "gravity_field.go",
+        "x": 410,
+        "y": 650,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "gravity_field.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_heat_go",
+        "label": "heat.go",
+        "x": 760,
+        "y": 650,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "heat.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_index_text_go",
+        "label": "index_text.go",
+        "x": 1110,
+        "y": 650,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "index_text.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_knowledge_go",
+        "label": "knowledge.go",
+        "x": 60,
+        "y": 754,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "knowledge.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_llm_go",
+        "label": "llm.go",
+        "x": 410,
+        "y": 754,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "llm.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_logging_file_go",
+        "label": "file.go",
+        "x": 80,
+        "y": 110,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "logging/file.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_logging_logging_go",
+        "label": "logging.go",
+        "x": 80,
+        "y": 318,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "logging/logging.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_logging_rotate_go",
+        "label": "rotate.go",
+        "x": 80,
+        "y": 214,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "logging/rotate.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_logging_router_go",
+        "label": "router.go",
+        "x": 80,
+        "y": 422,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "logging/router.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_memory_store_go",
+        "label": "memory_store.go",
+        "x": 760,
+        "y": 754,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "memory_store.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_meta_skill_go",
+        "label": "meta_skill.go",
+        "x": 1110,
+        "y": 754,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "meta_skill.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_query_rewriter_go",
+        "label": "query_rewriter.go",
+        "x": 60,
+        "y": 858,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "query_rewriter.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_remote_embedder_go",
+        "label": "remote_embedder.go",
+        "x": 410,
+        "y": 858,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "remote_embedder.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_reranker_go",
+        "label": "reranker.go",
+        "x": 760,
+        "y": 858,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "reranker.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_retrieval_pipeline_go",
+        "label": "retrieval_pipeline.go",
+        "x": 1110,
+        "y": 858,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "retrieval_pipeline.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_retriever_go",
+        "label": "retriever.go",
+        "x": 760,
+        "y": 962,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "retriever.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_retriever_DeepRetriever_go",
+        "label": "retriever_DeepRetriever.go",
+        "x": 60,
+        "y": 962,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "retriever_DeepRetriever.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_retriever_ShallowRetriever_go",
+        "label": "retriever_ShallowRetriever.go",
+        "x": 410,
+        "y": 962,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "retriever_ShallowRetriever.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_rrf_go",
+        "label": "rrf.go",
+        "x": 1110,
+        "y": 962,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "rrf.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_sandbox_go",
+        "label": "sandbox.go",
+        "x": 60,
+        "y": 1066,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "sandbox.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_shallow_writer_go",
+        "label": "shallow_writer.go",
+        "x": 410,
+        "y": 1066,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "shallow_writer.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_skill_gate_go",
+        "label": "skill_gate.go",
+        "x": 760,
+        "y": 1066,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "skill_gate.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_skill_import_go",
+        "label": "skill_import.go",
+        "x": 1110,
+        "y": 1066,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "skill_import.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_skill_registry_go",
+        "label": "skill_registry.go",
+        "x": 60,
+        "y": 1170,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "skill_registry.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_skill_tree_go",
+        "label": "skill_tree.go",
+        "x": 410,
+        "y": 1170,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "skill_tree.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_sleep_go",
+        "label": "sleep.go",
+        "x": 60,
+        "y": 1274,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "sleep.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_sleep_config_go",
+        "label": "sleep_config.go",
+        "x": 760,
+        "y": 1170,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "sleep_config.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_sleep_experiment_go",
+        "label": "sleep_experiment.go",
+        "x": 1110,
+        "y": 1170,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "sleep_experiment.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_sleep_prune_go",
+        "label": "sleep_prune.go",
+        "x": 410,
+        "y": 1274,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "sleep_prune.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_sleep_rem_go",
+        "label": "sleep_rem.go",
+        "x": 760,
+        "y": 1274,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "sleep_rem.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_sleep_scheduler_go",
+        "label": "sleep_scheduler.go",
+        "x": 1110,
+        "y": 1274,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "sleep_scheduler.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_sleep_wander_go",
+        "label": "sleep_wander.go",
+        "x": 60,
+        "y": 1378,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "sleep_wander.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_sqlite_store_go",
+        "label": "sqlite_store.go",
+        "x": 410,
+        "y": 1378,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "sqlite_store.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_tool_feedback_go",
+        "label": "tool_feedback.go",
+        "x": 760,
+        "y": 1378,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "tool_feedback.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_vector_store_go",
+        "label": "vector_store.go",
+        "x": 1110,
+        "y": 1378,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "vector_store.go",
+        "style": {
+          "bg": "#1a4a7a",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "project_agent-memory",
+        "label": "📋 项目卡 · agent-memory",
+        "x": 120,
+        "y": -80,
+        "width": 260,
+        "height": 72,
+        "type": "doc",
+        "decision": {
+          "summary": "项目卡 · agent-memory（active）：记忆图谱独立仓，自 ai-base 提取（MIT 出处注明）。根路径 D:/project_develop/agent-memory；五部位独立验证全✅（verify/e2e_test.go 461 行）；下一批：本地 ONNX embedder（bge-small-zh）+ 接入秘书席。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "func TestE2EMemoryLifecycle"
+              ],
+              "path": "verify/e2e_test.go",
+              "why": "端到端真实功能验证是本项目结题的验收判据（独立验证非作者自证）"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "LLMClient",
+                "SkillRegistry",
+                "SandboxRunner"
+              ],
+              "path": "verify/e2e_test.go",
+              "why": "接口三件套+兼容 struct 必须保留在册（提取的接口缝是长期契约）"
+            }
+          ],
+          "updated_at": "2026-10-24T12:54:44.967Z"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "contains_logging_logging_file_go",
+        "from": "dir_logging",
+        "to": "file_logging_file_go",
+        "label": "contains"
+      },
+      {
+        "id": "contains_logging_logging_logging_go",
+        "from": "dir_logging",
+        "to": "file_logging_logging_go",
+        "label": "contains"
+      },
+      {
+        "id": "contains_logging_logging_rotate_go",
+        "from": "dir_logging",
+        "to": "file_logging_rotate_go",
+        "label": "contains"
+      },
+      {
+        "id": "contains_logging_logging_router_go",
+        "from": "dir_logging",
+        "to": "file_logging_router_go",
+        "label": "contains"
+      },
+      {
+        "id": "dep_file_builder_go_dir_logging",
+        "from": "file_builder_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_graph_cache_go_dir_logging",
+        "from": "file_graph_cache_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_graph_writer_go_dir_logging",
+        "from": "file_graph_writer_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_heat_go_dir_logging",
+        "from": "file_heat_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_knowledge_go_dir_logging",
+        "from": "file_knowledge_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_meta_skill_go_dir_logging",
+        "from": "file_meta_skill_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_query_rewriter_go_dir_logging",
+        "from": "file_query_rewriter_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_reranker_go_dir_logging",
+        "from": "file_reranker_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_retrieval_pipeline_go_dir_logging",
+        "from": "file_retrieval_pipeline_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_retriever_go_dir_logging",
+        "from": "file_retriever_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_shallow_writer_go_dir_logging",
+        "from": "file_shallow_writer_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_skill_import_go_dir_logging",
+        "from": "file_skill_import_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_skill_tree_go_dir_logging",
+        "from": "file_skill_tree_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_sleep_config_go_dir_logging",
+        "from": "file_sleep_config_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_sleep_experiment_go_dir_logging",
+        "from": "file_sleep_experiment_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_sleep_go_dir_logging",
+        "from": "file_sleep_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_sleep_prune_go_dir_logging",
+        "from": "file_sleep_prune_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_sleep_rem_go_dir_logging",
+        "from": "file_sleep_rem_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_sleep_scheduler_go_dir_logging",
+        "from": "file_sleep_scheduler_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_sleep_wander_go_dir_logging",
+        "from": "file_sleep_wander_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_sqlite_store_go_dir_logging",
+        "from": "file_sqlite_store_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      },
+      {
+        "id": "dep_file_tool_feedback_go_dir_logging",
+        "from": "file_tool_feedback_go",
+        "to": "dir_logging",
+        "label": "imports ×4",
+        "type": "dashed",
+        "style": {
+          "strokeWidth": 2
+        }
+      }
+    ]
+  },
+  "semantic": {
+    "files": [
+      {
+        "id": "file_builder_go",
+        "path": "builder.go",
+        "responsibility": "核心层 · 根目录 — 50 个函数（导入自 10 个模块）",
+        "symbols": [
+          {
+            "name": "Builder",
+            "kind": "type",
+            "line": 53,
+            "end_line": 91,
+            "signature": "Builder()"
+          },
+          {
+            "name": "SyncNotifier",
+            "kind": "type",
+            "line": 95,
+            "end_line": 95,
+            "signature": "SyncNotifier()"
+          },
+          {
+            "name": "SkillSyncNotifier",
+            "kind": "type",
+            "line": 99,
+            "end_line": 99,
+            "signature": "SkillSyncNotifier()"
+          },
+          {
+            "name": "RecordOutcome",
+            "kind": "type",
+            "line": 1250,
+            "end_line": 1263,
+            "signature": "RecordOutcome()"
+          }
+        ],
+        "lines": 1731,
+        "layer": "core"
+      },
+      {
+        "id": "file_compat_types_go",
+        "path": "compat_types.go",
+        "responsibility": "核心层 · 根目录 — 0 个函数（导入自 0 个模块）",
+        "symbols": [
+          {
+            "name": "SearchEntry",
+            "kind": "type",
+            "line": 10,
+            "end_line": 26,
+            "signature": "SearchEntry()"
+          },
+          {
+            "name": "NodeDetail",
+            "kind": "type",
+            "line": 29,
+            "end_line": 35,
+            "signature": "NodeDetail()"
+          },
+          {
+            "name": "AgentSkillEntry",
+            "kind": "type",
+            "line": 39,
+            "end_line": 57,
+            "signature": "AgentSkillEntry()"
+          },
+          {
+            "name": "TranscriptEntry",
+            "kind": "type",
+            "line": 62,
+            "end_line": 67,
+            "signature": "TranscriptEntry()"
+          },
+          {
+            "name": "Session",
+            "kind": "type",
+            "line": 71,
+            "end_line": 79,
+            "signature": "Session()"
+          },
+          {
+            "name": "ToolDefWire",
+            "kind": "type",
+            "line": 84,
+            "end_line": 92,
+            "signature": "ToolDefWire()"
+          },
+          {
+            "name": "SkillSyncPayload",
+            "kind": "type",
+            "line": 95,
+            "end_line": 108,
+            "signature": "SkillSyncPayload()"
+          },
+          {
+            "name": "VectorStats",
+            "kind": "type",
+            "line": 113,
+            "end_line": 123,
+            "signature": "VectorStats()"
+          }
+        ],
+        "lines": 123,
+        "layer": "core"
+      },
+      {
+        "id": "file_embedder_go",
+        "path": "embedder.go",
+        "responsibility": "核心层 · 根目录 — 0 个函数（导入自 0 个模块）",
+        "symbols": [
+          {
+            "name": "Embedder",
+            "kind": "type",
+            "line": 9,
+            "end_line": 18,
+            "signature": "Embedder()"
+          },
+          {
+            "name": "EmbedCache",
+            "kind": "type",
+            "line": 22,
+            "end_line": 27,
+            "signature": "EmbedCache()"
+          }
+        ],
+        "lines": 27,
+        "layer": "core"
+      },
+      {
+        "id": "file_explorer_go",
+        "path": "explorer.go",
+        "responsibility": "核心层 · 根目录 — 14 个函数（导入自 2 个模块）",
+        "symbols": [
+          {
+            "name": "ExplorationState",
+            "kind": "type",
+            "line": 14,
+            "end_line": 19,
+            "signature": "ExplorationState()"
+          },
+          {
+            "name": "SearchRecord",
+            "kind": "type",
+            "line": 22,
+            "end_line": 29,
+            "signature": "SearchRecord()"
+          }
+        ],
+        "lines": 191,
+        "layer": "core"
+      },
+      {
+        "id": "file_gate_go",
+        "path": "gate.go",
+        "responsibility": "核心层 · 根目录 — 8 个函数（导入自 3 个模块）",
+        "symbols": [
+          {
+            "name": "ValidationScenario",
+            "kind": "type",
+            "line": 34,
+            "end_line": 38,
+            "signature": "ValidationScenario()"
+          },
+          {
+            "name": "EvalResult",
+            "kind": "type",
+            "line": 41,
+            "end_line": 45,
+            "signature": "EvalResult()"
+          },
+          {
+            "name": "SkillEvaluator",
+            "kind": "type",
+            "line": 50,
+            "end_line": 52,
+            "signature": "SkillEvaluator()"
+          },
+          {
+            "name": "HeldOutEvaluator",
+            "kind": "type",
+            "line": 59,
+            "end_line": 61,
+            "signature": "HeldOutEvaluator()"
+          }
+        ],
+        "lines": 196,
+        "layer": "core"
+      },
+      {
+        "id": "file_gate_policy_go",
+        "path": "gate_policy.go",
+        "responsibility": "核心层 · 根目录 — 10 个函数（导入自 1 个模块）",
+        "symbols": [
+          {
+            "name": "GateVocabulary",
+            "kind": "type",
+            "line": 57,
+            "end_line": 69,
+            "signature": "GateVocabulary()"
+          },
+          {
+            "name": "GatePolicy",
+            "kind": "type",
+            "line": 92,
+            "end_line": 101,
+            "signature": "GatePolicy()"
+          },
+          {
+            "name": "contractGatePolicy",
+            "kind": "type",
+            "line": 120,
+            "end_line": 120,
+            "signature": "contractGatePolicy()"
+          },
+          {
+            "name": "GateReceipt",
+            "kind": "type",
+            "line": 187,
+            "end_line": 197,
+            "signature": "GateReceipt()"
+          },
+          {
+            "name": "GateTransitionResult",
+            "kind": "type",
+            "line": 202,
+            "end_line": 206,
+            "signature": "GateTransitionResult()"
+          }
+        ],
+        "lines": 216,
+        "layer": "core"
+      },
+      {
+        "id": "file_graph_cache_go",
+        "path": "graph_cache.go",
+        "responsibility": "核心层 · 根目录 — 29 个函数（导入自 7 个模块）",
+        "symbols": [
+          {
+            "name": "NeighborInfo",
+            "kind": "type",
+            "line": 24,
+            "end_line": 27,
+            "signature": "NeighborInfo()"
+          },
+          {
+            "name": "CachedNode",
+            "kind": "type",
+            "line": 30,
+            "end_line": 35,
+            "signature": "CachedNode()"
+          },
+          {
+            "name": "GraphCache",
+            "kind": "type",
+            "line": 40,
+            "end_line": 52,
+            "signature": "GraphCache()"
+          }
+        ],
+        "lines": 526,
+        "layer": "core"
+      },
+      {
+        "id": "file_graph_writer_go",
+        "path": "graph_writer.go",
+        "responsibility": "核心层 · 根目录 — 14 个函数（导入自 9 个模块）",
+        "symbols": [
+          {
+            "name": "MergeRequest",
+            "kind": "type",
+            "line": 27,
+            "end_line": 36,
+            "signature": "MergeRequest()"
+          },
+          {
+            "name": "EdgeKey",
+            "kind": "type",
+            "line": 39,
+            "end_line": 43,
+            "signature": "EdgeKey()"
+          },
+          {
+            "name": "GraphWriter",
+            "kind": "type",
+            "line": 47,
+            "end_line": 63,
+            "signature": "GraphWriter()"
+          }
+        ],
+        "lines": 374,
+        "layer": "core"
+      },
+      {
+        "id": "file_gravity_field_go",
+        "path": "gravity_field.go",
+        "responsibility": "核心层 · 根目录 — 9 个函数（导入自 3 个模块）",
+        "symbols": [
+          {
+            "name": "PairForce",
+            "kind": "type",
+            "line": 21,
+            "end_line": 25,
+            "signature": "PairForce()"
+          },
+          {
+            "name": "GravityField",
+            "kind": "type",
+            "line": 31,
+            "end_line": 36,
+            "signature": "GravityField()"
+          },
+          {
+            "name": "minPairHeap",
+            "kind": "type",
+            "line": 39,
+            "end_line": 39,
+            "signature": "minPairHeap()"
+          }
+        ],
+        "lines": 238,
+        "layer": "core"
+      },
+      {
+        "id": "file_heat_go",
+        "path": "heat.go",
+        "responsibility": "核心层 · 根目录 — 22 个函数（导入自 9 个模块）",
+        "symbols": [
+          {
+            "name": "Filter",
+            "kind": "type",
+            "line": 22,
+            "end_line": 26,
+            "signature": "Filter()"
+          },
+          {
+            "name": "HeatEntry",
+            "kind": "type",
+            "line": 46,
+            "end_line": 64,
+            "signature": "HeatEntry()"
+          },
+          {
+            "name": "PromotionCandidate",
+            "kind": "type",
+            "line": 67,
+            "end_line": 71,
+            "signature": "PromotionCandidate()"
+          },
+          {
+            "name": "SkillEntry",
+            "kind": "type",
+            "line": 75,
+            "end_line": 88,
+            "signature": "SkillEntry()"
+          },
+          {
+            "name": "HeatStore",
+            "kind": "type",
+            "line": 92,
+            "end_line": 97,
+            "signature": "HeatStore()"
+          }
+        ],
+        "lines": 525,
+        "layer": "core"
+      },
+      {
+        "id": "file_index_text_go",
+        "path": "index_text.go",
+        "responsibility": "核心层 · 根目录 — 4 个函数（导入自 2 个模块）",
+        "lines": 104,
+        "layer": "core"
+      },
+      {
+        "id": "file_knowledge_go",
+        "path": "knowledge.go",
+        "responsibility": "核心层 · 根目录 — 18 个函数（导入自 9 个模块）",
+        "symbols": [
+          {
+            "name": "KnowledgeRelation",
+            "kind": "type",
+            "line": 27,
+            "end_line": 31,
+            "signature": "KnowledgeRelation()"
+          },
+          {
+            "name": "Experiment",
+            "kind": "type",
+            "line": 36,
+            "end_line": 39,
+            "signature": "Experiment()"
+          },
+          {
+            "name": "KnowledgeEntry",
+            "kind": "type",
+            "line": 42,
+            "end_line": 69,
+            "signature": "KnowledgeEntry()"
+          },
+          {
+            "name": "KnowledgeStore",
+            "kind": "type",
+            "line": 76,
+            "end_line": 82,
+            "signature": "KnowledgeStore()"
+          },
+          {
+            "name": "KnowledgeSearchResult",
+            "kind": "type",
+            "line": 355,
+            "end_line": 359,
+            "signature": "KnowledgeSearchResult()"
+          }
+        ],
+        "lines": 681,
+        "layer": "core"
+      },
+      {
+        "id": "file_llm_go",
+        "path": "llm.go",
+        "responsibility": "核心层 · 根目录 — 1 个函数（导入自 1 个模块）",
+        "symbols": [
+          {
+            "name": "Message",
+            "kind": "type",
+            "line": 10,
+            "end_line": 13,
+            "signature": "Message()"
+          },
+          {
+            "name": "Function",
+            "kind": "type",
+            "line": 16,
+            "end_line": 20,
+            "signature": "Function()"
+          },
+          {
+            "name": "ToolDef",
+            "kind": "type",
+            "line": 23,
+            "end_line": 26,
+            "signature": "ToolDef()"
+          },
+          {
+            "name": "Response",
+            "kind": "type",
+            "line": 29,
+            "end_line": 32,
+            "signature": "Response()"
+          },
+          {
+            "name": "LLMClient",
+            "kind": "type",
+            "line": 38,
+            "end_line": 40,
+            "signature": "LLMClient()"
+          },
+          {
+            "name": "NoopLLMClient",
+            "kind": "type",
+            "line": 45,
+            "end_line": 45,
+            "signature": "NoopLLMClient()"
+          }
+        ],
+        "lines": 49,
+        "layer": "core"
+      },
+      {
+        "id": "file_logging_file_go",
+        "path": "logging/file.go",
+        "responsibility": "核心层 · logging — 10 个函数（导入自 6 个模块）",
+        "symbols": [
+          {
+            "name": "LogLevel",
+            "kind": "type",
+            "line": 40,
+            "end_line": 40,
+            "signature": "LogLevel()"
+          },
+          {
+            "name": "LogEntry",
+            "kind": "type",
+            "line": 51,
+            "end_line": 57,
+            "signature": "LogEntry()"
+          },
+          {
+            "name": "FileLogger",
+            "kind": "type",
+            "line": 60,
+            "end_line": 65,
+            "signature": "FileLogger()"
+          }
+        ],
+        "lines": 237,
+        "layer": "core"
+      },
+      {
+        "id": "file_logging_logging_go",
+        "path": "logging/logging.go",
+        "responsibility": "核心层 · logging — 9 个函数（导入自 5 个模块）",
+        "lines": 151,
+        "layer": "core"
+      },
+      {
+        "id": "file_logging_rotate_go",
+        "path": "logging/rotate.go",
+        "responsibility": "核心层 · logging — 7 个函数（导入自 5 个模块）",
+        "symbols": [
+          {
+            "name": "rotatedFile",
+            "kind": "type",
+            "line": 32,
+            "end_line": 41,
+            "signature": "rotatedFile()"
+          }
+        ],
+        "lines": 194,
+        "layer": "core"
+      },
+      {
+        "id": "file_logging_router_go",
+        "path": "logging/router.go",
+        "responsibility": "核心层 · logging — 4 个函数（导入自 1 个模块）",
+        "symbols": [
+          {
+            "name": "routeEntry",
+            "kind": "type",
+            "line": 22,
+            "end_line": 26,
+            "signature": "routeEntry()"
+          }
+        ],
+        "lines": 116,
+        "layer": "core"
+      },
+      {
+        "id": "file_memory_store_go",
+        "path": "memory_store.go",
+        "responsibility": "核心层 · 根目录 — 5 个函数（导入自 3 个模块）",
+        "symbols": [
+          {
+            "name": "InMemoryStore",
+            "kind": "type",
+            "line": 11,
+            "end_line": 15,
+            "signature": "InMemoryStore()"
+          },
+          {
+            "name": "indexedItem",
+            "kind": "type",
+            "line": 17,
+            "end_line": 22,
+            "signature": "indexedItem()"
+          }
+        ],
+        "lines": 127,
+        "layer": "core"
+      },
+      {
+        "id": "file_meta_skill_go",
+        "path": "meta_skill.go",
+        "responsibility": "核心层 · 根目录 — 8 个函数（导入自 7 个模块）",
+        "symbols": [
+          {
+            "name": "ReflectOutcome",
+            "kind": "type",
+            "line": 25,
+            "end_line": 25,
+            "signature": "ReflectOutcome()"
+          },
+          {
+            "name": "ReflectRecord",
+            "kind": "type",
+            "line": 37,
+            "end_line": 44,
+            "signature": "ReflectRecord()"
+          },
+          {
+            "name": "PatternStat",
+            "kind": "type",
+            "line": 47,
+            "end_line": 52,
+            "signature": "PatternStat()"
+          },
+          {
+            "name": "MetaSkill",
+            "kind": "type",
+            "line": 55,
+            "end_line": 85,
+            "signature": "MetaSkill()"
+          },
+          {
+            "name": "MetaSkillStats",
+            "kind": "type",
+            "line": 228,
+            "end_line": 234,
+            "signature": "MetaSkillStats()"
+          }
+        ],
+        "lines": 290,
+        "layer": "core"
+      },
+      {
+        "id": "file_query_rewriter_go",
+        "path": "query_rewriter.go",
+        "responsibility": "核心层 · 根目录 — 2 个函数（导入自 5 个模块）",
+        "symbols": [
+          {
+            "name": "LLMQueryRewriter",
+            "kind": "type",
+            "line": 14,
+            "end_line": 16,
+            "signature": "LLMQueryRewriter()"
+          },
+          {
+            "name": "sender",
+            "kind": "type",
+            "line": 19,
+            "end_line": 21,
+            "signature": "sender()"
+          }
+        ],
+        "lines": 65,
+        "layer": "core"
+      },
+      {
+        "id": "file_remote_embedder_go",
+        "path": "remote_embedder.go",
+        "responsibility": "核心层 · 根目录 — 12 个函数（导入自 9 个模块）",
+        "symbols": [
+          {
+            "name": "EmbedderConfig",
+            "kind": "type",
+            "line": 22,
+            "end_line": 29,
+            "signature": "EmbedderConfig()"
+          },
+          {
+            "name": "EmbedUsageRecorder",
+            "kind": "type",
+            "line": 36,
+            "end_line": 36,
+            "signature": "EmbedUsageRecorder()"
+          },
+          {
+            "name": "RemoteEmbedder",
+            "kind": "type",
+            "line": 39,
+            "end_line": 45,
+            "signature": "RemoteEmbedder()"
+          },
+          {
+            "name": "embedAPIResponse",
+            "kind": "type",
+            "line": 149,
+            "end_line": 158,
+            "signature": "embedAPIResponse()"
+          }
+        ],
+        "lines": 266,
+        "layer": "core"
+      },
+      {
+        "id": "file_reranker_go",
+        "path": "reranker.go",
+        "responsibility": "核心层 · 根目录 — 2 个函数（导入自 5 个模块）",
+        "symbols": [
+          {
+            "name": "LLMReranker",
+            "kind": "type",
+            "line": 14,
+            "end_line": 16,
+            "signature": "LLMReranker()"
+          }
+        ],
+        "lines": 79,
+        "layer": "core"
+      },
+      {
+        "id": "file_retrieval_pipeline_go",
+        "path": "retrieval_pipeline.go",
+        "responsibility": "核心层 · 根目录 — 9 个函数（导入自 5 个模块）",
+        "symbols": [
+          {
+            "name": "RetrievalPipeline",
+            "kind": "type",
+            "line": 17,
+            "end_line": 20,
+            "signature": "RetrievalPipeline()"
+          },
+          {
+            "name": "DefaultPipeline",
+            "kind": "type",
+            "line": 27,
+            "end_line": 32,
+            "signature": "DefaultPipeline()"
+          }
+        ],
+        "lines": 422,
+        "layer": "core"
+      },
+      {
+        "id": "file_retriever_go",
+        "path": "retriever.go",
+        "responsibility": "核心层 · 根目录 — 26 个函数（导入自 10 个模块）",
+        "symbols": [
+          {
+            "name": "ContextItem",
+            "kind": "type",
+            "line": 19,
+            "end_line": 25,
+            "signature": "ContextItem()"
+          },
+          {
+            "name": "Retriever",
+            "kind": "type",
+            "line": 29,
+            "end_line": 32,
+            "signature": "Retriever()"
+          },
+          {
+            "name": "MemorySource",
+            "kind": "type",
+            "line": 49,
+            "end_line": 54,
+            "signature": "MemorySource()"
+          },
+          {
+            "name": "QueryRewriter",
+            "kind": "type",
+            "line": 59,
+            "end_line": 61,
+            "signature": "QueryRewriter()"
+          },
+          {
+            "name": "Reranker",
+            "kind": "type",
+            "line": 67,
+            "end_line": 69,
+            "signature": "Reranker()"
+          },
+          {
+            "name": "ShallowRetriever",
+            "kind": "type",
+            "line": 73,
+            "end_line": 76,
+            "signature": "ShallowRetriever()"
+          },
+          {
+            "name": "SearchOptions",
+            "kind": "type",
+            "line": 156,
+            "end_line": 162,
+            "signature": "SearchOptions()"
+          },
+          {
+            "name": "SessionRepository",
+            "kind": "type",
+            "line": 178,
+            "end_line": 180,
+            "signature": "SessionRepository()"
+          },
+          {
+            "name": "graphNode",
+            "kind": "type",
+            "line": 184,
+            "end_line": 204,
+            "signature": "graphNode()"
+          },
+          {
+            "name": "graphEdge",
+            "kind": "type",
+            "line": 256,
+            "end_line": 264,
+            "signature": "graphEdge()"
+          },
+          {
+            "name": "graphFile",
+            "kind": "type",
+            "line": 307,
+            "end_line": 310,
+            "signature": "graphFile()"
+          },
+          {
+            "name": "DeepRetriever",
+            "kind": "type",
+            "line": 312,
+            "end_line": 325,
+            "signature": "DeepRetriever()"
+          },
+          {
+            "name": "HeatRetriever",
+            "kind": "type",
+            "line": 427,
+            "end_line": 431,
+            "signature": "HeatRetriever()"
+          }
+        ],
+        "lines": 674,
+        "layer": "core"
+      },
+      {
+        "id": "file_retriever_DeepRetriever_go",
+        "path": "retriever_DeepRetriever.go",
+        "responsibility": "核心层 · 根目录 — 15 个函数（导入自 5 个模块）",
+        "lines": 318,
+        "layer": "core"
+      },
+      {
+        "id": "file_retriever_ShallowRetriever_go",
+        "path": "retriever_ShallowRetriever.go",
+        "responsibility": "核心层 · 根目录 — 3 个函数（导入自 4 个模块）",
+        "lines": 85,
+        "layer": "core"
+      },
+      {
+        "id": "file_rrf_go",
+        "path": "rrf.go",
+        "responsibility": "核心层 · 根目录 — 1 个函数（导入自 1 个模块）",
+        "symbols": [
+          {
+            "name": "ScoredItem",
+            "kind": "type",
+            "line": 10,
+            "end_line": 14,
+            "signature": "ScoredItem()"
+          }
+        ],
+        "lines": 48,
+        "layer": "core"
+      },
+      {
+        "id": "file_sandbox_go",
+        "path": "sandbox.go",
+        "responsibility": "核心层 · 根目录 — 3 个函数（导入自 1 个模块）",
+        "symbols": [
+          {
+            "name": "SandboxRunner",
+            "kind": "type",
+            "line": 11,
+            "end_line": 16,
+            "signature": "SandboxRunner()"
+          },
+          {
+            "name": "NoopSandbox",
+            "kind": "type",
+            "line": 19,
+            "end_line": 19,
+            "signature": "NoopSandbox()"
+          },
+          {
+            "name": "SandboxFactory",
+            "kind": "type",
+            "line": 27,
+            "end_line": 27,
+            "signature": "SandboxFactory()"
+          }
+        ],
+        "lines": 50,
+        "layer": "core"
+      },
+      {
+        "id": "file_shallow_writer_go",
+        "path": "shallow_writer.go",
+        "responsibility": "核心层 · 根目录 — 4 个函数（导入自 7 个模块）",
+        "symbols": [
+          {
+            "name": "shallowState",
+            "kind": "type",
+            "line": 19,
+            "end_line": 25,
+            "signature": "shallowState()"
+          },
+          {
+            "name": "shallowGit",
+            "kind": "type",
+            "line": 27,
+            "end_line": 32,
+            "signature": "shallowGit()"
+          },
+          {
+            "name": "shallowRisk",
+            "kind": "type",
+            "line": 34,
+            "end_line": 37,
+            "signature": "shallowRisk()"
+          }
+        ],
+        "lines": 152,
+        "layer": "core"
+      },
+      {
+        "id": "file_skill_gate_go",
+        "path": "skill_gate.go",
+        "responsibility": "核心层 · 根目录 — 4 个函数（导入自 2 个模块）",
+        "lines": 133,
+        "layer": "core"
+      },
+      {
+        "id": "file_skill_import_go",
+        "path": "skill_import.go",
+        "responsibility": "核心层 · 根目录 — 20 个函数（导入自 12 个模块）",
+        "symbols": [
+          {
+            "name": "frontmatter",
+            "kind": "type",
+            "line": 38,
+            "end_line": 49,
+            "signature": "frontmatter()"
+          },
+          {
+            "name": "skillRegistry",
+            "kind": "type",
+            "line": 53,
+            "end_line": 56,
+            "signature": "skillRegistry()"
+          }
+        ],
+        "lines": 588,
+        "layer": "core"
+      },
+      {
+        "id": "file_skill_registry_go",
+        "path": "skill_registry.go",
+        "responsibility": "核心层 · 根目录 — 4 个函数（导入自 1 个模块）",
+        "symbols": [
+          {
+            "name": "SkillToolDef",
+            "kind": "type",
+            "line": 11,
+            "end_line": 19,
+            "signature": "SkillToolDef()"
+          },
+          {
+            "name": "SkillDef",
+            "kind": "type",
+            "line": 23,
+            "end_line": 43,
+            "signature": "SkillDef()"
+          },
+          {
+            "name": "SkillRegistry",
+            "kind": "type",
+            "line": 47,
+            "end_line": 60,
+            "signature": "SkillRegistry()"
+          },
+          {
+            "name": "NoopSkillRegistry",
+            "kind": "type",
+            "line": 64,
+            "end_line": 64,
+            "signature": "NoopSkillRegistry()"
+          }
+        ],
+        "lines": 71,
+        "layer": "core"
+      },
+      {
+        "id": "file_skill_tree_go",
+        "path": "skill_tree.go",
+        "responsibility": "核心层 · 根目录 — 39 个函数（导入自 8 个模块）",
+        "symbols": [
+          {
+            "name": "SkillNode",
+            "kind": "type",
+            "line": 19,
+            "end_line": 77,
+            "signature": "SkillNode()"
+          },
+          {
+            "name": "EditRecord",
+            "kind": "type",
+            "line": 80,
+            "end_line": 85,
+            "signature": "EditRecord()"
+          },
+          {
+            "name": "AbsorbOutcome",
+            "kind": "type",
+            "line": 93,
+            "end_line": 93,
+            "signature": "AbsorbOutcome()"
+          },
+          {
+            "name": "SkillTreeMeta",
+            "kind": "type",
+            "line": 148,
+            "end_line": 151,
+            "signature": "SkillTreeMeta()"
+          },
+          {
+            "name": "SkillTree",
+            "kind": "type",
+            "line": 155,
+            "end_line": 165,
+            "signature": "SkillTree()"
+          }
+        ],
+        "lines": 1267,
+        "layer": "core"
+      },
+      {
+        "id": "file_sleep_go",
+        "path": "sleep.go",
+        "responsibility": "核心层 · 根目录 — 43 个函数（导入自 10 个模块）",
+        "symbols": [
+          {
+            "name": "HebbianRecord",
+            "kind": "type",
+            "line": 23,
+            "end_line": 28,
+            "signature": "HebbianRecord()"
+          },
+          {
+            "name": "PromotionRecord",
+            "kind": "type",
+            "line": 32,
+            "end_line": 37,
+            "signature": "PromotionRecord()"
+          },
+          {
+            "name": "NremReplay",
+            "kind": "type",
+            "line": 42,
+            "end_line": 67,
+            "signature": "NremReplay()"
+          },
+          {
+            "name": "PendingRefineRecord",
+            "kind": "type",
+            "line": 1262,
+            "end_line": 1269,
+            "signature": "PendingRefineRecord()"
+          },
+          {
+            "name": "DreamEntry",
+            "kind": "type",
+            "line": 1443,
+            "end_line": 1454,
+            "signature": "DreamEntry()"
+          },
+          {
+            "name": "judgeResult",
+            "kind": "type",
+            "line": 1692,
+            "end_line": 1699,
+            "signature": "judgeResult()"
+          }
+        ],
+        "lines": 1773,
+        "layer": "core"
+      },
+      {
+        "id": "file_sleep_config_go",
+        "path": "sleep_config.go",
+        "responsibility": "核心层 · 根目录 — 18 个函数（导入自 8 个模块）",
+        "symbols": [
+          {
+            "name": "SleepConfig",
+            "kind": "type",
+            "line": 40,
+            "end_line": 67,
+            "signature": "SleepConfig()"
+          },
+          {
+            "name": "SleepConfigStore",
+            "kind": "type",
+            "line": 311,
+            "end_line": 316,
+            "signature": "SleepConfigStore()"
+          }
+        ],
+        "lines": 432,
+        "layer": "core"
+      },
+      {
+        "id": "file_sleep_experiment_go",
+        "path": "sleep_experiment.go",
+        "responsibility": "核心层 · 根目录 — 10 个函数（导入自 8 个模块）",
+        "symbols": [
+          {
+            "name": "experimentResult",
+            "kind": "type",
+            "line": 34,
+            "end_line": 41,
+            "signature": "experimentResult()"
+          }
+        ],
+        "lines": 330,
+        "layer": "core"
+      },
+      {
+        "id": "file_sleep_prune_go",
+        "path": "sleep_prune.go",
+        "responsibility": "核心层 · 根目录 — 4 个函数（导入自 7 个模块）",
+        "symbols": [
+          {
+            "name": "PruneAuditEntry",
+            "kind": "type",
+            "line": 26,
+            "end_line": 35,
+            "signature": "PruneAuditEntry()"
+          },
+          {
+            "name": "SynapticPruner",
+            "kind": "type",
+            "line": 39,
+            "end_line": 44,
+            "signature": "SynapticPruner()"
+          }
+        ],
+        "lines": 239,
+        "layer": "core"
+      },
+      {
+        "id": "file_sleep_rem_go",
+        "path": "sleep_rem.go",
+        "responsibility": "核心层 · 根目录 — 9 个函数（导入自 6 个模块）",
+        "symbols": [
+          {
+            "name": "RemReplay",
+            "kind": "type",
+            "line": 62,
+            "end_line": 68,
+            "signature": "RemReplay()"
+          }
+        ],
+        "lines": 447,
+        "layer": "core"
+      },
+      {
+        "id": "file_sleep_scheduler_go",
+        "path": "sleep_scheduler.go",
+        "responsibility": "核心层 · 根目录 — 19 个函数（导入自 7 个模块）",
+        "symbols": [
+          {
+            "name": "SleepStatus",
+            "kind": "type",
+            "line": 35,
+            "end_line": 35,
+            "signature": "SleepStatus()"
+          },
+          {
+            "name": "SleepTrigger",
+            "kind": "type",
+            "line": 44,
+            "end_line": 44,
+            "signature": "SleepTrigger()"
+          },
+          {
+            "name": "SleepRunner",
+            "kind": "type",
+            "line": 54,
+            "end_line": 59,
+            "signature": "SleepRunner()"
+          },
+          {
+            "name": "SleepCheckpoint",
+            "kind": "type",
+            "line": 62,
+            "end_line": 68,
+            "signature": "SleepCheckpoint()"
+          },
+          {
+            "name": "SleepStatusDetail",
+            "kind": "type",
+            "line": 71,
+            "end_line": 84,
+            "signature": "SleepStatusDetail()"
+          },
+          {
+            "name": "SleepScheduler",
+            "kind": "type",
+            "line": 87,
+            "end_line": 112,
+            "signature": "SleepScheduler()"
+          },
+          {
+            "name": "sleepJob",
+            "kind": "type",
+            "line": 129,
+            "end_line": 132,
+            "signature": "sleepJob()"
+          }
+        ],
+        "lines": 567,
+        "layer": "core"
+      },
+      {
+        "id": "file_sleep_wander_go",
+        "path": "sleep_wander.go",
+        "responsibility": "核心层 · 根目录 — 13 个函数（导入自 4 个模块）",
+        "symbols": [
+          {
+            "name": "DreamPath",
+            "kind": "type",
+            "line": 21,
+            "end_line": 29,
+            "signature": "DreamPath()"
+          },
+          {
+            "name": "DreamWalkerConfig",
+            "kind": "type",
+            "line": 32,
+            "end_line": 38,
+            "signature": "DreamWalkerConfig()"
+          },
+          {
+            "name": "DreamWalker",
+            "kind": "type",
+            "line": 58,
+            "end_line": 61,
+            "signature": "DreamWalker()"
+          },
+          {
+            "name": "PathContent",
+            "kind": "type",
+            "line": 166,
+            "end_line": 172,
+            "signature": "PathContent()"
+          }
+        ],
+        "lines": 377,
+        "layer": "core"
+      },
+      {
+        "id": "file_sqlite_store_go",
+        "path": "sqlite_store.go",
+        "responsibility": "核心层 · 根目录 — 48 个函数（导入自 11 个模块）",
+        "symbols": [
+          {
+            "name": "NodeIndexEntry",
+            "kind": "type",
+            "line": 44,
+            "end_line": 60,
+            "signature": "NodeIndexEntry()"
+          },
+          {
+            "name": "SkillIndexEntry",
+            "kind": "type",
+            "line": 64,
+            "end_line": 72,
+            "signature": "SkillIndexEntry()"
+          },
+          {
+            "name": "SQLiteVecStore",
+            "kind": "type",
+            "line": 75,
+            "end_line": 86,
+            "signature": "SQLiteVecStore()"
+          },
+          {
+            "name": "AnchorHit",
+            "kind": "type",
+            "line": 273,
+            "end_line": 279,
+            "signature": "AnchorHit()"
+          },
+          {
+            "name": "ReconcileStats",
+            "kind": "type",
+            "line": 411,
+            "end_line": 417,
+            "signature": "ReconcileStats()"
+          }
+        ],
+        "lines": 1446,
+        "layer": "core"
+      },
+      {
+        "id": "file_tool_feedback_go",
+        "path": "tool_feedback.go",
+        "responsibility": "核心层 · 根目录 — 4 个函数（导入自 7 个模块）",
+        "symbols": [
+          {
+            "name": "ToolFeedbackEntry",
+            "kind": "type",
+            "line": 15,
+            "end_line": 21,
+            "signature": "ToolFeedbackEntry()"
+          },
+          {
+            "name": "ToolFeedbackStore",
+            "kind": "type",
+            "line": 25,
+            "end_line": 27,
+            "signature": "ToolFeedbackStore()"
+          }
+        ],
+        "lines": 121,
+        "layer": "core"
+      },
+      {
+        "id": "file_vector_store_go",
+        "path": "vector_store.go",
+        "responsibility": "核心层 · 根目录 — 1 个函数（导入自 1 个模块）",
+        "symbols": [
+          {
+            "name": "VectorStore",
+            "kind": "type",
+            "line": 13,
+            "end_line": 16,
+            "signature": "VectorStore()"
+          },
+          {
+            "name": "SearchResult",
+            "kind": "type",
+            "line": 19,
+            "end_line": 22,
+            "signature": "SearchResult()"
+          },
+          {
+            "name": "SearchHit",
+            "kind": "type",
+            "line": 25,
+            "end_line": 31,
+            "signature": "SearchHit()"
+          }
+        ],
+        "lines": 43,
+        "layer": "core"
+      }
+    ]
+  },
+  "layers": [
+    {
+      "id": "core",
+      "name": "核心层",
+      "description": "核心/未归类文件",
+      "color": "#65707e",
+      "count": 43
+    }
+  ],
+  "_dsl_rev": 3,
+  "_sync": {
+    "saved_at": "2026-10-24T12:54:44.968Z",
+    "source": "design_sheet",
+    "feature": "agent-memory",
+    "scanRev": 1792844049247,
+    "age": 2435721,
+    "dbSchemaVersion": 16,
+    "via": "edit_dsl:edit_dsl"
+  }
+}
