@@ -3431,16 +3431,16 @@
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
           },
           "owner": "agent:workbuddy-glm5",
-          "claimed_at": "2026-10-23T17:44:10.206Z",
+          "claimed_at": "2026-10-24T00:52:47.273Z",
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "b6a76b3b7de47c607c927589899c076a87066c52"
+                "content_hash": "f15c0f962fb7181170e946b48381ed35ed3db591"
               }
             ],
-            "computed_at": "2026-10-23T17:44:10.145Z",
+            "computed_at": "2026-10-24T00:52:47.235Z",
             "basis": [
               "declared"
             ]
@@ -3471,8 +3471,27 @@
               },
               "observed": "9/9 道门全过：zod schema 的 detail 参与枚举均与实现接线（工具签名门真调验证）；设计 DB 投影重跑后陈旧 0",
               "command": "npm run verify（含 MCP 工具签名门）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-24T00:58:06.398Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify（含 MCP 工具签名门）",
+                "input": "3c94a0062f9d7fd1a5eb1290010139a7fcaf13fe",
+                "code": "f19bf356bc0d10a2994c286e4c77c42cd43677b9",
+                "covers": [
+                  "src/application/design/index.ts"
+                ]
+              },
+              "observed": "9/9 过；detail 参数 describe 扩到 todo/decisions 与实现一致，概览层实测全降（todo 59KB / decisions 70KB / history 80KB）",
+              "command": "npm run verify（含 MCP 工具签名门）"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-24T00:52:47.273Z",
+          "reopen_reason": "detail 参数的 describe 要扩到 todo/decisions（概览/详情两级扩展），schema 文案与实现对齐",
+          "reopened_from": "agent:workbuddy-glm5"
         },
         "status": "done",
         "decision": {
@@ -3499,10 +3518,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T01:55:00+08:00",
+            "at": "2026-10-24T08:58:00+08:00",
             "command": "npm run verify（含 MCP 工具签名门）",
             "kind": "reading",
-            "observed": "9/9 道门全过：zod schema 的 detail 参与枚举均与实现接线（工具签名门真调验证）；设计 DB 投影重跑后陈旧 0"
+            "observed": "9/9 过；detail 参数 describe 扩到 todo/decisions 与实现一致，概览层实测全降（todo 59KB / decisions 70KB / history 80KB）"
           }
         }
       },
@@ -26947,13 +26966,13 @@
     }
   ],
   "annotations": [],
-  "_dsl_rev": 182,
+  "_dsl_rev": 183,
   "_sync": {
-    "saved_at": "2026-10-23T17:50:55.816Z",
+    "saved_at": "2026-10-24T00:58:06.446Z",
     "source": "design_sheet",
     "feature": "design-canvas",
     "scanRev": 1792582983534,
-    "age": 194872282,
+    "age": 220502912,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },

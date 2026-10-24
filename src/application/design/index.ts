@@ -149,7 +149,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         .describe('query=history 时：在 summary / card_json 里做**子串**匹配（「要查就搜索 history」）'),
       limit: z.number().optional().describe('query=history 时：最多返回几条（默认 20，上限 500）'),
       // ★★★ 2026-10-24（概览/详情两级）：history 缺省只给概览行；整卡原样按需取。
-      detail: z.boolean().optional().describe('query=history 时：true = data.items[] 附**整卡原样** card（缺省只给概览行：id/state/moved_at/summary 首行）；★ card_id 精查时无论本参如何都给整卡'),
+      detail: z.boolean().optional().describe('概览/详情两级开关：query=history 缺省概览行（card_id 精查总给整卡）；query=todo / query=decisions 缺省概览行，true = 附整卡全字段（修订史/读集/rationale 等）'),
       tag: z.string().optional().describe('query=tag 时：功能标记名（给=列出该标签的成员与失联成员；省略=列出全部标签）。★ 与决策卡上的 decision.tags 不是一件事'),
       thread: z.string().optional().describe('query=decisions 时：按功能线过滤（不传=全部，按 thread 分组输出）'),
       decision_status: z.enum(['active', 'draft']).optional().describe('query=decisions 时：按决策状态过滤（active=生效中/draft=草案）。★ 原 superseded 已退场'),

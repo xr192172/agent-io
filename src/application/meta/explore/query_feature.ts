@@ -253,6 +253,16 @@ function computePendingDebts(feature: string) {
   };
 }
 
+/**
+ * briefText —— 概览行的文本截断（2026-10-24）：先取首行，再按字符截到 n。
+ * ★ 为什么存在：reason/summary 常是**单行长文本**，split('\n')[0] 对它无效（实测 history 概览 215KB 两刀不动）。
+ *   概览行的契约 = 导航键（扫一眼选目标），长文本是 detail 层的事。
+ */
+const briefText = (s: string | null | undefined, n = 80): string => {
+  const f = (s ?? '').split('\n')[0] ?? '';
+  return f.length > n ? f.slice(0, n) + '…' : f;
+};
+
 interface DSLWithMeta {
   meta?: { goals?: OverlayGoal[]; function_tags?: Record<string, string[]> };
 }
@@ -857,7 +867,7 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           const status = d.status ?? 'active';
           const tags = d.tags?.length ? ` [${d.tags.join(', ')}]` : '';
           const verInfo = n.decision_history?.length ? ` · ${n.decision_history.length} 次修订` : '';
-          lines.push(`  [${status}] ${n.label ?? n.title ?? n.id}: ${d.summary}${tags}${verInfo}`);
+          lines.push(`  [${status}] ${n.label ?? n.title ?? n.id}: ${(d.summary ?? '').split('\n')[0]}${tags}${verInfo}`);
           // ★ 两轴：作者**类别**（可信度）+ 署名**身份**（可追溯；缺省标未署名）。
           const authorTag = d.author ? `作者 ${d.author}` : '作者未标';
           const signTag = d.agent ? `署名 ${d.agent}` : '未署名';
@@ -871,6 +881,9 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
 
       lines.push('(查看单卡详情与版本史：query=node + node_id)');
 
+      // ★ 2026-10-24（概览/详情两级）：缺省 data 每卡只给导航键 + summary 首行；整卡按需展开
+      const wantDetail = input.detail === true;
+
       return {
         message: lines.join('\n'),
         // ★★ 2026-10-10（T-e2e Bug1）：**透出完整的 `decision`**（含 dissent / votes / evidence_source /
@@ -881,7 +894,8 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         data: entries.map((n) => ({
           node_id: n.id,
           label: n.label ?? n.title,
-          ...n.decision!,
+          // ★ 2026-10-24（概览/详情两级）：缺省只给 summary 首行；整卡（rationale/alternatives/acceptance）detail=true 才展开
+          ...(wantDetail ? n.decision! : { summary: (n.decision!.summary ?? '').split('\n')[0] }),
           // ★ 保留旧投影的三个键及其**缺省口径**（thread→null / tags→[] / status→'active'）——
           //   下有依赖它们的调用方，扩字段**不改**已有键的语义（别改坏已验过的）。
           thread: n.decision!.thread ?? null,
@@ -1508,6 +1522,8 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       const byState: Record<string, number> = {};
       for (const s of TASK_STATES) byState[s] = 0;
       for (const t of cards) if (t.state in byState) byState[t.state]++;
+      // ★ 2026-10-24（概览/详情两级，同 history）：缺省概览行；整卡（修订史/读集）按需取
+      const wantDetail = input.detail === true;
 
       const { entries: tombstones, bad_lines } = readTodoTombstones(feature);
       // ★★★ 2026-10-22（D-T8 上架读端）：**在挂的卡**要看得见 —— 谁占着 / 挂了多久 / 读集多大。
@@ -1599,7 +1615,7 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           // ★ 2026-10-22（软归档）：查得到就必须看得出它已归档（否则 `state=all` 会把两种卡混成一种）
           const arch = t.archived_at ? ` · 已归档 ${String(t.archived_at).slice(0, 10)}` : '';
           lines.push('', `  ${i + 1}. [${t.id}] ${t.state} · ${owner}${linked}${arch}`);
-          lines.push(`     ${t.summary}`);
+          lines.push(`     ${wantDetail ? t.summary : (t.summary.split('\n')[0] ?? '')}`);
           const place = chains.places.get(t.id);
           if (place && (place.parent || place.children.length > 0)) {
             // ★ 断链时徽标里已经点名了「上一环已作废(todo_x)」⇒ 不再重复一次上一环的 id
@@ -1638,7 +1654,18 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           live: live.length,
           archived: archived.length,
           by_state: byState,
-          items: picked,
+          // ★ 2026-10-24（概览/详情两级）：缺省概览行；整卡（修订史/读集/evidence）detail=true 才给
+          items: wantDetail
+            ? picked
+            : picked.map((t) => ({
+                id: t.id,
+                state: t.state,
+                owner: t.owner ?? null,
+                node_id: t.node_id ?? null,
+                follows: t.follows ?? null,
+                archived_at: t.archived_at ?? null,
+                summary_first_line: t.summary.split('\n')[0] ?? '',
+              })),
           deleted: tombstones,
           // ★★★ 2026-10-22（D-T8）：**在挂的卡**的机器可读形态（与上面那段的同一个来源 `listPool`）
           //   ★ id / owner / 挂了多久 / 读集大小 都在这里 ⇒ 判据 A/B 可以用 JSON 直接比，不用抓文本
@@ -1708,6 +1735,8 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         ...(input.search ? { search: input.search } : {}),
         ...(input.limit ? { limit: input.limit } : {}),
       });
+      // ★ 2026-10-24：wantDetail 提前到文本行之前——message 的「为什么入史」也要截断（实测 data 截了 message 没截，213KB 纹丝不动）
+      const wantDetail = input.detail === true || Boolean(input.card_id);
       const lines: string[] = [
         `══ feature "${feature}" 的历史 · ${wantState ? `state=${wantState}` : '全部'} · 命中 ${rows.length}/${total} 条 ${viewTag} ══`,
         '',
@@ -1725,8 +1754,9 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
             '',
             `  ${i + 1}. [${r.id}] ${r.state} · 入史 ${r.moved_at}` +
               `${r.node_id ? ` · node=${r.node_id}` : ''}${ev ? ` · evidence ${ev} 条` : ''}`,
-            `     ${r.summary}`,
-            `     为什么入史：${r.reason}`,
+            `     ${briefText(r.summary)}`,
+            // ★ 2026-10-24 补：reason 是单行长审计文本 ⇒ 概览模式整行不输出（截首行对单行无效）
+            ...(wantDetail ? [`     为什么入史：${r.reason}`] : []),
           );
           if (!r.card) lines.push('     ⚠ card_json 解析失败 —— 这一行读不出原卡（★ 不猜，也不假装它是空的）');
         });
@@ -1736,10 +1766,9 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       }
       // ★★★ 2026-10-24（概览/详情两级）：**概览级每卡一行**，整卡原样按需取。
       //   实测：搬迁 93 张后首次查询回执 231,951 字符 —— data.items[].card（整卡解析）是负重主源。
-      //   ★ 缺省 data.items 只给概览行（id/state/moved_at/summary 首行/node_id/reason）；
-      //     `detail=true` 或 `card_id` 精查时才附 `card`（整卡解析，evidence/修订史都在里面）。
-      //   ★ 文本行（上面）本就是概览形状，不动；只收窄 data 的负重。与 digest 的「只读派生」同族。
-      const wantDetail = input.detail === true || Boolean(input.card_id);
+      //   ★ 缺省 data.items 只给概览行（id/state/moved_at/summary 首行/node_id/reason 首行）；
+      //     `detail=true` 或 `card_id` 精查时才附 `card` + 完整 reason。
+      //   ★ 文本行与 data **两层都截**（24 补：只截 data 不截 message，213KB 纹丝不动——两层都要收窄）。
       return {
         message: lines.join('\n'),
         data: {
@@ -1752,9 +1781,9 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
             state: r.state,
             node_id: r.node_id ?? null,
             moved_at: r.moved_at,
-            reason: r.reason,
-            summary_first_line: r.summary.split('\n')[0] ?? '',
-            ...(wantDetail ? { card: r.card } : {}),
+            // ★ 2026-10-24 补：reason 是审计字段（单行长文本，split('\n')[0] 截不住）⇒ 概览行整个不给，detail 才给
+            summary_first_line: briefText(r.summary),
+            ...(wantDetail ? { reason: r.reason, card: r.card } : {}),
           })),
         },
       };

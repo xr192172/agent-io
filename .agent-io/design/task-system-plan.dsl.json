@@ -17336,19 +17336,26 @@
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_query_feature_ts\"].responsibility"
           },
           "owner": "agent:workbuddy-glm5",
-          "claimed_at": "2026-10-23T17:43:51.052Z",
+          "claimed_at": "2026-10-24T00:52:33.710Z",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/application/meta/explore/query_feature.ts",
+                "name": "computePendingDebts",
+                "fp": "4c07f3dda9c73aa908ea48eb6faeff8c14e7535f"
+              }
+            ],
             "files": [
               {
                 "path": "src/application/meta/explore/query_feature.ts",
-                "content_hash": "306d34fc86ac778b8faf672bd52015bb4bf2b97a"
+                "content_hash": "3fac37263d392faf915b3a6151ab9190b4e21216"
               }
             ],
-            "computed_at": "2026-10-23T17:41:44.603Z",
+            "computed_at": "2026-10-24T00:52:33.672Z",
             "basis": [
-              "declared"
+              "declared",
+              "expectations"
             ]
           },
           "evidence": [
@@ -17367,8 +17374,27 @@
               },
               "observed": "verify 9/9 道门全过（ts 类型/MCP 工具签名/Go×2/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）；history 缺省 50 项 data 27KB 且无整卡字段；detail=true 与 card_id 精查均附整卡；query=overview 出 2 行（design-canvas 0/0，task-system-plan 活卡 76/history 181/欠账 11）；query=pending 回归正常（同一 computePendingDebts 口径）",
               "command": "npm run verify && node _design-canvas-labs/verify-overview.mjs（真调 dist query_feature）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-24T00:57:54.535Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify && node _design-canvas-labs/measure-read-layers.mjs",
+                "input": "fd12fb355b525cc91280e2908f70740cda4079e0",
+                "code": "a6a4a555d4835f46d4c7d0ceea4eced100cf4ad4",
+                "covers": [
+                  "src/application/meta/explore/query_feature.ts"
+                ]
+              },
+              "observed": "verify 9/9；概览层实测：todo 111→59KB、decisions 218→70KB、history 213→80KB（reason/summary 单行长文本，split 换行截不住 → briefText 按字符截 80）；全貌套餐（overview+digest+todo+history+decisions）≈365KB，1M 上下文内",
+              "command": "npm run verify && node _design-canvas-labs/measure-read-layers.mjs"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-24T00:52:33.710Z",
+          "reopen_reason": "可筛选性通读收尾：同文件三个 case（todo/decisions/history）补齐概览/详情两级——history 的 reason 每行重复全文（213KB）、todo 整卡出（111KB）、decisions 整卡展开（218KB），压掉后全貌套餐从 ~700KB 降到 ~220KB",
+          "reopened_from": "agent:workbuddy-glm5"
         },
         "status": "done",
         "decision": {
@@ -17402,10 +17428,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T01:55:00+08:00",
-            "command": "npm run verify && node _design-canvas-labs/verify-overview.mjs（真调 dist query_feature）",
+            "at": "2026-10-24T08:58:00+08:00",
+            "command": "npm run verify && node _design-canvas-labs/measure-read-layers.mjs",
             "kind": "reading",
-            "observed": "verify 9/9 道门全过（ts 类型/MCP 工具签名/Go×2/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）；history 缺省 50 项 data 27KB 且无整卡字段；detail=true 与 card_id 精查均附整卡；query=overview 出 2 行（design-canvas 0/0，task-system-plan 活卡 76/history 181/欠账 11）；query=pending 回归正常（同一 computePendingDebts 口径）"
+            "observed": "verify 9/9；概览层实测：todo 111→59KB、decisions 218→70KB、history 213→80KB（reason/summary 单行长文本，split 换行截不住 → briefText 按字符截 80）；全貌套餐（overview+digest+todo+history+decisions）≈365KB，1M 上下文内"
           }
         }
       },
@@ -38442,9 +38468,9 @@
         "task": {
           "id": "file_src_domain_overlay_ts",
           "summary": "**overlay 的唯一读写口**（领域侧）：overlay 文档/锚点/边意图/全局件的**类型与全部读写语义**都从这里出 —— 首次迁移 `seedOverlayFromDsl`、对账 `reconcileOverlay`、投影回 base `applyOverlay`、三个收口同步 `mergeDecisionsIntoOverlay` / `mergeTagsIntoOverlay` / `mergeLifecycleIntoOverlay`，以及锚点“有内容”的唯一判据 `hasAnchorPayload`。★★ `validateProgressEvidence` 是**「done 必带证据」的唯一一把尺**（三档 evidence，形状与拒绝理由都在这里；`updateStatus` / `task_ops.complete` 只调它，不另写第二套）。★ 它**不做**：不做 IO（`<feature>.overlay.json` 的读写住 `storage_overlay.ts`，那里只搬字节、不立判据）；不重建 base（`import_project`）；不定义决策卡字段（`geometry.ts`）；不校验整份 DSL（`validator.ts`）。",
-          "state": "claimed",
-          "owner": "agent:main",
-          "claimed_at": "2026-10-23T03:40:26.585Z",
+          "state": "candidate",
+          "owner": null,
+          "claimed_at": null,
           "evidence": [
             {
               "kind": "attestation",
@@ -38622,9 +38648,17 @@
               "expectations"
             ]
           },
-          "node_id": "file_src_domain_overlay_ts"
+          "node_id": "file_src_domain_overlay_ts",
+          "prepared_snapshot": null,
+          "expired_from": {
+            "owner": "agent:main",
+            "claimed_at": "2026-10-23T03:40:26.585Z",
+            "age_hours": 14.7,
+            "ttl_ms": 7200000
+          },
+          "expired_at": "2026-10-23T18:19:43.453Z"
         },
-        "status": "in_progress",
+        "status": "draft",
         "overlay": {
           "path": "src/domain/overlay.ts",
           "kind": "file",
@@ -47082,10 +47116,10 @@
         "task": {
           "id": "file_src_domain_validator_ts",
           "summary": "DSL 的【结构自洽】校验器：ajv schema + **三项** schema 表达不了的语义（nodes.id 唯一 / semantic.files.id 必须能在 nodes 里找到 / ★ **读数快照不许落盘**）。★★ 它**不判决策卡**（decision 根本不在 schema 里）—— 那是【tsc 契约】的事（设计侧符号级，certs/design-contracts）。★ 范围仍是【有意收窄】的：**结构错看得见，意图错看不见**；后者靠 tsc + 对拍 + 影响面。",
-          "state": "claimed",
+          "state": "candidate",
           "node_id": "file_src_domain_validator_ts",
-          "owner": "agent:main",
-          "claimed_at": "2026-10-23T03:40:35.198Z",
+          "owner": null,
+          "claimed_at": null,
           "read_set": {
             "symbols": [
               {
@@ -47164,9 +47198,17 @@
             "basis": [
               "expectations"
             ]
-          }
+          },
+          "prepared_snapshot": null,
+          "expired_from": {
+            "owner": "agent:main",
+            "claimed_at": "2026-10-23T03:40:35.198Z",
+            "age_hours": 14.7,
+            "ttl_ms": 7200000
+          },
+          "expired_at": "2026-10-23T18:19:43.453Z"
         },
-        "status": "in_progress",
+        "status": "draft",
         "decision_history": [
           {
             "at": "2026-10-18T12:39:57.521Z",
@@ -52557,12 +52599,12 @@
         "task": {
           "id": "file_src_presentation_http_serve_ts",
           "summary": "【L1 待建构】核心层 · src/presentation/http — 50 个 API（导入自 57 个模块）（src/presentation/http/serve.ts） ← 节点 file_src_presentation_http_serve_ts",
-          "state": "claimed",
+          "state": "candidate",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_http_serve_ts\"].responsibility"
           },
-          "owner": "agent:main",
-          "claimed_at": "2026-10-23T03:40:00.886Z",
+          "owner": null,
+          "claimed_at": null,
           "read_set": {
             "symbols": [],
             "files": [
@@ -52579,12 +52621,12 @@
           "node_id": "file_src_presentation_http_serve_ts",
           "prepared_snapshot": null,
           "expired_from": {
-            "owner": "subagent:deepseek-frontend-split",
-            "claimed_at": "2026-10-23T02:58:30.463Z",
-            "age_hours": 0.7,
-            "ttl_ms": 180000
+            "owner": "agent:main",
+            "claimed_at": "2026-10-23T03:40:00.886Z",
+            "age_hours": 14.7,
+            "ttl_ms": 7200000
           },
-          "expired_at": "2026-10-23T03:39:49.713Z",
+          "expired_at": "2026-10-23T18:19:43.453Z",
           "claimed_without_judge": {
             "at": "2026-10-23T03:40:00.886Z",
             "missing": [
@@ -52596,7 +52638,7 @@
             ]
           }
         },
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_presentation_mcp_lifecycle_ts",
@@ -91243,7 +91285,7 @@
         ],
         "lines": 984,
         "layer": "service",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_domain_reasoning_ts",
@@ -91998,7 +92040,7 @@
         ],
         "lines": 243,
         "layer": "service",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_alert_inbox_ts",
@@ -106161,7 +106203,7 @@
         ],
         "lines": 3360,
         "layer": "core",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_presentation_mcp_lifecycle_ts",
@@ -112856,11 +112898,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-23T18:07:54.894Z",
+    "saved_at": "2026-10-24T00:57:54.768Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 195352083,
+    "age": 219951957,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -115298,9 +115340,9 @@
     {
       "id": "file_src_domain_overlay_ts",
       "summary": "**overlay 的唯一读写口**（领域侧）：overlay 文档/锚点/边意图/全局件的**类型与全部读写语义**都从这里出 —— 首次迁移 `seedOverlayFromDsl`、对账 `reconcileOverlay`、投影回 base `applyOverlay`、三个收口同步 `mergeDecisionsIntoOverlay` / `mergeTagsIntoOverlay` / `mergeLifecycleIntoOverlay`，以及锚点“有内容”的唯一判据 `hasAnchorPayload`。★★ `validateProgressEvidence` 是**「done 必带证据」的唯一一把尺**（三档 evidence，形状与拒绝理由都在这里；`updateStatus` / `task_ops.complete` 只调它，不另写第二套）。★ 它**不做**：不做 IO（`<feature>.overlay.json` 的读写住 `storage_overlay.ts`，那里只搬字节、不立判据）；不重建 base（`import_project`）；不定义决策卡字段（`geometry.ts`）；不校验整份 DSL（`validator.ts`）。",
-      "state": "claimed",
-      "owner": "agent:main",
-      "claimed_at": "2026-10-23T03:40:26.585Z",
+      "state": "candidate",
+      "owner": null,
+      "claimed_at": null,
       "evidence": [
         {
           "kind": "attestation",
@@ -115478,7 +115520,15 @@
           "expectations"
         ]
       },
-      "node_id": "file_src_domain_overlay_ts"
+      "node_id": "file_src_domain_overlay_ts",
+      "prepared_snapshot": null,
+      "expired_from": {
+        "owner": "agent:main",
+        "claimed_at": "2026-10-23T03:40:26.585Z",
+        "age_hours": 14.7,
+        "ttl_ms": 7200000
+      },
+      "expired_at": "2026-10-23T18:19:43.453Z"
     },
     {
       "id": "file_src_domain_semantic_ts",
@@ -115494,10 +115544,10 @@
     {
       "id": "file_src_domain_validator_ts",
       "summary": "DSL 的【结构自洽】校验器：ajv schema + **三项** schema 表达不了的语义（nodes.id 唯一 / semantic.files.id 必须能在 nodes 里找到 / ★ **读数快照不许落盘**）。★★ 它**不判决策卡**（decision 根本不在 schema 里）—— 那是【tsc 契约】的事（设计侧符号级，certs/design-contracts）。★ 范围仍是【有意收窄】的：**结构错看得见，意图错看不见**；后者靠 tsc + 对拍 + 影响面。",
-      "state": "claimed",
+      "state": "candidate",
       "node_id": "file_src_domain_validator_ts",
-      "owner": "agent:main",
-      "claimed_at": "2026-10-23T03:40:35.198Z",
+      "owner": null,
+      "claimed_at": null,
       "read_set": {
         "symbols": [
           {
@@ -115576,7 +115626,15 @@
         "basis": [
           "expectations"
         ]
-      }
+      },
+      "prepared_snapshot": null,
+      "expired_from": {
+        "owner": "agent:main",
+        "claimed_at": "2026-10-23T03:40:35.198Z",
+        "age_hours": 14.7,
+        "ttl_ms": 7200000
+      },
+      "expired_at": "2026-10-23T18:19:43.453Z"
     },
     {
       "id": "file_src_infrastructure_index_schema_ts",
@@ -115627,12 +115685,12 @@
     {
       "id": "file_src_presentation_http_serve_ts",
       "summary": "【L1 待建构】核心层 · src/presentation/http — 50 个 API（导入自 57 个模块）（src/presentation/http/serve.ts） ← 节点 file_src_presentation_http_serve_ts",
-      "state": "claimed",
+      "state": "candidate",
       "discussion": {
         "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_http_serve_ts\"].responsibility"
       },
-      "owner": "agent:main",
-      "claimed_at": "2026-10-23T03:40:00.886Z",
+      "owner": null,
+      "claimed_at": null,
       "read_set": {
         "symbols": [],
         "files": [
@@ -115649,12 +115707,12 @@
       "node_id": "file_src_presentation_http_serve_ts",
       "prepared_snapshot": null,
       "expired_from": {
-        "owner": "subagent:deepseek-frontend-split",
-        "claimed_at": "2026-10-23T02:58:30.463Z",
-        "age_hours": 0.7,
-        "ttl_ms": 180000
+        "owner": "agent:main",
+        "claimed_at": "2026-10-23T03:40:00.886Z",
+        "age_hours": 14.7,
+        "ttl_ms": 7200000
       },
-      "expired_at": "2026-10-23T03:39:49.713Z",
+      "expired_at": "2026-10-23T18:19:43.453Z",
       "claimed_without_judge": {
         "at": "2026-10-23T03:40:00.886Z",
         "missing": [
@@ -115856,7 +115914,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1298,
+  "_dsl_rev": 1299,
   "feature_tree": {
     "features": [
       {
