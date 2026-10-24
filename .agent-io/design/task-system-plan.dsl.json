@@ -17515,7 +17515,96 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "decision": {
+          "summary": "「可判定的验收」的判定器：judgeExpectations 逐 kind 分支判定；判不了 ⇒ unsupported 单列",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/intent/expectations.ts",
+              "why": "判定器本体要有落点"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/intent/expectations.ts",
+              "symbol": "judgeExpectations",
+              "why": "★ 唯一判定入口（D-judge-port：形状在 domain/judge_port.ts，实现只此一处）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/intent/expectations.ts",
+              "symbol": "findExpectationConflicts",
+              "why": "★ 决策间冲突检测也住本文件"
+            }
+          ],
+          "acceptance": "判据四值语义 pass/fail/unsupported/pending；unsupported 不许混进通过；行为契约跑起来给输入验输出",
+          "updated_at": "2026-10-24T07:19:35.948Z",
+          "author": "llm",
+          "agent": "agent:subagent-behavior-cases"
+        },
+        "task": {
+          "id": "file_src_application_design_intent_expectations_ts",
+          "summary": "「可判定的验收」的判定器：judgeExpectations 逐 kind 分支判定；判不了 ⇒ unsupported 单列",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:subagent-behavior-cases",
+          "claimed_at": "2026-10-24T07:19:37.049Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/intent/expectations.ts",
+                "name": "findExpectationConflicts",
+                "fp": "677b684124a2fac8a8ecfc89993d0c92c489105f"
+              },
+              {
+                "file": "src/application/design/intent/expectations.ts",
+                "name": "judgeExpectations",
+                "fp": "6a19041a43dbb19efd133317315c0854f82e1c43"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/intent/expectations.ts",
+                "content_hash": "47a137ef1ddcf630dd933c9431f0b1732bbdc8f8"
+              }
+            ],
+            "computed_at": "2026-10-24T07:19:37.018Z",
+            "basis": [
+              "declared",
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-24T07:33:27.537Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify && check-bc.mjs",
+                "input": "c6a1a2979699214d8b051f703965d3f7e7596666",
+                "code": "0dcad137325f75f4324862a7c2b3cb5b8ef9e91b",
+                "covers": [
+                  "src/application/design/intent/expectations.ts"
+                ]
+              },
+              "observed": "verify 9/9；judgeExpectations 的 case behavior-cases 分支接线完成（runHarness 现跑 + expect 对比，进程级失败判 unsupported）",
+              "command": "npm run build && npm run verify && check-bc.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/design/intent/expectations.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-24T15:16:00+08:00",
+            "command": "npm run build && npm run verify && check-bc.mjs",
+            "kind": "reading",
+            "observed": "verify 9/9；judgeExpectations 的 case behavior-cases 分支接线完成（runHarness 现跑 + expect 对比，进程级失败判 unsupported）"
+          }
+        }
       },
       {
         "id": "file_src_application_design_intent_set_design_intent_ts",
@@ -32321,10 +32410,31 @@
               "symbol": "collectExpectations",
               "signature": "collectExpectations(dsl: DesignDSL): Array<{ node_id: string; node_label: string; expectation: Expectation }>",
               "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/expectation.ts",
+              "symbol": "normSignature",
+              "cases": [
+                {
+                  "given": [
+                    "f( a , b )"
+                  ],
+                  "expect": "f(a,b)"
+                },
+                {
+                  "given": [
+                    "x"
+                  ],
+                  "expect": "x"
+                }
+              ],
+              "why": "行为契约试点（工作项 L）：normSignature 必须只删空白不改字符 —— 实现改坏（空白换 '-'）必须被判 fail"
             }
           ],
-          "updated_at": "2026-10-19T01:47:29.482Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-24T07:23:44.951Z",
+          "agent": "agent:subagent-behavior-cases",
+          "author": "llm"
         },
         "decision_history": [
           {
@@ -32955,8 +33065,291 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-24T07:23:44.951Z",
+            "decision": {
+              "summary": "六种 kind + phase(pre/post) + 判定入口的契约；★ 新增 kind 漏标 phase 编不过",
+              "acceptance": "EXPECTATION_KINDS 是唯一清单；phase 由 Record<kind,…> 穷尽；非法 kind 抛错并列出合法值",
+              "provenance": {
+                "kind": "defect",
+                "where": "静态扫描：设计缺口 D1（要改的文件无节点）",
+                "note": "★ 补它是为了\"设计覆盖完整\"——让写闸能认这文件、增量验证能命中它；不是因为它有红"
+              },
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "EXPECTATION_KINDS",
+                  "why": "★ 六种 kind 的唯一清单（填卡时查它，不许拟造）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "★ 分类由期望自带 ⇒ 状态机不必\"记得剔除\"前态判据"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "postExpectations",
+                  "why": "★ 满足度只由后态算（这是 edge-absent 不污染满足度的关键）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "assertValidExpectations",
+                  "why": "运行时抛错并列出合法值 ⇒ 拟造不出来"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationSubjectPath",
+                  "why": "★ 一只红落在谁的 path 上 —— cardStanding 的归属判据靠它"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/expectation.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "Expectation",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "ExpectationPhase",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "PHASE_BY_KIND",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "collectExpectations",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "describeExpectation",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPaths",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normPath",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normSignature",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "signature": "expectationPhase(e: Expectation): ExpectationPhase",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "postExpectations",
+                  "signature": "postExpectations(expectations: readonly Expectation[]): Expectation[]",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normPath",
+                  "signature": "normPath(p: string): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normSignature",
+                  "signature": "normSignature(s: string): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "describeExpectation",
+                  "signature": "describeExpectation(e: Expectation): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "assertValidExpectations",
+                  "signature": "assertValidExpectations(v: unknown): asserts v is Expectation[]",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationSubjectPath",
+                  "signature": "expectationSubjectPath(e: Expectation): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPaths",
+                  "signature": "expectationPaths(e: Expectation): string[]",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "collectExpectations",
+                  "signature": "collectExpectations(dsl: DesignDSL): Array<{ node_id: string; node_label: string; expectation: Expectation }>",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                }
+              ],
+              "updated_at": "2026-10-19T01:47:29.482Z",
+              "agent": "all-externalize"
+            },
+            "note": "工作项 L 第一步：加第 25 条判据（kind=behavior-cases，试点 normSignature）；summary 保持原值不变",
+            "author": "llm",
+            "agent": "agent:subagent-behavior-cases"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_domain_expectation_ts",
+          "summary": "六种 kind + phase(pre/post) + 判定入口的契约；★ 新增 kind 漏标 phase 编不过",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:subagent-behavior-cases",
+          "claimed_at": "2026-10-24T07:19:36.689Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/expectation.ts",
+                "name": "EXPECTATION_KINDS",
+                "fp": "6e331061c18f339c3a71971c7aae72d07dcace5b"
+              },
+              {
+                "file": "src/domain/expectation.ts",
+                "name": "Expectation",
+                "fp": "e7f028163649fd289f70cea34f2145f3ac20b0e3"
+              },
+              {
+                "file": "src/domain/expectation.ts",
+                "name": "ExpectationPhase",
+                "fp": "d4c57e65f64a53b7bee4e9993bfc19705de7dce2"
+              },
+              {
+                "file": "src/domain/expectation.ts",
+                "name": "PHASE_BY_KIND",
+                "fp": "2b603bd0bdad4fd98fd9f7f695ed2c9bfce26e07"
+              },
+              {
+                "file": "src/domain/expectation.ts",
+                "name": "assertValidExpectations",
+                "fp": "ffb58a21a0a0d82339e4b3f5642edf4c616a5b22"
+              },
+              {
+                "file": "src/domain/expectation.ts",
+                "name": "collectExpectations",
+                "fp": "21997642f2b5a9c1b5a186f29bc8397999f85e32"
+              },
+              {
+                "file": "src/domain/expectation.ts",
+                "name": "describeExpectation",
+                "fp": "5ef73db0dfe27db919a3c88f00add15f2f38f362"
+              },
+              {
+                "file": "src/domain/expectation.ts",
+                "name": "expectationPaths",
+                "fp": "6b2de943d578df6878c3f430263616e4974b5f5e"
+              },
+              {
+                "file": "src/domain/expectation.ts",
+                "name": "expectationPhase",
+                "fp": "eb6b9ff9b27cb1776cf2842f6191bb24ef0ab8c2"
+              },
+              {
+                "file": "src/domain/expectation.ts",
+                "name": "expectationSubjectPath",
+                "fp": "30ca4afa6392397804ecb8cab6422dde7250a51e"
+              },
+              {
+                "file": "src/domain/expectation.ts",
+                "name": "normPath",
+                "fp": "d30320d071069b1966fefcde09d97ea41d8623c8"
+              },
+              {
+                "file": "src/domain/expectation.ts",
+                "name": "normSignature",
+                "fp": "0cea2cdabccf5e80b7fc25ee4d4749e3330e0f36"
+              },
+              {
+                "file": "src/domain/expectation.ts",
+                "name": "postExpectations",
+                "fp": "39e14b766d34d1f2a8975c25149ccb989496d63c"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/expectation.ts",
+                "content_hash": "630e7da248bd2b4cd9a4c3d882b35ae248c3a9f6"
+              }
+            ],
+            "computed_at": "2026-10-24T07:19:36.658Z",
+            "basis": [
+              "declared",
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-24T07:32:59.098Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify && check-bc.mjs",
+                "input": "615ab78a2dddf2c520a06cb0d7db3e8075964413",
+                "code": "1e4f2b7cb87174d763a608e1cf69387025f649bd",
+                "covers": [
+                  "src/domain/expectation.ts"
+                ]
+              },
+              "observed": "verify 9/9；behavior-cases 试点判据 verdict=pass（normSignature 2/2 case 现跑一致）；消融三段（正向 pass/改坏 fail/还原 pass）由 subagent:subagent-behavior-cases 实测并经主控 git diff 核验还原态",
+              "command": "npm run build && npm run verify && check-bc.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/expectation.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-24T15:15:00+08:00",
+            "command": "npm run build && npm run verify && check-bc.mjs",
+            "kind": "reading",
+            "observed": "verify 9/9；behavior-cases 试点判据 verdict=pass（normSignature 2/2 case 现跑一致）；消融三段（正向 pass/改坏 fail/还原 pass）由 subagent:subagent-behavior-cases 实测并经主控 git diff 核验还原态"
+          }
+        }
       },
       {
         "id": "file_src_domain_geometry_ts",
@@ -87896,7 +88289,8 @@
           }
         ],
         "lines": 397,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_design_intent_set_design_intent_ts",
@@ -94970,7 +95364,8 @@
           }
         ],
         "lines": 206,
-        "layer": "service"
+        "layer": "service",
+        "status": "done"
       },
       {
         "id": "file_src_domain_geometry_ts",
@@ -117074,11 +117469,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T04:37:18.551Z",
+    "saved_at": "2026-10-24T07:33:27.772Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 233115740,
+    "age": 243684961,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -120064,7 +120459,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1390,
+  "_dsl_rev": 1394,
   "feature_tree": {
     "features": [
       {

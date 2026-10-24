@@ -28,6 +28,8 @@ import { parseFileSymbols, isSupportedFile } from '../../../infrastructure/parse
 // ★ T79：调用边读取**复用现成那一处**（别在这再写一份 SQL）
 import { queryFileCalls } from '../../meta/explore/query_feature.js';
 import { normPath, normSignature } from '../../../domain/expectation.js';
+// ★ 工作项 L（2026-10-24）：行为契约的执行核 —— 复用 behavior 基建（与 capture/verify 同一条执行路径）
+import { runHarness, type BehaviorSpec } from '../../../infrastructure/authoring/behavior/index.js';
 // ★ 2026-10-21（D-judge-port）：判定器的**形状**住 domain（端口 = `domain/judge_port.ts`），本文件只实现
 //   「怎么判」。★ 这不是第二把尺 —— 除了本文件，全仓没有第二个 `judgeExpectations`。
 import type {
@@ -348,6 +350,62 @@ export async function judgeExpectations(
         break;
       }
 
+      // ★★★ 2026-10-24（工作项 L 第一步）：**行为契约** —— 给定输入 → 断言输出（契约三层之三：
+      //   ① signature-matches 声明契约 ② call-exists 副作用契约 ③ behavior-cases 行为契约）。
+      //   ★ 期望输出写在判据里（cases[].expect），**不依赖基线文件**：基线是 capture 时的"实然"，
+      //     expect 是设计声明的"应然" —— 判据必须对着应然判（若对着基线判：capture 自坏代码 ⇒ 恒 fail、
+      //     capture 自好代码 ⇒ expect 沦为摆设）。执行核复用 `runHarness`（`verifyBaseline` 同一条执行路径）。
+      case 'behavior-cases': {
+        const p = normPath(e.path);
+        const abs = path.join(root, p);
+        if (!fs.existsSync(abs)) {
+          push(it, 'fail', `${p} **不存在**（查的是 ${abs}）`);
+          break;
+        }
+        try {
+          const spec: BehaviorSpec = {
+            project_dir: root,
+            file: p,
+            function: e.symbol,
+            cases: e.cases.map((c, i) => ({ name: `case-${i + 1}`, args: c.given })),
+          };
+          const run = runHarness(spec);
+          if (run.error) {
+            // 进程级失败（工具链缺失 / 加载失败 / 顶层函数缺失）⇒ "判不了"不冒充"错"
+            push(it, 'unsupported', `行为基线跑不了 ⇒ 判不了：${run.error}`);
+            break;
+          }
+          // expect 是裸串（"f(a,b)"），harness 的 ret 是规范化 repr（字符串带引号）⇒ 对齐后再比
+          const shown = (ret: string): string => {
+            try {
+              const v: unknown = JSON.parse(ret);
+              return typeof v === 'string' ? v : JSON.stringify(v);
+            } catch { return ret; }
+          };
+          const same = (ret: string, expect: string): boolean => {
+            if (ret === expect) return true; // expect 本就写成 repr 形态（如 "5" / "true" / "{\"a\":1}"）
+            try { return String(JSON.parse(ret)) === expect; } catch { return false; } // expect 是裸串
+          };
+          const bad: string[] = [];
+          for (let i = 0; i < e.cases.length; i++) {
+            const c = e.cases[i];
+            const r = run.results.find((x) => x.case === `case-${i + 1}`);
+            if (!r) { bad.push(`case-${i + 1}（输入 ${JSON.stringify(c.given)}）harness 未产出该 case`); continue; }
+            if (!r.ok) { bad.push(`case-${i + 1} 输入 ${JSON.stringify(c.given)}：**抛错** ${r.error}`); continue; }
+            if (!same(r.ret ?? '', c.expect)) {
+              bad.push(`case-${i + 1} 输入 ${JSON.stringify(c.given)}：期望 \`${c.expect}\`，实得 \`${shown(r.ret ?? '')}\``);
+            }
+          }
+          if (bad.length > 0) {
+            push(it, 'fail', `行为差异 ${bad.length}/${e.cases.length}：${bad[0]}`);
+          } else {
+            push(it, 'pass', `${e.cases.length}/${e.cases.length} case 一致（${p} 的 \`${e.symbol}\` 经金丝雀 harness 现跑）`);
+          }
+        } catch (err) {
+          push(it, 'unsupported', `行为基线判不了：${(err as Error).message}`);
+        }
+        break;
+      }
       case 'edge-exists':
       case 'edge-absent': {
         const from = normPath(e.from);

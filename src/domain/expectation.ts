@@ -64,6 +64,20 @@ export type Expectation =
    */
   | { kind: 'source-has'; path: string; must?: string[]; mustNot?: string[]; why: string }
   /**
+   * ★★★ 2026-10-24（工作项 L 第一步）：**行为契约** —— 给定输入 → 断言输出（契约三层之三）。
+   *
+   * ## 为什么是它
+   * ① `signature-matches`（声明契约）② `call-exists`（副作用契约）已落地，
+   * ③「给定输入 ⇒ 断言输出」空缺 —— 而这正是行为基线
+   *   （`infrastructure/authoring/behavior`）现成的能力，接到判据上（**复用，不重写**）。
+   *
+   * ## 形状
+   * `cases[].given` = 位置实参数组（对齐 `BehaviorCase.args`；case 名由判定器自动编号）；
+   * `cases[].expect` = 期望输出的**裸串**（"f(a,b)" 就写 "f(a,b)"，判定器负责与规范化 repr 对齐）。
+   * ★ 空 cases = 校验失败（`assertValidExpectations`）：说不出验收输入的判据不许进册。
+   */
+  | { kind: 'behavior-cases'; path: string; symbol: string; cases: Array<{ given: unknown[]; expect: string }>; why: string }
+  /**
    * ★★★ 2026-10-18（用户："校验的过程就是夹具"）：**行为契约** —— 一条 `run` = 一个自包含的测试。
    *
    * ## 为什么只有【一个】kind（而不是"返回值/退出码/输出/状态"各一种）
@@ -108,7 +122,7 @@ export type Expectation =
       mutants_ignore?: string[];
     };
 
-export const EXPECTATION_KINDS = ['file-exists', 'symbol-exists', 'signature-matches', 'edge-exists', 'edge-absent', 'call-exists', 'run', 'source-has'] as const;
+export const EXPECTATION_KINDS = ['file-exists', 'symbol-exists', 'signature-matches', 'edge-exists', 'edge-absent', 'call-exists', 'run', 'source-has', 'behavior-cases'] as const;
 
 /**
  * ★★★ 判据的**阶段**维度（2026-10-16 · T10）。下面 ①②③ 就是判它是不是补丁的那三条特征
@@ -159,6 +173,7 @@ const PHASE_BY_KIND: Record<Expectation['kind'], ExpectationPhase> = {
   'signature-matches': 'post',
   'edge-exists': 'post',
   'edge-absent': 'pre', // ★ 前态判据：A 不许依赖 B —— 未施工时天然成立
+  'behavior-cases': 'post', // ★ 行为契约：跑起来才有输出可比 ⇒ 后态（与 run 同理）
   'call-exists': 'post',
 };
 
@@ -203,6 +218,7 @@ export function describeExpectation(e: Expectation): string {
     case 'call-exists': return `call-exists  ${normPath(e.path)} :: ${e.symbol}() → ${e.target}()`;
     case 'run': return `run  ${String(e.expect).slice(0, 70)}`;
     case 'source-has': return `source-has  ${normPath(e.path)} :: must ${(e.must ?? []).length} / mustNot ${(e.mustNot ?? []).length}`;
+    case 'behavior-cases': return `behavior-cases  ${normPath(e.path)} :: ${e.symbol}() × ${e.cases.length} case`;
   }
 }
 
@@ -233,6 +249,20 @@ export function assertValidExpectations(v: unknown): asserts v is Expectation[] 
       const hasMust = Array.isArray(o.must) && o.must.length > 0;
       const hasMustNot = Array.isArray(o.mustNot) && o.mustNot.length > 0;
       if (!hasMust && !hasMustNot) throw new Error(`${at} 必须给 must[] 或 mustNot[] 至少一个（kind=source-has）`);
+    }
+    else if (kind === 'behavior-cases') {
+      need('path'); need('symbol');
+      // ★ 空 cases = 校验失败：说不出"给什么输入、断什么输出"的判据不许进册
+      if (!Array.isArray(o.cases) || o.cases.length === 0) {
+        throw new Error(`${at}.cases 必须是**非空**数组（kind=behavior-cases）—— 说不出验收输入的判据不许进册`);
+      }
+      (o.cases as unknown[]).forEach((c, ci) => {
+        const cat = `${at}.cases[${ci}]`;
+        if (!c || typeof c !== 'object') throw new Error(`${cat} 必须是对象（{ given, expect }）`);
+        const co = c as Record<string, unknown>;
+        if (!Array.isArray(co.given)) throw new Error(`${cat}.given 必须是数组（位置实参，对齐 BehaviorCase.args）`);
+        if (typeof co.expect !== 'string' || (co.expect as string).trim() === '') throw new Error(`${cat}.expect 必填且非空（期望输出）`);
+      });
     }
     else { need('from'); need('to'); }
   });
