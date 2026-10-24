@@ -10645,10 +10645,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T10:55:00+08:00",
-            "command": "npm run build && npm run verify && excluded.update 实测 + design_line report 复测",
+            "at": "2026-10-24T09:00:00Z",
+            "command": "npm run verify",
             "kind": "reading",
-            "observed": "verify 9/9；excluded.update 落 5 条排除声明（certs//scripts//dogfood//.tmp-/translate.json）；沉默缺口 122→16（剩余=observe-lang 14+src 2，全部是真待纳入）"
+            "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）"
           }
         },
         "task": {
@@ -10656,8 +10656,8 @@
           "summary": "edit_dsl 各 type/op 的 data 键集（NODE_DATA_KEYS / OP_SPECS），由类型级断言防漂移",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:workbuddy-glm5",
-          "claimed_at": "2026-10-24T02:56:47.320Z",
+          "owner": "agent:subagent-colloquial-clean",
+          "claimed_at": "2026-10-24T08:41:56.138Z",
           "read_set": {
             "symbols": [
               {
@@ -10753,7 +10753,7 @@
               {
                 "file": "src/application/design/dsl_ops/op_data_spec.ts",
                 "name": "OP_SPECS",
-                "fp": "564b55abe5a03318166847df0282a31c45c65c8e"
+                "fp": "d95ca2efd8311b58541a78cd99a0e4cd1d1bb9b4"
               },
               {
                 "file": "src/application/design/dsl_ops/op_data_spec.ts",
@@ -10763,7 +10763,7 @@
               {
                 "file": "src/application/design/dsl_ops/op_data_spec.ts",
                 "name": "TYPE_KNOWN_KEYS",
-                "fp": "90eb11383fc823baa081f3952c25832105c5f5c7"
+                "fp": "d29afa2bba7591bad2b78782c93b5b79fe734d82"
               },
               {
                 "file": "src/application/design/dsl_ops/op_data_spec.ts",
@@ -10819,10 +10819,10 @@
             "files": [
               {
                 "path": "src/application/design/dsl_ops/op_data_spec.ts",
-                "content_hash": "c618c47a840c88e9a9f911994a59753a1720f9e2"
+                "content_hash": "02b8c61ae5fdf13186ea888d1260cf5150d9fc2b"
               }
             ],
-            "computed_at": "2026-10-24T02:56:47.258Z",
+            "computed_at": "2026-10-24T08:41:56.102Z",
             "basis": [
               "declared",
               "expectations"
@@ -10844,8 +10844,27 @@
               },
               "observed": "verify 9/9；excluded.update 落 5 条排除声明（certs//scripts//dogfood//.tmp-/translate.json）；沉默缺口 122→16（剩余=observe-lang 14+src 2，全部是真待纳入）",
               "command": "npm run build && npm run verify && excluded.update 实测 + design_line report 复测"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-24T08:44:48.144Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify",
+                "input": "266b0b67491a87cfc7019eca90f5eb9d5eee77ff",
+                "code": "a890692a07b16b43ab3ba521f8d05abc5e9203ae",
+                "covers": [
+                  "src/application/design/dsl_ops/op_data_spec.ts"
+                ]
+              },
+              "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）",
+              "command": "npm run verify"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-24T08:41:56.138Z",
+          "reopen_reason": "口语清洗第一批：仅改注释措辞不改语义",
+          "reopened_from": "agent:workbuddy-glm5"
         }
       },
       {
@@ -11424,9 +11443,9 @@
               "why": "★ 用户问「有没有自己过期的手段」——原来只有 `releaseIfExpired`（纯函数、**只产事件不改 state**）⇒ 没人来接管时卡会**永远停在 claimed**。`expire` 是主动回收：回 candidate + 记 expired_from。★ 与 release 分开记痕（release_reason=人放弃 / expired_from=超时），审计要能分清。"
             }
           ],
-          "updated_at": "2026-10-23T17:12:25.907Z",
+          "updated_at": "2026-10-24T08:38:43.937Z",
           "agent": "all-externalize",
-          "rationale": "用户 2026-10-24 澄清 history 语义：history 是完结态（done/void）的专门库，专门查（get_dsl query=history）、不进常规读路径；每次修改≠进 history。实测体积账：主册 todos[] 共 169 张 0.22MB，其中 93 张 done；修改期只压 summary 描述（每版约 0.5KB，hash 判重），读集/evidence 等派生物只挂末版（替换式）。",
+          "rationale": "用户 2026-10-24 澄清 history 语义：history 是完结态（done/void）的专门库，专门查（get_dsl query=history）、不进常规读路径；每次修改≠进 history。实测体积数据：主册 todos[] 共 169 张 0.22MB，其中 93 张 done；修改期只压 summary 描述（每版约 0.5KB，hash 判重），读集/evidence 等派生物只挂末版（替换式）。",
           "alternatives": [
             {
               "option": "每次修改都压整卡快照进主册（decision_history 形态）",
@@ -13122,27 +13141,211 @@
             },
             "note": "history 形态裁定需要落在它的实现住处 src/application/design/dsl_ops/task_ops.ts（todo.move_to_history 所在），并给 2026-10-23 交接里 todo.md 下一步#1（93 张 done 卡入史）之后的查询层改进立卡——实测 93 张 done 卡仍住主册 todos[]、主册 0.22MB 只涨不缩。",
             "author": "llm"
+          },
+          {
+            "at": "2026-10-24T08:38:43.937Z",
+            "decision": {
+              "summary": "history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。",
+              "acceptance": "① 在册 done 卡=0（全部入 task-history.db，可 get_dsl query=history 按 card_id/state 查到）；② get_dsl query=todo 缺省只列活卡；③ task-history.db 每条含描述修改史（history[]）与末版 evidence；④ 主册 todos[] 体积只随活卡数变化，不随已完结数增长。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "why": "动作要有落点"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "claimTask",
+                  "target": "cardStanding",
+                  "why": "★ 讨论 2 · P30：claim 读**可领**那一侧（work/violated 才可领）；satisfied 必拒（没活干不许领）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/application/design/dsl_ops/task_ops.ts",
+                  "to": "src/domain/task_machine.ts",
+                  "why": "op 层只能调状态机，不许自己判状态"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "completeTask",
+                  "target": "isSatisfied",
+                  "why": "★ 讨论 2 · P30 的结构判据：complete 读**可收口**那一侧（isSatisfied），★ 不许再与 claim 共用同一个判据 —— 共用会放行 violated 卡（后态全过、前态越权）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "completeTask",
+                  "target": "validateProgressEvidence",
+                  "why": "★ 接点③（证据闸）：置 done 前必须过既有 validateProgressEvidence（overlay.ts）—— ★ 复用，不新造第二把证据尺"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "completeTask",
+                  "target": "updateStatus",
+                  "why": "★ 接点④（状态唯一入口）：状态落盘只许走既有 updateStatus（status_tools.ts），不在 task 侧另写一份写盘 —— ★ 复用"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "publishTask",
+                  "why": "立卡：从设计 DSL 抽出这一块 ⇒ 形成任务卡（= board 的发布动作）。★ 缺它则闸对'尚无任何 task'的 feature 不可满足"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "publishFromDiff",
+                  "why": "★ diff 之后「无卡 ⇒ 补卡」的唯一入口（VISION §7）；它让差异能被上架，而不是靠人手点 publish"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "voidTask",
+                  "why": "★ 卡生命周期的出口（candidate → void）；没有它，代码先于卡存在会让卡永久卡在 candidate + satisfied（claim 拒 / complete 拒）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "ConstructBasis",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "Loaded",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "TaskOpInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "TaskOpRequest",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "applyTaskOp",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "assertTransition",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "claimTask",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "completeTask",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "constructBasis",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "constructionVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "loadTask",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "releaseTask",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "requireRoot",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "writeTask",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "renewTask",
+                  "why": "★ 用户追问「你把续租的路径也断了吗」——对，上一版把\"重复 claim 也拒\"写进契约，而 claim 会**重算并覆盖 read_set**，本来就不该拿来续租。`renew` = 只刷 claimed_at、不动读集。三条必须拒：非 claimed / 不是你的卡 / 已过期（过期 = 你停了，不是你没空）。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "expireTasks",
+                  "why": "★ 用户问「有没有自己过期的手段」——原来只有 `releaseIfExpired`（纯函数、**只产事件不改 state**）⇒ 没人来接管时卡会**永远停在 claimed**。`expire` 是主动回收：回 candidate + 记 expired_from。★ 与 release 分开记痕（release_reason=人放弃 / expired_from=超时），审计要能分清。"
+                }
+              ],
+              "updated_at": "2026-10-23T17:12:25.907Z",
+              "agent": "all-externalize",
+              "rationale": "用户 2026-10-24 澄清 history 语义：history 是完结态（done/void）的专门库，专门查（get_dsl query=history）、不进常规读路径；每次修改≠进 history。实测体积账：主册 todos[] 共 169 张 0.22MB，其中 93 张 done；修改期只压 summary 描述（每版约 0.5KB，hash 判重），读集/evidence 等派生物只挂末版（替换式）。",
+              "alternatives": [
+                {
+                  "option": "每次修改都压整卡快照进主册（decision_history 形态）",
+                  "rejected_because": "修改≠完结，快照住在常规读写路径里，主册只涨不缩（实测主册 decision_history 已 78 处；cache.db 52MB freelist 证明换内容不还空间的形态不可持续）"
+                },
+                {
+                  "option": "入史时只留末版描述、丢修改链",
+                  "rejected_because": "描述修改链是『为什么改』的审计轨迹，KB 级体积可承受；丢它等于丢考古能力"
+                }
+              ],
+              "consequences": "task-history.db 的条目形状 = 封口 meta（closed_at/archived_by/archived_reason）+ 描述修改史 + 末版 evidence；20 张引用 done 前置环的活卡摘链成根（链的前置环在 history 可查）。",
+              "thread": "history",
+              "tags": [
+                "history",
+                "task-system",
+                "体积治理"
+              ],
+              "author": "llm"
+            },
+            "note": "口语清洗：体积账→体积数据"
           }
         ],
-        "status": "in_progress",
+        "status": "done",
         "overlay": {
           "path": "src/application/design/dsl_ops/task_ops.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T10:10:00+08:00",
-            "command": "npm run build && npm run verify",
+            "at": "2026-10-24T09:00:00Z",
+            "command": "npm run verify",
             "kind": "reading",
-            "observed": "verify 9/9；moveTodoCardsToHistory 两处找卡（todos[] ∪ geometry.nodes[].task），节点卡入史通道打通；功能验收待 server 重启后实测（3 张 done 节点卡待搬）"
+            "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）"
           }
         },
         "task": {
           "id": "file_src_application_design_dsl_ops_task_ops_ts",
           "summary": "history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:workbuddy-glm5",
-          "claimed_at": "2026-10-24T03:01:18.255Z",
+          "owner": "agent:subagent-colloquial-clean",
+          "claimed_at": "2026-10-24T08:42:22.960Z",
           "read_set": {
             "symbols": [
               {
@@ -13244,10 +13447,10 @@
             "files": [
               {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "5e0c5a8c71d43f72e23d571d3143facabad19f85"
+                "content_hash": "33b29fa3ddfbafd053f82744fbd27d6cdf3dd915"
               }
             ],
-            "computed_at": "2026-10-24T03:01:18.188Z",
+            "computed_at": "2026-10-24T08:42:22.928Z",
             "basis": [
               "declared",
               "expectations"
@@ -13271,11 +13474,33 @@
               },
               "observed": "verify 9/9；moveTodoCardsToHistory 两处找卡（todos[] ∪ geometry.nodes[].task），节点卡入史通道打通；功能验收待 server 重启后实测（3 张 done 节点卡待搬）",
               "command": "npm run build && npm run verify"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-24T08:44:42.216Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify",
+                "input": "c823849e0bed9fd3c01cdc7e9f37633eb9f501a8",
+                "code": "9b700474a812983a1cbefe07b36784a3e5a42d25",
+                "covers": [
+                  "src/application/design/dsl_ops/task_ops.ts",
+                  "src/domain/task_machine.ts"
+                ]
+              },
+              "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）",
+              "command": "npm run verify"
             }
           ],
           "reopened_at": "2026-10-24T03:01:18.255Z",
           "reopen_reason": "排除清单机制（裁 A）施工：src/application/design/dsl_ops/task_ops.ts 加 applyExcludedOp（排除清单唯一写端，沉默缺口判据的另一半）",
-          "reopened_from": "agent:workbuddy-glm5"
+          "reopened_from": "agent:workbuddy-glm5",
+          "taken_over_from": {
+            "from_owner": "agent:workbuddy-glm5",
+            "from_claimed_at": "2026-10-24T03:01:18.255Z",
+            "age_hours": 5.7
+          }
         }
       },
       {
@@ -17157,8 +17382,8 @@
           "summary": "`edit_dsl` 的**唯一写入口**（`updateFeature`）：node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag/decision/todo/task 全部写操作都从这一处收口。它只做三件事且顺序固定：①**逐 op 应用**（先过 `checkOpSpec` 的 data 契约，再路由到各自原子实现）；②**自洽性闸**（全部 op 落定后回读 DSL 跑 `validateDSL`，只把 `after.keys − baseline.keys` —— **本次新引入**的错 —— 判为失败）；③**失败回滚到调用前字节**（任一 op 抛错或闸判红，就用调用前的原始文件字节覆盖回去 —— 不是 `saveDSL(backup)`，`_dsl_rev` / `_sync` 原样不动）。★ 边界（它不做什么）：**不判业务对错**（一条边该不该有、决策该怎么写，是各 op 与人的设计结论）；**不改 schema、不改 `validateDSL` 判定**；**不做重试/补偿**（失败就是全回滚，没有半成功）；**不是任务态写端**（task 的 claim/complete 只经 `task_ops`）；也**不把决策搬进 overlay**（那是收口后的 `syncDecisionsToOverlay`，本函数只是调用它）。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:workbuddy-glm5",
-          "claimed_at": "2026-10-24T02:56:53.403Z",
+          "owner": "agent:subagent-colloquial-clean",
+          "claimed_at": "2026-10-24T08:41:55.981Z",
           "read_set": {
             "symbols": [
               {
@@ -17174,7 +17399,7 @@
               {
                 "file": "src/application/design/dsl_ops/update_feature.ts",
                 "name": "FeatureOperation",
-                "fp": "fd5cd9828656b1bfea9d6a6ee1528aa3a8550f8c"
+                "fp": "c7eb5bfd178b67dfa098b1651ce875eb4c8892f5"
               },
               {
                 "file": "src/application/design/dsl_ops/update_feature.ts",
@@ -17214,7 +17439,7 @@
               {
                 "file": "src/application/design/dsl_ops/update_feature.ts",
                 "name": "applyOperation",
-                "fp": "465ba803b40251786353d6f137e8cdfc3becbf50"
+                "fp": "1c4678e61d89967de17532b58195074939a1a5fc"
               },
               {
                 "file": "src/application/design/dsl_ops/update_feature.ts",
@@ -17285,10 +17510,10 @@
             "files": [
               {
                 "path": "src/application/design/dsl_ops/update_feature.ts",
-                "content_hash": "79b948beca4eb60f585ffb712122630340b9696b"
+                "content_hash": "d1d4f928ca754ccd20962c9e4e9530b46bb39af9"
               }
             ],
-            "computed_at": "2026-10-24T02:56:53.346Z",
+            "computed_at": "2026-10-24T08:41:55.948Z",
             "basis": [
               "declared",
               "expectations"
@@ -17310,8 +17535,27 @@
               },
               "observed": "verify 9/9；case excluded 分派 + applyExcludedOp 接线完成；excluded.update 落 5 条排除声明实测通过",
               "command": "npm run build && npm run verify && excluded.update 实测"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-24T08:44:45.520Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify",
+                "input": "5d64d47a61b78113d041df622ecf18c92b164f2d",
+                "code": "669860cb04e4fc8ef27570e7e76804820f50b0fd",
+                "covers": [
+                  "src/application/design/dsl_ops/update_feature.ts"
+                ]
+              },
+              "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）",
+              "command": "npm run verify"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-24T08:41:55.981Z",
+          "reopen_reason": "口语清洗第一批：仅改注释措辞不改语义",
+          "reopened_from": "agent:workbuddy-glm5"
         },
         "status": "done",
         "overlay": {
@@ -17319,10 +17563,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T10:55:00+08:00",
-            "command": "npm run build && npm run verify && excluded.update 实测",
+            "at": "2026-10-24T09:00:00Z",
+            "command": "npm run verify",
             "kind": "reading",
-            "observed": "verify 9/9；case excluded 分派 + applyExcludedOp 接线完成；excluded.update 落 5 条排除声明实测通过"
+            "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）"
           }
         }
       },
@@ -17966,21 +18210,22 @@
               "why": "概览/详情两级的两个关键写法：overview 分支存在 + history 缺省不带整卡（detail 显式声明才给）"
             }
           ],
-          "rationale": "实测搬迁 93 张 done 卡后首次 query=history 回执 231,951 字符——data.items[].card 整卡解析是负重主源；用户 2026-10-24 裁定要「一眼全貌 + 过滤」，概览级每卡一行、整卡按需取。",
+          "rationale": "实测搬迁 93 张 done 卡后首次 query=history 回执 231,951 字符——data.items[].card 整卡解析是主要体积来源；用户 2026-10-24 裁定要「总览视图 + 过滤」，概览级每卡一行、整卡按需取。",
           "acceptance": "① get_dsl query=history 缺省 data.items 无 card 字段（detail=true 或 card_id 精查时才有）；② get_dsl query=overview 每 feature 一行活卡/done/void/归档/history/欠账计数；③ npm run verify 过。",
           "thread": "history",
-          "updated_at": "2026-10-23T17:43:50.952Z",
-          "author": "llm"
+          "updated_at": "2026-10-24T08:38:56.508Z",
+          "author": "llm",
+          "agent": "subagent-colloquial-clean"
         },
         "overlay": {
           "path": "src/application/meta/explore/query_feature.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T10:22:00+08:00",
-            "command": "npm run build && npm run verify && node _design-canvas-labs/show-overview.mjs",
+            "at": "2026-10-24T09:00:00Z",
+            "command": "npm run verify",
             "kind": "reading",
-            "observed": "verify 9/9；overview 4KB 且每 feature 带判据全量求值读数（task-system-plan 648 条：pass 640/fail 7/pending 1，fail 点名 storage.ts 的 clearAllFeatures/deleteFeature/getFeatureFile 僵尸判据——机制首日即抓到真僵尸）"
+            "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）"
           }
         },
         "task": {
@@ -17988,8 +18233,8 @@
           "summary": "query=history 出概览/详情两级（缺省概览行，detail=true 或 card_id 精查才附整卡）；新增 query=overview 跨库总账（features×活卡/done/void/归档/history/欠账，只读派生不落盘）；欠账口径抽 computePendingDebts 与 pending 共用。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:workbuddy-glm5",
-          "claimed_at": "2026-10-24T02:18:10.781Z",
+          "owner": "agent:subagent-colloquial-clean",
+          "claimed_at": "2026-10-24T08:41:55.664Z",
           "read_set": {
             "symbols": [
               {
@@ -18001,10 +18246,10 @@
             "files": [
               {
                 "path": "src/application/meta/explore/query_feature.ts",
-                "content_hash": "8fddb31bddc5b5c2cdc54ff57b21ea95b2c7c9ef"
+                "content_hash": "56e99119a21c8c0890d950bc6e071c76d2d37b84"
               }
             ],
-            "computed_at": "2026-10-24T02:18:10.746Z",
+            "computed_at": "2026-10-24T08:41:55.628Z",
             "basis": [
               "declared",
               "expectations"
@@ -18026,9 +18271,61 @@
               },
               "observed": "verify 9/9；overview 4KB 且每 feature 带判据全量求值读数（task-system-plan 648 条：pass 640/fail 7/pending 1，fail 点名 storage.ts 的 clearAllFeatures/deleteFeature/getFeatureFile 僵尸判据——机制首日即抓到真僵尸）",
               "command": "npm run build && npm run verify && node _design-canvas-labs/show-overview.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-24T08:44:34.434Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify",
+                "input": "fd12fb355b525cc91280e2908f70740cda4079e0",
+                "code": "139901b5f2d638ff299764ab72d83d4b8a98069b",
+                "covers": [
+                  "src/application/meta/explore/query_feature.ts"
+                ]
+              },
+              "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）",
+              "command": "npm run verify"
             }
-          ]
-        }
+          ],
+          "reopened_at": "2026-10-24T08:41:55.664Z",
+          "reopen_reason": "口语清洗第一批：仅改注释措辞不改语义",
+          "reopened_from": "agent:workbuddy-glm5"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:38:56.508Z",
+            "decision": {
+              "summary": "query=history 出概览/详情两级（缺省概览行，detail=true 或 card_id 精查才附整卡）；新增 query=overview 跨库总账（features×活卡/done/void/归档/history/欠账，只读派生不落盘）；欠账口径抽 computePendingDebts 与 pending 共用。",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "signature": "computePendingDebts(feature: string)",
+                  "symbol": "computePendingDebts",
+                  "why": "欠账口径唯一住处：query=pending（渲染）与 query=overview（计数）共用；参数形状定死 feature:string，改签名即破坏两路共用"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "case 'overview':",
+                    "const wantDetail = input.detail === true || Boolean(input.card_id)"
+                  ],
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "why": "概览/详情两级的两个关键写法：overview 分支存在 + history 缺省不带整卡（detail 显式声明才给）"
+                }
+              ],
+              "rationale": "实测搬迁 93 张 done 卡后首次 query=history 回执 231,951 字符——data.items[].card 整卡解析是负重主源；用户 2026-10-24 裁定要「一眼全貌 + 过滤」，概览级每卡一行、整卡按需取。",
+              "acceptance": "① get_dsl query=history 缺省 data.items 无 card 字段（detail=true 或 card_id 精查时才有）；② get_dsl query=overview 每 feature 一行活卡/done/void/归档/history/欠账计数；③ npm run verify 过。",
+              "thread": "history",
+              "updated_at": "2026-10-23T17:43:50.952Z",
+              "author": "llm"
+            },
+            "note": "口语清洗：一眼全貌→总览视图；负重主源→主要体积来源",
+            "agent": "subagent-colloquial-clean"
+          }
+        ]
       },
       {
         "id": "file_src_application_meta_handlers_ts",
@@ -19427,17 +19724,17 @@
           "summary": "5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的 inputSchema **显式展开** CALL_ACTOR_FIELD —— 调用方身份（`<kind>:<name>`，规范见 domain/actor_spec.ts）从 MCP 入参进，落到写闸 admitActor 的 explicit 位；env 只作回退。兑现 file_src_application_write_gate_ts 节点 run 判据的 flipped 断言（5 个注册块计 5 命中）。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:subagent-dsh-actor-param",
-          "claimed_at": "2026-10-24T04:29:18.766Z",
+          "owner": "agent:subagent-colloquial-clean",
+          "claimed_at": "2026-10-24T08:41:56.291Z",
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/application/refactor/index.ts",
-                "content_hash": "84089a01ab21e49ae080a2ba24991aaa4e66f4c7"
+                "content_hash": "79f8beaecea5cc90a17c8ab2e36beee45db41700"
               }
             ],
-            "computed_at": "2026-10-24T04:29:18.732Z",
+            "computed_at": "2026-10-24T08:41:56.257Z",
             "basis": [
               "declared"
             ]
@@ -19459,8 +19756,27 @@
               },
               "observed": "file_src_application_refactor_index_ts 2/2 pass（run 断言 5 注册块 ...CALL_ACTOR_FIELD + inputSchema 计 5 命中 ✓ ｜ source-has ...CALL_ACTOR_FIELD ✓）；verify 9/9 全 PASS",
               "command": "同上 judge 读数 + npm run build && npm run verify（退出 0）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-24T08:44:48.460Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify",
+                "input": "00adde5e6c4c34a23b71b133f36858e6a4f2c871",
+                "code": "4cdfb23cb86dde95b9abd2cf06387c5effaf5cc2",
+                "covers": [
+                  "src/application/refactor/index.ts"
+                ]
+              },
+              "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）",
+              "command": "npm run verify"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-24T08:41:56.291Z",
+          "reopen_reason": "口语清洗第一批：仅改注释措辞不改语义",
+          "reopened_from": "agent:subagent-dsh-actor-param"
         },
         "status": "done",
         "overlay": {
@@ -19468,10 +19784,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T04:38:00.000Z",
-            "command": "同上 judge 读数 + npm run build && npm run verify（退出 0）",
+            "at": "2026-10-24T09:00:00Z",
+            "command": "npm run verify",
             "kind": "reading",
-            "observed": "file_src_application_refactor_index_ts 2/2 pass（run 断言 5 注册块 ...CALL_ACTOR_FIELD + inputSchema 计 5 命中 ✓ ｜ source-has ...CALL_ACTOR_FIELD ✓）；verify 9/9 全 PASS"
+            "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）"
           }
         }
       },
@@ -50725,10 +51041,10 @@
               "why": "goObservePack.instrument 唯一入口（observe_langs.ts:351），删了 Go 插桩就没有路"
             }
           ],
-          "rationale": "被测 Go 工程零配置是设计目标：探针包拷进 internal/camprobe、注入 import 指向它 ⇒ go.mod 一字不改。改 go.mod 那条老路要求写本机绝对路径 replace（换机器即废）且全仓无人调用。",
+          "rationale": "被测 Go 工程零配置是设计目标：探针包复制到 internal/camprobe、注入 import 指向它 ⇒ go.mod 一字不改。改 go.mod 的旧方案要求写本机绝对路径 replace（换机后失效）且全仓无人调用。",
           "acceptance": "vendor/unvendor 是 Go 插桩的唯一落盘路径（instrumentGoProject / restoreGoProject 各一处调用）；go.mod 补桥（ensureGoObserveIntegration + checkGoObserveDeps + GoDepsCheck + GO_OBSERVE_MODULE）已删，文件尾留了旧路说明。",
-          "updated_at": "2026-10-23T04:00:53.229Z",
-          "agent": "subagent:deepseek-go-instrument"
+          "updated_at": "2026-10-24T08:39:15.374Z",
+          "agent": "subagent-colloquial-clean"
         },
         "decision_history": [
           {
@@ -50750,6 +51066,32 @@
             },
             "note": "复核后发现 go_instrument.ts 的 ensureGoObserveIntegration 全仓 0 调用已删 ⇒ 决策卡上的 symbol-exists 判据（点它）必须改指真实入口 vendorGoProbe，否则设计侧仍要求一个不存在的符号",
             "agent": "subagent:deepseek-go-instrument"
+          },
+          {
+            "at": "2026-10-24T08:39:15.374Z",
+            "decision": {
+              "summary": "go 侧插桩的桥：把本仓探针包 vendor 进被测工程、uninstrument 时连目录删；T268 起**不再改被测工程 go.mod**（go.mod 补桥 2026-10-23 已删）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/analysis/observe/go_instrument.ts",
+                  "symbol": "vendorGoProbe",
+                  "why": "它是 Go 插桩的唯一落盘入口：instrumentGoProject 调它把探针包拷进被测工程 internal/camprobe"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/analysis/observe/go_instrument.ts",
+                  "symbol": "instrumentGoProject",
+                  "why": "goObservePack.instrument 唯一入口（observe_langs.ts:351），删了 Go 插桩就没有路"
+                }
+              ],
+              "rationale": "被测 Go 工程零配置是设计目标：探针包拷进 internal/camprobe、注入 import 指向它 ⇒ go.mod 一字不改。改 go.mod 那条老路要求写本机绝对路径 replace（换机器即废）且全仓无人调用。",
+              "acceptance": "vendor/unvendor 是 Go 插桩的唯一落盘路径（instrumentGoProject / restoreGoProject 各一处调用）；go.mod 补桥（ensureGoObserveIntegration + checkGoObserveDeps + GoDepsCheck + GO_OBSERVE_MODULE）已删，文件尾留了旧路说明。",
+              "updated_at": "2026-10-23T04:00:53.229Z",
+              "agent": "subagent:deepseek-go-instrument"
+            },
+            "note": "口语清洗：那条老路→的旧方案；换机器即废→换机后失效；拷进→复制到",
+            "agent": "subagent-colloquial-clean"
           }
         ],
         "overlay": {
@@ -53480,8 +53822,9 @@
               "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
             }
           ],
-          "updated_at": "2026-10-24T02:32:08.780Z",
-          "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据没跟，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。"
+          "updated_at": "2026-10-24T08:39:06.010Z",
+          "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。",
+          "agent": "subagent-colloquial-clean"
         },
         "status": "done",
         "overlay": {
@@ -56026,6 +56369,303 @@
               "updated_at": "2026-10-24T02:32:08.694Z"
             },
             "note": "overview 全量求值首日抓到 7 条僵尸判据（src/infrastructure/storage.ts 缺 clearAllFeatures/deleteFeature/getFeatureFile/getFeaturesDir/listFeatures×2 签名）——features/ 整体退役（工作项 D）后判据没跟，按决策卡修订流程逐条删。"
+          },
+          {
+            "at": "2026-10-24T08:39:06.010Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "这个文件的职责就是「读写 DSL」——它不在，任务/设计都没有落脚点"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listDesignSheets",
+                  "why": "设计侧枚举只许有一个入口：写闸读覆盖率、别的读端要列 feature 都走它（否则又是「两份清单」）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheet",
+                  "why": "listDesignSheets 必须与 getDesignSheet 同源（同一份设计侧），不许另写一个解析器"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "buildSyncMeta",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "clearArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "diffBaselineFiles",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "dslContentHash",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ensureBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryByPath",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFacts",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSLByView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheetFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "onDslChange",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "rebuildBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFactsIfAbsent",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDesignSheet",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "viewBaseDirCandidates",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineDrift",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "DSLView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                }
+              ],
+              "updated_at": "2026-10-24T02:32:08.780Z",
+              "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据没跟，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。"
+            },
+            "note": "口语清洗：判据没跟→判据未同步更新",
+            "agent": "subagent-colloquial-clean"
           }
         ]
       },
@@ -57957,10 +58597,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T11:25:00+08:00",
-            "command": "npm run build && npm run verify && run-gen-db.mjs && gaps-remaining.mjs",
+            "at": "2026-10-24T09:00:00Z",
+            "command": "npm run verify",
             "kind": "reading",
-            "observed": "verify 9/9；gen-db paths=408 written=50 problems=0；沉默缺口=0（observe-lang 14+src 2 全部入投影；排除清单 5 条生效）；管辖范围权威从硬编码 src/ 迁到 excluded 清单"
+            "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）"
           }
         },
         "task": {
@@ -57968,8 +58608,8 @@
           "summary": "设计 DB 每文件投影新增 reverse_calls（谁调我：一跳反向调用，事实取 cache.db 边表反向索引），回答「改这里会炸哪里」的第一跳；跨文件传递闭包由消费者沿 reverse_calls 行走，不落库（渐进式披露）。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:workbuddy-glm5",
-          "claimed_at": "2026-10-24T03:20:18.036Z",
+          "owner": "agent:subagent-colloquial-clean",
+          "claimed_at": "2026-10-24T08:41:55.830Z",
           "read_set": {
             "symbols": [],
             "files": [
@@ -57979,10 +58619,10 @@
               },
               {
                 "path": "src/application/design/db/gen_design_db.ts",
-                "content_hash": "3036ff3b89b859b4942eb48c714a1a4a01b17ebf"
+                "content_hash": "aa6ba9ffd7a17e8a82c77666db654af2f1f72914"
               }
             ],
-            "computed_at": "2026-10-24T03:20:17.999Z",
+            "computed_at": "2026-10-24T08:41:55.794Z",
             "basis": [
               "declared",
               "expectations"
@@ -58039,10 +58679,27 @@
               },
               "observed": "verify 9/9；gen-db paths=408 written=50 problems=0；沉默缺口=0（observe-lang 14+src 2 全部入投影；排除清单 5 条生效）；管辖范围权威从硬编码 src/ 迁到 excluded 清单",
               "command": "npm run build && npm run verify && run-gen-db.mjs && gaps-remaining.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-24T08:44:34.749Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify",
+                "input": "c9394327013babc3561874256601400b3622929e",
+                "code": "5007f91e3e039e0e899968257486c8be0e669592",
+                "covers": [
+                  "docs/VISION.md",
+                  "src/application/design/db/gen_design_db.ts"
+                ]
+              },
+              "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）",
+              "command": "npm run verify"
             }
           ],
-          "reopened_at": "2026-10-24T03:20:18.036Z",
-          "reopen_reason": "设计 DB 管辖范围收口：planDesignDb 的 startsWith('src/') 硬编码换成 excluded 清单过滤（observe-lang 14 个由此入投影；certs 等由 excluded 挡住）——src/application/design/db/gen_design_db.ts",
+          "reopened_at": "2026-10-24T08:41:55.830Z",
+          "reopen_reason": "口语清洗第一批：仅改注释措辞不改语义",
           "reopened_from": "agent:workbuddy-glm5"
         }
       },
@@ -59246,10 +59903,50 @@
               "path": "src/infrastructure/dsl_write_scope.ts",
               "symbol": "currentDslWriteScope",
               "why": "当前作用域读取：事务重定向依赖它"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "src/infrastructure/dsl_write_scope.ts",
+              "signature": "runDslWriteScope(grant: { via: DslWriteVia; who: string; feature?: string },\n  fn: () => T,): T",
+              "symbol": "runDslWriteScope",
+              "why": "设计册写端唯一写入口：所有 DSL 写经此授予 (via, who) 作用域，写闸与审计契约压在这个签名上"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "src/infrastructure/dsl_write_scope.ts",
+              "signature": "currentDslWriteScope(): DslWriteGrant | null",
+              "symbol": "currentDslWriteScope",
+              "why": "事务重定向与写闸读「当前谁在写」的读取契约：返回 null 即不在作用域内"
             }
           ],
-          "updated_at": "2026-10-24T03:35:06.889Z"
-        }
+          "updated_at": "2026-10-24T08:54:09.385Z",
+          "agent": "subagent-expectation-deepen"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:54:09.385Z",
+            "decision": {
+              "summary": "基础设施 · 设计册写端的授权作用域（runDslWriteScope 的家）——设计侧写操作在这里判定「谁经什么通道写」",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/dsl_write_scope.ts",
+                  "symbol": "runDslWriteScope",
+                  "why": "设计册写端的授权作用域入口：写闸的 DSL 侧判定"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/dsl_write_scope.ts",
+                  "symbol": "currentDslWriteScope",
+                  "why": "当前作用域读取：事务重定向依赖它"
+                }
+              ],
+              "updated_at": "2026-10-24T03:35:06.889Z"
+            },
+            "note": "给 file_src_infrastructure_dsl_write_scope_ts 决策卡追加 signature-matches 判据：从 design-db/infrastructure-dsl_write_scope.calls.json 投影逐字抄 runDslWriteScope / currentDslWriteScope 的真实签名，补齐签名级判据（期望加深，subagent-expectation-deepen）",
+            "agent": "subagent-expectation-deepen"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_task_history_ts",
@@ -59275,10 +59972,50 @@
               "path": "src/infrastructure/task_history.ts",
               "symbol": "queryTaskHistory",
               "why": "入史唯一读口：get_dsl query=history 的底座"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "src/infrastructure/task_history.ts",
+              "signature": "recordTaskHistory(rows: readonly TaskHistoryRow[]): number",
+              "symbol": "recordTaskHistory",
+              "why": "task-history.db 唯一读写口的写侧：入参只收 TaskHistoryRow、返回写入行数，append-only 审计契约"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "src/infrastructure/task_history.ts",
+              "signature": "queryTaskHistory(q: TaskHistoryQuery): { total: number; rows: TaskHistoryHit[] }",
+              "symbol": "queryTaskHistory",
+              "why": "get_dsl query=history 的读底座：total/rows 返回结构就是查询面契约"
             }
           ],
-          "updated_at": "2026-10-24T03:35:06.984Z"
-        }
+          "updated_at": "2026-10-24T08:54:31.385Z",
+          "agent": "subagent-expectation-deepen"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:54:31.385Z",
+            "decision": {
+              "summary": "基础设施 · 已了结任务卡归档库（task-history.db 唯一读写口，append-only 审计；独立于可重建的 cache.db）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "recordTaskHistory",
+                  "why": "入史唯一写口：先写表后改册的顺序契约在此"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "queryTaskHistory",
+                  "why": "入史唯一读口：get_dsl query=history 的底座"
+                }
+              ],
+              "updated_at": "2026-10-24T03:35:06.984Z"
+            },
+            "note": "给 file_src_infrastructure_task_history_ts 决策卡追加 signature-matches 判据：从 design-db/infrastructure-task_history.calls.json 投影逐字抄 recordTaskHistory / queryTaskHistory 的真实签名（期望加深，subagent-expectation-deepen）",
+            "agent": "subagent-expectation-deepen"
+          }
+        ]
       },
       {
         "id": "file_observe_lang_go_cmd_instrument_main_go",
@@ -59304,10 +60041,50 @@
               "path": "observe-lang-go/cmd/instrument/main.go",
               "symbol": "main",
               "why": "CLI 入口本体"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/cmd/instrument/main.go",
+              "signature": "probeFromCode(code string) string",
+              "symbol": "probeFromCode",
+              "why": "插桩 CLI 的核心变换契约：源码进、插桩码出，instrument 命令的全部价值压在它身上"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/cmd/instrument/main.go",
+              "signature": "main()",
+              "symbol": "main",
+              "why": "go CLI 入口约定签名：observe_instrument 命令的实际执行体"
             }
           ],
-          "updated_at": "2026-10-24T03:33:00.098Z"
-        }
+          "updated_at": "2026-10-24T08:54:55.266Z",
+          "agent": "subagent-expectation-deepen"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:54:55.266Z",
+            "decision": {
+              "summary": "observe-lang-go · instrument 命令行入口：从源码生成探针插桩（probeFromCode 驱动）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/cmd/instrument/main.go",
+                  "symbol": "probeFromCode",
+                  "why": "命令行入口的驱动力：没有它插桩无从事发"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/cmd/instrument/main.go",
+                  "symbol": "main",
+                  "why": "CLI 入口本体"
+                }
+              ],
+              "updated_at": "2026-10-24T03:33:00.098Z"
+            },
+            "note": "给 file_observe_lang_go_cmd_instrument_main_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-cmd-instrument-main.go.calls.json 投影逐字抄 probeFromCode / main 的真实签名（期望加深，subagent-expectation-deepen）",
+            "agent": "subagent-expectation-deepen"
+          }
+        ]
       },
       {
         "id": "file_observe_lang_go_cmd_observev2_demo_main_go",
@@ -59333,10 +60110,50 @@
               "path": "observe-lang-go/cmd/observev2-demo/main.go",
               "symbol": "chargePayment",
               "why": "演示链路的支付动作：与 placeOrder 构成完整链路"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/cmd/observev2-demo/main.go",
+              "signature": "placeOrder(ctx context.Context, orderID int, injectErr bool) error",
+              "symbol": "placeOrder",
+              "why": "演示下单动作的契约：ctx 串联探针追踪、injectErr 演示错误注入，事件采集目标以此为形"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/cmd/observev2-demo/main.go",
+              "signature": "chargePayment(ctx context.Context, orderID int, injectErr bool) error",
+              "symbol": "chargePayment",
+              "why": "演示支付动作的契约：与 placeOrder 同形才能构成可追的完整链路"
             }
           ],
-          "updated_at": "2026-10-24T03:33:00.191Z"
-        }
+          "updated_at": "2026-10-24T08:55:14.062Z",
+          "agent": "subagent-expectation-deepen"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:55:14.062Z",
+            "decision": {
+              "summary": "observe-lang-go · observev2 演示入口：跑下单/支付链路演示探针采集",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/cmd/observev2-demo/main.go",
+                  "symbol": "placeOrder",
+                  "why": "演示链路的业务动作：探针采集的目标"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/cmd/observev2-demo/main.go",
+                  "symbol": "chargePayment",
+                  "why": "演示链路的支付动作：与 placeOrder 构成完整链路"
+                }
+              ],
+              "updated_at": "2026-10-24T03:33:00.191Z"
+            },
+            "note": "给 file_observe_lang_go_cmd_observev2_demo_main_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-cmd-observev2-demo-main.go.calls.json 投影逐字抄 placeOrder / chargePayment 的真实签名（期望加深，subagent-expectation-deepen）",
+            "agent": "subagent-expectation-deepen"
+          }
+        ]
       },
       {
         "id": "file_observe_lang_go_cmd_observev2_record_main_go",
@@ -59362,10 +60179,50 @@
               "path": "observe-lang-go/cmd/observev2-record/main.go",
               "symbol": "placeOrder",
               "why": "录制链路的业务动作"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/cmd/observev2-record/main.go",
+              "signature": "mark(s string)",
+              "symbol": "mark",
+              "why": "录制标记点契约：录制基线事件都锚在 mark 的调用位上"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/cmd/observev2-record/main.go",
+              "signature": "placeOrder(ctx context.Context, orderID int, injectErr bool) error",
+              "symbol": "placeOrder",
+              "why": "录制侧业务动作与 demo 侧同签名：保证录制基线与演示链路可对拍"
             }
           ],
-          "updated_at": "2026-10-24T03:33:20.747Z"
-        }
+          "updated_at": "2026-10-24T08:55:28.411Z",
+          "agent": "subagent-expectation-deepen"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:55:28.411Z",
+            "decision": {
+              "summary": "observe-lang-go · observev2 录制入口：录制链路运行产出基线事件",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/cmd/observev2-record/main.go",
+                  "symbol": "mark",
+                  "why": "录制标记点：演示链路的采集锚"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/cmd/observev2-record/main.go",
+                  "symbol": "placeOrder",
+                  "why": "录制链路的业务动作"
+                }
+              ],
+              "updated_at": "2026-10-24T03:33:20.747Z"
+            },
+            "note": "给 file_observe_lang_go_cmd_observev2_record_main_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-cmd-observev2-record-main.go.calls.json 投影逐字抄 mark / placeOrder 的真实签名（期望加深，subagent-expectation-deepen）",
+            "agent": "subagent-expectation-deepen"
+          }
+        ]
       },
       {
         "id": "file_observe_lang_go_internal_instrument_contract_go",
@@ -59391,10 +60248,50 @@
               "path": "observe-lang-go/internal/instrument/contract.go",
               "symbol": "MatchProbe",
               "why": "包过滤匹配：决定哪些包被插桩"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/internal/instrument/contract.go",
+              "signature": "packageFromProbe(probe string) string",
+              "symbol": "packageFromProbe",
+              "why": "探针名→包名换算契约：插桩定位与导出分流都依赖这个映射"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/internal/instrument/contract.go",
+              "signature": "MatchProbe(probeName string, probes []ContractProbe) bool",
+              "symbol": "MatchProbe",
+              "why": "包过滤契约：ContractProbe 列表决定哪些包被插桩，过滤口径从此签名读"
             }
           ],
-          "updated_at": "2026-10-24T03:33:20.840Z"
-        }
+          "updated_at": "2026-10-24T08:55:40.473Z",
+          "agent": "subagent-expectation-deepen"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:55:40.473Z",
+            "decision": {
+              "summary": "observe-lang-go · 插桩契约层：包过滤与探针命名（PackageFilter/MatchProbe）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/internal/instrument/contract.go",
+                  "symbol": "packageFromProbe",
+                  "why": "探针名到包名的换算：契约层的核心映射"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/internal/instrument/contract.go",
+                  "symbol": "MatchProbe",
+                  "why": "包过滤匹配：决定哪些包被插桩"
+                }
+              ],
+              "updated_at": "2026-10-24T03:33:20.840Z"
+            },
+            "note": "给 file_observe_lang_go_internal_instrument_contract_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-internal-instrument-contract.go.calls.json 投影逐字抄 packageFromProbe / MatchProbe 的真实签名（期望加深，subagent-expectation-deepen）",
+            "agent": "subagent-expectation-deepen"
+          }
+        ]
       },
       {
         "id": "file_observe_lang_go_internal_instrument_effects_go",
@@ -59420,10 +60317,50 @@
               "path": "observe-lang-go/internal/instrument/effects.go",
               "symbol": "effectTargetOfLHS",
               "why": "赋值左侧的效果目标分析"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/internal/instrument/effects.go",
+              "signature": "effectInStmt(stmt ast.Stmt, pkgVars map[string]bool) (EffectHit, bool)",
+              "symbol": "effectInStmt",
+              "why": "语句级效果判定契约：插桩引擎逐语句调用它决定改哪里，(EffectHit, bool) 返回形就是插桩位判定"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/internal/instrument/effects.go",
+              "signature": "effectTargetOfLHS(e ast.Expr, pkgVars map[string]bool) (string, bool)",
+              "symbol": "effectTargetOfLHS",
+              "why": "赋值左侧目标分析契约：返回的包变量名决定该语句是否计为效果命中"
             }
           ],
-          "updated_at": "2026-10-24T03:33:40.259Z"
-        }
+          "updated_at": "2026-10-24T08:55:56.975Z",
+          "agent": "subagent-expectation-deepen"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:55:56.975Z",
+            "decision": {
+              "summary": "observe-lang-go · 插桩副作用分析：语句级效果判定（effectInStmt/effectTargetOfLHS）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/internal/instrument/effects.go",
+                  "symbol": "effectInStmt",
+                  "why": "语句级效果判定：决定哪里需要插桩"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/internal/instrument/effects.go",
+                  "symbol": "effectTargetOfLHS",
+                  "why": "赋值左侧的效果目标分析"
+                }
+              ],
+              "updated_at": "2026-10-24T03:33:40.259Z"
+            },
+            "note": "给 file_observe_lang_go_internal_instrument_effects_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-internal-instrument-effects.go.calls.json 投影逐字抄 effectInStmt / effectTargetOfLHS 的真实签名（期望加深，subagent-expectation-deepen）",
+            "agent": "subagent-expectation-deepen"
+          }
+        ]
       },
       {
         "id": "file_observe_lang_go_internal_instrument_instrument_go",
@@ -59449,10 +60386,50 @@
               "path": "observe-lang-go/internal/instrument/instrument.go",
               "symbol": "backupOriginal",
               "why": "备份原文件：插桩可回退的前提"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/internal/instrument/instrument.go",
+              "signature": "collectGoFiles(root string, excludes []string) []string",
+              "symbol": "collectGoFiles",
+              "why": "插桩范围契约：root+excludes 决定哪些文件被改写，返回文件列表是后续备份/改写的输入"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/internal/instrument/instrument.go",
+              "signature": "backupOriginal(backupRoot, file, content string)",
+              "symbol": "backupOriginal",
+              "why": "可回退性契约：备份目录/文件/内容三元组落盘，插桩前必经"
             }
           ],
-          "updated_at": "2026-10-24T03:33:40.355Z"
-        }
+          "updated_at": "2026-10-24T08:56:10.359Z",
+          "agent": "subagent-expectation-deepen"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:56:10.359Z",
+            "decision": {
+              "summary": "observe-lang-go · 插桩引擎核心：文件收集/备份/改写（37 符号的最大件）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/internal/instrument/instrument.go",
+                  "symbol": "collectGoFiles",
+                  "why": "文件收集：插桩范围的入口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/internal/instrument/instrument.go",
+                  "symbol": "backupOriginal",
+                  "why": "备份原文件：插桩可回退的前提"
+                }
+              ],
+              "updated_at": "2026-10-24T03:33:40.355Z"
+            },
+            "note": "给 file_observe_lang_go_internal_instrument_instrument_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-internal-instrument-instrument.go.calls.json 投影逐字抄 collectGoFiles / backupOriginal 的真实签名（期望加深，subagent-expectation-deepen）",
+            "agent": "subagent-expectation-deepen"
+          }
+        ]
       },
       {
         "id": "file_observe_lang_go_probe_export_go",
@@ -59478,10 +60455,50 @@
               "path": "observe-lang-go/probe/export.go",
               "symbol": "filterHistos",
               "why": "直方图过滤：导出侧的降噪"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/export.go",
+              "signature": "newExportGate(quota int) *exportGate",
+              "symbol": "newExportGate",
+              "why": "导出门配额契约：quota 决定事件分流预算，返回的 exportGate 是导出路径的守门人"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/export.go",
+              "signature": "filterHistos(all []HistogramSnapshot, probe string) []HistogramSnapshot",
+              "symbol": "filterHistos",
+              "why": "直方图降噪契约：按探针名筛 HistogramSnapshot，导出体积由它控"
             }
           ],
-          "updated_at": "2026-10-24T03:33:55.799Z"
-        }
+          "updated_at": "2026-10-24T08:56:22.786Z",
+          "agent": "subagent-expectation-deepen"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:56:22.786Z",
+            "decision": {
+              "summary": "observe-lang-go · 探针导出门：事件分流与直方图过滤",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/probe/export.go",
+                  "symbol": "newExportGate",
+                  "why": "导出门：事件分流的入口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/probe/export.go",
+                  "symbol": "filterHistos",
+                  "why": "直方图过滤：导出侧的降噪"
+                }
+              ],
+              "updated_at": "2026-10-24T03:33:55.799Z"
+            },
+            "note": "给 file_observe_lang_go_probe_export_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-probe-export.go.calls.json 投影逐字抄 newExportGate / filterHistos 的真实签名（期望加深，subagent-expectation-deepen）",
+            "agent": "subagent-expectation-deepen"
+          }
+        ]
       },
       {
         "id": "file_observe_lang_go_probe_global_go",
@@ -59507,10 +60524,50 @@
               "path": "observe-lang-go/probe/global.go",
               "symbol": "reportProbeError",
               "why": "探针错误上报：观测系统自身不能静默失败"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/global.go",
+              "signature": "SetGlobalSink(s *Sink)",
+              "symbol": "SetGlobalSink",
+              "why": "探针输出的全局装配契约：宿主进程与 demo/record 入口都靠它注入 Sink"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/global.go",
+              "signature": "reportProbeError(probeName string, err error)",
+              "symbol": "reportProbeError",
+              "why": "探针自身错误上报契约：带探针名的错误通道，观测系统不静默失败的实现点"
             }
           ],
-          "updated_at": "2026-10-24T03:33:55.893Z"
-        }
+          "updated_at": "2026-10-24T08:56:37.818Z",
+          "agent": "subagent-expectation-deepen"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:56:37.818Z",
+            "decision": {
+              "summary": "observe-lang-go · 探针全局状态：全局 sink 与错误上报",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/probe/global.go",
+                  "symbol": "SetGlobalSink",
+                  "why": "全局 sink 装配点：探针输出的汇聚口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/probe/global.go",
+                  "symbol": "reportProbeError",
+                  "why": "探针错误上报：观测系统自身不能静默失败"
+                }
+              ],
+              "updated_at": "2026-10-24T03:33:55.893Z"
+            },
+            "note": "给 file_observe_lang_go_probe_global_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-probe-global.go.calls.json 投影逐字抄 SetGlobalSink / reportProbeError 的真实签名（期望加深，subagent-expectation-deepen）",
+            "agent": "subagent-expectation-deepen"
+          }
+        ]
       },
       {
         "id": "file_observe_lang_go_probe_probe_go",
@@ -59536,10 +60593,50 @@
               "path": "observe-lang-go/probe/probe.go",
               "symbol": "sanitizeFields",
               "why": "字段消毒：观测数据不能泄敏感值"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/probe.go",
+              "signature": "NewSink(path string) (*Sink, error)",
+              "symbol": "NewSink",
+              "why": "sink 构造契约：path 进 Sink 出、错误显式返回，所有探针输出的起点"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/probe.go",
+              "signature": "sanitizeFields(fields map[string]any) map[string]any",
+              "symbol": "sanitizeFields",
+              "why": "字段消毒契约：map 进 map 出的同形清洗，敏感值在写盘前被替换"
             }
           ],
-          "updated_at": "2026-10-24T03:34:11.082Z"
-        }
+          "updated_at": "2026-10-24T08:56:51.251Z",
+          "agent": "subagent-expectation-deepen"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:56:51.251Z",
+            "decision": {
+              "summary": "observe-lang-go · 探针核心：sink 构造/字段消毒/限流（newRateLimiter）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/probe/probe.go",
+                  "symbol": "NewSink",
+                  "why": "sink 构造：探针输出的起点"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/probe/probe.go",
+                  "symbol": "sanitizeFields",
+                  "why": "字段消毒：观测数据不能泄敏感值"
+                }
+              ],
+              "updated_at": "2026-10-24T03:34:11.082Z"
+            },
+            "note": "给 file_observe_lang_go_probe_probe_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-probe-probe.go.calls.json 投影逐字抄 NewSink / sanitizeFields 的真实签名（期望加深，subagent-expectation-deepen）",
+            "agent": "subagent-expectation-deepen"
+          }
+        ]
       },
       {
         "id": "file_observe_lang_go_probe_run_recorder_go",
@@ -59559,10 +60656,37 @@
               "path": "observe-lang-go/probe/run_recorder.go",
               "symbol": "newRunRecorder",
               "why": "运行录制器构造：差分测试的基线来源"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/run_recorder.go",
+              "signature": "newRunRecorder(path string) *runRecorder",
+              "symbol": "newRunRecorder",
+              "why": "行为基线采集契约：path 指定录制落盘位置，返回的 runRecorder 录 (args, ret) 供差分对拍"
             }
           ],
-          "updated_at": "2026-10-24T03:34:11.178Z"
-        }
+          "updated_at": "2026-10-24T08:57:03.292Z",
+          "agent": "subagent-expectation-deepen"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:57:03.292Z",
+            "decision": {
+              "summary": "observe-lang-go · 运行录制器：录 (args, ret) 供行为基线",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/probe/run_recorder.go",
+                  "symbol": "newRunRecorder",
+                  "why": "运行录制器构造：差分测试的基线来源"
+                }
+              ],
+              "updated_at": "2026-10-24T03:34:11.178Z"
+            },
+            "note": "给 file_observe_lang_go_probe_run_recorder_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-probe-run_recorder.go.calls.json 投影逐字抄 newRunRecorder 的真实签名（期望加深，subagent-expectation-deepen）",
+            "agent": "subagent-expectation-deepen"
+          }
+        ]
       },
       {
         "id": "file_observe_lang_go_probe_tiered_go",
@@ -59588,10 +60712,50 @@
               "path": "observe-lang-go/probe/tiered.go",
               "symbol": "WithFullSink",
               "why": "全量 sink 选项：分层策略的另一端"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/tiered.go",
+              "signature": "newRingBuf(budgetBytes, segSize int) *ringBuf",
+              "symbol": "newRingBuf",
+              "why": "分层预算契约：budgetBytes/segSize 两个参数就是内存预算的调参面"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/tiered.go",
+              "signature": "WithFullSink(s *Sink) TieredOption",
+              "symbol": "WithFullSink",
+              "why": "分层选项契约：TieredOption 函子形状，全量 sink 挂接的唯一入口"
             }
           ],
-          "updated_at": "2026-10-24T03:34:26.458Z"
-        }
+          "updated_at": "2026-10-24T08:57:16.047Z",
+          "agent": "subagent-expectation-deepen"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:57:16.047Z",
+            "decision": {
+              "summary": "observe-lang-go · 分层探针：环形缓冲预算 + 全量 sink（17 符号的最大件）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/probe/tiered.go",
+                  "symbol": "newRingBuf",
+                  "why": "环形缓冲：分层预算的核心结构"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/probe/tiered.go",
+                  "symbol": "WithFullSink",
+                  "why": "全量 sink 选项：分层策略的另一端"
+                }
+              ],
+              "updated_at": "2026-10-24T03:34:26.458Z"
+            },
+            "note": "给 file_observe_lang_go_probe_tiered_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-probe-tiered.go.calls.json 投影逐字抄 newRingBuf / WithFullSink 的真实签名（期望加深，subagent-expectation-deepen）",
+            "agent": "subagent-expectation-deepen"
+          }
+        ]
       },
       {
         "id": "file_observe_lang_go_probe_trace_go",
@@ -59617,10 +60781,50 @@
               "path": "observe-lang-go/probe/trace.go",
               "symbol": "TraceIDFromContext",
               "why": "从 context 取 TraceID：跨函数串联的关键"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/trace.go",
+              "signature": "Enter(ctx context.Context, probe string, fields map[string]any) (context.Context, *Scope)",
+              "symbol": "Enter",
+              "why": "trace 链起点契约：ctx 进新 ctx+Scope 出，插桩代码与探针间的调用形状由它定"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/trace.go",
+              "signature": "TraceIDFromContext(ctx context.Context) string",
+              "symbol": "TraceIDFromContext",
+              "why": "跨函数串联契约：从 ctx 读 TraceID，读不到返回空串（不 panic）"
             }
           ],
-          "updated_at": "2026-10-24T03:34:26.552Z"
-        }
+          "updated_at": "2026-10-24T08:57:30.188Z",
+          "agent": "subagent-expectation-deepen"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:57:30.188Z",
+            "decision": {
+              "summary": "observe-lang-go · 追踪探针：Enter/TraceID/作用域（TraceIDFromContext）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/probe/trace.go",
+                  "symbol": "Enter",
+                  "why": "函数进入探针：trace 链的起点"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "observe-lang-go/probe/trace.go",
+                  "symbol": "TraceIDFromContext",
+                  "why": "从 context 取 TraceID：跨函数串联的关键"
+                }
+              ],
+              "updated_at": "2026-10-24T03:34:26.552Z"
+            },
+            "note": "给 file_observe_lang_go_probe_trace_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-probe-trace.go.calls.json 投影逐字抄 Enter / TraceIDFromContext 的真实签名（期望加深，subagent-expectation-deepen）",
+            "agent": "subagent-expectation-deepen"
+          }
+        ]
       },
       {
         "id": "file_observe_lang_java_observe_probe_Camprobe_java",
@@ -59642,10 +60846,41 @@
               ],
               "path": "observe-lang-java/observe/probe/Camprobe.java",
               "why": "java 侧探针类本体（java 不走 TS 解析器，符号判不了 ⇒ 用文本判据，unsupported 不冒充）"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "public static void setGlobalSink(Sink s)",
+                "public static void capture(String probe, Object... kv)"
+              ],
+              "path": "observe-lang-java/observe/probe/Camprobe.java",
+              "why": "java 侧探针的两个写入口定义行：全局 sink 装配 + 探针捕获（唯一符号之外再锚两条关键定义，文本判据不冒充符号级）"
             }
           ],
-          "updated_at": "2026-10-24T03:34:50.839Z"
-        }
+          "updated_at": "2026-10-24T08:57:52.863Z",
+          "agent": "subagent-expectation-deepen"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:57:52.863Z",
+            "decision": {
+              "summary": "observe-lang-java · Camprobe 探针（java 侧唯一探针类，单符号）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "Camprobe"
+                  ],
+                  "path": "observe-lang-java/observe/probe/Camprobe.java",
+                  "why": "java 侧探针类本体（java 不走 TS 解析器，符号判不了 ⇒ 用文本判据，unsupported 不冒充）"
+                }
+              ],
+              "updated_at": "2026-10-24T03:34:50.839Z"
+            },
+            "note": "给 file_observe_lang_java_observe_probe_Camprobe_java 决策卡追加 source-has 判据：从 observe-lang-java/observe/probe/Camprobe.java 实际内容抄 setGlobalSink / capture 两行关键定义（java 符号级判不了，py/java 例外走文本判据；期望加深，subagent-expectation-deepen）",
+            "agent": "subagent-expectation-deepen"
+          }
+        ]
       },
       {
         "id": "file_observe_lang_py_camprobe_py",
@@ -59668,10 +60903,42 @@
               ],
               "path": "observe-lang-py/camprobe.py",
               "why": "py 侧两个关键写法：全局 sink 装配 + 探针捕获函数（py 符号级判据天花板 heuristic ⇒ 文本判据更诚实）"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "def cam_lambda(name, args, value, emit_enter=True, emit_exit=True):",
+                "def _scrub(value, depth=0):"
+              ],
+              "path": "observe-lang-py/camprobe.py",
+              "why": "py 侧 lambda 包装与值消毒的定义行：探针进入/退出双层发射与敏感值清洗的两个关键写法（文本判据不冒充符号级）"
             }
           ],
-          "updated_at": "2026-10-24T03:34:50.933Z"
-        }
+          "updated_at": "2026-10-24T08:58:06.735Z",
+          "agent": "subagent-expectation-deepen"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T08:58:06.735Z",
+            "decision": {
+              "summary": "observe-lang-py · Camprobe 探针（9 符号：全局 sink/捕获/lambda 包装）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "def set_global_probe_sink",
+                    "def capture_probe"
+                  ],
+                  "path": "observe-lang-py/camprobe.py",
+                  "why": "py 侧两个关键写法：全局 sink 装配 + 探针捕获函数（py 符号级判据天花板 heuristic ⇒ 文本判据更诚实）"
+                }
+              ],
+              "updated_at": "2026-10-24T03:34:50.933Z"
+            },
+            "note": "给 file_observe_lang_py_camprobe_py 决策卡追加 source-has 判据：从 observe-lang-py/camprobe.py 实际内容抄 cam_lambda / _scrub 两行关键定义（py 符号级判不了，走文本判据；期望加深，subagent-expectation-deepen）",
+            "agent": "subagent-expectation-deepen"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_intent_judge_cache_ts",
@@ -88049,7 +89316,7 @@
         ],
         "lines": 670,
         "layer": "core",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -117599,11 +118866,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T08:29:06.084Z",
+    "saved_at": "2026-10-24T08:58:06.765Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 247023273,
+    "age": 248763954,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -120589,7 +121856,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1400,
+  "_dsl_rev": 1426,
   "feature_tree": {
     "features": [
       {
