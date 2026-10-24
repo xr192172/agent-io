@@ -12935,11 +12935,149 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-10-24T10:10:00+08:00",
+            "command": "npm run build && npm run verify",
             "kind": "reading",
-            "command": "node certs/t363-reopen-complete-cert.mjs; node scripts/verify-changed.mjs src/application/design/dsl_ops/task_ops.ts",
-            "observed": "t363 PASS=14 FAIL=0；增量入口：23 条契约全 pass + t363 绿。改动 = completeTask 的 updateStatus 投影带 evidenceClearedBy:\"task-complete\"。",
-            "at": "2026-10-22T07:45:12.813Z"
+            "observed": "verify 9/9；moveTodoCardsToHistory 两处找卡（todos[] ∪ geometry.nodes[].task），节点卡入史通道打通；功能验收待 server 重启后实测（3 张 done 节点卡待搬）"
           }
+        },
+        "task": {
+          "id": "file_src_application_design_dsl_ops_task_ops_ts",
+          "summary": "history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:workbuddy-glm5",
+          "claimed_at": "2026-10-24T02:04:37.416Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "ConstructBasis",
+                "fp": "45109a62e016d5c79fe03f152146c7872073d6ca"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "Loaded",
+                "fp": "032b69f7b08dc4e4bdd530b9f35b3e650f516921"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "TaskOpInput",
+                "fp": "b44a899c55dffae536a4df79118c7f6bc6f39dc3"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "TaskOpRequest",
+                "fp": "394ad342a661c9e2d22d52ce96be93c042ce599e"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "applyTaskOp",
+                "fp": "d5e3888e422efb152e7e9bd8ac4ec7eadb83266f"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "assertTransition",
+                "fp": "1bfdaffe38e904e51a56d6ba054da05a243cd189"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "claimTask",
+                "fp": "8db19250a2a4229b21e1b223393774c4234ca710"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "completeTask",
+                "fp": "598d489556e037d66bb5e0b54b70c982ca761a01"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "constructBasis",
+                "fp": "047ff1b15a28c6bb7de138586ae856ccff89a859"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "constructionVerdict",
+                "fp": "1765e9552b8fa231b89235410ce7783f9f0f1d34"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "expireTasks",
+                "fp": "65d0497e29e05f1d1b746186cf9d7b2aeb0252f1"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "loadTask",
+                "fp": "8f51c0aff569e804714dd9577188535e528478c0"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "publishFromDiff",
+                "fp": "8d01ffcb95e5df791c652c1432ed0782f03c7d26"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "publishTask",
+                "fp": "0c9bbfcc7cf240bac976b5b5eb334dff0157f0b8"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "releaseTask",
+                "fp": "0fc78194f465e32f41b6b415c6a12fc29f08ba6a"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "renewTask",
+                "fp": "b7930e54a8ff5f030bc38362915e889bbbbd76e6"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "requireRoot",
+                "fp": "b25abe2dfa5a3890a81b979212f489ae2acf5d04"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "voidTask",
+                "fp": "2eb2f7037a72847f3c60fc992839ab4a82f7a286"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "writeTask",
+                "fp": "4038bea8cc00fa286bb1694b681b2a5a2ea7bca5"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/dsl_ops/task_ops.ts",
+                "content_hash": "deeb1aa73228ff977538dfdefb68442907e78145"
+              }
+            ],
+            "computed_at": "2026-10-24T02:04:37.382Z",
+            "basis": [
+              "declared",
+              "expectations"
+            ],
+            "note": "1 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-24T02:06:49.960Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify",
+                "input": "c823849e0bed9fd3c01cdc7e9f37633eb9f501a8",
+                "code": "7ff369d3e52ab534ecd639ca693e5f9dbbb060a1",
+                "covers": [
+                  "src/application/design/dsl_ops/task_ops.ts",
+                  "src/domain/task_machine.ts"
+                ]
+              },
+              "observed": "verify 9/9；moveTodoCardsToHistory 两处找卡（todos[] ∪ geometry.nodes[].task），节点卡入史通道打通；功能验收待 server 重启后实测（3 张 done 节点卡待搬）",
+              "command": "npm run build && npm run verify"
+            }
+          ]
         }
       },
       {
@@ -113123,11 +113261,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T01:55:08.025Z",
+    "saved_at": "2026-10-24T02:06:50.218Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 223385214,
+    "age": 224087407,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -116166,7 +116304,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1305,
+  "_dsl_rev": 1306,
   "feature_tree": {
     "features": [
       {

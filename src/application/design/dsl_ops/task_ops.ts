@@ -2904,12 +2904,17 @@ function moveTodoCardsToHistory(feature: string, data: Record<string, unknown>, 
   if (!dsl) throw new Error(`feature "${feature}" 不存在 —— todo 住在设计 DSL 的顶层 todos[]。`);
 
   const todos = dsl.todos ?? [];
+  // ★ 2026-10-24（闭环⑨补全）：**两处找卡** —— todos[]（todo 卡）与 geometry.nodes[].task（publish 产的节点卡）。
+  //   此前只扫 todos[] ⇒ done 的节点卡永远入不了史（实测被拒两次）。同一张表、同一条纪律。
+  const nodes = dsl.geometry?.nodes ?? [];
   const picked: TaskSpec[] = [];
   for (const id of ids) {
-    const cur = todos.find((t) => t.id === id);
+    const cur =
+      todos.find((t) => t.id === id) ??
+      (nodes.find((n) => (n.task as TaskSpec | undefined)?.id === id)?.task as TaskSpec | undefined);
     if (!cur) {
       throw new Error(
-        `todo.move_to_history 被拒：todos[] 里没有 "${id}"（★ 整批不落盘 —— 清单里有一个错 id，就不猜其余几张要不要动）。\n` +
+        `todo.move_to_history 被拒：todos[] 与节点任务格里都没有 "${id}"（★ 整批不落盘 —— 清单里有一个错 id，就不猜其余几张要不要动）。\n` +
           `★ 两条常见来路：① 它已经入史 ⇒ 用 \`get_dsl { query:'history', feature:'${feature}', card_id:'${id}' }\` 查；` +
           `② id 记错了 ⇒ \`get_dsl query=todo state=all\` 拿一遍当前 id。`,
       );
@@ -2917,7 +2922,7 @@ function moveTodoCardsToHistory(feature: string, data: Record<string, unknown>, 
     if (!isClosedTaskState(cur.state)) {
       throw new Error(
         `todo.move_to_history 被拒："${id}" 是 ${cur.state}（**未了结**）—— 只有已了结（done / void）的卡能入史。\n` +
-          `★ 活卡入史 = 让正在干的活从待办里消失（而且 claim / relaunch 都按 id 在 todos[] 里找卡 ⇒ 再也点不回来）。\n` +
+          `★ 活卡入史 = 让正在干的活从待办里消失（而且 claim / relaunch 都按 id 找卡 ⇒ 再也点不回来）。\n` +
           `★ 真要收尾 ⇒ 先 complete / retire。`,
       );
     }
@@ -2939,7 +2944,7 @@ function moveTodoCardsToHistory(feature: string, data: Record<string, unknown>, 
   }
 
   // ★ 投影清单**先算好**（纯读、不抛）—— 写表之后只剩「落盘」一件事，失败窗口最小
-  const nodes = dsl.geometry?.nodes ?? [];
+  //   （nodes 已在上方两处找卡时定义；idSet 含 todos 卡与节点卡 ⇒ 节点卡的投影一并摘掉）
   const mirrored = nodes.filter((n) => n.task && idSet.has(String((n.task as TaskSpec).id)));
 
   const movedAt = new Date().toISOString();
