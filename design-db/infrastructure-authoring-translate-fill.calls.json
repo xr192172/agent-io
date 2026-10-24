@@ -278,6 +278,78 @@
       "to": "src/infrastructure/authoring/translate/verify.ts#verifySkeletons"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FillContext",
+      "kind": "interface",
+      "signature": "FillContext()"
+    },
+    {
+      "name": "HoleTranslator",
+      "kind": "type",
+      "signature": "HoleTranslator()"
+    },
+    {
+      "name": "FillResult",
+      "kind": "interface",
+      "signature": "FillResult()"
+    },
+    {
+      "name": "BatchHoleTranslator",
+      "kind": "type",
+      "signature": "BatchHoleTranslator()"
+    },
+    {
+      "name": "BatchFillOptions",
+      "kind": "interface",
+      "signature": "BatchFillOptions()"
+    },
+    {
+      "name": "spliceBody",
+      "kind": "function",
+      "signature": "spliceBody(skeleton: string, body: string): string"
+    },
+    {
+      "name": "buildFillContext",
+      "kind": "function",
+      "signature": "buildFillContext(u: TransUnit, feedback?: string, projectNote?: string): FillContext"
+    },
+    {
+      "name": "fillUnit",
+      "kind": "function",
+      "signature": "fillUnit(u: TransUnit, translate: HoleTranslator, feedback?: string, projectNote?: string): Promise<FillResult | null>"
+    },
+    {
+      "name": "buildRetryFeedback",
+      "kind": "function",
+      "signature": "buildRetryFeedback(u: TransUnit, r: FillResult): string"
+    },
+    {
+      "name": "fillUnitWithRetry",
+      "kind": "function",
+      "signature": "fillUnitWithRetry(u: TransUnit, translate: HoleTranslator, maxRetries = 2, projectNote?: string): Promise<FillResult | null>"
+    },
+    {
+      "name": "fillUnits",
+      "kind": "function",
+      "signature": "fillUnits(units: TransUnit[], translate: HoleTranslator, projectNote?: string): Promise<FillResult[]>"
+    },
+    {
+      "name": "fillUnitsWithRetry",
+      "kind": "function",
+      "signature": "fillUnitsWithRetry(units: TransUnit[],\n  translate: HoleTranslator,\n  maxRetries = 2,\n  projectNote?: string,): Promise<FillResult[]>"
+    },
+    {
+      "name": "parseUnitBlocks",
+      "kind": "function",
+      "signature": "parseUnitBlocks(raw: string): Map<string, string>"
+    },
+    {
+      "name": "fillUnitsBatched",
+      "kind": "function",
+      "signature": "fillUnitsBatched(units: TransUnit[],\n  translateRaw: BatchHoleTranslator,\n  opts: BatchFillOptions = {},): Promise<FillResult[]>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/translate/fill.ts#fillUnit",
     "src/infrastructure/authoring/translate/fill.ts#fillUnitWithRetry",

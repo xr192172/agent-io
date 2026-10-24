@@ -146,6 +146,88 @@
       "to": "src/infrastructure/alert_inbox.ts#takeAlerts"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "PendingAlert",
+      "kind": "interface",
+      "signature": "PendingAlert()"
+    },
+    {
+      "name": "LoggedAlert",
+      "kind": "interface",
+      "signature": "LoggedAlert()"
+    },
+    {
+      "name": "ALERT_INBOX_CAP",
+      "kind": "const",
+      "signature": "const ALERT_INBOX_CAP = 10"
+    },
+    {
+      "name": "ALERT_LOG_CAP",
+      "kind": "const",
+      "signature": "const ALERT_LOG_CAP = 200"
+    },
+    {
+      "name": "inbox",
+      "kind": "const",
+      "signature": "const inbox = []"
+    },
+    {
+      "name": "alertLog",
+      "kind": "const",
+      "signature": "const alertLog = []"
+    },
+    {
+      "name": "nextAlertId",
+      "kind": "const",
+      "signature": "const nextAlertId = 1"
+    },
+    {
+      "name": "alertListener",
+      "kind": "const",
+      "signature": "const alertListener = null"
+    },
+    {
+      "name": "SELF_CARRYING_TOOLS",
+      "kind": "const",
+      "signature": "const SELF_CARRYING_TOOLS = new Set<string>()"
+    },
+    {
+      "name": "setAlertListener",
+      "kind": "function",
+      "signature": "setAlertListener(fn: ((a: LoggedAlert) => void) | null): void"
+    },
+    {
+      "name": "pushAlert",
+      "kind": "function",
+      "signature": "pushAlert(a: PendingAlert): void"
+    },
+    {
+      "name": "takeAlerts",
+      "kind": "function",
+      "signature": "takeAlerts(): PendingAlert[]"
+    },
+    {
+      "name": "peekAlerts",
+      "kind": "function",
+      "signature": "peekAlerts(): readonly PendingAlert[]"
+    },
+    {
+      "name": "alertsSince",
+      "kind": "function",
+      "signature": "alertsSince(cursor: number): { alerts: LoggedAlert[]; cursor: number }"
+    },
+    {
+      "name": "clearAlertInbox",
+      "kind": "function",
+      "signature": "clearAlertInbox(): void"
+    },
+    {
+      "name": "appendPendingAlerts",
+      "kind": "function",
+      "signature": "appendPendingAlerts(text: string, toolName: string): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/dispatch.ts#collectPendingAlertText",
     "src/application/observe/runtime/watch_project_tool.ts#doWork",

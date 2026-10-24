@@ -363,6 +363,73 @@
     }
   ],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "Edit",
+      "kind": "interface",
+      "signature": "Edit()"
+    },
+    {
+      "name": "RenameEditOp",
+      "kind": "interface",
+      "signature": "RenameEditOp()"
+    },
+    {
+      "name": "RenameSymbolFileInfo",
+      "kind": "interface",
+      "signature": "RenameSymbolFileInfo()"
+    },
+    {
+      "name": "RenameSymbolResult",
+      "kind": "interface",
+      "signature": "RenameSymbolResult()"
+    },
+    {
+      "name": "LangRenameArgs",
+      "kind": "interface",
+      "signature": "LangRenameArgs()"
+    },
+    {
+      "name": "LangPackage",
+      "kind": "interface",
+      "signature": "LangPackage()"
+    },
+    {
+      "name": "GoModuleAnalysis",
+      "kind": "interface",
+      "signature": "GoModuleAnalysis()"
+    },
+    {
+      "name": "collectFilesByExt",
+      "kind": "function",
+      "signature": "collectFilesByExt(root: string,\r\n  ext: string,): { files: Set<string>; skipped: Array<{ path: string; why: string }> }"
+    },
+    {
+      "name": "applyEdits",
+      "kind": "function",
+      "signature": "applyEdits(src: string, edits: Edit[]): string"
+    },
+    {
+      "name": "toOps",
+      "kind": "function",
+      "signature": "toOps(src: string, edits: Edit[]): RenameEditOp[]"
+    },
+    {
+      "name": "kindNodeTypes",
+      "kind": "function",
+      "signature": "kindNodeTypes(kind: string): Set<NodeType>"
+    },
+    {
+      "name": "resolveRel",
+      "kind": "function",
+      "signature": "resolveRel(source: string, importerAbs: string, byNoExt: Map<string, string>): string | null"
+    },
+    {
+      "name": "buildNoExt",
+      "kind": "function",
+      "signature": "buildNoExt(files: string[]): Map<string, string>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/find/find_references.ts#findReferencesCore",
     "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",

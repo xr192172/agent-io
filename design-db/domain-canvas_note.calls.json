@@ -5,5 +5,17 @@
   "path": "src/domain/canvas_note.ts",
   "symbols": [],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "CanvasNoteType",
+      "kind": "type",
+      "signature": "CanvasNoteType()"
+    },
+    {
+      "name": "CanvasNote",
+      "kind": "interface",
+      "signature": "CanvasNote()"
+    }
+  ]
 }

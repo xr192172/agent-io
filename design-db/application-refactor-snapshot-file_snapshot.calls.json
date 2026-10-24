@@ -271,6 +271,63 @@
       "to": "src/infrastructure/storage.ts#listDesignSheets"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FileSnapshotEntry",
+      "kind": "interface",
+      "signature": "FileSnapshotEntry()"
+    },
+    {
+      "name": "FileSnapshotMeta",
+      "kind": "interface",
+      "signature": "FileSnapshotMeta()"
+    },
+    {
+      "name": "MAX_FILE_SNAPSHOTS",
+      "kind": "const",
+      "signature": "const MAX_FILE_SNAPSHOTS = 20"
+    },
+    {
+      "name": "RollbackResult",
+      "kind": "interface",
+      "signature": "RollbackResult()"
+    },
+    {
+      "name": "fileSnapshotsDir",
+      "kind": "function",
+      "signature": "fileSnapshotsDir(root: string): string"
+    },
+    {
+      "name": "createFileSnapshot",
+      "kind": "function",
+      "signature": "createFileSnapshot(root: string,\n  opts: { reason: string; files: readonly string[] },): FileSnapshotMeta"
+    },
+    {
+      "name": "listFileSnapshots",
+      "kind": "function",
+      "signature": "listFileSnapshots(root: string): FileSnapshotMeta[]"
+    },
+    {
+      "name": "getFileSnapshot",
+      "kind": "function",
+      "signature": "getFileSnapshot(root: string, id: string): FileSnapshotMeta | null"
+    },
+    {
+      "name": "rollbackFileSnapshot",
+      "kind": "function",
+      "signature": "rollbackFileSnapshot(root: string,\n  id?: string,\n  filter?: { file?: string },): RollbackResult"
+    },
+    {
+      "name": "pruneFileSnapshots",
+      "kind": "function",
+      "signature": "pruneFileSnapshots(root: string, max = MAX_FILE_SNAPSHOTS): number"
+    },
+    {
+      "name": "snapshotBeforeWrite",
+      "kind": "function",
+      "signature": "snapshotBeforeWrite(root: string,\n  reason: string,\n  files: readonly string[],): FileSnapshotMeta | null"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/query_feature.ts#queryFeature",
     "src/application/refactor/rename/rename_files.ts#renameFilesCore",

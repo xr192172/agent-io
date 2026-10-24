@@ -186,6 +186,38 @@
       "to": "src/infrastructure/analysis/observe/run_trace_replay.ts#parseRunTraces"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "RunFrame",
+      "kind": "interface",
+      "signature": "RunFrame()"
+    },
+    {
+      "name": "RunTreeNode",
+      "kind": "interface",
+      "signature": "RunTreeNode()"
+    },
+    {
+      "name": "RunTrace",
+      "kind": "interface",
+      "signature": "RunTrace()"
+    },
+    {
+      "name": "RawEvent",
+      "kind": "interface",
+      "signature": "RawEvent()"
+    },
+    {
+      "name": "parseRunTraces",
+      "kind": "function",
+      "signature": "parseRunTraces(jsonl: string): RunTrace[]"
+    },
+    {
+      "name": "loadRunTracesFromText",
+      "kind": "function",
+      "signature": "loadRunTracesFromText(text: string): RunTrace[]"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/capture/observe_trace.ts#loadNeedles",
     "src/application/observe/capture/trace_evidence.ts#recordsFromEvents",

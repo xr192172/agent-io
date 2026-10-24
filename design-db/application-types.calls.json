@@ -61,5 +61,12 @@
       "kind": "package"
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "ToolDef",
+      "kind": "interface",
+      "signature": "ToolDef()"
+    }
+  ]
 }

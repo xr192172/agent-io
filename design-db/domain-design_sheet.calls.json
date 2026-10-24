@@ -309,6 +309,63 @@
       "to": "src/domain/overlay.ts#nodePath"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DESIGN_SHEET_NODE_KEYS",
+      "kind": "const",
+      "signature": "const DESIGN_SHEET_NODE_KEYS = [ 'label', 'type', 'title', 'description', 'status', 'lay…"
+    },
+    {
+      "name": "NodeAttrDiff",
+      "kind": "interface",
+      "signature": "NodeAttrDiff()"
+    },
+    {
+      "name": "SameIdDiff",
+      "kind": "interface",
+      "signature": "SameIdDiff()"
+    },
+    {
+      "name": "ResolvedDiff",
+      "kind": "interface",
+      "signature": "ResolvedDiff()"
+    },
+    {
+      "name": "DesignSheetDiff",
+      "kind": "interface",
+      "signature": "DesignSheetDiff()"
+    },
+    {
+      "name": "PendingEntry",
+      "kind": "interface",
+      "signature": "PendingEntry()"
+    },
+    {
+      "name": "trimStr",
+      "kind": "const",
+      "signature": "const trimStr = (v: unknown): string => (typeof v === 'string' ? v.trim()…"
+    },
+    {
+      "name": "designSheetRef",
+      "kind": "function",
+      "signature": "designSheetRef(n: Node): string"
+    },
+    {
+      "name": "designSheetPendingRefs",
+      "kind": "function",
+      "signature": "designSheetPendingRefs(dsl: DesignDSL | null | undefined): string[]"
+    },
+    {
+      "name": "diffDesignSheet",
+      "kind": "function",
+      "signature": "diffDesignSheet(design: DesignDSL, live: DesignDSL): DesignSheetDiff"
+    },
+    {
+      "name": "diffDesignSheetLine",
+      "kind": "function",
+      "signature": "diffDesignSheetLine(d: DesignSheetDiff): string"
+    }
+  ],
   "reverse_calls": [
     "src/domain/design_sheet.ts#designSheetPendingRefs",
     "src/domain/design_sheet.ts#diffDesignSheet",

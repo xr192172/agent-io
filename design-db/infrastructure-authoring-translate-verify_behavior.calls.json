@@ -144,6 +144,33 @@
       "to": "src/infrastructure/authoring/translate/verify_behavior.ts#zeroOf"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ParityOptions",
+      "kind": "interface",
+      "signature": "ParityOptions()"
+    },
+    {
+      "name": "ParityResult",
+      "kind": "interface",
+      "signature": "ParityResult()"
+    },
+    {
+      "name": "typeSamples",
+      "kind": "function",
+      "signature": "typeSamples(goType: string): unknown[]"
+    },
+    {
+      "name": "generateCasesFor",
+      "kind": "function",
+      "signature": "generateCasesFor(params: TranslateParam[]): BehaviorCase[]"
+    },
+    {
+      "name": "checkTranslationParity",
+      "kind": "function",
+      "signature": "checkTranslationParity(opts: ParityOptions): ParityResult"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/translate/receipt.ts#verifyTranslation",
     "src/infrastructure/authoring/translate/verify_behavior.ts#checkTranslationParity",

@@ -930,6 +930,98 @@
       "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ChangeKind",
+      "kind": "type",
+      "signature": "ChangeKind()"
+    },
+    {
+      "name": "ChangeOp",
+      "kind": "interface",
+      "signature": "ChangeOp()"
+    },
+    {
+      "name": "ChangeStatus",
+      "kind": "type",
+      "signature": "ChangeStatus()"
+    },
+    {
+      "name": "ChangeDiff",
+      "kind": "interface",
+      "signature": "ChangeDiff()"
+    },
+    {
+      "name": "ChangeReview",
+      "kind": "interface",
+      "signature": "ChangeReview()"
+    },
+    {
+      "name": "PendingChange",
+      "kind": "interface",
+      "signature": "PendingChange()"
+    },
+    {
+      "name": "ProposeInput",
+      "kind": "interface",
+      "signature": "ProposeInput()"
+    },
+    {
+      "name": "DslRenameEdit",
+      "kind": "interface",
+      "signature": "DslRenameEdit()"
+    },
+    {
+      "name": "ApproveResult",
+      "kind": "interface",
+      "signature": "ApproveResult()"
+    },
+    {
+      "name": "collectDslRenameEdits",
+      "kind": "function",
+      "signature": "collectDslRenameEdits(dsl: DesignDSL, op: ChangeOp): DslRenameEdit[]"
+    },
+    {
+      "name": "applyDslRenameEdits",
+      "kind": "function",
+      "signature": "applyDslRenameEdits(dsl: DesignDSL, edits: DslRenameEdit[]): number"
+    },
+    {
+      "name": "proposeChange",
+      "kind": "function",
+      "signature": "proposeChange(input: ProposeInput): Promise<{ change: PendingChange; ok: boolean; error?: string; duplicate?: boolean }>"
+    },
+    {
+      "name": "listChanges",
+      "kind": "function",
+      "signature": "listChanges(project_dir: string): PendingChange[]"
+    },
+    {
+      "name": "getChange",
+      "kind": "function",
+      "signature": "getChange(project_dir: string, id: string): PendingChange | undefined"
+    },
+    {
+      "name": "checkReviewer",
+      "kind": "function",
+      "signature": "checkReviewer(c: Pick<PendingChange, 'submitter'>,\n  reviewer: string,): { ok: true; selfReviewUnjudged?: string } | { ok: false; error: string }"
+    },
+    {
+      "name": "addReview",
+      "kind": "function",
+      "signature": "addReview(project_dir: string,\n  id: string,\n  review: { agent: string; verdict: ChangeReview['verdict']; note?: string },): { ok: boolean; error?: string; reviews: ChangeReview[] }"
+    },
+    {
+      "name": "approveChange",
+      "kind": "function",
+      "signature": "approveChange(project_dir: string, id: string, reviewer: string): Promise<ApproveResult>"
+    },
+    {
+      "name": "rejectChange",
+      "kind": "function",
+      "signature": "rejectChange(project_dir: string, id: string, reviewer: string): ApproveResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/workbench/code_workbench.ts#addReview",
     "src/application/design/workbench/code_workbench.ts#approveChange",

@@ -465,6 +465,68 @@
       "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "TraceStepSpec",
+      "kind": "interface",
+      "signature": "TraceStepSpec()"
+    },
+    {
+      "name": "TraceExecStep",
+      "kind": "interface",
+      "signature": "TraceExecStep()"
+    },
+    {
+      "name": "TraceExecInput",
+      "kind": "interface",
+      "signature": "TraceExecInput()"
+    },
+    {
+      "name": "TraceExecResult",
+      "kind": "interface",
+      "signature": "TraceExecResult()"
+    },
+    {
+      "name": "Lang",
+      "kind": "type",
+      "signature": "Lang()"
+    },
+    {
+      "name": "GoField",
+      "kind": "interface",
+      "signature": "GoField()"
+    },
+    {
+      "name": "ExampleParam",
+      "kind": "interface",
+      "signature": "ExampleParam()"
+    },
+    {
+      "name": "BUILTIN_PREFIX",
+      "kind": "const",
+      "signature": "const BUILTIN_PREFIX = new Set([ 'Math', 'JSON', 'Object', 'Array', 'String', 'N…"
+    },
+    {
+      "name": "ResolvedFn",
+      "kind": "interface",
+      "signature": "ResolvedFn()"
+    },
+    {
+      "name": "parseReceiver",
+      "kind": "function",
+      "signature": "parseReceiver(signature: string): { varName: string; typeName: string } | null"
+    },
+    {
+      "name": "exampleInputFor",
+      "kind": "function",
+      "signature": "exampleInputFor(signature: string,\n  lang: string,\n  formal?: ParsedParam[] | null,): { example: Record<string, unknown>; params: ExampleParam[]; preview: string }"
+    },
+    {
+      "name": "traceExecChain",
+      "kind": "function",
+      "signature": "traceExecChain(input: TraceExecInput): Promise<TraceExecResult>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/observe/trace_exec.ts#exampleInputFor",
     "src/infrastructure/analysis/observe/trace_exec.ts#execByLang",

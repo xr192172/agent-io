@@ -185,6 +185,63 @@
       "to": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#stripPyImports"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "SKIP_DIRS",
+      "kind": "const",
+      "signature": "const SKIP_DIRS = skipDirSet([])"
+    },
+    {
+      "name": "PyDeadImportCandidate",
+      "kind": "interface",
+      "signature": "PyDeadImportCandidate()"
+    },
+    {
+      "name": "DetectPyDeadImportsResult",
+      "kind": "interface",
+      "signature": "DetectPyDeadImportsResult()"
+    },
+    {
+      "name": "PyImportRef",
+      "kind": "interface",
+      "signature": "PyImportRef()"
+    },
+    {
+      "name": "PyImportAnalysis",
+      "kind": "interface",
+      "signature": "PyImportAnalysis()"
+    },
+    {
+      "name": "escRe",
+      "kind": "const",
+      "signature": "const escRe = (s: string): string => s.replace(/[.*+?^${}()|[\\]\\\\]/g, '…"
+    },
+    {
+      "name": "scanPySourceFiles",
+      "kind": "function",
+      "signature": "scanPySourceFiles(project_dir: string, files?: string[]): string[]"
+    },
+    {
+      "name": "analyzePyImports",
+      "kind": "function",
+      "signature": "analyzePyImports(src: string): PyImportAnalysis"
+    },
+    {
+      "name": "enumeratePyImports",
+      "kind": "function",
+      "signature": "enumeratePyImports(src: string): PyImportRef[]"
+    },
+    {
+      "name": "detectDeadPyImports",
+      "kind": "function",
+      "signature": "detectDeadPyImports(opts: { project_dir: string; files?: string[] }): DetectPyDeadImportsResult"
+    },
+    {
+      "name": "removePyImportsFromSource",
+      "kind": "function",
+      "signature": "removePyImportsFromSource(src: string, source: string): { removed: number; output: string }"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#detectDeadPyImports",
     "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#enumeratePyImports",

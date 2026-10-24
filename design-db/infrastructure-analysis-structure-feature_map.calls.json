@@ -407,6 +407,83 @@
       "to": "src/infrastructure/analysis/structure/layer_detect.ts#matchLayer"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FeatureSide",
+      "kind": "type",
+      "signature": "FeatureSide()"
+    },
+    {
+      "name": "FeatureMapOptions",
+      "kind": "interface",
+      "signature": "FeatureMapOptions()"
+    },
+    {
+      "name": "SimilarFeatureLink",
+      "kind": "interface",
+      "signature": "SimilarFeatureLink()"
+    },
+    {
+      "name": "DeprecationEvidence",
+      "kind": "interface",
+      "signature": "DeprecationEvidence()"
+    },
+    {
+      "name": "FeatureMapFeature",
+      "kind": "interface",
+      "signature": "FeatureMapFeature()"
+    },
+    {
+      "name": "RepeatedFamily",
+      "kind": "interface",
+      "signature": "RepeatedFamily()"
+    },
+    {
+      "name": "FeatureMapEntry",
+      "kind": "interface",
+      "signature": "FeatureMapEntry()"
+    },
+    {
+      "name": "FeatureMapMeta",
+      "kind": "interface",
+      "signature": "FeatureMapMeta()"
+    },
+    {
+      "name": "FeatureMapResult",
+      "kind": "interface",
+      "signature": "FeatureMapResult()"
+    },
+    {
+      "name": "SKIP_DIRS",
+      "kind": "const",
+      "signature": "const SKIP_DIRS = skipDirSet(['target'])"
+    },
+    {
+      "name": "SOURCE_EXT",
+      "kind": "const",
+      "signature": "const SOURCE_EXT = /\\.(ts|tsx|js|jsx|mjs|cjs|go|py)$/"
+    },
+    {
+      "name": "scanSourceFiles",
+      "kind": "function",
+      "signature": "scanSourceFiles(sourceRoot: string): string[]"
+    },
+    {
+      "name": "featureIdOf",
+      "kind": "function",
+      "signature": "featureIdOf(rel: string): string"
+    },
+    {
+      "name": "sideOfLayer",
+      "kind": "function",
+      "signature": "sideOfLayer(layer: string): FeatureSide"
+    },
+    {
+      "name": "buildFeatureMap",
+      "kind": "function",
+      "signature": "buildFeatureMap(opts: FeatureMapOptions): FeatureMapResult"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap",
     "src/infrastructure/analysis/structure/feature_map.ts#detectRepeatedFamilies"

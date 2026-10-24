@@ -29,5 +29,22 @@
       "kind": "relative"
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "CS_RESERVED",
+      "kind": "const",
+      "signature": "const CS_RESERVED = new Set([ 'if', 'for', 'while', 'switch', 'return', 'new'…"
+    },
+    {
+      "name": "CS_GLOBALS",
+      "kind": "const",
+      "signature": "const CS_GLOBALS = new Set([ 'System', 'String', 'Console', 'Math', 'Convert…"
+    },
+    {
+      "name": "cgCsPackage",
+      "kind": "const",
+      "signature": "const cgCsPackage = { lang: 'cs', exts: ['.cs'], reserved: CS_RESERVED, globa…"
+    }
+  ]
 }

@@ -232,5 +232,42 @@
     }
   ],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "ReasoningStepKind",
+      "kind": "type",
+      "signature": "ReasoningStepKind()"
+    },
+    {
+      "name": "ReasoningFoldKind",
+      "kind": "type",
+      "signature": "ReasoningFoldKind()"
+    },
+    {
+      "name": "ReasoningStep",
+      "kind": "interface",
+      "signature": "ReasoningStep()"
+    },
+    {
+      "name": "ReasoningFold",
+      "kind": "interface",
+      "signature": "ReasoningFold()"
+    },
+    {
+      "name": "ReasoningBudget",
+      "kind": "interface",
+      "signature": "ReasoningBudget()"
+    },
+    {
+      "name": "ReasoningEntry",
+      "kind": "interface",
+      "signature": "ReasoningEntry()"
+    },
+    {
+      "name": "ReasoningSystem",
+      "kind": "interface",
+      "signature": "ReasoningSystem()"
+    }
+  ]
 }

@@ -97,5 +97,12 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "OBSERVE_TOOLS",
+      "kind": "const",
+      "signature": "const OBSERVE_TOOLS = [ { name: 'memory_observe', title: 'External process memo…"
+    }
+  ]
 }

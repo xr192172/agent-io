@@ -165,6 +165,43 @@
       "to": "src/infrastructure/source_write_port.ts#commitSourceWrite"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "RewriteItem",
+      "kind": "interface",
+      "signature": "RewriteItem()"
+    },
+    {
+      "name": "PlanEdit",
+      "kind": "interface",
+      "signature": "PlanEdit()"
+    },
+    {
+      "name": "SAFE_SUBSTITUTIONS",
+      "kind": "const",
+      "signature": "const SAFE_SUBSTITUTIONS = [ // Node：new Buffer() 构造器（废弃）→ Buffer.from()，语义一致 { kind…"
+    },
+    {
+      "name": "ApplyResult",
+      "kind": "interface",
+      "signature": "ApplyResult()"
+    },
+    {
+      "name": "buildRewritePlan",
+      "kind": "function",
+      "signature": "buildRewritePlan(featureGroups: Array<{ declaration: { projectDir: string }; hits: FeatureHit[] }>,\n  removedGroups: Array<{ declaration: { projectDir: string }; hits: RemovedHit[] }>): RewriteItem[]"
+    },
+    {
+      "name": "suggestDeterministicEdits",
+      "kind": "function",
+      "signature": "suggestDeterministicEdits(hits: RemovedHit[]): PlanEdit[]"
+    },
+    {
+      "name": "applyEdits",
+      "kind": "function",
+      "signature": "applyEdits(root: string, edits: PlanEdit[], write?: SourceWriteHook): ApplyResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
     "src/application/meta/upgrade/upgrade.ts#scanAndPlan",

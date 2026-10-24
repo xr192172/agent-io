@@ -227,6 +227,38 @@
       "to": "src/infrastructure/analysis/impact/index.ts#buildImpactGraph"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "CrossRepoSym",
+      "kind": "interface",
+      "signature": "CrossRepoSym()"
+    },
+    {
+      "name": "ProjectSymbolIndex",
+      "kind": "interface",
+      "signature": "ProjectSymbolIndex()"
+    },
+    {
+      "name": "SymbolCollision",
+      "kind": "interface",
+      "signature": "SymbolCollision()"
+    },
+    {
+      "name": "CrossRepoReport",
+      "kind": "interface",
+      "signature": "CrossRepoReport()"
+    },
+    {
+      "name": "buildProjectIndex",
+      "kind": "function",
+      "signature": "buildProjectIndex(root: string): Promise<ProjectSymbolIndex>"
+    },
+    {
+      "name": "compareProjects",
+      "kind": "function",
+      "signature": "compareProjects(aRoot: string, bRoot: string): Promise<CrossRepoReport>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/cross_repo/index.ts#compareProjects",
     "src/infrastructure/analysis/cross_repo/index.ts#defFingerprint",

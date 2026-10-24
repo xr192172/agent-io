@@ -111,6 +111,58 @@
       "to": "src/infrastructure/text/refs_text.ts#walkSourceFiles"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ProjectView",
+      "kind": "interface",
+      "signature": "ProjectView()"
+    },
+    {
+      "name": "ProjectViewOptions",
+      "kind": "interface",
+      "signature": "ProjectViewOptions()"
+    },
+    {
+      "name": "PROJECT_VIEW_TTL_MS",
+      "kind": "const",
+      "signature": "const PROJECT_VIEW_TTL_MS = 5000"
+    },
+    {
+      "name": "_cache",
+      "kind": "const",
+      "signature": "const _cache = new Map<string, ProjectView>()"
+    },
+    {
+      "name": "_walks",
+      "kind": "const",
+      "signature": "const _walks = new Map<string, number>()"
+    },
+    {
+      "name": "_hits",
+      "kind": "const",
+      "signature": "const _hits = 0"
+    },
+    {
+      "name": "getProjectView",
+      "kind": "function",
+      "signature": "getProjectView(root: string, opts: ProjectViewOptions = {}): ProjectView"
+    },
+    {
+      "name": "invalidateProjectView",
+      "kind": "function",
+      "signature": "invalidateProjectView(root?: string): void"
+    },
+    {
+      "name": "projectViewStats",
+      "kind": "function",
+      "signature": "projectViewStats(): { walks: Record<string, number>; hits: number; cachedRoots: number }"
+    },
+    {
+      "name": "resetProjectViewForTest",
+      "kind": "function",
+      "signature": "resetProjectViewForTest(): void"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
     "src/application/refactor/find/find_references.ts#indexCandidateFiles",

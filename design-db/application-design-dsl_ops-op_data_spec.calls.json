@@ -285,6 +285,163 @@
     }
   ],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "OpSpec",
+      "kind": "interface",
+      "signature": "OpSpec()"
+    },
+    {
+      "name": "OP_SPECS",
+      "kind": "const",
+      "signature": "const OP_SPECS = [ { type: 'node', ops: ['add', 'update', 'delete', 'move'…"
+    },
+    {
+      "name": "BY_TYPE",
+      "kind": "const",
+      "signature": "const BY_TYPE = new Map(OP_SPECS.map((s) => [s.type, s]))"
+    },
+    {
+      "name": "NODE_DATA_KEYS",
+      "kind": "const",
+      "signature": "const NODE_DATA_KEYS = [ 'label', 'description', 'type', 'status', 'bg', 'color'…"
+    },
+    {
+      "name": "NodeNonDataKeys",
+      "kind": "type",
+      "signature": "NodeNonDataKeys()"
+    },
+    {
+      "name": "NodeOwnedKeys",
+      "kind": "type",
+      "signature": "NodeOwnedKeys()"
+    },
+    {
+      "name": "NodeKeysMissingFromList",
+      "kind": "type",
+      "signature": "NodeKeysMissingFromList()"
+    },
+    {
+      "name": "_assertNodeKeysNoMissing",
+      "kind": "const",
+      "signature": "const _assertNodeKeysNoMissing = true"
+    },
+    {
+      "name": "NodeKeysExtraInList",
+      "kind": "type",
+      "signature": "NodeKeysExtraInList()"
+    },
+    {
+      "name": "_assertNodeKeysNoExtra",
+      "kind": "const",
+      "signature": "const _assertNodeKeysNoExtra = true"
+    },
+    {
+      "name": "FILE_DATA_KEYS",
+      "kind": "const",
+      "signature": "const FILE_DATA_KEYS = [ 'path', 'responsibility', 'expected_apis', 'expected_de…"
+    },
+    {
+      "name": "FileOwnedKeys",
+      "kind": "type",
+      "signature": "FileOwnedKeys()"
+    },
+    {
+      "name": "FileKeysMissing",
+      "kind": "type",
+      "signature": "FileKeysMissing()"
+    },
+    {
+      "name": "_assertFileNoMissing",
+      "kind": "const",
+      "signature": "const _assertFileNoMissing = true"
+    },
+    {
+      "name": "FileKeysExtra",
+      "kind": "type",
+      "signature": "FileKeysExtra()"
+    },
+    {
+      "name": "_assertFileNoExtra",
+      "kind": "const",
+      "signature": "const _assertFileNoExtra = true"
+    },
+    {
+      "name": "EDGE_DATA_KEYS",
+      "kind": "const",
+      "signature": "const EDGE_DATA_KEYS = ['from', 'to', 'label', 'edge_type', 'arrow', 'layer'] as…"
+    },
+    {
+      "name": "EdgeOwnedKeys",
+      "kind": "type",
+      "signature": "EdgeOwnedKeys()"
+    },
+    {
+      "name": "EdgeKeysMissing",
+      "kind": "type",
+      "signature": "EdgeKeysMissing()"
+    },
+    {
+      "name": "_assertEdgeNoMissing",
+      "kind": "const",
+      "signature": "const _assertEdgeNoMissing = true"
+    },
+    {
+      "name": "EdgeKeysExtra",
+      "kind": "type",
+      "signature": "EdgeKeysExtra()"
+    },
+    {
+      "name": "_assertEdgeNoExtra",
+      "kind": "const",
+      "signature": "const _assertEdgeNoExtra = true"
+    },
+    {
+      "name": "TYPE_KNOWN_KEYS",
+      "kind": "const",
+      "signature": "const TYPE_KNOWN_KEYS = { node: NODE_DATA_KEYS, edge: EDGE_DATA_KEYS, file: FILE_…"
+    },
+    {
+      "name": "KnownKeysMissingTypes",
+      "kind": "type",
+      "signature": "KnownKeysMissingTypes()"
+    },
+    {
+      "name": "_assertKnownKeysCoverAll",
+      "kind": "const",
+      "signature": "const _assertKnownKeysCoverAll = true"
+    },
+    {
+      "name": "KnownKeysExtraTypes",
+      "kind": "type",
+      "signature": "KnownKeysExtraTypes()"
+    },
+    {
+      "name": "_assertKnownKeysNoExtraType",
+      "kind": "const",
+      "signature": "const _assertKnownKeysNoExtraType = true"
+    },
+    {
+      "name": "CheckedOperation",
+      "kind": "type",
+      "signature": "CheckedOperation()"
+    },
+    {
+      "name": "FeatureOperationLike",
+      "kind": "interface",
+      "signature": "FeatureOperationLike()"
+    },
+    {
+      "name": "checkOpSpec",
+      "kind": "function",
+      "signature": "checkOpSpec(op: T): CheckedOperation<T>"
+    },
+    {
+      "name": "renderOpSpecs",
+      "kind": "function",
+      "signature": "renderOpSpecs(): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/update_feature.ts#applyOperation"
   ]

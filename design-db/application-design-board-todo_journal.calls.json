@@ -100,6 +100,33 @@
       "to": "src/infrastructure/storage.ts#getDesignSheetFile"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "LF",
+      "kind": "const",
+      "signature": "const LF = String.fromCharCode(10)"
+    },
+    {
+      "name": "TodoTombstone",
+      "kind": "interface",
+      "signature": "TodoTombstone()"
+    },
+    {
+      "name": "todoJournalFile",
+      "kind": "function",
+      "signature": "todoJournalFile(feature: string): string"
+    },
+    {
+      "name": "appendTodoTombstone",
+      "kind": "function",
+      "signature": "appendTodoTombstone(feature: string, t: TodoTombstone): string"
+    },
+    {
+      "name": "readTodoTombstones",
+      "kind": "function",
+      "signature": "readTodoTombstones(feature: string): { entries: TodoTombstone[]; bad_lines: number }"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/board/todo_journal.ts#appendTodoTombstone",
     "src/application/design/board/todo_journal.ts#readTodoTombstones",

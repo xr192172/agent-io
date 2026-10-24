@@ -49,5 +49,22 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "C_FEATURES",
+      "kind": "const",
+      "signature": "const C_FEATURES = [ { name: '_Generic 泛型选择', tool: 'c', since: 11, pattern:…"
+    },
+    {
+      "name": "C_REMOVED",
+      "kind": "const",
+      "signature": "const C_REMOVED = [ { name: 'gets（已被移除）', tool: 'c', since: 11, kind: 'remo…"
+    },
+    {
+      "name": "cAdapter",
+      "kind": "const",
+      "signature": "const cAdapter = { lang: 'c', label: 'C', declarationFiles: ['Makefile', '…"
+    }
+  ]
 }

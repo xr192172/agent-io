@@ -278,6 +278,73 @@
       "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#versionSatisfies"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ToolchainDeclaration",
+      "kind": "interface",
+      "signature": "ToolchainDeclaration()"
+    },
+    {
+      "name": "RuntimeInfo",
+      "kind": "interface",
+      "signature": "RuntimeInfo()"
+    },
+    {
+      "name": "RuntimeMatch",
+      "kind": "interface",
+      "signature": "RuntimeMatch()"
+    },
+    {
+      "name": "ToolchainScan",
+      "kind": "interface",
+      "signature": "ToolchainScan()"
+    },
+    {
+      "name": "SKIP_DIRS",
+      "kind": "const",
+      "signature": "const SKIP_DIRS = skipDirSet([...ADAPTER_SKIP_DIRS, 'target', 'bin', 'vendo…"
+    },
+    {
+      "name": "collectDeclarationFiles",
+      "kind": "function",
+      "signature": "collectDeclarationFiles(root: string): string[]"
+    },
+    {
+      "name": "parseDeclarationFile",
+      "kind": "function",
+      "signature": "parseDeclarationFile(filePath: string): ToolchainDeclaration[]"
+    },
+    {
+      "name": "scanToolchainDeclarations",
+      "kind": "function",
+      "signature": "scanToolchainDeclarations(root: string): ToolchainDeclaration[]"
+    },
+    {
+      "name": "parseToolchainVersion",
+      "kind": "function",
+      "signature": "parseToolchainVersion(tool: ToolName, v: string): { major: number; minor?: number } | null"
+    },
+    {
+      "name": "versionSatisfies",
+      "kind": "function",
+      "signature": "versionSatisfies(tool: ToolName, declared: string, local: string): boolean"
+    },
+    {
+      "name": "probeLocalRuntimes",
+      "kind": "function",
+      "signature": "probeLocalRuntimes(): RuntimeInfo[]"
+    },
+    {
+      "name": "matchRuntimes",
+      "kind": "function",
+      "signature": "matchRuntimes(declarations: ToolchainDeclaration[], runtimes: RuntimeInfo[]): RuntimeMatch[]"
+    },
+    {
+      "name": "scanToolchains",
+      "kind": "function",
+      "signature": "scanToolchains(root: string): ToolchainScan"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/version_upgrade/detect.ts#runContractScan",
     "src/infrastructure/authoring/version_upgrade/toolchain.ts#matchRuntimes",

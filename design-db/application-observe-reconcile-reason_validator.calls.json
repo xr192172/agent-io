@@ -168,6 +168,58 @@
       "to": "src/application/observe/reconcile/reason_validator.ts#matchesConcreteEntity"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ReasonFailLayer",
+      "kind": "type",
+      "signature": "ReasonFailLayer()"
+    },
+    {
+      "name": "ReasonValidationResult",
+      "kind": "interface",
+      "signature": "ReasonValidationResult()"
+    },
+    {
+      "name": "ReasonEvidenceRef",
+      "kind": "interface",
+      "signature": "ReasonEvidenceRef()"
+    },
+    {
+      "name": "ReasonEvidenceResolver",
+      "kind": "interface",
+      "signature": "ReasonEvidenceResolver()"
+    },
+    {
+      "name": "ValidateReasonInput",
+      "kind": "interface",
+      "signature": "ValidateReasonInput()"
+    },
+    {
+      "name": "MIN_REASON_CHARS",
+      "kind": "const",
+      "signature": "const MIN_REASON_CHARS = 6"
+    },
+    {
+      "name": "FILLER_WORDS",
+      "kind": "const",
+      "signature": "const FILLER_WORDS = [ '更新代码', '修复bug', '修复 bug', '优化代码', '优化', '改进', '调整', '修…"
+    },
+    {
+      "name": "METRIC_RE",
+      "kind": "const",
+      "signature": "const METRIC_RE = /\\d+(\\.\\d+)?\\s*(?:s|ms|token|tokens|tok|%|k|KB|MB|GB)?\\b/i"
+    },
+    {
+      "name": "FUNCTION_WORDS",
+      "kind": "const",
+      "signature": "const FUNCTION_WORDS = [ '只是', '而已', '一下', '简单地', '稍微', '仅', '只要', '就是', '仅仅', '…"
+    },
+    {
+      "name": "validateReason",
+      "kind": "function",
+      "signature": "validateReason(input: ValidateReasonInput): ReasonValidationResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/reconcile/reason_validator.ts#validateReason"
   ]

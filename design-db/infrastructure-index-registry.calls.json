@@ -183,6 +183,43 @@
       "to": "src/infrastructure/storage.ts#getDataHome"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ArtifactEntry",
+      "kind": "interface",
+      "signature": "ArtifactEntry()"
+    },
+    {
+      "name": "registryFilePath",
+      "kind": "function",
+      "signature": "registryFilePath(): string"
+    },
+    {
+      "name": "inferLanguageFromPath",
+      "kind": "function",
+      "signature": "inferLanguageFromPath(p: string): string | undefined"
+    },
+    {
+      "name": "readRegistry",
+      "kind": "function",
+      "signature": "readRegistry(): ArtifactEntry[]"
+    },
+    {
+      "name": "registerArtifact",
+      "kind": "function",
+      "signature": "registerArtifact(entry: Partial<ArtifactEntry>): ArtifactEntry"
+    },
+    {
+      "name": "registerArtifactTo",
+      "kind": "function",
+      "signature": "registerArtifactTo(file: string, entry: Partial<ArtifactEntry>): ArtifactEntry"
+    },
+    {
+      "name": "updateArtifact",
+      "kind": "function",
+      "signature": "updateArtifact(relPath: string, patch: Partial<ArtifactEntry>): ArtifactEntry | null"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/index/registry.ts#readRegistry",
     "src/infrastructure/index/registry.ts#registerArtifact",

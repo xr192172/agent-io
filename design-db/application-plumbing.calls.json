@@ -122,6 +122,68 @@
       "to": "src/application/plumbing.ts#shapeErr"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DATA_MARKER",
+      "kind": "const",
+      "signature": "const DATA_MARKER = '---DATA---'"
+    },
+    {
+      "name": "textOut",
+      "kind": "function",
+      "signature": "textOut(text: string, isError = false)"
+    },
+    {
+      "name": "wrap",
+      "kind": "function",
+      "signature": "wrap(fn: (args: Record<string, unknown>) => { message: string; data?: unknown } | Promise<{ message: string; data?: unknown }>,): ToolDef['handler']"
+    },
+    {
+      "name": "parseDataBlock",
+      "kind": "function",
+      "signature": "parseDataBlock(text: string): unknown | null"
+    },
+    {
+      "name": "wrapData",
+      "kind": "function",
+      "signature": "wrapData(fn: (\n    args: Record<string, unknown>,\n  ) =>\n    | { message: string; data?: unknown; isError?: boolean }\n    | Promise<{ message: string; data?: unknown; isError?: boolean }>,): ToolDef['handler']"
+    },
+    {
+      "name": "requireStr",
+      "kind": "function",
+      "signature": "requireStr(a: Record<string, unknown>, key: string): string"
+    },
+    {
+      "name": "requireArr",
+      "kind": "function",
+      "signature": "requireArr(a: Record<string, unknown>, key: string, hint: string): unknown[]"
+    },
+    {
+      "name": "optionalArr",
+      "kind": "function",
+      "signature": "optionalArr(a: Record<string, unknown>, key: string, hint: string): unknown[] | undefined"
+    },
+    {
+      "name": "optionalStr",
+      "kind": "function",
+      "signature": "optionalStr(a: Record<string, unknown>, key: string, hint = 'string'): string | undefined"
+    },
+    {
+      "name": "optionalNum",
+      "kind": "function",
+      "signature": "optionalNum(a: Record<string, unknown>, key: string, hint = 'number'): number | undefined"
+    },
+    {
+      "name": "optionalBool",
+      "kind": "function",
+      "signature": "optionalBool(a: Record<string, unknown>, key: string, hint = 'boolean'): boolean | undefined"
+    },
+    {
+      "name": "looseInputSchema",
+      "kind": "function",
+      "signature": "looseInputSchema(shape: Record<string, unknown>): unknown"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/explore_code.ts#exploreCode",
     "src/application/plumbing.ts#optionalBool",

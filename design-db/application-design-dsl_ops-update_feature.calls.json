@@ -617,6 +617,43 @@
       "to": "src/infrastructure/storage_overlay.ts#syncTagsToOverlay"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FeatureOperation",
+      "kind": "interface",
+      "signature": "FeatureOperation()"
+    },
+    {
+      "name": "UpdateFeatureInput",
+      "kind": "interface",
+      "signature": "UpdateFeatureInput()"
+    },
+    {
+      "name": "DslWithMeta",
+      "kind": "interface",
+      "signature": "DslWithMeta()"
+    },
+    {
+      "name": "DecisionTarget",
+      "kind": "interface",
+      "signature": "DecisionTarget()"
+    },
+    {
+      "name": "updateFeature",
+      "kind": "function",
+      "signature": "updateFeature(input: UpdateFeatureInput): Promise<TouchedProduct<EditResult>>"
+    },
+    {
+      "name": "normRel",
+      "kind": "function",
+      "signature": "normRel(s: string): string"
+    },
+    {
+      "name": "findDecisionTargetNode",
+      "kind": "function",
+      "signature": "findDecisionTargetNode(dsl: DesignDSL, raw: string): DecisionTarget['node'] | undefined"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/update_feature.ts#applyDecisionOp",
     "src/application/design/dsl_ops/update_feature.ts#applyOperation",

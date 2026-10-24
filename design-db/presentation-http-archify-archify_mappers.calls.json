@@ -5,5 +5,22 @@
   "path": "src/presentation/http/archify/archify_mappers.ts",
   "symbols": [],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "DIAGRAM_TYPES",
+      "kind": "const",
+      "signature": "const DIAGRAM_TYPES = ['architecture', 'workflow', 'sequence', 'dataflow', 'lif…"
+    },
+    {
+      "name": "DiagramType",
+      "kind": "type",
+      "signature": "DiagramType()"
+    },
+    {
+      "name": "DiagramCandidate",
+      "kind": "interface",
+      "signature": "DiagramCandidate()"
+    }
+  ]
 }

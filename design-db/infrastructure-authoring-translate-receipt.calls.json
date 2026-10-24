@@ -602,6 +602,128 @@
       "to": "src/infrastructure/authoring/translate/verify_behavior.ts#typeSamples"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "KnownKind",
+      "kind": "type",
+      "signature": "KnownKind()"
+    },
+    {
+      "name": "KnownFact",
+      "kind": "interface",
+      "signature": "KnownFact()"
+    },
+    {
+      "name": "UnknownKind",
+      "kind": "type",
+      "signature": "UnknownKind()"
+    },
+    {
+      "name": "UnknownBasis",
+      "kind": "type",
+      "signature": "UnknownBasis()"
+    },
+    {
+      "name": "UnknownItem",
+      "kind": "interface",
+      "signature": "UnknownItem()"
+    },
+    {
+      "name": "VerifyStatus",
+      "kind": "type",
+      "signature": "VerifyStatus()"
+    },
+    {
+      "name": "CaseSource",
+      "kind": "type",
+      "signature": "CaseSource()"
+    },
+    {
+      "name": "CaseResult",
+      "kind": "interface",
+      "signature": "CaseResult()"
+    },
+    {
+      "name": "UnitVerification",
+      "kind": "interface",
+      "signature": "UnitVerification()"
+    },
+    {
+      "name": "VerificationReceipt",
+      "kind": "interface",
+      "signature": "VerificationReceipt()"
+    },
+    {
+      "name": "Receipt",
+      "kind": "interface",
+      "signature": "Receipt()"
+    },
+    {
+      "name": "DISCIPLINE",
+      "kind": "const",
+      "signature": "const DISCIPLINE = new Set(DEFAULT_CONSTRAINTS)"
+    },
+    {
+      "name": "Hint",
+      "kind": "interface",
+      "signature": "Hint()"
+    },
+    {
+      "name": "UnknownsInput",
+      "kind": "interface",
+      "signature": "UnknownsInput()"
+    },
+    {
+      "name": "VerifyUnitInput",
+      "kind": "interface",
+      "signature": "VerifyUnitInput()"
+    },
+    {
+      "name": "VerifyOptions",
+      "kind": "interface",
+      "signature": "VerifyOptions()"
+    },
+    {
+      "name": "MethodInfo",
+      "kind": "interface",
+      "signature": "MethodInfo()"
+    },
+    {
+      "name": "buildKnown",
+      "kind": "function",
+      "signature": "buildKnown(units: TransUnit[], filled?: Map<string, string>): KnownFact[]"
+    },
+    {
+      "name": "buildUnknowns",
+      "kind": "function",
+      "signature": "buildUnknowns(input: UnknownsInput): UnknownItem[]"
+    },
+    {
+      "name": "methodInfo",
+      "kind": "function",
+      "signature": "methodInfo(u: TransUnit): MethodInfo | null"
+    },
+    {
+      "name": "methodWrapper",
+      "kind": "function",
+      "signature": "methodWrapper(u: TransUnit): { name: string; code: string } | null"
+    },
+    {
+      "name": "receiverKind",
+      "kind": "function",
+      "signature": "receiverKind(goSource: string, recvType: string): 'scalar' | 'struct' | 'unknown'"
+    },
+    {
+      "name": "verifyTranslation",
+      "kind": "function",
+      "signature": "verifyTranslation(inputs: VerifyUnitInput[], opts: VerifyOptions): VerificationReceipt"
+    },
+    {
+      "name": "unverifiedReceipt",
+      "kind": "function",
+      "signature": "unverifiedReceipt(reason: string, funcCount = 0, nonFunc = 0): VerificationReceipt"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/translate/receipt.ts#buildKnown",
     "src/infrastructure/authoring/translate/receipt.ts#buildUnknowns",

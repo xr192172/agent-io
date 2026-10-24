@@ -136,6 +136,38 @@
       "to": "src/presentation/mcp/lifecycle.ts#describeError"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "LifecycleDeps",
+      "kind": "interface",
+      "signature": "LifecycleDeps()"
+    },
+    {
+      "name": "LifecycleHook",
+      "kind": "interface",
+      "signature": "LifecycleHook()"
+    },
+    {
+      "name": "LifecycleHandle",
+      "kind": "interface",
+      "signature": "LifecycleHandle()"
+    },
+    {
+      "name": "LifecycleHandlers",
+      "kind": "interface",
+      "signature": "LifecycleHandlers()"
+    },
+    {
+      "name": "createLifecycleHandlers",
+      "kind": "function",
+      "signature": "createLifecycleHandlers(deps: LifecycleDeps, hooks: LifecycleHook = {}): LifecycleHandlers"
+    },
+    {
+      "name": "installLifecycle",
+      "kind": "function",
+      "signature": "installLifecycle(deps: LifecycleDeps, hooks: LifecycleHook = {}): LifecycleHandle"
+    }
+  ],
   "reverse_calls": [
     "src/presentation/mcp/lifecycle.ts#createLifecycleHandlers",
     "src/presentation/mcp/lifecycle.ts#installLifecycle",

@@ -323,6 +323,63 @@
       "to": "src/infrastructure/parse/ast_rename.ts#analyzeLocals"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "SimilarNameEntry",
+      "kind": "interface",
+      "signature": "SimilarNameEntry()"
+    },
+    {
+      "name": "SimilarNameCluster",
+      "kind": "interface",
+      "signature": "SimilarNameCluster()"
+    },
+    {
+      "name": "DisambiguateOptions",
+      "kind": "interface",
+      "signature": "DisambiguateOptions()"
+    },
+    {
+      "name": "SimilarLlm",
+      "kind": "type",
+      "signature": "SimilarLlm()"
+    },
+    {
+      "name": "DisambiguateResult",
+      "kind": "interface",
+      "signature": "DisambiguateResult()"
+    },
+    {
+      "name": "DEFAULT_SYSTEM",
+      "kind": "const",
+      "signature": "const DEFAULT_SYSTEM = '你是资深 TypeScript/JS 代码审阅者。代码里存在\"相似命名\"（孪生名），高亮下极难区分，' + '需…"
+    },
+    {
+      "name": "cachedDefault",
+      "kind": "const",
+      "signature": "const cachedDefault = "
+    },
+    {
+      "name": "findSimilarNames",
+      "kind": "function",
+      "signature": "findSimilarNames(src: string,\n  filePath = 'file.ts',): Promise<SimilarNameCluster[]>"
+    },
+    {
+      "name": "suggestDisambiguations",
+      "kind": "function",
+      "signature": "suggestDisambiguations(src: string,\n  filePath = 'file.ts',\n  opts: DisambiguateOptions = {},): Promise<DisambiguateResult>"
+    },
+    {
+      "name": "suggestDisambiguationsInFile",
+      "kind": "function",
+      "signature": "suggestDisambiguationsInFile(args: {\n  project_dir: string;\n  file: string;\n  opts?: DisambiguateOptions;\n}): Promise<DisambiguateResult>"
+    },
+    {
+      "name": "disambiguationItems",
+      "kind": "function",
+      "signature": "disambiguationItems(result: DisambiguateResult, file: string): Array<{ file: string; symbol: string; to: string }>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/find/similar_names.ts#confusable",
     "src/application/refactor/find/similar_names.ts#describeReason",

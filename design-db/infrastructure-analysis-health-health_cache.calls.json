@@ -109,6 +109,53 @@
       "to": "src/infrastructure/analysis/health/health_cache.ts#pruneHealthCache"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FingerprintFile",
+      "kind": "interface",
+      "signature": "FingerprintFile()"
+    },
+    {
+      "name": "MAX_HEALTH_CACHE_FILES",
+      "kind": "const",
+      "signature": "const MAX_HEALTH_CACHE_FILES = 20"
+    },
+    {
+      "name": "healthCacheDir",
+      "kind": "function",
+      "signature": "healthCacheDir(root: string): string"
+    },
+    {
+      "name": "fileFingerprint",
+      "kind": "function",
+      "signature": "fileFingerprint(files: FingerprintFile[]): string"
+    },
+    {
+      "name": "singleFileFingerprint",
+      "kind": "function",
+      "signature": "singleFileFingerprint(abs: string): string"
+    },
+    {
+      "name": "readHealthCache",
+      "kind": "function",
+      "signature": "readHealthCache(key: string, root: string): T | null"
+    },
+    {
+      "name": "writeHealthCache",
+      "kind": "function",
+      "signature": "writeHealthCache(key: string, data: unknown, root: string): void"
+    },
+    {
+      "name": "healthKey",
+      "kind": "function",
+      "signature": "healthKey(prefix: string, parts: Array<string | number | boolean>): string"
+    },
+    {
+      "name": "pruneHealthCache",
+      "kind": "function",
+      "signature": "pruneHealthCache(root: string, max = MAX_HEALTH_CACHE_FILES): number"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/health/health_cache.ts#pruneHealthCache",
     "src/infrastructure/analysis/health/health_cache.ts#readHealthCache",

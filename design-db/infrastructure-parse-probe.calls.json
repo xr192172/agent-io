@@ -219,6 +219,63 @@
       "to": "src/infrastructure/parse/probe.ts#toFsPath"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "nodeRequire",
+      "kind": "const",
+      "signature": "const nodeRequire = createRequire(import.meta.url)"
+    },
+    {
+      "name": "loadable",
+      "kind": "const",
+      "signature": "const loadable = new Set<string>()"
+    },
+    {
+      "name": "unloadable",
+      "kind": "const",
+      "signature": "const unloadable = new Set<string>()"
+    },
+    {
+      "name": "LanguagePackageStatus",
+      "kind": "interface",
+      "signature": "LanguagePackageStatus()"
+    },
+    {
+      "name": "isLoadablePackage",
+      "kind": "function",
+      "signature": "isLoadablePackage(pkgJsonPath: string): boolean"
+    },
+    {
+      "name": "isLanguageInstalled",
+      "kind": "function",
+      "signature": "isLanguageInstalled(pkgName: string): boolean"
+    },
+    {
+      "name": "languagePackageStatus",
+      "kind": "function",
+      "signature": "languagePackageStatus(moduleSpec: string | null): LanguagePackageStatus"
+    },
+    {
+      "name": "probeInstalledLanguages",
+      "kind": "function",
+      "signature": "probeInstalledLanguages(): LanguageEntry[]"
+    },
+    {
+      "name": "isExtSupported",
+      "kind": "function",
+      "signature": "isExtSupported(ext: string): LanguageEntry | null"
+    },
+    {
+      "name": "resetProbeCache",
+      "kind": "function",
+      "signature": "resetProbeCache(): void"
+    },
+    {
+      "name": "listSupportedExts",
+      "kind": "function",
+      "signature": "listSupportedExts(): string[]"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile",
     "src/infrastructure/analysis/health/index.ts#unreadMark",

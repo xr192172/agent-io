@@ -744,6 +744,113 @@
       "to": "src/domain/task_schema.ts#todosForNode"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "TASK_STATES",
+      "kind": "const",
+      "signature": "const TASK_STATES = ['candidate', 'claimed', 'done', 'void', 'superseded'] as…"
+    },
+    {
+      "name": "TaskState",
+      "kind": "type",
+      "signature": "TaskState()"
+    },
+    {
+      "name": "TERMINAL_TASK_STATES",
+      "kind": "type",
+      "signature": "const TERMINAL_TASK_STATES = ['done', 'void', 'superseded'] as const"
+    },
+    {
+      "name": "TaskDiscussion",
+      "kind": "interface",
+      "signature": "TaskDiscussion()"
+    },
+    {
+      "name": "TaskEvidenceRecord",
+      "kind": "interface",
+      "signature": "TaskEvidenceRecord()"
+    },
+    {
+      "name": "TaskSpec",
+      "kind": "interface",
+      "signature": "TaskSpec()"
+    },
+    {
+      "name": "isTaskState",
+      "kind": "function",
+      "signature": "isTaskState(v: unknown): v is TaskState"
+    },
+    {
+      "name": "isClosedTaskState",
+      "kind": "function",
+      "signature": "isClosedTaskState(s: TaskState): boolean"
+    },
+    {
+      "name": "isArchivedTask",
+      "kind": "function",
+      "signature": "isArchivedTask(t: { archived_at?: string | null } | null | undefined): boolean"
+    },
+    {
+      "name": "liveTasks",
+      "kind": "function",
+      "signature": "liveTasks(tasks: readonly T[] | null | undefined): T[]"
+    },
+    {
+      "name": "archivedTasks",
+      "kind": "function",
+      "signature": "archivedTasks(tasks: readonly T[] | null | undefined): T[]"
+    },
+    {
+      "name": "progressOf",
+      "kind": "function",
+      "signature": "progressOf(task: Pick<TaskSpec, 'state'> | null | undefined): DiagramStatus | undefined"
+    },
+    {
+      "name": "todosForNode",
+      "kind": "function",
+      "signature": "todosForNode(nodeId: string | undefined, todos?: readonly TaskSpec[] | null): TaskSpec[]"
+    },
+    {
+      "name": "taskOfNode",
+      "kind": "function",
+      "signature": "taskOfNode(node: { id?: string; task?: TaskSpec | null } | null | undefined,\n  todos?: readonly TaskSpec[] | null,): TaskSpec | undefined"
+    },
+    {
+      "name": "progressOfNode",
+      "kind": "function",
+      "signature": "progressOfNode(node: { id?: string; task?: TaskSpec | null } | null | undefined,\n  anchor: { progress?: DiagramStatus } | null | undefined,\n  todos?: readonly TaskSpec[] | null,): NodeProgress"
+    },
+    {
+      "name": "pickTaskEvidence",
+      "kind": "function",
+      "signature": "pickTaskEvidence(raw: Readonly<Record<string, unknown>>): TaskEvidenceRecord"
+    },
+    {
+      "name": "fingerprintOf",
+      "kind": "function",
+      "signature": "fingerprintOf(parts: readonly string[]): string"
+    },
+    {
+      "name": "codeFingerprintOf",
+      "kind": "function",
+      "signature": "codeFingerprintOf(entries: ReadonlyArray<{ path: string; hash: string }>,): { code: string; covers: string[] }"
+    },
+    {
+      "name": "evidenceFreshness",
+      "kind": "function",
+      "signature": "evidenceFreshness(rec: Pick<TaskEvidenceRecord, 'fingerprint'>,\n  current: { code: string; covers: readonly string[]; input?: string } | null | undefined,): EvidenceFreshness"
+    },
+    {
+      "name": "expectationsOf",
+      "kind": "function",
+      "signature": "expectationsOf(home: CriteriaHome | null | undefined): Expectation[]"
+    },
+    {
+      "name": "taskLevel",
+      "kind": "function",
+      "signature": "taskLevel(expectations: readonly Expectation[]): 'L1' | 'L2'"
+    }
+  ],
   "reverse_calls": [
     "src/application/claim_conflict.ts#collectActiveClaims",
     "src/application/design/board/pool.ts#listPool",

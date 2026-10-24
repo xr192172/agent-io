@@ -227,6 +227,78 @@
       "to": "src/infrastructure/parse/import_resolve.ts#literalCandidates"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "IMPORT_EXTS",
+      "kind": "const",
+      "signature": "const IMPORT_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.mts', '.…"
+    },
+    {
+      "name": "INDEX_FILES",
+      "kind": "const",
+      "signature": "const INDEX_FILES = ['index.ts', 'index.tsx', 'index.js', 'index.jsx'] as const"
+    },
+    {
+      "name": "IMPORT_EXT_SET",
+      "kind": "const",
+      "signature": "const IMPORT_EXT_SET = new Set<string>(IMPORT_EXTS)"
+    },
+    {
+      "name": "ResolvePathOptions",
+      "kind": "interface",
+      "signature": "ResolvePathOptions()"
+    },
+    {
+      "name": "CompletionStrategy",
+      "kind": "type",
+      "signature": "CompletionStrategy()"
+    },
+    {
+      "name": "CompletionInput",
+      "kind": "interface",
+      "signature": "CompletionInput()"
+    },
+    {
+      "name": "ProjectImportLayer",
+      "kind": "type",
+      "signature": "ProjectImportLayer()"
+    },
+    {
+      "name": "ProjectImportHit",
+      "kind": "interface",
+      "signature": "ProjectImportHit()"
+    },
+    {
+      "name": "ProjectImportOptions",
+      "kind": "type",
+      "signature": "ProjectImportOptions()"
+    },
+    {
+      "name": "completionCandidates",
+      "kind": "function",
+      "signature": "completionCandidates(base: string, options: ResolvePathOptions = {}): string[]"
+    },
+    {
+      "name": "importPathCandidates",
+      "kind": "function",
+      "signature": "importPathCandidates(fromRel: string,\n  source: string,\n  options: ResolvePathOptions = {},): string[]"
+    },
+    {
+      "name": "resolveImportPath",
+      "kind": "function",
+      "signature": "resolveImportPath(fromRel: string,\n  source: string,\n  exists: (relPath: string) => boolean,\n  options: ResolvePathOptions = {},): string | null"
+    },
+    {
+      "name": "resolveExistingPath",
+      "kind": "function",
+      "signature": "resolveExistingPath(base: string,\n  exists: (candidate: string) => boolean,\n  options: ResolvePathOptions = {},): string | null"
+    },
+    {
+      "name": "resolveProjectImport",
+      "kind": "function",
+      "signature": "resolveProjectImport(fromRel: string,\n  source: string,\n  rels: ReadonlySet<string>,\n  options?: ProjectImportOptions,): ProjectImportHit"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/health/index.ts#resolveImportFile",
     "src/infrastructure/analysis/impact/index.ts#resolveImportTarget",

@@ -178,6 +178,58 @@
       "to": "src/presentation/mcp/tool_warnings.ts#warningBlock"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ToolWarning",
+      "kind": "interface",
+      "signature": "ToolWarning()"
+    },
+    {
+      "name": "WARNINGS_MARKER",
+      "kind": "const",
+      "signature": "const WARNINGS_MARKER = '---WARNINGS---'"
+    },
+    {
+      "name": "WireWarning",
+      "kind": "interface",
+      "signature": "WireWarning()"
+    },
+    {
+      "name": "delivered",
+      "kind": "const",
+      "signature": "const delivered = new Set<string>()"
+    },
+    {
+      "name": "WarningEmission",
+      "kind": "interface",
+      "signature": "WarningEmission()"
+    },
+    {
+      "name": "resetWarningDelivery",
+      "kind": "function",
+      "signature": "resetWarningDelivery(): void"
+    },
+    {
+      "name": "tierWarnings",
+      "kind": "function",
+      "signature": "tierWarnings(ws: readonly ToolWarning[], ledger: Set<string> = delivered): WireWarning[]"
+    },
+    {
+      "name": "renderWarningText",
+      "kind": "function",
+      "signature": "renderWarningText(ws: readonly WireWarning[]): string"
+    },
+    {
+      "name": "warningBlock",
+      "kind": "function",
+      "signature": "warningBlock(ws: readonly WireWarning[]): string"
+    },
+    {
+      "name": "emitWarnings",
+      "kind": "function",
+      "signature": "emitWarnings(produced: ReadonlyArray<ToolWarning | null | undefined>): WarningEmission"
+    }
+  ],
   "reverse_calls": [
     "src/presentation/mcp/server_registry.ts#invokeTool",
     "src/presentation/mcp/tool_warnings.ts#emitWarnings",

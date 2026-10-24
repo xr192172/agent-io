@@ -275,6 +275,33 @@
       "to": "src/infrastructure/storage.ts#getDesignSheet"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DriftRed",
+      "kind": "interface",
+      "signature": "DriftRed()"
+    },
+    {
+      "name": "DriftCard",
+      "kind": "interface",
+      "signature": "DriftCard()"
+    },
+    {
+      "name": "DriftReport",
+      "kind": "interface",
+      "signature": "DriftReport()"
+    },
+    {
+      "name": "PatrolOptions",
+      "kind": "interface",
+      "signature": "PatrolOptions()"
+    },
+    {
+      "name": "patrolDrift",
+      "kind": "function",
+      "signature": "patrolDrift(feature: string, opts: PatrolOptions): Promise<DriftReport>"
+    }
+  ],
   "requirements": [
     {
       "kind": "call-exists",

@@ -263,6 +263,83 @@
       "to": "src/infrastructure/analysis/observe/go_instrument.ts#vendorGoProbe"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "GoSite",
+      "kind": "interface",
+      "signature": "GoSite()"
+    },
+    {
+      "name": "GoFileResult",
+      "kind": "interface",
+      "signature": "GoFileResult()"
+    },
+    {
+      "name": "GoInstrumentOut",
+      "kind": "interface",
+      "signature": "GoInstrumentOut()"
+    },
+    {
+      "name": "GoInstrumentOptions",
+      "kind": "interface",
+      "signature": "GoInstrumentOptions()"
+    },
+    {
+      "name": "VENDORED_PROBE_DIR",
+      "kind": "const",
+      "signature": "const VENDORED_PROBE_DIR = 'internal/camprobe'"
+    },
+    {
+      "name": "GO_OBSERVE_MODULE",
+      "kind": "const",
+      "signature": "const GO_OBSERVE_MODULE = 'github.com/xr192172/agent-io/observe-lang-go'"
+    },
+    {
+      "name": "GoDepsCheck",
+      "kind": "interface",
+      "signature": "GoDepsCheck()"
+    },
+    {
+      "name": "isGoProject",
+      "kind": "function",
+      "signature": "isGoProject(root: string): boolean"
+    },
+    {
+      "name": "goObserveDir",
+      "kind": "function",
+      "signature": "goObserveDir(): string"
+    },
+    {
+      "name": "readGoModuleName",
+      "kind": "function",
+      "signature": "readGoModuleName(root: string): string | null"
+    },
+    {
+      "name": "vendorGoProbe",
+      "kind": "function",
+      "signature": "vendorGoProbe(root: string): string"
+    },
+    {
+      "name": "unvendorGoProbe",
+      "kind": "function",
+      "signature": "unvendorGoProbe(root: string): boolean"
+    },
+    {
+      "name": "instrumentGoProject",
+      "kind": "function",
+      "signature": "instrumentGoProject(root: string, opts: GoInstrumentOptions = {}): Promise<GoInstrumentOut>"
+    },
+    {
+      "name": "restoreGoProject",
+      "kind": "function",
+      "signature": "restoreGoProject(root: string): Promise<number>"
+    },
+    {
+      "name": "goReportSummary",
+      "kind": "function",
+      "signature": "goReportSummary(rep: GoInstrumentOut): { totalSites: number; instrumented: number; skipped: number; errors: number }"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/observe/go_instrument.ts#instrumentGoProject",
     "src/infrastructure/analysis/observe/go_instrument.ts#isGoProject",

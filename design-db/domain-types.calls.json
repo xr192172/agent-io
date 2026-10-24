@@ -492,5 +492,52 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "ThemeConfig",
+      "kind": "interface",
+      "signature": "ThemeConfig()"
+    },
+    {
+      "name": "ThemeId",
+      "kind": "type",
+      "signature": "ThemeId()"
+    },
+    {
+      "name": "ArchLayer",
+      "kind": "interface",
+      "signature": "ArchLayer()"
+    },
+    {
+      "name": "FeatureCommunity",
+      "kind": "interface",
+      "signature": "FeatureCommunity()"
+    },
+    {
+      "name": "FeatureNode",
+      "kind": "interface",
+      "signature": "FeatureNode()"
+    },
+    {
+      "name": "CommunityDirDiffEntry",
+      "kind": "interface",
+      "signature": "CommunityDirDiffEntry()"
+    },
+    {
+      "name": "FeatureTree",
+      "kind": "interface",
+      "signature": "FeatureTree()"
+    },
+    {
+      "name": "DesignDSL",
+      "kind": "interface",
+      "signature": "DesignDSL()"
+    },
+    {
+      "name": "UserNode",
+      "kind": "interface",
+      "signature": "UserNode()"
+    }
+  ]
 }

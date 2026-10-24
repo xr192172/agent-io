@@ -102,6 +102,68 @@
       "to": "src/infrastructure/parse/loader.ts#loadLanguage"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "Language",
+      "kind": "type",
+      "signature": "Language()"
+    },
+    {
+      "name": "ParserInstance",
+      "kind": "type",
+      "signature": "ParserInstance()"
+    },
+    {
+      "name": "parserCache",
+      "kind": "const",
+      "signature": "const parserCache = new Map<string, ParserInstance>()"
+    },
+    {
+      "name": "failedPks",
+      "kind": "const",
+      "signature": "const failedPks = new Set<string>()"
+    },
+    {
+      "name": "failedWarned",
+      "kind": "const",
+      "signature": "const failedWarned = new Set<string>()"
+    },
+    {
+      "name": "FAIL_RETRY_MS",
+      "kind": "const",
+      "signature": "const FAIL_RETRY_MS = 30_000"
+    },
+    {
+      "name": "failAt",
+      "kind": "const",
+      "signature": "const failAt = new Map<string, number>()"
+    },
+    {
+      "name": "isTransient",
+      "kind": "const",
+      "signature": "const isTransient = (e: unknown): boolean => (e as { code?: string })?.code =…"
+    },
+    {
+      "name": "loadLanguage",
+      "kind": "function",
+      "signature": "loadLanguage(lang: LanguageEntry): Promise<Language | null>"
+    },
+    {
+      "name": "getParser",
+      "kind": "function",
+      "signature": "getParser(ext: string, lang: LanguageEntry): Promise<ParserInstance | null>"
+    },
+    {
+      "name": "getParserSync",
+      "kind": "function",
+      "signature": "getParserSync(ext: string): ParserInstance | null"
+    },
+    {
+      "name": "clearLoaderCache",
+      "kind": "function",
+      "signature": "clearLoaderCache(): void"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/rename_symbol/languages/c.ts#analyzeCLanguage",
     "src/infrastructure/analysis/rename_symbol/languages/go.ts#analyzeGoSource",

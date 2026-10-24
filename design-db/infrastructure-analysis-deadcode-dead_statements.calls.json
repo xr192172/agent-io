@@ -223,6 +223,53 @@
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DeadStatementRun",
+      "kind": "interface",
+      "signature": "DeadStatementRun()"
+    },
+    {
+      "name": "DeadStatementReport",
+      "kind": "interface",
+      "signature": "DeadStatementReport()"
+    },
+    {
+      "name": "TS_TERMINAL",
+      "kind": "const",
+      "signature": "const TS_TERMINAL = new Set(['return_statement', 'throw_statement', 'break_st…"
+    },
+    {
+      "name": "GO_TERMINAL",
+      "kind": "const",
+      "signature": "const GO_TERMINAL = new Set(['return_statement', 'break_statement', 'continue…"
+    },
+    {
+      "name": "BLOCK_TYPES",
+      "kind": "const",
+      "signature": "const BLOCK_TYPES = new Set(['block', 'statement_block'])"
+    },
+    {
+      "name": "SRC_RE",
+      "kind": "const",
+      "signature": "const SRC_RE = /\\.(go|ts|tsx|js|jsx|mjs|cjs)$/"
+    },
+    {
+      "name": "detectUnreachableRunsInSource",
+      "kind": "function",
+      "signature": "detectUnreachableRunsInSource(src: string, ext: string): Promise<DeadStatementRun[]>"
+    },
+    {
+      "name": "flagDeadStatements",
+      "kind": "function",
+      "signature": "flagDeadStatements(opts: {\n  project_dir: string;\n  /** 显式文件清单（相对 project_dir 或绝对路径）；缺省递归扫全部 TS/Go 源 */\n  files?: string[];\n}): Promise<DeadStatementReport[]>"
+    },
+    {
+      "name": "applyReachabilityRuns",
+      "kind": "function",
+      "signature": "applyReachabilityRuns(src: string, runs: DeadStatementRun[]): { removed: number; changed: boolean; output: string }"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/pipeline/refactor_pipeline.ts#computeDeadStatementsPlan",
     "src/infrastructure/analysis/deadcode/dead_statements.ts#collectDeclaredNames",

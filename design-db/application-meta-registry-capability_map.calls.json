@@ -604,6 +604,208 @@
       "to": "src/infrastructure/storage.ts#getDataHome"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "LANE_IDS",
+      "kind": "const",
+      "signature": "const LANE_IDS = ['design', 'refactor', 'observe', 'harvest', 'cross', 'me…"
+    },
+    {
+      "name": "LaneId",
+      "kind": "type",
+      "signature": "LaneId()"
+    },
+    {
+      "name": "ToolCatalogEntry",
+      "kind": "interface",
+      "signature": "ToolCatalogEntry()"
+    },
+    {
+      "name": "LaneTool",
+      "kind": "interface",
+      "signature": "LaneTool()"
+    },
+    {
+      "name": "Lane",
+      "kind": "interface",
+      "signature": "Lane()"
+    },
+    {
+      "name": "LaneAssign",
+      "kind": "interface",
+      "signature": "LaneAssign()"
+    },
+    {
+      "name": "LANE_META",
+      "kind": "const",
+      "signature": "const LANE_META = [ { id: 'design', label: '设计 / 活文档', desc: 'DSL 读写、featur…"
+    },
+    {
+      "name": "WHEN_OVERRIDES",
+      "kind": "const",
+      "signature": "const WHEN_OVERRIDES = { // ★ T202：与 `diagnose` 的分工是**本工具最容易选错的地方** ⇒ 必写。 diagno…"
+    },
+    {
+      "name": "_toolDefs",
+      "kind": "const",
+      "signature": "const _toolDefs = null"
+    },
+    {
+      "name": "_laneOf",
+      "kind": "const",
+      "signature": "const _laneOf = null"
+    },
+    {
+      "name": "DomainNavView",
+      "kind": "interface",
+      "signature": "DomainNavView()"
+    },
+    {
+      "name": "_domains",
+      "kind": "const",
+      "signature": "const _domains = null"
+    },
+    {
+      "name": "BuiltLanes",
+      "kind": "interface",
+      "signature": "BuiltLanes()"
+    },
+    {
+      "name": "CapabilityMapInput",
+      "kind": "interface",
+      "signature": "CapabilityMapInput()"
+    },
+    {
+      "name": "InputPath",
+      "kind": "interface",
+      "signature": "InputPath()"
+    },
+    {
+      "name": "ChainHopVerdict",
+      "kind": "interface",
+      "signature": "ChainHopVerdict()"
+    },
+    {
+      "name": "bindToolDefs",
+      "kind": "function",
+      "signature": "bindToolDefs(defs: ToolDef[]): void"
+    },
+    {
+      "name": "listToolDefs",
+      "kind": "function",
+      "signature": "listToolDefs(): ToolDef[]"
+    },
+    {
+      "name": "bindLaneOf",
+      "kind": "function",
+      "signature": "bindLaneOf(table: Readonly<Record<string, LaneAssign>>): void"
+    },
+    {
+      "name": "resetLaneOfForTest",
+      "kind": "function",
+      "signature": "resetLaneOfForTest(): void"
+    },
+    {
+      "name": "bindDomains",
+      "kind": "function",
+      "signature": "bindDomains(domains: readonly DomainNavView[] | null): void"
+    },
+    {
+      "name": "listDomains",
+      "kind": "function",
+      "signature": "listDomains(): readonly DomainNavView[] | null"
+    },
+    {
+      "name": "resetDomainsForTest",
+      "kind": "function",
+      "signature": "resetDomainsForTest(): void"
+    },
+    {
+      "name": "domainsOfLane",
+      "kind": "function",
+      "signature": "domainsOfLane(lane: LaneId, all: readonly DomainNavView[]): DomainNavView[]"
+    },
+    {
+      "name": "renderDomainText",
+      "kind": "function",
+      "signature": "renderDomainText(lanes: readonly Lane[], all: readonly DomainNavView[] | null, why = ''): string"
+    },
+    {
+      "name": "buildLanes",
+      "kind": "function",
+      "signature": "buildLanes(catalog: readonly ToolCatalogEntry[],\n  assign?: Readonly<Record<string, LaneAssign>>,): BuiltLanes"
+    },
+    {
+      "name": "describeForNav",
+      "kind": "function",
+      "signature": "describeForNav(t: ToolCatalogEntry, max = 60): string"
+    },
+    {
+      "name": "validateLanes",
+      "kind": "function",
+      "signature": "validateLanes(catalog: readonly ToolCatalogEntry[],\n  assign?: Readonly<Record<string, LaneAssign>>,): string[]"
+    },
+    {
+      "name": "laneMaintenanceReport",
+      "kind": "function",
+      "signature": "laneMaintenanceReport(catalog: readonly ToolCatalogEntry[],\n  assign?: Readonly<Record<string, LaneAssign>>,): {\n  derived: string[];\n  curated: number;\n  unassigned: string[];\n  stale: string[];\n  staleWhen: string[];\n}"
+    },
+    {
+      "name": "renderLaneText",
+      "kind": "function",
+      "signature": "renderLaneText(lanes: readonly Lane[], laneIds: readonly LaneId[] = []): string"
+    },
+    {
+      "name": "renderUnassigned",
+      "kind": "function",
+      "signature": "renderUnassigned(unassigned: readonly ToolCatalogEntry[]): string"
+    },
+    {
+      "name": "collectRequiredKeys",
+      "kind": "function",
+      "signature": "collectRequiredKeys(schema: unknown): string[]"
+    },
+    {
+      "name": "collectInputKeys",
+      "kind": "function",
+      "signature": "collectInputKeys(schema: unknown): string[]"
+    },
+    {
+      "name": "collectInputPaths",
+      "kind": "function",
+      "signature": "collectInputPaths(schema: unknown): InputPath[]"
+    },
+    {
+      "name": "declaredRequiredMembersOf",
+      "kind": "function",
+      "signature": "declaredRequiredMembersOf(paths: readonly InputPath[]): InputPath[]"
+    },
+    {
+      "name": "catalogOf",
+      "kind": "function",
+      "signature": "catalogOf(defs: readonly ToolDef[]): ToolCatalogEntry[]"
+    },
+    {
+      "name": "objectInputsOf",
+      "kind": "function",
+      "signature": "objectInputsOf(name: string, catalog: readonly ToolCatalogEntry[]): readonly string[]"
+    },
+    {
+      "name": "chainVerdictsOf",
+      "kind": "function",
+      "signature": "chainVerdictsOf(chain: Chain, catalog: readonly ToolCatalogEntry[]): readonly ChainHopVerdict[]"
+    },
+    {
+      "name": "renderChainVerdicts",
+      "kind": "function",
+      "signature": "renderChainVerdicts(catalog: readonly ToolCatalogEntry[]): string"
+    },
+    {
+      "name": "makeCapabilityMapHandler",
+      "kind": "function",
+      "signature": "makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogEntry[])"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/first_hop_args.ts#buildStart",
     "src/application/meta/explore/first_hop_args.ts#firstHopArgs",

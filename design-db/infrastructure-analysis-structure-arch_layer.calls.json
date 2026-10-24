@@ -302,6 +302,38 @@
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ArchLayerInput",
+      "kind": "interface",
+      "signature": "ArchLayerInput()"
+    },
+    {
+      "name": "ArchLayerFileAssign",
+      "kind": "interface",
+      "signature": "ArchLayerFileAssign()"
+    },
+    {
+      "name": "LayerMatrixRow",
+      "kind": "interface",
+      "signature": "LayerMatrixRow()"
+    },
+    {
+      "name": "ArchLayerResult",
+      "kind": "interface",
+      "signature": "ArchLayerResult()"
+    },
+    {
+      "name": "scanImportEdges",
+      "kind": "function",
+      "signature": "scanImportEdges(files: Array<{ path: string; src: string }>): ImportEdge[]"
+    },
+    {
+      "name": "archLayer",
+      "kind": "function",
+      "signature": "archLayer(input: ArchLayerInput): Promise<ArchLayerResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/explore_code.ts#exploreCode",
     "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",

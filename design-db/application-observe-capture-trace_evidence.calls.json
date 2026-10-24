@@ -172,6 +172,48 @@
       "to": "src/infrastructure/analysis/observe/run_trace_replay.ts#loadRunTracesFromText"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "TraceRecord",
+      "kind": "interface",
+      "signature": "TraceRecord()"
+    },
+    {
+      "name": "ObservedTrace",
+      "kind": "interface",
+      "signature": "ObservedTrace()"
+    },
+    {
+      "name": "TraceEvidenceResult",
+      "kind": "type",
+      "signature": "TraceEvidenceResult()"
+    },
+    {
+      "name": "recordsFromEvents",
+      "kind": "function",
+      "signature": "recordsFromEvents(jsonl: string): TraceRecord[]"
+    },
+    {
+      "name": "loadTraceRecords",
+      "kind": "function",
+      "signature": "loadTraceRecords(file: string): TraceRecord[]"
+    },
+    {
+      "name": "loadObservedTraceRecords",
+      "kind": "function",
+      "signature": "loadObservedTraceRecords(cwd = process.cwd()): ObservedTrace"
+    },
+    {
+      "name": "resolveTraceEvidence",
+      "kind": "function",
+      "signature": "resolveTraceEvidence(records: TraceRecord[],\n  ev: ReasonEvidenceRef,): TraceEvidenceResult"
+    },
+    {
+      "name": "buildTraceResolver",
+      "kind": "function",
+      "signature": "buildTraceResolver(records: TraceRecord[]): Pick<\n  ReasonEvidenceResolver,\n  'exists' | 'traceRefs'\n>"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/capture/trace_evidence.ts#buildTraceResolver",
     "src/application/observe/capture/trace_evidence.ts#flatten",

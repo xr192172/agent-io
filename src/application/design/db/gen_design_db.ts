@@ -401,6 +401,28 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
     set.add(norm(e.source));
   }
 
+  // ★ 2026-10-24（裁 A 落地）：**期望段上投影** —— 设计册的符号期望（无行号）与现状并列，
+  //   gap 一眼可见。意图的源在设计册，gen-db 幂等重生成 ⇒ 不需要锁（VISION §冲突已裁：calls 只读、dep 已退役）。
+  const expectedByPath = new Map<string, Array<{ name: string; kind: string; signature?: string }>>();
+  for (const f of fs.readdirSync(path.join(root, '.agent-io', 'design'))) {
+    if (!f.endsWith('.dsl.json')) continue;
+    const book = JSON.parse(fs.readFileSync(path.join(root, '.agent-io', 'design', f), 'utf8')) as {
+      semantic?: { files?: Array<{ path?: string; symbols?: Array<{ name: string; kind: string; signature?: string }> }> };
+    };
+    for (const sf of book.semantic?.files ?? []) {
+      if (!sf.path) continue;
+      const key = norm(sf.path);
+      if (!expectedByPath.has(key)) expectedByPath.set(key, []);
+      const arr = expectedByPath.get(key)!;
+      const seen = new Set(arr.map((s) => s.name));
+      for (const s of sf.symbols ?? []) {
+        if (seen.has(s.name)) continue;
+        seen.add(s.name);
+        arr.push({ name: s.name, kind: s.kind, ...(s.signature ? { signature: s.signature } : {}) });
+      }
+    }
+  }
+
   try {
     for (const item of plan.items.values()) {
       const rel = item.path;
@@ -458,6 +480,7 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
         symbols,
         imports,
         calls,
+        ...(expectedByPath.get(norm(rel))?.length ? { expected_symbols: expectedByPath.get(norm(rel)) } : {}),
         ...(reverseCalls.length ? { reverse_calls: reverseCalls } : {}),
         ...(requirementsOf(item).length ? { requirements: requirementsOf(item) } : {}),
         ...(requirementsCalls.length ? { requirements_calls: requirementsCalls } : {}),

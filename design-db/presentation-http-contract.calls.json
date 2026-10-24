@@ -71,5 +71,67 @@
       "kind": "package"
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "RESPONSE_SCHEMA_AT",
+      "kind": "const",
+      "signature": "const RESPONSE_SCHEMA_AT = '_api'"
+    },
+    {
+      "name": "API_VERSION",
+      "kind": "const",
+      "signature": "const API_VERSION = 1"
+    },
+    {
+      "name": "apiVersion",
+      "kind": "const",
+      "signature": "const apiVersion = z.object({ [RESPONSE_SCHEMA_AT]: z.literal(API_VERSION) })"
+    },
+    {
+      "name": "featureItem",
+      "kind": "const",
+      "signature": "const featureItem = z .object({ feature: z.string(), title: z.string().option…"
+    },
+    {
+      "name": "featuresResp",
+      "kind": "const",
+      "signature": "const featuresResp = apiVersion.extend({ features: z.array(featureItem) }).pas…"
+    },
+    {
+      "name": "saveResp",
+      "kind": "const",
+      "signature": "const saveResp = apiVersion .extend({ success: z.literal(true), message: z…"
+    },
+    {
+      "name": "overviewResp",
+      "kind": "const",
+      "signature": "const overviewResp = apiVersion .extend({ success: z.literal(true), feature: z…"
+    },
+    {
+      "name": "mindMapResp",
+      "kind": "const",
+      "signature": "const mindMapResp = apiVersion .extend({ success: z.literal(true), mind_map: …"
+    },
+    {
+      "name": "archifyDemoItem",
+      "kind": "const",
+      "signature": "const archifyDemoItem = z .object({ type: z.enum(['architecture', 'workflow', 'se…"
+    },
+    {
+      "name": "archifyDemoResp",
+      "kind": "const",
+      "signature": "const archifyDemoResp = apiVersion .extend({ delivered: z.boolean(), manifest: z.…"
+    },
+    {
+      "name": "schemas",
+      "kind": "const",
+      "signature": "const schemas = { features: featuresResp, save: saveResp, overview: overv…"
+    },
+    {
+      "name": "ResponseSchemaKey",
+      "kind": "type",
+      "signature": "ResponseSchemaKey()"
+    }
+  ]
 }

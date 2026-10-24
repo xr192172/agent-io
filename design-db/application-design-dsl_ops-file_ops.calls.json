@@ -233,6 +233,38 @@
       "to": "src/infrastructure/storage_overlay.ts#dropLifecycleFromOverlay"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "AddFileInput",
+      "kind": "interface",
+      "signature": "AddFileInput()"
+    },
+    {
+      "name": "UpdateFileInput",
+      "kind": "interface",
+      "signature": "UpdateFileInput()"
+    },
+    {
+      "name": "DeleteFileInput",
+      "kind": "interface",
+      "signature": "DeleteFileInput()"
+    },
+    {
+      "name": "addFile",
+      "kind": "function",
+      "signature": "addFile(input: AddFileInput): EditResult"
+    },
+    {
+      "name": "updateFile",
+      "kind": "function",
+      "signature": "updateFile(input: UpdateFileInput): EditResult"
+    },
+    {
+      "name": "deleteFile",
+      "kind": "function",
+      "signature": "deleteFile(input: DeleteFileInput): EditResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/update_feature.ts#applyFileOp"
   ]

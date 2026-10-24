@@ -405,6 +405,108 @@
       "to": "src/infrastructure/rules/rule_tokens.ts#splitLines"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ApplyState",
+      "kind": "type",
+      "signature": "ApplyState()"
+    },
+    {
+      "name": "FileRuleOutcome",
+      "kind": "interface",
+      "signature": "FileRuleOutcome()"
+    },
+    {
+      "name": "SKIP_DIRS",
+      "kind": "const",
+      "signature": "const SKIP_DIRS = skipDirSet(['third_party'])"
+    },
+    {
+      "name": "CODE_EXT",
+      "kind": "const",
+      "signature": "const CODE_EXT = new Set<string>(SOURCE_EXTS)"
+    },
+    {
+      "name": "ApplySummary",
+      "kind": "interface",
+      "signature": "ApplySummary()"
+    },
+    {
+      "name": "BaselineEntry",
+      "kind": "interface",
+      "signature": "BaselineEntry()"
+    },
+    {
+      "name": "Baseline",
+      "kind": "interface",
+      "signature": "Baseline()"
+    },
+    {
+      "name": "entryKey",
+      "kind": "const",
+      "signature": "const entryKey = (e: BaselineEntry): string => `${e.ruleId}\\u0000${e.file}`"
+    },
+    {
+      "name": "RatchetDelta",
+      "kind": "interface",
+      "signature": "RatchetDelta()"
+    },
+    {
+      "name": "FixtureRunResult",
+      "kind": "interface",
+      "signature": "FixtureRunResult()"
+    },
+    {
+      "name": "commentStyleFor",
+      "kind": "function",
+      "signature": "commentStyleFor(file: string): string"
+    },
+    {
+      "name": "insertTodo",
+      "kind": "function",
+      "signature": "insertTodo(content: string, line: number, ruleId: string, reason: string, style: string): string"
+    },
+    {
+      "name": "applyRuleToContent",
+      "kind": "function",
+      "signature": "applyRuleToContent(file: string,\n  content: string,\n  rule: Rule,\n  opts: { todo?: boolean } = {},): FileRuleOutcome"
+    },
+    {
+      "name": "collectRuleTargets",
+      "kind": "function",
+      "signature": "collectRuleTargets(root: string, opts: { glob?: string; maxFiles?: number } = {}): string[]"
+    },
+    {
+      "name": "applyRulesToFiles",
+      "kind": "function",
+      "signature": "applyRulesToFiles(root: string,\n  files: string[],\n  rules: Rule[],\n  opts: { todo?: boolean; fileContents?: (rel: string) => string | null } = {},): ApplySummary"
+    },
+    {
+      "name": "loadBaseline",
+      "kind": "function",
+      "signature": "loadBaseline(root: string): Baseline | null"
+    },
+    {
+      "name": "writeBaseline",
+      "kind": "function",
+      "signature": "writeBaseline(root: string, summary: ApplySummary): Baseline"
+    },
+    {
+      "name": "ratchetDelta",
+      "kind": "function",
+      "signature": "ratchetDelta(summary: ApplySummary, baseline: Baseline | null): RatchetDelta[]"
+    },
+    {
+      "name": "runFixtures",
+      "kind": "function",
+      "signature": "runFixtures(rule: Rule): FixtureRunResult"
+    },
+    {
+      "name": "runAllFixtures",
+      "kind": "function",
+      "signature": "runAllFixtures(root: string): { results: FixtureRunResult[]; total: number; failed: number }"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/rule_library/rule_apply.ts#applyRuleToContent",
     "src/application/refactor/rule_library/rule_apply.ts#applyRulesToFiles",

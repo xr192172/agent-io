@@ -128,6 +128,43 @@
       "to": "src/infrastructure/analysis/observe/snapshot_needle.ts#defaultSignalsFor"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "NeedleSignals",
+      "kind": "interface",
+      "signature": "NeedleSignals()"
+    },
+    {
+      "name": "RepresentativeJudge",
+      "kind": "type",
+      "signature": "RepresentativeJudge()"
+    },
+    {
+      "name": "SamplingNeedle",
+      "kind": "interface",
+      "signature": "SamplingNeedle()"
+    },
+    {
+      "name": "NEEDLE_MARKER",
+      "kind": "const",
+      "signature": "const NEEDLE_MARKER = /\\[\\[KEEP\\]\\]|\\[\\[keep\\]\\]/"
+    },
+    {
+      "name": "ERROR_SIGNAL",
+      "kind": "const",
+      "signature": "const ERROR_SIGNAL = /error|失败|exception|panic|超时/i"
+    },
+    {
+      "name": "defaultSignalsFor",
+      "kind": "const",
+      "signature": "const defaultSignalsFor = (t: RunTrace): string[] => { const sig: string[] = []; co…"
+    },
+    {
+      "name": "sampleNeedles",
+      "kind": "function",
+      "signature": "sampleNeedles(traces: RunTrace[],\n  judge: RepresentativeJudge = defaultJudge,): { kept: SamplingNeedle[]; dropped: number }"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/capture/observe_trace.ts#loadNeedles",
     "src/infrastructure/analysis/observe/snapshot_needle.ts#collectTexts",

@@ -234,6 +234,113 @@
       "to": "src/presentation/cli/cli.ts#die"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "argv",
+      "kind": "const",
+      "signature": "const argv = process.argv.slice(2)"
+    },
+    {
+      "name": "cmd",
+      "kind": "const",
+      "signature": "const cmd = argv[0]"
+    },
+    {
+      "name": "asJson",
+      "kind": "const",
+      "signature": "const asJson = argv.includes('--json')"
+    },
+    {
+      "name": "w",
+      "kind": "const",
+      "signature": "const w = Math.max(...TOOL_DEFS.map((d) => d.name.length))"
+    },
+    {
+      "name": "found",
+      "kind": "const",
+      "signature": "const found = TOOL_DEFS.find((d) => d.name === cmd)"
+    },
+    {
+      "name": "like",
+      "kind": "const",
+      "signature": "const like = TOOL_DEFS.map((d) => d.name).filter((n) => n.includes(cmd…"
+    },
+    {
+      "name": "def",
+      "kind": "const",
+      "signature": "const def = found"
+    },
+    {
+      "name": "ZodLike",
+      "kind": "interface",
+      "signature": "ZodLike()"
+    },
+    {
+      "name": "ZodFieldMeta",
+      "kind": "type",
+      "signature": "ZodFieldMeta()"
+    },
+    {
+      "name": "fieldDesc",
+      "kind": "const",
+      "signature": "const fieldDesc = (s: ZodFieldMeta): string => s.description ?? s._def?.des…"
+    },
+    {
+      "name": "fieldType",
+      "kind": "const",
+      "signature": "const fieldType = (s: ZodFieldMeta): string => String(s._def?.type ?? s._de…"
+    },
+    {
+      "name": "schema",
+      "kind": "const",
+      "signature": "const schema = (def.inputSchema ?? {}) as Record<string, ZodFieldMeta>"
+    },
+    {
+      "name": "rows",
+      "kind": "const",
+      "signature": "const rows = Object.entries(schema).map(([k, s]) => ({ k, required: s.…"
+    },
+    {
+      "name": "fmt",
+      "kind": "const",
+      "signature": "const fmt = (r: (typeof rows)[number]) => ` ${r.required ? '*' : ' '}…"
+    },
+    {
+      "name": "req",
+      "kind": "const",
+      "signature": "const req = rows.filter((r) => r.required)"
+    },
+    {
+      "name": "opt",
+      "kind": "const",
+      "signature": "const opt = rows.filter((r) => !r.required)"
+    },
+    {
+      "name": "args",
+      "kind": "const",
+      "signature": "const args = "
+    },
+    {
+      "name": "r",
+      "kind": "const",
+      "signature": "const r = await invokeTool(def, args)"
+    },
+    {
+      "name": "outText",
+      "kind": "const",
+      "signature": "const outText = r.text"
+    },
+    {
+      "name": "miss",
+      "kind": "const",
+      "signature": "const miss = /缺参数\\s*\"([^\"]+)\"/.exec(outText)"
+    },
+    {
+      "name": "keyList",
+      "kind": "const",
+      "signature": "const keyList = (wantReq: boolean) => Object.entries(schema) .filter(([, …"
+    }
+  ],
   "reverse_calls": [
     "src/presentation/cli/cli.ts#coerceKeyValues",
     "src/presentation/cli/cli.ts#readArgs"

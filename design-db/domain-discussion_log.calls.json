@@ -124,6 +124,68 @@
       "to": "src/domain/discussion_log.ts#matchedExpandTriggers"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "MICRO_KEYS",
+      "kind": "const",
+      "signature": "const MICRO_KEYS = ['micro', 'open_count'] as const"
+    },
+    {
+      "name": "MicroKey",
+      "kind": "type",
+      "signature": "MicroKey()"
+    },
+    {
+      "name": "EXPAND_ONLY_FIELDS",
+      "kind": "const",
+      "signature": "const EXPAND_ONLY_FIELDS = ['user_quote', 'conclusion', 'decided_at', 'supersedes'] …"
+    },
+    {
+      "name": "ExpandOnlyField",
+      "kind": "type",
+      "signature": "ExpandOnlyField()"
+    },
+    {
+      "name": "DiscussionMicro",
+      "kind": "interface",
+      "signature": "DiscussionMicro()"
+    },
+    {
+      "name": "ExpandTrigger",
+      "kind": "type",
+      "signature": "ExpandTrigger()"
+    },
+    {
+      "name": "EXPAND_TRIGGERS",
+      "kind": "const",
+      "signature": "const EXPAND_TRIGGERS = ['claim', 'judge-failed', 'explicit'] as const"
+    },
+    {
+      "name": "ExpandContext",
+      "kind": "interface",
+      "signature": "ExpandContext()"
+    },
+    {
+      "name": "renderMicro",
+      "kind": "function",
+      "signature": "renderMicro(discussion: TaskDiscussion): DiscussionMicro"
+    },
+    {
+      "name": "excludedFields",
+      "kind": "function",
+      "signature": "excludedFields(discussion: TaskDiscussion): ExpandOnlyField[]"
+    },
+    {
+      "name": "matchedExpandTriggers",
+      "kind": "function",
+      "signature": "matchedExpandTriggers(ctx?: ExpandContext | null): ExpandTrigger[]"
+    },
+    {
+      "name": "shouldExpand",
+      "kind": "function",
+      "signature": "shouldExpand(discussion?: TaskDiscussion | null,\n  ctx?: ExpandContext | null,): boolean"
+    }
+  ],
   "reverse_calls": [
     "src/domain/discussion_log.ts#shouldExpand"
   ]

@@ -12,5 +12,12 @@
     }
   ],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "PACK_PINS",
+      "kind": "const",
+      "signature": "const PACK_PINS = { go: '^0.21.2', python: '^0.21.0', java: '^0.23.5', rust…"
+    }
+  ]
 }

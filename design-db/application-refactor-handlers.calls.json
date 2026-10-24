@@ -21,5 +21,12 @@
       "kind": "relative"
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "diffViewsHandler",
+      "kind": "const",
+      "signature": "const diffViewsHandler = wrapData(async (a) => { const r = diffViews({ feature: a.…"
+    }
+  ]
 }

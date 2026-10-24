@@ -345,6 +345,63 @@
       "to": "src/application/observe/capture/memory_observe.ts#snapshotToFile"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "nodeRequire",
+      "kind": "const",
+      "signature": "const nodeRequire = createRequire(import.meta.url)"
+    },
+    {
+      "name": "MB",
+      "kind": "const",
+      "signature": "const MB = (b: number | undefined): number => Math.round((b ?? 0) / …"
+    },
+    {
+      "name": "MemSample",
+      "kind": "interface",
+      "signature": "MemSample()"
+    },
+    {
+      "name": "baselines",
+      "kind": "const",
+      "signature": "const baselines = new Map<string, MemSample>()"
+    },
+    {
+      "name": "CdpClient",
+      "kind": "interface",
+      "signature": "CdpClient()"
+    },
+    {
+      "name": "MEM_EXPR",
+      "kind": "const",
+      "signature": "const MEM_EXPR = `(()=>{const m=process.memoryUsage();const h=process.getH…"
+    },
+    {
+      "name": "MemObserveAction",
+      "kind": "type",
+      "signature": "MemObserveAction()"
+    },
+    {
+      "name": "MemoryObserveInput",
+      "kind": "interface",
+      "signature": "MemoryObserveInput()"
+    },
+    {
+      "name": "sampleRemote",
+      "kind": "function",
+      "signature": "sampleRemote(target: number): Promise<MemSample>"
+    },
+    {
+      "name": "memoryObserveHandler",
+      "kind": "function",
+      "signature": "memoryObserveHandler(input: MemoryObserveInput): Promise<{ message: string; data?: unknown }>"
+    },
+    {
+      "name": "memoryTargetsHandler",
+      "kind": "function",
+      "signature": "memoryTargetsHandler(): Promise<{ message: string; data?: unknown }>"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/capture/memory_observe.ts#connectCdp",
     "src/application/observe/capture/memory_observe.ts#fmt",

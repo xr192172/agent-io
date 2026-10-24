@@ -200,6 +200,23 @@
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "SyncContractsInput",
+      "kind": "interface",
+      "signature": "SyncContractsInput()"
+    },
+    {
+      "name": "SyncContractsResult",
+      "kind": "interface",
+      "signature": "SyncContractsResult()"
+    },
+    {
+      "name": "syncContracts",
+      "kind": "function",
+      "signature": "syncContracts(input: SyncContractsInput): TouchedProduct<SyncContractsResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/registry/sync_contracts.ts#findUnder",
     "src/application/meta/registry/sync_contracts.ts#resolveImplPath",

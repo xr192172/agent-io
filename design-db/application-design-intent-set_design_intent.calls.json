@@ -210,6 +210,28 @@
       "to": "src/infrastructure/storage_overlay.ts#saveOverlay"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DesignEdgeIntentWrite",
+      "kind": "interface",
+      "signature": "DesignEdgeIntentWrite()"
+    },
+    {
+      "name": "SetDesignIntentInput",
+      "kind": "interface",
+      "signature": "SetDesignIntentInput()"
+    },
+    {
+      "name": "SetDesignIntentResult",
+      "kind": "interface",
+      "signature": "SetDesignIntentResult()"
+    },
+    {
+      "name": "setDesignIntent",
+      "kind": "function",
+      "signature": "setDesignIntent(input: SetDesignIntentInput): TouchedProduct<SetDesignIntentResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/intent/set_design_intent.ts#setDesignIntent",
     "src/application/design/workbench/code_workbench.ts#executeDslIntent"

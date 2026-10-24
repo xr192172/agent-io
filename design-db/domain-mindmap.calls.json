@@ -408,5 +408,57 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "MindMapKind",
+      "kind": "type",
+      "signature": "MindMapKind()"
+    },
+    {
+      "name": "TeachStep",
+      "kind": "interface",
+      "signature": "TeachStep()"
+    },
+    {
+      "name": "TeachPin",
+      "kind": "interface",
+      "signature": "TeachPin()"
+    },
+    {
+      "name": "TeachFlowEdge",
+      "kind": "interface",
+      "signature": "TeachFlowEdge()"
+    },
+    {
+      "name": "TeachGap",
+      "kind": "interface",
+      "signature": "TeachGap()"
+    },
+    {
+      "name": "MindMapNode",
+      "kind": "interface",
+      "signature": "MindMapNode()"
+    },
+    {
+      "name": "FeatureDep",
+      "kind": "interface",
+      "signature": "FeatureDep()"
+    },
+    {
+      "name": "SharedCapability",
+      "kind": "interface",
+      "signature": "SharedCapability()"
+    },
+    {
+      "name": "ProposalFeature",
+      "kind": "interface",
+      "signature": "ProposalFeature()"
+    },
+    {
+      "name": "MindMap",
+      "kind": "interface",
+      "signature": "MindMap()"
+    }
+  ]
 }

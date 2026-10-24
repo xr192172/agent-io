@@ -159,6 +159,48 @@
       "to": "src/infrastructure/analysis/refactor/protect.ts#loadRenameProtect"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "RenameProtectRule",
+      "kind": "interface",
+      "signature": "RenameProtectRule()"
+    },
+    {
+      "name": "RenameProtectConfig",
+      "kind": "interface",
+      "signature": "RenameProtectConfig()"
+    },
+    {
+      "name": "EditIn",
+      "kind": "interface",
+      "signature": "EditIn()"
+    },
+    {
+      "name": "CompiledRule",
+      "kind": "interface",
+      "signature": "CompiledRule()"
+    },
+    {
+      "name": "ProtectGuard",
+      "kind": "interface",
+      "signature": "ProtectGuard()"
+    },
+    {
+      "name": "loadRenameProtect",
+      "kind": "function",
+      "signature": "loadRenameProtect(root: string): RenameProtectConfig | null"
+    },
+    {
+      "name": "loadRenameGenerated",
+      "kind": "function",
+      "signature": "loadRenameGenerated(root: string): string[]"
+    },
+    {
+      "name": "createProtectGuard",
+      "kind": "function",
+      "signature": "createProtectGuard(root: string): ProtectGuard"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/rename/rename_file.ts#renameFileCore",
     "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",

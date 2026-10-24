@@ -277,6 +277,88 @@
       "to": "src/infrastructure/analysis/impact/impact_ledger_store.ts#saveLedger"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "LedgerEntryStatus",
+      "kind": "type",
+      "signature": "LedgerEntryStatus()"
+    },
+    {
+      "name": "LedgerEntry",
+      "kind": "interface",
+      "signature": "LedgerEntry()"
+    },
+    {
+      "name": "LedgerFile",
+      "kind": "interface",
+      "signature": "LedgerFile()"
+    },
+    {
+      "name": "ConsumeVerdict",
+      "kind": "interface",
+      "signature": "ConsumeVerdict()"
+    },
+    {
+      "name": "LEDGER_PENDING_TTL_MS",
+      "kind": "const",
+      "signature": "const LEDGER_PENDING_TTL_MS = 24 * 60 * 60 * 1000"
+    },
+    {
+      "name": "LEDGER_CLOSED_CAP",
+      "kind": "const",
+      "signature": "const LEDGER_CLOSED_CAP = 100"
+    },
+    {
+      "name": "idSeq",
+      "kind": "const",
+      "signature": "const idSeq = 0"
+    },
+    {
+      "name": "impactLedgerFile",
+      "kind": "function",
+      "signature": "impactLedgerFile(projectRoot: string): string"
+    },
+    {
+      "name": "loadLedger",
+      "kind": "function",
+      "signature": "loadLedger(projectRoot: string): LedgerEntry[]"
+    },
+    {
+      "name": "saveLedger",
+      "kind": "function",
+      "signature": "saveLedger(projectRoot: string, entries: LedgerEntry[]): void"
+    },
+    {
+      "name": "appendDeclaration",
+      "kind": "function",
+      "signature": "appendDeclaration(projectRoot: string, declaredFiles: string[], expectedFiles: string[]): LedgerEntry"
+    },
+    {
+      "name": "markConsumed",
+      "kind": "function",
+      "signature": "markConsumed(projectRoot: string, verdicts: ConsumeVerdict[]): void"
+    },
+    {
+      "name": "recoverPending",
+      "kind": "function",
+      "signature": "recoverPending(projectRoot: string,\n  excludeIds: Set<string>,\n  now: Date = new Date(),): { entries: LedgerEntry[]; expired: number }"
+    },
+    {
+      "name": "resolveViolation",
+      "kind": "function",
+      "signature": "resolveViolation(projectRoot: string, id: string, reviewer: string, reason: string): LedgerEntry"
+    },
+    {
+      "name": "listLedger",
+      "kind": "function",
+      "signature": "listLedger(projectRoot: string, status?: LedgerEntryStatus | 'all'): LedgerEntry[]"
+    },
+    {
+      "name": "countOpenViolations",
+      "kind": "function",
+      "signature": "countOpenViolations(projectRoot: string): number"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/runtime/watch_project_tool.ts#declareWatch",
     "src/application/observe/runtime/watch_project_tool.ts#doWork",

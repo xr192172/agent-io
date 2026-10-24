@@ -49,6 +49,18 @@
     }
   ],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "LANG_PACKAGES",
+      "kind": "const",
+      "signature": "const LANG_PACKAGES = [ tsPackage, goPackage, pyPackage, csPackage, javaPackage…"
+    },
+    {
+      "name": "findLangPackage",
+      "kind": "function",
+      "signature": "findLangPackage(ext: string): LangPackage | undefined"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/rename_symbol/core.ts#renameSymbolCore"
   ]

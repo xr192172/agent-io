@@ -265,6 +265,23 @@
       "to": "src/application/design/rewrite/symbol_diff.ts#sourceRelOf"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "sourceRelOf",
+      "kind": "function",
+      "signature": "sourceRelOf(dd: Record<string, unknown>): string"
+    },
+    {
+      "name": "diffSymbols",
+      "kind": "function",
+      "signature": "diffSymbols(args: SymbolDiffArgs): Promise<SymbolDiffResult>"
+    },
+    {
+      "name": "uncomparedTotal",
+      "kind": "function",
+      "signature": "uncomparedTotal(uncompared: Map<string, number>): number"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/rewrite/rewrite.ts#noWorkReason",
     "src/application/design/rewrite/rewrite.ts#rewriteSymbols",

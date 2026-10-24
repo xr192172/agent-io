@@ -459,6 +459,88 @@
       "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#dirHasSource"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DeadImportsStepCfg",
+      "kind": "interface",
+      "signature": "DeadImportsStepCfg()"
+    },
+    {
+      "name": "DeadStatementsStepCfg",
+      "kind": "interface",
+      "signature": "DeadStatementsStepCfg()"
+    },
+    {
+      "name": "PackageMigrationStepCfg",
+      "kind": "interface",
+      "signature": "PackageMigrationStepCfg()"
+    },
+    {
+      "name": "FunctionAnnotationStepCfg",
+      "kind": "interface",
+      "signature": "FunctionAnnotationStepCfg()"
+    },
+    {
+      "name": "RefactorStepsCfg",
+      "kind": "interface",
+      "signature": "RefactorStepsCfg()"
+    },
+    {
+      "name": "RefactorStageKind",
+      "kind": "type",
+      "signature": "RefactorStageKind()"
+    },
+    {
+      "name": "PackageMigrationSpec",
+      "kind": "interface",
+      "signature": "PackageMigrationSpec()"
+    },
+    {
+      "name": "FileMove",
+      "kind": "interface",
+      "signature": "FileMove()"
+    },
+    {
+      "name": "RunningChangePlan",
+      "kind": "interface",
+      "signature": "RunningChangePlan()"
+    },
+    {
+      "name": "RefactorStageComputeArgs",
+      "kind": "interface",
+      "signature": "RefactorStageComputeArgs()"
+    },
+    {
+      "name": "RefactorStageExecutor",
+      "kind": "interface",
+      "signature": "RefactorStageExecutor()"
+    },
+    {
+      "name": "LanguageRefactorExecutor",
+      "kind": "interface",
+      "signature": "LanguageRefactorExecutor()"
+    },
+    {
+      "name": "DEFAULT_SKIP",
+      "kind": "const",
+      "signature": "const DEFAULT_SKIP = skipDirSet(['target'])"
+    },
+    {
+      "name": "RefactorLangRegistry",
+      "kind": "class",
+      "signature": "RefactorLangRegistry()"
+    },
+    {
+      "name": "manifestPresent",
+      "kind": "function",
+      "signature": "manifestPresent(cwd: string, files?: string[]): boolean"
+    },
+    {
+      "name": "dirHasSource",
+      "kind": "function",
+      "signature": "dirHasSource(cwd: string, isSourceFile: (rel: string) => boolean): boolean"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
     "src/application/refactor/pipeline/refactor_pipeline.ts#dominantExecutor",

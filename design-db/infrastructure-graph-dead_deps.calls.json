@@ -305,6 +305,68 @@
       "to": "src/infrastructure/index/symbols.ts#contentHash"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DeadDepCandidate",
+      "kind": "interface",
+      "signature": "DeadDepCandidate()"
+    },
+    {
+      "name": "DeadDepsResult",
+      "kind": "interface",
+      "signature": "DeadDepsResult()"
+    },
+    {
+      "name": "SymbolRow",
+      "kind": "interface",
+      "signature": "SymbolRow()"
+    },
+    {
+      "name": "LIMITATIONS",
+      "kind": "const",
+      "signature": "const LIMITATIONS = [ '静态可达性看不见反射/接口动态分发/字符串引用符号——瘦身为行动前必须过编译+源测试+observe 四层验…"
+    },
+    {
+      "name": "goImportQualifierCandidates",
+      "kind": "function",
+      "signature": "goImportQualifierCandidates(p: string): string[]"
+    },
+    {
+      "name": "parseGoImportQualifiers",
+      "kind": "function",
+      "signature": "parseGoImportQualifiers(src: string): Map<string, string[]>"
+    },
+    {
+      "name": "parseTsImportQualifiers",
+      "kind": "function",
+      "signature": "parseTsImportQualifiers(src: string, mod: string): string[] | null"
+    },
+    {
+      "name": "stripGoCommentishLines",
+      "kind": "function",
+      "signature": "stripGoCommentishLines(src: string): string"
+    },
+    {
+      "name": "qualifierLines",
+      "kind": "function",
+      "signature": "qualifierLines(src: string, qualifier: string, lang: 'go' | 'ts' | 'go-bare'): number[]"
+    },
+    {
+      "name": "qualifierMemberLines",
+      "kind": "function",
+      "signature": "qualifierMemberLines(src: string, qualifier: string): Array<{ line: number; member: string }>"
+    },
+    {
+      "name": "stripTsImportLines",
+      "kind": "function",
+      "signature": "stripTsImportLines(src: string): string"
+    },
+    {
+      "name": "analyzeDeadThirdParty",
+      "kind": "function",
+      "signature": "analyzeDeadThirdParty(opts: {\n  db: Database;\n  projectDir: string;\n  /** 闭包内部文件（缓存基准相对路径） */\n  closureFiles: string[];\n  /** 种子文件（同基准） */\n  seedFiles: string[];\n  /** 闭包外部依赖（harvest_closure 结果，只取 third_party 类） */\n  external: ExternalDep[];\n  /** 值可达文件集（harvest_closure.value_files）：从种子只沿值 import 边可达。\n   *  TS 顶层 const 的\"模块初始化即执行\"特权只对值可达文件生效——type 边拉进\n   *  闭包的纯类型文件运行时不加载，其 const 不执行、三方依赖判死候选。\n   *  缺省 = 全部闭包文件按值可达处理（向后兼容旧调用方） */\n  valueFiles?: string[];\n}): DeadDepsResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/deprecate_offline/deprecate_offline.ts#hasActiveReference",
     "src/application/refactor/deprecate_offline/deprecate_offline.ts#remainingImporters",

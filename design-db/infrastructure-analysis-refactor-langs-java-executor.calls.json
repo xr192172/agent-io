@@ -68,5 +68,32 @@
       "from": "src/infrastructure/analysis/refactor/langs/java/executor.ts#dirHasJava",
       "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#collectJavaFiles"
     }
+  ],
+  "expected_symbols": [
+    {
+      "name": "javaExecutor",
+      "kind": "const",
+      "signature": "const javaExecutor = { lang: 'java', isSourceFile: (rel) => rel.endsWith('.jav…"
+    },
+    {
+      "name": "computeSpringMvcLayeringPlan",
+      "kind": "function",
+      "signature": "computeSpringMvcLayeringPlan(args: RefactorStageComputeArgs): Promise<RunningChangePlan>"
+    },
+    {
+      "name": "buildSpringMvcStage",
+      "kind": "function",
+      "signature": "buildSpringMvcStage(): RefactorStageExecutor"
+    },
+    {
+      "name": "javaVerifyCommands",
+      "kind": "function",
+      "signature": "javaVerifyCommands(cwd: string): VerifyCommand[]"
+    },
+    {
+      "name": "dirHasJava",
+      "kind": "function",
+      "signature": "dirHasJava(cwd: string): boolean"
+    }
   ]
 }

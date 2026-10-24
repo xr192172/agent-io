@@ -413,6 +413,58 @@
       "to": "src/infrastructure/storage.ts#getDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ImpactDirection",
+      "kind": "type",
+      "signature": "ImpactDirection()"
+    },
+    {
+      "name": "EdgeKind",
+      "kind": "type",
+      "signature": "EdgeKind()"
+    },
+    {
+      "name": "DiffImpactInput",
+      "kind": "interface",
+      "signature": "DiffImpactInput()"
+    },
+    {
+      "name": "ImpactedSymbol",
+      "kind": "interface",
+      "signature": "ImpactedSymbol()"
+    },
+    {
+      "name": "ImpactedFile",
+      "kind": "interface",
+      "signature": "ImpactedFile()"
+    },
+    {
+      "name": "DslContractHit",
+      "kind": "interface",
+      "signature": "DslContractHit()"
+    },
+    {
+      "name": "DiffImpactResult",
+      "kind": "interface",
+      "signature": "DiffImpactResult()"
+    },
+    {
+      "name": "SymbolDiffInfo",
+      "kind": "interface",
+      "signature": "SymbolDiffInfo()"
+    },
+    {
+      "name": "EDGE_KIND_LABEL",
+      "kind": "const",
+      "signature": "const EDGE_KIND_LABEL = { call: '调用边', type_ref: '类型引用', import: 'import 依赖', }"
+    },
+    {
+      "name": "diffImpact",
+      "kind": "function",
+      "signature": "diffImpact(input: DiffImpactInput): DiffImpactResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/impact/impact_report.ts#runImpactReport",
     "src/application/observe/runtime/watch_project_tool.ts#declareWatch",

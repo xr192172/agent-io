@@ -58,5 +58,22 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "LANE_SOURCES",
+      "kind": "const",
+      "signature": "const LANE_SOURCES = [ ['observe', OBSERVE_TOOLS], ['cross', CROSS_TOOLS], ['d…"
+    },
+    {
+      "name": "TOOL_DEFS",
+      "kind": "const",
+      "signature": "const TOOL_DEFS = LANE_SOURCES.flatMap(([, defs]) => [...defs])"
+    },
+    {
+      "name": "laneOfFromSources",
+      "kind": "function",
+      "signature": "laneOfFromSources(sources: ReadonlyArray<readonly [LaneId, readonly ToolDef[]]> = LANE_SOURCES,): Record<string, LaneAssign>"
+    }
+  ]
 }

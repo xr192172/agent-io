@@ -182,6 +182,63 @@
       "to": "src/infrastructure/analysis/observe/ledger_fold.ts#parseKnownSpread"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "SpreadPattern",
+      "kind": "interface",
+      "signature": "SpreadPattern()"
+    },
+    {
+      "name": "LedgerStats",
+      "kind": "interface",
+      "signature": "LedgerStats()"
+    },
+    {
+      "name": "KNOWN_SPREAD_RULE",
+      "kind": "const",
+      "signature": "const KNOWN_SPREAD_RULE = 'design:impact-known-spread'"
+    },
+    {
+      "name": "KnownSpreadConstraint",
+      "kind": "interface",
+      "signature": "KnownSpreadConstraint()"
+    },
+    {
+      "name": "analyzeLedger",
+      "kind": "function",
+      "signature": "analyzeLedger(projectRoot: string, minRepeat = 2): LedgerStats"
+    },
+    {
+      "name": "foldEntries",
+      "kind": "function",
+      "signature": "foldEntries(entries: LedgerEntry[], minRepeat = 2): LedgerStats"
+    },
+    {
+      "name": "parseKnownSpread",
+      "kind": "function",
+      "signature": "parseKnownSpread(d: TSDLDecl): KnownSpreadConstraint | null"
+    },
+    {
+      "name": "knownSpreadIndex",
+      "kind": "function",
+      "signature": "knownSpreadIndex(decls: readonly TSDLDecl[]): Map<string, Set<string>>"
+    },
+    {
+      "name": "joinQuoted",
+      "kind": "function",
+      "signature": "joinQuoted(files: string[], max: number): string"
+    },
+    {
+      "name": "knownSpreadDecl",
+      "kind": "function",
+      "signature": "knownSpreadDecl(p: SpreadPattern): TSDLDecl"
+    },
+    {
+      "name": "sameSpreadSet",
+      "kind": "function",
+      "signature": "sameSpreadSet(c: KnownSpreadConstraint, p: SpreadPattern): boolean"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/observe/contract.ts#TSComparator.compare",
     "src/infrastructure/analysis/observe/ledger_fold.ts#analyzeLedger",

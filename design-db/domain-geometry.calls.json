@@ -858,6 +858,93 @@
     }
   ],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "DiagramStatus",
+      "kind": "type",
+      "signature": "DiagramStatus()"
+    },
+    {
+      "name": "NodeLayer",
+      "kind": "type",
+      "signature": "NodeLayer()"
+    },
+    {
+      "name": "NodeStyle",
+      "kind": "interface",
+      "signature": "NodeStyle()"
+    },
+    {
+      "name": "BlockStyle",
+      "kind": "interface",
+      "signature": "BlockStyle()"
+    },
+    {
+      "name": "ContentBlock",
+      "kind": "interface",
+      "signature": "ContentBlock()"
+    },
+    {
+      "name": "NodeContent",
+      "kind": "interface",
+      "signature": "NodeContent()"
+    },
+    {
+      "name": "Node",
+      "kind": "interface",
+      "signature": "Node()"
+    },
+    {
+      "name": "DecisionAuthor",
+      "kind": "type",
+      "signature": "DecisionAuthor()"
+    },
+    {
+      "name": "NodeDecision",
+      "kind": "interface",
+      "signature": "NodeDecision()"
+    },
+    {
+      "name": "DecisionDissent",
+      "kind": "interface",
+      "signature": "DecisionDissent()"
+    },
+    {
+      "name": "DecisionHistoryEntry",
+      "kind": "interface",
+      "signature": "DecisionHistoryEntry()"
+    },
+    {
+      "name": "EdgeStyle",
+      "kind": "interface",
+      "signature": "EdgeStyle()"
+    },
+    {
+      "name": "Edge",
+      "kind": "interface",
+      "signature": "Edge()"
+    },
+    {
+      "name": "Swimlane",
+      "kind": "interface",
+      "signature": "Swimlane()"
+    },
+    {
+      "name": "Geometry",
+      "kind": "interface",
+      "signature": "Geometry()"
+    },
+    {
+      "name": "ForceParams",
+      "kind": "interface",
+      "signature": "ForceParams()"
+    },
+    {
+      "name": "resolveDiagramStatus",
+      "kind": "function",
+      "signature": "resolveDiagramStatus(dsl: { id?: string; status?: DiagramStatus }): DiagramStatus"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/lifecycle/snapshot.ts#listSnapshots",
     "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",

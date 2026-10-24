@@ -267,6 +267,58 @@
       "to": "src/infrastructure/storage.ts#getDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "MAX_FILES",
+      "kind": "const",
+      "signature": "const MAX_FILES = 200"
+    },
+    {
+      "name": "LANG_COLORS",
+      "kind": "const",
+      "signature": "const LANG_COLORS = { go: { bg: '#1a4a7a', color: '#ffffff' }, ts: { bg: '#15…"
+    },
+    {
+      "name": "DEFAULT_FILE_COLOR",
+      "kind": "const",
+      "signature": "const DEFAULT_FILE_COLOR = { bg: '#37474f', color: '#eceff1' }"
+    },
+    {
+      "name": "DIR_STYLE",
+      "kind": "const",
+      "signature": "const DIR_STYLE = { bg: '#152141', color: '#90caf9' }"
+    },
+    {
+      "name": "toPosix",
+      "kind": "const",
+      "signature": "const toPosix = (p: string): string => p.split(path.sep).join('/')"
+    },
+    {
+      "name": "sanitize",
+      "kind": "const",
+      "signature": "const sanitize = (s: string): string => s.replace(/[^a-zA-Z0-9_-]/g, '_')"
+    },
+    {
+      "name": "fileNodeId",
+      "kind": "const",
+      "signature": "const fileNodeId = (rel: string): string => `file_${sanitize(rel)}`"
+    },
+    {
+      "name": "dirNodeId",
+      "kind": "const",
+      "signature": "const dirNodeId = (rel: string): string => `dir_${sanitize(rel)}`"
+    },
+    {
+      "name": "ParsedFact",
+      "kind": "interface",
+      "signature": "ParsedFact()"
+    },
+    {
+      "name": "renderLiveFromDb",
+      "kind": "function",
+      "signature": "renderLiveFromDb(feature: string): DesignDSL | null"
+    }
+  ],
   "reverse_calls": [
     "src/application/patrol/task_drift.ts#patrolDrift",
     "src/infrastructure/index/live_render.ts#renderLiveFromDb",

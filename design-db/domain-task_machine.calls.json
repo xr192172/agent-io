@@ -452,6 +452,118 @@
       "to": "src/domain/task_schema.ts#isTaskState"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "CardStanding",
+      "kind": "type",
+      "signature": "CardStanding()"
+    },
+    {
+      "name": "StandingNode",
+      "kind": "interface",
+      "signature": "StandingNode()"
+    },
+    {
+      "name": "StandingInput",
+      "kind": "interface",
+      "signature": "StandingInput()"
+    },
+    {
+      "name": "SatisfactionCounts",
+      "kind": "interface",
+      "signature": "SatisfactionCounts()"
+    },
+    {
+      "name": "ViolationCounts",
+      "kind": "interface",
+      "signature": "ViolationCounts()"
+    },
+    {
+      "name": "StandingVerdict",
+      "kind": "interface",
+      "signature": "StandingVerdict()"
+    },
+    {
+      "name": "RedAttribution",
+      "kind": "type",
+      "signature": "RedAttribution()"
+    },
+    {
+      "name": "RedDisposition",
+      "kind": "type",
+      "signature": "RedDisposition()"
+    },
+    {
+      "name": "RED_DISPOSITION",
+      "kind": "const",
+      "signature": "const RED_DISPOSITION = { own: 'claim', orphan: 'claim', 'dep-pending': 'wait', '…"
+    },
+    {
+      "name": "SatisfactionVerdict",
+      "kind": "interface",
+      "signature": "SatisfactionVerdict()"
+    },
+    {
+      "name": "LeaseReleaseEvent",
+      "kind": "interface",
+      "signature": "LeaseReleaseEvent()"
+    },
+    {
+      "name": "TransitionState",
+      "kind": "type",
+      "signature": "TransitionState()"
+    },
+    {
+      "name": "TaskTransition",
+      "kind": "interface",
+      "signature": "TaskTransition()"
+    },
+    {
+      "name": "TRANSITIONS",
+      "kind": "const",
+      "signature": "const TRANSITIONS = [ { id: 't_claim', from: 'candidate', to: 'claimed', stat…"
+    },
+    {
+      "name": "cardStanding",
+      "kind": "function",
+      "signature": "cardStanding(card: TaskSpec,\n  expectations: readonly Expectation[],\n  opts: StandingInput,): Promise<StandingVerdict>"
+    },
+    {
+      "name": "isClaimable",
+      "kind": "function",
+      "signature": "isClaimable(standing: CardStanding, intent: ClaimIntent = 'work'): boolean"
+    },
+    {
+      "name": "isSatisfied",
+      "kind": "function",
+      "signature": "isSatisfied(card: TaskSpec,\n  expectations: readonly Expectation[],\n  opts: StandingInput,): Promise<SatisfactionVerdict>"
+    },
+    {
+      "name": "isLeaseHolding",
+      "kind": "function",
+      "signature": "isLeaseHolding(s: TaskState): boolean"
+    },
+    {
+      "name": "isLeaseExpired",
+      "kind": "function",
+      "signature": "isLeaseExpired(card: TaskSpec, nowMs: number, ttlMs: number = LEASE_TTL_MS): boolean"
+    },
+    {
+      "name": "leaseAgeHours",
+      "kind": "function",
+      "signature": "leaseAgeHours(card: TaskSpec, nowMs: number): number | null"
+    },
+    {
+      "name": "releaseIfExpired",
+      "kind": "function",
+      "signature": "releaseIfExpired(cards: readonly TaskSpec[],\n  nowMs: number,\n  ttlMs: number,): LeaseReleaseEvent[]"
+    },
+    {
+      "name": "applicableTransitions",
+      "kind": "function",
+      "signature": "applicableTransitions(from: TaskState): TaskTransition[]"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/board/pool.ts#listPool",
     "src/application/design/dsl_ops/task_ops.ts#assertTransition",

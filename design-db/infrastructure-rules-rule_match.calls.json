@@ -301,6 +301,68 @@
       "to": "src/infrastructure/rules/rule_tokens.ts#splitLines"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "HoleBinding",
+      "kind": "interface",
+      "signature": "HoleBinding()"
+    },
+    {
+      "name": "RuleMatch",
+      "kind": "interface",
+      "signature": "RuleMatch()"
+    },
+    {
+      "name": "MatchOutcome",
+      "kind": "interface",
+      "signature": "MatchOutcome()"
+    },
+    {
+      "name": "PatToken",
+      "kind": "type",
+      "signature": "PatToken()"
+    },
+    {
+      "name": "norm",
+      "kind": "const",
+      "signature": "const norm = (s: string): string => s.replace(/[ \\t]+/g, '')"
+    },
+    {
+      "name": "FileLine",
+      "kind": "interface",
+      "signature": "FileLine()"
+    },
+    {
+      "name": "__internals",
+      "kind": "const",
+      "signature": "const __internals = { norm, matchLiteral, balanced }"
+    },
+    {
+      "name": "holeNamesOf",
+      "kind": "function",
+      "signature": "holeNamesOf(pattern: string): string[]"
+    },
+    {
+      "name": "tokenizePattern",
+      "kind": "function",
+      "signature": "tokenizePattern(pattern: string): PatToken[][]"
+    },
+    {
+      "name": "matchRule",
+      "kind": "function",
+      "signature": "matchRule(content: string, pattern: string): MatchOutcome"
+    },
+    {
+      "name": "instantiateReplace",
+      "kind": "function",
+      "signature": "instantiateReplace(replace: string, match: RuleMatch): string"
+    },
+    {
+      "name": "applyMatch",
+      "kind": "function",
+      "signature": "applyMatch(content: string, match: RuleMatch, replace: string): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/rule_library/rule_apply.ts#applyRuleToContent",
     "src/application/refactor/rule_library/rule_apply.ts#runFixtures",

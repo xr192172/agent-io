@@ -263,6 +263,58 @@
       "to": "src/infrastructure/project_view.ts#getProjectView"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "BackfillState",
+      "kind": "interface",
+      "signature": "BackfillState()"
+    },
+    {
+      "name": "BackfillOptions",
+      "kind": "interface",
+      "signature": "BackfillOptions()"
+    },
+    {
+      "name": "states",
+      "kind": "const",
+      "signature": "const states = new Map<string, BackfillState>()"
+    },
+    {
+      "name": "timers",
+      "kind": "const",
+      "signature": "const timers = new Map<string, NodeJS.Timeout>()"
+    },
+    {
+      "name": "backfillState",
+      "kind": "function",
+      "signature": "backfillState(root: string): BackfillState | null"
+    },
+    {
+      "name": "stopBackfill",
+      "kind": "function",
+      "signature": "stopBackfill(root: string): void"
+    },
+    {
+      "name": "isBackfillRunning",
+      "kind": "function",
+      "signature": "isBackfillRunning(root: string): boolean"
+    },
+    {
+      "name": "backfillChunk",
+      "kind": "function",
+      "signature": "backfillChunk(db: Database,\r\n  root: string,\r\n  opts: { batch?: number } = {},): Promise<{ synced: number; failed: number; remaining: number; total: number }>"
+    },
+    {
+      "name": "scheduleBackfill",
+      "kind": "function",
+      "signature": "scheduleBackfill(root: string, opts: BackfillOptions = {}): BackfillState"
+    },
+    {
+      "name": "backfillSummary",
+      "kind": "function",
+      "signature": "backfillSummary(state: BackfillState | null): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/explore_code.ts#exploreCode",
     "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",

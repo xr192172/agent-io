@@ -390,6 +390,38 @@
       "to": "src/infrastructure/parse/symbol_shape.ts#typeParamsOf"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ParsedTypeParam",
+      "kind": "interface",
+      "signature": "ParsedTypeParam()"
+    },
+    {
+      "name": "SymbolShape",
+      "kind": "interface",
+      "signature": "SymbolShape()"
+    },
+    {
+      "name": "ShapeSpec",
+      "kind": "interface",
+      "signature": "ShapeSpec()"
+    },
+    {
+      "name": "SHAPE_SPECS",
+      "kind": "const",
+      "signature": "const SHAPE_SPECS = { // ── TS / TSX ────────────────────────────────────────…"
+    },
+    {
+      "name": "parseTypeParamText",
+      "kind": "function",
+      "signature": "parseTypeParamText(raw: string): ParsedTypeParam | undefined"
+    },
+    {
+      "name": "shapeOf",
+      "kind": "function",
+      "signature": "shapeOf(node: SyntaxNodeLike, langName: string): SymbolShape"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/parse/kernel.ts#traverseAndExtract",
     "src/infrastructure/parse/symbol_shape.ts#modifiersOf",

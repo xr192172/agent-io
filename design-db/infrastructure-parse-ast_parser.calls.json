@@ -42,6 +42,18 @@
       "to": "src/infrastructure/parse/kernel.ts#parseFile"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "isSupportedFile",
+      "kind": "function",
+      "signature": "isSupportedFile(filePath: string): boolean"
+    },
+    {
+      "name": "parseFileSymbols",
+      "kind": "function",
+      "signature": "parseFileSymbols(filePath: string, content: string): Promise<ParsedSymbol[]>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/intent/consistency.ts#checkConsistencyReport",
     "src/application/design/intent/expectations.ts#judgeExpectations"

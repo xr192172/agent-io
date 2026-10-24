@@ -415,6 +415,73 @@
       "to": "src/infrastructure/verify_refactor.ts#runVerification"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DeprecateOfflinePlan",
+      "kind": "interface",
+      "signature": "DeprecateOfflinePlan()"
+    },
+    {
+      "name": "DeprecateOfflineOptions",
+      "kind": "interface",
+      "signature": "DeprecateOfflineOptions()"
+    },
+    {
+      "name": "DeprecateOutcome",
+      "kind": "type",
+      "signature": "DeprecateOutcome()"
+    },
+    {
+      "name": "DeprecateOfflineItem",
+      "kind": "interface",
+      "signature": "DeprecateOfflineItem()"
+    },
+    {
+      "name": "DeprecateOfflineResult",
+      "kind": "interface",
+      "signature": "DeprecateOfflineResult()"
+    },
+    {
+      "name": "DeprecateSink",
+      "kind": "interface",
+      "signature": "DeprecateSink()"
+    },
+    {
+      "name": "goModulePrefix",
+      "kind": "function",
+      "signature": "goModulePrefix(project_dir: string): string | null"
+    },
+    {
+      "name": "goPackageOfFile",
+      "kind": "function",
+      "signature": "goPackageOfFile(project_dir: string, moduleRel: string): string | null"
+    },
+    {
+      "name": "resolveConsumerSource",
+      "kind": "function",
+      "signature": "resolveConsumerSource(project_dir: string, consumerRel: string, source: string): string | null"
+    },
+    {
+      "name": "aggregateProjectSources",
+      "kind": "function",
+      "signature": "aggregateProjectSources(project_dir: string,\n  dead: DeadDepCandidate[],): Map<string, { moduleFile: string; consumers: number }>"
+    },
+    {
+      "name": "remainingImporters",
+      "kind": "function",
+      "signature": "remainingImporters(project_dir: string,\n  moduleRel: string,\n  scannedFiles: string[],): number"
+    },
+    {
+      "name": "hasActiveReference",
+      "kind": "function",
+      "signature": "hasActiveReference(project_dir: string, moduleRel: string, scannedFiles: string[]): boolean"
+    },
+    {
+      "name": "deprecateOffline",
+      "kind": "function",
+      "signature": "deprecateOffline(opts: DeprecateOfflineOptions): Promise<TouchedProduct<DeprecateOfflineResult>>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/deprecate_offline/deprecate_offline.ts#aggregateProjectSources",
     "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOffline",

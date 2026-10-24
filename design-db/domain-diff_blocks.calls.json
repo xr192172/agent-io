@@ -139,5 +139,32 @@
       "from": "src/domain/diff_blocks.ts#buildDiffBlocks",
       "to": "src/domain/scope.ts#formatScope"
     }
+  ],
+  "expected_symbols": [
+    {
+      "name": "FileDiff",
+      "kind": "interface",
+      "signature": "FileDiff()"
+    },
+    {
+      "name": "DiffBlock",
+      "kind": "interface",
+      "signature": "DiffBlock()"
+    },
+    {
+      "name": "DiffBlocksResult",
+      "kind": "interface",
+      "signature": "DiffBlocksResult()"
+    },
+    {
+      "name": "hasDiff",
+      "kind": "function",
+      "signature": "hasDiff(f: FileDiff): boolean"
+    },
+    {
+      "name": "buildDiffBlocks",
+      "kind": "function",
+      "signature": "buildDiffBlocks(files: readonly FileDiff[],\n  scope: Scope,\n  group_by: 'arch_layer' | 'scope' = 'arch_layer',\n  compared?: number,): DiffBlocksResult"
+    }
   ]
 }

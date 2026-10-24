@@ -83,6 +83,13 @@
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "pyPackage",
+      "kind": "const",
+      "signature": "const pyPackage = { exts: ['.py'], collect: (a) => pyAliasEdits(a.src, a.ex…"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/package_migration/languages/py.ts#collectPyBinds",
     "src/infrastructure/analysis/package_migration/languages/py.ts#pyAliasEdits",

@@ -34,6 +34,23 @@
       "to": "src/infrastructure/authoring/translate/fixers.ts#squashImports"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "fixUnusedImports",
+      "kind": "function",
+      "signature": "fixUnusedImports(source: string): string"
+    },
+    {
+      "name": "squashImports",
+      "kind": "function",
+      "signature": "squashImports(source: string): string"
+    },
+    {
+      "name": "applyDeterministicFixers",
+      "kind": "function",
+      "signature": "applyDeterministicFixers(source: string): string"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/translate/fixers.ts#applyDeterministicFixers",
     "src/infrastructure/authoring/translate/project.ts#assembleModule"

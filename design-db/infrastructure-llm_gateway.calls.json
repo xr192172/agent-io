@@ -856,6 +856,143 @@
       "to": "src/infrastructure/storage.ts#getStorageRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "GatewayProvider",
+      "kind": "interface",
+      "signature": "GatewayProvider()"
+    },
+    {
+      "name": "GatewayConfig",
+      "kind": "interface",
+      "signature": "GatewayConfig()"
+    },
+    {
+      "name": "UsageStat",
+      "kind": "interface",
+      "signature": "UsageStat()"
+    },
+    {
+      "name": "ChatResult",
+      "kind": "interface",
+      "signature": "ChatResult()"
+    },
+    {
+      "name": "ProviderView",
+      "kind": "interface",
+      "signature": "ProviderView()"
+    },
+    {
+      "name": "UpsertProviderInput",
+      "kind": "interface",
+      "signature": "UpsertProviderInput()"
+    },
+    {
+      "name": "StatsView",
+      "kind": "interface",
+      "signature": "StatsView()"
+    },
+    {
+      "name": "keyPools",
+      "kind": "const",
+      "signature": "const keyPools = new Map<string, { pool: KeyPool; keyId: string }>()"
+    },
+    {
+      "name": "providerCursor",
+      "kind": "const",
+      "signature": "const providerCursor = 0"
+    },
+    {
+      "name": "Endpoint",
+      "kind": "interface",
+      "signature": "Endpoint()"
+    },
+    {
+      "name": "GatewayChatOptions",
+      "kind": "interface",
+      "signature": "GatewayChatOptions()"
+    },
+    {
+      "name": "GatewayHttpError",
+      "kind": "class",
+      "signature": "GatewayHttpError()"
+    },
+    {
+      "name": "OpenAICompatRequest",
+      "kind": "interface",
+      "signature": "OpenAICompatRequest()"
+    },
+    {
+      "name": "loadGatewayConfig",
+      "kind": "function",
+      "signature": "loadGatewayConfig(): GatewayConfig"
+    },
+    {
+      "name": "ensureSeededFromEnv",
+      "kind": "function",
+      "signature": "ensureSeededFromEnv(): boolean"
+    },
+    {
+      "name": "firstUsableProvider",
+      "kind": "function",
+      "signature": "firstUsableProvider(): GatewayProvider | undefined"
+    },
+    {
+      "name": "maskKey",
+      "kind": "function",
+      "signature": "maskKey(key: string): string"
+    },
+    {
+      "name": "listProvidersMasked",
+      "kind": "function",
+      "signature": "listProvidersMasked(): ProviderView[]"
+    },
+    {
+      "name": "upsertProvider",
+      "kind": "function",
+      "signature": "upsertProvider(input: UpsertProviderInput): { ok: boolean; error?: string }"
+    },
+    {
+      "name": "deleteProvider",
+      "kind": "function",
+      "signature": "deleteProvider(id: string): { ok: boolean; error?: string }"
+    },
+    {
+      "name": "hasEnabledProvider",
+      "kind": "function",
+      "signature": "hasEnabledProvider(): boolean"
+    },
+    {
+      "name": "getStats",
+      "kind": "function",
+      "signature": "getStats(): StatsView"
+    },
+    {
+      "name": "resetStats",
+      "kind": "function",
+      "signature": "resetStats(): void"
+    },
+    {
+      "name": "_resetGatewayCursors",
+      "kind": "function",
+      "signature": "_resetGatewayCursors(): void"
+    },
+    {
+      "name": "chatViaGateway",
+      "kind": "function",
+      "signature": "chatViaGateway(messages: Array<{ role: string; content: string }>,\n  opts: GatewayChatOptions = {},): Promise<ChatResult>"
+    },
+    {
+      "name": "testProvider",
+      "kind": "function",
+      "signature": "testProvider(id: string): Promise<{ ok: boolean; ms: number; model: string; error?: string }>"
+    },
+    {
+      "name": "handleOpenAICompatRequest",
+      "kind": "function",
+      "signature": "handleOpenAICompatRequest(body: OpenAICompatRequest): Promise<{\n  status: number;\n  body: unknown;\n}>"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
     "src/application/meta/llm/llm_decider.ts#decideMode",

@@ -243,6 +243,58 @@
       "to": "src/infrastructure/storage.ts#getStorageRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ProjectDoc",
+      "kind": "interface",
+      "signature": "ProjectDoc()"
+    },
+    {
+      "name": "DocsManifest",
+      "kind": "interface",
+      "signature": "DocsManifest()"
+    },
+    {
+      "name": "MAX_DOC_LINES",
+      "kind": "const",
+      "signature": "const MAX_DOC_LINES = 300"
+    },
+    {
+      "name": "MAX_MATCHED_DOCS",
+      "kind": "const",
+      "signature": "const MAX_MATCHED_DOCS = 5"
+    },
+    {
+      "name": "TOC_PREVIEW",
+      "kind": "const",
+      "signature": "const TOC_PREVIEW = 32"
+    },
+    {
+      "name": "DocTargetSet",
+      "kind": "interface",
+      "signature": "DocTargetSet()"
+    },
+    {
+      "name": "listProjectDocs",
+      "kind": "function",
+      "signature": "listProjectDocs(project_dir: string, feature: string): DocsManifest"
+    },
+    {
+      "name": "readProjectDoc",
+      "kind": "function",
+      "signature": "readProjectDoc(project_dir: string, feature: string, id: string): string | null"
+    },
+    {
+      "name": "matchDocsForTargets",
+      "kind": "function",
+      "signature": "matchDocsForTargets(man: DocsManifest, targets: DocTargetSet, maxDocs = MAX_MATCHED_DOCS): ProjectDoc[]"
+    },
+    {
+      "name": "buildDocsPromptBlock",
+      "kind": "function",
+      "signature": "buildDocsPromptBlock(man: DocsManifest,\n  targets: DocTargetSet,\n  maxLines = MAX_DOC_LINES,\n  maxDocs = MAX_MATCHED_DOCS,): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/docs/project_docs.ts#buildDocsPromptBlock",
     "src/application/meta/docs/project_docs.ts#docMatches",

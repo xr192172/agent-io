@@ -386,6 +386,98 @@
       "to": "src/infrastructure/source_write_port.ts#commitSourceWrite"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "AstNode",
+      "kind": "interface",
+      "signature": "AstNode()"
+    },
+    {
+      "name": "Insertion",
+      "kind": "type",
+      "signature": "Insertion()"
+    },
+    {
+      "name": "CollectSitesCtx",
+      "kind": "interface",
+      "signature": "CollectSitesCtx()"
+    },
+    {
+      "name": "InstrumentHooks",
+      "kind": "interface",
+      "signature": "InstrumentHooks()"
+    },
+    {
+      "name": "BACKUP_DIR",
+      "kind": "const",
+      "signature": "const BACKUP_DIR = '.agent-io/observe-backup'"
+    },
+    {
+      "name": "asNode",
+      "kind": "function",
+      "signature": "asNode(n: unknown): AstNode"
+    },
+    {
+      "name": "matchesContract",
+      "kind": "function",
+      "signature": "matchesContract(probeName: string, probes?: string[]): boolean"
+    },
+    {
+      "name": "applyInsertions",
+      "kind": "function",
+      "signature": "applyInsertions(content: string, insertions: Insertion[]): string"
+    },
+    {
+      "name": "prependAfterShebang",
+      "kind": "function",
+      "signature": "prependAfterShebang(content: string, head: string): string"
+    },
+    {
+      "name": "headOffset",
+      "kind": "function",
+      "signature": "headOffset(root: AstNode, packageDeclNode?: string): number"
+    },
+    {
+      "name": "isBracelessBodyReturn",
+      "kind": "function",
+      "signature": "isBracelessBodyReturn(parent: AstNode | undefined, guardTypes: ReadonlySet<string>): boolean"
+    },
+    {
+      "name": "backupPathFor",
+      "kind": "function",
+      "signature": "backupPathFor(backupRoot: string, file: string): string"
+    },
+    {
+      "name": "backupOriginal",
+      "kind": "function",
+      "signature": "backupOriginal(backupRoot: string, file: string, content: string): void"
+    },
+    {
+      "name": "instrumentFileWithHooks",
+      "kind": "function",
+      "signature": "instrumentFileWithHooks(file: string,\n  hooks: InstrumentHooks,\n  opts: InstrumentOptions = {},): Promise<InstrumentFileResult>"
+    },
+    {
+      "name": "countFunctionNodes",
+      "kind": "function",
+      "signature": "countFunctionNodes(root: AstNode, fnTypes: ReadonlySet<string>): number"
+    },
+    {
+      "name": "collectSourceFiles",
+      "kind": "function",
+      "signature": "collectSourceFiles(root: string, isInstrumentable: (rel: string) => boolean): string[]"
+    },
+    {
+      "name": "inferProjectRootByMarker",
+      "kind": "function",
+      "signature": "inferProjectRootByMarker(file: string, markerRel: string, hint?: string): string"
+    },
+    {
+      "name": "instrumentProjectWithHooks",
+      "kind": "function",
+      "signature": "instrumentProjectWithHooks(root: string,\n  hooks: InstrumentHooks,\n  isInstrumentable: (rel: string) => boolean,\n  opts: InstrumentOptions = {},): Promise<InstrumentFileResult[]>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/observe/instrument.ts#collectDeepSites",
     "src/infrastructure/analysis/observe/instrument.ts#collectSites",

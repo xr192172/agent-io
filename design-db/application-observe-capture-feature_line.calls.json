@@ -155,6 +155,43 @@
       "to": "src/infrastructure/index/function_outline.ts#buildFunctionOutline"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FeatureLineNode",
+      "kind": "interface",
+      "signature": "FeatureLineNode()"
+    },
+    {
+      "name": "FeatureLine",
+      "kind": "interface",
+      "signature": "FeatureLine()"
+    },
+    {
+      "name": "ENTRY_HINT",
+      "kind": "const",
+      "signature": "const ENTRY_HINT = /^(main|run|handle|execute|start|serve|process|entry|work…"
+    },
+    {
+      "name": "pickEntry",
+      "kind": "function",
+      "signature": "pickEntry(fns: FunctionOutlineFn[]): FunctionOutlineFn | undefined"
+    },
+    {
+      "name": "buildMainChain",
+      "kind": "function",
+      "signature": "buildMainChain(entry: FunctionOutlineFn,\n  allFns: FunctionOutlineFn[],\n  maxSteps = 24,): FeatureLineNode[]"
+    },
+    {
+      "name": "deriveLineFromFunctions",
+      "kind": "function",
+      "signature": "deriveLineFromFunctions(fns: FunctionOutlineFn[],\n  opts: { targetId?: string; targetName?: string; maxSteps?: number } = {},): { line: FeatureLine; chosenFeature: string }"
+    },
+    {
+      "name": "getFeatureLine",
+      "kind": "function",
+      "signature": "getFeatureLine(feature?: string,\n  sourceRoot?: string,\n  opts: { target?: string; maxSteps?: number } = {},): { ok: boolean; line?: FeatureLine; features?: Array<{ feature: string; entry: string; steps: number }>; note?: string }"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/capture/feature_line.ts#deriveLineFromFunctions",
     "src/application/observe/capture/feature_line.ts#getFeatureLine",

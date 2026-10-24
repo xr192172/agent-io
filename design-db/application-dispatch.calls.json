@@ -116,6 +116,48 @@
       "to": "src/infrastructure/daemon/client.ts#probeDaemon"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "PROBE_TTL_MS",
+      "kind": "const",
+      "signature": "const PROBE_TTL_MS = 30_000"
+    },
+    {
+      "name": "daemonCache",
+      "kind": "const",
+      "signature": "const daemonCache = null"
+    },
+    {
+      "name": "daemonAlertCursor",
+      "kind": "const",
+      "signature": "const daemonAlertCursor = 0"
+    },
+    {
+      "name": "isDaemonAvailable",
+      "kind": "function",
+      "signature": "isDaemonAvailable(): Promise<boolean>"
+    },
+    {
+      "name": "invalidateDaemonCache",
+      "kind": "function",
+      "signature": "invalidateDaemonCache(): void"
+    },
+    {
+      "name": "dispatchWatch",
+      "kind": "function",
+      "signature": "dispatchWatch(input: WatchProjectToolInput): Promise<WatchProjectToolResult>"
+    },
+    {
+      "name": "dispatchDslEdit",
+      "kind": "function",
+      "signature": "dispatchDslEdit(input: Record<string, unknown>,\n  localRun: (input: Record<string, unknown>) => unknown,): Promise<{ result: { message: string; feature: string; [k: string]: unknown }; viaDaemon: boolean }>"
+    },
+    {
+      "name": "collectPendingAlertText",
+      "kind": "function",
+      "signature": "collectPendingAlertText(toolName: string): Promise<string>"
+    }
+  ],
   "reverse_calls": [
     "src/application/dispatch.ts#collectPendingAlertText",
     "src/application/dispatch.ts#dispatchDslEdit",

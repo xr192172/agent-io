@@ -200,6 +200,38 @@
       "to": "src/infrastructure/storage.ts#getDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ExportSvgInput",
+      "kind": "interface",
+      "signature": "ExportSvgInput()"
+    },
+    {
+      "name": "ExportSvgResult",
+      "kind": "interface",
+      "signature": "ExportSvgResult()"
+    },
+    {
+      "name": "ExportMarkdownInput",
+      "kind": "interface",
+      "signature": "ExportMarkdownInput()"
+    },
+    {
+      "name": "ExportMarkdownResult",
+      "kind": "interface",
+      "signature": "ExportMarkdownResult()"
+    },
+    {
+      "name": "exportSvg",
+      "kind": "function",
+      "signature": "exportSvg(input: ExportSvgInput): ExportSvgResult"
+    },
+    {
+      "name": "exportMarkdown",
+      "kind": "function",
+      "signature": "exportMarkdown(input: ExportMarkdownInput): ExportMarkdownResult"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/render/export.ts#exportMarkdown",
     "src/infrastructure/render/export.ts#exportSvg",

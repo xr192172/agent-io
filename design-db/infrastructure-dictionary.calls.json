@@ -275,6 +275,88 @@
       "to": "src/infrastructure/storage.ts#getDataHome"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DictKind",
+      "kind": "type",
+      "signature": "DictKind()"
+    },
+    {
+      "name": "DictEntry",
+      "kind": "interface",
+      "signature": "DictEntry()"
+    },
+    {
+      "name": "DictLinks",
+      "kind": "interface",
+      "signature": "DictLinks()"
+    },
+    {
+      "name": "DictionaryView",
+      "kind": "interface",
+      "signature": "DictionaryView()"
+    },
+    {
+      "name": "_allowedRoots",
+      "kind": "const",
+      "signature": "const _allowedRoots = null"
+    },
+    {
+      "name": "setAllowedProjectRoots",
+      "kind": "function",
+      "signature": "setAllowedProjectRoots(roots: string[]): void"
+    },
+    {
+      "name": "validateProjectRoot",
+      "kind": "function",
+      "signature": "validateProjectRoot(projectRoot: string, context = 'project_dir'): string"
+    },
+    {
+      "name": "getGlobalDictFile",
+      "kind": "function",
+      "signature": "getGlobalDictFile(): string"
+    },
+    {
+      "name": "getProjectDictFile",
+      "kind": "function",
+      "signature": "getProjectDictFile(projectRoot: string): string"
+    },
+    {
+      "name": "loadGlobalDict",
+      "kind": "function",
+      "signature": "loadGlobalDict(): DictEntry[]"
+    },
+    {
+      "name": "loadProjectDict",
+      "kind": "function",
+      "signature": "loadProjectDict(projectRoot: string): DictEntry[]"
+    },
+    {
+      "name": "saveGlobalEntry",
+      "kind": "function",
+      "signature": "saveGlobalEntry(entry: DictEntry): number"
+    },
+    {
+      "name": "saveProjectEntry",
+      "kind": "function",
+      "signature": "saveProjectEntry(projectRoot: string, entry: DictEntry): number"
+    },
+    {
+      "name": "buildDictionaryView",
+      "kind": "function",
+      "signature": "buildDictionaryView(projectRoot?: string | null): DictionaryView"
+    },
+    {
+      "name": "findDictHits",
+      "kind": "function",
+      "signature": "findDictHits(text: string,\n  view: DictionaryView,): Array<{ term: string; start: number; end: number }[]>"
+    },
+    {
+      "name": "splitHighlights",
+      "kind": "function",
+      "signature": "splitHighlights(text: string, view: DictionaryView): Array<{ text: string; term?: string }>"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/reconcile/proposal_approve.ts#approveObserveProposal",
     "src/application/observe/reconcile/proposal_list.ts#listObserveProposals",

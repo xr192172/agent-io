@@ -186,7 +186,11 @@ export function lineReport(root: string, feature: string): LineReport {
       reading:
         dbCount && sourceFiles.length
           ? `覆盖：设计 DB ${dbCount} 份 / 源码 ${n(sourceFiles.length)} 文件 = ${coverRate}%；` +
-            `★ 未覆盖 ${n(uncovered.length)} 个（设计侧还没有副本；符号级差分归 rewrite / design-diff）`
+            `★ 沉默缺口（盘上有 ∧ 册上无 ∧ 无 excluded_reason）${n(uncovered.length)} 个` +
+            (uncovered.length
+              ? `：${uncovered.slice(0, 10).join(' ; ')}${uncovered.length > 10 ? ' …' : ''}` +
+                ` —— 逐个裁「纳入/显式排除」（意图推不出来，不自动建节点；纳入后走 L1 建构卡）`
+              : '')
           : '设计 DB 或源码缺失，无法算覆盖',
     },
   ];

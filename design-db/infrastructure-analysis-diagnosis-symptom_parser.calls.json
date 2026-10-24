@@ -184,6 +184,103 @@
       "to": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#stripAbsPaths"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ERROR_TYPE_PATTERNS",
+      "kind": "const",
+      "signature": "const ERROR_TYPE_PATTERNS = [ // 顺序敏感：TS 编译错误（error TSxxxx: …）优先于其内部嵌套的 \"Cannot find …"
+    },
+    {
+      "name": "KNOWN_ERROR_KINDS",
+      "kind": "const",
+      "signature": "const KNOWN_ERROR_KINDS = new Set([ 'TypeError', 'ReferenceError', 'RangeError', 'S…"
+    },
+    {
+      "name": "FILE_LINE_RES",
+      "kind": "const",
+      "signature": "const FILE_LINE_RES = /([\\w@./\\\\-]+\\.(?:ts|tsx|js|jsx|mjs|cjs|go|py|java|rs|rb|…"
+    },
+    {
+      "name": "COLON_LINE_RES",
+      "kind": "const",
+      "signature": "const COLON_LINE_RES = /((?:[A-Za-z]:[\\\\/]|\\/)?[\\w@./\\\\-]+\\.(?:ts|tsx|js|jsx|mjs…"
+    },
+    {
+      "name": "PY_TRACEBACK_RES",
+      "kind": "const",
+      "signature": "const PY_TRACEBACK_RES = /File \"([^\"]+)\", line (\\d+)/g"
+    },
+    {
+      "name": "READING_RES",
+      "kind": "const",
+      "signature": "const READING_RES = /reading\\s+'([A-Za-z_$][\\w$]*)'/g"
+    },
+    {
+      "name": "NOT_FUNCTION_RES",
+      "kind": "const",
+      "signature": "const NOT_FUNCTION_RES = /([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*)\\s+is not a fun…"
+    },
+    {
+      "name": "NOT_DEFINED_RES",
+      "kind": "const",
+      "signature": "const NOT_DEFINED_RES = /([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*)\\s+is not defin…"
+    },
+    {
+      "name": "NOT_CONSTRUCTOR_RES",
+      "kind": "const",
+      "signature": "const NOT_CONSTRUCTOR_RES = /([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*)\\s+is not a con…"
+    },
+    {
+      "name": "STACK_AT_RES",
+      "kind": "const",
+      "signature": "const STACK_AT_RES = /at\\s+([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*)\\s+\\(/g"
+    },
+    {
+      "name": "PY_IN_RES",
+      "kind": "const",
+      "signature": "const PY_IN_RES = /,\\s+in\\s+([A-Za-z_$][\\w$]*)/g"
+    },
+    {
+      "name": "STOPWORDS",
+      "kind": "const",
+      "signature": "const STOPWORDS = new Set([ 'the', 'a', 'an', 'is', 'are', 'was', 'were', '…"
+    },
+    {
+      "name": "ABS_FILE_RES",
+      "kind": "const",
+      "signature": "const ABS_FILE_RES = /(?:[A-Za-z]:[\\\\/]|file:\\/\\/\\/|\\/(?!\\/))(?:[^，。；：\\s\"\"''（）…"
+    },
+    {
+      "name": "FILE_URL_RES",
+      "kind": "const",
+      "signature": "const FILE_URL_RES = /file:\\/\\/[^，。；：\\s\"\"''（）()<>'\"]+(?:[ ][^，。；：\\s\"\"''（）()<>'…"
+    },
+    {
+      "name": "HTTP_URL_RES",
+      "kind": "const",
+      "signature": "const HTTP_URL_RES = /https?:\\/\\/[^，。；：\\s\"\"''（）()<>'\"]+/gi"
+    },
+    {
+      "name": "extractLocations",
+      "kind": "function",
+      "signature": "extractLocations(symptom: string): Array<{ file: string; line?: number }>"
+    },
+    {
+      "name": "extractSymbols",
+      "kind": "function",
+      "signature": "extractSymbols(symptom: string): string[]"
+    },
+    {
+      "name": "extractKeywords",
+      "kind": "function",
+      "signature": "extractKeywords(symptom: string): string[]"
+    },
+    {
+      "name": "parseSymptom",
+      "kind": "function",
+      "signature": "parseSymptom(symptom: string): SymptomParsed"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis",
     "src/infrastructure/analysis/diagnosis/symptom_parser.ts#extractKeywords",

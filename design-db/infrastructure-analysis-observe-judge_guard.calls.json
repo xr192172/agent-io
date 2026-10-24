@@ -38,6 +38,18 @@
       "to": "src/infrastructure/analysis/observe/judge_guard.ts#judgeGuardEnabled"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "judgeGuardEnabled",
+      "kind": "function",
+      "signature": "judgeGuardEnabled(): boolean"
+    },
+    {
+      "name": "judgeGuardLog",
+      "kind": "function",
+      "signature": "judgeGuardLog(ev: TSEvent): void"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/observe/judge_guard.ts#judgeGuardLog",
     "src/presentation/http/serve.ts#startServer"

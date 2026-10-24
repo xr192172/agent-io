@@ -12,5 +12,12 @@
     }
   ],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "SCHEMA_SQL",
+      "kind": "const",
+      "signature": "const SCHEMA_SQL = ` -- schema 版本追踪（迁移机制从第一版就占位） CREATE TABLE IF NOT EXISTS …"
+    }
+  ]
 }

@@ -138,6 +138,63 @@
       "to": "src/infrastructure/analysis/observe/chain.ts#subsequencePrefixLen"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "SCOPE_EVENT_SUFFIXES",
+      "kind": "const",
+      "signature": "const SCOPE_EVENT_SUFFIXES = ['.enter', '.exit', '.catch']"
+    },
+    {
+      "name": "TSChainObs",
+      "kind": "interface",
+      "signature": "TSChainObs()"
+    },
+    {
+      "name": "MAX_CHAINS",
+      "kind": "const",
+      "signature": "const MAX_CHAINS = 512"
+    },
+    {
+      "name": "MAX_CHAIN_FRAMES",
+      "kind": "const",
+      "signature": "const MAX_CHAIN_FRAMES = 4096"
+    },
+    {
+      "name": "MAX_SEQUENCE_EXPORT",
+      "kind": "const",
+      "signature": "const MAX_SEQUENCE_EXPORT = 128"
+    },
+    {
+      "name": "TSChainMatch",
+      "kind": "interface",
+      "signature": "TSChainMatch()"
+    },
+    {
+      "name": "baseProbeName",
+      "kind": "function",
+      "signature": "baseProbeName(probe: string): string"
+    },
+    {
+      "name": "rebuildChains",
+      "kind": "function",
+      "signature": "rebuildChains(events: TSEvent[]): { chains: TSChainObs[]; dropped: number }"
+    },
+    {
+      "name": "isSubsequence",
+      "kind": "function",
+      "signature": "isSubsequence(want: string[], seq: string[]): boolean"
+    },
+    {
+      "name": "matchChainDecl",
+      "kind": "function",
+      "signature": "matchChainDecl(want: string[], chains: TSChainObs[]): { satisfied: boolean; best: TSChainMatch | null }"
+    },
+    {
+      "name": "subsequencePrefixLen",
+      "kind": "function",
+      "signature": "subsequencePrefixLen(want: string[], seq: string[]): number"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
     "src/infrastructure/analysis/observe/chain.ts#isSubsequence",

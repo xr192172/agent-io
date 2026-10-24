@@ -33,5 +33,22 @@
       "kind": "relative"
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "SKIP_LHS",
+      "kind": "const",
+      "signature": "const SKIP_LHS = new Set([ 'if', 'for', 'func', 'go', 'defer', 'range', 'r…"
+    },
+    {
+      "name": "TS_GLOBALS",
+      "kind": "const",
+      "signature": "const TS_GLOBALS = new Set([ 'window', 'document', 'history', 'location', 'n…"
+    },
+    {
+      "name": "cgTsPackage",
+      "kind": "const",
+      "signature": "const cgTsPackage = { lang: 'ts', // JS 家族：语法是 TS 子集，走同一套 ts 分支（collectSymbol…"
+    }
+  ]
 }

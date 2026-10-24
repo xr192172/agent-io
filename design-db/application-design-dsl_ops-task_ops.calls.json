@@ -1719,6 +1719,113 @@
       "to": "src/infrastructure/task_history.ts#recordTaskHistory"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "TaskOpRequest",
+      "kind": "interface",
+      "signature": "TaskOpRequest()"
+    },
+    {
+      "name": "TaskOpInput",
+      "kind": "interface",
+      "signature": "TaskOpInput()"
+    },
+    {
+      "name": "Loaded",
+      "kind": "interface",
+      "signature": "Loaded()"
+    },
+    {
+      "name": "ConstructBasis",
+      "kind": "interface",
+      "signature": "ConstructBasis()"
+    },
+    {
+      "name": "codeFingerprintAt",
+      "kind": "function",
+      "signature": "codeFingerprintAt(root: string, rels: readonly string[]): { code: string; covers: string[] }"
+    },
+    {
+      "name": "fingerprintEvidence",
+      "kind": "function",
+      "signature": "fingerprintEvidence(expectations: readonly Expectation[],\n  sourceRoot: string | undefined,\n  nodeId: string,\n  ev: EvidenceWhatSource,): TaskEvidenceFingerprint"
+    },
+    {
+      "name": "planEvidenceRerun",
+      "kind": "function",
+      "signature": "planEvidenceRerun(root: string | undefined,\n  cards: readonly EvidencePlanCard[],\n  opts?: { changed?: readonly string[] },): { rerun: EvidencePlanItem[]; skip: EvidencePlanItem[]; unknown: EvidencePlanItem[] }"
+    },
+    {
+      "name": "publishTask",
+      "kind": "function",
+      "signature": "publishTask(input: TaskOpInput): EditResult"
+    },
+    {
+      "name": "claimTask",
+      "kind": "function",
+      "signature": "claimTask(input: TaskOpInput): Promise<EditResult>"
+    },
+    {
+      "name": "renewTask",
+      "kind": "function",
+      "signature": "renewTask(input: TaskOpInput): Promise<EditResult>"
+    },
+    {
+      "name": "expireTasks",
+      "kind": "function",
+      "signature": "expireTasks(input: TaskOpInput): Promise<EditResult>"
+    },
+    {
+      "name": "releaseTask",
+      "kind": "function",
+      "signature": "releaseTask(input: TaskOpInput): Promise<EditResult>"
+    },
+    {
+      "name": "completeTask",
+      "kind": "function",
+      "signature": "completeTask(input: TaskOpInput): Promise<EditResult>"
+    },
+    {
+      "name": "reopenTask",
+      "kind": "function",
+      "signature": "reopenTask(input: TaskOpInput): Promise<EditResult>"
+    },
+    {
+      "name": "relaunchTask",
+      "kind": "function",
+      "signature": "relaunchTask(input: TaskOpInput): EditResult"
+    },
+    {
+      "name": "startTask",
+      "kind": "function",
+      "signature": "startTask(input: TaskOpInput): EditResult"
+    },
+    {
+      "name": "applyTaskPlanOp",
+      "kind": "function",
+      "signature": "applyTaskPlanOp(feature: string, op: TaskOpRequest): EditResult"
+    },
+    {
+      "name": "applyTaskOp",
+      "kind": "function",
+      "signature": "applyTaskOp(feature: string,\n  op: TaskOpRequest,\n  agent?: string,): Promise<EditResult>"
+    },
+    {
+      "name": "publishFromDiff",
+      "kind": "function",
+      "signature": "publishFromDiff(feature: string, nodeId: string): EditResult"
+    },
+    {
+      "name": "voidTask",
+      "kind": "function",
+      "signature": "voidTask(input: TaskOpInput): EditResult"
+    },
+    {
+      "name": "applyTodoOp",
+      "kind": "function",
+      "signature": "applyTodoOp(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
     "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",

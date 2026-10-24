@@ -144,6 +144,33 @@
       "to": "src/infrastructure/authoring/translate/verify.ts#verifySkeletons"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "TranslatePair",
+      "kind": "interface",
+      "signature": "TranslatePair()"
+    },
+    {
+      "name": "TRANSLATE_PAIRS",
+      "kind": "const",
+      "signature": "const TRANSLATE_PAIRS = { 'go-ts': { srcLang: 'go', srcExt: '.go', dstLang: 'ts' …"
+    },
+    {
+      "name": "TranslateResult",
+      "kind": "interface",
+      "signature": "TranslateResult()"
+    },
+    {
+      "name": "translatePair",
+      "kind": "function",
+      "signature": "translatePair(srcLang: string, dstLang: string): TranslatePair | undefined"
+    },
+    {
+      "name": "translateGoToTs",
+      "kind": "function",
+      "signature": "translateGoToTs(filePath: string, source: string): Promise<TranslateResult>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/translate/project.ts#translateGoProject",
     "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler"

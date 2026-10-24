@@ -110,6 +110,23 @@
       "to": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "EMPTY_IMPACT",
+      "kind": "const",
+      "signature": "const EMPTY_IMPACT = { affected_files: [], affected_symbols: [], dsl_contract_…"
+    },
+    {
+      "name": "runDiagnosis",
+      "kind": "function",
+      "signature": "runDiagnosis(input: DiagnoseInput): Promise<DiagnoseOutput>"
+    },
+    {
+      "name": "formatDiagnoseText",
+      "kind": "function",
+      "signature": "formatDiagnoseText(out: DiagnoseOutput): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
     "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis",

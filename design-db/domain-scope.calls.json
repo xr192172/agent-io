@@ -175,6 +175,48 @@
       "to": "src/domain/scope.ts#uniqSorted"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "Scope",
+      "kind": "type",
+      "signature": "Scope()"
+    },
+    {
+      "name": "ResolvedScope",
+      "kind": "interface",
+      "signature": "ResolvedScope()"
+    },
+    {
+      "name": "LAYERS",
+      "kind": "const",
+      "signature": "const LAYERS = ['main', 'error', 'detail']"
+    },
+    {
+      "name": "uniqSorted",
+      "kind": "const",
+      "signature": "const uniqSorted = (xs: readonly string[]): string[] => [...new Set(xs)].sort()"
+    },
+    {
+      "name": "parseScope",
+      "kind": "function",
+      "signature": "parseScope(text: string): Scope"
+    },
+    {
+      "name": "formatScope",
+      "kind": "function",
+      "signature": "formatScope(scope: Scope): string"
+    },
+    {
+      "name": "resolveScope",
+      "kind": "function",
+      "signature": "resolveScope(dsl: DesignDSL, scope: Scope): ResolvedScope"
+    },
+    {
+      "name": "resolveScopeText",
+      "kind": "function",
+      "signature": "resolveScopeText(dsl: DesignDSL, text: string): ResolvedScope"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite",
     "src/application/meta/explore/query_feature.ts#queryFeature",

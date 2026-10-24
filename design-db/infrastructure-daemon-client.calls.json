@@ -108,6 +108,43 @@
       "to": "src/infrastructure/daemon/client.ts#daemonPort"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DaemonHealth",
+      "kind": "interface",
+      "signature": "DaemonHealth()"
+    },
+    {
+      "name": "daemonPort",
+      "kind": "function",
+      "signature": "daemonPort(): number"
+    },
+    {
+      "name": "daemonBaseUrl",
+      "kind": "function",
+      "signature": "daemonBaseUrl(): string"
+    },
+    {
+      "name": "probeDaemon",
+      "kind": "function",
+      "signature": "probeDaemon(timeoutMs = 400): Promise<DaemonHealth | null>"
+    },
+    {
+      "name": "postWatch",
+      "kind": "function",
+      "signature": "postWatch(input: Record<string, unknown>, timeoutMs = 10_000): Promise<Record<string, unknown>>"
+    },
+    {
+      "name": "postDsl",
+      "kind": "function",
+      "signature": "postDsl(req: {\n    feature: string;\n    ops?: Record<string, unknown>;\n    base_dsl_rev?: number;\n    source?: string;\n  },\n  timeoutMs = 10_000,): Promise<{ ok: boolean; rev: number; conflict?: boolean; current_rev?: number; message?: string }>"
+    },
+    {
+      "name": "fetchAlertsSince",
+      "kind": "function",
+      "signature": "fetchAlertsSince(cursor: number,\n  timeoutMs = 800,): Promise<{ alerts: Array<{ id: number; project_dir: string; seq: number; line: string; created_at: string }>; cursor: number }>"
+    }
+  ],
   "reverse_calls": [
     "src/application/dispatch.ts#collectPendingAlertText",
     "src/application/dispatch.ts#dispatchDslEdit",

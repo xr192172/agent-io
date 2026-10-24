@@ -350,6 +350,73 @@
       "to": "src/domain/chain_wiring.ts#universalHopsOf"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "SlotState",
+      "kind": "type",
+      "signature": "SlotState()"
+    },
+    {
+      "name": "PreparedSlot",
+      "kind": "interface",
+      "signature": "PreparedSlot()"
+    },
+    {
+      "name": "PreparedHop",
+      "kind": "interface",
+      "signature": "PreparedHop()"
+    },
+    {
+      "name": "NextHopResolution",
+      "kind": "type",
+      "signature": "NextHopResolution()"
+    },
+    {
+      "name": "NextHopArgsResult",
+      "kind": "interface",
+      "signature": "NextHopArgsResult()"
+    },
+    {
+      "name": "NextHopArgsInput",
+      "kind": "interface",
+      "signature": "NextHopArgsInput()"
+    },
+    {
+      "name": "intentMarker",
+      "kind": "const",
+      "signature": "const intentMarker = (path: string, desc: string): string => { const h = short…"
+    },
+    {
+      "name": "unresolvedMarker",
+      "kind": "const",
+      "signature": "const unresolvedMarker = (path: string, reason: string): string => `<拿不到：${path} —…"
+    },
+    {
+      "name": "pickMarker",
+      "kind": "const",
+      "signature": "const pickMarker = (path: string, candidates: readonly string[]): string => …"
+    },
+    {
+      "name": "EdgeOutcome",
+      "kind": "type",
+      "signature": "EdgeOutcome()"
+    },
+    {
+      "name": "assignPath",
+      "kind": "function",
+      "signature": "assignPath(root: Record<string, unknown>, path: string, value: unknown): void"
+    },
+    {
+      "name": "nextHopArgs",
+      "kind": "function",
+      "signature": "nextHopArgs(touchedObj: Record<string, unknown>,\n  input: NextHopArgsInput,): NextHopArgsResult"
+    },
+    {
+      "name": "renderNextHopArgs",
+      "kind": "function",
+      "signature": "renderNextHopArgs(r: NextHopArgsResult): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/first_hop_args.ts#buildStart",
     "src/application/meta/explore/next_hop_args.ts#buildHop",

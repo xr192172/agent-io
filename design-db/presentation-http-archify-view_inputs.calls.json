@@ -5,5 +5,32 @@
   "path": "src/presentation/http/archify/view_inputs.ts",
   "symbols": [],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "ViewNode",
+      "kind": "interface",
+      "signature": "ViewNode()"
+    },
+    {
+      "name": "ViewEdge",
+      "kind": "interface",
+      "signature": "ViewEdge()"
+    },
+    {
+      "name": "ViewGroup",
+      "kind": "interface",
+      "signature": "ViewGroup()"
+    },
+    {
+      "name": "ViewDiagram",
+      "kind": "interface",
+      "signature": "ViewDiagram()"
+    },
+    {
+      "name": "RenderViews",
+      "kind": "interface",
+      "signature": "RenderViews()"
+    }
+  ]
 }

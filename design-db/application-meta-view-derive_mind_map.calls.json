@@ -1294,6 +1294,173 @@
       "to": "src/infrastructure/storage.ts#getStorageRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DeriveMindMapInput",
+      "kind": "interface",
+      "signature": "DeriveMindMapInput()"
+    },
+    {
+      "name": "DeriveMindMapResult",
+      "kind": "interface",
+      "signature": "DeriveMindMapResult()"
+    },
+    {
+      "name": "NOISE_COMMUNITY_RE",
+      "kind": "const",
+      "signature": "const NOISE_COMMUNITY_RE = /^(min|max|small|big)?(heap|hash|map|set|list|stack|queue…"
+    },
+    {
+      "name": "NOISE_ZH",
+      "kind": "const",
+      "signature": "const NOISE_ZH = '内部组件'"
+    },
+    {
+      "name": "FileInfo",
+      "kind": "interface",
+      "signature": "FileInfo()"
+    },
+    {
+      "name": "FileIndex",
+      "kind": "type",
+      "signature": "FileIndex()"
+    },
+    {
+      "name": "TYPE_HUMAN",
+      "kind": "const",
+      "signature": "const TYPE_HUMAN = [ [/raw\\s*event/i, '原始事件'], [/event/i, '事件'], [/probe\\s*(…"
+    },
+    {
+      "name": "GENERIC_T",
+      "kind": "const",
+      "signature": "const GENERIC_T = new Set([ 'string', 'number', 'boolean', 'bool', 'int', '…"
+    },
+    {
+      "name": "GENERIC_T_ZH",
+      "kind": "const",
+      "signature": "const GENERIC_T_ZH = new Set([ '文本', '字符串', '数字', '数值', '布尔', '数组', '对象', '字典'…"
+    },
+    {
+      "name": "StepFlowOut",
+      "kind": "interface",
+      "signature": "StepFlowOut()"
+    },
+    {
+      "name": "CrossFeatureFlowEdge",
+      "kind": "interface",
+      "signature": "CrossFeatureFlowEdge()"
+    },
+    {
+      "name": "FileFlowNode",
+      "kind": "interface",
+      "signature": "FileFlowNode()"
+    },
+    {
+      "name": "TeachScript",
+      "kind": "interface",
+      "signature": "TeachScript()"
+    },
+    {
+      "name": "TECH_NOISE_RE",
+      "kind": "const",
+      "signature": "const TECH_NOISE_RE = /[\\w./-]+\\(\\s*\\)|[\\w-]+\\.(ts|tsx|js|mjs|go|py|rs|java)\\b|…"
+    },
+    {
+      "name": "PlaceProposalsResult",
+      "kind": "interface",
+      "signature": "PlaceProposalsResult()"
+    },
+    {
+      "name": "ResolvedNoteTarget",
+      "kind": "interface",
+      "signature": "ResolvedNoteTarget()"
+    },
+    {
+      "name": "ResolvedCanvasNote",
+      "kind": "interface",
+      "signature": "ResolvedCanvasNote()"
+    },
+    {
+      "name": "TeachStepIdx",
+      "kind": "interface",
+      "signature": "TeachStepIdx()"
+    },
+    {
+      "name": "TeachIndex",
+      "kind": "interface",
+      "signature": "TeachIndex()"
+    },
+    {
+      "name": "NoteCtx",
+      "kind": "interface",
+      "signature": "NoteCtx()"
+    },
+    {
+      "name": "CanvasNotesDigest",
+      "kind": "interface",
+      "signature": "CanvasNotesDigest()"
+    },
+    {
+      "name": "NOTE_STATUS_LABEL",
+      "kind": "const",
+      "signature": "const NOTE_STATUS_LABEL = { open: '待处理', done: '已处理', rejected: '已驳回' }"
+    },
+    {
+      "name": "getMindMapFile",
+      "kind": "function",
+      "signature": "getMindMapFile(feature: string, view: 'structure' | 'teach' = 'structure'): string"
+    },
+    {
+      "name": "buildFileIndex",
+      "kind": "function",
+      "signature": "buildFileIndex(dsl: DesignDSL): FileIndex"
+    },
+    {
+      "name": "projectSignature",
+      "kind": "function",
+      "signature": "projectSignature(sig: string | null | undefined,\n  params?: ParsedParam[] | null,): ProjectedShape | null"
+    },
+    {
+      "name": "projectStepDataShape",
+      "kind": "function",
+      "signature": "projectStepDataShape(involves: string[] | undefined,\n  fileIndex: FileIndex,\n  cap = 6,): { inputs: TeachPin[]; outputs: TeachPin[]; via: PinSource } | null"
+    },
+    {
+      "name": "projectFileDataShape",
+      "kind": "function",
+      "signature": "projectFileDataShape(file: string,\n  fileIndex: FileIndex,\n  cap = 3,): { inputs: TeachPin[]; outputs: TeachPin[]; via: PinSource } | null"
+    },
+    {
+      "name": "pinIdentityKeys",
+      "kind": "function",
+      "signature": "pinIdentityKeys(pins: TeachPin[] | undefined): Set<string>"
+    },
+    {
+      "name": "deriveStepFlow",
+      "kind": "function",
+      "signature": "deriveStepFlow(steps: TeachStep[],\n  stepIds: string[],\n  global?: { produced?: Set<string>; consumed?: Set<string> },): StepFlowOut"
+    },
+    {
+      "name": "deriveCrossFeatureFlow",
+      "kind": "function",
+      "signature": "deriveCrossFeatureFlow(features: Array<{ id: string; steps: TeachStep[] }>,): CrossFeatureFlowEdge[]"
+    },
+    {
+      "name": "deriveFileFlow",
+      "kind": "function",
+      "signature": "deriveFileFlow(files: FileFlowNode[]): TeachFlowEdge[]"
+    },
+    {
+      "name": "placeProposals",
+      "kind": "function",
+      "signature": "placeProposals(feature: string): Promise<PlaceProposalsResult>"
+    },
+    {
+      "name": "deriveMindMap",
+      "kind": "function",
+      "signature": "deriveMindMap(input: DeriveMindMapInput): Promise<TouchedProduct<DeriveMindMapResult>>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/derive/opl.ts#oplIntegrate",
     "src/application/design/derive/opl.ts#oplLocate",

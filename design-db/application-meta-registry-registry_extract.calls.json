@@ -131,6 +131,33 @@
       "to": "src/application/meta/registry/registry_extract.ts#handlerDefBody"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "RegistryTool",
+      "kind": "interface",
+      "signature": "RegistryTool()"
+    },
+    {
+      "name": "RegistryExtractResult",
+      "kind": "interface",
+      "signature": "RegistryExtractResult()"
+    },
+    {
+      "name": "extractImportMap",
+      "kind": "const",
+      "signature": "const extractImportMap = parseRelativeNamedImportMap"
+    },
+    {
+      "name": "extractRegistryTools",
+      "kind": "function",
+      "signature": "extractRegistryTools(src: string): RegistryExtractResult"
+    },
+    {
+      "name": "extractRegistryToolsFromFile",
+      "kind": "function",
+      "signature": "extractRegistryToolsFromFile(registryFile: string,): RegistryExtractResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/registry/registry_extract.ts#extractRegistryTools",
     "src/application/meta/registry/registry_extract.ts#extractRegistryToolsFromFile"

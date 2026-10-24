@@ -99,6 +99,33 @@
       "to": "src/infrastructure/authoring/version_upgrade/adapters/node.ts#nodeRunMode"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "NODE_FEATURES",
+      "kind": "const",
+      "signature": "const NODE_FEATURES = [ { name: '可选链 ?.', tool: 'node', since: 14, pattern: /\\?…"
+    },
+    {
+      "name": "NODE_REMOVED",
+      "kind": "const",
+      "signature": "const NODE_REMOVED = [ { name: 'new Buffer(...)', tool: 'node', since: 6, kind…"
+    },
+    {
+      "name": "MODULE_RESOLVE_RE",
+      "kind": "const",
+      "signature": "const MODULE_RESOLVE_RE = /Cannot find module|ERR_MODULE_NOT_FOUND|Cannot use impor…"
+    },
+    {
+      "name": "NodeRunMode",
+      "kind": "type",
+      "signature": "NodeRunMode()"
+    },
+    {
+      "name": "nodeAdapter",
+      "kind": "const",
+      "signature": "const nodeAdapter = { lang: 'node', label: 'Node', declarationFiles: ['.nvmrc…"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/version_upgrade/adapters/node.ts#nodeRunProbe"
   ]

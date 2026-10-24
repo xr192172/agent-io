@@ -337,6 +337,78 @@
       "to": "src/infrastructure/graph/dead_deps.ts#qualifierLines"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DeadImportCandidate",
+      "kind": "interface",
+      "signature": "DeadImportCandidate()"
+    },
+    {
+      "name": "NeedsReviewCandidate",
+      "kind": "interface",
+      "signature": "NeedsReviewCandidate()"
+    },
+    {
+      "name": "UnjudgedCandidate",
+      "kind": "interface",
+      "signature": "UnjudgedCandidate()"
+    },
+    {
+      "name": "DetectDeadImportsOptions",
+      "kind": "interface",
+      "signature": "DetectDeadImportsOptions()"
+    },
+    {
+      "name": "DetectDeadImportsResult",
+      "kind": "interface",
+      "signature": "DetectDeadImportsResult()"
+    },
+    {
+      "name": "FileKind",
+      "kind": "type",
+      "signature": "FileKind()"
+    },
+    {
+      "name": "TS_RE",
+      "kind": "const",
+      "signature": "const TS_RE = /\\.(ts|tsx|js|jsx|mjs|cjs)$/"
+    },
+    {
+      "name": "GO_RE",
+      "kind": "const",
+      "signature": "const GO_RE = /\\.go$/"
+    },
+    {
+      "name": "SourceVerdict",
+      "kind": "type",
+      "signature": "SourceVerdict()"
+    },
+    {
+      "name": "TS_TRY_EXTS",
+      "kind": "const",
+      "signature": "const TS_TRY_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']"
+    },
+    {
+      "name": "classifyFileKind",
+      "kind": "function",
+      "signature": "classifyFileKind(rel: string): FileKind"
+    },
+    {
+      "name": "scanProjectSourceFiles",
+      "kind": "function",
+      "signature": "scanProjectSourceFiles(project_dir: string, files?: string[]): string[]"
+    },
+    {
+      "name": "detectDeadImports",
+      "kind": "function",
+      "signature": "detectDeadImports(opts: DetectDeadImportsOptions): DetectDeadImportsResult"
+    },
+    {
+      "name": "enumerateTsSources",
+      "kind": "function",
+      "signature": "enumerateTsSources(src: string): string[]"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
     "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",

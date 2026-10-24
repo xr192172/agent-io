@@ -424,6 +424,93 @@
       "to": "src/infrastructure/analysis/observe/instrument.ts#instrumentFile"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "PointReason",
+      "kind": "interface",
+      "signature": "PointReason()"
+    },
+    {
+      "name": "ObservePoint",
+      "kind": "interface",
+      "signature": "ObservePoint()"
+    },
+    {
+      "name": "RecommendOptions",
+      "kind": "interface",
+      "signature": "RecommendOptions()"
+    },
+    {
+      "name": "FOCUS_BOOST",
+      "kind": "const",
+      "signature": "const FOCUS_BOOST = 0.25"
+    },
+    {
+      "name": "RecommendStats",
+      "kind": "interface",
+      "signature": "RecommendStats()"
+    },
+    {
+      "name": "RecommendResult",
+      "kind": "interface",
+      "signature": "RecommendResult()"
+    },
+    {
+      "name": "SIGNAL_WEIGHTS",
+      "kind": "const",
+      "signature": "const SIGNAL_WEIGHTS = { indegree: 0.3, recentlyChanged: 0.2, io: 0.2, silentCat…"
+    },
+    {
+      "name": "IO_NAMES",
+      "kind": "const",
+      "signature": "const IO_NAMES = [ 'writeFileSync', 'writeFile', 'appendFileSync', 'append…"
+    },
+    {
+      "name": "DEFAULT_MAX_POINTS",
+      "kind": "const",
+      "signature": "const DEFAULT_MAX_POINTS = 40"
+    },
+    {
+      "name": "DEFAULT_MAX_FILES",
+      "kind": "const",
+      "signature": "const DEFAULT_MAX_FILES = 20"
+    },
+    {
+      "name": "MAX_PER_SYMBOL",
+      "kind": "const",
+      "signature": "const MAX_PER_SYMBOL = 3"
+    },
+    {
+      "name": "MAX_PER_FILE",
+      "kind": "const",
+      "signature": "const MAX_PER_FILE = 8"
+    },
+    {
+      "name": "HOT_FILE_MS",
+      "kind": "const",
+      "signature": "const HOT_FILE_MS = 24 * 3600 * 1000"
+    },
+    {
+      "name": "BIG_SYMBOL_LINES",
+      "kind": "const",
+      "signature": "const BIG_SYMBOL_LINES = 40"
+    },
+    {
+      "name": "SymbolRow",
+      "kind": "interface",
+      "signature": "SymbolRow()"
+    },
+    {
+      "name": "observePointsFile",
+      "kind": "function",
+      "signature": "observePointsFile(root: string): string"
+    },
+    {
+      "name": "recommendObservePoints",
+      "kind": "function",
+      "signature": "recommendObservePoints(db: Database,\n  projectRoot: string,\n  opts: RecommendOptions = {},): Promise<RecommendResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/capture/observe_points.ts#recommendObservePoints"
   ]

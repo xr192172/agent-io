@@ -335,6 +335,88 @@
       "to": "src/application/refactor/rule_library/rule_library.ts#serializeRule"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "RuleLevel",
+      "kind": "type",
+      "signature": "RuleLevel()"
+    },
+    {
+      "name": "RULE_LEVELS",
+      "kind": "const",
+      "signature": "const RULE_LEVELS = ['error', 'warn', 'info'] as const"
+    },
+    {
+      "name": "RuleFixture",
+      "kind": "interface",
+      "signature": "RuleFixture()"
+    },
+    {
+      "name": "Rule",
+      "kind": "interface",
+      "signature": "Rule()"
+    },
+    {
+      "name": "RuleLoadError",
+      "kind": "interface",
+      "signature": "RuleLoadError()"
+    },
+    {
+      "name": "LoadRulesResult",
+      "kind": "interface",
+      "signature": "LoadRulesResult()"
+    },
+    {
+      "name": "rulesDir",
+      "kind": "function",
+      "signature": "rulesDir(root: string): string"
+    },
+    {
+      "name": "baselinePath",
+      "kind": "function",
+      "signature": "baselinePath(root: string): string"
+    },
+    {
+      "name": "parseRule",
+      "kind": "function",
+      "signature": "parseRule(md: string, id: string, sourcePath?: string): Rule"
+    },
+    {
+      "name": "parseFixtures",
+      "kind": "function",
+      "signature": "parseFixtures(body: string): RuleFixture[]"
+    },
+    {
+      "name": "serializeRule",
+      "kind": "function",
+      "signature": "serializeRule(rule: Rule): string"
+    },
+    {
+      "name": "loadRules",
+      "kind": "function",
+      "signature": "loadRules(root: string): LoadRulesResult"
+    },
+    {
+      "name": "writeRule",
+      "kind": "function",
+      "signature": "writeRule(root: string, rule: Rule): string"
+    },
+    {
+      "name": "isLegalRuleId",
+      "kind": "function",
+      "signature": "isLegalRuleId(id: string): boolean"
+    },
+    {
+      "name": "hasNegativeFixture",
+      "kind": "function",
+      "signature": "hasNegativeFixture(rule: Rule): boolean"
+    },
+    {
+      "name": "hasPositiveFixture",
+      "kind": "function",
+      "signature": "hasPositiveFixture(rule: Rule): boolean"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/rule_library/rule_apply.ts#loadBaseline",
     "src/application/refactor/rule_library/rule_apply.ts#runAllFixtures",

@@ -299,6 +299,23 @@
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DeriveAnimFlowInput",
+      "kind": "interface",
+      "signature": "DeriveAnimFlowInput()"
+    },
+    {
+      "name": "DeriveAnimFlowResult",
+      "kind": "interface",
+      "signature": "DeriveAnimFlowResult()"
+    },
+    {
+      "name": "deriveAnimFlow",
+      "kind": "function",
+      "signature": "deriveAnimFlow(input: DeriveAnimFlowInput): Promise<TouchedProduct<DeriveAnimFlowResult>>"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/view/derive_anim_flow.ts#deriveAnimFlow",
     "src/application/meta/view/derive_anim_flow.ts#deriveAnimFlowCore"

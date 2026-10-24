@@ -122,6 +122,43 @@
       "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "PooledTranslatorConfig",
+      "kind": "interface",
+      "signature": "PooledTranslatorConfig()"
+    },
+    {
+      "name": "ChatMessage",
+      "kind": "interface",
+      "signature": "ChatMessage()"
+    },
+    {
+      "name": "SYSTEM_FILL",
+      "kind": "const",
+      "signature": "const SYSTEM_FILL = '你是源码翻译器。严格遵守 user 的约束：只输出目标函数体，不得生成 export function 外壳、不…"
+    },
+    {
+      "name": "SYSTEM_BATCH",
+      "kind": "const",
+      "signature": "const SYSTEM_BATCH = '你是源码翻译器。必须为每个函数各输出一个 `<unit id=\"...\">函数体</unit>` 标记块，块数=…"
+    },
+    {
+      "name": "normalizeBody",
+      "kind": "function",
+      "signature": "normalizeBody(c: string): string"
+    },
+    {
+      "name": "createPooledHoleTranslator",
+      "kind": "function",
+      "signature": "createPooledHoleTranslator(config: PooledTranslatorConfig = {}): HoleTranslator"
+    },
+    {
+      "name": "createPooledBatchTranslator",
+      "kind": "function",
+      "signature": "createPooledBatchTranslator(config: PooledTranslatorConfig = {}): BatchHoleTranslator"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/translate/llm.ts#createPooledBatchTranslator",
     "src/infrastructure/authoring/translate/llm.ts#createPooledHoleTranslator",

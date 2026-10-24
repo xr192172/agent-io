@@ -117,6 +117,28 @@
       "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "RoleFileInput",
+      "kind": "interface",
+      "signature": "RoleFileInput()"
+    },
+    {
+      "name": "RoleTitleOptions",
+      "kind": "interface",
+      "signature": "RoleTitleOptions()"
+    },
+    {
+      "name": "TitleEntry",
+      "kind": "interface",
+      "signature": "TitleEntry()"
+    },
+    {
+      "name": "generateFileRoleTitles",
+      "kind": "function",
+      "signature": "generateFileRoleTitles(files: RoleFileInput[],\n  opts: RoleTitleOptions = {},): Promise<Record<string, string>>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/structure/role_title.ts#generateFileRoleTitles",
     "src/infrastructure/graph/import_project.ts#importProject"

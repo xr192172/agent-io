@@ -56,5 +56,12 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "HARVEST_TOOLS",
+      "kind": "const",
+      "signature": "const HARVEST_TOOLS = [ { name: 'harvest_decisions', title: 'Harvest why-a-file…"
+    }
+  ]
 }

@@ -194,6 +194,43 @@
       "to": "src/infrastructure/parse/ast_parser.ts#parseFileSymbols"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "Verdict",
+      "kind": "type",
+      "signature": "Verdict()"
+    },
+    {
+      "name": "ExpectationItem",
+      "kind": "interface",
+      "signature": "ExpectationItem()"
+    },
+    {
+      "name": "ExpectationsReport",
+      "kind": "interface",
+      "signature": "ExpectationsReport()"
+    },
+    {
+      "name": "ExpectationConflict",
+      "kind": "interface",
+      "signature": "ExpectationConflict()"
+    },
+    {
+      "name": "findExpectationConflicts",
+      "kind": "function",
+      "signature": "findExpectationConflicts(items: readonly JudgeItem[],): ExpectationConflict[]"
+    },
+    {
+      "name": "indexStaleFor",
+      "kind": "function",
+      "signature": "indexStaleFor(root: string, rels: readonly string[]): string | null"
+    },
+    {
+      "name": "judgeExpectations",
+      "kind": "function",
+      "signature": "judgeExpectations(root: string,\n  items: readonly JudgeItem[],): Promise<ExpectationsReport>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/task_ops.ts#planEvidenceRerun",
     "src/application/design/intent/expectations.ts#judgeExpectations",

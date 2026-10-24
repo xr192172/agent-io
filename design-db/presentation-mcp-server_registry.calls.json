@@ -669,6 +669,133 @@
       "to": "src/presentation/mcp/tool_warnings.ts#emitWarnings"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "prewarmPromise",
+      "kind": "const",
+      "signature": "const prewarmPromise = null"
+    },
+    {
+      "name": "SELF_PATH",
+      "kind": "const",
+      "signature": "const SELF_PATH = (() => { try { return fileURLToPath(import.meta.url); } c…"
+    },
+    {
+      "name": "SELF_MTIME_MS",
+      "kind": "const",
+      "signature": "const SELF_MTIME_MS = SELF_PATH ? safeMtimeMs(SELF_PATH) : null"
+    },
+    {
+      "name": "PACKAGE_ROOT",
+      "kind": "const",
+      "signature": "const PACKAGE_ROOT = SELF_PATH ? resolveProjectRoot(SELF_PATH) : null"
+    },
+    {
+      "name": "SRC_DIR",
+      "kind": "const",
+      "signature": "const SRC_DIR = PACKAGE_ROOT ? path.join(PACKAGE_ROOT, 'src') : null"
+    },
+    {
+      "name": "DIST_DIR",
+      "kind": "const",
+      "signature": "const DIST_DIR = PACKAGE_ROOT ? path.join(PACKAGE_ROOT, 'dist') : null"
+    },
+    {
+      "name": "_srcMaxCache",
+      "kind": "const",
+      "signature": "const _srcMaxCache = null"
+    },
+    {
+      "name": "STALE_INDEX_TTL_MS",
+      "kind": "const",
+      "signature": "const STALE_INDEX_TTL_MS = 5000"
+    },
+    {
+      "name": "_staleIndexCache",
+      "kind": "const",
+      "signature": "const _staleIndexCache = null"
+    },
+    {
+      "name": "NO_PROJECT_ROOT_NOTE",
+      "kind": "const",
+      "signature": "const NO_PROJECT_ROOT_NOTE = '本次调用未解析到项目根 ⇒ 未做索引保鲜 / 未做陈旧检查（结果可能基于旧图）'"
+    },
+    {
+      "name": "ArgValidator",
+      "kind": "interface",
+      "signature": "ArgValidator()"
+    },
+    {
+      "name": "_argValidators",
+      "kind": "const",
+      "signature": "const _argValidators = new WeakMap<ToolDef, ArgValidator>()"
+    },
+    {
+      "name": "ATOMIC_ENTRY_NAME",
+      "kind": "const",
+      "signature": "const ATOMIC_ENTRY_NAME = 'atomic_call'"
+    },
+    {
+      "name": "staleBuildWarningFor",
+      "kind": "function",
+      "signature": "staleBuildWarningFor(loadedMtimeMs: number | null, curMtimeMs: number | null): ToolWarning | null"
+    },
+    {
+      "name": "newestMtime",
+      "kind": "function",
+      "signature": "newestMtime(dir: string | null, skipGen: boolean): number | null"
+    },
+    {
+      "name": "staleSourceWarningFor",
+      "kind": "function",
+      "signature": "staleSourceWarningFor(srcMax: number | null, distMax: number | null): ToolWarning | null"
+    },
+    {
+      "name": "liveDslFallbackWarning",
+      "kind": "function",
+      "signature": "liveDslFallbackWarning(): ToolWarning | null"
+    },
+    {
+      "name": "resolveRootFromArgs",
+      "kind": "function",
+      "signature": "resolveRootFromArgs(args: Record<string, unknown>): string | null"
+    },
+    {
+      "name": "resetStaleIndexWarningCache",
+      "kind": "function",
+      "signature": "resetStaleIndexWarningCache(): void"
+    },
+    {
+      "name": "staleIndexWarning",
+      "kind": "function",
+      "signature": "staleIndexWarning(rawRoot: string | null): ToolWarning | null"
+    },
+    {
+      "name": "freshnessRefusedWarning",
+      "kind": "function",
+      "signature": "freshnessRefusedWarning(msg: string, scope: string | null): ToolWarning | null"
+    },
+    {
+      "name": "firstContactBackfill",
+      "kind": "function",
+      "signature": "firstContactBackfill(rawRoot: string | null): string"
+    },
+    {
+      "name": "trustNoteFor",
+      "kind": "function",
+      "signature": "trustNoteFor(rawRoot: string | null): string"
+    },
+    {
+      "name": "invokeTool",
+      "kind": "function",
+      "signature": "invokeTool(def: ToolDef,\n  args: Record<string, unknown> | undefined,\n  via: DogfoodVia = 'mcp',): Promise<{ text: string; isError?: boolean }>"
+    },
+    {
+      "name": "registerAllTools",
+      "kind": "function",
+      "signature": "registerAllTools(server: McpServer): void"
+    }
+  ],
   "reverse_calls": [
     "src/presentation/http/serve.ts#handleApiTool",
     "src/presentation/mcp/server_registry.ts#argValidatorOf",

@@ -236,6 +236,63 @@
       "to": "src/infrastructure/storage.ts#getDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "engineCache",
+      "kind": "const",
+      "signature": "const engineCache = new Map<string, SimulationEngine>()"
+    },
+    {
+      "name": "RunSimulationInput",
+      "kind": "interface",
+      "signature": "RunSimulationInput()"
+    },
+    {
+      "name": "RunSimulationResult",
+      "kind": "interface",
+      "signature": "RunSimulationResult()"
+    },
+    {
+      "name": "GetSimulationStateInput",
+      "kind": "interface",
+      "signature": "GetSimulationStateInput()"
+    },
+    {
+      "name": "GetSimulationStateResult",
+      "kind": "interface",
+      "signature": "GetSimulationStateResult()"
+    },
+    {
+      "name": "ResetSimulationInput",
+      "kind": "interface",
+      "signature": "ResetSimulationInput()"
+    },
+    {
+      "name": "ResetSimulationResult",
+      "kind": "interface",
+      "signature": "ResetSimulationResult()"
+    },
+    {
+      "name": "runSimulation",
+      "kind": "function",
+      "signature": "runSimulation(input: RunSimulationInput): RunSimulationResult"
+    },
+    {
+      "name": "getSimulationState",
+      "kind": "function",
+      "signature": "getSimulationState(input: GetSimulationStateInput): GetSimulationStateResult"
+    },
+    {
+      "name": "resetSimulation",
+      "kind": "function",
+      "signature": "resetSimulation(input: ResetSimulationInput): ResetSimulationResult"
+    },
+    {
+      "name": "clearEngineCache",
+      "kind": "function",
+      "signature": "clearEngineCache(): void"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/update_feature.ts#applySimulationOp",
     "src/application/design/lifecycle/simulation.ts#getSimulationState",

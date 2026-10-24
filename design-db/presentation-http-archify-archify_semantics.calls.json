@@ -5,5 +5,42 @@
   "path": "src/presentation/http/archify/archify_semantics.ts",
   "symbols": [],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "GENERIC_T",
+      "kind": "const",
+      "signature": "const GENERIC_T = /^(string|number|boolean|void|unknown|any|null|undefined|…"
+    },
+    {
+      "name": "GENERIC_T_ZH",
+      "kind": "const",
+      "signature": "const GENERIC_T_ZH = /^(字符串|数字|布尔|空|未知|对象|数组|异常|无|数据|结果)$/"
+    },
+    {
+      "name": "SemanticNode",
+      "kind": "interface",
+      "signature": "SemanticNode()"
+    },
+    {
+      "name": "SemanticEdge",
+      "kind": "interface",
+      "signature": "SemanticEdge()"
+    },
+    {
+      "name": "SemanticSurface",
+      "kind": "interface",
+      "signature": "SemanticSurface()"
+    },
+    {
+      "name": "RawNode",
+      "kind": "interface",
+      "signature": "RawNode()"
+    },
+    {
+      "name": "REdge",
+      "kind": "interface",
+      "signature": "REdge()"
+    }
+  ]
 }

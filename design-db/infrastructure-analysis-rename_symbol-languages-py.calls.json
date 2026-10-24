@@ -92,6 +92,23 @@
       "to": "src/infrastructure/parse/loader.ts#getParser"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "pyPackage",
+      "kind": "const",
+      "signature": "const pyPackage = { exts: ['.py'], rename: (a) => renamePythonSymbol({ file…"
+    },
+    {
+      "name": "analyzePythonSource",
+      "kind": "function",
+      "signature": "analyzePythonSource(src: string): Promise<GoModuleAnalysis | null>"
+    },
+    {
+      "name": "renamePythonSymbol",
+      "kind": "function",
+      "signature": "renamePythonSymbol(args: {\n  file: string;\n  symbol: string;\n  to: string;\n  dryRun: boolean;\n  resolvedRoot: string;\n  blocked: string[];\n  /** ★ 落盘注入（`parts#SourceWriteHook`）：引擎不写盘，没注入就抛 */\n  write?: SourceWriteHook;\n}): Promise<RenameSymbolResult>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/rename_symbol/languages/py.ts#renamePythonSymbol"
   ]

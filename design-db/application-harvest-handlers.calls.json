@@ -21,5 +21,12 @@
       "kind": "relative"
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "harvestDecisionsHandler",
+      "kind": "const",
+      "signature": "const harvestDecisionsHandler = wrapData(async (a) => { const r = await harvestDecisions(…"
+    }
+  ]
 }

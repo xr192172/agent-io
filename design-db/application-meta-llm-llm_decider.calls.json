@@ -457,6 +457,43 @@
       "to": "src/infrastructure/storage.ts#getDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DecideAction",
+      "kind": "type",
+      "signature": "DecideAction()"
+    },
+    {
+      "name": "NoteDecisionResult",
+      "kind": "interface",
+      "signature": "NoteDecisionResult()"
+    },
+    {
+      "name": "DecideCanvasNotesInput",
+      "kind": "interface",
+      "signature": "DecideCanvasNotesInput()"
+    },
+    {
+      "name": "DecideCanvasNotesResult",
+      "kind": "interface",
+      "signature": "DecideCanvasNotesResult()"
+    },
+    {
+      "name": "FileExcerpt",
+      "kind": "interface",
+      "signature": "FileExcerpt()"
+    },
+    {
+      "name": "RawDecision",
+      "kind": "interface",
+      "signature": "RawDecision()"
+    },
+    {
+      "name": "decideCanvasNotes",
+      "kind": "function",
+      "signature": "decideCanvasNotes(input: DecideCanvasNotesInput): Promise<DecideCanvasNotesResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
     "src/application/meta/llm/llm_decider.ts#llmDecide",

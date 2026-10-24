@@ -106,6 +106,28 @@
       "to": "src/infrastructure/analysis/diagnosis/verifier.ts#detectKind"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "VerifyInput",
+      "kind": "interface",
+      "signature": "VerifyInput()"
+    },
+    {
+      "name": "ProjectKind",
+      "kind": "interface",
+      "signature": "ProjectKind()"
+    },
+    {
+      "name": "detectKind",
+      "kind": "function",
+      "signature": "detectKind(project_dir: string): ProjectKind | null"
+    },
+    {
+      "name": "suggestVerification",
+      "kind": "function",
+      "signature": "suggestVerification(input: VerifyInput): Verification[]"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
     "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis",

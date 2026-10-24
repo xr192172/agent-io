@@ -98,6 +98,38 @@
       "to": "src/infrastructure/parse/languages.ts#languageModuleSpec"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "LangKind",
+      "kind": "type",
+      "signature": "LangKind()"
+    },
+    {
+      "name": "LanguageEntry",
+      "kind": "interface",
+      "signature": "LanguageEntry()"
+    },
+    {
+      "name": "LANGUAGES",
+      "kind": "const",
+      "signature": "const LANGUAGES = [ // === Web/JS 生态 === // TS 符号宇宙 v6 扩容：type_alias/enum/a…"
+    },
+    {
+      "name": "findLanguageByExt",
+      "kind": "function",
+      "signature": "findLanguageByExt(ext: string): LanguageEntry | undefined"
+    },
+    {
+      "name": "languageModuleSpec",
+      "kind": "function",
+      "signature": "languageModuleSpec(pkg: string, pkgSpec?: string | null): string | null"
+    },
+    {
+      "name": "moduleSpecOfPkg",
+      "kind": "function",
+      "signature": "moduleSpecOfPkg(pkg: string): string | null"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile",
     "src/application/refactor/rename/rename_local.ts#renameLocals",

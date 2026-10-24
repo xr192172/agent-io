@@ -414,6 +414,78 @@
       "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#manifestPresent"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ObserveSite",
+      "kind": "interface",
+      "signature": "ObserveSite()"
+    },
+    {
+      "name": "ObserveFileResult",
+      "kind": "interface",
+      "signature": "ObserveFileResult()"
+    },
+    {
+      "name": "ObserveInstrumentReport",
+      "kind": "interface",
+      "signature": "ObserveInstrumentReport()"
+    },
+    {
+      "name": "ObserveUninstrumentReport",
+      "kind": "interface",
+      "signature": "ObserveUninstrumentReport()"
+    },
+    {
+      "name": "ObserveLangPack",
+      "kind": "interface",
+      "signature": "ObserveLangPack()"
+    },
+    {
+      "name": "ObserveInstrumentOptions",
+      "kind": "interface",
+      "signature": "ObserveInstrumentOptions()"
+    },
+    {
+      "name": "tsJsObservePack",
+      "kind": "const",
+      "signature": "const tsJsObservePack = { lang: 'ts_js', label: 'TypeScript / JavaScript', // ★★★…"
+    },
+    {
+      "name": "goObservePack",
+      "kind": "const",
+      "signature": "const goObservePack = { lang: 'go', label: 'Go', isSourceFile: (rel) => rel.end…"
+    },
+    {
+      "name": "pyObservePack",
+      "kind": "const",
+      "signature": "const pyObservePack = { lang: 'python', label: 'Python', isSourceFile: (rel) =>…"
+    },
+    {
+      "name": "javaObservePack",
+      "kind": "const",
+      "signature": "const javaObservePack = { lang: 'java', label: 'Java', isSourceFile: (rel) => isI…"
+    },
+    {
+      "name": "ObserveLangRegistry",
+      "kind": "class",
+      "signature": "ObserveLangRegistry()"
+    },
+    {
+      "name": "observeLangs",
+      "kind": "const",
+      "signature": "const observeLangs = new ObserveLangRegistry()"
+    },
+    {
+      "name": "renderInstrumentReport",
+      "kind": "function",
+      "signature": "renderInstrumentReport(rep: ObserveInstrumentReport,\n  opts: { target: string; contractProbes?: string[] },): string[]"
+    },
+    {
+      "name": "renderUninstrumentReport",
+      "kind": "function",
+      "signature": "renderUninstrumentReport(rep: ObserveUninstrumentReport): string"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/observe/observe_langs.ts#ObserveLangRegistry.pickAll"
   ]

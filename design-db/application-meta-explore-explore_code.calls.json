@@ -890,6 +890,53 @@
       "to": "src/infrastructure/text/line_utils.ts#splitKeepEnds"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "EXPLORE_ACTIONS",
+      "kind": "const",
+      "signature": "const EXPLORE_ACTIONS = [ 'search', 'read', 'diff_impact', 'arch_layer', 'guided_…"
+    },
+    {
+      "name": "ExploreAction",
+      "kind": "type",
+      "signature": "ExploreAction()"
+    },
+    {
+      "name": "READ_PREVIEW_CAP",
+      "kind": "const",
+      "signature": "const READ_PREVIEW_CAP = 500"
+    },
+    {
+      "name": "SYMBOL_TABLE_CAP",
+      "kind": "const",
+      "signature": "const SYMBOL_TABLE_CAP = 30"
+    },
+    {
+      "name": "SymbolIndexItem",
+      "kind": "type",
+      "signature": "SymbolIndexItem()"
+    },
+    {
+      "name": "ReadCodeOptions",
+      "kind": "interface",
+      "signature": "ReadCodeOptions()"
+    },
+    {
+      "name": "ReadCodeData",
+      "kind": "interface",
+      "signature": "ReadCodeData()"
+    },
+    {
+      "name": "exploreCode",
+      "kind": "function",
+      "signature": "exploreCode(params: { action: ExploreAction; args: Record<string, unknown> }): Promise<{ message: string; data: unknown }>"
+    },
+    {
+      "name": "readFacts",
+      "kind": "function",
+      "signature": "readFacts(input: FactsInput): { message: string; data: FactsData }"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/explore_code.ts#exploreCode",
     "src/application/meta/explore/explore_code.ts#readFacts"

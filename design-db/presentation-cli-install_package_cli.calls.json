@@ -453,6 +453,63 @@
       "to": "src/presentation/cli/install_package_cli.ts#verifyAbi"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "LangPackRow",
+      "kind": "interface",
+      "signature": "LangPackRow()"
+    },
+    {
+      "name": "DERIVED",
+      "kind": "const",
+      "signature": "const DERIVED = { tsx: 'typescript', jsx: 'javascript' }"
+    },
+    {
+      "name": "GH_SOURCES",
+      "kind": "const",
+      "signature": "const GH_SOURCES = { go: 'https://github.com/tree-sitter/tree-sitter-go', py…"
+    },
+    {
+      "name": "hasHostPrebuild",
+      "kind": "function",
+      "signature": "hasHostPrebuild(pkg: string): boolean"
+    },
+    {
+      "name": "compatVerdict",
+      "kind": "function",
+      "signature": "compatVerdict(compat: TemplateCompat, prebuild: boolean | null, usesNan: boolean | null = null): string"
+    },
+    {
+      "name": "registryInstallScript",
+      "kind": "function",
+      "signature": "registryInstallScript(pkg: string): {\n  script: string | null;\n  /** 上游 latest 版本号（取不到 ⇒ null） */\n  version: string | null;\n  /** 上游 latest 是否 NAN 绑定（取不到 ⇒ null） */\n  usesNan: boolean | null;\n  /**\n   * 上游 latest 声明的 `peerDependencies['tree-sitter']`（没声明 ⇒ null）。\n   * ★★ 2026-10-08 补：**只看\"模板修了\"会推荐一个装不上的版本** —— 实测 `tree-sitter-css`：\n   *   latest 0.25.0 已是 node-gyp-build，但它 `peerDependencies: tree-sitter ^0.25.0`，\n   *   而本机核心是 **0.21.1** ⇒ 真去装**当场 ERESOLVE**（本笔实测踩到）。\n   *   而**同核心线上**的 `0.21.0` 是真能载入的（本笔实测：`setLanguage` + `parse` 出 `stylesheet`）。\n   */\n  peer: string | null;\n  missing: boolean;\n  error?: string;\n}"
+    },
+    {
+      "name": "rangeOk",
+      "kind": "function",
+      "signature": "rangeOk(range: string, version: string): boolean"
+    },
+    {
+      "name": "verifyAbi",
+      "kind": "function",
+      "signature": "verifyAbi(pkg: string): string[]"
+    },
+    {
+      "name": "checkPrebuild",
+      "kind": "function",
+      "signature": "checkPrebuild(pkg: string): string[]"
+    },
+    {
+      "name": "collect",
+      "kind": "function",
+      "signature": "collect(): LangPackRow[]"
+    },
+    {
+      "name": "installPrecheck",
+      "kind": "function",
+      "signature": "installPrecheck(targets: string[], rows: LangPackRow[]): string[]"
+    }
+  ],
   "reverse_calls": [
     "src/presentation/cli/install_package_cli.ts#checkPrebuild",
     "src/presentation/cli/install_package_cli.ts#collect",

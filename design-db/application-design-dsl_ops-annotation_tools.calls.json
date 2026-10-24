@@ -5,5 +5,27 @@
   "path": "src/application/design/dsl_ops/annotation_tools.ts",
   "symbols": [],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "ListAnnotationsInput",
+      "kind": "interface",
+      "signature": "ListAnnotationsInput()"
+    },
+    {
+      "name": "AnnotationView",
+      "kind": "interface",
+      "signature": "AnnotationView()"
+    },
+    {
+      "name": "ResolveAnnotationInput",
+      "kind": "interface",
+      "signature": "ResolveAnnotationInput()"
+    },
+    {
+      "name": "AddAnnotationInput",
+      "kind": "interface",
+      "signature": "AddAnnotationInput()"
+    }
+  ]
 }

@@ -149,6 +149,23 @@
       "to": "src/application/observe/runtime/run_tests.ts#tail"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "RunTestsResult",
+      "kind": "interface",
+      "signature": "RunTestsResult()"
+    },
+    {
+      "name": "TAIL_CHARS",
+      "kind": "const",
+      "signature": "const TAIL_CHARS = 4000"
+    },
+    {
+      "name": "runTests",
+      "kind": "function",
+      "signature": "runTests(input: { project_dir?: string; filter?: string; timeoutMs?: number }): RunTestsResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/runtime/run_tests.ts#runTests"
   ]

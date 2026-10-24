@@ -50,6 +50,33 @@
       "to": "src/infrastructure/rules/rule_tokens.ts#splitLines"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "splitLines",
+      "kind": "function",
+      "signature": "splitLines(s: string): string[]"
+    },
+    {
+      "name": "fold",
+      "kind": "function",
+      "signature": "fold(s: string): string"
+    },
+    {
+      "name": "leadingWs",
+      "kind": "function",
+      "signature": "leadingWs(line: string): string"
+    },
+    {
+      "name": "keyedLines",
+      "kind": "function",
+      "signature": "keyedLines(text: string): string[]"
+    },
+    {
+      "name": "countLines",
+      "kind": "function",
+      "signature": "countLines(text: string): number"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/rule_library/rule_apply.ts#insertTodo",
     "src/application/refactor/rule_library/rule_extract.ts#extractRule",

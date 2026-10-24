@@ -46,5 +46,32 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "JAVA_RULES",
+      "kind": "const",
+      "signature": "const JAVA_RULES = { ext: '.java', label: 'Java', typeNodes: ['class_declara…"
+    },
+    {
+      "name": "analyzeJavaSource",
+      "kind": "const",
+      "signature": "const analyzeJavaSource = makeNamespaceAnalyzer(JAVA_RULES)"
+    },
+    {
+      "name": "JAVA",
+      "kind": "const",
+      "signature": "const JAVA = { ...JAVA_RULES, analyze: analyzeJavaSource }"
+    },
+    {
+      "name": "renameJavaSymbol",
+      "kind": "const",
+      "signature": "const renameJavaSymbol = (args: LangRenameArgs): Promise<RenameSymbolResult> => re…"
+    },
+    {
+      "name": "javaPackage",
+      "kind": "const",
+      "signature": "const javaPackage = { exts: ['.java'], rename: (a) => renameJavaSymbol(a), }"
+    }
+  ]
 }

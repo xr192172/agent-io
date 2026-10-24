@@ -199,6 +199,43 @@
       "to": "src/presentation/http/dict_gen.ts#generateDictEntry"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DictClassResult",
+      "kind": "type",
+      "signature": "DictClassResult()"
+    },
+    {
+      "name": "DictGenerationResult",
+      "kind": "interface",
+      "signature": "DictGenerationResult()"
+    },
+    {
+      "name": "IngestResult",
+      "kind": "interface",
+      "signature": "IngestResult()"
+    },
+    {
+      "name": "classifyTerm",
+      "kind": "function",
+      "signature": "classifyTerm(term: string,\n  projectHint: string,): Promise<DictClassResult>"
+    },
+    {
+      "name": "generateDictEntry",
+      "kind": "function",
+      "signature": "generateDictEntry(term: string,): Promise<DictGenerationResult>"
+    },
+    {
+      "name": "ingestTerm",
+      "kind": "function",
+      "signature": "ingestTerm(source: string,\n  projectRoot: string,\n  projectHint: string,\n  opts: { save?: boolean } = {},): Promise<IngestResult>"
+    },
+    {
+      "name": "makeManualEntry",
+      "kind": "function",
+      "signature": "makeManualEntry(term: string,\n  kind: 'global' | 'project',\n  narrations: { newbie: string; pm: string; senior: string },\n  projectRoot?: string,): DictEntry"
+    }
+  ],
   "reverse_calls": [
     "src/presentation/http/dict_gen.ts#ingestTerm",
     "src/presentation/http/serve.ts#handleApiDictGenerate",

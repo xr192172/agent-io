@@ -465,6 +465,93 @@
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "SpringLayeringFile",
+      "kind": "interface",
+      "signature": "SpringLayeringFile()"
+    },
+    {
+      "name": "SpringLayeringPlan",
+      "kind": "interface",
+      "signature": "SpringLayeringPlan()"
+    },
+    {
+      "name": "SpringLayeringInput",
+      "kind": "interface",
+      "signature": "SpringLayeringInput()"
+    },
+    {
+      "name": "LayerMigration",
+      "kind": "interface",
+      "signature": "LayerMigration()"
+    },
+    {
+      "name": "SpringMvcLayeringPlan",
+      "kind": "interface",
+      "signature": "SpringMvcLayeringPlan()"
+    },
+    {
+      "name": "DEFAULT_ANNOTATION_LAYERS",
+      "kind": "const",
+      "signature": "const DEFAULT_ANNOTATION_LAYERS = { restcontroller: 'controller', controller: 'controller',…"
+    },
+    {
+      "name": "LAYER_ORDER",
+      "kind": "const",
+      "signature": "const LAYER_ORDER = ['controller', 'service', 'repository', 'entity', 'config']"
+    },
+    {
+      "name": "LAYER_LABELS",
+      "kind": "const",
+      "signature": "const LAYER_LABELS = { controller: '控制层', service: '服务层', repository: '数据访问层',…"
+    },
+    {
+      "name": "DEFAULT_SKIP_DIRS",
+      "kind": "const",
+      "signature": "const DEFAULT_SKIP_DIRS = skipDirSet(['target'])"
+    },
+    {
+      "name": "SpringLayeringResult",
+      "kind": "interface",
+      "signature": "SpringLayeringResult()"
+    },
+    {
+      "name": "collectJavaFiles",
+      "kind": "function",
+      "signature": "collectJavaFiles(proj: string, skipDirs?: Set<string>): string[]"
+    },
+    {
+      "name": "layerForType",
+      "kind": "function",
+      "signature": "layerForType(annotations: string[], map: Record<string, string>): string"
+    },
+    {
+      "name": "inferBasePackage",
+      "kind": "function",
+      "signature": "inferBasePackage(pkgs: string[]): string"
+    },
+    {
+      "name": "planSpringLayering",
+      "kind": "function",
+      "signature": "planSpringLayering(input: SpringLayeringInput): Promise<SpringLayeringPlan>"
+    },
+    {
+      "name": "buildSpringMvcLayeringPlan",
+      "kind": "function",
+      "signature": "buildSpringMvcLayeringPlan(proj: string, input: SpringLayeringInput): Promise<{ plan: SpringMvcLayeringPlan; run: RunningChangePlan }>"
+    },
+    {
+      "name": "renderLayeringText",
+      "kind": "function",
+      "signature": "renderLayeringText(plan: SpringLayeringPlan, targetBase = ''): string"
+    },
+    {
+      "name": "springMvcLayeringHandler",
+      "kind": "function",
+      "signature": "springMvcLayeringHandler(args: Record<string, unknown>): Promise<{ text: string; isError?: boolean }>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/refactor/langs/java/executor.ts#computeSpringMvcLayeringPlan",
     "src/infrastructure/analysis/refactor/langs/java/executor.ts#dirHasJava",

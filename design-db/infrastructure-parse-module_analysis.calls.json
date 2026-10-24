@@ -267,6 +267,58 @@
       "to": "src/infrastructure/parse/module_analysis.ts#isRefType"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "TS_LANG_NAMES",
+      "kind": "const",
+      "signature": "const TS_LANG_NAMES = new Set(['typescript', 'tsx', 'javascript', 'jsx'])"
+    },
+    {
+      "name": "ScopeMap",
+      "kind": "type",
+      "signature": "ScopeMap()"
+    },
+    {
+      "name": "ImportEdge",
+      "kind": "interface",
+      "signature": "ImportEdge()"
+    },
+    {
+      "name": "ModuleRef",
+      "kind": "interface",
+      "signature": "ModuleRef()"
+    },
+    {
+      "name": "ModuleAnalysis",
+      "kind": "interface",
+      "signature": "ModuleAnalysis()"
+    },
+    {
+      "name": "FN_TYPES",
+      "kind": "const",
+      "signature": "const FN_TYPES = new Set([ 'function_declaration', 'generator_function_dec…"
+    },
+    {
+      "name": "CLASS_TYPES",
+      "kind": "const",
+      "signature": "const CLASS_TYPES = new Set(['class_declaration', 'abstract_class_declaration'])"
+    },
+    {
+      "name": "VAR_TYPES",
+      "kind": "const",
+      "signature": "const VAR_TYPES = new Set(['lexical_declaration', 'variable_declaration', '…"
+    },
+    {
+      "name": "FOR_TYPES",
+      "kind": "const",
+      "signature": "const FOR_TYPES = new Set(['for_statement', 'for_in_statement', 'for_of_sta…"
+    },
+    {
+      "name": "analyzeModuleSource",
+      "kind": "function",
+      "signature": "analyzeModuleSource(src: string, filePath = 'file.ts'): Promise<ModuleAnalysis | null>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/find/find_references.ts#findReferencesCore",
     "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",

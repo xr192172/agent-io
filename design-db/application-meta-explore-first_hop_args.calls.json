@@ -386,6 +386,58 @@
       "to": "src/domain/chain_wiring.ts#hopsOf"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FirstHopMode",
+      "kind": "type",
+      "signature": "FirstHopMode()"
+    },
+    {
+      "name": "FirstHopResolution",
+      "kind": "type",
+      "signature": "FirstHopResolution()"
+    },
+    {
+      "name": "PrerequisiteState",
+      "kind": "type",
+      "signature": "PrerequisiteState()"
+    },
+    {
+      "name": "Prerequisite",
+      "kind": "interface",
+      "signature": "Prerequisite()"
+    },
+    {
+      "name": "ChainHopReading",
+      "kind": "interface",
+      "signature": "ChainHopReading()"
+    },
+    {
+      "name": "PreparedStart",
+      "kind": "interface",
+      "signature": "PreparedStart()"
+    },
+    {
+      "name": "FirstHopArgsInput",
+      "kind": "interface",
+      "signature": "FirstHopArgsInput()"
+    },
+    {
+      "name": "FirstHopArgsResult",
+      "kind": "interface",
+      "signature": "FirstHopArgsResult()"
+    },
+    {
+      "name": "firstHopArgs",
+      "kind": "function",
+      "signature": "firstHopArgs(input: FirstHopArgsInput): FirstHopArgsResult"
+    },
+    {
+      "name": "renderFirstHopArgs",
+      "kind": "function",
+      "signature": "renderFirstHopArgs(r: FirstHopArgsResult): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/first_hop_args.ts#buildStart",
     "src/application/meta/explore/first_hop_args.ts#firstHopArgs",

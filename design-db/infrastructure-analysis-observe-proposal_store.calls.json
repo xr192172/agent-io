@@ -267,6 +267,58 @@
       "to": "src/infrastructure/analysis/observe/proposal_store.ts#writeAtomic"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ProposalStatus",
+      "kind": "type",
+      "signature": "ProposalStatus()"
+    },
+    {
+      "name": "PROPOSAL_PENDING",
+      "kind": "const",
+      "signature": "const PROPOSAL_PENDING = 'pending'"
+    },
+    {
+      "name": "PROPOSAL_APPROVED",
+      "kind": "const",
+      "signature": "const PROPOSAL_APPROVED = 'approved'"
+    },
+    {
+      "name": "PROPOSAL_REJECTED",
+      "kind": "const",
+      "signature": "const PROPOSAL_REJECTED = 'rejected'"
+    },
+    {
+      "name": "Proposal",
+      "kind": "interface",
+      "signature": "Proposal()"
+    },
+    {
+      "name": "proposalSeq",
+      "kind": "const",
+      "signature": "const proposalSeq = 0"
+    },
+    {
+      "name": "ProposalStore",
+      "kind": "class",
+      "signature": "ProposalStore()"
+    },
+    {
+      "name": "nextProposalID",
+      "kind": "function",
+      "signature": "nextProposalID(): string"
+    },
+    {
+      "name": "declKey",
+      "kind": "function",
+      "signature": "declKey(d: TSDLDecl): string"
+    },
+    {
+      "name": "validateDecls",
+      "kind": "function",
+      "signature": "validateDecls(decls: TSDLDecl[]): void"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
     "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.create",

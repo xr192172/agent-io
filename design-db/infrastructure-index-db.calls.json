@@ -219,6 +219,88 @@
       "to": "src/infrastructure/storage.ts#getStorageRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "Database",
+      "kind": "type",
+      "signature": "Database()"
+    },
+    {
+      "name": "txDepth",
+      "kind": "const",
+      "signature": "const txDepth = new WeakMap<object, number>()"
+    },
+    {
+      "name": "SCHEMA_VERSION",
+      "kind": "const",
+      "signature": "const SCHEMA_VERSION = 8"
+    },
+    {
+      "name": "projectCachePool",
+      "kind": "const",
+      "signature": "const projectCachePool = new Map<string, Database>()"
+    },
+    {
+      "name": "inTransaction",
+      "kind": "function",
+      "signature": "inTransaction(db: Database): boolean"
+    },
+    {
+      "name": "beginBatch",
+      "kind": "function",
+      "signature": "beginBatch(db: Database): void"
+    },
+    {
+      "name": "endBatch",
+      "kind": "function",
+      "signature": "endBatch(db: Database, rollback = false): void"
+    },
+    {
+      "name": "getDbFile",
+      "kind": "function",
+      "signature": "getDbFile(): string"
+    },
+    {
+      "name": "projectCacheDbPath",
+      "kind": "function",
+      "signature": "projectCacheDbPath(root: string): string"
+    },
+    {
+      "name": "featureCacheDbPath",
+      "kind": "function",
+      "signature": "featureCacheDbPath(feature: string): string"
+    },
+    {
+      "name": "findCacheDb",
+      "kind": "function",
+      "signature": "findCacheDb(opts: { feature?: string; sourceRoot?: string } = {}): string | null"
+    },
+    {
+      "name": "nearestCacheDb",
+      "kind": "function",
+      "signature": "nearestCacheDb(dir: string): string | null"
+    },
+    {
+      "name": "openDb",
+      "kind": "function",
+      "signature": "openDb(dbFile: string = getDbFile()): Database"
+    },
+    {
+      "name": "getProjectCacheDb",
+      "kind": "function",
+      "signature": "getProjectCacheDb(projectRoot: string): Database"
+    },
+    {
+      "name": "closeAllProjectCacheDbs",
+      "kind": "function",
+      "signature": "closeAllProjectCacheDbs(): void"
+    },
+    {
+      "name": "closeProjectCacheDb",
+      "kind": "function",
+      "signature": "closeProjectCacheDb(projectRoot: string): void"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/derive/derive_chain.ts#deriveDetailChain",
     "src/application/design/intent/expectations.ts#depFactsIncomplete",

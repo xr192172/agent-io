@@ -141,5 +141,42 @@
       "from": "src/application/design/handlers.ts#groupExpectationFails",
       "to": "src/domain/expectation.ts#expectationSubjectPath"
     }
+  ],
+  "expected_symbols": [
+    {
+      "name": "consistencyHandler",
+      "kind": "const",
+      "signature": "const consistencyHandler = wrapData(async (a) => { const r = await checkConsistencyR…"
+    },
+    {
+      "name": "detectDriftHandler",
+      "kind": "const",
+      "signature": "const detectDriftHandler = wrapData(async (a) => { const r = await detectDrift({ fea…"
+    },
+    {
+      "name": "editDslHandler",
+      "kind": "const",
+      "signature": "const editDslHandler = wrap(async (a) => { // 视图写护栏：live 是代码快照，只能由 import/watch …"
+    },
+    {
+      "name": "getDslHandler",
+      "kind": "const",
+      "signature": "const getDslHandler = wrapData(async (a) => queryFeature(a as never))"
+    },
+    {
+      "name": "manageFeatureHandler",
+      "kind": "type",
+      "signature": "const manageFeatureHandler = wrapData(async (a) => manageFeature(a as never))"
+    },
+    {
+      "name": "renderDesignHandler",
+      "kind": "const",
+      "signature": "const renderDesignHandler = wrap(async (a) => { // 默认 mindmap：现行思维导图架构（root → 目录分组 → …"
+    },
+    {
+      "name": "diffDesignSheetHandler",
+      "kind": "const",
+      "signature": "const diffDesignSheetHandler = wrapData(async (a) => { const feature = requireStr(a, 'fe…"
+    }
   ]
 }

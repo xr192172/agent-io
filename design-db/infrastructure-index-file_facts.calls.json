@@ -146,6 +146,38 @@
       "to": "src/infrastructure/index/file_facts.ts#resolveFilePath"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FileFacts",
+      "kind": "interface",
+      "signature": "FileFacts()"
+    },
+    {
+      "name": "EMPTY",
+      "kind": "const",
+      "signature": "const EMPTY = { apis: [], deps: [], source: null, matched_path: null }"
+    },
+    {
+      "name": "fileFacts",
+      "kind": "function",
+      "signature": "fileFacts(root: string, fileRel: string, feature?: string): FileFacts"
+    },
+    {
+      "name": "apiSignaturesOf",
+      "kind": "function",
+      "signature": "apiSignaturesOf(root: string, fileRel: string, feature?: string): string[]"
+    },
+    {
+      "name": "diagnoseFactsOffset",
+      "kind": "function",
+      "signature": "diagnoseFactsOffset(dRoot: string | undefined, lRoot: string | undefined): string[]"
+    },
+    {
+      "name": "mergedApis",
+      "kind": "function",
+      "signature": "mergedApis(root: string | undefined,\n  fileRel: string | undefined,\n  /** ★ 入参放宽到 `ExpectedApi` 形态（`name` 可选、`signature` 可能缺）—— 免得每个调用点都强转 */\n  expected: ReadonlyArray<{ name?: string; signature?: string }> | undefined,\n  feature?: string,\n  /** ★ 产物与 DSL 的 `ExpectedApi` **可赋值**（`signature` 必填）—— 这样它能直接喂 `diffApis(ExpectedApi[], ExpectedApi[])` */): Array<{ name?: string; signature: string }>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/derive/opl.ts#llmDeclare",
     "src/application/design/intent/consistency.ts#checkBaselineDrift",

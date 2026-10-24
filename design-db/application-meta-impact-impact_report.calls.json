@@ -267,6 +267,38 @@
       "to": "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ImpactReportSummary",
+      "kind": "interface",
+      "signature": "ImpactReportSummary()"
+    },
+    {
+      "name": "ImpactReportFile",
+      "kind": "interface",
+      "signature": "ImpactReportFile()"
+    },
+    {
+      "name": "RunImpactReportInput",
+      "kind": "interface",
+      "signature": "RunImpactReportInput()"
+    },
+    {
+      "name": "runImpactReport",
+      "kind": "function",
+      "signature": "runImpactReport(input: RunImpactReportInput): ImpactReportSummary"
+    },
+    {
+      "name": "readImpactReport",
+      "kind": "function",
+      "signature": "readImpactReport(projectDir: string, seq: number): ImpactReportFile"
+    },
+    {
+      "name": "listImpactReports",
+      "kind": "function",
+      "signature": "listImpactReports(projectDir: string, limit = 10): ImpactReportSummary[]"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/impact/impact_report.ts#buildSummaryLine",
     "src/application/meta/impact/impact_report.ts#listImpactReports",

@@ -446,6 +446,83 @@
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "SaveSnapshotInput",
+      "kind": "interface",
+      "signature": "SaveSnapshotInput()"
+    },
+    {
+      "name": "SnapshotInfo",
+      "kind": "interface",
+      "signature": "SnapshotInfo()"
+    },
+    {
+      "name": "SaveSnapshotResult",
+      "kind": "interface",
+      "signature": "SaveSnapshotResult()"
+    },
+    {
+      "name": "ListSnapshotsInput",
+      "kind": "interface",
+      "signature": "ListSnapshotsInput()"
+    },
+    {
+      "name": "ListSnapshotsResult",
+      "kind": "interface",
+      "signature": "ListSnapshotsResult()"
+    },
+    {
+      "name": "RollbackSnapshotInput",
+      "kind": "interface",
+      "signature": "RollbackSnapshotInput()"
+    },
+    {
+      "name": "RollbackSnapshotResult",
+      "kind": "interface",
+      "signature": "RollbackSnapshotResult()"
+    },
+    {
+      "name": "DeleteSnapshotInput",
+      "kind": "interface",
+      "signature": "DeleteSnapshotInput()"
+    },
+    {
+      "name": "DeleteSnapshotResult",
+      "kind": "interface",
+      "signature": "DeleteSnapshotResult()"
+    },
+    {
+      "name": "saveSnapshot",
+      "kind": "function",
+      "signature": "saveSnapshot(input: SaveSnapshotInput): SaveSnapshotResult"
+    },
+    {
+      "name": "saveAutoSnapshot",
+      "kind": "function",
+      "signature": "saveAutoSnapshot(feature: string, reason: string): SaveSnapshotResult | null"
+    },
+    {
+      "name": "pruneSnapshots",
+      "kind": "function",
+      "signature": "pruneSnapshots(feature: string, max = 20): number"
+    },
+    {
+      "name": "listSnapshots",
+      "kind": "function",
+      "signature": "listSnapshots(input: ListSnapshotsInput): ListSnapshotsResult"
+    },
+    {
+      "name": "rollbackSnapshot",
+      "kind": "function",
+      "signature": "rollbackSnapshot(input: RollbackSnapshotInput): RollbackSnapshotResult"
+    },
+    {
+      "name": "deleteSnapshot",
+      "kind": "function",
+      "signature": "deleteSnapshot(input: DeleteSnapshotInput): DeleteSnapshotResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/update_feature.ts#applyLayoutOp",
     "src/application/design/dsl_ops/update_feature.ts#applySnapshotOp",

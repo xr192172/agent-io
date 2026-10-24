@@ -778,6 +778,73 @@
       "to": "src/infrastructure/storage.ts#getLiveFeatureResolved"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DiffViewsInput",
+      "kind": "interface",
+      "signature": "DiffViewsInput()"
+    },
+    {
+      "name": "FileChangeType",
+      "kind": "type",
+      "signature": "FileChangeType()"
+    },
+    {
+      "name": "FileDiff",
+      "kind": "interface",
+      "signature": "FileDiff()"
+    },
+    {
+      "name": "SymbolDiff",
+      "kind": "interface",
+      "signature": "SymbolDiff()"
+    },
+    {
+      "name": "ApiDiff",
+      "kind": "interface",
+      "signature": "ApiDiff()"
+    },
+    {
+      "name": "EdgeDiff",
+      "kind": "interface",
+      "signature": "EdgeDiff()"
+    },
+    {
+      "name": "ThreeWayState",
+      "kind": "type",
+      "signature": "ThreeWayState()"
+    },
+    {
+      "name": "DecisionCardRef",
+      "kind": "interface",
+      "signature": "DecisionCardRef()"
+    },
+    {
+      "name": "ThreeWayFile",
+      "kind": "interface",
+      "signature": "ThreeWayFile()"
+    },
+    {
+      "name": "ThreeWaySummary",
+      "kind": "interface",
+      "signature": "ThreeWaySummary()"
+    },
+    {
+      "name": "DiffViewsResult",
+      "kind": "interface",
+      "signature": "DiffViewsResult()"
+    },
+    {
+      "name": "diffViews",
+      "kind": "function",
+      "signature": "diffViews(input: DiffViewsInput): TouchedProduct<DiffViewsResult>"
+    },
+    {
+      "name": "baselineAdvanceBlockers",
+      "kind": "function",
+      "signature": "baselineAdvanceBlockers(summary: ThreeWaySummary): string[]"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/runtime/watch_project_tool.ts#doWork",
     "src/application/refactor/diff_views/diff_views.ts#diffSymbols",

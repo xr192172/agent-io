@@ -231,6 +231,33 @@
       "to": "src/infrastructure/authoring/translate/unit.ts#withConstraints"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "GO_TO_TS",
+      "kind": "const",
+      "signature": "const GO_TO_TS = { int: 'number', int8: 'number', int16: 'number', int32: …"
+    },
+    {
+      "name": "MappedType",
+      "kind": "interface",
+      "signature": "MappedType()"
+    },
+    {
+      "name": "mapGoType",
+      "kind": "function",
+      "signature": "mapGoType(goType: string): MappedType"
+    },
+    {
+      "name": "channelShimSource",
+      "kind": "function",
+      "signature": "channelShimSource(): string"
+    },
+    {
+      "name": "renderTsSkeleton",
+      "kind": "function",
+      "signature": "renderTsSkeleton(u: TransUnit): string"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/translate/pairs.ts#translateGoToTs",
     "src/infrastructure/authoring/translate/project.ts#assembleModule",

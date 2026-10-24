@@ -301,6 +301,43 @@
       "to": "src/infrastructure/index/symbols.ts#toIndexKey"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "SourceWriteCtx",
+      "kind": "interface",
+      "signature": "SourceWriteCtx()"
+    },
+    {
+      "name": "SourceWriteReceipt",
+      "kind": "interface",
+      "signature": "SourceWriteReceipt()"
+    },
+    {
+      "name": "SourceWriteTxn",
+      "kind": "interface",
+      "signature": "SourceWriteTxn()"
+    },
+    {
+      "name": "openSourceWrite",
+      "kind": "function",
+      "signature": "openSourceWrite(rootArg: string, files: readonly string[], ctx: SourceWriteCtx): SourceWriteTxn"
+    },
+    {
+      "name": "writeSourceFile",
+      "kind": "function",
+      "signature": "writeSourceFile(root: string,\n  file: string,\n  content: string,\n  ctx: SourceWriteCtx,): SourceWriteReceipt"
+    },
+    {
+      "name": "writeSourceBatch",
+      "kind": "function",
+      "signature": "writeSourceBatch(root: string,\n  entries: ReadonlyArray<readonly [string, string]>,\n  ctx: SourceWriteCtx,): SourceWriteReceipt[]"
+    },
+    {
+      "name": "restoreSourceBytes",
+      "kind": "function",
+      "signature": "restoreSourceBytes(abs: string, content: string): void"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/derive/derive_split.ts#splitOnce",
     "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",

@@ -582,6 +582,78 @@
       "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "SKIP_DIRS",
+      "kind": "const",
+      "signature": "const SKIP_DIRS = skipDirSet(['vendor', 'target'])"
+    },
+    {
+      "name": "ProjectModule",
+      "kind": "interface",
+      "signature": "ProjectModule()"
+    },
+    {
+      "name": "ReportEntry",
+      "kind": "interface",
+      "signature": "ReportEntry()"
+    },
+    {
+      "name": "TypesMapEntry",
+      "kind": "interface",
+      "signature": "TypesMapEntry()"
+    },
+    {
+      "name": "ConflictEntry",
+      "kind": "interface",
+      "signature": "ConflictEntry()"
+    },
+    {
+      "name": "ProjectResult",
+      "kind": "interface",
+      "signature": "ProjectResult()"
+    },
+    {
+      "name": "ProjectOptions",
+      "kind": "interface",
+      "signature": "ProjectOptions()"
+    },
+    {
+      "name": "SymbolDef",
+      "kind": "interface",
+      "signature": "SymbolDef()"
+    },
+    {
+      "name": "ProjectCallContext",
+      "kind": "interface",
+      "signature": "ProjectCallContext()"
+    },
+    {
+      "name": "TscCluster",
+      "kind": "interface",
+      "signature": "TscCluster()"
+    },
+    {
+      "name": "TS_CODE_LABEL",
+      "kind": "const",
+      "signature": "const TS_CODE_LABEL = { 2304: '未定义的名字/类型', 2307: '找不到模块', 2503: '找不到命名空间', 2339…"
+    },
+    {
+      "name": "walkGoFiles",
+      "kind": "function",
+      "signature": "walkGoFiles(dir: string): string[]"
+    },
+    {
+      "name": "buildProjectCallNote",
+      "kind": "function",
+      "signature": "buildProjectCallNote(m: ProjectModule, defined: Map<string, SymbolDef>, ctx?: ProjectCallContext): string"
+    },
+    {
+      "name": "translateGoProject",
+      "kind": "function",
+      "signature": "translateGoProject(projectDir: string, opts: ProjectOptions = {}): Promise<ProjectResult>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/translate/project.ts#translateGoProject",
     "src/infrastructure/authoring/translate/project.ts#verifyProjectTree",

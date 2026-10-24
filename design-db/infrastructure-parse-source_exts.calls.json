@@ -298,6 +298,173 @@
       "to": "src/infrastructure/parse/source_exts.ts#shouldSkipDir"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "TS_JS_EXTS",
+      "kind": "const",
+      "signature": "const TS_JS_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.…"
+    },
+    {
+      "name": "TS_JS_SET",
+      "kind": "const",
+      "signature": "const TS_JS_SET = new Set<string>(TS_JS_EXTS)"
+    },
+    {
+      "name": "TS_EXTS",
+      "kind": "const",
+      "signature": "const TS_EXTS = ['.ts', '.tsx', '.mts', '.cts'] as const"
+    },
+    {
+      "name": "TS_EXT_SET",
+      "kind": "const",
+      "signature": "const TS_EXT_SET = new Set<string>(TS_EXTS)"
+    },
+    {
+      "name": "CODE_LANG_EXTS",
+      "kind": "const",
+      "signature": "const CODE_LANG_EXTS = LANGUAGES.filter((l) => l.kind === 'code').flatMap((l) =>…"
+    },
+    {
+      "name": "OTHER_LANG_EXTS",
+      "kind": "const",
+      "signature": "const OTHER_LANG_EXTS = CODE_LANG_EXTS.filter((e) => !TS_JS_SET.has(e))"
+    },
+    {
+      "name": "SOURCE_EXTS",
+      "kind": "const",
+      "signature": "const SOURCE_EXTS = [...TS_JS_EXTS, ...OTHER_LANG_EXTS]"
+    },
+    {
+      "name": "NODE_RUNNABLE_EXTS",
+      "kind": "const",
+      "signature": "const NODE_RUNNABLE_EXTS = TS_JS_EXTS.filter((e) => e !== '.mts' && e !== '.cts')"
+    },
+    {
+      "name": "SOURCE_EXT_SET",
+      "kind": "const",
+      "signature": "const SOURCE_EXT_SET = new Set<string>(SOURCE_EXTS)"
+    },
+    {
+      "name": "CODE_LANG_EXT_SET",
+      "kind": "const",
+      "signature": "const CODE_LANG_EXT_SET = new Set<string>(CODE_LANG_EXTS.map((e) => e.toLowerCase()))"
+    },
+    {
+      "name": "sourceExtSetCache",
+      "kind": "const",
+      "signature": "const sourceExtSetCache = null"
+    },
+    {
+      "name": "UnmatchedExtFact",
+      "kind": "interface",
+      "signature": "UnmatchedExtFact()"
+    },
+    {
+      "name": "TEST_FILE_RE",
+      "kind": "const",
+      "signature": "const TEST_FILE_RE = /(_test\\.go$|\\.test\\.[tj]sx?$|\\.spec\\.[tj]sx?$|test_.*\\.p…"
+    },
+    {
+      "name": "NOISE_FILE_RE",
+      "kind": "const",
+      "signature": "const NOISE_FILE_RE = /(\\.min\\.js$|\\.d\\.[cm]?ts$|\\.gen\\.[tj]sx?$|\\.tmp$|\\.temp$…"
+    },
+    {
+      "name": "SKIP_DIR_BASE",
+      "kind": "const",
+      "signature": "const SKIP_DIR_BASE = new Set<string>([ 'node_modules', '.git', '.svn', '.hg', …"
+    },
+    {
+      "name": "INDEX_SKIP_DIR_EXTRA",
+      "kind": "const",
+      "signature": "const INDEX_SKIP_DIR_EXTRA = new Set([ 'vendor', 'target', 'bin', 'obj', '.idea', '.vs…"
+    },
+    {
+      "name": "SkipDirSetImpl",
+      "kind": "class",
+      "signature": "SkipDirSetImpl()"
+    },
+    {
+      "name": "isTsExt",
+      "kind": "function",
+      "signature": "isTsExt(ext: string): boolean"
+    },
+    {
+      "name": "isTsJsExt",
+      "kind": "function",
+      "signature": "isTsJsExt(ext: string): boolean"
+    },
+    {
+      "name": "isSourceExt",
+      "kind": "function",
+      "signature": "isSourceExt(ext: string): boolean"
+    },
+    {
+      "name": "isNodeRunnableExt",
+      "kind": "function",
+      "signature": "isNodeRunnableExt(ext: string): boolean"
+    },
+    {
+      "name": "isCodeLangExt",
+      "kind": "function",
+      "signature": "isCodeLangExt(ext: string): boolean"
+    },
+    {
+      "name": "codeSourceExts",
+      "kind": "function",
+      "signature": "codeSourceExts(parseableExts: readonly string[]): string[]"
+    },
+    {
+      "name": "codeSourceExtSet",
+      "kind": "function",
+      "signature": "codeSourceExtSet(): Set<string>"
+    },
+    {
+      "name": "excludedNonCodeExts",
+      "kind": "function",
+      "signature": "excludedNonCodeExts(parseableExts: readonly string[]): string[]"
+    },
+    {
+      "name": "describeUnmatchedExt",
+      "kind": "function",
+      "signature": "describeUnmatchedExt(ext: string): UnmatchedExtFact"
+    },
+    {
+      "name": "partitionByCodeLang",
+      "kind": "function",
+      "signature": "partitionByCodeLang(files: readonly T[],): { code: T[]; nonCodeExts: Array<{ ext: string; count: number }> }"
+    },
+    {
+      "name": "isTestFileName",
+      "kind": "function",
+      "signature": "isTestFileName(name: string): boolean"
+    },
+    {
+      "name": "isNoiseFileName",
+      "kind": "function",
+      "signature": "isNoiseFileName(name: string): boolean"
+    },
+    {
+      "name": "isIndexSkippedFileName",
+      "kind": "function",
+      "signature": "isIndexSkippedFileName(name: string, includeTests = false): boolean"
+    },
+    {
+      "name": "shouldSkipDir",
+      "kind": "function",
+      "signature": "shouldSkipDir(name: string, extra?: ReadonlySet<string> | readonly string[]): boolean"
+    },
+    {
+      "name": "isUnderSkippedDir",
+      "kind": "function",
+      "signature": "isUnderSkippedDir(relPath: string, extra?: ReadonlySet<string> | readonly string[]): boolean"
+    },
+    {
+      "name": "skipDirSet",
+      "kind": "function",
+      "signature": "skipDirSet(extra?: readonly string[]): Set<string>"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
     "src/application/refactor/rename/move_domain.ts#untouchedEntries",

@@ -541,6 +541,53 @@
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FieldRefKind",
+      "kind": "type",
+      "signature": "FieldRefKind()"
+    },
+    {
+      "name": "FieldRefPoint",
+      "kind": "interface",
+      "signature": "FieldRefPoint()"
+    },
+    {
+      "name": "FieldRefFile",
+      "kind": "interface",
+      "signature": "FieldRefFile()"
+    },
+    {
+      "name": "FieldScopeReport",
+      "kind": "interface",
+      "signature": "FieldScopeReport()"
+    },
+    {
+      "name": "TypeConstructCandidate",
+      "kind": "interface",
+      "signature": "TypeConstructCandidate()"
+    },
+    {
+      "name": "ClassifiedFieldRef",
+      "kind": "interface",
+      "signature": "ClassifiedFieldRef()"
+    },
+    {
+      "name": "STRING_LEAF_TYPES",
+      "kind": "const",
+      "signature": "const STRING_LEAF_TYPES = new Set(['string', 'string_fragment', 'template_string', …"
+    },
+    {
+      "name": "collectFieldRefs",
+      "kind": "function",
+      "signature": "collectFieldRefs(input: {\n  project_dir: string;\n  field: string;\n  /** 定义文件（可选）：提供时默认按闭包扫描 */\n  file?: string;\n  /** closure（默认，给 file 时按 import 闭包）| all（全项目扫） */\n  scope?: 'closure' | 'all';\n  /** ★ 所属类型名：把字段引用限定到该类型（见上方 of_type 说明）。 */\n  of_type?: string;\n}): Promise<{ files: FieldRefFile[]; scope?: FieldScopeReport; field_via: FieldRefVia }>"
+    },
+    {
+      "name": "collectTypeConstructCandidates",
+      "kind": "function",
+      "signature": "collectTypeConstructCandidates(input: {\n  project_dir: string;\n  file: string;\n  symbol: string;\n  scope?: 'closure' | 'all';\n  /** 交叠成员数阈值，默认 2 */\n  min_hit?: number;\n}): Promise<{ members: string[]; candidates: TypeConstructCandidate[] }>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/find/field_refs.ts#bracketReadOffsets",
     "src/application/refactor/find/field_refs.ts#captureReads",

@@ -241,6 +241,13 @@
       "to": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "rewriteSymbols",
+      "kind": "function",
+      "signature": "rewriteSymbols(args: RewriteArgs): Promise<RewriteResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/rewrite/rewrite.ts#rewriteSymbols"
   ]

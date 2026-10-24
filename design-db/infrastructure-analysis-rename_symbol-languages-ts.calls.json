@@ -117,5 +117,17 @@
       "from": "src/infrastructure/analysis/rename_symbol/languages/ts.ts#renameTsSymbol",
       "to": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource"
     }
+  ],
+  "expected_symbols": [
+    {
+      "name": "tsPackage",
+      "kind": "const",
+      "signature": "const tsPackage = { exts: TS_JS_EXTS, rename: (a) => renameTsSymbol(a), }"
+    },
+    {
+      "name": "renameTsSymbol",
+      "kind": "function",
+      "signature": "renameTsSymbol(args: LangRenameArgs): Promise<RenameSymbolResult>"
+    }
   ]
 }

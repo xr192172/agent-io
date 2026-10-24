@@ -354,6 +354,78 @@
       "to": "src/infrastructure/rules/rule_tokens.ts#splitLines"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "LineDiff",
+      "kind": "interface",
+      "signature": "LineDiff()"
+    },
+    {
+      "name": "KEYWORDS",
+      "kind": "const",
+      "signature": "const KEYWORDS = new Set([ 'function', 'const', 'let', 'var', 'return', 'i…"
+    },
+    {
+      "name": "GLOBALS",
+      "kind": "const",
+      "signature": "const GLOBALS = new Set(['console', 'window', 'document', 'process', 'glo…"
+    },
+    {
+      "name": "Token",
+      "kind": "interface",
+      "signature": "Token()"
+    },
+    {
+      "name": "GeneralizeResult",
+      "kind": "interface",
+      "signature": "GeneralizeResult()"
+    },
+    {
+      "name": "ValidateIssue",
+      "kind": "interface",
+      "signature": "ValidateIssue()"
+    },
+    {
+      "name": "ValidateResult",
+      "kind": "interface",
+      "signature": "ValidateResult()"
+    },
+    {
+      "name": "ExtractInput",
+      "kind": "interface",
+      "signature": "ExtractInput()"
+    },
+    {
+      "name": "ExtractResult",
+      "kind": "interface",
+      "signature": "ExtractResult()"
+    },
+    {
+      "name": "diffLines",
+      "kind": "function",
+      "signature": "diffLines(before: string[], after: string[]): LineDiff[]"
+    },
+    {
+      "name": "generalizeChange",
+      "kind": "function",
+      "signature": "generalizeChange(beforeLines: string[],\n  afterLines: string[],\n  limit = Number.POSITIVE_INFINITY,): GeneralizeResult"
+    },
+    {
+      "name": "buildFixtures",
+      "kind": "function",
+      "signature": "buildFixtures(beforeText: string, afterText: string, lang = ''): RuleFixture[]"
+    },
+    {
+      "name": "validateRule",
+      "kind": "function",
+      "signature": "validateRule(pattern: string, replace: string, fixtures: RuleFixture[]): ValidateResult"
+    },
+    {
+      "name": "extractRule",
+      "kind": "function",
+      "signature": "extractRule(input: ExtractInput): ExtractResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/rule_library/rule_extract.ts#abstractableIdents",
     "src/application/refactor/rule_library/rule_extract.ts#extractRule",

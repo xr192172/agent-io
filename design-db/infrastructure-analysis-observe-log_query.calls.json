@@ -187,6 +187,33 @@
       "to": "src/infrastructure/analysis/observe/probe.ts#loadTSEvents"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "LogEntry",
+      "kind": "interface",
+      "signature": "LogEntry()"
+    },
+    {
+      "name": "LogQueryOptions",
+      "kind": "interface",
+      "signature": "LogQueryOptions()"
+    },
+    {
+      "name": "LogQueryResult",
+      "kind": "interface",
+      "signature": "LogQueryResult()"
+    },
+    {
+      "name": "norm",
+      "kind": "const",
+      "signature": "const norm = (s: string): string => s.replaceAll('\\\\', '/')"
+    },
+    {
+      "name": "queryObserveLog",
+      "kind": "function",
+      "signature": "queryObserveLog(eventsPath: string, opts: LogQueryOptions = {}): LogQueryResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
     "src/application/observe/runtime/observe_log_query.ts#queryObserveLogUseCase",

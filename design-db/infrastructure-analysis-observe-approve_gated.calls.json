@@ -141,6 +141,18 @@
       "to": "src/infrastructure/analysis/observe/verify_gate.ts#verifyRuleRegression"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ApproveResult",
+      "kind": "interface",
+      "signature": "ApproveResult()"
+    },
+    {
+      "name": "approveGated",
+      "kind": "function",
+      "signature": "approveGated(ps: ProposalStore,\n  dsl: DesignDSLStore,\n  id: string,\n  reviewer: string,\n  useLlm = false,): Promise<ApproveResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/reconcile/proposal_approve.ts#approveObserveProposal",
     "src/infrastructure/analysis/observe/approve_gated.ts#approveGated"

@@ -133,6 +133,33 @@
       "to": "src/infrastructure/dogfood_stats.ts#snapshotDogfoodStats"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ToolUsageRow",
+      "kind": "interface",
+      "signature": "ToolUsageRow()"
+    },
+    {
+      "name": "DogfoodCoverage",
+      "kind": "interface",
+      "signature": "DogfoodCoverage()"
+    },
+    {
+      "name": "computeDogfoodCoverage",
+      "kind": "function",
+      "signature": "computeDogfoodCoverage(registry: readonly string[],\n  registrySource: string,): DogfoodCoverage"
+    },
+    {
+      "name": "summarizeCoverage",
+      "kind": "function",
+      "signature": "summarizeCoverage(c: DogfoodCoverage): string"
+    },
+    {
+      "name": "renderDogfoodCoverage",
+      "kind": "function",
+      "signature": "renderDogfoodCoverage(c: DogfoodCoverage): string"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/dogfood_coverage.ts#renderDogfoodCoverage"
   ]

@@ -151,6 +151,43 @@
       "to": "src/infrastructure/parse/probe.ts#isExtSupported"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ParseTier",
+      "kind": "type",
+      "signature": "ParseTier()"
+    },
+    {
+      "name": "ParseCapability",
+      "kind": "interface",
+      "signature": "ParseCapability()"
+    },
+    {
+      "name": "LanguageTierSummary",
+      "kind": "interface",
+      "signature": "LanguageTierSummary()"
+    },
+    {
+      "name": "tierForLanguage",
+      "kind": "function",
+      "signature": "tierForLanguage(lang: LanguageEntry | undefined, parserInstalled: boolean): ParseTier"
+    },
+    {
+      "name": "parseCapabilityForFile",
+      "kind": "function",
+      "signature": "parseCapabilityForFile(relOrAbs: string): ParseCapability"
+    },
+    {
+      "name": "renderGranularityNote",
+      "kind": "function",
+      "signature": "renderGranularityNote(files: Array<string | undefined>,\n  tool: 'refs' | 'impact',): string"
+    },
+    {
+      "name": "summarizeLanguagesByTier",
+      "kind": "function",
+      "signature": "summarizeLanguagesByTier(relFiles: string[]): LanguageTierSummary[]"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
     "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile",

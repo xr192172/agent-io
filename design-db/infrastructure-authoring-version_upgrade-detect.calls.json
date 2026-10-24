@@ -191,6 +191,53 @@
       "to": "src/infrastructure/parse/source_exts.ts#skipDirSet"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FEATURE_EXTS",
+      "kind": "const",
+      "signature": "const FEATURE_EXTS = Object.fromEntries( // eslint-disable-next-line @typescri…"
+    },
+    {
+      "name": "DeclarationFiles",
+      "kind": "interface",
+      "signature": "DeclarationFiles()"
+    },
+    {
+      "name": "ContractScanResult",
+      "kind": "interface",
+      "signature": "ContractScanResult()"
+    },
+    {
+      "name": "declaredToFeatureVersion",
+      "kind": "function",
+      "signature": "declaredToFeatureVersion(tool: ToolName, declaredVersion: string): number | null"
+    },
+    {
+      "name": "projectDirs",
+      "kind": "function",
+      "signature": "projectDirs(declarations: ToolchainDeclaration[]): Set<string>"
+    },
+    {
+      "name": "nestedProjectDirs",
+      "kind": "function",
+      "signature": "nestedProjectDirs(dir: string, allDirs: Set<string>): Set<string>"
+    },
+    {
+      "name": "collectSourceFiles",
+      "kind": "function",
+      "signature": "collectSourceFiles(dir: string,\n  exts: string[],\n  excludeRelDirs?: Set<string>,\n  unmatched?: Map<string, number>): Array<{ rel: string; content: string }>"
+    },
+    {
+      "name": "filesForDeclarations",
+      "kind": "function",
+      "signature": "filesForDeclarations(root: string,\n  declarations: ToolchainDeclaration[],\n  unmatched?: Map<string, number>): DeclarationFiles[]"
+    },
+    {
+      "name": "runContractScan",
+      "kind": "function",
+      "signature": "runContractScan(root: string): ContractScanResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/upgrade/upgrade.ts#runUpgradeScan",
     "src/application/meta/upgrade/upgrade.ts#scanAndPlan",

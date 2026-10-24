@@ -201,6 +201,38 @@
       "to": "src/infrastructure/alert_inbox.ts#pushAlert"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "Verdict",
+      "kind": "type",
+      "signature": "Verdict()"
+    },
+    {
+      "name": "JudgeIssue",
+      "kind": "interface",
+      "signature": "JudgeIssue()"
+    },
+    {
+      "name": "JudgeDecision",
+      "kind": "interface",
+      "signature": "JudgeDecision()"
+    },
+    {
+      "name": "JudgeInput",
+      "kind": "interface",
+      "signature": "JudgeInput()"
+    },
+    {
+      "name": "JudgeResult",
+      "kind": "interface",
+      "signature": "JudgeResult()"
+    },
+    {
+      "name": "runRefactorJudge",
+      "kind": "function",
+      "signature": "runRefactorJudge(input: JudgeInput): Promise<JudgeResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/pipeline/refactor_judge.ts#runRefactorJudge"
   ]

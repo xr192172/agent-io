@@ -549,6 +549,118 @@
       "to": "src/domain/task_schema.ts#progressOfNode"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ProgressEvidence",
+      "kind": "type",
+      "signature": "ProgressEvidence()"
+    },
+    {
+      "name": "OverlayAnchor",
+      "kind": "interface",
+      "signature": "OverlayAnchor()"
+    },
+    {
+      "name": "OverlayGlobal",
+      "kind": "interface",
+      "signature": "OverlayGlobal()"
+    },
+    {
+      "name": "OverlayGoal",
+      "kind": "interface",
+      "signature": "OverlayGoal()"
+    },
+    {
+      "name": "OverlayEdgeIntent",
+      "kind": "interface",
+      "signature": "OverlayEdgeIntent()"
+    },
+    {
+      "name": "DesignOverlay",
+      "kind": "interface",
+      "signature": "DesignOverlay()"
+    },
+    {
+      "name": "AnchorCandidate",
+      "kind": "interface",
+      "signature": "AnchorCandidate()"
+    },
+    {
+      "name": "ReconcileStats",
+      "kind": "interface",
+      "signature": "ReconcileStats()"
+    },
+    {
+      "name": "EdgeCandidate",
+      "kind": "interface",
+      "signature": "EdgeCandidate()"
+    },
+    {
+      "name": "hasAnchorPayload",
+      "kind": "function",
+      "signature": "hasAnchorPayload(a: OverlayAnchor): boolean"
+    },
+    {
+      "name": "computeFileSignature",
+      "kind": "function",
+      "signature": "computeFileSignature(apis: ExpectedApi[],\n  nonFuncSymbols: Symbol[],\n  lineCount: number,): string"
+    },
+    {
+      "name": "validateProgressEvidence",
+      "kind": "function",
+      "signature": "validateProgressEvidence(progress: DiagramStatus | undefined,\n  evidence: ProgressEvidence | undefined,): { ok: true } | { ok: false; reason: string }"
+    },
+    {
+      "name": "attestationAppliesTo",
+      "kind": "function",
+      "signature": "attestationAppliesTo(att: Extract<ProgressEvidence, { kind: 'attestation' }>,\n  currentNodeId: string,): boolean"
+    },
+    {
+      "name": "nodePath",
+      "kind": "function",
+      "signature": "nodePath(n: { id: string; type?: string; description?: string; path?: string }): string"
+    },
+    {
+      "name": "buildCandidates",
+      "kind": "function",
+      "signature": "buildCandidates(dsl: DesignDSL): AnchorCandidate[]"
+    },
+    {
+      "name": "buildEdgeCandidates",
+      "kind": "function",
+      "signature": "buildEdgeCandidates(base: DesignDSL): EdgeCandidate[]"
+    },
+    {
+      "name": "reconcileOverlay",
+      "kind": "function",
+      "signature": "reconcileOverlay(old: DesignOverlay,\n  newCandidates: AnchorCandidate[],\n  newEdgeCandidates?: EdgeCandidate[],): { overlay: DesignOverlay; stats: ReconcileStats }"
+    },
+    {
+      "name": "applyOverlay",
+      "kind": "function",
+      "signature": "applyOverlay(base: DesignDSL, overlay: DesignOverlay): DesignDSL"
+    },
+    {
+      "name": "seedOverlayFromDsl",
+      "kind": "function",
+      "signature": "seedOverlayFromDsl(dsl: DesignDSL | null): DesignOverlay"
+    },
+    {
+      "name": "mergeTagsIntoOverlay",
+      "kind": "function",
+      "signature": "mergeTagsIntoOverlay(ov: DesignOverlay,\n  dsl: DesignDSL,): { overlay: DesignOverlay; tags: Record<string, string[]> | undefined; written: number; cleared: boolean }"
+    },
+    {
+      "name": "mergeLifecycleIntoOverlay",
+      "kind": "function",
+      "signature": "mergeLifecycleIntoOverlay(ov: DesignOverlay,\n  dsl: DesignDSL,): { overlay: DesignOverlay; written: number; cleared: number; notes: string[] }"
+    },
+    {
+      "name": "statsLine",
+      "kind": "function",
+      "signature": "statsLine(stats: ReconcileStats): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/board/pool.ts#listPool",
     "src/application/design/dsl_ops/status_tools.ts#updateStatus",

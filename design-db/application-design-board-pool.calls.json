@@ -205,6 +205,23 @@
       "to": "src/infrastructure/storage.ts#getDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ALL_STATES",
+      "kind": "const",
+      "signature": "const ALL_STATES = ['candidate', 'claimed', 'done', 'void']"
+    },
+    {
+      "name": "BoardView",
+      "kind": "interface",
+      "signature": "BoardView()"
+    },
+    {
+      "name": "listPool",
+      "kind": "function",
+      "signature": "listPool(feature: string, nowMs: number = Date.now()): BoardView"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/board/pool.ts#listPool",
     "src/application/meta/explore/query_feature.ts#queryFeature"

@@ -390,6 +390,108 @@
       "to": "src/infrastructure/analysis/observe/probe.ts#summarize"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "GLOBAL_SINK_KEY",
+      "kind": "const",
+      "signature": "const GLOBAL_SINK_KEY = '__observe_global_sink__'"
+    },
+    {
+      "name": "SinkHolder",
+      "kind": "type",
+      "signature": "SinkHolder()"
+    },
+    {
+      "name": "probeErrCount",
+      "kind": "const",
+      "signature": "const probeErrCount = 0"
+    },
+    {
+      "name": "probeErrSeen",
+      "kind": "const",
+      "signature": "const probeErrSeen = false"
+    },
+    {
+      "name": "als",
+      "kind": "const",
+      "signature": "const als = new AsyncLocalStorage<FrameCtx | undefined>()"
+    },
+    {
+      "name": "frameSeq",
+      "kind": "const",
+      "signature": "const frameSeq = 0"
+    },
+    {
+      "name": "ProbeFrame",
+      "kind": "interface",
+      "signature": "ProbeFrame()"
+    },
+    {
+      "name": "FrameCtx",
+      "kind": "interface",
+      "signature": "FrameCtx()"
+    },
+    {
+      "name": "TSEvent",
+      "kind": "interface",
+      "signature": "TSEvent()"
+    },
+    {
+      "name": "MAX_FIELD_CHARS",
+      "kind": "const",
+      "signature": "const MAX_FIELD_CHARS = 2048"
+    },
+    {
+      "name": "MAX_FIELD_DEPTH",
+      "kind": "const",
+      "signature": "const MAX_FIELD_DEPTH = 4"
+    },
+    {
+      "name": "ExtraFields",
+      "kind": "type",
+      "signature": "ExtraFields()"
+    },
+    {
+      "name": "TSProbeCapture",
+      "kind": "class",
+      "signature": "TSProbeCapture()"
+    },
+    {
+      "name": "hasGlobalProbeSink",
+      "kind": "function",
+      "signature": "hasGlobalProbeSink(): boolean"
+    },
+    {
+      "name": "setGlobalProbeSink",
+      "kind": "function",
+      "signature": "setGlobalProbeSink(s: TSProbeCapture | null): TSProbeCapture | null"
+    },
+    {
+      "name": "captureProbe",
+      "kind": "function",
+      "signature": "captureProbe(probe: string, fields: Record<string, unknown>, source = 'static-rule'): void"
+    },
+    {
+      "name": "enterScope",
+      "kind": "function",
+      "signature": "enterScope(probe: string, fields: Record<string, unknown>): void"
+    },
+    {
+      "name": "exitScope",
+      "kind": "function",
+      "signature": "exitScope(probe: string, fields: Record<string, unknown> = {}): void"
+    },
+    {
+      "name": "catchScope",
+      "kind": "function",
+      "signature": "catchScope(probe: string, fields: Record<string, unknown> = {}): void"
+    },
+    {
+      "name": "loadTSEvents",
+      "kind": "function",
+      "signature": "loadTSEvents(eventsPath: string): { events: TSEvent[]; skipped: number }"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
     "src/application/observe/runtime/watch_project_tool.ts#declareWatch",

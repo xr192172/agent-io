@@ -460,6 +460,93 @@
       "to": "src/infrastructure/project_view.ts#invalidateProjectView"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "IGNORE_DIRS",
+      "kind": "const",
+      "signature": "const IGNORE_DIRS = skipDirSet(['vendor', 'target', 'bin', 'obj', 'scaffold',…"
+    },
+    {
+      "name": "SKIP_FILE_RE",
+      "kind": "const",
+      "signature": "const SKIP_FILE_RE = /(_test\\.go$|\\.test\\.[tj]sx?$|\\.spec\\.[tj]sx?$|\\.min\\.js$…"
+    },
+    {
+      "name": "MAX_FLUSH_WAIT_MS",
+      "kind": "const",
+      "signature": "const MAX_FLUSH_WAIT_MS = 2000"
+    },
+    {
+      "name": "WatchEventType",
+      "kind": "type",
+      "signature": "WatchEventType()"
+    },
+    {
+      "name": "WatchEventResult",
+      "kind": "interface",
+      "signature": "WatchEventResult()"
+    },
+    {
+      "name": "WatchBatchSummary",
+      "kind": "interface",
+      "signature": "WatchBatchSummary()"
+    },
+    {
+      "name": "FlushBatchOptions",
+      "kind": "interface",
+      "signature": "FlushBatchOptions()"
+    },
+    {
+      "name": "ReconcileSummary",
+      "kind": "interface",
+      "signature": "ReconcileSummary()"
+    },
+    {
+      "name": "WatchProjectOptions",
+      "kind": "interface",
+      "signature": "WatchProjectOptions()"
+    },
+    {
+      "name": "WatchHandle",
+      "kind": "interface",
+      "signature": "WatchHandle()"
+    },
+    {
+      "name": "isIgnoredRel",
+      "kind": "function",
+      "signature": "isIgnoredRel(rel: string): boolean"
+    },
+    {
+      "name": "shouldSyncRel",
+      "kind": "function",
+      "signature": "shouldSyncRel(rel: string): boolean"
+    },
+    {
+      "name": "decideFlushDelay",
+      "kind": "function",
+      "signature": "decideFlushDelay(lastFlushAt: number, windowMs: number, maxWaitMs: number, now: number): number"
+    },
+    {
+      "name": "handleWatchEvent",
+      "kind": "function",
+      "signature": "handleWatchEvent(db: Database,\r\n  projectRoot: string,\r\n  absPath: string,): Promise<WatchEventResult>"
+    },
+    {
+      "name": "flushBatch",
+      "kind": "function",
+      "signature": "flushBatch(db: Database,\r\n  projectRoot: string,\r\n  rels: string[],\r\n  opts: FlushBatchOptions = {},): Promise<WatchBatchSummary>"
+    },
+    {
+      "name": "reconcileProject",
+      "kind": "function",
+      "signature": "reconcileProject(db: Database, projectRoot: string): Promise<ReconcileSummary>"
+    },
+    {
+      "name": "watchProject",
+      "kind": "function",
+      "signature": "watchProject(opts: WatchProjectOptions): WatchHandle"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/runtime/watch_project_tool.ts#startWatch",
     "src/infrastructure/index/watch_project.ts#flushBatch",

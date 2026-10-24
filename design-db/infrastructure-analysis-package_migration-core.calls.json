@@ -98,6 +98,18 @@
       "to": "src/infrastructure/analysis/package_migration/parts.ts#rewriteImportPaths"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "MigrationPlanOptions",
+      "kind": "interface",
+      "signature": "MigrationPlanOptions()"
+    },
+    {
+      "name": "computeMigrationPlan",
+      "kind": "function",
+      "signature": "computeMigrationPlan(opts: MigrationPlanOptions): Promise<RunningChangePlan>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
     "src/infrastructure/analysis/package_migration/core.ts#computeMigrationPlan"

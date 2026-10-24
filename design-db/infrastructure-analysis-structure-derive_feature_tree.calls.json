@@ -306,6 +306,28 @@
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FeatureTreeInput",
+      "kind": "interface",
+      "signature": "FeatureTreeInput()"
+    },
+    {
+      "name": "FeatureTreeResult",
+      "kind": "interface",
+      "signature": "FeatureTreeResult()"
+    },
+    {
+      "name": "DIR_FEATURE_NAMES",
+      "kind": "const",
+      "signature": "const DIR_FEATURE_NAMES = { dsl: 'DSL 协议定义', db: '数据存储', daemon: '守护进程', renderer: …"
+    },
+    {
+      "name": "deriveFeatureTree",
+      "kind": "function",
+      "signature": "deriveFeatureTree(input: FeatureTreeInput,): Promise<FeatureTreeResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/view/overview.ts#tryDeriveFeatureTree",
     "src/infrastructure/analysis/structure/derive_feature_tree.ts#communityKeyOf",

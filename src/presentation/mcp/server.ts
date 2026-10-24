@@ -185,6 +185,8 @@ function deriveFeatureName(projectDir: string): string {
  * 旧的默认关理由（2026-10-21 记的"initialize 60s 无响应"）仍然有效，但解法已经落地：
  * 下面 `setTimeout(1500) + void`（延后起、不 await）。⇒ 不再是"默认关"的理由。
  */
+import { genDesignDb } from '../../application/design/db/gen_design_db.js';
+
 async function runAutoWatchHook(): Promise<void> {
   if (process.env.AGENT_IO_AUTO_WATCH === '0') return;
   const projectDir = resolveProjectDir();
@@ -207,6 +209,19 @@ async function runAutoWatchHook(): Promise<void> {
       `[Auto Watch] 已导入工作空间 ${projectDir} → feature="${feature}" ` +
         `（解析 ${imp.files_parsed} 文件 / ${imp.symbols_found} 符号 / ${imp.dep_edges} 调用边）`,
     );
+    // ★★★ 2026-10-24（保鲜 · 工作项 B）：设计 DB 自动保鲜——cache.db 刚重扫过 ⇒ 投影跟着重生成。
+    //   先 check 后写：无 drift 不落盘（幂等生成）；有 drift 才真跑。挂在初始导入后（服务器每次启动都保鲜）。
+    try {
+      const chk = genDesignDb(projectDir, { check: true });
+      if (chk.drift.length > 0) {
+        const run = genDesignDb(projectDir);
+        console.error(`[Auto Watch] 设计 DB 已保鲜：written=${run.written} unchanged=${run.unchanged}`);
+      } else {
+        console.error('[Auto Watch] 设计 DB 新鲜（无需保鲜）');
+      }
+    } catch (e2) {
+      console.error(`[Auto Watch] 设计 DB 保鲜失败: ${(e2 as Error).message}`);
+    }
   } catch (e) {
     console.error(`[Auto Watch] 初始导入失败: ${(e as Error).message}`);
   }

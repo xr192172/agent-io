@@ -590,6 +590,68 @@
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "CfgNodeKind",
+      "kind": "type",
+      "signature": "CfgNodeKind()"
+    },
+    {
+      "name": "CfgNode",
+      "kind": "interface",
+      "signature": "CfgNode()"
+    },
+    {
+      "name": "CfgEdge",
+      "kind": "interface",
+      "signature": "CfgEdge()"
+    },
+    {
+      "name": "FunctionCfg",
+      "kind": "interface",
+      "signature": "FunctionCfg()"
+    },
+    {
+      "name": "CtrlKind",
+      "kind": "type",
+      "signature": "CtrlKind()"
+    },
+    {
+      "name": "TS_CTRL",
+      "kind": "const",
+      "signature": "const TS_CTRL = { if_statement: 'branch', for_statement: 'loop', for_in_s…"
+    },
+    {
+      "name": "CTRL",
+      "kind": "const",
+      "signature": "const CTRL = { go: { if_statement: 'branch', for_statement: 'loop', ex…"
+    },
+    {
+      "name": "FUNC_NODES",
+      "kind": "const",
+      "signature": "const FUNC_NODES = { go: ['function_declaration', 'method_declaration'], typ…"
+    },
+    {
+      "name": "Exit",
+      "kind": "interface",
+      "signature": "Exit()"
+    },
+    {
+      "name": "Ctx",
+      "kind": "interface",
+      "signature": "Ctx()"
+    },
+    {
+      "name": "SeqResult",
+      "kind": "interface",
+      "signature": "SeqResult()"
+    },
+    {
+      "name": "extractFunctionCfg",
+      "kind": "function",
+      "signature": "extractFunctionCfg(filePath: string,\n  content: string,\n  funcName: string,\n  maxDepth = 3,): Promise<FunctionCfg | null>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/derive/derive_algorithm.ts#deriveAlgorithmCore",
     "src/application/design/derive/derive_chain.ts#deriveDetailChain",

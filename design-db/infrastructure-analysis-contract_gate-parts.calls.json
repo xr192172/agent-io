@@ -114,5 +114,37 @@
     }
   ],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "Lang",
+      "kind": "type",
+      "signature": "Lang()"
+    },
+    {
+      "name": "FileSymbols",
+      "kind": "interface",
+      "signature": "FileSymbols()"
+    },
+    {
+      "name": "RefHit",
+      "kind": "interface",
+      "signature": "RefHit()"
+    },
+    {
+      "name": "CgLangPackage",
+      "kind": "interface",
+      "signature": "CgLangPackage()"
+    },
+    {
+      "name": "scanDotRefs",
+      "kind": "function",
+      "signature": "scanDotRefs(text: string,\n  skip: ReadonlySet<string>,\n  skipLine?: (line: string) => boolean,): RefHit[]"
+    },
+    {
+      "name": "addDeclared",
+      "kind": "function",
+      "signature": "addDeclared(set: Set<string>, m: RegExpMatchArray | null, idx = 1): void"
+    }
+  ]
 }

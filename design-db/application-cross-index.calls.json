@@ -58,5 +58,12 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "CROSS_TOOLS",
+      "kind": "const",
+      "signature": "const CROSS_TOOLS = [ { name: 'translate_go_ts', title: 'Go→TS 半自动翻译（骨架 + 可选 …"
+    }
+  ]
 }

@@ -548,5 +548,77 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "ElementState",
+      "kind": "interface",
+      "signature": "ElementState()"
+    },
+    {
+      "name": "AnimationStage",
+      "kind": "interface",
+      "signature": "AnimationStage()"
+    },
+    {
+      "name": "Animation",
+      "kind": "interface",
+      "signature": "Animation()"
+    },
+    {
+      "name": "AnimationTrigger",
+      "kind": "interface",
+      "signature": "AnimationTrigger()"
+    },
+    {
+      "name": "AnimationValueSchema",
+      "kind": "interface",
+      "signature": "AnimationValueSchema()"
+    },
+    {
+      "name": "NodeShapes",
+      "kind": "interface",
+      "signature": "NodeShapes()"
+    },
+    {
+      "name": "AnimationValue",
+      "kind": "interface",
+      "signature": "AnimationValue()"
+    },
+    {
+      "name": "AnimationHandlerMapping",
+      "kind": "interface",
+      "signature": "AnimationHandlerMapping()"
+    },
+    {
+      "name": "AnimationError",
+      "kind": "interface",
+      "signature": "AnimationError()"
+    },
+    {
+      "name": "AnimationHandler",
+      "kind": "interface",
+      "signature": "AnimationHandler()"
+    },
+    {
+      "name": "AnimationBranch",
+      "kind": "interface",
+      "signature": "AnimationBranch()"
+    },
+    {
+      "name": "AnimationFlow",
+      "kind": "interface",
+      "signature": "AnimationFlow()"
+    },
+    {
+      "name": "AnimationRuntime",
+      "kind": "interface",
+      "signature": "AnimationRuntime()"
+    },
+    {
+      "name": "AnimationSystem",
+      "kind": "interface",
+      "signature": "AnimationSystem()"
+    }
+  ]
 }

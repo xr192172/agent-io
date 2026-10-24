@@ -97,6 +97,28 @@
       "to": "src/infrastructure/parse/loader.ts#getParser"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "GO_DEF_NODE_TYPES",
+      "kind": "const",
+      "signature": "const GO_DEF_NODE_TYPES = new Set(['function_declaration', 'type_spec', 'const_spec…"
+    },
+    {
+      "name": "goPackage",
+      "kind": "const",
+      "signature": "const goPackage = { exts: ['.go'], rename: (a) => renameGoSymbol({ file: a.…"
+    },
+    {
+      "name": "analyzeGoSource",
+      "kind": "function",
+      "signature": "analyzeGoSource(src: string): Promise<GoModuleAnalysis | null>"
+    },
+    {
+      "name": "renameGoSymbol",
+      "kind": "function",
+      "signature": "renameGoSymbol(args: {\n  file: string; // 定义文件绝对路径\n  symbol: string;\n  to: string;\n  dryRun: boolean;\n  resolvedRoot: string;\n  blocked: string[];\n  /** ★ 落盘注入（`parts#SourceWriteHook`）：引擎不写盘，没注入就抛 */\n  write?: SourceWriteHook;\n}): Promise<RenameSymbolResult>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/rename_symbol/languages/go.ts#renameGoSymbol"
   ]

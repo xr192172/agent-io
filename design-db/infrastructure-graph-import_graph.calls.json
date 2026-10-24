@@ -83,6 +83,18 @@
       "to": "src/infrastructure/graph/import_project.ts#resolveImport"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ImportGraph",
+      "kind": "interface",
+      "signature": "ImportGraph()"
+    },
+    {
+      "name": "buildImportGraph",
+      "kind": "function",
+      "signature": "buildImportGraph(db: Database, root: string): ImportGraph"
+    }
+  ],
   "reverse_calls": [
     "src/application/harvest/extract_contracts.ts#extractContractsCore",
     "src/application/harvest/harvest_closure.ts#harvestClosureCore",

@@ -126,6 +126,38 @@
       "to": "src/domain/chain_wiring.ts#deriveObjectChains"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FaceId",
+      "kind": "type",
+      "signature": "FaceId()"
+    },
+    {
+      "name": "ToolFaceView",
+      "kind": "interface",
+      "signature": "ToolFaceView()"
+    },
+    {
+      "name": "uniq",
+      "kind": "const",
+      "signature": "const uniq = (xs: readonly string[]): string[] => [...new Set(xs)].sort()"
+    },
+    {
+      "name": "facesOf",
+      "kind": "function",
+      "signature": "facesOf(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): ToolFaceView[]"
+    },
+    {
+      "name": "mcpFace",
+      "kind": "function",
+      "signature": "mcpFace(): 'all' | 'composed'"
+    },
+    {
+      "name": "renderFaces",
+      "kind": "function",
+      "signature": "renderFaces(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
     "src/application/meta/registry/tool_faces.ts#facesOf",

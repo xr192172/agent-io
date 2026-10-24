@@ -208,6 +208,103 @@
       "to": "src/domain/actor_spec.ts#suggestLine"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ActorKind",
+      "kind": "type",
+      "signature": "ActorKind()"
+    },
+    {
+      "name": "ACTOR_KINDS",
+      "kind": "const",
+      "signature": "const ACTOR_KINDS = ['human', 'agent', 'subagent'] as const"
+    },
+    {
+      "name": "ACTOR_NAME_MAX",
+      "kind": "const",
+      "signature": "const ACTOR_NAME_MAX = 40"
+    },
+    {
+      "name": "ACTOR_NAME_RE",
+      "kind": "const",
+      "signature": "const ACTOR_NAME_RE = /^(?=.*[a-z0-9])[a-z0-9_-]{1,40}$/"
+    },
+    {
+      "name": "ACTOR_RE",
+      "kind": "const",
+      "signature": "const ACTOR_RE = /^(human|agent|subagent):(?=.*[a-z0-9])[a-z0-9_-]{1,40}$/"
+    },
+    {
+      "name": "LEGACY_ACTOR_KIND",
+      "kind": "const",
+      "signature": "const LEGACY_ACTOR_KIND = 'agent'"
+    },
+    {
+      "name": "ActorSource",
+      "kind": "type",
+      "signature": "ActorSource()"
+    },
+    {
+      "name": "ActorAdmission",
+      "kind": "interface",
+      "signature": "ActorAdmission()"
+    },
+    {
+      "name": "KIND_LIST",
+      "kind": "const",
+      "signature": "const KIND_LIST = ACTOR_KINDS.join(' / ')"
+    },
+    {
+      "name": "SAMPLES",
+      "kind": "const",
+      "signature": "const SAMPLES = `human:admin · agent:workbuddy · subagent:a7`"
+    },
+    {
+      "name": "actorStrictMode",
+      "kind": "function",
+      "signature": "actorStrictMode(): boolean"
+    },
+    {
+      "name": "isCanonicalActor",
+      "kind": "function",
+      "signature": "isCanonicalActor(v: unknown): v is string"
+    },
+    {
+      "name": "isLegacyActorName",
+      "kind": "function",
+      "signature": "isLegacyActorName(v: unknown): v is string"
+    },
+    {
+      "name": "actorKindOf",
+      "kind": "function",
+      "signature": "actorKindOf(v: unknown): ActorKind | null"
+    },
+    {
+      "name": "actorKey",
+      "kind": "function",
+      "signature": "actorKey(v: unknown): string | null"
+    },
+    {
+      "name": "sameActor",
+      "kind": "function",
+      "signature": "sameActor(a: unknown, b: unknown): boolean"
+    },
+    {
+      "name": "suggestActorName",
+      "kind": "function",
+      "signature": "suggestActorName(raw: string): string | null"
+    },
+    {
+      "name": "admitActor",
+      "kind": "function",
+      "signature": "admitActor(explicit?: string | null,\n  env?: string | null,\n  opts: { strict?: boolean } = {},): ActorAdmission"
+    },
+    {
+      "name": "normalizedActorNote",
+      "kind": "function",
+      "signature": "normalizedActorNote(adm: ActorAdmission): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
     "src/application/design/dsl_ops/task_ops.ts#claimTask",

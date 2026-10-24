@@ -120,6 +120,33 @@
     }
   ],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "ChainTraceInput",
+      "kind": "interface",
+      "signature": "ChainTraceInput()"
+    },
+    {
+      "name": "ChainTraceResult",
+      "kind": "interface",
+      "signature": "ChainTraceResult()"
+    },
+    {
+      "name": "SymAdj",
+      "kind": "interface",
+      "signature": "SymAdj()"
+    },
+    {
+      "name": "FileAdj",
+      "kind": "interface",
+      "signature": "FileAdj()"
+    },
+    {
+      "name": "traceChain",
+      "kind": "function",
+      "signature": "traceChain(db: Database, input: ChainTraceInput): ChainTraceResult"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis"
   ]

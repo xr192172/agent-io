@@ -159,6 +159,28 @@
       "to": "src/infrastructure/authoring/version_upgrade/detect.ts#filesForDeclarations"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "StaticGateResult",
+      "kind": "interface",
+      "signature": "StaticGateResult()"
+    },
+    {
+      "name": "DynamicGateResult",
+      "kind": "interface",
+      "signature": "DynamicGateResult()"
+    },
+    {
+      "name": "runStaticGates",
+      "kind": "function",
+      "signature": "runStaticGates(root: string, declarations: ToolchainDeclaration[]): StaticGateResult[]"
+    },
+    {
+      "name": "runDynamicGates",
+      "kind": "function",
+      "signature": "runDynamicGates(root: string, declarations: ToolchainDeclaration[]): Promise<DynamicGateResult[]>"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/upgrade/upgrade.ts#runUpgradeScan"
   ]

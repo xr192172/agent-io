@@ -345,7 +345,7 @@
     {
       "name": "DesignDbStructureResult",
       "kind": "interface",
-      "line": 501,
+      "line": 524,
       "signature": "DesignDbStructureResult()",
       "members": [
         {
@@ -395,7 +395,7 @@
     {
       "name": "checkDesignDbStructure",
       "kind": "function",
-      "line": 531,
+      "line": 554,
       "signature": "checkDesignDbStructure(root: string): DesignDbStructureResult"
     }
   ],
@@ -471,6 +471,14 @@
       "to": "src/application/design/db/gen_design_db.ts#norm"
     },
     {
+      "from": "src/application/design/db/gen_design_db.ts#genDesignDb",
+      "to": "src/application/design/db/gen_design_db.ts#norm"
+    },
+    {
+      "from": "src/application/design/db/gen_design_db.ts#genDesignDb",
+      "to": "src/application/design/db/gen_design_db.ts#norm"
+    },
+    {
       "from": "src/application/design/db/gen_design_db.ts#checkDesignDbStructure",
       "to": "src/application/design/db/gen_design_db.ts#norm"
     },
@@ -515,12 +523,40 @@
       "to": "src/application/design/db/gen_design_db.ts#requirementsOf"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "planDesignDb",
+      "kind": "function",
+      "signature": "planDesignDb(root: string,\n  opts: { feature?: string } = {},): {\n  features: string[];\n  nodes: number;\n  items: Map<string, DesignDbPlanItem>;\n  conflicts: DesignDbConflict[];\n  missingDir: boolean;\n}"
+    },
+    {
+      "name": "requirementsOf",
+      "kind": "function",
+      "signature": "requirementsOf(item: DesignDbPlanItem): Array<Record<string, unknown>>"
+    },
+    {
+      "name": "requirementCallsOf",
+      "kind": "function",
+      "signature": "requirementCallsOf(item: DesignDbPlanItem): Array<{ from: string; target: string; why?: string }>"
+    },
+    {
+      "name": "genDesignDb",
+      "kind": "function",
+      "signature": "genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDesignDbResult"
+    },
+    {
+      "name": "checkDesignDbStructure",
+      "kind": "function",
+      "signature": "checkDesignDbStructure(root: string): DesignDbStructureResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/db/gen_design_db.ts#checkDesignDbStructure",
     "src/application/design/db/gen_design_db.ts#conflictsOf",
     "src/application/design/db/gen_design_db.ts#genDesignDb",
     "src/application/design/db/gen_design_db.ts#planDesignDb",
     "src/application/design/db/gen_design_db.ts#requirementCallsOf",
-    "src/application/design/line/design_line.ts#lineReport"
+    "src/application/design/line/design_line.ts#lineReport",
+    "src/presentation/mcp/server.ts#runAutoWatchHook"
   ]
 }

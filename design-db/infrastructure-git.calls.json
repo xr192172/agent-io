@@ -111,6 +111,43 @@
       "to": "src/infrastructure/git.ts#run"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "GitStatus",
+      "kind": "interface",
+      "signature": "GitStatus()"
+    },
+    {
+      "name": "isGitRepo",
+      "kind": "function",
+      "signature": "isGitRepo(dir: string): boolean"
+    },
+    {
+      "name": "gitStatus",
+      "kind": "function",
+      "signature": "gitStatus(dir: string): GitStatus"
+    },
+    {
+      "name": "gitDirty",
+      "kind": "function",
+      "signature": "gitDirty(dir: string): boolean"
+    },
+    {
+      "name": "gitCommitFiles",
+      "kind": "function",
+      "signature": "gitCommitFiles(dir: string, files: string[], message: string): { committed: boolean; out: string }"
+    },
+    {
+      "name": "gitCommitAll",
+      "kind": "function",
+      "signature": "gitCommitAll(dir: string, message: string): { committed: boolean; out: string }"
+    },
+    {
+      "name": "gitRestoreFiles",
+      "kind": "function",
+      "signature": "gitRestoreFiles(dir: string, files: string[]): { ok: boolean; out: string }"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
     "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",

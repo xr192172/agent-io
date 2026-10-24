@@ -145,6 +145,28 @@
       "to": "src/infrastructure/authoring/version_upgrade/removed.ts#removedRulesForExt"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "RemovedHit",
+      "kind": "interface",
+      "signature": "RemovedHit()"
+    },
+    {
+      "name": "SourceFile",
+      "kind": "interface",
+      "signature": "SourceFile()"
+    },
+    {
+      "name": "removedRulesForExt",
+      "kind": "function",
+      "signature": "removedRulesForExt(ext: string): RemovedRule[]"
+    },
+    {
+      "name": "scanRemovedApis",
+      "kind": "function",
+      "signature": "scanRemovedApis(files: SourceFile[], declaredVersion: number): RemovedHit[]"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/version_upgrade/detect.ts#runContractScan",
     "src/infrastructure/authoring/version_upgrade/removed.ts#scanRemovedApis"

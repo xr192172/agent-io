@@ -87,5 +87,12 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "DESIGN_TOOLS",
+      "kind": "const",
+      "signature": "const DESIGN_TOOLS = [ { name: 'get_dsl', title: 'Query feature data', descrip…"
+    }
+  ]
 }

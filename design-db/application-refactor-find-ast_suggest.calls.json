@@ -241,6 +241,63 @@
       "to": "src/infrastructure/parse/ast_rename.ts#analyzeLocals"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "BAD_NAMES",
+      "kind": "const",
+      "signature": "const BAD_NAMES = new Set([ 'tmp', 'temp', 't', 'val', 'value', 'obj', 'ite…"
+    },
+    {
+      "name": "LOCAL_KINDS",
+      "kind": "const",
+      "signature": "const LOCAL_KINDS = new Set(['const', 'let', 'var', 'param', 'catch'])"
+    },
+    {
+      "name": "SuggestCandidate",
+      "kind": "interface",
+      "signature": "SuggestCandidate()"
+    },
+    {
+      "name": "SuggestLlm",
+      "kind": "type",
+      "signature": "SuggestLlm()"
+    },
+    {
+      "name": "SuggestOptions",
+      "kind": "interface",
+      "signature": "SuggestOptions()"
+    },
+    {
+      "name": "SuggestResult",
+      "kind": "interface",
+      "signature": "SuggestResult()"
+    },
+    {
+      "name": "DEFAULT_SYSTEM",
+      "kind": "const",
+      "signature": "const DEFAULT_SYSTEM = '你是资深 TypeScript/JS 代码审阅者。给下面的短变量/无意义变量建议更语义化的新名。' + '要求：…"
+    },
+    {
+      "name": "cachedDefault",
+      "kind": "const",
+      "signature": "const cachedDefault = "
+    },
+    {
+      "name": "findSuggestCandidates",
+      "kind": "function",
+      "signature": "findSuggestCandidates(src: string,\n  filePath = 'file.ts',\n  minLen = 2,): Promise<SuggestCandidate[]>"
+    },
+    {
+      "name": "suggestRenames",
+      "kind": "function",
+      "signature": "suggestRenames(src: string,\n  filePath = 'file.ts',\n  opts: SuggestOptions = {},): Promise<SuggestResult>"
+    },
+    {
+      "name": "suggestRenamesInFile",
+      "kind": "function",
+      "signature": "suggestRenamesInFile(args: {\n  project_dir: string;\n  file: string;\n  opts?: SuggestOptions;\n}): Promise<SuggestResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/find/ast_suggest.ts#defaultLlmCands",
     "src/application/refactor/find/ast_suggest.ts#findSuggestCandidates",

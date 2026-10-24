@@ -55,6 +55,23 @@
     }
   ],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "CG_LANG_PACKAGES",
+      "kind": "const",
+      "signature": "const CG_LANG_PACKAGES = [ cgTsPackage, cgGoPackage, cgPyPackage, cgJavaPackage, c…"
+    },
+    {
+      "name": "cgPackageForLang",
+      "kind": "function",
+      "signature": "cgPackageForLang(lang: Lang): CgLangPackage | undefined"
+    },
+    {
+      "name": "langOfFile",
+      "kind": "function",
+      "signature": "langOfFile(rel: string): Lang | null"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/contract_gate/core.ts#scanContracts",
     "src/infrastructure/analysis/contract_gate/core.ts#scanOne"

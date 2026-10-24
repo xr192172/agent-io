@@ -570,6 +570,58 @@
       "to": "src/infrastructure/parse/type_members.ts#memberNamesOf"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "MAX_SITES",
+      "kind": "const",
+      "signature": "const MAX_SITES = 40"
+    },
+    {
+      "name": "ContractPageInput",
+      "kind": "interface",
+      "signature": "ContractPageInput()"
+    },
+    {
+      "name": "ContractPageResolution",
+      "kind": "type",
+      "signature": "ContractPageResolution()"
+    },
+    {
+      "name": "ContractDefinition",
+      "kind": "interface",
+      "signature": "ContractDefinition()"
+    },
+    {
+      "name": "ContractSite",
+      "kind": "interface",
+      "signature": "ContractSite()"
+    },
+    {
+      "name": "ContractEdge",
+      "kind": "interface",
+      "signature": "ContractEdge()"
+    },
+    {
+      "name": "ContractTerm",
+      "kind": "interface",
+      "signature": "ContractTerm()"
+    },
+    {
+      "name": "ContractPageResult",
+      "kind": "interface",
+      "signature": "ContractPageResult()"
+    },
+    {
+      "name": "contractPage",
+      "kind": "function",
+      "signature": "contractPage(input: ContractPageInput): Promise<TouchedProduct<ContractPageResult>>"
+    },
+    {
+      "name": "renderContractPage",
+      "kind": "function",
+      "signature": "renderContractPage(r: ContractPageResult): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/contract_page.ts#contractPage",
     "src/application/meta/explore/contract_page.ts#contractPageCore"

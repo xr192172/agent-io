@@ -99,5 +99,27 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "EntryKind",
+      "kind": "type",
+      "signature": "EntryKind()"
+    },
+    {
+      "name": "FunctionEntry",
+      "kind": "interface",
+      "signature": "FunctionEntry()"
+    },
+    {
+      "name": "FunctionRegistry",
+      "kind": "interface",
+      "signature": "FunctionRegistry()"
+    },
+    {
+      "name": "collectFunctions",
+      "kind": "function",
+      "signature": "collectFunctions(tools: RegistryTool[], commands: CliCommand[]): FunctionRegistry"
+    }
+  ]
 }

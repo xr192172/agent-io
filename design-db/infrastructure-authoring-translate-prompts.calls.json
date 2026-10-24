@@ -67,6 +67,28 @@
     }
   ],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "BatchUnitView",
+      "kind": "interface",
+      "signature": "BatchUnitView()"
+    },
+    {
+      "name": "buildHolePrompt",
+      "kind": "function",
+      "signature": "buildHolePrompt(u: TransUnit): string"
+    },
+    {
+      "name": "buildHolePrompts",
+      "kind": "function",
+      "signature": "buildHolePrompts(units: TransUnit[]): string[]"
+    },
+    {
+      "name": "buildBatchFillPrompt",
+      "kind": "function",
+      "signature": "buildBatchFillPrompt(views: BatchUnitView[], projectNote?: string): string"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/translate/fill.ts#buildFillContext",
     "src/infrastructure/authoring/translate/llm.ts#createPooledBatchTranslator",

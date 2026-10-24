@@ -389,6 +389,73 @@
       "to": "src/infrastructure/scan_bounds.ts#boundsSkipFromExcluded"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ImpactSite",
+      "kind": "interface",
+      "signature": "ImpactSite()"
+    },
+    {
+      "name": "ImpactedFile",
+      "kind": "interface",
+      "signature": "ImpactedFile()"
+    },
+    {
+      "name": "ImpactChangePoint",
+      "kind": "interface",
+      "signature": "ImpactChangePoint()"
+    },
+    {
+      "name": "ImpactReport",
+      "kind": "interface",
+      "signature": "ImpactReport()"
+    },
+    {
+      "name": "HubFile",
+      "kind": "interface",
+      "signature": "HubFile()"
+    },
+    {
+      "name": "ImpactOptions",
+      "kind": "interface",
+      "signature": "ImpactOptions()"
+    },
+    {
+      "name": "EdgeMap",
+      "kind": "type",
+      "signature": "EdgeMap()"
+    },
+    {
+      "name": "GraphResult",
+      "kind": "interface",
+      "signature": "GraphResult()"
+    },
+    {
+      "name": "TYPE_KINDS",
+      "kind": "const",
+      "signature": "const TYPE_KINDS = new Set<ParsedSymbol['kind']>(['interface', 'type', 'clas…"
+    },
+    {
+      "name": "buildImpactGraph",
+      "kind": "function",
+      "signature": "buildImpactGraph(root: string): Promise<GraphResult>"
+    },
+    {
+      "name": "analyzeImpact",
+      "kind": "function",
+      "signature": "analyzeImpact(root: string,\n  changePoints: ImpactChangePoint[],\n  options: ImpactOptions = {},): Promise<ImpactReport>"
+    },
+    {
+      "name": "computeImpact",
+      "kind": "function",
+      "signature": "computeImpact(graph: GraphResult,\n  root: string,\n  changePoints: ImpactChangePoint[],\n  maxDepth: number = Number.POSITIVE_INFINITY,): ImpactReport"
+    },
+    {
+      "name": "analyzeHubs",
+      "kind": "function",
+      "signature": "analyzeHubs(root: string,\n  top = 10,): Promise<{ root: string; files: HubFile[]; fileCount: number; edgeCount: number; bounds: ScanBounds }>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/line/design_line.ts#briefReport",
     "src/infrastructure/analysis/cross_repo/index.ts#buildProjectIndex",

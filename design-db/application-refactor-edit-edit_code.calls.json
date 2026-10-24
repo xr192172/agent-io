@@ -973,6 +973,63 @@
       "to": "src/infrastructure/text/line_utils.ts#splitKeepEnds"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "EditCodeOp",
+      "kind": "type",
+      "signature": "EditCodeOp()"
+    },
+    {
+      "name": "EditCodeArgs",
+      "kind": "interface",
+      "signature": "EditCodeArgs()"
+    },
+    {
+      "name": "EditBatchItem",
+      "kind": "interface",
+      "signature": "EditBatchItem()"
+    },
+    {
+      "name": "LineOp",
+      "kind": "interface",
+      "signature": "LineOp()"
+    },
+    {
+      "name": "DECL_PREFIXES",
+      "kind": "const",
+      "signature": "const DECL_PREFIXES = [ 'function ', 'class ', 'interface ', 'enum ', 'type ', …"
+    },
+    {
+      "name": "EditReceipt",
+      "kind": "interface",
+      "signature": "EditReceipt()"
+    },
+    {
+      "name": "ReplaceTextPlan",
+      "kind": "interface",
+      "signature": "ReplaceTextPlan()"
+    },
+    {
+      "name": "matchSymbols",
+      "kind": "function",
+      "signature": "matchSymbols(symbols: ParsedSymbol[], symbol: string, parent?: string): {\n  qnHits: ParsedSymbol[];\n  nameHits: ParsedSymbol[];\n}"
+    },
+    {
+      "name": "describeSymbol",
+      "kind": "function",
+      "signature": "describeSymbol(s: ParsedSymbol): string"
+    },
+    {
+      "name": "planReplaceText",
+      "kind": "function",
+      "signature": "planReplaceText(absPath: string,\n  content: string,\n  eol: string,\n  oldText: string,\n  newText: string,): Promise<ReplaceTextPlan>"
+    },
+    {
+      "name": "editCode",
+      "kind": "function",
+      "signature": "editCode(args: EditCodeArgs): Promise<TouchedProduct<{ message: string; data: EditReceipt }>>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/workbench/code_workbench.ts#approveChange",
     "src/application/meta/explore/explore_code.ts#readCode",

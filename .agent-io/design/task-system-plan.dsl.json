@@ -52686,7 +52686,58 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "task": {
+          "id": "file_src_presentation_mcp_server_ts",
+          "summary": "【L1 待建构】入口层 · src/presentation/mcp — 4 个 API（导入自 12 个模块）（src/presentation/mcp/server.ts） ← 节点 file_src_presentation_mcp_server_ts",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_ts\"].responsibility"
+          },
+          "owner": "agent:workbuddy-glm5",
+          "claimed_at": "2026-10-24T01:50:59.893Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/presentation/mcp/server.ts",
+                "content_hash": "47a81721de56eee549b4817a1aceca165cc3d37c"
+              }
+            ],
+            "computed_at": "2026-10-24T01:49:39.146Z",
+            "basis": [
+              "declared"
+            ]
+          }
+        },
+        "status": "in_progress",
+        "decision": {
+          "summary": "get_dsl 启动钩子接设计 DB 自动保鲜：初始导入后 check（无 drift 不落盘）+ gen（幂等重生成），设计册或 cache.db 一变，投影跟着新鲜。",
+          "expectations": [
+            {
+              "kind": "signature-matches",
+              "path": "src/presentation/mcp/server.ts",
+              "signature": "runAutoWatchHook(): Promise<void>",
+              "symbol": "runAutoWatchHook",
+              "why": "保鲜挂在初始导入钩子里，签名定死挂载点——改签名即破坏挂载"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "genDesignDb",
+                "设计 DB 已保鲜"
+              ],
+              "path": "src/presentation/mcp/server.ts",
+              "why": "check-then-gen 的两个关键写法必须在：先 check 无 drift 不落盘，有 drift 才真跑"
+            }
+          ],
+          "rationale": "工作项 B（设计 DB 自动保鲜）：cache.db 有 ensureProjectIndex 调用前保鲜，设计 DB 没有——设计册或 cache.db 一变投影就落后（实测落后 22h）。挂在 runAutoWatchHook 初始导入后最自然：cache.db 刚重扫完，投影跟着重生成。",
+          "acceptance": "npm run verify 过；MCP 启动日志出现设计 DB 保鲜读数",
+          "updated_at": "2026-10-24T01:50:59.801Z",
+          "author": "llm"
+        }
       },
       {
         "id": "file_src_presentation_mcp_server_registry_ts",
@@ -53807,29 +53858,39 @@
         "task": {
           "id": "file_src_application_design_line_design_line_ts",
           "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
-          "state": "candidate",
-          "owner": null,
-          "claimed_at": null,
-          "evidence": [
-            {
-              "kind": "expectations",
-              "at": "2026-10-19T13:13:08.173Z",
-              "verdict": "pass"
-            },
-            {
-              "kind": "expectations",
-              "at": "2026-10-20T03:56:15.627Z",
-              "by": "llm",
-              "agent": "workbuddy",
-              "verdict": "pass"
-            }
-          ],
+          "state": "claimed",
+          "judge_gate": "strict",
           "reopened_at": "2026-10-20T06:28:37.710Z",
-          "release_reason": "子代理已结束，释放占用的卡",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T10:49:14.165Z"
+          "node_id": "file_src_application_design_line_design_line_ts",
+          "owner": "agent:workbuddy-glm5",
+          "claimed_at": "2026-10-24T01:49:38.910Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/line/design_line.ts",
+                "name": "designLineHandler",
+                "fp": "fd39cdcff8dc0b18baa3f4dc38782ea87073f493"
+              },
+              {
+                "file": "src/application/design/line/design_line.ts",
+                "name": "lineReport",
+                "fp": "c5dcc8ee0cb84e72142b1f3a7842a3145ea11d89"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/line/design_line.ts",
+                "content_hash": "fd6c4500112c46ff46ae2353e4081d829d46b45c"
+              }
+            ],
+            "computed_at": "2026-10-24T01:49:38.872Z",
+            "basis": [
+              "declared",
+              "expectations"
+            ]
+          }
         },
-        "status": "draft",
+        "status": "in_progress",
         "decision_history": [
           {
             "at": "2026-10-20T03:31:18.887Z",
@@ -53914,7 +53975,7 @@
           "agent": "workbuddy",
           "thread": "影响面"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision_history": [
           {
             "at": "2026-10-20T00:08:42.765Z",
@@ -54046,23 +54107,23 @@
         "task": {
           "id": "file_src_application_design_db_gen_design_db_ts",
           "summary": "设计 DB 每文件投影新增 reverse_calls（谁调我：一跳反向调用，事实取 cache.db 边表反向索引），回答「改这里会炸哪里」的第一跳；跨文件传递闭包由消费者沿 reverse_calls 行走，不落库（渐进式披露）。",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
           "owner": "agent:workbuddy-glm5",
-          "claimed_at": "2026-10-24T01:38:32.907Z",
+          "claimed_at": "2026-10-24T01:49:38.416Z",
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "docs/VISION.md",
-                "content_hash": "907c3a15cc3985d6dd6a275a9ca531406f257fad"
+                "content_hash": "28139a22b2ae10ddade38763cfdc8f555b653e57"
               },
               {
                 "path": "src/application/design/db/gen_design_db.ts",
-                "content_hash": "cb96b90c7386c8eaf555b10653bd3d19ea2fd65b"
+                "content_hash": "250f16cf1dc5d868c9dc11a8246c4b83aee90172"
               }
             ],
-            "computed_at": "2026-10-24T01:38:32.873Z",
+            "computed_at": "2026-10-24T01:49:38.381Z",
             "basis": [
               "declared",
               "expectations"
@@ -54086,7 +54147,10 @@
               "observed": "verify 9/9；退役前对账 removed 全空（无未接管意图）；scripts/dep.mjs 已删、package.json dep 入口已移除；VISION.md 影响面行原文在册（判据 must 已对齐原文）",
               "command": "npm run verify && grep -c removed design-db/*.calls.json && grep -c 设计侧\\ DB\\ 要能回答 docs/VISION.md"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-24T01:49:38.416Z",
+          "reopen_reason": "预期符号上投影（裁 A 落地）：src/application/design/db/gen_design_db.ts 加 expected_symbols 段（从设计册 semantic.files 生成，无行号），与现状 symbols 并列——gap 一眼可见",
+          "reopened_from": "agent:workbuddy-glm5"
         }
       },
       {
@@ -106443,7 +106507,8 @@
           }
         ],
         "lines": 253,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "in_progress"
       },
       {
         "id": "file_src_presentation_mcp_server_registry_ts",
@@ -109091,7 +109156,7 @@
         "id": "file_src_application_design_line_design_line_ts",
         "path": "src/application/design/line/design_line.ts",
         "responsibility": "设计链六步读数（工具 design_line 的 report action）",
-        "status": "draft",
+        "status": "in_progress",
         "symbols": [
           {
             "name": "lineReport",
@@ -109141,7 +109206,7 @@
         "id": "file_src_application_design_db_gen_design_db_ts",
         "path": "src/application/design/db/gen_design_db.ts",
         "responsibility": "设计 DSL → 设计 DB（全量、与实际 DB 同构）",
-        "status": "done",
+        "status": "in_progress",
         "symbols": [
           {
             "name": "planDesignDb",
@@ -112994,11 +113059,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T01:41:23.291Z",
+    "saved_at": "2026-10-24T01:50:59.963Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 222560480,
+    "age": 223137152,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -115897,28 +115962,37 @@
     {
       "id": "file_src_application_design_line_design_line_ts",
       "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
-      "state": "candidate",
-      "owner": null,
-      "claimed_at": null,
-      "evidence": [
-        {
-          "kind": "expectations",
-          "at": "2026-10-19T13:13:08.173Z",
-          "verdict": "pass"
-        },
-        {
-          "kind": "expectations",
-          "at": "2026-10-20T03:56:15.627Z",
-          "by": "llm",
-          "agent": "workbuddy",
-          "verdict": "pass"
-        }
-      ],
+      "state": "claimed",
+      "judge_gate": "strict",
       "reopened_at": "2026-10-20T06:28:37.710Z",
-      "release_reason": "子代理已结束，释放占用的卡",
-      "released_by": "workbuddy",
-      "released_at": "2026-10-20T10:49:14.165Z",
-      "node_id": "file_src_application_design_line_design_line_ts"
+      "node_id": "file_src_application_design_line_design_line_ts",
+      "owner": "agent:workbuddy-glm5",
+      "claimed_at": "2026-10-24T01:49:38.910Z",
+      "read_set": {
+        "symbols": [
+          {
+            "file": "src/application/design/line/design_line.ts",
+            "name": "designLineHandler",
+            "fp": "fd39cdcff8dc0b18baa3f4dc38782ea87073f493"
+          },
+          {
+            "file": "src/application/design/line/design_line.ts",
+            "name": "lineReport",
+            "fp": "c5dcc8ee0cb84e72142b1f3a7842a3145ea11d89"
+          }
+        ],
+        "files": [
+          {
+            "path": "src/application/design/line/design_line.ts",
+            "content_hash": "fd6c4500112c46ff46ae2353e4081d829d46b45c"
+          }
+        ],
+        "computed_at": "2026-10-24T01:49:38.872Z",
+        "basis": [
+          "declared",
+          "expectations"
+        ]
+      }
     },
     {
       "id": "file_src_application_design_rewrite_symbol_diff_ts",
@@ -116010,7 +116084,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1302,
+  "_dsl_rev": 1303,
   "feature_tree": {
     "features": [
       {

@@ -44,5 +44,22 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "GO_FEATURES",
+      "kind": "const",
+      "signature": "const GO_FEATURES = [ { name: '泛型函数（类型参数）', tool: 'go', since: 18, pattern: /…"
+    },
+    {
+      "name": "GO_REMOVED",
+      "kind": "const",
+      "signature": "const GO_REMOVED = [ { name: 'io/ioutil', tool: 'go', since: 16, kind: 'depr…"
+    },
+    {
+      "name": "goAdapter",
+      "kind": "const",
+      "signature": "const goAdapter = { lang: 'go', label: 'Go', declarationFiles: ['go.mod', '…"
+    }
+  ]
 }

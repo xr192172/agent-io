@@ -621,6 +621,118 @@
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "OplStatus",
+      "kind": "type",
+      "signature": "OplStatus()"
+    },
+    {
+      "name": "OplLiveState",
+      "kind": "type",
+      "signature": "OplLiveState()"
+    },
+    {
+      "name": "OplApi",
+      "kind": "interface",
+      "signature": "OplApi()"
+    },
+    {
+      "name": "OplDeclFile",
+      "kind": "interface",
+      "signature": "OplDeclFile()"
+    },
+    {
+      "name": "OplLiveFile",
+      "kind": "interface",
+      "signature": "OplLiveFile()"
+    },
+    {
+      "name": "OplState",
+      "kind": "interface",
+      "signature": "OplState()"
+    },
+    {
+      "name": "oplRoot",
+      "kind": "const",
+      "signature": "const oplRoot = (feature: string) => path.join(getStorageRoot(), 'opl', f…"
+    },
+    {
+      "name": "implRoot",
+      "kind": "const",
+      "signature": "const implRoot = (feature: string, id: string) => path.join(oplRoot(featur…"
+    },
+    {
+      "name": "stateFile",
+      "kind": "const",
+      "signature": "const stateFile = (feature: string, id: string) => path.join(oplRoot(featur…"
+    },
+    {
+      "name": "opSignatureCacheFile",
+      "kind": "const",
+      "signature": "const opSignatureCacheFile = (feature: string) => path.join(oplRoot(feature), '_cache'…"
+    },
+    {
+      "name": "SignatureCacheEntry",
+      "kind": "interface",
+      "signature": "SignatureCacheEntry()"
+    },
+    {
+      "name": "SignatureCache",
+      "kind": "type",
+      "signature": "SignatureCache()"
+    },
+    {
+      "name": "oplAdd",
+      "kind": "function",
+      "signature": "oplAdd(feature: string, idea: string): OplState"
+    },
+    {
+      "name": "oplLocate",
+      "kind": "function",
+      "signature": "oplLocate(feature: string, id: string): Promise<OplState>"
+    },
+    {
+      "name": "assertContractNotFromCode",
+      "kind": "function",
+      "signature": "assertContractNotFromCode(codeSignaturesFedAsContext: readonly string[]): void"
+    },
+    {
+      "name": "oplDeclare",
+      "kind": "function",
+      "signature": "oplDeclare(feature: string,\n  id: string,\n  overrides?: { files?: OplDeclFile[]; declCodeContext?: string[] },): OplState"
+    },
+    {
+      "name": "oplImplement",
+      "kind": "function",
+      "signature": "oplImplement(feature: string, id: string): OplState"
+    },
+    {
+      "name": "oplCheck",
+      "kind": "function",
+      "signature": "oplCheck(feature: string, id: string): OplState"
+    },
+    {
+      "name": "oplIntegrate",
+      "kind": "function",
+      "signature": "oplIntegrate(feature: string, id: string): Promise<OplState>"
+    },
+    {
+      "name": "oplList",
+      "kind": "function",
+      "signature": "oplList(feature: string): Array<{ id: string; title: string; idea: string; status: OplStatus; parentFeat?: string; integrated: boolean; updated: string }>"
+    },
+    {
+      "name": "oplGet",
+      "kind": "function",
+      "signature": "oplGet(feature: string, id: string): OplState"
+    },
+    {
+      "name": "oplAuto",
+      "kind": "function",
+      "signature": "oplAuto(feature: string, id?: string, idea?: string): Promise<OplState>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/derive/opl.ts#fileApisWithCache",
     "src/application/design/derive/opl.ts#llmDeclare",

@@ -177,6 +177,48 @@
       "to": "src/presentation/daemon/memory_watch.ts#judgeLeak"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "MB",
+      "kind": "const",
+      "signature": "const MB = (b: number): number => Math.round(b / 1048576)"
+    },
+    {
+      "name": "MemoryWatchOpts",
+      "kind": "interface",
+      "signature": "MemoryWatchOpts()"
+    },
+    {
+      "name": "MemoryVerdict",
+      "kind": "type",
+      "signature": "MemoryVerdict()"
+    },
+    {
+      "name": "JudgeOpts",
+      "kind": "interface",
+      "signature": "JudgeOpts()"
+    },
+    {
+      "name": "FORMAT",
+      "kind": "const",
+      "signature": "const FORMAT = (v: MemoryVerdict): string => v === 'grow' ? 'grow' : v =…"
+    },
+    {
+      "name": "TargetState",
+      "kind": "interface",
+      "signature": "TargetState()"
+    },
+    {
+      "name": "judgeLeak",
+      "kind": "function",
+      "signature": "judgeLeak(series: MemSample[], o: JudgeOpts): MemoryVerdict"
+    },
+    {
+      "name": "startMemoryWatch",
+      "kind": "function",
+      "signature": "startMemoryWatch(opts: MemoryWatchOpts = {}): Promise<() => void>"
+    }
+  ],
   "reverse_calls": [
     "src/presentation/daemon/daemon.ts#main",
     "src/presentation/daemon/memory_watch.ts#startMemoryWatch"

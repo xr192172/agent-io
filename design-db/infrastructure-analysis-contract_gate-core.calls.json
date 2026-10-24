@@ -374,6 +374,78 @@
       "to": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "UndefinedRef",
+      "kind": "interface",
+      "signature": "UndefinedRef()"
+    },
+    {
+      "name": "FileScan",
+      "kind": "interface",
+      "signature": "FileScan()"
+    },
+    {
+      "name": "SkippedFile",
+      "kind": "interface",
+      "signature": "SkippedFile()"
+    },
+    {
+      "name": "ContractSnapshot",
+      "kind": "interface",
+      "signature": "ContractSnapshot()"
+    },
+    {
+      "name": "ContractDiff",
+      "kind": "interface",
+      "signature": "ContractDiff()"
+    },
+    {
+      "name": "ScanContractsOptions",
+      "kind": "interface",
+      "signature": "ScanContractsOptions()"
+    },
+    {
+      "name": "SRC_EXT",
+      "kind": "const",
+      "signature": "const SRC_EXT = SOURCE_EXTS"
+    },
+    {
+      "name": "EXCLUDE_DIRS",
+      "kind": "const",
+      "signature": "const EXCLUDE_DIRS = skipDirSet(['vendor'])"
+    },
+    {
+      "name": "Cleaned",
+      "kind": "type",
+      "signature": "Cleaned()"
+    },
+    {
+      "name": "ContractGateResult",
+      "kind": "interface",
+      "signature": "ContractGateResult()"
+    },
+    {
+      "name": "scanContracts",
+      "kind": "function",
+      "signature": "scanContracts(opts: ScanContractsOptions): ContractSnapshot"
+    },
+    {
+      "name": "renderContractSkips",
+      "kind": "function",
+      "signature": "renderContractSkips(skipped: readonly SkippedFile[]): string"
+    },
+    {
+      "name": "diffContracts",
+      "kind": "function",
+      "signature": "diffContracts(before: ContractSnapshot, after: ContractSnapshot): ContractDiff"
+    },
+    {
+      "name": "contractGate",
+      "kind": "function",
+      "signature": "contractGate(opts: ScanContractsOptions): ContractGateResult"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/contract_gate/core.ts#cleanLine",
     "src/infrastructure/analysis/contract_gate/core.ts#cleanSource",

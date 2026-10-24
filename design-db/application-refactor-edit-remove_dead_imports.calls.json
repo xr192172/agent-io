@@ -613,6 +613,58 @@
       "to": "src/infrastructure/verify_refactor.ts#defaultVerifyCommands"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "RemoveImportsResult",
+      "kind": "interface",
+      "signature": "RemoveImportsResult()"
+    },
+    {
+      "name": "DeadImportRemoval",
+      "kind": "interface",
+      "signature": "DeadImportRemoval()"
+    },
+    {
+      "name": "FileRemoval",
+      "kind": "interface",
+      "signature": "FileRemoval()"
+    },
+    {
+      "name": "RemoveDeadImportResult",
+      "kind": "interface",
+      "signature": "RemoveDeadImportResult()"
+    },
+    {
+      "name": "RemoveDeadImportsVerifyResult",
+      "kind": "interface",
+      "signature": "RemoveDeadImportsVerifyResult()"
+    },
+    {
+      "name": "RemoveDeadImportsVerifyOptions",
+      "kind": "interface",
+      "signature": "RemoveDeadImportsVerifyOptions()"
+    },
+    {
+      "name": "removeImportsFromSource",
+      "kind": "function",
+      "signature": "removeImportsFromSource(src: string, target: string, lang: 'go' | 'ts'): RemoveImportsResult"
+    },
+    {
+      "name": "writtenFilesOf",
+      "kind": "function",
+      "signature": "writtenFilesOf(projectDir: string, r: RemoveDeadImportResult): string[]"
+    },
+    {
+      "name": "removeDeadImports",
+      "kind": "function",
+      "signature": "removeDeadImports(opts: {\n  project_dir: string;\n  dead: DeadDepCandidate[];\n  /** ★ 2026-10-20（A7）：本次写入者身份（与 claim 时 `data.owner` 同一个值），直通 `removeDeadImportsCore` */\n  actor?: string;\n  /** ★★★ T356：按 run 授权 —— 直通 `removeDeadImportsCore`（判据仍只住写闸） */\n  authorize?: string;\n}): TouchedProduct<RemoveDeadImportResult>"
+    },
+    {
+      "name": "removeDeadImportsWithVerify",
+      "kind": "function",
+      "signature": "removeDeadImportsWithVerify(opts: RemoveDeadImportsVerifyOptions): RemoveDeadImportsVerifyResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
     "src/application/refactor/edit/remove_dead_imports.ts#applyCuts",

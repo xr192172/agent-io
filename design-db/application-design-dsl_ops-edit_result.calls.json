@@ -32,5 +32,12 @@
     }
   ],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "EditResult",
+      "kind": "interface",
+      "signature": "EditResult()"
+    }
+  ]
 }

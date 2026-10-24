@@ -31,6 +31,13 @@
       "to": "src/infrastructure/analysis/observe/probe.ts#setGlobalProbeSink"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "enableObserveFromEnv",
+      "kind": "function",
+      "signature": "enableObserveFromEnv(onEvent?: (ev: TSEvent) => void): boolean"
+    }
+  ],
   "reverse_calls": [
     "src/presentation/http/serve.ts#startServer"
   ]

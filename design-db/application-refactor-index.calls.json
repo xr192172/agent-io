@@ -173,5 +173,17 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "refactorPlanSchema",
+      "kind": "const",
+      "signature": "const refactorPlanSchema = z.object({ schema: z.literal('refactor_plan/1'), plan_id:…"
+    },
+    {
+      "name": "REFACTOR_TOOLS",
+      "kind": "const",
+      "signature": "const REFACTOR_TOOLS = [ { name: 'diff_views', title: 'Compare design view vs li…"
+    }
+  ]
 }

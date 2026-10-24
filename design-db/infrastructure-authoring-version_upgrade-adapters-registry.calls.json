@@ -94,6 +94,48 @@
       "to": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "adapters",
+      "kind": "const",
+      "signature": "const adapters = [javaAdapter, goAdapter, nodeAdapter, pythonAdapter, csha…"
+    },
+    {
+      "name": "ALL_DECLARATION_FILES",
+      "kind": "const",
+      "signature": "const ALL_DECLARATION_FILES = [ ...new Set(adapters.flatMap((a) => a.declarationFiles)), ]"
+    },
+    {
+      "name": "ADAPTER_SKIP_DIRS",
+      "kind": "const",
+      "signature": "const ADAPTER_SKIP_DIRS = new Set(adapters.flatMap((a) => a.skipDirs ?? []))"
+    },
+    {
+      "name": "ALL_ADAPTER_EXTS",
+      "kind": "const",
+      "signature": "const ALL_ADAPTER_EXTS = new Set(adapters.flatMap((a) => a.sourceExts))"
+    },
+    {
+      "name": "adapterForLang",
+      "kind": "function",
+      "signature": "adapterForLang(lang: ToolName): LanguageAdapter | undefined"
+    },
+    {
+      "name": "adapterForExt",
+      "kind": "function",
+      "signature": "adapterForExt(ext: string): LanguageAdapter | undefined"
+    },
+    {
+      "name": "adaptersForFile",
+      "kind": "function",
+      "signature": "adaptersForFile(name: string): LanguageAdapter[]"
+    },
+    {
+      "name": "adapterMissHint",
+      "kind": "function",
+      "signature": "adapterMissHint(extOrLang: string): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/upgrade/upgrade.ts#renderUncovered",
     "src/infrastructure/authoring/version_upgrade/detect.ts#declaredToFeatureVersion",

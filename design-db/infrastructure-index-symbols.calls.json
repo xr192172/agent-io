@@ -1182,6 +1182,218 @@
       "to": "src/infrastructure/project_view.ts#invalidateProjectView"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "SyncStatus",
+      "kind": "type",
+      "signature": "SyncStatus()"
+    },
+    {
+      "name": "SyncFileResult",
+      "kind": "interface",
+      "signature": "SyncFileResult()"
+    },
+    {
+      "name": "SyncProjectResult",
+      "kind": "interface",
+      "signature": "SyncProjectResult()"
+    },
+    {
+      "name": "SymbolHit",
+      "kind": "interface",
+      "signature": "SymbolHit()"
+    },
+    {
+      "name": "IndexStats",
+      "kind": "interface",
+      "signature": "IndexStats()"
+    },
+    {
+      "name": "SymbolStatus",
+      "kind": "type",
+      "signature": "SymbolStatus()"
+    },
+    {
+      "name": "SyncPrelude",
+      "kind": "interface",
+      "signature": "SyncPrelude()"
+    },
+    {
+      "name": "PreludeResult",
+      "kind": "type",
+      "signature": "PreludeResult()"
+    },
+    {
+      "name": "ReopenRefsResult",
+      "kind": "interface",
+      "signature": "ReopenRefsResult()"
+    },
+    {
+      "name": "BUILTIN_PREFIXES",
+      "kind": "const",
+      "signature": "const BUILTIN_PREFIXES = new Set([ 'Math', 'JSON', 'Array', 'Object', 'String', 'N…"
+    },
+    {
+      "name": "BUILTIN_CALLEES",
+      "kind": "const",
+      "signature": "const BUILTIN_CALLEES = new Set([ 'String', 'Number', 'Boolean', 'Object', 'Array…"
+    },
+    {
+      "name": "CrossFileResolveStats",
+      "kind": "interface",
+      "signature": "CrossFileResolveStats()"
+    },
+    {
+      "name": "BUILTIN_TYPES",
+      "kind": "const",
+      "signature": "const BUILTIN_TYPES = new Set([ 'string', 'number', 'boolean', 'void', 'any', '…"
+    },
+    {
+      "name": "CachedSymbol",
+      "kind": "interface",
+      "signature": "CachedSymbol()"
+    },
+    {
+      "name": "CachedImport",
+      "kind": "interface",
+      "signature": "CachedImport()"
+    },
+    {
+      "name": "CachedFileParse",
+      "kind": "interface",
+      "signature": "CachedFileParse()"
+    },
+    {
+      "name": "toIndexKey",
+      "kind": "function",
+      "signature": "toIndexKey(projectRoot: string, p: string): string | null"
+    },
+    {
+      "name": "toRelPath",
+      "kind": "function",
+      "signature": "toRelPath(projectRoot: string, absPath: string): string"
+    },
+    {
+      "name": "contentHash",
+      "kind": "function",
+      "signature": "contentHash(content: string): string"
+    },
+    {
+      "name": "mergeSymbolStatus",
+      "kind": "function",
+      "signature": "mergeSymbolStatus(a: SymbolStatus | undefined,\r\n  b: SymbolStatus | undefined,): SymbolStatus | undefined"
+    },
+    {
+      "name": "symbolSpanHash",
+      "kind": "function",
+      "signature": "symbolSpanHash(lines: string[], startLine: number, endLine: number, lang: string): string"
+    },
+    {
+      "name": "readSymbolBody",
+      "kind": "function",
+      "signature": "readSymbolBody(db: Database,\r\n  opts: { file: string; qualifiedName: string; startLine: number; src: string },): SymbolBodyRead"
+    },
+    {
+      "name": "resolveImportTarget",
+      "kind": "function",
+      "signature": "resolveImportTarget(projectRoot: string,\r\n  fromRel: string,\r\n  source: string,\r\n  exts?: readonly string[],): string | null"
+    },
+    {
+      "name": "declaredReceiverTypes",
+      "kind": "function",
+      "signature": "declaredReceiverTypes(content: string): Map<string, ReceiverType | null>"
+    },
+    {
+      "name": "classifyCall",
+      "kind": "function",
+      "signature": "classifyCall(args: {\r\n  content: string;\r\n  symbols: readonly ParsedSymbol[];\r\n  /** declaredReceiverTypes() 的结果（每个文件建一次） */\r\n  receiverTypes: ReadonlyMap<string, ReceiverType | null>;\r\n  /** 本文件的 import 列表（判「接收者是不是导入名」——那种 `X.foo()` 归跨文件解析） */\r\n  imports: ReadonlyArray<{ bindings?: string[] }>;\r\n  callerQn: string;\r\n  callee: string;\r\n  calleeExpr: string;\r\n}): CallVerdict"
+    },
+    {
+      "name": "syncFile",
+      "kind": "function",
+      "signature": "syncFile(db: Database, projectRoot: string, absPath: string): Promise<SyncFileResult>"
+    },
+    {
+      "name": "syncFileSync",
+      "kind": "function",
+      "signature": "syncFileSync(db: Database, projectRoot: string, absPath: string): SyncFileResult"
+    },
+    {
+      "name": "reopenRefsTo",
+      "kind": "function",
+      "signature": "reopenRefsTo(db: Database, names: readonly string[]): ReopenRefsResult"
+    },
+    {
+      "name": "changedSymbolNames",
+      "kind": "function",
+      "signature": "changedSymbolNames(db: Database, rel: string): string[]"
+    },
+    {
+      "name": "syncProject",
+      "kind": "function",
+      "signature": "syncProject(db: Database,\r\n  projectRoot: string,\r\n  absPaths: string[],): Promise<SyncProjectResult>"
+    },
+    {
+      "name": "removeFile",
+      "kind": "function",
+      "signature": "removeFile(db: Database, projectRoot: string, absPath: string): void"
+    },
+    {
+      "name": "resolveCrossFileCalls",
+      "kind": "function",
+      "signature": "resolveCrossFileCalls(db: Database,\r\n  projectRoot: string,\r\n  opts: { scopeFiles?: readonly string[]; keepUnresolvedPending?: boolean } = {},): CrossFileResolveStats"
+    },
+    {
+      "name": "pruneDeletedFiles",
+      "kind": "function",
+      "signature": "pruneDeletedFiles(db: Database,\r\n  projectRoot: string,\r\n  absPaths: string[],\r\n  retainedOut?: string[],): string[]"
+    },
+    {
+      "name": "getFileParse",
+      "kind": "function",
+      "signature": "getFileParse(db: Database, relPath: string): CachedFileParse | null"
+    },
+    {
+      "name": "searchSymbols",
+      "kind": "function",
+      "signature": "searchSymbols(db: Database, query: string, limit = 20): SymbolHit[]"
+    },
+    {
+      "name": "getIndexStats",
+      "kind": "function",
+      "signature": "getIndexStats(db: Database): IndexStats"
+    },
+    {
+      "name": "hasAnyIndexedFiles",
+      "kind": "function",
+      "signature": "hasAnyIndexedFiles(db: Database): boolean"
+    },
+    {
+      "name": "isFileIndexed",
+      "kind": "function",
+      "signature": "isFileIndexed(db: Database, relPath: string): boolean"
+    },
+    {
+      "name": "getResolvedImportTargets",
+      "kind": "function",
+      "signature": "getResolvedImportTargets(db: Database, relPath: string): string[]"
+    },
+    {
+      "name": "getResolvedImportSources",
+      "kind": "function",
+      "signature": "getResolvedImportSources(db: Database, relPath: string): string[]"
+    },
+    {
+      "name": "getRawImportsOfFile",
+      "kind": "function",
+      "signature": "getRawImportsOfFile(db: Database,\r\n  relPath: string,): Array<{ source: string; kind: 'relative' | 'package'; type_only: boolean; line: number }>"
+    },
+    {
+      "name": "findFilesImportingAnySource",
+      "kind": "function",
+      "signature": "findFilesImportingAnySource(db: Database, sources: string[]): string[]"
+    }
+  ],
   "reverse_calls": [
     "src/application/claim_conflict.ts#computeClaimReadSet",
     "src/application/design/dsl_ops/task_ops.ts#codeFingerprintAt",

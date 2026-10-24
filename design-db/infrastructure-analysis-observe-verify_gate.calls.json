@@ -172,6 +172,73 @@
       "to": "src/infrastructure/analysis/observe/verify_gate.ts#regressionSummary"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "RuleRegression",
+      "kind": "interface",
+      "signature": "RuleRegression()"
+    },
+    {
+      "name": "DATA_DECL_RULES",
+      "kind": "const",
+      "signature": "const DATA_DECL_RULES = new Set([KNOWN_SPREAD_RULE])"
+    },
+    {
+      "name": "registeredRules",
+      "kind": "const",
+      "signature": "const registeredRules = (): Set<string> => new Set([...OBSERVE_RULE_IDS, ...DATA_…"
+    },
+    {
+      "name": "DeclVerdict",
+      "kind": "interface",
+      "signature": "DeclVerdict()"
+    },
+    {
+      "name": "verifyRuleRegression",
+      "kind": "function",
+      "signature": "verifyRuleRegression(decls: TSDLDecl[]): RuleRegression"
+    },
+    {
+      "name": "regressionSummary",
+      "kind": "function",
+      "signature": "regressionSummary(r: RuleRegression): string"
+    },
+    {
+      "name": "regressionDescribe",
+      "kind": "function",
+      "signature": "regressionDescribe(r: RuleRegression): string"
+    },
+    {
+      "name": "regressionEvidence",
+      "kind": "function",
+      "signature": "regressionEvidence(r: RuleRegression, llmCount: number): string"
+    },
+    {
+      "name": "verifyLLMCoverage",
+      "kind": "function",
+      "signature": "verifyLLMCoverage(uncovered: string[], verdicts: DeclVerdict[]): void"
+    },
+    {
+      "name": "finalizeDecls",
+      "kind": "function",
+      "signature": "finalizeDecls(decls: TSDLDecl[], reg: RuleRegression, llmVerdicts: DeclVerdict[]): TSDLDecl[]"
+    },
+    {
+      "name": "rejectedByReview",
+      "kind": "function",
+      "signature": "rejectedByReview(decls: TSDLDecl[], llmVerdicts: DeclVerdict[]): DeclVerdict[]"
+    },
+    {
+      "name": "mergeLoopDecls",
+      "kind": "function",
+      "signature": "mergeLoopDecls(current: TSDLDecl[], incoming: TSDLDecl[]): TSDLDecl[]"
+    },
+    {
+      "name": "droppedDeclCount",
+      "kind": "function",
+      "signature": "droppedDeclCount(current: TSDLDecl[] | null, incoming: TSDLDecl[]): number"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
     "src/infrastructure/analysis/observe/verify_gate.ts#finalizeDecls",

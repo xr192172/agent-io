@@ -143,5 +143,42 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "PROBE_SUFFIX_RE",
+      "kind": "const",
+      "signature": "const PROBE_SUFFIX_RE = /\\.(enter|exit|catch|defer|recover|writefile|mkdir|rename…"
+    },
+    {
+      "name": "GO_PLATFORM_SUFFIXES",
+      "kind": "const",
+      "signature": "const GO_PLATFORM_SUFFIXES = new Set([ // GOOS 'aix', 'android', 'darwin', 'dragonfly'…"
+    },
+    {
+      "name": "observeInstrumentHandler",
+      "kind": "const",
+      "signature": "const observeInstrumentHandler = wrapData(async (a) => { const targetArg = a.target as str…"
+    },
+    {
+      "name": "observeJudgeHandler",
+      "kind": "const",
+      "signature": "const observeJudgeHandler = wrap(async (a) => { const events = a.events; if (!Array.i…"
+    },
+    {
+      "name": "observeLogHandler",
+      "kind": "const",
+      "signature": "const observeLogHandler = wrapData(async (a) => { const eventsFile = a.events_file …"
+    },
+    {
+      "name": "observeTraceHandler",
+      "kind": "const",
+      "signature": "const observeTraceHandler = wrapData(async (a) => { const cfg = { events_path: typeof…"
+    },
+    {
+      "name": "reconcileChainHandler",
+      "kind": "const",
+      "signature": "const reconcileChainHandler = wrapData(async (a) => { const input = a as unknown as Rec…"
+    }
+  ]
 }

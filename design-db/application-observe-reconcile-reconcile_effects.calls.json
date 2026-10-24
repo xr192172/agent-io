@@ -358,6 +358,43 @@
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ReconcileEffectsInput",
+      "kind": "interface",
+      "signature": "ReconcileEffectsInput()"
+    },
+    {
+      "name": "FileReconcileReport",
+      "kind": "interface",
+      "signature": "FileReconcileReport()"
+    },
+    {
+      "name": "ReconcileEffectsResult",
+      "kind": "interface",
+      "signature": "ReconcileEffectsResult()"
+    },
+    {
+      "name": "EffectEvent",
+      "kind": "interface",
+      "signature": "EffectEvent()"
+    },
+    {
+      "name": "RawEvent",
+      "kind": "interface",
+      "signature": "RawEvent()"
+    },
+    {
+      "name": "FileObservation",
+      "kind": "interface",
+      "signature": "FileObservation()"
+    },
+    {
+      "name": "reconcileEffects",
+      "kind": "function",
+      "signature": "reconcileEffects(input: ReconcileEffectsInput): Promise<TouchedProduct<ReconcileEffectsResult>>"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/reconcile/reconcile_effects.ts#discoverEventFiles",
     "src/application/observe/reconcile/reconcile_effects.ts#legacyEventFiles",

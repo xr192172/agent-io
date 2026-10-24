@@ -161,6 +161,23 @@
       "to": "src/infrastructure/index/symbols.ts#toIndexKey"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "WriteItem",
+      "kind": "interface",
+      "signature": "WriteItem()"
+    },
+    {
+      "name": "WriteReceipt",
+      "kind": "interface",
+      "signature": "WriteReceipt()"
+    },
+    {
+      "name": "applyWrites",
+      "kind": "function",
+      "signature": "applyWrites(projectRoot: string,\n  items: readonly WriteItem[],\n  opts: { dryRun?: boolean; note?: string; actor?: string | null; authorize?: string | null } = {},): Promise<TouchedProduct<WriteReceipt>>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/edit/apply_writes.ts#applyWrites",
     "src/application/refactor/rename/rename_local.ts#renameLocals"

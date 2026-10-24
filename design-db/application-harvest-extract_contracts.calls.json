@@ -586,6 +586,113 @@
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ExtractContractsInput",
+      "kind": "interface",
+      "signature": "ExtractContractsInput()"
+    },
+    {
+      "name": "FileContractReport",
+      "kind": "interface",
+      "signature": "FileContractReport()"
+    },
+    {
+      "name": "ExtractContractsResult",
+      "kind": "interface",
+      "signature": "ExtractContractsResult()"
+    },
+    {
+      "name": "BUSINESS_SEED_PATTERNS",
+      "kind": "const",
+      "signature": "const BUSINESS_SEED_PATTERNS = [ { re: /(^|\\/)cmd\\//, reason: 'cmd 入口目录' }, { re: /(^|\\/…"
+    },
+    {
+      "name": "SymbolRow",
+      "kind": "interface",
+      "signature": "SymbolRow()"
+    },
+    {
+      "name": "TS_FIELD_RE",
+      "kind": "const",
+      "signature": "const TS_FIELD_RE = /^[\\s]*(?:public\\s+|private\\s+|protected\\s+|readonly\\s+|s…"
+    },
+    {
+      "name": "GO_FIELD_RE",
+      "kind": "const",
+      "signature": "const GO_FIELD_RE = /^[\\t ]*([A-Z]\\w*)\\s+([\\w\\[\\]\\*\\.\\{\\}\"' ]+?)[\\t ]*(?:\\/\\/…"
+    },
+    {
+      "name": "GO_METHOD_RE",
+      "kind": "const",
+      "signature": "const GO_METHOD_RE = /^[\\t ]*(\\w+)\\s*\\(([^)]*)\\)\\s*(.*)$/"
+    },
+    {
+      "name": "PY_FIELD_RE",
+      "kind": "const",
+      "signature": "const PY_FIELD_RE = /^[\\s]*([a-zA-Z_]\\w*)\\s*:\\s*([^=#\\n]+)/"
+    },
+    {
+      "name": "GO_ENV_RES",
+      "kind": "const",
+      "signature": "const GO_ENV_RES = [ /\\bos\\.Getenv\\(\\s*\"([^\"]+)\"\\s*\\)/g, /\\bflag\\.\\w+\\(\\s*\"(…"
+    },
+    {
+      "name": "TS_ENV_RES",
+      "kind": "const",
+      "signature": "const TS_ENV_RES = [ /\\bprocess\\.env\\.([A-Za-z_][A-Za-z0-9_]*)/g, /\\bprocess…"
+    },
+    {
+      "name": "PY_ENV_RES",
+      "kind": "const",
+      "signature": "const PY_ENV_RES = [ /\\bos\\.(?:environ|getenv)\\.?get\\(\\s*['\"]([^'\"]+)['\"]/g,…"
+    },
+    {
+      "name": "GO_FILE_WRITE_RES",
+      "kind": "const",
+      "signature": "const GO_FILE_WRITE_RES = [ { re: /\\bos\\.WriteFile\\(\\s*(?:\"([^\"]+)\"|([\\w.]+))/g, op…"
+    },
+    {
+      "name": "TS_FILE_WRITE_RES",
+      "kind": "const",
+      "signature": "const TS_FILE_WRITE_RES = [ { re: /\\bfs\\.(?:writeFile|writeFileSync)\\(\\s*(?:['\"]([^…"
+    },
+    {
+      "name": "GO_HOLD_RES",
+      "kind": "const",
+      "signature": "const GO_HOLD_RES = [ { re: /net\\.Listen\\(\\s*\"[^\"]*\"\\s*,\\s*(?:\"([^\"]+)\"|([\\w.…"
+    },
+    {
+      "name": "TS_HOLD_RES",
+      "kind": "const",
+      "signature": "const TS_HOLD_RES = [ { re: /\\.listen\\(\\s*(\\d+)/g, make: (m) => ({ target: `l…"
+    },
+    {
+      "name": "PY_FILE_WRITE_RES",
+      "kind": "const",
+      "signature": "const PY_FILE_WRITE_RES = [ { re: /\\bopen\\(\\s*(?:['\"]([^'\"]+)['\"]|([\\w.]+))\\s*,\\s*(…"
+    },
+    {
+      "name": "PY_HOLD_RES",
+      "kind": "const",
+      "signature": "const PY_HOLD_RES = [ { re: /\\.(?:bind|listen)\\(\\s*\\(?['\"]?([\\w:.\\-]+)/g, mak…"
+    },
+    {
+      "name": "GO_CHAN_KEYWORDS",
+      "kind": "const",
+      "signature": "const GO_CHAN_KEYWORDS = new Set([ 'case', 'default', 'if', 'for', 'return', 'swit…"
+    },
+    {
+      "name": "EffectCandidates",
+      "kind": "interface",
+      "signature": "EffectCandidates()"
+    },
+    {
+      "name": "extractContracts",
+      "kind": "function",
+      "signature": "extractContracts(input: ExtractContractsInput): TouchedProduct<ExtractContractsResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/harvest/extract_contracts.ts#classifyRoles",
     "src/application/harvest/extract_contracts.ts#collectModuleVars",

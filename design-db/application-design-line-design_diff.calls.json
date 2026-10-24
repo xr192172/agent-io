@@ -199,6 +199,13 @@
       "to": "src/application/design/line/design_line.ts#mustHaveFor"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "designDiff",
+      "kind": "function",
+      "signature": "designDiff(projectDir: string, feature: string): DesignDiffResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/line/design_diff.ts#designDiff",
     "src/application/design/line/design_diff.ts#designDiff.checkEdgeInSource"

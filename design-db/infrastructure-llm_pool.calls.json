@@ -61,6 +61,18 @@
   ],
   "imports": [],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "KeyPool",
+      "kind": "class",
+      "signature": "KeyPool()"
+    },
+    {
+      "name": "loadKeys",
+      "kind": "function",
+      "signature": "loadKeys(poolEnv: string, fallbackEnvs: string[]): string[]"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/llm_agnes.ts#resolveAgnesKeys"
   ]

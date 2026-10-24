@@ -145,6 +145,68 @@
     }
   ],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "JudgeVerdict",
+      "kind": "interface",
+      "signature": "JudgeVerdict()"
+    },
+    {
+      "name": "ObserveRuleCtx",
+      "kind": "interface",
+      "signature": "ObserveRuleCtx()"
+    },
+    {
+      "name": "IMPACT_BLAST_RADIUS_LIMIT",
+      "kind": "const",
+      "signature": "const IMPACT_BLAST_RADIUS_LIMIT = 50"
+    },
+    {
+      "name": "NO_ACK_NOTE",
+      "kind": "const",
+      "signature": "const NO_ACK_NOTE = '（⚠ 未扣已承认耦合：无声明集）'"
+    },
+    {
+      "name": "ObserveRuleSpec",
+      "kind": "interface",
+      "signature": "ObserveRuleSpec()"
+    },
+    {
+      "name": "OBSERVE_RULE_TABLE",
+      "kind": "const",
+      "signature": "const OBSERVE_RULE_TABLE = [ { rule: 'design:silent-error-discard', label: '静默错误丢弃',…"
+    },
+    {
+      "name": "OBSERVE_RULE_IDS",
+      "kind": "const",
+      "signature": "const OBSERVE_RULE_IDS = OBSERVE_RULE_TABLE.map((r) => r.rule)"
+    },
+    {
+      "name": "silentErrorDiscard",
+      "kind": "function",
+      "signature": "silentErrorDiscard(ev: TSEvent): JudgeVerdict"
+    },
+    {
+      "name": "impactBlastRadius",
+      "kind": "function",
+      "signature": "impactBlastRadius(ev: TSEvent): JudgeVerdict"
+    },
+    {
+      "name": "impactUnplannedSpread",
+      "kind": "function",
+      "signature": "impactUnplannedSpread(ev: TSEvent, ctx?: ObserveRuleCtx): JudgeVerdict"
+    },
+    {
+      "name": "observeRulePredicate",
+      "kind": "function",
+      "signature": "observeRulePredicate(rule: string): ((ev: TSEvent, ctx?: ObserveRuleCtx) => JudgeVerdict) | undefined"
+    },
+    {
+      "name": "judgeEvent",
+      "kind": "function",
+      "signature": "judgeEvent(ev: TSEvent, ctx?: ObserveRuleCtx): JudgeVerdict"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
     "src/infrastructure/analysis/observe/contract.ts#TSComparator.compare",

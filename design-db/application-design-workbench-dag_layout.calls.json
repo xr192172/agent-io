@@ -350,6 +350,43 @@
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DagLayoutInput",
+      "kind": "interface",
+      "signature": "DagLayoutInput()"
+    },
+    {
+      "name": "ForceLayoutInput",
+      "kind": "interface",
+      "signature": "ForceLayoutInput()"
+    },
+    {
+      "name": "ForceNode",
+      "kind": "interface",
+      "signature": "ForceNode()"
+    },
+    {
+      "name": "GridAlignInput",
+      "kind": "interface",
+      "signature": "GridAlignInput()"
+    },
+    {
+      "name": "dagLayout",
+      "kind": "function",
+      "signature": "dagLayout(input: DagLayoutInput): TouchedProduct<ReturnType<typeof dagLayoutCore>>"
+    },
+    {
+      "name": "forceLayout",
+      "kind": "function",
+      "signature": "forceLayout(input: ForceLayoutInput): { message: string; iterations: number; edge_crossings: number }"
+    },
+    {
+      "name": "gridAlign",
+      "kind": "function",
+      "signature": "gridAlign(input: GridAlignInput): { message: string; grid_size: number; aligned_count: number }"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/update_feature.ts#applyLayoutOp",
     "src/application/design/workbench/dag_layout.ts#countEdgeCrossings",

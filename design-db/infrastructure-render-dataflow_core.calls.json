@@ -368,6 +368,88 @@
       "to": "src/infrastructure/render/dataflow_core.ts#mockValue"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DfNodeLike",
+      "kind": "interface",
+      "signature": "DfNodeLike()"
+    },
+    {
+      "name": "DfEdgeLike",
+      "kind": "interface",
+      "signature": "DfEdgeLike()"
+    },
+    {
+      "name": "DfTraceStep",
+      "kind": "interface",
+      "signature": "DfTraceStep()"
+    },
+    {
+      "name": "DfTrace",
+      "kind": "interface",
+      "signature": "DfTrace()"
+    },
+    {
+      "name": "DfJudgementBranch",
+      "kind": "interface",
+      "signature": "DfJudgementBranch()"
+    },
+    {
+      "name": "DfJudgement",
+      "kind": "interface",
+      "signature": "DfJudgement()"
+    },
+    {
+      "name": "EvalResult",
+      "kind": "interface",
+      "signature": "EvalResult()"
+    },
+    {
+      "name": "TRUE_VIA",
+      "kind": "const",
+      "signature": "const TRUE_VIA = /是|进入|继续|重复|满足|成立/"
+    },
+    {
+      "name": "FALSE_VIA",
+      "kind": "const",
+      "signature": "const FALSE_VIA = /否|结束|退出|不满足|不成立/"
+    },
+    {
+      "name": "DfJudgementResult",
+      "kind": "interface",
+      "signature": "DfJudgementResult()"
+    },
+    {
+      "name": "collectJudgements",
+      "kind": "function",
+      "signature": "collectJudgements(nodes: DfNodeLike[],\n  edges: DfEdgeLike[],\n  host: string,\n  funcName: string,): DfJudgement[]"
+    },
+    {
+      "name": "flattenScope",
+      "kind": "function",
+      "signature": "flattenScope(value: unknown): Record<string, unknown>"
+    },
+    {
+      "name": "evaluateCond",
+      "kind": "function",
+      "signature": "evaluateCond(cond: string, scope: Record<string, unknown>): EvalResult"
+    },
+    {
+      "name": "applyJudgements",
+      "kind": "function",
+      "signature": "applyJudgements(judgements: DfJudgement[], scope: Record<string, unknown>): DfJudgementResult[]"
+    },
+    {
+      "name": "mockValue",
+      "kind": "function",
+      "signature": "mockValue(schema: unknown): unknown"
+    },
+    {
+      "name": "buildDataTrace",
+      "kind": "function",
+      "signature": "buildDataTrace(nodes: DfNodeLike[],\n  edges: DfEdgeLike[],\n  entryId: string,\n  inputValue: unknown,): DfTrace"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/render/dataflow_core.ts#applyJudgements",
     "src/infrastructure/render/dataflow_core.ts#buildDataTrace",

@@ -198,6 +198,23 @@
       "to": "src/domain/chain_wiring.ts#universalHopsOf"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "handoffTouchedShape",
+      "kind": "const",
+      "signature": "const handoffTouchedShape = { feature: z.string().optional().describe('作用到的 feature（D…"
+    },
+    {
+      "name": "META_TOOLS",
+      "kind": "const",
+      "signature": "const META_TOOLS = [ { name: 'explore_code', title: 'Explore, analyze and un…"
+    },
+    {
+      "name": "renderHandoffPanel",
+      "kind": "function",
+      "signature": "renderHandoffPanel(fromTool: string | undefined,\n  touched: Record<string, unknown> | undefined,\n  /**\n   * 下游工具的**入参路径表**（由 `collectInputPaths(d.inputSchema)` 提供；★ 与 `CHAIN_EDGES.toPath` 同形）。\n   * ★★★ 为什么不是 `readonly string[]`（=`catalogOf(...).requiredKeys`）：那只给**顶层 + schema 必填**\n   *   ⇒ 照不出**模式相关必填**（见 `missingOf` 与 `declaredRequiredMembersOf` 的头注，T140）。\n   */\n  pathsOf: (tool: string) => readonly InputPath[],): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/index.ts#renderHandoffPanel",
     "src/presentation/mcp/server_registry.ts#renderNextNote"

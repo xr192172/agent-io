@@ -24,5 +24,22 @@
     }
   ],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "DATA_DIR_NAME",
+      "kind": "const",
+      "signature": "const DATA_DIR_NAME = '.agent-io'"
+    },
+    {
+      "name": "GO_OBSERVE_DIR_NAME",
+      "kind": "const",
+      "signature": "const GO_OBSERVE_DIR_NAME = '.agent'"
+    },
+    {
+      "name": "PKG_NAME",
+      "kind": "const",
+      "signature": "const PKG_NAME = 'agent-io'"
+    }
+  ]
 }

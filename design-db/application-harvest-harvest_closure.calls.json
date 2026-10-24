@@ -293,6 +293,43 @@
       "to": "src/infrastructure/storage.ts#getDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "HarvestClosureInput",
+      "kind": "interface",
+      "signature": "HarvestClosureInput()"
+    },
+    {
+      "name": "ClosureFile",
+      "kind": "interface",
+      "signature": "ClosureFile()"
+    },
+    {
+      "name": "ExternalDep",
+      "kind": "interface",
+      "signature": "ExternalDep()"
+    },
+    {
+      "name": "HarvestClosureResult",
+      "kind": "interface",
+      "signature": "HarvestClosureResult()"
+    },
+    {
+      "name": "NODE_BUILTINS",
+      "kind": "const",
+      "signature": "const NODE_BUILTINS = new Set([ 'assert', 'async_hooks', 'buffer', 'child_proce…"
+    },
+    {
+      "name": "PY_STDLIB",
+      "kind": "const",
+      "signature": "const PY_STDLIB = new Set([ 'abc', 'argparse', 'asyncio', 'base64', 'bisect…"
+    },
+    {
+      "name": "harvestClosure",
+      "kind": "function",
+      "signature": "harvestClosure(input: HarvestClosureInput): TouchedProduct<HarvestClosureResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/harvest/harvest_closure.ts#harvestClosure",
     "src/application/harvest/harvest_closure.ts#harvestClosureCore"

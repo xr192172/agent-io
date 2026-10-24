@@ -898,6 +898,153 @@
       "to": "src/infrastructure/parse/source_exts.ts#isTsJsExt"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "PROBE_DIR_REL",
+      "kind": "const",
+      "signature": "const PROBE_DIR_REL = 'src/infrastructure/analysis/observe'"
+    },
+    {
+      "name": "InstrNode",
+      "kind": "interface",
+      "signature": "InstrNode()"
+    },
+    {
+      "name": "ProbeLevel",
+      "kind": "type",
+      "signature": "ProbeLevel()"
+    },
+    {
+      "name": "InstrumentedSite",
+      "kind": "interface",
+      "signature": "InstrumentedSite()"
+    },
+    {
+      "name": "InstrumentFileResult",
+      "kind": "interface",
+      "signature": "InstrumentFileResult()"
+    },
+    {
+      "name": "InstrumentOptions",
+      "kind": "interface",
+      "signature": "InstrumentOptions()"
+    },
+    {
+      "name": "PROBE_MARKER",
+      "kind": "const",
+      "signature": "const PROBE_MARKER = 'observe:instrumented'"
+    },
+    {
+      "name": "DEEP_MARKER",
+      "kind": "const",
+      "signature": "const DEEP_MARKER = 'observe:deep'"
+    },
+    {
+      "name": "LEDGER_FILE",
+      "kind": "const",
+      "signature": "const LEDGER_FILE = '.agent-io/observe-ledger.json'"
+    },
+    {
+      "name": "ProbeLedger",
+      "kind": "interface",
+      "signature": "ProbeLedger()"
+    },
+    {
+      "name": "FN_TYPES",
+      "kind": "const",
+      "signature": "const FN_TYPES = new Set([ 'function_declaration', 'method_definition', 'a…"
+    },
+    {
+      "name": "IO_CALLS",
+      "kind": "const",
+      "signature": "const IO_CALLS = { writeFileSync: 'writefile', writeFile: 'writefile', mkd…"
+    },
+    {
+      "name": "HostModuleSystem",
+      "kind": "type",
+      "signature": "HostModuleSystem()"
+    },
+    {
+      "name": "TS_ROOT_MARKER",
+      "kind": "const",
+      "signature": "const TS_ROOT_MARKER = `${PROBE_DIR_REL}/probe.ts`"
+    },
+    {
+      "name": "tsJsRootHint",
+      "kind": "const",
+      "signature": "const tsJsRootHint = `★ 请**显式传** \\`project_root\\`（= agent-io 仓库根，即含 package.js…"
+    },
+    {
+      "name": "TS_GUARD_TYPES",
+      "kind": "const",
+      "signature": "const TS_GUARD_TYPES = new Set([ 'if_statement', 'else_clause', // ★ T274：tree-s…"
+    },
+    {
+      "name": "Insertion",
+      "kind": "type",
+      "signature": "Insertion()"
+    },
+    {
+      "name": "tsJsInstrumentHooks",
+      "kind": "const",
+      "signature": "const tsJsInstrumentHooks = { lang: 'ts_js', markers: { core: PROBE_MARKER, deep: DEE…"
+    },
+    {
+      "name": "restoreInstrumented",
+      "kind": "function",
+      "signature": "restoreInstrumented(root: string, restore?: SourceWriteHook): string[]"
+    },
+    {
+      "name": "ledgerPath",
+      "kind": "function",
+      "signature": "ledgerPath(root: string): string"
+    },
+    {
+      "name": "buildProbeLedger",
+      "kind": "function",
+      "signature": "buildProbeLedger(results: InstrumentFileResult[],\n  projectRoot: string,\n  opts?: { contractMode?: boolean },): ProbeLedger"
+    },
+    {
+      "name": "saveProbeLedger",
+      "kind": "function",
+      "signature": "saveProbeLedger(root: string, ledger: ProbeLedger): string"
+    },
+    {
+      "name": "loadProbeLedger",
+      "kind": "function",
+      "signature": "loadProbeLedger(root: string): ProbeLedger | null"
+    },
+    {
+      "name": "clearProbeLedger",
+      "kind": "function",
+      "signature": "clearProbeLedger(root: string): boolean"
+    },
+    {
+      "name": "ledgerSummary",
+      "kind": "function",
+      "signature": "ledgerSummary(ledger: ProbeLedger): string"
+    },
+    {
+      "name": "isInstrumentableTsJsFile",
+      "kind": "function",
+      "signature": "isInstrumentableTsJsFile(rel: string): boolean"
+    },
+    {
+      "name": "collectTsFiles",
+      "kind": "function",
+      "signature": "collectTsFiles(root: string): string[]"
+    },
+    {
+      "name": "instrumentFile",
+      "kind": "function",
+      "signature": "instrumentFile(file: string, opts: InstrumentOptions = {}): Promise<InstrumentFileResult>"
+    },
+    {
+      "name": "instrumentProject",
+      "kind": "function",
+      "signature": "instrumentProject(root: string, opts: InstrumentOptions = {}): Promise<InstrumentFileResult[]>"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/capture/observe_points.ts#recommendObservePoints",
     "src/infrastructure/analysis/observe/instrument.ts#clearProbeLedger",

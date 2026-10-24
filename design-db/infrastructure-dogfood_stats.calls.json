@@ -333,6 +333,68 @@
       "to": "src/infrastructure/storage.ts#getDataHome"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DogfoodUsage",
+      "kind": "interface",
+      "signature": "DogfoodUsage()"
+    },
+    {
+      "name": "MAX_ERR_LEN",
+      "kind": "const",
+      "signature": "const MAX_ERR_LEN = 200"
+    },
+    {
+      "name": "DogfoodActionStat",
+      "kind": "interface",
+      "signature": "DogfoodActionStat()"
+    },
+    {
+      "name": "DogfoodToolStat",
+      "kind": "interface",
+      "signature": "DogfoodToolStat()"
+    },
+    {
+      "name": "DogfoodSnapshot",
+      "kind": "interface",
+      "signature": "DogfoodSnapshot()"
+    },
+    {
+      "name": "isMain",
+      "kind": "const",
+      "signature": "const isMain = import.meta.url === pathToFileURL(path.resolve(process.ar…"
+    },
+    {
+      "name": "dogfoodLogDir",
+      "kind": "function",
+      "signature": "dogfoodLogDir(): string"
+    },
+    {
+      "name": "recordDogfoodUsage",
+      "kind": "function",
+      "signature": "recordDogfoodUsage(u: DogfoodUsage): void"
+    },
+    {
+      "name": "snapshotDogfoodStats",
+      "kind": "function",
+      "signature": "snapshotDogfoodStats(opts: { includeSweeps?: boolean } = {}): DogfoodSnapshot"
+    },
+    {
+      "name": "renderDogfoodSnapshot",
+      "kind": "function",
+      "signature": "renderDogfoodSnapshot(s: DogfoodSnapshot): string"
+    },
+    {
+      "name": "renderDogfoodSummary",
+      "kind": "function",
+      "signature": "renderDogfoodSummary(s: DogfoodSnapshot): string"
+    },
+    {
+      "name": "runDogfoodCLI",
+      "kind": "function",
+      "signature": "runDogfoodCLI(argv: string[]): void"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/dogfood_coverage.ts#computeDogfoodCoverage",
     "src/infrastructure/dogfood_stats.ts#logFile",

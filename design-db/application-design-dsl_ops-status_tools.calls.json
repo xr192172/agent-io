@@ -132,6 +132,28 @@
       "to": "src/infrastructure/storage_overlay.ts#saveOverlay"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "UpdateStatusInput",
+      "kind": "interface",
+      "signature": "UpdateStatusInput()"
+    },
+    {
+      "name": "StatusResult",
+      "kind": "interface",
+      "signature": "StatusResult()"
+    },
+    {
+      "name": "updateStatus",
+      "kind": "function",
+      "signature": "updateStatus(input: UpdateStatusInput): StatusResult"
+    },
+    {
+      "name": "computeFeatureStatus",
+      "kind": "function",
+      "signature": "computeFeatureStatus(nodes: Array<{ status?: DiagramStatus }>): DiagramStatus"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/file_ops.ts#addFile",
     "src/application/design/dsl_ops/file_ops.ts#updateFile",

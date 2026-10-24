@@ -230,6 +230,28 @@
       "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "LocalRenameTarget",
+      "kind": "interface",
+      "signature": "LocalRenameTarget()"
+    },
+    {
+      "name": "LocalRenameOutcome",
+      "kind": "interface",
+      "signature": "LocalRenameOutcome()"
+    },
+    {
+      "name": "LocalRenameBatchResult",
+      "kind": "interface",
+      "signature": "LocalRenameBatchResult()"
+    },
+    {
+      "name": "renameLocals",
+      "kind": "function",
+      "signature": "renameLocals(input: {\n  root: string;\n  renames: LocalRenameTarget[];\n  dry_run?: boolean;\n  actor?: string;\n  authorize?: string | null;\n}): Promise<LocalRenameBatchResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/rename/rename_symbols.ts#renameSymbolsLocal"
   ]

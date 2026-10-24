@@ -187,6 +187,38 @@
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DeriveAlgorithmInput",
+      "kind": "interface",
+      "signature": "DeriveAlgorithmInput()"
+    },
+    {
+      "name": "DeriveAlgorithmResult",
+      "kind": "interface",
+      "signature": "DeriveAlgorithmResult()"
+    },
+    {
+      "name": "KIND_SHAPE",
+      "kind": "const",
+      "signature": "const KIND_SHAPE = { entry: { shape: 'circle', w: 140, h: 44 }, exit: { shap…"
+    },
+    {
+      "name": "COL_GAP",
+      "kind": "const",
+      "signature": "const COL_GAP = 280"
+    },
+    {
+      "name": "ROW_GAP",
+      "kind": "const",
+      "signature": "const ROW_GAP = 104"
+    },
+    {
+      "name": "deriveAlgorithm",
+      "kind": "function",
+      "signature": "deriveAlgorithm(input: DeriveAlgorithmInput): Promise<TouchedProduct<DeriveAlgorithmResult>>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/derive/derive_algorithm.ts#deriveAlgorithm"
   ]

@@ -859,6 +859,63 @@
       "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "execFileAsync",
+      "kind": "const",
+      "signature": "const execFileAsync = promisify(execFile)"
+    },
+    {
+      "name": "SubSplitMethod",
+      "kind": "interface",
+      "signature": "SubSplitMethod()"
+    },
+    {
+      "name": "SubSplitGroupPlan",
+      "kind": "interface",
+      "signature": "SubSplitGroupPlan()"
+    },
+    {
+      "name": "CommunitySubSplitPlan",
+      "kind": "interface",
+      "signature": "CommunitySubSplitPlan()"
+    },
+    {
+      "name": "DeriveSplitInput",
+      "kind": "interface",
+      "signature": "DeriveSplitInput()"
+    },
+    {
+      "name": "DeriveSplitResult",
+      "kind": "interface",
+      "signature": "DeriveSplitResult()"
+    },
+    {
+      "name": "LangId",
+      "kind": "type",
+      "signature": "LangId()"
+    },
+    {
+      "name": "IMPORT_NODE_TYPES",
+      "kind": "const",
+      "signature": "const IMPORT_NODE_TYPES = { ts: ['import_statement'], go: ['import_declaration'], p…"
+    },
+    {
+      "name": "Wiring",
+      "kind": "interface",
+      "signature": "Wiring()"
+    },
+    {
+      "name": "GoImportSpec",
+      "kind": "interface",
+      "signature": "GoImportSpec()"
+    },
+    {
+      "name": "deriveSplit",
+      "kind": "function",
+      "signature": "deriveSplit(input: DeriveSplitInput): Promise<TouchedProduct<DeriveSplitResult>>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/derive/derive_split.ts#buildWiring",
     "src/application/design/derive/derive_split.ts#collectGoImportSpecs",

@@ -86,6 +86,28 @@
       "to": "src/infrastructure/authoring/version_upgrade/adapters/python.ts#minVersionFromSpec"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "PY",
+      "kind": "const",
+      "signature": "const PY = process.platform === 'win32' ? 'python' : 'python3'"
+    },
+    {
+      "name": "PY_FEATURES",
+      "kind": "const",
+      "signature": "const PY_FEATURES = [ { name: 'f-string 字符串', tool: 'python', since: 6, patte…"
+    },
+    {
+      "name": "PY_REMOVED",
+      "kind": "const",
+      "signature": "const PY_REMOVED = [ { name: 'distutils 打包模块', tool: 'python', since: 12, ki…"
+    },
+    {
+      "name": "pythonAdapter",
+      "kind": "const",
+      "signature": "const pythonAdapter = { lang: 'python', label: 'Python', declarationFiles: ['py…"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/version_upgrade/adapters/python.ts#parsePyproject"
   ]

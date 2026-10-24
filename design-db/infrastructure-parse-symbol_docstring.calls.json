@@ -130,6 +130,23 @@
       "to": "src/infrastructure/parse/symbol_docstring.ts#trimOrUndef"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DocSpec",
+      "kind": "interface",
+      "signature": "DocSpec()"
+    },
+    {
+      "name": "DOCSTRING_SPECS",
+      "kind": "const",
+      "signature": "const DOCSTRING_SPECS = { // ── Python ──────────────────────────────────────────…"
+    },
+    {
+      "name": "docstringOf",
+      "kind": "function",
+      "signature": "docstringOf(node: SyntaxNodeLike, langName: string): string | undefined"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/parse/kernel.ts#traverseAndExtract",
     "src/infrastructure/parse/symbol_docstring.ts#bodyDocOf",

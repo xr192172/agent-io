@@ -23,5 +23,17 @@
       "kind": "relative"
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "GO_RESERVED",
+      "kind": "const",
+      "signature": "const GO_RESERVED = new Set([ 'if', 'for', 'func', 'go', 'defer', 'range', 'r…"
+    },
+    {
+      "name": "cgGoPackage",
+      "kind": "const",
+      "signature": "const cgGoPackage = { lang: 'go', exts: ['.go'], reserved: GO_RESERVED, colle…"
+    }
+  ]
 }

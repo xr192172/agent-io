@@ -233,6 +233,33 @@
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "MAX_CASES",
+      "kind": "const",
+      "signature": "const MAX_CASES = 50"
+    },
+    {
+      "name": "GoTestRef",
+      "kind": "interface",
+      "signature": "GoTestRef()"
+    },
+    {
+      "name": "HarvestResult",
+      "kind": "interface",
+      "signature": "HarvestResult()"
+    },
+    {
+      "name": "findGoTestFiles",
+      "kind": "function",
+      "signature": "findGoTestFiles(goFileAbs: string): string[]"
+    },
+    {
+      "name": "harvestForUnits",
+      "kind": "function",
+      "signature": "harvestForUnits(testFiles: string[],\n  funcs: { name: string; params?: TranslateParam[]; /** 方法单元的原始方法名：测试里是 \\`c.Double()\\`，不是 \\`Counter_Double()\\` */ methodName?: string }[],): Promise<Map<string, HarvestResult>>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/translate/go_tests.ts#absorbNested",
     "src/infrastructure/authoring/translate/go_tests.ts#harvestForUnits",

@@ -146,5 +146,37 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "Verdict",
+      "kind": "type",
+      "signature": "Verdict()"
+    },
+    {
+      "name": "JudgeItem",
+      "kind": "interface",
+      "signature": "JudgeItem()"
+    },
+    {
+      "name": "ExpectationItem",
+      "kind": "interface",
+      "signature": "ExpectationItem()"
+    },
+    {
+      "name": "ExpectationConflict",
+      "kind": "interface",
+      "signature": "ExpectationConflict()"
+    },
+    {
+      "name": "ExpectationsReport",
+      "kind": "interface",
+      "signature": "ExpectationsReport()"
+    },
+    {
+      "name": "Judge",
+      "kind": "type",
+      "signature": "Judge()"
+    }
+  ]
 }

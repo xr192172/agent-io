@@ -196,6 +196,38 @@
       "to": "src/presentation/daemon/server.ts#hostAllowed"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "dslWriteTails",
+      "kind": "const",
+      "signature": "const dslWriteTails = new Map<string, Promise<unknown>>()"
+    },
+    {
+      "name": "DslWriteRequest",
+      "kind": "interface",
+      "signature": "DslWriteRequest()"
+    },
+    {
+      "name": "DslWriteResult",
+      "kind": "interface",
+      "signature": "DslWriteResult()"
+    },
+    {
+      "name": "DaemonServerHandlers",
+      "kind": "interface",
+      "signature": "DaemonServerHandlers()"
+    },
+    {
+      "name": "DaemonServer",
+      "kind": "interface",
+      "signature": "DaemonServer()"
+    },
+    {
+      "name": "createDaemonServer",
+      "kind": "function",
+      "signature": "createDaemonServer(handlers: DaemonServerHandlers, opts: { port?: number; host?: string } = {}): DaemonServer"
+    }
+  ],
   "reverse_calls": [
     "src/presentation/daemon/daemon.ts#main",
     "src/presentation/daemon/server.ts#createDaemonServer"

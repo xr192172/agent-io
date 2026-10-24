@@ -181,6 +181,33 @@
       "to": "src/infrastructure/index/symbols.ts#searchSymbols"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "LocateInput",
+      "kind": "interface",
+      "signature": "LocateInput()"
+    },
+    {
+      "name": "LocateResult",
+      "kind": "interface",
+      "signature": "LocateResult()"
+    },
+    {
+      "name": "SOURCE_EXT_RE",
+      "kind": "const",
+      "signature": "const SOURCE_EXT_RE = /\\.(ts|tsx|js|jsx|mjs|cjs|go|py|java|rs|rb|vue|svelte|css…"
+    },
+    {
+      "name": "NodeRow",
+      "kind": "interface",
+      "signature": "NodeRow()"
+    },
+    {
+      "name": "locateCandidates",
+      "kind": "function",
+      "signature": "locateCandidates(db: Database, input: LocateInput): LocateResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/contract_page.ts#contractPageCore",
     "src/infrastructure/analysis/diagnosis/candidate_locator.ts#locateCandidates",

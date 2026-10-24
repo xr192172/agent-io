@@ -519,6 +519,153 @@
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "MonolithStatus",
+      "kind": "type",
+      "signature": "MonolithStatus()"
+    },
+    {
+      "name": "CommunityInfo",
+      "kind": "interface",
+      "signature": "CommunityInfo()"
+    },
+    {
+      "name": "FileMonolithReport",
+      "kind": "interface",
+      "signature": "FileMonolithReport()"
+    },
+    {
+      "name": "CheckMonolithInput",
+      "kind": "interface",
+      "signature": "CheckMonolithInput()"
+    },
+    {
+      "name": "CheckMonolithResult",
+      "kind": "interface",
+      "signature": "CheckMonolithResult()"
+    },
+    {
+      "name": "DeclUnit",
+      "kind": "interface",
+      "signature": "DeclUnit()"
+    },
+    {
+      "name": "GO_RECEIVER_SIG_RE",
+      "kind": "const",
+      "signature": "const GO_RECEIVER_SIG_RE = /^(\\w+)\\.(\\w+)\\(/"
+    },
+    {
+      "name": "LOUVAIN_EPS",
+      "kind": "const",
+      "signature": "const LOUVAIN_EPS = 1e-7"
+    },
+    {
+      "name": "LOUVAIN_MAX_AGG",
+      "kind": "const",
+      "signature": "const LOUVAIN_MAX_AGG = 20"
+    },
+    {
+      "name": "NAME_STOPWORDS",
+      "kind": "const",
+      "signature": "const NAME_STOPWORDS = new Set([ 'utils', 'util', 'helper', 'helpers', 'common',…"
+    },
+    {
+      "name": "PV_NODE_W",
+      "kind": "const",
+      "signature": "const PV_NODE_W = 220"
+    },
+    {
+      "name": "PV_NODE_H",
+      "kind": "const",
+      "signature": "const PV_NODE_H = 64"
+    },
+    {
+      "name": "PV_COLS",
+      "kind": "const",
+      "signature": "const PV_COLS = 3"
+    },
+    {
+      "name": "PV_GAP_X",
+      "kind": "const",
+      "signature": "const PV_GAP_X = 40"
+    },
+    {
+      "name": "PV_GAP_Y",
+      "kind": "const",
+      "signature": "const PV_GAP_Y = 30"
+    },
+    {
+      "name": "PV_PAD",
+      "kind": "const",
+      "signature": "const PV_PAD = 20"
+    },
+    {
+      "name": "PV_TITLE",
+      "kind": "const",
+      "signature": "const PV_TITLE = 30"
+    },
+    {
+      "name": "PV_CONTAINER_GAP",
+      "kind": "const",
+      "signature": "const PV_CONTAINER_GAP = 60"
+    },
+    {
+      "name": "countLines",
+      "kind": "function",
+      "signature": "countLines(content: string): number"
+    },
+    {
+      "name": "assessLines",
+      "kind": "function",
+      "signature": "assessLines(lines: number, warn = 500, crit = 1000): MonolithStatus"
+    },
+    {
+      "name": "buildDeclUnits",
+      "kind": "function",
+      "signature": "buildDeclUnits(symbols: ParsedSymbol[]): DeclUnit[]"
+    },
+    {
+      "name": "buildReferenceGraph",
+      "kind": "function",
+      "signature": "buildReferenceGraph(units: DeclUnit[], content: string): Array<Map<number, number>>"
+    },
+    {
+      "name": "symmetrize",
+      "kind": "function",
+      "signature": "symmetrize(directed: Array<Map<number, number>>): Array<Map<number, number>>"
+    },
+    {
+      "name": "louvain",
+      "kind": "function",
+      "signature": "louvain(adj: Array<Map<number, number>>): number[]"
+    },
+    {
+      "name": "tokenizeName",
+      "kind": "function",
+      "signature": "tokenizeName(name: string): string[]"
+    },
+    {
+      "name": "suggestFileName",
+      "kind": "function",
+      "signature": "suggestFileName(declNames: string[], ext: string, taken: Set<string>, origBase: string): string"
+    },
+    {
+      "name": "analyzeFileContent",
+      "kind": "function",
+      "signature": "analyzeFileContent(relPath: string,\n  content: string,\n  warn = 500,\n  crit = 1000,\n  flagCohesive = true,): Promise<FileMonolithReport>"
+    },
+    {
+      "name": "buildSplitPreviewDsl",
+      "kind": "function",
+      "signature": "buildSplitPreviewDsl(feature: string,\n  reports: FileMonolithReport[],\n  warn: number,\n  crit: number,): DesignDSL"
+    },
+    {
+      "name": "checkMonolith",
+      "kind": "function",
+      "signature": "checkMonolith(input: CheckMonolithInput): Promise<CheckMonolithResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/explore_code.ts#exploreCode",
     "src/infrastructure/analysis/structure/monolith.ts#analyzeFileContent",

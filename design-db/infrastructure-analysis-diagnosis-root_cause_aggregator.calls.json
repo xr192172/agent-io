@@ -319,6 +319,53 @@
       "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "AggregateInput",
+      "kind": "interface",
+      "signature": "AggregateInput()"
+    },
+    {
+      "name": "AggregateResult",
+      "kind": "interface",
+      "signature": "AggregateResult()"
+    },
+    {
+      "name": "CaptureOpts",
+      "kind": "interface",
+      "signature": "CaptureOpts()"
+    },
+    {
+      "name": "Scored",
+      "kind": "interface",
+      "signature": "Scored()"
+    },
+    {
+      "name": "clamp",
+      "kind": "const",
+      "signature": "const clamp = (v: number): number => Math.min(1, Math.max(0, v))"
+    },
+    {
+      "name": "LlmRootCauseJson",
+      "kind": "interface",
+      "signature": "LlmRootCauseJson()"
+    },
+    {
+      "name": "captureSnippet",
+      "kind": "function",
+      "signature": "captureSnippet(absFile: string, startLine: number, endLine?: number, opts: CaptureOpts = {}): string | undefined"
+    },
+    {
+      "name": "aggregateRule",
+      "kind": "function",
+      "signature": "aggregateRule(input: AggregateInput): AggregateResult"
+    },
+    {
+      "name": "aggregateRootCause",
+      "kind": "function",
+      "signature": "aggregateRootCause(input: AggregateInput, opts?: { skipLlm?: boolean }): Promise<AggregateResult>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis",
     "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateRootCause",

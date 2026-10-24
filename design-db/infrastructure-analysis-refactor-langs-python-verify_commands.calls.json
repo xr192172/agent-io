@@ -26,5 +26,12 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "pyVerifyCommands",
+      "kind": "function",
+      "signature": "pyVerifyCommands(cwd: string): VerifyCommand[]"
+    }
+  ]
 }

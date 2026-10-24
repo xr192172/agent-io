@@ -332,6 +332,118 @@
       "to": "src/infrastructure/render/anim_core.ts#validateValueSchema.walk"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "BranchLike",
+      "kind": "interface",
+      "signature": "BranchLike()"
+    },
+    {
+      "name": "ErrorDeclLike",
+      "kind": "interface",
+      "signature": "ErrorDeclLike()"
+    },
+    {
+      "name": "ErrorClassification",
+      "kind": "interface",
+      "signature": "ErrorClassification()"
+    },
+    {
+      "name": "ValueSchemaLike",
+      "kind": "interface",
+      "signature": "ValueSchemaLike()"
+    },
+    {
+      "name": "evalCondition",
+      "kind": "function",
+      "signature": "evalCondition(expr: string | undefined | null, value?: unknown, result?: unknown): boolean"
+    },
+    {
+      "name": "pickBranch",
+      "kind": "function",
+      "signature": "pickBranch(branches: BranchLike[] | undefined | null,\n  value?: unknown,\n  result?: unknown,): { branch: BranchLike; index: number } | null"
+    },
+    {
+      "name": "createMockRotator",
+      "kind": "function",
+      "signature": "createMockRotator(mockValues: unknown[] | undefined | null): () => unknown"
+    },
+    {
+      "name": "resolvePath",
+      "kind": "function",
+      "signature": "resolvePath(context: { value?: unknown; result?: unknown },\n  path: string | undefined | null,): unknown"
+    },
+    {
+      "name": "setPath",
+      "kind": "function",
+      "signature": "setPath(target: any, path: string, val: unknown): void"
+    },
+    {
+      "name": "applyInputMapping",
+      "kind": "function",
+      "signature": "applyInputMapping(mapping: Record<string, string> | undefined | null,\n  value?: unknown,\n  result?: unknown,): Record<string, unknown>"
+    },
+    {
+      "name": "applyOutputMapping",
+      "kind": "function",
+      "signature": "applyOutputMapping(mapping: Record<string, string> | undefined | null,\n  value: unknown,\n  result: unknown,): unknown"
+    },
+    {
+      "name": "parseApiName",
+      "kind": "function",
+      "signature": "parseApiName(signature: string | undefined | null): string"
+    },
+    {
+      "name": "formatHandlerArgs",
+      "kind": "function",
+      "signature": "formatHandlerArgs(args: Record<string, unknown>,\n  maxLen?: number,): string"
+    },
+    {
+      "name": "formatValueShort",
+      "kind": "function",
+      "signature": "formatValueShort(v: unknown, maxLen?: number): string"
+    },
+    {
+      "name": "matchError",
+      "kind": "function",
+      "signature": "matchError(errors: ErrorDeclLike[] | undefined | null,\n  result: unknown,): ErrorDeclLike | null"
+    },
+    {
+      "name": "isErrorResult",
+      "kind": "function",
+      "signature": "isErrorResult(result: unknown): boolean"
+    },
+    {
+      "name": "classifyError",
+      "kind": "function",
+      "signature": "classifyError(errors: ErrorDeclLike[] | undefined | null,\n  result: unknown,): ErrorClassification"
+    },
+    {
+      "name": "extractStringLiterals",
+      "kind": "function",
+      "signature": "extractStringLiterals(condition: string | undefined | null): string[]"
+    },
+    {
+      "name": "presetCandidates",
+      "kind": "function",
+      "signature": "presetCandidates(decl: ErrorDeclLike): unknown[]"
+    },
+    {
+      "name": "buildPresetValue",
+      "kind": "function",
+      "signature": "buildPresetValue(decl: ErrorDeclLike): { value: unknown; hit: boolean }"
+    },
+    {
+      "name": "validateValueSchema",
+      "kind": "function",
+      "signature": "validateValueSchema(schema: ValueSchemaLike | undefined | null, value: unknown): string[]"
+    },
+    {
+      "name": "makeSnapshot",
+      "kind": "function",
+      "signature": "makeSnapshot(data: unknown): string | null"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/render/anim_core.ts#applyInputMapping",
     "src/infrastructure/render/anim_core.ts#applyOutputMapping",

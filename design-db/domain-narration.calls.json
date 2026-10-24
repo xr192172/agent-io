@@ -90,6 +90,28 @@
       "to": "src/domain/narration.ts#pinFacts"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "NarrScene",
+      "kind": "interface",
+      "signature": "NarrScene()"
+    },
+    {
+      "name": "ShapeLike",
+      "kind": "interface",
+      "signature": "ShapeLike()"
+    },
+    {
+      "name": "humanOf",
+      "kind": "const",
+      "signature": "const humanOf = (t: string): string => { const m: Record<string, string> …"
+    },
+    {
+      "name": "buildScenes",
+      "kind": "function",
+      "signature": "buildScenes(shape: ShapeLike | undefined, title: string, detail: string, signature?: string): NarrScene[]"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
     "src/application/observe/capture/narrate_step.ts#narrateStepCore",

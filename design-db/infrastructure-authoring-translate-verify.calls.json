@@ -114,6 +114,18 @@
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "VerifyIssue",
+      "kind": "interface",
+      "signature": "VerifyIssue()"
+    },
+    {
+      "name": "verifySkeletons",
+      "kind": "function",
+      "signature": "verifySkeletons(units: TransUnit[]): Promise<VerifyIssue[]>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/translate/fill.ts#fillUnit",
     "src/infrastructure/authoring/translate/fill.ts#fillUnitsBatched",

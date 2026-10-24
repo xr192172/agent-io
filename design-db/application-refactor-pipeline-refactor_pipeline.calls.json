@@ -549,6 +549,78 @@
       "to": "src/infrastructure/verify_refactor.ts#defaultVerifyCommands"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "StageId",
+      "kind": "type",
+      "signature": "StageId()"
+    },
+    {
+      "name": "StageOutcome",
+      "kind": "type",
+      "signature": "StageOutcome()"
+    },
+    {
+      "name": "StageResult",
+      "kind": "interface",
+      "signature": "StageResult()"
+    },
+    {
+      "name": "PipelineOptions",
+      "kind": "interface",
+      "signature": "PipelineOptions()"
+    },
+    {
+      "name": "PipelineResult",
+      "kind": "interface",
+      "signature": "PipelineResult()"
+    },
+    {
+      "name": "DEFAULT_LANGS",
+      "kind": "const",
+      "signature": "const DEFAULT_LANGS = buildDefaultLangs()"
+    },
+    {
+      "name": "ScheduledStep",
+      "kind": "interface",
+      "signature": "ScheduledStep()"
+    },
+    {
+      "name": "buildStepCount",
+      "kind": "const",
+      "signature": "const buildStepCount = countPlanned"
+    },
+    {
+      "name": "registerRefactorLanguage",
+      "kind": "function",
+      "signature": "registerRefactorLanguage(ex: LanguageRefactorExecutor): void"
+    },
+    {
+      "name": "collectSteps",
+      "kind": "function",
+      "signature": "collectSteps(executors: LanguageRefactorExecutor[],\n  steps: RefactorStepsCfg,): ScheduledStep[]"
+    },
+    {
+      "name": "dominantExecutor",
+      "kind": "function",
+      "signature": "dominantExecutor(executors: LanguageRefactorExecutor[],\n  cwd: string,): LanguageRefactorExecutor | undefined"
+    },
+    {
+      "name": "dominantVerifyCommands",
+      "kind": "function",
+      "signature": "dominantVerifyCommands(executors: LanguageRefactorExecutor[],\n  cwd: string,): VerifyCommand[]"
+    },
+    {
+      "name": "mergeVerifyCommands",
+      "kind": "function",
+      "signature": "mergeVerifyCommands(executors: LanguageRefactorExecutor[], cwd: string): VerifyCommand[]"
+    },
+    {
+      "name": "runRefactorPipeline",
+      "kind": "function",
+      "signature": "runRefactorPipeline(opts: PipelineOptions): Promise<PipelineResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
     "src/application/refactor/pipeline/refactor_pipeline.ts#dominantVerifyCommands",

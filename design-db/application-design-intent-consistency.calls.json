@@ -676,6 +676,93 @@
       "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "BaselineDrift",
+      "kind": "interface",
+      "signature": "BaselineDrift()"
+    },
+    {
+      "name": "ComparisonState",
+      "kind": "type",
+      "signature": "ComparisonState()"
+    },
+    {
+      "name": "RetireFlowEntry",
+      "kind": "interface",
+      "signature": "RetireFlowEntry()"
+    },
+    {
+      "name": "RetireStage",
+      "kind": "type",
+      "signature": "RetireStage()"
+    },
+    {
+      "name": "FileDiffRetire",
+      "kind": "type",
+      "signature": "FileDiffRetire()"
+    },
+    {
+      "name": "ConsistencyResult",
+      "kind": "interface",
+      "signature": "ConsistencyResult()"
+    },
+    {
+      "name": "FileConsistency",
+      "kind": "interface",
+      "signature": "FileConsistency()"
+    },
+    {
+      "name": "ApiMatch",
+      "kind": "interface",
+      "signature": "ApiMatch()"
+    },
+    {
+      "name": "InvariantResult",
+      "kind": "interface",
+      "signature": "InvariantResult()"
+    },
+    {
+      "name": "ConsistencyInput",
+      "kind": "interface",
+      "signature": "ConsistencyInput()"
+    },
+    {
+      "name": "ParsedApi",
+      "kind": "interface",
+      "signature": "ParsedApi()"
+    },
+    {
+      "name": "MISSING_FUNC_REASON",
+      "kind": "const",
+      "signature": "const MISSING_FUNC_REASON = '代码中未找到该函数'"
+    },
+    {
+      "name": "checkBaselineDrift",
+      "kind": "function",
+      "signature": "checkBaselineDrift(feature: string, codeDir: string): BaselineDrift"
+    },
+    {
+      "name": "comparisonState",
+      "kind": "function",
+      "signature": "comparisonState(compared: number, drifted: number): ComparisonState"
+    },
+    {
+      "name": "retireStage",
+      "kind": "function",
+      "signature": "retireStage(exists: boolean): RetireStage"
+    },
+    {
+      "name": "retireMarksOf",
+      "kind": "function",
+      "signature": "retireMarksOf(entries: readonly RetireFlowEntry[]): Map<string, NonNullable<FileDiffRetire>>"
+    },
+    {
+      "name": "checkConsistencyReport",
+      "kind": "function",
+      "signature": "checkConsistencyReport(input: ConsistencyInput): Promise<ConsistencyResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/intent/consistency.ts#checkConsistencyReport",
     "src/application/design/intent/consistency.ts#compareSignatures",

@@ -120,6 +120,23 @@
       "to": "src/infrastructure/authoring/version_upgrade/adapters/java.ts#isSelfContained"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "JDK_FEATURES",
+      "kind": "const",
+      "signature": "const JDK_FEATURES = [ { name: 'var 局部变量', tool: 'java', since: 10, pattern: /…"
+    },
+    {
+      "name": "JDK_REMOVED",
+      "kind": "const",
+      "signature": "const JDK_REMOVED = [ { name: 'JAXB（javax.xml.bind）', tool: 'java', since: 11…"
+    },
+    {
+      "name": "javaAdapter",
+      "kind": "const",
+      "signature": "const javaAdapter = { lang: 'java', label: 'JDK', declarationFiles: ['pom.xml…"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/version_upgrade/adapters/java.ts#javaRunProbe",
     "src/infrastructure/authoring/version_upgrade/adapters/java.ts#javacSingleFile"

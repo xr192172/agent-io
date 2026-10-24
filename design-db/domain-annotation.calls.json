@@ -5,5 +5,47 @@
   "path": "src/domain/annotation.ts",
   "symbols": [],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "ApprovalStatus",
+      "kind": "type",
+      "signature": "ApprovalStatus()"
+    },
+    {
+      "name": "APPROVAL_STATUSES",
+      "kind": "const",
+      "signature": "const APPROVAL_STATUSES = ['draft', 'pending_review', 'approved', 'rejected', 'need…"
+    },
+    {
+      "name": "_AssertStatusesCover",
+      "kind": "type",
+      "signature": "_AssertStatusesCover()"
+    },
+    {
+      "name": "_assertStatusesCover",
+      "kind": "const",
+      "signature": "const _assertStatusesCover = true"
+    },
+    {
+      "name": "_AssertStatusesNoExtra",
+      "kind": "type",
+      "signature": "_AssertStatusesNoExtra()"
+    },
+    {
+      "name": "_assertStatusesNoExtra",
+      "kind": "const",
+      "signature": "const _assertStatusesNoExtra = true"
+    },
+    {
+      "name": "ApprovalHistoryEntry",
+      "kind": "interface",
+      "signature": "ApprovalHistoryEntry()"
+    },
+    {
+      "name": "Annotation",
+      "kind": "interface",
+      "signature": "Annotation()"
+    }
+  ]
 }

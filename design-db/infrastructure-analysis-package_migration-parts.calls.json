@@ -213,6 +213,78 @@
       "to": "src/infrastructure/analysis/package_migration/parts.ts#escapeRe"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DEFAULT_SKIP",
+      "kind": "const",
+      "signature": "const DEFAULT_SKIP = new Set([ '.git', 'node_modules', DATA_DIR_NAME, 'dist', …"
+    },
+    {
+      "name": "DEFAULT_EXTS",
+      "kind": "const",
+      "signature": "const DEFAULT_EXTS = new Set<string>(SOURCE_EXTS)"
+    },
+    {
+      "name": "AliasEdit",
+      "kind": "interface",
+      "signature": "AliasEdit()"
+    },
+    {
+      "name": "PmCollectArgs",
+      "kind": "interface",
+      "signature": "PmCollectArgs()"
+    },
+    {
+      "name": "PmCollectResult",
+      "kind": "interface",
+      "signature": "PmCollectResult()"
+    },
+    {
+      "name": "PmLangPackage",
+      "kind": "interface",
+      "signature": "PmLangPackage()"
+    },
+    {
+      "name": "escapeRe",
+      "kind": "function",
+      "signature": "escapeRe(s: string): string"
+    },
+    {
+      "name": "collectSourceFiles",
+      "kind": "function",
+      "signature": "collectSourceFiles(proj: string,\n  exts: Set<string>,\n  skipDirs: Set<string>,): string[]"
+    },
+    {
+      "name": "rewriteImportPaths",
+      "kind": "function",
+      "signature": "rewriteImportPaths(src: string, oldAbs: string, newAbs: string): string"
+    },
+    {
+      "name": "stripQuotes",
+      "kind": "function",
+      "signature": "stripQuotes(s: string): string"
+    },
+    {
+      "name": "applyAliasEdits",
+      "kind": "function",
+      "signature": "applyAliasEdits(src: string, edits: AliasEdit[], from: string): string"
+    },
+    {
+      "name": "cleanAliasRegex",
+      "kind": "function",
+      "signature": "cleanAliasRegex(src: string, exactPath: string, from: string, to: string): string"
+    },
+    {
+      "name": "renamePackageDecl",
+      "kind": "function",
+      "signature": "renamePackageDecl(src: string, from: string, to: string): string"
+    },
+    {
+      "name": "isTopLevelOf",
+      "kind": "function",
+      "signature": "isTopLevelOf(fileAbs: string, dirAbs: string): boolean"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/package_migration/core.ts#cleanAlias",
     "src/infrastructure/analysis/package_migration/core.ts#computeMigrationPlan",

@@ -138,6 +138,43 @@
       "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "JudgeEntry",
+      "kind": "interface",
+      "signature": "JudgeEntry()"
+    },
+    {
+      "name": "JudgeEntryWithLLM",
+      "kind": "interface",
+      "signature": "JudgeEntryWithLLM()"
+    },
+    {
+      "name": "JudgeResult",
+      "kind": "interface",
+      "signature": "JudgeResult()"
+    },
+    {
+      "name": "normalizeEvents",
+      "kind": "function",
+      "signature": "normalizeEvents(input: unknown): { events: TSEvent[]; error?: string }"
+    },
+    {
+      "name": "judgeEvents",
+      "kind": "function",
+      "signature": "judgeEvents(events: TSEvent[], ctx?: ObserveRuleCtx): JudgeResult"
+    },
+    {
+      "name": "judgeEventsWithLLM",
+      "kind": "function",
+      "signature": "judgeEventsWithLLM(events: TSEvent[],\n  useLlm = false,\n  ctx?: ObserveRuleCtx,): Promise<JudgeResult>"
+    },
+    {
+      "name": "renderJudgeReport",
+      "kind": "function",
+      "signature": "renderJudgeReport(r: JudgeResult): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/runtime/judge_observe_events.ts#judgeObserveEvents",
     "src/infrastructure/analysis/observe/judge_service.ts#judgeEventsWithLLM",

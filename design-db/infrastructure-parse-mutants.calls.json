@@ -116,5 +116,17 @@
       "from": "src/infrastructure/parse/mutants.ts#extractMutants",
       "to": "src/infrastructure/parse/kernel.ts#parseTreeForFile"
     }
+  ],
+  "expected_symbols": [
+    {
+      "name": "extractMutants",
+      "kind": "function",
+      "signature": "extractMutants(filePath: string, content: string): Promise<Mutant[]>"
+    },
+    {
+      "name": "applyMutant",
+      "kind": "function",
+      "signature": "applyMutant(content: string, m: Mutant): string"
+    }
   ]
 }

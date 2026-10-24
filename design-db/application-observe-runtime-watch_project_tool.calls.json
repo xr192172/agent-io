@@ -991,6 +991,88 @@
       "to": "src/infrastructure/index/watch_project.ts#watchProject"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "RebuildThrottleOptions",
+      "kind": "interface",
+      "signature": "RebuildThrottleOptions()"
+    },
+    {
+      "name": "RebuildThrottler",
+      "kind": "interface",
+      "signature": "RebuildThrottler()"
+    },
+    {
+      "name": "ImpactDeclaration",
+      "kind": "interface",
+      "signature": "ImpactDeclaration()"
+    },
+    {
+      "name": "ActiveWatch",
+      "kind": "interface",
+      "signature": "ActiveWatch()"
+    },
+    {
+      "name": "active",
+      "kind": "const",
+      "signature": "const active = new Map<string, ActiveWatch>()"
+    },
+    {
+      "name": "ALERTS_CAP",
+      "kind": "const",
+      "signature": "const ALERTS_CAP = 20"
+    },
+    {
+      "name": "WatchToolEvent",
+      "kind": "type",
+      "signature": "WatchToolEvent()"
+    },
+    {
+      "name": "watchToolEventListener",
+      "kind": "const",
+      "signature": "const watchToolEventListener = null"
+    },
+    {
+      "name": "WatchProjectToolInput",
+      "kind": "interface",
+      "signature": "WatchProjectToolInput()"
+    },
+    {
+      "name": "WatchProjectToolResult",
+      "kind": "interface",
+      "signature": "WatchProjectToolResult()"
+    },
+    {
+      "name": "createRebuildThrottler",
+      "kind": "function",
+      "signature": "createRebuildThrottler(opts: RebuildThrottleOptions): RebuildThrottler"
+    },
+    {
+      "name": "setWatchToolEventListener",
+      "kind": "function",
+      "signature": "setWatchToolEventListener(fn: ((e: WatchToolEvent) => void) | null): void"
+    },
+    {
+      "name": "listActiveWatches",
+      "kind": "function",
+      "signature": "listActiveWatches(): Array<{\n  project_dir: string;\n  feature?: string;\n  rebuild: boolean;\n  impact_on_change: boolean;\n  started_at: string;\n  last_change_at?: string;\n  last_impact_seq?: number;\n  pending_declarations: number;\n}>"
+    },
+    {
+      "name": "observeEventsDir",
+      "kind": "function",
+      "signature": "observeEventsDir(projectRoot: string): string"
+    },
+    {
+      "name": "watchProjectTool",
+      "kind": "function",
+      "signature": "watchProjectTool(input: WatchProjectToolInput): Promise<TouchedProduct<WatchProjectToolResult>>"
+    },
+    {
+      "name": "closeAllActiveWatches",
+      "kind": "function",
+      "signature": "closeAllActiveWatches(): void"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/runtime/watch_project_tool.ts#declareWatch",
     "src/application/observe/runtime/watch_project_tool.ts#doWork",

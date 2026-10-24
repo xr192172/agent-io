@@ -66,6 +66,13 @@
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "tsPackage",
+      "kind": "const",
+      "signature": "const tsPackage = { exts: TS_JS_EXTS, collect: (a) => tsAliasEdits(a.src, a…"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/package_migration/languages/ts.ts#tsAliasEdits"
   ]

@@ -46,6 +46,18 @@
       "to": "src/infrastructure/authoring/translate/referenced.ts#localNames"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "KNOWN_TS_TYPES",
+      "kind": "const",
+      "signature": "const KNOWN_TS_TYPES = new Set([ 'number', 'string', 'boolean', 'boolean', 'Erro…"
+    },
+    {
+      "name": "collectExternalTypeRefs",
+      "kind": "function",
+      "signature": "collectExternalTypeRefs(u: TransUnit): string[]"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/translate/project.ts#buildProjectCallNote",
     "src/infrastructure/authoring/translate/project.ts#translateGoProject",

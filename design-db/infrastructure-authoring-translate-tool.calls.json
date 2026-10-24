@@ -218,6 +218,18 @@
       "to": "src/infrastructure/authoring/translate/tool.ts#projectReceipt"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "TranslateGoTsArgs",
+      "kind": "interface",
+      "signature": "TranslateGoTsArgs()"
+    },
+    {
+      "name": "translateGoTsHandler",
+      "kind": "function",
+      "signature": "translateGoTsHandler(args: Record<string, unknown>): Promise<{ message: string; data?: unknown }>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler"
   ]

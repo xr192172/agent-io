@@ -184,5 +184,32 @@
     }
   ],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "ShapeField",
+      "kind": "interface",
+      "signature": "ShapeField()"
+    },
+    {
+      "name": "ShapeSchema",
+      "kind": "interface",
+      "signature": "ShapeSchema()"
+    },
+    {
+      "name": "EffectTarget",
+      "kind": "interface",
+      "signature": "EffectTarget()"
+    },
+    {
+      "name": "BrickRole",
+      "kind": "interface",
+      "signature": "BrickRole()"
+    },
+    {
+      "name": "BrickContract",
+      "kind": "interface",
+      "signature": "BrickContract()"
+    }
+  ]
 }

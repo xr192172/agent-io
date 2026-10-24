@@ -360,5 +360,62 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "ToolName",
+      "kind": "type",
+      "signature": "ToolName()"
+    },
+    {
+      "name": "VersionInfo",
+      "kind": "interface",
+      "signature": "VersionInfo()"
+    },
+    {
+      "name": "AdapterDeclaration",
+      "kind": "interface",
+      "signature": "AdapterDeclaration()"
+    },
+    {
+      "name": "SourceFile",
+      "kind": "interface",
+      "signature": "SourceFile()"
+    },
+    {
+      "name": "FeatureRule",
+      "kind": "interface",
+      "signature": "FeatureRule()"
+    },
+    {
+      "name": "DeprecationKind",
+      "kind": "type",
+      "signature": "DeprecationKind()"
+    },
+    {
+      "name": "RemovedRule",
+      "kind": "interface",
+      "signature": "RemovedRule()"
+    },
+    {
+      "name": "StaticGateItem",
+      "kind": "interface",
+      "signature": "StaticGateItem()"
+    },
+    {
+      "name": "DynamicGateItem",
+      "kind": "interface",
+      "signature": "DynamicGateItem()"
+    },
+    {
+      "name": "ProbeSpec",
+      "kind": "interface",
+      "signature": "ProbeSpec()"
+    },
+    {
+      "name": "LanguageAdapter",
+      "kind": "interface",
+      "signature": "LanguageAdapter()"
+    }
+  ]
 }

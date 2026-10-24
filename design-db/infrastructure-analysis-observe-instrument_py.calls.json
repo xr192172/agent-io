@@ -346,6 +346,73 @@
       "to": "src/infrastructure/parse/source_exts.ts#isNoiseFileName"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "PROBE_DIR_REL",
+      "kind": "const",
+      "signature": "const PROBE_DIR_REL = 'observe-lang-py'"
+    },
+    {
+      "name": "PROBE_MODULE",
+      "kind": "const",
+      "signature": "const PROBE_MODULE = 'camprobe'"
+    },
+    {
+      "name": "MARKER",
+      "kind": "const",
+      "signature": "const MARKER = 'observe:instrumented'"
+    },
+    {
+      "name": "DEEP_MARKER",
+      "kind": "const",
+      "signature": "const DEEP_MARKER = 'observe:deep'"
+    },
+    {
+      "name": "FN_TYPES",
+      "kind": "const",
+      "signature": "const FN_TYPES = new Set(['function_definition', 'lambda'])"
+    },
+    {
+      "name": "pyInstrumentHooks",
+      "kind": "const",
+      "signature": "const pyInstrumentHooks = { lang: 'python', markers: { core: MARKER, deep: DEEP_MAR…"
+    },
+    {
+      "name": "PyFn",
+      "kind": "interface",
+      "signature": "PyFn()"
+    },
+    {
+      "name": "str",
+      "kind": "const",
+      "signature": "const str = (s: string): string => JSON.stringify(s)"
+    },
+    {
+      "name": "pyDict",
+      "kind": "const",
+      "signature": "const pyDict = (entries: Array<[string, string]>): string => `{${entries…"
+    },
+    {
+      "name": "probeCall",
+      "kind": "const",
+      "signature": "const probeCall = (name: string, fields: Array<[string, string]>): string =…"
+    },
+    {
+      "name": "isInstrumentablePyFile",
+      "kind": "function",
+      "signature": "isInstrumentablePyFile(rel: string): boolean"
+    },
+    {
+      "name": "collectPyFiles",
+      "kind": "function",
+      "signature": "collectPyFiles(root: string): string[]"
+    },
+    {
+      "name": "instrumentPyProject",
+      "kind": "function",
+      "signature": "instrumentPyProject(root: string, opts: InstrumentOptions = {}): Promise<InstrumentFileResult[]>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/observe/instrument_py.ts#collectDefSites",
     "src/infrastructure/analysis/observe/instrument_py.ts#collectLambdaSite",

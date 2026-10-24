@@ -465,6 +465,38 @@
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ConstDecl",
+      "kind": "interface",
+      "signature": "ConstDecl()"
+    },
+    {
+      "name": "SkippedDecl",
+      "kind": "interface",
+      "signature": "SkippedDecl()"
+    },
+    {
+      "name": "ExtractGoResult",
+      "kind": "interface",
+      "signature": "ExtractGoResult()"
+    },
+    {
+      "name": "ExtractGoFileResult",
+      "kind": "interface",
+      "signature": "ExtractGoFileResult()"
+    },
+    {
+      "name": "extractGoFromFile",
+      "kind": "function",
+      "signature": "extractGoFromFile(file: string): Promise<ExtractGoFileResult>"
+    },
+    {
+      "name": "extractGo",
+      "kind": "function",
+      "signature": "extractGo(filePath: string, source: string): Promise<ExtractGoResult>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/translate/go_extractor.ts#boundFromConstraint",
     "src/infrastructure/authoring/translate/go_extractor.ts#collect",

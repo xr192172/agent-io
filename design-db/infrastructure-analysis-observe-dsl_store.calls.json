@@ -293,6 +293,38 @@
       "to": "src/infrastructure/analysis/observe/dsl_store.ts#writeAtomic"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DSLDoc",
+      "kind": "interface",
+      "signature": "DSLDoc()"
+    },
+    {
+      "name": "HistoryEntry",
+      "kind": "interface",
+      "signature": "HistoryEntry()"
+    },
+    {
+      "name": "SaveMeta",
+      "kind": "interface",
+      "signature": "SaveMeta()"
+    },
+    {
+      "name": "DesignDSLStore",
+      "kind": "class",
+      "signature": "DesignDSLStore()"
+    },
+    {
+      "name": "silentErrorDiscardDSL",
+      "kind": "function",
+      "signature": "silentErrorDiscardDSL(): TSDLDecl"
+    },
+    {
+      "name": "defaultDSLDir",
+      "kind": "function",
+      "signature": "defaultDSLDir(projectRoot = process.cwd()): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/reconcile/proposal_approve.ts#approveObserveProposal",
     "src/application/observe/reconcile/proposal_list.ts#listObserveProposals",

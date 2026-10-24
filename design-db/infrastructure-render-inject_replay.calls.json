@@ -258,6 +258,33 @@
       "to": "src/infrastructure/storage.ts#getDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "InjectReplayInput",
+      "kind": "interface",
+      "signature": "InjectReplayInput()"
+    },
+    {
+      "name": "ReplayRoute",
+      "kind": "interface",
+      "signature": "ReplayRoute()"
+    },
+    {
+      "name": "ShapeCheck",
+      "kind": "interface",
+      "signature": "ShapeCheck()"
+    },
+    {
+      "name": "InjectReplayResult",
+      "kind": "interface",
+      "signature": "InjectReplayResult()"
+    },
+    {
+      "name": "injectReplay",
+      "kind": "function",
+      "signature": "injectReplay(input: InjectReplayInput): InjectReplayResult"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/render/inject_replay.ts#injectReplay"
   ]

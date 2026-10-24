@@ -871,6 +871,183 @@
       "to": "src/infrastructure/parse/source_exts.ts#isTsJsExt"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "SRC_EXTS",
+      "kind": "const",
+      "signature": "const SRC_EXTS = new Set<string>(SOURCE_EXTS)"
+    },
+    {
+      "name": "SKIP_DIRS",
+      "kind": "const",
+      "signature": "const SKIP_DIRS = skipDirSet(['vendor', 'target'])"
+    },
+    {
+      "name": "MANIFESTS",
+      "kind": "const",
+      "signature": "const MANIFESTS = ['package.json', 'go.mod', 'pyproject.toml', 'Cargo.toml'…"
+    },
+    {
+      "name": "NEIGHBOR_LIMIT",
+      "kind": "const",
+      "signature": "const NEIGHBOR_LIMIT = 20"
+    },
+    {
+      "name": "EXTERNAL_IMPORTER_DEADLINE_MS",
+      "kind": "const",
+      "signature": "const EXTERNAL_IMPORTER_DEADLINE_MS = 2500"
+    },
+    {
+      "name": "ExternalRef",
+      "kind": "interface",
+      "signature": "ExternalRef()"
+    },
+    {
+      "name": "ScanSkip",
+      "kind": "interface",
+      "signature": "ScanSkip()"
+    },
+    {
+      "name": "ExternalImporterResult",
+      "kind": "interface",
+      "signature": "ExternalImporterResult()"
+    },
+    {
+      "name": "ExpansionResult",
+      "kind": "interface",
+      "signature": "ExpansionResult()"
+    },
+    {
+      "name": "RootsResult",
+      "kind": "interface",
+      "signature": "RootsResult()"
+    },
+    {
+      "name": "gitRootCache",
+      "kind": "const",
+      "signature": "const gitRootCache = new Map<string, string | null>()"
+    },
+    {
+      "name": "MULTILANG_EXTS",
+      "kind": "const",
+      "signature": "const MULTILANG_EXTS = SOURCE_EXTS"
+    },
+    {
+      "name": "MULTILANG_INDEX",
+      "kind": "const",
+      "signature": "const MULTILANG_INDEX = ['index.ts', 'index.tsx', 'index.js', 'index.jsx', 'mod.t…"
+    },
+    {
+      "name": "LangResolveCtx",
+      "kind": "interface",
+      "signature": "LangResolveCtx()"
+    },
+    {
+      "name": "LANG_RESOLVERS",
+      "kind": "const",
+      "signature": "const LANG_RESOLVERS = { '.go': resolveGoImport, '.py': resolvePythonImport, '.j…"
+    },
+    {
+      "name": "AliasConfig",
+      "kind": "interface",
+      "signature": "AliasConfig()"
+    },
+    {
+      "name": "CLOSURE_TS_EXTS",
+      "kind": "const",
+      "signature": "const CLOSURE_TS_EXTS = new Set<string>(TS_JS_EXTS)"
+    },
+    {
+      "name": "isInsideRoot",
+      "kind": "function",
+      "signature": "isInsideRoot(abs: string, root: string): boolean"
+    },
+    {
+      "name": "gitRootOf",
+      "kind": "function",
+      "signature": "gitRootOf(file: string): string | null"
+    },
+    {
+      "name": "clearGitRootCache",
+      "kind": "function",
+      "signature": "clearGitRootCache(): void"
+    },
+    {
+      "name": "manifestRootOf",
+      "kind": "function",
+      "signature": "manifestRootOf(file: string): string | null"
+    },
+    {
+      "name": "resolveProjectRoot",
+      "kind": "function",
+      "signature": "resolveProjectRoot(file: string): string"
+    },
+    {
+      "name": "walkProjectFiles",
+      "kind": "function",
+      "signature": "walkProjectFiles(dir: string, out: string[], skipped?: ScanSkip[]): void"
+    },
+    {
+      "name": "resolveToFile",
+      "kind": "function",
+      "signature": "resolveToFile(p: string): string | null"
+    },
+    {
+      "name": "realResolveImport",
+      "kind": "function",
+      "signature": "realResolveImport(importerAbs: string, source: string): string | null"
+    },
+    {
+      "name": "detectReachableRoots",
+      "kind": "function",
+      "signature": "detectReachableRoots(root: string): RootsResult"
+    },
+    {
+      "name": "resolveLangImport",
+      "kind": "function",
+      "signature": "resolveLangImport(absFile: string, imp: ParsedImport, ctx: LangResolveCtx): string | null"
+    },
+    {
+      "name": "loadAliasConfig",
+      "kind": "function",
+      "signature": "loadAliasConfig(root: string): AliasConfig | null"
+    },
+    {
+      "name": "resolveAliasedImport",
+      "kind": "function",
+      "signature": "resolveAliasedImport(source: string, alias: AliasConfig): string | null"
+    },
+    {
+      "name": "isLocalSource",
+      "kind": "function",
+      "signature": "isLocalSource(abs: string): boolean"
+    },
+    {
+      "name": "isProjectDir",
+      "kind": "function",
+      "signature": "isProjectDir(d: string): boolean"
+    },
+    {
+      "name": "readPackageName",
+      "kind": "function",
+      "signature": "readPackageName(root: string): string | undefined"
+    },
+    {
+      "name": "findExternalImporters",
+      "kind": "function",
+      "signature": "findExternalImporters(seedFile: string, root: string): Promise<ExternalImporterResult>"
+    },
+    {
+      "name": "expandClosureDetailed",
+      "kind": "function",
+      "signature": "expandClosureDetailed(seedFile: string,\n  root: string,\n  alias?: AliasConfig | null,): Promise<ExpansionResult>"
+    },
+    {
+      "name": "expandClosure",
+      "kind": "function",
+      "signature": "expandClosure(seedFile: string, root: string, alias?: AliasConfig | null): Promise<string[]>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/intent/detect_drift.ts#detectDriftCore",
     "src/application/refactor/find/field_refs.ts#collectFieldRefs",

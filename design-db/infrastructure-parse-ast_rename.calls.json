@@ -751,6 +751,123 @@
       "to": "src/infrastructure/parse/loader.ts#getParser"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "NodeLike",
+      "kind": "interface",
+      "signature": "NodeLike()"
+    },
+    {
+      "name": "LocalBinding",
+      "kind": "interface",
+      "signature": "LocalBinding()"
+    },
+    {
+      "name": "LocalScope",
+      "kind": "interface",
+      "signature": "LocalScope()"
+    },
+    {
+      "name": "ScopeNode",
+      "kind": "interface",
+      "signature": "ScopeNode()"
+    },
+    {
+      "name": "B",
+      "kind": "interface",
+      "signature": "B()"
+    },
+    {
+      "name": "DeclUnit",
+      "kind": "interface",
+      "signature": "DeclUnit()"
+    },
+    {
+      "name": "nextId",
+      "kind": "const",
+      "signature": "const nextId = 1"
+    },
+    {
+      "name": "Decl",
+      "kind": "interface",
+      "signature": "Decl()"
+    },
+    {
+      "name": "FN_SCOPE_TYPES",
+      "kind": "const",
+      "signature": "const FN_SCOPE_TYPES = new Set([ 'function_declaration', 'function_expression', …"
+    },
+    {
+      "name": "PARAM_TYPES",
+      "kind": "const",
+      "signature": "const PARAM_TYPES = new Set(['formal_parameters', 'parameters'])"
+    },
+    {
+      "name": "FOR_TYPES",
+      "kind": "const",
+      "signature": "const FOR_TYPES = new Set(['for_statement', 'for_in_statement', 'for_of_sta…"
+    },
+    {
+      "name": "BuiltRaw",
+      "kind": "interface",
+      "signature": "BuiltRaw()"
+    },
+    {
+      "name": "LocalAddressCandidate",
+      "kind": "interface",
+      "signature": "LocalAddressCandidate()"
+    },
+    {
+      "name": "LocalAddressResolution",
+      "kind": "type",
+      "signature": "LocalAddressResolution()"
+    },
+    {
+      "name": "RenameItem",
+      "kind": "interface",
+      "signature": "RenameItem()"
+    },
+    {
+      "name": "RenameApplied",
+      "kind": "interface",
+      "signature": "RenameApplied()"
+    },
+    {
+      "name": "analyzeLocals",
+      "kind": "function",
+      "signature": "analyzeLocals(src: string, filePath = 'file.ts'): Promise<LocalBinding[]>"
+    },
+    {
+      "name": "analyzeScopes",
+      "kind": "function",
+      "signature": "analyzeScopes(src: string, filePath = 'file.ts'): Promise<LocalScope[]>"
+    },
+    {
+      "name": "lineNumberOf",
+      "kind": "function",
+      "signature": "lineNumberOf(src: string, index: number): number"
+    },
+    {
+      "name": "resolveLocalAddress",
+      "kind": "function",
+      "signature": "resolveLocalAddress(bindings: readonly LocalBinding[],\n  src: string,\n  addr: { symbol: string; declLine?: number },): LocalAddressResolution"
+    },
+    {
+      "name": "renameLocal",
+      "kind": "function",
+      "signature": "renameLocal(src: string,\n  targetId: number,\n  to: string,\n  filePath = 'file.ts',): Promise<{ out: string; changed: number }>"
+    },
+    {
+      "name": "renameMany",
+      "kind": "function",
+      "signature": "renameMany(src: string,\n  items: RenameItem[],\n  filePath = 'file.ts',): Promise<{ out: string; applied: RenameApplied[] }>"
+    },
+    {
+      "name": "deleteDeadLocals",
+      "kind": "function",
+      "signature": "deleteDeadLocals(src: string,\n  filePath = 'file.ts',): Promise<{ out: string; deleted: Array<{ name: string; start: number; end: number }> }>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/find/ast_suggest.ts#findSuggestCandidates",
     "src/application/refactor/find/similar_names.ts#findSimilarNames",

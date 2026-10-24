@@ -179,6 +179,48 @@
       "to": "src/infrastructure/analysis/observe/snapshot_needle.ts#sampleNeedles"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ObserveTraceCfg",
+      "kind": "interface",
+      "signature": "ObserveTraceCfg()"
+    },
+    {
+      "name": "ObserveTraceResult",
+      "kind": "interface",
+      "signature": "ObserveTraceResult()"
+    },
+    {
+      "name": "defaultEventsCandidates",
+      "kind": "function",
+      "signature": "defaultEventsCandidates(cwd = process.cwd()): string[]"
+    },
+    {
+      "name": "loadEventsText",
+      "kind": "function",
+      "signature": "loadEventsText(cfg: ObserveTraceCfg, cwd = process.cwd()): { text: string; source: string }"
+    },
+    {
+      "name": "loadNeedles",
+      "kind": "function",
+      "signature": "loadNeedles(cfg: ObserveTraceCfg, cwd = process.cwd()): ObserveTraceResult"
+    },
+    {
+      "name": "traceToText",
+      "kind": "function",
+      "signature": "traceToText(t: SamplingNeedle, maxDepth = 40): string"
+    },
+    {
+      "name": "needleToData",
+      "kind": "function",
+      "signature": "needleToData(t: SamplingNeedle): Record<string, unknown>"
+    },
+    {
+      "name": "observeTrace",
+      "kind": "function",
+      "signature": "observeTrace(cfg: ObserveTraceCfg, cwd = process.cwd()): { message: string; data: unknown }"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/capture/observe_trace.ts#loadEventsText",
     "src/application/observe/capture/observe_trace.ts#loadNeedles",

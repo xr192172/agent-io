@@ -77,6 +77,23 @@
       "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DeclReviewResult",
+      "kind": "interface",
+      "signature": "DeclReviewResult()"
+    },
+    {
+      "name": "buildDeclReviewPrompt",
+      "kind": "function",
+      "signature": "buildDeclReviewPrompt(d: TSDLDecl): string"
+    },
+    {
+      "name": "reviewDeclsWithLLM",
+      "kind": "function",
+      "signature": "reviewDeclsWithLLM(decls: TSDLDecl[], uncovered: string[]): Promise<DeclReviewResult>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
     "src/infrastructure/analysis/observe/decl_review.ts#reviewDeclsWithLLM"

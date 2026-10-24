@@ -178,6 +178,48 @@
       "to": "src/domain/validator.ts#validateSemanticAnchoring"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "AddFormatsFn",
+      "kind": "type",
+      "signature": "AddFormatsFn()"
+    },
+    {
+      "name": "addFormats",
+      "kind": "const",
+      "signature": "const addFormats = ( (addFormatsNS as unknown as { default?: AddFormatsFn })…"
+    },
+    {
+      "name": "ajv",
+      "kind": "const",
+      "signature": "const ajv = new Ajv({ allErrors: true, strict: false })"
+    },
+    {
+      "name": "validateSchema",
+      "kind": "const",
+      "signature": "const validateSchema = ajv.compile<DesignDSL>(schema)"
+    },
+    {
+      "name": "ValidationErrorItem",
+      "kind": "interface",
+      "signature": "ValidationErrorItem()"
+    },
+    {
+      "name": "ValidationResult",
+      "kind": "interface",
+      "signature": "ValidationResult()"
+    },
+    {
+      "name": "validateDSL",
+      "kind": "function",
+      "signature": "validateDSL(dsl: unknown): ValidationResult"
+    },
+    {
+      "name": "validateDSLJson",
+      "kind": "function",
+      "signature": "validateDSLJson(json: string): ValidationResult & { dsl?: DesignDSL }"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/update_feature.ts#updateFeatureCore",
     "src/domain/validator.ts#validateDSL",

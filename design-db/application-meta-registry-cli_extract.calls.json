@@ -95,6 +95,28 @@
       "to": "src/application/meta/registry/cli_extract.ts#extractImportMap"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "CliCommand",
+      "kind": "interface",
+      "signature": "CliCommand()"
+    },
+    {
+      "name": "CliExtractResult",
+      "kind": "interface",
+      "signature": "CliExtractResult()"
+    },
+    {
+      "name": "extractImportMap",
+      "kind": "const",
+      "signature": "const extractImportMap = parseRelativeNamedImportMap"
+    },
+    {
+      "name": "extractCliCommands",
+      "kind": "function",
+      "signature": "extractCliCommands(dir: string): CliExtractResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/registry/cli_extract.ts#extractCliCommands"
   ]

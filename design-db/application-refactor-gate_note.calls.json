@@ -45,6 +45,28 @@
     }
   ],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "GateNoteCarrier",
+      "kind": "interface",
+      "signature": "GateNoteCarrier()"
+    },
+    {
+      "name": "GateNoteSource",
+      "kind": "type",
+      "signature": "GateNoteSource()"
+    },
+    {
+      "name": "attachGateNote",
+      "kind": "function",
+      "signature": "attachGateNote(receipt: T,\n  gate: GateNoteSource,): T & GateNoteCarrier"
+    },
+    {
+      "name": "gateHumanLines",
+      "kind": "function",
+      "signature": "gateHumanLines(taskGate?: string): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/rewrite/rewrite.ts#rewriteSymbols",
     "src/application/design/workbench/code_workbench.ts#approveChange",

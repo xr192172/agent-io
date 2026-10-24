@@ -86,6 +86,33 @@
     }
   ],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "N",
+      "kind": "interface",
+      "signature": "N()"
+    },
+    {
+      "name": "NodeType",
+      "kind": "type",
+      "signature": "NodeType()"
+    },
+    {
+      "name": "TS_EXTS",
+      "kind": "const",
+      "signature": "const TS_EXTS = new Set<string>(TS_JS_EXTS)"
+    },
+    {
+      "name": "stripQuotes",
+      "kind": "function",
+      "signature": "stripQuotes(s: string): string"
+    },
+    {
+      "name": "nameInfo",
+      "kind": "function",
+      "signature": "nameInfo(n: N): { text: string; offset: number } | null"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/rename_symbol/namespace_family.ts#makeNamespaceAnalyzer",
     "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource"

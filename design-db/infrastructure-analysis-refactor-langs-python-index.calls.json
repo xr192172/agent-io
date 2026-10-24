@@ -49,5 +49,17 @@
       "from": "src/infrastructure/analysis/refactor/langs/python/index.ts#computePyDeadImportsPlan",
       "to": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#removePyImportsFromSource"
     }
+  ],
+  "expected_symbols": [
+    {
+      "name": "pythonExecutor",
+      "kind": "const",
+      "signature": "const pythonExecutor = { lang: 'py', isSourceFile: (rel) => rel.endsWith('.py'),…"
+    },
+    {
+      "name": "computePyDeadImportsPlan",
+      "kind": "function",
+      "signature": "computePyDeadImportsPlan(args: RefactorStageComputeArgs): RunningChangePlan"
+    }
   ]
 }

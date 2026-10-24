@@ -119,6 +119,53 @@
       "to": "src/infrastructure/text/refs_text.ts#specifierCandidates"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "TextRefHit",
+      "kind": "interface",
+      "signature": "TextRefHit()"
+    },
+    {
+      "name": "IMPORT_RE",
+      "kind": "const",
+      "signature": "const IMPORT_RE = /(?:from|require\\s*\\()\\s*['\"]([^'\"]+)['\"]/g"
+    },
+    {
+      "name": "SKIP_DIR",
+      "kind": "const",
+      "signature": "const SKIP_DIR = skipDirSet([])"
+    },
+    {
+      "name": "SRC_EXT",
+      "kind": "const",
+      "signature": "const SRC_EXT = new Set<string>(SOURCE_EXTS)"
+    },
+    {
+      "name": "walkSourceFiles",
+      "kind": "function",
+      "signature": "walkSourceFiles(root: string, limit = 20000): string[]"
+    },
+    {
+      "name": "buildTextImportIndex",
+      "kind": "function",
+      "signature": "buildTextImportIndex(root: string,\n  files: readonly string[],): { importers: Map<string, string[]>; scanned: number; bytes: number }"
+    },
+    {
+      "name": "importLookupKeys",
+      "kind": "function",
+      "signature": "importLookupKeys(targetRel: string): string[]"
+    },
+    {
+      "name": "scanTextImporters",
+      "kind": "function",
+      "signature": "scanTextImporters(root: string,\n  targetRel: string,\n  files: readonly string[],): TextRefHit[]"
+    },
+    {
+      "name": "scanTextMentions",
+      "kind": "function",
+      "signature": "scanTextMentions(root: string,\n  name: string,\n  files: readonly string[],\n  opts: { limitPerFile?: number; maxFiles?: number } = {},): TextRefHit[]"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/find/find_references.ts#indexCandidateFiles",
     "src/infrastructure/index/index_freshness.ts#ensureIndexAround",

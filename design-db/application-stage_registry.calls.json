@@ -335,6 +335,108 @@
       "to": "src/application/stage_registry.ts#produceWithRetry"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "StageId",
+      "kind": "type",
+      "signature": "StageId()"
+    },
+    {
+      "name": "StageOwner",
+      "kind": "type",
+      "signature": "StageOwner()"
+    },
+    {
+      "name": "StageCtx",
+      "kind": "interface",
+      "signature": "StageCtx()"
+    },
+    {
+      "name": "StageBase",
+      "kind": "interface",
+      "signature": "StageBase()"
+    },
+    {
+      "name": "DerivedStage",
+      "kind": "interface",
+      "signature": "DerivedStage()"
+    },
+    {
+      "name": "SourceStage",
+      "kind": "interface",
+      "signature": "SourceStage()"
+    },
+    {
+      "name": "PendingStage",
+      "kind": "interface",
+      "signature": "PendingStage()"
+    },
+    {
+      "name": "Stage",
+      "kind": "type",
+      "signature": "Stage()"
+    },
+    {
+      "name": "STAGES",
+      "kind": "const",
+      "signature": "const STAGES = [ // ── 已接上产者（4 道）───────────────────────────────────────…"
+    },
+    {
+      "name": "BY_ID",
+      "kind": "const",
+      "signature": "const BY_ID = new Map(STAGES.map((s) => [s.id, s]))"
+    },
+    {
+      "name": "PRODUCE_ATTEMPTS",
+      "kind": "const",
+      "signature": "const PRODUCE_ATTEMPTS = 3"
+    },
+    {
+      "name": "EnsureResult",
+      "kind": "interface",
+      "signature": "EnsureResult()"
+    },
+    {
+      "name": "LocateState",
+      "kind": "type",
+      "signature": "LocateState()"
+    },
+    {
+      "name": "getStage",
+      "kind": "function",
+      "signature": "getStage(id: StageId): Stage"
+    },
+    {
+      "name": "pendingStages",
+      "kind": "function",
+      "signature": "pendingStages(): PendingStage[]"
+    },
+    {
+      "name": "weakFreshnessStages",
+      "kind": "function",
+      "signature": "weakFreshnessStages(): DerivedStage[]"
+    },
+    {
+      "name": "assertAcyclic",
+      "kind": "function",
+      "signature": "assertAcyclic(): void"
+    },
+    {
+      "name": "renderStageTable",
+      "kind": "function",
+      "signature": "renderStageTable(): string"
+    },
+    {
+      "name": "ensureStage",
+      "kind": "function",
+      "signature": "ensureStage(id: StageId, ctx: StageCtx = {}): Promise<EnsureResult>"
+    },
+    {
+      "name": "produceWithRetry",
+      "kind": "function",
+      "signature": "produceWithRetry(stage: DerivedStage, ctx: StageCtx = {}): Promise<void>"
+    }
+  ],
   "reverse_calls": [
     "src/application/stage_registry.ts#assertAcyclic",
     "src/application/stage_registry.ts#ensureStage",

@@ -441,6 +441,103 @@
       "to": "src/infrastructure/llm_focus.ts#configFileReadPath"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "EmbeddingConfig",
+      "kind": "interface",
+      "signature": "EmbeddingConfig()"
+    },
+    {
+      "name": "DEFAULT_BASE_URL",
+      "kind": "const",
+      "signature": "const DEFAULT_BASE_URL = 'https://api.siliconflow.cn/v1'"
+    },
+    {
+      "name": "DEFAULT_MODEL",
+      "kind": "const",
+      "signature": "const DEFAULT_MODEL = 'BAAI/bge-m3'"
+    },
+    {
+      "name": "DEFAULT_DIM",
+      "kind": "const",
+      "signature": "const DEFAULT_DIM = 1024"
+    },
+    {
+      "name": "embedCache",
+      "kind": "const",
+      "signature": "const embedCache = new Map<string, number[]>()"
+    },
+    {
+      "name": "cacheHits",
+      "kind": "const",
+      "signature": "const cacheHits = 0"
+    },
+    {
+      "name": "apiCalls",
+      "kind": "const",
+      "signature": "const apiCalls = 0"
+    },
+    {
+      "name": "EmbeddingResponseItem",
+      "kind": "interface",
+      "signature": "EmbeddingResponseItem()"
+    },
+    {
+      "name": "SemanticHit",
+      "kind": "interface",
+      "signature": "SemanticHit()"
+    },
+    {
+      "name": "SemanticSearchInput",
+      "kind": "interface",
+      "signature": "SemanticSearchInput()"
+    },
+    {
+      "name": "SemanticSearchResult",
+      "kind": "interface",
+      "signature": "SemanticSearchResult()"
+    },
+    {
+      "name": "SYMBOL_QUERY_RE",
+      "kind": "const",
+      "signature": "const SYMBOL_QUERY_RE = /^[A-Za-z_$][\\w$]*(\\.[A-Za-z_$][\\w$]*)*$/"
+    },
+    {
+      "name": "loadEmbeddingConfig",
+      "kind": "function",
+      "signature": "loadEmbeddingConfig(): EmbeddingConfig | null"
+    },
+    {
+      "name": "embeddingCacheStats",
+      "kind": "function",
+      "signature": "embeddingCacheStats(): { cache_size: number; cache_hits: number; api_calls: number }"
+    },
+    {
+      "name": "embedTexts",
+      "kind": "function",
+      "signature": "embedTexts(cfg: EmbeddingConfig, texts: string[], db?: Database): Promise<number[][]>"
+    },
+    {
+      "name": "encodeVectorBlob",
+      "kind": "function",
+      "signature": "encodeVectorBlob(v: number[]): Uint8Array"
+    },
+    {
+      "name": "decodeVectorBlob",
+      "kind": "function",
+      "signature": "decodeVectorBlob(b: Uint8Array): number[]"
+    },
+    {
+      "name": "cosineSimilarity",
+      "kind": "function",
+      "signature": "cosineSimilarity(a: number[], b: number[]): number"
+    },
+    {
+      "name": "semanticSearch",
+      "kind": "function",
+      "signature": "semanticSearch(input: SemanticSearchInput): Promise<TouchedProduct<SemanticSearchResult>>"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/explore_code.ts#exploreCode",
     "src/application/meta/llm/semantic_search.ts#embedTexts",

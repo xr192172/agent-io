@@ -137,6 +137,38 @@
     }
   ],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "ChainCard",
+      "kind": "type",
+      "signature": "ChainCard()"
+    },
+    {
+      "name": "ChainPlace",
+      "kind": "interface",
+      "signature": "ChainPlace()"
+    },
+    {
+      "name": "TodoChains",
+      "kind": "interface",
+      "signature": "TodoChains()"
+    },
+    {
+      "name": "buildTodoChains",
+      "kind": "function",
+      "signature": "buildTodoChains(cards: readonly ChainCard[]): TodoChains"
+    },
+    {
+      "name": "chainBadge",
+      "kind": "function",
+      "signature": "chainBadge(place: ChainPlace): string"
+    },
+    {
+      "name": "assertFollowsTarget",
+      "kind": "function",
+      "signature": "assertFollowsTarget(cards: readonly ChainCard[],\n  childId: string,\n  parentId: string,): void"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
     "src/application/design/dsl_ops/task_ops.ts#followTodoCard",

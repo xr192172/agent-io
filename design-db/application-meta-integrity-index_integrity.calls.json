@@ -407,6 +407,48 @@
       "to": "src/infrastructure/project_view.ts#getProjectView"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FileKindCounts",
+      "kind": "interface",
+      "signature": "FileKindCounts()"
+    },
+    {
+      "name": "IntegrityIssue",
+      "kind": "interface",
+      "signature": "IntegrityIssue()"
+    },
+    {
+      "name": "IndexIntegrityResult",
+      "kind": "interface",
+      "signature": "IndexIntegrityResult()"
+    },
+    {
+      "name": "NOT_FRESH_SAMPLE",
+      "kind": "const",
+      "signature": "const NOT_FRESH_SAMPLE = 20"
+    },
+    {
+      "name": "repairStaleResolvedRefs",
+      "kind": "function",
+      "signature": "repairStaleResolvedRefs(db: ReturnType<typeof getProjectCacheDb>,\r\n  root: string,): { names: number; reopened: number; cross: { total: number; resolved: number; external: number; failed: number } }"
+    },
+    {
+      "name": "integrityVerdict",
+      "kind": "function",
+      "signature": "integrityVerdict(args: {\r\n  /** 有没有可用索引（`false` ⇒ 查不了） */\r\n  hasIndex: boolean;\r\n  /** 有没有 blocker 级问题（陈旧断言 / 未保鲜文件 …） */\r\n  hasBlocker: boolean;\r\n  /** 有没有幽灵行（索引有、磁盘无） */\r\n  hasGhost: boolean;\r\n}): 'trusted' | 'untrusted' | 'unknown'"
+    },
+    {
+      "name": "indexIntegrity",
+      "kind": "function",
+      "signature": "indexIntegrity(opts: {\r\n  project_dir: string;\r\n  /** ★ 调用方是否**显式**给了 `project_dir`：`false` ⇒ `touched.project_dir` 整项省略（见 {@link touchedOf}）。\r\n   *  缺省 `true`（保守：直接调本函数、未经\"自定位兜底\"的调用方，视为显式给了根）。 */\r\n  project_dir_explicit?: boolean;\r\n  refresh?: boolean;\r\n  sample?: number;\r\n}): Promise<TouchedProduct<IndexIntegrityResult>>"
+    },
+    {
+      "name": "renderIntegrity",
+      "kind": "function",
+      "signature": "renderIntegrity(r: IndexIntegrityResult): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/integrity/index_integrity.ts#indexIntegrity",
     "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore"

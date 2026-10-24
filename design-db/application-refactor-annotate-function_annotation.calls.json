@@ -357,6 +357,53 @@
       "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FNHASH_PREFIX",
+      "kind": "const",
+      "signature": "const FNHASH_PREFIX = '@fnhash'"
+    },
+    {
+      "name": "FnCommentStatus",
+      "kind": "type",
+      "signature": "FnCommentStatus()"
+    },
+    {
+      "name": "FnTarget",
+      "kind": "interface",
+      "signature": "FnTarget()"
+    },
+    {
+      "name": "AnnotationSummary",
+      "kind": "interface",
+      "signature": "AnnotationSummary()"
+    },
+    {
+      "name": "AnnotationPlanResult",
+      "kind": "interface",
+      "signature": "AnnotationPlanResult()"
+    },
+    {
+      "name": "PlanAnnotationInput",
+      "kind": "interface",
+      "signature": "PlanAnnotationInput()"
+    },
+    {
+      "name": "scanFileAnnotations",
+      "kind": "function",
+      "signature": "scanFileAnnotations(absFile: string): Promise<FnTarget[]>"
+    },
+    {
+      "name": "applyAnnotationsToSource",
+      "kind": "function",
+      "signature": "applyAnnotationsToSource(content: string,\n  jobs: Array<{ startLine: number; status: FnCommentStatus; blockLines: string[]; blockStart: number; newBlock: string[] }>,): string"
+    },
+    {
+      "name": "planFunctionAnnotation",
+      "kind": "function",
+      "signature": "planFunctionAnnotation(input: PlanAnnotationInput): Promise<AnnotationPlanResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/annotate/function_annotation.ts#classify",
     "src/application/refactor/annotate/function_annotation.ts#docBlock",

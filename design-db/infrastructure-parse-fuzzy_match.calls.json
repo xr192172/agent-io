@@ -220,6 +220,53 @@
       "to": "src/infrastructure/parse/fuzzy_match.ts#windowToMatch"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FuzzyLevel",
+      "kind": "type",
+      "signature": "FuzzyLevel()"
+    },
+    {
+      "name": "FUZZY_LEVEL_LABEL",
+      "kind": "const",
+      "signature": "const FUZZY_LEVEL_LABEL = { 1: 'exact', 2: '空白归一', 3: '缩进弹性', 4: '省略号占位', }"
+    },
+    {
+      "name": "FuzzyMatch",
+      "kind": "interface",
+      "signature": "FuzzyMatch()"
+    },
+    {
+      "name": "LocateResult",
+      "kind": "interface",
+      "signature": "LocateResult()"
+    },
+    {
+      "name": "isEllipsisLine",
+      "kind": "const",
+      "signature": "const isEllipsisLine = (line: string): boolean => { const t = line.trim(); retur…"
+    },
+    {
+      "name": "LineIndex",
+      "kind": "interface",
+      "signature": "LineIndex()"
+    },
+    {
+      "name": "hasEllipsisLine",
+      "kind": "function",
+      "signature": "hasEllipsisLine(oldText: string): boolean"
+    },
+    {
+      "name": "locateReplaceText",
+      "kind": "function",
+      "signature": "locateReplaceText(content: string, oldText: string): LocateResult"
+    },
+    {
+      "name": "realignNewTextTo",
+      "kind": "function",
+      "signature": "realignNewTextTo(newText: string, targetIndent: string, eol: string): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/edit/edit_code.ts#planReplaceText",
     "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",

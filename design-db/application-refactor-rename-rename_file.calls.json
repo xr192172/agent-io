@@ -475,6 +475,38 @@
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "SOURCE_EXTS",
+      "kind": "const",
+      "signature": "const SOURCE_EXTS = new Set<string>([...TS_JS_EXTS, '.py'])"
+    },
+    {
+      "name": "RefEdit",
+      "kind": "interface",
+      "signature": "RefEdit()"
+    },
+    {
+      "name": "RenameFileInput",
+      "kind": "interface",
+      "signature": "RenameFileInput()"
+    },
+    {
+      "name": "RenameFileResult",
+      "kind": "interface",
+      "signature": "RenameFileResult()"
+    },
+    {
+      "name": "SPECIFIER_APIS",
+      "kind": "const",
+      "signature": "const SPECIFIER_APIS = new Set<string>([ // ── 语言级：CommonJS / dynamic import（`im…"
+    },
+    {
+      "name": "renameFile",
+      "kind": "function",
+      "signature": "renameFile(input: RenameFileInput): Promise<TouchedProduct<RenameFileResult>>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/rename/rename_file.ts#collectImportLiterals",
     "src/application/refactor/rename/rename_file.ts#collectPythonImportLiterals",

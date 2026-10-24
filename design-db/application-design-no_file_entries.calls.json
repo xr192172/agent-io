@@ -13,6 +13,13 @@
   ],
   "imports": [],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "noFileEntriesMessage",
+      "kind": "function",
+      "signature": "noFileEntriesMessage(feature: string): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/intent/consistency.ts#checkConsistencyReport"
   ]

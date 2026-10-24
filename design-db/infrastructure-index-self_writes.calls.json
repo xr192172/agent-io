@@ -79,6 +79,33 @@
       "to": "src/infrastructure/index/self_writes.ts#selfWritesPath"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "SELF_WRITE_TTL_MS",
+      "kind": "const",
+      "signature": "const SELF_WRITE_TTL_MS = 10 * 60 * 1000"
+    },
+    {
+      "name": "SelfWriteEntry",
+      "kind": "interface",
+      "signature": "SelfWriteEntry()"
+    },
+    {
+      "name": "selfWritesPath",
+      "kind": "function",
+      "signature": "selfWritesPath(projectRoot: string): string"
+    },
+    {
+      "name": "readSelfWrites",
+      "kind": "function",
+      "signature": "readSelfWrites(root: string): SelfWriteEntry[]"
+    },
+    {
+      "name": "pendingSelfWrites",
+      "kind": "function",
+      "signature": "pendingSelfWrites(projectRoot: string, opts: { maxAgeMs?: number } = {}): string[]"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
     "src/application/write_gate.ts#recordSelfWrite",

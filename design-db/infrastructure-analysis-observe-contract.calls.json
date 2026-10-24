@@ -300,6 +300,48 @@
       "to": "src/infrastructure/analysis/observe/ledger_fold.ts#knownSpreadIndex"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "TSDLDecl",
+      "kind": "interface",
+      "signature": "TSDLDecl()"
+    },
+    {
+      "name": "TSDesignDSLDoc",
+      "kind": "interface",
+      "signature": "TSDesignDSLDoc()"
+    },
+    {
+      "name": "DeviationKind",
+      "kind": "type",
+      "signature": "DeviationKind()"
+    },
+    {
+      "name": "TSDeviation",
+      "kind": "interface",
+      "signature": "TSDeviation()"
+    },
+    {
+      "name": "TSDiffReport",
+      "kind": "interface",
+      "signature": "TSDiffReport()"
+    },
+    {
+      "name": "TSProbeObs",
+      "kind": "interface",
+      "signature": "TSProbeObs()"
+    },
+    {
+      "name": "TSComparator",
+      "kind": "class",
+      "signature": "TSComparator()"
+    },
+    {
+      "name": "renderTSDiffReport",
+      "kind": "function",
+      "signature": "renderTSDiffReport(r: TSDiffReport): string"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/observe/run_loop.ts#runLoop"
   ]

@@ -174,6 +174,33 @@
       "to": "src/infrastructure/parse/symbol_params.ts#topLevelIndex"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ParsedParam",
+      "kind": "interface",
+      "signature": "ParsedParam()"
+    },
+    {
+      "name": "OPEN",
+      "kind": "const",
+      "signature": "const OPEN = '([{<'"
+    },
+    {
+      "name": "CLOSE",
+      "kind": "const",
+      "signature": "const CLOSE = ')]}>'"
+    },
+    {
+      "name": "paramsOfNode",
+      "kind": "function",
+      "signature": "paramsOfNode(paramsNode: SyntaxNodeLike, langName: string): ParsedParam[]"
+    },
+    {
+      "name": "paramsOf",
+      "kind": "function",
+      "signature": "paramsOf(decl: SyntaxNodeLike, parametersField = 'parameters', langName = ''): ParsedParam[]"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/intent/consistency.ts#expectedParamsOf",
     "src/infrastructure/parse/kernel.ts#traverseAndExtract",

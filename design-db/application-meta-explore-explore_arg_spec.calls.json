@@ -42,6 +42,28 @@
       "to": "src/application/meta/explore/explore_arg_spec.ts#editDistance"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "EXPLORE_ARGS",
+      "kind": "const",
+      "signature": "const EXPLORE_ARGS = { search: ['min_score', 'project_dir', 'query', 'top_k'],…"
+    },
+    {
+      "name": "EXPLORE_REQUIRED",
+      "kind": "const",
+      "signature": "const EXPLORE_REQUIRED = { run_simulation: ['feature'], reset_simulation: ['featur…"
+    },
+    {
+      "name": "assertExploreArgKeys",
+      "kind": "function",
+      "signature": "assertExploreArgKeys(action: string, args: Record<string, unknown>): void"
+    },
+    {
+      "name": "assertExploreRequired",
+      "kind": "function",
+      "signature": "assertExploreRequired(action: string, args: Record<string, unknown>): void"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/explore_arg_spec.ts#assertExploreArgKeys",
     "src/application/meta/explore/explore_code.ts#exploreCode"

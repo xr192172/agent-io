@@ -266,6 +266,28 @@
       "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.reset"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "EngineState",
+      "kind": "interface",
+      "signature": "EngineState()"
+    },
+    {
+      "name": "NodeUpdate",
+      "kind": "interface",
+      "signature": "NodeUpdate()"
+    },
+    {
+      "name": "SimulationEngine",
+      "kind": "class",
+      "signature": "SimulationEngine()"
+    },
+    {
+      "name": "applyNodeUpdates",
+      "kind": "function",
+      "signature": "applyNodeUpdates(nodes: Node[], updates: NodeUpdate[]): Node[]"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/render/simulation_engine.ts#SimulationEngine.constructor",
     "src/infrastructure/render/simulation_engine.ts#SimulationEngine.executeAction",

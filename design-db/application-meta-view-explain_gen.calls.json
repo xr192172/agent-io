@@ -105,6 +105,38 @@
       "to": "src/infrastructure/storage.ts#getStorageRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "GeneratedNarrations",
+      "kind": "interface",
+      "signature": "GeneratedNarrations()"
+    },
+    {
+      "name": "extractJsonObject",
+      "kind": "function",
+      "signature": "extractJsonObject(text: string): Record<string, unknown> | null"
+    },
+    {
+      "name": "generateModuleNarrations",
+      "kind": "function",
+      "signature": "generateModuleNarrations(moduleLabel: string,\n  background: string,): Promise<GeneratedNarrations>"
+    },
+    {
+      "name": "getExplainGenFile",
+      "kind": "function",
+      "signature": "getExplainGenFile(): string"
+    },
+    {
+      "name": "loadGeneratedNarrations",
+      "kind": "function",
+      "signature": "loadGeneratedNarrations(): Record<string, GeneratedNarrations>"
+    },
+    {
+      "name": "saveGeneratedNarrations",
+      "kind": "function",
+      "signature": "saveGeneratedNarrations(entries: Array<{ title: string; narrations: GeneratedNarrations }>): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
     "src/application/meta/view/derive_mind_map.ts#llmEnrichDescriptions",

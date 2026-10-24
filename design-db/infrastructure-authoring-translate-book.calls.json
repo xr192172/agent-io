@@ -795,6 +795,143 @@
       "to": "src/infrastructure/authoring/translate/book.ts#writeBook"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "BookSymbol",
+      "kind": "interface",
+      "signature": "BookSymbol()"
+    },
+    {
+      "name": "BookShape",
+      "kind": "interface",
+      "signature": "BookShape()"
+    },
+    {
+      "name": "TranslateBook",
+      "kind": "interface",
+      "signature": "TranslateBook()"
+    },
+    {
+      "name": "BookGenOptions",
+      "kind": "interface",
+      "signature": "BookGenOptions()"
+    },
+    {
+      "name": "BookGenStats",
+      "kind": "interface",
+      "signature": "BookGenStats()"
+    },
+    {
+      "name": "NodeRow",
+      "kind": "interface",
+      "signature": "NodeRow()"
+    },
+    {
+      "name": "GO_INITIALISMS",
+      "kind": "const",
+      "signature": "const GO_INITIALISMS = new Set([ 'dsl', 'api', 'url', 'uri', 'http', 'https', 'j…"
+    },
+    {
+      "name": "NOMINAL",
+      "kind": "const",
+      "signature": "const NOMINAL = new Set(['string', 'number', 'boolean', 'any', 'unknown',…"
+    },
+    {
+      "name": "CONTAINER",
+      "kind": "const",
+      "signature": "const CONTAINER = new Set([ 'Promise', 'Array', 'ReadonlyArray', 'Record', …"
+    },
+    {
+      "name": "NULLISH",
+      "kind": "const",
+      "signature": "const NULLISH = new Set(['null', 'undefined', 'void', 'never', 'true', 'f…"
+    },
+    {
+      "name": "AUTO_TAG",
+      "kind": "const",
+      "signature": "const AUTO_TAG = '[auto]'"
+    },
+    {
+      "name": "STICKY_STATES",
+      "kind": "const",
+      "signature": "const STICKY_STATES = new Set(['translated', 'verified', 'diff', 'stubbed'])"
+    },
+    {
+      "name": "stripComments",
+      "kind": "const",
+      "signature": "const stripComments = (s: string): string => s.replace(/\\/\\*[\\s\\S]*?\\*\\//g, ' '…"
+    },
+    {
+      "name": "stripLiterals",
+      "kind": "const",
+      "signature": "const stripLiterals = (s: string): string => s.replace(/'[^']*'|\"[^\"]*\"|`[^`]*`…"
+    },
+    {
+      "name": "ShapeCat",
+      "kind": "interface",
+      "signature": "ShapeCat()"
+    },
+    {
+      "name": "SHAPE_CATS",
+      "kind": "const",
+      "signature": "const SHAPE_CATS = [ { id: 'func', label: '(p: T) => U（函数类型）', to: { shape: …"
+    },
+    {
+      "name": "goName",
+      "kind": "function",
+      "signature": "goName(tsName: string): string"
+    },
+    {
+      "name": "goPath",
+      "kind": "function",
+      "signature": "goPath(filePath: string, srcPrefix = 'src/', targetPrefix = 'internal/'): string"
+    },
+    {
+      "name": "typeExpressions",
+      "kind": "function",
+      "signature": "typeExpressions(row: NodeRow): string[]"
+    },
+    {
+      "name": "unmappedTypes",
+      "kind": "function",
+      "signature": "unmappedTypes(row: NodeRow,\n  declared: ReadonlySet<string>,\n  covered?: ReadonlySet<string>,): string[]"
+    },
+    {
+      "name": "termCoverage",
+      "kind": "function",
+      "signature": "termCoverage(types: ReadonlyArray<Record<string, unknown>>): TermTable"
+    },
+    {
+      "name": "goSymbolName",
+      "kind": "function",
+      "signature": "goSymbolName(row: NodeRow): string"
+    },
+    {
+      "name": "goInternalName",
+      "kind": "function",
+      "signature": "goInternalName(row: NodeRow): string"
+    },
+    {
+      "name": "generateBook",
+      "kind": "function",
+      "signature": "generateBook(book: TranslateBook, opts: BookGenOptions): { book: TranslateBook; stats: BookGenStats }"
+    },
+    {
+      "name": "serializeBook",
+      "kind": "function",
+      "signature": "serializeBook(book: TranslateBook): string"
+    },
+    {
+      "name": "writeBook",
+      "kind": "function",
+      "signature": "writeBook(bookPath: string, book: TranslateBook): void"
+    },
+    {
+      "name": "rebuildBook",
+      "kind": "function",
+      "signature": "rebuildBook(opts: BookGenOptions): BookRebuildResult"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/translate/book.ts#classifyShape",
     "src/infrastructure/authoring/translate/book.ts#generateBook",

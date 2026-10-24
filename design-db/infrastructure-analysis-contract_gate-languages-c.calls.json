@@ -23,5 +23,17 @@
       "kind": "relative"
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "C_RESERVED",
+      "kind": "const",
+      "signature": "const C_RESERVED = new Set([ 'if', 'for', 'while', 'switch', 'return', 'brea…"
+    },
+    {
+      "name": "cgCPackage",
+      "kind": "const",
+      "signature": "const cgCPackage = { lang: 'c', exts: ['.c', '.h'], reserved: C_RESERVED, co…"
+    }
+  ]
 }

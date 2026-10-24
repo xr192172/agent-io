@@ -202,6 +202,38 @@
       "to": "src/infrastructure/authoring/translate/const_eval.ts#toBig"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ConstValue",
+      "kind": "type",
+      "signature": "ConstValue()"
+    },
+    {
+      "name": "ConstLookup",
+      "kind": "type",
+      "signature": "ConstLookup()"
+    },
+    {
+      "name": "OP",
+      "kind": "const",
+      "signature": "const OP = new Set(['+', '-', '*', '/', '%', '<<', '>>', '&', '|', '…"
+    },
+    {
+      "name": "UNARY",
+      "kind": "const",
+      "signature": "const UNARY = new Set(['+', '-', '^', '!'])"
+    },
+    {
+      "name": "evalConstExpr",
+      "kind": "function",
+      "signature": "evalConstExpr(node: SyntaxNodeLike, lookup: ConstLookup): ConstValue | null"
+    },
+    {
+      "name": "constToTsLiteral",
+      "kind": "function",
+      "signature": "constToTsLiteral(v: ConstValue): string"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/translate/const_eval.ts#applyBinary",
     "src/infrastructure/authoring/translate/const_eval.ts#evalConstExpr",

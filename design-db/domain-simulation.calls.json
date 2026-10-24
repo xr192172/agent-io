@@ -332,5 +332,42 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "SimulationRule",
+      "kind": "interface",
+      "signature": "SimulationRule()"
+    },
+    {
+      "name": "SimulationDepEdge",
+      "kind": "interface",
+      "signature": "SimulationDepEdge()"
+    },
+    {
+      "name": "SimulationAction",
+      "kind": "interface",
+      "signature": "SimulationAction()"
+    },
+    {
+      "name": "SimulationStateDef",
+      "kind": "interface",
+      "signature": "SimulationStateDef()"
+    },
+    {
+      "name": "SimulationNodeMapping",
+      "kind": "interface",
+      "signature": "SimulationNodeMapping()"
+    },
+    {
+      "name": "Simulation",
+      "kind": "interface",
+      "signature": "Simulation()"
+    },
+    {
+      "name": "SimulationTrace",
+      "kind": "interface",
+      "signature": "SimulationTrace()"
+    }
+  ]
 }

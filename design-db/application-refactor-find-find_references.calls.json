@@ -482,6 +482,53 @@
       "to": "src/infrastructure/text/refs_text.ts#scanTextMentions"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "TEXT_MENTION_PER_FILE",
+      "kind": "const",
+      "signature": "const TEXT_MENTION_PER_FILE = 3"
+    },
+    {
+      "name": "TEXT_SCAN_MAX_FILES",
+      "kind": "const",
+      "signature": "const TEXT_SCAN_MAX_FILES = 3000"
+    },
+    {
+      "name": "CandidateScan",
+      "kind": "interface",
+      "signature": "CandidateScan()"
+    },
+    {
+      "name": "CandidateSet",
+      "kind": "interface",
+      "signature": "CandidateSet()"
+    },
+    {
+      "name": "ReferenceSite",
+      "kind": "interface",
+      "signature": "ReferenceSite()"
+    },
+    {
+      "name": "ReferenceFile",
+      "kind": "interface",
+      "signature": "ReferenceFile()"
+    },
+    {
+      "name": "FindReferencesResult",
+      "kind": "interface",
+      "signature": "FindReferencesResult()"
+    },
+    {
+      "name": "FIELD_KIND_LABEL",
+      "kind": "const",
+      "signature": "const FIELD_KIND_LABEL = { 'field-read': '读', 'field-key': '构', 'field-destructure…"
+    },
+    {
+      "name": "findReferences",
+      "kind": "function",
+      "signature": "findReferences(input: Parameters<typeof findReferencesCore>[0]): Promise<TouchedProduct<FindReferencesResult>>"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/contract_page.ts#contractPageCore",
     "src/application/refactor/find/find_references.ts#findReferences",

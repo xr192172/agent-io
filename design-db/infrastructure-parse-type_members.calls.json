@@ -188,6 +188,68 @@
       "to": "src/infrastructure/parse/type_members.ts#typeMembersOf"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "TYPE_DECL_NODES",
+      "kind": "const",
+      "signature": "const TYPE_DECL_NODES = new Set([ 'interface_declaration', 'type_alias_declaratio…"
+    },
+    {
+      "name": "BODY_NODES",
+      "kind": "const",
+      "signature": "const BODY_NODES = new Set([ 'interface_body', 'object_type', 'class_body', …"
+    },
+    {
+      "name": "MEMBER_NODES",
+      "kind": "const",
+      "signature": "const MEMBER_NODES = new Set([ 'property_signature', 'method_signature', 'publ…"
+    },
+    {
+      "name": "ParsedTypeMember",
+      "kind": "interface",
+      "signature": "ParsedTypeMember()"
+    },
+    {
+      "name": "ParsedTypeDecl",
+      "kind": "interface",
+      "signature": "ParsedTypeDecl()"
+    },
+    {
+      "name": "METHOD_NODES",
+      "kind": "const",
+      "signature": "const METHOD_NODES = new Set([ 'method_signature', 'method_definition', 'abstr…"
+    },
+    {
+      "name": "SignatureDeclResult",
+      "kind": "type",
+      "signature": "SignatureDeclResult()"
+    },
+    {
+      "name": "typeMembersOf",
+      "kind": "function",
+      "signature": "typeMembersOf(decl: SyntaxNodeLike): ParsedTypeMember[]"
+    },
+    {
+      "name": "memberNamesOf",
+      "kind": "function",
+      "signature": "memberNamesOf(decl: SyntaxNodeLike): string[]"
+    },
+    {
+      "name": "findTypeDeclByName",
+      "kind": "function",
+      "signature": "findTypeDeclByName(root: SyntaxNodeLike, name: string): SyntaxNodeLike | null"
+    },
+    {
+      "name": "typeDeclFromSignature",
+      "kind": "function",
+      "signature": "typeDeclFromSignature(signature: string,\n  filePath: string,): Promise<SignatureDeclResult>"
+    },
+    {
+      "name": "normalizeMemberType",
+      "kind": "function",
+      "signature": "normalizeMemberType(t: string | undefined): string | undefined"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/intent/consistency.ts#checkConsistencyReport",
     "src/application/design/intent/consistency.ts#compareTypeContractMembers",

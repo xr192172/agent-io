@@ -5,5 +5,62 @@
   "path": "src/application/observe/reconcile/approval.ts",
   "symbols": [],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "SubmitApprovalInput",
+      "kind": "interface",
+      "signature": "SubmitApprovalInput()"
+    },
+    {
+      "name": "SubmitApprovalResult",
+      "kind": "interface",
+      "signature": "SubmitApprovalResult()"
+    },
+    {
+      "name": "APPROVAL_DECISIONS",
+      "kind": "const",
+      "signature": "const APPROVAL_DECISIONS = ['approve', 'reject', 'request_revision'] as const"
+    },
+    {
+      "name": "ApprovalDecision",
+      "kind": "type",
+      "signature": "ApprovalDecision()"
+    },
+    {
+      "name": "DECISION_EFFECT",
+      "kind": "const",
+      "signature": "const DECISION_EFFECT = { approve: { action: 'approve', status: 'approved', label…"
+    },
+    {
+      "name": "ReviewAnnotationInput",
+      "kind": "interface",
+      "signature": "ReviewAnnotationInput()"
+    },
+    {
+      "name": "ReviewAnnotationResult",
+      "kind": "interface",
+      "signature": "ReviewAnnotationResult()"
+    },
+    {
+      "name": "ListApprovalsInput",
+      "kind": "interface",
+      "signature": "ListApprovalsInput()"
+    },
+    {
+      "name": "ListApprovalsResult",
+      "kind": "interface",
+      "signature": "ListApprovalsResult()"
+    },
+    {
+      "name": "GetApprovalHistoryInput",
+      "kind": "interface",
+      "signature": "GetApprovalHistoryInput()"
+    },
+    {
+      "name": "GetApprovalHistoryResult",
+      "kind": "interface",
+      "signature": "GetApprovalHistoryResult()"
+    }
+  ]
 }

@@ -817,6 +817,213 @@
       "to": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "PY",
+      "kind": "const",
+      "signature": "const PY = process.platform === 'win32' ? 'python' : 'python3'"
+    },
+    {
+      "name": "NODE_EXTS",
+      "kind": "const",
+      "signature": "const NODE_EXTS = NODE_RUNNABLE_EXTS"
+    },
+    {
+      "name": "GO_EXTS",
+      "kind": "const",
+      "signature": "const GO_EXTS = ['.go']"
+    },
+    {
+      "name": "JAVA_EXTS",
+      "kind": "const",
+      "signature": "const JAVA_EXTS = ['.java']"
+    },
+    {
+      "name": "CS_EXTS",
+      "kind": "const",
+      "signature": "const CS_EXTS = ['.cs']"
+    },
+    {
+      "name": "C_EXTS",
+      "kind": "const",
+      "signature": "const C_EXTS = ['.c', '.h']"
+    },
+    {
+      "name": "BehaviorLang",
+      "kind": "type",
+      "signature": "BehaviorLang()"
+    },
+    {
+      "name": "BehaviorVerdict",
+      "kind": "type",
+      "signature": "BehaviorVerdict()"
+    },
+    {
+      "name": "BehaviorCase",
+      "kind": "interface",
+      "signature": "BehaviorCase()"
+    },
+    {
+      "name": "BehaviorSpec",
+      "kind": "interface",
+      "signature": "BehaviorSpec()"
+    },
+    {
+      "name": "BehaviorSampleResult",
+      "kind": "interface",
+      "signature": "BehaviorSampleResult()"
+    },
+    {
+      "name": "BehaviorRun",
+      "kind": "interface",
+      "signature": "BehaviorRun()"
+    },
+    {
+      "name": "BehaviorBaseline",
+      "kind": "interface",
+      "signature": "BehaviorBaseline()"
+    },
+    {
+      "name": "CaseDiff",
+      "kind": "interface",
+      "signature": "CaseDiff()"
+    },
+    {
+      "name": "BehaviorDiff",
+      "kind": "interface",
+      "signature": "BehaviorDiff()"
+    },
+    {
+      "name": "TOOLCHAIN_PROBE",
+      "kind": "const",
+      "signature": "const TOOLCHAIN_PROBE = { go: ['version'], // go version go1.22.0 linux/amd64 jav…"
+    },
+    {
+      "name": "TOOLCHAIN_INSTALL",
+      "kind": "const",
+      "signature": "const TOOLCHAIN_INSTALL = { go: 'https://go.dev/dl/ （或 `mise use go@latest`；已有项目请尊重…"
+    },
+    {
+      "name": "VerifyResult",
+      "kind": "interface",
+      "signature": "VerifyResult()"
+    },
+    {
+      "name": "BehaviorLangPack",
+      "kind": "interface",
+      "signature": "BehaviorLangPack()"
+    },
+    {
+      "name": "BuildCtx",
+      "kind": "interface",
+      "signature": "BuildCtx()"
+    },
+    {
+      "name": "BuiltPlan",
+      "kind": "interface",
+      "signature": "BuiltPlan()"
+    },
+    {
+      "name": "pythonPack",
+      "kind": "const",
+      "signature": "const pythonPack = { lang: 'python', exts: ['.py'], toolchain: () => toolcha…"
+    },
+    {
+      "name": "nodePack",
+      "kind": "const",
+      "signature": "const nodePack = { lang: 'node', exts: [...NODE_EXTS], toolchain: () => to…"
+    },
+    {
+      "name": "goPack",
+      "kind": "const",
+      "signature": "const goPack = { lang: 'go', exts: [...GO_EXTS], toolchain: () => toolch…"
+    },
+    {
+      "name": "javaPack",
+      "kind": "const",
+      "signature": "const javaPack = { lang: 'java', exts: [...JAVA_EXTS], toolchain: () => to…"
+    },
+    {
+      "name": "csharpPack",
+      "kind": "const",
+      "signature": "const csharpPack = { lang: 'csharp', exts: [...CS_EXTS], toolchain: () => to…"
+    },
+    {
+      "name": "cPack",
+      "kind": "const",
+      "signature": "const cPack = { lang: 'c', exts: [...C_EXTS], // C 认 cc 或 gcc（任一可用即可）——…"
+    },
+    {
+      "name": "BEHAVIOR_PACKS",
+      "kind": "const",
+      "signature": "const BEHAVIOR_PACKS = [pythonPack, nodePack, goPack, javaPack, csharpPack, cPack]"
+    },
+    {
+      "name": "harnessSource",
+      "kind": "function",
+      "signature": "harnessSource(spec: BehaviorSpec): string"
+    },
+    {
+      "name": "transpileToCjs",
+      "kind": "function",
+      "signature": "transpileToCjs(abs: string, src: string): { js: string } | { error: string }"
+    },
+    {
+      "name": "nodeRunnerSource",
+      "kind": "function",
+      "signature": "nodeRunnerSource(spec: BehaviorSpec): string"
+    },
+    {
+      "name": "missingToolchainHint",
+      "kind": "function",
+      "signature": "missingToolchainHint(lang: string, reason: string, install: string): string"
+    },
+    {
+      "name": "cParamTypes",
+      "kind": "function",
+      "signature": "cParamTypes(source: string, funcName: string): string[]"
+    },
+    {
+      "name": "cArgLiteral",
+      "kind": "function",
+      "signature": "cArgLiteral(v: unknown, type: string): string"
+    },
+    {
+      "name": "cHarnessSource",
+      "kind": "function",
+      "signature": "cHarnessSource(spec: BehaviorSpec, paramTypes: string[]): string"
+    },
+    {
+      "name": "baselinePathFor",
+      "kind": "function",
+      "signature": "baselinePathFor(project_dir: string, file: string, func: string): string"
+    },
+    {
+      "name": "captureBaseline",
+      "kind": "function",
+      "signature": "captureBaseline(spec: BehaviorSpec, baselinePath?: string): BehaviorBaseline"
+    },
+    {
+      "name": "verifyBaseline",
+      "kind": "function",
+      "signature": "verifyBaseline(spec: BehaviorSpec, baselinePath?: string): VerifyResult"
+    },
+    {
+      "name": "diffRuns",
+      "kind": "function",
+      "signature": "diffRuns(before: BehaviorRun, after: BehaviorRun): BehaviorDiff"
+    },
+    {
+      "name": "langOfFile",
+      "kind": "function",
+      "signature": "langOfFile(file: string): BehaviorLang"
+    },
+    {
+      "name": "runHarness",
+      "kind": "function",
+      "signature": "runHarness(spec: BehaviorSpec): BehaviorRun"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/behavior/index.ts#cHarnessSource",
     "src/infrastructure/authoring/behavior/index.ts#captureBaseline",

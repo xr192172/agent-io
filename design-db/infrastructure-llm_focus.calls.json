@@ -375,6 +375,93 @@
       "to": "src/infrastructure/storage.ts#getDataHome"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "LlmConfig",
+      "kind": "interface",
+      "signature": "LlmConfig()"
+    },
+    {
+      "name": "AgentConfig",
+      "kind": "interface",
+      "signature": "AgentConfig()"
+    },
+    {
+      "name": "ExplainConfig",
+      "kind": "interface",
+      "signature": "ExplainConfig()"
+    },
+    {
+      "name": "DEFAULT_DS_BASE_URL",
+      "kind": "const",
+      "signature": "const DEFAULT_DS_BASE_URL = 'https://api.deepseek.com/v1'"
+    },
+    {
+      "name": "DEFAULT_DS_MODEL",
+      "kind": "const",
+      "signature": "const DEFAULT_DS_MODEL = 'deepseek-v4-flash'"
+    },
+    {
+      "name": "ChatMessage",
+      "kind": "interface",
+      "signature": "ChatMessage()"
+    },
+    {
+      "name": "FocusNode",
+      "kind": "interface",
+      "signature": "FocusNode()"
+    },
+    {
+      "name": "ChainNodeInfo",
+      "kind": "interface",
+      "signature": "ChainNodeInfo()"
+    },
+    {
+      "name": "FocusResult",
+      "kind": "interface",
+      "signature": "FocusResult()"
+    },
+    {
+      "name": "getConfigHome",
+      "kind": "function",
+      "signature": "getConfigHome(): string"
+    },
+    {
+      "name": "configFilePath",
+      "kind": "function",
+      "signature": "configFilePath(): string"
+    },
+    {
+      "name": "configFileReadPath",
+      "kind": "function",
+      "signature": "configFileReadPath(): string"
+    },
+    {
+      "name": "loadAgentConfig",
+      "kind": "function",
+      "signature": "loadAgentConfig(): AgentConfig | null"
+    },
+    {
+      "name": "loadLlmConfig",
+      "kind": "function",
+      "signature": "loadLlmConfig(): LlmConfig | null"
+    },
+    {
+      "name": "loadExplainConfig",
+      "kind": "function",
+      "signature": "loadExplainConfig(): ExplainConfig | null"
+    },
+    {
+      "name": "callChat",
+      "kind": "function",
+      "signature": "callChat(cfg: LlmConfig,\n  messages: ChatMessage[],\n  temperature = 0.2,\n  /** 请求超时（默认 90s；慢端点上大 prompt 曾出现 5 分钟悬挂，必须有保护） */\n  timeoutMs = 90_000,): Promise<string>"
+    },
+    {
+      "name": "pickKeyNodes",
+      "kind": "function",
+      "signature": "pickKeyNodes(cfg: LlmConfig | null,\n  chain: ChainNodeInfo[],\n  opts?: { max?: number; userFocus?: string },): Promise<FocusResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/derive/opl.ts#llmDeclare",
     "src/application/design/derive/opl.ts#llmImplement",

@@ -13,6 +13,13 @@
   ],
   "imports": [],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "extractFuncName",
+      "kind": "function",
+      "signature": "extractFuncName(sig: string): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/intent/consistency.ts#checkConsistencyReport",
     "src/application/design/intent/consistency.ts#compareSignatures"

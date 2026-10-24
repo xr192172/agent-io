@@ -46,5 +46,32 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "CSHARP_RULES",
+      "kind": "const",
+      "signature": "const CSHARP_RULES = { ext: '.cs', label: 'C#', typeNodes: ['class_declaration…"
+    },
+    {
+      "name": "analyzeCSharpSource",
+      "kind": "const",
+      "signature": "const analyzeCSharpSource = makeNamespaceAnalyzer(CSHARP_RULES)"
+    },
+    {
+      "name": "CSHARP",
+      "kind": "const",
+      "signature": "const CSHARP = { ...CSHARP_RULES, analyze: analyzeCSharpSource }"
+    },
+    {
+      "name": "renameCSharpSymbol",
+      "kind": "const",
+      "signature": "const renameCSharpSymbol = (args: LangRenameArgs): Promise<RenameSymbolResult> => re…"
+    },
+    {
+      "name": "csPackage",
+      "kind": "const",
+      "signature": "const csPackage = { exts: ['.cs'], rename: (a) => renameCSharpSymbol(a), }"
+    }
+  ]
 }

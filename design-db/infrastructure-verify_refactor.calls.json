@@ -178,6 +178,48 @@
     }
   ],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "VerifyCommand",
+      "kind": "interface",
+      "signature": "VerifyCommand()"
+    },
+    {
+      "name": "VerificationOutcome",
+      "kind": "interface",
+      "signature": "VerificationOutcome()"
+    },
+    {
+      "name": "VerifyOutcomeKind",
+      "kind": "type",
+      "signature": "VerifyOutcomeKind()"
+    },
+    {
+      "name": "ApplyWithVerifyResult",
+      "kind": "interface",
+      "signature": "ApplyWithVerifyResult()"
+    },
+    {
+      "name": "ApplyWithVerifyOpts",
+      "kind": "interface",
+      "signature": "ApplyWithVerifyOpts()"
+    },
+    {
+      "name": "runVerification",
+      "kind": "function",
+      "signature": "runVerification(opts: { cwd: string; commands: VerifyCommand[] }): VerificationOutcome"
+    },
+    {
+      "name": "defaultVerifyCommands",
+      "kind": "function",
+      "signature": "defaultVerifyCommands(cwd: string): VerifyCommand[]"
+    },
+    {
+      "name": "applyWithVerify",
+      "kind": "function",
+      "signature": "applyWithVerify(opts: ApplyWithVerifyOpts): ApplyWithVerifyResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
     "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",

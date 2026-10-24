@@ -74,6 +74,33 @@
       "to": "src/infrastructure/text/arg_suggest.ts#suggestNames"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "SuggestOptions",
+      "kind": "interface",
+      "signature": "SuggestOptions()"
+    },
+    {
+      "name": "levenshtein",
+      "kind": "function",
+      "signature": "levenshtein(a: string, b: string): number"
+    },
+    {
+      "name": "suggestNames",
+      "kind": "function",
+      "signature": "suggestNames(input: string, candidates: readonly string[], opts: SuggestOptions = {}): string[]"
+    },
+    {
+      "name": "unknownArgHints",
+      "kind": "function",
+      "signature": "unknownArgHints(args: Record<string, unknown>,\n  known: readonly string[],\n  opts: SuggestOptions = {},): string[]"
+    },
+    {
+      "name": "renderArgHints",
+      "kind": "function",
+      "signature": "renderArgHints(hints: readonly string[], known: readonly string[]): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/explore_code.ts#factsFieldsOf",
     "src/infrastructure/text/arg_suggest.ts#suggestNames",

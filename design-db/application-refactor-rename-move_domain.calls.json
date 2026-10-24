@@ -204,6 +204,28 @@
       "to": "src/infrastructure/parse/source_exts.ts#isSourceExt"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "MoveDomainInput",
+      "kind": "interface",
+      "signature": "MoveDomainInput()"
+    },
+    {
+      "name": "MoveDomainResult",
+      "kind": "interface",
+      "signature": "MoveDomainResult()"
+    },
+    {
+      "name": "MoveDomainOutput",
+      "kind": "interface",
+      "signature": "MoveDomainOutput()"
+    },
+    {
+      "name": "moveDomain",
+      "kind": "function",
+      "signature": "moveDomain(input: MoveDomainInput): Promise<MoveDomainOutput>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/rename/move_domain.ts#moveDomain"
   ]

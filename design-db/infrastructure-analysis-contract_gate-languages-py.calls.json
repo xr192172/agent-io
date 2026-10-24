@@ -29,5 +29,22 @@
       "kind": "relative"
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "PY_RESERVED",
+      "kind": "const",
+      "signature": "const PY_RESERVED = new Set([ 'if', 'elif', 'else', 'for', 'while', 'def', 'c…"
+    },
+    {
+      "name": "PY_GLOBALS",
+      "kind": "const",
+      "signature": "const PY_GLOBALS = new Set([ 'str', 'int', 'float', 'bool', 'list', 'dict', …"
+    },
+    {
+      "name": "cgPyPackage",
+      "kind": "const",
+      "signature": "const cgPyPackage = { lang: 'py', exts: ['.py'], reserved: PY_RESERVED, globa…"
+    }
+  ]
 }

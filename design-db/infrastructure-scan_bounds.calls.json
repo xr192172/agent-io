@@ -77,6 +77,23 @@
   ],
   "imports": [],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "ScanSkip",
+      "kind": "interface",
+      "signature": "ScanSkip()"
+    },
+    {
+      "name": "ScanBounds",
+      "kind": "interface",
+      "signature": "ScanBounds()"
+    },
+    {
+      "name": "boundsSkipFromExcluded",
+      "kind": "function",
+      "signature": "boundsSkipFromExcluded(excluded: ReadonlyArray<{ ext: string; count: number; why?: string }>,\n  why = '非代码语言扩展名：不进调用 / 依赖图（口径收紧的可见性；文件真实存在，只是不算源码）',): ScanSkip[]"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/health/index.ts#analyzeHealth",
     "src/infrastructure/analysis/impact/index.ts#analyzeHubs",

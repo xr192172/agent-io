@@ -478,6 +478,63 @@
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DeriveChainInput",
+      "kind": "interface",
+      "signature": "DeriveChainInput()"
+    },
+    {
+      "name": "DeriveChainResult",
+      "kind": "interface",
+      "signature": "DeriveChainResult()"
+    },
+    {
+      "name": "Lang",
+      "kind": "type",
+      "signature": "Lang()"
+    },
+    {
+      "name": "ANY",
+      "kind": "const",
+      "signature": "const ANY = { type: 'object', label: '任意' }"
+    },
+    {
+      "name": "Param",
+      "kind": "interface",
+      "signature": "Param()"
+    },
+    {
+      "name": "CallEdge",
+      "kind": "interface",
+      "signature": "CallEdge()"
+    },
+    {
+      "name": "CIRCLED",
+      "kind": "const",
+      "signature": "const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫']"
+    },
+    {
+      "name": "buildCallGraph",
+      "kind": "function",
+      "signature": "buildCallGraph(symbols: ParsedSymbol[],\n  calls: ParsedCall[],): Map<string, CallEdge[]>"
+    },
+    {
+      "name": "pickEntry",
+      "kind": "function",
+      "signature": "pickEntry(symbols: ParsedSymbol[], graph: Map<string, CallEdge[]>): ParsedSymbol"
+    },
+    {
+      "name": "walkChain",
+      "kind": "function",
+      "signature": "walkChain(entry: ParsedSymbol,\n  symbols: ParsedSymbol[],\n  graph: Map<string, CallEdge[]>,): ParsedSymbol[]"
+    },
+    {
+      "name": "deriveDetailChain",
+      "kind": "function",
+      "signature": "deriveDetailChain(input: DeriveChainInput): Promise<DeriveChainResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/derive/derive_chain.ts#deriveDetailChain",
     "src/application/design/derive/derive_chain.ts#mapGoType",

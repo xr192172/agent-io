@@ -377,6 +377,63 @@
       "to": "src/infrastructure/storage.ts#getDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FuncCallRef",
+      "kind": "interface",
+      "signature": "FuncCallRef()"
+    },
+    {
+      "name": "FunctionOutlineFn",
+      "kind": "interface",
+      "signature": "FunctionOutlineFn()"
+    },
+    {
+      "name": "FunctionOutline",
+      "kind": "interface",
+      "signature": "FunctionOutline()"
+    },
+    {
+      "name": "FeatureIndexDsl",
+      "kind": "interface",
+      "signature": "FeatureIndexDsl()"
+    },
+    {
+      "name": "FeatureIndexEntry",
+      "kind": "interface",
+      "signature": "FeatureIndexEntry()"
+    },
+    {
+      "name": "queryFunctionOutline",
+      "kind": "function",
+      "signature": "queryFunctionOutline(db: Database, opts: { dir?: string } = {}): FunctionOutline"
+    },
+    {
+      "name": "listFunctionDirs",
+      "kind": "function",
+      "signature": "listFunctionDirs(feature?: string, sourceRoot?: string): { ok: boolean; dirs: Array<{ dir: string; files: number; fns: number }>; note?: string }"
+    },
+    {
+      "name": "buildFunctionOutline",
+      "kind": "function",
+      "signature": "buildFunctionOutline(feature?: string, sourceRoot?: string, opts?: { dir?: string }): { ok: boolean; outline: FunctionOutline; note?: string }"
+    },
+    {
+      "name": "buildFeatureIndex",
+      "kind": "function",
+      "signature": "buildFeatureIndex(dsl: FeatureIndexDsl | null | undefined): Map<string, FeatureIndexEntry>"
+    },
+    {
+      "name": "attachFunctionFeatures",
+      "kind": "function",
+      "signature": "attachFunctionFeatures(fns: FunctionOutlineFn[],\n  dsl: FeatureIndexDsl | null | undefined,): FunctionOutlineFn[]"
+    },
+    {
+      "name": "attachDocs",
+      "kind": "function",
+      "signature": "attachDocs(fns: FunctionOutlineFn[], sourceRoot: string): void"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/query_feature.ts#queryFeature",
     "src/application/observe/capture/feature_line.ts#getFeatureLine",

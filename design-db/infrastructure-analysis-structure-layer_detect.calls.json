@@ -218,6 +218,68 @@
       "to": "src/infrastructure/analysis/structure/layer_detect.ts#pyRelToPath"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "LayerDef",
+      "kind": "interface",
+      "signature": "LayerDef()"
+    },
+    {
+      "name": "LAYER_DEFS",
+      "kind": "const",
+      "signature": "const LAYER_DEFS = [ { id: 'api', name: 'API 层', desc: 'HTTP 端点、路由处理器与接口控制',…"
+    },
+    {
+      "name": "CORE_DEF",
+      "kind": "const",
+      "signature": "const CORE_DEF = { id: 'core', name: '核心层', desc: '核心/未归类文件', color: '#657…"
+    },
+    {
+      "name": "DEFAULT_ALLOWED_DEPS",
+      "kind": "const",
+      "signature": "const DEFAULT_ALLOWED_DEPS = { api: ['api', 'service', 'middleware', 'data', 'utility'…"
+    },
+    {
+      "name": "defOf",
+      "kind": "const",
+      "signature": "const defOf = (id: string, layers: LayerDef[] = LAYER_DEFS): LayerDef =…"
+    },
+    {
+      "name": "ImportEdge",
+      "kind": "interface",
+      "signature": "ImportEdge()"
+    },
+    {
+      "name": "LayerViolation",
+      "kind": "interface",
+      "signature": "LayerViolation()"
+    },
+    {
+      "name": "DetectLayerViolationsInput",
+      "kind": "interface",
+      "signature": "DetectLayerViolationsInput()"
+    },
+    {
+      "name": "matchLayer",
+      "kind": "function",
+      "signature": "matchLayer(rel: string, layers: LayerDef[] = LAYER_DEFS): string"
+    },
+    {
+      "name": "detectArchLayers",
+      "kind": "function",
+      "signature": "detectArchLayers(dsl: DesignDSL, layers?: LayerDef[]): DesignDSL"
+    },
+    {
+      "name": "parseImportsLight",
+      "kind": "function",
+      "signature": "parseImportsLight(src: string): string[]"
+    },
+    {
+      "name": "detectLayerViolations",
+      "kind": "function",
+      "signature": "detectLayerViolations(input: DetectLayerViolationsInput): LayerViolation[]"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
     "src/infrastructure/analysis/structure/arch_layer.ts#scanImportEdges",

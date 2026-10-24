@@ -545,6 +545,113 @@
       "to": "src/infrastructure/text/refs_text.ts#importLookupKeys"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "IndexState",
+      "kind": "type",
+      "signature": "IndexState()"
+    },
+    {
+      "name": "FreshnessReport",
+      "kind": "interface",
+      "signature": "FreshnessReport()"
+    },
+    {
+      "name": "MAX_ADDS_PER_REFRESH",
+      "kind": "const",
+      "signature": "const MAX_ADDS_PER_REFRESH = 100"
+    },
+    {
+      "name": "MAX_BOOTSTRAP_FILES",
+      "kind": "const",
+      "signature": "const MAX_BOOTSTRAP_FILES = 2000"
+    },
+    {
+      "name": "MAX_TEXT_IMPORTERS_PER_SEED",
+      "kind": "const",
+      "signature": "const MAX_TEXT_IMPORTERS_PER_SEED = 20"
+    },
+    {
+      "name": "FreshnessOptions",
+      "kind": "interface",
+      "signature": "FreshnessOptions()"
+    },
+    {
+      "name": "ProjectIndex",
+      "kind": "interface",
+      "signature": "ProjectIndex()"
+    },
+    {
+      "name": "StaleIndexProbe",
+      "kind": "interface",
+      "signature": "StaleIndexProbe()"
+    },
+    {
+      "name": "TileOptions",
+      "kind": "interface",
+      "signature": "TileOptions()"
+    },
+    {
+      "name": "TileReport",
+      "kind": "interface",
+      "signature": "TileReport()"
+    },
+    {
+      "name": "fileOfNode",
+      "kind": "const",
+      "signature": "const fileOfNode = (id: string): string => id.split('#')[0]"
+    },
+    {
+      "name": "hasChanges",
+      "kind": "function",
+      "signature": "hasChanges(r: FreshnessReport | null): boolean"
+    },
+    {
+      "name": "indexedRelativeSet",
+      "kind": "function",
+      "signature": "indexedRelativeSet(db: Database): Set<string>"
+    },
+    {
+      "name": "isIndexedRelative",
+      "kind": "function",
+      "signature": "isIndexedRelative(db: Database, rel: string): boolean"
+    },
+    {
+      "name": "detectStaleIndex",
+      "kind": "function",
+      "signature": "detectStaleIndex(db: Database,\n  projectRoot: string,\n  opts: { maxScan?: number; sample?: number } = {},): StaleIndexProbe"
+    },
+    {
+      "name": "ensureIndexAround",
+      "kind": "function",
+      "signature": "ensureIndexAround(db: Database,\n  projectRoot: string,\n  seeds: readonly string[],\n  opts: TileOptions = {},): Promise<TileReport>"
+    },
+    {
+      "name": "ensureIndexAroundSeed",
+      "kind": "function",
+      "signature": "ensureIndexAroundSeed(projectRoot: string,\n  seeds: readonly string[],\n  opts: TileOptions = {},): Promise<TileReport & { db: Database }>"
+    },
+    {
+      "name": "ensureProjectIndex",
+      "kind": "function",
+      "signature": "ensureProjectIndex(projectRoot: string,\n  opts: FreshnessOptions = {},): Promise<ProjectIndex>"
+    },
+    {
+      "name": "indexCovers",
+      "kind": "function",
+      "signature": "indexCovers(coveredRel: ReadonlySet<string>, diskRel: readonly string[]): boolean"
+    },
+    {
+      "name": "indexCoversDisk",
+      "kind": "function",
+      "signature": "indexCoversDisk(db: Database, root: string): boolean"
+    },
+    {
+      "name": "ensureFreshIndex",
+      "kind": "function",
+      "signature": "ensureFreshIndex(db: Database,\n  projectRoot: string,\n  opts: FreshnessOptions = {},): Promise<FreshnessReport>"
+    }
+  ],
   "reverse_calls": [
     "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
     "src/application/meta/explore/contract_page.ts#contractPageCore",

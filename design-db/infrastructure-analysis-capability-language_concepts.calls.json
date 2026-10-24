@@ -243,6 +243,53 @@
       "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ConceptDef",
+      "kind": "interface",
+      "signature": "ConceptDef()"
+    },
+    {
+      "name": "CONCEPTS",
+      "kind": "const",
+      "signature": "const CONCEPTS = [ { id: 'generic', name: '泛型', explanation: '用类型参数（如 <T>）…"
+    },
+    {
+      "name": "CONCEPT_BY_ID",
+      "kind": "const",
+      "signature": "const CONCEPT_BY_ID = new Map(CONCEPTS.map((c) => [c.id, c]))"
+    },
+    {
+      "name": "SymbolInput",
+      "kind": "interface",
+      "signature": "SymbolInput()"
+    },
+    {
+      "name": "ConceptHit",
+      "kind": "interface",
+      "signature": "ConceptHit()"
+    },
+    {
+      "name": "LanguageConceptsInput",
+      "kind": "interface",
+      "signature": "LanguageConceptsInput()"
+    },
+    {
+      "name": "LanguageConceptsResult",
+      "kind": "interface",
+      "signature": "LanguageConceptsResult()"
+    },
+    {
+      "name": "detectConcepts",
+      "kind": "function",
+      "signature": "detectConcepts(sym: SymbolInput): string[]"
+    },
+    {
+      "name": "languageConcepts",
+      "kind": "function",
+      "signature": "languageConcepts(input: LanguageConceptsInput): LanguageConceptsResult"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/capability/language_concepts.ts#languageConcepts",
     "src/presentation/http/serve.ts#handleApiLanguageConcepts"

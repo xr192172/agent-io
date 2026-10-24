@@ -62,6 +62,13 @@
       "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "goPackage",
+      "kind": "const",
+      "signature": "const goPackage = { exts: ['.go'], collect: (a) => goAliasEdits(a.src, a.ex…"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/package_migration/languages/go.ts#goAliasEdits"
   ]

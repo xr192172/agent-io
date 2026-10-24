@@ -397,6 +397,38 @@
       "to": "src/infrastructure/storage.ts#getDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ReconcileChainInput",
+      "kind": "interface",
+      "signature": "ReconcileChainInput()"
+    },
+    {
+      "name": "ReconcileChainFunction",
+      "kind": "interface",
+      "signature": "ReconcileChainFunction()"
+    },
+    {
+      "name": "ReconcileChainObserved",
+      "kind": "interface",
+      "signature": "ReconcileChainObserved()"
+    },
+    {
+      "name": "ReconcileChainDeviation",
+      "kind": "interface",
+      "signature": "ReconcileChainDeviation()"
+    },
+    {
+      "name": "ReconcileChainResult",
+      "kind": "interface",
+      "signature": "ReconcileChainResult()"
+    },
+    {
+      "name": "reconcileChain",
+      "kind": "function",
+      "signature": "reconcileChain(input: ReconcileChainInput): Promise<TouchedProduct<ReconcileChainResult>>"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/reconcile/reconcile_chain.ts#readDerivedChain",
     "src/application/observe/reconcile/reconcile_chain.ts#reconcileChain",

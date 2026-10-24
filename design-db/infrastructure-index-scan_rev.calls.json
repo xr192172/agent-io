@@ -59,6 +59,23 @@
       "to": "src/infrastructure/index/db.ts#findCacheDb"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "ScanRev",
+      "kind": "interface",
+      "signature": "ScanRev()"
+    },
+    {
+      "name": "NONE",
+      "kind": "const",
+      "signature": "const NONE = { rev: null, db: null }"
+    },
+    {
+      "name": "scanRevOf",
+      "kind": "function",
+      "signature": "scanRevOf(opts: { feature?: string; sourceRoot?: string } = {}): ScanRev"
+    }
+  ],
   "reverse_calls": [
     "src/application/patrol/task_drift.ts#patrolDrift",
     "src/infrastructure/storage.ts#buildSyncMeta"

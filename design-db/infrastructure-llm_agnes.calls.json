@@ -93,6 +93,53 @@
       "to": "src/infrastructure/llm_pool.ts#loadKeys"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DEFAULT_AGNES_UPSTREAM",
+      "kind": "const",
+      "signature": "const DEFAULT_AGNES_UPSTREAM = 'https://apihub.agnes-ai.com'"
+    },
+    {
+      "name": "DEFAULT_AGNES_MODEL",
+      "kind": "const",
+      "signature": "const DEFAULT_AGNES_MODEL = 'agnes-2.5-flash'"
+    },
+    {
+      "name": "AGNES_ENV",
+      "kind": "const",
+      "signature": "const AGNES_ENV = { /** 上游根（不含 /v1）；`AGNES_BASE_URL` 是它的等价旧写法（含 /v1） */ ups…"
+    },
+    {
+      "name": "describeAgnesConfigHint",
+      "kind": "function",
+      "signature": "describeAgnesConfigHint(): string"
+    },
+    {
+      "name": "agnesApiBaseUrl",
+      "kind": "function",
+      "signature": "agnesApiBaseUrl(root: string): string"
+    },
+    {
+      "name": "resolveAgnesUpstreamBase",
+      "kind": "function",
+      "signature": "resolveAgnesUpstreamBase(explicit?: string): string"
+    },
+    {
+      "name": "resolveAgnesApiBaseUrl",
+      "kind": "function",
+      "signature": "resolveAgnesApiBaseUrl(): string"
+    },
+    {
+      "name": "resolveAgnesModel",
+      "kind": "function",
+      "signature": "resolveAgnesModel(): string"
+    },
+    {
+      "name": "resolveAgnesKeys",
+      "kind": "function",
+      "signature": "resolveAgnesKeys(): string[]"
+    }
+  ],
   "reverse_calls": [
     "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
     "src/application/harvest/harvest_decisions.ts#requireLlmConfig",

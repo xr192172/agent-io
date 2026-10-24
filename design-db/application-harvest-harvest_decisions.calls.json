@@ -1060,6 +1060,173 @@
       "to": "src/infrastructure/storage.ts#getDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "HarvestSource",
+      "kind": "type",
+      "signature": "HarvestSource()"
+    },
+    {
+      "name": "EvidenceSource",
+      "kind": "type",
+      "signature": "EvidenceSource()"
+    },
+    {
+      "name": "EVIDENCE_SOURCES",
+      "kind": "const",
+      "signature": "const EVIDENCE_SOURCES = ['code', 'history', 'docs']"
+    },
+    {
+      "name": "EVIDENCE_LABEL",
+      "kind": "const",
+      "signature": "const EVIDENCE_LABEL = { code: '代码证据（该文件的符号/导出/依赖/被谁引用）', history: '历史证据（该文件的 gi…"
+    },
+    {
+      "name": "LifecycleHint",
+      "kind": "interface",
+      "signature": "LifecycleHint()"
+    },
+    {
+      "name": "DecisionElements",
+      "kind": "interface",
+      "signature": "DecisionElements()"
+    },
+    {
+      "name": "AlternativeWhy",
+      "kind": "interface",
+      "signature": "AlternativeWhy()"
+    },
+    {
+      "name": "HarvestCandidate",
+      "kind": "interface",
+      "signature": "HarvestCandidate()"
+    },
+    {
+      "name": "HarvestResult",
+      "kind": "interface",
+      "signature": "HarvestResult()"
+    },
+    {
+      "name": "EvidenceExcerpt",
+      "kind": "interface",
+      "signature": "EvidenceExcerpt()"
+    },
+    {
+      "name": "FileEvidence",
+      "kind": "interface",
+      "signature": "FileEvidence()"
+    },
+    {
+      "name": "HarvestInput",
+      "kind": "interface",
+      "signature": "HarvestInput()"
+    },
+    {
+      "name": "BATCH_SIZE",
+      "kind": "const",
+      "signature": "const BATCH_SIZE = 20"
+    },
+    {
+      "name": "CONCURRENCY",
+      "kind": "const",
+      "signature": "const CONCURRENCY = 3"
+    },
+    {
+      "name": "MAX_SIGNAL_LINES",
+      "kind": "const",
+      "signature": "const MAX_SIGNAL_LINES = 40"
+    },
+    {
+      "name": "GIT_LOG_LIMIT",
+      "kind": "const",
+      "signature": "const GIT_LOG_LIMIT = 30"
+    },
+    {
+      "name": "EVIDENCE_MAX",
+      "kind": "const",
+      "signature": "const EVIDENCE_MAX = 240"
+    },
+    {
+      "name": "SOURCE_EXT_RE",
+      "kind": "const",
+      "signature": "const SOURCE_EXT_RE = /\\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|go|py)$/i"
+    },
+    {
+      "name": "MAX_DOC_MENTIONS",
+      "kind": "const",
+      "signature": "const MAX_DOC_MENTIONS = 3"
+    },
+    {
+      "name": "LIFECYCLE_RULES",
+      "kind": "const",
+      "signature": "const LIFECYCLE_RULES = [ { kw: ['弃用', '下线', '废弃', '删除'], type: 'retired' }, { kw…"
+    },
+    {
+      "name": "LlmCfg",
+      "kind": "type",
+      "signature": "LlmCfg()"
+    },
+    {
+      "name": "TargetFile",
+      "kind": "interface",
+      "signature": "TargetFile()"
+    },
+    {
+      "name": "SignalLine",
+      "kind": "interface",
+      "signature": "SignalLine()"
+    },
+    {
+      "name": "EvidenceSignal",
+      "kind": "interface",
+      "signature": "EvidenceSignal()"
+    },
+    {
+      "name": "DocCorpusEntry",
+      "kind": "interface",
+      "signature": "DocCorpusEntry()"
+    },
+    {
+      "name": "EvidenceCtx",
+      "kind": "interface",
+      "signature": "EvidenceCtx()"
+    },
+    {
+      "name": "RawHit",
+      "kind": "interface",
+      "signature": "RawHit()"
+    },
+    {
+      "name": "EVIDENCE_SYSTEM_PROMPT",
+      "kind": "const",
+      "signature": "const EVIDENCE_SYSTEM_PROMPT = '你是项目结构解读助手。给定若干文件，以及这些文件的**一份特定证据**（代码证据 / 历史证据 / 文档与注释证…"
+    },
+    {
+      "name": "VoteBin",
+      "kind": "interface",
+      "signature": "VoteBin()"
+    },
+    {
+      "name": "VoteTable",
+      "kind": "type",
+      "signature": "VoteTable()"
+    },
+    {
+      "name": "EvidenceByRel",
+      "kind": "type",
+      "signature": "EvidenceByRel()"
+    },
+    {
+      "name": "normalizeWhy",
+      "kind": "function",
+      "signature": "normalizeWhy(s: string): string"
+    },
+    {
+      "name": "harvestDecisions",
+      "kind": "function",
+      "signature": "harvestDecisions(input: HarvestInput): Promise<TouchedProduct<HarvestResult>>"
+    }
+  ],
   "reverse_calls": [
     "src/application/harvest/harvest_decisions.ts#accumulate",
     "src/application/harvest/harvest_decisions.ts#askEvidenceBatch",

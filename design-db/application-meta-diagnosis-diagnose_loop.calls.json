@@ -219,6 +219,28 @@
       "to": "src/infrastructure/index/symbols.ts#syncProject"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DiagnoseLoopStage",
+      "kind": "type",
+      "signature": "DiagnoseLoopStage()"
+    },
+    {
+      "name": "DiagnoseLoopInput",
+      "kind": "interface",
+      "signature": "DiagnoseLoopInput()"
+    },
+    {
+      "name": "DiagnoseLoopResult",
+      "kind": "interface",
+      "signature": "DiagnoseLoopResult()"
+    },
+    {
+      "name": "diagnoseLoop",
+      "kind": "function",
+      "signature": "diagnoseLoop(input: DiagnoseLoopInput): Promise<DiagnoseLoopResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoop"
   ]

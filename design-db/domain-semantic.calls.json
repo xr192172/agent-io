@@ -430,6 +430,83 @@
     }
   ],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "ExpectedApi",
+      "kind": "interface",
+      "signature": "ExpectedApi()"
+    },
+    {
+      "name": "Symbol",
+      "kind": "interface",
+      "signature": "Symbol()"
+    },
+    {
+      "name": "SymbolLifecycle",
+      "kind": "interface",
+      "signature": "SymbolLifecycle()"
+    },
+    {
+      "name": "SemanticFile",
+      "kind": "interface",
+      "signature": "SemanticFile()"
+    },
+    {
+      "name": "FileLifecycle",
+      "kind": "interface",
+      "signature": "FileLifecycle()"
+    },
+    {
+      "name": "LIFECYCLE_KEYS",
+      "kind": "const",
+      "signature": "const LIFECYCLE_KEYS = [ 'status', 'merged_into', 'merged_from', 'retire_reason'…"
+    },
+    {
+      "name": "LifecycleKeysMissing",
+      "kind": "type",
+      "signature": "LifecycleKeysMissing()"
+    },
+    {
+      "name": "_assertLifecycleKeysNoMissing",
+      "kind": "const",
+      "signature": "const _assertLifecycleKeysNoMissing = true"
+    },
+    {
+      "name": "LifecycleKeysExtra",
+      "kind": "type",
+      "signature": "LifecycleKeysExtra()"
+    },
+    {
+      "name": "_assertLifecycleKeysNoExtra",
+      "kind": "const",
+      "signature": "const _assertLifecycleKeysNoExtra = true"
+    },
+    {
+      "name": "CodeTemplate",
+      "kind": "interface",
+      "signature": "CodeTemplate()"
+    },
+    {
+      "name": "ScaffoldConfig",
+      "kind": "interface",
+      "signature": "ScaffoldConfig()"
+    },
+    {
+      "name": "Semantic",
+      "kind": "interface",
+      "signature": "Semantic()"
+    },
+    {
+      "name": "assertLifecycle",
+      "kind": "function",
+      "signature": "assertLifecycle(lc: FileLifecycle): void"
+    },
+    {
+      "name": "hasFileEntries",
+      "kind": "function",
+      "signature": "hasFileEntries(semantic: Semantic | undefined | null): semantic is Semantic"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/file_ops.ts#updateFile",
     "src/application/design/intent/consistency.ts#checkConsistencyReport",

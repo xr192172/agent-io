@@ -133,6 +133,28 @@
       "to": "src/infrastructure/analysis/submit_gate/index.ts#walkGoFiles"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "EmbedRequirement",
+      "kind": "interface",
+      "signature": "EmbedRequirement()"
+    },
+    {
+      "name": "SubmitCheckResult",
+      "kind": "interface",
+      "signature": "SubmitCheckResult()"
+    },
+    {
+      "name": "GO_FILE",
+      "kind": "const",
+      "signature": "const GO_FILE = '*.go'"
+    },
+    {
+      "name": "checkEmbedSubmissions",
+      "kind": "function",
+      "signature": "checkEmbedSubmissions(cwd: string): SubmitCheckResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline",
     "src/infrastructure/analysis/submit_gate/index.ts#checkEmbedSubmissions"

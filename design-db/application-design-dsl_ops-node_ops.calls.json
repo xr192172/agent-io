@@ -589,6 +589,53 @@
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "PATH_NODE_KINDS",
+      "kind": "const",
+      "signature": "const PATH_NODE_KINDS = ['file', 'doc', 'module', 'symbol'] as const"
+    },
+    {
+      "name": "PathNodeKind",
+      "kind": "type",
+      "signature": "PathNodeKind()"
+    },
+    {
+      "name": "AddNodeInput",
+      "kind": "interface",
+      "signature": "AddNodeInput()"
+    },
+    {
+      "name": "UpdateNodeInput",
+      "kind": "interface",
+      "signature": "UpdateNodeInput()"
+    },
+    {
+      "name": "DeleteNodeInput",
+      "kind": "interface",
+      "signature": "DeleteNodeInput()"
+    },
+    {
+      "name": "addNode",
+      "kind": "function",
+      "signature": "addNode(input: AddNodeInput): EditResult"
+    },
+    {
+      "name": "applyDecisionWrite",
+      "kind": "function",
+      "signature": "applyDecisionWrite(prevDecision: NodeDecision | undefined,\n  history: DecisionHistoryEntry[] | undefined,\n  next: NodeDecision | null | undefined,\n  opts?: { author?: DecisionAuthor; agent?: string; note?: string; now?: string },): { decision: NodeDecision | undefined; decision_history: DecisionHistoryEntry[] | undefined }"
+    },
+    {
+      "name": "updateNode",
+      "kind": "function",
+      "signature": "updateNode(input: UpdateNodeInput): EditResult"
+    },
+    {
+      "name": "deleteNode",
+      "kind": "function",
+      "signature": "deleteNode(input: DeleteNodeInput): EditResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/node_ops.ts#addNode",
     "src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite",

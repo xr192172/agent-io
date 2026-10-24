@@ -5,5 +5,22 @@
   "path": "src/presentation/http/archify/archify_pipeline.ts",
   "symbols": [],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "ProductionItem",
+      "kind": "interface",
+      "signature": "ProductionItem()"
+    },
+    {
+      "name": "ProductionManifest",
+      "kind": "interface",
+      "signature": "ProductionManifest()"
+    },
+    {
+      "name": "PipelineOptions",
+      "kind": "interface",
+      "signature": "PipelineOptions()"
+    }
+  ]
 }

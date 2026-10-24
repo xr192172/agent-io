@@ -98,6 +98,53 @@
       "to": "src/infrastructure/packages/template_compat.ts#usesNanBinding"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "TemplateCompat",
+      "kind": "type",
+      "signature": "TemplateCompat()"
+    },
+    {
+      "name": "BindingGeneration",
+      "kind": "type",
+      "signature": "BindingGeneration()"
+    },
+    {
+      "name": "BindingFacts",
+      "kind": "interface",
+      "signature": "BindingFacts()"
+    },
+    {
+      "name": "bindingGenerationOf",
+      "kind": "function",
+      "signature": "bindingGenerationOf(f: BindingFacts): BindingGeneration"
+    },
+    {
+      "name": "bindingVerdictOf",
+      "kind": "function",
+      "signature": "bindingVerdictOf(gen: BindingGeneration): TemplateCompat"
+    },
+    {
+      "name": "templateCompatFromPkgJson",
+      "kind": "function",
+      "signature": "templateCompatFromPkgJson(j: Record<string, unknown> | null,\n  opts?: { hasBuiltBinding?: boolean | null },): TemplateCompat"
+    },
+    {
+      "name": "templateCompatFromFacts",
+      "kind": "function",
+      "signature": "templateCompatFromFacts(usesNan: boolean | null,\n  installScript: string | null,\n  hasBuiltBinding: boolean | null = null,): TemplateCompat"
+    },
+    {
+      "name": "usesNanBinding",
+      "kind": "function",
+      "signature": "usesNanBinding(j: Record<string, unknown> | null): boolean | null"
+    },
+    {
+      "name": "templateCompatReason",
+      "kind": "function",
+      "signature": "templateCompatReason(compat: TemplateCompat,\n  usesNan: boolean | null,\n  gen?: BindingGeneration,): string"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/packages/template_compat.ts#templateCompatFromFacts",
     "src/infrastructure/packages/template_compat.ts#templateCompatFromPkgJson",

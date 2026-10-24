@@ -665,6 +665,153 @@
       "to": "src/infrastructure/scan_bounds.ts#boundsSkipFromExcluded"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "Layer",
+      "kind": "type",
+      "signature": "Layer()"
+    },
+    {
+      "name": "HealthKind",
+      "kind": "type",
+      "signature": "HealthKind()"
+    },
+    {
+      "name": "HealthSeverity",
+      "kind": "type",
+      "signature": "HealthSeverity()"
+    },
+    {
+      "name": "HealthIssue",
+      "kind": "interface",
+      "signature": "HealthIssue()"
+    },
+    {
+      "name": "ComplexityEntry",
+      "kind": "interface",
+      "signature": "ComplexityEntry()"
+    },
+    {
+      "name": "HealthReport",
+      "kind": "interface",
+      "signature": "HealthReport()"
+    },
+    {
+      "name": "HealthOptions",
+      "kind": "interface",
+      "signature": "HealthOptions()"
+    },
+    {
+      "name": "LAYER_SEGMENT_RE",
+      "kind": "const",
+      "signature": "const LAYER_SEGMENT_RE = /^src\\/(domain|infrastructure|application|presentation)\\//"
+    },
+    {
+      "name": "LAYER_ORDER",
+      "kind": "const",
+      "signature": "const LAYER_ORDER = { domain: 0, infrastructure: 1, application: 2, presentat…"
+    },
+    {
+      "name": "TS_FAMILY",
+      "kind": "const",
+      "signature": "const TS_FAMILY = new Set(['typescript', 'tsx', 'javascript', 'jsx'])"
+    },
+    {
+      "name": "COMPLEXITY_BRANCH_NODES",
+      "kind": "const",
+      "signature": "const COMPLEXITY_BRANCH_NODES = { typescript: ['if_statement', 'for_statement', 'for_in_s…"
+    },
+    {
+      "name": "COMPLEXITY_LOGIC_NODES",
+      "kind": "const",
+      "signature": "const COMPLEXITY_LOGIC_NODES = { typescript: ['binary_expression'], tsx: ['binary_expres…"
+    },
+    {
+      "name": "NamedImportRef",
+      "kind": "interface",
+      "signature": "NamedImportRef()"
+    },
+    {
+      "name": "AstImportBind",
+      "kind": "interface",
+      "signature": "AstImportBind()"
+    },
+    {
+      "name": "ImportBindingFact",
+      "kind": "interface",
+      "signature": "ImportBindingFact()"
+    },
+    {
+      "name": "TYPE_KINDS",
+      "kind": "const",
+      "signature": "const TYPE_KINDS = new Set<ParsedSymbol['kind']>(['interface', 'type', 'clas…"
+    },
+    {
+      "name": "TYPE_ONLY_IMPORT_RE",
+      "kind": "const",
+      "signature": "const TYPE_ONLY_IMPORT_RE = /^\\s*import\\s+type\\b/"
+    },
+    {
+      "name": "SCORE_SPEC",
+      "kind": "const",
+      "signature": "const SCORE_SPEC = { layer_violation: { w: 30, fullAt: 15 }, // ★ 2026-10-03…"
+    },
+    {
+      "name": "SCORE_KEYS",
+      "kind": "const",
+      "signature": "const SCORE_KEYS = Object.keys(SCORE_SPEC) as HealthKind[]"
+    },
+    {
+      "name": "classifyLayer",
+      "kind": "function",
+      "signature": "classifyLayer(rel: string): Layer | null"
+    },
+    {
+      "name": "judgesDeadCode",
+      "kind": "function",
+      "signature": "judgesDeadCode(rel: string): boolean"
+    },
+    {
+      "name": "estimateComplexity",
+      "kind": "function",
+      "signature": "estimateComplexity(filePath: string, body: string): Promise<number>"
+    },
+    {
+      "name": "estimateComplexityRegex",
+      "kind": "function",
+      "signature": "estimateComplexityRegex(body: string): number"
+    },
+    {
+      "name": "extractNamedImports",
+      "kind": "function",
+      "signature": "extractNamedImports(filePath: string, source: string): Promise<NamedImportRef[]>"
+    },
+    {
+      "name": "unusedImportsIn",
+      "kind": "function",
+      "signature": "unusedImportsIn(filePath: string, source: string): Promise<NamedImportRef[]>"
+    },
+    {
+      "name": "importBindingFactsSync",
+      "kind": "function",
+      "signature": "importBindingFactsSync(filePath: string, source: string): ImportBindingFact[] | null"
+    },
+    {
+      "name": "extractNamedImportsRegex",
+      "kind": "function",
+      "signature": "extractNamedImportsRegex(source: string): NamedImportRef[]"
+    },
+    {
+      "name": "analyzeHealth",
+      "kind": "function",
+      "signature": "analyzeHealth(root: string, options: HealthOptions = {}): Promise<HealthReport>"
+    },
+    {
+      "name": "computeScore",
+      "kind": "function",
+      "signature": "computeScore(counts: Record<HealthKind, number>,\n  fileCount: number,): { value: number; grade: HealthReport['grade']; contribution: Record<HealthKind, number> }"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#judgeSource",
     "src/infrastructure/analysis/health/index.ts#analyzeHealth",

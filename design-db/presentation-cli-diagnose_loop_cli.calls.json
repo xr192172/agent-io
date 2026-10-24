@@ -368,6 +368,13 @@
       "to": "src/presentation/cli/diagnose_loop_cli.ts#readArg"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "has",
+      "kind": "const",
+      "signature": "const has = (name: string): boolean => process.argv.includes(name)"
+    }
+  ],
   "reverse_calls": [
     "src/presentation/cli/diagnose_loop_cli.ts#main"
   ]

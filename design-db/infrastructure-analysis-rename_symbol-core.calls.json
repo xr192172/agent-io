@@ -140,6 +140,18 @@
       "to": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "RenameSymbolInput",
+      "kind": "interface",
+      "signature": "RenameSymbolInput()"
+    },
+    {
+      "name": "renameSymbol",
+      "kind": "function",
+      "signature": "renameSymbol(input: RenameSymbolInput, hooks?: RenameSymbolHooks): Promise<TouchedProduct<RenameSymbolResult>>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
     "src/infrastructure/analysis/rename_symbol/core.ts#renameSymbol"

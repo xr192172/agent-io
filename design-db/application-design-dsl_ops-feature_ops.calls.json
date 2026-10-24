@@ -144,5 +144,32 @@
       "from": "src/application/design/dsl_ops/feature_ops.ts#cloneFeature",
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
+  ],
+  "expected_symbols": [
+    {
+      "name": "CreateFeatureInput",
+      "kind": "interface",
+      "signature": "CreateFeatureInput()"
+    },
+    {
+      "name": "CloneFeatureInput",
+      "kind": "interface",
+      "signature": "CloneFeatureInput()"
+    },
+    {
+      "name": "CloneFeatureResult",
+      "kind": "interface",
+      "signature": "CloneFeatureResult()"
+    },
+    {
+      "name": "createFeature",
+      "kind": "function",
+      "signature": "createFeature(input: CreateFeatureInput): EditResult"
+    },
+    {
+      "name": "cloneFeature",
+      "kind": "function",
+      "signature": "cloneFeature(input: CloneFeatureInput): CloneFeatureResult"
+    }
   ]
 }

@@ -223,6 +223,103 @@
       "to": "src/infrastructure/analysis/capability/capability_matrix.ts#levelFor"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "SUPPORT_LEVELS",
+      "kind": "const",
+      "signature": "const SUPPORT_LEVELS = ['full_ast', 'partial_ast', 'regex_fallback', 'unimplemen…"
+    },
+    {
+      "name": "SupportLevel",
+      "kind": "type",
+      "signature": "SupportLevel()"
+    },
+    {
+      "name": "LangId",
+      "kind": "type",
+      "signature": "LangId()"
+    },
+    {
+      "name": "SUPPORT_META",
+      "kind": "const",
+      "signature": "const SUPPORT_META = { full_ast: { label: 'AST 全量', badge: '🟢', needWork: fal…"
+    },
+    {
+      "name": "CapabilityDecl",
+      "kind": "interface",
+      "signature": "CapabilityDecl()"
+    },
+    {
+      "name": "declared",
+      "kind": "const",
+      "signature": "const declared = new Map<string, CapabilityDecl>()"
+    },
+    {
+      "name": "CapabilityCell",
+      "kind": "interface",
+      "signature": "CapabilityCell()"
+    },
+    {
+      "name": "CapabilityAuditRow",
+      "kind": "interface",
+      "signature": "CapabilityAuditRow()"
+    },
+    {
+      "name": "declareCapability",
+      "kind": "function",
+      "signature": "declareCapability(c: CapabilityDecl): void"
+    },
+    {
+      "name": "getCapability",
+      "kind": "function",
+      "signature": "getCapability(id: string): CapabilityDecl | undefined"
+    },
+    {
+      "name": "allCapabilities",
+      "kind": "function",
+      "signature": "allCapabilities(): CapabilityDecl[]"
+    },
+    {
+      "name": "_resetRegistry",
+      "kind": "function",
+      "signature": "_resetRegistry(): void"
+    },
+    {
+      "name": "levelFor",
+      "kind": "function",
+      "signature": "levelFor(c: CapabilityDecl, langName: string): SupportLevel"
+    },
+    {
+      "name": "languageCatalog",
+      "kind": "function",
+      "signature": "languageCatalog(): LanguageEntry[]"
+    },
+    {
+      "name": "installedLanguages",
+      "kind": "function",
+      "signature": "installedLanguages(probe: () => LanguageEntry[]): LanguageEntry[]"
+    },
+    {
+      "name": "diagnoseCapabilities",
+      "kind": "function",
+      "signature": "diagnoseCapabilities(langNames: string[]): CapabilityAuditRow[]"
+    },
+    {
+      "name": "diagnoseCapabilitiesByEntries",
+      "kind": "function",
+      "signature": "diagnoseCapabilitiesByEntries(langs: LanguageEntry[]): CapabilityAuditRow[]"
+    },
+    {
+      "name": "aggregateGaps",
+      "kind": "function",
+      "signature": "aggregateGaps(rows: CapabilityAuditRow[]): Record<string, string[]>"
+    },
+    {
+      "name": "renderAuditText",
+      "kind": "function",
+      "signature": "renderAuditText(rows: CapabilityAuditRow[], title = '能力矩阵 · 缺口自检'): string"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/capability/capability_matrix.ts#diagnoseCapabilities",
     "src/infrastructure/analysis/capability/capability_matrix.ts#diagnoseCapabilitiesByEntries",

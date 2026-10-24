@@ -139,6 +139,28 @@
       "to": "src/infrastructure/authoring/version_upgrade/features.ts#rulesForExt"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "FeatureHit",
+      "kind": "interface",
+      "signature": "FeatureHit()"
+    },
+    {
+      "name": "SourceFile",
+      "kind": "interface",
+      "signature": "SourceFile()"
+    },
+    {
+      "name": "rulesForExt",
+      "kind": "function",
+      "signature": "rulesForExt(ext: string): FeatureRule[]"
+    },
+    {
+      "name": "scanFeatureHits",
+      "kind": "function",
+      "signature": "scanFeatureHits(files: SourceFile[], minVersion: number): FeatureHit[]"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/authoring/version_upgrade/detect.ts#runContractScan",
     "src/infrastructure/authoring/version_upgrade/features.ts#scanFeatureHits"

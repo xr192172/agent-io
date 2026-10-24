@@ -104,6 +104,23 @@
       "to": "src/infrastructure/parse/loader.ts#getParser"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "cPackage",
+      "kind": "const",
+      "signature": "const cPackage = { exts: ['.c', '.h'], rename: (a) => renameCSymbol({ file…"
+    },
+    {
+      "name": "analyzeCLanguage",
+      "kind": "function",
+      "signature": "analyzeCLanguage(src: string): Promise<GoModuleAnalysis | null>"
+    },
+    {
+      "name": "renameCSymbol",
+      "kind": "function",
+      "signature": "renameCSymbol(args: {\n  file: string;\n  symbol: string;\n  to: string;\n  dryRun: boolean;\n  resolvedRoot: string;\n  blocked: string[];\n  /** ★ 落盘注入（`parts#SourceWriteHook`）：引擎不写盘，没注入就抛 */\n  write?: SourceWriteHook;\n}): Promise<RenameSymbolResult>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/rename_symbol/languages/c.ts#renameCSymbol"
   ]

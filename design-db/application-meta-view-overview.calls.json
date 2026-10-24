@@ -377,6 +377,38 @@
       "to": "src/infrastructure/storage.ts#getStorageRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "OverviewSummary",
+      "kind": "interface",
+      "signature": "OverviewSummary()"
+    },
+    {
+      "name": "OverviewResult",
+      "kind": "interface",
+      "signature": "OverviewResult()"
+    },
+    {
+      "name": "GetOverviewInput",
+      "kind": "interface",
+      "signature": "GetOverviewInput()"
+    },
+    {
+      "name": "STATISTICAL_DESC_RE",
+      "kind": "const",
+      "signature": "const STATISTICAL_DESC_RE = / — \\d+ 个| — 聚合 /"
+    },
+    {
+      "name": "sharedDescInflight",
+      "kind": "const",
+      "signature": "const sharedDescInflight = new Map<string, Promise<void>>()"
+    },
+    {
+      "name": "getOverview",
+      "kind": "function",
+      "signature": "getOverview(input: GetOverviewInput): Promise<OverviewResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/view/overview.ts#enrichSharedDesc",
     "src/application/meta/view/overview.ts#getOverview",

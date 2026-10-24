@@ -381,6 +381,88 @@
       "to": "src/infrastructure/parse/source_exts.ts#isSourceExt"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "STRUCTURE_CONFIG_BASENAME",
+      "kind": "const",
+      "signature": "const STRUCTURE_CONFIG_BASENAME = 'structure.domains.json'"
+    },
+    {
+      "name": "DomainRole",
+      "kind": "type",
+      "signature": "DomainRole()"
+    },
+    {
+      "name": "DOMAIN_ROLES",
+      "kind": "const",
+      "signature": "const DOMAIN_ROLES = ['capability', 'analysis', 'engine', 'adapter']"
+    },
+    {
+      "name": "StructureDomainDecl",
+      "kind": "interface",
+      "signature": "StructureDomainDecl()"
+    },
+    {
+      "name": "FlatDirDecl",
+      "kind": "interface",
+      "signature": "FlatDirDecl()"
+    },
+    {
+      "name": "StructureDomainsConfig",
+      "kind": "interface",
+      "signature": "StructureDomainsConfig()"
+    },
+    {
+      "name": "StructureGapItem",
+      "kind": "interface",
+      "signature": "StructureGapItem()"
+    },
+    {
+      "name": "RelocateMove",
+      "kind": "interface",
+      "signature": "RelocateMove()"
+    },
+    {
+      "name": "StructureGapReport",
+      "kind": "interface",
+      "signature": "StructureGapReport()"
+    },
+    {
+      "name": "StructureGapResult",
+      "kind": "interface",
+      "signature": "StructureGapResult()"
+    },
+    {
+      "name": "absOf",
+      "kind": "const",
+      "signature": "const absOf = (projectDir: string, rel: string): string => path.join(pr…"
+    },
+    {
+      "name": "structureConfigPath",
+      "kind": "function",
+      "signature": "structureConfigPath(projectDir: string): string"
+    },
+    {
+      "name": "readStructureConfig",
+      "kind": "function",
+      "signature": "readStructureConfig(projectDir: string): StructureDomainsConfig | null"
+    },
+    {
+      "name": "computeStructureGap",
+      "kind": "function",
+      "signature": "computeStructureGap(projectDir: string, cfg: StructureDomainsConfig): StructureGapReport"
+    },
+    {
+      "name": "structureGapIsClean",
+      "kind": "function",
+      "signature": "structureGapIsClean(r: StructureGapResult): boolean"
+    },
+    {
+      "name": "structureGap",
+      "kind": "function",
+      "signature": "structureGap(projectDir: string): StructureGapResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/rename/move_domain.ts#moveDomain",
     "src/infrastructure/analysis/structure/structure_gap.ts#computeStructureGap",

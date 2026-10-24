@@ -175,6 +175,43 @@
       "to": "src/infrastructure/storage_overlay.ts#saveOverlay"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "MergeResult",
+      "kind": "interface",
+      "signature": "MergeResult()"
+    },
+    {
+      "name": "saveOverlay",
+      "kind": "function",
+      "signature": "saveOverlay(ov: DesignOverlay): string"
+    },
+    {
+      "name": "loadOverlay",
+      "kind": "function",
+      "signature": "loadOverlay(feature: string): DesignOverlay | null"
+    },
+    {
+      "name": "syncTagsToOverlay",
+      "kind": "function",
+      "signature": "syncTagsToOverlay(feature: string,\n  dsl: DesignDSL,): { changed: boolean; written: number; cleared: boolean; file: string | null }"
+    },
+    {
+      "name": "syncLifecycleToOverlay",
+      "kind": "function",
+      "signature": "syncLifecycleToOverlay(feature: string,\n  dsl: DesignDSL,): { changed: boolean; written: number; cleared: number; file: string | null; notes: string[] }"
+    },
+    {
+      "name": "dropLifecycleFromOverlay",
+      "kind": "function",
+      "signature": "dropLifecycleFromOverlay(feature: string,\n  fileId: string,): { changed: boolean; file: string | null }"
+    },
+    {
+      "name": "mergeDesignLayer",
+      "kind": "function",
+      "signature": "mergeDesignLayer(base: DesignDSL): MergeResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/file_ops.ts#deleteFile",
     "src/application/design/dsl_ops/status_tools.ts#updateStatus",

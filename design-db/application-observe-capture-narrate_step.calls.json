@@ -236,6 +236,28 @@
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "NarrateStepInput",
+      "kind": "interface",
+      "signature": "NarrateStepInput()"
+    },
+    {
+      "name": "NarrateStepResult",
+      "kind": "interface",
+      "signature": "NarrateStepResult()"
+    },
+    {
+      "name": "slug",
+      "kind": "const",
+      "signature": "const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9\\…"
+    },
+    {
+      "name": "narrateStep",
+      "kind": "function",
+      "signature": "narrateStep(input: NarrateStepInput): TouchedProduct<NarrateStepResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/capture/narrate_step.ts#narrateStep",
     "src/application/observe/capture/narrate_step.ts#narrateStepCore"

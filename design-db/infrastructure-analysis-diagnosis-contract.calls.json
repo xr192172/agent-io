@@ -366,5 +366,57 @@
     }
   ],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "SymptomType",
+      "kind": "type",
+      "signature": "SymptomType()"
+    },
+    {
+      "name": "DiagnoseInput",
+      "kind": "interface",
+      "signature": "DiagnoseInput()"
+    },
+    {
+      "name": "SymptomParsed",
+      "kind": "interface",
+      "signature": "SymptomParsed()"
+    },
+    {
+      "name": "Candidate",
+      "kind": "interface",
+      "signature": "Candidate()"
+    },
+    {
+      "name": "EvidenceStep",
+      "kind": "interface",
+      "signature": "EvidenceStep()"
+    },
+    {
+      "name": "RootCause",
+      "kind": "interface",
+      "signature": "RootCause()"
+    },
+    {
+      "name": "Impact",
+      "kind": "interface",
+      "signature": "Impact()"
+    },
+    {
+      "name": "FixSuggestion",
+      "kind": "interface",
+      "signature": "FixSuggestion()"
+    },
+    {
+      "name": "Verification",
+      "kind": "interface",
+      "signature": "Verification()"
+    },
+    {
+      "name": "DiagnoseOutput",
+      "kind": "interface",
+      "signature": "DiagnoseOutput()"
+    }
+  ]
 }

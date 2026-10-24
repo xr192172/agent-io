@@ -489,6 +489,43 @@
       "to": "src/infrastructure/text/line_utils.ts#splitKeepEnds"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "MoveSymbolInput",
+      "kind": "interface",
+      "signature": "MoveSymbolInput()"
+    },
+    {
+      "name": "MoveRedirect",
+      "kind": "interface",
+      "signature": "MoveRedirect()"
+    },
+    {
+      "name": "MoveSymbolResult",
+      "kind": "interface",
+      "signature": "MoveSymbolResult()"
+    },
+    {
+      "name": "TS_EXTS",
+      "kind": "const",
+      "signature": "const TS_EXTS = new Set<string>(TS_JS_EXTS)"
+    },
+    {
+      "name": "Edit",
+      "kind": "interface",
+      "signature": "Edit()"
+    },
+    {
+      "name": "IDENT_LIKE",
+      "kind": "const",
+      "signature": "const IDENT_LIKE = new Set(['identifier', 'type_identifier', 'property_ident…"
+    },
+    {
+      "name": "moveSymbol",
+      "kind": "function",
+      "signature": "moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/rename/symbol_move.ts#findNamedDeclInExport",
     "src/application/refactor/rename/symbol_move.ts#findTopLevelDeclRange",

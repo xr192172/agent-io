@@ -269,6 +269,33 @@
       "to": "src/infrastructure/storage.ts#getStorageRoot"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DetectDriftInput",
+      "kind": "interface",
+      "signature": "DetectDriftInput()"
+    },
+    {
+      "name": "DriftStatus",
+      "kind": "type",
+      "signature": "DriftStatus()"
+    },
+    {
+      "name": "DriftData",
+      "kind": "interface",
+      "signature": "DriftData()"
+    },
+    {
+      "name": "norm",
+      "kind": "const",
+      "signature": "const norm = (p: string): string => path.resolve(p).toLowerCase()"
+    },
+    {
+      "name": "detectDrift",
+      "kind": "function",
+      "signature": "detectDrift(input: DetectDriftInput): Promise<TouchedProduct<DriftData & { message: string }>>"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/intent/detect_drift.ts#detectDrift",
     "src/application/design/intent/detect_drift.ts#detectDriftCore",

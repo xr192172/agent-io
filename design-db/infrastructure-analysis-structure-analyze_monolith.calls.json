@@ -501,6 +501,78 @@
       "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "MonolithCommunity",
+      "kind": "interface",
+      "signature": "MonolithCommunity()"
+    },
+    {
+      "name": "MonolithFileView",
+      "kind": "interface",
+      "signature": "MonolithFileView()"
+    },
+    {
+      "name": "AnalyzeMonolithInput",
+      "kind": "interface",
+      "signature": "AnalyzeMonolithInput()"
+    },
+    {
+      "name": "AnalyzeMonolithResult",
+      "kind": "interface",
+      "signature": "AnalyzeMonolithResult()"
+    },
+    {
+      "name": "SubSplitGroup",
+      "kind": "interface",
+      "signature": "SubSplitGroup()"
+    },
+    {
+      "name": "CommunitySubSplit",
+      "kind": "interface",
+      "signature": "CommunitySubSplit()"
+    },
+    {
+      "name": "ROLE_SUFFIX_RE",
+      "kind": "const",
+      "signature": "const ROLE_SUFFIX_RE = /(Service|Services|Handler|Handlers|Repo|Repository|Repos…"
+    },
+    {
+      "name": "FuncNode",
+      "kind": "interface",
+      "signature": "FuncNode()"
+    },
+    {
+      "name": "CallGraph",
+      "kind": "interface",
+      "signature": "CallGraph()"
+    },
+    {
+      "name": "buildCallGraphFromCache",
+      "kind": "function",
+      "signature": "buildCallGraphFromCache(db: Database): { funcs: FuncNode[]; graph: CallGraph }"
+    },
+    {
+      "name": "scoreAnchors",
+      "kind": "function",
+      "signature": "scoreAnchors(funcs: FuncNode[],\n  graph: CallGraph,): { idx: number; score: number; anchor: boolean }[]"
+    },
+    {
+      "name": "labelPropagation",
+      "kind": "function",
+      "signature": "labelPropagation(funcs: FuncNode[],\n  graph: CallGraph,\n  anchors: { idx: number; score: number }[],\n  maxIter = 12,\n  ownerClusters: number[][] = [],): Map<number, number[]>"
+    },
+    {
+      "name": "assessCommunitySubSplit",
+      "kind": "function",
+      "signature": "assessCommunitySubSplit(funcs: FuncNode[],\n  communities: MonolithCommunity[],\n  callRows: Array<{ source: string; target: string }>,\n  minGroup = 3,\n  maxCrossRatio = 0.4,): CommunitySubSplit[]"
+    },
+    {
+      "name": "analyzeMonolith",
+      "kind": "function",
+      "signature": "analyzeMonolith(input: AnalyzeMonolithInput): AnalyzeMonolithResult"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
     "src/infrastructure/analysis/structure/analyze_monolith.ts#assessCommunitySubSplit",

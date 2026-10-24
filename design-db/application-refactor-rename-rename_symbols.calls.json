@@ -563,6 +563,73 @@
       "to": "src/infrastructure/parse/source_exts.ts#skipDirSet"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "LiteralMatchKind",
+      "kind": "type",
+      "signature": "LiteralMatchKind()"
+    },
+    {
+      "name": "LiteralDecision",
+      "kind": "type",
+      "signature": "LiteralDecision()"
+    },
+    {
+      "name": "RawLiteralMatch",
+      "kind": "interface",
+      "signature": "RawLiteralMatch()"
+    },
+    {
+      "name": "LiteralMatch",
+      "kind": "interface",
+      "signature": "LiteralMatch()"
+    },
+    {
+      "name": "RenameSymbolsItem",
+      "kind": "interface",
+      "signature": "RenameSymbolsItem()"
+    },
+    {
+      "name": "ModuleSymbolRenameResult",
+      "kind": "type",
+      "signature": "ModuleSymbolRenameResult()"
+    },
+    {
+      "name": "RenameSymbolsResult",
+      "kind": "interface",
+      "signature": "RenameSymbolsResult()"
+    },
+    {
+      "name": "RenameSymbolsInput",
+      "kind": "interface",
+      "signature": "RenameSymbolsInput()"
+    },
+    {
+      "name": "renameSymbols",
+      "kind": "function",
+      "signature": "renameSymbols(input: RenameSymbolsInput): Promise<TouchedProduct<RenameSymbolsResult>>"
+    },
+    {
+      "name": "camelToSnake",
+      "kind": "function",
+      "signature": "camelToSnake(str: string): string"
+    },
+    {
+      "name": "scanLiteralOccurrences",
+      "kind": "function",
+      "signature": "scanLiteralOccurrences(projectDir: string,\n  needles: string[],): Array<{ needle: string; matches: RawLiteralMatch[] }>"
+    },
+    {
+      "name": "buildLiteralPlan",
+      "kind": "function",
+      "signature": "buildLiteralPlan(rootDir: string,\n  renames: RenameSymbolsItem[],\n  guard?: { isFrozen(absFile: string, src: string, pos: number): boolean; isGeneratedFile(absFile: string): boolean } | null,): RenameSymbolsResult['literals']"
+    },
+    {
+      "name": "applyLiteralPlan",
+      "kind": "function",
+      "signature": "applyLiteralPlan(plan: RenameSymbolsResult['literals'],\n  /** ★ 落盘注入（与 `renameSymbol` 的 `write` 同源）：缺它而有改动要写 ⇒ 抛，不回落裸写 */\n  write?: SourceWriteHook,): { filesWritten: number; files: string[] }"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/contract_page.ts#contractPageCore",
     "src/application/meta/explore/contract_page.ts#lookupTerm",

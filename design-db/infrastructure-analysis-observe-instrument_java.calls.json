@@ -402,6 +402,98 @@
       "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "JAVA_GUARD_TYPES",
+      "kind": "const",
+      "signature": "const JAVA_GUARD_TYPES = new Set([ 'if_statement', 'for_statement', 'enhanced_for_…"
+    },
+    {
+      "name": "PROBE_DIR_REL",
+      "kind": "const",
+      "signature": "const PROBE_DIR_REL = 'observe-lang-java'"
+    },
+    {
+      "name": "PROBE_MODULE",
+      "kind": "const",
+      "signature": "const PROBE_MODULE = 'Camprobe'"
+    },
+    {
+      "name": "LANG_ID",
+      "kind": "const",
+      "signature": "const LANG_ID = 'java'"
+    },
+    {
+      "name": "MARKER",
+      "kind": "const",
+      "signature": "const MARKER = 'observe:instrumented'"
+    },
+    {
+      "name": "DEEP_MARKER",
+      "kind": "const",
+      "signature": "const DEEP_MARKER = 'observe:deep'"
+    },
+    {
+      "name": "PROBE_FQCN",
+      "kind": "const",
+      "signature": "const PROBE_FQCN = 'observe.probe.Camprobe'"
+    },
+    {
+      "name": "JavaFnSlot",
+      "kind": "interface",
+      "signature": "JavaFnSlot()"
+    },
+    {
+      "name": "Java_SYNTAX",
+      "kind": "const",
+      "signature": "const Java_SYNTAX = { /** 注释前缀（幂等标记行用它拼） */ comment: '//', /** 「函数」节点类型集合 —— …"
+    },
+    {
+      "name": "javaInstrumentHooks",
+      "kind": "const",
+      "signature": "const javaInstrumentHooks = { lang: LANG_ID, markers: { core: MARKER, deep: DEEP_MARK…"
+    },
+    {
+      "name": "ProbeFields",
+      "kind": "interface",
+      "signature": "ProbeFields()"
+    },
+    {
+      "name": "str",
+      "kind": "const",
+      "signature": "const str = (s: string): string => JSON.stringify(s)"
+    },
+    {
+      "name": "probeNameOf",
+      "kind": "function",
+      "signature": "probeNameOf(fn: JavaFnSlot, mod: string): string"
+    },
+    {
+      "name": "scanFunctions",
+      "kind": "function",
+      "signature": "scanFunctions(root: AstNode): JavaFnSlot[]"
+    },
+    {
+      "name": "returnValueOf",
+      "kind": "function",
+      "signature": "returnValueOf(ret: AstNode): AstNode | null"
+    },
+    {
+      "name": "isInstrumentableJavaFile",
+      "kind": "function",
+      "signature": "isInstrumentableJavaFile(rel: string): boolean"
+    },
+    {
+      "name": "collectJavaFiles",
+      "kind": "function",
+      "signature": "collectJavaFiles(root: string): string[]"
+    },
+    {
+      "name": "instrumentJavaProject",
+      "kind": "function",
+      "signature": "instrumentJavaProject(root: string,\n  opts: InstrumentOptions = {},): Promise<InstrumentFileResult[]>"
+    }
+  ],
   "reverse_calls": [
     "src/infrastructure/analysis/observe/instrument_java.ts#bodyOf",
     "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",

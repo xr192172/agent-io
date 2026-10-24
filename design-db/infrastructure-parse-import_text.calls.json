@@ -30,5 +30,27 @@
     }
   ],
   "imports": [],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "RELATIVE_NAMED_IMPORT_RE",
+      "kind": "const",
+      "signature": "const RELATIVE_NAMED_IMPORT_RE = /import\\s+(?:type\\s+)?\\{([^}]+)\\}\\s+from\\s+'(\\.[^']+)'/g"
+    },
+    {
+      "name": "SPEC_ALIAS_RE",
+      "kind": "const",
+      "signature": "const SPEC_ALIAS_RE = /^([A-Za-z_$][\\w$]*)\\s+as\\s+([A-Za-z_$][\\w$]*)$/"
+    },
+    {
+      "name": "SPEC_PLAIN_RE",
+      "kind": "const",
+      "signature": "const SPEC_PLAIN_RE = /^[A-Za-z_$][\\w$]*$/"
+    },
+    {
+      "name": "parseRelativeNamedImportMap",
+      "kind": "function",
+      "signature": "parseRelativeNamedImportMap(src: string): Map<string, string>"
+    }
+  ]
 }

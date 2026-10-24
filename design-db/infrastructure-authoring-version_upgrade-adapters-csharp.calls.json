@@ -55,5 +55,22 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "CSHARP_FEATURES",
+      "kind": "const",
+      "signature": "const CSHARP_FEATURES = [ { name: 'switch 表达式（值 switch 形式）', tool: 'csharp', sinc…"
+    },
+    {
+      "name": "CSHARP_REMOVED",
+      "kind": "const",
+      "signature": "const CSHARP_REMOVED = [ { name: 'BinaryFormatter', tool: 'csharp', since: 8, ki…"
+    },
+    {
+      "name": "csharpAdapter",
+      "kind": "const",
+      "signature": "const csharpAdapter = { lang: 'csharp', label: '.NET', declarationFiles: ['glob…"
+    }
+  ]
 }

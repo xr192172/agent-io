@@ -280,6 +280,73 @@
       "to": "src/infrastructure/source_write_port.ts#commitSourceWrite"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "Patch",
+      "kind": "interface",
+      "signature": "Patch()"
+    },
+    {
+      "name": "PatchPlan",
+      "kind": "interface",
+      "signature": "PatchPlan()"
+    },
+    {
+      "name": "AppliedPatch",
+      "kind": "interface",
+      "signature": "AppliedPatch()"
+    },
+    {
+      "name": "RepairInput",
+      "kind": "interface",
+      "signature": "RepairInput()"
+    },
+    {
+      "name": "PatchJson",
+      "kind": "interface",
+      "signature": "PatchJson()"
+    },
+    {
+      "name": "ValidationError",
+      "kind": "interface",
+      "signature": "ValidationError()"
+    },
+    {
+      "name": "allowedPatchFiles",
+      "kind": "function",
+      "signature": "allowedPatchFiles(input: RepairInput): string[]"
+    },
+    {
+      "name": "buildRepairPrompt",
+      "kind": "function",
+      "signature": "buildRepairPrompt(input: RepairInput, allowed: string[]): string"
+    },
+    {
+      "name": "generatePatch",
+      "kind": "function",
+      "signature": "generatePatch(input: RepairInput): Promise<PatchPlan | null>"
+    },
+    {
+      "name": "validatePatches",
+      "kind": "function",
+      "signature": "validatePatches(project_dir: string, plan: PatchPlan, allowed: string[]): ValidationError[]"
+    },
+    {
+      "name": "formatPatchDiff",
+      "kind": "function",
+      "signature": "formatPatchDiff(project_dir: string, plan: PatchPlan): string[]"
+    },
+    {
+      "name": "applyPatches",
+      "kind": "function",
+      "signature": "applyPatches(project_dir: string,\n  plan: PatchPlan,\n  allowed: string[],\n  write?: SourceWriteHook,): { applied: AppliedPatch[]; errors: ValidationError[] }"
+    },
+    {
+      "name": "revertPatches",
+      "kind": "function",
+      "signature": "revertPatches(applied: AppliedPatch[], restore?: SourceWriteHook): void"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
     "src/infrastructure/analysis/diagnosis/repair.ts#allowedPatchFiles",

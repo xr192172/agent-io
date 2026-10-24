@@ -294,6 +294,63 @@
       "to": "src/infrastructure/storage.ts#saveDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "AddExpectedApiInput",
+      "kind": "interface",
+      "signature": "AddExpectedApiInput()"
+    },
+    {
+      "name": "UpdateExpectedApiInput",
+      "kind": "interface",
+      "signature": "UpdateExpectedApiInput()"
+    },
+    {
+      "name": "DeleteExpectedApiInput",
+      "kind": "interface",
+      "signature": "DeleteExpectedApiInput()"
+    },
+    {
+      "name": "SetExpectedApisInput",
+      "kind": "interface",
+      "signature": "SetExpectedApisInput()"
+    },
+    {
+      "name": "SetExpectedApisData",
+      "kind": "interface",
+      "signature": "SetExpectedApisData()"
+    },
+    {
+      "name": "SetNodeSemanticInput",
+      "kind": "interface",
+      "signature": "SetNodeSemanticInput()"
+    },
+    {
+      "name": "addExpectedApi",
+      "kind": "function",
+      "signature": "addExpectedApi(input: AddExpectedApiInput): EditResult"
+    },
+    {
+      "name": "updateExpectedApi",
+      "kind": "function",
+      "signature": "updateExpectedApi(input: UpdateExpectedApiInput): EditResult"
+    },
+    {
+      "name": "deleteExpectedApi",
+      "kind": "function",
+      "signature": "deleteExpectedApi(input: DeleteExpectedApiInput): EditResult"
+    },
+    {
+      "name": "setExpectedApis",
+      "kind": "function",
+      "signature": "setExpectedApis(input: SetExpectedApisInput): EditResult & { data: SetExpectedApisData }"
+    },
+    {
+      "name": "setNodeSemantic",
+      "kind": "function",
+      "signature": "setNodeSemantic(input: SetNodeSemanticInput): EditResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/dsl_ops/update_feature.ts#applyApiOp",
     "src/application/design/dsl_ops/update_feature.ts#applyOperation"

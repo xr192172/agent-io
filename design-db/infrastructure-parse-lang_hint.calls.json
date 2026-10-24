@@ -163,6 +163,48 @@
       "to": "src/infrastructure/parse/probe.ts#languagePackageStatus"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DOC",
+      "kind": "const",
+      "signature": "const DOC = 'docs/adding-a-language.md'"
+    },
+    {
+      "name": "LAYER1_SECTION",
+      "kind": "const",
+      "signature": "const LAYER1_SECTION = '§1 第 ① 层（加 1 条 LANGUAGES 表项 + 装包）'"
+    },
+    {
+      "name": "CAP_SECTION",
+      "kind": "const",
+      "signature": "const CAP_SECTION = { ast_parse_skeleton: '§2.1 ast_parse_skeleton', rename_s…"
+    },
+    {
+      "name": "CapabilityGapStats",
+      "kind": "interface",
+      "signature": "CapabilityGapStats()"
+    },
+    {
+      "name": "RUNTIME_SIDE_CAP",
+      "kind": "const",
+      "signature": "const RUNTIME_SIDE_CAP = { behavior_baseline: '一个 harness 分支（真编译/真跑该语言）', version_…"
+    },
+    {
+      "name": "SIEVE_HINT",
+      "kind": "const",
+      "signature": "const SIEVE_HINT = '（装前先验：npm run install-package check <lang> —— 判据是 script…"
+    },
+    {
+      "name": "capabilityGaps",
+      "kind": "function",
+      "signature": "capabilityGaps(): CapabilityGapStats"
+    },
+    {
+      "name": "missingLanguageHint",
+      "kind": "function",
+      "signature": "missingLanguageHint(ext: string, capabilityId?: string): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/refactor/parse_capability/parse_capability.ts#granularityOf",
     "src/infrastructure/analysis/contract_gate/core.ts#renderContractSkips",

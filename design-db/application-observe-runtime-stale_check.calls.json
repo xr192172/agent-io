@@ -145,6 +145,33 @@
       "to": "src/application/observe/runtime/stale_check.ts#walkSrcSources"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "StaleEntry",
+      "kind": "interface",
+      "signature": "StaleEntry()"
+    },
+    {
+      "name": "StaleCheckResult",
+      "kind": "interface",
+      "signature": "StaleCheckResult()"
+    },
+    {
+      "name": "GEN_SRC_RE",
+      "kind": "const",
+      "signature": "const GEN_SRC_RE = /\\.gen\\.ts$/"
+    },
+    {
+      "name": "checkStaleBuild",
+      "kind": "function",
+      "signature": "checkStaleBuild(root: string): StaleCheckResult"
+    },
+    {
+      "name": "formatStaleText",
+      "kind": "function",
+      "signature": "formatStaleText(r: StaleCheckResult): string"
+    }
+  ],
   "reverse_calls": [
     "src/application/observe/runtime/stale_check.ts#checkStaleBuild"
   ]

@@ -355,6 +355,53 @@
       "to": "src/infrastructure/verify_refactor.ts#runVerification"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "TOOL_LABEL",
+      "kind": "const",
+      "signature": "const TOOL_LABEL = { java: 'JDK', node: 'Node', go: 'Go', python: 'Python' }"
+    },
+    {
+      "name": "UpgradeScanResult",
+      "kind": "interface",
+      "signature": "UpgradeScanResult()"
+    },
+    {
+      "name": "UpgradeScanOptions",
+      "kind": "interface",
+      "signature": "UpgradeScanOptions()"
+    },
+    {
+      "name": "UpgradeApplyResult",
+      "kind": "interface",
+      "signature": "UpgradeApplyResult()"
+    },
+    {
+      "name": "upgradeHandler",
+      "kind": "const",
+      "signature": "const upgradeHandler = wrapData(async (a) => { const projectDir = requireStr(a, …"
+    },
+    {
+      "name": "upgradeScanData",
+      "kind": "function",
+      "signature": "upgradeScanData(res: ContractScanResult,\r\n  gates: StaticGateResult[] = [],\r\n  dynamicGates: DynamicGateResult[] = []): Record<string, unknown>"
+    },
+    {
+      "name": "runUpgradeScan",
+      "kind": "function",
+      "signature": "runUpgradeScan(root: string, opts: UpgradeScanOptions = {}): Promise<UpgradeScanResult>"
+    },
+    {
+      "name": "runUpgradePlanReport",
+      "kind": "function",
+      "signature": "runUpgradePlanReport(root: string): UpgradeApplyResult"
+    },
+    {
+      "name": "runUpgradeApplyLoop",
+      "kind": "function",
+      "signature": "runUpgradeApplyLoop(root: string,\n  edits: PlanEdit[],\n  skipVerify = false,\n  /** ★ 2026-10-22（并发控制·账户）：谁在写 —— 落盘要过写闸（判据仍只在 `write_gate` 一处） */\n  writeCtx: { actor?: string; authorize?: string } = {},): Promise<UpgradeApplyResult>"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/upgrade/upgrade.ts#renderToolchain",
     "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",

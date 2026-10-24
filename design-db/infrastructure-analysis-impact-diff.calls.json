@@ -147,6 +147,28 @@
       "to": "src/infrastructure/storage.ts#getDSLByView"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "DiffFeaturesInput",
+      "kind": "interface",
+      "signature": "DiffFeaturesInput()"
+    },
+    {
+      "name": "DiffItem",
+      "kind": "interface",
+      "signature": "DiffItem()"
+    },
+    {
+      "name": "DiffFeaturesResult",
+      "kind": "interface",
+      "signature": "DiffFeaturesResult()"
+    },
+    {
+      "name": "diffFeatures",
+      "kind": "function",
+      "signature": "diffFeatures(input: DiffFeaturesInput): DiffFeaturesResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/query_feature.ts#queryFeature"
   ]

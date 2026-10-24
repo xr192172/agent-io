@@ -147,6 +147,33 @@
       "to": "src/infrastructure/storage.ts#getDSL"
     }
   ],
+  "expected_symbols": [
+    {
+      "name": "GuidedTourInput",
+      "kind": "interface",
+      "signature": "GuidedTourInput()"
+    },
+    {
+      "name": "TourStep",
+      "kind": "interface",
+      "signature": "TourStep()"
+    },
+    {
+      "name": "GuidedTourResult",
+      "kind": "interface",
+      "signature": "GuidedTourResult()"
+    },
+    {
+      "name": "isDeep",
+      "kind": "const",
+      "signature": "const isDeep = (layer?: string): boolean => layer !== undefined && layer…"
+    },
+    {
+      "name": "guidedTour",
+      "kind": "function",
+      "signature": "guidedTour(input: GuidedTourInput): GuidedTourResult"
+    }
+  ],
   "reverse_calls": [
     "src/application/meta/explore/explore_code.ts#exploreCode",
     "src/application/meta/view/overview.ts#getOverview",

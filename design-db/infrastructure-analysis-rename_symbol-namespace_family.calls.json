@@ -237,5 +237,37 @@
       "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#makeNamespaceAnalyzer",
       "to": "src/infrastructure/parse/loader.ts#getParser"
     }
+  ],
+  "expected_symbols": [
+    {
+      "name": "NamespaceDeclRule",
+      "kind": "interface",
+      "signature": "NamespaceDeclRule()"
+    },
+    {
+      "name": "NamespaceLangRules",
+      "kind": "interface",
+      "signature": "NamespaceLangRules()"
+    },
+    {
+      "name": "NamespaceLangSpec",
+      "kind": "interface",
+      "signature": "NamespaceLangSpec()"
+    },
+    {
+      "name": "NamespaceRenameArgs",
+      "kind": "interface",
+      "signature": "NamespaceRenameArgs()"
+    },
+    {
+      "name": "makeNamespaceAnalyzer",
+      "kind": "function",
+      "signature": "makeNamespaceAnalyzer(rules: NamespaceLangRules)"
+    },
+    {
+      "name": "renameNamespaceSymbol",
+      "kind": "function",
+      "signature": "renameNamespaceSymbol(spec: NamespaceLangSpec, args: NamespaceRenameArgs): Promise<RenameSymbolResult>"
+    }
   ]
 }
