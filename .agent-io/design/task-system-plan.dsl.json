@@ -52037,19 +52037,7 @@
             {
               "kind": "symbol-exists",
               "path": "src/infrastructure/storage.ts",
-              "symbol": "clearAllFeatures",
-              "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/infrastructure/storage.ts",
               "symbol": "clearArchiveEntries",
-              "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/infrastructure/storage.ts",
-              "symbol": "deleteFeature",
               "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
             },
             {
@@ -52157,18 +52145,6 @@
             {
               "kind": "symbol-exists",
               "path": "src/infrastructure/storage.ts",
-              "symbol": "getFeatureFile",
-              "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/infrastructure/storage.ts",
-              "symbol": "getFeaturesDir",
-              "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/infrastructure/storage.ts",
               "symbol": "getLiveDir",
               "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
             },
@@ -52206,12 +52182,6 @@
               "kind": "symbol-exists",
               "path": "src/infrastructure/storage.ts",
               "symbol": "listArchiveEntries",
-              "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/infrastructure/storage.ts",
-              "symbol": "listFeatures",
               "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
             },
             {
@@ -52325,23 +52295,10 @@
               "symbol": "requireProjectRoot",
               "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
               "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
-            },
-            {
-              "kind": "signature-matches",
-              "path": "src/infrastructure/storage.ts",
-              "symbol": "getFeaturesDir",
-              "signature": "getFeaturesDir(): string",
-              "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
-            },
-            {
-              "kind": "signature-matches",
-              "path": "src/infrastructure/storage.ts",
-              "symbol": "getFeatureFile",
-              "signature": "getFeatureFile(feature: string): string",
-              "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
             }
           ],
-          "updated_at": "2026-10-20T05:07:12.409Z"
+          "updated_at": "2026-10-24T02:32:08.780Z",
+          "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据没跟，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。"
         },
         "status": "done",
         "overlay": {
@@ -52354,7 +52311,2540 @@
             "observed": "B claim: scanRev 1792583522811 不变 / saved_at 11:52:12.956→11:53:40.092 前进；C saveDSL×2: scanRev 1792582983534 不变 / saved_at 11:44:15.495→11:53:41.314 前进；D fork/import（基线 scanRev=1）: design & live 的 scanRev 都刷成库 gen 1792583546987、schema=16；E 差值: design-canvas 库gen−scanRev=563453ms、task-system-plan=24176ms（均 >0，改造前恒 0）",
             "at": "2026-10-21T11:54:03.482Z"
           }
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-24T02:32:08.149Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "这个文件的职责就是「读写 DSL」——它不在，任务/设计都没有落脚点"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listDesignSheets",
+                  "why": "设计侧枚举只许有一个入口：写闸读覆盖率、别的读端要列 feature 都走它（否则又是「两份清单」）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheet",
+                  "why": "listDesignSheets 必须与 getDesignSheet 同源（同一份设计侧），不许另写一个解析器"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "buildSyncMeta",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "clearAllFeatures",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "clearArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "deleteFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "diffBaselineFiles",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "dslContentHash",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ensureBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryByPath",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFacts",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSLByView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheetFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getFeaturesDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listFeatures",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "onDslChange",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "rebuildBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFactsIfAbsent",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDesignSheet",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "viewBaseDirCandidates",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineDrift",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "DSLView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getFeaturesDir",
+                  "signature": "getFeaturesDir(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getFeatureFile",
+                  "signature": "getFeatureFile(feature: string): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                }
+              ],
+              "updated_at": "2026-10-20T05:07:12.409Z"
+            },
+            "note": "overview 全量求值首日抓到 7 条僵尸判据（src/infrastructure/storage.ts 缺 clearAllFeatures/deleteFeature/getFeatureFile/getFeaturesDir/listFeatures×2 签名）——features/ 整体退役（工作项 D）后判据没跟，按决策卡修订流程逐条删。"
+          },
+          {
+            "at": "2026-10-24T02:32:08.240Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "这个文件的职责就是「读写 DSL」——它不在，任务/设计都没有落脚点"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listDesignSheets",
+                  "why": "设计侧枚举只许有一个入口：写闸读覆盖率、别的读端要列 feature 都走它（否则又是「两份清单」）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheet",
+                  "why": "listDesignSheets 必须与 getDesignSheet 同源（同一份设计侧），不许另写一个解析器"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "buildSyncMeta",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "clearAllFeatures",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "clearArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "deleteFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "diffBaselineFiles",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "dslContentHash",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ensureBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryByPath",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFacts",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSLByView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheetFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getFeaturesDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listFeatures",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "onDslChange",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "rebuildBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFactsIfAbsent",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDesignSheet",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "viewBaseDirCandidates",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineDrift",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "DSLView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getFeaturesDir",
+                  "signature": "getFeaturesDir(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                }
+              ],
+              "updated_at": "2026-10-24T02:32:08.149Z"
+            },
+            "note": "overview 全量求值首日抓到 7 条僵尸判据（src/infrastructure/storage.ts 缺 clearAllFeatures/deleteFeature/getFeatureFile/getFeaturesDir/listFeatures×2 签名）——features/ 整体退役（工作项 D）后判据没跟，按决策卡修订流程逐条删。"
+          },
+          {
+            "at": "2026-10-24T02:32:08.330Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "这个文件的职责就是「读写 DSL」——它不在，任务/设计都没有落脚点"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listDesignSheets",
+                  "why": "设计侧枚举只许有一个入口：写闸读覆盖率、别的读端要列 feature 都走它（否则又是「两份清单」）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheet",
+                  "why": "listDesignSheets 必须与 getDesignSheet 同源（同一份设计侧），不许另写一个解析器"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "buildSyncMeta",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "clearAllFeatures",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "clearArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "deleteFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "diffBaselineFiles",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "dslContentHash",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ensureBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryByPath",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFacts",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSLByView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheetFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getFeaturesDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listFeatures",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "onDslChange",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "rebuildBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFactsIfAbsent",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDesignSheet",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "viewBaseDirCandidates",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineDrift",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "DSLView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                }
+              ],
+              "updated_at": "2026-10-24T02:32:08.240Z"
+            },
+            "note": "overview 全量求值首日抓到 7 条僵尸判据（src/infrastructure/storage.ts 缺 clearAllFeatures/deleteFeature/getFeatureFile/getFeaturesDir/listFeatures×2 签名）——features/ 整体退役（工作项 D）后判据没跟，按决策卡修订流程逐条删。"
+          },
+          {
+            "at": "2026-10-24T02:32:08.418Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "这个文件的职责就是「读写 DSL」——它不在，任务/设计都没有落脚点"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listDesignSheets",
+                  "why": "设计侧枚举只许有一个入口：写闸读覆盖率、别的读端要列 feature 都走它（否则又是「两份清单」）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheet",
+                  "why": "listDesignSheets 必须与 getDesignSheet 同源（同一份设计侧），不许另写一个解析器"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "buildSyncMeta",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "clearAllFeatures",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "clearArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "deleteFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "diffBaselineFiles",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "dslContentHash",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ensureBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryByPath",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFacts",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSLByView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheetFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getFeaturesDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "onDslChange",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "rebuildBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFactsIfAbsent",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDesignSheet",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "viewBaseDirCandidates",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineDrift",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "DSLView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                }
+              ],
+              "updated_at": "2026-10-24T02:32:08.330Z"
+            },
+            "note": "overview 全量求值首日抓到 7 条僵尸判据（src/infrastructure/storage.ts 缺 clearAllFeatures/deleteFeature/getFeatureFile/getFeaturesDir/listFeatures×2 签名）——features/ 整体退役（工作项 D）后判据没跟，按决策卡修订流程逐条删。"
+          },
+          {
+            "at": "2026-10-24T02:32:08.507Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "这个文件的职责就是「读写 DSL」——它不在，任务/设计都没有落脚点"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listDesignSheets",
+                  "why": "设计侧枚举只许有一个入口：写闸读覆盖率、别的读端要列 feature 都走它（否则又是「两份清单」）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheet",
+                  "why": "listDesignSheets 必须与 getDesignSheet 同源（同一份设计侧），不许另写一个解析器"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "buildSyncMeta",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "clearAllFeatures",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "clearArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "deleteFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "diffBaselineFiles",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "dslContentHash",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ensureBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryByPath",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFacts",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSLByView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheetFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "onDslChange",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "rebuildBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFactsIfAbsent",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDesignSheet",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "viewBaseDirCandidates",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineDrift",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "DSLView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                }
+              ],
+              "updated_at": "2026-10-24T02:32:08.418Z"
+            },
+            "note": "overview 全量求值首日抓到 7 条僵尸判据（src/infrastructure/storage.ts 缺 clearAllFeatures/deleteFeature/getFeatureFile/getFeaturesDir/listFeatures×2 签名）——features/ 整体退役（工作项 D）后判据没跟，按决策卡修订流程逐条删。"
+          },
+          {
+            "at": "2026-10-24T02:32:08.598Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "这个文件的职责就是「读写 DSL」——它不在，任务/设计都没有落脚点"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listDesignSheets",
+                  "why": "设计侧枚举只许有一个入口：写闸读覆盖率、别的读端要列 feature 都走它（否则又是「两份清单」）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheet",
+                  "why": "listDesignSheets 必须与 getDesignSheet 同源（同一份设计侧），不许另写一个解析器"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "buildSyncMeta",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "clearAllFeatures",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "clearArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "deleteFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "diffBaselineFiles",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "dslContentHash",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ensureBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryByPath",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFacts",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSLByView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheetFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "onDslChange",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "rebuildBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFactsIfAbsent",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDesignSheet",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "viewBaseDirCandidates",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineDrift",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "DSLView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                }
+              ],
+              "updated_at": "2026-10-24T02:32:08.507Z"
+            },
+            "note": "overview 全量求值首日抓到 7 条僵尸判据（src/infrastructure/storage.ts 缺 clearAllFeatures/deleteFeature/getFeatureFile/getFeaturesDir/listFeatures×2 签名）——features/ 整体退役（工作项 D）后判据没跟，按决策卡修订流程逐条删。"
+          },
+          {
+            "at": "2026-10-24T02:32:08.694Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "这个文件的职责就是「读写 DSL」——它不在，任务/设计都没有落脚点"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listDesignSheets",
+                  "why": "设计侧枚举只许有一个入口：写闸读覆盖率、别的读端要列 feature 都走它（否则又是「两份清单」）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheet",
+                  "why": "listDesignSheets 必须与 getDesignSheet 同源（同一份设计侧），不许另写一个解析器"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "buildSyncMeta",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "clearAllFeatures",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "clearArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "diffBaselineFiles",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "dslContentHash",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ensureBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryByPath",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFacts",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSLByView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheetFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "onDslChange",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "rebuildBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFactsIfAbsent",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDesignSheet",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "viewBaseDirCandidates",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineDrift",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "DSLView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                }
+              ],
+              "updated_at": "2026-10-24T02:32:08.598Z"
+            },
+            "note": "overview 全量求值首日抓到 7 条僵尸判据（src/infrastructure/storage.ts 缺 clearAllFeatures/deleteFeature/getFeatureFile/getFeaturesDir/listFeatures×2 签名）——features/ 整体退役（工作项 D）后判据没跟，按决策卡修订流程逐条删。"
+          },
+          {
+            "at": "2026-10-24T02:32:08.780Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "这个文件的职责就是「读写 DSL」——它不在，任务/设计都没有落脚点"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listDesignSheets",
+                  "why": "设计侧枚举只许有一个入口：写闸读覆盖率、别的读端要列 feature 都走它（否则又是「两份清单」）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheet",
+                  "why": "listDesignSheets 必须与 getDesignSheet 同源（同一份设计侧），不许另写一个解析器"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "buildSyncMeta",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "clearArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "diffBaselineFiles",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "dslContentHash",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ensureBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryByPath",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getArchiveEntryFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFacts",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getBaselineFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSLByView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheetFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveDir",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getLiveFeatureResolved",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "listArchiveEntries",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "onDslChange",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "rebuildBaseline",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFactsIfAbsent",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveBaselineFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDSL",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDesignSheet",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveLiveFeature",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "viewBaseDirCandidates",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "ArchiveEntry",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineDrift",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "BaselineFactsFile",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "DSLView",
+                  "why": "导出集即对外契约：删它必须是一次显式决定；删除前判据应先红，删后显式转 retired"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                }
+              ],
+              "updated_at": "2026-10-24T02:32:08.694Z"
+            },
+            "note": "overview 全量求值首日抓到 7 条僵尸判据（src/infrastructure/storage.ts 缺 clearAllFeatures/deleteFeature/getFeatureFile/getFeaturesDir/listFeatures×2 签名）——features/ 整体退役（工作项 D）后判据没跟，按决策卡修订流程逐条删。"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_storage_overlay_ts",
@@ -113126,11 +115616,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T02:22:47.054Z",
+    "saved_at": "2026-10-24T02:32:08.812Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 225044243,
+    "age": 225606001,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -116116,7 +118606,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1307,
+  "_dsl_rev": 1315,
   "feature_tree": {
     "features": [
       {
