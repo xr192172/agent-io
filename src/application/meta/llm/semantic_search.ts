@@ -162,7 +162,7 @@ export async function embedTexts(cfg: EmbeddingConfig, texts: string[], db?: Dat
     const ins = db.prepare(
       'INSERT OR REPLACE INTO embedding_cache(cache_key, dim, vector, created_at) VALUES (?, ?, ?, ?)',
     );
-    db.exec('BEGIN');
+    db.exec('BEGIN IMMEDIATE');
     try {
       for (const i of pending) {
         ins.run(cacheKey(cfg, texts[i]), cfg.dim, encodeVectorBlob(out[i]!), Date.now());

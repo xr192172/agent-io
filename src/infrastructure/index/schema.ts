@@ -348,4 +348,51 @@ CREATE VIEW IF NOT EXISTS v_symbol_diffs AS
 SELECT f.path AS file_path, s.from_hash, s.to_hash, s.added, s.removed, s.changed,
        s.norm_from, s.norm_to, s.updated_at
 FROM symbol_diffs s JOIN files f ON f.id = s.file_id;
+
+-- ─────────────────────────────────────────────────────────────
+-- 扫描台账（2026-10-23 · §7「两个时间参照」的第一步）
+--
+-- ★ 为什么需要它：files 表只有**现在**（content_hash + indexed_at），
+--   没有历史 ⇒「上一次扫描时盘上是什么」答不出来 ⇒ **「源码改了什么」也答不出来**。
+--   而删除授权对账、重写进度、refs 置信度分桶，全都依赖这一句能答出来。
+--
+-- ★ 最小实现：**不建「上次快照表」**（540 行 × N 次会膨胀），
+--   而是在 syncProject 内部做**一次扫描的前后对比**：扫描前读 (path, hash) 进内存，
+--   扫描后再读一次，差异写进 scan_changes。一次扫描内前后对比 = 完整的「改了什么」。
+--
+-- ★ scan_changes 必须**逐文件**存（不许只存计数）：只存计数就永远答不出「删的是谁」。
+--
+-- ★★ 与 baseline / drift 的关系（别把它们「统一」成一套，会坏掉窗口语义）：
+--   · baseline（<dataHome>/.agent-io/baseline/<f>.dsl.json）= **上一次扫描**的实际侧快照，
+--     由 rebuildBaseline 在每次扫成功后覆盖。它**必须先算 drift 再覆盖**
+--     （import_project.ts 1211-1213 的注释：覆盖之后旧快照没了，答案就一起被删了）。
+--   · drift（rebuildBaseline 的返回值）= 旧 baseline → 新 layered 的聚合差异，
+--     **不持久化**，只用来生成「有人用工具以外的方式改了」那条告警。
+--   · scan_changes（本表）= 同一窗口（上次扫描 → 这次扫描）的**逐文件**差异，**持久化**。
+--   ⇒ 两者窗口相同、粒度不同（drift 是 DSL 文件列表，本表是 path + hash）。
+--   ⇒ **不要为了「消重」把 drift 改成读本表**：drift 必须**在覆盖 baseline 之前**算，
+--     而那时本次扫描尚未收尾 —— 先有 drift，后才有本表的行。顺序反了就两边都错。
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS scan_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    at TEXT NOT NULL,
+    files_before INTEGER NOT NULL,
+    files_after INTEGER NOT NULL,
+    added INTEGER NOT NULL DEFAULT 0,
+    changed INTEGER NOT NULL DEFAULT 0,
+    removed INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS scan_changes (
+    scan_id INTEGER NOT NULL,
+    -- ★ 用 path 不用 file_id：**removed 的文件已不在 files 表里，没有 id 可挂**。
+    --   这是本表与其它表的关键区别，不要"为了统一"改成外键。
+    path TEXT NOT NULL,
+    kind TEXT NOT NULL,              -- added | changed | removed
+    before_hash TEXT,
+    after_hash TEXT,
+    PRIMARY KEY (scan_id, path)
+);
+
+CREATE INDEX IF NOT EXISTS idx_scan_changes_path ON scan_changes(path);
 `;

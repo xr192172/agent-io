@@ -56,6 +56,12 @@ export interface SyncProjectResult {
   results: SyncFileResult[];
   /** 跨文件调用解析统计（收尾步骤，见 resolveCrossFileCalls） */
   cross?: CrossFileResolveStats;
+  /**
+   * ★ §7（2026-10-23）：这次扫描**逐文件改了什么**的计数。
+   * 明细在 `scan_changes`（按 `scan_runs.id`），这里只给三个数当回执。
+   * ★ 只给计数**不能**当成"改了什么"的答案 —— 要答那个问题必须查 `scan_changes`。
+   */
+  changes?: { added: number; changed: number; removed: number };
 }
 
 export interface SymbolHit {
@@ -729,7 +735,7 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
 
   // 批量事务（冷启 bootstrap 会开外层事务）时不再自己 BEGIN/COMMIT —— 见 db.ts beginBatch 注释
   const ownTx = !inTransaction(db);
-  if (ownTx) db.exec('BEGIN');
+  if (ownTx) db.exec('BEGIN IMMEDIATE');
   try {
     // 0. files 行**最先写**（v16）：identifiers / imports / unresolved_refs / symbol_diffs 都要 file_id，
     //    而**首次索引**时 files 行还不存在 ⇒ 必须先 UPSERT 拿到 id，再往下写。
@@ -1136,7 +1142,7 @@ export function reopenRefsTo(db: Database, names: readonly string[]): ReopenRefs
   const files = new Set<string>();
   let n = 0;
   const ownTx = !inTransaction(db);
-  if (ownTx) db.exec('BEGIN');
+  if (ownTx) db.exec('BEGIN IMMEDIATE');
   try {
     for (const nm of wanted) {
       const back = !!exists.get(nm);
@@ -1187,12 +1193,66 @@ export function changedSymbolNames(db: Database, rel: string): string[] {
 // ─────────────────────────────────────────────────────────────
 
 /** 顺序同步一组文件（解析是 CPU 活，v1 串行即可；规模大了再加并发池） */
+/** 文件指纹快照：path → content_hash（逐文件，用于算"这次扫描改了什么"）*/
+function snapshotHashes(db: Database): Map<string, string> {
+  const m = new Map<string, string>();
+  const rows = db.prepare('SELECT path, content_hash FROM files').all() as Array<{
+    path: string;
+    content_hash: string | null;
+  }>;
+  for (const r of rows) m.set(r.path, r.content_hash ?? '');
+  return m;
+}
+
+/**
+ * ★★ 2026-10-23（§7「两个时间参照」）：写一条扫描台账 + **逐文件**变更。
+ *
+ * ## 为什么不需要"上次快照表"
+ * `files` 表只有**现在**。但一次 `syncProject` 的**内部**天然有"前"和"后"两个时刻：
+ * 进来时读一次、出去时再读一次，两者之差就是"这次改了什么"。
+ * ⇒ 存这个差，就不必存每次的完整快照（540 行 × N 次会膨胀），而信息量等价。
+ *
+ * ## 为什么 `scan_changes.path` 不是外键
+ * `removed` 的文件**已经不在 files 表里**，没有 id 可挂。这是本表与其它表的关键区别。
+ */
+function recordScanRun(
+  db: Database,
+  before: Map<string, string>,
+): { added: number; changed: number; removed: number } {
+  const after = snapshotHashes(db);
+  const rows: Array<{ path: string; kind: string; b: string | null; a: string | null }> = [];
+  for (const [p, h] of after) {
+    const b = before.get(p);
+    if (b === undefined) rows.push({ path: p, kind: 'added', b: null, a: h });
+    else if (b !== h) rows.push({ path: p, kind: 'changed', b, a: h });
+  }
+  for (const [p, h] of before) if (!after.has(p)) rows.push({ path: p, kind: 'removed', b: h, a: null });
+
+  const added = rows.filter((r) => r.kind === 'added').length;
+  const changed = rows.filter((r) => r.kind === 'changed').length;
+  const removed = rows.filter((r) => r.kind === 'removed').length;
+
+  const info = db
+    .prepare(
+      'INSERT INTO scan_runs(at, files_before, files_after, added, changed, removed) VALUES(?,?,?,?,?,?)',
+    )
+    .run(new Date().toISOString(), before.size, after.size, added, changed, removed);
+  const scanId = Number(info.lastInsertRowid);
+  const ins = db.prepare(
+    'INSERT OR REPLACE INTO scan_changes(scan_id, path, kind, before_hash, after_hash) VALUES(?,?,?,?,?)',
+  );
+  for (const r of rows) ins.run(scanId, r.path, r.kind, r.b, r.a);
+  return { added, changed, removed };
+}
+
 export async function syncProject(
   db: Database,
   projectRoot: string,
   absPaths: string[],
 ): Promise<SyncProjectResult> {
   const t0 = Date.now();
+  // ★ §7：进来先拍一张"前"的快照（只读 files 表，很便宜）
+  const before = snapshotHashes(db);
   const results: SyncFileResult[] = [];
   for (const p of absPaths) {
     results.push(await syncFile(db, projectRoot, p));
@@ -1200,6 +1260,8 @@ export async function syncProject(
   const by = (s: SyncStatus) => results.filter((r) => r.status === s).length;
   // 收尾：跨文件调用解析（同文件未命中的调用沿 imports 解析到目标文件符号；幂等，只处理 pending）
   const cross = resolveCrossFileCalls(db, projectRoot);
+  // ★ §7：出去再拍一张，差写进 scan_runs / scan_changes（逐文件）
+  const changes = recordScanRun(db, before);
   return {
     total: results.length,
     updated: by('updated'),
@@ -1208,6 +1270,7 @@ export async function syncProject(
     failed: by('failed'),
     ms: Date.now() - t0,
     results,
+    changes,
     cross: {
       total: cross.total,
       resolved: cross.resolved,
@@ -1815,7 +1878,7 @@ export function resolveCrossFileCalls(
   //   不包事务 = 每条语句各自 autocommit ⇒ **每条一次 fsync** ⇒ 实测 20 文件规模的一批要 1.7s
   //   （后台补齐 42s 里 27s 全在这里）。外层已有事务（如冷启 bootstrap）时自动降级为 no-op。
   const ownTx = !inTransaction(db);
-  if (ownTx) db.exec('BEGIN');
+  if (ownTx) db.exec('BEGIN IMMEDIATE');
   try {
   for (const r of rows) {
     const rel = r.from_node_id.split('#')[0];
@@ -2141,7 +2204,7 @@ export function pruneDeletedFiles(
   }
   if (dead.length === 0) return [];
   const ownTx = !inTransaction(db);
-  if (ownTx) db.exec('BEGIN');
+  if (ownTx) db.exec('BEGIN IMMEDIATE');
   try {
     for (const rel of dead) removeFileRel(db, rel);
     if (ownTx) db.exec('COMMIT');

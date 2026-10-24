@@ -274,6 +274,10 @@ export function expectationPaths(e: Expectation): string[] {
 export function collectExpectations(dsl: DesignDSL): Array<{ node_id: string; node_label: string; expectation: Expectation }> {
   const out: Array<{ node_id: string; node_label: string; expectation: Expectation }> = [];
   for (const n of dsl.geometry?.nodes ?? []) {
+    // ★★ 2026-10-23：`intent='retired'` 的节点**不再收集判据**。
+    //   它描述的东西已确认不存在（对账写入 retired）⇒ 继续求值只会制造永久红。
+    //   判据本身留在册子里当历史，不删。★ 缺省（无 intent）= `live`，照常收集。
+    if (n.intent === 'retired') continue;
     for (const e of n.decision?.expectations ?? []) {
       out.push({ node_id: n.id, node_label: n.label ?? n.id, expectation: e });
     }

@@ -38,6 +38,10 @@ certs/.work/
 # ★ 唯一例外：设计侧（手写权威）必须进 git
 !.agent-io/design/
 !.agent-io/design/**
+# ★ 设计事务的**工作副本**（`scripts/design_txn.mjs` 的 .txn/）不进 git：
+#   它是临时文件（每册 ~5.5MB），commit 后就消失；进了 git 会被 `git add -A` 收进去。
+#   ★ 必须写在 `!.agent-io/design/**` 之后 —— 后者会 un-ignore 整个目录，靠顺序再收回来。
+.agent-io/design/.txn/
 # ★ 测试夹具里的 .agent-io（含 cache.db）不进 git
 certs/*/.agent-io/
 # DSL 布局/内容的自动备份目录（带时间戳成批生成，不入库，避免大体积误提交）

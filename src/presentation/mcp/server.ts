@@ -18,7 +18,7 @@ import { registerAllTools } from './server_registry.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { watchProjectTool } from '../../application/observe/runtime/watch_project_tool.js';
-import { listFeatures, getDSL } from '../../infrastructure/storage.js';
+import { listDesignSheets, getDSL } from '../../infrastructure/storage.js';
 import { listProjectDocs } from '../../application/meta/docs/project_docs.js';
 import { installLifecycle } from './lifecycle.js';
 import { closeAllActiveWatches } from '../../application/observe/runtime/watch_project_tool.js';
@@ -100,7 +100,8 @@ server.resource(
   'project-docs',
   new ResourceTemplate('agent-io://{feature}/docs', {
     list: async () => {
-      const resources = listFeatures()
+      // ★ 2026-10-23：listFeatures 已删（features/ 退役）⇒ 读设计侧唯一清单
+      const resources = listDesignSheets()
         .map((d) => ({
           uri: `agent-io://${d.feature}/docs`,
           name: `项目文档 · ${d.feature}`,
@@ -164,14 +165,28 @@ function deriveFeatureName(projectDir: string): string {
  *   1. import_project 全量导入工作空间 → 建索引（cache.db + 设计 DSL）
  *   2. watch_project 常驻监听 → 文件变更增量保鲜 + 影响报告
  * 环境变量（与 serve.ts 约定一致）：
- *   AGENT_IO_AUTO_WATCH=1            开启本钩子
+ *   AGENT_IO_AUTO_WATCH=0            **关闭**本钩子（★ 2026-10-23 起默认开启，见下）
  *   AGENT_IO_PROJECT_DIR=<dir>       目标工作空间（默认 cwd）
  *   AGENT_IO_WATCH_FEATURE=<name>    feature 名（默认取目录名）
  *   AGENT_IO_WATCH_INTERVAL_MS=<ms>  reconcile 兜底扫描间隔（默认 30000）
  * 失败不致命：任何一步出错仅打日志，不影响 MCP 工具服务。
+ *
+ * ## ★★★ 2026-10-23：开关从「默认关」改成「默认开」
+ *
+ * 病灶：本钩子一直存在、也一直正确，但**要 `AGENT_IO_AUTO_WATCH=1` 才启** ⇒ 本仓从没设过
+ * ⇒ 实测后果：`live/*.dsl.json` **6 册里 5 册过期**（最久 84 小时），
+ *   而 `live` 正是「实际 DSL 表示现状」的那一份，也是 `diff_views` / 离线查看的输入。
+ *   `serve.ts` 的 404 文案还写着「或等待自动同步」—— **那个"自动同步"指的就是本函数，而它没跑过。**
+ *
+ * 判据（用户原话）：「**保鲜机制就是用来保鲜的**，你这样一直让它不保鲜，那你这个保鲜机制做来是干嘛的？
+ * 而且本身这保鲜机制也不贵。」
+ * ⇒ 一个需要"记得设 env 才生效"的保鲜机制 **等于没有**。默认必须开，关要靠显式选择。
+ *
+ * 旧的默认关理由（2026-10-21 记的"initialize 60s 无响应"）仍然有效，但解法已经落地：
+ * 下面 `setTimeout(1500) + void`（延后起、不 await）。⇒ 不再是"默认关"的理由。
  */
 async function runAutoWatchHook(): Promise<void> {
-  if (process.env.AGENT_IO_AUTO_WATCH !== '1') return;
+  if (process.env.AGENT_IO_AUTO_WATCH === '0') return;
   const projectDir = resolveProjectDir();
   const feature = process.env.AGENT_IO_WATCH_FEATURE?.trim() || deriveFeatureName(projectDir);
   const reconcileMs = parseInt(process.env.AGENT_IO_WATCH_INTERVAL_MS ?? '30000', 10) || 30000;

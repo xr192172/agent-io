@@ -27,7 +27,7 @@ import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 // ★ T90：**反查 feature**（"这次实现所依据的决策"）—— ★ 4 个重写工具的入参里**根本没有 feature**，
 //   所以在这条咽喉点**自己反查** ⇒ **零调用点改动**。
-import { getDSL, listFeatures } from '../../../infrastructure/storage.js';
+import { getDSL, listDesignSheets } from '../../../infrastructure/storage.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -159,7 +159,7 @@ export function createFileSnapshot(
   const intents: Record<string, { summary?: string; acceptance?: string }> = {};
   {
     // ★ **命中 0 个或多个 ⇒ 一律不标** —— 不许替人选（与 `applyChainEdge` 的 `pick` 同一立论）
-    const hits = listFeatures().filter((d) => d.source_root && path.resolve(d.source_root) === absRoot);
+    const hits = listDesignSheets().filter((d) => d.source_root && path.resolve(d.source_root) === absRoot);
     if (hits.length === 1) {
       const dsl = getDSL(hits[0].feature);
       const byPath = new Map(

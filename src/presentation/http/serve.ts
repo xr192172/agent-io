@@ -17,7 +17,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, exec } from 'node:child_process';
-import { getDSL, getDesignSheetFile, getLiveDslFile, getLiveFeature, onDslChange, getStorageRoot, getFeaturesDir } from '../../infrastructure/storage.js';
+import { getDSL, getDesignSheetFile, getLiveFeature, onDslChange, getStorageRoot, listDesignSheets } from '../../infrastructure/storage.js';
 // ★★★ 2026-10-23：画布（annotations / user_nodes / canvas_notes）搬出设计 DSL 后的唯一读写口。
 //   serve 的 4 个画布端点只碰它，**不再** import `saveDSL` —— 这是「和前端切割」的接线点。
 import { enableObserveFromEnv } from '../../infrastructure/analysis/observe/run_sentinel.js';
@@ -261,42 +261,27 @@ function handleApiLoad(_req: http.IncomingMessage, res: http.ServerResponse): vo
 
 function handleApiFeatures(_req: http.IncomingMessage, res: http.ServerResponse): void {
   try {
-    // ★ 2026-10-01 修：这里原先把 `features/` 拼成 `<cwd>/.agent-io/features` —— 而**写侧**
-    //   （`storage.ts#saveDSL` → `getFeaturesDir()`）写的是 **`<dataHome>/.agent-io/features`**。
-    //   与账本「结论二」**同型**：`cwd ≠ 包根` 时就是"一边写、另一边读到空"（此处表现为
-    //   `/api/features` 永远返回空列表）。⇒ 改成走**同一个 accessor**，不再自己拼。
-    const featuresDir = getFeaturesDir();
-    if (!fs.existsSync(featuresDir)) {
-      guard(res, '/api/features', 'features', { features: [] });
-      return;
-    }
-    const files = fs.readdirSync(featuresDir)
-      .filter((f) => f.endsWith('.json') && !f.endsWith('.overlay.json')); // overlay 是设计意图层，不是独立 feature
-    const features = files.flatMap((f) => {
-      try {
-        const fp = path.join(featuresDir, f);
-        const dsl = JSON.parse(fs.readFileSync(fp, 'utf-8'));
-        // 主导语言：semantic.files 里出现最多的扩展名
-        const langCount = new Map<string, number>();
-        for (const sf of dsl.semantic?.files ?? []) {
-          const ext = path.extname(sf.path ?? '').slice(1).toLowerCase();
-          if (ext) langCount.set(ext, (langCount.get(ext) ?? 0) + 1);
-        }
-        let language = '';
-        let bestN = 0;
-        for (const [l, n] of langCount) if (n > bestN) { bestN = n; language = l; }
-        return [{
-          feature: dsl.feature,
-          title: dsl.title || dsl.feature,
-          files: dsl.semantic?.files?.length ?? 0,
-          nodes: Array.isArray(dsl.geometry?.nodes) ? dsl.geometry.nodes.length : 0,
-          language,
-          updated_at: fs.statSync(fp).mtime.toISOString(),
-        }];
-      } catch {
-        return []; // 单个 DSL 损坏不影响列表
+    // ★ 2026-10-23：`features/` 目录已退役（overlay 并入设计册）⇒ 清单改读**设计侧唯一来源**
+    //   `listDesignSheets()`（与 MCP resources、写闸同一条读端）。
+    const dsls = listDesignSheets();
+    const features = dsls.map((dsl) => {
+      // 主导语言：semantic.files 里出现最多的扩展名
+      const langCount = new Map<string, number>();
+      for (const sf of dsl.semantic?.files ?? []) {
+        const ext = path.extname(sf.path ?? '').slice(1).toLowerCase();
+        if (ext) langCount.set(ext, (langCount.get(ext) ?? 0) + 1);
       }
-    }).sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? ''));
+      let language = '';
+      let bestN = 0;
+      for (const [l, n] of langCount) if (n > bestN) { bestN = n; language = l; }
+      return {
+        feature: dsl.feature,
+        title: dsl.title || dsl.feature,
+        files: dsl.semantic?.files?.length ?? 0,
+        nodes: Array.isArray(dsl.geometry?.nodes) ? dsl.geometry.nodes.length : 0,
+        language,
+      };
+    });
     guard(res, '/api/features', 'features', { features });
   } catch (e) {
     sendError(res, 500, (e as Error).message);

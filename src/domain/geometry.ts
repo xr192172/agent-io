@@ -6,6 +6,7 @@
 import type { DesignDSL } from './types.js';
 import type { NodeShapes } from './animation.js';
 import type { TaskSpec } from './task_schema.js';
+import type { OverlayAnchor } from './overlay.js';
 
 /** 图纸/节点状态 */
 export type DiagramStatus = 'draft' | 'in_progress' | 'done';
@@ -233,7 +234,37 @@ export interface Node {
    * 栈底最老、栈顶最近被取代的版本；当前生效版永远是 node.decision 本身。
    */
   decision_history?: DecisionHistoryEntry[];
+  /**
+   * ★★ 节点的**意图状态**（2026-10-23）—— ★ 它是「打算」，不是「事实」。
+   *
+   * ## 为什么必须落盘（而不是派生）
+   * `to_delete` **不可派生**：盘上有、节点有，它与 `live` 在**事实层面完全同构**，
+   * 唯一的区别是「我打算删它」——那是一个决定，推不出来。
+   * ⇒ 与 `taskLevel`（纯派生，`postExpectations().length > 0`）不同：那一维只有事实，
+   *   这一维含意图。`VISION.md`：**意图是源头，不是派生物。**
+   *
+   * ## 四态
+   * · `planned`   —— 设计要它，盘上还没写（待施工）
+   * · `live`      —— 已实现（**缺省值**：现有节点不必逐个补）
+   * · `to_delete` —— 已决定删，但实际侧还没删完 / 善后未完成
+   * · `retired`   —— 对账确认盘上已无。★ **只能由对账写入**（`to_delete ∧ 盘上无 ⇒ retired`），
+   *                  手设等于用声称代替验证。
+   *
+   * ## 它同时决定「判据还参不参与求值」
+   * `retired` 节点的判据**不再被 `collectExpectations` 收集** —— 它描述的东西已经不存在，
+   * 继续求值只会制造永久红。判据本身留在册子里当历史。
+   */
+  intent?: NodeIntent;
+  /**
+   * 运行时状态（原 features/<f>.overlay.json 的内容，2026-10-23 并入设计册）。
+   * 读写一律经 storage_overlay.ts 的 loadOverlay / saveOverlay（唯一读写口），
+   * saveOverlay 走 saveDesignSheet（写闸 + 事务重定向）。
+   */
+  overlay?: OverlayAnchor;
 }
+
+/** 节点的意图状态（`Node.intent` 的唯一取值域） */
+export type NodeIntent = 'planned' | 'live' | 'to_delete' | 'retired';
 
 /**
  * ★★★ 决策作者的**类别**（可信度轴）—— `NodeDecision.author` / `DecisionHistoryEntry.author` 的唯一取值域。

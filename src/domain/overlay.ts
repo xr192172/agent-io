@@ -563,6 +563,10 @@ export function applyOverlay(base: DesignDSL, overlay: DesignOverlay): DesignDSL
           //   它们只住 `design/<f>.dsl.json`（DESIGN.md:300 的"唯一权威"）。
           //   此处原先回填 ⇒ 造成"同一份 decision 在 design/ 和 overlay 各一份"（37×2，实测一致但因镜像而会漂移）。
           ...(a.attributes ? { attributes: a.attributes } : {}),
+          // ★★★ 2026-10-23（overlay 并入设计册）：锚点整体 stamp 到 `n.overlay`
+          //   —— 运行时状态（status/progress/stale/lifecycle）的唯一住处就是节点自己，
+          //   随 `saveDesignSheet`/`saveDSL` 原子落盘，不再有第二个文件、第二个写手。
+          overlay: a,
         } as typeof n)
       : { ...n };
     // ★★★ 2026-10-22（progress 权威归一）：**这一处不再自带判据** —— 调
@@ -639,6 +643,11 @@ export function applyOverlay(base: DesignDSL, overlay: DesignOverlay): DesignDSL
       };
     }
   }
+  // ★★★ 2026-10-23（overlay 并入设计册）：global 的**原始形态**也随册落盘
+  //   —— `applyOverlay` 投影 title/theme/goals 等可读字段之外，整包存进 `overlay_global`，
+  //   供 `loadOverlay` 原样取回（roundtrip 零损失；无 global 则不写，不产生空壳键）。
+  if (g) (out as unknown as { overlay_global?: OverlayGlobal }).overlay_global = g;
+
   return out;
 }
 

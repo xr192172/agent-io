@@ -1,46 +1,51 @@
 /**
  * 设计层 overlay 持久化 + 合并入口
  *
- * 存储：<features>/<feature>.overlay.json（与 base 分离，base 可再生成，overlay 独立保留）
- * 入口：mergeDesignLayer(base) —— 读旧 overlay（无则从既有设计 DSL 一次性迁移），
- * 按稳定锚点 reconcile 到新 base，落盘 overlay，并把设计意图合回 base 返回。
+ * ★★ 2026-10-23（overlay 并入设计册）：**overlay 不再是独立文件**。
+ *   运行时状态（status/progress/stale/lifecycle）就住在设计册的 `nodes[].overlay`，
+ *   全局件（title/theme/goals…）住在册上的 `overlay_global` —— 与设计意图同一个文件、同一个写手
+ *   （`saveDesignSheet`，带写闸 + 事务重定向）。
+ *   旧 `<features>/<f>.overlay.json` 已退役；`loadOverlay`/`saveOverlay` 接口不变，只换存储。
  */
-import fs from 'node:fs';
-import path from 'node:path';
-import { getFeaturesDir, getDSL } from './storage.js';
+import { getDesignSheet, saveDesignSheet } from './storage.js';
 import type { DesignDSL } from '../domain/types.js';
 import type {
   DesignOverlay,
+  OverlayAnchor,
+  OverlayGlobal,
   ReconcileStats,
 } from '../domain/overlay.js';
 import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, applyOverlay, statsLine, mergeTagsIntoOverlay, mergeLifecycleIntoOverlay, hasAnchorPayload } from '../domain/overlay.js';
 
-function getOverlayFile(feature: string): string {
-  if (!/^[a-zA-Z0-9_-]+$/.test(feature)) {
-    throw new Error(`非法 feature 名: "${feature}"，必须匹配 ^[a-zA-Z0-9_-]+$`);
-  }
-  return path.join(getFeaturesDir(), `${feature}.overlay.json`);
-}
-
-/** 保存 overlay（权威写） */
+/** 保存 overlay（权威写）。设计册不存在 ⇒ **抛**（绝不静默建册）。 */
 export function saveOverlay(ov: DesignOverlay): string {
-  const file = getOverlayFile(ov.feature);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：`getOverlayFile()` = `<dataHome>/.agent-io/features/<f>.overlay.json`
-  //   ⇒ classifyWriteSubject = product（overlay 是工具自有设计状态）⇒ 不过闸。
-  fs.writeFileSync(file, JSON.stringify(ov, null, 2), 'utf-8');
-  return file;
+  const dsl = getDesignSheet(ov.feature);
+  if (!dsl) throw new Error(`saveOverlay：设计册不存在（${ov.feature}）⇒ 先经 manage_feature create / import_project 建册，overlay 不再独立落盘（2026-10-23 并入设计册）`);
+  const nodes = dsl.geometry?.nodes ?? [];
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  for (const [id, a] of Object.entries(ov.anchors ?? {})) {
+    const n = byId.get(id);
+    // ★ 孤儿不静默丢：写侧拿到册上没有的锚点 id ⇒ 抛（合法流不会走到这 —— reconcile 先对过账）
+    if (!n) throw new Error(`saveOverlay：锚点 "${id}" 在设计册（${ov.feature}）里没有对应节点 ⇒ 拒写（孤儿要人看，不许静默丢）`);
+    n.overlay = a;
+  }
+  // overlay 里有、循环里没碰到的节点（即被 prune 掉的锚点）⇒ 清掉节点上的旧 overlay
+  for (const n of nodes) {
+    if (n.overlay && !(n.id in (ov.anchors ?? {}))) delete n.overlay;
+  }
+  (dsl as unknown as { overlay_global?: OverlayGlobal }).overlay_global = ov.global;
+  return saveDesignSheet(dsl); // ★ 带写闸（assertDslWriteAllowed）+ 事务重定向（txnRedirect）
 }
 
-/** 读取 overlay，不存在返回 null */
+/** 读取 overlay，不存在返回 null。读端唯一：从设计册的 `nodes[].overlay` + `overlay_global` 现算。 */
 export function loadOverlay(feature: string): DesignOverlay | null {
-  const file = getOverlayFile(feature);
-  if (!fs.existsSync(file)) return null;
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf-8')) as DesignOverlay;
-  } catch {
-    return null;
-  }
+  const dsl = getDesignSheet(feature); // ← 走设计册（已受事务重定向）
+  if (!dsl) return null;
+  const anchors: Record<string, OverlayAnchor> = {};
+  for (const n of dsl.geometry?.nodes ?? []) if (n.overlay) anchors[n.id] = n.overlay;
+  const global = (dsl as unknown as { overlay_global?: OverlayGlobal }).overlay_global;
+  if (!Object.keys(anchors).length && !global) return null;
+  return { version: 1, feature, anchors, ...(global ? { global } : {}) };
 }
 
 export interface MergeResult {
@@ -165,18 +170,25 @@ export function dropLifecycleFromOverlay(
 }
 
 /**
- * 合并设计层：base（新扫描结构）→ 读旧 overlay（或从既有设计 DSL 一次性迁移）
- * → reconcile 到新 base 锚点 → 落盘 overlay → 把设计意图合回 base。
+ * 合并设计层：base（新扫描结构）→ 读旧 overlay → reconcile 到新 base 锚点
+ * → 把设计意图（含 stamp 好的 `nodes[].overlay`）合回 base 返回。
+ *
+ * ★★ 2026-10-23（overlay 并入设计册）：**这里不再独立落盘 overlay** ——
+ *   `applyOverlay` 会把 reconcile 后的锚点 stamp 到 `nodes[].overlay`（含 `overlay_global`），
+ *   调用方（import_project）紧接着 `saveDSL(designDsl)` 一次性落盘。
+ *   ★ 为什么不能保留原来的 `saveOverlay(overlay)`：fork 首次导入时设计册**还不存在**
+ *     （merge 在 saveDSL 之前跑）⇒ 按新语义会抛「设计册不存在」—— 顺序雷。
+ *     而 rebuild 场景它写的也是**旧册**，马上会被新册整个覆盖 —— 纯属多余一笔。
  */
 export function mergeDesignLayer(base: DesignDSL): MergeResult {
   const existing = loadOverlay(base.feature);
-  const legacyDSL = getDSL(base.feature);
+  const legacyDSL = getDesignSheet(base.feature);
   let old: DesignOverlay;
   let seeded = false;
   if (existing) {
     old = existing;
   } else if (legacyDSL) {
-    // 首次无 overlay 文件：从既有设计 DSL 迁移一次（以后不再走这里）
+    // 首次无 overlay：从既有设计 DSL 迁移一次（以后不再走这里）
     old = seedOverlayFromDsl(legacyDSL);
     seeded = true;
   } else {
@@ -186,12 +198,11 @@ export function mergeDesignLayer(base: DesignDSL): MergeResult {
   const candidates = buildCandidates(base);
   const edgeCandidates = buildEdgeCandidates(base);
   const { overlay, stats } = reconcileOverlay(old, candidates, edgeCandidates);
-  const file = saveOverlay(overlay);
   const dsl = applyOverlay(base, overlay);
 
   const message = [
     statsLine(stats),
-    `overlay: ${file}`,
+    `overlay：已并入设计册（${Object.keys(overlay.anchors ?? {}).length} 锚点 · 随 saveDSL 落盘）`,
     seeded ? '（首次从既有设计 DSL 迁移铺底，之后只做增量对账）' : '',
   ].filter(Boolean).join(' · ');
 

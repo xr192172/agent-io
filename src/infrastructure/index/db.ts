@@ -43,11 +43,36 @@ export function inTransaction(db: Database): boolean {
   return (txDepth.get(db as unknown as object) ?? 0) > 0;
 }
 
-/** 开一层批量事务（最外层真正 BEGIN，嵌套只加深度） */
+/**
+ * 开一层批量事务（最外层真正 BEGIN，嵌套只加深度）
+ *
+ * ★★★ 2026-10-23：**必须 `BEGIN IMMEDIATE`，不许裸 `BEGIN`** —— 这治的是
+ *   `busy_timeout = 5000` **治不了**的那一半。
+ *
+ * ## 病灶（实测 2026-10-23 21:30）
+ * `syncProject` 在 `resolveCrossFileCalls` 处抛 `database is locked`（errcode=5），
+ * **而 `openDb` 明明设了 `PRAGMA busy_timeout = 5000`**。为什么它没生效？
+ *
+ * ## 原因：SQLite 的 **deferred 事务「锁升级」不可重试**
+ * 裸 `BEGIN` = DEFERRED：开始时**只拿读锁**，第一次写才尝试升级成写锁。
+ * 若此刻另一个连接（本仓的 MCP server 常驻，PID 21040）已持有写锁 ⇒ SQLite **立即**返回
+ * SQLITE_BUSY，**并且故意不按 busy_timeout 等待** —— 因为等待会让两个"持读锁、都想升级"的
+ * 连接互相死锁。
+ * ⇒ `busy_timeout` 只治"**一开始就拿锁**"的争用，**治不了"半路升级"**。
+ *
+ * ## 修法
+ * `BEGIN IMMEDIATE` 在**事务开始**就取 RESERVED（写意图）锁：拿不到时**尚未持有任何锁**
+ * ⇒ 此时按 `busy_timeout` 排队等待**是安全的**。争用于是从"立刻失败"变成"排队最多 5s"。
+ *
+ * ## 判据
+ * `grep -rn "exec('BEGIN')" src` 必须为 **0**；只许 `exec('BEGIN IMMEDIATE')`。
+ * ★ 全仓 7 处已改（`db.ts` ×2 / `symbols.ts` ×4 / `semantic_search.ts` ×1）；
+ *   `task_history.ts:98` 早在 2026-10-22 就已是 IMMEDIATE —— 这条经验一直没推广到索引层。
+ */
 export function beginBatch(db: Database): void {
   const key = db as unknown as object;
   const d = txDepth.get(key) ?? 0;
-  if (d === 0) db.exec('BEGIN');
+  if (d === 0) db.exec('BEGIN IMMEDIATE');
   txDepth.set(key, d + 1);
 }
 
@@ -222,7 +247,7 @@ function migrateV15ToV16(db: Database): string {
     .all() as unknown as Array<{ p: string; c: number }>;
   const orphanRows = orphans.reduce((n, o) => n + o.c, 0);
 
-  db.exec('BEGIN');
+  db.exec('BEGIN IMMEDIATE');
   try {
     // ① 腾名字（先子后父：files 是父）
     for (const t of V16_TABLES) db.exec(`ALTER TABLE ${t} RENAME TO ${t}_v15`);

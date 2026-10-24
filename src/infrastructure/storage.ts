@@ -69,10 +69,11 @@ export function getDataHome(): string {
 /**
  * ★★ 本文件 14 处裸调（writeFileSync ×6 / renameSync / rmSync / unlinkSync ×6）**不搬**（2026-10-22 分类收口）：
  *   落点全在 `<dataHome>/.agent-io/**`（features / live / design / baseline / archive / cache）
- *   或 `<dataHome>/agent-io.json`（活态视图，`getLiveDslFile()`，现只删不写）
  *   ⇒ `classifyWriteSubject` = **product**（工具自有状态，不是用户源码）⇒ 不过闸。
  *   ★ 逐处对应：saveLiveFeature · saveDesignSheetDSL · saveSnapshot · saveBaselineFeature ·
  *     saveArchiveEntry · clearArchiveEntries · saveDSL#writeAtomic · deleteFeature（4 行）· clearAllFeatures。
+ *   ★ 2026-10-23：原第 72 行那类「`<dataHome>/agent-io.json` 活态视图」已随 `getLiveDslFile()` 一并删除
+ *     —— 落点现在只剩 `.agent-io/**` 一处，没有根级产物文件了。
  */
 /** 设计存储根目录：<dataHome>/.agent-io */
 export function getStorageRoot(): string {
@@ -113,27 +114,10 @@ export function requireProjectRoot(cands: Record<string, unknown>): string {
 }
 
 /**
- * feature 持久化目录：**`<dataHome>/.agent-io/features`**。
- * ★ 2026-10-01 修注释：原文写的是 `<cwd>/.agent-io/features` —— **与实现不符**（实现一直走
- *   `getStorageRoot()` = dataHome）。错注释本身就是一种"判据分叉"：它会让读者照着 `<cwd>` 去读。
+ * ★ 2026-10-23：`getFeaturesDir` / `getFeatureFile` / `listFeatures` / `deleteFeature` /
+ *   `clearAllFeatures` 已全部删除 —— features/ 目录整体退役（overlay 并入设计册后，
+ *   那个目录里已没有任何活物）。feature 的唯一主体 = `design/<f>.dsl.json`。
  */
-export function getFeaturesDir(): string {
-  return path.join(getStorageRoot(), 'features');
-}
-
-/** 活态 DSL 文件：<dataHome>/agent-io.json */
-export function getLiveDslFile(): string {
-  return path.join(getDataHome(), 'agent-io.json');
-}
-
-/** 单个 feature 文件路径 */
-export function getFeatureFile(feature: string): string {
-  // 防止路径穿越：feature 名必须匹配 [a-zA-Z0-9_-]
-  if (!/^[a-zA-Z0-9_-]+$/.test(feature)) {
-    throw new Error(`非法 feature 名: "${feature}"，必须匹配 ^[a-zA-Z0-9_-]+$`);
-  }
-  return path.join(getFeaturesDir(), `${feature}.json`);
-}
 
 /** 实际 DSL 目录（动态快照）：<dataHome>/.agent-io/live */
 export function getLiveDir(baseDir?: string): string {
@@ -330,13 +314,60 @@ export function getDesignSheetFile(feature: string, baseDir?: string): string {
 }
 
 /** 保存设计图（**手写**那一份；带 `_sync` 标记，与 `saveLiveFeature` 同形 ⇒ 两份文件形状一致） */
+/**
+ * ★★★ 2026-10-23（§4.6 设计事务）：**事务进行中，设计册的读写都重定向到工作副本。**
+ *
+ * ## 为什么在这里收口（而不是每个工具自己判断）
+ * 加一个 `design_txn` 工具解决不了"**记得调**"——那正是本仓反复出现的病（写闸 / gen-db / saveDSL）。
+ * 而 `saveDesignSheet` / `getDesignSheet` 是设计册的**唯一读写出口** ⇒ 在这里判一次，
+ * **所有工具（`edit_dsl` / `design_line` / `task_ops`）自动进练手场**，一个都不用改。
+ *
+ * ## 语义
+ * · 有事务且 `manifest.target` 就是这次要读/写的册子 ⇒ 换成 `.txn/work.dsl.json`
+ * · 无事务 / 事务针对别的册子 ⇒ 原路径（行为与今天完全一致）
+ *
+ * ## 不许静默
+ * 重定向**每次写**都往 stderr 报一行（进程内只报一次，避免刷屏）：读到/写到的不是正式册，
+ * 这件事必须让调用方看见 —— 否则"改了但没提交"会变成一个安静的坑。
+ */
+const TXN_DIR = '.agent-io/design/.txn';
+const TXN_MANIFEST = `${TXN_DIR}/manifest.json`;
+let txnNoticeShown = false;
+
+function txnRedirect(file: string): string {
+  try {
+    if (!fs.existsSync(TXN_MANIFEST)) return file;
+    const m = JSON.parse(fs.readFileSync(TXN_MANIFEST, 'utf-8')) as {
+      target?: string;
+      work_file?: string;
+      book?: string;
+    };
+    if (!m.target || !m.work_file) return file;
+    if (path.resolve(m.target) !== path.resolve(file)) return file;
+    if (!fs.existsSync(m.work_file)) return file;
+    if (!txnNoticeShown) {
+      txnNoticeShown = true;
+      process.stderr.write(
+        `⚠ 设计事务进行中（${m.book}）⇒ 读写走工作副本 ${m.work_file}；` +
+          `正式册 ${m.target} 在 commit 前不会被改动（cancel = 字节级还原）\n`,
+      );
+    }
+    return m.work_file;
+  } catch {
+    // 清单损坏 ⇒ 不重定向（退回正式册），但**不静默**：这本身是异常状态
+    process.stderr.write(`⚠ 事务清单损坏（${TXN_MANIFEST}）⇒ 本次退回正式册\n`);
+    return file;
+  }
+}
+
 export function saveDesignSheet(dsl: DesignDSL, baseDir?: string): string {
   // ★★ 2026-10-22：与 `saveDSL` **同一道闸** —— 它写的是**同一个文件**（`design/<f>.dsl.json`）。
   //   只闸 `saveDSL` 而放它 = 把门焊上又在旁边留个洞（`task_ops` 用它落盘，那条路在 edit_dsl 作用域内）。
   const via = assertDslWriteAllowed(dsl, 'saveDesignSheet');
   const dir = getDesignDir(baseDir);
   fs.mkdirSync(dir, { recursive: true });
-  const file = getDesignSheetFile(dsl.feature, baseDir);
+  // ★ 2026-10-23：事务进行中 ⇒ 落工作副本（见上方 txnRedirect 的论证）
+  const file = txnRedirect(getDesignSheetFile(dsl.feature, baseDir));
   const data = {
     ...dsl,
     _sync: { ...syncMeta(dsl, 'design_sheet'), via },
@@ -347,7 +378,8 @@ export function saveDesignSheet(dsl: DesignDSL, baseDir?: string): string {
 
 /** 读取设计图，不存在返回 null */
 export function getDesignSheet(feature: string, baseDir?: string): DesignDSL | null {
-  const file = getDesignSheetFile(feature, baseDir);
+  // ★ 2026-10-23：事务进行中 ⇒ 读工作副本（否则"改了工作副本、读的却是正式册"，preview 与 edit 不一致）
+  const file = txnRedirect(getDesignSheetFile(feature, baseDir));
   if (!fs.existsSync(file)) return null;
   try {
     return JSON.parse(fs.readFileSync(file, 'utf-8')) as DesignDSL;
@@ -763,11 +795,6 @@ export function clearArchiveEntries(feature: string, baseDir?: string): void {
   if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
 }
 
-/** 确保 features 目录存在 */
-function ensureFeaturesDir(): void {
-  fs.mkdirSync(getFeaturesDir(), { recursive: true });
-}
-
 /** DSL 变更回调（serve.ts 注册后，saveDSL 会触发） */
 type DslChangeCallback = (feature: string, source: string) => void;
 let dslChangeCallback: DslChangeCallback | null = null;
@@ -849,10 +876,10 @@ export function saveDSL(
   // ★★★ 2026-10-22（A1/A2）：**先问「你是谁」** —— 拿不到写授权就抛（不是警告）。
   //   位置必须在任何落盘 / 自增 rev **之前**：被拒的写不许留下任何痕迹（连 rev 都不许动）。
   const writeVia = assertDslWriteAllowed(dsl, 'saveDSL');
-  ensureFeaturesDir();
-  // ★★★ 2026-10-20：saveDSL 写的是**设计侧**（下面 `getDesignSheetFile`），而上面只建了 features/ ⇒
-  //   全新 `AGENT_IO_HOME` 下 `writeAtomic` 直接 ENOENT（实测：t352 / t353 的 seed 崩在这一行）。
-  //   ★ 与 `saveDesignSheet` 同一条纪律：**写之前先保证落点目录在**（不是测试夹具的问题，是真写端缺口）。
+  // ★★★ 2026-10-23：`ensureFeaturesDir()` 已删 —— features/ 目录整体退役（overlay 并入设计册），
+  //   再 mkdir 它 = 「360 装回来了」。
+  // ★★★ 2026-10-20：saveDSL 写的是**设计侧**（下面 `getDesignSheetFile`）⇒
+  //   写之前先保证落点目录在（不是测试夹具的问题，是真写端缺口）。
   fs.mkdirSync(getDesignDir(), { recursive: true });
   // 乐观锁：读当前 rev 对比 base
   if (base_dsl_rev !== undefined) {
@@ -891,7 +918,10 @@ export function saveDSL(
   // ★★ 这一改顺便修好了 import_project 的 fork：它此前调 saveDSL(designDsl) 想「fork 一份设计」，
   //   而 saveDSL 写的是 features/（派生）⇒ **设计侧从来没被真的 fork 过** ⇒ 那正是「rebuild_design 调了没生效」的根因。
   //   ⇒ 现在 saveDSL 写 design/，fork 才真的落到设计侧。
-  const file = getDesignSheetFile(dsl.feature);
+  // ★ 2026-10-23（§4.6）：事务进行中 ⇒ 落工作副本。
+  //   ★★ 这一处**必须补**：`saveDSL` 与 `saveDesignSheet` 写的是**同一个文件**，
+  //   只重定向后者 = 把门焊上又在旁边留个洞（`update_feature.ts` 走的正是 `saveDSL`）。
+  const file = txnRedirect(getDesignSheetFile(dsl.feature));
   // ★★★ 2026-10-12（T188）：**改成原子写**（临时文件 + rename）—— 治的是 M4 的**根因**。
   //   为什么必须：本函数原先用**裸 `writeFileSync`** 直写目标文件（全仓 `renameSync` **0** 处）
   //   ⇒ ★ **写不是原子的**：看护进程（watch/daemon）写的时候，并发的读**可能读到半截**
@@ -919,46 +949,6 @@ export function saveDSL(
   }
 
   return file;
-}
-
-/**
- * ★ T188：**最近一次"活态 DSL 读不了 ⇒ 回退到存档"**的记录（没有则 `null`）。
- * ★ 为什么要它：那次回退**会改变你读到的内容**（可能是**较旧**的一份），
- *   而此前它**完全静默**（§2.3「不报错的错」）。⇒ 现在**记下来 + 一次性 stderr 提示**。
- * ★ 未做（登记在账）：把它接进 MCP 的告警通道（`tool_warnings`）——
- *   那需要一层注入（infrastructure 不许 import presentation，先例是 `dslChangeCallback`）。
- */
-let lastLiveFallback: { file: string; error: string; at: string } | null = null;
-let liveFallbackWarned = false;
-
-/** 读最近一次"活态回退"记录（`null` = 本进程没发生过）。 */
-export function getLiveFallback(): { file: string; error: string; at: string } | null {
-  return lastLiveFallback;
-}
-
-/**
- * ★ T190：**活态文件现在还能不能解析** —— 给告警做**自清**用。
- *
- * ## 为什么要它（★ 我第一版漏了这一步）
- * `lastLiveFallback` 是**一条历史记录**，它**不会自己消失** ⇒ 若告警只读记录，就会
- * **粘住不放**：活态文件被修好之后，读者仍会一直被告知"你读到的可能是旧的"。
- * ★ 而同族先例是**自清**的：`staleSourceWarning` **每次都重算 mtime**（不存状态位 ——
- * 那个状态位当年正是因为"把持续陈旧变成**永久静默**"而被删；这里是**另一个方向**的错：
- * 把**已恢复**说成**仍然坏着**）。
- * ⇒ 判据：**告警说"现在读到的可能旧" ⇒ 它必须反映【现在】。**
- *
- * ★ 只判"**能不能 JSON.parse**"，**不碰** `feature` 比对 —— 那是"这份活态不是本 feature 的"
- * （**正常**情形，不是损坏）⇒ 混进来会误报。判据**就这一处**（`readLiveDsl` 的回退分支也用它）。
- */
-export function isLiveDslParseable(): boolean {
-  const f = getLiveDslFile();
-  if (!fs.existsSync(f)) return true; // 没有活态文件 ≠ 损坏（下次 saveDSL 会建）
-  try {
-    JSON.parse(fs.readFileSync(f, 'utf-8'));
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 /** 当前磁盘 rev：优先活态文件，回退 feature 存档，缺失为 0 */
@@ -1083,39 +1073,19 @@ export function getDSLByView(feature: string, view: DSLView = 'design'): DesignD
   return view === 'live' ? getLiveFeatureResolved(feature) : getDSL(feature);
 }
 
-/** 列出所有已保存的 feature，按 feature 名升序 */
-export function listFeatures(): DesignDSL[] {
-  const dir = getFeaturesDir();
-  if (!fs.existsSync(dir)) return [];
-  // 排除 overlay 覆盖文件（<feature>.overlay.json 非完整 DSL，无 id/status，混入会被当成幽灵 feature）
-  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.json') && !f.endsWith('.overlay.json'));
-  const dsls: DesignDSL[] = [];
-  for (const f of files) {
-    try {
-      const content = fs.readFileSync(path.join(dir, f), 'utf-8');
-      const dsl = JSON.parse(content) as DesignDSL;
-      // 防御：损坏/遗留存档可能缺 feature 名（排序 localeCompare 会崩），丢弃
-      if (!dsl || typeof dsl.feature !== 'string' || dsl.feature.length === 0) continue;
-      dsls.push(dsl);
-    } catch {
-      // 跳过无法解析的文件
-    }
-  }
-  return dsls.sort((a, b) => a.feature.localeCompare(b.feature));
-}
-
 /**
  * ★★★ 列出**设计侧**全部 sheet（`<dataHome>/.agent-io/design/<f>.dsl.json`）。
  *
  * ## 为什么需要它（2026-10-20 实测）
- * `listFeatures()` 读的是 `features/` —— 那个目录 2026-10-18 搬走后**只剩 overlay**
- * （本仓实测：2 个 `.overlay.json`、0 个 `.dsl.json`）⇒ 它返回 `[]`。
+ * 原 `listFeatures()` 读 `features/` —— 那个目录 2026-10-18 搬走后**只剩 overlay**，
+ * 2026-10-23 overlay 也并入设计册、目录整个退役 ⇒ 它永远返回 `[]` ⇒ **已删除**，
+ * 原 3 个调用方（`file_snapshot` / `query_feature` / MCP resources）全部改读本函数。
  * 而写闸的 `collectGateCoverage` 用它 ⇒ `rootFeatureCount === 0` ⇒ `applicable:false`
  * ⇒ **闸对全仓源码恒放行**（连"提醒"那一支都没走到）。
  *
  * ## 口径（★ 与 `getDSL` 同一处）
  * 逐文件走 `getDesignSheet`（= `getDSL` 的底层读端），**不另写解析器、不接受第二份清单**。
- * ★ 只认 `.dsl.json`：overlay 不是设计侧本身（它是进度轴）。
+ * ★ 只认 `.dsl.json`。
  * ★ 读不出来 / 缺 `feature` 名 ⇒ **抛**（静默跳过会让"闸看不见某个 feature"变成放行理由）。
  */
 export function listDesignSheets(): DesignDSL[] {
@@ -1134,54 +1104,4 @@ export function listDesignSheets(): DesignDSL[] {
     out.push(dsl);
   }
   return out.sort((a, b) => a.feature.localeCompare(b.feature));
-}
-
-/**
- * 完整删除 feature（manage_feature action=delete 用）：
- * 1. 删 feature 存档文件
- * 2. 删该 feature 的实际代码快照（live/<f>.dsl.json）
- * 3. 若活态文件（agent-io.json）当前对应此 feature，一并删除，避免残留陈旧活态视图
- */
-export function deleteFeature(feature: string): void {
-  // ★ 先算**视图根的候选链**（它要反查 `getDSL(feature).source_root`）—— 必须赶在下面删掉
-  //   feature 存档**之前**算，否则反查不到、又只剩 `dataHome` 一处（就是原来的 bug）。
-  const viewBases = viewBaseDirCandidates(feature);
-  const file = getFeatureFile(feature);
-  if (fs.existsSync(file)) fs.unlinkSync(file);
-
-  // 连带删除该 feature 的 overlay 覆盖文件，避免删除后残留陈旧 overlay
-  const overlayFile = path.join(getFeaturesDir(), `${feature}.overlay.json`);
-  if (fs.existsSync(overlayFile)) fs.unlinkSync(overlayFile);
-
-  // ★★ 2026-10-06（T19）：live / baseline **候选链上每一处都删** —— 原先只删
-  //   `getLiveFeatureFile(feature)`（隐含 `dataHome`）⇒ 快照若落在被监听项目的根（传过 `live_dir`
-  //   的那种模式）就**删不到、留残**。删除的语义就是"**一处都不留**"。
-  for (const base of viewBases) {
-    const liveFile = getLiveFeatureFile(feature, base);
-    if (fs.existsSync(liveFile)) fs.unlinkSync(liveFile);
-    const baselineFile = getBaselineFeatureFile(feature, base);
-    if (fs.existsSync(baselineFile)) fs.unlinkSync(baselineFile);
-  }
-
-  // 连带删除下线库归档（孤立节点的历史研究材料）
-  clearArchiveEntries(feature);
-
-  const liveDsl = getLiveDslFile();
-  if (fs.existsSync(liveDsl)) {
-    try {
-      const data = JSON.parse(fs.readFileSync(liveDsl, 'utf-8'));
-      if (data.feature === feature) fs.unlinkSync(liveDsl);
-    } catch {
-      // 活态文件损坏则忽略，不阻塞删除主流程
-    }
-  }
-}
-
-/** 清空所有 feature（用于测试清理） */
-export function clearAllFeatures(): void {
-  const dir = getFeaturesDir();
-  if (!fs.existsSync(dir)) return;
-  for (const f of fs.readdirSync(dir)) {
-    if (f.endsWith('.json')) fs.unlinkSync(path.join(dir, f));
-  }
 }

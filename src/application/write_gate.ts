@@ -592,12 +592,6 @@ export type WriteSubject = 'source' | 'product' | 'temp' | 'outside-root';
 /** 产物目录首段（★ 唯一住处：别在别处再列一遍） */
 const PRODUCT_TOP_DIRS = new Set(['.agent-io', '.agent', 'design-db', 'dist', 'node_modules', 'output']);
 /**
- * ★ 2026-10-22（分类口径补格）：**本身就是产物文件**的顶层条目（不是目录）。
- *   唯一成员 `agent-io.json` = `storage.ts#getLiveDslFile()` 的活态视图（`data_dir.ts` 里点名的“第三份”，
- *   现只删不写）。它住在 dataHome 根下 ⇒ 首段不是目录 ⇒ 只靠 {@link PRODUCT_TOP_DIRS} 会被误判成 `source`。
- */
-const PRODUCT_TOP_FILES = new Set(['agent-io.json']);
-
 /** 判「这个写属于哪一类主体」（纯函数，无 IO） */
 export function classifyWriteSubject(root: string, abs: string): { subject: WriteSubject; why: string } {
   // ★ 顺序即判据（先命中先定）：temp 要在 outside-root **之前** ——
@@ -608,7 +602,6 @@ export function classifyWriteSubject(root: string, abs: string): { subject: Writ
   const rel = toIndexKey(root, abs);
   if (rel === null) return { subject: 'outside-root', why: '不在项目根内：造不出「相对根的路径」⇒ 闸的键空间里没有它' };
   const top = rel.split('/')[0];
-  if (PRODUCT_TOP_FILES.has(rel)) return { subject: 'product', why: '「' + rel + '」是产物文件（工具自有的活态视图）' };
   if (PRODUCT_TOP_DIRS.has(top)) return { subject: 'product', why: '首段「' + top + '」是产物/状态目录（工具自有，不是用户源码）' };
   return { subject: 'source', why: '项目根内的普通路径 ⇒ 改它就是改用户源码' };
 }
