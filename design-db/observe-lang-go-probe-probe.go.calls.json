@@ -1,0 +1,160 @@
+{
+  "//": "Design DB —— observe-lang-go/probe/probe.go（★ 全量、与实际 DB 同构；从 design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json",
+  "path": "observe-lang-go/probe/probe.go",
+  "symbols": [
+    {
+      "name": "Event",
+      "kind": "type",
+      "line": 34,
+      "signature": "Event()"
+    },
+    {
+      "name": "DeviationEntry",
+      "kind": "type",
+      "line": 47,
+      "signature": "DeviationEntry()"
+    },
+    {
+      "name": "Sink",
+      "kind": "type",
+      "line": 65,
+      "signature": "Sink()"
+    },
+    {
+      "name": "NewSink",
+      "kind": "function",
+      "line": 84,
+      "signature": "NewSink(path string) (*Sink, error)"
+    },
+    {
+      "name": "sanitizeFields",
+      "kind": "function",
+      "line": 168,
+      "signature": "sanitizeFields(fields map[string]any) map[string]any"
+    },
+    {
+      "name": "sanitizeValue",
+      "kind": "function",
+      "line": 177,
+      "signature": "sanitizeValue(v any) any"
+    },
+    {
+      "name": "rateLimiter",
+      "kind": "type",
+      "line": 303,
+      "signature": "rateLimiter()"
+    },
+    {
+      "name": "tokenBucket",
+      "kind": "type",
+      "line": 311,
+      "signature": "tokenBucket()"
+    },
+    {
+      "name": "newRateLimiter",
+      "kind": "function",
+      "line": 316,
+      "signature": "newRateLimiter(rate, burst float64) *rateLimiter"
+    }
+  ],
+  "imports": [
+    {
+      "source": "encoding/json",
+      "kind": "package"
+    },
+    {
+      "source": "fmt",
+      "kind": "package"
+    },
+    {
+      "source": "os",
+      "kind": "package"
+    },
+    {
+      "source": "path/filepath",
+      "kind": "package"
+    },
+    {
+      "source": "sync",
+      "kind": "package"
+    },
+    {
+      "source": "time",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "observe-lang-go/probe/probe.go#rotateLocked",
+      "to": "observe-lang-go/probe/probe.go#filePath"
+    },
+    {
+      "from": "observe-lang-go/probe/probe.go#NewSink",
+      "to": "observe-lang-go/probe/probe.go#newRateLimiter"
+    },
+    {
+      "from": "observe-lang-go/probe/probe.go#SetRateLimit",
+      "to": "observe-lang-go/probe/probe.go#newRateLimiter"
+    },
+    {
+      "from": "observe-lang-go/probe/probe.go#Emit",
+      "to": "observe-lang-go/probe/probe.go#rotateLocked"
+    },
+    {
+      "from": "observe-lang-go/probe/probe.go#Emit",
+      "to": "observe-lang-go/probe/probe.go#sanitizeFields"
+    },
+    {
+      "from": "observe-lang-go/probe/probe.go#sanitizeFields",
+      "to": "observe-lang-go/probe/probe.go#sanitizeValue"
+    },
+    {
+      "from": "observe-lang-go/probe/probe.go#sanitizeValue",
+      "to": "observe-lang-go/probe/probe.go#sanitizeValue"
+    },
+    {
+      "from": "observe-lang-go/probe/probe.go#sanitizeValue",
+      "to": "observe-lang-go/probe/probe.go#sanitizeValue"
+    }
+  ],
+  "expected_symbols": [
+    {
+      "name": "Event",
+      "kind": "type",
+      "signature": "Event()"
+    },
+    {
+      "name": "DeviationEntry",
+      "kind": "type",
+      "signature": "DeviationEntry()"
+    },
+    {
+      "name": "Sink",
+      "kind": "type",
+      "signature": "Sink()"
+    },
+    {
+      "name": "rateLimiter",
+      "kind": "type",
+      "signature": "rateLimiter()"
+    },
+    {
+      "name": "tokenBucket",
+      "kind": "type",
+      "signature": "tokenBucket()"
+    }
+  ],
+  "reverse_calls": [
+    "observe-lang-go/probe/probe.go#Emit",
+    "observe-lang-go/probe/probe.go#NewSink",
+    "observe-lang-go/probe/probe.go#SetRateLimit",
+    "observe-lang-go/probe/probe.go#rotateLocked",
+    "observe-lang-go/probe/probe.go#sanitizeFields",
+    "observe-lang-go/probe/probe.go#sanitizeValue",
+    "observe-lang-go/probe/probe_test.go#TestSinkRateLimitDrops",
+    "observe-lang-go/probe/skeleton_cert_test.go#TestSkeletonSinkEmitsEvents",
+    "observe-lang-go/probe/skeleton_cert_test.go#TestSkeletonSinkFailureIsLoud"
+  ]
+}

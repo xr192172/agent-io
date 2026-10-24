@@ -1118,6 +1118,7 @@
     "src/application/design/dsl_ops/node_ops.ts#updateNode",
     "src/application/design/dsl_ops/status_tools.ts#updateStatus",
     "src/application/design/dsl_ops/task_ops.ts#applyArchiveOp",
+    "src/application/design/dsl_ops/task_ops.ts#applyExcludedOp",
     "src/application/design/dsl_ops/task_ops.ts#applyTaskPlanOp",
     "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
     "src/application/design/dsl_ops/task_ops.ts#completeTask",

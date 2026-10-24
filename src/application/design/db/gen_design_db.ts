@@ -244,13 +244,23 @@ export function planDesignDb(
   plan.features = files.map((f) => f.replace(/\.dsl\.json$/, ''));
 
   // ① 按路径收集**所有**持有者（同一路径允许被多个 feature 各持一个节点）
+  // ★ 2026-10-24（管辖范围收口，裁 A）：范围权威从硬编码 `startsWith('src/')` 迁到**每册的 excluded 清单**——
+  //   observe-lang 等非 src 产品文件由此入投影；certs/scripts 等量具由 excluded 挡住。
+  //   判据不变的一条：仍以 `description` 存路径（fork 的既有形态，两翼分工：geometry 存路径、semantic 存符号）。
+  const excludedAll: Array<{ path: string; reason: string }> = [];
+  for (const f of files) {
+    const dsl = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8'));
+    for (const x of (dsl.excluded ?? []) as Array<{ path: string; reason: string }>) excludedAll.push(x);
+  }
+  const isExcludedPath = (p: string) => excludedAll.some((x) => p === x.path || p.startsWith(x.path));
   const byPath = new Map<string, DesignDbHolder[]>();
   for (const f of files) {
     const dsl = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8'));
     const feature = f.replace(/\.dsl\.json$/, '');
     for (const raw of (dsl.geometry?.nodes ?? []) as AnyNode[]) {
       const rel = norm(raw.description);
-      if (!rel.startsWith('src/')) continue;
+      if (!rel) continue;
+      if (isExcludedPath(rel)) continue;
       plan.nodes += 1;
       const list = byPath.get(rel) ?? [];
       list.push({ feature, source: `design/${f}`, node: raw });

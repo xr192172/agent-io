@@ -1,0 +1,144 @@
+{
+  "//": "Design DB —— observe-lang-go/internal/instrument/effects.go（★ 全量、与实际 DB 同构；从 design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json",
+  "path": "observe-lang-go/internal/instrument/effects.go",
+  "symbols": [
+    {
+      "name": "importsProbePkg",
+      "kind": "function",
+      "line": 28,
+      "signature": "importsProbePkg(f *ast.File, probeImport string) bool"
+    },
+    {
+      "name": "collectPkgVars",
+      "kind": "function",
+      "line": 39,
+      "signature": "collectPkgVars(f *ast.File) map[string]bool"
+    },
+    {
+      "name": "EffectHit",
+      "kind": "type",
+      "line": 62,
+      "signature": "EffectHit()"
+    },
+    {
+      "name": "effectInStmt",
+      "kind": "function",
+      "line": 70,
+      "signature": "effectInStmt(stmt ast.Stmt, pkgVars map[string]bool) (EffectHit, bool)"
+    },
+    {
+      "name": "effectTargetOfLHS",
+      "kind": "function",
+      "line": 107,
+      "signature": "effectTargetOfLHS(e ast.Expr, pkgVars map[string]bool) (string, bool)"
+    },
+    {
+      "name": "chanTargetName",
+      "kind": "function",
+      "line": 126,
+      "signature": "chanTargetName(e ast.Expr) string"
+    },
+    {
+      "name": "callArgName",
+      "kind": "function",
+      "line": 141,
+      "signature": "callArgName(e ast.Expr) string"
+    },
+    {
+      "name": "argName",
+      "kind": "function",
+      "line": 166,
+      "signature": "argName(c *ast.CallExpr, i int) string"
+    },
+    {
+      "name": "recvPkg",
+      "kind": "function",
+      "line": 174,
+      "signature": "recvPkg(sel *ast.SelectorExpr) string"
+    },
+    {
+      "name": "holdCallInStmt",
+      "kind": "function",
+      "line": 256,
+      "signature": "holdCallInStmt(stmt ast.Stmt) (EffectHit, bool)"
+    }
+  ],
+  "imports": [
+    {
+      "source": "go/ast",
+      "kind": "package"
+    },
+    {
+      "source": "go/token",
+      "kind": "package"
+    },
+    {
+      "source": "strconv",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "observe-lang-go/internal/instrument/effects.go#callArgName",
+      "to": "observe-lang-go/internal/instrument/effects.go#callArgName"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/effects.go#callArgName",
+      "to": "observe-lang-go/internal/instrument/effects.go#callArgName"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/effects.go#callArgName",
+      "to": "observe-lang-go/internal/instrument/effects.go#callArgName"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/effects.go#argName",
+      "to": "observe-lang-go/internal/instrument/effects.go#callArgName"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/effects.go#effectInStmt",
+      "to": "observe-lang-go/internal/instrument/effects.go#chanTargetName"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/effects.go#chanTargetName",
+      "to": "observe-lang-go/internal/instrument/effects.go#chanTargetName"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/effects.go#effectInStmt",
+      "to": "observe-lang-go/internal/instrument/effects.go#effectTargetOfLHS"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/effects.go#effectInStmt",
+      "to": "observe-lang-go/internal/instrument/effects.go#effectTargetOfLHS"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/effects.go#effectTargetOfLHS",
+      "to": "observe-lang-go/internal/instrument/effects.go#effectTargetOfLHS"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/effects.go#effectTargetOfLHS",
+      "to": "observe-lang-go/internal/instrument/effects.go#effectTargetOfLHS"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/effects.go#effectInStmt",
+      "to": "observe-lang-go/internal/instrument/effects.go#holdCallInStmt"
+    }
+  ],
+  "expected_symbols": [
+    {
+      "name": "EffectHit",
+      "kind": "type",
+      "signature": "EffectHit()"
+    }
+  ],
+  "reverse_calls": [
+    "observe-lang-go/internal/instrument/effects.go#argName",
+    "observe-lang-go/internal/instrument/effects.go#callArgName",
+    "observe-lang-go/internal/instrument/effects.go#chanTargetName",
+    "observe-lang-go/internal/instrument/effects.go#effectInStmt",
+    "observe-lang-go/internal/instrument/effects.go#effectTargetOfLHS",
+    "observe-lang-go/internal/instrument/instrument.go#InstrumentFile",
+    "observe-lang-go/internal/instrument/instrument.go#walkStmts"
+  ]
+}

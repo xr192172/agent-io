@@ -551,45 +551,51 @@
       "signature": "deleteTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
+      "name": "applyExcludedOp",
+      "kind": "function",
+      "line": 2902,
+      "signature": "applyExcludedOp(feature: string, data: Record<string, unknown>): EditResult"
+    },
+    {
       "name": "moveTodoCardsToHistory",
       "kind": "function",
-      "line": 2890,
+      "line": 2929,
       "signature": "moveTodoCardsToHistory(feature: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "applyArchiveOp",
       "kind": "function",
-      "line": 3041,
+      "line": 3085,
       "signature": "applyArchiveOp(feature: string,\n  data: Record<string, unknown>,\n  agent: string | undefined,\n  mode: 'archive' | 'unarchive',): EditResult"
     },
     {
       "name": "followTodoCard",
       "kind": "function",
-      "line": 3169,
+      "line": 3213,
       "signature": "followTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "applyTodoMutation",
       "kind": "function",
-      "line": 3222,
+      "line": 3266,
       "signature": "applyTodoMutation(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
     },
     {
       "name": "todoChainNote",
       "kind": "function",
-      "line": 3272,
+      "line": 3316,
       "signature": "todoChainNote(cards: readonly TaskSpec[], id: string): { head: string; detail: string }"
     },
     {
       "name": "applyTodoOp",
       "kind": "function",
-      "line": 3336,
+      "line": 3380,
       "signature": "applyTodoOp(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
     },
     {
       "name": "importTodoCards",
       "kind": "function",
-      "line": 3499,
+      "line": 3543,
       "signature": "importTodoCards(feature: string, data: Record<string, unknown>, agent?: string): EditResult"
     }
   ],
@@ -1239,6 +1245,10 @@
       "to": "src/domain/overlay.ts#applyOverlay"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyExcludedOp",
+      "to": "src/domain/overlay.ts#applyOverlay"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#moveTodoCardsToHistory",
       "to": "src/domain/overlay.ts#applyOverlay"
     },
@@ -1268,6 +1278,10 @@
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#deleteTodoCard",
+      "to": "src/domain/overlay.ts#seedOverlayFromDsl"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyExcludedOp",
       "to": "src/domain/overlay.ts#seedOverlayFromDsl"
     },
     {
@@ -1611,6 +1625,10 @@
       "to": "src/infrastructure/storage.ts#getDesignSheet"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyExcludedOp",
+      "to": "src/infrastructure/storage.ts#getDesignSheet"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#moveTodoCardsToHistory",
       "to": "src/infrastructure/storage.ts#getDesignSheet"
     },
@@ -1651,6 +1669,10 @@
       "to": "src/infrastructure/storage.ts#saveDesignSheet"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyExcludedOp",
+      "to": "src/infrastructure/storage.ts#saveDesignSheet"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#moveTodoCardsToHistory",
       "to": "src/infrastructure/storage.ts#saveDesignSheet"
     },
@@ -1680,6 +1702,10 @@
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#deleteTodoCard",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyExcludedOp",
       "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
     },
     {

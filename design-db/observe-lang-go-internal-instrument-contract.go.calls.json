@@ -1,0 +1,66 @@
+{
+  "//": "Design DB —— observe-lang-go/internal/instrument/contract.go（★ 全量、与实际 DB 同构；从 design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json",
+  "path": "observe-lang-go/internal/instrument/contract.go",
+  "symbols": [
+    {
+      "name": "ContractProbe",
+      "kind": "type",
+      "line": 20,
+      "signature": "ContractProbe()"
+    },
+    {
+      "name": "packageFromProbe",
+      "kind": "function",
+      "line": 28,
+      "signature": "packageFromProbe(probe string) string"
+    },
+    {
+      "name": "PackageFilter",
+      "kind": "function",
+      "line": 37,
+      "signature": "PackageFilter(probes []ContractProbe) map[string]bool"
+    },
+    {
+      "name": "MatchProbe",
+      "kind": "function",
+      "line": 49,
+      "signature": "MatchProbe(probeName string, probes []ContractProbe) bool"
+    },
+    {
+      "name": "ProbeName",
+      "kind": "function",
+      "line": 62,
+      "signature": "ProbeName(pkg, fn, suffix string) string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "strings",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "observe-lang-go/internal/instrument/contract.go#PackageFilter",
+      "to": "observe-lang-go/internal/instrument/contract.go#packageFromProbe"
+    }
+  ],
+  "expected_symbols": [
+    {
+      "name": "ContractProbe",
+      "kind": "type",
+      "signature": "ContractProbe()"
+    }
+  ],
+  "reverse_calls": [
+    "observe-lang-go/internal/instrument/contract.go#PackageFilter",
+    "observe-lang-go/internal/instrument/contract_test.go#TestMatchProbe",
+    "observe-lang-go/internal/instrument/contract_test.go#TestMatchProbe_ExploreNil",
+    "observe-lang-go/internal/instrument/contract_test.go#TestPackageFilter",
+    "observe-lang-go/internal/instrument/instrument.go#InstrumentFile",
+    "observe-lang-go/internal/instrument/instrument.go#processFunction",
+    "observe-lang-go/internal/instrument/instrument.go#walkStmts"
+  ]
+}

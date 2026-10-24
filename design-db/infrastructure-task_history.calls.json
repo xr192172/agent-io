@@ -1,0 +1,211 @@
+{
+  "//": "Design DB —— src/infrastructure/task_history.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/infrastructure/task_history.ts",
+  "symbols": [
+    {
+      "name": "getTaskHistoryFile",
+      "kind": "function",
+      "line": 42,
+      "signature": "getTaskHistoryFile(): string"
+    },
+    {
+      "name": "SCHEMA_SQL",
+      "kind": "const",
+      "line": 47,
+      "signature": "const SCHEMA_SQL = ` CREATE TABLE IF NOT EXISTS task_history ( id TEXT NOT N…"
+    },
+    {
+      "name": "openTaskHistory",
+      "kind": "function",
+      "line": 63,
+      "signature": "openTaskHistory(): DatabaseSync"
+    },
+    {
+      "name": "TaskHistoryRow",
+      "kind": "interface",
+      "line": 72,
+      "signature": "TaskHistoryRow()",
+      "members": [
+        {
+          "name": "id",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "node_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "state",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "summary",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "card_json",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "moved_at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "reason",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "recordTaskHistory",
+      "kind": "function",
+      "line": 94,
+      "signature": "recordTaskHistory(rows: readonly TaskHistoryRow[]): number"
+    },
+    {
+      "name": "dropTaskHistoryBatch",
+      "kind": "function",
+      "line": 128,
+      "signature": "dropTaskHistoryBatch(feature: string, movedAt: string): number"
+    },
+    {
+      "name": "TaskHistoryHit",
+      "kind": "interface",
+      "line": 140,
+      "signature": "TaskHistoryHit()",
+      "members": [
+        {
+          "name": "card",
+          "type": ": Record<string, unknown> | null",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "TaskHistoryQuery",
+      "kind": "interface",
+      "line": 146,
+      "signature": "TaskHistoryQuery()",
+      "members": [
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "state",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "card_id",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "search",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "limit",
+          "type": ": number",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "queryTaskHistory",
+      "kind": "function",
+      "line": 159,
+      "signature": "queryTaskHistory(q: TaskHistoryQuery): { total: number; rows: TaskHistoryHit[] }"
+    },
+    {
+      "name": "countTaskHistory",
+      "kind": "function",
+      "line": 215,
+      "signature": "countTaskHistory(feature?: string): number"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:sqlite",
+      "kind": "package"
+    },
+    {
+      "source": "./storage.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/task_history.ts#getTaskHistoryFile",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    },
+    {
+      "from": "src/infrastructure/task_history.ts#openTaskHistory",
+      "to": "src/infrastructure/task_history.ts#getTaskHistoryFile"
+    },
+    {
+      "from": "src/infrastructure/task_history.ts#recordTaskHistory",
+      "to": "src/infrastructure/task_history.ts#openTaskHistory"
+    },
+    {
+      "from": "src/infrastructure/task_history.ts#dropTaskHistoryBatch",
+      "to": "src/infrastructure/task_history.ts#openTaskHistory"
+    },
+    {
+      "from": "src/infrastructure/task_history.ts#queryTaskHistory",
+      "to": "src/infrastructure/task_history.ts#openTaskHistory"
+    },
+    {
+      "from": "src/infrastructure/task_history.ts#countTaskHistory",
+      "to": "src/infrastructure/task_history.ts#openTaskHistory"
+    }
+  ],
+  "reverse_calls": [
+    "src/application/design/dsl_ops/task_ops.ts#moveTodoCardsToHistory",
+    "src/application/meta/explore/query_feature.ts#queryFeature",
+    "src/infrastructure/task_history.ts#countTaskHistory",
+    "src/infrastructure/task_history.ts#dropTaskHistoryBatch",
+    "src/infrastructure/task_history.ts#openTaskHistory",
+    "src/infrastructure/task_history.ts#queryTaskHistory",
+    "src/infrastructure/task_history.ts#recordTaskHistory"
+  ]
+}

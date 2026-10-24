@@ -1,0 +1,36 @@
+{
+  "//": "Design DB —— third_party/archify/renderers/shared/i18n.mjs（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "third_party/archify/renderers/shared/i18n.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "SUPPORTED_LOCALES",
+      "kind": "const",
+      "signature": "const SUPPORTED_LOCALES = ['en', 'zh-CN']"
+    },
+    {
+      "name": "DEFAULT_LOCALE",
+      "kind": "const",
+      "signature": "const DEFAULT_LOCALE = 'en'"
+    },
+    {
+      "name": "ESCAPE_MAP",
+      "kind": "const",
+      "signature": "const ESCAPE_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', …"
+    },
+    {
+      "name": "MESSAGE_PAIRS",
+      "kind": "const",
+      "signature": "const MESSAGE_PAIRS = { 'page.title': ['{title} Diagram', '{title}'], 'diagram.…"
+    },
+    {
+      "name": "CATALOGS",
+      "kind": "const",
+      "signature": "const CATALOGS = Object.fromEntries(SUPPORTED_LOCALES.map((locale, index) …"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "//": "Design DB —— third_party/archify/renderers/shared/utils.mjs（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "third_party/archify/renderers/shared/utils.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "SIGIL_TONE",
+      "kind": "const",
+      "signature": "const SIGIL_TONE = { frontend: 'frontend', start: 'frontend', backend: 'back…"
+    },
+    {
+      "name": "SIGIL_SHAPE",
+      "kind": "const",
+      "signature": "const SIGIL_SHAPE = { frontend: `<rect x=\"2\" y=\"3\" width=\"12\" height=\"10\" rx=…"
+    },
+    {
+      "name": "SVG_SLOT_RE",
+      "kind": "const",
+      "signature": "const SVG_SLOT_RE = / <!-- ARCHIFY:SVG_SLOT_START -->[\\s\\S]*? <!-- ARCHIFY:SV…"
+    },
+    {
+      "name": "CARDS_SLOT_RE",
+      "kind": "const",
+      "signature": "const CARDS_SLOT_RE = / <!-- ARCHIFY:CARDS_SLOT_START -->[\\s\\S]*? <!-- ARCHIFY:…"
+    },
+    {
+      "name": "SUBTITLE_SLOT_RE",
+      "kind": "const",
+      "signature": "const SUBTITLE_SLOT_RE = /^([ \\t]*)<p class=\"subtitle\">\\[Subtitle description\\]<\\/…"
+    },
+    {
+      "name": "GUIDED_VIEWS_PLACEHOLDER",
+      "kind": "const",
+      "signature": "const GUIDED_VIEWS_PLACEHOLDER = '<!-- ARCHIFY:GUIDED_VIEWS_DATA -->'"
+    },
+    {
+      "name": "SOURCE_EVIDENCE_PLACEHOLDER",
+      "kind": "const",
+      "signature": "const SOURCE_EVIDENCE_PLACEHOLDER = ' <!-- ARCHIFY:SOURCE_EVIDENCE_DATA -->'"
+    },
+    {
+      "name": "I18N_PLACEHOLDER",
+      "kind": "const",
+      "signature": "const I18N_PLACEHOLDER = ' <!-- ARCHIFY:I18N_DATA -->'"
+    },
+    {
+      "name": "TEMPLATE_PLACEHOLDERS",
+      "kind": "const",
+      "signature": "const TEMPLATE_PLACEHOLDERS = [ '<html lang=\"en\" data-theme=\"dark\" data-preset=\"[VISUAL…"
+    },
+    {
+      "name": "FULLWIDTH_RE",
+      "kind": "const",
+      "signature": "const FULLWIDTH_RE = /[\\u1100-\\u115F\\u231A-\\u231B\\u2329-\\u232A\\u23E9-\\u23EC\\u2…"
+    },
+    {
+      "name": "VARIATION_SELECTOR_FIRST",
+      "kind": "const",
+      "signature": "const VARIATION_SELECTOR_FIRST = 0xfe00"
+    },
+    {
+      "name": "VARIATION_SELECTOR_LAST",
+      "kind": "const",
+      "signature": "const VARIATION_SELECTOR_LAST = 0xfe0f"
+    },
+    {
+      "name": "VARIATION_SELECTOR_TEXT",
+      "kind": "const",
+      "signature": "const VARIATION_SELECTOR_TEXT = 0xfe0e"
+    },
+    {
+      "name": "VARIATION_SELECTOR_EMOJI",
+      "kind": "const",
+      "signature": "const VARIATION_SELECTOR_EMOJI = 0xfe0f"
+    }
+  ]
+}

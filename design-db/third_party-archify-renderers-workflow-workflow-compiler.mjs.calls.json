@@ -1,0 +1,61 @@
+{
+  "//": "Design DB —— third_party/archify/renderers/workflow/workflow-compiler.mjs（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "third_party/archify/renderers/workflow/workflow-compiler.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "LEGACY_COLUMN_CENTERS",
+      "kind": "const",
+      "signature": "const LEGACY_COLUMN_CENTERS = Object.freeze([88, 220, 300, 430, 500, 625])"
+    },
+    {
+      "name": "READABLE_CANDIDATE_COST_PRIORITY",
+      "kind": "const",
+      "signature": "const READABLE_CANDIDATE_COST_PRIORITY = Object.freeze([ 'automaticForwardReversePx', 'properCross…"
+    },
+    {
+      "name": "MAX_READABLE_LAYOUT_FEEDBACK_ROUNDS",
+      "kind": "const",
+      "signature": "const MAX_READABLE_LAYOUT_FEEDBACK_ROUNDS = 3"
+    },
+    {
+      "name": "GROUP_FRAME_TOP_INSET",
+      "kind": "const",
+      "signature": "const GROUP_FRAME_TOP_INSET = 8"
+    },
+    {
+      "name": "GROUP_FRAME_BOTTOM_INSET",
+      "kind": "const",
+      "signature": "const GROUP_FRAME_BOTTOM_INSET = 4"
+    },
+    {
+      "name": "GROUP_LABEL_BASELINE_OFFSET",
+      "kind": "const",
+      "signature": "const GROUP_LABEL_BASELINE_OFFSET = -2"
+    },
+    {
+      "name": "GROUP_LABEL_MASK_ASCENT",
+      "kind": "const",
+      "signature": "const GROUP_LABEL_MASK_ASCENT = 10"
+    },
+    {
+      "name": "GROUP_LABEL_MASK_H",
+      "kind": "const",
+      "signature": "const GROUP_LABEL_MASK_H = 14"
+    },
+    {
+      "name": "GROUP_NODE_INSET",
+      "kind": "const",
+      "signature": "const GROUP_NODE_INSET = 4"
+    },
+    {
+      "name": "WorkflowLayoutFeedback",
+      "kind": "class",
+      "signature": "WorkflowLayoutFeedback()"
+    }
+  ]
+}

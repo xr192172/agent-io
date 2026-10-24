@@ -1,0 +1,102 @@
+{
+  "//": "Design DB —— observe-lang-go/probe/trace.go（★ 全量、与实际 DB 同构；从 design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json",
+  "path": "observe-lang-go/probe/trace.go",
+  "symbols": [
+    {
+      "name": "Scope",
+      "kind": "type",
+      "line": 35,
+      "signature": "Scope()"
+    },
+    {
+      "name": "scopeCtxKey",
+      "kind": "type",
+      "line": 45,
+      "signature": "scopeCtxKey()"
+    },
+    {
+      "name": "Enter",
+      "kind": "function",
+      "line": 51,
+      "signature": "Enter(ctx context.Context, probe string, fields map[string]any) (context.Context, *Scope)"
+    },
+    {
+      "name": "ScopeFromContext",
+      "kind": "function",
+      "line": 118,
+      "signature": "ScopeFromContext(ctx context.Context) *Scope"
+    },
+    {
+      "name": "TraceIDFromContext",
+      "kind": "function",
+      "line": 127,
+      "signature": "TraceIDFromContext(ctx context.Context) string"
+    },
+    {
+      "name": "newTraceID",
+      "kind": "function",
+      "line": 135,
+      "signature": "newTraceID() string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "context",
+      "kind": "package"
+    },
+    {
+      "source": "crypto/rand",
+      "kind": "package"
+    },
+    {
+      "source": "encoding/hex",
+      "kind": "package"
+    },
+    {
+      "source": "sync/atomic",
+      "kind": "package"
+    },
+    {
+      "source": "time",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "observe-lang-go/probe/trace.go#Enter",
+      "to": "observe-lang-go/probe/global.go#globalTieredFor"
+    },
+    {
+      "from": "observe-lang-go/probe/trace.go#Enter",
+      "to": "observe-lang-go/probe/trace.go#ScopeFromContext"
+    },
+    {
+      "from": "observe-lang-go/probe/trace.go#TraceIDFromContext",
+      "to": "observe-lang-go/probe/trace.go#ScopeFromContext"
+    },
+    {
+      "from": "observe-lang-go/probe/trace.go#Enter",
+      "to": "observe-lang-go/probe/trace.go#newTraceID"
+    }
+  ],
+  "expected_symbols": [
+    {
+      "name": "Scope",
+      "kind": "type",
+      "signature": "Scope()"
+    },
+    {
+      "name": "scopeCtxKey",
+      "kind": "type",
+      "signature": "scopeCtxKey()"
+    }
+  ],
+  "reverse_calls": [
+    "observe-lang-go/probe/tiered_test.go#TestExportFloodBounded",
+    "observe-lang-go/probe/tiered_test.go#TestIncidentChainSameTraceID",
+    "observe-lang-go/probe/trace.go#Enter",
+    "observe-lang-go/probe/trace.go#TraceIDFromContext"
+  ]
+}

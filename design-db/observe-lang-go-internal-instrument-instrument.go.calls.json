@@ -1,0 +1,728 @@
+{
+  "//": "Design DB —— observe-lang-go/internal/instrument/instrument.go（★ 全量、与实际 DB 同构；从 design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json",
+  "path": "observe-lang-go/internal/instrument/instrument.go",
+  "symbols": [
+    {
+      "name": "ProbeKind",
+      "kind": "type",
+      "line": 28,
+      "signature": "ProbeKind()"
+    },
+    {
+      "name": "Site",
+      "kind": "type",
+      "line": 40,
+      "signature": "Site()"
+    },
+    {
+      "name": "Result",
+      "kind": "type",
+      "line": 50,
+      "signature": "Result()"
+    },
+    {
+      "name": "Options",
+      "kind": "type",
+      "line": 57,
+      "signature": "Options()"
+    },
+    {
+      "name": "collectGoFiles",
+      "kind": "function",
+      "line": 102,
+      "signature": "collectGoFiles(root string, excludes []string) []string"
+    },
+    {
+      "name": "backupPathFor",
+      "kind": "function",
+      "line": 137,
+      "signature": "backupPathFor(backupRoot, file string) string"
+    },
+    {
+      "name": "relPath",
+      "kind": "function",
+      "line": 143,
+      "signature": "relPath(from, to string) string"
+    },
+    {
+      "name": "backupOriginal",
+      "kind": "function",
+      "line": 152,
+      "signature": "backupOriginal(backupRoot, file, content string)"
+    },
+    {
+      "name": "RestoreInstrumented",
+      "kind": "function",
+      "line": 162,
+      "signature": "RestoreInstrumented(root string) []string"
+    },
+    {
+      "name": "InstrumentFile",
+      "kind": "function",
+      "line": 187,
+      "signature": "InstrumentFile(file string, opts Options) (Result, error)"
+    },
+    {
+      "name": "findProjectRoot",
+      "kind": "function",
+      "line": 299,
+      "signature": "findProjectRoot(file, _ string) string"
+    },
+    {
+      "name": "packageLineEnd",
+      "kind": "function",
+      "line": 317,
+      "signature": "packageLineEnd(src string, fset *token.FileSet, f *ast.File) int"
+    },
+    {
+      "name": "terminatesFunction",
+      "kind": "function",
+      "line": 351,
+      "signature": "terminatesFunction(stmt ast.Stmt) bool"
+    },
+    {
+      "name": "isPanicCall",
+      "kind": "function",
+      "line": 393,
+      "signature": "isPanicCall(s *ast.ExprStmt) bool"
+    },
+    {
+      "name": "hasUnnestedBreak",
+      "kind": "function",
+      "line": 404,
+      "signature": "hasUnnestedBreak(body *ast.BlockStmt) bool"
+    },
+    {
+      "name": "terminatesSwitchBody",
+      "kind": "function",
+      "line": 434,
+      "signature": "terminatesSwitchBody(body *ast.BlockStmt, requireDefault bool) bool"
+    },
+    {
+      "name": "sortSites",
+      "kind": "function",
+      "line": 470,
+      "signature": "sortSites(sites []Site)"
+    },
+    {
+      "name": "collectFuncSites",
+      "kind": "function",
+      "line": 479,
+      "signature": "collectFuncSites(fset *token.FileSet, f *ast.File, pkg, fileRel string, enableDeep, enableEffect bool, pkgVars map[string]bool, probes []ContractProbe, sites *[]Site)"
+    },
+    {
+      "name": "funcDeclName",
+      "kind": "function",
+      "line": 513,
+      "signature": "funcDeclName(t *ast.FuncDecl, fileRel string) string"
+    },
+    {
+      "name": "recvTypeName",
+      "kind": "function",
+      "line": 545,
+      "signature": "recvTypeName(e ast.Expr) string"
+    },
+    {
+      "name": "processFunction",
+      "kind": "function",
+      "line": 568,
+      "signature": "processFunction(fset *token.FileSet, fn string, params, results *ast.FieldList, body *ast.BlockStmt, pkg, fileRel string, enableDeep, enableEffect bool, pkgVars map[string]bool, probes []ContractProbe, sites *[]Site)"
+    },
+    {
+      "name": "namedResultNames",
+      "kind": "function",
+      "line": 662,
+      "signature": "namedResultNames(results *ast.FieldList) []string"
+    },
+    {
+      "name": "paramCapture",
+      "kind": "function",
+      "line": 685,
+      "signature": "paramCapture(params *ast.FieldList) string"
+    },
+    {
+      "name": "walkStmts",
+      "kind": "function",
+      "line": 710,
+      "signature": "walkStmts(fset *token.FileSet, stmts []ast.Stmt, probeName func(string) string, fileRel string, enableDeep, enableEffect bool, pkgVars map[string]bool, offsetOf func(token.Pos) int, lineOf func(token.Pos) int, probes []ContractProbe, sites *[]Site, skipReturnExit bool)"
+    },
+    {
+      "name": "returnCapture",
+      "kind": "function",
+      "line": 832,
+      "signature": "returnCapture(s *ast.ReturnStmt) string"
+    },
+    {
+      "name": "isSideEffectFree",
+      "kind": "function",
+      "line": 857,
+      "signature": "isSideEffectFree(e ast.Expr) bool"
+    },
+    {
+      "name": "isSideEffectFreeOrRecv",
+      "kind": "function",
+      "line": 888,
+      "signature": "isSideEffectFreeOrRecv(e ast.Expr) bool"
+    },
+    {
+      "name": "hasBlockingRecv",
+      "kind": "function",
+      "line": 915,
+      "signature": "hasBlockingRecv(e ast.Expr) bool"
+    },
+    {
+      "name": "blockingReturnCapture",
+      "kind": "function",
+      "line": 943,
+      "signature": "blockingReturnCapture(s *ast.ReturnStmt, line int, probeExit, fileRel string) (string, bool)"
+    },
+    {
+      "name": "exprString",
+      "kind": "function",
+      "line": 976,
+      "signature": "exprString(e ast.Expr) string"
+    },
+    {
+      "name": "ioOpInStmt",
+      "kind": "function",
+      "line": 1021,
+      "signature": "ioOpInStmt(stmt ast.Stmt) string"
+    },
+    {
+      "name": "deferOp",
+      "kind": "function",
+      "line": 1041,
+      "signature": "deferOp(s *ast.DeferStmt) string"
+    },
+    {
+      "name": "deepCapture",
+      "kind": "function",
+      "line": 1065,
+      "signature": "deepCapture(stmt ast.Stmt, probeName func(string) string, fileRel string) (string, bool)"
+    },
+    {
+      "name": "InstrumentDir",
+      "kind": "function",
+      "line": 1083,
+      "signature": "InstrumentDir(root string, opts Options) []Result"
+    },
+    {
+      "name": "applySites",
+      "kind": "function",
+      "line": 1125,
+      "signature": "applySites(src string, sites []Site) string"
+    },
+    {
+      "name": "isProbeCall",
+      "kind": "function",
+      "line": 1167,
+      "signature": "isProbeCall(stmt ast.Stmt) bool"
+    },
+    {
+      "name": "cleanupTrailingProbes",
+      "kind": "function",
+      "line": 1188,
+      "signature": "cleanupTrailingProbes(file string, src []byte) []byte"
+    }
+  ],
+  "imports": [
+    {
+      "source": "fmt",
+      "kind": "package"
+    },
+    {
+      "source": "go/ast",
+      "kind": "package"
+    },
+    {
+      "source": "go/parser",
+      "kind": "package"
+    },
+    {
+      "source": "go/token",
+      "kind": "package"
+    },
+    {
+      "source": "os",
+      "kind": "package"
+    },
+    {
+      "source": "path/filepath",
+      "kind": "package"
+    },
+    {
+      "source": "sort",
+      "kind": "package"
+    },
+    {
+      "source": "strings",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#processFunction",
+      "to": "observe-lang-go/internal/instrument/contract.go#MatchProbe"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#processFunction",
+      "to": "observe-lang-go/internal/instrument/contract.go#MatchProbe"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#processFunction",
+      "to": "observe-lang-go/internal/instrument/contract.go#MatchProbe"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/contract.go#MatchProbe"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/contract.go#MatchProbe"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/contract.go#MatchProbe"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/contract.go#MatchProbe"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/contract.go#MatchProbe"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#InstrumentFile",
+      "to": "observe-lang-go/internal/instrument/contract.go#PackageFilter"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#InstrumentFile",
+      "to": "observe-lang-go/internal/instrument/effects.go#collectPkgVars"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/effects.go#effectInStmt"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#InstrumentFile",
+      "to": "observe-lang-go/internal/instrument/effects.go#importsProbePkg"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#InstrumentDir",
+      "to": "observe-lang-go/internal/instrument/instrument.go#InstrumentFile"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#InstrumentFile",
+      "to": "observe-lang-go/internal/instrument/instrument.go#applySites"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#InstrumentFile",
+      "to": "observe-lang-go/internal/instrument/instrument.go#backupOriginal"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#backupOriginal",
+      "to": "observe-lang-go/internal/instrument/instrument.go#backupPathFor"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/instrument.go#blockingReturnCapture"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#InstrumentFile",
+      "to": "observe-lang-go/internal/instrument/instrument.go#cleanupTrailingProbes"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#InstrumentFile",
+      "to": "observe-lang-go/internal/instrument/instrument.go#collectFuncSites"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#InstrumentDir",
+      "to": "observe-lang-go/internal/instrument/instrument.go#collectGoFiles"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/instrument.go#deepCapture"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/instrument.go#deferOp"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#recvTypeName",
+      "to": "observe-lang-go/internal/instrument/instrument.go#exprString"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#returnCapture",
+      "to": "observe-lang-go/internal/instrument/instrument.go#exprString"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#blockingReturnCapture",
+      "to": "observe-lang-go/internal/instrument/instrument.go#exprString"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#exprString",
+      "to": "observe-lang-go/internal/instrument/instrument.go#exprString"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#exprString",
+      "to": "observe-lang-go/internal/instrument/instrument.go#exprString"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#exprString",
+      "to": "observe-lang-go/internal/instrument/instrument.go#exprString"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#exprString",
+      "to": "observe-lang-go/internal/instrument/instrument.go#exprString"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#exprString",
+      "to": "observe-lang-go/internal/instrument/instrument.go#exprString"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#exprString",
+      "to": "observe-lang-go/internal/instrument/instrument.go#exprString"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#exprString",
+      "to": "observe-lang-go/internal/instrument/instrument.go#exprString"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#exprString",
+      "to": "observe-lang-go/internal/instrument/instrument.go#exprString"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#exprString",
+      "to": "observe-lang-go/internal/instrument/instrument.go#exprString"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#exprString",
+      "to": "observe-lang-go/internal/instrument/instrument.go#exprString"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#exprString",
+      "to": "observe-lang-go/internal/instrument/instrument.go#exprString"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#deepCapture",
+      "to": "observe-lang-go/internal/instrument/instrument.go#exprString"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#InstrumentFile",
+      "to": "observe-lang-go/internal/instrument/instrument.go#findProjectRoot"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#collectFuncSites",
+      "to": "observe-lang-go/internal/instrument/instrument.go#funcDeclName"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#hasBlockingRecv",
+      "to": "observe-lang-go/internal/instrument/instrument.go#hasBlockingRecv"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#hasBlockingRecv",
+      "to": "observe-lang-go/internal/instrument/instrument.go#hasBlockingRecv"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#hasBlockingRecv",
+      "to": "observe-lang-go/internal/instrument/instrument.go#hasBlockingRecv"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#hasBlockingRecv",
+      "to": "observe-lang-go/internal/instrument/instrument.go#hasBlockingRecv"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#hasBlockingRecv",
+      "to": "observe-lang-go/internal/instrument/instrument.go#hasBlockingRecv"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#blockingReturnCapture",
+      "to": "observe-lang-go/internal/instrument/instrument.go#hasBlockingRecv"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#terminatesFunction",
+      "to": "observe-lang-go/internal/instrument/instrument.go#hasUnnestedBreak"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/instrument.go#ioOpInStmt"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#terminatesFunction",
+      "to": "observe-lang-go/internal/instrument/instrument.go#isPanicCall"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#cleanupTrailingProbes",
+      "to": "observe-lang-go/internal/instrument/instrument.go#isProbeCall"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#returnCapture",
+      "to": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFree"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFree",
+      "to": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFree"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFree",
+      "to": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFree"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFree",
+      "to": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFree"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFree",
+      "to": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFree"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFree",
+      "to": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFree"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFree",
+      "to": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFree"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFreeOrRecv",
+      "to": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFreeOrRecv"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFreeOrRecv",
+      "to": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFreeOrRecv"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFreeOrRecv",
+      "to": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFreeOrRecv"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFreeOrRecv",
+      "to": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFreeOrRecv"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFreeOrRecv",
+      "to": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFreeOrRecv"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFreeOrRecv",
+      "to": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFreeOrRecv"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#blockingReturnCapture",
+      "to": "observe-lang-go/internal/instrument/instrument.go#isSideEffectFreeOrRecv"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#processFunction",
+      "to": "observe-lang-go/internal/instrument/instrument.go#namedResultNames"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#InstrumentFile",
+      "to": "observe-lang-go/internal/instrument/instrument.go#packageLineEnd"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#processFunction",
+      "to": "observe-lang-go/internal/instrument/instrument.go#paramCapture"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#collectFuncSites",
+      "to": "observe-lang-go/internal/instrument/instrument.go#processFunction"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#collectFuncSites",
+      "to": "observe-lang-go/internal/instrument/instrument.go#processFunction"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#funcDeclName",
+      "to": "observe-lang-go/internal/instrument/instrument.go#recvTypeName"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#recvTypeName",
+      "to": "observe-lang-go/internal/instrument/instrument.go#recvTypeName"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#recvTypeName",
+      "to": "observe-lang-go/internal/instrument/instrument.go#recvTypeName"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#recvTypeName",
+      "to": "observe-lang-go/internal/instrument/instrument.go#recvTypeName"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#recvTypeName",
+      "to": "observe-lang-go/internal/instrument/instrument.go#recvTypeName"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#backupPathFor",
+      "to": "observe-lang-go/internal/instrument/instrument.go#relPath"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#RestoreInstrumented",
+      "to": "observe-lang-go/internal/instrument/instrument.go#relPath"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#InstrumentFile",
+      "to": "observe-lang-go/internal/instrument/instrument.go#relPath"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/instrument.go#returnCapture"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#InstrumentFile",
+      "to": "observe-lang-go/internal/instrument/instrument.go#sortSites"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#terminatesFunction",
+      "to": "observe-lang-go/internal/instrument/instrument.go#terminatesFunction"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#terminatesFunction",
+      "to": "observe-lang-go/internal/instrument/instrument.go#terminatesFunction"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#terminatesFunction",
+      "to": "observe-lang-go/internal/instrument/instrument.go#terminatesFunction"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#terminatesSwitchBody",
+      "to": "observe-lang-go/internal/instrument/instrument.go#terminatesFunction"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#processFunction",
+      "to": "observe-lang-go/internal/instrument/instrument.go#terminatesFunction"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#cleanupTrailingProbes",
+      "to": "observe-lang-go/internal/instrument/instrument.go#terminatesFunction"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#terminatesFunction",
+      "to": "observe-lang-go/internal/instrument/instrument.go#terminatesSwitchBody"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#terminatesFunction",
+      "to": "observe-lang-go/internal/instrument/instrument.go#terminatesSwitchBody"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#terminatesFunction",
+      "to": "observe-lang-go/internal/instrument/instrument.go#terminatesSwitchBody"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#processFunction",
+      "to": "observe-lang-go/internal/instrument/instrument.go#walkStmts"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/instrument.go#walkStmts"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/instrument.go#walkStmts"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/instrument.go#walkStmts"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/instrument.go#walkStmts"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/instrument.go#walkStmts"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/instrument.go#walkStmts"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/instrument.go#walkStmts"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/instrument.go#walkStmts"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/instrument.go#walkStmts"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/instrument.go#walkStmts"
+    },
+    {
+      "from": "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+      "to": "observe-lang-go/internal/instrument/instrument.go#walkStmts"
+    }
+  ],
+  "expected_symbols": [
+    {
+      "name": "ProbeKind",
+      "kind": "type",
+      "signature": "ProbeKind()"
+    },
+    {
+      "name": "Site",
+      "kind": "type",
+      "signature": "Site()"
+    },
+    {
+      "name": "Result",
+      "kind": "type",
+      "signature": "Result()"
+    },
+    {
+      "name": "Options",
+      "kind": "type",
+      "signature": "Options()"
+    }
+  ],
+  "reverse_calls": [
+    "observe-lang-go/internal/instrument/contract_test.go#TestInstrumentFile_ContractMode_Filtered",
+    "observe-lang-go/internal/instrument/contract_test.go#TestInstrumentFile_ContractMode_Multiple",
+    "observe-lang-go/internal/instrument/contract_test.go#TestInstrumentFile_ContractMode_PackageFilter",
+    "observe-lang-go/internal/instrument/contract_test.go#TestInstrumentFile_ExploreMode_Full",
+    "observe-lang-go/internal/instrument/effects_test.go#TestEffectProbes_DryRun",
+    "observe-lang-go/internal/instrument/effects_test.go#TestEffectProbes_WriteAndIdempotent",
+    "observe-lang-go/internal/instrument/instrument.go#InstrumentDir",
+    "observe-lang-go/internal/instrument/instrument.go#InstrumentFile",
+    "observe-lang-go/internal/instrument/instrument.go#RestoreInstrumented",
+    "observe-lang-go/internal/instrument/instrument.go#backupOriginal",
+    "observe-lang-go/internal/instrument/instrument.go#backupPathFor",
+    "observe-lang-go/internal/instrument/instrument.go#blockingReturnCapture",
+    "observe-lang-go/internal/instrument/instrument.go#cleanupTrailingProbes",
+    "observe-lang-go/internal/instrument/instrument.go#collectFuncSites",
+    "observe-lang-go/internal/instrument/instrument.go#deepCapture",
+    "observe-lang-go/internal/instrument/instrument.go#exprString",
+    "observe-lang-go/internal/instrument/instrument.go#funcDeclName",
+    "observe-lang-go/internal/instrument/instrument.go#hasBlockingRecv",
+    "observe-lang-go/internal/instrument/instrument.go#isSideEffectFree",
+    "observe-lang-go/internal/instrument/instrument.go#isSideEffectFreeOrRecv",
+    "observe-lang-go/internal/instrument/instrument.go#processFunction",
+    "observe-lang-go/internal/instrument/instrument.go#recvTypeName",
+    "observe-lang-go/internal/instrument/instrument.go#returnCapture",
+    "observe-lang-go/internal/instrument/instrument.go#terminatesFunction",
+    "observe-lang-go/internal/instrument/instrument.go#terminatesSwitchBody",
+    "observe-lang-go/internal/instrument/instrument.go#walkStmts",
+    "observe-lang-go/internal/instrument/instrument_test.go#TestBackupRootAutoInferAndRestore",
+    "observe-lang-go/internal/instrument/instrument_test.go#TestBlockingReturnSingleRecv",
+    "observe-lang-go/internal/instrument/instrument_test.go#TestCollectGoFilesSkips",
+    "observe-lang-go/internal/instrument/instrument_test.go#TestDeepCapture",
+    "observe-lang-go/internal/instrument/instrument_test.go#TestDryRunNoWrite",
+    "observe-lang-go/internal/instrument/instrument_test.go#TestFuncDeclName_RecvAndInit",
+    "observe-lang-go/internal/instrument/instrument_test.go#TestIdempotent",
+    "observe-lang-go/internal/instrument/instrument_test.go#TestInstrumentFile_EnterExitIO",
+    "observe-lang-go/internal/instrument/instrument_test.go#TestInstrument_MethodRecvInProbeName",
+    "observe-lang-go/internal/instrument/instrument_test.go#TestInstrument_TwoInitsDistinct",
+    "observe-lang-go/internal/instrument/instrument_test.go#TestMultiFunctionInjectSyntaxPreserved",
+    "observe-lang-go/internal/instrument/instrument_test.go#TestNamedReturnExitUsesDefer",
+    "observe-lang-go/internal/instrument/instrument_test.go#TestRecvTypeName",
+    "observe-lang-go/internal/instrument/instrument_test.go#TestRestoreInstrumented",
+    "observe-lang-go/internal/instrument/terminates_test.go#TestInstrumentTerminalFormsCompile",
+    "observe-lang-go/internal/instrument/terminates_test.go#lastStmtTerminates"
+  ]
+}

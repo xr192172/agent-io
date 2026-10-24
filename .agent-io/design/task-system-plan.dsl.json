@@ -57061,10 +57061,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T09:55:00+08:00",
-            "command": "npm run build && npm run verify && node _design-canvas-labs/run-gen-db.mjs",
+            "at": "2026-10-24T11:25:00+08:00",
+            "command": "npm run build && npm run verify && run-gen-db.mjs && gaps-remaining.mjs",
             "kind": "reading",
-            "observed": "verify 9/9；gen-db written=345/problems=0；抽检 application-design-dsl_ops-task_ops.calls.json：expected_symbols 21 条（首条 TaskOpRequest interface）+ reverse_calls 25 条并存"
+            "observed": "verify 9/9；gen-db paths=408 written=50 problems=0；沉默缺口=0（observe-lang 14+src 2 全部入投影；排除清单 5 条生效）；管辖范围权威从硬编码 src/ 迁到 excluded 清单"
           }
         },
         "task": {
@@ -57073,7 +57073,7 @@
           "state": "done",
           "judge_gate": "strict",
           "owner": "agent:workbuddy-glm5",
-          "claimed_at": "2026-10-24T01:49:38.416Z",
+          "claimed_at": "2026-10-24T03:20:18.036Z",
           "read_set": {
             "symbols": [],
             "files": [
@@ -57083,10 +57083,10 @@
               },
               {
                 "path": "src/application/design/db/gen_design_db.ts",
-                "content_hash": "250f16cf1dc5d868c9dc11a8246c4b83aee90172"
+                "content_hash": "3036ff3b89b859b4942eb48c714a1a4a01b17ebf"
               }
             ],
-            "computed_at": "2026-10-24T01:49:38.381Z",
+            "computed_at": "2026-10-24T03:20:17.999Z",
             "basis": [
               "declared",
               "expectations"
@@ -57126,10 +57126,27 @@
               },
               "observed": "verify 9/9；gen-db written=345/problems=0；抽检 application-design-dsl_ops-task_ops.calls.json：expected_symbols 21 条（首条 TaskOpRequest interface）+ reverse_calls 25 条并存",
               "command": "npm run build && npm run verify && node _design-canvas-labs/run-gen-db.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-24T03:24:22.046Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify && run-gen-db.mjs && gaps-remaining.mjs",
+                "input": "c9394327013babc3561874256601400b3622929e",
+                "code": "56a0222cb7aa32d7650d35ac5a8be8ebc12a9d18",
+                "covers": [
+                  "docs/VISION.md",
+                  "src/application/design/db/gen_design_db.ts"
+                ]
+              },
+              "observed": "verify 9/9；gen-db paths=408 written=50 problems=0；沉默缺口=0（observe-lang 14+src 2 全部入投影；排除清单 5 条生效）；管辖范围权威从硬编码 src/ 迁到 excluded 清单",
+              "command": "npm run build && npm run verify && run-gen-db.mjs && gaps-remaining.mjs"
             }
           ],
-          "reopened_at": "2026-10-24T01:49:38.416Z",
-          "reopen_reason": "预期符号上投影（裁 A 落地）：src/application/design/db/gen_design_db.ts 加 expected_symbols 段（从设计册 semantic.files 生成，无行号），与现状 symbols 并列——gap 一眼可见",
+          "reopened_at": "2026-10-24T03:20:18.036Z",
+          "reopen_reason": "设计 DB 管辖范围收口：planDesignDb 的 startsWith('src/') 硬编码换成 excluded 清单过滤（observe-lang 14 个由此入投影；certs 等由 excluded 挡住）——src/application/design/db/gen_design_db.ts",
           "reopened_from": "agent:workbuddy-glm5"
         }
       },
@@ -58239,6 +58256,182 @@
         },
         "arch_layer": "infra",
         "status": "draft"
+      },
+      {
+        "id": "file_src_infrastructure_dsl_write_scope_ts",
+        "label": "dsl_write_scope.ts",
+        "x": 9200,
+        "y": 120,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/infrastructure/dsl_write_scope.ts",
+        "style": {}
+      },
+      {
+        "id": "file_src_infrastructure_task_history_ts",
+        "label": "task_history.ts",
+        "x": 9200,
+        "y": 220,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/infrastructure/task_history.ts",
+        "style": {}
+      },
+      {
+        "id": "file_observe_lang_go_cmd_instrument_main_go",
+        "label": "main.go (instrument)",
+        "x": 9200,
+        "y": 320,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "observe-lang-go/cmd/instrument/main.go",
+        "style": {}
+      },
+      {
+        "id": "file_observe_lang_go_cmd_observev2_demo_main_go",
+        "label": "main.go (observev2-demo)",
+        "x": 9200,
+        "y": 420,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "observe-lang-go/cmd/observev2-demo/main.go",
+        "style": {}
+      },
+      {
+        "id": "file_observe_lang_go_cmd_observev2_record_main_go",
+        "label": "main.go (observev2-record)",
+        "x": 9200,
+        "y": 520,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "observe-lang-go/cmd/observev2-record/main.go",
+        "style": {}
+      },
+      {
+        "id": "file_observe_lang_go_internal_instrument_contract_go",
+        "label": "contract.go",
+        "x": 9200,
+        "y": 620,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "observe-lang-go/internal/instrument/contract.go",
+        "style": {}
+      },
+      {
+        "id": "file_observe_lang_go_internal_instrument_effects_go",
+        "label": "effects.go",
+        "x": 9200,
+        "y": 720,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "observe-lang-go/internal/instrument/effects.go",
+        "style": {}
+      },
+      {
+        "id": "file_observe_lang_go_internal_instrument_instrument_go",
+        "label": "instrument.go",
+        "x": 9200,
+        "y": 820,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "observe-lang-go/internal/instrument/instrument.go",
+        "style": {}
+      },
+      {
+        "id": "file_observe_lang_go_probe_export_go",
+        "label": "export.go",
+        "x": 9500,
+        "y": 320,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "observe-lang-go/probe/export.go",
+        "style": {}
+      },
+      {
+        "id": "file_observe_lang_go_probe_global_go",
+        "label": "global.go",
+        "x": 9500,
+        "y": 420,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "observe-lang-go/probe/global.go",
+        "style": {}
+      },
+      {
+        "id": "file_observe_lang_go_probe_probe_go",
+        "label": "probe.go",
+        "x": 9500,
+        "y": 520,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "observe-lang-go/probe/probe.go",
+        "style": {}
+      },
+      {
+        "id": "file_observe_lang_go_probe_run_recorder_go",
+        "label": "run_recorder.go",
+        "x": 9500,
+        "y": 620,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "observe-lang-go/probe/run_recorder.go",
+        "style": {}
+      },
+      {
+        "id": "file_observe_lang_go_probe_tiered_go",
+        "label": "tiered.go",
+        "x": 9500,
+        "y": 720,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "observe-lang-go/probe/tiered.go",
+        "style": {}
+      },
+      {
+        "id": "file_observe_lang_go_probe_trace_go",
+        "label": "trace.go",
+        "x": 9500,
+        "y": 820,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "observe-lang-go/probe/trace.go",
+        "style": {}
+      },
+      {
+        "id": "file_observe_lang_java_observe_probe_Camprobe_java",
+        "label": "Camprobe.java",
+        "x": 9800,
+        "y": 320,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "observe-lang-java/observe/probe/Camprobe.java",
+        "style": {}
+      },
+      {
+        "id": "file_observe_lang_py_camprobe_py",
+        "label": "camprobe.py",
+        "x": 9800,
+        "y": 420,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "observe-lang-py/camprobe.py",
+        "style": {}
       }
     ],
     "edges": [
@@ -115978,6 +116171,86 @@
         ],
         "lines": 528,
         "layer": "core"
+      },
+      {
+        "id": "file_src_infrastructure_dsl_write_scope_ts",
+        "path": "src/infrastructure/dsl_write_scope.ts",
+        "responsibility": "基础设施 · 设计册写端的授权作用域（runDslWriteScope）"
+      },
+      {
+        "id": "file_src_infrastructure_task_history_ts",
+        "path": "src/infrastructure/task_history.ts",
+        "responsibility": "基础设施 · 已了结任务卡归档库（task-history.db 唯一读写口，append-only）"
+      },
+      {
+        "id": "file_observe_lang_go_cmd_instrument_main_go",
+        "path": "observe-lang-go/cmd/instrument/main.go",
+        "responsibility": "observe-lang-go · instrument 命令行入口"
+      },
+      {
+        "id": "file_observe_lang_go_cmd_observev2_demo_main_go",
+        "path": "observe-lang-go/cmd/observev2-demo/main.go",
+        "responsibility": "observe-lang-go · observev2 演示入口"
+      },
+      {
+        "id": "file_observe_lang_go_cmd_observev2_record_main_go",
+        "path": "observe-lang-go/cmd/observev2-record/main.go",
+        "responsibility": "observe-lang-go · observev2 录制入口"
+      },
+      {
+        "id": "file_observe_lang_go_internal_instrument_contract_go",
+        "path": "observe-lang-go/internal/instrument/contract.go",
+        "responsibility": "observe-lang-go · 插桩契约定义"
+      },
+      {
+        "id": "file_observe_lang_go_internal_instrument_effects_go",
+        "path": "observe-lang-go/internal/instrument/effects.go",
+        "responsibility": "observe-lang-go · 副作用效果层"
+      },
+      {
+        "id": "file_observe_lang_go_internal_instrument_instrument_go",
+        "path": "observe-lang-go/internal/instrument/instrument.go",
+        "responsibility": "observe-lang-go · 插桩引擎核心"
+      },
+      {
+        "id": "file_observe_lang_go_probe_export_go",
+        "path": "observe-lang-go/probe/export.go",
+        "responsibility": "observe-lang-go · 探针导出"
+      },
+      {
+        "id": "file_observe_lang_go_probe_global_go",
+        "path": "observe-lang-go/probe/global.go",
+        "responsibility": "observe-lang-go · 探针全局状态"
+      },
+      {
+        "id": "file_observe_lang_go_probe_probe_go",
+        "path": "observe-lang-go/probe/probe.go",
+        "responsibility": "observe-lang-go · 探针核心"
+      },
+      {
+        "id": "file_observe_lang_go_probe_run_recorder_go",
+        "path": "observe-lang-go/probe/run_recorder.go",
+        "responsibility": "observe-lang-go · 运行录制器"
+      },
+      {
+        "id": "file_observe_lang_go_probe_tiered_go",
+        "path": "observe-lang-go/probe/tiered.go",
+        "responsibility": "observe-lang-go · 分层探针"
+      },
+      {
+        "id": "file_observe_lang_go_probe_trace_go",
+        "path": "observe-lang-go/probe/trace.go",
+        "responsibility": "observe-lang-go · 追踪探针"
+      },
+      {
+        "id": "file_observe_lang_java_observe_probe_Camprobe_java",
+        "path": "observe-lang-java/observe/probe/Camprobe.java",
+        "responsibility": "observe-lang-java · Camprobe 探针"
+      },
+      {
+        "id": "file_observe_lang_py_camprobe_py",
+        "path": "observe-lang-py/camprobe.py",
+        "responsibility": "observe-lang-py · Camprobe 探针"
       }
     ]
   },
@@ -116040,11 +116313,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T03:08:54.501Z",
+    "saved_at": "2026-10-24T03:24:22.309Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 227811690,
+    "age": 228739498,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -119030,7 +119303,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1318,
+  "_dsl_rev": 1367,
   "feature_tree": {
     "features": [
       {

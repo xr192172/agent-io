@@ -1,0 +1,31 @@
+{
+  "//": "Design DB —— third_party/archify/renderers/shared/cli.mjs（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "third_party/archify/renderers/shared/cli.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "outputPathGuards",
+      "kind": "const",
+      "signature": "const outputPathGuards = new Map()"
+    },
+    {
+      "name": "START_TYPES",
+      "kind": "const",
+      "signature": "const START_TYPES = new Set(['architecture', 'workflow', 'sequence', 'dataflo…"
+    },
+    {
+      "name": "SEMANTIC_COLLECTIONS",
+      "kind": "const",
+      "signature": "const SEMANTIC_COLLECTIONS = { architecture: 'components', workflow: 'nodes', sequence…"
+    },
+    {
+      "name": "RELATIONSHIP_COLLECTIONS",
+      "kind": "const",
+      "signature": "const RELATIONSHIP_COLLECTIONS = { architecture: 'connections', workflow: 'edges', sequenc…"
+    }
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "//": "Design DB —— observe-lang-py/camprobe.py（★ 全量、与实际 DB 同构；从 design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json",
+  "path": "observe-lang-py/camprobe.py",
+  "symbols": [
+    {
+      "name": "set_global_probe_sink",
+      "kind": "function",
+      "line": 26,
+      "signature": "set_global_probe_sink(sink)"
+    },
+    {
+      "name": "has_global_probe_sink",
+      "kind": "function",
+      "line": 34,
+      "signature": "has_global_probe_sink()"
+    },
+    {
+      "name": "capture_probe",
+      "kind": "function",
+      "line": 39,
+      "signature": "capture_probe(probe, fields=None, source=\"static-rule\")"
+    },
+    {
+      "name": "cam_lambda",
+      "kind": "function",
+      "line": 50,
+      "signature": "cam_lambda(name, args, value, emit_enter=True, emit_exit=True)"
+    },
+    {
+      "name": "_report_probe_error",
+      "kind": "function",
+      "line": 62,
+      "signature": "_report_probe_error(probe_name, err)"
+    },
+    {
+      "name": "_scrub",
+      "kind": "function",
+      "line": 80,
+      "signature": "_scrub(value, depth=0)"
+    },
+    {
+      "name": "_summarize",
+      "kind": "function",
+      "line": 106,
+      "signature": "_summarize(value)"
+    },
+    {
+      "name": "JsonlSink",
+      "kind": "class",
+      "line": 112,
+      "signature": "JsonlSink()"
+    },
+    {
+      "name": "load_events",
+      "kind": "function",
+      "line": 134,
+      "signature": "load_events(events_path)"
+    }
+  ],
+  "imports": [
+    {
+      "source": "json",
+      "kind": "package"
+    },
+    {
+      "source": "os",
+      "kind": "package"
+    },
+    {
+      "source": "sys",
+      "kind": "package"
+    },
+    {
+      "source": "threading",
+      "kind": "package"
+    },
+    {
+      "source": "datetime",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "observe-lang-py/camprobe.py#capture_probe",
+      "to": "observe-lang-py/camprobe.py#_report_probe_error"
+    },
+    {
+      "from": "observe-lang-py/camprobe.py#_scrub",
+      "to": "observe-lang-py/camprobe.py#_scrub"
+    },
+    {
+      "from": "observe-lang-py/camprobe.py#_scrub",
+      "to": "observe-lang-py/camprobe.py#_scrub"
+    },
+    {
+      "from": "observe-lang-py/camprobe.py#_scrub",
+      "to": "observe-lang-py/camprobe.py#_scrub"
+    },
+    {
+      "from": "observe-lang-py/camprobe.py#JsonlSink.emit",
+      "to": "observe-lang-py/camprobe.py#_scrub"
+    },
+    {
+      "from": "observe-lang-py/camprobe.py#_scrub",
+      "to": "observe-lang-py/camprobe.py#_summarize"
+    },
+    {
+      "from": "observe-lang-py/camprobe.py#_scrub",
+      "to": "observe-lang-py/camprobe.py#_summarize"
+    },
+    {
+      "from": "observe-lang-py/camprobe.py#cam_lambda",
+      "to": "observe-lang-py/camprobe.py#capture_probe"
+    },
+    {
+      "from": "observe-lang-py/camprobe.py#cam_lambda",
+      "to": "observe-lang-py/camprobe.py#capture_probe"
+    }
+  ],
+  "expected_symbols": [
+    {
+      "name": "JsonlSink",
+      "kind": "class",
+      "signature": "JsonlSink()"
+    }
+  ],
+  "reverse_calls": [
+    "observe-lang-py/camprobe.py#JsonlSink.emit",
+    "observe-lang-py/camprobe.py#_scrub",
+    "observe-lang-py/camprobe.py#cam_lambda",
+    "observe-lang-py/camprobe.py#capture_probe"
+  ]
+}

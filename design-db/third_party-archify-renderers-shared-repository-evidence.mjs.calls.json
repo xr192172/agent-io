@@ -1,0 +1,21 @@
+{
+  "//": "Design DB —— third_party/archify/renderers/shared/repository-evidence.mjs（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "third_party/archify/renderers/shared/repository-evidence.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "FULL_SHA_RE",
+      "kind": "const",
+      "signature": "const FULL_SHA_RE = /^[a-f0-9]{40}$/i"
+    },
+    {
+      "name": "CONTROL_CHARACTER_RE",
+      "kind": "const",
+      "signature": "const CONTROL_CHARACTER_RE = /[\\u0000-\\u001f\\u007f]/"
+    }
+  ]
+}

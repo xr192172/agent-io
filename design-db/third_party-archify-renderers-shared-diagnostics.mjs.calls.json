@@ -1,0 +1,36 @@
+{
+  "//": "Design DB —— third_party/archify/renderers/shared/diagnostics.mjs（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "third_party/archify/renderers/shared/diagnostics.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "DIAGNOSTIC_MODE",
+      "kind": "const",
+      "signature": "const DIAGNOSTIC_MODE = process.env.ARCHIFY_DIAGNOSTIC_FORMAT === 'json'"
+    },
+    {
+      "name": "recorded",
+      "kind": "const",
+      "signature": "const recorded = []"
+    },
+    {
+      "name": "recordedMessages",
+      "kind": "const",
+      "signature": "const recordedMessages = new Set()"
+    },
+    {
+      "name": "boundaryKey",
+      "kind": "const",
+      "signature": "const boundaryKey = Symbol.for('archify.renderer-diagnostic-boundary')"
+    },
+    {
+      "name": "recordingSuppressionDepth",
+      "kind": "const",
+      "signature": "const recordingSuppressionDepth = 0"
+    }
+  ]
+}

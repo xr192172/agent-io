@@ -1,0 +1,84 @@
+{
+  "//": "Design DB —— src/infrastructure/dsl_write_scope.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/infrastructure/dsl_write_scope.ts",
+  "symbols": [
+    {
+      "name": "DslWriteVia",
+      "kind": "type",
+      "line": 44,
+      "signature": "DslWriteVia()"
+    },
+    {
+      "name": "DslWriteGrant",
+      "kind": "interface",
+      "line": 60,
+      "signature": "DslWriteGrant()",
+      "members": [
+        {
+          "name": "via",
+          "type": ": DslWriteVia",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "who",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "feature",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "at",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "als",
+      "kind": "const",
+      "line": 68,
+      "signature": "const als = new AsyncLocalStorage<DslWriteGrant>()"
+    },
+    {
+      "name": "runDslWriteScope",
+      "kind": "function",
+      "line": 76,
+      "signature": "runDslWriteScope(grant: { via: DslWriteVia; who: string; feature?: string },\n  fn: () => T,): T"
+    },
+    {
+      "name": "currentDslWriteScope",
+      "kind": "function",
+      "line": 85,
+      "signature": "currentDslWriteScope(): DslWriteGrant | null"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:async_hooks",
+      "kind": "package"
+    }
+  ],
+  "calls": [],
+  "reverse_calls": [
+    "src/application/design/derive/opl.ts#oplIntegrate",
+    "src/application/design/dsl_ops/update_feature.ts#updateFeatureCore",
+    "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",
+    "src/application/design/workbench/dag_layout.ts#dagLayoutCore",
+    "src/application/design/workbench/dag_layout.ts#forceLayout",
+    "src/application/design/workbench/dag_layout.ts#gridAlign",
+    "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+    "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
+    "src/infrastructure/graph/import_project.ts#importProject",
+    "src/infrastructure/storage.ts#assertDslWriteAllowed",
+    "src/presentation/mcp/server_registry.ts#invokeTool"
+  ]
+}

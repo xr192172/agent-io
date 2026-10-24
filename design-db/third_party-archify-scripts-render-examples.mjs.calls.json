@@ -1,0 +1,31 @@
+{
+  "//": "Design DB —— third_party/archify/scripts/render-examples.mjs（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "third_party/archify/scripts/render-examples.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "__dirname",
+      "kind": "const",
+      "signature": "const __dirname = path.dirname(fileURLToPath(import.meta.url))"
+    },
+    {
+      "name": "skillRoot",
+      "kind": "const",
+      "signature": "const skillRoot = path.resolve(__dirname, '..')"
+    },
+    {
+      "name": "outputRoot",
+      "kind": "const",
+      "signature": "const outputRoot = path.resolve(process.argv[2] || path.join(skillRoot, 'exa…"
+    },
+    {
+      "name": "TARGETS",
+      "kind": "const",
+      "signature": "const TARGETS = [ ['workflow', 'agent-tool-call.workflow.json', 'workflow…"
+    }
+  ]
+}

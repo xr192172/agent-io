@@ -1,0 +1,213 @@
+{
+  "//": "Design DB —— observe-lang-go/cmd/observev2-demo/main.go（★ 全量、与实际 DB 同构；从 design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json",
+  "path": "observe-lang-go/cmd/observev2-demo/main.go",
+  "symbols": [
+    {
+      "name": "main",
+      "kind": "function",
+      "line": 32,
+      "signature": "main()"
+    },
+    {
+      "name": "runChain",
+      "kind": "function",
+      "line": 57,
+      "signature": "runChain(n, errEvery int)"
+    },
+    {
+      "name": "placeOrder",
+      "kind": "function",
+      "line": 67,
+      "signature": "placeOrder(ctx context.Context, orderID int, injectErr bool) error"
+    },
+    {
+      "name": "chargePayment",
+      "kind": "function",
+      "line": 77,
+      "signature": "chargePayment(ctx context.Context, orderID int, injectErr bool) error"
+    },
+    {
+      "name": "reserveInventory",
+      "kind": "function",
+      "line": 87,
+      "signature": "reserveInventory(ctx context.Context, orderID int, injectErr bool) error"
+    },
+    {
+      "name": "report",
+      "kind": "function",
+      "line": 102,
+      "signature": "report(root, incidents string, heap1, heap2 float64)"
+    },
+    {
+      "name": "tiered",
+      "kind": "function",
+      "line": 172,
+      "signature": "tiered() *probe.Tiered"
+    },
+    {
+      "name": "pass",
+      "kind": "function",
+      "line": 174,
+      "signature": "pass(ok bool) string"
+    },
+    {
+      "name": "verifyChain",
+      "kind": "function",
+      "line": 182,
+      "signature": "verifyChain(path string) (bool, int, string)"
+    },
+    {
+      "name": "countIncidentsByProbe",
+      "kind": "function",
+      "line": 223,
+      "signature": "countIncidentsByProbe(dir string, files []string) map[string]int"
+    },
+    {
+      "name": "previewIncident",
+      "kind": "function",
+      "line": 245,
+      "signature": "previewIncident(w *bufio.Writer, path string)"
+    },
+    {
+      "name": "listIncidents",
+      "kind": "function",
+      "line": 264,
+      "signature": "listIncidents(dir string) []string"
+    },
+    {
+      "name": "heapAllocMB",
+      "kind": "function",
+      "line": 279,
+      "signature": "heapAllocMB() float64"
+    }
+  ],
+  "imports": [
+    {
+      "source": "bufio",
+      "kind": "package"
+    },
+    {
+      "source": "context",
+      "kind": "package"
+    },
+    {
+      "source": "encoding/json",
+      "kind": "package"
+    },
+    {
+      "source": "fmt",
+      "kind": "package"
+    },
+    {
+      "source": "os",
+      "kind": "package"
+    },
+    {
+      "source": "path/filepath",
+      "kind": "package"
+    },
+    {
+      "source": "runtime",
+      "kind": "package"
+    },
+    {
+      "source": "sort",
+      "kind": "package"
+    },
+    {
+      "source": "strings",
+      "kind": "package"
+    },
+    {
+      "source": "github.com/xr192172/agent-io/observe-lang-go/probe",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#placeOrder",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#chargePayment"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#countIncidentsByProbe"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#main",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#heapAllocMB"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#main",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#heapAllocMB"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#listIncidents"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#pass"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#pass"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#pass"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#pass"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#runChain",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#placeOrder"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#previewIncident"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#main",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#report"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#chargePayment",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#reserveInventory"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#main",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#runChain"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#main",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#runChain"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#tiered"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#tiered"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#tiered"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#verifyChain"
+    }
+  ],
+  "reverse_calls": [
+    "observe-lang-go/cmd/observev2-demo/main.go#chargePayment",
+    "observe-lang-go/cmd/observev2-demo/main.go#main",
+    "observe-lang-go/cmd/observev2-demo/main.go#placeOrder",
+    "observe-lang-go/cmd/observev2-demo/main.go#report",
+    "observe-lang-go/cmd/observev2-demo/main.go#runChain"
+  ]
+}

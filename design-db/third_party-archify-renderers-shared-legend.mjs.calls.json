@@ -1,0 +1,41 @@
+{
+  "//": "Design DB —— third_party/archify/renderers/shared/legend.mjs（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "third_party/archify/renderers/shared/legend.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "DEFAULT_FONT_SIZE",
+      "kind": "const",
+      "signature": "const DEFAULT_FONT_SIZE = 8"
+    },
+    {
+      "name": "DEFAULT_ITEM_GAP",
+      "kind": "const",
+      "signature": "const DEFAULT_ITEM_GAP = 22"
+    },
+    {
+      "name": "DEFAULT_LINE_GAP",
+      "kind": "const",
+      "signature": "const DEFAULT_LINE_GAP = 22"
+    },
+    {
+      "name": "DEFAULT_SWATCH_GAP",
+      "kind": "const",
+      "signature": "const DEFAULT_SWATCH_GAP = 8"
+    },
+    {
+      "name": "TEXT_ADVANCE_EM",
+      "kind": "const",
+      "signature": "const TEXT_ADVANCE_EM = 0.62"
+    },
+    {
+      "name": "INTERACTIVE_BADGE_ALLOWANCE",
+      "kind": "const",
+      "signature": "const INTERACTIVE_BADGE_ALLOWANCE = 21"
+    }
+  ]
+}

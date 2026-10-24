@@ -1,0 +1,201 @@
+{
+  "//": "Design DB —— third_party/archify/scripts/check-render-output.mjs（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "third_party/archify/scripts/check-render-output.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "input",
+      "kind": "const",
+      "signature": "const input = process.argv[2]"
+    },
+    {
+      "name": "htmlPath",
+      "kind": "const",
+      "signature": "const htmlPath = path.resolve(input)"
+    },
+    {
+      "name": "html",
+      "kind": "const",
+      "signature": "const html = "
+    },
+    {
+      "name": "checks",
+      "kind": "const",
+      "signature": "const checks = []"
+    },
+    {
+      "name": "composition",
+      "kind": "const",
+      "signature": "const composition = { schemaVersion: 1, profile: 'standard', status: 'pass', …"
+    },
+    {
+      "name": "svgMatches",
+      "kind": "const",
+      "signature": "const svgMatches = [...html.matchAll(/<svg\\b[\\s\\S]*?<\\/svg>/gi)]"
+    },
+    {
+      "name": "svg",
+      "kind": "const",
+      "signature": "const svg = svgMatches[0][0]"
+    },
+    {
+      "name": "svgRoot",
+      "kind": "const",
+      "signature": "const svgRoot = svg.match(/<svg\\b[^>]*>/i)?.[0] || ''"
+    },
+    {
+      "name": "svgAttrs",
+      "kind": "const",
+      "signature": "const svgAttrs = parseAttrs(svgRoot)"
+    },
+    {
+      "name": "qualityProfile",
+      "kind": "const",
+      "signature": "const qualityProfile = svgAttrs['data-quality-profile'] || 'standard'"
+    },
+    {
+      "name": "qualityGatesEnforced",
+      "kind": "const",
+      "signature": "const qualityGatesEnforced = svgAttrs['data-quality-gates'] !== 'advisory'"
+    },
+    {
+      "name": "legendStart",
+      "kind": "const",
+      "signature": "const legendStart = svg.indexOf('<!-- Legend -->')"
+    },
+    {
+      "name": "beforeLegend",
+      "kind": "const",
+      "signature": "const beforeLegend = legendStart >= 0 ? svg.slice(0, legendStart) : svg"
+    },
+    {
+      "name": "desktopReadabilityIssue",
+      "kind": "const",
+      "signature": "const desktopReadabilityIssue = collectDesktopReadability(svgAttrs, beforeLegend)"
+    },
+    {
+      "name": "arrows",
+      "kind": "const",
+      "signature": "const arrows = collectArrows(beforeLegend)"
+    },
+    {
+      "name": "diagonal",
+      "kind": "const",
+      "signature": "const diagonal = arrows.flatMap((arrow) => diagonalStraightSegments(arrow)…"
+    },
+    {
+      "name": "relationshipCrossings",
+      "kind": "const",
+      "signature": "const relationshipCrossings = collectRelationshipCrossings(arrows)"
+    },
+    {
+      "name": "compositionFrames",
+      "kind": "const",
+      "signature": "const compositionFrames = collectCompositionFrames(beforeLegend)"
+    },
+    {
+      "name": "containerBorderRuns",
+      "kind": "const",
+      "signature": "const containerBorderRuns = collectBorderRuns({ routedRelations: arrows .filter((arro…"
+    },
+    {
+      "name": "routedRelationships",
+      "kind": "const",
+      "signature": "const routedRelationships = arrows .filter((arrow) => arrow.from && arrow.to && arrow…"
+    },
+    {
+      "name": "routeMetrics",
+      "kind": "const",
+      "signature": "const routeMetrics = routeBudgetMetrics({ routedRelations: routedRelationships })"
+    },
+    {
+      "name": "routeRhythmIssues",
+      "kind": "const",
+      "signature": "const routeRhythmIssues = collectRouteRhythmIssues({ routedRelations: routedRelatio…"
+    },
+    {
+      "name": "ambiguousCorridors",
+      "kind": "const",
+      "signature": "const ambiguousCorridors = collectAmbiguousCorridors({ routedRelations: routedRelati…"
+    },
+    {
+      "name": "relationshipLabels",
+      "kind": "const",
+      "signature": "const relationshipLabels = collectRelationshipLabelMasks(beforeLegend, arrows)"
+    },
+    {
+      "name": "labelClearanceThreshold",
+      "kind": "const",
+      "signature": "const labelClearanceThreshold = qualityProfile === 'showcase' ? 4 : 2"
+    },
+    {
+      "name": "labelRouteMeasurements",
+      "kind": "const",
+      "signature": "const labelRouteMeasurements = collectLabelRouteClearance({ labels: relationshipLabels, …"
+    },
+    {
+      "name": "labelRouteClearance",
+      "kind": "const",
+      "signature": "const labelRouteClearance = collectLabelRouteClearance({ labels: relationshipLabels, …"
+    },
+    {
+      "name": "crossingIsError",
+      "kind": "const",
+      "signature": "const crossingIsError = qualityProfile === 'showcase'"
+    },
+    {
+      "name": "corridorIsError",
+      "kind": "const",
+      "signature": "const corridorIsError = qualityProfile === 'showcase'"
+    },
+    {
+      "name": "rhythmIsError",
+      "kind": "const",
+      "signature": "const rhythmIsError = qualityProfile === 'showcase'"
+    },
+    {
+      "name": "labelClearanceIsError",
+      "kind": "const",
+      "signature": "const labelClearanceIsError = qualityProfile === 'showcase'"
+    },
+    {
+      "name": "desktopReadabilityIsError",
+      "kind": "const",
+      "signature": "const desktopReadabilityIsError = qualityProfile === 'showcase'"
+    },
+    {
+      "name": "compositionErrors",
+      "kind": "const",
+      "signature": "const compositionErrors = (qualityGatesEnforced ? containerBorderRuns.length : 0) +…"
+    },
+    {
+      "name": "compositionWarnings",
+      "kind": "const",
+      "signature": "const compositionWarnings = (qualityGatesEnforced ? 0 : containerBorderRuns.length) +…"
+    },
+    {
+      "name": "legendFragment",
+      "kind": "const",
+      "signature": "const legendFragment = svg.slice(legendStart)"
+    },
+    {
+      "name": "legendBoxes",
+      "kind": "const",
+      "signature": "const legendBoxes = collectLegendBoxes(legendFragment)"
+    },
+    {
+      "name": "collisions",
+      "kind": "const",
+      "signature": "const collisions = collectLegendCollisions(arrows, legendBoxes)"
+    },
+    {
+      "name": "ok",
+      "kind": "const",
+      "signature": "const ok = checks.every((check) => check.ok) && composition.status !…"
+    }
+  ]
+}

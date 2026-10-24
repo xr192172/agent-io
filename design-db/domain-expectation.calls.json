@@ -223,6 +223,7 @@
     "src/application/design/intent/expectations.ts#findExpectationConflicts",
     "src/application/design/intent/expectations.ts#indexStaleFor",
     "src/application/design/intent/expectations.ts#judgeExpectations",
+    "src/application/meta/explore/query_feature.ts#queryFeature",
     "src/application/patrol/task_drift.ts#patrolDrift",
     "src/domain/expectation.ts#describeExpectation",
     "src/domain/expectation.ts#expectationPaths",

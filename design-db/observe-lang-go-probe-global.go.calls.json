@@ -1,0 +1,84 @@
+{
+  "//": "Design DB —— observe-lang-go/probe/global.go（★ 全量、与实际 DB 同构；从 design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json",
+  "path": "observe-lang-go/probe/global.go",
+  "symbols": [
+    {
+      "name": "reportProbeError",
+      "kind": "function",
+      "line": 22,
+      "signature": "reportProbeError(probeName string, err error)"
+    },
+    {
+      "name": "SetGlobalSink",
+      "kind": "function",
+      "line": 59,
+      "signature": "SetGlobalSink(s *Sink)"
+    },
+    {
+      "name": "SetGlobalTiered",
+      "kind": "function",
+      "line": 66,
+      "signature": "SetGlobalTiered(t *Tiered)"
+    },
+    {
+      "name": "globalTieredFor",
+      "kind": "function",
+      "line": 73,
+      "signature": "globalTieredFor() *Tiered"
+    },
+    {
+      "name": "Capture",
+      "kind": "function",
+      "line": 82,
+      "signature": "Capture(probeName, source string, fields map[string]any)"
+    },
+    {
+      "name": "CaptureErr",
+      "kind": "function",
+      "line": 104,
+      "signature": "CaptureErr(probeName, source string, err error, extra map[string]any)"
+    }
+  ],
+  "imports": [
+    {
+      "source": "fmt",
+      "kind": "package"
+    },
+    {
+      "source": "os",
+      "kind": "package"
+    },
+    {
+      "source": "sync",
+      "kind": "package"
+    },
+    {
+      "source": "time",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "observe-lang-go/probe/global.go#CaptureErr",
+      "to": "observe-lang-go/probe/global.go#Capture"
+    },
+    {
+      "from": "observe-lang-go/probe/global.go#Capture",
+      "to": "observe-lang-go/probe/global.go#reportProbeError"
+    }
+  ],
+  "reverse_calls": [
+    "observe-lang-go/probe/global.go#Capture",
+    "observe-lang-go/probe/global.go#CaptureErr",
+    "observe-lang-go/probe/skeleton_cert_test.go#TestSkeletonNoSinkIsNoOp",
+    "observe-lang-go/probe/skeleton_cert_test.go#TestSkeletonSinkEmitsEvents",
+    "observe-lang-go/probe/skeleton_cert_test.go#TestSkeletonSinkFailureIsLoud",
+    "observe-lang-go/probe/skeleton_cert_test.go#setGlobalSinkForTest",
+    "observe-lang-go/probe/tiered_test.go#TestExportFloodBounded",
+    "observe-lang-go/probe/tiered_test.go#TestIncidentChainSameTraceID",
+    "observe-lang-go/probe/tiered_test.go#TestLegacyCaptureRoutesToTiered",
+    "observe-lang-go/probe/trace.go#Enter"
+  ]
+}

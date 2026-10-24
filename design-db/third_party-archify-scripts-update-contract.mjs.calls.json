@@ -1,0 +1,56 @@
+{
+  "//": "Design DB —— third_party/archify/scripts/update-contract.mjs（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "third_party/archify/scripts/update-contract.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "SKILL_ID",
+      "kind": "const",
+      "signature": "const SKILL_ID = 'archify'"
+    },
+    {
+      "name": "EXPECTED_REPOSITORY",
+      "kind": "const",
+      "signature": "const EXPECTED_REPOSITORY = 'https://github.com/tt-a1i/archify'"
+    },
+    {
+      "name": "DEFAULT_MANIFEST_URL",
+      "kind": "const",
+      "signature": "const DEFAULT_MANIFEST_URL = 'https://tt-a1i.github.io/archify/skill-updates/archify/s…"
+    },
+    {
+      "name": "CONTROL_OR_BIDI",
+      "kind": "const",
+      "signature": "const CONTROL_OR_BIDI = /[\\u0000-\\u001f\\u007f-\\u009f\\u202a-\\u202e\\u2066-\\u2069]/u"
+    },
+    {
+      "name": "HEX_40",
+      "kind": "const",
+      "signature": "const HEX_40 = /^[a-f0-9]{40}$/"
+    },
+    {
+      "name": "HEX_64",
+      "kind": "const",
+      "signature": "const HEX_64 = /^[a-f0-9]{64}$/"
+    },
+    {
+      "name": "SEMVER",
+      "kind": "const",
+      "signature": "const SEMVER = /^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-([0-9A-Za-z…"
+    },
+    {
+      "name": "UTC_SECONDS",
+      "kind": "const",
+      "signature": "const UTC_SECONDS = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$/"
+    },
+    {
+      "name": "UpdateContractError",
+      "kind": "class",
+      "signature": "UpdateContractError()"
+    }
+  ]
+}

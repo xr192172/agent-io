@@ -1,0 +1,71 @@
+{
+  "//": "Design DB —— third_party/archify/renderers/lifecycle/render-lifecycle.mjs（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "third_party/archify/renderers/lifecycle/render-lifecycle.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "stateTextFit",
+      "kind": "const",
+      "signature": "const stateTextFit = { sublabelPreferred: 7, sublabelMinimum: 6, tagPreferred:…"
+    },
+    {
+      "name": "__dirname",
+      "kind": "const",
+      "signature": "const __dirname = path.dirname(fileURLToPath(import.meta.url))"
+    },
+    {
+      "name": "viewBox",
+      "kind": "const",
+      "signature": "const viewBox = lifecycle.meta?.viewBox || [980, 660]"
+    },
+    {
+      "name": "layout",
+      "kind": "const",
+      "signature": "const layout = { phaseY: 126, eventY: 278, outcomeY: 450, phaseW: 118, p…"
+    },
+    {
+      "name": "typeClass",
+      "kind": "const",
+      "signature": "const typeClass = { start: 'c-frontend', active: 'c-backend', waiting: 'c-c…"
+    },
+    {
+      "name": "textClass",
+      "kind": "const",
+      "signature": "const textClass = { start: 't-frontend', active: 't-backend', waiting: 't-c…"
+    },
+    {
+      "name": "states",
+      "kind": "const",
+      "signature": "const states = new Map(asArray(lifecycle.states).map((state) => [state.i…"
+    },
+    {
+      "name": "laneLabels",
+      "kind": "const",
+      "signature": "const laneLabels = new Map(asArray(lifecycle.lanes).map((lane) => [lane.id, …"
+    },
+    {
+      "name": "stateSteps",
+      "kind": "const",
+      "signature": "const stateSteps = new Map()"
+    },
+    {
+      "name": "pathCache",
+      "kind": "const",
+      "signature": "const pathCache = new Map()"
+    },
+    {
+      "name": "automaticPorts",
+      "kind": "const",
+      "signature": "const automaticPorts = automaticPortSpread(lifecycle.transitions, states, { side…"
+    },
+    {
+      "name": "LEGEND_CATALOG",
+      "kind": "const",
+      "signature": "const LEGEND_CATALOG = [ 'start', 'active', 'waiting', 'decision', 'success', 'f…"
+    }
+  ]
+}

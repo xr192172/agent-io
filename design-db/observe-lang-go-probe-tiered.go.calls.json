@@ -1,0 +1,217 @@
+{
+  "//": "Design DB —— observe-lang-go/probe/tiered.go（★ 全量、与实际 DB 同构；从 design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json",
+  "path": "observe-lang-go/probe/tiered.go",
+  "symbols": [
+    {
+      "name": "probeCounters",
+      "kind": "type",
+      "line": 28,
+      "signature": "probeCounters()"
+    },
+    {
+      "name": "CountersSnapshot",
+      "kind": "type",
+      "line": 34,
+      "signature": "CountersSnapshot()"
+    },
+    {
+      "name": "histogram",
+      "kind": "type",
+      "line": 48,
+      "signature": "histogram()"
+    },
+    {
+      "name": "HistogramSnapshot",
+      "kind": "type",
+      "line": 93,
+      "signature": "HistogramSnapshot()"
+    },
+    {
+      "name": "ringBuf",
+      "kind": "type",
+      "line": 127,
+      "signature": "ringBuf()"
+    },
+    {
+      "name": "newRingBuf",
+      "kind": "function",
+      "line": 138,
+      "signature": "newRingBuf(budgetBytes, segSize int) *ringBuf"
+    },
+    {
+      "name": "RingStats",
+      "kind": "type",
+      "line": 207,
+      "signature": "RingStats()"
+    },
+    {
+      "name": "TieredOption",
+      "kind": "type",
+      "line": 234,
+      "signature": "TieredOption()"
+    },
+    {
+      "name": "WithRingBudgetMB",
+      "kind": "function",
+      "line": 237,
+      "signature": "WithRingBudgetMB(mb int) TieredOption"
+    },
+    {
+      "name": "WithFullSink",
+      "kind": "function",
+      "line": 247,
+      "signature": "WithFullSink(s *Sink) TieredOption"
+    },
+    {
+      "name": "WithRunRecorder",
+      "kind": "function",
+      "line": 253,
+      "signature": "WithRunRecorder(path string) TieredOption"
+    },
+    {
+      "name": "WithIncidentDir",
+      "kind": "function",
+      "line": 258,
+      "signature": "WithIncidentDir(dir string) TieredOption"
+    },
+    {
+      "name": "WithExportPerMin",
+      "kind": "function",
+      "line": 263,
+      "signature": "WithExportPerMin(n int) TieredOption"
+    },
+    {
+      "name": "Tiered",
+      "kind": "type",
+      "line": 269,
+      "signature": "Tiered()"
+    },
+    {
+      "name": "NewTiered",
+      "kind": "function",
+      "line": 284,
+      "signature": "NewTiered(opts ...TieredOption) *Tiered"
+    },
+    {
+      "name": "isCatchProbe",
+      "kind": "function",
+      "line": 365,
+      "signature": "isCatchProbe(name string) bool"
+    },
+    {
+      "name": "sortSnapshots",
+      "kind": "function",
+      "line": 370,
+      "signature": "sortSnapshots(s []CountersSnapshot)"
+    }
+  ],
+  "imports": [
+    {
+      "source": "encoding/json",
+      "kind": "package"
+    },
+    {
+      "source": "math/bits",
+      "kind": "package"
+    },
+    {
+      "source": "sync",
+      "kind": "package"
+    },
+    {
+      "source": "sync/atomic",
+      "kind": "package"
+    },
+    {
+      "source": "time",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "observe-lang-go/probe/tiered.go#NewTiered",
+      "to": "observe-lang-go/probe/export.go#newExportGate"
+    },
+    {
+      "from": "observe-lang-go/probe/tiered.go#WithRunRecorder",
+      "to": "observe-lang-go/probe/run_recorder.go#newRunRecorder"
+    },
+    {
+      "from": "observe-lang-go/probe/tiered.go#snapshot",
+      "to": "observe-lang-go/probe/tiered.go#Percentile"
+    },
+    {
+      "from": "observe-lang-go/probe/tiered.go#snapshot",
+      "to": "observe-lang-go/probe/tiered.go#Percentile"
+    },
+    {
+      "from": "observe-lang-go/probe/tiered.go#Emit",
+      "to": "observe-lang-go/probe/tiered.go#isCatchProbe"
+    },
+    {
+      "from": "observe-lang-go/probe/tiered.go#WithRingBudgetMB",
+      "to": "observe-lang-go/probe/tiered.go#newRingBuf"
+    },
+    {
+      "from": "observe-lang-go/probe/tiered.go#NewTiered",
+      "to": "observe-lang-go/probe/tiered.go#newRingBuf"
+    },
+    {
+      "from": "observe-lang-go/probe/tiered.go#Counters",
+      "to": "observe-lang-go/probe/tiered.go#sortSnapshots"
+    }
+  ],
+  "expected_symbols": [
+    {
+      "name": "probeCounters",
+      "kind": "type",
+      "signature": "probeCounters()"
+    },
+    {
+      "name": "CountersSnapshot",
+      "kind": "type",
+      "signature": "CountersSnapshot()"
+    },
+    {
+      "name": "histogram",
+      "kind": "type",
+      "signature": "histogram()"
+    },
+    {
+      "name": "HistogramSnapshot",
+      "kind": "type",
+      "signature": "HistogramSnapshot()"
+    },
+    {
+      "name": "ringBuf",
+      "kind": "type",
+      "signature": "ringBuf()"
+    },
+    {
+      "name": "RingStats",
+      "kind": "type",
+      "signature": "RingStats()"
+    },
+    {
+      "name": "TieredOption",
+      "kind": "type",
+      "signature": "TieredOption()"
+    },
+    {
+      "name": "Tiered",
+      "kind": "type",
+      "signature": "Tiered()"
+    }
+  ],
+  "reverse_calls": [
+    "observe-lang-go/probe/tiered.go#Counters",
+    "observe-lang-go/probe/tiered.go#Emit",
+    "observe-lang-go/probe/tiered.go#NewTiered",
+    "observe-lang-go/probe/tiered.go#WithRingBudgetMB",
+    "observe-lang-go/probe/tiered.go#snapshot",
+    "observe-lang-go/probe/tiered_test.go#newTestTiered",
+    "observe-lang-go/probe/tiered_test.go#withTempIncidentDir"
+  ]
+}

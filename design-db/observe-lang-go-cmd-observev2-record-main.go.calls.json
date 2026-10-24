@@ -1,0 +1,92 @@
+{
+  "//": "Design DB —— observe-lang-go/cmd/observev2-record/main.go（★ 全量、与实际 DB 同构；从 design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/design-canvas.dsl.json, design/task-system-plan.dsl.json, design/task-system-plan.dsl.json",
+  "path": "observe-lang-go/cmd/observev2-record/main.go",
+  "symbols": [
+    {
+      "name": "main",
+      "kind": "function",
+      "line": 20,
+      "signature": "main()"
+    },
+    {
+      "name": "mark",
+      "kind": "function",
+      "line": 45,
+      "signature": "mark(s string)"
+    },
+    {
+      "name": "placeOrder",
+      "kind": "function",
+      "line": 47,
+      "signature": "placeOrder(ctx context.Context, orderID int, injectErr bool) error"
+    },
+    {
+      "name": "chargePayment",
+      "kind": "function",
+      "line": 58,
+      "signature": "chargePayment(ctx context.Context, orderID int, injectErr bool) error"
+    },
+    {
+      "name": "reserveInventory",
+      "kind": "function",
+      "line": 69,
+      "signature": "reserveInventory(ctx context.Context, orderID int, injectErr bool) error"
+    }
+  ],
+  "imports": [
+    {
+      "source": "bufio",
+      "kind": "package"
+    },
+    {
+      "source": "context",
+      "kind": "package"
+    },
+    {
+      "source": "fmt",
+      "kind": "package"
+    },
+    {
+      "source": "os",
+      "kind": "package"
+    },
+    {
+      "source": "github.com/xr192172/agent-io/observe-lang-go/probe",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "observe-lang-go/cmd/observev2-record/main.go#placeOrder",
+      "to": "observe-lang-go/cmd/observev2-record/main.go#chargePayment"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-record/main.go#placeOrder",
+      "to": "observe-lang-go/cmd/observev2-record/main.go#mark"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-record/main.go#chargePayment",
+      "to": "observe-lang-go/cmd/observev2-record/main.go#mark"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-record/main.go#reserveInventory",
+      "to": "observe-lang-go/cmd/observev2-record/main.go#mark"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-record/main.go#main",
+      "to": "observe-lang-go/cmd/observev2-record/main.go#placeOrder"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-record/main.go#chargePayment",
+      "to": "observe-lang-go/cmd/observev2-record/main.go#reserveInventory"
+    }
+  ],
+  "reverse_calls": [
+    "observe-lang-go/cmd/observev2-record/main.go#chargePayment",
+    "observe-lang-go/cmd/observev2-record/main.go#main",
+    "observe-lang-go/cmd/observev2-record/main.go#placeOrder",
+    "observe-lang-go/cmd/observev2-record/main.go#reserveInventory"
+  ]
+}
