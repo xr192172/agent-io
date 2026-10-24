@@ -52690,7 +52690,7 @@
         "task": {
           "id": "file_src_presentation_mcp_server_ts",
           "summary": "【L1 待建构】入口层 · src/presentation/mcp — 4 个 API（导入自 12 个模块）（src/presentation/mcp/server.ts） ← 节点 file_src_presentation_mcp_server_ts",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_ts\"].responsibility"
@@ -52710,9 +52710,27 @@
             "basis": [
               "declared"
             ]
-          }
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-24T01:55:07.755Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify",
+                "input": "501e45d3fd21811d883ad77f076dd60462b8df42",
+                "code": "762591367c8891b50488a16a50b8d9f33b3098db",
+                "covers": [
+                  "src/presentation/mcp/server.ts"
+                ]
+              },
+              "observed": "verify 9/9；设计 DB 自动保鲜已挂 runAutoWatchHook 初始导入后（check 无 drift 不落盘，有 drift 才真跑），工作项 B 落地",
+              "command": "npm run build && npm run verify"
+            }
+          ]
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "get_dsl 启动钩子接设计 DB 自动保鲜：初始导入后 check（无 drift 不落盘）+ gen（幂等重生成），设计册或 cache.db 一变，投影跟着新鲜。",
           "expectations": [
@@ -52737,6 +52755,17 @@
           "acceptance": "npm run verify 过；MCP 启动日志出现设计 DB 保鲜读数",
           "updated_at": "2026-10-24T01:50:59.801Z",
           "author": "llm"
+        },
+        "overlay": {
+          "path": "src/presentation/mcp/server.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-24T09:57:00+08:00",
+            "command": "npm run build && npm run verify",
+            "kind": "reading",
+            "observed": "verify 9/9；设计 DB 自动保鲜已挂 runAutoWatchHook 初始导入后（check 无 drift 不落盘，有 drift 才真跑），工作项 B 落地"
+          }
         }
       },
       {
@@ -53858,7 +53887,7 @@
         "task": {
           "id": "file_src_application_design_line_design_line_ts",
           "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "reopened_at": "2026-10-20T06:28:37.710Z",
           "node_id": "file_src_application_design_line_design_line_ts",
@@ -53888,9 +53917,27 @@
               "declared",
               "expectations"
             ]
-          }
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-24T01:54:28.531Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify && node _design-canvas-labs/run-gen-db.mjs",
+                "input": "956602cfa0e08ec0da92c47d4e96662b6e963434",
+                "code": "d2fe586ddbe649dbe998f41042164d689a019f38",
+                "covers": [
+                  "src/application/design/line/design_line.ts"
+                ]
+              },
+              "observed": "verify 9/9；design_line report ⑥ 读数已把沉默缺口清单化（实测未覆盖含 dsl_write_scope.ts / task_history.ts，逐个裁纳入/排除不自动建节点）",
+              "command": "npm run build && npm run verify && node _design-canvas-labs/run-gen-db.mjs"
+            }
+          ]
         },
-        "status": "in_progress",
+        "status": "done",
         "decision_history": [
           {
             "at": "2026-10-20T03:31:18.887Z",
@@ -53975,7 +54022,7 @@
           "agent": "workbuddy",
           "thread": "影响面"
         },
-        "status": "in_progress",
+        "status": "done",
         "decision_history": [
           {
             "at": "2026-10-20T00:08:42.765Z",
@@ -54098,16 +54145,16 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T09:45:00+08:00",
-            "command": "npm run verify && grep -c removed design-db/*.calls.json && grep -c 设计侧\\ DB\\ 要能回答 docs/VISION.md",
+            "at": "2026-10-24T09:55:00+08:00",
+            "command": "npm run build && npm run verify && node _design-canvas-labs/run-gen-db.mjs",
             "kind": "reading",
-            "observed": "verify 9/9；退役前对账 removed 全空（无未接管意图）；scripts/dep.mjs 已删、package.json dep 入口已移除；VISION.md 影响面行原文在册（判据 must 已对齐原文）"
+            "observed": "verify 9/9；gen-db written=345/problems=0；抽检 application-design-dsl_ops-task_ops.calls.json：expected_symbols 21 条（首条 TaskOpRequest interface）+ reverse_calls 25 条并存"
           }
         },
         "task": {
           "id": "file_src_application_design_db_gen_design_db_ts",
           "summary": "设计 DB 每文件投影新增 reverse_calls（谁调我：一跳反向调用，事实取 cache.db 边表反向索引），回答「改这里会炸哪里」的第一跳；跨文件传递闭包由消费者沿 reverse_calls 行走，不落库（渐进式披露）。",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "owner": "agent:workbuddy-glm5",
           "claimed_at": "2026-10-24T01:49:38.416Z",
@@ -54146,6 +54193,23 @@
               },
               "observed": "verify 9/9；退役前对账 removed 全空（无未接管意图）；scripts/dep.mjs 已删、package.json dep 入口已移除；VISION.md 影响面行原文在册（判据 must 已对齐原文）",
               "command": "npm run verify && grep -c removed design-db/*.calls.json && grep -c 设计侧\\ DB\\ 要能回答 docs/VISION.md"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-24T01:53:57.557Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify && node _design-canvas-labs/run-gen-db.mjs",
+                "input": "c9394327013babc3561874256601400b3622929e",
+                "code": "34301c11fe1460e0ce98ab3bc530fae18b511117",
+                "covers": [
+                  "docs/VISION.md",
+                  "src/application/design/db/gen_design_db.ts"
+                ]
+              },
+              "observed": "verify 9/9；gen-db written=345/problems=0；抽检 application-design-dsl_ops-task_ops.calls.json：expected_symbols 21 条（首条 TaskOpRequest interface）+ reverse_calls 25 条并存",
+              "command": "npm run build && npm run verify && node _design-canvas-labs/run-gen-db.mjs"
             }
           ],
           "reopened_at": "2026-10-24T01:49:38.416Z",
@@ -106508,7 +106572,7 @@
         ],
         "lines": 253,
         "layer": "entry",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_presentation_mcp_server_registry_ts",
@@ -109156,7 +109220,7 @@
         "id": "file_src_application_design_line_design_line_ts",
         "path": "src/application/design/line/design_line.ts",
         "responsibility": "设计链六步读数（工具 design_line 的 report action）",
-        "status": "in_progress",
+        "status": "done",
         "symbols": [
           {
             "name": "lineReport",
@@ -109206,7 +109270,7 @@
         "id": "file_src_application_design_db_gen_design_db_ts",
         "path": "src/application/design/db/gen_design_db.ts",
         "responsibility": "设计 DSL → 设计 DB（全量、与实际 DB 同构）",
-        "status": "in_progress",
+        "status": "done",
         "symbols": [
           {
             "name": "planDesignDb",
@@ -113059,11 +113123,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T01:50:59.963Z",
+    "saved_at": "2026-10-24T01:55:08.025Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 223137152,
+    "age": 223385214,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -115962,7 +116026,7 @@
     {
       "id": "file_src_application_design_line_design_line_ts",
       "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
-      "state": "claimed",
+      "state": "done",
       "judge_gate": "strict",
       "reopened_at": "2026-10-20T06:28:37.710Z",
       "node_id": "file_src_application_design_line_design_line_ts",
@@ -115992,7 +116056,25 @@
           "declared",
           "expectations"
         ]
-      }
+      },
+      "evidence": [
+        {
+          "kind": "reading",
+          "at": "2026-10-24T01:54:28.531Z",
+          "by": "llm",
+          "verdict": "pass",
+          "fingerprint": {
+            "what": "npm run build && npm run verify && node _design-canvas-labs/run-gen-db.mjs",
+            "input": "956602cfa0e08ec0da92c47d4e96662b6e963434",
+            "code": "d2fe586ddbe649dbe998f41042164d689a019f38",
+            "covers": [
+              "src/application/design/line/design_line.ts"
+            ]
+          },
+          "observed": "verify 9/9；design_line report ⑥ 读数已把沉默缺口清单化（实测未覆盖含 dsl_write_scope.ts / task_history.ts，逐个裁纳入/排除不自动建节点）",
+          "command": "npm run build && npm run verify && node _design-canvas-labs/run-gen-db.mjs"
+        }
+      ]
     },
     {
       "id": "file_src_application_design_rewrite_symbol_diff_ts",
@@ -116084,7 +116166,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1303,
+  "_dsl_rev": 1305,
   "feature_tree": {
     "features": [
       {
