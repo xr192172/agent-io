@@ -332,7 +332,7 @@ function withCardWritten(
   //   ⇒ 节点卡的每一次 claim / complete 都会落进 todos[] 镜像，而节点卡**冻结在旧态**；
   //   而读端（`loadTask` 节点优先、`progressOfNode` ①）读的仍是节点卡 ⇒ **一张卡两个答案、claim 永远不生效**。
   //   判据：**节点上有卡** ⇒ 节点是主住处（与读端同序）；`todos[]` 里那条同 id·同 node_id 的
-  //   **迁移镜像**跟着写同一份（否则下一步把读端切到 todos[] 时，这一步之间落的账会丢）。
+  //   **迁移镜像**跟着写同一份（否则下一步把读端切到 todos[] 时，这一步之间写入的数据会丢）。
   //   ★ 纯 todo 卡（节点上没有它的 id）行为不变：仍是只在 `todos[]` 里改。
   // ★★★ 2026-10-22（迁移第②步 · 写端跟着读端走）：**先写权威 `todos[]`，再刷派生投影 `node.task`**。
   //   上一版（第①步的兼容层）是反的：节点优先写、todos 跟着镜像 —— 那是"读端还没切"时的临时序。
@@ -953,7 +953,7 @@ export function publishTask(input: TaskOpInput): EditResult {
     : !expectations.length
       ? `节点 "${node_id}" 的决策卡**没有判据**（\`decision.expectations\` 为空）⇒ 翻成 L2 也**无法验收**`
       : `节点 "${node_id}" 的决策卡只有**前态判据**（\`phase='pre'\`，如 edge-absent）：现有 ${expectations.length} 条、` +
-        `后态判据（\`phase='post'\`）**0 条** ⇒ 翻成 L2 的卡**必然领不了**（\`cardStanding\` 对空集给 unknowable）`;
+        `后态判据（\`phase='post'\`）**0 条** ⇒ 翻成 L2 的卡**必然不可领取**（\`cardStanding\` 对空集给 unknowable）`;
 
   // 已有任务格：只允许 ① 重翻 candidate ② L1(done) ⇒ L2 升一级 ③ claimed + reason ⇒ 原地换判据
   let advance = false;
@@ -975,7 +975,7 @@ export function publishTask(input: TaskOpInput): EditResult {
         `publish 被拒：节点 "${node_id}" 上已有一张 state=${existing.state} 的任务卡` +
           (existing.owner ? `（owner=${existing.owner}）` : '') +
           `（级别 ${taskLevel(expectations)}） —— 覆盖它等于把"已完成/已作废"的判据换掉。\n` +
-          `★ 允许重翻 \`candidate\`（没人领）；★ 允许 **L1 已 done 且现在够得上 L2** ⇒ 升一级；` +
+          `★ 允许重翻 \`candidate\`（无人领取）；★ 允许 **L1 已 done 且现已达到 L2** ⇒ 升一级；` +
           `★ 允许 **claimed 带 \`data.reason\`** ⇒ 原地换判据。\n` +
           (existing.state === 'done'
             ? `★ 换这张**已完成（L2）**卡的判据的正路：\`reopen\`（带 owner + reason）→ 改 \`decision\` → ` +
@@ -1031,7 +1031,7 @@ export function publishTask(input: TaskOpInput): EditResult {
         `summary 已按 decision 重写；当前后态判据 ${nowPost} 条` +
         (nowPost > 0 ? ` ⇒ 可以 \`start\`（第二段）了` : ` ⇒ 还差后态判据，\`start\` 仍会被拒`) +
         `\n★ 事务账本**没动**：\`prepared_snapshot\` 原样留着（放弃时按它逐字还原），owner / claimed_at 也没动。` +
-        `\n★ 与 candidate「重翻」的区别：那个是整卡重建（快照会没），这个只换 summary。`,
+        `\n★ 与 candidate「重翻」的区别：那个是整卡重建（快照会丢失），这个只换 summary。`,
       feature,
       data: {
         node_id,
@@ -1048,7 +1048,7 @@ export function publishTask(input: TaskOpInput): EditResult {
   if (level === 'L2') {
     // ★★ 已领卡的**原地换判据**：只换 summary + expectations，其余逐条保留（★ 尤其 evidence）。
     if (refresh) {
-      // ★★★ 重开账：`publish` 是唯一的结清口 ⇒ "换了等于没换"必须拒（否则账白结、白洞照旧）。
+      // ★★★ 重开账：`publish` 是唯一的结清口 ⇒ "换了等于没换"必须拒（否则结清作废、缺陷照旧）。
       if (existing?.reopened_at && sameAsCard) {
         throw new Error(
           `publish 被拒（重开账未结清）：节点 "${node_id}" 的卡**重开于 ${existing.reopened_at}**，` +
@@ -1073,7 +1073,7 @@ export function publishTask(input: TaskOpInput): EditResult {
           `★ 只换 \`summary\`；判据不搬家（唯一住处 = decision）；state / owner / claimed_at / evidence / discussion 全保留 —— ` +
           `这正是它比"release → publish → claim"少两步、又不丢证据的原因。\n` +
           `★ 内容来源 = \`geometry.nodes[${node_id}].decision\`（summary 逐字 + expectations 逐字）。\n` +
-          `★ 进度派生：task.state=claimed ⇒ progress=in_progress。下一步直接干活 → \`complete\`（写闸只认 claimed，已就位）。`,
+          `★ 进度派生：task.state=claimed ⇒ progress=in_progress。下一步直接执行 → \`complete\`（写闸只认 claimed，已就位）。`,
         feature,
         data: {
           node_id,
@@ -1331,7 +1331,7 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
           (alreadyMine
             ? '★ 它**已经在你自己手上** —— 重复 claim **不幂等**：放过它就等于**重置租约**' +
               '（`claimed_at` 会被刷新，TTL 回收再也看不见真正的停工）。\n' +
-              '★ 怎么办：① 直接干活；② 这一轮**要碰的东西变了**（读集要换）⇒ 先 `release` 再 `claim`，' +
+              '★ 怎么办：① 直接继续执行；② 这一轮**要动的符号/文件变了**（读集要换）⇒ 先 `release` 再 `claim`，' +
               '读集会被**重算并覆盖**（不是追加）。\n'
             : '★ 这是**别人的在办活**（A7：卡不是你的）⇒ 等它到期（到期后**任何 agent 都能接管**，' +
               '接管会记 `taken_over_from`），或等它 `release` / `complete`。\n') +
@@ -1404,7 +1404,7 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       throw new Error(
         `claim 被拒（L1 无活可干）：节点 "${node_id}" 的 **DSL 已经建构完整**` +
           `（decision.summary 有、后态判据 ${c.post} 条）⇒ 这张 L1 建构卡没有活。\n` +
-          `★ 下一步是 \`publish\`（现在会翻成 **L2 实现卡**，旧的 L1 证据会带过去），不是领它。`,
+          `★ 下一步是 \`publish\`（现在会翻成 **L2 实现卡**，旧的 L1 证据会带过去），不是领取该卡。`,
       );
     }
     levelNote =
@@ -1472,7 +1472,7 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   if (!sourceRoot) {
     conflictNote =
       '★ 该 feature 没有 `source_root` ⇒ 读集算不出来，也**没有可对照的项目** ⇒ 本次**不做**读集冲突检测' +
-      '（这是“没比”，不是“不冲突”）。';
+      '（这是“未比对”，不是“无冲突”）。';
   } else {
     const computed = computeClaimReadSet({
       root: sourceRoot,
@@ -1495,7 +1495,7 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   const readHead = readSet
     ? `；读集 ${readSet.symbols.length} 符号 / ${readSet.files.length} 文件` +
       `（依据 ${readSet.basis.join('+') || '空'}），与 ${claimConflict?.checked ?? 0} 张活跃卡对照**无相交**` +
-      (claimConflict?.unchecked.length ? `（另 ${claimConflict.unchecked.length} 张活跃卡没读集、这次没比）` : '')
+      (claimConflict?.unchecked.length ? `（另 ${claimConflict.unchecked.length} 张活跃卡无读集、这次未比对）` : '')
     : '；★ 读集**未算**（该 feature 没有 source_root）';
 
   if (twoPhase) {
@@ -1526,8 +1526,8 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
         `\n★ **可直接粘的模板**（只差你填 \`<…>\` 那几处）：\n` +
         gap.templates.map((t, i) => `  ${i + 1}) ${t}`).join('\n') +
         `\n★ 为什么不在 claimed：\`write_gate\` 只认 \`state=claimed\` ⇒ preparing 期间**拿不到写权**` +
-        `（这就是"领了不能干"的机制形态，不是靠谁记得拦）。判据写进 \`decision\` 走 \`edit_dsl\`，不受写闸管。` +
-        `\n★ 租约：preparing 也持租约（TTL 同 claimed）⇒ 你跑了不回来，\`expire\` 会**还原判据**并退回 candidate。` +
+        `（这就是"已领取但不可开工"的机制形态，不是靠谁记得拦）。判据写进 \`decision\` 走 \`edit_dsl\`，不受写闸管。` +
+        `\n★ 租约：preparing 也持租约（TTL 同 claimed）⇒ 你未按期收口（租约到期）时，\`expire\` 会**还原判据**并退回 candidate。` +
         readHead,
       feature,
       data: {
@@ -1611,7 +1611,7 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       // ★★★ 迁移期：存量卡免检也要**说出来**（静默放行 = 假绿灯）
       (legacyGap
         ? `\n★★ **警告（存量卡·判据为空）**：该节点的**后态判据 0 条**，而这张卡是 \`judge_gate\` 之前的存量卡 ⇒ ` +
-          `放它开工（**不拦**，否则 117 张存量卡会同时不可领）。已落 \`claimed_without_judge\`。` +
+          `放行开工（**不拦**，否则 117 张存量卡会同时不可领）。已落 \`claimed_without_judge\`。` +
           `\n★ 要补的话：**${legacyGap.need} 条**（${legacyGap.kinds.join(' + ')}）；收口时 \`complete\` 仍会按判据闸判（不会因为这条记录放绿）。`
         : '') +
       // ★★★ 2026-10-22（链 C）：留痕**只有一份实现** —— `actor_spec.ts#normalizedActorNote`（`invokeTool` 用的就是它）。
@@ -1712,7 +1712,7 @@ export async function renewTask(input: TaskOpInput): Promise<EditResult> {
     throw new Error(
       `renew 被拒：租约**已经过期**（挂了 ${leaseAgeHours(card, now) ?? '?'}h，TTL=${Math.round(LEASE_TTL_MS / 3.6e6)}h）` +
         `⇒ 过期后**不许自己续活**（那是熔断的反面）。\n` +
-        `★ 出路：① 直接继续干活并**重新 claim**（会被判为"接管"，记 taken_over_from）；` +
+        `★ 出路：① 直接继续执行并**重新 claim**（会被判为"接管"，记 taken_over_from）；` +
         `② 或者别人已经接管了 —— 那就该停下，先看当前 owner 是谁。`,
     );
   }
@@ -2319,7 +2319,7 @@ export function startTask(input: TaskOpInput): EditResult {
     message:
       `已开始任务 "${node_id}"（preparing → claimed，owner=${card.owner}${normalizedInline(whoAdm)}）：` +
       `后态判据 ${post.length} 条已就位、**快照已删** —— 两件事在**同一次落盘**里完成（原子，判据 B）。` +
-      `\n★ 现在才有写权：\`write_gate\` 只认 \`state=claimed\`（preparing 期间它一直没放行，这就是"领了不能干"）。` +
+      `\n★ 现在才有写权：\`write_gate\` 只认 \`state=claimed\`（preparing 期间它一直没放行，这就是"已领取但不可开工"）。` +
       `\n★ 收口仍走 \`complete\`（判据仍然是 decision 上那 ${post.length} 条，快照已不存在 ⇒ 无从"还原成旧判据"）。` +
       `\n★ 进度派生：task.state=claimed ⇒ progress=in_progress。` +
       normalizedActorNote(whoAdm),
@@ -2961,7 +2961,7 @@ function moveTodoCardsToHistory(feature: string, data: Record<string, unknown>, 
     if (!isClosedTaskState(cur.state)) {
       throw new Error(
         `todo.move_to_history 被拒："${id}" 是 ${cur.state}（**未了结**）—— 只有已了结（done / void）的卡能入史。\n` +
-          `★ 活卡入史 = 让正在干的活从待办里消失（而且 claim / relaunch 都按 id 找卡 ⇒ 再也点不回来）。\n` +
+          `★ 活卡入史 = 让执行中的任务从待办里消失（而且 claim / relaunch 都按 id 找卡 ⇒ 届时无法再取回）。\n` +
           `★ 真要收尾 ⇒ 先 complete / retire。`,
       );
     }

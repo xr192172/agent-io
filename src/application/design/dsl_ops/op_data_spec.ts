@@ -100,7 +100,7 @@ export const OP_SPECS: readonly OpSpec[] = [
     required: { add: ['path', 'responsibility'] },
     // ★★★ T181：「**设计侧先标记待删**」三步流程的第一步**只能从这里进** ——
     //   而此前 `lifecycle` **一个字的说明都没有**（`FILE_DATA_KEYS` 里有、描述里没有）
-    //   ⇒ ★ **能力被藏在 MCP 面之外**（本仓已为此记过账：`bricks/signal_review` 同族）。
+    //   ⇒ ★ **能力被藏在 MCP 面之外**（本仓已有在案先例：`bricks/signal_review` 同族）。
     //   ⇒ 这里补一句**指路**；★ 真正的判据仍只有一处 = `semantic.ts` 的 `assertLifecycle`
     //     （本 note 只说"有这条路 + 它是什么轴"，**不重述合法值/必填字段**，避免第二份判据）。
     note:
@@ -132,8 +132,8 @@ export const OP_SPECS: readonly OpSpec[] = [
     //     （三档形状逐字定义在 `ProgressEvidence`）。
     note:
       '★ `data.evidence`（**T334：`op=update` 时可选、`data.status="done"` 时【必须给】** —— 否则被拒，' +
-      '理由见回执）：**置"完成"必须带一条能被复核的证据**（"不许默默勾上"）。★ 形状**三档择一**（按 `kind` 判别）：' +
-      '① `{kind:"expectations", all_green:true, unsupported:0}` —— **机器判**（expectations 全绿；`unsupported` 必须为 0 —— **"没判"≠"通过"**）；' +
+      '理由见回执）：**置"完成"必须带一条能被复核的证据**（"不许静默置完成"）。★ 形状**三档择一**（按 `kind` 判别）：' +
+      '① `{kind:"expectations", all_green:true, unsupported:0}` —— **机器判**（expectations 全绿；`unsupported` 必须为 0 —— **"未判定"≠"通过"**）；' +
       '② `{kind:"reading", command, observed, at}` —— **一条可复跑的读数**（跑什么 / 看到什么 / 什么时候跑的）；' +
       '③ `{kind:"attestation", by:"human"|"llm", at, why}` —— **显式人工确认**（署名）。' +
       '★ `draft` / `in_progress` **不需要** evidence。★ 判据唯一住处 = `domain/overlay.ts#validateProgressEvidence`。',
@@ -244,7 +244,7 @@ export const OP_SPECS: readonly OpSpec[] = [
       '★ **无节点任务**（2026-10-18 Q5）：和 task **同一套状态机/同一套 claim/complete/void 语义**，' +
       '区别只在"挂在哪"（task 挂 geometry.nodes[].task，todo 挂顶层 todos[]）。' +
       '★ add 只需 data.summary（可选 data.decision: creator/source/handoff；data.id 可指定）。' +
-      `★ 它**没有 expectations**（不是代码，判不了）⇒ 完成只收 attestation 证据。
+      `★ 它**没有 expectations**（不是代码，无法判定）⇒ 完成只收 attestation 证据。
       ★ **update** = 改内容，★ **必留旧值**：{op:"update", id:"todo_x", data:{summary:"新说法", reason:"为什么改"}}
            ⇒ 旧 summary 压进 history[]（{at, from, to, reason}，**不是覆盖** —— 「旧的怎么样、新的怎么样」都能查）；
            ★ id 改不了（身份不变，data.id 会被拒）；★ 只允许活卡（state=candidate|claimed）—— done/void 是了结的卡，改它就是改写历史。
@@ -268,7 +268,7 @@ export const OP_SPECS: readonly OpSpec[] = [
       ★★★ **archive / unarchive = 软归档**（2026-10-22）：{op:"archive", data:{ids:["todo_a","todo_b"], reason:"为什么归档"}}
            ⇒ 给卡盖 archived_at / archived_by / archived_reason（★ **state 一个字节不改** —— done / void 仍是两种结局，
              归档不是第 5 个状态，只是一层**可回滚**的可见性标记）；
-           ★ 只接受**已了结**（done / void）的卡：归档一张还在跑的卡 = 让正在干的活从待办里消失 ⇒ **拒**；
+           ★ 只接受**已了结**（done / void）的卡：归档仍在执行的卡 = 让执行中的任务从待办里消失 ⇒ **拒**；
            ★ 之后：get_dsl query=todo（待办）不再列它们；state=done|void|all 仍**查得到**（带 archived_at）；
              loadTask 按 id 照旧能取到（重开一张卡要先把标记摘掉）；
            ★ 口径**只有一处**（domain/task_schema.ts 的 liveTasks / archivedTasks）—— 别处不许再写 !archived_at。
@@ -347,7 +347,7 @@ export const OP_SPECS: readonly OpSpec[] = [
       'complete:`data.evidence`（同一把证据尺；L2 须 isSatisfied，L1 须建构完整）· ' +
       'reopen:`data.owner`+`data.reason`（done→claimed「接手」，**判据不变**，原卡继续；落 `reopen_reason` / `reopened_from`）· ' +
       'relaunch:`data.reason`（void→candidate「重新立卡」，reason 必填；★ 判据不随卡走（仍在 decision，relaunch **不改也不清**）、summary/evidence 保留 —— 与 reopen 不是一回事）· ' +
-      '★ 三条出口别混：`done`=**干完了**（收口）· `release`=**放回去**（claimed→candidate，活还在）· `void`=**不做了**（candidate→void，弃做）—— ★ **不许用 void 收尾**。',
+      '★ 三条出口勿混用：`done`=**已完成**（收口）· `release`=**放回候选**（claimed→candidate，活卡仍在）· `void`=**不再执行**（candidate→void，弃做）—— ★ **不许用 void 收尾**。',
   },
 ];
 
@@ -535,7 +535,7 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
   //     让调用方塞 = 手写一份"我在第几环"，必与链的实际情况打架。
   // ★★★ 2026-10-22（卡迁移）：补 `cards` —— `todo.import` 唯一读的键（整张卡的数组，逐字搬进 `todos[]`）。
   //   ★ 它与 `summary`/`state`/`owner` 那几个**不是一张卡的两个入口**：`summary` 那是 `add` 用来**造**一张新卡，
-  //     `cards` 是 `import` 用来**搬**一张已存在的卡（同一条纪律：造卡的入口不许顺手改卡上已有的事实）。
+  //     `cards` 是 `import` 用来**迁入**一张已存在的卡（同一条纪律：造卡的入口不得擅自改动卡上已有的事实）。
   todo: ['summary', 'decision', 'owner', 'id', 'node_id', 'reason', 'follows', 'cards', 'ids'],
 };
 /** ★★ 断言：`TYPE_KNOWN_KEYS` 的键集**必须恰好覆盖 `OP_SPECS` 的全部 type**（多 / 少都红）。 */

@@ -234,7 +234,7 @@ async function updateFeatureCore(input: UpdateFeatureInput): Promise<EditResult>
     for (const [i, op] of operations.entries()) {
       // ★★★ 2026-10-22（A1/A2）：**授权只在 op 的执行期间有效**（`AsyncLocalStorage` 按调用栈传播，
       //   `await` 之后仍在同一上下文里）。⇒ 本行之外（含 `updateFeatureCore` 的前后准备工作）
-      //   **没有**写权限：任何在别的路径上"顺手 saveDSL"的代码拿不到它。
+      //   **没有**写权限：任何在别的路径上直接调用 saveDSL 的代码拿不到它。
       //   ★ 这里也是"为什么只给 applyOperation"的答案：它是**唯一**逐条落盘的地方
       //   （`node_ops` / `file_ops` / `task_ops` … 各自的 saveDSL 都在这条栈下面）。
       const result = await runDslWriteScope({ via: 'edit_dsl', who: 'edit_dsl', feature }, () =>
@@ -769,7 +769,7 @@ function applyTagOp(feature: string, op: CheckedOperation<FeatureOperation>): Ed
 //   ★★ 语义分叉（本 op 的头号纪律）：**未决分歧**住 `data.dissent`，
 //      **不是** `data.alternatives`（后者 = 已排除的方案 + 否决原因）。见 `domain/b_terms.ts` 的 `dissent`。
 //   ★ 住 overlay：本 op **只改 base**；收口处 `updateFeature` 调 `syncDecisionsToOverlay`
-//      把它搬进 overlay，`import_project` 重建时由 `applyOverlay` 投影回来（与 tag / 决策卡既有同步同款）。
+//      把它写入 overlay，`import_project` 重建时由 `applyOverlay` 投影回来（与 tag / 决策卡既有同步一致）。
 // ─────────────────────────────────────────────────────────────
 
 /**

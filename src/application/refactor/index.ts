@@ -20,7 +20,7 @@
  *   判据（逐处人读 [B] 的返回类型，不是按名字猜）：它们的 [C] 都已经在回 `data: r`
  *   （或已构造 data 对象），而 `src/registry/plumbing.ts` 的 `wrap()` 只取 `r.message` ⇒
  *   **结构化产物（逐项 preview/applied、引用点/行号、影响面文件表、失效清单、逐阶段 outcome、
- *   裁决台账 …）在传输层蒸发**，agent 只能正则解析散文。8 处的理由是同一条，故不逐处重写注释。
+ *   裁决台账 …）在传输层丢失**，agent 只能正则解析散文。8 处的理由是同一条，故不逐处重写注释。
  *   ★ 两处**刻意例外**（不在本线，见 handlers.ts 的逐处说明）：`edit_dsl`（[B] 的 EditResult 只有
  *   `{message, feature}`，压根没有 data）、`render_design` / `observe_judge`（data 与 message 逐字重复）。
  */
@@ -714,7 +714,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         const kindLabel = { 'field-read': '读', 'field-key': '构', 'field-destructure': '解', 'field-decl': '声明' } as Record<string, string>;
         const lines = [`字段 ${r.symbol} 的引用（${r.fieldRefs!.length} 个文件；scope=${common.scope}${r.fieldScope?.of_type ? `；of_type=${r.fieldScope.of_type}` : ''}）：`];
         if (r.fieldScope) {
-          // ★ 限定账目如实打印：丢了什么、为什么留 —— 不让"限定"变成静默少给（T125）
+          // ★ 类型限定明细如实打印：丢了什么、为什么留 —— 不让"限定"变成静默少给（T125）
           lines.push(
             `\t★ 类型限定：of_type=${r.fieldScope.of_type}，声明于 ${r.fieldScope.declared_in.join(', ')}；` +
               `按 ownerType 证伪丢弃声明点 ${r.fieldScope.dropped_decl_points} 条；` +
@@ -1775,7 +1775,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
     name: 'plan_refactor',
     title: 'Compute a reviewable, replayable refactor plan (read-only)',
     description:
-      '「先算清单 → 预览 → 批量落盘」的**第一半**（规划书 §16.3 P-C）：**只读**算出一份可审、可复跑、可入账的重构清单，不写任何文件。' +
+      '「先算清单 → 预览 → 批量落盘」的**第一半**（规划书 §16.3 P-C）：**只读**算出一份可审、可复跑、可落地的重构清单，不写任何文件。' +
       '输入 targets=[{file, old_text, new_text}, ...]（与 edit_code 批量同形状，每项 = 文件内一次**唯一**文本替换）；' +
       '输出结构化清单 data：plan_id（内容派生指纹）+ items（每项 file/old/new/**命中级别**/diff 预览）+ files（规划时刻源文件指纹 base_fingerprint 与"全应用后"指纹 post_fingerprint）+ summary（项数/文件数/按命中级别分布）。' +
       '定位与语法门**复用** edit_code 的 replace_text 同一实现（4 级模糊级联：逐字→空白归一→缩进弹性→省略号占位；歧义即报错、绝不猜）。' +
