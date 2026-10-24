@@ -53899,22 +53899,22 @@
             {
               "kind": "source-has",
               "must": [
-                "设计 DB 要能回答"
+                "设计侧 DB 要能回答"
               ],
               "path": "docs/VISION.md",
-              "why": "本卡的依据：VISION.md 影响面行（❌）——设计文档说了、此前没人做"
+              "why": "本卡的依据：VISION.md 影响面行（原文『设计侧 DB 要能回答「改这里会炸哪里」』，❌）——设计文档说了、此前没人做"
             }
           ],
           "rationale": "docs/VISION.md 影响面行（❌ 设计 DB 只有 symbols/imports/calls，无闭包；两条路都没接）——选 A 路（calls 反向自足算）因它与 gen-db 的「事实全取 cache.db」同构，不引第二份事实源；一跳反向先落库，跨文件闭包可由消费者沿 reverse_calls 行走（渐进式披露：DSL 浅 → DB 深一层）。",
           "consequences": "所有 359 份投影都会新增字段（一次性全量重写）；消费方（契约门）读旧字段不受影响（新增可选字段）。",
           "acceptance": "① gen-db 重跑后 design-db/<rel>.calls.json 含 reverse_calls 且与 cache.db 边表反向一致（抽检）；② npm run verify 9/9；③ design_line gen-db 报告 written/unchanged 无真冲突。",
           "status": "active",
-          "updated_at": "2026-10-23T18:03:04.925Z",
+          "updated_at": "2026-10-24T01:41:22.932Z",
           "author": "llm",
           "agent": "workbuddy",
           "thread": "影响面"
         },
-        "status": "in_progress",
+        "status": "done",
         "decision_history": [
           {
             "at": "2026-10-20T00:08:42.765Z",
@@ -53996,6 +53996,40 @@
             },
             "note": "docs/VISION.md 影响面行标 ❌（design-db 无闭包、两条路都没接）且无对应决策卡——设计文档说了、设计侧没人接，按用户 2026-10-24 管线（文档→决策卡→DSL→DB→源码）立第一颗种子；落点 src/application/design/db/gen_design_db.ts。",
             "author": "llm"
+          },
+          {
+            "at": "2026-10-24T01:41:22.932Z",
+            "decision": {
+              "summary": "设计 DB 每文件投影新增 reverse_calls（谁调我：一跳反向调用，事实取 cache.db 边表反向索引），回答「改这里会炸哪里」的第一跳；跨文件传递闭包由消费者沿 reverse_calls 行走，不落库（渐进式披露）。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "reverse_calls",
+                    "reverseByFile"
+                  ],
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "why": "反向调用投影的两个关键写法：reverseByFile 索引（一次性建）+ reverse_calls 字段落进投影"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "设计 DB 要能回答"
+                  ],
+                  "path": "docs/VISION.md",
+                  "why": "本卡的依据：VISION.md 影响面行（❌）——设计文档说了、此前没人做"
+                }
+              ],
+              "rationale": "docs/VISION.md 影响面行（❌ 设计 DB 只有 symbols/imports/calls，无闭包；两条路都没接）——选 A 路（calls 反向自足算）因它与 gen-db 的「事实全取 cache.db」同构，不引第二份事实源；一跳反向先落库，跨文件闭包可由消费者沿 reverse_calls 行走（渐进式披露：DSL 浅 → DB 深一层）。",
+              "consequences": "所有 359 份投影都会新增字段（一次性全量重写）；消费方（契约门）读旧字段不受影响（新增可选字段）。",
+              "acceptance": "① gen-db 重跑后 design-db/<rel>.calls.json 含 reverse_calls 且与 cache.db 边表反向一致（抽检）；② npm run verify 9/9；③ design_line gen-db 报告 written/unchanged 无真冲突。",
+              "status": "active",
+              "updated_at": "2026-10-23T18:03:04.925Z",
+              "author": "llm",
+              "agent": "workbuddy",
+              "thread": "影响面"
+            },
+            "note": "收口被拒的根因是我把判据 must 抄错了（VISION.md 原文是『设计侧 DB 要能回答』，我写成『设计 DB 要能回答』）——对齐原文后 reverse_calls 与两条判据均已满足，src/application/design/db/gen_design_db_ts 收口。"
           }
         ],
         "overlay": {
@@ -54003,15 +54037,16 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "kind": "expectations",
-            "all_green": true,
-            "unsupported": 0
+            "at": "2026-10-24T09:45:00+08:00",
+            "command": "npm run verify && grep -c removed design-db/*.calls.json && grep -c 设计侧\\ DB\\ 要能回答 docs/VISION.md",
+            "kind": "reading",
+            "observed": "verify 9/9；退役前对账 removed 全空（无未接管意图）；scripts/dep.mjs 已删、package.json dep 入口已移除；VISION.md 影响面行原文在册（判据 must 已对齐原文）"
           }
         },
         "task": {
           "id": "file_src_application_design_db_gen_design_db_ts",
           "summary": "设计 DB 每文件投影新增 reverse_calls（谁调我：一跳反向调用，事实取 cache.db 边表反向索引），回答「改这里会炸哪里」的第一跳；跨文件传递闭包由消费者沿 reverse_calls 行走，不落库（渐进式披露）。",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "owner": "agent:workbuddy-glm5",
           "claimed_at": "2026-10-24T01:38:32.907Z",
@@ -54032,7 +54067,26 @@
               "declared",
               "expectations"
             ]
-          }
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-24T01:41:23.038Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify && grep -c removed design-db/*.calls.json && grep -c 设计侧\\ DB\\ 要能回答 docs/VISION.md",
+                "input": "c9394327013babc3561874256601400b3622929e",
+                "code": "314ae213584a9760fa63eef212bb8c35332ba44c",
+                "covers": [
+                  "docs/VISION.md",
+                  "src/application/design/db/gen_design_db.ts"
+                ]
+              },
+              "observed": "verify 9/9；退役前对账 removed 全空（无未接管意图）；scripts/dep.mjs 已删、package.json dep 入口已移除；VISION.md 影响面行原文在册（判据 must 已对齐原文）",
+              "command": "npm run verify && grep -c removed design-db/*.calls.json && grep -c 设计侧\\ DB\\ 要能回答 docs/VISION.md"
+            }
+          ]
         }
       },
       {
@@ -109087,7 +109141,7 @@
         "id": "file_src_application_design_db_gen_design_db_ts",
         "path": "src/application/design/db/gen_design_db.ts",
         "responsibility": "设计 DSL → 设计 DB（全量、与实际 DB 同构）",
-        "status": "in_progress",
+        "status": "done",
         "symbols": [
           {
             "name": "planDesignDb",
@@ -112940,11 +112994,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T01:38:32.971Z",
+    "saved_at": "2026-10-24T01:41:23.291Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 222390160,
+    "age": 222560480,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -115956,7 +116010,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1300,
+  "_dsl_rev": 1302,
   "feature_tree": {
     "features": [
       {
