@@ -930,7 +930,7 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
       //   （`…apis.length`）⇒ 本工具是 LLM 查代码的**第一站**（见 `mcp/server.ts` 的第 10 条），
       //   而它给出的符号**只有个数、没有名字** ⇒ 下游 `find_references.symbol`
       //   （受控词表里的 `anchor`，值 = `qualified_name`）**无从填起**，只能由人/LLM 从散文行里抠。
-      //   `fileFacts` 本来就把名字带回来了（`apis[].qualified_name`）—— **丢掉的是投影，不是能力**。
+      //   `fileFacts` 本身已返回这些名字（`apis[].qualified_name`）—— **丢掉的是投影，不是能力**。
       //   ⇒ 现在按**受控词表**的名字与类型出：`symbols: string[]`（`b_terms.ts` 里的复数形态）。
       const factsRoot = dsl.source_root ?? input.project_dir;
       const actualSymbols = new Map<string, string[]>();
@@ -1791,9 +1791,9 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
       };
     }
 
-    // ── 跨库总账（一眼全貌 · 只读派生 · 不落盘）─────────────────────────────
+    // ── 跨库总账（总览视图 · 只读派生 · 不落盘）─────────────────────────────
     //
-    // ★★★ 2026-10-24（用户裁定「一眼全貌 + 过滤」）：每个 feature 一行 —— 活卡/终态/归档/history/欠账。
+    // ★★★ 2026-10-24（用户裁定「总览视图 + 过滤」）：每个 feature 一行 —— 活卡/终态/归档/history/欠账。
     //   ★ 口径全部借现成唯一住处，本分支**不重算判据**：
     //     活卡/终态 = todos[] 按 `TASK_STATES` 现算（与 `case 'todo'` 同一来源字段）；
     //     history = `countTaskHistory`（infrastructure 唯一读口）；
