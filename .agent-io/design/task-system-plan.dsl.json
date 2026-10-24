@@ -53914,7 +53914,7 @@
           "agent": "workbuddy",
           "thread": "影响面"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision_history": [
           {
             "at": "2026-10-20T00:08:42.765Z",
@@ -54006,6 +54006,32 @@
             "kind": "expectations",
             "all_green": true,
             "unsupported": 0
+          }
+        },
+        "task": {
+          "id": "file_src_application_design_db_gen_design_db_ts",
+          "summary": "设计 DB 每文件投影新增 reverse_calls（谁调我：一跳反向调用，事实取 cache.db 边表反向索引），回答「改这里会炸哪里」的第一跳；跨文件传递闭包由消费者沿 reverse_calls 行走，不落库（渐进式披露）。",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "owner": "agent:workbuddy-glm5",
+          "claimed_at": "2026-10-24T01:38:32.907Z",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "docs/VISION.md",
+                "content_hash": "907c3a15cc3985d6dd6a275a9ca531406f257fad"
+              },
+              {
+                "path": "src/application/design/db/gen_design_db.ts",
+                "content_hash": "cb96b90c7386c8eaf555b10653bd3d19ea2fd65b"
+              }
+            ],
+            "computed_at": "2026-10-24T01:38:32.873Z",
+            "basis": [
+              "declared",
+              "expectations"
+            ]
           }
         }
       },
@@ -109061,7 +109087,7 @@
         "id": "file_src_application_design_db_gen_design_db_ts",
         "path": "src/application/design/db/gen_design_db.ts",
         "responsibility": "设计 DSL → 设计 DB（全量、与实际 DB 同构）",
-        "status": "done",
+        "status": "in_progress",
         "symbols": [
           {
             "name": "planDesignDb",
@@ -112914,11 +112940,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T01:09:44.532Z",
+    "saved_at": "2026-10-24T01:38:32.971Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 220661721,
+    "age": 222390160,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },

@@ -32,7 +32,7 @@
 | 一维一处 | 同一件事只在一个字段、一处表达 | ✅ 收归 `TransitionState` / `RedAttribution` / `CLOSED_TASK_STATES` |
 | 不打补丁 | 修一处就整块重写；补丁说明结构缺一维 | ✅ 规矩（无可判形态） |
 | 三个工具 | 智能读 / 智能编辑 / 智能重写直接操作源码，依赖关系由它们处理 | ✅ `explore_code` / `edit_code` / `apply_refactor_plan` |
-| 设计侧写入口 | 改设计走工具，不靠脚本脚手架；节点 / 边 / 判据都能加 | ⚠️ `edit_dsl` 有 decision / expectation / node / edge / todo op；依赖层仍靠 `scripts/dep.mjs`（见 §冲突） |
+| 设计侧写入口 | 改设计走工具，不靠脚本脚手架；节点 / 边 / 判据都能加 | ✅ 依赖层 = `call-exists` 判据（投影侧 `requirements_calls` 自动从它生成）；`dep.mjs` 已退役（2026-10-24 裁 A） |
 | 影响面 | 设计侧 DB 要能回答"改这里会炸哪里" | ❌ `design-db` 只有 symbols / imports / calls，无闭包 |
 | 影响面的来源 | 设计侧自足算（`calls` 反向闭包）或接 `impact_analysis`（带证据行 + 风险排序） | ⚠️ 两条都没接 |
 | 设计 DB 的形态 | 全量副本 + 只写增量；"没动的部分" = 设计认可现状 | ⚠️ `gen-db` 按事实全量重写；`dep` 的增删会被冲掉 |
@@ -48,7 +48,5 @@ scripts/dep.mjs：在 calls 上 --add / --remove，作为"设计说该有 / 不�
 ⇒ 两者同时存在 ⇒ dep 的增删会被下一次 gen-db 覆盖
 ```
 
-待裁：
-
-- **A**：`calls` 只读（事实镜像）；意图只住 `requirements_calls` ⇒ `dep` 退场
-- **B**：`calls` 可写；`gen-db` 保留 `removed` 与新增条目，不整份覆盖
+**已裁（2026-10-24）：A。** `calls` 只读（事实镜像）；"设计说该调"的唯一形态 = `call-exists` 判据（投影侧 `requirements_calls` 自动从它生成）；`dep.mjs` 退役（退役前对账：removed 全空，无未接管意图）。
+⇒ 投影锁（提示词 §4.10 设计）随之**降级为备选**：意图全部上收设计册后，gen-db 幂等生成使"被现实冲掉"失去对象——锁的必要性判据（"有没有第二个写手"）不再成立；将来若真出现第二个写手，原设计直接启用。

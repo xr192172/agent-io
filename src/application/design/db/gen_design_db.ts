@@ -89,7 +89,7 @@ export const outNameOf = (rel: string): string =>
  * 消费者全部认这一处，不许各写一遍字面量：
  * - `gen_design_db.ts` 自己
  * - `design_line.ts` / `symbol_diff.ts`（TS 侧直接 import 本函数）
- * - `scripts/gen-contracts.mjs` / `contract-calls.mjs` / `dep.mjs`（.mjs 侧 import dist 里的编译产物）
+ * - `scripts/gen-contracts.mjs` / `contract-calls.mjs`（.mjs 侧 import dist 里的编译产物；`dep.mjs` 已于 2026-10-24 按裁 A 退役——calls 只读，意图走 call-exists 判据）
  */
 export const designDbDir = (root: string): string => path.join(root, 'design-db');
 

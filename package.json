@@ -106,7 +106,6 @@
     "patrol": "node scripts/patrol.mjs",
     "diff": "node scripts/design-diff.mjs",
     "fork": "node scripts/fork-design.mjs",
-    "dep": "node scripts/dep.mjs",
     "coverage": "node scripts/coverage.mjs",
     "impact": "node dist/src/presentation/cli/cli.js impact_analysis project_dir=.",
     "design:check": "node scripts/design-check.mjs",
