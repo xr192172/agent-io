@@ -181,81 +181,75 @@
       ]
     },
     {
-      "name": "CALL_ACTOR_FIELD",
-      "kind": "const",
-      "line": 681,
-      "signature": "const CALL_ACTOR_FIELD = { actor: z .string() .optional() .describe( '★ 本次调用的**身份*…"
-    },
-    {
       "name": "CALL_AUTHORIZE_FIELD",
       "kind": "const",
-      "line": 717,
+      "line": 711,
       "signature": "const CALL_AUTHORIZE_FIELD = { authorize: z .string() .optional() .describe( '★ 本次 run…"
     },
     {
       "name": "CALL_RESERVED_KEYS",
       "kind": "const",
-      "line": 729,
+      "line": 723,
       "signature": "const CALL_RESERVED_KEYS = [...Object.keys(CALL_ACTOR_FIELD), ...Object.keys(CALL_AU…"
     },
     {
       "name": "withCallActor",
       "kind": "const",
-      "line": 731,
+      "line": 725,
       "signature": "const withCallActor = (shape: Record<string, unknown>): Record<string, unknown>…"
     },
     {
       "name": "_argValidators",
       "kind": "const",
-      "line": 738,
+      "line": 732,
       "signature": "const _argValidators = new WeakMap<ToolDef, ArgValidator>()"
     },
     {
       "name": "argValidatorOf",
       "kind": "function",
-      "line": 740,
+      "line": 734,
       "signature": "argValidatorOf(def: ToolDef): ArgValidator"
     },
     {
       "name": "validateToolArgs",
       "kind": "function",
-      "line": 756,
+      "line": 750,
       "signature": "validateToolArgs(def: ToolDef, a: Record<string, unknown>): string | null"
     },
     {
       "name": "invokeTool",
       "kind": "function",
-      "line": 787,
+      "line": 781,
       "signature": "invokeTool(def: ToolDef,\n  args: Record<string, unknown> | undefined,\n  via: DogfoodVia = 'mcp',): Promise<{ text: string; isError?: boolean }>"
     },
     {
       "name": "renderNextNote",
       "kind": "function",
-      "line": 986,
+      "line": 980,
       "signature": "renderNextNote(tool: string, text: string): string"
     },
     {
       "name": "ATOMIC_ENTRY_NAME",
       "kind": "const",
-      "line": 1024,
+      "line": 1018,
       "signature": "const ATOMIC_ENTRY_NAME = 'atomic_call'"
     },
     {
       "name": "composedDefs",
       "kind": "function",
-      "line": 1030,
+      "line": 1024,
       "signature": "composedDefs(): ToolDef[]"
     },
     {
       "name": "registerAtomicEntry",
       "kind": "function",
-      "line": 1048,
+      "line": 1042,
       "signature": "registerAtomicEntry(server: McpServer, exposedNames: ReadonlySet<string>): void"
     },
     {
       "name": "registerAllTools",
       "kind": "function",
-      "line": 1092,
+      "line": 1086,
       "signature": "registerAllTools(server: McpServer): void"
     }
   ],

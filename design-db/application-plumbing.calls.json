@@ -87,6 +87,12 @@
       "kind": "function",
       "line": 261,
       "signature": "looseInputSchema(shape: Record<string, unknown>): unknown"
+    },
+    {
+      "name": "CALL_ACTOR_FIELD",
+      "kind": "const",
+      "line": 290,
+      "signature": "const CALL_ACTOR_FIELD = { actor: z .string() .optional() .describe( '★ 本次调用的**身份*…"
     }
   ],
   "imports": [

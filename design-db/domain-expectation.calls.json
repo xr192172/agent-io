@@ -13,73 +13,73 @@
     {
       "name": "EXPECTATION_KINDS",
       "kind": "const",
-      "line": 111,
+      "line": 125,
       "signature": "const EXPECTATION_KINDS = ['file-exists', 'symbol-exists', 'signature-matches', 'ed…"
     },
     {
       "name": "ExpectationPhase",
       "kind": "type",
-      "line": 146,
+      "line": 160,
       "signature": "ExpectationPhase()"
     },
     {
       "name": "PHASE_BY_KIND",
       "kind": "const",
-      "line": 153,
+      "line": 167,
       "signature": "const PHASE_BY_KIND = { // ★ run 是「跑起来看结果」⇒ 必然属【后态】（跑之前谈不上结果） run: 'post', 'sou…"
     },
     {
       "name": "expectationPhase",
       "kind": "function",
-      "line": 170,
+      "line": 185,
       "signature": "expectationPhase(e: Expectation): ExpectationPhase"
     },
     {
       "name": "postExpectations",
       "kind": "function",
-      "line": 181,
+      "line": 196,
       "signature": "postExpectations(expectations: readonly Expectation[]): Expectation[]"
     },
     {
       "name": "normPath",
       "kind": "function",
-      "line": 186,
+      "line": 201,
       "signature": "normPath(p: string): string"
     },
     {
       "name": "normSignature",
       "kind": "function",
-      "line": 191,
+      "line": 206,
       "signature": "normSignature(s: string): string"
     },
     {
       "name": "describeExpectation",
       "kind": "function",
-      "line": 196,
+      "line": 211,
       "signature": "describeExpectation(e: Expectation): string"
     },
     {
       "name": "assertValidExpectations",
       "kind": "function",
-      "line": 210,
+      "line": 226,
       "signature": "assertValidExpectations(v: unknown): asserts v is Expectation[]"
     },
     {
       "name": "expectationSubjectPath",
       "kind": "function",
-      "line": 259,
+      "line": 289,
       "signature": "expectationSubjectPath(e: Expectation): string"
     },
     {
       "name": "expectationPaths",
       "kind": "function",
-      "line": 267,
+      "line": 297,
       "signature": "expectationPaths(e: Expectation): string[]"
     },
     {
       "name": "collectExpectations",
       "kind": "function",
-      "line": 274,
+      "line": 304,
       "signature": "collectExpectations(dsl: DesignDSL): Array<{ node_id: string; node_label: string; expectation: Expectation }>"
     }
   ],
@@ -94,6 +94,10 @@
     {
       "from": "src/domain/expectation.ts#postExpectations",
       "to": "src/domain/expectation.ts#expectationPhase"
+    },
+    {
+      "from": "src/domain/expectation.ts#describeExpectation",
+      "to": "src/domain/expectation.ts#normPath"
     },
     {
       "from": "src/domain/expectation.ts#describeExpectation",
@@ -223,6 +227,8 @@
     "src/application/design/intent/expectations.ts#findExpectationConflicts",
     "src/application/design/intent/expectations.ts#indexStaleFor",
     "src/application/design/intent/expectations.ts#judgeExpectations",
+    "src/application/design/intent/expectations.ts#judgeSourceHas",
+    "src/application/design/intent/expectations.ts#judgeSymbolOrSignature",
     "src/application/meta/explore/query_feature.ts#queryFeature",
     "src/application/patrol/task_drift.ts#patrolDrift",
     "src/domain/expectation.ts#describeExpectation",

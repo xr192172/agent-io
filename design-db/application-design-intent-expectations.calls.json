@@ -7,25 +7,37 @@
     {
       "name": "findExpectationConflicts",
       "kind": "function",
-      "line": 63,
+      "line": 67,
       "signature": "findExpectationConflicts(items: readonly JudgeItem[],): ExpectationConflict[]"
     },
     {
       "name": "indexStaleFor",
       "kind": "function",
-      "line": 120,
+      "line": 124,
       "signature": "indexStaleFor(root: string, rels: readonly string[]): string | null"
     },
     {
       "name": "depFactsIncomplete",
       "kind": "function",
-      "line": 145,
+      "line": 149,
       "signature": "depFactsIncomplete(root: string, relPath: string): string | null"
+    },
+    {
+      "name": "judgeSymbolOrSignature",
+      "kind": "function",
+      "line": 184,
+      "signature": "judgeSymbolOrSignature(root: string,\n  e: Extract<Expectation, { kind: 'symbol-exists' | 'signature-matches' }>,): Promise<{ verdict: Verdict; detail: string }>"
+    },
+    {
+      "name": "judgeSourceHas",
+      "kind": "function",
+      "line": 237,
+      "signature": "judgeSourceHas(root: string,\n  e: Extract<Expectation, { kind: 'source-has' }>,): { verdict: Verdict; detail: string }"
     },
     {
       "name": "judgeExpectations",
       "kind": "function",
-      "line": 177,
+      "line": 259,
       "signature": "judgeExpectations(root: string,\n  items: readonly JudgeItem[],): Promise<ExpectationsReport>"
     }
   ],
@@ -63,6 +75,14 @@
       "kind": "relative"
     },
     {
+      "source": "./judge_cache.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/authoring/behavior/index.js",
+      "kind": "relative"
+    },
+    {
       "source": "../../../domain/judge_port.js",
       "kind": "relative",
       "type_only": true
@@ -91,6 +111,34 @@
     },
     {
       "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/application/design/intent/expectations.ts#judgeSourceHas"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/application/design/intent/expectations.ts#judgeSourceHas"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/application/design/intent/expectations.ts#judgeSymbolOrSignature"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/application/design/intent/expectations.ts#judgeSymbolOrSignature"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/application/design/intent/judge_cache.ts#judgeCacheKey"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/application/design/intent/judge_cache.ts#loadJudgeCache"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/application/design/intent/judge_cache.ts#saveJudgeCache"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
       "to": "src/application/meta/explore/query_feature.ts#queryFileCalls"
     },
     {
@@ -106,6 +154,14 @@
       "to": "src/domain/expectation.ts#normPath"
     },
     {
+      "from": "src/application/design/intent/expectations.ts#judgeSymbolOrSignature",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeSourceHas",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
       "from": "src/application/design/intent/expectations.ts#judgeExpectations",
       "to": "src/domain/expectation.ts#normPath"
     },
@@ -138,8 +194,12 @@
       "to": "src/domain/expectation.ts#normSignature"
     },
     {
-      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "from": "src/application/design/intent/expectations.ts#judgeSymbolOrSignature",
       "to": "src/domain/expectation.ts#normSignature"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/infrastructure/authoring/behavior/index.ts#runHarness"
     },
     {
       "from": "src/application/design/intent/expectations.ts#indexStaleFor",
@@ -147,6 +207,10 @@
     },
     {
       "from": "src/application/design/intent/expectations.ts#depFactsIncomplete",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
       "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
     },
     {
@@ -186,11 +250,11 @@
       "to": "src/infrastructure/index/symbols.ts#getRawImportsOfFile"
     },
     {
-      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "from": "src/application/design/intent/expectations.ts#judgeSymbolOrSignature",
       "to": "src/infrastructure/parse/ast_parser.ts#isSupportedFile"
     },
     {
-      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "from": "src/application/design/intent/expectations.ts#judgeSymbolOrSignature",
       "to": "src/infrastructure/parse/ast_parser.ts#parseFileSymbols"
     }
   ],

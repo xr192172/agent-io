@@ -129,13 +129,19 @@
           "type": ": ExpectationConflict[]",
           "optional": false,
           "member_kind": "property"
+        },
+        {
+          "name": "cache",
+          "type": ": { hits: number; misses: number }",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "Judge",
       "kind": "type",
-      "line": 117,
+      "line": 125,
       "signature": "Judge()"
     }
   ],

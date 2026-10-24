@@ -56,6 +56,6 @@
   ],
   "reverse_calls": [
     "src/application/design/intent/consistency.ts#checkConsistencyReport",
-    "src/application/design/intent/expectations.ts#judgeExpectations"
+    "src/application/design/intent/expectations.ts#judgeSymbolOrSignature"
   ]
 }
