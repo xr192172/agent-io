@@ -17336,7 +17336,7 @@
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_query_feature_ts\"].responsibility"
           },
           "owner": "agent:workbuddy-glm5",
-          "claimed_at": "2026-10-24T00:52:33.710Z",
+          "claimed_at": "2026-10-24T01:08:14.416Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
@@ -17349,10 +17349,10 @@
             "files": [
               {
                 "path": "src/application/meta/explore/query_feature.ts",
-                "content_hash": "3fac37263d392faf915b3a6151ab9190b4e21216"
+                "content_hash": "4bfcc943cd48b295ee22b4c5f59affaeb499b392"
               }
             ],
-            "computed_at": "2026-10-24T00:52:33.672Z",
+            "computed_at": "2026-10-24T01:08:14.378Z",
             "basis": [
               "declared",
               "expectations"
@@ -17390,10 +17390,26 @@
               },
               "observed": "verify 9/9；概览层实测：todo 111→59KB、decisions 218→70KB、history 213→80KB（reason/summary 单行长文本，split 换行截不住 → briefText 按字符截 80）；全貌套餐（overview+digest+todo+history+decisions）≈365KB，1M 上下文内",
               "command": "npm run verify && node _design-canvas-labs/measure-read-layers.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-24T01:09:44.283Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify && node _design-canvas-labs/show-overview.mjs",
+                "input": "fd12fb355b525cc91280e2908f70740cda4079e0",
+                "code": "6192d177c9f3902edb26453b6e2db56c021a80d6",
+                "covers": [
+                  "src/application/meta/explore/query_feature.ts"
+                ]
+              },
+              "observed": "verify 9/9；overview 仍 3KB，但含每 feature 的 next_up（claimed 优先前 5，带截断 summary）与 recently_closed（入史前 3）——任务日志屏成型，实测输出见回执",
+              "command": "npm run build && npm run verify && node _design-canvas-labs/show-overview.mjs"
             }
           ],
-          "reopened_at": "2026-10-24T00:52:33.710Z",
-          "reopen_reason": "可筛选性通读收尾：同文件三个 case（todo/decisions/history）补齐概览/详情两级——history 的 reason 每行重复全文（213KB）、todo 整卡出（111KB）、decisions 整卡展开（218KB），压掉后全貌套餐从 ~700KB 降到 ~220KB",
+          "reopened_at": "2026-10-24T01:08:14.416Z",
+          "reopen_reason": "overview 升级为完整任务日志屏：每 feature 补 next_up（claimed→candidate 前 5，含 summary 首行）与 recently_closed（history 最近 3 条）——现在只有计数栏，打开看不出『接下来该干什么』",
           "reopened_from": "agent:workbuddy-glm5"
         },
         "status": "done",
@@ -17428,10 +17444,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T08:58:00+08:00",
-            "command": "npm run verify && node _design-canvas-labs/measure-read-layers.mjs",
+            "at": "2026-10-24T09:12:00+08:00",
+            "command": "npm run build && npm run verify && node _design-canvas-labs/show-overview.mjs",
             "kind": "reading",
-            "observed": "verify 9/9；概览层实测：todo 111→59KB、decisions 218→70KB、history 213→80KB（reason/summary 单行长文本，split 换行截不住 → briefText 按字符截 80）；全貌套餐（overview+digest+todo+history+decisions）≈365KB，1M 上下文内"
+            "observed": "verify 9/9；overview 仍 3KB，但含每 feature 的 next_up（claimed 优先前 5，带截断 summary）与 recently_closed（入史前 3）——任务日志屏成型，实测输出见回执"
           }
         }
       },
@@ -112898,11 +112914,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T00:57:54.768Z",
+    "saved_at": "2026-10-24T01:09:44.532Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 219951957,
+    "age": 220661721,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -115914,7 +115930,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1299,
+  "_dsl_rev": 1300,
   "feature_tree": {
     "features": [
       {

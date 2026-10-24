@@ -1806,6 +1806,18 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         for (const s of TASK_STATES) byState[s] = 0;
         for (const t of d.todos ?? []) if (t.state in byState) byState[t.state]++;
         const pd = computePendingDebts(feature);
+        // ★ 2026-10-24（任务日志屏）：总账只给计数，看不出「接下来该干什么」⇒ 每栏目带 top N 概览行
+        const nextUp = (d.todos ?? [])
+          .filter((t) => !isClosedTaskState(t.state))
+          .sort((a, b) => (a.state === 'claimed' ? 0 : 1) - (b.state === 'claimed' ? 0 : 1))
+          .slice(0, 5)
+          .map((t) => ({ id: t.id, state: t.state, owner: t.owner ?? null, summary: briefText(t.summary) }));
+        const recentlyClosed = queryTaskHistory({ feature, limit: 3 }).rows.map((r) => ({
+          id: r.id,
+          state: r.state,
+          moved_at: r.moved_at,
+          summary: briefText(r.summary),
+        }));
         return {
           feature,
           todo_live: (byState.candidate ?? 0) + (byState.preparing ?? 0) + (byState.claimed ?? 0),
@@ -1814,6 +1826,8 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           todo_archived: (d.todos ?? []).filter((t) => t.archived_at).length,
           history: countTaskHistory(feature),
           pending_debts: pd ? pd.debts.length : 0,
+          next_up: nextUp,
+          recently_closed: recentlyClosed,
           ...(pd ? {} : { pending_note: '无 overlay' }),
         };
       });
@@ -1839,6 +1853,18 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         );
       }
       lines.push('', `  合计：活卡 ${totals.todo_live} · history ${totals.history} · 欠账 ${totals.pending_debts}`);
+      // ★ 2026-10-24（任务日志屏）：每个 feature 的「接下来该干什么」（claimed 优先，前 5）+ 刚收口的
+      for (const r of rows) {
+        if (r.next_up.length === 0 && r.recently_closed.length === 0) continue;
+        lines.push('', `─ ${r.feature} ─`);
+        for (const t of r.next_up) {
+          lines.push(`  ▶ [${t.state}] ${t.id}${t.owner ? ` · ${t.owner}` : ''}`);
+          lines.push(`    ${t.summary}`);
+        }
+        for (const t of r.recently_closed) {
+          lines.push(`  ✔ [${t.state}] ${t.id} · ${t.moved_at.slice(0, 10)}`);
+        }
+      }
       return { message: lines.join('\n'), data: { rows, totals } };
     }
 
