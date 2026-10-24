@@ -101,6 +101,14 @@ export interface ExpectationsReport {
   notes: string[];
   /** 决策间冲突（单列，**不混进** pass/fail 计数 —— 谁对是人的裁） */
   conflicts: ExpectationConflict[];
+  /**
+   * ★★ 2026-10-24（judge-cache 第一阶）：**缓存命中率**（可选 —— 假 judge / 旧实现不填就没有，读端判 `!= null`）。
+   * `hits` = 判定直接取自 `<root>/.agent-io/judge-cache.json` 的条数（detail 带「缓存命中」标记）；
+   * `misses` = 本轮现算并入缓存的条数。目标 = 「没变的文件不再测」：二连跑的第二跑 hits ≈ 第一跑 misses。
+   * ★ 只有 `symbol-exists` / `signature-matches` / `source-has` 三类参与缓存
+   *   （file-exists / run / behavior-cases / edge-* 按设计不缓存 —— 便宜的与必须现跑的不凑数）。
+   */
+  cache?: { hits: number; misses: number };
 }
 
 /**

@@ -17547,8 +17547,8 @@
           "summary": "「可判定的验收」的判定器：judgeExpectations 逐 kind 分支判定；判不了 ⇒ unsupported 单列",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:subagent-behavior-cases",
-          "claimed_at": "2026-10-24T07:19:37.049Z",
+          "owner": "subagent:subagent-judge-cache",
+          "claimed_at": "2026-10-24T08:07:07.954Z",
           "read_set": {
             "symbols": [
               {
@@ -17559,18 +17559,17 @@
               {
                 "file": "src/application/design/intent/expectations.ts",
                 "name": "judgeExpectations",
-                "fp": "6a19041a43dbb19efd133317315c0854f82e1c43"
+                "fp": "794b9da947f94ee495c084a09eb75a568e3bbca7"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/intent/expectations.ts",
-                "content_hash": "47a137ef1ddcf630dd933c9431f0b1732bbdc8f8"
+                "content_hash": "854727bf35f33e07080873713a7f6f872f559e90"
               }
             ],
-            "computed_at": "2026-10-24T07:19:37.018Z",
+            "computed_at": "2026-10-24T08:07:07.913Z",
             "basis": [
-              "declared",
               "expectations"
             ]
           },
@@ -17590,8 +17589,28 @@
               },
               "observed": "verify 9/9；judgeExpectations 的 case behavior-cases 分支接线完成（runHarness 现跑 + expect 对比，进程级失败判 unsupported）",
               "command": "npm run build && npm run verify && check-bc.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-24T08:23:02.613Z",
+              "by": "llm",
+              "agent": "subagent:subagent-judge-cache",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify && node _design-canvas-labs/judge-cache-two-runs.mjs（两连跑+消融）",
+                "input": "c6a1a2979699214d8b051f703965d3f7e7596666",
+                "code": "9f2b506f389832dc45d3194c994659fd5f56ead5",
+                "covers": [
+                  "src/application/design/intent/expectations.ts"
+                ]
+              },
+              "observed": "build 无错；verify 9/9；两连跑：首跑 hits=3/misses=574 → 二跑 hits=577/misses=0，578 条缓存类判定 verdict 逐条一致（0 差异）；消融：src/domain/expectation.ts 加注释 → 该文件判据 22 键全 miss 且 verdict 与基线 0 差异 → 还原重跑 → hits=577/misses=0 恢复",
+              "command": "npm run build && npm run verify && node _design-canvas-labs/judge-cache-two-runs.mjs（两连跑+消融）"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-24T08:07:07.954Z",
+          "reopen_reason": "judgeExpectations 现算 670+ 条，贵判定（symbol/signature/source-has）每次重读重解析目标文件 ⇒ 接一阶文件哈希缓存（v3 §4.9 第一阶）",
+          "reopened_from": "agent:subagent-behavior-cases"
         },
         "status": "done",
         "overlay": {
@@ -17599,10 +17618,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T15:16:00+08:00",
-            "command": "npm run build && npm run verify && check-bc.mjs",
             "kind": "reading",
-            "observed": "verify 9/9；judgeExpectations 的 case behavior-cases 分支接线完成（runHarness 现跑 + expect 对比，进程级失败判 unsupported）"
+            "command": "npm run build && npm run verify && node _design-canvas-labs/judge-cache-two-runs.mjs（两连跑+消融）",
+            "observed": "build 无错；verify 9/9；两连跑：首跑 hits=3/misses=574 → 二跑 hits=577/misses=0，578 条缓存类判定 verdict 逐条一致（0 差异）；消融：src/domain/expectation.ts 加注释 → 该文件判据 22 键全 miss 且 verdict 与基线 0 差异 → 还原重跑 → hits=577/misses=0 恢复",
+            "at": "2026-10-24T08:30:00Z",
+            "verdict": "pass"
           }
         }
       },
@@ -58852,6 +58872,75 @@
           ],
           "updated_at": "2026-10-22T10:20:00+08:00",
           "agent": "agent:workbuddy"
+        },
+        "task": {
+          "id": "file_src_domain_judge_port_ts",
+          "summary": "「判定器」的**端口**（domain 侧唯一契约）：只声明形状，实现住 application，由调用方注入。★ 为什么存在：`task_machine.ts` 曾**向上** import `application/design/intent/expectations.ts#judgeExpectations` —— 「domain 不许 import infrastructure」这条满足了、「不许向上」那条违反了 ⇒ 规则满足一半 = 没满足。★ 这**不是**第二把尺：判定器仍然只有 `judgeExpectations` 一个实现，本文件只是它的**类型**。★ 边界（它不做什么）：**不含任何实现**；不读盘、不读索引、不判定；不替实现决定「判不了该算哪种」——它只负责**留住 `unsupported` 这个词**。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:subagent-judge-cache",
+          "claimed_at": "2026-10-24T08:08:00.834Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/judge_port.ts",
+                "name": "ExpectationsReport",
+                "fp": "11cc2e26899e831f1b0fde2a30cde672f182e82d"
+              },
+              {
+                "file": "src/domain/judge_port.ts",
+                "name": "Judge",
+                "fp": "01492616678aaf9e53d22f4080a12732f6566758"
+              },
+              {
+                "file": "src/domain/judge_port.ts",
+                "name": "Verdict",
+                "fp": "ebf32ae2952394880b7647e4c54436293f2ca565"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/judge_port.ts",
+                "content_hash": "8a01f0092e9c521b5937939384bf71d7c9d1a092"
+              }
+            ],
+            "computed_at": "2026-10-24T08:08:00.792Z",
+            "basis": [
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-24T08:23:17.282Z",
+              "by": "llm",
+              "agent": "subagent:subagent-judge-cache",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify && node _design-canvas-labs/judge-cache-two-runs.mjs（两连跑+消融）",
+                "input": "99e7f1823b6fa959e4c1802d37358fe311da195b",
+                "code": "565d901168b7c965fae599f695868693dd5c0ff2",
+                "covers": [
+                  "src/domain/judge_port.ts"
+                ]
+              },
+              "observed": "ExpectationsReport 新增可选 cache:{hits,misses}；实测读端可见：首跑 {hits:3,misses:574} → 二跑 {hits:577,misses:0}；消融 22 miss → 还原后 577 hit；verdict 逐条一致 0 差异",
+              "command": "npm run build && npm run verify && node _design-canvas-labs/judge-cache-two-runs.mjs（两连跑+消融）"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/judge_port.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "npm run build && npm run verify && node _design-canvas-labs/judge-cache-two-runs.mjs（两连跑+消融）",
+            "observed": "ExpectationsReport 新增可选 cache:{hits,misses}；实测读端可见：首跑 {hits:3,misses:574} → 二跑 {hits:577,misses:0}；消融 22 miss → 还原后 577 hit；verdict 逐条一致 0 差异",
+            "at": "2026-10-24T08:32:00Z",
+            "verdict": "pass"
+          }
         }
       },
       {
@@ -59582,6 +59671,41 @@
             }
           ],
           "updated_at": "2026-10-24T03:34:50.933Z"
+        }
+      },
+      {
+        "id": "file_src_application_design_intent_judge_cache_ts",
+        "label": "judge_cache.ts",
+        "x": 9800,
+        "y": 120,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "description": "src/application/design/intent/judge_cache.ts",
+        "style": {},
+        "decision": {
+          "summary": "判据求值缓存（judge-cache.json）：key = sha256(判据形状 ‖ 目标文件 content_hash)，只缓存 symbol-exists/signature-matches/source-has 三类文件解析判定；写侧原子（tmp+rename）；损坏留痕不静默。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "judgeCacheKey",
+                "saveJudgeCache",
+                "rename"
+              ],
+              "path": "src/application/design/intent/judge_cache.ts",
+              "why": "缓存三件套：key 派生/原子落盘（tmp+rename）/读入口必须在"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "mustNot"
+              ],
+              "path": "src/application/design/intent/judge_cache.ts",
+              "why": "mustNot 必须入 key——source-has 的 mustNot 是断言的一部分，只改 mustNot 不动文件时缓存不得给过期 verdict（2026-10-24 修订）"
+            }
+          ],
+          "updated_at": "2026-10-24T08:29:06.055Z"
         }
       }
     ],
@@ -116731,7 +116855,8 @@
           }
         ],
         "lines": 100,
-        "layer": "service"
+        "layer": "service",
+        "status": "done"
       },
       {
         "id": "file_src_domain_todo_chain_ts",
@@ -117407,6 +117532,11 @@
         "id": "file_observe_lang_py_camprobe_py",
         "path": "observe-lang-py/camprobe.py",
         "responsibility": "observe-lang-py · Camprobe 探针"
+      },
+      {
+        "id": "file_src_application_design_intent_judge_cache_ts",
+        "path": "src/application/design/intent/judge_cache.ts",
+        "responsibility": "基础设施 · 判据求值缓存（judge-cache.json：一阶文件哈希，基线/增量/全量三档的载体）"
       }
     ]
   },
@@ -117469,11 +117599,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-24T07:33:27.772Z",
+    "saved_at": "2026-10-24T08:29:06.084Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 243684961,
+    "age": 247023273,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -120459,7 +120589,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1394,
+  "_dsl_rev": 1400,
   "feature_tree": {
     "features": [
       {

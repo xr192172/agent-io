@@ -27,7 +27,9 @@ import { getRawImportsOfFile, contentHash } from '../../../infrastructure/index/
 import { parseFileSymbols, isSupportedFile } from '../../../infrastructure/parse/ast_parser.js';
 // ★ T79：调用边读取**复用现成那一处**（别在这再写一份 SQL）
 import { queryFileCalls } from '../../meta/explore/query_feature.js';
-import { normPath, normSignature } from '../../../domain/expectation.js';
+import { normPath, normSignature, type Expectation } from '../../../domain/expectation.js';
+// ★ 2026-10-24（judge-cache 第一阶）：**一阶文件哈希缓存** —— 「没变的文件不再测」（判据见 judgeExpectations 内注）
+import { loadJudgeCache, saveJudgeCache, judgeCacheKey } from './judge_cache.js';
 // ★ 工作项 L（2026-10-24）：行为契约的执行核 —— 复用 behavior 基建（与 capture/verify 同一条执行路径）
 import { runHarness, type BehaviorSpec } from '../../../infrastructure/authoring/behavior/index.js';
 // ★ 2026-10-21（D-judge-port）：判定器的**形状**住 domain（端口 = `domain/judge_port.ts`），本文件只实现
@@ -175,6 +177,84 @@ function depFactsIncomplete(root: string, relPath: string): string | null {
   return null;
 }
 
+/**
+ * ★ symbol-exists / signature-matches 的**判定核**（2026-10-24 从 judgeExpectations 原样抽出 ——
+ *   缓存通道与直算通道共用同一份逻辑，不许判据住两处）。返回而不 push；详细判据注释见函数体内。
+ */
+async function judgeSymbolOrSignature(
+  root: string,
+  e: Extract<Expectation, { kind: 'symbol-exists' | 'signature-matches' }>,
+): Promise<{ verdict: Verdict; detail: string }> {
+  const p = normPath(e.path);
+  const abs = path.join(root, p);
+  if (!fs.existsSync(abs)) {
+    return { verdict: 'fail', detail: `${p} **不存在**（查的是 ${abs}）` };
+  }
+  if (!isSupportedFile(p)) {
+    return {
+      verdict: 'unsupported',
+      detail: `${p} 的扩展名不走 TS/JS 解析器 ⇒ **符号事实取不到，判不了**（不拿“取不到”冒充“没有”）`,
+    };
+  }
+  // ★★★ 现读现解析：**不许**用 `fileFacts`（索引）—— 出生证证明过它会假绿。
+  //   证据：把源码里的 mul 删掉后，`consistency_check`（现解析）已报 missing:1，
+  //   而用 fileFacts 的初版仍报“✅ 有 mul” ⇒ **拿索引冒充代码**。
+  const content = fs.readFileSync(abs, 'utf-8');
+  const syms = await parseFileSymbols(p, content);
+  // ★★★ T258（2026-10-14）：**这里原先按 kind 过滤，只认 `function | method`** ——
+  //   实测后果：`const` / `type` / `interface` / 接口字段类断言**结构上无法表达**
+  //   （`parseFileSymbols` 把 `const`/`arrow const` 判成 `const`/`type`，`interface`/`type` 判成
+  //   `interface`/`type`）⇒ 取不到 ⇒ 判 **fail**。
+  //   ★★ 那是**假红**：把“**我表达不了**”读成“**代码里没有**” —— 比 unsupported 更坏
+  //   （unsupported 至少诚实；假红会让人去改没坏的东西）。实测至少 4 张决策卡死于此
+  //   （`arc_6` 的 const / `tcc_6` 的接口字段 / `tcc_9` 的 type / `tcc_3` 的类型本体）。
+  //   ⇒ 现在**不按 kind 过滤**：问的是“**这个符号在不在**”，就不该替调用方挑 kind。
+  const hit = syms.find((s) => s.name === e.symbol || s.qualified_name === e.symbol);
+  if (!hit) {
+    // ★ 提示也**不再过滤** —— 否则“现取到 N 个”会漏报 const/type，把读者引向错的方向。
+    const names = syms.map((s) => s.name);
+    return {
+      verdict: 'fail',
+      detail:
+        `${p}（**现解析**）里**没有符号** \`${e.symbol}\`；现取到 ${names.length} 个：` +
+        `${names.slice(0, 6).join(', ')}${names.length > 6 ? ' …' : ''}`,
+    };
+  }
+  if (e.kind === 'symbol-exists') {
+    return { verdict: 'pass', detail: `${p}（现解析）有 \`${hit.name}\`（L${hit.start_line}-${hit.end_line}）` };
+  }
+  const got = hit.signature ?? '';
+  const ok = normSignature(got) === normSignature(e.signature);
+  return {
+    verdict: ok ? 'pass' : 'fail',
+    detail: ok
+      ? `${p} 的 \`${hit.name}\` 签名与期望一致`
+      : `${p} 的 \`${hit.name}\` **签名不符**：期望 \`${e.signature}\`，实取 \`${got || '（无签名）'}\``,
+  };
+}
+
+/** ★ source-has 的**判定核**（同上，从 judgeExpectations 原样抽出 —— 2026-10-19 源码文本判据：不装 input） */
+function judgeSourceHas(
+  root: string,
+  e: Extract<Expectation, { kind: 'source-has' }>,
+): { verdict: Verdict; detail: string } {
+  const p = normPath(e.path);
+  const abs = path.join(root, p);
+  if (!fs.existsSync(abs)) {
+    return { verdict: 'fail', detail: `${p} **不存在**（查的是 ${abs}）` };
+  }
+  const src = fs.readFileSync(abs, 'utf-8');
+  const missMust = (e.must ?? []).filter((t) => !src.includes(t));
+  const hitMustNot = (e.mustNot ?? []).filter((t) => src.includes(t));
+  if (missMust.length || hitMustNot.length) {
+    const parts = [];
+    if (missMust.length) parts.push(`缺 must：${missMust.map((t) => JSON.stringify(t.slice(0, 40))).join(' / ')}`);
+    if (hitMustNot.length) parts.push(`命中 mustNot：${hitMustNot.map((t) => JSON.stringify(t.slice(0, 40))).join(' / ')}`);
+    return { verdict: 'fail', detail: parts.join('；') };
+  }
+  return { verdict: 'pass', detail: `${p}：must ${(e.must ?? []).length} 全在 / mustNot ${(e.mustNot ?? []).length} 全无` };
+}
+
 /** 逐条判定（★ `async`：符号走**现解析**；不写盘） ★ 见文件头纪律 1 —— 不许用索引冒充代码 */
 export async function judgeExpectations(
   root: string,
@@ -185,8 +265,55 @@ export async function judgeExpectations(
     out.push({ ...it, verdict, detail });
   };
 
+  // ★★ 2026-10-24（judge-cache 第一阶，v3 §4.9）：**一阶文件哈希缓存** —— 「没变的文件不再测」。
+  //   · 只缓存 **symbol-exists / signature-matches / source-has** 三类：它们的判定只依赖**目标文件本体**
+  //     （key = hash(判据内容 ‖ 目标文件 content_hash)，见 `intent/judge_cache.ts`），一阶即覆盖全部贵判定；
+  //   · **不缓存**：file-exists（existsSync 便宜）/ run 与 behavior-cases（必须现跑）/ edge-* 与
+  //     call-exists（读边表便宜，且新鲜度由 indexStaleFor 把守）；
+  //   · **新鲜度判据 = files.content_hash**（索引那一刻的内容指纹）：文件不在 files 表 ⇒ 拿不到哈希
+  //     ⇒ **不缓存，现算**（不许拿"没有哈希"冒充"没变"）；文件变了 ⇒ 哈希变 ⇒ key 变 ⇒ 自然 miss；
+  //   · 纪律 1（现读现解析）**不变**：命中的恰是"文件内容哈希没变"的文件 ⇒
+  //     缓存里的判定与"此刻现解析"是同一个事实 —— 不是拿索引冒充代码。
+  const cache = loadJudgeCache(root);
+  let cacheHits = 0;
+  let cacheMisses = 0;
+  // 一条 prepared statement 复用（逐条现 prepare 才是浪费）；库不可用 ⇒ 全部现算（与"没索引"同语义）
+  let fileHashStmt: { get(p: { p: string }): unknown } | null = null;
+  try {
+    fileHashStmt = getProjectCacheDb(root).prepare('SELECT content_hash FROM files WHERE path = $p');
+  } catch {
+    fileHashStmt = null;
+  }
+
   for (const it of items) {
     const e = it.expectation;
+    // ── 缓存通道（只对三类贵判定；拿不到文件哈希 ⇒ 落到下面 switch 现算）──
+    if (e.kind === 'symbol-exists' || e.kind === 'signature-matches' || e.kind === 'source-has') {
+      const p = normPath(e.path);
+      let fileHash: string | null = null;
+      if (fileHashStmt) {
+        try {
+          const row = fileHashStmt.get({ p }) as { content_hash?: string } | undefined;
+          fileHash = row?.content_hash ?? null;
+        } catch {
+          fileHash = null;
+        }
+      }
+      if (fileHash) {
+        const key = judgeCacheKey(e, fileHash);
+        const hit = cache.get(key);
+        if (hit) {
+          cacheHits++;
+          push(it, hit.verdict, `${hit.detail}（缓存命中）`);
+          continue;
+        }
+        cacheMisses++;
+        const res = e.kind === 'source-has' ? judgeSourceHas(root, e) : await judgeSymbolOrSignature(root, e);
+        cache.set(key, { verdict: res.verdict, detail: res.detail });
+        push(it, res.verdict, res.detail);
+        continue;
+      }
+    }
     switch (e.kind) {
       case 'file-exists': {
         const p = normPath(e.path);
@@ -197,76 +324,17 @@ export async function judgeExpectations(
       }
       case 'symbol-exists':
       case 'signature-matches': {
-        const p = normPath(e.path);
-        const abs = path.join(root, p);
-        if (!fs.existsSync(abs)) {
-          push(it, 'fail', `${p} **不存在**（查的是 ${abs}）`);
-          break;
-        }
-        if (!isSupportedFile(p)) {
-          push(it, 'unsupported', `${p} 的扩展名不走 TS/JS 解析器 ⇒ **符号事实取不到，判不了**（不拿"取不到"冒充"没有"）`);
-          break;
-        }
-        // ★★★ 现读现解析：**不许**用 `fileFacts`（索引）—— 出生证证明过它会假绿。
-        //   证据：把源码里的 mul 删掉后，`consistency_check`（现解析）已报 missing:1，
-        //   而用 fileFacts 的初版仍报"✅ 有 mul" ⇒ **拿索引冒充代码**。
-        const content = fs.readFileSync(abs, 'utf-8');
-        const syms = await parseFileSymbols(p, content);
-        // ★★★ T258（2026-10-14）：**这里原先按 kind 过滤，只认 `function | method`** ——
-        //   实测后果：`const` / `type` / `interface` / 接口字段类断言**结构上无法表达**
-        //   （`parseFileSymbols` 把 `const`/`arrow const` 判成 `const`/`type`，`interface`/`type` 判成
-        //   `interface`/`type`）⇒ 取不到 ⇒ 判 **fail**。
-        //   ★★ 那是**假红**：把"**我表达不了**"读成"**代码里没有**" —— 比 unsupported 更坏
-        //   （unsupported 至少诚实；假红会让人去改没坏的东西）。实测至少 4 张决策卡死于此
-        //   （`arc_6` 的 const / `tcc_6` 的接口字段 / `tcc_9` 的 type / `tcc_3` 的类型本体）。
-        //   ⇒ 现在**不按 kind 过滤**：问的是"**这个符号在不在**"，就不该替调用方挑 kind。
-        const hit = syms.find((s) => s.name === e.symbol || s.qualified_name === e.symbol);
-        if (!hit) {
-          // ★ 提示也**不再过滤** —— 否则"现取到 N 个"会漏报 const/type，把读者引向错的方向。
-          const names = syms.map((s) => s.name);
-          push(
-            it,
-            'fail',
-            `${p}（**现解析**）里**没有符号** \`${e.symbol}\`；现取到 ${names.length} 个：` +
-              `${names.slice(0, 6).join(', ')}${names.length > 6 ? ' …' : ''}`,
-          );
-          break;
-        }
-        if (e.kind === 'symbol-exists') {
-          push(it, 'pass', `${p}（现解析）有 \`${hit.name}\`（L${hit.start_line}-${hit.end_line}）`);
-          break;
-        }
-        const got = hit.signature ?? '';
-        const ok = normSignature(got) === normSignature(e.signature);
-        push(
-          it,
-          ok ? 'pass' : 'fail',
-          ok
-            ? `${p} 的 \`${hit.name}\` 签名与期望一致`
-            : `${p} 的 \`${hit.name}\` **签名不符**：期望 \`${e.signature}\`，实取 \`${got || '（无签名）'}\``,
-        );
+        // ★ 2026-10-24（judge-cache）：判定核抽到 judgeSymbolOrSignature —— 缓存通道与直算通道共用同一份逻辑
+        const r = await judgeSymbolOrSignature(root, e);
+        push(it, r.verdict, r.detail);
         break;
       }
       // ★★★ 2026-10-19：**源码文本判据**（grep 型契约的正式名字）—— 不装 input。
       //   ★ 它的边界：只验"文本存在"，不懂语义（注释里出现也算）。
       case 'source-has': {
-        const p = normPath(e.path);
-        const abs = path.join(root, p);
-        if (!fs.existsSync(abs)) {
-          push(it, 'fail', `${p} **不存在**（查的是 ${abs}）`);
-          break;
-        }
-        const src = fs.readFileSync(abs, 'utf-8');
-        const missMust = (e.must ?? []).filter((t) => !src.includes(t));
-        const hitMustNot = (e.mustNot ?? []).filter((t) => src.includes(t));
-        if (missMust.length || hitMustNot.length) {
-          const parts = [];
-          if (missMust.length) parts.push(`缺 must：${missMust.map((t) => JSON.stringify(t.slice(0, 40))).join(' / ')}`);
-          if (hitMustNot.length) parts.push(`命中 mustNot：${hitMustNot.map((t) => JSON.stringify(t.slice(0, 40))).join(' / ')}`);
-          push(it, 'fail', parts.join('；'));
-        } else {
-          push(it, 'pass', `${p}：must ${(e.must ?? []).length} 全在 / mustNot ${(e.mustNot ?? []).length} 全无`);
-        }
+        // ★ 2026-10-24（judge-cache）：判定核抽到 judgeSourceHas —— 缓存通道与直算通道共用同一份逻辑
+        const r = judgeSourceHas(root, e);
+        push(it, r.verdict, r.detail);
         break;
       }
       // ★★★ 2026-10-18：**行为契约** —— 一条 run = 一个自包含的测试（input + expect 表达式）。
@@ -463,6 +531,17 @@ export async function judgeExpectations(
     }
   }
 
+  // ★ 函数末尾：本轮有现算并入缓存的新条目 ⇒ 落盘（try/catch：落盘失败警告不致命，**不静默吞**）
+  if (cacheMisses > 0) {
+    try {
+      saveJudgeCache(root, cache);
+    } catch (err) {
+      process.stderr.write(
+        `⚠ judge-cache 落盘失败（${(err as Error).message}）—— 不致命：本轮判定已出，只是下次要重算\n`,
+      );
+    }
+  }
+
   const notes: string[] = [];
   const unsupported = out.filter((x) => x.verdict === 'unsupported').length;
   if (unsupported > 0) {
@@ -482,6 +561,8 @@ export async function judgeExpectations(
     pending: out.filter((x) => x.verdict === 'pending').length,
     // ★ T256 缺口②：决策间冲突（同一对象上的互斥要求）—— 单列，不混进 pass/fail 计数
     conflicts: findExpectationConflicts(items),
+    // ★ 2026-10-24（judge-cache）：缓存命中率（读端可看见「没变的文件不再测」兑现了几成）
+    cache: { hits: cacheHits, misses: cacheMisses },
     items: out,
     notes,
   };
