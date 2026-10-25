@@ -62,7 +62,7 @@ export function createPooledHoleTranslator(config: PooledTranslatorConfig = {}):
  */
 export function createPooledBatchTranslator(config: PooledTranslatorConfig = {}): BatchHoleTranslator {
   const chat = buildChat(config);
-  const view = (c: FillContext): BatchUnitView => ({ unit: c.unit, skeleton: c.skeleton, srcSnippet: c.srcSnippet, constraints: c.constraints });
+  const view = (c: FillContext): BatchUnitView => ({ unit: c.unit, skeleton: c.skeleton, srcSnippet: c.srcSnippet, constraints: c.constraints, ...(c.unit.bookFacts?.length ? { bookFacts: c.unit.bookFacts } : {}) });
   return async (ctxs: FillContext[]): Promise<string> => {
     const prompt = buildBatchFillPrompt(ctxs.map(view), ctxs[0]?.projectNote);
     return normalizeBody(await chat([{ role: 'system', content: SYSTEM_BATCH }, { role: 'user', content: prompt }]));

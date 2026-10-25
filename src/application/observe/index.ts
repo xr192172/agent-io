@@ -1,5 +1,5 @@
 /**
- * observe 线（12 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ * observe 线（11 个工具）—— ★ **本文件即该线归属的唯一来源**。
  *
  * ★ P1b（2026-09-28）：按当时 `capability_map.LANE_OF` 的归属从 `TOOL_DEFS` 切分而来，
  *   条目**逐字搬移**，只加了 `export const OBSERVE_TOOLS` 外壳 —— 归属自此由文件路径表达。
@@ -18,6 +18,13 @@
  *     （查询 / 判定 / 动作 / 中观编排），锚点各异（events_file / events_path / events[] / node_id+feature / target），
  *     与 `camera_*` 教训同型。**按前缀聚类是 §2.0 明确禁止的口径**，故一行未动。
  *
+ * ★ 面收敛（2026-10-25，I2b）：behavior_baseline 工具面**并入 behavior-cases 判据生态**（本线 12 → 11 个）。
+ *   判据：同一生态位出现更高级工具 → 吸收旧的，全方面只留一个，最终吸收进设计侧 ——
+ *   行为基线的执行核 `runHarness`（`infrastructure/authoring/behavior`）早已被
+ *   `design/intent/expectations.ts` 的 `behavior-cases` 判据共用（capture/verify 与判据走同一条执行路径）
+ *   ⇒ 工具注册拆掉，行为基线场景**用 behavior-cases 判据表达**（期望输出写在判据里，不依赖基线文件）。
+ *   ★ 只拆工具注册，**不动执行核**（capture/verify 基线函数与六个语言包原样保留）。
+ *
  * 为什么能切了：依赖已先行抽到 `registry/{types,plumbing,handlers}.ts`（P1a）——
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
@@ -26,7 +33,6 @@ import { z } from 'zod';
 import { resolveProjectRoot } from '../../infrastructure/analysis/project_root/index.js';
 import { wrap, wrapData, requireStr } from '../plumbing.js';
 import path from 'node:path';
-import { baselinePathFor, captureBaseline, verifyBaseline } from '../../infrastructure/authoring/behavior/index.js';
 import { rebuildChains } from '../../infrastructure/analysis/observe/chain.js';
 import { getFeatureLine } from './capture/feature_line.js';
 import { ensureProjectIndex } from '../../infrastructure/index/index_freshness.js';
@@ -103,7 +109,8 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       '（actual_apis[0] 签名）产生，是代码事实、非 LLM 编造；分镜 facts 逐条引用真实针脚。' +
       'write=true 时用自有 MCP 抽成砖接入体系：DSL semantic 落 brick_narr_* 条目' +
       '（思维导图「🧱 已验证积木」区出卡）。防编造纪律同契约提取：' +
-      'LLM 结论只进 role.reasons/notes，不产生数据事实。',
+      'LLM 结论只进 role.reasons/notes，不产生数据事实。' +
+      '（低频候选，待真实使用评估）',
     inputSchema: {
       feature: z.string().describe('feature 名'),
       file: z.string().describe('工序涉及文件（相对路径，语义层锚点）；从 actual_apis[0] 契约投影取输入/输出针脚'),
@@ -266,7 +273,8 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       '与 contractProbes 精确匹配 ⇒ 推荐出来的点一定插得出来，不会漂移。' +
       '输出清单落 `<project_dir>/.agent-io/observe-points.json`（可人工增删/改 level），' +
       '再把 contractProbes 交给 observe_instrument 即可只插这些点。' +
-      '预算按分数裁剪（max_points），被截断的如实列出——不搞环形缓冲那套事后策略。',
+      '预算按分数裁剪（max_points），被截断的如实列出——不搞环形缓冲那套事后策略。' +
+      '（低频候选，待真实使用评估）',
     inputSchema: {
       project_dir: z.string().describe('目标项目根目录（空库会自动冷启建索引，无需先 import_project）'),
       focus: z
@@ -302,88 +310,10 @@ export const OBSERVE_TOOLS: ToolDef[] = [
     }),
   },
 
-  {
-    name: 'behavior_baseline',
-    title: 'Behavior baseline - canary test capture/verify diff',
-    description:
-      '行为基线（金丝雀测试对比）：对目标 Python 函数用样例输入跑一次记录行为快照（capture），' +
-      '改代码后再跑一次对比（verify）——回答"跑得对不对"（动态闸只答"跑得动不炸"，补不了行为级变化）。' +
-      'action=capture：生成 harness（顶层 exec 目标文件 + 规范化 repr 返回值 + stdout 痕迹 + 函数源码快照），' +
-      '存基线到 <project_dir>/.agent-io/behavior/<file>__<func>.json（baseline 参数可覆盖路径）。' +
-      'action=verify：读基线 + 对当前磁盘再跑同一份 harness，逐 case 对齐对比 → verdict same/diff（进程级失败 → error）。' +
-      'v1 边界：仅 Python；目标函数须自包含（顶层 exec 整文件，模块级常量/其它函数可用；跨文件 import 与 import 副作用不支持）；' +
-      '返回值对比 = 规范化 repr（set 排序化）；样例输入由 cases 显式提供（capture 必需），不自动生成。',
-    inputSchema: {
-      action: z.enum(['capture', 'verify']).describe('capture=记录行为基线；verify=对比当前行为与基线'),
-      project_dir: z.string().describe('目标项目根目录（绝对路径）'),
-      file: z.string().describe('相对 project_dir 的目标文件（.py / .ts / .tsx / .js / .jsx / .mjs / .cjs）'),
-      function: z.string().describe('目标顶层函数名'),
-      cases: z
-        .array(z.object({ name: z.string(), args: z.array(z.unknown()).optional(), kwargs: z.record(z.string(), z.unknown()).optional() }))
-        .optional()
-        .describe('capture 必需：金丝雀样例输入（verify 忽略，复用基线里的 cases）'),
-      baseline: z.string().optional().describe('基线 JSON 路径覆盖（缺省 <project_dir>/.agent-io/behavior/<file>__<func>.json）'),
-    },
-    handler: wrapData(async (a) => {
-      // ★ 2026-10-06（T41 ①）：这三个参数原先走 `String(a.xxx)` —— 缺失时得到**字面量 "undefined"**，
-      //   于是报错串里出现 `…/undefined/.agent-io/behavior/undefined__undefined.json`
-      //   （**看着像 bug，而不是"缺参数"**）。CLI 路径**不做 zod 校验**（见 `mcp_scan` 的 note）
-      //   ⇒ 这道守卫是必要的。同族的 `narrate_step` 早已改用 `requireStr`（其注释明言
-      //   "绝不把 undefined 拼进路径 —— 规划书 §16.4 P-D"），此处对齐。
-      const spec = {
-        project_dir: requireStr(a, 'project_dir'),
-        file: requireStr(a, 'file'),
-        function: requireStr(a, 'function'),
-        cases: Array.isArray(a.cases)
-          ? (a.cases as Array<Record<string, unknown>>).map((c) => ({
-              name: String(c.name),
-              args: Array.isArray(c.args) ? (c.args as unknown[]) : [],
-              kwargs: c.kwargs as Record<string, unknown> | undefined,
-            }))
-          : [],
-      };
-      const bp = a.baseline ? String(a.baseline) : baselinePathFor(spec.project_dir, spec.file, spec.function);
-
-      if (a.action === 'capture') {
-        const b = captureBaseline(spec, bp);
-        const lines = [
-          `行为基线已记录 · ${b.spec.function} @ ${b.spec.file}`,
-          `基线：${b.baseline_path}（文件哈希 ${b.file_hash}）`,
-          `${b.results.length} 个 case：`,
-          ...b.results.map((r) => `  ${r.case} = ${r.ok ? r.ret : `✗ ${r.error}`}`),
-          '',
-          '函数源码快照：',
-          ...(b.source || '(unavailable)').split('\n').map((l) => `  ${l}`),
-        ];
-        return { message: lines.join('\n'), data: b };
-      }
-
-      const v = verifyBaseline(spec, bp);
-      const lines = [
-        `行为基线对比 · ${v.diff.verdict === 'same' ? '✔ 一致' : v.diff.verdict === 'diff' ? '✗ 有差异' : '⚠ 无法对比'}`,
-        v.diff.message,
-        `基线文件哈希 ${v.baseline.file_hash} → 当前 ${v.run.file_hash}`,
-        '',
-      ];
-      for (const d of v.diff.details) {
-        if (d.status === 'same') {
-          lines.push(`  = ${d.case}  same`);
-          continue;
-        }
-        lines.push(`  ! ${d.case}`);
-        if (d.case === '(stdout)') {
-          lines.push(`    改前 stdout: ${JSON.stringify(d.before)}`);
-          lines.push(`    改后 stdout: ${JSON.stringify(d.after)}`);
-        } else {
-          if (d.before !== undefined) lines.push(`    改前 ret: ${d.before}`);
-          if (d.after !== undefined) lines.push(`    改后 ret: ${d.after}`);
-          if (d.before_error !== undefined) lines.push(`    改前 error: ${d.before_error}`);
-          if (d.after_error !== undefined) lines.push(`    改后 error: ${d.after_error}`);
-        }
-      }
-      return { message: lines.join('\n'), data: v };
-    }),
-  },
+  // ★ I2b（2026-10-25）：behavior_baseline 工具注册已拆（并入 behavior-cases 判据生态，见文件头）。
+  //   行为基线场景 → 用 `edit_dsl` 在决策卡写 `behavior-cases` 判据（期望输出写在判据里，
+  //   判定器经 `runHarness` 走同一条执行路径）；capture/verify 快照式基线的执行核
+  //   （`infrastructure/authoring/behavior`）原样保留，供判据判定器与未来消费方共用。
 
   {
     name: 'run_tests',

@@ -173,12 +173,15 @@ export const CROSS_TOOLS: ToolDef[] = [
 
   {
     name: 'translate_book',
-    title: '重建翻译册（TS→目标语言的全量符号账：pending / blocked / unknowns 一次算清）',
+    title: '重建翻译册（Go→TS 正向的全量符号账：pending / blocked / judgments / external_deps 一次算清）',
     description:
       '把 `(project_dir, feature)` 的翻译册 `.agent-io/design/<feature>.translate.json` **从事实库重算并写回**：' +
-      '人写的 `types`（术语表）/ `atoms` / 人写的 `unknowns` 原样保留，`symbols` / `shapes` / `[auto]` unknowns 按 `cache.db` 现取重算。' +
-      '★ 术语表**参与**覆盖判定（2026-10-22 前它从不参与 ⇒ 补术语不解锁，是空话）：补一条 `types` 后重跑，引用它的符号自动从 blocked 转 pending；' +
+      '源侧 = cache.db 里 language=\'go\' 的节点，目标侧 = TS 对应物（I3 与翻译管线同向：翻译 DSL judgments → 翻译 DB 投影 → 翻译代码）。' +
+      '人写的 `types`（术语表）/ `atoms` / `external_deps.strategy` / 人写的 `unknowns` 原样保留，`symbols` / `shapes` / `[auto]` unknowns / `external_deps.from` 面按 `cache.db` 现取重算。' +
+      '★ 术语表**参与**覆盖判定：补一条 `types` 后重跑，引用它的符号自动从 blocked 转 pending；' +
       '`to:null` 的术语（真没有对应）**不算覆盖** —— 那一条仍 blocked，但计数单列 `blockedByTermNull`，理由换成「已定但无目标」。' +
+      '★ blocked 四档：term（术语未覆盖）/ term_null（已定无目标）/ collision（同名撞车）/ external_dep（外部硬依赖，见 external_deps 区块，strategy 初始空由模型填：npm_equiv / same_slot / http_bridge）。' +
+      '★ pending 符号挂 `judgments`（映射判据：symbol-exists / signature-matches / source-has 术语命中 —— 复用 expectations kinds）。' +
       '★ 人的进度不倒退（translated / verified / diff / stubbed 与人工 blocked 原样保留）。' +
       '★ `dry_run=true` 只算不写（回执 `size` = 若写回会是多大），先看读数再决定落盘。' +
       '★ 失败**抛**（册子不存在 / `cache.db` 不存在 / 目标语言与册子不符），绝不返回一份空账。',
@@ -190,7 +193,7 @@ export const CROSS_TOOLS: ToolDef[] = [
       target_language: z
         .string()
         .optional()
-        .describe('目标语言（如 `go`）：给了就**必须**与册子 `meta.target_language` 一致，否则抛 —— 换语言要另起一份册子，不是改一个字段'),
+        .describe('目标语言（如 `ts`）：给了就**必须**与册子 `meta.target_language` 一致，否则抛 —— 换语言要另起一份册子，不是改一个字段'),
       dry_run: z.boolean().optional().describe('true = 只算不写（预览 blocked/unknowns 读数；回执 size 是「若写回多大」）'),
     },
     handler: wrapData(async (a) => {
@@ -207,17 +210,17 @@ export const CROSS_TOOLS: ToolDef[] = [
         expectTargetLanguage: a.target_language == null ? undefined : String(a.target_language),
       });
       const s = r.stats;
-      // ★ 每一项都能对上总数：人工 blocked（如 lookahead 那类）不在自动三档里，所以单列，别让读者自己猜差额。
-      const manual = s.blocked - (s.blockedByTerm + s.blockedByTermNull + s.blockedByCollision + s.blockedByStatic);
+      // ★ 每一项都能对上总数：人工 blocked（如人判的结构性阻断）不在自动四档里，所以单列，别让读者自己猜差额。
+      const manual = s.blocked - (s.blockedByTerm + s.blockedByTermNull + s.blockedByCollision + s.blockedByExternalDep);
       const lines = [
         // ★ 三个数必须能对上：`pending` / `blocked` 只数**源侧**符号，`added`（目标侧新增）单列
         //   —— 而 `symbols` 是两者之和（meta.origin_rule：两类要分开报）。写法上直接给出拆分，别让读者自己减。
-        `翻译册重建 · ${feature}（TS→${r.targetLanguage ?? '?'}）· ` +
-          `${s.symbols} 符号（源侧 ${s.symbols - s.added} + added ${s.added}）/ pending ${s.pending} / blocked ${s.blocked} / unknowns ${r.unknowns} · ` +
+        `翻译册重建 · ${feature}（Go→${r.targetLanguage ?? '?'}）· ` +
+          `${s.symbols} 符号（源侧 ${s.symbols - s.added} + added ${s.added}）/ pending ${s.pending} / blocked ${s.blocked} / unknowns ${r.unknowns} / external_deps ${r.externalDeps} · ` +
           `${dryRun ? 'dry_run：未写盘' : '已写回'} ${path.relative(root, bookPath)}（${Math.round(r.size / 1024)} KB）`,
-        `blocked ${s.blocked} = 未覆盖术语 ${s.blockedByTerm} + 已定无目标 ${s.blockedByTermNull} + 同包撞名 ${s.blockedByCollision}` +
-          ` + static ${s.blockedByStatic} + 人工 ${manual}`,
-        `shapes ${s.shapes} 处 · 事实基线 scanRev=${s.scanRev ?? '（无）'} / schema v${s.dbSchemaVersion ?? '?'} / ${s.srcFiles} 个 ts 文件` +
+        `blocked ${s.blocked} = 未覆盖术语 ${s.blockedByTerm} + 已定无目标 ${s.blockedByTermNull} + 同名撞车 ${s.blockedByCollision}` +
+          ` + 外部硬依赖 ${s.blockedByExternalDep} + 人工 ${manual}`,
+        `shapes ${s.shapes} 处 · 事实基线 scanRev=${s.scanRev ?? '（无）'} / schema v${s.dbSchemaVersion ?? '?'} / ${s.srcFiles} 个 go 文件` +
           (dryRun ? ' · ★ 本次**没有**改动册子' : ''),
       ];
       return {
@@ -229,6 +232,7 @@ export const CROSS_TOOLS: ToolDef[] = [
           // ★ 单列：`pending + blocked = symbols - added`（added 是目标侧新增，不计入这两个态）
           added: s.added,
           unknowns: r.unknowns,
+          external_deps: r.externalDeps,
           book_path: bookPath,
           size: r.size,
           dry_run: dryRun,

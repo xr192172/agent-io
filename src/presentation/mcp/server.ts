@@ -74,7 +74,7 @@ const server = new McpServer(
       '\n\n## 能力导航（capability_map）' +
       '\n- 不确定用哪个工具 → 先调 capability_map 看能力线，再进入具体工具。' +
       '\n- 高频工具无需导航，直接可用：get_dsl / edit_dsl / explore_code / rename_symbols / rename_files / find_references。' +
-      '\n- 执行类（observe_*/run_tests/behavior_baseline）、采集链（harvest_*）、重量分析（cross_*/code_health）建议先经 capability_map 定位。' +
+      '\n- 执行类（observe_*/run_tests）、采集链（harvest_*）、重量分析（cross_*/code_health）建议先经 capability_map 定位。' +
       '\n- 前缀语义：observe_=观测、harvest_=采集、reconcile_=对账、rename_=改名、edit_=修改、render_=渲染。' +
       '\n- 能力线：design 设计/活文档 · refactor 重构/改名 · observe 观测/验证 · harvest 契约/闭包采集 · cross 跨仓/翻译/健康 · meta 元信息/探索。',
   },

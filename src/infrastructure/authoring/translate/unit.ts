@@ -88,6 +88,13 @@ export interface TransUnit {
   bodyHole: boolean;
   /** 本单元翻译约束（骨架生成时并入 typeMap 语义 note） */
   constraints: string[];
+  /**
+   * ★ I3（2026-10-25）：翻译 DB 投影事实 + 术语表命中项（`book.ts#attachBookFacts` 注入，
+   * `prompts.ts#buildHolePrompt` 渲染进 prompt）—— 与设计侧同构的"往下写"一步：
+   * 按图索骥的"图"（翻译册投影）进 prompt，LLM 不再对着裸 Go 源脑补术语与对应物。
+   * 缺省不注入（没册子是常态）。
+   */
+  bookFacts?: string[];
 }
 
 /** 一条决策分支（A3）：一组 case 标签属同一分支（`case a, b:`），或 default */

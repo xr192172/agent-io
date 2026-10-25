@@ -423,6 +423,8 @@ export async function judgeExpectations(
       //   ★ 期望输出写在判据里（cases[].expect），**不依赖基线文件**：基线是 capture 时的"实然"，
       //     expect 是设计声明的"应然" —— 判据必须对着应然判（若对着基线判：capture 自坏代码 ⇒ 恒 fail、
       //     capture 自好代码 ⇒ expect 沦为摆设）。执行核复用 `runHarness`（`verifyBaseline` 同一条执行路径）。
+      //   ★ I2b（2026-10-25）：`behavior_baseline` **工具注册已并入本判据生态**（observe 线拆注册、执行核不动）
+      //     ⇒ 行为基线场景一律用 behavior-cases 判据表达，不再有独立的 capture/verify 工具面。
       case 'behavior-cases': {
         const p = normPath(e.path);
         const abs = path.join(root, p);

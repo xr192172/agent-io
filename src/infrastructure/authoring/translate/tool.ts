@@ -20,7 +20,8 @@ import { translateGoProject, type ProjectResult } from './project.js';
 import { createPooledHoleTranslator } from './llm.js';
 import { fillUnitsWithRetry } from './fill.js';
 import { findGoTestFiles, harvestForUnits } from './go_tests.js';
-import { buildKnown, buildUnknowns, methodInfo, unverifiedReceipt, verifyTranslation, type KnownFact, type Receipt, type VerificationReceipt } from './receipt.js';
+import { buildKnown, buildUnknowns, buildExternalDeps, methodInfo, unverifiedReceipt, verifyTranslation, type KnownFact, type Receipt, type VerificationReceipt } from './receipt.js';
+import { attachBookFacts, findBookRootFor, loadTranslateBooks } from './book.js';
 import type { SkippedDecl } from './go_extractor.js';
 import type { BehaviorCase } from '../behavior/index.js';
 import type { TransUnit } from './unit.js';
@@ -114,6 +115,19 @@ export async function translateGoTsHandler(args: Record<string, unknown>): Promi
     notes.push(`机械骨架验证闸（未过，这部分单元不可落盘）：${r.issues.map((i) => `${i.id}[${i.gate}]`).join(', ')}`);
   }
 
+  // ★ I3（2026-10-25）：翻译 DB 投影 + 术语表进 prompt（按图索骥的"图"）——
+  //   向上找含 .agent-io/design 的项目根，读全部 *.translate.json，按 `<rel>#<符号名>` 对齐注入。
+  //   没册子是常态（0 注入，不打扰）；有册子 ⇒ 明说注入了几个。
+  if (fill) {
+    const bookRoot = findBookRootFor(abs);
+    if (bookRoot) {
+      const books = loadTranslateBooks(bookRoot);
+      const rel = path.relative(bookRoot, abs).split(path.sep).join('/');
+      const n = attachBookFacts(units, books, rel);
+      if (n > 0) notes.push(`翻译册命中：${n} 个单元已注入翻译 DB 投影与术语表（buildHolePrompt 消费）`);
+    }
+  }
+
   if (fill) {
     const translate = createPooledHoleTranslator();
     const filled = await fillUnitsWithRetry(units, translate, maxRetries);
@@ -132,7 +146,6 @@ export async function translateGoTsHandler(args: Record<string, unknown>): Promi
     filled: filledCode,
     fillFailures,
     skipped: r.skipped as SkippedDecl[] | undefined,
-    externalImports: externalImportsOf(source),
   });
 
   // ── 验证：只有"同一批输入新旧逐条比"才叫验证 ──
@@ -185,7 +198,9 @@ export async function translateGoTsHandler(args: Record<string, unknown>): Promi
 
   const header = `Go→TS 萃取 ${units.length} 个单元${fill ? '（已按 LLM 填充）' : ''}`;
   const lines = [header, ...notes];
-  appendReceipt(lines, { known, unknowns, verification });
+  // ★ I3：外部 import 升格为独立硬依赖清单区块（不再混进 unknowns 的 missing_lib），回执与 data 同一份
+  const receipt: Receipt = { known, unknowns, verification, external_deps: buildExternalDeps(externalImportsOf(source)) };
+  appendReceipt(lines, receipt);
   lines.push('', r.output ? output : '（无单元）');
 
   return {
@@ -193,7 +208,7 @@ export async function translateGoTsHandler(args: Record<string, unknown>): Promi
     data: {
       unit_ids: units.map((u) => u.id),
       output,
-      receipt: { known, unknowns, verification },
+      receipt,
       ...(holePrompts.length > 0 ? { hole_prompts: holePrompts } : {}),
       ...(outPath ? { out_path: outPath } : {}),
     },
@@ -227,6 +242,14 @@ function appendReceipt(lines: string[], receipt: Receipt): void {
   lines.push(`【未知】${receipt.unknowns.length} 条（推测/缺失/假设 ⇒ data.receipt.unknowns）`);
   for (const u of receipt.unknowns.slice(0, 5)) lines.push(`  · [${u.kind}/${u.basis}] ${u.id}：${u.detail}`);
   if (receipt.unknowns.length > 5) lines.push(`  · …另有 ${receipt.unknowns.length - 5} 条`);
+
+  // ★ I3：硬依赖清单（独立区块，不混进未知）—— strategy 初始空由模型/人填
+  const deps = receipt.external_deps ?? [];
+  lines.push(
+    `【硬依赖清单】${deps.length} 条（非 stdlib Go 包，TS 侧无对应物；strategy 待填：npm_equiv=等价 npm 库 / same_slot=同槽位替身 / http_bridge=HTTP 桥接）`,
+  );
+  for (const d of deps.slice(0, 5)) lines.push(`  · import "${d.import}" · strategy=${d.strategy === '' ? '（空，待填）' : d.strategy}`);
+  if (deps.length > 5) lines.push(`  · …另有 ${deps.length - 5} 条（全量见 data.receipt.external_deps）`);
 }
 
 /** 项目模式回执：编译门禁的读数如实记，但**不许**当成"功能达成" */
@@ -259,7 +282,9 @@ function projectReceipt(r: ProjectResult, fillRequested: boolean, verifyRequeste
     funcCount,
     units.length - funcCount,
   );
-  return { known, unknowns, verification };
+  // ★ I3：项目模式暂不逐文件扫外部 import（m.imports 是生成出的 TS 相对 import，不是 Go 外部依赖）——
+  //   硬依赖清单在单文件模式由 externalImportsOf 供给；项目模式如需，随模块萃取另案挂账。
+  return { known, unknowns, verification, external_deps: [] };
 }
 
 /** 调用方显式给的用例（宽松收：只认 { args: [...] }，名字可省） */

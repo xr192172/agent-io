@@ -101,6 +101,23 @@ export interface Receipt {
   known: KnownFact[];
   unknowns: UnknownItem[];
   verification: VerificationReceipt;
+  /**
+   * ★ I3（2026-10-25）：**硬依赖清单** —— externalImports 从 unknowns 的 missing_lib 诊断
+   *   升格为独立区块（回执 + 册子 `external_deps` 同型）：每条带 strategy 字段，
+   *   初始空由模型/人填（npm_equiv=找等价 npm 库 / same_slot=同槽位替身 / http_bridge=HTTP 桥接）。
+   *   为什么升格：外部依赖是「必须先定策略才能翻」的**一等欠账**，混在 unknowns 里会被当成普通推测刷过去。
+   */
+  external_deps: ExternalDep[];
+}
+
+/** 硬依赖清单条目（与册子 `book.ts#BookExternalDep` 同型：回执 + 册子两处同一种东西） */
+export type ExternalDepStrategy = '' | 'npm_equiv' | 'same_slot' | 'http_bridge';
+
+export interface ExternalDep {
+  /** 非 stdlib 的 Go import 路径（首段含 '.'） */
+  import: string;
+  strategy: ExternalDepStrategy;
+  note?: string;
 }
 
 // ─────────────────────────────────────────────
@@ -197,9 +214,7 @@ export interface UnknownsInput {
   fillFailures?: Map<string, string>;
   /** 萃取期跳过项（空结构体/空接口/不可求值 const…） */
   skipped?: SkippedDecl[];
-  /** 非 stdlib 的 Go import 路径（外部依赖 ⇒ TS 侧没有实现） */
-  externalImports?: string[];
-  /** 项目模式诊断（stdlib 未定义类型 / 同名冲突…） */
+  /** ★ I3：外部 import 不再进 unknowns（升格为独立硬依赖清单区块 `Receipt.external_deps`） */
   diagnostics?: string[];
 }
 
@@ -238,9 +253,6 @@ export function buildUnknowns(input: UnknownsInput): UnknownItem[] {
     }
   }
 
-  for (const p of input.externalImports ?? []) {
-    push({ id: '*', kind: 'missing_lib', detail: `import "${p}"`, why: '外部/标准库依赖在 TS 侧没有对应实现，未机械绑定', basis: 'missing', suggested: '手写适配层或换等价库' });
-  }
   for (const s of input.skipped ?? []) {
     push({ id: s.name, kind: 'structure', detail: `${s.kind} ${s.name} 未进翻译（${s.reason}）`, why: '萃取阶段就判定为不可机械翻译', basis: 'missing', suggested: '手动翻译该声明', line: s.line });
   }
@@ -249,6 +261,25 @@ export function buildUnknowns(input: UnknownsInput): UnknownItem[] {
     push({ id: '*', kind, detail: d, why: '项目级诊断（不阻断）', basis: 'missing', suggested: '人工消歧/补实现' });
   }
 
+  return out;
+}
+
+// ─────────────────────────────────────────────
+// 硬依赖清单（I3 升格）：外部 import 一等区块，strategy 待填
+// ─────────────────────────────────────────────
+
+/**
+ * 外部 import 路径 → 硬依赖清单条目（strategy 初始空，由模型/人填）。
+ * ★ 纯函数：去重保序，不猜策略。
+ */
+export function buildExternalDeps(imports: readonly string[]): ExternalDep[] {
+  const seen = new Set<string>();
+  const out: ExternalDep[] = [];
+  for (const p of imports) {
+    if (!p || seen.has(p)) continue;
+    seen.add(p);
+    out.push({ import: p, strategy: '' });
+  }
   return out;
 }
 

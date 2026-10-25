@@ -18,6 +18,8 @@ import { collectExternalTypeRefs } from './referenced.js';
 import { fillUnitsWithRetry, fillUnitsBatched } from './fill.js';
 import { createPooledBatchTranslator } from './llm.js';
 import { applyDeterministicFixers } from './fixers.js';
+// ★ I3：翻译 DB 投影 + 术语表进 prompt（按图索骥）
+import { attachBookFacts, loadTranslateBooks } from './book.js';
 import type { SkippedDecl } from './go_extractor.js';
 import { parseFileFull } from '../../parse/index.js';
 import type { TransUnit } from './unit.js';
@@ -505,6 +507,11 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
   // 第三遍（fill）：在 import 已算定的前提下逐模块注入「项目级调用约定」再填孔，
   // 让函数体引用对名；填完重建每个模块的 m.ts（门禁在填后输出上跑 = 填后 release gate）。
   if (opts.fill) {
+    // ★ I3（2026-10-25）：翻译 DB 投影 + 术语表进 prompt（按图索骥的"图"）——
+    //   根目录 `.agent-io/design/*.translate.json` 存在时按 `<rel>#<符号名>` 对齐注入。
+    //   没册子是常态（loadTranslateBooks ⇒ []，0 注入不打扰）。
+    const books = loadTranslateBooks(root);
+    for (const m of modules) attachBookFacts(m.units, books, m.rel);
     for (const m of modules) {
       const note = buildProjectCallNote(m, defined, pctx) || undefined;
       let filled: Awaited<ReturnType<typeof fillUnitsWithRetry>>;

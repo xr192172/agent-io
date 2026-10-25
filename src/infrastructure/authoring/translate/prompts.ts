@@ -25,6 +25,9 @@ export function buildHolePrompt(u: TransUnit): string {
     '【待翻译的 Go 源】',
     u.srcSnippet,
     '',
+    // ★ I3（2026-10-25）：翻译 DB 投影事实 + 术语表命中项（attachBookFacts 注入）——
+    //   与设计侧同构的"往下写"：按图索骥的"图"进 prompt，术语与对应物不再靠 LLM 脑补。
+    ...(u.bookFacts?.length ? ['【翻译 DB 投影与术语表（按图索骥，优先照此映射）】', ...u.bookFacts.map((f) => `- ${f}`), ''] : []),
     '【约束】',
     ...(u.constraints.length ? u.constraints.map((c) => `- ${c}`) : ['- 无']),
     '',
@@ -45,6 +48,8 @@ export interface BatchUnitView {
   skeleton: string;
   srcSnippet: string;
   constraints: string[];
+  /** ★ I3：翻译 DB 投影事实 + 术语命中（attachBookFacts 注入；缺省不渲染） */
+  bookFacts?: string[];
 }
 
 /** 输出标记块的包裹：每条函数体必须包在 `<unit id="...">...</unit>` 里，便于确定性切分 */
@@ -53,6 +58,8 @@ export function buildBatchFillPrompt(views: BatchUnitView[], projectNote?: strin
     // 只列该单元的独特约束（全局默认约束抽到头部一次性给，省 N-1 份重复 token）
     const unique = v.constraints.filter((c) => !DEFAULT_CONSTRAINTS.includes(c));
     const parts = [`<unit id="${v.unit.id}">`, '【目标签名（锁定，勿改）】', v.skeleton, '', '【待翻译的 Go 源】', v.srcSnippet];
+    // ★ I3：投影事实 + 术语命中进批量块（与单孔 buildHolePrompt 同一份数据、同一套措辞口径）
+    if (v.bookFacts?.length) parts.push('', '【翻译 DB 投影与术语表（按图索骥，优先照此映射）】', ...v.bookFacts.map((f) => `- ${f}`));
     if (unique.length) parts.push('', '【该单元特有约束】', ...unique.map((c) => `- ${c}`));
     parts.push('</unit>');
     return parts.join('\n');
