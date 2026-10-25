@@ -51,7 +51,7 @@ const TRIGGER_ROWS = [
   ['对账设计视图 / 实际视图', '`diff_views` / `reconcile_chain`', '波及方向'],
   ['两仓合并 / 迁移查撞名', '`cross_repo_symbol_index`', '顶层符号求交 = 冲突，求差 = 迁移范围'],
   ['Go → TS 翻译', '`translate_go_ts`', '机械骨架 + 验证闸；`fill` 逐孔填函数体；`verify` 行为对拍'],
-  ['改完函数验证行为', '`behavior_baseline`', '`capture` 存快照，改后 `verify` 对比'],
+  ['改完函数验证行为', '`edit_dsl`（decision expectation `behavior-cases`）', '行为基线已并入判据生态（I2b）：期望输出写在 behavior-cases 判据里（同一执行核 runHarness），不再用 capture/verify 快照工具'],
   ['项目体检', '`code_health`', '死代码 / 圈复杂度 / 分层违规 → 健康分 + 清单'],
   ['查语言支持度 / 缺口', '`capability_audit`', '语言 × 功能的 AST 覆盖缺口（只读）；与 `capability_map`（工具导航）不同'],
   ['查工具使用 / 死工具 / 过期记录', '`tool_usage`', '只读：使用与覆盖读数、注册了没被用、用过但已不在注册表'],
@@ -121,6 +121,7 @@ ${triggerTable}
 - 能现取（AST / 运行时数据 / 结构化 API）就不落第二份；必须留的进 \`stage_registry.STAGES\`，带 \`owner\` / \`inputs\` / \`fresh\` / \`produce\`，且只留一处
 - 不新造字段 / 表：先挂进已有载体（\`cache.db\` / \`B_TERMS\` / \`chain_wiring\`）
 - 不加新门：不写拦截脚本、对账判据、棘轮 / 基线 / 豁免清单；脚本只提示不产出 ⇒ 删
+- **工具面收敛原则**：同一生态位出现更高级工具 ⇒ **吸收旧的**，全方面只留一个，最终吸收进设计侧（判据/DSL）——被吸收的工具拆注册不拆执行核，行为场景改用判据表达（例：\`behavior_baseline\` 已并入 \`behavior-cases\` 判据生态）
 - 门 / 判据 / 读数四态的规矩只住 \`docs/GUIDE-GATE.md\`，本文件不复述
 
 ## 五、交付

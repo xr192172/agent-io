@@ -264,11 +264,9 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   get_dsl:
     '统一只读入口，query 参数查 DSL/features/nodes/edges/file/decisions/digest（一行式认知索引 F/R/A/S —— 想知道"这些文件都是干什么的"先看它）/calls/functions/diff/goals/tag（功能标记：人给文件节点打的"隶属某功能"标签）等 21 种',
   edit_dsl: '统一写入口，operations 批量增删改节点/边/文件/API/binding/status/tag（功能标记：给文件节点打"隶属某功能"标签）',
-  manage_feature: 'feature 生命周期：create/clone/template/list/delete',
   render_design: '渲染并保存设计图（完整 DSL 模式产物）',
-  render_brickwork: '渲染积木墙视图',
-  scaffold: '脚手架生成（action=generate）', // ★ 2026-10-05 更正：原说明写 action=generate / backfill，
-  //   而 backfill 已随 T20 整条删除 ⇒ 教了一个不存在的 action。
+  // ★ I4（2026-10-25）清理陈旧策展条目：`manage_feature` / `render_brickwork` / `scaffold` /
+  //   `review_changes` 已不在注册表（本文件 §staleWhen 纪律：工具删了、说明忘删 ⇒ 删条目）。
   consistency_check: '设计 DSL 与代码语义一致性体检',
   detect_drift: '检测 DSL 与代码语义漂移',
   import_project: '扫描代码项目生成 DSL（文件节点+调用边+符号语义层）',
@@ -280,8 +278,9 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   find_references: '查某符号的引用点/外部导入者（影响面前置）',
   impact_analysis: '计算一次改动的变更点/风险面',
   structure_gap: '结构意图 vs 现状四态读数（域表声明 vs 磁盘）：待搬清单 / 归属未定 / 待建域 —— 回答"这次分层还差多少、下一步搬什么"（判据是域表 + 目录扫描，不读符号索引）',
-  remove_dead_imports: '清理未使用 import',
-  refactor_pipeline: '整条重构流水线（预览→执行→校验闭环）',
+  // ★ I4（2026-10-25）：`remove_dead_imports` 工具面已吸收进 `refactor_pipeline`（dead_imports 步，
+  //   同一份执行内核 + 同语义 verify）⇒ 策展条目随之删除。
+  refactor_pipeline: '整条重构流水线（预览→执行→校验闭环）；含 dead_imports 步（显式 dead 清单或自动检测，TS/Go）',
   plan_refactor: '★ 先算清单（只读）：把一批 file+old_text+new_text 算成可审、可复跑、可入账的清单（plan id + 命中级别 + 预览）——"工具链"缺的那一环',
   apply_refactor_plan: '按 plan_refactor 的清单落盘（幂等：重复 apply 不重复改；plan_id 指纹不符即报错）；与 plan_refactor 成对',
   annotate_functions: '函数语义注释（TS/JS + Go）：扫覆盖→缺失用 LLM 补→@fnhash body 指纹同步过期；可配进 refactor_pipeline 的 function_annotation 步',
@@ -330,11 +329,6 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   //   agent 照它去选 diagnose 会得到完全无关的结果。正确口径 = diagnosis 域 note 的第一句。
   diagnose: '症状 → 根因 + 证据链 + 影响面 + 修复建议（不知道是哪条线坏了时先用它定位）',
   archive: '下线库统一入口（action=node/list）—— node：把文件下线归档（写，不可逆，立即落盘，无 dry_run，重复归档被拒）+ 合并记录；list：列某 feature 的下线库归档条目（只读）',
-  // ★ 2026-10-12（T186）：PR 的确认人是**下一个接手的 Agent**（不是人）。
-  //   ★ 策展文本要**点明"谁用"** —— 否则接手方不会想到"先来看这里有没有别人提的 PR"，
-  //     即"**下一个接手的 AI 发现自己这里除了原有的设计以外，还有新的 PR**"。
-  review_changes:
-    '待确认的 PR 入口（action=list/show/comment/approve/reject）—— ★ **给下一个接手的 Agent 用**（不是给人）：list 看待确认的提案，comment 开会留意见，approve/reject 拍板（**必须署名，且不许自批**）',
   // ★ 2026-10-12（T186b）：observe 侧那套提案也开了 MCP 口（此前只有 HTTP ⇒ 接手方看不见也批不了）。
   observe_proposals:
     'observe 提案入口（action=list/show/approve/reject）—— ★ 同样是**给下一个接手的 Agent**：approve 走**四层门**（L1 规则/L2 LLM 复核/L3 覆盖/L4 定稿），★ 任一层不过即 **frozen**（提案 rejected、权威 DSL 不动，**别把 frozen 读成通过**）',

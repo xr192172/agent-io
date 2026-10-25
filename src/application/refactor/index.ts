@@ -42,8 +42,13 @@ import { renderGranularityNote } from './parse_capability/parse_capability.js';
 import { runRefactorJudge } from './pipeline/refactor_judge.js';
 import type { JudgeDecision, JudgeIssue } from './pipeline/refactor_judge.js';
 import { runRefactorPipeline } from './pipeline/refactor_pipeline.js';
-import { removeDeadImports, removeDeadImportsWithVerify } from './edit/remove_dead_imports.js';
-import type { RemoveDeadImportsVerifyOptions } from './edit/remove_dead_imports.js';
+// ★ I4（2026-10-25）：`remove_dead_imports` **工具面已吸收进 `refactor_pipeline`**（同生态位收敛）——
+//   管线的 `dead_imports` 步覆盖它的全部能力：① 同一份执行内核（`edit/remove_dead_imports.ts`，
+//   TS/Go 全形态）；② 显式 dead 清单（`steps.dead_imports.dead`，形状同 DeadDepCandidate）
+//   或不给清单自动检测（`detectDeadImports`，比它描述里指向的 `dead_deps` 工具——已不存在——更直接）；
+//   ③ `verify: true | {commands}` 与它的验证闭环逐字同语义（改前基线 + 改后重验 + 回归自动回滚）。
+//   实现函数（`removeDeadImportsWithVerify` 等）**保留**，`deprecate_offline` 的写路仍用它。
+import { removeDeadImportsWithVerify } from './edit/remove_dead_imports.js';
 import { renameFiles } from './rename/rename_files.js';
 // ★ 2026-10-20：三条写路共用的闸读数人读侧（机器侧字段仍是 `task_gate`，形状照抄 `edit_code`）
 import { gateHumanLines } from './gate_note.js';
@@ -917,7 +922,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
     name: 'deprecate_offline',
     title: 'Deprecate & retire internally-authored modules (dead-import cleanup + compile-level verification)',
     description:
-      '废弃积木**下线链**（C 链）：承接 dead_deps / brickify 的废弃证据，把**项目内自研源码模块**真正下线。' +
+      '废弃积木**下线链**（C 链）：废弃证据自取（`detectDeadImports` 全量扫 + 编译级验收），把**项目内自研源码模块**真正下线。' +
       '三问式判据：① **是自研积木吗**（source 能 resolve 成项目内 .ts/.go 实体；三方包/内置模块不参与 —— 那是清依赖，不是下线积木）；' +
       '② **无活跃消费吗**（移除各消费者死 import 后跑**编译级验收**：编译仍绿 ⇒ 无活跃消费者，比静态扫描更可信；' +
       '一旦回归 ⇒ **自动回滚**并判定「有活跃消费」）；' +
@@ -927,7 +932,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '`plans` 显式指定下线清单（不给 = 从全量死源里筛「项目内自研源」）；' +
       '`files` 收窄扫描视野（★ 它会**同时**收窄候选判定与「物理删硬闸门」的视野 ⇒ 若漏掉仍在消费该模块的文件，' +
       '硬闸门可能计数为 0（视觉盲区）⇒ 只建议用于 dry-run 收敛；真物理下线时请**省略**它，让硬闸门覆盖全库，别靠兜底擦屁股）。' +
-      '★ 与 `remove_dead_imports` 是**两个对象**（不聚合）：那个只清死 import、不判定能不能下线；本工具做的是「下线裁决 + 验收 + 可选物理删」。',
+      '★ 与 `refactor_pipeline` 的 `dead_imports` 步是**两个对象**（不聚合）：那步只清死 import、不判定能不能下线；本工具做的是「下线裁决 + 验收 + 可选物理删」。',
     inputSchema: {
       project_dir: z.string().describe('目标项目根目录（绝对或相对 cwd）'),
       plans: z
@@ -964,102 +969,6 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       return { message, data: rest };
     }),
   },
-  {
-    name: 'remove_dead_imports',
-    title: 'Remove dead imports reported by dead_deps',
-    description:
-      '移除死 import 执行器：把 dead_deps 报告的死三方依赖（DeadDepCandidate 列表，含 source + files）' +
-      '从对应文件里删掉对应的 import/require/re-export 语句。Go 与 TS/JS 各形态都支持：' +
-      '单行 import、块 import（删空块壳 `import (...) `）、别名/空导入 `_`/点导入 `.`、' +
-      '具名/默认/命名空间/type/副作用 import、export * / export {...} from、CommonJS require。' +
-      '定位方式：TS/JS 优先按 cache.db 里 imports 的**整句 span**（start_index/end_index）直接切；' +
-      '该文件库里没有 span（未索引 / 旧库 / 内容与索引不一致 / 用了 require）时**退回正则兜底**，' +
-      '`removal_reports[].via` 标明每个文件走的是哪条路。' +
-      '保守规则：只删整条 import 语句；识别不出的形态不动；动态 import("x") 等使用点绝不碰。' +
-      '原子性：预读全部待改文件，任一读取失败 → 整批中止、一个都不写。' +
-      '★ 回执：`removed_statements[]` 逐条给出 {file, line, source, text}（text = 被删的原句），' +
-      '没有回执就等于悄悄删了东西。' +
-      'dead 参数可直接传 dead_deps 工具返回结果里的 dead 数组。' +
-      'verify=true（推荐）：启用改前/改后验证闭环——改写前先跑 build+test 基线，' +
-      '改写后再跑同一批验证；基线失败则一个都不改，改后回归则自动回滚原位。' +
-      'verify 也可传 { commands: [{label, cmd, args, timeoutMs}] } 自定义验证命令组（缺省按项目形态探测）' +
-      '：有 go.mod → go build ./... + go test ./...；有 package.json → tsc --noEmit + npm test。' +
-      'verify=false/缺省 = 只执行不验证。',
-    inputSchema: {
-      project_dir: z.string().describe('目标项目根目录（用于把 files 解析为绝对路径）'),
-      dead: z
-        .array(
-          z.object({
-            source: z.string().describe('死三方源，如 Go import 路径或 TS 模块说明符'),
-            files: z.array(z.string()).describe('导入该源的闭包文件（相对 project_dir 或绝对路径）'),
-            reason: z.enum(['no_reference', 'unreachable_only']).optional().describe('dead_deps 判定的死因，仅供记录'),
-          }),
-        )
-        .describe('dead_deps 报告的 DeadDepCandidate 列表'),
-      verify: z
-        .union([
-          z.boolean(),
-          z.object({
-            commands: z
-              .array(
-                z.object({
-                  label: z.string().describe('命令标签（写进验证详情便于排查）'),
-                  cmd: z.string().describe('可执行命令名，如 go / npm / npx'),
-                  args: z.array(z.string()).describe('命令参数'),
-                  timeoutMs: z.number().optional().describe('单命令超时（毫秒，默认 300000）'),
-                }),
-              )
-              .optional()
-              .describe('自定义验证命令组；缺省按项目形态自动探测'),
-          }),
-        ])
-        .optional()
-        .describe('true 启用改前/改后验证闭环；{commands} 自定义验证命令；缺省只执行不验证'),
-    },
-    handler: wrapData(async (a) => {
-      // ★ 缺根时此前会静默回「无可删除的死 import」（其实一个文件都没扫）—— 先守根。
-      const project_dir = requireStr(a, 'project_dir');
-      const { dead, verify } = a;
-      if (!Array.isArray(dead) || dead.length === 0) {
-        return { message: '无可删除的死 import（dead 列表为空）', data: { removal_reports: [], files_changed: 0, statements_removed: 0, removed_statements: [], verification: { enabled: Boolean(verify), outcome: 'no_change', baseline: null, after: null } } };
-      }
-      const r = removeDeadImportsWithVerify({
-        project_dir,
-        dead,
-        verify: verify as RemoveDeadImportsVerifyOptions['verify'] | undefined,
-        // ★★★ 2026-10-20（写闸授权检查闭合 · 补漏口）：身份一路传给 `snapshotAndRecordSelfWrite`。
-        //   此前这里**没有这个字段**，而那条路连形参都没有 ⇒ 闸只能"提醒 + 放行"。
-        actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
-        // ★★★ T356：按 run 授权（同一行写法）
-        authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
-      });
-      const parts = [
-        `移除死 import 完成：改写 ${r.files_changed} 个文件，删除 ${r.statements_removed} 条 import 语句。`,
-      ];
-      if (r.verification.enabled) {
-        const v = r.verification;
-        const kind =
-          v.outcome === 'applied_verified' ? '改前/改后验证全绿，改动落盘'
-          : v.outcome === 'baseline_fail' ? '改前基线失败——拒绝执行，未改动任何文件'
-          : v.outcome === 'regression_rolled_back' ? '改后验证回归——已自动回滚原位'
-          : v.outcome === 'no_change' ? '无实际变更，未改动文件'
-          : '项目形态不可自动验证（无 go.mod/package.json）——已执行但未验证';
-        parts.push(`\t[$kind] 基线=${v.baseline?.status ?? '-'} 改后=${v.after?.status ?? '-'}`);
-        if (v.detail) parts.push(`\t详情：${v.detail}`);
-      }
-      if (r.removal_reports.length === 0) parts.push('\t没有命中任何可操作的文件（输入 dead 清单的文件均非 TS/Go 系）。');
-      for (const f of r.removal_reports) {
-        const detail = f.removals.filter((x) => x.changed).map((x) => `${x.source}×${x.removed}`).join('、') || '无变更';
-        parts.push(`\t- ${f.file}（${f.lang}）：${detail}`);
-      }
-      // ★★★ 2026-10-21（写闸授权检查回执闭合）：闸的读数**人读那一份**。机器侧 `data.task_gate` 由
-      //   `RemoveDeadImportsVerifyResult` 顶层带出（判据只住写闸，本层不重判，只搬话）。
-      const gateLine = gateHumanLines(r.task_gate);
-      if (gateLine) parts.push(gateLine);
-      return { message: parts.join('\n'), data: r };
-    }),
-  },
-
   {
     name: 'annotate_functions',
     title: '函数语义注释：扫描覆盖 → LLM 补全缺失 → body指纹同步过期（TS/JS + Go）',
