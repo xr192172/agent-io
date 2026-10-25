@@ -55,7 +55,7 @@ export interface DriftData {
   feature: string;
   status: DriftStatus;
   drifted: boolean;
-  scope: { mode: 'changed' | 'all'; since_ref: string | null; changed_files: number };
+  scope: { mode: 'changed' | 'all'; since_ref: string | null; changed_files: number; unchecked_ledger_files: number };
   summary: {
     checked_files: number;
     /**
@@ -160,6 +160,12 @@ async function detectDriftCore(input: DetectDriftInput): Promise<DriftData & { m
     ? r.fileResults.filter((fr) => changedAbs.has(norm(path.join(codeDir, fr.file.path))))
     : r.fileResults;
 
+  // ★★★ P0 保鲜链第 2 环（2026-10-26）：**存量缺口显式声明**（W0 实测的病）。
+  //   scope=changed 是**默认值** ⇒ 调用方多半没意识到"只判了变更命中的那几个"；
+  //   在册却未被本轮判定的文件（M）**一次存量漂移都没判过** —— 沉默会被读成"查过、没事"。
+  //   ⇒ 回执必须把 N/M 两个数**说出口**（机器读数在 `scope.unchecked_ledger_files`）。
+  const uncheckedLedgerFiles = scopeMode === 'changed' ? Math.max(0, r.fileResults.length - scoped.length) : 0;
+
   let matched = 0, missing = 0, mismatched = 0, unexpected = 0;
   const staleFiles = new Set<string>();
   const missingFiles = new Set<string>();
@@ -216,7 +222,12 @@ async function detectDriftCore(input: DetectDriftInput): Promise<DriftData & { m
     feature,
     status,
     drifted,
-    scope: { mode: scopeMode, since_ref: (scopeMode === 'changed' && !(input.changed_files && input.changed_files.length > 0)) ? (input.since_ref ?? 'HEAD') : null, changed_files: changedAbs.size },
+    scope: {
+      mode: scopeMode,
+      since_ref: (scopeMode === 'changed' && !(input.changed_files && input.changed_files.length > 0)) ? (input.since_ref ?? 'HEAD') : null,
+      changed_files: changedAbs.size,
+      unchecked_ledger_files: uncheckedLedgerFiles,
+    },
     summary: {
       checked_files: scoped.length,
       compared,
@@ -249,6 +260,11 @@ async function detectDriftCore(input: DetectDriftInput): Promise<DriftData & { m
     `  状态: ${statusLabel} ${scopeNote}`,
     '',
     `  已检文件: ${data.summary.checked_files}`,
+    // ★★★ P0 保鲜链第 2 环：**存量缺口显式声明**（只在 changed 态出现）—— N/M 两个数说出口，
+    //   不再让"只判了变更命中的几个"被读成"全查过了"（W0 实测的病）。
+    ...(scopeMode === 'changed'
+      ? [`  ⚠ 作用域声明：本次仅判 git 变更 ${changedAbs.size} 文件；其余 ${uncheckedLedgerFiles} 个在册文件未判存量漂移——全量请 scope=all`]
+      : []),
     `  ✅ 满足: ${matched}`,
     `  ❌ 缺实现: ${missing}`,
     `  ⚠️ 签名偏离: ${mismatched}`,

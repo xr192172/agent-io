@@ -58,6 +58,11 @@ import { assertSourceWriteRegistered, reopenAndResolveAfterWrite, reopenNote, re
 //   索引当场就新了 ⇒ 不需要「待消费登记」；② `pendingSelfWrites` 自带 TTL（`now - at >= SELF_WRITE_TTL_MS ⇒ skip`）
 //   ⇒ 旧记录自动过期，不会产生假信号。⇒ 别为了「让它看起来接上了」去调 close()（那会多建一次索引）。
 import { openSourceWrite, type SourceWriteTxn } from '../../source_writer.js';
+// ★★★ P0 保鲜链第 1 环（2026-10-26）：**新建文件自动提议入册**。
+//   W0 实测：op=insert 在盘上新建的文件不在设计册 semantic.files ⇒ 判据/对账全覆盖不到，
+//   而这件事没有任何机制报出。⇒ 落盘后查一次册（只警告、不自动入册 —— 入册要带
+//   responsibility 意图，自动插会造空壳节点），判据唯一住处 = `design/ledger_membership.ts`。
+import { newFileLedgerWarning } from '../../design/ledger_membership.js';
 // ★★★ 2026-10-21（并发控制·读集比对）：回执里的**假设检定**（与 `task_gate` 两件事）。
 //   ★ 判定在写闸（`write_gate` 是唯一判据处），这里只**带出**读数 + 写后刷新写者自己的基线。
 import { assumptionLines, refreshAfterOwnWrite, type AssumptionCheck } from '../../read_set.js';
@@ -590,10 +595,14 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     txn!.commit(absPath, content);
     const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
     const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
+    // ★★★ P0 保鲜链第 1 环（2026-10-26）：**本笔在盘上产生了一个新路径** ⇒ 查一次设计册。
+    //   不在册 ⇒ 回执追加警告段（只警告不自动入册，给一键入参示例）；在册 / 无册指向 ⇒ 不加噪声。
+    const ledgerWarn = newFileLedgerWarning(projectRoot, relPath);
     return {
       message:
         `✓ 已创建 ${relPath}（${reparsed.symbols.length} 符号）并重建索引（${sync.status}${reopenNote(_rw)}）\n` +
-        reparsed.symbols.map((s) => `  + ${describeSymbol(s)}`).join('\n'),
+        reparsed.symbols.map((s) => `  + ${describeSymbol(s)}`).join('\n') +
+        (ledgerWarn ? `\n${ledgerWarn}` : ''),
     };
   }
 

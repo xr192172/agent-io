@@ -174,6 +174,50 @@ export interface IndexIntegrityResult {
 const NOT_FRESH_SAMPLE = 20;
 
 /**
+ * ★★★ P0 保鲜链第 4 环（2026-10-26）：**陈旧断言计数的唯一 SQL 住处**。
+ * `indexIntegrityCore` 的 `staleCount()` 与 claim 前置提醒（`indexTrustReminderForClaim`）
+ * 共用这一份 —— 不许第二把尺。表坏/查询失败 ⇒ 0（调用方各自按"没发现"处理，不假阳性）。
+ */
+export function countStaleResolvedRefs(db: ReturnType<typeof getProjectCacheDb>): number {
+  try {
+    const row = db
+      .prepare(
+        `SELECT COUNT(*) c FROM unresolved_refs u
+         WHERE u.status = 'resolved'
+           AND NOT EXISTS (SELECT 1 FROM nodes n WHERE n.name = u.reference_name)`,
+      )
+      .get() as { c: number } | undefined;
+    return row?.c ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * ★★★ P0 保鲜链第 4 环（2026-10-26）：**claim 前置的索引可信度提醒**（唯一住处）。
+ *
+ * 行为：索引在（`hasLiveIndex`）且判 `untrusted`（判定**复用** `integrityVerdict` ——
+ * 与 `index_integrity` 同一把尺）⇒ 返回一行提醒文案；trusted / 无索引 / 自检异常 ⇒ 返回空串。
+ * ★ **不拒领、不抛错**：提醒进 claim 回执；claim 的工作不该被索引自检的偶发异常阻塞。
+ */
+export function indexTrustReminderForClaim(projectRoot: string): string {
+  const root = path.resolve(projectRoot);
+  try {
+    if (!hasLiveIndex(root)) return '';
+    const stale = countStaleResolvedRefs(getProjectCacheDb(root));
+    // 判定复用现有三态函数：有陈旧断言 ⇒ blocker ⇒ untrusted（与 index_integrity 的 headline 同判）
+    const verdict = integrityVerdict({ hasIndex: true, hasBlocker: stale > 0, hasGhost: false });
+    if (verdict !== 'untrusted') return '';
+    return (
+      `索引 untrusted（陈旧断言 ${stale}）—— 建议先 \`index_integrity { project_dir:'${root}', refresh:true }\` 再领卡` +
+      `（find_references / impact 会静默漏报；本提醒**不拦领**）`
+    );
+  } catch {
+    return ''; // 自检失败不阻塞领卡
+  }
+}
+
+/**
  * ★ **修复陈旧引用**：把"声称 resolved、但目标名已不在索引"的引用重新打开并重解析。
  *
  * 为什么这件事只有这里能做：保鲜路径（`ensureFreshIndex`）靠**文件内容变了**来触发重开
@@ -470,13 +514,9 @@ async function indexIntegrityCore(opts: {
   // ── 引用状态 ──
   const byStatus = (s: string): number =>
     one(`SELECT COUNT(*) c FROM unresolved_refs WHERE status = '${s}'`);
-  const staleCount = (): number =>
-    one(
-      `SELECT COUNT(*) c FROM unresolved_refs u
-       WHERE u.status = 'resolved'
-         AND NOT EXISTS (SELECT 1 FROM nodes n WHERE n.name = u.reference_name)`,
-    );
-  let stale_resolved = staleCount();
+  // ★★★ P0 保鲜链（2026-10-26）：SQL 收口到 `countStaleResolvedRefs`（唯一住处；
+  //   claim 前置提醒 `indexTrustReminderForClaim` 用的是同一份 —— 不再各写一遍）。
+  let stale_resolved = countStaleResolvedRefs(db);
 
   // refresh:true ⇒ 顺手**修复陈旧引用**（保鲜路径看不见它们：那些文件内容根本没变，
   // `symbol_diffs` 是空的，所以只有靠"这些行本身"当线索）。报告的是修完之后的现状。
@@ -485,7 +525,7 @@ async function indexIntegrityCore(opts: {
     try {
       const rep = repairStaleResolvedRefs(db, root);
       repair = `已重开 ${rep.reopened} 条陈旧引用（涉及 ${rep.names} 个符号名），重解析 ${rep.cross.total} 条`;
-      stale_resolved = staleCount();
+      stale_resolved = countStaleResolvedRefs(db);
     } catch (e) {
       repair = `陈旧引用修复失败：${(e as Error).message}`;
     }

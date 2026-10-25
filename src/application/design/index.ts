@@ -393,9 +393,9 @@ export const DESIGN_TOOLS: ToolDef[] = [
     title: 'Detect live-doc drift against code',
     description:
       '活文档↔代码漂移检测：对比 design DSL 的 expected_apis 与当前代码，判定「设计是否过时 / 是否欠实现」，' +
-      '并持久化漂移台账。scope=changed（默认）只看 git 变更文件（相对 since_ref，默认 HEAD=未提交改动），' +
-      '圈出「这次改代码引发了哪些漂移」；scope=all 全量对标。mode=check 重新计算（默认），' +
-      'mode=status 只读最近一次台账。只读，不改 DSL；要同步设计请用 edit_dsl / import_project。',
+      '并持久化漂移台账。scope=changed（默认）只对 git 变更命中的在册文件下判定（相对 since_ref，默认 HEAD=未提交改动），' +
+      '★ 其余在册文件**未判存量漂移** —— 回执会显式声明缺口数（机读字段 `unchecked_ledger_files`），存量请 scope=all 全量对标。' +
+      'mode=check 重新计算（默认），mode=status 只读最近一次台账。只读，不改 DSL；要同步设计请用 edit_dsl / import_project。',
     inputSchema: {
       feature: z.string().describe('feature 名'),
       code_dir: z.string().optional().describe('代码根目录（默认 feature 的 source_root，手工 DSL 回退 <cwd>/scaffold/<feature>）'),

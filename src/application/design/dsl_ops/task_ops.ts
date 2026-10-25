@@ -138,6 +138,10 @@ import {
   type ClaimConflictReport,
   type DeclaredReadSet,
 } from '../../claim_conflict.js';
+// ★★★ P0 保鲜链第 4 环（2026-10-26）：**claim 前置的索引可信度提醒**。
+//   判定复用 `index_integrity` 现有函数（`indexTrustReminderForClaim` 唯一住处）；
+//   ★ **不拒领**：untrusted（陈旧断言>0）只在回执里追加提醒行，避免阻塞正常领卡。
+import { indexTrustReminderForClaim } from '../../meta/integrity/index_integrity.js';
 
 /**
  * ★★★ 2026-10-22（链 C · 身份归一化）：**卡上的「谁」只走一套规范**。
@@ -1498,6 +1502,12 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       (claimConflict?.unchecked.length ? `（另 ${claimConflict.unchecked.length} 张活跃卡无读集、这次未比对）` : '')
     : '；★ 读集**未算**（该 feature 没有 source_root）';
 
+  // ★★★ P0 保鲜链第 4 环（2026-10-26）：claim 时**带出**索引可信度提醒（不拒领）。
+  //   untrusted（陈旧断言>0）⇒ find_references / impact 正在静默漏报，领卡人该知道；
+  //   判定与阈值全部复用 `index_integrity` 现有函数（唯一住处在那边）。无索引 / trusted / 异常 ⇒ 空串不加噪声。
+  const integrityReminder = sourceRoot ? indexTrustReminderForClaim(sourceRoot) : '';
+  const integrityNote = integrityReminder ? `\n★ 提醒：${integrityReminder}` : '';
+
   if (twoPhase) {
     // ── 两段式第一段：落 preparing + 快照（★ 判据**不动**：这一段不写 decision，只记账）──
     const gap = criteriaGap(dsl, cardNode, node_id);
@@ -1528,7 +1538,8 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
         `\n★ 为什么不在 claimed：\`write_gate\` 只认 \`state=claimed\` ⇒ preparing 期间**拿不到写权**` +
         `（这就是"已领取但不可开工"的机制形态，不是靠谁记得拦）。判据写进 \`decision\` 走 \`edit_dsl\`，不受写闸管。` +
         `\n★ 租约：preparing 也持租约（TTL 同 claimed）⇒ 你未按期收口（租约到期）时，\`expire\` 会**还原判据**并退回 candidate。` +
-        readHead,
+        readHead +
+        integrityNote,
       feature,
       data: {
         node_id,
@@ -1627,7 +1638,9 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
             `\`complete\` 也是用这同一把尺判。`
           : '') +
       // ★★ 读集读数**必须在首行之后**出现：它回答「这次有没有真的比过」（比了 0 张 ≠ 谁都不冲突）
-      `\n${conflictNote}`,
+      `\n${conflictNote}` +
+      // ★★★ P0 保鲜链第 4 环：索引 untrusted ⇒ 提醒行（非空才追加；**不拒领**）
+      integrityNote,
     feature,
     data: {
       node_id,
@@ -1642,6 +1655,8 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
         ? { reopened: true, reopened_from: card.owner ?? null, reopened_at: claimedAt, reopen_reason: reopenReason }
         : {}),
       progress: progressOf({ state: 'claimed' }),
+      // ★★★ P0 保鲜链第 4 环：机读提醒（非空才有；判定与文案唯一住处 = `indexTrustReminderForClaim`）
+      ...(integrityReminder ? { index_trust: integrityReminder } : {}),
       // ★★★ 2026-10-21（并发控制·读集比对）：**独立字段**，别与写前的 `assumption_check` 混。
       //   `assumption_check` = 「我读的东西变了吗」（写前，只报）；`claim_conflict` = 「我要碰的东西被占了吗」（领卡，阻塞）。
       claim_conflict: {

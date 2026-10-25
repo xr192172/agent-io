@@ -35,6 +35,11 @@ import path from 'node:path';
 import type { DesignDSL, SemanticFile } from '../../../domain/types.js';
 import { hasFileEntries } from '../../../domain/semantic.js';
 import { noFileEntriesMessage } from '../no_file_entries.js';
+// ★★★ P0 保鲜链第 3 环（2026-10-26）：**判据覆盖对账**。
+//   W0 实测（council-hub）：5 条决策卡判据指向 7 个测试文件，全不在册 —— 这个缺口此前
+//   没有任何检查会报。⇒ 本文件新增 coverage 段：收集全部判据路径（复用 domain/expectation
+//   的**唯一提取器**，不新写解析），凡不在 `semantic.files` ⇒ 缺口清单。
+import { collectExpectations, expectationPaths, normPath } from '../../../domain/expectation.js';
 // ★ AB-double-name 病 B：函数名提取收口成唯一住处（与 scaffold 共用同一份，不再各持一份）
 import { extractFuncName } from '../api_signature.js';
 import { getDSL, getBaselineFacts } from '../../../infrastructure/storage.js';
@@ -319,6 +324,11 @@ export interface ConsistencyResult {
    *   ⇒ 两条线**各有各的对手**，混着比就是假差异（**这就是 T85 的病根**）。
    */
   baselineDrift?: BaselineDrift;
+  /**
+   * ★★★ P0 保鲜链第 3 环（2026-10-26）：**判据覆盖对账**（见 {@link ExpectationCoverage}）。
+   * 缺口 0 ≠ "全对上"——`total_expectations === 0` 时是"没有判据可对"。
+   */
+  expectation_coverage: ExpectationCoverage;
   summary: {
     total_files: number;
     /**
@@ -402,6 +412,69 @@ export interface InvariantResult {
   invariant: string;
   status: 'passed' | 'failed';
   reason?: string;
+}
+
+/**
+ * ★★★ P0 保鲜链第 3 环（2026-10-26）：**判据覆盖对账**的一条缺口。
+ *
+ * 判据（决策卡 `decision.expectations`）引用的文件路径**不在** `semantic.files`
+ * ⇒ 判据/对账（线 2 逐文件比、闸覆盖、快照意图）**全都覆盖不到它** —— 缺口必须点名。
+ * `on_disk` = 现取磁盘存在性（**只报事实、不替读者下结论**：存在 ⇒ 判据够得着一个册外文件；
+ * 不存在 ⇒ 判据指向的东西可能连盘上都没有）。
+ */
+export interface ExpectationCoverageGap {
+  path: string;
+  /** 哪些决策卡的判据指着它（一条路径可被多张卡引用 ⇒ 去重列出） */
+  sources: Array<{ node_id: string; node_label: string }>;
+  on_disk: boolean;
+}
+
+export interface ExpectationCoverage {
+  /** 收集到的判据总条数（0 = 没有判据可对 ⇒ 缺口恒 0，不是"全对上"） */
+  total_expectations: number;
+  gap_count: number;
+  gaps: ExpectationCoverageGap[];
+}
+
+/**
+ * 判据覆盖对账（**唯一计算处**；渲染在 `checkConsistencyReport` 的消息段）。
+ * · 路径提取：`expectationPaths`（主体 + 对端，edge 类两端口径已由 domain 定死）；
+ * · 在册集合：`semantic.files[].path`（与 `expectationPaths` 同用 `normPath` 归一口径）；
+ * · `run` 判据无路径 ⇒ 天然不参与（`expectationPaths` 已处理）。
+ */
+function expectationCoverageOf(dsl: DesignDSL, codeDir: string): ExpectationCoverage {
+  const entries = collectExpectations(dsl);
+  const ledger = new Set((dsl.semantic?.files ?? []).map((f) => normPath(f.path)));
+  const byPath = new Map<string, ExpectationCoverageGap>();
+  for (const { node_id, node_label, expectation } of entries) {
+    for (const p of expectationPaths(expectation)) {
+      if (ledger.has(p)) continue;
+      let g = byPath.get(p);
+      if (!g) {
+        g = { path: p, sources: [], on_disk: fs.existsSync(path.join(codeDir, p)) };
+        byPath.set(p, g);
+      }
+      if (!g.sources.some((s) => s.node_id === node_id)) g.sources.push({ node_id, node_label });
+    }
+  }
+  const gaps = [...byPath.values()].sort((a, b) => a.path.localeCompare(b.path));
+  return { total_expectations: entries.length, gap_count: gaps.length, gaps };
+}
+
+/** 渲染判据覆盖对账段（**只在有缺口时出现**；无缺口不加噪声） */
+function renderExpectationCoverageSection(c: ExpectationCoverage): string {
+  if (c.gap_count === 0) return '';
+  const L: string[] = [
+    '',
+    `【判据覆盖对账（决策卡判据 vs 在册文件）】`,
+    `  判据 ${c.total_expectations} 条，其中指向**册外**路径的缺口 ${c.gap_count} 个：`,
+  ];
+  for (const g of c.gaps) {
+    const who = g.sources.map((s) => `${s.node_label}(${s.node_id})`).join('、');
+    L.push(`  - 判据指册外：\`${g.path}\`（来自决策卡 ${who}）——该文件在盘上${g.on_disk ? '**存在**' : '**不存在**'}`);
+  }
+  L.push('  ★ 后果：判据/对账覆盖不到册外路径（线 2 不比它、闸不认它）。入册：edit_dsl file add 或 import_project 增量。');
+  return L.join('\n');
 }
 
 export interface ConsistencyInput {
@@ -1348,6 +1421,12 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
 
   // ★ 线 1 排在**线 2 整段（摘要 + 建议）之后** —— 两条线各自自成一段（见上）。
   const baselineDrift = checkBaselineDrift(feature, codeDir);
+  // ★★★ P0 保鲜链第 3 环（2026-10-26）：**判据覆盖对账** —— 只要有册外缺口，就必须在本报告里
+  //   当场点名（W0 实证：council-hub 的 5 条判据指向 7 个测试文件、全不在册，本检查本该当场报）。
+  //   判据唯一住处 = `expectationCoverageOf`；渲染唯一住处 = `renderExpectationCoverageSection`。
+  const expectation_coverage = expectationCoverageOf(dsl, codeDir);
+  const coverageSection = renderExpectationCoverageSection(expectation_coverage);
+  if (coverageSection) lines.push(coverageSection);
   lines.push(renderBaselineDriftSection(baselineDrift));
   lines.push('');
   return {
@@ -1355,6 +1434,7 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
     fileResults,
     retireFlow,
     baselineDrift,
+    expectation_coverage,
     invariantResults,
     summary: {
       total_files: fileResults.length,
