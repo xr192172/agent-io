@@ -118,6 +118,7 @@ _dbg_*.mjs
 _tmp_*.ts
 test_*.mjs
 test_*.ts
+!src/**/test_*.ts
 test_*.txt
 
 # ───── 发布划界（内部实验/诊断/目标项目专属，不入发布仓库） ─────
