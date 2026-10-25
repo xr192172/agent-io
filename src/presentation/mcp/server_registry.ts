@@ -49,10 +49,12 @@ import { catalogOf, collectInputPaths, LANE_META } from '../../application/meta/
 import type { InputPath } from '../../application/meta/registry/capability_map.js';
 // ★ T54 收口：「下一棒」印具体值，**共用** capability_map 的同一个渲染（别在这写第二份）
 import { renderHandoffPanel } from '../../application/meta/index.js';
-import { facesOf, mcpFace } from '../../application/meta/registry/tool_faces.js';
+import { facesOf, mcpFace, MINIMAL_FACE_TOOLS } from '../../application/meta/registry/tool_faces.js';
 // ★ T179：**仓根**要用仓里已有的"向上找"（`resolveProjectRoot`：git 根 → 最近 manifest）——
 //   ★ 不许再手算 `'..', '..'`（那是"级数随位置变"的补丁，见下方 STALE SOURCE 段的注释）。
 import { resolveProjectRoot } from '../../infrastructure/analysis/project_root/index.js';
+// ★★★ I1（2026-10-25）：根解析的**级 3**（feature → 该 feature 设计 DSL 的 source_root）要读 DSL。
+import { getDSL } from '../../infrastructure/storage.js';
 // ★ T173：`mcpFace()` 的定义已搬到 `tool_faces.ts`（与「说面」的回执同处）—— 这里 re-export 保持对外 API 不变。
 export { mcpFace };
 
@@ -305,6 +307,8 @@ function projectRootArg(args: Record<string, unknown>): string | null {
  *   ② **级 2**：扫本次调用的**参数值**（含嵌套对象 / 数组里的字符串），挑出**真实存在**的路径，
  *      从它所在目录**向上**找最近的 `<dir>/.agent-io/cache.db`（`nearestCacheDb`——仓里已有的
  *      "向上找"原语，直接复用）⇒ 第一个命中的目录即项目根。
+ *   ③ **级 3**（I1，2026-10-25）：入参带 `feature` ⇒ 读该 feature 设计 DSL 的 `source_root`
+ *      （真实存在的目录才算）—— 只带 feature 的调用（edit_dsl / get_dsl）不再假报 NO_PROJECT_ROOT。
  *
  * ★★ **绝不用 `cwd` 兜底**：`cwd` 与被分析项目没有关系（不是"更弱的答案"，是**另一个项目的答案**，
  *   见 `storage.ts#requireProjectRoot` 的判据）。这里只在**调用方真给过的路径值**上解析；
@@ -331,7 +335,35 @@ export function resolveRootFromArgs(args: Record<string, unknown>): string | nul
     void startDir;
     return resolveProjectRoot(cand);
   }
-  return null;
+  // ★★★ I1（2026-10-25）：**级 3 —— feature → 该 feature 设计 DSL 的 `source_root`**。
+  //   ★ 病（实测）：`edit_dsl` / `get_dsl` 这类只带 `feature` 的调用，入参里**没有任何路径** ⇒
+  //     级 1 / 级 2 全落空 ⇒ 恒报 `NO_PROJECT_ROOT`（"未做索引保鲜 / 未做陈旧检查"）。
+  //     但 feature 的 DSL **自己就写着** `source_root`（import_project 保证写入）——
+  //     明明能定位项目根，却按"解析不到"响亮告警 = **假警报**（噪音会把真警报淹没）。
+  //   ★ 判据：`source_root` 是 DSL 里的**权威字段**（它是"这份设计说的是哪个项目"的答案），
+  //     且必须是**真实存在的目录**（防幻觉路径）；取不到 / feature 不存在 ⇒ 照旧返回 null（真警报不灭）。
+  return rootFromFeatureArg(args.feature);
+}
+
+/**
+ * ★★★ I1（2026-10-25）：从 `feature` 参数解析项目根（级 3 的**唯一实现**，单测钉住）。
+ *
+ * @returns 项目根（`source_root` 解析成真实目录时）；否则 `null`（**不兜底 cwd** —— 与
+ *          `resolveRootFromArgs` 同一条纪律：cwd 与被分析项目无关）。
+ * ★ 导出是为了能被测试看见（注入型逻辑最容易静默失效）。
+ */
+export function rootFromFeatureArg(feature: unknown): string | null {
+  if (typeof feature !== 'string' || !feature.trim()) return null;
+  try {
+    const dsl = getDSL(feature.trim());
+    const sr = dsl?.source_root;
+    if (typeof sr !== 'string' || !sr.trim()) return null;
+    const root = path.resolve(sr.trim());
+    if (!statSync(root).isDirectory()) return null;
+    return root;
+  } catch {
+    return null; // 读不到 DSL / stat 失败 ⇒ 当"没有这级"（真警报照旧，不静默升级成假根）
+  }
 }
 
 /**
@@ -1014,6 +1046,8 @@ function renderNextNote(tool: string, text: string): string {
  * ★★ 默认 `all` = **与改造前逐字等价**（61 个全注册、**不注册**入口）⇒ 不打断现有下游
  *   （`dsh-brain` / `dsl-workbench` / `elv` / `ai-config/skills/design-canvas-mind`）。
  *   要收敛就设 `AGENT_IO_MCP_FACE=composed`：只注册**编排面** + **一个原子入口**。
+ *   ★ I1（2026-10-25）：再收一档 `AGENT_IO_MCP_FACE=minimal` —— 只注册**高频 6 工具** + 原子入口
+ *     （名单唯一住处 = `tool_faces.ts#MINIMAL_FACE_TOOLS`；all/composed 原样保留，兼容不打断）。
  */
 export const ATOMIC_ENTRY_NAME = 'atomic_call';
 
@@ -1024,6 +1058,21 @@ export const ATOMIC_ENTRY_NAME = 'atomic_call';
 function composedDefs(): ToolDef[] {
   const faces = facesOf(catalogOf(TOOL_DEFS), LANE_META.flatMap((m) => m.direct));
   const names = new Set(faces.find((f) => f.id === 'composed')?.names ?? []);
+  return TOOL_DEFS.filter((d) => names.has(d.name));
+}
+
+/**
+ * ★★★ I1（2026-10-25）：**极简面** = 高频 6 工具（`MINIMAL_FACE_TOOLS`）+ 原子入口。
+ *
+ * ★ 名单是**手写判据**（依据 = 用量，住 `tool_faces.ts` 唯一一处）；注册时**按注册表过滤**，
+ *   名单里漂掉的名字由 `facesOf` 的 `unknown` 信号点名（不静默）。
+ * ★ task 系（publish/claim/start/complete）与 pending **不是独立工具**：
+ *   分别经 `edit_dsl` 的 op（type=task）与 `get_dsl` 的 query 承载 —— 已在前 2 个工具里，能力不缺。
+ * ★ **仍注册 `atomic_call`**：minimal 的目的 = 收敛 MCP 面（listTools 载荷），不是**阉割能力** ——
+ *   其余工具经入口照旧可达（与 composed 同款）。
+ */
+function minimalDefs(): ToolDef[] {
+  const names = new Set(MINIMAL_FACE_TOOLS);
   return TOOL_DEFS.filter((d) => names.has(d.name));
 }
 
@@ -1085,7 +1134,7 @@ function registerAtomicEntry(server: McpServer, exposedNames: ReadonlySet<string
 
 export function registerAllTools(server: McpServer): void {
   const face = mcpFace();
-  const exposed = face === 'composed' ? composedDefs() : TOOL_DEFS;
+  const exposed = face === 'composed' ? composedDefs() : face === 'minimal' ? minimalDefs() : TOOL_DEFS;
   for (const def of exposed) {
     server.registerTool(
       def.name,
@@ -1096,8 +1145,8 @@ export function registerAllTools(server: McpServer): void {
       },
     );
   }
-  // ★ 收敛面：额外注册**一个**原子入口（= 原工具面的唯一通道）。
-  if (face === 'composed') registerAtomicEntry(server, new Set(exposed.map((d) => d.name)));
+  // ★ 收敛面（composed / minimal）：额外注册**一个**原子入口（= 原工具面的唯一通道）。
+  if (face !== 'all') registerAtomicEntry(server, new Set(exposed.map((d) => d.name)));
 }
 
 

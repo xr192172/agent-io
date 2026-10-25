@@ -364,6 +364,31 @@ export const editDslHandler = wrap(async (a) => {
         '要重建实际视图请用 import_project 工具（全量导入），增量监听用 explore_code action=watch。',
     );
   }
+  // ★★★ I1（2026-10-25）：**顶层孤儿键响亮拒** —— `operations[]` 之外的业务键（type/id/data 等）出现即报错点名。
+  //   ★ 病（实测）：把 `operations[]` 里的一条误写到顶层（`{ ..., type:'node', op:'add', data:{…} }`）——
+  //     schema 是 looseObject（未知键**保留**不丢）、handler 只读 `a.operations` ⇒ **静默忽略**，
+  //     回执"0 个操作成功"都算客气的；更坏的是调用方以为写进去了（沉默的缺失，本仓头号病）。
+  //   ★ 判据：**已知的顶层键**只有下面这组（schema 声明的 + 跨工具保留键 `actor`/`authorize`）；
+  //     之外的键一律**报错点名**并指路（业务键进 `operations[].data`，身份/授权走顶层专用键）。
+  //   ★ 为什么报错而不是提醒：顶层孤儿键几乎必然是**调用方写错了形状**（把 op 字段放错层），
+  //     放行只会让"我以为改了"变成现实 —— 与 T170c（data 未知键拒绝）同一口径，只是抬到顶层。
+  const TOP_ORPHAN_EXAMPLES = ['op', 'type', 'id', 'data'] as const;
+  // ★ `project_dir` 也算已知：接续面板对**任何** [B] 都提示"project_dir → 任何 [B].project_dir"
+  //   （通用边）⇒ 调用方照提示传它不算孤儿（工具忽略它，但不该为此挨骂）。
+  const EDIT_DSL_TOP_KEYS = new Set([
+    'feature', 'agent', 'view', 'weight', 'reason', 'operations', 'evidence', 'actor', 'authorize', 'project_dir',
+  ]);
+  const orphanKeys = Object.keys(a).filter((k) => !EDIT_DSL_TOP_KEYS.has(k));
+  if (orphanKeys.length) {
+    throw new Error(
+      `拒绝调用（顶层孤儿键）：edit_dsl 的入参里出现了 \`operations\` 之外的顶层键：${orphanKeys.map((k) => `\`${k}\``).join(', ')} —— ` +
+        `它们**不属于这一层**，此前会被静默忽略（现在响亮拒绝）。\n` +
+        `★ 怎么改：op 级字段（${TOP_ORPHAN_EXAMPLES.join(' / ')} …）要放进 \`operations[]\` 的**元素**里，` +
+        `即 { operations: [{ op:…, type:…, id:…, data:{…} }] }；` +
+        `身份走顶层 \`agent\`/\`actor\`，授权走顶层 \`authorize\`（这两个是仅有的顶层业务键）。\n` +
+        `★ 已知的合法顶层键：${[...EDIT_DSL_TOP_KEYS].join(', ')}。`,
+    );
+  }
   // 活文档：变更原因校验（L1-L4）。weight=routine → 轻量写路径（level=3，仍有 L1/L2/L3，
   // 跳过 L4 证据回溯），给日常维护放行；默认 normal → 全链强闸。
   const reason = (a.reason as string | undefined) ?? '';

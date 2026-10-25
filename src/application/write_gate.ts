@@ -619,6 +619,19 @@ export function isGateRejection(err: unknown): boolean {
   return m.startsWith(GATE_REJECTION_PREFIX);
 }
 
+// ★★★ I1（2026-10-25）：任务闸拒绝的**出路文案**里必须有 authorize 方案。
+//   ★ 为什么单拎成一个导出常量：① 出路列表是调用方**唯一的行动指引**，漏一条 = 把人堵死在闸外
+//     （实测：批量改 packages/ 下文件时，出路只有"逐文件立卡"一条，authorize 已支持却不说）；
+//     ② 抽成常量才能被单测钉住内容（tests/i1_write_gate_escape.test.ts），文案改坏测试会红。
+//   ★ 判据不在这里：authorize 的文法唯一落点 = `domain/scope.ts`；放行判据 = 本文件 T356 那段
+//     （本批 ⊆ scope ∧ scope 里有你的 claimed 卡）。这里只负责**指路**（被「怎么领」段引用）。
+export const AUTHORIZE_ESCAPE_HATCH =
+  `  ③ 本批文件**同属一个范围**、且你已在该范围内领了卡 ⇒ 用「按 run 授权」**一次放行整批**（免逐文件立卡）：\n` +
+  `     在本次写调用（edit_code / rename_files / apply_refactor_plan …）的入参里带：authorize: 'files:packages/xxx/'\n` +
+  `     · 文法唯一落点 = domain/scope.ts（files:目录/ / nodes:id,id / subtree:节点 / layer:main）；\n` +
+  `     · 判据 = 本批要写的文件**全部**落在该 scope 内 ∧ 该 scope 的节点里有**你领的** claimed 卡（A7 不放宽）；\n` +
+  `     · ★ authorize:'all' **明令拒绝**（把整份 DSL 都授权出去 = 关闸）。不传 authorize ⇒ 逐文件判定（上面的 ①②）照旧可用。`;
+
 /** 任务闸放行的依据分类（★ 唯一取值处；`applicable:false` 只许前两格） */
 export type TaskGateBasis =
   | 'no-files' // 没有落在项目根内的文件
@@ -1600,6 +1613,7 @@ function evaluateTaskGate(
       `    ★ \`node.status\`（draft / in_progress / done）对它是**派生值**（progressOf），**不许直接改**。\n` +
       `  · claim 写前必过「可领」读数（cardStanding ∈ work/violated）；complete 必过「可收口」读数（isSatisfied）且另需 \`data.evidence\`（与 status 同一把证据尺）。\n` +
       `  · 覆盖这条改动的 feature 有多条时，在**任一条**里 claim 即可（本闸不替你挑）。\n` +
+      AUTHORIZE_ESCAPE_HATCH +
       `\n★ 本闸**不会替你 claim**，也**不会把这次写入降级放行** —— 拒绝就是拒绝；领到后再改即可。\n` +
       `★ 拦的范围（只此一条）：项目根上有设计 feature 覆盖该文件（` +
       `source_root === 项目根 ∧ 该文件是它的文件节点）∧ 覆盖它的 feature 里**没有一条**在该节点上有一张 ` +

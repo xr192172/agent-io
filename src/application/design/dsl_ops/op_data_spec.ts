@@ -89,7 +89,9 @@ export const OP_SPECS: readonly OpSpec[] = [
       '        · 几何：`x` `y` `width` `height`\n' +
       '        · 结构与内容：`layer` `host`(宿主节点 id) `swimlane` `shapes` `content` `sub_dsl`(子图 DSL) ' +
       '`attributes`(Record<string,string|number|boolean>) `path`(文件指针=仓库相对路径，校验见 `node_ops.ts`)\n' +
-      '        · 语义：`decision`（决策卡对象，**字段形状同下面 `decision` 那张表**）· ' +
+      '        · 语义：`decision`（决策卡对象，**字段形状同下面 `decision` 那张表**；' +
+      '★ **update 的替换语义（I1 写明）**：给的对象与旧卡**逐字段合并** —— 给了的字段覆盖、没给的保留旧值、' +
+      '**`decision:null` 清除整张卡**；旧卡自动压入 `decision_history`（带本次 `decision_note`，不覆盖））· ' +
       '`decision_note`（**update 专有**）· `author`（**update 专有**，`human`｜`llm`）',
   },
   { type: 'edge', ops: ['add', 'update', 'delete'], idRequired: true, required: { add: ['from', 'to'] } },
@@ -181,7 +183,7 @@ export const OP_SPECS: readonly OpSpec[] = [
     type: 'decision',
     ops: ['update', 'expectation.add', 'expectation.remove'],
     idRequired: true,
-    idNote: '文件/文档节点 id **或**仓库相对路径（`resolveDecisionTarget` 两种都认）',
+    idNote: '文件/文档/**service** 节点 id **或**仓库相对路径（I1 起 service 也收；`resolveDecisionTarget` 两种都认）',
     required: { update: ['summary'] },
     note:
       '★ **`data` 各字段的形状（2026-10-11 T174 从实现逐个读出 —— 照填）**：' +
@@ -243,6 +245,12 @@ export const OP_SPECS: readonly OpSpec[] = [
     note:
       '★ **无节点任务**（2026-10-18 Q5）：和 task **同一套状态机/同一套 claim/complete/void 语义**，' +
       '区别只在"挂在哪"（task 挂 geometry.nodes[].task，todo 挂顶层 todos[]）。' +
+      '★★ I1（2026-10-25）写明两条口径：\n' +
+      '  · **claim / start / release / complete / void / reopen 等【状态流转】走 `type=task`（`id` 填 todo 的 id）** —— ' +
+      'todo 本身的 op 表里**没有**这些 op（这里只有 add/update/follows/retire/delete/archive/unarchive/import/move_to_history）；' +
+      '`loadTask` 对 todos[] 的卡同样认（task_ops.ts），所以 `claim id:<todo id>` 直接可领。\n' +
+      '  · **todo 不跑节点建构判定**：L1/L2 分级与 `constructionVerdict`（DSL 建构完整）都不适用于它，' +
+      'claim 不判判据、complete 只凭 attestation 证据。\n' +
       '★ add 只需 data.summary（可选 data.decision: creator/source/handoff；data.id 可指定）。' +
       `★ 它**没有 expectations**（不是代码，无法判定）⇒ 完成只收 attestation 证据。
       ★ **update** = 改内容，★ **必留旧值**：{op:"update", id:"todo_x", data:{summary:"新说法", reason:"为什么改"}}

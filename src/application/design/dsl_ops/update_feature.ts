@@ -43,6 +43,8 @@ import { applyExcludedOp, applyTodoOp, applyTaskOp, applyTaskPlanOp } from './ta
 import { validateDSL } from '../../../domain/validator.js';
 // ★ T334：`status` op 的 `data.evidence` 形状 —— ★ **类型引用**（不新增判据；判据在 `domain/overlay.ts`）。
 import type { ProgressEvidence } from '../../../domain/overlay.js';
+// ★★★ I1（2026-10-25）：**expectations 写入时预判** —— 判定器只有 `judgeExpectations` 一把尺（复用，不新造）。
+import { judgeExpectations } from '../intent/expectations.js';
 import { saveSnapshot, rollbackSnapshot, deleteSnapshot, saveAutoSnapshot, pruneSnapshots } from '../lifecycle/snapshot.js';
 import { dagLayout, forceLayout, gridAlign } from '../workbench/dag_layout.js';
 import { resetSimulation } from '../lifecycle/simulation.js';
@@ -63,7 +65,7 @@ export interface FeatureOperation {
    * - layout：apply（自动布局，data.algo=dag|force|grid）
    * - simulation：reset（重置仿真状态）
    * - tag：**功能标记**（add=给 files 打 tag / delete=从 tag 移除 files 或删整个 tag；data.tag 必填）
-   * - decision：**决策卡写入口**（update=把决策候选写到**文件/文档节点**的 `decision`；
+   * - decision：**决策卡写入口**（update=把决策候选写到**文件/文档/service 节点**的 `decision`；
    *   id = 文件节点 id 或仓库相对路径；data.summary 必填，可带 rationale/alternatives/consequences/
    *   acceptance/dissent/votes/evidence_source/author/note。★ 未决分歧进 `dissent`，**不是** `alternatives`；
    *   ★ `data.author` 是**类别**（只认 'human' | 'llm'，说可信度）；**身份**（谁）走**顶层入参 `agent`**）
@@ -317,11 +319,16 @@ async function updateFeatureCore(input: UpdateFeatureInput): Promise<EditResult>
     );
   }
 
+  // ★★★ I1（2026-10-25）：**expectations 写入时预判** —— 本批写进的判据当场判一遍，
+  //   「现在就红」的在回执 warning 里点名（**不拒** —— 判据本来就是描述红）。见 previewBatchExpectations。
+  const expPreview = await previewBatchExpectations(draft, operations);
+  const previewTail = renderExpectationsPreview(expPreview);
+
   return {
     message: [
       `已对 feature "${feature}" 应用 ${operations.length} 个操作（全部成功）:`,
       ...results,
-    ].join('\n'),
+    ].join('\n') + previewTail,
     feature,
     ...(opData.length ? { data: opData.length === 1 ? opData[0] : opData } : {}),
   };
@@ -351,7 +358,7 @@ function touchedOf(input: UpdateFeatureInput): Touched {
  *   · `status`   —— `updateStatus({node_id: op.id, …})`；
  *   · `task`     —— 任务格（2026-10-17）：`id` = **任务格所在的 node_id**（与节点同居，
  *     `.agent-io/design/task-system-plan.dsl.json#task_home`）⇒ 它确实是节点 id；
- *   · `decision` —— 决策写入口，`id` = **文件/文档节点 id 或仓库相对路径**（2026-10-10 T106 加）；
+ *   · `decision` —— 决策写入口，`id` = **文件/文档/service 节点 id 或仓库相对路径**（2026-10-10 T106 加；I1 起 service 也收）；
  *     ★★ 2026-10-10（T-e2e Bug2 修）：**路径必须先解析成真节点 id**（`findDecisionTargetNode`）再收 ——
  *     此前把 `op.id`（可能是路径）原样丢进 `alive.has(id)` ⇒ 路径永远匹配不上 ⇒ `nodes` 整项省略。
  * ★ **其余 type 的 `id` 不是节点**，一个都不收：`edge` 是**边**、`file`/`api` 是**语义实体**、
@@ -402,6 +409,99 @@ function touchedNodeIds(input: UpdateFeatureInput): string[] {
     .map((id) => findDecisionTargetNode(dslNow, id)?.id)
     .filter((id): id is string => typeof id === 'string' && id.length > 0);
   return [...new Set([...directIds, ...resolvedDecisionIds])].filter((id) => alive.has(id));
+}
+
+// ─────────────────────────────────────────────────────────────
+// I1（2026-10-25）：**expectations 写入时预判**
+// ─────────────────────────────────────────────────────────────
+
+/** 本批写进的判据的预判结果（进回执的 warning，**不拒** —— 判据本来就是描述红） */
+export interface ExpectationsPreview {
+  /** 本批实际送判的条数（0 = 没写判据 / 没跑成） */
+  judged: number;
+  /** 「现在就红」的条目（人读一行一条） */
+  failed: string[];
+  /** 判不了的条数（unsupported：没索引 / 扩展名不解析 / 依赖事实不完整） */
+  unsupported: number;
+  /** 没跑成时的说明（source_root 缺失 / 判定器抛错）；跑成了则缺省 */
+  note?: string;
+}
+
+/**
+ * ★★★ I1（2026-10-25）：**expectations 写入时预判** —— `edit_dsl` 写判据的同一批，先判一遍。
+ *
+ * ## 为什么要有它（实测痛点）
+ * 判据写进去时**全绿假象**没人负责：`consistency_check` / `cardStanding` 要等**下一次读**才暴露红，
+ * 写的人当时看不见 ⇒ 红判据安静地住进决策卡（僵尸判据）。⇒ 写入回执里**当场点名**：
+ * 「这 N 条现在就红」—— **不拒**（判据本来就是"描述红"的：写 `symbol-exists` 去验收一个还没写的函数，
+ * 红是**预期**），只许"红得可见"。
+ *
+ * ## 收哪些（只收**本批写进的**，不重判存量）
+ * · `type=decision`：`op=update` 的 `data.expectations[]` / `op=expectation.add` 的 `data.expectation`；
+ * · `type=node`（add/update）：`data.decision.expectations[]`。
+ *
+ * ## 判定器（★ 不新造第二把尺）
+ * `judgeExpectations`（`intent/expectations.ts`）—— 与 consistency_check / cardStanding 同一把；
+ * 求值根 = 落定后 DSL 的 `source_root`。**拿不到 source_root / 判定器抛错 ⇒ 不拦不吞**：
+ * `note` 里说明"没预判"，随回执出去（沉默的缺失不许发生）。
+ */
+export async function previewBatchExpectations(
+  dsl: DesignDSL,
+  operations: ReadonlyArray<FeatureOperation>,
+): Promise<ExpectationsPreview> {
+  const items: Array<{ node_id: string; expectation: unknown }> = [];
+  const pushFrom = (nodeId: string, raw: unknown): void => {
+    if (!Array.isArray(raw)) return;
+    for (const e of raw) {
+      if (e && typeof e === 'object' && typeof (e as { kind?: unknown }).kind === 'string') {
+        items.push({ node_id: nodeId, expectation: e });
+      }
+    }
+  };
+  for (const op of operations) {
+    const data = (op.data ?? {}) as Record<string, unknown>;
+    if (op.type === 'decision') {
+      const target = typeof op.id === 'string' ? op.id : typeof data.path === 'string' ? data.path : '';
+      if (op.op === 'update') pushFrom(target, data.expectations);
+      else if (op.op === 'expectation.add' && data.expectation !== undefined) pushFrom(target, [data.expectation]);
+    } else if (op.type === 'node' && (op.op === 'add' || op.op === 'update')) {
+      const dec = data.decision as { expectations?: unknown } | undefined;
+      if (dec && typeof dec === 'object') pushFrom(typeof op.id === 'string' ? op.id : '', dec.expectations);
+    }
+  }
+  if (!items.length) return { judged: 0, failed: [], unsupported: 0 };
+
+  const root = typeof dsl.source_root === 'string' ? dsl.source_root.trim() : '';
+  if (!root) {
+    return { judged: 0, failed: [], unsupported: 0, note: 'DSL 无 source_root（纯设计/代码侧还不存在）⇒ 未预判' };
+  }
+  try {
+    const report = await judgeExpectations(root, items as never);
+    const failed = report.items
+      .filter((it) => it.verdict === 'fail')
+      .map((it) => {
+        const e = it.expectation as { kind?: string; path?: string; symbol?: string };
+        const where = [e.path, e.symbol].filter(Boolean).join('#');
+        return `${e.kind ?? '?'}${where ? ` ${where}` : ''} —— ${it.detail}`;
+      });
+    return { judged: report.checked, failed, unsupported: report.unsupported };
+  } catch (e) {
+    return { judged: 0, failed: [], unsupported: 0, note: `预判未跑成（不拦写入）：${(e as Error).message}` };
+  }
+}
+
+/** 把预判结果渲染成回执尾段（无红且无 note ⇒ 空串，回执一字不多） */
+export function renderExpectationsPreview(p: ExpectationsPreview): string {
+  if (p.note) return `\n⚠ 写入预判（I1）：${p.note}`;
+  if (!p.judged) return '';
+  const head = p.failed.length
+    ? `\n⚠ 写入预判（I1）：本批写进的判据 ${p.judged} 条里有 ${p.failed.length} 条「现在就红」` +
+      `（**不拒** —— 判据本来就是描述红；对应卡 complete 前要把它们做绿）：\n` +
+      p.failed.map((s) => `  · ${s}`).join('\n')
+    : `\n★ 写入预判（I1）：本批写进的判据 ${p.judged} 条当场判过，0 红` +
+      (p.unsupported ? `（另有 ${p.unsupported} 条判不了/unsupported，不计入）` : '') +
+      '。';
+  return head;
 }
 
 export async function updateFeature(input: UpdateFeatureInput): Promise<TouchedProduct<EditResult>> {
@@ -765,7 +865,7 @@ function applyTagOp(feature: string, op: CheckedOperation<FeatureOperation>): Ed
 }
 
 // ─────────────────────────────────────────────────────────────
-// decision：决策卡写入口（把候选落到**文件/文档节点**的 `decision`）
+// decision：决策卡写入口（把候选落到**文件/文档/service 节点**的 `decision`）
 //   ★★ 语义分叉（本 op 的头号纪律）：**未决分歧**住 `data.dissent`，
 //      **不是** `data.alternatives`（后者 = 已排除的方案 + 否决原因）。见 `domain/b_terms.ts` 的 `dissent`。
 //   ★ 住 overlay：本 op **只改 base**；收口处 `updateFeature` 调 `syncDecisionsToOverlay`
@@ -781,7 +881,7 @@ export function normRel(s: string): string {
   return s.replace(/\\/g, '/').replace(/^\.\//, '');
 }
 
-/** 决策写入口的目标节点：`id` 可为 **节点 id** 或 **仓库相对路径**（文件/文档节点） */
+/** 决策写入口的目标节点：`id` 可为 **节点 id** 或 **仓库相对路径**（文件/文档/service 节点） */
 interface DecisionTarget {
   node: { id: string; type?: string; description?: string; decision?: NodeDecision; decision_history?: import('../../../domain/types.js').DecisionHistoryEntry[]; task?: import('../../../domain/task_schema.js').TaskSpec };
   /** 目标的仓库相对路径（人读回执用；取不到给节点 id） */
@@ -813,8 +913,10 @@ export function findDecisionTargetNode(dsl: DesignDSL, raw: string): DecisionTar
 }
 
 /**
- * 解析目标节点。★ **只接受文件/文档节点** —— 决策卡的定义就是"**每个文件为什么存在**"
- * （`harvest_decisions` 文件头）；挂到聚合/模块节点上是**语义错**，这里**响亮拒绝**而不是默默挂上去。
+ * 解析目标节点。★ **接受文件/文档/service 节点** —— 决策卡的语义是"**每个文件为什么存在**"
+ * （`harvest_decisions` 文件头）；**I1（2026-10-25）放开 `type=service`**：服务级节点同样要能挂
+ * "为什么这样设计"的决策卡（实测痛点：架构决策的落点是 service 聚合节点，不是某个文件 ⇒
+ * 以前被「不是文件/文档节点」一概拒掉，决策只能挤进某个无关文件）。
  * ★ 解析不到 ⇒ **抛**（列出试过的方式），绝不静默创建一个新节点。
  */
 function resolveDecisionTarget(dsl: DesignDSL, id: string | undefined, data: Record<string, unknown>): DecisionTarget {
@@ -827,10 +929,10 @@ function resolveDecisionTarget(dsl: DesignDSL, id: string | undefined, data: Rec
         `也不在 semantic.files 里。请用 get_dsl query=files 核对**仓库相对路径**或节点 id。`,
     );
   }
-  if (node.type !== 'file' && node.type !== 'doc') {
+  if (node.type !== 'file' && node.type !== 'doc' && node.type !== 'service') {
     throw new Error(
-      `decision.update 的目标节点 "${node.id}"（type=${node.type ?? '?'}）不是文件/文档节点 ⇒ 拒绝。` +
-        `决策卡语义是"**每个文件为什么存在**"（harvest_decisions），只能挂 type=file / type=doc 的节点。`,
+      `decision.update 的目标节点 "${node.id}"（type=${node.type ?? '?'}）不是文件/文档/service 节点 ⇒ 拒绝。` +
+        `决策卡挂 type=file / type=doc / type=service 的节点（I1 起放开 service —— 架构决策的落点常是服务级节点）。`,
     );
   }
   return { node, path: node.description ?? node.id };

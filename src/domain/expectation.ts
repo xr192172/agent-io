@@ -79,6 +79,9 @@ export type Expectation =
   | { kind: 'behavior-cases'; path: string; symbol: string; cases: Array<{ given: unknown[]; expect: string }>; why: string }
   /**
    * ★★★ 2026-10-18（用户："校验的过程就是夹具"）：**行为契约** —— 一条 `run` = 一个自包含的测试。
+   * ★★ I1（2026-10-25）首行口径：**不执行命令，只求值表达式** —— `expect` 是一个**表达式**，
+   *   在 `judgeExpectations` 显式传入的小求值域（input / root / validateDSL / fs / path）里求值；
+   *   它**不是** shell / 子进程，**没有任何命令被执行**（判据见 `intent/expectations.ts` 的 run 分支）。
    *
    * ## 为什么只有【一个】kind（而不是"返回值/退出码/输出/状态"各一种）
    * 所有行为契约的本质 = **给输入 ⇒ 断言输出**；而"输出"可以是返回值、退出码、stdout、**跑完之后的状态**。

@@ -42,7 +42,28 @@ import { deriveObjectChains } from '../../../domain/chain_wiring.js';
 import type { ToolCatalogEntry } from './capability_map.js';
 
 /** 面的 id（★ 加面要在这里登记，且必须能说清"它比原子面少列了什么、为什么"） */
-export type FaceId = 'atomic' | 'composed';
+export type FaceId = 'atomic' | 'composed' | 'minimal';
+
+/**
+ * ★★★ I1（2026-10-25）：**minimal 面** = 高频工具的**手写白名单**（寄风已批准的 10 项能力）。
+ *
+ * ★ 它与 composed 的**性质不同**：composed = 零手写（direct ∪ 派生链，机器算的）；
+ *   minimal = **按用量手写的收敛面**（判据是"高频"，不是"结构上有没有门"）⇒ 这份清单**就是判据**，
+ *   住在这一处、被单测钉住（tests/i1_face_minimal.test.ts：列出的名字必须真实存在，漂了就红）。
+ *
+ * ★ **清单里为什么只有 6 个名字**（对齐批准的 10 项）：批准清单里的「task 系（publish/claim/start/complete）」
+ *   与「pending」**不是独立 MCP 工具** —— 它们分别是 `edit_dsl` 的 op（type=task）与 `get_dsl` 的 query，
+ *   已被前 2 个工具**完整承载**；consistency_check / capability_map / index_integrity 各是独立工具。
+ *   ⇒ 对外能力 = 批准的 10 项，一个不少；注册的工具数 = 6。
+ */
+export const MINIMAL_FACE_TOOLS: readonly string[] = [
+  'edit_dsl',
+  'get_dsl',
+  'edit_code',
+  'consistency_check',
+  'capability_map',
+  'index_integrity',
+];
 
 /** 一个「面」= 注册表的一个视图，**只决定"列出来什么"**。 */
 export interface ToolFaceView {
@@ -73,6 +94,10 @@ export function facesOf(catalog: readonly ToolCatalogEntry[], directNames: reado
   const chainTools = uniq(deriveObjectChains().flat());
   const composed = uniq([...directNames, ...chainTools]);
 
+  // ★ I1：minimal 面 = 高频手写白名单**原样列出**（列了但注册表没有的名字会进 `unknown` ⇒
+  //   跨层漂移照常点名 —— 手写清单必须能被"漂移信号"考住，这与 composed 的 unknown 同一机制）
+  const minimal = MINIMAL_FACE_TOOLS;
+
   const mk = (id: FaceId, label: string, desc: string, names: readonly string[]): ToolFaceView => ({
     id,
     label,
@@ -95,6 +120,16 @@ export function facesOf(catalog: readonly ToolCatalogEntry[], directNames: reado
         '`direct` **门名单**（**人写的**，依据是"每条线要有门"，**不是**用量统计）。',
       composed,
     ),
+    mk(
+      'minimal',
+      '极简面',
+      '**高频 10 项能力的手写白名单**（I1）：edit_dsl / get_dsl / edit_code / consistency_check / ' +
+        'capability_map / index_integrity 共 6 个工具（task 系 publish/claim/start/complete 与 pending ' +
+        '分别经 edit_dsl 的 op、get_dsl 的 query 承载 ⇒ 能力 10 项、工具 6 个）；' +
+        '其余工具经 `atomic_call` 仍可达（与 composed 同款）。' +
+        '判据 = **用量**（手写），不是结构 —— 名单唯一住处 = 本文件的 `MINIMAL_FACE_TOOLS`。',
+      minimal,
+    ),
   ];
 }
 
@@ -108,9 +143,15 @@ export function facesOf(catalog: readonly ToolCatalogEntry[], directNames: reado
  *   ⇒ ★ 实测后果（黑盒实验，三轮里**两次**被试都被它误导）：**默认面（`all`）下 `atomic_call` 并未注册**，
  *     而回执读起来像"它存在" ⇒ 被试去调 ⇒ `MCP error -32602: Tool atomic_call not found` ✗
  *   ⇒ 现在**定义搬到"说面"的那一侧**，两边共用同一个函数 ⇒ 回执可以**按当前面说实话** ✓
+ *
+ * ★★ I1（2026-10-25）：加 `minimal` 档 —— `AGENT_IO_MCP_FACE=minimal` 只注册高频 6 工具
+ *   （`MINIMAL_FACE_TOOLS`）+ 原子入口；`all` / `composed` 原样保留（兼容，一字不改）。
  */
-export function mcpFace(): 'all' | 'composed' {
-  return process.env.AGENT_IO_MCP_FACE === 'composed' ? 'composed' : 'all';
+export function mcpFace(): 'all' | 'composed' | 'minimal' {
+  const v = process.env.AGENT_IO_MCP_FACE;
+  if (v === 'composed') return 'composed';
+  if (v === 'minimal') return 'minimal';
+  return 'all';
 }
 
 export function renderFaces(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): string {
@@ -139,11 +180,14 @@ export function renderFaces(catalog: readonly ToolCatalogEntry[], directNames: r
     '\n     真做法 = **不注册**那些工具 + **留一个原子入口**（`atomic_call`）—— 即用户方案。' +
     // ★★★ 2026-10-11（T173）：**这句原先不说条件** ⇒ 默认面下读它的人以为 `atomic_call` 存在 ⇒ 去调 ⇒ `not found`。
     //   实测：黑盒实验三轮里**两次**被试都先试它 ✗ ⇒ 现在**按当前面说实话**（面由本文件的 `mcpFace()` 算，判据一处）。
-    (mcpFace() === 'composed'
-      ? '\n       ★ **本会话的面 = `composed`** ⇒ `atomic_call` **已注册**（`action=list/describe/call`）；' +
-        '**其余工具**经 `atomic_call action=call` 调。'
-      : '\n       ★ **本会话的面 = `all`（默认）** ⇒ **没有 `atomic_call`**（它**只在 `composed` 面注册**）——' +
-        ' ★ **所有工具都已直接暴露，不需要它**；别去调 `atomic_call`（会报 `Tool atomic_call not found`）。') +
+    (mcpFace() === 'all'
+      ? '\n       ★ **本会话的面 = `all`（默认）** ⇒ **没有 `atomic_call`**（它**只在 `composed` / `minimal` 面注册**）——' +
+        ' ★ **所有工具都已直接暴露，不需要它**；别去调 `atomic_call`（会报 `Tool atomic_call not found`）。'
+      : mcpFace() === 'composed'
+        ? '\n       ★ **本会话的面 = `composed`** ⇒ `atomic_call` **已注册**（`action=list/describe/call`）；' +
+          '**其余工具**经 `atomic_call action=call` 调。'
+        : '\n       ★ **本会话的面 = `minimal`（I1）** ⇒ 只注册高频 6 工具（`MINIMAL_FACE_TOOLS`）；' +
+          '`atomic_call` **已注册**，其余工具经 `atomic_call action=call` 仍可达。') +
     '\n  ★★ **编排面 = 两份依据拼的（可以重叠，不是互斥的两半）**：' +
     `\n     · **派生链**（${chainTools.length} 个：${chainTools.join(', ')}）—— **机器算的**，验出一条新边它就自己长；` +
     `\n     · **「direct」门名单**（${directNames.length} 个，其中 **${directOnly.length} 个派生链没覆盖**、` +
