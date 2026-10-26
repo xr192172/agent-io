@@ -1679,6 +1679,11 @@ const BUILTIN_CALLEES = new Set([
   'type', 'isinstance', 'sum', 'min', 'max', 'sorted', 'enumerate', 'zip', 'map', 'filter',
   'open', 'repr', 'abs', 'round', 'any', 'all', 'next', 'iter', 'hasattr', 'getattr',
   'ValueError', 'KeyError', 'Exception',
+  // ★★★ 2026-10-27（T-#44）：**Node / 浏览器全局函数**（不需 import 就能用）。
+  //   实测 `setTimeout`(17) 落进了 failed —— 它是 `@types/node` 的全局函数，
+  //   源码里不 import ⇒ `packageBindingsByFile` 看不到 ⇒ 只能靠这张表。
+  'setTimeout', 'setInterval', 'setImmediate', 'clearTimeout', 'clearInterval', 'clearImmediate',
+  'queueMicrotask', 'structuredClone', 'fetch', 'atob', 'btoa', 'require',
 ]);
 
 export interface CrossFileResolveStats {
@@ -1890,11 +1895,13 @@ export function resolveCrossFileCalls(
     const rel = r.from_node_id.split('#')[0];
     const expr = r.reference_name;
     const kind = r.reference_kind as 'call' | 'type_ref';
+    // ★ T-#44：Go 的内置表**只对 .go 文件**启用（避免 int/max/close 误伤本仓同名符号）
+    const isGoFile = rel.endsWith('.go');
     // ★ 2026-10-22：本条引用的「没建边原因」暂存器（一行一个，不复用：上一条的原因不能写进下一条）
     const miss: ReexportMiss[] = [];
 
     if (kind === 'type_ref') {
-      if (BUILTIN_TYPES.has(expr)) {
+      if (BUILTIN_TYPES.has(expr) || (isGoFile && GO_BUILTIN_TYPES.has(expr))) {
         updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'builtin-type' }) });
         stats.external++;
         continue;
@@ -1974,7 +1981,7 @@ export function resolveCrossFileCalls(
       continue;
     }
 
-    if (BUILTIN_CALLEES.has(expr)) {
+    if (BUILTIN_CALLEES.has(expr) || (isGoFile && GO_BUILTIN_CALLEES.has(expr))) {
       updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'builtin-callee' }) });
       stats.external++;
       continue;
@@ -2026,6 +2033,36 @@ const BUILTIN_TYPES = new Set([
   'Omit', 'Exclude', 'Extract', 'NonNullable', 'ReturnType', 'Parameters', 'Awaited', 'Promise',
   'Function', 'Error', 'Date', 'RegExp', 'Map', 'Set', 'WeakMap', 'WeakSet', 'Iterable',
   'IterableIterator', 'Generator', 'AsyncGenerator', 'HTMLElement', 'Event', 'Node',
+  // ★★★ 2026-10-27（T-#44）：补 **TS lib 内置类型**（实测漏了它们 ⇒ 落进 failed）。
+  //   `RegExpExecArray` 等在 `lib.es5.d.ts` 里是全局 interface，源码里**不需要 import**
+  //   ⇒ `packageBindingsByFile` 看不到它 ⇒ 只能靠这张表。
+  'RegExpExecArray', 'RegExpMatchArray', 'PropertyKey', 'ThisType', 'ThisParameterType',
+  'OmitThisParameter', 'TemplateStringsArray', 'Uppercase', 'Lowercase', 'Capitalize',
+  'Uncapitalize', 'InstanceType', 'ConstructorParameters', 'WeakRef', 'FinalizationRegistry',
+  // ★ 实测漏的：ReadonlySet(23) 等同族容器类型（TS lib，不需 import）
+  'ReadonlySet', 'ReadonlyMap', 'ReadonlyArray', 'ArrayLike', 'PromiseLike', 'AsyncIterable',
+  'AsyncIterableIterator', 'Iterator', 'IteratorResult', 'Disposable', 'AsyncDisposable',
+  // ★ @types/node 的全局（不需 import 就能用）
+  'Buffer', 'NodeJS', 'NodeRequire', 'Timer', 'NodeJS.Timeout',
+]);
+
+/**
+ * ★★★ 2026-10-27（T-#44）：**Go 的内置类型 / 内置函数单独一张表**。
+ *
+ * 为什么不并进 `BUILTIN_TYPES`：Go 的 `int` / `max` / `min` / `new` / `close` / `copy`
+ * 在 TS 里**完全可能是本仓的真函数名**（实测本仓就有 `max`/`close`）
+ * ⇒ 并成一张表会**把本仓真符号判成 external ⇒ 丢边**。
+ * ⇒ 判据：**只对 `.go` 文件启用这两张表**（`rel.endsWith('.go')`，零查询）。
+ * ★ 这就是「每门语言都要有自己的内置表」的落地形态（见 `parse/kernel.ts#LANG_ADAPTERS` 的 §4）。
+ */
+const GO_BUILTIN_TYPES = new Set([
+  'bool', 'byte', 'complex64', 'complex128', 'error', 'float32', 'float64',
+  'int', 'int8', 'int16', 'int32', 'int64', 'rune', 'string',
+  'uint', 'uint8', 'uint16', 'uint32', 'uint64', 'uintptr', 'any', 'comparable',
+]);
+const GO_BUILTIN_CALLEES = new Set([
+  'len', 'cap', 'make', 'new', 'append', 'copy', 'delete', 'close',
+  'panic', 'recover', 'print', 'println', 'complex', 'real', 'imag', 'min', 'max', 'clear',
 ]);
 
 /** 沿源文件的 relative imports 找符号对应的目标符号（首个命中）；找不到返回 null。
