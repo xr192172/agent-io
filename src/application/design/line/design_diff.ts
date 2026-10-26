@@ -32,7 +32,27 @@ import path from 'node:path';
 //   这里只负责把结果并进 diff 的回执 —— 判据一处，别在 diff 里再写一把。
 import { mustHaveFor, type MustHaveReport } from './design_line.js';
 
-type AnyNode = Record<string, unknown> & { id?: string; path?: string };
+/**
+ * ★★★ 2026-10-27（T-#38 / 「五」）：**已知字段必须显式声明，不许靠索引签名兜**。
+ *
+ * 原来只有 `{ id?: string } & Record<string, unknown>` ⇒ **`node.description` 的类型是 `unknown`**
+ * ⇒ tsc 不管 ⇒ 那个"读已删字段、永远 undefined、静默失效"的 bug 就是这么躲过编译器的。
+ * ⇒ 现在把**用得到的字段**逐个写出来（`path` / `label` / `type` / `title` / …），
+ *   只保留 `Record<string, unknown>` 兜"其余未知字段"。
+ * ★ 判据：**用到的字段就必须声明** —— 声明了 tsc 才管得着。
+ */
+type AnyNode = {
+  id?: string;
+  path?: string;
+  label?: string;
+  type?: string;
+  title?: string;
+  layer?: string;
+  host?: string;
+  style?: unknown;
+  shapes?: unknown;
+  decision?: unknown;
+} & Record<string, unknown>;
 type AnyEdge = { from?: string; to?: string; label?: string };
 
 export interface DesignDiffResult {
