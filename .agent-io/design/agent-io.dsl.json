@@ -4632,7 +4632,7 @@
         "task": {
           "id": "file_src_application_design_dsl_ops_node_ops_ts",
           "summary": "node.add/update/delete：file 型节点都必须同步 semantic.files（两张表不许分叉）",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_node_ops_ts\"].responsibility"
@@ -4690,13 +4690,28 @@
                   "src/application/design/dsl_ops/node_ops.ts"
                 ]
               }
+            },
+            {
+              "kind": "expectations",
+              "at": "2026-10-26T13:35:33.096Z",
+              "by": "llm",
+              "agent": "agent:wish-machine",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_application_design_dsl_ops_node_ops_ts（3 条判据）",
+                "input": "d8bdd31fe8b8d4b2ab6df7c1cc23ac993dcbf276",
+                "code": "18738c159dd0816f4a693bfdcd2ed42f21b30182",
+                "covers": [
+                  "src/application/design/dsl_ops/node_ops.ts"
+                ]
+              }
             }
           ],
           "reopened_at": null,
           "reopen_reason": "T-#22 续2：deleteNode 也要同步 semantic.files（否则删 file 节点后语义表留孤儿条目）",
           "reopened_from": "agent:wish-machine"
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "node.add/update/delete：file 型节点都必须同步 semantic.files（两张表不许分叉）",
           "expectations": [
@@ -10184,24 +10199,24 @@
         "arch_layer": "core",
         "task": {
           "id": "file_src_infrastructure_graph_import_project_ts",
-          "summary": "【L1 待建构】核心层 · src/infrastructure/graph — 13 个函数（导入自 19 个模块）（src/infrastructure/graph/import_project.ts） ← 节点 file_src_infrastructure_graph_import_project_ts",
-          "state": "done",
+          "summary": "import_project：扫描出的 file 节点必须带 path（路径事实的权威落在节点上）",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_import_project_ts\"].responsibility"
           },
           "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T11:48:33.373Z",
+          "claimed_at": "2026-10-26T13:38:47.742Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/infrastructure/graph/import_project.ts",
-                "content_hash": "0f3874d987532037b65e056c6f844e713be15c8f"
+                "content_hash": "e5bab6875992cbc57360a73549ac21337a4875ec"
               }
             ],
-            "computed_at": "2026-10-26T11:48:33.138Z",
+            "computed_at": "2026-10-26T13:38:47.675Z",
             "basis": [
               "declared"
             ]
@@ -10222,19 +10237,22 @@
                 ]
               }
             }
-          ]
+          ],
+          "reopened_at": null,
+          "reopen_reason": "T-#23：import_project 建 file 节点时补 path（否则 560 个扫描节点都没 path，路径事实只能住在 semantic.files）",
+          "reopened_from": "agent:wish-machine"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision": {
-          "summary": "import_project：重建闸（节点级 + 意图级）一次报全；放行时两类丢失都进回执",
+          "summary": "import_project：扫描出的 file 节点必须带 path（路径事实的权威落在节点上）",
           "expectations": [
             {
               "kind": "source-has",
               "must": [
-                "lostIntentNow"
+                "path: f.rel"
               ],
               "path": "src/infrastructure/graph/import_project.ts",
-              "why": "两层闸必须一次报全 —— 实测第一层先抛后，用户只看到“丢 1 个节点”就传了 allow_design_drop，结果决策卡也丢了却没被告知"
+              "why": "扫描产物里的 file 节点必须自己持有 path —— 否则 write_gate / D1 只能回落 description（散文），这正是 D1 误判手写节点的根源"
             },
             {
               "kind": "source-has",
@@ -10242,19 +10260,20 @@
                 "allow_design_drop"
               ],
               "path": "src/infrastructure/graph/import_project.ts",
-              "why": "重建闸的开关必须仍在（回归底线）"
+              "why": "重建闸必须仍在（回归底线）"
             }
           ],
-          "acceptance": "① rebuild_design 的两层闸（节点级 willDrop + 意图级 lostIntent）必须**一次报全**，不得第一层先抛、第二层永远看不见；② allow_design_drop=true 放行时，丢掉的节点与意图都要进 designDropNote（可读回执）；③ 不得改变任何放行/拒绝的判定（只改报告完整性）。",
+          "acceptance": "① 扫描出来的 file 节点必须带 `path`（仓库相对路径）—— 实测现状：569 个 file 节点里 560 个**没有** path，路径事实只住在 semantic.files ⇒ 两份事实（write_gate.ts:1003 已把它们数过：semantic.files 515 + node.description 508）；② write_gate 的 `nodeFilePath` 本就「`path` 优先、回落 `description`」⇒ 补 path 是让权威落在节点上；③ 不得改动 semantic.files 的现有字段。",
           "status": "active",
           "tags": [
-            "gate",
-            "rebuild-design",
-            "informed-consent"
+            "single-source",
+            "path-fact",
+            "structural"
           ],
-          "updated_at": "2026-10-26T11:48:33.343Z",
+          "updated_at": "2026-10-26T13:38:47.786Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
+          "agent": "agent:wish-machine",
+          "rationale": "一个「文件」实体被拆成两行：geometry.nodes 有几何+决策卡+任务但没有 path，semantic.files 有 path+4 个字段但没有 decision/task。write_gate 的 nodeFilePath 已是「path 优先、回落 description」，说明权威本该在节点上。⇒ 先让产者写 path，再迁存量，最后 semantic.files 降为派生视图。"
         },
         "overlay": {
           "path": "src/infrastructure/graph/import_project.ts",
@@ -10265,7 +10284,46 @@
             "kind": "expectations",
             "unsupported": 0
           }
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-26T13:38:47.786Z",
+            "decision": {
+              "summary": "import_project：重建闸（节点级 + 意图级）一次报全；放行时两类丢失都进回执",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "lostIntentNow"
+                  ],
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "why": "两层闸必须一次报全 —— 实测第一层先抛后，用户只看到“丢 1 个节点”就传了 allow_design_drop，结果决策卡也丢了却没被告知"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "allow_design_drop"
+                  ],
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "why": "重建闸的开关必须仍在（回归底线）"
+                }
+              ],
+              "acceptance": "① rebuild_design 的两层闸（节点级 willDrop + 意图级 lostIntent）必须**一次报全**，不得第一层先抛、第二层永远看不见；② allow_design_drop=true 放行时，丢掉的节点与意图都要进 designDropNote（可读回执）；③ 不得改变任何放行/拒绝的判定（只改报告完整性）。",
+              "status": "active",
+              "tags": [
+                "gate",
+                "rebuild-design",
+                "informed-consent"
+              ],
+              "updated_at": "2026-10-26T11:48:33.343Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "T-#23：产者先产 —— file 节点带 path",
+            "author": "llm",
+            "agent": "agent:wish-machine"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_index_db_ts",
@@ -45430,7 +45488,7 @@
         ],
         "lines": 588,
         "layer": "core",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_dsl_ops_op_data_spec_ts",
@@ -58799,7 +58857,7 @@
         ],
         "lines": 1642,
         "layer": "core",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_index_db_ts",
@@ -62335,13 +62393,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 71,
+  "_dsl_rev": 73,
   "_sync": {
-    "saved_at": "2026-10-26T13:34:46.275Z",
+    "saved_at": "2026-10-26T13:38:47.843Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 20689138,
+    "age": 20930706,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

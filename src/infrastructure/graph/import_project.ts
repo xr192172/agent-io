@@ -1528,6 +1528,13 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       width: FILE_W,
       height: FILE_H,
       type: 'file',
+      // ★★★ 2026-10-26（T-#23）：**节点自己持 `path`（结构化指针），别再用 `description` 冒充**。
+      //   实测现状：569 个 file 节点里 **560 个没有 `path`** ⇒ 路径只能从 `description`（散文）推，
+      //   而 `write_gate#nodeFilePath` 恰恰是「`path` 优先、回落 `description`」——
+      //   于是"手写节点 description 写的是职责句"就被判成"path 不存在"（D1 的误判就是这么来的）。
+      //   ★ 与 `semantic.files[].path` 的关系：**指针只需一份**。这里是产者，先让它产出来；
+      //     存量迁移与"语义表降为派生视图"是后续步骤（别一次改三处）。
+      path: f.rel,
       description: f.rel,
       style: { ...colors, borderRadius: 4 },
     });
