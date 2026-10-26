@@ -11970,7 +11970,7 @@
         "task": {
           "id": "file_src_infrastructure_storage_ts",
           "summary": "storage：getDesignSheetFile 查项目注册表（设计随项目根；读写同口径）",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_storage_ts\"].responsibility"
@@ -12006,13 +12006,28 @@
                   "src/infrastructure/storage.ts"
                 ]
               }
+            },
+            {
+              "kind": "expectations",
+              "at": "2026-10-26T14:49:05.179Z",
+              "by": "llm",
+              "agent": "agent:wish-machine",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_infrastructure_storage_ts（2 条判据）",
+                "input": "26611ebee2df77fcb2e55d90adbcf8b72f749a67",
+                "code": "cc2e67dda7d94a2e13349bf79bcc7f5164415ab4",
+                "covers": [
+                  "src/infrastructure/storage.ts"
+                ]
+              }
             }
           ],
           "reopened_at": null,
           "reopen_reason": "T-#27：getDesignSheetFile 查项目注册表（读写同口径，设计随项目根生效）",
           "reopened_from": "agent:wish-machine"
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "storage：getDesignSheetFile 查项目注册表（设计随项目根；读写同口径）",
           "expectations": [
@@ -61975,7 +61990,7 @@
         ],
         "lines": 1107,
         "layer": "data",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_storage_overlay_ts",
@@ -63035,13 +63050,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 78,
+  "_dsl_rev": 79,
   "_sync": {
-    "saved_at": "2026-10-26T14:48:00.904Z",
+    "saved_at": "2026-10-26T14:49:05.278Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 25083767,
+    "age": 25148141,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
