@@ -7919,7 +7919,7 @@
         "task": {
           "id": "file_src_domain_geometry_ts",
           "summary": "【L1 待建构】服务层 · src/domain — 1 个函数（导入自 4 个模块）（src/domain/geometry.ts） ← 节点 file_src_domain_geometry_ts",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_domain_geometry_ts\"].responsibility"
@@ -7939,9 +7939,26 @@
             "basis": [
               "declared"
             ]
-          }
+          },
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-26T16:17:30.526Z",
+              "by": "llm",
+              "agent": "agent:wish-machine",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_domain_geometry_ts（2 条判据）",
+                "input": "2d382859a3742570024fc95fe42ba6a7df6b9c2e",
+                "code": "5d9410be6f0ae61a72f67484c038de42cd190890",
+                "covers": [
+                  "src/domain/geometry.ts"
+                ]
+              }
+            }
+          ]
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "geometry：删掉 Node.description —— 路径只住 path，说明只住 responsibility/title",
           "expectations": [
@@ -7970,6 +7987,16 @@
           "updated_at": "2026-10-26T16:14:42.453Z",
           "author": "llm",
           "agent": "agent:wish-machine"
+        },
+        "overlay": {
+          "path": "src/domain/geometry.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "all_green": true,
+            "kind": "expectations",
+            "unsupported": 0
+          }
         }
       },
       {
@@ -52252,7 +52279,7 @@
         ],
         "lines": 501,
         "layer": "service",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_domain_judge_port_ts",
@@ -62901,13 +62928,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 90,
+  "_dsl_rev": 91,
   "_sync": {
-    "saved_at": "2026-10-26T16:14:42.511Z",
+    "saved_at": "2026-10-26T16:17:30.616Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 30285374,
+    "age": 30453479,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
