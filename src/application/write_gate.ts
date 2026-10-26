@@ -711,16 +711,17 @@ export interface GateCoverage {
  *   `description` 为 0** ⇒ 旧口径（只认 description）把它们全漏掉 ⇒ 整条 feature 被跳过
  *   ⇒ 写闸对"人写的 DSL"是装饰（F7 实测）。
  */
-function nodeFilePath(
-  n: { type?: string; description?: string } & { path?: string },
-  sep: string,
-): string | undefined {
+function nodeFilePath(n: { type?: string; path?: string }, sep: string): string | undefined {
+  // ★★★ 2026-10-27（T-#37）：**回落 `description` 的分支已删** —— `Node.description` 已不存在，
+  //   那个分支是死代码。
+  //   ★ 顺带纠正一条**过期断言**：此前注释说它与 `overlay.ts#nodePath` 是“**同一把尺**”——
+  //     其实**不是同一个概念**：
+  //       · `nodePath` 给的是“路径**或** id”（展示/认亲用，**一定有值**）
+  //       · 本函数给的是“**真实文件路径，没有就 `undefined`**”（写闸要判“这个节点指不指文件”）
+  //     ⇒ 两个概念，各留一份实现；但**取值口径一致**（`path` 优先、`\`→`/`）。
   const explicit = n.path;
-  if (typeof explicit === 'string' && explicit.trim()) return explicit.split(sep).join('/');
-  if (n.type !== 'file' && n.type !== 'doc') return undefined;
-  const legacy = n.description;
-  if (typeof legacy !== 'string' || !legacy.trim()) return undefined;
-  return legacy.split(sep).join('/');
+  if (typeof explicit !== 'string' || !explicit.trim()) return undefined;
+  return explicit.split(sep).join('/');
 }
 
 /**

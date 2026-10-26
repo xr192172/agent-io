@@ -165,12 +165,14 @@ export function createFileSnapshot(
       const byPath = new Map(
         (
           (dsl?.geometry?.nodes ?? []) as Array<{
-            description?: string;
+            path?: string;
             decision?: { summary?: string; acceptance?: string };
           }>
         )
-          .filter((n) => typeof n.description === 'string' && n.description !== '')
-          .map((n) => [n.description as string, n]),
+          // ★★★ 2026-10-27（T-#37）：**改用 `path`** —— 原先用 `description` 当路径键，
+          //   而 `Node.description` 已删 ⇒ 那个键**永远是 undefined** ⇒ byPath 空 ⇒ **快照标记静默失效**。
+          .filter((n) => typeof n.path === 'string' && n.path !== '')
+          .map((n) => [n.path as string, n]),
       );
       for (const rel of seen) {
         const d = byPath.get(rel)?.decision;

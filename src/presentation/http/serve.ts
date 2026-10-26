@@ -722,7 +722,7 @@ async function handleApiRevealFile(req: http.IncomingMessage, res: http.ServerRe
  */
 function collectChainInfo(
   dsl: {
-    geometry: { nodes: Array<{ id: string; x?: number; host?: string; layer?: string; label?: string; description?: string }> };
+    geometry: { nodes: Array<{ id: string; x?: number; host?: string; layer?: string; label?: string; title?: string }> };
     semantic?: { files?: Array<{ id: string; path: string }> };
   },
   nodeId: string,
@@ -745,7 +745,7 @@ function collectChainInfo(
   for (const n of nodes) {
     const funcName = (n.label || '').replace(/^[①-⑫]|^\d+\.\s*/, '').replace(/·.*$/, '').trim();
     if (!funcName) continue;
-    const crossM = (n.description || '').match(/跨文件调用：(.+)$/m);
+    const crossM = (n.title || '').match(/跨文件调用：(.+)$/m); // ★ T-#37：派生文本现在住 title
     let file = hostFile;
     if (crossM) {
       const t = crossM[1];
@@ -762,20 +762,20 @@ function collectChainInfo(
       node_id: n.id,
       label: n.label || n.id,
       func_name: funcName,
-      description: (n.description || '').slice(0, 200),
+      description: (n.title || '').slice(0, 200), // ★ T-#37：响应字段仍叫 description，值读 title
       is_judgement: false,
       is_cross: n.id.includes('__sx'),
     });
   }
   // CFG 判定节点（跨文件 CFG 的 branch/loop，__alg_）
-  const judgeNodes = (dsl.geometry.nodes as Array<{ id: string; label?: string; description?: string }>)
-    .filter((n) => n.id.includes('__alg_') && /branch|loop/.test(n.description || ''));
+  const judgeNodes = (dsl.geometry.nodes as Array<{ id: string; label?: string; title?: string }>)
+    .filter((n) => n.id.includes('__alg_') && /branch|loop/.test(n.title || '')); // ★ T-#37
   for (const j of judgeNodes) {
     infos.push({
       node_id: j.id,
       label: j.label || j.id,
       func_name: (j.label || '').replace(/^▶\s*/, ''),
-      description: (j.description || '').slice(0, 200),
+      description: (j.title || '').slice(0, 200), // ★ T-#37：响应字段仍叫 description，值读 title
       is_judgement: true,
       is_cross: false,
     });

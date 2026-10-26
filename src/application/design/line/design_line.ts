@@ -483,20 +483,15 @@ export interface BriefReport {
 /** 纯组装：入参是已经算好的两侧事实，本函数不做 I/O、不判判据 */
 export function briefFrom(dsl: unknown, target: { node_id?: string; path?: string }): BriefReport['design'] & { nodePath?: string } {
   const d = (dsl ?? {}) as {
-    geometry?: { nodes?: Array<{ id?: string; path?: string; description?: string; decision?: unknown }> };
+    geometry?: { nodes?: Array<{ id?: string; path?: string; decision?: unknown }> };
     semantic?: { files?: Array<{ path?: string }> };
   };
   const nodes = d.geometry?.nodes ?? [];
   const node = target.node_id ? nodes.find((n) => n.id === target.node_id) : undefined;
-  // ★★★ 2026-10-23（误报修正）：**文件节点的路径住在 `description`，不是 `path`**。
-  //   实测 `get_dsl node` 的输出：{"type":"file","description":"src/domain/task_schema.ts"}（无 path 字段）。
-  //   ★ 只认 `path` 会让 briefReport 拿不到文件 ⇒ fileFacts 不查 ⇒ 报「实际 0 符号（未索引）」
-  //     ⇒ **13 个明明存在的符号被全部报成"缺"** —— 一个典型的误报（比不报更坏）。
-  const filePath =
-    target.path ??
-    (typeof node?.path === 'string' ? node.path : typeof (node as { description?: unknown } | undefined)?.description === 'string'
-      ? String((node as { description: string }).description)
-      : undefined);
+  // ★★★ 2026-10-27（T-#37）：**只认 `path`** —— `Node.description` 已删（T-#35），
+  //   下面那条 2026-10-23 的注释（“文件节点的路径住在 description”）**已过期**：
+  //   T-#23 起 `import_project` 给每个 file 节点写 `path`，全册 description 也已清零。
+  const filePath = target.path ?? (typeof node?.path === 'string' ? node.path : undefined);
   const dec = (node?.decision ?? undefined) as { summary?: string; acceptance?: string; expectations?: unknown } | undefined;
   const exps = Array.isArray(dec?.expectations) ? (dec!.expectations as Array<{ kind?: string }>) : [];
   return {

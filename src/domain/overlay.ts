@@ -380,13 +380,14 @@ export interface ReconcileStats {
  *   `path` 型节点在锚点上会**退回 `id`** 当路径（`nodePath` 的 `else` 分支）⇒
  *   设计单/写闸按路径认亲时对不上（一事实两口径）。★ 实测真仓无"两者都给且不同"的节点（both=0）。
  */
-export function nodePath(n: { id: string; type?: string; description?: string; path?: string }): string {
+export function nodePath(n: { id: string; type?: string; path?: string }): string {
+  // ★★★ 2026-10-27（T-#37）：**回落 `description` 已删** —— `Node.description` 不存在了，
+  //   那个分支是**死代码**（永远不会命中）。剩下三级：`path` → `dir_`/`brick_` 特例 → `id`。
   const explicit = typeof n.path === 'string' ? n.path.trim() : '';
   if (explicit) return explicit.split('\\').join('/');
-  if (n.type === 'file') return n.description ?? n.id;
   if (n.type === 'module' && n.id.startsWith('dir_')) return decodeDirId(n.id);
   if (n.id.startsWith('brick_')) return n.id.slice('brick_'.length);
-  return n.description ?? n.id;
+  return n.id;
 }
 
 function decodeDirId(id: string): string {

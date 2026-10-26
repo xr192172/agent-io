@@ -73,7 +73,7 @@ type RawExpectation = {
 
 type AnyNode = {
   id?: string;
-  description?: string;
+  path?: string;
   decision?: { expectations?: RawExpectation[] };
 };
 
@@ -267,7 +267,7 @@ export function planDesignDb(
       //   ★ 这是第 4 处“散文当结构”（前 3 处：`design-check` 拿 description 当 path ·
       //     `write_gate` 回落 description · `node.update` 的 responsibility 优先级）。
       //   ★ T-#23 已让 `import_project` 给 file 节点写 `path` ⇒ 扫描节点走 path 分支，产出不变。
-      const rel = norm((raw as { path?: string }).path ?? raw.description);
+      const rel = norm((raw as { path?: string }).path); // ★ T-#37：AnyNode.description 已删 ⇒ 只认 path
       if (!rel) continue;
       if (isExcludedPath(rel)) continue;
       plan.nodes += 1;

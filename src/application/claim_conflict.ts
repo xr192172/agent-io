@@ -145,7 +145,6 @@ export interface ClaimReadSetInput {
   node?: {
     id: string;
     type?: string;
-    description?: string;
     path?: string;
     decision?: { expectations?: Expectation[] };
   };
@@ -254,11 +253,10 @@ export function computeClaimReadSet(input: ClaimReadSetInput): ClaimReadSetResul
   // ── ③ 节点自己的文件（最粗的兜底；L1 卡唯一能算出来的东西）──
   const n = input.node;
   if (n) {
-    const explicit = typeof n.path === 'string' ? n.path.trim() : '';
-    const legacy = n.type === 'file' || n.type === 'doc' ? (n.description ?? '').trim() : '';
-    const p = explicit || legacy;
+    // ★ T-#37：回落 `description` 的分支已删（`Node.description` 不存在）
+    const p = typeof n.path === 'string' ? n.path.trim() : '';
     if (p) addFile(p, 'node-path');
-    else notes.push(`节点 ${input.cardId} 没有 \`path\` / 可用 \`description\` ⇒ 连文件级兜底都没有`);
+    else notes.push(`节点 ${input.cardId} 没有 \`path\` ⇒ 连文件级兜底都没有`);
   }
 
   if (missingSyms.length) {

@@ -410,7 +410,6 @@ function criteriaGap(
         id?: string;
         type?: string;
         path?: string;
-        description?: string;
         decision?: { expectations?: Expectation[] };
       }
     | undefined,
@@ -420,10 +419,8 @@ function criteriaGap(
   const post = postExpectations(expectations);
   const pre = expectations.filter((e) => expectationPhase(e) === 'pre');
   const sem = (dsl.semantic?.files ?? []).find((f) => f.id === node?.id);
-  const filePath =
-    (node?.path ?? '').trim() ||
-    (sem?.path ?? '').trim() ||
-    (node?.type === 'file' || node?.type === 'doc' ? (node?.description ?? '').trim() : '');
+  // ★ T-#37：回落 `description` 的分支已删（`Node.description` 不存在）
+  const filePath = (node?.path ?? '').trim() || (sem?.path ?? '').trim();
   /** ★ 从这个节点**已有的符号**里取一个真实名字（模板里不写 `<symbol>` 这种占位符 —— 那还是要人再查一遍） */
   const symbols = (sem?.symbols ?? []).map((s) => String((s as { name?: unknown }).name ?? '')).filter(Boolean);
   const sample = symbols[0];
@@ -838,7 +835,7 @@ interface ConstructBasis {
  */
 function constructBasis(
   dsl: NonNullable<ReturnType<typeof getDesignSheet>>,
-  node: { id: string; type?: string; label?: string; title?: string; description?: string; path?: string },
+  node: { id: string; type?: string; label?: string; title?: string; path?: string },
 ): ConstructBasis {
   const sem = (dsl.semantic?.files ?? []).find((f) => f.id === node.id);
   const resp = (sem?.responsibility ?? '').trim();
@@ -846,10 +843,8 @@ function constructBasis(
   // ★ 自动生成的 label 等于 id（`addNode` 的 `label || node_id`）⇒ 它不携带任何信息，不算"内容"
   const label = (node.label ?? '').trim();
   const labelUsable = label && label !== node.id ? label : '';
-  const filePath =
-    (node.path ?? '').trim() ||
-    (sem?.path ?? '').trim() ||
-    (node.type === 'file' || node.type === 'doc' ? (node.description ?? '').trim() : '');
+  // ★ T-#37：回落 `description` 的分支已删（`Node.description` 不存在）
+  const filePath = (node.path ?? '').trim() || (sem?.path ?? '').trim();
   const where = filePath ? `（${filePath}）` : '';
   const what = resp || title || labelUsable;
   if (what) {

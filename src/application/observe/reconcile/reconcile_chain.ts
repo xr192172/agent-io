@@ -157,7 +157,7 @@ function hasDerivedChain(dsl: {
 /** 从 DSL detail 链读取函数序列（与 serve.ts collectChainInfo 同源解析） */
 function readDerivedChain(
   dsl: {
-    geometry: { nodes: Array<{ id: string; x?: number; host?: string; layer?: string; label?: string; description?: string }> };
+    geometry: { nodes: Array<{ id: string; x?: number; host?: string; layer?: string; label?: string; title?: string }> };
     semantic?: { files?: Array<{ id: string; path: string }> };
   },
   nodeId: string,
@@ -173,7 +173,7 @@ function readDerivedChain(
     const funcName = (n.label || '').replace(/^[①-⑫]|^\d+\.\s*/, '').replace(/·.*$/, '').trim();
     if (!funcName) return;
     let file = hostFile || '';
-    const crossM = (n.description || '').match(/跨文件调用：(.+)$/m);
+    const crossM = (n.title || '').match(/跨文件调用：(.+)$/m); // ★ T-#37：派生文本现在住 title
     if (crossM) {
       const t = crossM[1];
       file = path.isAbsolute(t) ? t : [path.join(projectRoot, t), path.join(projectRoot, 'src', t)].find((c) => fs.existsSync(c)) || path.join(projectRoot, t);
@@ -181,7 +181,7 @@ function readDerivedChain(
     chain.push({
       step: i + 1,
       name: funcName,
-      signature: (n.description || '').split('\n')[0] || undefined,
+      signature: (n.title || '').split('\n')[0] || undefined, // ★ T-#37
       node_id: n.id,
       file,
       is_cross: n.id.includes('__sx'),
