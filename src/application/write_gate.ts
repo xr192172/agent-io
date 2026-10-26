@@ -774,7 +774,8 @@ export function collectGateCoverage(rootArg: string): GateCoverage {
       const card = taskOfNode(n, d.todos ?? []);
       if (card) taskById.set(n.id, card);
       if (n.gate) gateById.set(n.id, n.gate);
-      const rel = nodeFilePath(n as { type?: string; description?: string } & { path?: string }, path.sep);
+      // ★ T-#37：cast 里的 `description?: string` 已删（`nodeFilePath` 不再接受它）
+      const rel = nodeFilePath(n as { type?: string; path?: string }, path.sep);
       if (rel) {
         byPath.set(rel, n.id);
         gateByPath.set(rel, n.gate); // ★ 未声明 ⇒ undefined ⇒ 下面一律按 gated 处理（安全方向）

@@ -26,7 +26,8 @@ export interface DfNodeLike {
   shapes?: { in?: unknown; out?: unknown } | null;
   /** derive_algorithm 生成的 CFG 节点用 style.shape 区分判定形状 */
   style?: { shape?: string; tone?: string } | null;
-  description?: string;
+  /** ★ T-#37：原 `description`（`Node.description` 已删）⇒ 派生文本现在住 `title` */
+  title?: string;
 }
 
 export interface DfEdgeLike {
@@ -137,7 +138,7 @@ export function collectJudgements(
           const label = (t?.label ?? e.to).replace(/\s+/g, ' ').slice(0, 40);
           return { via: e.label || '', to: label };
         });
-        judgements.push({ cond: (n.description ?? '').split('\n').find((l) => l.startsWith('条件：'))?.slice(3) ?? '', nodeId: cur, branches });
+        judgements.push({ cond: (n.title ?? '').split('\n').find((l) => l.startsWith('条件：'))?.slice(3) ?? '', nodeId: cur, branches }); // ★ T-#37：派生文本住 title
       }
       // 判定点也继续深入（嵌套 if/循环内的判定也要收集；visited 防环）
     }

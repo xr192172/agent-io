@@ -32,7 +32,7 @@ import path from 'node:path';
 //   这里只负责把结果并进 diff 的回执 —— 判据一处，别在 diff 里再写一把。
 import { mustHaveFor, type MustHaveReport } from './design_line.js';
 
-type AnyNode = Record<string, unknown> & { id?: string };
+type AnyNode = Record<string, unknown> & { id?: string; path?: string };
 type AnyEdge = { from?: string; to?: string; label?: string };
 
 export interface DesignDiffResult {
@@ -65,11 +65,15 @@ const MEANINGFUL = ['decision', 'task', 'label', 'type', 'arch_layer', 'descript
 const stripExt = (p: string): string => String(p).replace(/\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/, '');
 const normPath = (p: string): string => stripExt(path.resolve(p)).replace(/[\\/]index$/, '').toLowerCase();
 
-/** 节点 id → 源码相对路径（优先用 description，那里存的是真路径） */
-function nodePath(node: AnyNode | undefined): string | null {
-  const d = node?.description;
-  if (typeof d === 'string' && d.includes('/') && !/\s/.test(d)) return d;
-  return null;
+/** 节点 id → 源码相对路径（**只认 `path`**） */
+function nodeRelPath(node: AnyNode | undefined): string | null {
+  // ★★★ 2026-10-27（T-#37）：**原先读 `description`**（注释写“那里存的是真路径”）——
+  //   `Node.description` 已删 ⇒ 读到的永远是 `undefined` ⇒ 本函数**永远返回 null**
+  //   ⇒ 下面 L143/144 的路径匹配**全失效**（且静默 —— 因为 AnyNode 是 `Record<string, unknown>`，
+  //   `.description` 的类型是 `unknown`，**tsc 不管**）。
+  //   ★ 同时改名 `nodeRelPath`：原名 `nodePath` 与 `overlay.ts#nodePath` 撞名，读代码时极易混淆。
+  const p = typeof node?.path === 'string' ? node.path : '';
+  return p && p.includes('/') && !/\s/.test(p) ? p : null;
 }
 
 /** 抓文件里出现过的模块说明符（★ 浅正则，不建 AST —— 见头注） */
@@ -140,8 +144,8 @@ export function designDiff(projectDir: string, feature: string): DesignDiffResul
     const label = String(edge.label || '');
     if (!label.startsWith('imports')) return { verdict: 'unknown', evidence: `非 imports 边（${label}）` };
 
-    const fromRel = nodePath(dNodes.get(String(edge.from)));
-    const toRel = nodePath(dNodes.get(String(edge.to)));
+    const fromRel = nodeRelPath(dNodes.get(String(edge.from)));
+    const toRel = nodeRelPath(dNodes.get(String(edge.to)));
     if (!fromRel || !toRel) return { verdict: 'unknown', evidence: '节点无路径' };
 
     const text = readSrc(fromRel);
