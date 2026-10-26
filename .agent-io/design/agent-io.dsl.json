@@ -10400,7 +10400,7 @@
         "task": {
           "id": "file_src_infrastructure_graph_import_project_ts",
           "summary": "import_project：file 节点带 path + 登记注册表 + **不再写 description**",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_import_project_ts\"].responsibility"
@@ -10466,13 +10466,28 @@
                   "src/infrastructure/graph/import_project.ts"
                 ]
               }
+            },
+            {
+              "kind": "expectations",
+              "at": "2026-10-26T16:20:32.211Z",
+              "by": "llm",
+              "agent": "agent:wish-machine",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_infrastructure_graph_import_project_ts（3 条判据）",
+                "input": "c3233030d8be2f3f3e8933f2a6c90b99858761df",
+                "code": "7da1e441f612b792766346d6d468b34072fc1ea3",
+                "covers": [
+                  "src/infrastructure/graph/import_project.ts"
+                ]
+              }
             }
           ],
           "reopened_at": null,
           "reopen_reason": "T-#34：import_project 不再写 description（它是 path 的纯副本；C 方案第一刀：先停产者）",
           "reopened_from": "agent:wish-machine"
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "import_project：file 节点带 path + 登记注册表 + **不再写 description**",
           "expectations": [
@@ -59392,7 +59407,7 @@
         ],
         "lines": 1642,
         "layer": "core",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_index_db_ts",
@@ -62928,13 +62943,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 91,
+  "_dsl_rev": 92,
   "_sync": {
-    "saved_at": "2026-10-26T16:17:30.616Z",
+    "saved_at": "2026-10-26T16:20:32.295Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 30453479,
+    "age": 30635158,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
