@@ -331,7 +331,7 @@ export function renderLiveFromDb(feature: string): DesignDSL | null {
       width: FILE_W,
       height: FILE_H,
       type: 'file',
-      description: f.rel,
+      title: f.rel, // ★ T-#35：description 已删（路径只住 path）
       style: { ...colors, borderRadius: 4 },
     });
     if (f.dir && f.dir !== '.') {

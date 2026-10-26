@@ -18,6 +18,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { nodePath } from '../../../domain/overlay.js'; // ★ T-#35：路径的唯一取值器
 import { getDSL, saveDSL, requireProjectRoot } from '../../storage.js';
 // ★★ 2026-10-22（A1）：架构分层结果回写是**派生写端**（serve.ts 直接 import）。
 import { runDslWriteScope } from '../../dsl_write_scope.js';
@@ -145,7 +146,7 @@ function dslFingerprint(dsl: DesignDSL): string {
     n.id,
     n.label ?? '',
     n.type ?? '',
-    n.description ?? '',
+    nodePath(n), // ★ T-#35：description 已删
     n.arch_layer ?? '',
   ]);
   const edges = (dsl.geometry?.edges ?? []).map((e) => [e.id, e.from, e.to, e.label ?? '']);
@@ -159,7 +160,7 @@ function dslSourceRels(dsl: DesignDSL): string[] {
   const rels = new Set<string>();
   for (const f of dsl.semantic?.files ?? []) if (f.path) rels.add(f.path);
   for (const n of dsl.geometry?.nodes ?? []) {
-    if (n.type === 'file' && n.description) rels.add(n.description);
+    if (n.type === 'file') { const np = nodePath(n); if (np) rels.add(np); } // ★ T-#35
   }
   return [...rels];
 }
@@ -211,7 +212,7 @@ export async function archLayer(input: ArchLayerInput): Promise<ArchLayerResult>
   const assignments: ArchLayerFileAssign[] = fileNodes.map((n) => ({
     id: n.id,
     label: n.label,
-    path: idToPath.get(n.id) ?? n.description,
+    path: idToPath.get(n.id) ?? nodePath(n), // ★ T-#35
     arch_layer: n.arch_layer ?? 'core',
   }));
 

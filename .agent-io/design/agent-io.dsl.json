@@ -7915,7 +7915,62 @@
           "borderRadius": 4
         },
         "arch_layer": "service",
-        "path": "src/domain/geometry.ts"
+        "path": "src/domain/geometry.ts",
+        "task": {
+          "id": "file_src_domain_geometry_ts",
+          "summary": "【L1 待建构】服务层 · src/domain — 1 个函数（导入自 4 个模块）（src/domain/geometry.ts） ← 节点 file_src_domain_geometry_ts",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_domain_geometry_ts\"].responsibility"
+          },
+          "owner": "agent:wish-machine",
+          "claimed_at": "2026-10-26T16:14:42.487Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/domain/geometry.ts",
+                "content_hash": "73c1ff2b7b5d1053e1b2094ad139564bd24fb956"
+              }
+            ],
+            "computed_at": "2026-10-26T16:14:42.367Z",
+            "basis": [
+              "declared"
+            ]
+          }
+        },
+        "status": "in_progress",
+        "decision": {
+          "summary": "geometry：删掉 Node.description —— 路径只住 path，说明只住 responsibility/title",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "mustNot": [
+                "description?: string"
+              ],
+              "path": "src/domain/geometry.ts",
+              "why": "C 方案第二刀：description 是 path 的纯副本（实测 1050/1057 逐字相等、7 条 basename、0 条说明）⇒ 字段本身删除"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "Node",
+              "why": "Node 类型必须仍在（回归底线）"
+            }
+          ],
+          "acceptance": "① `Node` 类型上**不再有 `description`**（数据已清零 1057 → 0，实测零信息丢失）；② 编译通过（tsc 必须绿）—— 88 个读点必须逐处显式回答“这是路径还是说明”；③ 不得改变行为。",
+          "status": "active",
+          "tags": [
+            "single-source",
+            "path-fact",
+            "structural"
+          ],
+          "updated_at": "2026-10-26T16:14:42.453Z",
+          "author": "llm",
+          "agent": "agent:wish-machine"
+        }
       },
       {
         "id": "file_src_domain_judge_port_ts",
@@ -52196,7 +52251,8 @@
           }
         ],
         "lines": 501,
-        "layer": "service"
+        "layer": "service",
+        "status": "in_progress"
       },
       {
         "id": "file_src_domain_judge_port_ts",
@@ -62845,15 +62901,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 89,
+  "_dsl_rev": 90,
   "_sync": {
-    "saved_at": "2026-10-26T16:09:05.484Z",
+    "saved_at": "2026-10-26T16:14:42.511Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 29948347,
+    "age": 30285374,
     "dbSchemaVersion": 17,
-    "via": "tool:t34-strip-description"
+    "via": "edit_dsl:edit_dsl"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）"

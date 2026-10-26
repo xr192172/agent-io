@@ -59,6 +59,7 @@ import {
 // ★★★ 2026-10-21（跑环继任链）：链的**位置**（上一环 / 下一环 / 第几环 / 断没断）与徽标措辞的
 //   唯一住处 = `domain/todo_chain.ts` —— ★ 读端只调它，不自己走一遍父指针（两处实现迟早对不上）。
 import { buildTodoChains, chainBadge, type ChainPlace } from '../../../domain/todo_chain.js';
+import { nodePath } from '../../../domain/overlay.js'; // ★ T-#35：路径的唯一取值器
 import { readTodoTombstones } from '../../design/board/todo_journal.js';
 // ★★★ T330：欠账视图（`query=pending`）**直读 overlay 权威** —— `progress_evidence` 不被
 //   `applyOverlay` 投影回 base（`overlay.ts:481/500`）⇒ 要 evidence 只能读 overlay 本体。
@@ -656,7 +657,7 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
         `  状态: ${node.status ?? '-'}`,
         `  架构层: ${node.arch_layer ?? '-'}`,
         `  泳道: ${node.swimlane ?? '-'}`,
-        node.description ? `  描述: ${node.description}` : '',
+        node.title ? `  标题: ${node.title}` : '', // ★ T-#35：description 已删 ⇒ 说明位读 title
         `  位置: (${node.x ?? 'auto'}, ${node.y ?? 'auto'}) ${node.width ?? 'auto'}×${node.height ?? 'auto'}`,
         node.sub_dsl ? `  子图: ${node.sub_dsl.feature ?? '（内联 DSL）'}` : '',
       ].filter(Boolean);
@@ -1423,7 +1424,7 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
       // 现存文件节点的 rel 集合（语义层 path ∪ geometry 文件节点 description/id）
       const filePaths = new Set<string>();
       for (const f of dsl.semantic?.files ?? []) if (f.path) filePaths.add(f.path);
-      for (const n of dsl.geometry?.nodes ?? []) if (n.type === 'file') filePaths.add(n.description ?? n.id);
+      for (const n of dsl.geometry?.nodes ?? []) if (n.type === 'file') filePaths.add(nodePath(n)); // ★ T-#35
 
       if (!input.tag) {
         // 不给 tag：列出全部标签（名字 + 成员数 + 失联数）—— 便于发现有哪些标记

@@ -14,6 +14,7 @@
 
 import fs from 'node:fs';
 import { getDSL, saveDSL, getDesignSheetFile } from '../../../infrastructure/storage.js';
+import { nodePath } from '../../../domain/overlay.js'; // ★ T-#35：路径的唯一取值器
 // ★★★ 2026-10-22（A1）：`edit_dsl` 是**人改设计的唯一正路** —— 它必须自己声明"这次写是谁授权的"，
 //   否则下面的 `applyOperation` → `saveDSL` 会抛（`storage.ts#assertDslWriteAllowed`）。
 import { runDslWriteScope } from '../../../infrastructure/dsl_write_scope.js';
@@ -757,9 +758,9 @@ function resolveMemberFiles(dsl: DesignDSL, inputs: string[]): { resolved: strin
   }
   for (const n of dsl.geometry?.nodes ?? []) {
     if (n.type !== 'file') continue;
-    const rel = n.description ?? n.id;
+    const rel = nodePath(n); // ★ T-#35：description 已删 ⇒ 路径只走 nodePath
     byKey.set(n.id, rel);
-    if (n.description) byKey.set(norm(n.description), rel);
+    if (rel) byKey.set(norm(rel), rel); // ★ T-#35：同一取值器
   }
   const resolved: string[] = [];
   const unresolved: string[] = [];
@@ -905,7 +906,7 @@ export function findDecisionTargetNode(dsl: DesignDSL, raw: string): DecisionTar
   const nodes = dsl.geometry?.nodes ?? [];
   const byId = nodes.find((n) => n.id === raw);
   const byPath = nodes.find(
-    (n) => (n.type === 'file' || n.type === 'doc') && n.description && (n.description === raw || normRel(n.description) === normRel(raw)),
+    (n) => (n.type === 'file' || n.type === 'doc') && (nodePath(n) === raw || normRel(nodePath(n)) === normRel(raw)), // ★ T-#35
   );
   if (byId ?? byPath) return byId ?? byPath;
   // 语义文件表兜底：把 path / file_id 解析到它的节点 id，再取节点

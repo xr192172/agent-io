@@ -18,6 +18,7 @@
  */
 
 import type { DesignDSL, Node, ArchLayer, SemanticFile } from '../../../domain/types.js';
+import { nodePath } from '../../../domain/overlay.js'; // ★ T-#35：路径的唯一取值器
 
 /** 层定义：目录/文件名段模式 → 层。首中即止（顺序敏感：更具体的层排前） */
 export interface LayerDef {
@@ -157,7 +158,7 @@ export function detectArchLayers(dsl: DesignDSL, layers?: LayerDef[]): DesignDSL
 
   const nodes: Node[] = dsl.geometry.nodes.map((n) => {
     if (n.type !== 'file') return n;
-    const layer = matchLayer(n.description ?? n.id, defs);
+    const layer = matchLayer(nodePath(n), defs); // ★ T-#35
     byLayer.set(layer, [...(byLayer.get(layer) ?? []), n.id]);
     return layers ? { ...n, arch_layer: layer } : n.arch_layer ? n : { ...n, arch_layer: layer };
   });

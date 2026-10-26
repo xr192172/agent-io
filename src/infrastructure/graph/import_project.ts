@@ -19,6 +19,7 @@
  */
 
 import { INDEX_SKIP_DIR_EXTRA, codeSourceExtSet, excludedNonCodeExts, isIndexSkippedFileName, partitionByCodeLang, shouldSkipDir } from '../parse/source_exts.js';
+import { nodePath } from '../../domain/overlay.js'; // ★ T-#35：路径的唯一取值器
 import fs from 'node:fs';
 import path from 'node:path';
 import ignore from 'ignore';
@@ -1058,7 +1059,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       //   · 文件节点：`description` 即文件相对路径（`import_project.ts` 写文件节点时落的）；
       //   · 目录容器节点：id = `dir_<sanitized rel>` ⇒ 反推 rel。
       const roleRelOf = (n: Node): string =>
-        n.description || (n.id.startsWith('dir_') ? n.id.replace(/^dir_/, '').replace(/_/g, '/') : n.id);
+        nodePath(n); // ★ T-#35：description 已删 ⇒ nodePath 内含 dir_/brick_ 特例
       // ★★★ 2026-10-09（T93 round2）：**喂 LLM 的条目键 = 文件相对路径**（渲染的就是文件节点）；
       //   回填标题时用同一个 `roleRelOf` 取查找键（杜绝两把尺）。
       //   ★ 2026-10-09 移除聚合模式（`functional_mode` / `design_mode`，0 使用 + 有害 T101）后，
@@ -1620,7 +1621,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
         type: 'doc',
         // ★★★ 2026-10-15（进度轴收归，T328）：同上面两处 —— 扫描侧的 `status: 'done'` **不再落库**。
         // ★ 与 file 节点同款：**路径放 `description`** ⇒ `nodePath()` 的 else 分支能原样取到 ✓
-        description: rel,
+        title: rel, // ★ T-#35：description 已删（rel 就是路径 ⇒ 它只住 path；这里只留人读标题）
         style: { ...DEFAULT_FILE_COLOR, borderRadius: 4 },
       });
     });

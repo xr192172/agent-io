@@ -152,7 +152,7 @@ function sameValue(a: unknown, b: unknown): boolean {
 export function designSheetRef(n: Node): string {
   const id = typeof n.id === 'string' ? n.id.trim() : '';
   if (id) return id; // ★ 已实现：唯一 id 空间（扫描给的）
-  const desc = (n.description ?? '').trim();
+  const desc = nodePath(n).trim(); // ★ T-#35：description 已删 ⇒ 走唯一取值器
   const name = (n.label ?? '').trim();
   // ★ 未实现：名字/路径指代（file 用路径，其余用名字；都缺时给一个响亮可见的兜底，不静默）
   return (n.type === 'file' ? desc || name : name || desc) || `<无名占位:${n.type ?? 'node'}>`;
@@ -235,7 +235,7 @@ function nodePendingEntries(dsl: DesignDSL | null | undefined): PendingEntry[] {
   const out: PendingEntry[] = [];
   for (const n of nodesOf(dsl)) {
     if (trimStr(n.id)) continue;
-    out.push({ ref: designSheetRef(n), path: trimStr(n.description), name: trimStr(n.label) || trimStr(n.title) });
+    out.push({ ref: designSheetRef(n), path: nodePath(n), name: trimStr(n.label) || trimStr(n.title) }); // ★ T-#35
   }
   return out;
 }

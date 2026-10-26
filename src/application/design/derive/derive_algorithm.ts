@@ -144,7 +144,7 @@ async function deriveAlgorithmCore(input: DeriveAlgorithmInput): Promise<DeriveA
     };
     const descParts: string[] = [`${cn.kind}${cn.line > 0 ? ` · 源码第 ${cn.line} 行` : ''}`];
     if (cn.condition && cn.condition !== cn.label) descParts.push(`条件：${cn.condition}`);
-    node.description = descParts.join('\n');
+    node.title = descParts.join('\n'); // ★ T-#35：description 已删 ⇒ 存 title（“人话主标题”）
     return node;
   });
 

@@ -586,7 +586,7 @@ export function buildSplitPreviewDsl(
       width: contW,
       height: contH,
       type: 'module',
-      description: r.suggestion,
+      title: r.suggestion, // ★ T-#35：description 已删 ⇒ 存 title
       style: {
         bg: isCrit ? 'rgba(233,69,96,0.08)' : 'rgba(255,152,0,0.08)',
         border: `2px dashed ${isCrit ? '#e94560' : '#FF9800'}`,
@@ -606,7 +606,7 @@ export function buildSplitPreviewDsl(
         width: PV_NODE_W,
         height: PV_NODE_H,
         type: 'file',
-        description: `声明: ${c.decls.join(', ')}\n内聚引用: ${c.internal_refs}`,
+        title: `声明: ${c.decls.join(', ')}\n内聚引用: ${c.internal_refs}`, // ★ T-#35：description 已删
         style: { borderRadius: 6 },
       });
       edges.push({

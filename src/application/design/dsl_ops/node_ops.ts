@@ -193,7 +193,7 @@ function syncSemanticFileForFileNode(dsl: DesignDSL, node: Node): void {
     //   ⇒ 顺序反过来：`node.description` 优先；没有才回落旧值 / label / path。
     //   ★ 这不是"谁更好看"，是**谁是写入口**：节点由 `node.add/update` 写，语义表只是它的投影。
     responsibility:
-      (node.description as string | undefined) ??
+      (node.title as string | undefined) ?? // ★ T-#35：description 已删 ⇒ “说明”位改读 title
       (prev?.responsibility as string | undefined) ??
       node.label ??
       p,
@@ -284,7 +284,8 @@ export function addNode(input: AddNodeInput): EditResult {
     type: nodeType,
     path: nodePathValue,
     gate: gateValue,
-    description,
+    // ★ T-#35：Node.description 已删 ⇒ 入参名保留 description（调用方兼容），**存储到 title**。
+    title: description,
     // ★★★ T328：**不再把 `status` 落进 base**（旧轴直写）。进度改走权威（下面的 `updateStatus`）——
     //   它同时也是 evidence 闸的入口：不带证据置 `done` ⇒ 当场拒（"不许默默勾上"）。
     swimlane,
@@ -534,7 +535,7 @@ export function updateNode(input: UpdateNodeInput): EditResult {
   } else {
     node.gate = normalizeGate(gateInput);
   }
-  if (description !== undefined) node.description = description;
+  if (description !== undefined) node.title = description; // ★ T-#35：入参名保留，存储到 title
   // ★★★ T328：进度**不在此裸写** `Node.status`（旧轴/base）—— 见下方 saveDSL 后的 `updateStatus`。
   if (swimlane !== undefined) node.swimlane = swimlane;
   if (content !== undefined) node.content = content;

@@ -180,7 +180,7 @@ export function exportMarkdown(input: ExportMarkdownInput): ExportMarkdownResult
   lines.push('| ID | 标签 | 类型 | 状态 | 描述 |');
   lines.push('|---|---|---|---|---|');
   for (const n of dsl.geometry.nodes) {
-    const desc = n.description ?? '';
+    const desc = n.title ?? ''; // ★ T-#35：description 已删 ⇒ 说明位读 title
     lines.push(`| ${n.id} | ${n.label ?? n.id} | ${n.type ?? '-'} | ${n.status ?? '-'} | ${desc} |`);
   }
   lines.push('');

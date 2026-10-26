@@ -594,7 +594,7 @@ export async function deriveDetailChain(input: DeriveChainInput): Promise<Derive
       label: `${CIRCLED[stepNum - 1] ?? `${stepNum}.`} ${s.name}${crossSuffix(s.qualified_name)}`,
       layer: 'detail',
       host: node_id,
-      description: `${s.signature}${crossNote(s.qualified_name)}`,
+      title: `${s.signature}${crossNote(s.qualified_name)}`, // ★ T-#35：description 已删
     };
     if (shapes.in || shapes.out) node.shapes = shapes;
     newNodes.push(node);
@@ -627,7 +627,7 @@ export async function deriveDetailChain(input: DeriveChainInput): Promise<Derive
       label: `${CIRCLED[num - 1] ?? `${num}.`} ${fn.name}·分支${crossSuffix(fn.qualified_name)}`,
       layer: 'detail',
       host: node_id,
-      description: `${fn.signature}${crossNote(fn.qualified_name)}`,
+      title: `${fn.signature}${crossNote(fn.qualified_name)}`, // ★ T-#35：description 已删
     };
     if (shapes.in || shapes.out) node.shapes = shapes;
     newNodes.push(node);
@@ -722,7 +722,7 @@ export async function deriveDetailChain(input: DeriveChainInput): Promise<Derive
           label: `${CIRCLED[num - 1] ?? `${num}.`} ${tfn}·→${tfileName}`,
           layer: 'detail',
           host: node_id,
-          description: `${tsym.signature}\n跨文件调用：${tfile}`,
+          title: `${tsym.signature}\n跨文件调用：${tfile}`, // ★ T-#35：description 已删
         };
         if (tshapes.in || tshapes.out) xnode.shapes = tshapes;
         newNodes.push(xnode);
@@ -751,7 +751,7 @@ export async function deriveDetailChain(input: DeriveChainInput): Promise<Derive
             };
             const descParts: string[] = [`${cn.kind}${cn.line > 0 ? ` · 源码第 ${cn.line} 行` : ''}`];
             if (cn.condition && cn.condition !== cn.label) descParts.push(`条件：${cn.condition}`);
-            node.description = descParts.join('\n');
+            node.title = descParts.join('\n'); // ★ T-#35：description 已删 ⇒ 存 title
             return node;
           });
           const cfgEdges: Edge[] = tcfg.edges.map((ce, i) => ({

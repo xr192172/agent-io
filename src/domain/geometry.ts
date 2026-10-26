@@ -205,8 +205,27 @@ export interface Node {
    * `overlay.ts#nodePath` 也照此取值。★ 两者都没给的情况仍按"不可寻址"处理（点名，不静默）。
    */
   path?: string;
-  /** 节点描述/备注 */
-  description?: string;
+  /**
+   * ★★★ 2026-10-27（T-#35 / C 方案第二刀）：**`description` 已删除** —— 它曾是 `path` 的纯副本。
+   *
+   * ## 病历（一天内被当成"结构"读了 5 次）
+   * ① `design-check` 拿它当 path（D1 误判手写节点）② `write_gate#nodeFilePath` 回落它
+   * ③ `node.update` 的 responsibility 优先级（旧值永远赢）④ `gen-db` 拿它当**文件名**
+   * （整句中文当文件名）⑤ `project_task-system-plan` 的 summary 里写死根路径
+   *
+   * ## 为什么删字段而不是改注释
+   * 删**数据**后再删**类型** ⇒ 编译器把 88 个读点**全部**指出来，每处必须显式回答
+   * "这是路径（→ `nodePath`）还是说明（→ `semantic.files[].responsibility` / `label`）"
+   * —— **没有一处能漏**。而"记得去改"正是今天失败 5 次的模式。
+   *
+   * ## 实测（删之前）
+   * `description === path` 的 file 节点 **1050/1057**（逐字相等）；另 7 条是 basename 变体
+   * （`label` 已持 basename）；非 file 节点用它 **0 条**；`title` 覆盖率 **0%**。
+   * ⇒ **零信息丢失**。
+   *
+   * ★ 路径的唯一权威 = {@link path}（+ `overlay.ts#nodePath` 这一个取值器）。
+   * ★ 职责/说明的唯一住处 = `semantic.files[].responsibility`。
+   */
   /** 人话主标题：LLM 生成的职责摘要（如"配置加载与校验"），渲染端优先展示，label 兜底 */
   title?: string;
   /** title 英文版（i18n：切换英文时用，缺失回退 title） */
