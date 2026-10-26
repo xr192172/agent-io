@@ -115,9 +115,10 @@
     "verify:changed": "node scripts/derive-touches.mjs && node scripts/verify-changed.mjs",
     "typecheck": "tsc --noEmit",
     "gitignore:check": "node scripts/gen_gitignore.mjs --check",
+    "lint:prose": "node scripts/lint-prose-as-structure.mjs",
     "design:gen-db": "node scripts/gen-db.mjs",
     "gen-db:check": "node scripts/gen-db-check.mjs",
-    "gate": "npm run typecheck && npm run gitignore:check && npm run design:gen-db && npm run gen-db:check && npm run design:check && npm run contract"
+    "gate": "npm run typecheck && npm run gitignore:check && npm run lint:prose && npm run design:gen-db && npm run gen-db:check && npm run design:check && npm run contract"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
