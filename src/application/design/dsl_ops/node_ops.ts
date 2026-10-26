@@ -187,8 +187,16 @@ function syncSemanticFileForFileNode(dsl: DesignDSL, node: Node): void {
     ...(prev ?? {}),
     id: (prev?.id as string | undefined) ?? node.id,
     path: p,
+    // ★★ 2026-10-26（T-#22 续，实测改）：**节点是权威，语义表是投影**。
+    //   第一版写的是 `prev.responsibility ?? node.description ?? …` —— 实测**更新分支永远不生效**
+    //   （旧值永远赢）：改完 description，semantic.files 里还是老句子。
+    //   ⇒ 顺序反过来：`node.description` 优先；没有才回落旧值 / label / path。
+    //   ★ 这不是"谁更好看"，是**谁是写入口**：节点由 `node.add/update` 写，语义表只是它的投影。
     responsibility:
-      (prev?.responsibility as string | undefined) ?? node.description ?? node.label ?? p,
+      (node.description as string | undefined) ??
+      (prev?.responsibility as string | undefined) ??
+      node.label ??
+      p,
   };
   if (i >= 0) files[i] = next;
   else files.push(next);
@@ -563,6 +571,10 @@ export function updateNode(input: UpdateNodeInput): EditResult {
   if (shadow !== undefined) node.style.shadow = shadow;
   if (opacity !== undefined) node.style.opacity = opacity;
 
+  // ★★★ 2026-10-26（T-#22 续）：**update 也要同步** —— 否则改一个 file 节点的 `path` 时，
+  //   `semantic.files` 里还是旧路径 ⇒ 两张表分叉（与 `addNode` 同一个病，只是方向不同）。
+  //   ★ 同一处判据（`syncSemanticFileForFileNode`）：只动 `type==='file' && path` 的节点。
+  syncSemanticFileForFileNode(dsl, node);
   saveDSL(dsl);
 
   // ★★★ T328（进度轴收归）：**进度改走权威** —— 唯一权威住 `overlay` 锚点的 `progress`，
