@@ -5,7 +5,8 @@
  * ★ 为什么要这样验（上一轮的教训）：探针只覆盖它**走过的路径**；
  *   而重写一个纯函数时，风险恰恰在"**没被覆盖的那一格**"（上轮我在 `usesNan === null` 那格翻过车）。
  */
-const REPO = 'D:/project_develop/design-canvas';
+// ★ 2026-10-26：不再硬编码旧仓路径（前身 `D:/project_develop/design-canvas`）—— 从本文件位置推导仓根
+const REPO = import.meta.dirname.replace(/[\\/][^\\/]+$/, '');
 const ir = await import('file://' + REPO + '/dist/src/infrastructure/parse/import_resolve.js');
 const path = await import('node:path');
 

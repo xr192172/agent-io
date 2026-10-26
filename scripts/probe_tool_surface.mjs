@@ -10,7 +10,8 @@
  *
  * `--json`：吐 `{ count, tools: [{name,title,description,inputKeys}] }`（按 name 排序 ⇒ 确定）。
  */
-const REPO = 'D:/project_develop/design-canvas';
+// ★ 2026-10-26：不再硬编码旧仓路径（前身 `D:/project_develop/design-canvas`）—— 从本文件位置推导仓根
+const REPO = import.meta.dirname.replace(/[\\/][^\\/]+$/, '');
 const { TOOL_DEFS } = await import('file://' + REPO + '/dist/src/application/tool_registry.js');
 
 const tools = TOOL_DEFS.map((t) => ({

@@ -18,7 +18,8 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
-const REPO = 'D:/project_develop/design-canvas';
+// ★ 2026-10-26：REPO 不再硬编码旧仓路径（前身 `D:/project_develop/design-canvas`）—— 从本文件位置推导仓根
+const REPO = import.meta.dirname.replace(/[\\/][^\\/]+$/, '');
 const CLI = path.join(REPO, 'dist/src/presentation/cli/cli.js');
 const LABS = 'D:/project_develop/_design-canvas-labs';
 const TMP = fs.mkdtempSync(path.join(LABS, '.tmp-t357-'));

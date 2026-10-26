@@ -19,7 +19,8 @@
 import fs from 'node:fs';
 import { TOOL_DEFS } from '../dist/src/application/tool_registry.js';
 
-const REPO = 'D:/project_develop/design-canvas';
+// ★ 2026-10-26：不再硬编码旧仓路径（前身 `D:/project_develop/design-canvas`）—— 从本文件位置推导仓根
+const REPO = import.meta.dirname.replace(/[\\/][^\\/]+$/, '');
 
 // ── ① 静态扫：只看【该工具自己的 def 块】（★ 绑松了会全命中 —— 我第一版就那样，52/69 全中 ✗）──
 // ★ 做法：在 6 个 lane 的 index.ts 里，找 `name: '<tool>'` 到**下一个** `name: ` 之间的那段 ⇒ 那段才是它的 def。

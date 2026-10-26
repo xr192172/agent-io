@@ -1,4 +1,5 @@
-const REPO = 'D:/project_develop/design-canvas';
+// ★ 2026-10-26：不再硬编码旧仓路径（前身 `D:/project_develop/design-canvas`）—— 从本文件位置推导仓根
+const REPO = import.meta.dirname.replace(/[\\/][^\\/]+$/, '');
 const tc = await import('file://' + REPO + '/dist/src/infrastructure/packages/template_compat.js');
 
 // 旧公式（从重写前的代码逐字抄回）

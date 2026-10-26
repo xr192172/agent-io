@@ -2002,7 +2002,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t203-touched-audit_mjs",
@@ -2018,7 +2019,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t203b-declared_mjs",
@@ -2690,7 +2692,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_certs_t358-domain-five-values-cert_mjs",
@@ -3859,7 +3862,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_closure_multi_mjs",
@@ -3971,7 +3975,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_tool_surface_mjs",
@@ -3987,7 +3992,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_verdict_grid_mjs",
@@ -4003,7 +4009,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_xfile_resolve_mjs",
@@ -61449,13 +61456,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 38,
+  "_dsl_rev": 45,
   "_sync": {
-    "saved_at": "2026-10-26T09:49:13.834Z",
+    "saved_at": "2026-10-26T10:26:32.199Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 7156697,
+    "age": 9395062,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

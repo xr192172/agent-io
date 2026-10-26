@@ -49,7 +49,9 @@ chk(/缺必填|schema 校验/.test(noArgs), '④-a 无参 ⇒ **人话缺参错*
 chk(!/Cannot read|paths\[0\]|The "path" argument|TypeError/.test(noArgs), '④-b ★ 且**不是** Node 原始异常');
 
 console.log('\n══ ★★ `apply` 不给 ⇒ 只算不写 + 如实止步 + 给下一步（真调）');
-const r = run(['diagnose_loop', '--json', '{"project_dir":"D:/project_develop/design-canvas","symptom":"T202 出生证真调"}']);
+// ★ 2026-10-26：不再硬编码旧仓路径（前身 `D:/project_develop/design-canvas`）—— 从本文件位置推导仓根
+const REPO = import.meta.dirname.replace(/[\\/][^\\/]+$/, '');
+const r = run(['diagnose_loop', '--json', JSON.stringify({ project_dir: REPO, symptom: 'T202 出生证真调' })]);
 const dataLine = (r.match(/\{"stopped_at".*/) ?? [''])[0];
 let data = {};
 try { data = JSON.parse(dataLine); } catch { /* 下面会体现出来 */ }
