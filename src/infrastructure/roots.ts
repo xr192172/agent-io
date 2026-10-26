@@ -30,7 +30,6 @@ export type RootRole =
   | 'history' // 任务历史（task-history.db）
   | 'judgeCache' // 判据缓存（按 feature + 文件哈希）
   | 'cache' // 符号索引（cache.db，项目本地）
-  | 'featureCache' // 册索引（import_cache_<feature>.db，按 feature 寻址，shared 根）
   | 'live' // 实际侧 DSL 快照
   | 'baseline' // 上一次扫描的实际侧基线
   | 'snapshot' // 写闸快照（可撤回）
@@ -56,32 +55,20 @@ export interface RootSpec {
    * 被「零行为变更校验」当场抓住（新解析器算出的路径必须与旧拼法**逐字相同**）。
    */
   fileName?: string;
-  /**
-   * ★ 带占位符的文件名（仅 `featureCache` 用）：`import_cache_{feature}.db`。
-   * 为什么需要它：这个角色的路径不只靠 projectRoot，还靠 **feature 名**
-   * —— feature 是**跨项目**概念（册按 feature 寻址），所以它的索引住 shared 根。
-   */
-  fileTemplate?: string;
-  /**
-   * ★ 本角色在当前入参下能不能算出来。
-   * `featureCache` 没给 feature 时 = `false`，此时 `path` 是空串。
-   * ★ 为什么是“标记不可用”而不是“抛错”：2026-10-26 实测，抛错会**连坐** ——
-   *   任何 `rootsOf(projectRoot)`（根本不关心册索引的调用）都会炸。
-   *   要册索引的调用方请用 `featureCachePath(feature)`（语义最窄）。
-   */
-  available: boolean;
+  // ★ 2026-10-26（T-#8）：`fileTemplate` / `available` 已随 `featureCache` 一并删除 ——
+  //   它们只为那一个角色存在（占位符文件名 + “算不出来就标不可用”）。真没用就删，不留抽象。
 }
 
 /** 角色表：**归属与可派生性只住这里**（别在调用点再判） */
-const ROLE_SPECS: ReadonlyArray<Omit<RootSpec, 'path' | 'available'>> = [
+const ROLE_SPECS: ReadonlyArray<Omit<RootSpec, 'path'>> = [
   { role: 'design', kind: 'shared', derivable: false, note: '设计册：意图 + 决策 + 判据（丢了不可重建）' },
   { role: 'history', kind: 'shared', derivable: false, note: '任务历史（已了结的卡，丢了不可重建）', fileName: 'task-history.db' },
   { role: 'judgeCache', kind: 'shared', derivable: true, note: '判据缓存（按 feature+文件哈希，删了会重算）', fileName: 'judge-cache.json' },
   { role: 'cache', kind: 'project', derivable: true, note: '符号索引 cache.db（A 方案：项目本地）', fileName: 'cache.db' },
-  // ★ 2026-10-26（T-#4b）：这不是「重复寻址」，是**另一种作用域** —— 主键是 feature 而不是项目根。
-  //   它服务的是「只有 feature 名、没有项目根」的合法场景（HTTP 面按 feature 查函数大纲 / 文件事实）。
-  //   名字 `import_cache_` 听起来像临时文件，但语义正当 ⇒ 收编为角色，而不是退场。
-  { role: 'featureCache', kind: 'shared', derivable: true, note: '册索引：按 feature 寻址（feature 跨项目）', fileTemplate: 'import_cache_{feature}.db' },
+  // ★ 2026-10-26（T-#8）：**`featureCache` 已删**（原为“按 feature 寻址的跨项目索引”）。
+  //   删的依据是取证：三个工作区全盘扫 `import_cache_*.db` ⇒ **0 个**（从未产生过任何产物）；
+  //   且寄风确认 HTTP 面（它唯一的消费者）是**可视化预留、没人用**。
+  //   ⇒ 乙方案下每个项目有自己的索引，不存在“跨项目的按 feature 索引”这个角色。
   { role: 'live', kind: 'project', derivable: true, note: '实际侧 DSL 快照（由源码现算）' },
   { role: 'baseline', kind: 'project', derivable: true, note: '上一次扫描的实际侧基线' },
   { role: 'snapshot', kind: 'project', derivable: true, note: '写闸快照（可撤回；保留期由策略定）' },
@@ -96,7 +83,6 @@ const ROLE_SUBDIR: Record<RootRole, string> = {
   history: '.', // task-history.db 直接落在根下
   judgeCache: '.', // judge-cache.json 直接落在根下
   cache: '.', // cache.db 直接落在根下
-  featureCache: '.', // import_cache_<feature>.db 直接落在根下
   live: 'live',
   baseline: 'baseline',
   snapshot: 'code-snapshots',
@@ -110,7 +96,7 @@ const ROLE_SUBDIR: Record<RootRole, string> = {
  *
  * @param projectRoot 被分析项目根；**不传 ⇒ 只有 shared 角色可用**（project 角色会抛，不兜底 cwd）
  */
-export function rootsOf(projectRoot?: string, feature?: string): Record<RootRole, RootSpec> {
+export function rootsOf(projectRoot?: string): Record<RootRole, RootSpec> {
   const sharedHome = getStorageRoot(); // <dataHome>/.agent-io
   const projectHome = projectRoot ? path.join(path.resolve(projectRoot), DATA_DIR_NAME) : null;
   const out = {} as Record<RootRole, RootSpec>;
@@ -124,33 +110,15 @@ export function rootsOf(projectRoot?: string, feature?: string): Record<RootRole
     }
     const sub = ROLE_SUBDIR[spec.role];
     const dir = sub === '.' ? base : path.join(base, sub);
-    // ★ 模板型角色（featureCache）：路径还要 feature 名 —— 没给就标 unavailable（**不猜、也不连坐**）
-    if (spec.fileTemplate) {
-      out[spec.role] = feature
-        ? { ...spec, available: true, path: path.join(dir, spec.fileTemplate.replace('{feature}', feature)) }
-        : { ...spec, available: false, path: '' };
-      continue;
-    }
     // ★ 文件型角色再拼文件名（目录型角色 fileName 为空，直接用目录）
-    out[spec.role] = { ...spec, available: true, path: spec.fileName ? path.join(dir, spec.fileName) : dir };
+    out[spec.role] = { ...spec, path: spec.fileName ? path.join(dir, spec.fileName) : dir };
   }
   return out;
 }
 
-/**
- * 册索引路径（**唯一解析**）：`<shared>/.agent-io/import_cache_<feature>.db`。
- *
- * ★ 为什么不走 `rootsOf()`：`rootsOf` 要 projectRoot（它要算项目本地角色），
- *   而“只有 feature 名”的调用方（HTTP 面按 feature 查）**没有项目根** ——
- *   2026-10-26 实测：让它去调 `rootsOf(undefined, feature)` 会在 project 角色上抛错。
- *   ⇒ 单独一个入口，只算 shared 根下的这个文件，语义最窄。
- */
-export function featureCachePath(feature: string): string {
-  if (!feature) throw new Error('featureCachePath 需要 feature 名 —— 不兜底、不猜');
-  const spec = ROLE_SPECS.find((s) => s.role === 'featureCache');
-  if (!spec?.fileTemplate) throw new Error('roots: featureCache 角色未定义 fileTemplate（不该发生）');
-  return path.join(getStorageRoot(), spec.fileTemplate.replace('{feature}', feature));
-}
+// ★ 2026-10-26（T-#8）：`featureCachePath()` 已随 `featureCache` 角色一起删除。
+//   它存在的唯一理由是“只有 feature 名、没有项目根”的 HTTP 调用方 —— 而那个面是可视化预留、没人用。
+//   要恢复“上传模式跨次复用”，正确做法是给项目注册表加 feature→cache 映射，不是再长一个平行索引。
 
 /**
  * **三个侧**（寄风的口径：一个项目独立拥有三个侧）+ 一个跨项目任务系统。
@@ -163,7 +131,6 @@ const ROLE_SIDE: Record<RootRole, RootSide> = {
   design: 'design', // 设计侧：意图（决策卡/期望/判据）
   judgeCache: 'design', // 判据缓存服务判据 ⇒ 跟设计侧
   cache: 'live', // 实际侧：事实
-  featureCache: 'live',
   live: 'live',
   baseline: 'live',
   snapshot: 'live',
@@ -205,8 +172,7 @@ export function formatRootsReport(projectRoot?: string): string {
     lines.push(`\n■ ${SIDE_LABEL[side]}`);
     for (const role of roles) {
       const r = table[role];
-      // ★ 算不出来的角色（featureCache 缺 feature）如实标「需 feature」，不留空白
-      const shownPath = r.available ? r.path : '（需 feature）';
+      const shownPath = r.path;
       lines.push(
         `  ${role.padEnd(11)} ${r.kind.padEnd(8)} ${r.derivable ? '可删重建' : '禁止脚本删'}  ${shownPath}\n` +
           `  ${' '.repeat(11)} ${r.note}`,

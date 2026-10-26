@@ -31,7 +31,7 @@ import { listObserveProposals } from '../../application/observe/reconcile/propos
 import { approveObserveProposal } from '../../application/observe/reconcile/proposal_approve.js';
 import { rejectObserveProposal } from '../../application/observe/reconcile/proposal_reject.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';
-import { getProjectCacheDb, openDb, featureCacheDbPath } from '../../infrastructure/index/db.js';
+import { getProjectCacheDb, openDb, projectCacheDbPath } from '../../infrastructure/index/db.js';
 import { dagLayout, forceLayout, gridAlign } from '../../application/design/workbench/dag_layout.js';
 import { checkConsistencyReport } from '../../application/design/intent/consistency.js';
 import { diffImpact } from '../../infrastructure/analysis/impact/diff_impact.js';
@@ -432,7 +432,9 @@ async function handleApiImport(req: http.IncomingMessage, res: http.ServerRespon
         return;
       }
       if (!feature) feature = sanitize(path.basename(abs));
-      const cacheDb = openDb(featureCacheDbPath(feature));
+      // ★ 2026-10-26（T-#8）：用**项目自己的索引**（`<abs>/.agent-io/cache.db`），
+      //   不再往数据仓写“按 feature 的跨项目索引”（那个概念已删：实测 0 产物 + HTTP 面没人用）。
+      const cacheDb = openDb(projectCacheDbPath(abs));
       let imp;
       try {
         imp = await importProject({
@@ -480,8 +482,11 @@ async function handleApiImport(req: http.IncomingMessage, res: http.ServerRespon
       fs.writeFileSync(dest, f.content, 'utf-8');
     }
 
-    // 缓存 db 固定位置（跨重复导入增量复用），与项目目录生命周期解耦
-    const cacheDb = openDb(featureCacheDbPath(feature));
+    // ★ 2026-10-26（T-#8）：改用**项目自己的索引**。
+    //   ★ 代价（如实写明）：上传模式每次都解到新的临时目录 ⇒ **失去“跨重复导入增量复用”**
+    //     —— 那正是旧 `featureCache` 存在的唯一理由。既然 HTTP 面是可视化预留、没人用，
+    //     这个代价先接受；将来真要用这个面，正确做法是给项目注册表加 feature→cache 映射。
+    const cacheDb = openDb(projectCacheDbPath(projDir));
     let imp;
     try {
       imp = await importProject({

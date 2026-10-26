@@ -16,7 +16,7 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { getStorageRoot } from '../storage.js';
 // ★★★ 2026-10-26（T-#4 / 用户选 A）：索引路径走 `roots.ts` 的唯一解析器
-import { rootsOf, featureCachePath } from '../roots.js';
+import { rootsOf } from '../roots.js';
 import { SCHEMA_SQL } from './schema.js';
 
 // ★ 2026-10-04：从 `createRequire` 绕路**改回静态 import**。
@@ -137,13 +137,13 @@ export function projectCacheDbPath(root: string): string {
   return rootsOf(root).cache.path;
 }
 
-/** ② feature 的册索引路径。**不查存在**。★ 路径由 `roots.ts` 唯一解析（T-#4b）。 */
-export function featureCacheDbPath(feature: string): string {
-  // ★ 2026-10-26（T-#4b）：这是**册索引**（主键 = feature，跨项目）⇒ 住 shared 根；
-  //   与项目索引 `cache`（主键 = 项目根）是**两种作用域**，不是两套寻址。
-  //   ★ 路径与实际逐字相同（`<dataHome>/.agent-io/import_cache_<feature>.db`）⇒ 零行为变更。
-  return featureCachePath(feature);
-}
+// ★ 2026-10-26（T-#8）：**`featureCacheDbPath` 已删**。
+//   它是“按 feature 寻址的跨项目索引”（`<dataHome>/.agent-io/import_cache_<feature>.db`）。
+//   删的依据是**取证而不是口味**：三个工作区全盘扫 `import_cache_*.db` ⇒ **0 个**（从未产生过任何产物）；
+//   且寄风确认 HTTP 面（它唯一的消费者）是**可视化预留、没人用**。
+//   ⇒ 乙方案下每个项目有自己的索引，不存在“跨项目的按 feature 索引”这个角色。
+//   ★ 若将来要恢复“上传模式跨次复用”，正确做法是给项目注册表加 feature→cache 映射，
+//     而不是在数据仓里再长一个平行索引（那正是“同一事实两处”的病）。
 
 /**
  * ③ 候选优先级：`import_cache_<feature>.db`(dataHome) > `<sourceRoot>/.agent-io/cache.db`，
@@ -161,11 +161,11 @@ export function featureCacheDbPath(feature: string): string {
  *     见 `storage.ts#requireProjectRoot` 的注释）。
  */
 export function findCacheDb(opts: { feature?: string; sourceRoot?: string } = {}): string | null {
-  const { feature, sourceRoot } = opts;
-  const candidates = [
-    feature ? featureCacheDbPath(feature) : '',
-    sourceRoot ? projectCacheDbPath(sourceRoot) : '',
-  ];
+  const { sourceRoot } = opts;
+  // ★★ 2026-10-26（T-#8）：候选从**两级降为一级** —— 只剩项目索引。
+  //   原先候选①是 `import_cache_<feature>.db`（dataHome），实测**从未产生过任何产物**（三工作区全盘扫 = 0 个），已删。
+  //   `feature` 入参保留只为不改调用方签名 —— **它不再参与寻址**（“按册找索引”在乙方案下不存在）。
+  const candidates = [sourceRoot ? projectCacheDbPath(sourceRoot) : ''];
   return candidates.find((p) => p && fs.existsSync(p)) ?? null;
 }
 
