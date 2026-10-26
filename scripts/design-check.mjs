@@ -84,6 +84,19 @@ let callReport = null;
 //   ★ 为什么要预跑：D7 的判据就是"有没有存活的装饰判据" —— 而它要靠 mutate 才知道。
 //   ★ 只在 D7 需要时才跑（省时间）；没有 D7 就跳过。
 const needsMutate = criteria.some((c) => typeof c.expect === 'string' && c.expect.includes('mutateReport'));
+// ★★★ 2026-10-26（T-#20）：kind 的**唯一权威**（`domain/expectation.ts#EXPECTATION_KINDS`）
+//   作为 `KINDS` 注入 expect 的求值域 —— 让判据**引用权威**而不是各抄一份。
+let EXPECTATION_KINDS;
+try {
+  const m = await import(pathToFileURL(path.join(ROOT, 'dist', 'src', 'domain', 'expectation.js')).href);
+  EXPECTATION_KINDS = m.EXPECTATION_KINDS;
+  if (!Array.isArray(EXPECTATION_KINDS) || EXPECTATION_KINDS.length === 0) throw new Error('EXPECTATION_KINDS 为空');
+} catch (e) {
+  console.error(
+    `[design:check] ✗ 拿不到 kind 权威（dist/src/domain/expectation.js）—— 先 \`npm run build\`。\n  ${String(e.message)}`,
+  );
+  process.exit(2);
+}
 let mutateReport = null;
 if (needsMutate) {
   try {
@@ -107,8 +120,12 @@ for (const c of criteria) {
   }
   try {
     // ★ 求值域：dsl / nodes / paths / fs / path / root（root = 被分析项目根，D4 要读源码查"迁移有没有执行者"）
-    const fn = new Function('dsl', 'nodes', 'paths', 'fs', 'path', 'root', 'mutateReport', 'callReport', 'results', `"use strict"; return (${c.expect});`);
-    const ok = Boolean(fn(dsl, nodes, paths, fs, path, ROOT, mutateReport, callReport, results));
+    // ★★★ 2026-10-26（T-#20）：**kind 权威注入求值域** —— 不再让每条 expect 自己抄一份白名单。
+    //   实测病史：D3 体内抄了 8 种（漏 source-has 时红过一次；漏 behavior-cases 时又红）。
+    //   ⇒ 现在把 `domain/expectation.ts#EXPECTATION_KINDS`（唯一权威）作为 `KINDS` 注入。
+    //   ★ 依赖 dist（需先 build）—— 拿不到就**响亮报**，不静默降级。
+    const fn = new Function('dsl', 'nodes', 'paths', 'fs', 'path', 'root', 'mutateReport', 'callReport', 'results', 'KINDS', `"use strict"; return (${c.expect});`);
+    const ok = Boolean(fn(dsl, nodes, paths, fs, path, ROOT, mutateReport, callReport, results, EXPECTATION_KINDS));
     results.push({ id, name, verdict: ok ? 'pass' : 'fail', detail: ok ? '断言成立' : `断言**不成立**：${c.expect.slice(0, 90)}…`, __fullExpect: ok ? undefined : c.expect });
   } catch (e) {
     results.push({ id, name, verdict: 'fail', detail: `判不了：${e.message}` });

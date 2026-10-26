@@ -119034,13 +119034,13 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-26T10:24:46.067Z",
+    "saved_at": "2026-10-26T12:52:14.222Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 426763256,
+    "age": 435611411,
     "dbSchemaVersion": 16,
-    "via": "edit_dsl:edit_dsl"
+    "via": "tool:t20-criteria-entry"
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -120327,7 +120327,8 @@
           "now": "✓（validate 通过）",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
           "debt": "D-design-completeness",
-          "expect": "(() => {\n  // ★ kind 白名单（★ 加新 kind 时这里必须同步 —— 2026-10-19 加 source-has 时漏了，D3 立刻红）\n  const KINDS = ['file-exists','symbol-exists','signature-matches','edge-exists','edge-absent','call-exists','run','source-has'];\n  const bad = [];\n  for (const n of nodes) for (const e of (n.decision?.expectations ?? [])) {\n    if (!KINDS.includes(e.kind)) bad.push(n.id + ':' + String(e.kind));\n  }\n  return bad.length === 0;\n})()"
+          "expect": "(() => {\n  // ★ 2026-10-26：不再抄一份白名单 —— 直接用**注入的权威** KINDS（= domain/expectation.ts#EXPECTATION_KINDS）。\n  //   抄一份的后果实测过两次：漏 source-has 时红一次、漏 behavior-cases 时又红一次。\n  const bad = [];\n  for (const n of nodes) for (const e of (n.decision?.expectations ?? [])) {\n    if (!KINDS.includes(e.kind)) bad.push(n.id + ':' + String(e.kind));\n  }\n  return bad.length === 0;\n})()",
+          "why": "kind 白名单必须引用唯一权威（EXPECTATION_KINDS），不许每条判据抄一份 —— 抄一份实测漂移过两次（漏 source-has / 漏 behavior-cases），而漂移的后果是\"判据与实现脱节却没人知道\"。"
         },
         {
           "id": "D4",

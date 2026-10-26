@@ -2452,9 +2452,66 @@ export function applyTaskPlanOp(feature: string, op: TaskOpRequest): EditResult 
     changed.push('note');
   }
 
+  // ★★★ 2026-10-26（T-#20 / 寄风）：**项目级判据（`criteria`）的写入口**。
+  //   此前它**只有读端**（`scripts/design-check.mjs`），写端不存在 ——
+  //   实测：`grep design_completeness src/` = **0 命中**，本 op 也只写 `state_machine`。
+  //   ⇒ 那 4 条红（D1/D3/D4/D9）**只能手改 JSON** = 绕过写闸。
+  //   ★ 三条纪律：
+  //     ① `why` 必填（说不出理由的判据不许进册 —— 与 expectation 同款）；
+  //     ② `expect` 写前必须用 `new Function` **试解析**（design:check 就是用它求值的，
+  //        写坏一个字节会让**整道门崩**，而不是"这条红"）；
+  //     ③ **按 `id` upsert**，不整块覆盖别人的条目。
+  if (data.criteria !== undefined) {
+    const c = data.criteria as Record<string, unknown> | null;
+    if (!c || typeof c !== 'object') {
+      throw new Error('task_plan.update 被拒：`data.criteria` 必须是对象（单条按 id upsert）。');
+    }
+    const cid = typeof c.id === 'string' ? c.id.trim() : '';
+    if (!cid) throw new Error('task_plan.update 被拒：`data.criteria.id` 必填（按 id upsert）。');
+    const why = typeof c.why === 'string' ? c.why.trim() : '';
+    if (!why) {
+      throw new Error(`task_plan.update 被拒：判据 \`${cid}\` 缺 \`why\` —— 说不出理由的判据不许进册。`);
+    }
+    const expect = typeof c.expect === 'string' ? c.expect : '';
+    if (!expect.trim()) {
+      throw new Error(`task_plan.update 被拒：判据 \`${cid}\` 的 \`expect\` 必须是非空字符串。`);
+    }
+    // ★ 写前试解析 —— 求值域必须与 design-check.mjs 逐字一致，否则"能过写端却跑不起来"
+    try {
+      // eslint-disable-next-line no-new-func
+      new Function(
+        'dsl',
+        'nodes',
+        'paths',
+        'fs',
+        'path',
+        'root',
+        'mutateReport',
+        'callReport',
+        'results',
+        'KINDS',
+        `"use strict"; return (${expect});`,
+      );
+    } catch (e) {
+      throw new Error(
+        `task_plan.update 被拒：判据 \`${cid}\` 的 \`expect\` 语法不成立（design:check 会**整体崩**）—— ${String(
+          (e as Error).message,
+        )}`,
+      );
+    }
+    const dc = (tp.design_completeness as Record<string, unknown> | undefined) ?? {};
+    const list = Array.isArray(dc.criteria) ? [...(dc.criteria as Array<Record<string, unknown>>)] : [];
+    const ci = list.findIndex((x) => x && (x as { id?: string }).id === cid);
+    const merged = { ...(ci >= 0 ? list[ci] : {}), ...c, id: cid, why, expect };
+    if (ci >= 0) list[ci] = merged;
+    else list.push(merged);
+    tp.design_completeness = { ...dc, criteria: list };
+    changed.push(`criteria ${cid}（${ci >= 0 ? '已更新' : '已新增'}）`);
+  }
+
   if (!changed.length) {
     throw new Error(
-      `task_plan.update 被拒：没有可写的键 —— 认 \`states\`（必须 === TASK_STATES）/ \`transition\`（单条 upsert）/ \`note\`。`,
+      `task_plan.update 被拒：没有可写的键 —— 认 \`states\`（必须 === TASK_STATES）/ \`transition\`（单条 upsert）/ \`note\` / \`criteria\`（项目级判据，按 id upsert，why 必填）。`,
     );
   }
 
@@ -2464,7 +2521,7 @@ export function applyTaskPlanOp(feature: string, op: TaskOpRequest): EditResult 
 
   return {
     message:
-      `已写设计册 \`task_plan.state_machine\`（feature=${feature}）：${changed.join('；')}。` +
+      `已写设计册 \`task_plan\`（feature=${feature}）：${changed.join('；')}。` +
       `\n★ 判据：\`states\` 与代码 \`TASK_STATES\` **逐字一致**（写端强制比对，不靠"记得去改"）；迁移按 id upsert。` +
       `\n★ 下一步：\`design_line { action:'gen-db' }\` 让 design-db 跟上（否则契约门读的是旧要求）。`,
     feature,

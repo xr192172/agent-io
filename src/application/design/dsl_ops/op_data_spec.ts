@@ -292,7 +292,9 @@ export const OP_SPECS: readonly OpSpec[] = [
     idRequired: false,
     required: { update: [] },
     note:
-      '★ 只写 `task_plan.state_machine`（`states` / 单条 `transition` upsert / `note`），别的 `task_plan.*` **不开后门**。' +
+      '★ 写 `task_plan` 的**两格**：`state_machine`（`states` / 单条 `transition` upsert / `note`）与 ' +
+      '`criteria`（**项目级判据**，按 `id` upsert；`why` 必填、`expect` 写前用 `new Function` 试解析 —— ' +
+      '写坏会让 design:check **整体崩**）。别的 `task_plan.*` 仍**不开后门**。' +
       '★★ `data.states` 必须与 `src/domain/task_schema.ts#TASK_STATES` **逐字相同**（含顺序）—— 写端强制比对，不一致当场拒；' +
       '这就是「设计册与代码同步」的机制形态（不是记得去改，而是改不动）。' +
       '`data.transition` = `{id, from, to, guard:{clauses:[…]}, executor?}`，按 `id` upsert；`guard.clauses` **非空**（说不出判据的迁移不许进册）。' +
