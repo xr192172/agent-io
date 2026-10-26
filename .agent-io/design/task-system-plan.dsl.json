@@ -58649,7 +58649,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "status": "draft"
+        "status": "draft",
+        "path": "src/application/meta/archive/archive_node.ts"
       },
       {
         "id": "file_application_observe_reconcile_proposal_approve_ts",
@@ -58666,7 +58667,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "status": "draft"
+        "status": "draft",
+        "path": "src/application/observe/reconcile/proposal_approve.ts"
       },
       {
         "id": "file_application_observe_reconcile_proposal_list_ts",
@@ -58683,7 +58685,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "status": "draft"
+        "status": "draft",
+        "path": "src/application/observe/reconcile/proposal_list.ts"
       },
       {
         "id": "file_application_observe_reconcile_proposal_reject_ts",
@@ -58700,7 +58703,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "status": "draft"
+        "status": "draft",
+        "path": "src/application/observe/reconcile/proposal_reject.ts"
       },
       {
         "id": "file_application_observe_runtime_judge_observe_events_ts",
@@ -58717,7 +58721,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "status": "draft"
+        "status": "draft",
+        "path": "src/application/observe/runtime/judge_observe_events.ts"
       },
       {
         "id": "file_application_observe_runtime_observe_log_query_ts",
@@ -58734,7 +58739,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "status": "draft"
+        "status": "draft",
+        "path": "src/application/observe/runtime/observe_log_query.ts"
       },
       {
         "id": "file_infrastructure_analysis_diagnosis_test_contract_ts",
@@ -58751,7 +58757,8 @@
           "borderRadius": 4
         },
         "arch_layer": "infra",
-        "status": "draft"
+        "status": "draft",
+        "path": "src/infrastructure/analysis/diagnosis/test_contract.ts"
       },
       {
         "id": "file_infrastructure_source_write_port_ts",
@@ -58768,7 +58775,8 @@
           "borderRadius": 4
         },
         "arch_layer": "infra",
-        "status": "draft"
+        "status": "draft",
+        "path": "src/infrastructure/source_write_port.ts"
       },
       {
         "id": "file_src_infrastructure_dsl_write_scope_ts",
@@ -114301,6 +114309,46 @@
         "id": "file_docs_vision_md",
         "path": "docs/VISION.md",
         "responsibility": "本仓的愿景/理想文档：回答「这个工具到底为什么存在」，是判据与取舍的最终依据。"
+      },
+      {
+        "id": "file_application_meta_archive_archive_node_ts",
+        "path": "src/application/meta/archive/archive_node.ts",
+        "responsibility": "src/application/meta/archive/archive_node.ts"
+      },
+      {
+        "id": "file_application_observe_reconcile_proposal_approve_ts",
+        "path": "src/application/observe/reconcile/proposal_approve.ts",
+        "responsibility": "src/application/observe/reconcile/proposal_approve.ts"
+      },
+      {
+        "id": "file_application_observe_reconcile_proposal_list_ts",
+        "path": "src/application/observe/reconcile/proposal_list.ts",
+        "responsibility": "src/application/observe/reconcile/proposal_list.ts"
+      },
+      {
+        "id": "file_application_observe_reconcile_proposal_reject_ts",
+        "path": "src/application/observe/reconcile/proposal_reject.ts",
+        "responsibility": "src/application/observe/reconcile/proposal_reject.ts"
+      },
+      {
+        "id": "file_application_observe_runtime_judge_observe_events_ts",
+        "path": "src/application/observe/runtime/judge_observe_events.ts",
+        "responsibility": "src/application/observe/runtime/judge_observe_events.ts"
+      },
+      {
+        "id": "file_application_observe_runtime_observe_log_query_ts",
+        "path": "src/application/observe/runtime/observe_log_query.ts",
+        "responsibility": "src/application/observe/runtime/observe_log_query.ts"
+      },
+      {
+        "id": "file_infrastructure_analysis_diagnosis_test_contract_ts",
+        "path": "src/infrastructure/analysis/diagnosis/test_contract.ts",
+        "responsibility": "src/infrastructure/analysis/diagnosis/test_contract.ts"
+      },
+      {
+        "id": "file_infrastructure_source_write_port_ts",
+        "path": "src/infrastructure/source_write_port.ts",
+        "responsibility": "src/infrastructure/source_write_port.ts"
       }
     ]
   },
@@ -114363,13 +114411,13 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-26T14:25:02.368Z",
+    "saved_at": "2026-10-26T15:51:11.608Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 441179557,
+    "age": 446348797,
     "dbSchemaVersion": 16,
-    "via": "tool:cleanup"
+    "via": "tool:t30-orphans"
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -117370,7 +117418,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1488,
+  "_dsl_rev": 1496,
   "feature_tree": {
     "features": [
       {
