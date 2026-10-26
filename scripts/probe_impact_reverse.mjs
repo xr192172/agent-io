@@ -27,10 +27,12 @@ console.log(`   ★ 直接依赖 ${TARGET} 的（现扫）: ${liveDeps.size} 个
 console.log(`      ${[...liveDeps].slice(0, 6).join('  ')}`);
 
 // ② 索引库 SQL 反查（独立方法）
+// ★ 2026-10-26：python 解释器不再硬编码这台机器的绝对路径 —— 显式 env 优先，否则走 PATH
+const PY = process.env.AGENT_IO_PYTHON ?? 'python';
 const db = path.join(REPO, '.agent-io', 'cache.db');
 const sql = `SELECT DISTINCT source FROM edges WHERE kind='import' AND target='${TARGET}'`;
 const indexed = new Set(
-  execFileSync('C:/Users/Admin/.workbuddy/binaries/python/versions/3.13.12/python.exe',
+  execFileSync(PY,
     ['-c', `import sqlite3,sys\nc=sqlite3.connect(r'${db}')\nfor r in c.execute(${JSON.stringify(sql)}): print(r[0])`],
     { encoding: 'utf8' }).split('\n').map((s) => s.trim()).filter(Boolean));
 console.log(`   ★ 直接依赖 ${TARGET} 的（索引库）: ${indexed.size} 个`);
@@ -50,7 +52,7 @@ console.log(`   bounds.skipped: ${JSON.stringify(rep.bounds?.skipped)}`);
 
 // ⑤ 索引库里也在的文件范围（解释差异用）
 const idxFiles = new Set(
-  execFileSync('C:/Users/Admin/.workbuddy/binaries/python/versions/3.13.12/python.exe',
+  execFileSync(PY,
     ['-c', `import sqlite3\nc=sqlite3.connect(r'${db}')\nfor r in c.execute('select path from files'): print(r[0])`],
     { encoding: 'utf8' }).split('\n').map((s) => s.trim()).filter(Boolean));
 console.log(`\n⑤ 范围对照：索引 files=${idxFiles.size} · 图 rels=${rels.size} · 交集=${[...rels].filter((r) => idxFiles.has(r)).length}`);

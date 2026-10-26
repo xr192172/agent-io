@@ -37,6 +37,61 @@ import { walkFiles } from '../../../infrastructure/graph/import_project.js';
 import { summarizeLanguagesByTier, type LanguageTierSummary } from '../../refactor/parse_capability/parse_capability.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
+/**
+ * ★★★ 2026-10-26（T-#12）：**绝对路径字面量**（硬编码盘符路径）—— 只报不改。
+ *
+ * 为什么需要它：`AGENTS.md:84` 早就写着「新增代码/注释/文档不出现旧品牌串」+ 现查命令，
+ * 但**没人执行** —— 实测曾 grep 出 120 处（其中 9 处是**活代码**，跑起来分析的是前身那份 checkout）。
+ * ⇒ 规矩写在文档里**不会自己发生**，必须有判据。
+ *
+ * 扫描面：`src/` `scripts/` `certs/`（`*.ts/.tsx/.mjs/.js`）。
+ * 判据：引号内出现 `<盘符>:` 的路径字面量。
+ * 白名单（启发式，**只说数**）：整行注释 / 行内 `//` 之后的部分 / `*` 开头的块注释行。
+ * ★ 它不判断“这个路径对不对”，只回答“这里硬编码了一个绝对路径”。
+ */
+function findAbsolutePathLiterals(root: string, limit = 20): Array<{ file: string; line: number; text: string }> {
+  const DIRS = ['src', 'scripts', 'certs'];
+  const EXTS = new Set(['.ts', '.tsx', '.mjs', '.js']);
+  const RE = /['"][A-Za-z]:[\\/]/;
+  const out: Array<{ file: string; line: number; text: string }> = [];
+  const walk = (dir: string, depth: number): void => {
+    if (depth > 8) return;
+    let ents: fs.Dirent[];
+    try {
+      ents = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of ents) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        if (e.name !== 'node_modules' && e.name !== 'dist') walk(p, depth + 1);
+        continue;
+      }
+      if (!e.isFile() || !EXTS.has(path.extname(e.name))) continue;
+      let text: string;
+      try {
+        text = fs.readFileSync(p, 'utf-8');
+      } catch {
+        continue;
+      }
+      const lines = text.split(/\r?\n/);
+      for (let i = 0; i < lines.length; i++) {
+        const l = lines[i];
+        const m = RE.exec(l);
+        if (!m) continue;
+        const before = l.slice(0, m.index);
+        const trimmed = l.trim();
+        if (before.includes('//') || trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+        out.push({ file: path.relative(root, p).replace(/\\/g, '/'), line: i + 1, text: l.trim().slice(0, 120) });
+        if (out.length >= limit * 4) return;
+      }
+    }
+  };
+  for (const d of DIRS) walk(path.join(root, d), 0);
+  return out.slice(0, limit);
+}
+
 /** 源码文件按类拆分（本体 / 测试 / 噪音）。★ 见 ④ 处的长注释：两把尺差的就是这两个类 */
 export interface FileKindCounts {
   /** 本体（真正的源码）—— **本应全覆盖**，缺一个就是缺陷 */
@@ -127,6 +182,11 @@ export interface IndexIntegrityResult {
   stray_data_dirs: string[];
   /** 根清单（一个角色一个根）：每种数据住在哪，人读一遍就清楚 */
   roots_report: string;
+  /**
+   * ★★ 2026-10-26（T-#12）：**硬编码绝对路径**（引号内 `<盘符>:`），注释行已排除。
+   * 只说数、不下结论 —— 外部实验区、测试数据等合法情形需要人看一眼。
+   */
+  absolute_path_literals: Array<{ file: string; line: number; text: string }>;
   freshness: {
     /** 已索引文件里 stat 与库记录不一致的个数（需要保鲜） */
     not_fresh: number;
@@ -429,6 +489,7 @@ async function indexIntegrityCore(opts: {
       stale_names: [],
       stray_data_dirs: [],
       roots_report: '',
+      absolute_path_literals: [],
       project_root: root,
       state: 'empty',
       refreshed,
@@ -493,6 +554,7 @@ async function indexIntegrityCore(opts: {
       stale_names: [],
       stray_data_dirs: [],
       roots_report: '',
+      absolute_path_literals: [],
       project_root: root,
       state: 'empty',
       refreshed,
@@ -761,6 +823,26 @@ async function indexIntegrityCore(opts: {
     });
   }
 
+  // ★ 2026-10-26（T-#12）：**绝对路径字面量** —— 只报不改（判据住 findAbsolutePathLiterals）
+  //   背景：AGENTS.md 早就写着「不出现旧品牌串」+ 现查命令，但没人执行 => 实测 120 处（9 处活代码）。
+  let absPathHits: Array<{ file: string; line: number; text: string }> = [];
+  try {
+    absPathHits = findAbsolutePathLiterals(root);
+  } catch {
+    absPathHits = [];
+  }
+  if (absPathHits.length) {
+    issues.push({
+      code: 'absolute_path_literal',
+      severity: 'warn',
+      message:
+        `发现 ${absPathHits.length} 处**硬编码绝对路径**：` +
+        absPathHits.slice(0, 5).map((h) => `${h.file}:${h.line}`).join(' · ') +
+        (absPathHits.length > 5 ? ' …' : ''),
+      fix: '改成“从自身位置推导根”（import.meta.dirname / resolveProjectRoot）或走显式 env；外部依赖请显式声明',
+    });
+  }
+
   const hasBlocker = issues.some((i) => i.severity === 'blocker');
   const verdict = integrityVerdict({ hasIndex: state !== 'empty', hasBlocker, hasGhost: ghosts > 0 });
   const trustworthy = verdict === 'trusted';
@@ -825,6 +907,7 @@ async function indexIntegrityCore(opts: {
     // ★ 2026-10-26（T-#5）：根偏离 + 根清单（让「根」在工具面上可见）
     stray_data_dirs: strayDataDirs,
     roots_report: formatRootsReport(root),
+    absolute_path_literals: absPathHits,
   };
 }
 

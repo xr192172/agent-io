@@ -3911,7 +3911,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_extract_hard_mjs",
@@ -3959,7 +3960,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_probe_tool_smells_mjs",
@@ -5487,28 +5489,24 @@
         "arch_layer": "core",
         "task": {
           "id": "file_src_application_meta_integrity_index_integrity_ts",
-          "summary": "【L1 待建构】核心层 · src/application/meta/integrity — 11 个函数（导入自 14 个模块）（src/application/meta/integrity/index_integrity.ts） ← 节点 file_src_application_meta_integrity_index_integrity_ts",
-          "state": "done",
+          "summary": "index_integrity 报告根偏离 + 绝对路径字面量（两条都只说数不下结论）",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_integrity_index_integrity_ts\"].responsibility"
           },
           "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T08:30:19.833Z",
+          "claimed_at": "2026-10-26T10:32:24.745Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/application/meta/integrity/index_integrity.ts",
-                "content_hash": "42e7d3cc46ade0fd5291e7b284e74c54f634d709"
-              },
-              {
-                "path": "src/infrastructure/roots.ts",
-                "content_hash": "24c42f998fcbbda5cf0cc51a9495d6ad0d98e5bf"
+                "content_hash": "e623b8572f5289fbd9695813a42211d1011c585a"
               }
             ],
-            "computed_at": "2026-10-26T08:30:19.698Z",
+            "computed_at": "2026-10-26T10:32:24.662Z",
             "basis": [
               "declared"
             ]
@@ -5529,11 +5527,14 @@
                 ]
               }
             }
-          ]
+          ],
+          "reopened_at": null,
+          "reopen_reason": "T-#12：新增 absolute_path_literal 检查（让「不许硬编码绝对路径」这条规矩有牙）",
+          "reopened_from": "agent:wish-machine"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision": {
-          "summary": "index_integrity 报告项目下偏离 rootsOf 期望的数据目录 + 根清单",
+          "summary": "index_integrity 报告根偏离 + 绝对路径字面量（两条都只说数不下结论）",
           "expectations": [
             {
               "kind": "source-has",
@@ -5549,17 +5550,27 @@
                 "stray_data_dirs"
               ],
               "path": "src/application/meta/integrity/index_integrity.ts",
-              "why": "偏离必须以独立 issue code 报出（让下游能机器判定，而不是埋在长文本里）"
+              "why": "偏离必须以独立 issue code 报出（让下游能机器判定）"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "findAbsolutePathLiterals",
+                "absolute_path_literal"
+              ],
+              "path": "src/application/meta/integrity/index_integrity.ts",
+              "why": "「不许硬编码绝对路径」写在 AGENTS.md 里但没人执行（实测曾经 9 处活代码）——必须变成判据"
             }
           ],
-          "acceptance": "① index_integrity 必须报告本项目下偏离 rootsOf 期望的数据目录（stray_data_dirs），并给出根清单；② 只说数不下结论（多出来的可能是历史遗留/误算的根/嵌套的另一个项目）；③ 不得因此改动任何文件（只读）。",
+          "acceptance": "① index_integrity 必须报告本项目下偏离 rootsOf 期望的数据目录（stray_data_dirs）；② 必须报告绝对路径字面量（absolute_path_literal，扫 src/scripts/certs，注释行不算）；③ 两条都只说数不下结论，不得改任何文件。",
           "status": "active",
           "tags": [
             "root",
             "doctor",
-            "readout"
+            "readout",
+            "legacy-brand"
           ],
-          "updated_at": "2026-10-26T08:30:19.804Z",
+          "updated_at": "2026-10-26T10:32:24.793Z",
           "author": "llm",
           "agent": "agent:wish-machine"
         },
@@ -5572,7 +5583,46 @@
             "kind": "expectations",
             "unsupported": 0
           }
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-26T10:32:24.793Z",
+            "decision": {
+              "summary": "index_integrity 报告项目下偏离 rootsOf 期望的数据目录 + 根清单",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findStrayDataDirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离检测必须复用 roots.ts 的判据，不许本文件自己再扫一套"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "stray_data_dirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离必须以独立 issue code 报出（让下游能机器判定，而不是埋在长文本里）"
+                }
+              ],
+              "acceptance": "① index_integrity 必须报告本项目下偏离 rootsOf 期望的数据目录（stray_data_dirs），并给出根清单；② 只说数不下结论（多出来的可能是历史遗留/误算的根/嵌套的另一个项目）；③ 不得因此改动任何文件（只读）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "doctor",
+                "readout"
+              ],
+              "updated_at": "2026-10-26T08:30:19.804Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "T-#12：把 AGENTS.md 那条 grep 规矩变成判据",
+            "author": "llm",
+            "agent": "agent:wish-machine"
+          }
+        ]
       },
       {
         "id": "file_src_application_meta_llm_llm_decider_ts",
@@ -46787,7 +46837,7 @@
         ],
         "lines": 898,
         "layer": "core",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_llm_llm_decider_ts",
@@ -61456,13 +61506,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 45,
+  "_dsl_rev": 48,
   "_sync": {
-    "saved_at": "2026-10-26T10:26:32.199Z",
+    "saved_at": "2026-10-26T10:32:24.851Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 9395062,
+    "age": 9747714,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

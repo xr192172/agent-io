@@ -13,7 +13,8 @@ import { execFileSync } from 'node:child_process';
 const REPO = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..');
 const { buildImpactGraph } = await import('file://' + path.join(REPO, 'dist/src/infrastructure/analysis/impact/index.js').replace(/\\/g, '/'));
 const DB = path.join(REPO, '.agent-io', 'cache.db');
-const PY = 'C:/Users/Admin/.workbuddy/binaries/python/versions/3.13.12/python.exe';
+// ★ 2026-10-26：不再硬编码这台机器的 python 绝对路径（换机器就挂）—— 显式 env 优先，否则走 PATH
+const PY = process.env.AGENT_IO_PYTHON ?? 'python';
 // ★ 必须去掉行尾 `\r`：Windows 上 Python 的 print 出 CRLF，不去 ⇒ 每个路径都带 `\r`
 //   ⇒ 与 JS 侧的路径**永不相等** ⇒ 交集 0（我这一版第一次跑就是这么错的，白跑一轮）。
 const sql = (q) => execFileSync(PY, ['-c', `import sqlite3\nc=sqlite3.connect(r'${DB}')\nfor r in c.execute(${JSON.stringify(q)}): print('\\t'.join(str(x) for x in r), end='\\n')`], { encoding: 'utf8' })
