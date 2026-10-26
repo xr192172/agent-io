@@ -55,7 +55,7 @@ import { facesOf, mcpFace, MINIMAL_FACE_TOOLS } from '../../application/meta/reg
 import { resolveProjectRoot } from '../../infrastructure/analysis/project_root/index.js';
 // ★★ 2026-10-26（T-②）：**判据合一** —— 本文件不再自比 mtime（那曾是第二把尺，见下方 STALE SOURCE 段），
 //   改为委派唯一实现 `stale_check#checkStaleBuild`（mtime 只做触发，内容哈希才是判定）。
-import { checkStaleBuild } from '../../application/observe/runtime/stale_check.js';
+import { checkStaleBuild, readBuildManifest } from '../../application/observe/runtime/stale_check.js';
 // ★★★ I1（2026-10-25）：根解析的**级 3**（feature → 该 feature 设计 DSL 的 source_root）要读 DSL。
 import { getDSL } from '../../infrastructure/storage.js';
 // ★ T173：`mcpFace()` 的定义已搬到 `tool_faces.ts`（与「说面」的回执同处）—— 这里 re-export 保持对外 API 不变。
@@ -163,27 +163,31 @@ function safeMtimeMs(p: string): number | null {
   }
 }
 
-/**
- * 陈旧构建判定（纯函数，可单测）：加载时的 mtime 早于当前 mtime → 进程仍跑旧代码。
- * 任何一侧未知（非编译产物环境）→ `null`，静默禁用。
- *
- * ★ P-F（§16.6）：产物是**结构化告警**（不是 message）—— 分级呈现（首次全文/后续摘要）与
- *   机器通道由 `emitWarnings` 统一负责，本函数只管"判出来"。
- */
-export function staleBuildWarningFor(loadedMtimeMs: number | null, curMtimeMs: number | null): ToolWarning | null {
-  if (loadedMtimeMs === null || curMtimeMs === null) return null;
-  if (curMtimeMs <= loadedMtimeMs) return null;
-  return {
-    code: 'STALE_BUILD',
-    summary: 'dist 已在本进程启动后重建 ⇒ 当前响应来自旧代码（新增工具/字段/参数可能缺失或报"未知"错误）',
-    detail: '本进程加载的是重建**之前**的编译产物：进程启动时记录 dist/server_registry.js 的 mtime，之后每次调用比对发现它已被更新。',
-    fix: '重启 agent-io MCP server 后再执行写操作',
-  };
-}
+// ───── 陈旧构建（STALE_BUILD）─────
+// ★★★ 2026-10-26（T-#2）：**不再比 mtime，也不再只看一个文件**。
+//   原先：`staleBuildWarningFor(SELF_MTIME_MS, safeMtimeMs(SELF_PATH))` —— 只盯
+//   `dist/src/presentation/mcp/server_registry.js` 一个文件的 mtime：
+//     · 漏：tsc 重建了**别的**文件（如 consistency.js）时它不报；
+//     · 误：只要 touch 一下它就报（而内容可能没变）。
+//   ⇒ 现在读**同一个事实**：构建清单的 `stamp`（生产者 = `clean_dist.mjs`，见 stale_check.ts）：
+//     本进程启动时记下 stamp（`BOOT_MANIFEST_STAMP`），调用时再读一份，**不同 ⇒ dist 被重建过**。
+//   这样 STALE_BUILD 与 STALE_SOURCE 两个告警都站在**同一份构建事实**上，不再各比各的 mtime。
 
-/** dist 已更新（进程仍在跑旧代码）⇒ 告警；否则 null。 */
+/** dist 已在本进程启动后重建 ⇒ 告警；否则 null。判据 = 清单 stamp 变了（不看 mtime）。 */
 function staleBuildWarning(): ToolWarning | null {
-  return staleBuildWarningFor(SELF_MTIME_MS, SELF_PATH ? safeMtimeMs(SELF_PATH) : null);
+  if (!PACKAGE_ROOT || !BOOT_MANIFEST_STAMP) return null;
+  try {
+    const now = readBuildManifest(PACKAGE_ROOT)?.stamp ?? null;
+    if (!now || now === BOOT_MANIFEST_STAMP) return null;
+    return {
+      code: 'STALE_BUILD',
+      summary: 'dist 已在本进程启动后重建 ⇒ 当前响应来自旧代码（新增工具/字段/参数可能缺失或报"未知"错误）',
+      detail: `构建清单 stamp 从 ${BOOT_MANIFEST_STAMP} 变为 ${now} —— 本进程加载的是重建**之前**的编译产物。`,
+      fix: '重启 agent-io MCP server 后再执行写操作',
+    };
+  } catch {
+    return null; // 自检失败不假阳性
+  }
 }
 
 // ───── STALE SOURCE：改了 src 却忘了 build 的检测 ─────
@@ -197,60 +201,21 @@ function staleBuildWarning(): ToolWarning | null {
 //   ⇒ ★ **修法不是"把 2 改成 4"**（那只是补丁：级数随文件位置变，下次搬家还会错）——
 //     **改用仓里已有的 `resolveProjectRoot()`**（向上找 `.git` → 最近 manifest），★ **一处判据** ✓
 const PACKAGE_ROOT = SELF_PATH ? resolveProjectRoot(SELF_PATH) : null;
-const SRC_DIR = PACKAGE_ROOT ? path.join(PACKAGE_ROOT, 'src') : null;
-const DIST_DIR = PACKAGE_ROOT ? path.join(PACKAGE_ROOT, 'dist') : null;
 
-/** 递归取目录内最新文件 mtime（跳过 node_modules；skipGen 时忽略 *.gen.ts 生成物，避免 build 自己造成误判） */
-export function newestMtime(dir: string | null, skipGen: boolean): number | null {
-  if (!dir) return null;
-  let max: number | null = null;
-  const stack: string[] = [dir];
-  while (stack.length > 0) {
-    const d = stack.pop()!;
-    let ents: Dirent[];
-    try {
-      ents = readdirSync(d, { withFileTypes: true });
-    } catch {
-      continue; // 目录不存在/无权限 → 视为可跳过
-    }
-    for (const e of ents) {
-      const p = path.join(d, e.name);
-      if (e.isDirectory()) {
-        if (e.name !== 'node_modules') stack.push(p);
-      } else if (e.isFile()) {
-        if (skipGen && e.name.endsWith('.gen.ts')) continue;
-        const m = safeMtimeMs(p);
-        if (m !== null && (max === null || m > max)) max = m;
-      }
-    }
+/** 本进程启动时读到的构建清单 stamp（null = 启动时无清单 ⇒ 无法判断"是否重建过"，宁可不报） */
+const BOOT_MANIFEST_STAMP: string | null = (() => {
+  if (!PACKAGE_ROOT) return null;
+  try {
+    return readBuildManifest(PACKAGE_ROOT)?.stamp ?? null;
+  } catch {
+    return null;
   }
-  return max;
-}
+})();
 
-let _srcMaxCache: { at: number; v: number | null } | null = null;
-/** src 树最新 mtime，5s 缓存避免每次工具调用递归扫全树。 */
-function cachedSrcMtime(): number | null {
-  const now = Date.now();
-  if (_srcMaxCache && now - _srcMaxCache.at < 5000) return _srcMaxCache.v;
-  const v = newestMtime(SRC_DIR, true);
-  _srcMaxCache = { at: now, v };
-  return v;
-}
+// ★ 2026-10-26（T-#2）：本文件旧的 mtime 判据族（newestMtime / cachedSrcMtime / staleSourceWarningFor）
+//   已随「判据合一」全部删除 —— 它们与 `stale_check#checkStaleBuild` 构成两把尺。
+//   要回头看它们的形状：git log 9b5e43a3 之前的版本。
 
-/**
- * src 树最新 mtime 晚于 dist 树最新 mtime ⇒ 结构化告警；任一未知 / 不新 ⇒ `null`。
- * 纯函数（两个 mtime 进来），与 `staleBuildWarningFor` 对称 —— 导出**为了能被测试看见**。
- */
-export function staleSourceWarningFor(srcMax: number | null, distMax: number | null): ToolWarning | null {
-  if (srcMax === null || distMax === null) return null;
-  if (srcMax <= distMax) return null;
-  return {
-    code: 'STALE_SOURCE',
-    summary: '`src/` 比 `dist/` 新（疑似改了源码但未 `npm run build`）—— 当前工具跑的是旧编译产物',
-    detail: 'dist 产物比源旧：工具的行为（新增字段/修好的 bug）不会体现在本进程里，直到重建。',
-    fix: '`npm run build` 后重启 agent-io MCP server 生效',
-  };
-}
 
 /**
  * src 比 dist 新（改了源码未 build）⇒ 结构化告警；否则 `null`。
