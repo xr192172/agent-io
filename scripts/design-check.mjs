@@ -108,13 +108,46 @@ for (const c of criteria) {
     // ★ 求值域：dsl / nodes / paths / fs / path / root（root = 被分析项目根，D4 要读源码查"迁移有没有执行者"）
     const fn = new Function('dsl', 'nodes', 'paths', 'fs', 'path', 'root', 'mutateReport', 'callReport', 'results', `"use strict"; return (${c.expect});`);
     const ok = Boolean(fn(dsl, nodes, paths, fs, path, ROOT, mutateReport, callReport, results));
-    results.push({ id, name, verdict: ok ? 'pass' : 'fail', detail: ok ? '断言成立' : `断言**不成立**：${c.expect.slice(0, 90)}` });
+    results.push({ id, name, verdict: ok ? 'pass' : 'fail', detail: ok ? '断言成立' : `断言**不成立**：${c.expect.slice(0, 90)}…`, __fullExpect: ok ? undefined : c.expect });
   } catch (e) {
     results.push({ id, name, verdict: 'fail', detail: `判不了：${e.message}` });
   }
 }
 
 const count = (v) => results.filter((r) => r.verdict === v).length;
+
+// ★★★ 2026-10-26（T-#19 / 寄风）：**截断不是丢信息，是换句柄**。
+//   原来失败项写的是 `c.expect.slice(0, 90)` —— **硬切 90 字**，要看全只能**重跑本脚本**
+//   （实测：为了看 D1/D4/D9 的完整 expect，我今天重跑了一次 `design-check --json`）。
+//   ⇒ 现在超长时把**完整 expect** 落到 `.agent-io/.spill/`，detail 里给句柄：
+//     用 `read offset/limit` 翻页，**不必重跑**。
+//   ★ DSH 的 `grep` / `pwsh` 早就是这个范式（"Full output stored at <path>"）。
+//   ★ 为什么先写在这里而不是抽公共：**唯一消费者只有一个**，现在就抽 = 凭想象定接口。
+//     第二个消费者出现时再提到 `application/plumbing.ts`（唯一住处）。
+const SPILL_DIR = path.join(ROOT, '.agent-io', '.spill');
+const SPILL_STAMP = new Date().toISOString().replace(/[:.]/g, '-');
+function spillText(text, kind) {
+  try {
+    fs.mkdirSync(SPILL_DIR, { recursive: true });
+    const file = path.join(SPILL_DIR, `${kind}-${SPILL_STAMP}.txt`);
+    fs.writeFileSync(file, text);
+    return { file, bytes: Buffer.byteLength(text) };
+  } catch {
+    return null;
+  }
+}
+// 回填：失败项把完整 expect 换成一个**句柄**（JSON 与文本两条路径共用）
+for (const r of results) {
+  if (r.verdict !== 'fail' || !r.__fullExpect) continue;
+  const s = spillText(r.__fullExpect, `design-check-${r.id}`);
+  if (s) {
+    r.expect_file = s.file;
+    r.detail =
+      r.detail.replace(/…$/, '') +
+      `\n     ★ 完整 expect（${s.bytes} 字节）见 ${s.file} —— 用 read offset/limit 翻页，**不必重跑本工具**`;
+  }
+  delete r.__fullExpect;
+}
 
 if (JSON_OUT) {
   console.log(JSON.stringify({ feature: FEATURE, checked: results.length, passed: count('pass'), failed: count('fail'), pending: count('pending'), items: results }, null, 2));

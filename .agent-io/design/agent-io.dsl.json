@@ -3350,7 +3350,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_design-node-coverage_mjs",
@@ -61996,13 +61997,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 61,
+  "_dsl_rev": 62,
   "_sync": {
-    "saved_at": "2026-10-26T11:58:43.328Z",
+    "saved_at": "2026-10-26T12:39:07.273Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 14926191,
+    "age": 17350136,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
