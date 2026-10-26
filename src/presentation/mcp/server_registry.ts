@@ -53,6 +53,9 @@ import { facesOf, mcpFace, MINIMAL_FACE_TOOLS } from '../../application/meta/reg
 // ★ T179：**仓根**要用仓里已有的"向上找"（`resolveProjectRoot`：git 根 → 最近 manifest）——
 //   ★ 不许再手算 `'..', '..'`（那是"级数随位置变"的补丁，见下方 STALE SOURCE 段的注释）。
 import { resolveProjectRoot } from '../../infrastructure/analysis/project_root/index.js';
+// ★★ 2026-10-26（T-②）：**判据合一** —— 本文件不再自比 mtime（那曾是第二把尺，见下方 STALE SOURCE 段），
+//   改为委派唯一实现 `stale_check#checkStaleBuild`（mtime 只做触发，内容哈希才是判定）。
+import { checkStaleBuild } from '../../application/observe/runtime/stale_check.js';
 // ★★★ I1（2026-10-25）：根解析的**级 3**（feature → 该 feature 设计 DSL 的 source_root）要读 DSL。
 import { getDSL } from '../../infrastructure/storage.js';
 // ★ T173：`mcpFace()` 的定义已搬到 `tool_faces.ts`（与「说面」的回执同处）—— 这里 re-export 保持对外 API 不变。
@@ -258,7 +261,26 @@ export function staleSourceWarningFor(srcMax: number | null, distMax: number | n
  *   后来加入的读者永远不知道图是旧的）。
  */
 function staleSourceWarning(): ToolWarning | null {
-  return staleSourceWarningFor(cachedSrcMtime(), newestMtime(DIST_DIR, false));
+  // ★★ 2026-10-26（T-②）：**委派唯一实现**。本文件曾自比「src 树最大 mtime vs dist 树最大 mtime」，
+  //   与 `stale_check#checkStaleBuild`（逐文件）构成两把尺 —— 实测修好一把另一把仍在喊。
+  //   现在判据只住 `checkStaleBuild`（mtime 触发 + 内容哈希判定），本函数只管**缓存与文案**。
+  if (!PACKAGE_ROOT) return null;
+  try {
+    const r = checkStaleBuild(PACKAGE_ROOT);
+    if (!r.stale) return null;
+    const head = r.entries
+      .slice(0, 3)
+      .map((e) => `${e.src}${e.missing ? '（缺产物）' : ''}`)
+      .join(' · ');
+    return {
+      code: 'STALE_SOURCE',
+      summary: `\`src/\` 比 \`dist/\` 新（${r.entries.length}/${r.scanned} 个文件）—— 当前工具跑的是旧编译产物`,
+      detail: `按**内容哈希**判定（mtime 只做触发，basis=${r.basis}）：${head}${r.entries.length > 3 ? ' …' : ''}`,
+      fix: '`npm run build` 后重启 agent-io MCP server 生效',
+    };
+  } catch {
+    return null; // 自检失败不假阳性
+  }
 }
 
 

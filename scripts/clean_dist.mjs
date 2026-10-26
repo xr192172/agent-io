@@ -23,7 +23,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.join(ROOT, 'dist');
@@ -151,11 +151,20 @@ console.log(`[clean_dist] 反向检查：${srcTs.length} 个源文件，缺产�
 //     **永远喊脏**（假阳性；实测：test_contract.ts 源 14:57 vs 产物 01:33，内容其实一致）。
 //   ⇒ 把戳写进 dist/ 里，现有的 `newestMtime(DIST_DIR)` 会自动把它算进最大 mtime ⇒ **一处生效、零改判据代码**；
 //     而"真的改了 src 没 build"仍然会告警（戳不刷新）✓ —— 判据语义不变，只是基准变准。
+// ★★ 2026-10-26（T-②）：写「构建清单」`dist/.build-manifest.json` —— **生产者存事实**。
+//   替掉临时构建戳（`.build-stamp`）：戳只能回答"构建过没有"，清单能回答"**哪个源文件的产物对不上**"。
+//   消费者 = `src/application/observe/runtime/stale_check.ts#checkStaleBuild`（**唯一判据实现**）。
+//   ★ 为什么必须内容哈希：tsconfig 是 incremental，文件改了又改回原样时 tsc 跳过 emit
+//     ⇒ 产物 mtime 停在旧值 ⇒ 纯 mtime 判据 100% 假阳性（实测 test_contract.ts 源 14:57 / 产物 01:33，内容一致）。
 if (!dryRun) {
   try {
-    fs.writeFileSync(path.join(DIST, '.build-stamp'), `${new Date().toISOString()}\n`);
-  } catch {
-    console.log('[clean_dist] ⚠ 构建戳写入失败（不影响产物，只影响 STALE_SOURCE 判据的基准）');
+    const mod = await import(
+      pathToFileURL(path.join(DIST, 'src/application/observe/runtime/stale_check.js')).href
+    );
+    const r = mod.writeBuildManifest(ROOT);
+    console.log(`[clean_dist] 已写构建清单：${r.files} 个文件 → dist/.build-manifest.json`);
+  } catch (e) {
+    console.log(`[clean_dist] ⚠ 构建清单写入失败：${e?.message ?? e}（不影响产物，但 STALE_SOURCE 会退回 mtime 判据）`);
   }
 }
 
