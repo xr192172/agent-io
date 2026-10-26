@@ -118,11 +118,14 @@ export function getDbFile(): string {
 //   差异是**有意保留**的，但从此**可见**（各自注释写明"为什么它与另一个不同"）。
 //
 //   ① projectCacheDbPath(root)              已知根 ⇒ 算路径（不问存在）
-//   ② featureCacheDbPath(feature)           导入缓存路径（不问存在）
-//   ③ findCacheDb({ feature, sourceRoot })  候选优先级：挑第一个**存在**的
-//   ④ nearestCacheDb(dir)                   向上逐级：找最近的**存在**的
+//   ② findCacheDb({ sourceRoot })           候选：挑第一个**存在**的（只剩项目索引）
+//   ③ nearestCacheDb(dir)                   向上逐级：找最近的**存在**的
 //
-// ★ ①② 是**纯字符串**（不查盘），好让调用方能在**真正开库之前**先 `existsSync` 预检 ——
+// ★ 2026-10-26（T-#8）：原来还有一个“按 feature 的跨项目索引”（候选②），已删 ——
+//   实测三工作区全盘扫 0 产物，且 HTTP 面是可视化预留、没人用。
+//   ⇒ 现在只剩**一种作用域**：项目索引。
+//
+// ★ ① 是**纯字符串**（不查盘），好让调用方能在**真正开库之前**先 `existsSync` 预检 ——
 //   否则 `getProjectCacheDb` 会在无索引的项目里造出一个空 cache.db（Windows 上还持有 EBUSY 锁，
 //   让临时目录测试的 rmSync 失败；`infrastructure/analysis/project_root/index.ts` 里记着这笔账）。
 // ─────────────────────────────────────────────────────────────
@@ -366,7 +369,7 @@ function requireDbFile(): never {
   throw new Error(
     'openDb 必须显式给 dbFile（无主键兜底已退场）：\n' +
       '  · 项目索引 ⇒ rootsOf(projectRoot).cache.path\n' +
-      '  · 册索引   ⇒ rootsOf(undefined, feature).featureCache.path',
+      '  · （没有第二种索引作用域：按 feature 的跨项目索引已于 2026-10-26 删除）',
   );
 }
 
