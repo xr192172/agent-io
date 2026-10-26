@@ -4,7 +4,12 @@
   "title": "agent-io DSL",
   "description": "双层 DSL：几何层（位置/样式）+ 语义层（文件/API/依赖）",
   "type": "object",
-  "required": ["id", "type", "feature", "geometry"],
+  "required": [
+    "id",
+    "type",
+    "feature",
+    "geometry"
+  ],
   "properties": {
     "id": {
       "type": "string",
@@ -30,7 +35,11 @@
     },
     "status": {
       "type": "string",
-      "enum": ["draft", "in_progress", "done"]
+      "enum": [
+        "draft",
+        "in_progress",
+        "done"
+      ]
     },
     "geometry": {
       "$ref": "#/definitions/Geometry"
@@ -40,11 +49,20 @@
     },
     "annotations": {
       "type": "array",
-      "items": { "$ref": "#/definitions/Annotation" }
+      "items": {
+        "$ref": "#/definitions/Annotation"
+      }
     },
     "theme": {
       "type": "string",
-      "enum": ["dynamic", "blue", "sakura", "forest", "ocean", "star"],
+      "enum": [
+        "dynamic",
+        "blue",
+        "sakura",
+        "forest",
+        "ocean",
+        "star"
+      ],
       "description": "主题 ID"
     },
     "animations_v2": {
@@ -59,21 +77,36 @@
     "canvas_notes": {
       "type": "array",
       "description": "批注层数据（阶段 C）：手绘批注覆盖层持久化（高亮/箭头/便签/文本），独立于语义模型，仅供前端画布渲染与协作",
-      "items": { "$ref": "#/definitions/CanvasNote" }
+      "items": {
+        "$ref": "#/definitions/CanvasNote"
+      }
     }
   },
   "definitions": {
     "Geometry": {
       "type": "object",
-      "required": ["nodes"],
+      "required": [
+        "nodes"
+      ],
       "properties": {
         "layout": {
           "type": "string",
-          "enum": ["grid", "vertical_flow", "horizontal_flow", "free"],
+          "enum": [
+            "grid",
+            "vertical_flow",
+            "horizontal_flow",
+            "free"
+          ],
           "description": "自动排版策略，free=完全用 x/y"
         },
-        "width": { "type": "number", "description": "画布宽度（px）" },
-        "height": { "type": "number", "description": "画布高度（px）" },
+        "width": {
+          "type": "number",
+          "description": "画布宽度（px）"
+        },
+        "height": {
+          "type": "number",
+          "description": "画布高度（px）"
+        },
         "columns": {
           "type": "integer",
           "minimum": 1,
@@ -81,98 +114,204 @@
         },
         "nodes": {
           "type": "array",
-          "items": { "$ref": "#/definitions/Node" }
+          "items": {
+            "$ref": "#/definitions/Node"
+          }
         },
         "edges": {
           "type": "array",
-          "items": { "$ref": "#/definitions/Edge" }
+          "items": {
+            "$ref": "#/definitions/Edge"
+          }
         }
       }
     },
     "Node": {
+      "description": "★ **自动生成**（scripts/gen_dsl_schema.mjs ← src/domain/geometry.ts#Node）。不要手改。",
       "type": "object",
-      "required": ["id"],
       "properties": {
         "id": {
-          "type": "string",
-          "description": "节点 ID，语义层 file.id 通过它锚定"
+          "type": "string"
         },
-        "label": { "type": "string" },
-        "path": {
-          "type": "string",
-          "description": "显式文件指针（仓库相对路径）。写闸/任务机/设计单按它认亲（path 优先、回落 description）；校验见 src/application/design/dsl_ops/node_ops.ts#normalizeNodePath"
+        "label": {
+          "type": "string"
         },
-        "x": { "type": "number" },
-        "y": { "type": "number" },
-        "width": { "type": "number" },
-        "height": { "type": "number" },
-        "layer": {
-          "type": "string",
-          "enum": ["main", "error", "detail"],
-          "description": "职责分层：main=主干（默认显示）；error/detail=深层（默认折叠，角标展开）。缺省 main"
+        "x": {
+          "type": "number"
         },
-        "host": {
-          "type": "string",
-          "description": "深层节点的宿主主干节点 ID（角标挂载点）；缺省时仅跟随全局层开关"
+        "y": {
+          "type": "number"
         },
-        "shapes": {
-          "type": "object",
-          "description": "数据形状卡（D1）：进/出该节点的数据形状（AnimationValueSchema，人话渲染，纯展示）",
-          "properties": {
-            "in": { "type": "object", "description": "进料口数据形状（JSON Schema 格式）" },
-            "out": { "type": "object", "description": "出料口数据形状（JSON Schema 格式）" }
-          },
-          "additionalProperties": false
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
         },
         "style": {
-          "type": "object",
-          "properties": {
-            "bg": { "type": "string", "description": "背景色" },
-            "color": { "type": "string", "description": "前景色" },
-            "border": { "type": "string" },
-            "borderRadius": { "type": "number" }
-          },
-          "additionalProperties": true
+          "$ref": "#/definitions/NodeStyle"
+        },
+        "content": {
+          "$ref": "#/definitions/NodeContent"
+        },
+        "sub_dsl": {
+          "$ref": "#/definitions/DesignDSL"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "const": "draft"
+            },
+            {
+              "const": "in_progress"
+            },
+            {
+              "const": "done"
+            }
+          ]
         },
         "task": {
+          "$ref": "#/definitions/TaskSpec"
+        },
+        "gate": {
+          "anyOf": [
+            {
+              "const": "gated"
+            },
+            {
+              "const": "exempt"
+            }
+          ]
+        },
+        "swimlane": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "title_en": {
+          "type": "string"
+        },
+        "layer": {
+          "anyOf": [
+            {
+              "const": "error"
+            },
+            {
+              "const": "main"
+            },
+            {
+              "const": "detail"
+            }
+          ]
+        },
+        "host": {
+          "type": "string"
+        },
+        "arch_layer": {
+          "type": "string"
+        },
+        "shapes": {
+          "$ref": "#/definitions/NodeShapes"
+        },
+        "attributes": {
           "type": "object",
-          "description": "任务格（★ 与节点同居；唯一写端 = edit_dsl {type:'task'}）。★ 五态 state 是唯一权威，node.status 对它只是派生值（见 src/domain/task_schema.ts#progressOf）",
-          "required": ["id", "summary", "state"],
-          "properties": {
-            "id": { "type": "string", "description": "任务 id（= 所在节点的 id）" },
-            "summary": { "type": "string", "description": "要做什么（人读一句）" },
-            "state": { "type": "string", "enum": ["candidate", "preparing", "claimed", "done", "void"] },
-            "owner": { "type": ["string", "null"] },
-            "claimed_at": { "type": ["string", "null"] },
-            "release_reason": { "type": "string" },
-            "released_by": { "type": ["string", "null"] },
-            "released_at": { "type": ["string", "null"] },
-            "replaces": { "type": "string" },
-            "evidence": { "type": "array", "items": { "type": "object" } },
-            "discussion": { "type": "object" }
-          },
-          "additionalProperties": true
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        },
+        "decision": {
+          "$ref": "#/definitions/NodeDecision"
+        },
+        "decision_history": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DecisionHistoryEntry"
+          }
+        },
+        "intent": {
+          "anyOf": [
+            {
+              "const": "planned"
+            },
+            {
+              "const": "live"
+            },
+            {
+              "const": "to_delete"
+            },
+            {
+              "const": "retired"
+            }
+          ]
+        },
+        "overlay": {
+          "$ref": "#/definitions/OverlayAnchor"
         }
-      }
+      },
+      "required": [
+        "id"
+      ]
     },
     "Edge": {
       "type": "object",
-      "required": ["id", "from", "to"],
+      "required": [
+        "id",
+        "from",
+        "to"
+      ],
       "properties": {
-        "id": { "type": "string" },
-        "from": { "type": "string", "description": "源节点 ID" },
-        "to": { "type": "string", "description": "目标节点 ID" },
-        "label": { "type": "string" },
+        "id": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string",
+          "description": "源节点 ID"
+        },
+        "to": {
+          "type": "string",
+          "description": "目标节点 ID"
+        },
+        "label": {
+          "type": "string"
+        },
         "layer": {
           "type": "string",
-          "enum": ["main", "error", "detail"],
+          "enum": [
+            "main",
+            "error",
+            "detail"
+          ],
           "description": "职责分层：缺省时自动推导——任一端点为深层节点则跟随较深层"
         },
         "style": {
           "type": "object",
           "properties": {
-            "stroke": { "type": "string" },
-            "strokeWidth": { "type": "number" }
+            "stroke": {
+              "type": "string"
+            },
+            "strokeWidth": {
+              "type": "number"
+            }
           },
           "additionalProperties": true
         }
@@ -180,175 +319,423 @@
     },
     "Semantic": {
       "type": "object",
-      "required": ["files"],
+      "required": [
+        "files"
+      ],
       "properties": {
         "files": {
           "type": "array",
-          "items": { "$ref": "#/definitions/File" }
+          "items": {
+            "$ref": "#/definitions/File"
+          }
         },
         "multi_file_invariants": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "不变式规则，design_check 会验证"
         },
         "expected_global_behavior": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
     "File": {
       "type": "object",
-      "required": ["id", "path", "responsibility"],
+      "required": [
+        "id",
+        "path",
+        "responsibility"
+      ],
       "properties": {
         "id": {
           "type": "string",
           "description": "与 geometry.nodes.id 对应"
         },
-        "path": { "type": "string" },
-        "responsibility": { "type": "string" },
+        "path": {
+          "type": "string"
+        },
+        "responsibility": {
+          "type": "string"
+        },
         "expected_apis": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["signature"],
+            "required": [
+              "signature"
+            ],
             "properties": {
-              "signature": { "type": "string" },
-              "notes": { "type": "string" }
+              "signature": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "string"
+              }
             }
           }
         },
         "expected_deps": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
-        "expected_behavior": { "type": "string" },
-        "layer": { "type": "string", "description": "架构层 id（序号5：architecture-analyzer 推断，如 api/service/data/ui）" },
-        "contract": { "$ref": "#/definitions/BrickContract" }
+        "expected_behavior": {
+          "type": "string"
+        },
+        "layer": {
+          "type": "string",
+          "description": "架构层 id（序号5：architecture-analyzer 推断，如 api/service/data/ui）"
+        },
+        "contract": {
+          "$ref": "#/definitions/BrickContract"
+        }
       }
     },
     "BrickContract": {
       "type": "object",
-      "required": ["schema_version", "role", "shapes", "effects"],
+      "required": [
+        "schema_version",
+        "role",
+        "shapes",
+        "effects"
+      ],
       "properties": {
-        "schema_version": { "type": "number", "enum": [1] },
+        "schema_version": {
+          "type": "number",
+          "enum": [
+            1
+          ]
+        },
         "role": {
           "type": "object",
-          "required": ["class", "basis", "confidence"],
+          "required": [
+            "class",
+            "basis",
+            "confidence"
+          ],
           "properties": {
-            "class": { "type": "string", "enum": ["business", "functional", "hybrid"] },
-            "basis": { "type": "string", "enum": ["graph", "runtime", "llm", "mixed"] },
-            "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
-            "reasons": { "type": "array", "items": { "type": "string" } }
+            "class": {
+              "type": "string",
+              "enum": [
+                "business",
+                "functional",
+                "hybrid"
+              ]
+            },
+            "basis": {
+              "type": "string",
+              "enum": [
+                "graph",
+                "runtime",
+                "llm",
+                "mixed"
+              ]
+            },
+            "confidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "reasons": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         },
         "shapes": {
           "type": "object",
-          "required": ["exposes", "consumes"],
+          "required": [
+            "exposes",
+            "consumes"
+          ],
           "properties": {
-            "exposes": { "type": "array", "items": { "$ref": "#/definitions/ShapeSchema" } },
-            "consumes": { "type": "array", "items": { "$ref": "#/definitions/ShapeSchema" } }
+            "exposes": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ShapeSchema"
+              }
+            },
+            "consumes": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ShapeSchema"
+              }
+            }
           }
         },
         "effects": {
           "type": "object",
-          "required": ["writes", "holds", "emits", "reads_config"],
+          "required": [
+            "writes",
+            "holds",
+            "emits",
+            "reads_config"
+          ],
           "properties": {
-            "writes": { "type": "array", "items": { "$ref": "#/definitions/EffectTarget" } },
-            "holds": { "type": "array", "items": { "$ref": "#/definitions/EffectTarget" } },
-            "emits": { "type": "array", "items": { "type": "string" } },
-            "reads_config": { "type": "array", "items": { "type": "string" } }
+            "writes": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/EffectTarget"
+              }
+            },
+            "holds": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/EffectTarget"
+              }
+            },
+            "emits": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "reads_config": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         },
         "runtime": {
           "type": "object",
-          "required": ["call_count", "top_callers", "observed_targets"],
+          "required": [
+            "call_count",
+            "top_callers",
+            "observed_targets"
+          ],
           "properties": {
-            "call_count": { "type": "number" },
-            "top_callers": { "type": "array", "items": { "type": "string" } },
-            "observed_targets": { "type": "array", "items": { "type": "string" } },
-            "last_seen": { "type": "string" }
+            "call_count": {
+              "type": "number"
+            },
+            "top_callers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "observed_targets": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "last_seen": {
+              "type": "string"
+            }
           }
         },
         "provenance": {
           "type": "object",
           "properties": {
-            "source_project": { "type": "string" },
-            "commit": { "type": "string" },
-            "harvested_at": { "type": "string" },
-            "last_reconciled": { "type": "string", "description": "最近一次 observe 动静对账时间" }
+            "source_project": {
+              "type": "string"
+            },
+            "commit": {
+              "type": "string"
+            },
+            "harvested_at": {
+              "type": "string"
+            },
+            "last_reconciled": {
+              "type": "string",
+              "description": "最近一次 observe 动静对账时间"
+            }
           }
         }
       }
     },
     "ShapeSchema": {
       "type": "object",
-      "required": ["name", "kind", "fields", "origin"],
+      "required": [
+        "name",
+        "kind",
+        "fields",
+        "origin"
+      ],
       "properties": {
-        "name": { "type": "string" },
-        "kind": { "type": "string", "enum": ["struct", "interface", "type", "class"] },
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "struct",
+            "interface",
+            "type",
+            "class"
+          ]
+        },
         "fields": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["name", "type"],
+            "required": [
+              "name",
+              "type"
+            ],
             "properties": {
-              "name": { "type": "string" },
-              "type": { "type": "string" },
-              "required": { "type": "boolean" }
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "required": {
+                "type": "boolean"
+              }
             }
           }
         },
-        "origin": { "type": "string", "enum": ["ast", "runtime", "llm"] },
-        "notes": { "type": "string" }
+        "origin": {
+          "type": "string",
+          "enum": [
+            "ast",
+            "runtime",
+            "llm"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
       }
     },
     "EffectTarget": {
       "type": "object",
-      "required": ["target", "op"],
+      "required": [
+        "target",
+        "op"
+      ],
       "properties": {
-        "target": { "type": "string" },
-        "op": { "type": "string", "enum": ["write", "append", "delete", "acquire", "release"] },
-        "reversible": { "type": "string" },
-        "origin": { "type": "string", "enum": ["ast", "runtime"], "description": "ast=静态扫描候选；runtime=observe 实测确认" }
+        "target": {
+          "type": "string"
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "write",
+            "append",
+            "delete",
+            "acquire",
+            "release"
+          ]
+        },
+        "reversible": {
+          "type": "string"
+        },
+        "origin": {
+          "type": "string",
+          "enum": [
+            "ast",
+            "runtime"
+          ],
+          "description": "ast=静态扫描候选；runtime=observe 实测确认"
+        }
       }
     },
     "Annotation": {
       "type": "object",
-      "required": ["id", "text"],
+      "required": [
+        "id",
+        "text"
+      ],
       "anyOf": [
-        { "required": ["target_id"] },
-        { "required": ["node_id"] }
+        {
+          "required": [
+            "target_id"
+          ]
+        },
+        {
+          "required": [
+            "node_id"
+          ]
+        }
       ],
       "properties": {
-        "id": { "type": "string" },
-        "target_id": { "type": "string", "description": "指向 node.id 或 edge.id" },
-        "node_id": { "type": "string", "description": "直接指明所属节点 ID（兼容字段）" },
-        "text": { "type": "string" },
-        "author": { "type": "string", "enum": ["human", "llm"] },
-        "created": { "type": "string", "format": "date-time" }
+        "id": {
+          "type": "string"
+        },
+        "target_id": {
+          "type": "string",
+          "description": "指向 node.id 或 edge.id"
+        },
+        "node_id": {
+          "type": "string",
+          "description": "直接指明所属节点 ID（兼容字段）"
+        },
+        "text": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string",
+          "enum": [
+            "human",
+            "llm"
+          ]
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        }
       }
     },
     "CanvasNote": {
       "type": "object",
-      "required": ["id", "type"],
+      "required": [
+        "id",
+        "type"
+      ],
       "description": "批注层图元：手绘自由笔迹 / 箭头 / 圈注椭圆 / 便签 / 文本。坐标均为画布世界坐标（world px）",
       "properties": {
-        "id": { "type": "string", "description": "图元唯一 ID" },
-        "groupId": { "type": "string", "description": "批注套 ID：同一次批注层会话（开启→关闭）内创建的图元共享同一套，一套=一个批注；历史数据缺省时按单元素处理" },
+        "id": {
+          "type": "string",
+          "description": "图元唯一 ID"
+        },
+        "groupId": {
+          "type": "string",
+          "description": "批注套 ID：同一次批注层会话（开启→关闭）内创建的图元共享同一套，一套=一个批注；历史数据缺省时按单元素处理"
+        },
         "anchor": {
           "type": "object",
           "description": "节点锚定：批注随锚定节点移动/布局重排而跟随；ox/oy = 基准点相对节点左上角的偏移（世界 px）。缺省=绝对坐标",
           "properties": {
-            "nodeId": { "type": "string", "description": "锚定的画布节点 ID（geometry.nodes[].id）" },
-            "ox": { "type": "number", "description": "批注基准点相对节点左上角 x 偏移（世界 px）" },
-            "oy": { "type": "number", "description": "批注基准点相对节点左上角 y 偏移（世界 px）" }
+            "nodeId": {
+              "type": "string",
+              "description": "锚定的画布节点 ID（geometry.nodes[].id）"
+            },
+            "ox": {
+              "type": "number",
+              "description": "批注基准点相对节点左上角 x 偏移（世界 px）"
+            },
+            "oy": {
+              "type": "number",
+              "description": "批注基准点相对节点左上角 y 偏移（世界 px）"
+            }
           },
-          "required": ["nodeId", "ox", "oy"]
+          "required": [
+            "nodeId",
+            "ox",
+            "oy"
+          ]
         },
         "type": {
           "type": "string",
-          "enum": ["highlight", "arrow", "oval", "sticky", "text"],
+          "enum": [
+            "highlight",
+            "arrow",
+            "oval",
+            "sticky",
+            "text"
+          ],
           "description": "highlight=高亮笔自由笔迹；arrow=箭头；oval=圈注红色虚线椭圆（points=[中心,边缘]）；sticky=便签；text=文本"
         },
         "points": {
@@ -356,100 +743,224 @@
           "description": "笔迹/箭头关键点序列 [[x,y],...]（世界坐标）；oval 时 [中心点, 边缘点]",
           "items": {
             "type": "array",
-            "items": { "type": "number" },
+            "items": {
+              "type": "number"
+            },
             "minItems": 2,
             "maxItems": 2
           }
         },
-        "x": { "type": "number", "description": "便签/文本锚点 x（世界坐标）" },
-        "y": { "type": "number", "description": "便签/文本锚点 y（世界坐标）" },
-        "w": { "type": "number", "description": "便签/文本宽度（世界 px）" },
-        "h": { "type": "number", "description": "便签/文本高度（世界 px）" },
-        "text": { "type": "string", "description": "便签/文本内容" },
-        "color": { "type": "string", "description": "颜色（CSS 色值）" },
-        "strokeWidth": { "type": "number", "description": "笔迹/箭头线宽（世界 px）" },
-        "created": { "type": "string", "format": "date-time", "description": "创建时间" },
-        "status": { "type": "string", "enum": ["open", "done", "rejected"], "description": "批注处理状态：open=待处理（默认）/ done=已处理 / rejected=已驳回" }
+        "x": {
+          "type": "number",
+          "description": "便签/文本锚点 x（世界坐标）"
+        },
+        "y": {
+          "type": "number",
+          "description": "便签/文本锚点 y（世界坐标）"
+        },
+        "w": {
+          "type": "number",
+          "description": "便签/文本宽度（世界 px）"
+        },
+        "h": {
+          "type": "number",
+          "description": "便签/文本高度（世界 px）"
+        },
+        "text": {
+          "type": "string",
+          "description": "便签/文本内容"
+        },
+        "color": {
+          "type": "string",
+          "description": "颜色（CSS 色值）"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "description": "笔迹/箭头线宽（世界 px）"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time",
+          "description": "创建时间"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "done",
+            "rejected"
+          ],
+          "description": "批注处理状态：open=待处理（默认）/ done=已处理 / rejected=已驳回"
+        }
       },
       "additionalProperties": true
     },
     "Simulation": {
       "type": "object",
-      "required": ["id", "initial_state", "rules"],
+      "required": [
+        "id",
+        "initial_state",
+        "rules"
+      ],
       "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "description": { "type": "string" },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
         "initial_state": {
           "type": "array",
-          "items": { "$ref": "#/definitions/SimulationStateDef" }
+          "items": {
+            "$ref": "#/definitions/SimulationStateDef"
+          }
         },
         "rules": {
           "type": "array",
-          "items": { "$ref": "#/definitions/SimulationRule" }
+          "items": {
+            "$ref": "#/definitions/SimulationRule"
+          }
         },
         "mappings": {
           "type": "array",
-          "items": { "$ref": "#/definitions/SimulationNodeMapping" }
+          "items": {
+            "$ref": "#/definitions/SimulationNodeMapping"
+          }
         }
       }
     },
     "SimulationStateDef": {
       "type": "object",
-      "required": ["key", "value"],
+      "required": [
+        "key",
+        "value"
+      ],
       "properties": {
-        "key": { "type": "string" },
+        "key": {
+          "type": "string"
+        },
         "value": {},
-        "type": { "type": "string", "enum": ["number", "string", "boolean", "array", "object"] },
-        "description": { "type": "string" }
+        "type": {
+          "type": "string",
+          "enum": [
+            "number",
+            "string",
+            "boolean",
+            "array",
+            "object"
+          ]
+        },
+        "description": {
+          "type": "string"
+        }
       }
     },
     "SimulationRule": {
       "type": "object",
-      "required": ["id", "event", "actions"],
+      "required": [
+        "id",
+        "event",
+        "actions"
+      ],
       "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "event": { "type": "string" },
-        "condition": { "type": "string" },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "event": {
+          "type": "string"
+        },
+        "condition": {
+          "type": "string"
+        },
         "actions": {
           "type": "array",
-          "items": { "$ref": "#/definitions/SimulationAction" }
+          "items": {
+            "$ref": "#/definitions/SimulationAction"
+          }
         },
         "emits": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
     "SimulationAction": {
       "type": "object",
-      "required": ["type"],
+      "required": [
+        "type"
+      ],
       "properties": {
-        "type": { "type": "string", "enum": ["set_state", "increment", "decrement", "push", "pop", "move", "highlight", "log", "call"] },
-        "target": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": [
+            "set_state",
+            "increment",
+            "decrement",
+            "push",
+            "pop",
+            "move",
+            "highlight",
+            "log",
+            "call"
+          ]
+        },
+        "target": {
+          "type": "string"
+        },
         "value": {},
-        "amount": { "type": "number" },
-        "from": { "type": "string" },
-        "to": { "type": "string" },
-        "message": { "type": "string" }
+        "amount": {
+          "type": "number"
+        },
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
       }
     },
     "SimulationNodeMapping": {
       "type": "object",
-      "required": ["stateKey", "nodeId"],
+      "required": [
+        "stateKey",
+        "nodeId"
+      ],
       "properties": {
-        "stateKey": { "type": "string" },
-        "nodeId": { "type": "string" },
-        "labelTemplate": { "type": "string" },
+        "stateKey": {
+          "type": "string"
+        },
+        "nodeId": {
+          "type": "string"
+        },
+        "labelTemplate": {
+          "type": "string"
+        },
         "styleMap": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["when", "style"],
+            "required": [
+              "when",
+              "style"
+            ],
             "properties": {
-              "when": { "type": "string" },
-              "style": { "type": "object" }
+              "when": {
+                "type": "string"
+              },
+              "style": {
+                "type": "object"
+              }
             }
           }
         }
@@ -457,20 +968,38 @@
     },
     "AnimationSystem": {
       "type": "object",
-      "required": ["version"],
+      "required": [
+        "version"
+      ],
       "properties": {
-        "version": { "type": "number" },
+        "version": {
+          "type": "number"
+        },
         "flows": {
           "type": "array",
-          "items": { "$ref": "#/definitions/AnimationFlow" }
+          "items": {
+            "$ref": "#/definitions/AnimationFlow"
+          }
         },
         "runtime": {
           "type": "object",
           "properties": {
-            "mode": { "type": "string", "enum": ["mock", "live"] },
-            "code_dir": { "type": "string" },
-            "entry": { "type": "string" },
-            "timeout": { "type": "number" }
+            "mode": {
+              "type": "string",
+              "enum": [
+                "mock",
+                "live"
+              ]
+            },
+            "code_dir": {
+              "type": "string"
+            },
+            "entry": {
+              "type": "string"
+            },
+            "timeout": {
+              "type": "number"
+            }
           },
           "additionalProperties": true
         }
@@ -479,34 +1008,76 @@
     },
     "AnimationFlow": {
       "type": "object",
-      "required": ["id", "trigger", "from"],
+      "required": [
+        "id",
+        "trigger",
+        "from"
+      ],
       "properties": {
-        "id": { "type": "string" },
+        "id": {
+          "type": "string"
+        },
         "trigger": {
           "type": "object",
-          "required": ["type"],
+          "required": [
+            "type"
+          ],
           "properties": {
-            "type": { "type": "string", "enum": ["periodic", "event", "state_change", "manual"] },
-            "interval": { "type": "number" },
-            "event": { "type": "string" },
-            "watch": { "type": "string" }
+            "type": {
+              "type": "string",
+              "enum": [
+                "periodic",
+                "event",
+                "state_change",
+                "manual"
+              ]
+            },
+            "interval": {
+              "type": "number"
+            },
+            "event": {
+              "type": "string"
+            },
+            "watch": {
+              "type": "string"
+            }
           },
           "additionalProperties": true
         },
-        "from": { "type": "string", "description": "源节点 ID" },
-        "to": { "type": "string", "description": "目标节点 ID（L2 直连；L3 用 branches 替代）" },
-        "value": { "$ref": "#/definitions/AnimationValue" },
+        "from": {
+          "type": "string",
+          "description": "源节点 ID"
+        },
+        "to": {
+          "type": "string",
+          "description": "目标节点 ID（L2 直连；L3 用 branches 替代）"
+        },
+        "value": {
+          "$ref": "#/definitions/AnimationValue"
+        },
         "branches": {
           "type": "array",
           "description": "L3 条件分支，与 to 互斥；按声明顺序求值，第一个命中者生效",
           "items": {
             "type": "object",
-            "required": ["to"],
+            "required": [
+              "to"
+            ],
             "properties": {
-              "condition": { "type": "string", "description": "JS 表达式（访问 value）；else/true/default/空 为兜底" },
-              "to": { "type": "string" },
-              "value": { "$ref": "#/definitions/AnimationValue" },
-              "effect": { "type": "string", "description": "particle_red / particle_green 等颜色提示" }
+              "condition": {
+                "type": "string",
+                "description": "JS 表达式（访问 value）；else/true/default/空 为兜底"
+              },
+              "to": {
+                "type": "string"
+              },
+              "value": {
+                "$ref": "#/definitions/AnimationValue"
+              },
+              "effect": {
+                "type": "string",
+                "description": "particle_red / particle_green 等颜色提示"
+              }
             },
             "additionalProperties": true
           }
@@ -514,125 +1085,2934 @@
         "mock_values": {
           "type": "array",
           "description": "L3 mock 数据源：periodic 触发时轮流播放的求值上下文 value",
-          "items": { "type": "object" }
+          "items": {
+            "type": "object"
+          }
         },
         "handler": {
           "type": "object",
           "description": "L4 函数绑定",
-          "required": ["file_id", "api"],
+          "required": [
+            "file_id",
+            "api"
+          ],
           "properties": {
-            "file_id": { "type": "string" },
-            "api": { "type": "string" },
-            "input_mapping": { "type": "object", "additionalProperties": { "type": "string" } },
-            "output_mapping": { "type": "object", "additionalProperties": { "type": "string" } },
+            "file_id": {
+              "type": "string"
+            },
+            "api": {
+              "type": "string"
+            },
+            "input_mapping": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "output_mapping": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
             "errors": {
               "type": "array",
               "description": "L4.5 异常声明",
               "items": {
                 "type": "object",
-                "required": ["type", "condition", "severity", "to"],
+                "required": [
+                  "type",
+                  "condition",
+                  "severity",
+                  "to"
+                ],
                 "properties": {
-                  "type": { "type": "string" },
-                  "condition": { "type": "string" },
-                  "severity": { "type": "string", "enum": ["expected", "unexpected"] },
-                  "to": { "type": "string" },
-                  "value": { "$ref": "#/definitions/AnimationValue" },
-                  "effect": { "type": "string" },
-                  "log": { "type": "string" }
+                  "type": {
+                    "type": "string"
+                  },
+                  "condition": {
+                    "type": "string"
+                  },
+                  "severity": {
+                    "type": "string",
+                    "enum": [
+                      "expected",
+                      "unexpected"
+                    ]
+                  },
+                  "to": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "$ref": "#/definitions/AnimationValue"
+                  },
+                  "effect": {
+                    "type": "string"
+                  },
+                  "log": {
+                    "type": "string"
+                  }
                 },
                 "additionalProperties": true
               }
             },
-            "live": { "type": "boolean" },
-            "mock_result": { "description": "mock 模式固定返回值（mock_results 为空时生效）" },
+            "live": {
+              "type": "boolean"
+            },
+            "mock_result": {
+              "description": "mock 模式固定返回值（mock_results 为空时生效）"
+            },
             "mock_results": {
               "type": "array",
               "description": "mock 模式轮换返回值（优先于 mock_result；可混入 { error } / { panic: true } 演示 L4.5 异常路径）",
-              "items": { "type": "object" }
+              "items": {
+                "type": "object"
+              }
             }
           },
           "additionalProperties": true
         },
-        "effect": { "type": "string" },
-        "on_arrive": { "type": "string" },
-        "source_key": { "type": "string" },
-        "layout": { "type": "object", "additionalProperties": true }
+        "effect": {
+          "type": "string"
+        },
+        "on_arrive": {
+          "type": "string"
+        },
+        "source_key": {
+          "type": "string"
+        },
+        "layout": {
+          "type": "object",
+          "additionalProperties": true
+        }
       },
       "additionalProperties": true
     },
     "AnimationValue": {
       "type": "object",
-      "required": ["type"],
+      "required": [
+        "type"
+      ],
       "properties": {
-        "type": { "type": "string" },
-        "label": { "type": "string" },
-        "fields": { "type": "object", "description": "JSON Schema 格式的字段结构" }
+        "type": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "object",
+          "description": "JSON Schema 格式的字段结构"
+        }
       },
       "additionalProperties": true
     },
     "ReasoningStep": {
       "type": "object",
-      "required": ["id", "node", "kind", "tokens", "reasoning"],
+      "required": [
+        "id",
+        "node",
+        "kind",
+        "tokens",
+        "reasoning"
+      ],
       "properties": {
-        "id": { "type": "string", "description": "步骤 ID（唯一，供 folds.folded 引用）" },
-        "node": { "type": "string", "description": "步骤所在节点 id（引用 geometry.nodes[].id）" },
-        "kind": { "type": "string", "enum": ["think", "tool", "respond", "fold"], "description": "步骤类型" },
-        "tokens": { "type": "number", "minimum": 0, "description": "该步占用/消耗 token 数" },
-        "input": { "type": "string", "description": "该步输入上下文描述" },
-        "reasoning": { "type": "string", "description": "LLM 推理内容（回放时浮层显示）" },
-        "output": { "type": "string", "description": "该步输出" },
-        "api": { "type": "string", "description": "该步绑定的函数名（L4 浮层 ƒ api）" }
+        "id": {
+          "type": "string",
+          "description": "步骤 ID（唯一，供 folds.folded 引用）"
+        },
+        "node": {
+          "type": "string",
+          "description": "步骤所在节点 id（引用 geometry.nodes[].id）"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "think",
+            "tool",
+            "respond",
+            "fold"
+          ],
+          "description": "步骤类型"
+        },
+        "tokens": {
+          "type": "number",
+          "minimum": 0,
+          "description": "该步占用/消耗 token 数"
+        },
+        "input": {
+          "type": "string",
+          "description": "该步输入上下文描述"
+        },
+        "reasoning": {
+          "type": "string",
+          "description": "LLM 推理内容（回放时浮层显示）"
+        },
+        "output": {
+          "type": "string",
+          "description": "该步输出"
+        },
+        "api": {
+          "type": "string",
+          "description": "该步绑定的函数名（L4 浮层 ƒ api）"
+        }
       },
       "additionalProperties": true
     },
     "ReasoningFold": {
       "type": "object",
-      "required": ["at_step", "node", "kind", "summary", "folded"],
+      "required": [
+        "at_step",
+        "node",
+        "kind",
+        "summary",
+        "folded"
+      ],
       "properties": {
-        "at_step": { "type": "integer", "minimum": 1, "description": "在哪一步之后触发（steps 索引，从 1 起）" },
-        "node": { "type": "string", "description": "折叠目标节点 id" },
-        "kind": { "type": "string", "enum": ["summarize", "evict"], "description": "折叠方式" },
-        "summary": { "type": "string", "description": "折叠后生成的摘要文本" },
-        "folded": { "type": "array", "items": { "type": "string" }, "description": "被折叠的步骤 id 列表" }
+        "at_step": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "在哪一步之后触发（steps 索引，从 1 起）"
+        },
+        "node": {
+          "type": "string",
+          "description": "折叠目标节点 id"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "summarize",
+            "evict"
+          ],
+          "description": "折叠方式"
+        },
+        "summary": {
+          "type": "string",
+          "description": "折叠后生成的摘要文本"
+        },
+        "folded": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "被折叠的步骤 id 列表"
+        }
       },
       "additionalProperties": true
     },
     "ReasoningBudget": {
       "type": "object",
-      "required": ["max_tokens"],
+      "required": [
+        "max_tokens"
+      ],
       "properties": {
-        "max_tokens": { "type": "number", "minimum": 1, "description": "上下文窗口 token 上限" },
-        "fold_at": { "type": "number", "minimum": 0, "maximum": 1, "description": "触发折叠的阈值比例（默认 0.8）" }
+        "max_tokens": {
+          "type": "number",
+          "minimum": 1,
+          "description": "上下文窗口 token 上限"
+        },
+        "fold_at": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "触发折叠的阈值比例（默认 0.8）"
+        }
       },
       "additionalProperties": true
     },
     "ReasoningEntry": {
       "type": "object",
-      "required": ["label", "node"],
+      "required": [
+        "label",
+        "node"
+      ],
       "properties": {
-        "label": { "type": "string", "description": "入口标签" },
-        "node": { "type": "string", "description": "入口节点 id" }
+        "label": {
+          "type": "string",
+          "description": "入口标签"
+        },
+        "node": {
+          "type": "string",
+          "description": "入口节点 id"
+        }
       },
       "additionalProperties": true
     },
     "ReasoningSystem": {
       "type": "object",
-      "required": ["version", "entry", "steps"],
+      "required": [
+        "version",
+        "entry",
+        "steps"
+      ],
       "properties": {
-        "version": { "type": "integer" },
-        "entry": { "$ref": "#/definitions/ReasoningEntry" },
-        "budget": { "$ref": "#/definitions/ReasoningBudget" },
+        "version": {
+          "type": "integer"
+        },
+        "entry": {
+          "$ref": "#/definitions/ReasoningEntry"
+        },
+        "budget": {
+          "$ref": "#/definitions/ReasoningBudget"
+        },
         "steps": {
           "type": "array",
-          "items": { "$ref": "#/definitions/ReasoningStep" }
+          "items": {
+            "$ref": "#/definitions/ReasoningStep"
+          }
         },
         "folds": {
           "type": "array",
-          "items": { "$ref": "#/definitions/ReasoningFold" }
+          "items": {
+            "$ref": "#/definitions/ReasoningFold"
+          }
         }
       },
       "additionalProperties": true
+    },
+    "NodeStyle": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "shape": {
+          "anyOf": [
+            {
+              "const": "rect"
+            },
+            {
+              "const": "rounded"
+            },
+            {
+              "const": "circle"
+            },
+            {
+              "const": "diamond"
+            },
+            {
+              "const": "freeform"
+            },
+            {
+              "const": "parallelogram"
+            },
+            {
+              "const": "hexagon"
+            },
+            {
+              "const": "triangle"
+            }
+          ]
+        },
+        "bg": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "tone": {
+          "anyOf": [
+            {
+              "const": "error"
+            },
+            {
+              "const": "success"
+            },
+            {
+              "const": "warning"
+            }
+          ]
+        },
+        "border": {
+          "type": "string"
+        },
+        "borderRadius": {
+          "type": "number"
+        },
+        "shadow": {
+          "type": "string"
+        },
+        "opacity": {
+          "type": "number"
+        }
+      }
+    },
+    "NodeContent": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "type": {
+          "anyOf": [
+            {
+              "const": "text"
+            },
+            {
+              "const": "rich"
+            },
+            {
+              "const": "layout"
+            }
+          ]
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ContentBlock"
+          }
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "ContentBlock": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "type": {
+          "anyOf": [
+            {
+              "const": "text"
+            },
+            {
+              "const": "image"
+            },
+            {
+              "const": "color_block"
+            },
+            {
+              "const": "spacer"
+            },
+            {
+              "const": "code"
+            },
+            {
+              "const": "list"
+            },
+            {
+              "const": "divider"
+            },
+            {
+              "const": "badge"
+            }
+          ]
+        },
+        "value": {
+          "type": "string"
+        },
+        "src": {
+          "type": "string"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "bg": {
+          "type": "string"
+        },
+        "border": {
+          "type": "string"
+        },
+        "borderRadius": {
+          "type": "number"
+        },
+        "padding": {
+          "type": "number"
+        },
+        "spacerHeight": {
+          "type": "number"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ContentBlock"
+          }
+        },
+        "style": {
+          "$ref": "#/definitions/BlockStyle"
+        },
+        "visible": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "listType": {
+          "anyOf": [
+            {
+              "const": "ul"
+            },
+            {
+              "const": "ol"
+            }
+          ]
+        },
+        "language": {
+          "type": "string"
+        },
+        "badgeColor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "BlockStyle": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "fontSize": {
+          "type": "number"
+        },
+        "bold": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "italic": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "color": {
+          "type": "string"
+        },
+        "align": {
+          "anyOf": [
+            {
+              "const": "left"
+            },
+            {
+              "const": "center"
+            },
+            {
+              "const": "right"
+            }
+          ]
+        }
+      }
+    },
+    "DesignDSL": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "feature": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "source_root": {
+          "type": "string"
+        },
+        "_dsl_rev": {
+          "type": "number"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "const": "draft"
+            },
+            {
+              "const": "in_progress"
+            },
+            {
+              "const": "done"
+            }
+          ]
+        },
+        "theme": {
+          "anyOf": [
+            {
+              "const": "dynamic"
+            },
+            {
+              "const": "blue"
+            },
+            {
+              "const": "sakura"
+            },
+            {
+              "const": "forest"
+            },
+            {
+              "const": "ocean"
+            },
+            {
+              "const": "star"
+            }
+          ]
+        },
+        "todos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TaskSpec"
+          }
+        },
+        "geometry": {
+          "$ref": "#/definitions/Geometry"
+        },
+        "semantic": {
+          "$ref": "#/definitions/Semantic"
+        },
+        "animations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Animation"
+          }
+        },
+        "animations_v2": {
+          "$ref": "#/definitions/AnimationSystem"
+        },
+        "simulation": {
+          "$ref": "#/definitions/Simulation"
+        },
+        "reasoning": {
+          "$ref": "#/definitions/ReasoningSystem"
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ArchLayer"
+          }
+        },
+        "feature_tree": {
+          "$ref": "#/definitions/FeatureTree"
+        }
+      },
+      "required": [
+        "feature",
+        "geometry"
+      ]
+    },
+    "TaskSpec": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "const": "done"
+            },
+            {
+              "const": "candidate"
+            },
+            {
+              "const": "preparing"
+            },
+            {
+              "const": "claimed"
+            },
+            {
+              "const": "void"
+            }
+          ]
+        },
+        "node_id": {
+          "type": "string"
+        },
+        "follows": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "claimed_at": {
+          "type": "string"
+        },
+        "release_reason": {
+          "type": "string"
+        },
+        "released_by": {
+          "type": "string"
+        },
+        "released_at": {
+          "type": "string"
+        },
+        "reopened_at": {
+          "type": "string"
+        },
+        "reopened_from": {
+          "type": "string"
+        },
+        "reopen_reason": {
+          "type": "string"
+        },
+        "renewed_count": {
+          "type": "number"
+        },
+        "last_renewed_at": {
+          "type": "string"
+        },
+        "taken_over_from": {
+          "type": "object",
+          "properties": {
+            "from_owner": {
+              "type": "string"
+            },
+            "from_claimed_at": {
+              "type": "string"
+            },
+            "age_hours": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "age_hours",
+            "from_claimed_at"
+          ]
+        },
+        "expired_from": {
+          "type": "object",
+          "properties": {
+            "owner": {
+              "type": "string"
+            },
+            "claimed_at": {
+              "type": "string"
+            },
+            "age_hours": {
+              "type": "number"
+            },
+            "ttl_ms": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "age_hours",
+            "claimed_at",
+            "owner",
+            "ttl_ms"
+          ]
+        },
+        "expired_at": {
+          "type": "string"
+        },
+        "replaces": {
+          "type": "string"
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TaskHistoryEntry"
+          }
+        },
+        "retire_reason": {
+          "type": "string"
+        },
+        "retired_at": {
+          "type": "string"
+        },
+        "retired_by": {
+          "type": "string"
+        },
+        "archived_at": {
+          "type": "string"
+        },
+        "archived_by": {
+          "type": "string"
+        },
+        "archived_reason": {
+          "type": "string"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TaskEvidenceRecord"
+          }
+        },
+        "discussion": {
+          "$ref": "#/definitions/TaskDiscussion"
+        },
+        "read_set": {
+          "$ref": "#/definitions/TaskReadSet"
+        },
+        "judge_gate": {
+          "const": "strict"
+        },
+        "claimed_without_judge": {
+          "type": "object",
+          "properties": {
+            "at": {
+              "type": "string"
+            },
+            "missing": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "at",
+            "missing"
+          ]
+        },
+        "prepared_snapshot": {
+          "$ref": "#/definitions/PreparedSnapshot"
+        }
+      },
+      "required": [
+        "id",
+        "state",
+        "summary"
+      ]
+    },
+    "TaskHistoryEntry": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "at": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "by": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "at",
+        "from",
+        "reason",
+        "to"
+      ]
+    },
+    "TaskEvidenceRecord": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "anyOf": [
+            {
+              "const": "expectations"
+            },
+            {
+              "const": "reading"
+            },
+            {
+              "const": "attestation"
+            }
+          ]
+        },
+        "at": {
+          "type": "string"
+        },
+        "by": {
+          "anyOf": [
+            {
+              "const": "human"
+            },
+            {
+              "const": "llm"
+            }
+          ]
+        },
+        "agent": {
+          "type": "string"
+        },
+        "observed": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "why": {
+          "type": "string"
+        },
+        "verdict": {
+          "anyOf": [
+            {
+              "const": "pass"
+            },
+            {
+              "const": "fail"
+            },
+            {
+              "const": "unsupported"
+            }
+          ]
+        },
+        "fingerprint": {
+          "$ref": "#/definitions/TaskEvidenceFingerprint"
+        }
+      },
+      "required": [
+        "at",
+        "kind",
+        "verdict"
+      ]
+    },
+    "TaskEvidenceFingerprint": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "what": {
+          "type": "string"
+        },
+        "input": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "covers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "what"
+      ]
+    },
+    "TaskDiscussion": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "micro": {
+          "type": "string"
+        },
+        "user_quote": {
+          "type": "string"
+        },
+        "conclusion": {
+          "type": "string"
+        },
+        "open": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "decided_at": {
+          "type": "string"
+        },
+        "supersedes": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "micro"
+      ]
+    },
+    "TaskReadSet": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "symbols": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TaskReadSetSymbol"
+          }
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TaskReadSetFile"
+          }
+        },
+        "computed_at": {
+          "type": "string"
+        },
+        "basis": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "const": "expectations"
+              },
+              {
+                "const": "declared"
+              },
+              {
+                "const": "node-path"
+              }
+            ]
+          }
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "basis",
+        "computed_at",
+        "files",
+        "symbols"
+      ]
+    },
+    "TaskReadSetSymbol": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "fp": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "fp",
+        "name"
+      ]
+    },
+    "TaskReadSetFile": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "content_hash": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "content_hash",
+        "path"
+      ]
+    },
+    "PreparedSnapshot": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "expectations": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "file-exists"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "path",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "symbol-exists"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "symbol": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "path",
+                  "symbol",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "signature-matches"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "symbol": {
+                    "type": "string"
+                  },
+                  "signature": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "path",
+                  "signature",
+                  "symbol",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "edge-exists"
+                  },
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "from",
+                  "kind",
+                  "to",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "edge-absent"
+                  },
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "from",
+                  "kind",
+                  "to",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "call-exists"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "symbol": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "path",
+                  "symbol",
+                  "target",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "source-has"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "must": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "mustNot": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "path",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "behavior-cases"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "symbol": {
+                    "type": "string"
+                  },
+                  "cases": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "given": {
+                          "type": "array",
+                          "items": {}
+                        },
+                        "expect": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "expect",
+                        "given"
+                      ]
+                    }
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "cases",
+                  "kind",
+                  "path",
+                  "symbol",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "run"
+                  },
+                  "input": {},
+                  "input_ref": {
+                    "type": "string"
+                  },
+                  "expect": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  },
+                  "blocked_by": {
+                    "type": "string"
+                  },
+                  "mutants_ignore": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "expect",
+                  "kind",
+                  "why"
+                ]
+              }
+            ]
+          }
+        },
+        "at": {
+          "type": "string"
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "at",
+        "expectations",
+        "missing"
+      ]
+    },
+    "ForceParams": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "repulsion": {
+          "type": "number"
+        },
+        "stiffness": {
+          "type": "number"
+        },
+        "damping": {
+          "type": "number"
+        },
+        "iterations": {
+          "type": "number"
+        },
+        "node_radius": {
+          "type": "number"
+        }
+      }
+    },
+    "NodeShapes": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "in": {
+          "$ref": "#/definitions/AnimationValueSchema"
+        },
+        "out": {
+          "$ref": "#/definitions/AnimationValueSchema"
+        }
+      }
+    },
+    "AnimationValueSchema": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "type": {
+          "anyOf": [
+            {
+              "const": "string"
+            },
+            {
+              "const": "number"
+            },
+            {
+              "const": "boolean"
+            },
+            {
+              "const": "object"
+            },
+            {
+              "const": "array"
+            },
+            {
+              "const": "integer"
+            },
+            {
+              "const": "null"
+            }
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/AnimationValueSchema"
+          }
+        },
+        "items": {
+          "$ref": "#/definitions/AnimationValueSchema"
+        },
+        "required": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "enum": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "NodeDecision": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "summary": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "option": {
+                "type": "string"
+              },
+              "rejected_because": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "option",
+              "rejected_because"
+            ]
+          }
+        },
+        "consequences": {
+          "type": "string"
+        },
+        "acceptance": {
+          "type": "string"
+        },
+        "expectations": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "file-exists"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "path",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "symbol-exists"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "symbol": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "path",
+                  "symbol",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "signature-matches"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "symbol": {
+                    "type": "string"
+                  },
+                  "signature": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "path",
+                  "signature",
+                  "symbol",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "edge-exists"
+                  },
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "from",
+                  "kind",
+                  "to",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "edge-absent"
+                  },
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "from",
+                  "kind",
+                  "to",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "call-exists"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "symbol": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "path",
+                  "symbol",
+                  "target",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "source-has"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "must": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "mustNot": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "path",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "behavior-cases"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "symbol": {
+                    "type": "string"
+                  },
+                  "cases": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "given": {
+                          "type": "array",
+                          "items": {}
+                        },
+                        "expect": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "expect",
+                        "given"
+                      ]
+                    }
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "cases",
+                  "kind",
+                  "path",
+                  "symbol",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "run"
+                  },
+                  "input": {},
+                  "input_ref": {
+                    "type": "string"
+                  },
+                  "expect": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  },
+                  "blocked_by": {
+                    "type": "string"
+                  },
+                  "mutants_ignore": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "expect",
+                  "kind",
+                  "why"
+                ]
+              }
+            ]
+          }
+        },
+        "status": {
+          "anyOf": [
+            {
+              "const": "draft"
+            },
+            {
+              "const": "active"
+            }
+          ]
+        },
+        "thread": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "scope": {
+          "type": "string"
+        },
+        "author": {
+          "anyOf": [
+            {
+              "const": "human"
+            },
+            {
+              "const": "llm"
+            }
+          ]
+        },
+        "agent": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "dissent": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DecisionDissent"
+          }
+        },
+        "votes": {
+          "type": "number"
+        },
+        "evidence_source": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "summary"
+      ]
+    },
+    "DecisionDissent": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "option": {
+          "type": "string"
+        },
+        "votes": {
+          "type": "number"
+        },
+        "evidence_source": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "option"
+      ]
+    },
+    "DecisionHistoryEntry": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "at": {
+          "type": "string"
+        },
+        "decision": {
+          "$ref": "#/definitions/NodeDecision"
+        },
+        "note": {
+          "type": "string"
+        },
+        "author": {
+          "anyOf": [
+            {
+              "const": "human"
+            },
+            {
+              "const": "llm"
+            }
+          ]
+        },
+        "agent": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "at",
+        "decision"
+      ]
+    },
+    "OverlayAnchor": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "const": "symbol"
+            },
+            {
+              "const": "file"
+            },
+            {
+              "const": "dir"
+            },
+            {
+              "const": "brick"
+            },
+            {
+              "const": "doc"
+            }
+          ]
+        },
+        "signature": {
+          "type": "string"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        },
+        "stale": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "orphaned": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "_migratedFrom": {
+          "type": "string"
+        },
+        "lifecycle": {
+          "$ref": "#/definitions/FileLifecycle"
+        },
+        "progress": {
+          "anyOf": [
+            {
+              "const": "draft"
+            },
+            {
+              "const": "in_progress"
+            },
+            {
+              "const": "done"
+            }
+          ]
+        },
+        "progress_evidence": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "expectations"
+                },
+                "all_green": {
+                  "type": "boolean"
+                },
+                "unsupported": {
+                  "const": 0
+                },
+                "ref": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "all_green",
+                "kind",
+                "unsupported"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "reading"
+                },
+                "command": {
+                  "type": "string"
+                },
+                "observed": {
+                  "type": "string"
+                },
+                "at": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "at",
+                "command",
+                "kind",
+                "observed"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "attestation"
+                },
+                "by": {
+                  "anyOf": [
+                    {
+                      "const": "human"
+                    },
+                    {
+                      "const": "llm"
+                    }
+                  ]
+                },
+                "at": {
+                  "type": "string"
+                },
+                "why": {
+                  "type": "string"
+                },
+                "source_node_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "at",
+                "by",
+                "kind",
+                "why"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "FileLifecycle": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "status": {
+          "anyOf": [
+            {
+              "const": "active"
+            },
+            {
+              "const": "deprecated"
+            },
+            {
+              "const": "merged"
+            }
+          ]
+        },
+        "merged_into": {
+          "type": "string"
+        },
+        "merged_from": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "retire_reason": {
+          "type": "string"
+        },
+        "changed_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ]
+    },
+    "EdgeStyle": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "stroke": {
+          "type": "string"
+        },
+        "strokeWidth": {
+          "type": "number"
+        }
+      }
+    },
+    "Swimlane": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "bg": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "y": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "SemanticFile": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "responsibility": {
+          "type": "string"
+        },
+        "responsibility_en": {
+          "type": "string"
+        },
+        "expected_apis": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ExpectedApi"
+          }
+        },
+        "expected_deps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expected_behavior": {
+          "type": "string"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "const": "draft"
+            },
+            {
+              "const": "in_progress"
+            },
+            {
+              "const": "done"
+            }
+          ]
+        },
+        "symbols": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Symbol"
+          }
+        },
+        "lines": {
+          "type": "number"
+        },
+        "layer": {
+          "type": "string"
+        },
+        "contract": {
+          "$ref": "#/definitions/BrickContract"
+        },
+        "lifecycle": {
+          "$ref": "#/definitions/FileLifecycle"
+        }
+      },
+      "required": [
+        "id",
+        "path",
+        "responsibility"
+      ]
+    },
+    "ExpectedApi": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "signature": {
+          "type": "string"
+        },
+        "line": {
+          "type": "number"
+        },
+        "end_line": {
+          "type": "number"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "notes_en": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "signature"
+      ]
+    },
+    "Symbol": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "const": "function"
+            },
+            {
+              "const": "const"
+            },
+            {
+              "const": "type"
+            },
+            {
+              "const": "var"
+            },
+            {
+              "const": "struct"
+            },
+            {
+              "const": "interface"
+            },
+            {
+              "const": "class"
+            },
+            {
+              "const": "method"
+            }
+          ]
+        },
+        "line": {
+          "type": "number"
+        },
+        "end_line": {
+          "type": "number"
+        },
+        "signature": {
+          "type": "string"
+        },
+        "decision": {
+          "$ref": "#/definitions/NodeDecision"
+        },
+        "decision_history": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DecisionHistoryEntry"
+          }
+        },
+        "lifecycle": {
+          "$ref": "#/definitions/SymbolLifecycle"
+        }
+      },
+      "required": [
+        "kind",
+        "line",
+        "name"
+      ]
+    },
+    "SymbolLifecycle": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "status": {
+          "anyOf": [
+            {
+              "const": "active"
+            },
+            {
+              "const": "deprecated"
+            },
+            {
+              "const": "merged"
+            },
+            {
+              "const": "superseded"
+            },
+            {
+              "const": "split"
+            }
+          ]
+        },
+        "superseded_by": {
+          "type": "string"
+        },
+        "split_into": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "merged_from": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "retire_reason": {
+          "type": "string"
+        },
+        "changed_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ]
+    },
+    "BrickRole": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "class": {
+          "anyOf": [
+            {
+              "const": "business"
+            },
+            {
+              "const": "functional"
+            },
+            {
+              "const": "hybrid"
+            }
+          ]
+        },
+        "basis": {
+          "anyOf": [
+            {
+              "const": "llm"
+            },
+            {
+              "const": "graph"
+            },
+            {
+              "const": "runtime"
+            },
+            {
+              "const": "mixed"
+            }
+          ]
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "basis",
+        "class",
+        "confidence"
+      ]
+    },
+    "ShapeField": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "required": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ]
+    },
+    "ScaffoldConfig": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "templates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CodeTemplate"
+          }
+        },
+        "markers": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "generate_ui_skeleton": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "ui_framework": {
+          "anyOf": [
+            {
+              "const": "vue"
+            },
+            {
+              "const": "react"
+            },
+            {
+              "const": "html"
+            }
+          ]
+        }
+      }
+    },
+    "CodeTemplate": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "lang": {
+          "type": "string"
+        },
+        "template": {
+          "type": "string"
+        },
+        "ext": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ext",
+        "id",
+        "lang",
+        "name",
+        "template"
+      ]
+    },
+    "Animation": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "stages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AnimationStage"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "stages"
+      ]
+    },
+    "AnimationStage": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "duration": {
+          "type": "number"
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ElementState"
+          }
+        }
+      },
+      "required": [
+        "elements",
+        "name"
+      ]
+    },
+    "ElementState": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "visible": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "status": {
+          "type": "string"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "content": {
+          "$ref": "#/definitions/NodeContent"
+        },
+        "highlight": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "opacity": {
+          "type": "number"
+        },
+        "label": {
+          "type": "string"
+        },
+        "style": {
+          "$ref": "#/definitions/NodeStyle"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "AnimationTrigger": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "type": {
+          "anyOf": [
+            {
+              "const": "periodic"
+            },
+            {
+              "const": "event"
+            },
+            {
+              "const": "state_change"
+            },
+            {
+              "const": "manual"
+            }
+          ]
+        },
+        "interval": {
+          "type": "number"
+        },
+        "event": {
+          "type": "string"
+        },
+        "watch": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    "AnimationHandler": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "file_id": {
+          "type": "string"
+        },
+        "api": {
+          "type": "string"
+        },
+        "input_mapping": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "output_mapping": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AnimationError"
+          }
+        },
+        "mock_result": {},
+        "mock_results": {
+          "type": "array",
+          "items": {}
+        },
+        "live": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        }
+      },
+      "required": [
+        "api",
+        "file_id"
+      ]
+    },
+    "AnimationError": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "condition": {
+          "type": "string"
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "const": "expected"
+            },
+            {
+              "const": "unexpected"
+            }
+          ]
+        },
+        "to": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/definitions/AnimationValue"
+        },
+        "effect": {
+          "type": "string"
+        },
+        "log": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "condition",
+        "severity",
+        "to",
+        "type"
+      ]
+    },
+    "AnimationBranch": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "condition": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/definitions/AnimationValue"
+        },
+        "effect": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "condition",
+        "to"
+      ]
+    },
+    "AnimationRuntime": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "mode": {
+          "anyOf": [
+            {
+              "const": "live"
+            },
+            {
+              "const": "mock"
+            }
+          ]
+        },
+        "code_dir": {
+          "type": "string"
+        },
+        "entry": {
+          "type": "string"
+        },
+        "timeout": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "mode"
+      ]
+    },
+    "SimulationTrace": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "step": {
+          "type": "number"
+        },
+        "event": {
+          "type": "string"
+        },
+        "ruleId": {
+          "type": "string"
+        },
+        "conditionMet": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SimulationAction"
+          }
+        },
+        "emittedEvents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "stateSnapshot": {
+          "type": "object",
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "actions",
+        "conditionMet",
+        "emittedEvents",
+        "event",
+        "ruleId",
+        "stateSnapshot",
+        "step",
+        "timestamp"
+      ]
+    },
+    "ArchLayer": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "name_en": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "description_en": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "count": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "color",
+        "count",
+        "description",
+        "id",
+        "name"
+      ]
+    },
+    "FeatureTree": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "features": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FeatureNode"
+          }
+        },
+        "file_map": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "feature_id": {
+                "type": "string"
+              },
+              "community_id": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "community_id",
+              "feature_id"
+            ]
+          }
+        },
+        "source": {
+          "anyOf": [
+            {
+              "const": "llm"
+            },
+            {
+              "const": "rule"
+            }
+          ]
+        },
+        "community_dir_diff": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CommunityDirDiffEntry"
+          }
+        }
+      },
+      "required": [
+        "features",
+        "file_map"
+      ]
+    },
+    "FeatureNode": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "name_en": {
+          "type": "string"
+        },
+        "communities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FeatureCommunity"
+          }
+        }
+      },
+      "required": [
+        "communities",
+        "id",
+        "name"
+      ]
+    },
+    "FeatureCommunity": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "number"
+        },
+        "name": {
+          "type": "string"
+        },
+        "name_en": {
+          "type": "string"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "est_lines": {
+          "type": "number"
+        },
+        "symbol_count": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "est_lines",
+        "files",
+        "id",
+        "name",
+        "symbol_count"
+      ]
+    },
+    "CommunityDirDiffEntry": {
+      "description": "★ 自动生成（被 Node 引用）",
+      "type": "object",
+      "properties": {
+        "file_id": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "dir": {
+          "type": "string"
+        },
+        "community_id": {
+          "type": "number"
+        },
+        "community_name": {
+          "type": "string"
+        },
+        "community_dir": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "community_dir",
+        "community_id",
+        "community_name",
+        "dir",
+        "file",
+        "file_id"
+      ]
     }
   }
 }
-
