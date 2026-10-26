@@ -1,0 +1,126 @@
+{
+  "//": "Design DB —— agent-shell-client/agent_shell_client/protocol.py（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell-client/agent_shell_client/protocol.py",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "Address",
+      "kind": "class",
+      "signature": "Address()"
+    },
+    {
+      "name": "Message",
+      "kind": "class",
+      "signature": "Message()"
+    },
+    {
+      "name": "HelloPayload",
+      "kind": "class",
+      "signature": "HelloPayload()"
+    },
+    {
+      "name": "WelcomePayload",
+      "kind": "class",
+      "signature": "WelcomePayload()"
+    },
+    {
+      "name": "InputPayload",
+      "kind": "class",
+      "signature": "InputPayload()"
+    },
+    {
+      "name": "CancelPayload",
+      "kind": "class",
+      "signature": "CancelPayload()"
+    },
+    {
+      "name": "UsageStats",
+      "kind": "class",
+      "signature": "UsageStats()"
+    },
+    {
+      "name": "TurnDonePayload",
+      "kind": "class",
+      "signature": "TurnDonePayload()"
+    },
+    {
+      "name": "ThinkingPayload",
+      "kind": "class",
+      "signature": "ThinkingPayload()"
+    },
+    {
+      "name": "ToolCallPayload",
+      "kind": "class",
+      "signature": "ToolCallPayload()"
+    },
+    {
+      "name": "ToolResultPayload",
+      "kind": "class",
+      "signature": "ToolResultPayload()"
+    },
+    {
+      "name": "MemoryInsightPayload",
+      "kind": "class",
+      "signature": "MemoryInsightPayload()"
+    },
+    {
+      "name": "NoticePayload",
+      "kind": "class",
+      "signature": "NoticePayload()"
+    },
+    {
+      "name": "EventMessagePayload",
+      "kind": "class",
+      "signature": "EventMessagePayload()"
+    },
+    {
+      "name": "CompactionStartedPayload",
+      "kind": "class",
+      "signature": "CompactionStartedPayload()"
+    },
+    {
+      "name": "CompactionDonePayload",
+      "kind": "class",
+      "signature": "CompactionDonePayload()"
+    },
+    {
+      "name": "RetryingPayload",
+      "kind": "class",
+      "signature": "RetryingPayload()"
+    },
+    {
+      "name": "PermissionRequestPayload",
+      "kind": "class",
+      "signature": "PermissionRequestPayload()"
+    },
+    {
+      "name": "PermissionResponsePayload",
+      "kind": "class",
+      "signature": "PermissionResponsePayload()"
+    },
+    {
+      "name": "ResumePayload",
+      "kind": "class",
+      "signature": "ResumePayload()"
+    },
+    {
+      "name": "StatusPayload",
+      "kind": "class",
+      "signature": "StatusPayload()"
+    },
+    {
+      "name": "FragmentPayload",
+      "kind": "class",
+      "signature": "FragmentPayload()"
+    },
+    {
+      "name": "ErrorPayload",
+      "kind": "class",
+      "signature": "ErrorPayload()"
+    }
+  ]
+}

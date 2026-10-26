@@ -80,7 +80,7 @@
         },
         {
           "name": "data",
-          "type": ": {\r\n    stopped_at: DiagnoseLoopStage;\r\n    /** ★ 每一步的读数（★ 都不加工，原样给） */\r\n    cache?: { total: number; updated: number; failed: number; ms: number } | { error: string };\r\n    diagnosis?: { engine: string; root_cause: unknown; fix_suggestions: unknown };\r\n    patch?: { rationale: string; allowed_files: string[]; diff: string[]; changed_files: string[] };\r\n    applied?: boolean;\r\n    verify?: { command: string; ok: boolean; output_tail: string } | { skipped: true; reason: string };\r\n    reverted?: boolean;\r\n    /** ★★ 明确告诉调用方「下一步该做什么」（★ 尤其\"提交要你自己做\"） */\r\n    next: string;\r\n  }",
+          "type": ": {\n    stopped_at: DiagnoseLoopStage;\n    /** ★ 每一步的读数（★ 都不加工，原样给） */\n    cache?: { total: number; updated: number; failed: number; ms: number } | { error: string };\n    diagnosis?: { engine: string; root_cause: unknown; fix_suggestions: unknown };\n    patch?: { rationale: string; allowed_files: string[]; diff: string[]; changed_files: string[] };\n    applied?: boolean;\n    verify?: { command: string; ok: boolean; output_tail: string } | { skipped: true; reason: string };\n    reverted?: boolean;\n    /** ★★ 明确告诉调用方「下一步该做什么」（★ 尤其\"提交要你自己做\"） */\n    next: string;\n  }",
           "optional": false,
           "member_kind": "property"
         }

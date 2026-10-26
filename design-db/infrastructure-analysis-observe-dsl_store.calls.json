@@ -329,6 +329,7 @@
     "src/application/observe/reconcile/proposal_approve.ts#approveObserveProposal",
     "src/application/observe/reconcile/proposal_list.ts#listObserveProposals",
     "src/application/observe/reconcile/proposal_reject.ts#rejectObserveProposal",
+    "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
     "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.appendHistory",
     "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.constructor",
     "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.history",

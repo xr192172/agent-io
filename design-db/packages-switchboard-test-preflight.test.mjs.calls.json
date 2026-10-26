@@ -1,0 +1,41 @@
+{
+  "//": "Design DB —— packages/switchboard/test/preflight.test.mjs（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/switchboard/test/preflight.test.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "n",
+      "kind": "const",
+      "signature": "const n = 0"
+    },
+    {
+      "name": "inv",
+      "kind": "const",
+      "signature": "const inv = collectInventory({ gen: 'g', mode: 'staging' })"
+    },
+    {
+      "name": "by",
+      "kind": "const",
+      "signature": "const by = Object.fromEntries(inv.plugins.map((p) => [p.id, p]))"
+    },
+    {
+      "name": "slot",
+      "kind": "const",
+      "signature": "const slot = 1"
+    },
+    {
+      "name": "p",
+      "kind": "const",
+      "signature": "const p = allocGenPort(3100, slot)"
+    },
+    {
+      "name": "seq",
+      "kind": "const",
+      "signature": "const seq = []"
+    }
+  ]
+}

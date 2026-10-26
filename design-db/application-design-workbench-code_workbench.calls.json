@@ -890,6 +890,14 @@
       "to": "src/application/refactor/gate_note.ts#gateHumanLines"
     },
     {
+      "from": "src/application/design/workbench/code_workbench.ts#previewRename",
+      "to": "src/application/refactor/rename/rename_file.ts#renameFile"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/refactor/rename/rename_file.ts#renameFile"
+    },
+    {
       "from": "src/application/design/workbench/code_workbench.ts#previewDslIntent",
       "to": "src/domain/overlay.ts#buildCandidates"
     },

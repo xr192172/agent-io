@@ -1,0 +1,26 @@
+{
+  "//": "Design DB —— packages/subagent-council/src/seat-registry.generated.ts（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/subagent-council/src/seat-registry.generated.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "SeatDef",
+      "kind": "interface",
+      "signature": "SeatDef()"
+    },
+    {
+      "name": "SEAT_DEFS",
+      "kind": "const",
+      "signature": "const SEAT_DEFS = [ { name: \"council-acceptance\", description: \"Use when a …"
+    },
+    {
+      "name": "SEAT_BY_NAME",
+      "kind": "const",
+      "signature": "const SEAT_BY_NAME = Object.fromEntries( SEAT_DEFS.map((s) => [s.name, s]), )"
+    }
+  ]
+}

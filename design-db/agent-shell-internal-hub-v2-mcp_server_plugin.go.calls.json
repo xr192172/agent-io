@@ -1,0 +1,61 @@
+{
+  "//": "Design DB —— agent-shell/internal/hub/v2/mcp_server_plugin.go（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell/internal/hub/v2/mcp_server_plugin.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "ToolProvider",
+      "kind": "type",
+      "signature": "ToolProvider()"
+    },
+    {
+      "name": "PermissionChecker",
+      "kind": "type",
+      "signature": "PermissionChecker()"
+    },
+    {
+      "name": "MCPDecision",
+      "kind": "type",
+      "signature": "MCPDecision()"
+    },
+    {
+      "name": "MCPToolDef",
+      "kind": "type",
+      "signature": "MCPToolDef()"
+    },
+    {
+      "name": "jsonrpcRequest",
+      "kind": "type",
+      "signature": "jsonrpcRequest()"
+    },
+    {
+      "name": "jsonrpcResponse",
+      "kind": "type",
+      "signature": "jsonrpcResponse()"
+    },
+    {
+      "name": "jsonrpcErr",
+      "kind": "type",
+      "signature": "jsonrpcErr()"
+    },
+    {
+      "name": "MCPServerPlugin",
+      "kind": "type",
+      "signature": "MCPServerPlugin()"
+    },
+    {
+      "name": "sseResponseWriter",
+      "kind": "type",
+      "signature": "sseResponseWriter()"
+    },
+    {
+      "name": "allowAllGate",
+      "kind": "type",
+      "signature": "allowAllGate()"
+    }
+  ]
+}

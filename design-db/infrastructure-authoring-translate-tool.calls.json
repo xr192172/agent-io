@@ -7,7 +7,7 @@
     {
       "name": "TranslateGoTsArgs",
       "kind": "interface",
-      "line": 28,
+      "line": 29,
       "signature": "TranslateGoTsArgs()",
       "members": [
         {
@@ -63,31 +63,31 @@
     {
       "name": "translateGoTsHandler",
       "kind": "function",
-      "line": 47,
+      "line": 48,
       "signature": "translateGoTsHandler(args: Record<string, unknown>): Promise<{ message: string; data?: unknown }>"
     },
     {
       "name": "appendReceipt",
       "kind": "function",
-      "line": 207,
+      "line": 222,
       "signature": "appendReceipt(lines: string[], receipt: Receipt): void"
     },
     {
       "name": "projectReceipt",
       "kind": "function",
-      "line": 233,
+      "line": 256,
       "signature": "projectReceipt(r: ProjectResult, fillRequested: boolean, verifyRequested: boolean): Receipt"
     },
     {
       "name": "parseSuppliedCases",
       "kind": "function",
-      "line": 266,
+      "line": 291,
       "signature": "parseSuppliedCases(raw: unknown): BehaviorCase[]"
     },
     {
       "name": "externalImportsOf",
       "kind": "function",
-      "line": 279,
+      "line": 304,
       "signature": "externalImportsOf(source: string): string[]"
     }
   ],
@@ -125,6 +125,10 @@
       "kind": "relative"
     },
     {
+      "source": "./book.js",
+      "kind": "relative"
+    },
+    {
       "source": "./go_extractor.js",
       "kind": "relative",
       "type_only": true
@@ -141,6 +145,18 @@
     }
   ],
   "calls": [
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
+      "to": "src/infrastructure/authoring/translate/book.ts#attachBookFacts"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
+      "to": "src/infrastructure/authoring/translate/book.ts#findBookRootFor"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
+      "to": "src/infrastructure/authoring/translate/book.ts#loadTranslateBooks"
+    },
     {
       "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
       "to": "src/infrastructure/authoring/translate/fill.ts#fillUnitsWithRetry"
@@ -164,6 +180,10 @@
     {
       "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
       "to": "src/infrastructure/authoring/translate/project.ts#translateGoProject"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",
+      "to": "src/infrastructure/authoring/translate/receipt.ts#buildExternalDeps"
     },
     {
       "from": "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler",

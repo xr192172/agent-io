@@ -320,7 +320,9 @@
     }
   ],
   "reverse_calls": [
+    "src/application/observe/reconcile/proposal_reject.ts#rejectObserveProposal",
     "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+    "src/infrastructure/analysis/observe/approve_gated.ts#freeze",
     "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.create",
     "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.get",
     "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.reject",

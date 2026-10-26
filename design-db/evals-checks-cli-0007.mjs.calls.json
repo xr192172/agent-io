@@ -1,0 +1,231 @@
+{
+  "//": "Design DB —— evals/checks/cli-0007.mjs（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "evals/checks/cli-0007.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "HERE_DIR",
+      "kind": "const",
+      "signature": "const HERE_DIR = path.dirname(fileURLToPath(import.meta.url))"
+    },
+    {
+      "name": "_resolved",
+      "kind": "const",
+      "signature": "const _resolved = resolveRepoArgv()"
+    },
+    {
+      "name": "REPO",
+      "kind": "const",
+      "signature": "const REPO = path.resolve(_resolved.repo ?? '')"
+    },
+    {
+      "name": "DIR",
+      "kind": "const",
+      "signature": "const DIR = path.join(REPO, 'evals', 'pilot', 'rename-target')"
+    },
+    {
+      "name": "INDEX",
+      "kind": "const",
+      "signature": "const INDEX = path.join(DIR, 'index.js')"
+    },
+    {
+      "name": "STORE",
+      "kind": "const",
+      "signature": "const STORE = path.join(DIR, 'store.js')"
+    },
+    {
+      "name": "GUARD",
+      "kind": "const",
+      "signature": "const GUARD = path.join(DIR, 'store-guard.mjs')"
+    },
+    {
+      "name": "GUARD_SELFTEST",
+      "kind": "const",
+      "signature": "const GUARD_SELFTEST = path.join(DIR, 'store-guard.selftest.mjs')"
+    },
+    {
+      "name": "BASELINE_SELFTEST",
+      "kind": "const",
+      "signature": "const BASELINE_SELFTEST = ['h=1a47e90b', 'd=computeHash-v1/1a47e90b', 'put/get=one@…"
+    },
+    {
+      "name": "SELFTEST_PAIRS",
+      "kind": "const",
+      "signature": "const SELFTEST_PAIRS = [ { name: 'h', value: '1a47e90b' }, { name: 'd', value: '…"
+    },
+    {
+      "name": "MIN_ENTRIES",
+      "kind": "const",
+      "signature": "const MIN_ENTRIES = 5"
+    },
+    {
+      "name": "TMP",
+      "kind": "const",
+      "signature": "const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-0007-oracle-'))"
+    },
+    {
+      "name": "BASE",
+      "kind": "const",
+      "signature": "const BASE = path.join(TMP, 'store-baseline.txt')"
+    },
+    {
+      "name": "MISSING",
+      "kind": "const",
+      "signature": "const MISSING = path.join(TMP, '绝不存在的基线文件.txt')"
+    },
+    {
+      "name": "pass",
+      "kind": "const",
+      "signature": "const pass = 0"
+    },
+    {
+      "name": "fail",
+      "kind": "const",
+      "signature": "const fail = 0"
+    },
+    {
+      "name": "say",
+      "kind": "const",
+      "signature": "const say = (ok, id, what, detail) => { console.log(' ' + (ok ? 'ok '…"
+    },
+    {
+      "name": "short",
+      "kind": "const",
+      "signature": "const short = (s, n) => String(s ?? '').replace(/\\r\\n/g, '\\n').trim().s…"
+    },
+    {
+      "name": "run",
+      "kind": "const",
+      "signature": "const run = (args, cwd) => spawnSync(process.execPath, args, { cwd: c…"
+    },
+    {
+      "name": "jsonOf",
+      "kind": "const",
+      "signature": "const jsonOf = (stdout) => { try { return { obj: JSON.parse(stdout ?? ''…"
+    },
+    {
+      "name": "deepEq",
+      "kind": "const",
+      "signature": "const deepEq = (a, b) => JSON.stringify(a) === JSON.stringify(b)"
+    },
+    {
+      "name": "writeLines",
+      "kind": "const",
+      "signature": "const writeLines = (rows) => rows.map((r) => r.name + '\\t' + r.value).join('…"
+    },
+    {
+      "name": "r",
+      "kind": "const",
+      "signature": "const r = run([INDEX, '--selftest'], REPO)"
+    },
+    {
+      "name": "got",
+      "kind": "const",
+      "signature": "const got = String(r.stdout ?? '').replace(/\\r\\n/g, '\\n').trim()"
+    },
+    {
+      "name": "want",
+      "kind": "const",
+      "signature": "const want = BASELINE_SELFTEST.join('\\n')"
+    },
+    {
+      "name": "rows",
+      "kind": "const",
+      "signature": "const rows = []"
+    },
+    {
+      "name": "exists",
+      "kind": "const",
+      "signature": "const exists = fs.existsSync(BASE)"
+    },
+    {
+      "name": "text",
+      "kind": "const",
+      "signature": "const text = exists ? fs.readFileSync(BASE, 'utf8') : ''"
+    },
+    {
+      "name": "parsed",
+      "kind": "const",
+      "signature": "const parsed = parsePinned(text)"
+    },
+    {
+      "name": "copied",
+      "kind": "const",
+      "signature": "const copied = rows.length === SELFTEST_PAIRS.length && SELFTEST_PAIRS.e…"
+    },
+    {
+      "name": "p",
+      "kind": "const",
+      "signature": "const p = rows[0]"
+    },
+    {
+      "name": "plain",
+      "kind": "const",
+      "signature": "const plain = run([GUARD, '--check', BASE], REPO)"
+    },
+    {
+      "name": "ok",
+      "kind": "const",
+      "signature": "const ok = obj !== null && obj.mode === 'check' && obj.ok === false …"
+    },
+    {
+      "name": "q",
+      "kind": "const",
+      "signature": "const q = rows[2]"
+    },
+    {
+      "name": "copy",
+      "kind": "const",
+      "signature": "const copy = path.join(TMP, 'copy')"
+    },
+    {
+      "name": "copyBase",
+      "kind": "const",
+      "signature": "const copyBase = path.join(TMP, 'copy-baseline.txt')"
+    },
+    {
+      "name": "g",
+      "kind": "const",
+      "signature": "const g = path.join(copy, 'store-guard.mjs')"
+    },
+    {
+      "name": "rec",
+      "kind": "const",
+      "signature": "const rec = run([g, '--record', copyBase], copy)"
+    },
+    {
+      "name": "green",
+      "kind": "const",
+      "signature": "const green = run([g, '--check', copyBase], copy)"
+    },
+    {
+      "name": "sp",
+      "kind": "const",
+      "signature": "const sp = path.join(copy, 'store.js')"
+    },
+    {
+      "name": "src",
+      "kind": "const",
+      "signature": "const src = fs.readFileSync(sp, 'utf8')"
+    },
+    {
+      "name": "anchor",
+      "kind": "const",
+      "signature": "const anchor = \"computeHash(key + '|' + value)\""
+    },
+    {
+      "name": "patched",
+      "kind": "const",
+      "signature": "const patched = false"
+    },
+    {
+      "name": "red",
+      "kind": "const",
+      "signature": "const red = patched ? run([g, '--check', copyBase], copy) : { status:…"
+    }
+  ]
+}

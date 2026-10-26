@@ -1,0 +1,21 @@
+{
+  "//": "Design DB —— packages/switchboard/src/brains.ts（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/switchboard/src/brains.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "BrainDef",
+      "kind": "interface",
+      "signature": "BrainDef()"
+    },
+    {
+      "name": "BRAINS",
+      "kind": "const",
+      "signature": "const BRAINS = [ { kind: 'left', role: '直接服务执行的主行动脑', mutating: true }, …"
+    }
+  ]
+}

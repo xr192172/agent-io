@@ -1,0 +1,36 @@
+{
+  "//": "Design DB —— agent-shell/internal/tools/knowledge_tools.go（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell/internal/tools/knowledge_tools.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "KnowledgeWriteTool",
+      "kind": "type",
+      "signature": "KnowledgeWriteTool()"
+    },
+    {
+      "name": "KnowledgeSearchTool",
+      "kind": "type",
+      "signature": "KnowledgeSearchTool()"
+    },
+    {
+      "name": "KnowledgeLinkTool",
+      "kind": "type",
+      "signature": "KnowledgeLinkTool()"
+    },
+    {
+      "name": "KnowledgeListTool",
+      "kind": "type",
+      "signature": "KnowledgeListTool()"
+    },
+    {
+      "name": "KnowledgeTagsTool",
+      "kind": "type",
+      "signature": "KnowledgeTagsTool()"
+    }
+  ]
+}

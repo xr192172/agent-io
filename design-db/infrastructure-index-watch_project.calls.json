@@ -82,7 +82,7 @@
       "name": "handleWatchEvent",
       "kind": "function",
       "line": 108,
-      "signature": "handleWatchEvent(db: Database,\r\n  projectRoot: string,\r\n  absPath: string,): Promise<WatchEventResult>"
+      "signature": "handleWatchEvent(db: Database,\n  projectRoot: string,\n  absPath: string,): Promise<WatchEventResult>"
     },
     {
       "name": "WatchBatchSummary",
@@ -164,7 +164,7 @@
       "name": "flushBatch",
       "kind": "function",
       "line": 178,
-      "signature": "flushBatch(db: Database,\r\n  projectRoot: string,\r\n  rels: string[],\r\n  opts: FlushBatchOptions = {},): Promise<WatchBatchSummary>"
+      "signature": "flushBatch(db: Database,\n  projectRoot: string,\n  rels: string[],\n  opts: FlushBatchOptions = {},): Promise<WatchBatchSummary>"
     },
     {
       "name": "ReconcileSummary",

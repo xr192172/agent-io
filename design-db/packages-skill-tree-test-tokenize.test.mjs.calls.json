@@ -1,0 +1,46 @@
+{
+  "//": "Design DB —— packages/skill-tree/test/tokenize.test.mjs（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/skill-tree/test/tokenize.test.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "setOf",
+      "kind": "const",
+      "signature": "const setOf = (...xs) => new Set(xs)"
+    },
+    {
+      "name": "t",
+      "kind": "const",
+      "signature": "const t = tokenizePrinciple('Validate user input, always.')"
+    },
+    {
+      "name": "a",
+      "kind": "const",
+      "signature": "const a = setOf('x', 'y', 'z')"
+    },
+    {
+      "name": "b",
+      "kind": "const",
+      "signature": "const b = setOf('y', 'z', 'w')"
+    },
+    {
+      "name": "s",
+      "kind": "const",
+      "signature": "const s = jaccard(a, b)"
+    },
+    {
+      "name": "dst",
+      "kind": "const",
+      "signature": "const dst = ['b', 'a']"
+    },
+    {
+      "name": "src",
+      "kind": "const",
+      "signature": "const src = ['a', 'c']"
+    }
+  ]
+}

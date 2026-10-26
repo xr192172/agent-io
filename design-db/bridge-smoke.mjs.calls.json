@@ -1,0 +1,66 @@
+{
+  "//": "Design DB —— bridge/smoke.mjs（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "bridge/smoke.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "HUB",
+      "kind": "const",
+      "signature": "const HUB = process.env.HUB_URL ?? 'ws://127.0.0.1:15813/ws'"
+    },
+    {
+      "name": "BRIDGE_PERM",
+      "kind": "const",
+      "signature": "const BRIDGE_PERM = process.env.BRIDGE_PERM ?? 'http://127.0.0.1:15900/permis…"
+    },
+    {
+      "name": "ROLE",
+      "kind": "const",
+      "signature": "const ROLE = process.env.TARGET_ROLE ?? 'executor-alpha'"
+    },
+    {
+      "name": "CLIENT_ROLE",
+      "kind": "const",
+      "signature": "const CLIENT_ROLE = process.env.CLIENT_ROLE ?? 'ui'"
+    },
+    {
+      "name": "seen",
+      "kind": "const",
+      "signature": "const seen = []"
+    },
+    {
+      "name": "noticeCode",
+      "kind": "const",
+      "signature": "const noticeCode = null"
+    },
+    {
+      "name": "permReq",
+      "kind": "const",
+      "signature": "const permReq = null"
+    },
+    {
+      "name": "me",
+      "kind": "const",
+      "signature": "const me = await openHub({ hub: HUB, role: CLIENT_ROLE, id: 'smoke-a…"
+    },
+    {
+      "name": "permResp",
+      "kind": "const",
+      "signature": "const permResp = await fetch(BRIDGE_PERM, { method: 'POST', headers: { 'co…"
+    },
+    {
+      "name": "checks",
+      "kind": "const",
+      "signature": "const checks = []"
+    },
+    {
+      "name": "fail",
+      "kind": "const",
+      "signature": "const fail = 0"
+    }
+  ]
+}

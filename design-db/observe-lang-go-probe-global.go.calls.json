@@ -72,13 +72,6 @@
   "reverse_calls": [
     "observe-lang-go/probe/global.go#Capture",
     "observe-lang-go/probe/global.go#CaptureErr",
-    "observe-lang-go/probe/skeleton_cert_test.go#TestSkeletonNoSinkIsNoOp",
-    "observe-lang-go/probe/skeleton_cert_test.go#TestSkeletonSinkEmitsEvents",
-    "observe-lang-go/probe/skeleton_cert_test.go#TestSkeletonSinkFailureIsLoud",
-    "observe-lang-go/probe/skeleton_cert_test.go#setGlobalSinkForTest",
-    "observe-lang-go/probe/tiered_test.go#TestExportFloodBounded",
-    "observe-lang-go/probe/tiered_test.go#TestIncidentChainSameTraceID",
-    "observe-lang-go/probe/tiered_test.go#TestLegacyCaptureRoutesToTiered",
     "observe-lang-go/probe/trace.go#Enter"
   ]
 }

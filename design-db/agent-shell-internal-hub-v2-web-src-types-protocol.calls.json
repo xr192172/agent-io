@@ -1,0 +1,111 @@
+{
+  "//": "Design DB —— agent-shell/internal/hub/v2/web/src/types/protocol.ts（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell/internal/hub/v2/web/src/types/protocol.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "PROTOCOL_VERSION",
+      "kind": "const",
+      "signature": "const PROTOCOL_VERSION = '2.0'"
+    },
+    {
+      "name": "MsgType",
+      "kind": "const",
+      "signature": "const MsgType = { // session SessionHello: 'session.hello', SessionWelcom…"
+    },
+    {
+      "name": "MsgTypeValue",
+      "kind": "type",
+      "signature": "MsgTypeValue()"
+    },
+    {
+      "name": "Address",
+      "kind": "interface",
+      "signature": "Address()"
+    },
+    {
+      "name": "Message",
+      "kind": "interface",
+      "signature": "Message()"
+    },
+    {
+      "name": "HelloPayload",
+      "kind": "interface",
+      "signature": "HelloPayload()"
+    },
+    {
+      "name": "WelcomePayload",
+      "kind": "interface",
+      "signature": "WelcomePayload()"
+    },
+    {
+      "name": "PeerUpdatePayload",
+      "kind": "interface",
+      "signature": "PeerUpdatePayload()"
+    },
+    {
+      "name": "InputPayload",
+      "kind": "interface",
+      "signature": "InputPayload()"
+    },
+    {
+      "name": "ThinkingPayload",
+      "kind": "interface",
+      "signature": "ThinkingPayload()"
+    },
+    {
+      "name": "ToolCallPayload",
+      "kind": "interface",
+      "signature": "ToolCallPayload()"
+    },
+    {
+      "name": "ToolResultPayload",
+      "kind": "interface",
+      "signature": "ToolResultPayload()"
+    },
+    {
+      "name": "TurnDonePayload",
+      "kind": "interface",
+      "signature": "TurnDonePayload()"
+    },
+    {
+      "name": "NoticePayload",
+      "kind": "interface",
+      "signature": "NoticePayload()"
+    },
+    {
+      "name": "EventMessagePayload",
+      "kind": "interface",
+      "signature": "EventMessagePayload()"
+    },
+    {
+      "name": "GroupMessagePayload",
+      "kind": "interface",
+      "signature": "GroupMessagePayload()"
+    },
+    {
+      "name": "GroupMemberStatePayload",
+      "kind": "interface",
+      "signature": "GroupMemberStatePayload()"
+    },
+    {
+      "name": "PermissionRequestPayload",
+      "kind": "interface",
+      "signature": "PermissionRequestPayload()"
+    },
+    {
+      "name": "PermissionResponsePayload",
+      "kind": "interface",
+      "signature": "PermissionResponsePayload()"
+    },
+    {
+      "name": "PetMood",
+      "kind": "type",
+      "signature": "PetMood()"
+    }
+  ]
+}

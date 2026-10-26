@@ -1,0 +1,36 @@
+{
+  "//": "Design DB —— skill_tree.go（★ 全量、与实际 DB 同构；从 design/agent-memory.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/agent-memory.dsl.json",
+  "path": "skill_tree.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "SkillNode",
+      "kind": "type",
+      "signature": "SkillNode()"
+    },
+    {
+      "name": "EditRecord",
+      "kind": "type",
+      "signature": "EditRecord()"
+    },
+    {
+      "name": "AbsorbOutcome",
+      "kind": "type",
+      "signature": "AbsorbOutcome()"
+    },
+    {
+      "name": "SkillTreeMeta",
+      "kind": "type",
+      "signature": "SkillTreeMeta()"
+    },
+    {
+      "name": "SkillTree",
+      "kind": "type",
+      "signature": "SkillTree()"
+    }
+  ]
+}

@@ -7,7 +7,7 @@
     {
       "name": "BaselineDrift",
       "kind": "interface",
-      "line": 73,
+      "line": 78,
       "signature": "BaselineDrift()",
       "members": [
         {
@@ -33,31 +33,31 @@
     {
       "name": "checkBaselineDrift",
       "kind": "function",
-      "line": 86,
+      "line": 91,
       "signature": "checkBaselineDrift(feature: string, codeDir: string): BaselineDrift"
     },
     {
       "name": "renderBaselineDriftSection",
       "kind": "function",
-      "line": 119,
+      "line": 124,
       "signature": "renderBaselineDriftSection(d: BaselineDrift): string"
     },
     {
       "name": "ComparisonState",
       "kind": "type",
-      "line": 164,
+      "line": 169,
       "signature": "ComparisonState()"
     },
     {
       "name": "comparisonState",
       "kind": "function",
-      "line": 170,
+      "line": 175,
       "signature": "comparisonState(compared: number, drifted: number): ComparisonState"
     },
     {
       "name": "RetireFlowEntry",
       "kind": "interface",
-      "line": 190,
+      "line": 195,
       "signature": "RetireFlowEntry()",
       "members": [
         {
@@ -101,37 +101,37 @@
     {
       "name": "overlayTombstones",
       "kind": "function",
-      "line": 235,
+      "line": 240,
       "signature": "overlayTombstones(feature: string,\n  basePaths: ReadonlySet<string>,\n  existsOf: (relPath: string) => boolean,): RetireFlowEntry[]"
     },
     {
       "name": "RetireStage",
       "kind": "type",
-      "line": 261,
+      "line": 266,
       "signature": "RetireStage()"
     },
     {
       "name": "retireStage",
       "kind": "function",
-      "line": 269,
+      "line": 274,
       "signature": "retireStage(exists: boolean): RetireStage"
     },
     {
       "name": "retireMarksOf",
       "kind": "function",
-      "line": 290,
+      "line": 295,
       "signature": "retireMarksOf(entries: readonly RetireFlowEntry[]): Map<string, NonNullable<FileDiffRetire>>"
     },
     {
       "name": "FileDiffRetire",
       "kind": "type",
-      "line": 301,
+      "line": 306,
       "signature": "FileDiffRetire()"
     },
     {
       "name": "ConsistencyResult",
       "kind": "interface",
-      "line": 303,
+      "line": 308,
       "signature": "ConsistencyResult()",
       "members": [
         {
@@ -165,6 +165,12 @@
           "member_kind": "property"
         },
         {
+          "name": "expectation_coverage",
+          "type": ": ExpectationCoverage",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
           "name": "summary",
           "type": ": {\n    total_files: number;\n    /**\n     * ★★★ **真的\"比\"了多少条 `expected_apis`**（= matched+missing+mismatched；每条约产生一条 `ApiMatch`）。\n     * ★ 它回答「**线 2 到底有没有对手**」；= 0 ⇒ `state='no_comparison'`（**什么都没比，别读成\"没问题\"**）。\n     */\n    compared: number;\n    matched: number;\n    missing: number;\n    mismatched: number;\n    unexpected: number;\n    invariant_passed: number;\n    invariant_failed: number;\n    /**\n     * ★★★ **三态机读值**（唯一判定见 `comparisonState`）：\n     *   `no_comparison` = 没得比（compared=0）；`consistent` = 比过且一致；`drifted` = 有漂移。\n     * ★ 有了它，调用方**不必**再从\"全 0\"里猜 —— 全 0 既可能是\"没得比\"，也可能是\"比过且全对\"。\n     */\n    state: ComparisonState;\n    /**\n     * ★ T184：三步流②的两个计数（**只数 `deprecated` 的文件**，与线 2 的计数不共用口径）。\n     *   `retire_pending` = 设计说该删、**实现还在**；`retire_ready` = 设计说该删、**实现也没了**。\n     *   ★ 两者之和 = `retireFlow.length`；`0` = 没有任何待删标记（**不是**\"都删完了\"）。\n     */\n    retire_pending: number;\n    retire_ready: number;\n  }",
           "optional": false,
@@ -175,7 +181,7 @@
     {
       "name": "FileConsistency",
       "kind": "interface",
-      "line": 351,
+      "line": 361,
       "signature": "FileConsistency()",
       "members": [
         {
@@ -213,7 +219,7 @@
     {
       "name": "ApiMatch",
       "kind": "interface",
-      "line": 363,
+      "line": 373,
       "signature": "ApiMatch()",
       "members": [
         {
@@ -281,7 +287,7 @@
     {
       "name": "InvariantResult",
       "kind": "interface",
-      "line": 401,
+      "line": 411,
       "signature": "InvariantResult()",
       "members": [
         {
@@ -305,9 +311,73 @@
       ]
     },
     {
+      "name": "ExpectationCoverageGap",
+      "kind": "interface",
+      "line": 425,
+      "signature": "ExpectationCoverageGap()",
+      "members": [
+        {
+          "name": "path",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "sources",
+          "type": ": Array<{ node_id: string; node_label: string }>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "on_disk",
+          "type": ": boolean",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "ExpectationCoverage",
+      "kind": "interface",
+      "line": 432,
+      "signature": "ExpectationCoverage()",
+      "members": [
+        {
+          "name": "total_expectations",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "gap_count",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "gaps",
+          "type": ": ExpectationCoverageGap[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "expectationCoverageOf",
+      "kind": "function",
+      "line": 445,
+      "signature": "expectationCoverageOf(dsl: DesignDSL, codeDir: string): ExpectationCoverage"
+    },
+    {
+      "name": "renderExpectationCoverageSection",
+      "kind": "function",
+      "line": 465,
+      "signature": "renderExpectationCoverageSection(c: ExpectationCoverage): string"
+    },
+    {
       "name": "ConsistencyInput",
       "kind": "interface",
-      "line": 407,
+      "line": 480,
       "signature": "ConsistencyInput()",
       "members": [
         {
@@ -327,7 +397,7 @@
     {
       "name": "ParsedApi",
       "kind": "interface",
-      "line": 421,
+      "line": 494,
       "signature": "ParsedApi()",
       "members": [
         {
@@ -377,85 +447,85 @@
     {
       "name": "normalizeSignature",
       "kind": "function",
-      "line": 433,
+      "line": 506,
       "signature": "normalizeSignature(sig: string): string"
     },
     {
       "name": "MISSING_FUNC_REASON",
       "kind": "const",
-      "line": 443,
+      "line": 516,
       "signature": "const MISSING_FUNC_REASON = '代码中未找到该函数'"
     },
     {
       "name": "splitTopLevelArgs",
       "kind": "function",
-      "line": 449,
+      "line": 522,
       "signature": "splitTopLevelArgs(argsStr: string): string[]"
     },
     {
       "name": "argName",
       "kind": "function",
-      "line": 468,
+      "line": 541,
       "signature": "argName(arg: string): string"
     },
     {
       "name": "isObjectishParamType",
       "kind": "function",
-      "line": 478,
+      "line": 551,
       "signature": "isObjectishParamType(t: string | undefined): boolean"
     },
     {
       "name": "normalizeParamName",
       "kind": "function",
-      "line": 484,
+      "line": 557,
       "signature": "normalizeParamName(n: string): string"
     },
     {
       "name": "expectedParamsOf",
       "kind": "function",
-      "line": 490,
+      "line": 563,
       "signature": "expectedParamsOf(signature: string, filePath: string): Promise<ParsedParam[] | null>"
     },
     {
       "name": "findParamsDecl",
       "kind": "function",
-      "line": 508,
+      "line": 581,
       "signature": "findParamsDecl(root: SyntaxNodeLike): SyntaxNodeLike | null"
     },
     {
       "name": "returnTypeOf",
       "kind": "function",
-      "line": 529,
+      "line": 602,
       "signature": "returnTypeOf(signature: string): string"
     },
     {
       "name": "compareSignatures",
       "kind": "function",
-      "line": 559,
+      "line": 632,
       "signature": "compareSignatures(expected: string,\n  /** ★ v14：`returnType` = AST 原文（`ParsedSymbol.returnType` / `nodes.return_type`）；\n   *  缺省 ⇒ 返回类型退回拆签名串（`return_via` 标 `regex`） */\n  actual: { name: string; signature: string; params?: ParsedParam[]; returnType?: string },\n  /** ★ v13：设计侧形参表（由 `expectedParamsOf` 用**同一个内核解析器**出）；null = 解析不了 */\n  expectedParams?: ParsedParam[] | null,): { score: number; reason?: string; params_via: 'ast' | 'regex'; return_via?: 'ast' | 'regex' }"
     },
     {
       "name": "compareTypeContractMembers",
       "kind": "function",
-      "line": 718,
+      "line": 791,
       "signature": "compareTypeContractMembers(expectedMembers: ParsedTypeMember[],\n  actualMembers: ParsedTypeMember[],): NonNullable<ApiMatch['members']>"
     },
     {
       "name": "typeContractReason",
       "kind": "function",
-      "line": 762,
+      "line": 835,
       "signature": "typeContractReason(m: NonNullable<ApiMatch['members']>): string | undefined"
     },
     {
       "name": "checkInvariants",
       "kind": "function",
-      "line": 779,
+      "line": 852,
       "signature": "checkInvariants(dsl: DesignDSL, codeDir: string): InvariantResult[]"
     },
     {
       "name": "checkConsistencyReport",
       "kind": "function",
-      "line": 830,
+      "line": 903,
       "signature": "checkConsistencyReport(input: ConsistencyInput): Promise<ConsistencyResult>"
     }
   ],
@@ -479,6 +549,10 @@
     },
     {
       "source": "../no_file_entries.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/expectation.js",
       "kind": "relative"
     },
     {
@@ -537,6 +611,10 @@
     },
     {
       "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/application/design/intent/consistency.ts#expectationCoverageOf"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
       "to": "src/application/design/intent/consistency.ts#expectedParamsOf"
     },
     {
@@ -570,6 +648,10 @@
     {
       "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
       "to": "src/application/design/intent/consistency.ts#renderBaselineDriftSection"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/application/design/intent/consistency.ts#renderExpectationCoverageSection"
     },
     {
       "from": "src/application/design/intent/consistency.ts#overlayTombstones",
@@ -610,6 +692,18 @@
     {
       "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
       "to": "src/application/design/no_file_entries.ts#noFileEntriesMessage"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#expectationCoverageOf",
+      "to": "src/domain/expectation.ts#collectExpectations"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#expectationCoverageOf",
+      "to": "src/domain/expectation.ts#expectationPaths"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#expectationCoverageOf",
+      "to": "src/domain/expectation.ts#normPath"
     },
     {
       "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",

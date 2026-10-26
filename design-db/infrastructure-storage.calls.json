@@ -1144,6 +1144,7 @@
     "src/application/design/intent/detect_drift.ts#driftFile",
     "src/application/design/intent/detect_drift.ts#touchedOf",
     "src/application/design/intent/set_design_intent.ts#setDesignIntentCore",
+    "src/application/design/ledger_membership.ts#newFileLedgerWarning",
     "src/application/design/lifecycle/simulation.ts#getEngine",
     "src/application/design/lifecycle/simulation.ts#getSimulationState",
     "src/application/design/lifecycle/simulation.ts#resetSimulation",
@@ -1266,6 +1267,7 @@
     "src/presentation/http/serve.ts#handleApiLive",
     "src/presentation/http/serve.ts#handleApiMonolith",
     "src/presentation/http/serve.ts#handleApiTraceExec",
-    "src/presentation/http/serve.ts#startServer"
+    "src/presentation/http/serve.ts#startServer",
+    "src/presentation/mcp/server_registry.ts#rootFromFeatureArg"
   ]
 }

@@ -402,7 +402,7 @@
       "name": "buildLead",
       "kind": "function",
       "line": 362,
-      "signature": "buildLead(el: DecisionElements,\r\n  rest: {\r\n    source: HarvestSource;\r\n    votes: number;\r\n    samples: number;\r\n    evidence_source: EvidenceSource[];\r\n    evidence: string;\r\n    /** 详细理由（一句话，**不参与归一**）—— 落到 `decision.rationale`（NodeDecision 既有字段，语义不变） */\r\n    rationale?: string;\r\n    /** 其余分歧结论（各带票数 + 证据源）；收敛时缺省 ⇒ 落为空数组 */\r\n    alternatives?: AlternativeWhy[];\r\n    lifecycle_hint?: LifecycleHint;\r\n    /** ★★ 落点可行性（见 {@link HarvestCandidate.landing}）—— 由 {@link makeLandable} 判定 */\r\n    landing: HarvestCandidate['landing'];\r\n  },): HarvestCandidate | null"
+      "signature": "buildLead(el: DecisionElements,\n  rest: {\n    source: HarvestSource;\n    votes: number;\n    samples: number;\n    evidence_source: EvidenceSource[];\n    evidence: string;\n    /** 详细理由（一句话，**不参与归一**）—— 落到 `decision.rationale`（NodeDecision 既有字段，语义不变） */\n    rationale?: string;\n    /** 其余分歧结论（各带票数 + 证据源）；收敛时缺省 ⇒ 落为空数组 */\n    alternatives?: AlternativeWhy[];\n    lifecycle_hint?: LifecycleHint;\n    /** ★★ 落点可行性（见 {@link HarvestCandidate.landing}）—— 由 {@link makeLandable} 判定 */\n    landing: HarvestCandidate['landing'];\n  },): HarvestCandidate | null"
     },
     {
       "name": "makeLandable",
@@ -654,7 +654,7 @@
       "name": "runBatches",
       "kind": "function",
       "line": 720,
-      "signature": "runBatches(batches: T[][],\r\n  ask: (batch: T[]) => Promise<RawHit[]>,): Promise<RawHit[]>"
+      "signature": "runBatches(batches: T[][],\n  ask: (batch: T[]) => Promise<RawHit[]>,): Promise<RawHit[]>"
     },
     {
       "name": "chunk",
@@ -728,7 +728,7 @@
       "name": "writeCandidates",
       "kind": "function",
       "line": 805,
-      "signature": "writeCandidates(targets: TargetFile[],\r\n  table: VoteTable,\r\n  evidenceByRel: EvidenceByRel,\r\n  landable: (rel: string) => boolean,): HarvestCandidate[]"
+      "signature": "writeCandidates(targets: TargetFile[],\n  table: VoteTable,\n  evidenceByRel: EvidenceByRel,\n  landable: (rel: string) => boolean,): HarvestCandidate[]"
     },
     {
       "name": "collectMdFiles",
@@ -782,7 +782,7 @@
       "name": "buildEvidenceByFile",
       "kind": "function",
       "line": 1120,
-      "signature": "buildEvidenceByFile(targets: TargetFile[],\r\n  evidenceByRel: EvidenceByRel,\r\n  landable: (rel: string) => boolean,): FileEvidence[]"
+      "signature": "buildEvidenceByFile(targets: TargetFile[],\n  evidenceByRel: EvidenceByRel,\n  landable: (rel: string) => boolean,): FileEvidence[]"
     },
     {
       "name": "touchedOf",

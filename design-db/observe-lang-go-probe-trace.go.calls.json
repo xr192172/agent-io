@@ -94,8 +94,6 @@
     }
   ],
   "reverse_calls": [
-    "observe-lang-go/probe/tiered_test.go#TestExportFloodBounded",
-    "observe-lang-go/probe/tiered_test.go#TestIncidentChainSameTraceID",
     "observe-lang-go/probe/trace.go#Enter",
     "observe-lang-go/probe/trace.go#TraceIDFromContext"
   ]

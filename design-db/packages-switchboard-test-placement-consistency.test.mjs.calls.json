@@ -1,0 +1,136 @@
+{
+  "//": "Design DB —— packages/switchboard/test/placement-consistency.test.mjs（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/switchboard/test/placement-consistency.test.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "HERE",
+      "kind": "const",
+      "signature": "const HERE = dirname(fileURLToPath(import.meta.url))"
+    },
+    {
+      "name": "PKG",
+      "kind": "const",
+      "signature": "const PKG = join(HERE, '..')"
+    },
+    {
+      "name": "SRC",
+      "kind": "const",
+      "signature": "const SRC = join(PKG, 'src', 'main.ts')"
+    },
+    {
+      "name": "LIB",
+      "kind": "const",
+      "signature": "const LIB = join(PKG, 'lib', 'main.js')"
+    },
+    {
+      "name": "ok",
+      "kind": "const",
+      "signature": "const ok = 0"
+    },
+    {
+      "name": "fail",
+      "kind": "const",
+      "signature": "const fail = 0"
+    },
+    {
+      "name": "pass",
+      "kind": "const",
+      "signature": "const pass = (m) => { console.log(' [OK ] ' + m); ok++ }"
+    },
+    {
+      "name": "bad",
+      "kind": "const",
+      "signature": "const bad = (m) => { console.log(' [RED] ' + m); fail++ }"
+    },
+    {
+      "name": "src",
+      "kind": "const",
+      "signature": "const src = readFileSync(SRC, 'utf8')"
+    },
+    {
+      "name": "lines",
+      "kind": "const",
+      "signature": "const lines = src.split(/\\r?\\n/)"
+    },
+    {
+      "name": "callLines",
+      "kind": "const",
+      "signature": "const callLines = []"
+    },
+    {
+      "name": "inBlockComment",
+      "kind": "const",
+      "signature": "const inBlockComment = false"
+    },
+    {
+      "name": "code",
+      "kind": "const",
+      "signature": "const code = l"
+    },
+    {
+      "name": "close",
+      "kind": "const",
+      "signature": "const close = code.indexOf('*/')"
+    },
+    {
+      "name": "open",
+      "kind": "const",
+      "signature": "const open = code.indexOf('/*')"
+    },
+    {
+      "name": "slash",
+      "kind": "const",
+      "signature": "const slash = code.indexOf('//')"
+    },
+    {
+      "name": "cfgBlock",
+      "kind": "const",
+      "signature": "const cfgBlock = src.slice(src.indexOf('const config: CoordinatorConfig'),…"
+    },
+    {
+      "name": "fromPlacement",
+      "kind": "const",
+      "signature": "const fromPlacement = cfgBlock.includes('coordDir: placement.coordDir') && cfgB…"
+    },
+    {
+      "name": "probe",
+      "kind": "const",
+      "signature": "const probe = async (env) => { const script = ` const home = ${JSON.str…"
+    },
+    {
+      "name": "split",
+      "kind": "const",
+      "signature": "const split = await probe({ DSH_HOME: 'D:/__placement_test_home__', WOR…"
+    },
+    {
+      "name": "valve",
+      "kind": "const",
+      "signature": "const valve = await probe({ DSH_HOME: 'D:/__placement_test_home__', WOR…"
+    },
+    {
+      "name": "normal",
+      "kind": "const",
+      "signature": "const normal = await probe({ DSH_HOME: 'D:/__placement_test_home__', WOR…"
+    },
+    {
+      "name": "exp",
+      "kind": "const",
+      "signature": "const exp = 'd:/__placement_test_home__/switchboard'"
+    },
+    {
+      "name": "n",
+      "kind": "const",
+      "signature": "const n = normal.data"
+    },
+    {
+      "name": "lib",
+      "kind": "const",
+      "signature": "const lib = readFileSync(LIB, 'utf8')"
+    }
+  ]
+}

@@ -102,6 +102,10 @@
     {
       "from": "src/infrastructure/analysis/rename_symbol/languages/c.ts#analyzeCLanguage",
       "to": "src/infrastructure/parse/loader.ts#getParser"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/c.ts#renameCSymbol",
+      "to": "src/infrastructure/source_write_port.ts#commitSourceWrite"
     }
   ],
   "expected_symbols": [

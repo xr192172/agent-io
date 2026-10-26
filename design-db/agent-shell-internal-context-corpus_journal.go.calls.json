@@ -1,0 +1,31 @@
+{
+  "//": "Design DB —— agent-shell/internal/context/corpus_journal.go（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell/internal/context/corpus_journal.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "CorpusEntry",
+      "kind": "type",
+      "signature": "CorpusEntry()"
+    },
+    {
+      "name": "SearchResult",
+      "kind": "type",
+      "signature": "SearchResult()"
+    },
+    {
+      "name": "SearchPage",
+      "kind": "type",
+      "signature": "SearchPage()"
+    },
+    {
+      "name": "CorpusJournal",
+      "kind": "type",
+      "signature": "CorpusJournal()"
+    }
+  ]
+}

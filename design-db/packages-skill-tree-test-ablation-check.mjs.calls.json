@@ -1,0 +1,61 @@
+{
+  "//": "Design DB —— packages/skill-tree/test/ablation-check.mjs（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/skill-tree/test/ablation-check.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "LIB",
+      "kind": "const",
+      "signature": "const LIB = fileURLToPath(new URL('../lib/skill-tree.js', import.meta…"
+    },
+    {
+      "name": "TSC",
+      "kind": "const",
+      "signature": "const TSC = fileURLToPath(new URL('../../../node_modules/typescript/b…"
+    },
+    {
+      "name": "TSCFG",
+      "kind": "const",
+      "signature": "const TSCFG = fileURLToPath(new URL('../tsconfig.json', import.meta.url))"
+    },
+    {
+      "name": "TEST",
+      "kind": "const",
+      "signature": "const TEST = fileURLToPath(new URL('./skill-tree.test.mjs', import.met…"
+    },
+    {
+      "name": "ablations",
+      "kind": "const",
+      "signature": "const ablations = [ { // 还原成 Go 的「先遍历到谁谁赢」：去掉平票的字典序比较 name: 'D1 Tier-2 平票',…"
+    },
+    {
+      "name": "orig",
+      "kind": "const",
+      "signature": "const orig = readFileSync(LIB, 'utf8')"
+    },
+    {
+      "name": "allRed",
+      "kind": "const",
+      "signature": "const allRed = true"
+    },
+    {
+      "name": "out",
+      "kind": "const",
+      "signature": "const out = ''"
+    },
+    {
+      "name": "line",
+      "kind": "const",
+      "signature": "const line = out.split('\\n').find((l) => l.startsWith('not ok') && l.i…"
+    },
+    {
+      "name": "red",
+      "kind": "const",
+      "signature": "const red = Boolean(line)"
+    }
+  ]
+}

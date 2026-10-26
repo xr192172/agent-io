@@ -321,6 +321,7 @@
     }
   ],
   "reverse_calls": [
+    "scripts/gen-facts.mjs#languageMatrix",
     "src/infrastructure/analysis/capability/capability_matrix.ts#diagnoseCapabilities",
     "src/infrastructure/analysis/capability/capability_matrix.ts#diagnoseCapabilitiesByEntries",
     "src/infrastructure/parse/lang_hint.ts#capabilityGaps",

@@ -1,0 +1,61 @@
+{
+  "//": "Design DB —— packages/switchboard/scripts/build-flip.mjs（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/switchboard/scripts/build-flip.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "root",
+      "kind": "const",
+      "signature": "const root = process.cwd()"
+    },
+    {
+      "name": "buildId",
+      "kind": "const",
+      "signature": "const buildId = 'b' + Date.now()"
+    },
+    {
+      "name": "outId",
+      "kind": "const",
+      "signature": "const outId = join(root, 'out', buildId)"
+    },
+    {
+      "name": "localTsc",
+      "kind": "const",
+      "signature": "const localTsc = [ join(root, '..', '..', 'node_modules', 'typescript', 'b…"
+    },
+    {
+      "name": "libPath",
+      "kind": "const",
+      "signature": "const libPath = join(root, 'lib')"
+    },
+    {
+      "name": "st",
+      "kind": "const",
+      "signature": "const st = lstatSync(libPath)"
+    },
+    {
+      "name": "stamp",
+      "kind": "const",
+      "signature": "const stamp = readFileSync(join(outId, 'build-stamp.js'), 'utf8')"
+    },
+    {
+      "name": "sha",
+      "kind": "const",
+      "signature": "const sha = createHash('sha256').update(stamp).digest('hex').slice(0,…"
+    },
+    {
+      "name": "p",
+      "kind": "const",
+      "signature": "const p = join(outId, f)"
+    },
+    {
+      "name": "h",
+      "kind": "const",
+      "signature": "const h = createHash('sha256').update(readFileSync(p)).digest('hex'…"
+    }
+  ]
+}

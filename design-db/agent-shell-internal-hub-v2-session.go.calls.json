@@ -1,0 +1,36 @@
+{
+  "//": "Design DB —— agent-shell/internal/hub/v2/session.go（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell/internal/hub/v2/session.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "Session",
+      "kind": "type",
+      "signature": "Session()"
+    },
+    {
+      "name": "TranscriptEntry",
+      "kind": "type",
+      "signature": "TranscriptEntry()"
+    },
+    {
+      "name": "GroupSnapshot",
+      "kind": "type",
+      "signature": "GroupSnapshot()"
+    },
+    {
+      "name": "SessionRepository",
+      "kind": "type",
+      "signature": "SessionRepository()"
+    },
+    {
+      "name": "FileSessionRepository",
+      "kind": "type",
+      "signature": "FileSessionRepository()"
+    }
+  ]
+}

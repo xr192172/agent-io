@@ -210,8 +210,6 @@
     "observe-lang-go/probe/tiered.go#Emit",
     "observe-lang-go/probe/tiered.go#NewTiered",
     "observe-lang-go/probe/tiered.go#WithRingBudgetMB",
-    "observe-lang-go/probe/tiered.go#snapshot",
-    "observe-lang-go/probe/tiered_test.go#newTestTiered",
-    "observe-lang-go/probe/tiered_test.go#withTempIncidentDir"
+    "observe-lang-go/probe/tiered.go#snapshot"
   ]
 }

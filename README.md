@@ -14,7 +14,11 @@
 
 一个独立 Agent 通过 agent-io 的完整流程（写设计 → 挂卡 → 领任务 → 施工 → 对拍）交付了一个完整子系统：它写了自相矛盾的验收判据（**被 checker 抓住**）、想没证据就收口（**被闸门拒绝**）、想静默改别人的文件（**被读集冲突拒绝**）——最终 18/18 条机器验证通过。这套机制不是设计文档里的理想，是跑通过的流程。
 
-## 六条能力线（65 个工具，全部证据闸控）
+<!-- FACTS:TOOLS:BEGIN（由 scripts/gen-facts.mjs 生成，勿手改） -->
+## 六条能力线（63 个工具，全部证据闸控）
+
+> 工具数与语言矩阵的**唯一事实源**是 [docs/FACTS.json](docs/FACTS.json)（`node --import tsx scripts/gen-facts.mjs` 生成）；本节数字由它回写，**勿手改**。分线：observe 11 / cross 5 / design 9 / meta 16 / refactor 19 / harvest 3。
+<!-- FACTS:TOOLS:END -->
 
 ### ① 认知 —— 快速且准确地了解项目全貌
 - **explore_code**（search / read / facts / arch_layer / **guided_tour**）：agent 三分钟读懂陌生项目
@@ -47,10 +51,14 @@
 - **translate_go_ts**：Go→TS 骨架机械生成 + 验证闸 + **known/unknowns 回执**（事实与推测显式分离）
 - **硬依赖账**：不能翻译的依赖带策略字段（npm 等价 / 同位替代 / HTTP 桥接），由 Agent 按图决策
 
+<!-- FACTS:LANG:BEGIN（由 scripts/gen-facts.mjs 生成，勿手改） -->
 ## 语言支持（诚实版）
 
-- **AST 解析**：33 门全量（tree-sitter：TS/JS/Go/Python/Java/C/C#/Rust/Kotlin/Swift/Ruby/PHP/…）
-- **语义操作**（改名/契约闸/影响面/行为基线）：9 门全量（TypeScript/JavaScript/Go/Python/Java/C#/C 等），其余 24 门覆盖度递减（`capability_audit` 一键自检缺口清单）
+- **AST 解析**：33 门已装全量（tree-sitter；名册共注册 55 门，装了才能用——`capability_audit` 一键自检）
+- **语义操作**（改名/契约闸/影响面等）：9 门全量，其余覆盖度递减（`capability_audit` 一键出缺口清单）
+
+> 数字由 scripts/gen-facts.mjs 回写自 docs/FACTS.json（roster/installed 随机器与版本变），**勿手改**。
+<!-- FACTS:LANG:END -->
 
 ## 快速开始
 

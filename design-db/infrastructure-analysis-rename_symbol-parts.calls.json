@@ -8,7 +8,7 @@
       "name": "collectFilesByExt",
       "kind": "function",
       "line": 33,
-      "signature": "collectFilesByExt(root: string,\r\n  ext: string,): { files: Set<string>; skipped: Array<{ path: string; why: string }> }"
+      "signature": "collectFilesByExt(root: string,\n  ext: string,): { files: Set<string>; skipped: Array<{ path: string; why: string }> }"
     },
     {
       "name": "Edit",

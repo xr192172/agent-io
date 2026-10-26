@@ -1,0 +1,26 @@
+{
+  "//": "Design DB —— agent-shell/internal/hub/v2/web/src/features/pet/PetContextMenu.tsx（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell/internal/hub/v2/web/src/features/pet/PetContextMenu.tsx",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "PetContextMenuProps",
+      "kind": "interface",
+      "signature": "PetContextMenuProps()"
+    },
+    {
+      "name": "SubItem",
+      "kind": "type",
+      "signature": "SubItem()"
+    },
+    {
+      "name": "MenuItemProps",
+      "kind": "interface",
+      "signature": "MenuItemProps()"
+    }
+  ]
+}

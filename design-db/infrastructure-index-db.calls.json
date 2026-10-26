@@ -312,6 +312,7 @@
     "src/application/meta/explore/explore_code.ts#readFacts",
     "src/application/meta/explore/query_feature.ts#queryFeature",
     "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+    "src/application/meta/integrity/index_integrity.ts#indexTrustReminderForClaim",
     "src/application/meta/integrity/index_integrity.ts#readRawSchemaVersion",
     "src/application/meta/llm/semantic_search.ts#semanticSearchCore",
     "src/application/meta/view/derive_anim_flow.ts#readCrossCalls",

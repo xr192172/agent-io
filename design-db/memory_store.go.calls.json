@@ -1,0 +1,21 @@
+{
+  "//": "Design DB —— memory_store.go（★ 全量、与实际 DB 同构；从 design/agent-memory.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/agent-memory.dsl.json",
+  "path": "memory_store.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "InMemoryStore",
+      "kind": "type",
+      "signature": "InMemoryStore()"
+    },
+    {
+      "name": "indexedItem",
+      "kind": "type",
+      "signature": "indexedItem()"
+    }
+  ]
+}

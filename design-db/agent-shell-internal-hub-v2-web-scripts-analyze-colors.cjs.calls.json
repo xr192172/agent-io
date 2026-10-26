@@ -1,0 +1,101 @@
+{
+  "//": "Design DB —— agent-shell/internal/hub/v2/web/scripts/analyze-colors.cjs（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell/internal/hub/v2/web/scripts/analyze-colors.cjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "fs",
+      "kind": "const",
+      "signature": "const fs = require('fs')"
+    },
+    {
+      "name": "path",
+      "kind": "const",
+      "signature": "const path = require('path')"
+    },
+    {
+      "name": "zlib",
+      "kind": "const",
+      "signature": "const zlib = require('zlib')"
+    },
+    {
+      "name": "CRC32T",
+      "kind": "const",
+      "signature": "const CRC32T = crc32Table()"
+    },
+    {
+      "name": "SAMPLE_POINTS",
+      "kind": "const",
+      "signature": "const SAMPLE_POINTS = [ // 头发区域（应该是深蓝色） { name: '头发顶部', x: 140, y: 60 }, { name…"
+    },
+    {
+      "name": "srcPath",
+      "kind": "const",
+      "signature": "const srcPath = path.join(__dirname, '..', 'public', 'pets', 'custom', 'd…"
+    },
+    {
+      "name": "img",
+      "kind": "const",
+      "signature": "const img = readPng(srcPath)"
+    },
+    {
+      "name": "x",
+      "kind": "const",
+      "signature": "const x = Math.min(point.x, img.width - 1)"
+    },
+    {
+      "name": "y",
+      "kind": "const",
+      "signature": "const y = Math.min(point.y, img.height - 1)"
+    },
+    {
+      "name": "idx",
+      "kind": "const",
+      "signature": "const idx = (y * img.width + x) * 4"
+    },
+    {
+      "name": "r",
+      "kind": "const",
+      "signature": "const r = img.rgba[idx]"
+    },
+    {
+      "name": "g",
+      "kind": "const",
+      "signature": "const g = img.rgba[idx + 1]"
+    },
+    {
+      "name": "b",
+      "kind": "const",
+      "signature": "const b = img.rgba[idx + 2]"
+    },
+    {
+      "name": "a",
+      "kind": "const",
+      "signature": "const a = img.rgba[idx + 3]"
+    },
+    {
+      "name": "colorBuckets",
+      "kind": "const",
+      "signature": "const colorBuckets = { 'transparent': 0, 'very_dark (V<20)': 0, 'dark_blue (H …"
+    },
+    {
+      "name": "total",
+      "kind": "const",
+      "signature": "const total = img.width * img.height"
+    },
+    {
+      "name": "i",
+      "kind": "const",
+      "signature": "const i = 0"
+    },
+    {
+      "name": "pct",
+      "kind": "const",
+      "signature": "const pct = ((count / total) * 100).toFixed(1)"
+    }
+  ]
+}

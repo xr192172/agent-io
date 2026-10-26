@@ -90,6 +90,26 @@
     },
     {
       "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.load"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.save"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.get"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#freeze",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.write"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.write"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
       "to": "src/infrastructure/analysis/observe/proposal_store.ts#validateDecls"
     },
     {

@@ -1,0 +1,46 @@
+{
+  "//": "Design DB —— agent-shell/internal/hub/v2/orchestrator/refine.go（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell/internal/hub/v2/orchestrator/refine.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "TaskPriority",
+      "kind": "type",
+      "signature": "TaskPriority()"
+    },
+    {
+      "name": "RefinedTask",
+      "kind": "type",
+      "signature": "RefinedTask()"
+    },
+    {
+      "name": "RefineContext",
+      "kind": "type",
+      "signature": "RefineContext()"
+    },
+    {
+      "name": "Refiner",
+      "kind": "type",
+      "signature": "Refiner()"
+    },
+    {
+      "name": "DefaultRefiner",
+      "kind": "type",
+      "signature": "DefaultRefiner()"
+    },
+    {
+      "name": "TaskIntake",
+      "kind": "type",
+      "signature": "TaskIntake()"
+    },
+    {
+      "name": "NoopRefiner",
+      "kind": "type",
+      "signature": "NoopRefiner()"
+    }
+  ]
+}

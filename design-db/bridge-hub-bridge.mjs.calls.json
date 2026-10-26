@@ -1,0 +1,36 @@
+{
+  "//": "Design DB —— bridge/hub-bridge.mjs（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "bridge/hub-bridge.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "decompressZstd",
+      "kind": "const",
+      "signature": "const decompressZstd = null"
+    },
+    {
+      "name": "handoffValidator",
+      "kind": "const",
+      "signature": "const handoffValidator = null"
+    },
+    {
+      "name": "DEFAULTS",
+      "kind": "const",
+      "signature": "const DEFAULTS = { hub: 'ws://127.0.0.1:15813/ws', role: 'executor-default…"
+    },
+    {
+      "name": "bridge",
+      "kind": "const",
+      "signature": "const bridge = createBridge(parseArgs(process.argv.slice(2)))"
+    },
+    {
+      "name": "cfg",
+      "kind": "const",
+      "signature": "const cfg = bridge.cfg"
+    }
+  ]
+}

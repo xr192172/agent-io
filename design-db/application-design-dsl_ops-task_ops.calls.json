@@ -7,19 +7,19 @@
     {
       "name": "signTaskActor",
       "kind": "function",
-      "line": 159,
+      "line": 163,
       "signature": "signTaskActor(raw: string | undefined | null,\n  field: string,): { actor: string | null; adm: ActorAdmission }"
     },
     {
       "name": "normalizedInline",
       "kind": "function",
-      "line": 177,
+      "line": 181,
       "signature": "normalizedInline(adm: ActorAdmission): string"
     },
     {
       "name": "TaskOpRequest",
       "kind": "interface",
-      "line": 182,
+      "line": 186,
       "signature": "TaskOpRequest()",
       "members": [
         {
@@ -51,7 +51,7 @@
     {
       "name": "TaskOpInput",
       "kind": "interface",
-      "line": 189,
+      "line": 193,
       "signature": "TaskOpInput()",
       "members": [
         {
@@ -107,7 +107,7 @@
     {
       "name": "Loaded",
       "kind": "interface",
-      "line": 221,
+      "line": 225,
       "signature": "Loaded()",
       "members": [
         {
@@ -133,43 +133,43 @@
     {
       "name": "loadTask",
       "kind": "function",
-      "line": 227,
+      "line": 231,
       "signature": "loadTask(feature: string, nodeId: string): Loaded"
     },
     {
       "name": "requireRoot",
       "kind": "function",
-      "line": 262,
+      "line": 266,
       "signature": "requireRoot(dsl: { source_root?: string }): string"
     },
     {
       "name": "assertTransition",
       "kind": "function",
-      "line": 274,
+      "line": 278,
       "signature": "assertTransition(from: TaskState, to: TaskState, action: string): void"
     },
     {
       "name": "assertCardWritable",
       "kind": "function",
-      "line": 297,
+      "line": 301,
       "signature": "assertCardWritable(nodeId: string, next: TaskSpec): void"
     },
     {
       "name": "withCardWritten",
       "kind": "function",
-      "line": 324,
+      "line": 328,
       "signature": "withCardWritten(dsl: NonNullable<ReturnType<typeof getDesignSheet>>,\n  nodeId: string,\n  next: TaskSpec,): NonNullable<ReturnType<typeof getDesignSheet>>"
     },
     {
       "name": "writeTask",
       "kind": "function",
-      "line": 368,
+      "line": 372,
       "signature": "writeTask(feature: string, nodeId: string, next: TaskSpec): void"
     },
     {
       "name": "CriteriaGap",
       "kind": "interface",
-      "line": 391,
+      "line": 395,
       "signature": "CriteriaGap()",
       "members": [
         {
@@ -201,49 +201,49 @@
     {
       "name": "criteriaGap",
       "kind": "function",
-      "line": 402,
+      "line": 406,
       "signature": "criteriaGap(dsl: NonNullable<ReturnType<typeof getDesignSheet>>,\n  node:\n    | {\n        id?: string;\n        type?: string;\n        path?: string;\n        description?: string;\n        decision?: { expectations?: Expectation[] };\n      }\n    | undefined,\n  cardId: string,): CriteriaGap"
     },
     {
       "name": "writeTaskAndRestoreSnapshot",
       "kind": "function",
-      "line": 479,
+      "line": 483,
       "signature": "writeTaskAndRestoreSnapshot(feature: string,\n  nodeId: string,\n  next: TaskSpec,\n  snapshot: PreparedSnapshot,): void"
     },
     {
       "name": "criteriaChangedSince",
       "kind": "function",
-      "line": 513,
+      "line": 517,
       "signature": "criteriaChangedSince(node: { decision?: { expectations?: Expectation[] }; decision_history?: DecisionHistoryEntry[] },\n  since: string | null | undefined,): boolean"
     },
     {
       "name": "canonCriteria",
       "kind": "function",
-      "line": 528,
+      "line": 532,
       "signature": "canonCriteria(xs: readonly unknown[]): string"
     },
     {
       "name": "codeFingerprintAt",
       "kind": "function",
-      "line": 548,
+      "line": 552,
       "signature": "codeFingerprintAt(root: string, rels: readonly string[]): { code: string; covers: string[] }"
     },
     {
       "name": "fingerprintEvidence",
       "kind": "function",
-      "line": 573,
+      "line": 577,
       "signature": "fingerprintEvidence(expectations: readonly Expectation[],\n  sourceRoot: string | undefined,\n  nodeId: string,\n  ev: EvidenceWhatSource,): TaskEvidenceFingerprint"
     },
     {
       "name": "EvidencePlanBucket",
       "kind": "type",
-      "line": 625,
+      "line": 629,
       "signature": "EvidencePlanBucket()"
     },
     {
       "name": "EvidencePlanItem",
       "kind": "interface",
-      "line": 628,
+      "line": 632,
       "signature": "EvidencePlanItem()",
       "members": [
         {
@@ -305,7 +305,7 @@
     {
       "name": "EvidencePlanCard",
       "kind": "interface",
-      "line": 645,
+      "line": 649,
       "signature": "EvidencePlanCard()",
       "members": [
         {
@@ -343,7 +343,7 @@
     {
       "name": "EvidenceWhatSource",
       "kind": "type",
-      "line": 660,
+      "line": 664,
       "signature": "EvidenceWhatSource()",
       "members": [
         {
@@ -369,19 +369,19 @@
     {
       "name": "planEvidenceRerun",
       "kind": "function",
-      "line": 673,
+      "line": 677,
       "signature": "planEvidenceRerun(root: string | undefined,\n  cards: readonly EvidencePlanCard[],\n  opts?: { changed?: readonly string[] },): { rerun: EvidencePlanItem[]; skip: EvidencePlanItem[]; unknown: EvidencePlanItem[] }"
     },
     {
       "name": "reopenGate",
       "kind": "function",
-      "line": 756,
+      "line": 760,
       "signature": "reopenGate(card: TaskSpec,\n  evidence: ProgressEvidence | undefined,): { ok: true } | { ok: false; reason: string }"
     },
     {
       "name": "ConstructBasis",
       "kind": "interface",
-      "line": 825,
+      "line": 829,
       "signature": "ConstructBasis()",
       "members": [
         {
@@ -407,97 +407,97 @@
     {
       "name": "constructBasis",
       "kind": "function",
-      "line": 835,
+      "line": 839,
       "signature": "constructBasis(dsl: NonNullable<ReturnType<typeof getDesignSheet>>,\n  node: { id: string; type?: string; label?: string; title?: string; description?: string; path?: string },): ConstructBasis"
     },
     {
       "name": "constructionVerdict",
       "kind": "function",
-      "line": 878,
+      "line": 882,
       "signature": "constructionVerdict(dsl: NonNullable<ReturnType<typeof getDesignSheet>>,\n  nodeId: string,): { complete: boolean; missing: string[]; post: number }"
     },
     {
       "name": "publishTask",
       "kind": "function",
-      "line": 897,
+      "line": 901,
       "signature": "publishTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "claimTask",
       "kind": "function",
-      "line": 1233,
+      "line": 1237,
       "signature": "claimTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "renewTask",
       "kind": "function",
-      "line": 1694,
+      "line": 1709,
       "signature": "renewTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "expireTasks",
       "kind": "function",
-      "line": 1760,
+      "line": 1775,
       "signature": "expireTasks(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "releaseTask",
       "kind": "function",
-      "line": 1833,
+      "line": 1848,
       "signature": "releaseTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "completeTask",
       "kind": "function",
-      "line": 1909,
+      "line": 1924,
       "signature": "completeTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "reopenTask",
       "kind": "function",
-      "line": 2134,
+      "line": 2149,
       "signature": "reopenTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "relaunchTask",
       "kind": "function",
-      "line": 2206,
+      "line": 2221,
       "signature": "relaunchTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "startTask",
       "kind": "function",
-      "line": 2265,
+      "line": 2280,
       "signature": "startTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "applyTaskPlanOp",
       "kind": "function",
-      "line": 2360,
+      "line": 2375,
       "signature": "applyTaskPlanOp(feature: string, op: TaskOpRequest): EditResult"
     },
     {
       "name": "applyTaskOp",
       "kind": "function",
-      "line": 2464,
+      "line": 2479,
       "signature": "applyTaskOp(feature: string,\n  op: TaskOpRequest,\n  agent?: string,): Promise<EditResult>"
     },
     {
       "name": "publishFromDiff",
       "kind": "function",
-      "line": 2540,
+      "line": 2555,
       "signature": "publishFromDiff(feature: string, nodeId: string): EditResult"
     },
     {
       "name": "voidTask",
       "kind": "function",
-      "line": 2575,
+      "line": 2590,
       "signature": "voidTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "TodoHit",
       "kind": "interface",
-      "line": 2629,
+      "line": 2644,
       "signature": "TodoHit()",
       "members": [
         {
@@ -523,79 +523,79 @@
     {
       "name": "findTodoCard",
       "kind": "function",
-      "line": 2639,
+      "line": 2654,
       "signature": "findTodoCard(feature: string, action: string, id: string): TodoHit"
     },
     {
       "name": "assertNoIdentityChange",
       "kind": "function",
-      "line": 2657,
+      "line": 2672,
       "signature": "assertNoIdentityChange(action: string, data: Record<string, unknown>): void"
     },
     {
       "name": "updateTodoCard",
       "kind": "function",
-      "line": 2678,
+      "line": 2693,
       "signature": "updateTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "retireTodoCard",
       "kind": "function",
-      "line": 2728,
+      "line": 2743,
       "signature": "retireTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "deleteTodoCard",
       "kind": "function",
-      "line": 2798,
+      "line": 2813,
       "signature": "deleteTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "applyExcludedOp",
       "kind": "function",
-      "line": 2902,
+      "line": 2917,
       "signature": "applyExcludedOp(feature: string, data: Record<string, unknown>): EditResult"
     },
     {
       "name": "moveTodoCardsToHistory",
       "kind": "function",
-      "line": 2929,
+      "line": 2944,
       "signature": "moveTodoCardsToHistory(feature: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "applyArchiveOp",
       "kind": "function",
-      "line": 3085,
+      "line": 3100,
       "signature": "applyArchiveOp(feature: string,\n  data: Record<string, unknown>,\n  agent: string | undefined,\n  mode: 'archive' | 'unarchive',): EditResult"
     },
     {
       "name": "followTodoCard",
       "kind": "function",
-      "line": 3213,
+      "line": 3228,
       "signature": "followTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "applyTodoMutation",
       "kind": "function",
-      "line": 3266,
+      "line": 3281,
       "signature": "applyTodoMutation(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
     },
     {
       "name": "todoChainNote",
       "kind": "function",
-      "line": 3316,
+      "line": 3331,
       "signature": "todoChainNote(cards: readonly TaskSpec[], id: string): { head: string; detail: string }"
     },
     {
       "name": "applyTodoOp",
       "kind": "function",
-      "line": 3380,
+      "line": 3395,
       "signature": "applyTodoOp(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
     },
     {
       "name": "importTodoCards",
       "kind": "function",
-      "line": 3543,
+      "line": 3558,
       "signature": "importTodoCards(feature: string, data: Record<string, unknown>, agent?: string): EditResult"
     }
   ],
@@ -672,6 +672,10 @@
     },
     {
       "source": "../../claim_conflict.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../meta/integrity/index_integrity.js",
       "kind": "relative"
     }
   ],
@@ -1115,6 +1119,10 @@
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#planEvidenceRerun",
       "to": "src/application/design/intent/expectations.ts#indexStaleFor"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/application/meta/integrity/index_integrity.ts#indexTrustReminderForClaim"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#signTaskActor",

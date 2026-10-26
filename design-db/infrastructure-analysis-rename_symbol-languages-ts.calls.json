@@ -116,6 +116,14 @@
     {
       "from": "src/infrastructure/analysis/rename_symbol/languages/ts.ts#renameTsSymbol",
       "to": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/ts.ts#renameTsSymbol",
+      "to": "src/infrastructure/source_write_port.ts#commitSourceWrite"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/ts.ts#renameTsSymbol",
+      "to": "src/infrastructure/source_write_port.ts#commitSourceWrite"
     }
   ],
   "expected_symbols": [

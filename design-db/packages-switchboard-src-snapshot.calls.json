@@ -1,0 +1,26 @@
+{
+  "//": "Design DB —— packages/switchboard/src/snapshot.ts（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/switchboard/src/snapshot.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "SnapshotBlob",
+      "kind": "interface",
+      "signature": "SnapshotBlob()"
+    },
+    {
+      "name": "SnapshotProvider",
+      "kind": "interface",
+      "signature": "SnapshotProvider()"
+    },
+    {
+      "name": "noSnapshot",
+      "kind": "const",
+      "signature": "const noSnapshot = { kind: 'none', async exportSnapshot() { return null }, a…"
+    }
+  ]
+}

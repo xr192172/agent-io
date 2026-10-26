@@ -187,13 +187,19 @@
           "type": ": string[]",
           "optional": false,
           "member_kind": "property"
+        },
+        {
+          "name": "bookFacts",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "DecisionCase",
       "kind": "interface",
-      "line": 94,
+      "line": 101,
       "signature": "DecisionCase()",
       "members": [
         {
@@ -213,7 +219,7 @@
     {
       "name": "DecisionShape",
       "kind": "interface",
-      "line": 100,
+      "line": 107,
       "signature": "DecisionShape()",
       "members": [
         {
@@ -239,13 +245,13 @@
     {
       "name": "DEFAULT_CONSTRAINTS",
       "kind": "const",
-      "line": 109,
+      "line": 116,
       "signature": "const DEFAULT_CONSTRAINTS = [ '不得新增或删除顶层导出（export）', '不得改动函数签名、参数名与返回类型', '不得引入除目标函数体…"
     },
     {
       "name": "withConstraints",
       "kind": "function",
-      "line": 117,
+      "line": 124,
       "signature": "withConstraints(existing: string[], more: string[]): string[]"
     }
   ],

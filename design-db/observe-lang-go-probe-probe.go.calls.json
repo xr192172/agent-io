@@ -152,9 +152,6 @@
     "observe-lang-go/probe/probe.go#SetRateLimit",
     "observe-lang-go/probe/probe.go#rotateLocked",
     "observe-lang-go/probe/probe.go#sanitizeFields",
-    "observe-lang-go/probe/probe.go#sanitizeValue",
-    "observe-lang-go/probe/probe_test.go#TestSinkRateLimitDrops",
-    "observe-lang-go/probe/skeleton_cert_test.go#TestSkeletonSinkEmitsEvents",
-    "observe-lang-go/probe/skeleton_cert_test.go#TestSkeletonSinkFailureIsLoud"
+    "observe-lang-go/probe/probe.go#sanitizeValue"
   ]
 }

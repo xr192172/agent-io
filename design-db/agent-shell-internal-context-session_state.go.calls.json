@@ -1,0 +1,31 @@
+{
+  "//": "Design DB —— agent-shell/internal/context/session_state.go（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell/internal/context/session_state.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "SectionMeta",
+      "kind": "type",
+      "signature": "SectionMeta()"
+    },
+    {
+      "name": "SummaryZoneState",
+      "kind": "type",
+      "signature": "SummaryZoneState()"
+    },
+    {
+      "name": "CheckpointState",
+      "kind": "type",
+      "signature": "CheckpointState()"
+    },
+    {
+      "name": "SessionState",
+      "kind": "type",
+      "signature": "SessionState()"
+    }
+  ]
+}

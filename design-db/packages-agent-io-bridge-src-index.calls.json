@@ -1,0 +1,86 @@
+{
+  "//": "Design DB —— packages/agent-io-bridge/src/index.ts（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/agent-io-bridge/src/index.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "callSeq",
+      "kind": "const",
+      "signature": "const callSeq = 0"
+    },
+    {
+      "name": "MemorySample",
+      "kind": "interface",
+      "signature": "MemorySample()"
+    },
+    {
+      "name": "memoryBase",
+      "kind": "const",
+      "signature": "const memoryBase = new Map<string, MemorySample>()"
+    },
+    {
+      "name": "name",
+      "kind": "const",
+      "signature": "const name = 'agent-io-bridge'"
+    },
+    {
+      "name": "inject",
+      "kind": "const",
+      "signature": "const inject = ['workspaceRegistry', 'tools']"
+    },
+    {
+      "name": "Config",
+      "kind": "interface",
+      "signature": "Config()"
+    },
+    {
+      "name": "ReferenceFileLite",
+      "kind": "interface",
+      "signature": "ReferenceFileLite()"
+    },
+    {
+      "name": "FoundRefsLite",
+      "kind": "interface",
+      "signature": "FoundRefsLite()"
+    },
+    {
+      "name": "EditResultLite",
+      "kind": "interface",
+      "signature": "EditResultLite()"
+    },
+    {
+      "name": "RenameSymbolsResultLite",
+      "kind": "interface",
+      "signature": "RenameSymbolsResultLite()"
+    },
+    {
+      "name": "MoveSymbolResultLite",
+      "kind": "interface",
+      "signature": "MoveSymbolResultLite()"
+    },
+    {
+      "name": "KernelModule",
+      "kind": "interface",
+      "signature": "KernelModule()"
+    },
+    {
+      "name": "SeamFsLike",
+      "kind": "interface",
+      "signature": "SeamFsLike()"
+    },
+    {
+      "name": "SandboxPolicyLike",
+      "kind": "interface",
+      "signature": "SandboxPolicyLike()"
+    },
+    {
+      "name": "WorkspaceRegistryLike",
+      "kind": "interface",
+      "signature": "WorkspaceRegistryLike()"
+    }
+  ]
+}

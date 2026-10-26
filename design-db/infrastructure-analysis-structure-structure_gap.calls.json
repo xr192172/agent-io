@@ -272,7 +272,7 @@
       "name": "detectRelocations",
       "kind": "function",
       "line": 303,
-      "signature": "detectRelocations(projectDir: string,\r\n  cfg: StructureDomainsConfig,): { moves: Array<{ id: string; oldDir: string; newDir: string }>; note?: string }"
+      "signature": "detectRelocations(projectDir: string,\n  cfg: StructureDomainsConfig,): { moves: Array<{ id: string; oldDir: string; newDir: string }>; note?: string }"
     },
     {
       "name": "computeStructureGap",

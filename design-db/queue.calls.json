@@ -1,0 +1,46 @@
+{
+  "//": "Design DB —— src/queue.ts（★ 全量、与实际 DB 同构；从 design/review-hub.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/review-hub.dsl.json",
+  "path": "src/queue.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "TaskEndpoint",
+      "kind": "interface",
+      "signature": "TaskEndpoint()"
+    },
+    {
+      "name": "QueuedTask",
+      "kind": "interface",
+      "signature": "QueuedTask()"
+    },
+    {
+      "name": "EnqueueInput",
+      "kind": "interface",
+      "signature": "EnqueueInput()"
+    },
+    {
+      "name": "QueueConfig",
+      "kind": "interface",
+      "signature": "QueueConfig()"
+    },
+    {
+      "name": "TaskOutcome",
+      "kind": "type",
+      "signature": "TaskOutcome()"
+    },
+    {
+      "name": "QueueStats",
+      "kind": "interface",
+      "signature": "QueueStats()"
+    },
+    {
+      "name": "TaskQueue",
+      "kind": "class",
+      "signature": "TaskQueue()"
+    }
+  ]
+}

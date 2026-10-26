@@ -7,169 +7,175 @@
     {
       "name": "prewarmPromise",
       "kind": "const",
-      "line": 81,
+      "line": 83,
       "signature": "const prewarmPromise = null"
     },
     {
       "name": "ensureKernelPrewarmed",
       "kind": "function",
-      "line": 96,
+      "line": 98,
       "signature": "ensureKernelPrewarmed(): Promise<void>"
     },
     {
       "name": "SELF_PATH",
       "kind": "const",
-      "line": 144,
+      "line": 146,
       "signature": "const SELF_PATH = (() => { try { return fileURLToPath(import.meta.url); } c…"
     },
     {
       "name": "SELF_MTIME_MS",
       "kind": "const",
-      "line": 151,
+      "line": 153,
       "signature": "const SELF_MTIME_MS = SELF_PATH ? safeMtimeMs(SELF_PATH) : null"
     },
     {
       "name": "safeMtimeMs",
       "kind": "function",
-      "line": 153,
+      "line": 155,
       "signature": "safeMtimeMs(p: string): number | null"
     },
     {
       "name": "staleBuildWarningFor",
       "kind": "function",
-      "line": 168,
+      "line": 170,
       "signature": "staleBuildWarningFor(loadedMtimeMs: number | null, curMtimeMs: number | null): ToolWarning | null"
     },
     {
       "name": "staleBuildWarning",
       "kind": "function",
-      "line": 180,
+      "line": 182,
       "signature": "staleBuildWarning(): ToolWarning | null"
     },
     {
       "name": "PACKAGE_ROOT",
       "kind": "const",
-      "line": 194,
+      "line": 196,
       "signature": "const PACKAGE_ROOT = SELF_PATH ? resolveProjectRoot(SELF_PATH) : null"
     },
     {
       "name": "SRC_DIR",
       "kind": "const",
-      "line": 195,
+      "line": 197,
       "signature": "const SRC_DIR = PACKAGE_ROOT ? path.join(PACKAGE_ROOT, 'src') : null"
     },
     {
       "name": "DIST_DIR",
       "kind": "const",
-      "line": 196,
+      "line": 198,
       "signature": "const DIST_DIR = PACKAGE_ROOT ? path.join(PACKAGE_ROOT, 'dist') : null"
     },
     {
       "name": "newestMtime",
       "kind": "function",
-      "line": 199,
+      "line": 201,
       "signature": "newestMtime(dir: string | null, skipGen: boolean): number | null"
     },
     {
       "name": "_srcMaxCache",
       "kind": "const",
-      "line": 225,
+      "line": 227,
       "signature": "const _srcMaxCache = null"
     },
     {
       "name": "cachedSrcMtime",
       "kind": "function",
-      "line": 227,
+      "line": 229,
       "signature": "cachedSrcMtime(): number | null"
     },
     {
       "name": "staleSourceWarningFor",
       "kind": "function",
-      "line": 239,
+      "line": 241,
       "signature": "staleSourceWarningFor(srcMax: number | null, distMax: number | null): ToolWarning | null"
     },
     {
       "name": "staleSourceWarning",
       "kind": "function",
-      "line": 258,
+      "line": 260,
       "signature": "staleSourceWarning(): ToolWarning | null"
     },
     {
       "name": "STALE_INDEX_TTL_MS",
       "kind": "const",
-      "line": 284,
+      "line": 286,
       "signature": "const STALE_INDEX_TTL_MS = 5000"
     },
     {
       "name": "_staleIndexCache",
       "kind": "const",
-      "line": 286,
+      "line": 288,
       "signature": "const _staleIndexCache = null"
     },
     {
       "name": "projectRootArg",
       "kind": "function",
-      "line": 289,
+      "line": 291,
       "signature": "projectRootArg(args: Record<string, unknown>): string | null"
     },
     {
       "name": "resolveRootFromArgs",
       "kind": "function",
-      "line": 313,
+      "line": 317,
       "signature": "resolveRootFromArgs(args: Record<string, unknown>): string | null"
+    },
+    {
+      "name": "rootFromFeatureArg",
+      "kind": "function",
+      "line": 355,
+      "signature": "rootFromFeatureArg(feature: unknown): string | null"
     },
     {
       "name": "collectArgPaths",
       "kind": "function",
-      "line": 344,
+      "line": 376,
       "signature": "collectArgPaths(args: Record<string, unknown>): string[]"
     },
     {
       "name": "NO_PROJECT_ROOT_NOTE",
       "kind": "const",
-      "line": 381,
+      "line": 413,
       "signature": "const NO_PROJECT_ROOT_NOTE = '本次调用未解析到项目根 ⇒ 未做索引保鲜 / 未做陈旧检查（结果可能基于旧图）'"
     },
     {
       "name": "resetStaleIndexWarningCache",
       "kind": "function",
-      "line": 389,
+      "line": 421,
       "signature": "resetStaleIndexWarningCache(): void"
     },
     {
       "name": "staleIndexWarning",
       "kind": "function",
-      "line": 401,
+      "line": 433,
       "signature": "staleIndexWarning(rawRoot: string | null): ToolWarning | null"
     },
     {
       "name": "backfillProgressNote",
       "kind": "function",
-      "line": 467,
+      "line": 499,
       "signature": "backfillProgressNote(absRoot: string): string"
     },
     {
       "name": "freshnessRefusedWarning",
       "kind": "function",
-      "line": 493,
+      "line": 525,
       "signature": "freshnessRefusedWarning(msg: string, scope: string | null): ToolWarning | null"
     },
     {
       "name": "firstContactBackfill",
       "kind": "function",
-      "line": 511,
+      "line": 543,
       "signature": "firstContactBackfill(rawRoot: string | null): string"
     },
     {
       "name": "trustNoteFor",
       "kind": "function",
-      "line": 547,
+      "line": 579,
       "signature": "trustNoteFor(rawRoot: string | null): string"
     },
     {
       "name": "ArgValidator",
       "kind": "interface",
-      "line": 656,
+      "line": 688,
       "signature": "ArgValidator()",
       "members": [
         {
@@ -183,73 +189,79 @@
     {
       "name": "CALL_AUTHORIZE_FIELD",
       "kind": "const",
-      "line": 711,
+      "line": 743,
       "signature": "const CALL_AUTHORIZE_FIELD = { authorize: z .string() .optional() .describe( '★ 本次 run…"
     },
     {
       "name": "CALL_RESERVED_KEYS",
       "kind": "const",
-      "line": 723,
+      "line": 755,
       "signature": "const CALL_RESERVED_KEYS = [...Object.keys(CALL_ACTOR_FIELD), ...Object.keys(CALL_AU…"
     },
     {
       "name": "withCallActor",
       "kind": "const",
-      "line": 725,
+      "line": 757,
       "signature": "const withCallActor = (shape: Record<string, unknown>): Record<string, unknown>…"
     },
     {
       "name": "_argValidators",
       "kind": "const",
-      "line": 732,
+      "line": 764,
       "signature": "const _argValidators = new WeakMap<ToolDef, ArgValidator>()"
     },
     {
       "name": "argValidatorOf",
       "kind": "function",
-      "line": 734,
+      "line": 766,
       "signature": "argValidatorOf(def: ToolDef): ArgValidator"
     },
     {
       "name": "validateToolArgs",
       "kind": "function",
-      "line": 750,
+      "line": 782,
       "signature": "validateToolArgs(def: ToolDef, a: Record<string, unknown>): string | null"
     },
     {
       "name": "invokeTool",
       "kind": "function",
-      "line": 781,
+      "line": 813,
       "signature": "invokeTool(def: ToolDef,\n  args: Record<string, unknown> | undefined,\n  via: DogfoodVia = 'mcp',): Promise<{ text: string; isError?: boolean }>"
     },
     {
       "name": "renderNextNote",
       "kind": "function",
-      "line": 980,
+      "line": 1012,
       "signature": "renderNextNote(tool: string, text: string): string"
     },
     {
       "name": "ATOMIC_ENTRY_NAME",
       "kind": "const",
-      "line": 1018,
+      "line": 1052,
       "signature": "const ATOMIC_ENTRY_NAME = 'atomic_call'"
     },
     {
       "name": "composedDefs",
       "kind": "function",
-      "line": 1024,
+      "line": 1058,
       "signature": "composedDefs(): ToolDef[]"
+    },
+    {
+      "name": "minimalDefs",
+      "kind": "function",
+      "line": 1074,
+      "signature": "minimalDefs(): ToolDef[]"
     },
     {
       "name": "registerAtomicEntry",
       "kind": "function",
-      "line": 1042,
+      "line": 1091,
       "signature": "registerAtomicEntry(server: McpServer, exposedNames: ReadonlySet<string>): void"
     },
     {
       "name": "registerAllTools",
       "kind": "function",
-      "line": 1086,
+      "line": 1135,
       "signature": "registerAllTools(server: McpServer): void"
     }
   ],
@@ -325,6 +337,10 @@
     },
     {
       "source": "../../infrastructure/analysis/project_root/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/storage.js",
       "kind": "relative"
     },
     {
@@ -539,6 +555,10 @@
       "to": "src/infrastructure/parse/kernel.ts#prewarmKernel"
     },
     {
+      "from": "src/presentation/mcp/server_registry.ts#rootFromFeatureArg",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
       "from": "src/presentation/mcp/server_registry.ts#invokeTool",
       "to": "src/infrastructure/text/arg_suggest.ts#renderArgHints"
     },
@@ -591,6 +611,10 @@
       "to": "src/presentation/mcp/server_registry.ts#invokeTool"
     },
     {
+      "from": "src/presentation/mcp/server_registry.ts#registerAllTools",
+      "to": "src/presentation/mcp/server_registry.ts#minimalDefs"
+    },
+    {
       "from": "src/presentation/mcp/server_registry.ts#cachedSrcMtime",
       "to": "src/presentation/mcp/server_registry.ts#newestMtime"
     },
@@ -613,6 +637,10 @@
     {
       "from": "src/presentation/mcp/server_registry.ts#invokeTool",
       "to": "src/presentation/mcp/server_registry.ts#resolveRootFromArgs"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#resolveRootFromArgs",
+      "to": "src/presentation/mcp/server_registry.ts#rootFromFeatureArg"
     },
     {
       "from": "src/presentation/mcp/server_registry.ts#staleBuildWarning",

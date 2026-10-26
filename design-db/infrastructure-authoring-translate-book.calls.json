@@ -7,7 +7,7 @@
     {
       "name": "BookSymbol",
       "kind": "interface",
-      "line": 43,
+      "line": 62,
       "signature": "BookSymbol()",
       "members": [
         {
@@ -51,13 +51,19 @@
           "type": ": string",
           "optional": true,
           "member_kind": "property"
+        },
+        {
+          "name": "judgments",
+          "type": ": Expectation[]",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "BookShape",
       "kind": "interface",
-      "line": 61,
+      "line": 83,
       "signature": "BookShape()",
       "members": [
         {
@@ -105,9 +111,47 @@
       ]
     },
     {
+      "name": "ExternalDepStrategy",
+      "kind": "type",
+      "line": 95,
+      "signature": "ExternalDepStrategy()"
+    },
+    {
+      "name": "BookExternalDep",
+      "kind": "interface",
+      "line": 97,
+      "signature": "BookExternalDep()",
+      "members": [
+        {
+          "name": "from",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "strategy",
+          "type": ": ExternalDepStrategy",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
+        },
+        {
+          "name": "usedBy",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
       "name": "TranslateBook",
       "kind": "interface",
-      "line": 73,
+      "line": 107,
       "signature": "TranslateBook()",
       "members": [
         {
@@ -169,13 +213,19 @@
           "type": ": Array<Record<string, unknown>>",
           "optional": false,
           "member_kind": "property"
+        },
+        {
+          "name": "external_deps",
+          "type": ": BookExternalDep[]",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "BookGenOptions",
       "kind": "interface",
-      "line": 87,
+      "line": 123,
       "signature": "BookGenOptions()",
       "members": [
         {
@@ -225,7 +275,7 @@
     {
       "name": "BookGenStats",
       "kind": "interface",
-      "line": 103,
+      "line": 139,
       "signature": "BookGenStats()",
       "members": [
         {
@@ -277,7 +327,7 @@
           "member_kind": "property"
         },
         {
-          "name": "blockedByStatic",
+          "name": "blockedByExternalDep",
           "type": ": number",
           "optional": false,
           "member_kind": "property"
@@ -311,7 +361,7 @@
     {
       "name": "NodeRow",
       "kind": "interface",
-      "line": 123,
+      "line": 159,
       "signature": "NodeRow()",
       "members": [
         {
@@ -383,98 +433,86 @@
       ]
     },
     {
-      "name": "GO_INITIALISMS",
+      "name": "GO_NOMINAL",
       "kind": "const",
-      "line": 140,
-      "signature": "const GO_INITIALISMS = new Set([ 'dsl', 'api', 'url', 'uri', 'http', 'https', 'j…"
-    },
-    {
-      "name": "NOMINAL",
-      "kind": "const",
-      "line": 147,
-      "signature": "const NOMINAL = new Set(['string', 'number', 'boolean', 'any', 'unknown',…"
-    },
-    {
-      "name": "CONTAINER",
-      "kind": "const",
-      "line": 149,
-      "signature": "const CONTAINER = new Set([ 'Promise', 'Array', 'ReadonlyArray', 'Record', …"
-    },
-    {
-      "name": "NULLISH",
-      "kind": "const",
-      "line": 156,
-      "signature": "const NULLISH = new Set(['null', 'undefined', 'void', 'never', 'true', 'f…"
+      "line": 176,
+      "signature": "const GO_NOMINAL = new Set([ 'int', 'int8', 'int16', 'int32', 'int64', 'uint…"
     },
     {
       "name": "AUTO_TAG",
       "kind": "const",
-      "line": 159,
+      "line": 183,
       "signature": "const AUTO_TAG = '[auto]'"
     },
     {
       "name": "STICKY_STATES",
       "kind": "const",
-      "line": 161,
+      "line": 185,
       "signature": "const STICKY_STATES = new Set(['translated', 'verified', 'diff', 'stubbed'])"
     },
     {
-      "name": "goName",
+      "name": "tsPath",
       "kind": "function",
-      "line": 166,
-      "signature": "goName(tsName: string): string"
+      "line": 193,
+      "signature": "tsPath(filePath: string, srcPrefix = '', targetPrefix = ''): string"
     },
     {
-      "name": "goPath",
+      "name": "tsSymbolName",
       "kind": "function",
-      "line": 186,
-      "signature": "goPath(filePath: string, srcPrefix = 'src/', targetPrefix = 'internal/'): string"
+      "line": 203,
+      "signature": "tsSymbolName(row: NodeRow): string"
     },
     {
       "name": "stripComments",
       "kind": "const",
-      "line": 193,
+      "line": 210,
       "signature": "const stripComments = (s: string): string => s.replace(/\\/\\*[\\s\\S]*?\\*\\//g, ' '…"
     },
     {
       "name": "stripLiterals",
       "kind": "const",
-      "line": 195,
+      "line": 212,
       "signature": "const stripLiterals = (s: string): string => s.replace(/'[^']*'|\"[^\"]*\"|`[^`]*`…"
     },
     {
       "name": "typeExpressions",
       "kind": "function",
-      "line": 198,
+      "line": 215,
       "signature": "typeExpressions(row: NodeRow): string[]"
     },
     {
       "name": "parseJson",
       "kind": "function",
-      "line": 206,
+      "line": 223,
       "signature": "parseJson(raw: string | null, fallback: T): T"
     },
     {
       "name": "genericNames",
       "kind": "function",
-      "line": 216,
+      "line": 233,
       "signature": "genericNames(row: NodeRow): Set<string>"
     },
     {
-      "name": "unmappedTypes",
+      "name": "unmappedGoTypes",
       "kind": "function",
-      "line": 233,
-      "signature": "unmappedTypes(row: NodeRow,\n  declared: ReadonlySet<string>,\n  covered?: ReadonlySet<string>,): string[]"
+      "line": 248,
+      "signature": "unmappedGoTypes(row: NodeRow,\n  declared: ReadonlySet<string>,\n  covered?: ReadonlySet<string>,): string[]"
     },
     {
       "name": "TermTable",
       "kind": "interface",
-      "line": 254,
+      "line": 268,
       "signature": "TermTable()",
       "members": [
         {
           "name": "covered",
           "type": ": Set<string>",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "coveredTo",
+          "type": ": Map<string, string>",
           "optional": false,
           "member_kind": "property"
         },
@@ -489,13 +527,13 @@
     {
       "name": "termCoverage",
       "kind": "function",
-      "line": 274,
+      "line": 287,
       "signature": "termCoverage(types: ReadonlyArray<Record<string, unknown>>): TermTable"
     },
     {
       "name": "ShapeCat",
       "kind": "interface",
-      "line": 293,
+      "line": 310,
       "signature": "ShapeCat()",
       "members": [
         {
@@ -527,79 +565,85 @@
     {
       "name": "SHAPE_CATS",
       "kind": "const",
-      "line": 300,
-      "signature": "const SHAPE_CATS = [ { id: 'func', label: '(p: T) => U（函数类型）', to: { shape: …"
+      "line": 317,
+      "signature": "const SHAPE_CATS = [ { id: 'func', label: 'func(...) ...（函数类型）', to: { shape…"
     },
     {
       "name": "classifyShape",
       "kind": "function",
-      "line": 321,
+      "line": 338,
       "signature": "classifyShape(expr: string): ShapeCat | null"
     },
     {
       "name": "openBookDb",
       "kind": "function",
-      "line": 330,
+      "line": 347,
       "signature": "openBookDb(projectDir: string): DatabaseSync"
     },
     {
       "name": "readSymbolRows",
       "kind": "function",
-      "line": 351,
-      "signature": "readSymbolRows(db: DatabaseSync,\n  activeFiles: ReadonlySet<string>,): { rows: NodeRow[]; internalRows: NodeRow[]; srcFiles: number }"
+      "line": 367,
+      "signature": "readSymbolRows(db: DatabaseSync,\n  activeFiles: ReadonlySet<string>,): { rows: NodeRow[]; internalRows: NodeRow[]; srcFiles: number; extFiles: Map<string, string[]> }"
     },
     {
       "name": "briefNote",
       "kind": "function",
-      "line": 387,
+      "line": 418,
       "signature": "briefNote(note: string | undefined, max = 240): string"
     },
     {
       "name": "autoNote",
       "kind": "function",
-      "line": 393,
+      "line": 424,
       "signature": "autoNote(row: NodeRow, bad: string[], target: string): string"
     },
     {
-      "name": "goSymbolName",
+      "name": "renderTsSignature",
       "kind": "function",
-      "line": 403,
-      "signature": "goSymbolName(row: NodeRow): string"
+      "line": 435,
+      "signature": "renderTsSignature(row: NodeRow, toName: string): string | null"
     },
     {
-      "name": "goInternalName",
+      "name": "coveredTermHits",
       "kind": "function",
-      "line": 418,
-      "signature": "goInternalName(row: NodeRow): string"
+      "line": 457,
+      "signature": "coveredTermHits(row: NodeRow, declared: ReadonlySet<string>, terms: TermTable): string[]"
     },
     {
-      "name": "shapeStats",
+      "name": "buildJudgments",
       "kind": "function",
-      "line": 423,
-      "signature": "shapeStats(rows: readonly NodeRow[]): Map<string, { count: number; samples: string[]; distinct: Set<string> }>"
+      "line": 472,
+      "signature": "buildJudgments(row: NodeRow, targetPath: string, toName: string, termHits: string[], terms: TermTable): Expectation[]"
     },
     {
       "name": "generateBook",
       "kind": "function",
-      "line": 446,
+      "line": 505,
       "signature": "generateBook(book: TranslateBook, opts: BookGenOptions): { book: TranslateBook; stats: BookGenStats }"
+    },
+    {
+      "name": "shapeStats",
+      "kind": "function",
+      "line": 793,
+      "signature": "shapeStats(rows: readonly NodeRow[]): Map<string, { count: number; samples: string[]; distinct: Set<string> }>"
     },
     {
       "name": "serializeBook",
       "kind": "function",
-      "line": 699,
+      "line": 814,
       "signature": "serializeBook(book: TranslateBook): string"
     },
     {
       "name": "writeBook",
       "kind": "function",
-      "line": 704,
+      "line": 819,
       "signature": "writeBook(bookPath: string, book: TranslateBook): void"
     },
     {
       "name": "BookRebuildResult",
       "kind": "interface",
-      "line": 712,
+      "line": 827,
       "signature": "BookRebuildResult()",
       "members": [
         {
@@ -610,6 +654,12 @@
         },
         {
           "name": "unknowns",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "externalDeps",
           "type": ": number",
           "optional": false,
           "member_kind": "property"
@@ -643,8 +693,26 @@
     {
       "name": "rebuildBook",
       "kind": "function",
-      "line": 733,
+      "line": 850,
       "signature": "rebuildBook(opts: BookGenOptions): BookRebuildResult"
+    },
+    {
+      "name": "loadTranslateBooks",
+      "kind": "function",
+      "line": 891,
+      "signature": "loadTranslateBooks(projectDir: string): TranslateBook[]"
+    },
+    {
+      "name": "findBookRootFor",
+      "kind": "function",
+      "line": 911,
+      "signature": "findBookRootFor(file: string): string | null"
+    },
+    {
+      "name": "attachBookFacts",
+      "kind": "function",
+      "line": 932,
+      "signature": "attachBookFacts(units: TransUnit[], books: TranslateBook[], relFile: string): number"
     }
   ],
   "imports": [
@@ -659,6 +727,20 @@
     {
       "source": "node:path",
       "kind": "package"
+    },
+    {
+      "source": "../../../domain/expectation.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./ts_codegen.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./unit.js",
+      "kind": "relative",
+      "type_only": true
     }
   ],
   "calls": [
@@ -671,52 +753,28 @@
       "to": "src/infrastructure/authoring/translate/book.ts#briefNote"
     },
     {
+      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
+      "to": "src/infrastructure/authoring/translate/book.ts#buildJudgments"
+    },
+    {
       "from": "src/infrastructure/authoring/translate/book.ts#shapeStats",
       "to": "src/infrastructure/authoring/translate/book.ts#classifyShape"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
+      "to": "src/infrastructure/authoring/translate/book.ts#coveredTermHits"
     },
     {
       "from": "src/infrastructure/authoring/translate/book.ts#rebuildBook",
       "to": "src/infrastructure/authoring/translate/book.ts#generateBook"
     },
     {
-      "from": "src/infrastructure/authoring/translate/book.ts#unmappedTypes",
+      "from": "src/infrastructure/authoring/translate/book.ts#unmappedGoTypes",
       "to": "src/infrastructure/authoring/translate/book.ts#genericNames"
     },
     {
-      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
-      "to": "src/infrastructure/authoring/translate/book.ts#goInternalName"
-    },
-    {
-      "from": "src/infrastructure/authoring/translate/book.ts#goSymbolName",
-      "to": "src/infrastructure/authoring/translate/book.ts#goName"
-    },
-    {
-      "from": "src/infrastructure/authoring/translate/book.ts#goSymbolName",
-      "to": "src/infrastructure/authoring/translate/book.ts#goName"
-    },
-    {
-      "from": "src/infrastructure/authoring/translate/book.ts#goSymbolName",
-      "to": "src/infrastructure/authoring/translate/book.ts#goName"
-    },
-    {
-      "from": "src/infrastructure/authoring/translate/book.ts#goSymbolName",
-      "to": "src/infrastructure/authoring/translate/book.ts#goName"
-    },
-    {
-      "from": "src/infrastructure/authoring/translate/book.ts#goInternalName",
-      "to": "src/infrastructure/authoring/translate/book.ts#goName"
-    },
-    {
-      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
-      "to": "src/infrastructure/authoring/translate/book.ts#goPath"
-    },
-    {
-      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
-      "to": "src/infrastructure/authoring/translate/book.ts#goSymbolName"
-    },
-    {
-      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
-      "to": "src/infrastructure/authoring/translate/book.ts#goSymbolName"
+      "from": "src/infrastructure/authoring/translate/book.ts#coveredTermHits",
+      "to": "src/infrastructure/authoring/translate/book.ts#genericNames"
     },
     {
       "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
@@ -735,8 +793,16 @@
       "to": "src/infrastructure/authoring/translate/book.ts#parseJson"
     },
     {
+      "from": "src/infrastructure/authoring/translate/book.ts#renderTsSignature",
+      "to": "src/infrastructure/authoring/translate/book.ts#parseJson"
+    },
+    {
       "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
       "to": "src/infrastructure/authoring/translate/book.ts#readSymbolRows"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#buildJudgments",
+      "to": "src/infrastructure/authoring/translate/book.ts#renderTsSignature"
     },
     {
       "from": "src/infrastructure/authoring/translate/book.ts#writeBook",
@@ -751,11 +817,15 @@
       "to": "src/infrastructure/authoring/translate/book.ts#shapeStats"
     },
     {
-      "from": "src/infrastructure/authoring/translate/book.ts#unmappedTypes",
+      "from": "src/infrastructure/authoring/translate/book.ts#unmappedGoTypes",
       "to": "src/infrastructure/authoring/translate/book.ts#stripComments"
     },
     {
       "from": "src/infrastructure/authoring/translate/book.ts#classifyShape",
+      "to": "src/infrastructure/authoring/translate/book.ts#stripComments"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#coveredTermHits",
       "to": "src/infrastructure/authoring/translate/book.ts#stripComments"
     },
     {
@@ -763,11 +833,15 @@
       "to": "src/infrastructure/authoring/translate/book.ts#stripComments"
     },
     {
-      "from": "src/infrastructure/authoring/translate/book.ts#unmappedTypes",
+      "from": "src/infrastructure/authoring/translate/book.ts#unmappedGoTypes",
       "to": "src/infrastructure/authoring/translate/book.ts#stripLiterals"
     },
     {
       "from": "src/infrastructure/authoring/translate/book.ts#classifyShape",
+      "to": "src/infrastructure/authoring/translate/book.ts#stripLiterals"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#coveredTermHits",
       "to": "src/infrastructure/authoring/translate/book.ts#stripLiterals"
     },
     {
@@ -779,7 +853,27 @@
       "to": "src/infrastructure/authoring/translate/book.ts#termCoverage"
     },
     {
-      "from": "src/infrastructure/authoring/translate/book.ts#unmappedTypes",
+      "from": "src/infrastructure/authoring/translate/book.ts#attachBookFacts",
+      "to": "src/infrastructure/authoring/translate/book.ts#termCoverage"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
+      "to": "src/infrastructure/authoring/translate/book.ts#tsPath"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
+      "to": "src/infrastructure/authoring/translate/book.ts#tsSymbolName"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
+      "to": "src/infrastructure/authoring/translate/book.ts#tsSymbolName"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#unmappedGoTypes",
+      "to": "src/infrastructure/authoring/translate/book.ts#typeExpressions"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#coveredTermHits",
       "to": "src/infrastructure/authoring/translate/book.ts#typeExpressions"
     },
     {
@@ -788,11 +882,19 @@
     },
     {
       "from": "src/infrastructure/authoring/translate/book.ts#generateBook",
-      "to": "src/infrastructure/authoring/translate/book.ts#unmappedTypes"
+      "to": "src/infrastructure/authoring/translate/book.ts#unmappedGoTypes"
     },
     {
       "from": "src/infrastructure/authoring/translate/book.ts#rebuildBook",
       "to": "src/infrastructure/authoring/translate/book.ts#writeBook"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#renderTsSignature",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/book.ts#renderTsSignature",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
     }
   ],
   "expected_symbols": [
@@ -933,15 +1035,19 @@
     }
   ],
   "reverse_calls": [
+    "src/infrastructure/authoring/translate/book.ts#attachBookFacts",
+    "src/infrastructure/authoring/translate/book.ts#buildJudgments",
     "src/infrastructure/authoring/translate/book.ts#classifyShape",
+    "src/infrastructure/authoring/translate/book.ts#coveredTermHits",
     "src/infrastructure/authoring/translate/book.ts#generateBook",
     "src/infrastructure/authoring/translate/book.ts#genericNames",
-    "src/infrastructure/authoring/translate/book.ts#goInternalName",
-    "src/infrastructure/authoring/translate/book.ts#goSymbolName",
     "src/infrastructure/authoring/translate/book.ts#rebuildBook",
+    "src/infrastructure/authoring/translate/book.ts#renderTsSignature",
     "src/infrastructure/authoring/translate/book.ts#shapeStats",
     "src/infrastructure/authoring/translate/book.ts#typeExpressions",
-    "src/infrastructure/authoring/translate/book.ts#unmappedTypes",
-    "src/infrastructure/authoring/translate/book.ts#writeBook"
+    "src/infrastructure/authoring/translate/book.ts#unmappedGoTypes",
+    "src/infrastructure/authoring/translate/book.ts#writeBook",
+    "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+    "src/infrastructure/authoring/translate/tool.ts#translateGoTsHandler"
   ]
 }

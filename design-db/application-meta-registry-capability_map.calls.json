@@ -159,49 +159,49 @@
     {
       "name": "_toolDefs",
       "kind": "const",
-      "line": 362,
+      "line": 357,
       "signature": "const _toolDefs = null"
     },
     {
       "name": "bindToolDefs",
       "kind": "function",
-      "line": 368,
+      "line": 363,
       "signature": "bindToolDefs(defs: ToolDef[]): void"
     },
     {
       "name": "listToolDefs",
       "kind": "function",
-      "line": 378,
+      "line": 373,
       "signature": "listToolDefs(): ToolDef[]"
     },
     {
       "name": "_laneOf",
       "kind": "const",
-      "line": 390,
+      "line": 385,
       "signature": "const _laneOf = null"
     },
     {
       "name": "bindLaneOf",
       "kind": "function",
-      "line": 396,
+      "line": 391,
       "signature": "bindLaneOf(table: Readonly<Record<string, LaneAssign>>): void"
     },
     {
       "name": "resetLaneOfForTest",
       "kind": "function",
-      "line": 401,
+      "line": 396,
       "signature": "resetLaneOfForTest(): void"
     },
     {
       "name": "resolveAssign",
       "kind": "function",
-      "line": 413,
+      "line": 408,
       "signature": "resolveAssign(assign?: Readonly<Record<string, LaneAssign>>): Readonly<Record<string, LaneAssign>>"
     },
     {
       "name": "DomainNavView",
       "kind": "interface",
-      "line": 438,
+      "line": 433,
       "signature": "DomainNavView()",
       "members": [
         {
@@ -239,43 +239,43 @@
     {
       "name": "_domains",
       "kind": "const",
-      "line": 447,
+      "line": 442,
       "signature": "const _domains = null"
     },
     {
       "name": "bindDomains",
       "kind": "function",
-      "line": 458,
+      "line": 453,
       "signature": "bindDomains(domains: readonly DomainNavView[] | null): void"
     },
     {
       "name": "listDomains",
       "kind": "function",
-      "line": 463,
+      "line": 458,
       "signature": "listDomains(): readonly DomainNavView[] | null"
     },
     {
       "name": "resetDomainsForTest",
       "kind": "function",
-      "line": 468,
+      "line": 463,
       "signature": "resetDomainsForTest(): void"
     },
     {
       "name": "domainsOfLane",
       "kind": "function",
-      "line": 482,
+      "line": 477,
       "signature": "domainsOfLane(lane: LaneId, all: readonly DomainNavView[]): DomainNavView[]"
     },
     {
       "name": "renderDomainText",
       "kind": "function",
-      "line": 489,
+      "line": 484,
       "signature": "renderDomainText(lanes: readonly Lane[], all: readonly DomainNavView[] | null, why = ''): string"
     },
     {
       "name": "BuiltLanes",
       "kind": "interface",
-      "line": 519,
+      "line": 514,
       "signature": "BuiltLanes()",
       "members": [
         {
@@ -307,43 +307,43 @@
     {
       "name": "buildLanes",
       "kind": "function",
-      "line": 534,
+      "line": 529,
       "signature": "buildLanes(catalog: readonly ToolCatalogEntry[],\n  assign?: Readonly<Record<string, LaneAssign>>,): BuiltLanes"
     },
     {
       "name": "describeForNav",
       "kind": "function",
-      "line": 571,
+      "line": 566,
       "signature": "describeForNav(t: ToolCatalogEntry, max = 60): string"
     },
     {
       "name": "validateLanes",
       "kind": "function",
-      "line": 605,
+      "line": 600,
       "signature": "validateLanes(catalog: readonly ToolCatalogEntry[],\n  assign?: Readonly<Record<string, LaneAssign>>,): string[]"
     },
     {
       "name": "laneMaintenanceReport",
       "kind": "function",
-      "line": 630,
+      "line": 625,
       "signature": "laneMaintenanceReport(catalog: readonly ToolCatalogEntry[],\n  assign?: Readonly<Record<string, LaneAssign>>,): {\n  derived: string[];\n  curated: number;\n  unassigned: string[];\n  stale: string[];\n  staleWhen: string[];\n}"
     },
     {
       "name": "renderLaneText",
       "kind": "function",
-      "line": 657,
+      "line": 652,
       "signature": "renderLaneText(lanes: readonly Lane[], laneIds: readonly LaneId[] = []): string"
     },
     {
       "name": "renderUnassigned",
       "kind": "function",
-      "line": 673,
+      "line": 668,
       "signature": "renderUnassigned(unassigned: readonly ToolCatalogEntry[]): string"
     },
     {
       "name": "CapabilityMapInput",
       "kind": "interface",
-      "line": 684,
+      "line": 679,
       "signature": "CapabilityMapInput()",
       "members": [
         {
@@ -357,19 +357,19 @@
     {
       "name": "collectRequiredKeys",
       "kind": "function",
-      "line": 722,
+      "line": 717,
       "signature": "collectRequiredKeys(schema: unknown): string[]"
     },
     {
       "name": "collectInputKeys",
       "kind": "function",
-      "line": 733,
+      "line": 728,
       "signature": "collectInputKeys(schema: unknown): string[]"
     },
     {
       "name": "InputPath",
       "kind": "interface",
-      "line": 785,
+      "line": 780,
       "signature": "InputPath()",
       "members": [
         {
@@ -401,31 +401,31 @@
     {
       "name": "collectInputPaths",
       "kind": "function",
-      "line": 796,
+      "line": 791,
       "signature": "collectInputPaths(schema: unknown): InputPath[]"
     },
     {
       "name": "declaredRequiredMembersOf",
       "kind": "function",
-      "line": 884,
+      "line": 879,
       "signature": "declaredRequiredMembersOf(paths: readonly InputPath[]): InputPath[]"
     },
     {
       "name": "catalogOf",
       "kind": "function",
-      "line": 893,
+      "line": 888,
       "signature": "catalogOf(defs: readonly ToolDef[]): ToolCatalogEntry[]"
     },
     {
       "name": "objectInputsOf",
       "kind": "function",
-      "line": 904,
+      "line": 899,
       "signature": "objectInputsOf(name: string, catalog: readonly ToolCatalogEntry[]): readonly string[]"
     },
     {
       "name": "ChainHopVerdict",
       "kind": "interface",
-      "line": 911,
+      "line": 906,
       "signature": "ChainHopVerdict()",
       "members": [
         {
@@ -451,19 +451,19 @@
     {
       "name": "chainVerdictsOf",
       "kind": "function",
-      "line": 925,
+      "line": 920,
       "signature": "chainVerdictsOf(chain: Chain, catalog: readonly ToolCatalogEntry[]): readonly ChainHopVerdict[]"
     },
     {
       "name": "renderChainVerdicts",
       "kind": "function",
-      "line": 942,
+      "line": 937,
       "signature": "renderChainVerdicts(catalog: readonly ToolCatalogEntry[]): string"
     },
     {
       "name": "makeCapabilityMapHandler",
       "kind": "function",
-      "line": 974,
+      "line": 969,
       "signature": "makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogEntry[])"
     }
   ],

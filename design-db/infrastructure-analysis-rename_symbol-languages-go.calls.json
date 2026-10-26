@@ -95,6 +95,10 @@
     {
       "from": "src/infrastructure/analysis/rename_symbol/languages/go.ts#analyzeGoSource",
       "to": "src/infrastructure/parse/loader.ts#getParser"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/go.ts#renameGoSymbol",
+      "to": "src/infrastructure/source_write_port.ts#commitSourceWrite"
     }
   ],
   "expected_symbols": [

@@ -1,0 +1,51 @@
+{
+  "//": "Design DB —— packages/skill-tree/src/text/tokenize.ts（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/skill-tree/src/text/tokenize.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "STOPWORDS",
+      "kind": "const",
+      "signature": "const STOPWORDS = new Set([ 'the', 'a', 'an', 'is', 'are', 'was', 'were', '…"
+    },
+    {
+      "name": "jaccardFromSets",
+      "kind": "const",
+      "signature": "const jaccardFromSets = jaccard"
+    },
+    {
+      "name": "FILLER_WORDS",
+      "kind": "const",
+      "signature": "const FILLER_WORDS = ['the ', 'a ', 'an ', 'this ', 'that ']"
+    },
+    {
+      "name": "RETRIEVER_SEPARATORS",
+      "kind": "const",
+      "signature": "const RETRIEVER_SEPARATORS = /[ ,.;?!\\n]/"
+    },
+    {
+      "name": "MAX_ID_BYTES",
+      "kind": "const",
+      "signature": "const MAX_ID_BYTES = 80"
+    },
+    {
+      "name": "TRIGGER_FALLBACK_BYTES",
+      "kind": "const",
+      "signature": "const TRIGGER_FALLBACK_BYTES = 60"
+    },
+    {
+      "name": "MAX_TRIGGER_TOKENS",
+      "kind": "const",
+      "signature": "const MAX_TRIGGER_TOKENS = 5"
+    },
+    {
+      "name": "FIX_SEPARATOR",
+      "kind": "const",
+      "signature": "const FIX_SEPARATOR = '\\n\\n---\\n\\n'"
+    }
+  ]
+}

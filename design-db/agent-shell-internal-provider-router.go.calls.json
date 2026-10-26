@@ -1,0 +1,31 @@
+{
+  "//": "Design DB —— agent-shell/internal/provider/router.go（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell/internal/provider/router.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "TaskType",
+      "kind": "type",
+      "signature": "TaskType()"
+    },
+    {
+      "name": "ctxKey",
+      "kind": "type",
+      "signature": "ctxKey()"
+    },
+    {
+      "name": "TaskRouter",
+      "kind": "type",
+      "signature": "TaskRouter()"
+    },
+    {
+      "name": "fixedTaskSender",
+      "kind": "type",
+      "signature": "fixedTaskSender()"
+    }
+  ]
+}

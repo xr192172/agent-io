@@ -96,6 +96,10 @@
       "to": "src/application/dispatch.ts#isDslConflictError"
     },
     {
+      "from": "src/application/dispatch.ts#dispatchWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#watchProjectTool"
+    },
+    {
       "from": "src/application/dispatch.ts#collectPendingAlertText",
       "to": "src/infrastructure/alert_inbox.ts#takeAlerts"
     },

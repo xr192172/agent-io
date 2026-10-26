@@ -1,0 +1,206 @@
+{
+  "//": "Design DB —— packages/subagent-council/test/seats-check.mjs（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/subagent-council/test/seats-check.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "LIB",
+      "kind": "const",
+      "signature": "const LIB = pathToFileURL('D:/project_develop/dsh-brain/packages/suba…"
+    },
+    {
+      "name": "mod",
+      "kind": "const",
+      "signature": "const mod = await import(LIB)"
+    },
+    {
+      "name": "results",
+      "kind": "const",
+      "signature": "const results = []"
+    },
+    {
+      "name": "check",
+      "kind": "const",
+      "signature": "const check = (n, ok, detail) => { results.push({ n, ok, detail }); con…"
+    },
+    {
+      "name": "seats",
+      "kind": "const",
+      "signature": "const seats = Object.keys(SEAT_PERSONAS).sort()"
+    },
+    {
+      "name": "names",
+      "kind": "const",
+      "signature": "const names = Object.values(SEAT_PROVIDER_NAMES)"
+    },
+    {
+      "name": "EXP_SEATS",
+      "kind": "const",
+      "signature": "const EXP_SEATS = ['council-architect', 'council-dev', 'council-review']"
+    },
+    {
+      "name": "dev",
+      "kind": "const",
+      "signature": "const dev = SEAT_PERSONAS['council-dev'] ?? ''"
+    },
+    {
+      "name": "devSections",
+      "kind": "const",
+      "signature": "const devSections = ['## Key Distinctions', '## Output Contract', '## Red Fla…"
+    },
+    {
+      "name": "devMiss",
+      "kind": "const",
+      "signature": "const devMiss = devSections.filter((k) => !dev.includes(k))"
+    },
+    {
+      "name": "devHasFixedCount",
+      "kind": "const",
+      "signature": "const devHasFixedCount = /固定\\s*(?:[一二三四五六七八九十\\d]+)\\s*(?:段|项|条|点)/.test(dev)"
+    },
+    {
+      "name": "rev",
+      "kind": "const",
+      "signature": "const rev = SEAT_PERSONAS['council-review'] ?? ''"
+    },
+    {
+      "name": "revSections",
+      "kind": "const",
+      "signature": "const revSections = ['## Key Distinctions', '## Output Contract', '## Red Fla…"
+    },
+    {
+      "name": "revMiss",
+      "kind": "const",
+      "signature": "const revMiss = revSections.filter((k) => !rev.includes(k))"
+    },
+    {
+      "name": "revHasFixedCount",
+      "kind": "const",
+      "signature": "const revHasFixedCount = /固定\\s*(?:[一二三四五六七八九十\\d]+)\\s*(?:段|项|条|点)/.test(rev)"
+    },
+    {
+      "name": "hasIndependence",
+      "kind": "const",
+      "signature": "const hasIndependence = rev.includes('独立性的构造条件') && rev.includes('由发起方') && rev.i…"
+    },
+    {
+      "name": "hasThreeState",
+      "kind": "const",
+      "signature": "const hasThreeState = rev.includes('UNKNOWN') && rev.includes('不许给总评')"
+    },
+    {
+      "name": "both",
+      "kind": "const",
+      "signature": "const both = runApply({ seats: ['dev', 'review'] })"
+    },
+    {
+      "name": "legacy",
+      "kind": "const",
+      "signature": "const legacy = runApply({})"
+    },
+    {
+      "name": "unknown",
+      "kind": "const",
+      "signature": "const unknown = runApply({ seats: ['dev', 'nope'] })"
+    },
+    {
+      "name": "warnProbe",
+      "kind": "const",
+      "signature": "const warnProbe = runApply({ seats: ['dev', 'review'] })"
+    },
+    {
+      "name": "visible",
+      "kind": "const",
+      "signature": "const visible = warnProbe.logs.some((l) => l.includes('自进化两席已就位') && l.in…"
+    },
+    {
+      "name": "warnedInherit",
+      "kind": "const",
+      "signature": "const warnedInherit = warnProbe.logs.some((l) => l.includes('跨会话') && l.include…"
+    },
+    {
+      "name": "SRC",
+      "kind": "const",
+      "signature": "const SRC = 'D:/project_develop/dsh-brain/packages/subagent-council/s…"
+    },
+    {
+      "name": "ANCHOR",
+      "kind": "const",
+      "signature": "const ANCHOR = '\\t\\t\\tcontinue;\\n\\t\\t}\\n\\t\\tresolvedSeats.push(def);'"
+    },
+    {
+      "name": "ABLATED",
+      "kind": "const",
+      "signature": "const ABLATED = '\\t\\t\\t// ABLATED: 原本是 continue（跳过未知席位），现在降级成 architect\\n…"
+    },
+    {
+      "name": "src",
+      "kind": "const",
+      "signature": "const src = fs.readFileSync(SRC, 'utf8')"
+    },
+    {
+      "name": "ablOk",
+      "kind": "const",
+      "signature": "const ablOk = false"
+    },
+    {
+      "name": "bak",
+      "kind": "const",
+      "signature": "const bak = src"
+    },
+    {
+      "name": "tsc",
+      "kind": "const",
+      "signature": "const tsc = 'D:/project_develop/dsh-brain/node_modules/typescript/bin…"
+    },
+    {
+      "name": "cfg",
+      "kind": "const",
+      "signature": "const cfg = 'D:/project_develop/dsh-brain/packages/subagent-council/t…"
+    },
+    {
+      "name": "ablatedSrc",
+      "kind": "const",
+      "signature": "const ablatedSrc = src.replace(ANCHOR, ABLATED)"
+    },
+    {
+      "name": "b",
+      "kind": "const",
+      "signature": "const b = spawnSync(process.execPath, [tsc, '-p', cfg], { encoding:…"
+    },
+    {
+      "name": "ablNames",
+      "kind": "const",
+      "signature": "const ablNames = null"
+    },
+    {
+      "name": "m2",
+      "kind": "const",
+      "signature": "const m2 = await import(LIB + '?abl=' + Date.now())"
+    },
+    {
+      "name": "cap",
+      "kind": "const",
+      "signature": "const cap = []"
+    },
+    {
+      "name": "o",
+      "kind": "const",
+      "signature": "const o = console.log"
+    },
+    {
+      "name": "pass",
+      "kind": "const",
+      "signature": "const pass = results.filter((r) => r.ok).length"
+    },
+    {
+      "name": "total",
+      "kind": "const",
+      "signature": "const total = pass === results.length && ablOk"
+    }
+  ]
+}

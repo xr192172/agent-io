@@ -277,6 +277,7 @@
     }
   ],
   "reverse_calls": [
+    "scripts/gen-facts.mjs#languageMatrix",
     "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile",
     "src/infrastructure/analysis/health/index.ts#unreadMark",
     "src/infrastructure/parse/comments.ts#commentRangesSync",

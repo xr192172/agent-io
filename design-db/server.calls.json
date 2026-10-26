@@ -1,0 +1,36 @@
+{
+  "//": "Design DB —— src/server.ts（★ 全量、与实际 DB 同构；从 design/review-hub.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/review-hub.dsl.json",
+  "path": "src/server.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "HubConfig",
+      "kind": "interface",
+      "signature": "HubConfig()"
+    },
+    {
+      "name": "HubAddress",
+      "kind": "interface",
+      "signature": "HubAddress()"
+    },
+    {
+      "name": "SentinelAlertRecord",
+      "kind": "interface",
+      "signature": "SentinelAlertRecord()"
+    },
+    {
+      "name": "CouncilHub",
+      "kind": "interface",
+      "signature": "CouncilHub()"
+    },
+    {
+      "name": "SocketState",
+      "kind": "interface",
+      "signature": "SocketState()"
+    }
+  ]
+}

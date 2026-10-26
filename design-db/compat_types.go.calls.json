@@ -1,0 +1,51 @@
+{
+  "//": "Design DB —— compat_types.go（★ 全量、与实际 DB 同构；从 design/agent-memory.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/agent-memory.dsl.json",
+  "path": "compat_types.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "SearchEntry",
+      "kind": "type",
+      "signature": "SearchEntry()"
+    },
+    {
+      "name": "NodeDetail",
+      "kind": "type",
+      "signature": "NodeDetail()"
+    },
+    {
+      "name": "AgentSkillEntry",
+      "kind": "type",
+      "signature": "AgentSkillEntry()"
+    },
+    {
+      "name": "TranscriptEntry",
+      "kind": "type",
+      "signature": "TranscriptEntry()"
+    },
+    {
+      "name": "Session",
+      "kind": "type",
+      "signature": "Session()"
+    },
+    {
+      "name": "ToolDefWire",
+      "kind": "type",
+      "signature": "ToolDefWire()"
+    },
+    {
+      "name": "SkillSyncPayload",
+      "kind": "type",
+      "signature": "SkillSyncPayload()"
+    },
+    {
+      "name": "VectorStats",
+      "kind": "type",
+      "signature": "VectorStats()"
+    }
+  ]
+}

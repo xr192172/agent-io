@@ -1,0 +1,36 @@
+{
+  "//": "Design DB —— agent-shell/internal/hub/v2/web/src/features/pet/renderers/PMXRenderer.tsx（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell/internal/hub/v2/web/src/features/pet/renderers/PMXRenderer.tsx",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "MOOD_TO_MMD_MORPH",
+      "kind": "const",
+      "signature": "const MOOD_TO_MMD_MORPH = { idle: [], happy: ['smile', 'にっこり', '笑い', '笑', 'happy', …"
+    },
+    {
+      "name": "BLINK_INTERVAL_MIN",
+      "kind": "const",
+      "signature": "const BLINK_INTERVAL_MIN = 3000"
+    },
+    {
+      "name": "BLINK_INTERVAL_MAX",
+      "kind": "const",
+      "signature": "const BLINK_INTERVAL_MAX = 6000"
+    },
+    {
+      "name": "BLINK_DURATION",
+      "kind": "const",
+      "signature": "const BLINK_DURATION = 120"
+    },
+    {
+      "name": "PMXRenderer",
+      "kind": "const",
+      "signature": "const PMXRenderer = ({ skin, mood, playingActionId, onActionEnd }) => { const…"
+    }
+  ]
+}

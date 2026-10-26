@@ -1,0 +1,76 @@
+{
+  "//": "Design DB —— retriever.go（★ 全量、与实际 DB 同构；从 design/agent-memory.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/agent-memory.dsl.json",
+  "path": "retriever.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "ContextItem",
+      "kind": "type",
+      "signature": "ContextItem()"
+    },
+    {
+      "name": "Retriever",
+      "kind": "type",
+      "signature": "Retriever()"
+    },
+    {
+      "name": "MemorySource",
+      "kind": "type",
+      "signature": "MemorySource()"
+    },
+    {
+      "name": "QueryRewriter",
+      "kind": "type",
+      "signature": "QueryRewriter()"
+    },
+    {
+      "name": "Reranker",
+      "kind": "type",
+      "signature": "Reranker()"
+    },
+    {
+      "name": "ShallowRetriever",
+      "kind": "type",
+      "signature": "ShallowRetriever()"
+    },
+    {
+      "name": "SearchOptions",
+      "kind": "type",
+      "signature": "SearchOptions()"
+    },
+    {
+      "name": "SessionRepository",
+      "kind": "type",
+      "signature": "SessionRepository()"
+    },
+    {
+      "name": "graphNode",
+      "kind": "type",
+      "signature": "graphNode()"
+    },
+    {
+      "name": "graphEdge",
+      "kind": "type",
+      "signature": "graphEdge()"
+    },
+    {
+      "name": "graphFile",
+      "kind": "type",
+      "signature": "graphFile()"
+    },
+    {
+      "name": "DeepRetriever",
+      "kind": "type",
+      "signature": "DeepRetriever()"
+    },
+    {
+      "name": "HeatRetriever",
+      "kind": "type",
+      "signature": "HeatRetriever()"
+    }
+  ]
+}

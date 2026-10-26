@@ -7,19 +7,19 @@
     {
       "name": "SKIP_DIRS",
       "kind": "const",
-      "line": 28,
+      "line": 30,
       "signature": "const SKIP_DIRS = skipDirSet(['vendor', 'target'])"
     },
     {
       "name": "walkGoFiles",
       "kind": "function",
-      "line": 31,
+      "line": 33,
       "signature": "walkGoFiles(dir: string): string[]"
     },
     {
       "name": "ProjectModule",
       "kind": "interface",
-      "line": 54,
+      "line": 56,
       "signature": "ProjectModule()",
       "members": [
         {
@@ -87,7 +87,7 @@
     {
       "name": "ReportEntry",
       "kind": "interface",
-      "line": 76,
+      "line": 78,
       "signature": "ReportEntry()",
       "members": [
         {
@@ -131,7 +131,7 @@
     {
       "name": "TypesMapEntry",
       "kind": "interface",
-      "line": 86,
+      "line": 88,
       "signature": "TypesMapEntry()",
       "members": [
         {
@@ -163,7 +163,7 @@
     {
       "name": "ConflictEntry",
       "kind": "interface",
-      "line": 96,
+      "line": 98,
       "signature": "ConflictEntry()",
       "members": [
         {
@@ -189,7 +189,7 @@
     {
       "name": "ProjectResult",
       "kind": "interface",
-      "line": 103,
+      "line": 105,
       "signature": "ProjectResult()",
       "members": [
         {
@@ -239,7 +239,7 @@
     {
       "name": "ProjectOptions",
       "kind": "interface",
-      "line": 118,
+      "line": 120,
       "signature": "ProjectOptions()",
       "members": [
         {
@@ -283,25 +283,25 @@
     {
       "name": "toPosix",
       "kind": "function",
-      "line": 132,
+      "line": 134,
       "signature": "toPosix(abs: string): string"
     },
     {
       "name": "relImportPath",
       "kind": "function",
-      "line": 136,
+      "line": 138,
       "signature": "relImportPath(fromGoRel: string, toGoRel: string): string"
     },
     {
       "name": "collectCallRefs",
       "kind": "function",
-      "line": 151,
+      "line": 153,
       "signature": "collectCallRefs(fileAbs: string, src: string): Promise<string[]>"
     },
     {
       "name": "SymbolDef",
       "kind": "interface",
-      "line": 171,
+      "line": 173,
       "signature": "SymbolDef()",
       "members": [
         {
@@ -321,43 +321,43 @@
     {
       "name": "assembleModule",
       "kind": "function",
-      "line": 177,
+      "line": 179,
       "signature": "assembleModule(m: ProjectModule): void"
     },
     {
       "name": "buildReport",
       "kind": "function",
-      "line": 192,
+      "line": 194,
       "signature": "buildReport(modules: ProjectModule[], fillRequested: boolean): ReportEntry[]"
     },
     {
       "name": "writeReport",
       "kind": "function",
-      "line": 220,
+      "line": 222,
       "signature": "writeReport(outDir: string, report: ReportEntry[]): void"
     },
     {
       "name": "buildTypesMap",
       "kind": "function",
-      "line": 243,
+      "line": 245,
       "signature": "buildTypesMap(modules: ProjectModule[]): TypesMapEntry[]"
     },
     {
       "name": "detectConflicts",
       "kind": "function",
-      "line": 253,
+      "line": 255,
       "signature": "detectConflicts(modules: ProjectModule[]): ConflictEntry[]"
     },
     {
       "name": "writeTypesMap",
       "kind": "function",
-      "line": 275,
+      "line": 277,
       "signature": "writeTypesMap(outDir: string, map: TypesMapEntry[]): void"
     },
     {
       "name": "ProjectCallContext",
       "kind": "interface",
-      "line": 299,
+      "line": 301,
       "signature": "ProjectCallContext()",
       "members": [
         {
@@ -377,13 +377,13 @@
     {
       "name": "buildProjectCallNote",
       "kind": "function",
-      "line": 305,
+      "line": 307,
       "signature": "buildProjectCallNote(m: ProjectModule, defined: Map<string, SymbolDef>, ctx?: ProjectCallContext): string"
     },
     {
       "name": "TscCluster",
       "kind": "interface",
-      "line": 343,
+      "line": 345,
       "signature": "TscCluster()",
       "members": [
         {
@@ -409,25 +409,25 @@
     {
       "name": "TS_CODE_LABEL",
       "kind": "const",
-      "line": 350,
+      "line": 352,
       "signature": "const TS_CODE_LABEL = { 2304: '未定义的名字/类型', 2307: '找不到模块', 2503: '找不到命名空间', 2339…"
     },
     {
       "name": "clusterKeyFor",
       "kind": "function",
-      "line": 357,
+      "line": 359,
       "signature": "clusterKeyFor(code: number, msg: string): string"
     },
     {
       "name": "verifyProjectTree",
       "kind": "function",
-      "line": 369,
+      "line": 371,
       "signature": "verifyProjectTree(modules: ProjectModule[]): TscCluster[]"
     },
     {
       "name": "translateGoProject",
       "kind": "function",
-      "line": 415,
+      "line": 417,
       "signature": "translateGoProject(projectDir: string, opts: ProjectOptions = {}): Promise<ProjectResult>"
     }
   ],
@@ -469,6 +469,10 @@
       "kind": "relative"
     },
     {
+      "source": "./book.js",
+      "kind": "relative"
+    },
+    {
       "source": "./go_extractor.js",
       "kind": "relative",
       "type_only": true
@@ -493,6 +497,14 @@
     }
   ],
   "calls": [
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/book.ts#attachBookFacts"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/book.ts#loadTranslateBooks"
+    },
     {
       "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
       "to": "src/infrastructure/authoring/translate/fill.ts#fillUnitsBatched"

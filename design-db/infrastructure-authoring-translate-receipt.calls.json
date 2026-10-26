@@ -277,31 +277,69 @@
           "type": ": VerificationReceipt",
           "optional": false,
           "member_kind": "property"
+        },
+        {
+          "name": "external_deps",
+          "type": ": ExternalDep[]",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "ExternalDepStrategy",
+      "kind": "type",
+      "line": 114,
+      "signature": "ExternalDepStrategy()"
+    },
+    {
+      "name": "ExternalDep",
+      "kind": "interface",
+      "line": 116,
+      "signature": "ExternalDep()",
+      "members": [
+        {
+          "name": "import",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "strategy",
+          "type": ": ExternalDepStrategy",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "note",
+          "type": ": string",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "signatureOf",
       "kind": "function",
-      "line": 110,
+      "line": 127,
       "signature": "signatureOf(u: TransUnit): string"
     },
     {
       "name": "buildKnown",
       "kind": "function",
-      "line": 117,
+      "line": 134,
       "signature": "buildKnown(units: TransUnit[], filled?: Map<string, string>): KnownFact[]"
     },
     {
       "name": "DISCIPLINE",
       "kind": "const",
-      "line": 143,
+      "line": 160,
       "signature": "const DISCIPLINE = new Set(DEFAULT_CONSTRAINTS)"
     },
     {
       "name": "Hint",
       "kind": "interface",
-      "line": 145,
+      "line": 162,
       "signature": "Hint()",
       "members": [
         {
@@ -333,19 +371,19 @@
     {
       "name": "hintFor",
       "kind": "function",
-      "line": 153,
+      "line": 170,
       "signature": "hintFor(text: string): Hint | null"
     },
     {
       "name": "typeUnknowns",
       "kind": "function",
-      "line": 165,
+      "line": 182,
       "signature": "typeUnknowns(u: TransUnit, noteTexts: Set<string>): UnknownItem[]"
     },
     {
       "name": "UnknownsInput",
       "kind": "interface",
-      "line": 192,
+      "line": 209,
       "signature": "UnknownsInput()",
       "members": [
         {
@@ -373,12 +411,6 @@
           "member_kind": "property"
         },
         {
-          "name": "externalImports",
-          "type": ": string[]",
-          "optional": true,
-          "member_kind": "property"
-        },
-        {
           "name": "diagnostics",
           "type": ": string[]",
           "optional": true,
@@ -389,13 +421,19 @@
     {
       "name": "buildUnknowns",
       "kind": "function",
-      "line": 207,
+      "line": 222,
       "signature": "buildUnknowns(input: UnknownsInput): UnknownItem[]"
+    },
+    {
+      "name": "buildExternalDeps",
+      "kind": "function",
+      "line": 275,
+      "signature": "buildExternalDeps(imports: readonly string[]): ExternalDep[]"
     },
     {
       "name": "VerifyUnitInput",
       "kind": "interface",
-      "line": 259,
+      "line": 290,
       "signature": "VerifyUnitInput()",
       "members": [
         {
@@ -415,7 +453,7 @@
     {
       "name": "VerifyOptions",
       "kind": "interface",
-      "line": 265,
+      "line": 296,
       "signature": "VerifyOptions()",
       "members": [
         {
@@ -453,19 +491,19 @@
     {
       "name": "caseResultsOf",
       "kind": "function",
-      "line": 278,
+      "line": 309,
       "signature": "caseResultsOf(diff: { details: { case: string; status: 'same' | 'changed'; before?: string; after?: string; before_error?: string; after_error?: string }[] }): CaseResult[]"
     },
     {
       "name": "summarize",
       "kind": "function",
-      "line": 290,
+      "line": 321,
       "signature": "summarize(units: UnitVerification[], funcCount: number, nonFunc: number): string"
     },
     {
       "name": "MethodInfo",
       "kind": "interface",
-      "line": 319,
+      "line": 350,
       "signature": "MethodInfo()",
       "members": [
         {
@@ -491,31 +529,31 @@
     {
       "name": "methodInfo",
       "kind": "function",
-      "line": 327,
+      "line": 358,
       "signature": "methodInfo(u: TransUnit): MethodInfo | null"
     },
     {
       "name": "methodWrapper",
       "kind": "function",
-      "line": 343,
+      "line": 374,
       "signature": "methodWrapper(u: TransUnit): { name: string; code: string } | null"
     },
     {
       "name": "receiverKind",
       "kind": "function",
-      "line": 364,
+      "line": 395,
       "signature": "receiverKind(goSource: string, recvType: string): 'scalar' | 'struct' | 'unknown'"
     },
     {
       "name": "verifyTranslation",
       "kind": "function",
-      "line": 374,
+      "line": 405,
       "signature": "verifyTranslation(inputs: VerifyUnitInput[], opts: VerifyOptions): VerificationReceipt"
     },
     {
       "name": "unverifiedReceipt",
       "kind": "function",
-      "line": 514,
+      "line": 545,
       "signature": "unverifiedReceipt(reason: string, funcCount = 0, nonFunc = 0): VerificationReceipt"
     }
   ],

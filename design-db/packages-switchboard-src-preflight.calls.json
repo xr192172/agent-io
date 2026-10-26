@@ -1,0 +1,26 @@
+{
+  "//": "Design DB —— packages/switchboard/src/preflight.ts（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/switchboard/src/preflight.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "PreflightConfig",
+      "kind": "interface",
+      "signature": "PreflightConfig()"
+    },
+    {
+      "name": "PreflightState",
+      "kind": "interface",
+      "signature": "PreflightState()"
+    },
+    {
+      "name": "PreflightRunner",
+      "kind": "class",
+      "signature": "PreflightRunner()"
+    }
+  ]
+}

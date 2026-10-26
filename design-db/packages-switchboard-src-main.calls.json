@@ -1,0 +1,51 @@
+{
+  "//": "Design DB —— packages/switchboard/src/main.ts（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/switchboard/src/main.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "isMain",
+      "kind": "const",
+      "signature": "const isMain = process.argv[1] !== undefined && import.meta.url === path…"
+    },
+    {
+      "name": "MODEL_ENV_PROBES",
+      "kind": "const",
+      "signature": "const MODEL_ENV_PROBES = [ 'GEN_ENV_EXTRA', 'AGENTSHELL_MAIN_LLM_API_KEYS', 'AGENT…"
+    },
+    {
+      "name": "home",
+      "kind": "const",
+      "signature": "const home = envStr('DSH_HOME', join(homedir(), '.dsh'))"
+    },
+    {
+      "name": "nodeBin",
+      "kind": "const",
+      "signature": "const nodeBin = envStr('NODE_BIN', join(process.cwd(), '.tools', 'node', …"
+    },
+    {
+      "name": "dshBin",
+      "kind": "const",
+      "signature": "const dshBin = envStr('DSH_BIN', join(process.cwd(), 'node_modules', '@d…"
+    },
+    {
+      "name": "placement",
+      "kind": "const",
+      "signature": "const placement = resolvePlacement(home)"
+    },
+    {
+      "name": "config",
+      "kind": "const",
+      "signature": "const config = { nodeBin: existsSync(nodeBin) ? nodeBin : join(homedir()…"
+    },
+    {
+      "name": "panelHtml",
+      "kind": "const",
+      "signature": "const panelHtml = `<!doctype html><html lang=\"zh\"><meta charset=\"utf-8\"> <m…"
+    }
+  ]
+}

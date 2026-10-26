@@ -31,25 +31,25 @@
     {
       "name": "getDslHandler",
       "kind": "const",
-      "line": 566,
+      "line": 591,
       "signature": "const getDslHandler = wrapData(async (a) => queryFeature(a as never))"
     },
     {
       "name": "renderDesignHandler",
       "kind": "const",
-      "line": 580,
+      "line": 605,
       "signature": "const renderDesignHandler = wrap(async (a) => { // 默认 mindmap：现行思维导图架构（root → 目录分组 → …"
     },
     {
       "name": "groupExpectationFails",
       "kind": "function",
-      "line": 634,
+      "line": 659,
       "signature": "groupExpectationFails(items: readonly { verdict: string; expectation: Parameters<typeof expectationSubjectPath>[0] }[],\n  inScope: (p: string) => boolean,): { failByPath: Map<string, number>; outsideScope: string[]; unsupportedInScope: number; unsupportedOutside: number }"
     },
     {
       "name": "diffDesignSheetHandler",
       "kind": "const",
-      "line": 681,
+      "line": 706,
       "signature": "const diffDesignSheetHandler = wrapData(async (a) => { const feature = requireStr(a, 'fe…"
     }
   ],

@@ -221,6 +221,7 @@
     }
   ],
   "reverse_calls": [
-    "src/infrastructure/analysis/observe/run_loop.ts#runLoop"
+    "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+    "src/presentation/daemon/daemon.ts#scheduleLoopTrigger"
   ]
 }

@@ -1,0 +1,76 @@
+{
+  "//": "Design DB —— packages/switchboard/src/handover-protocol.ts（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/switchboard/src/handover-protocol.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "GenIdentity",
+      "kind": "interface",
+      "signature": "GenIdentity()"
+    },
+    {
+      "name": "GenInstance",
+      "kind": "interface",
+      "signature": "GenInstance()"
+    },
+    {
+      "name": "HandoverStage",
+      "kind": "type",
+      "signature": "HandoverStage()"
+    },
+    {
+      "name": "GenRole",
+      "kind": "type",
+      "signature": "GenRole()"
+    },
+    {
+      "name": "LeaseState",
+      "kind": "interface",
+      "signature": "LeaseState()"
+    },
+    {
+      "name": "StateRecord",
+      "kind": "interface",
+      "signature": "StateRecord()"
+    },
+    {
+      "name": "HealthReply",
+      "kind": "interface",
+      "signature": "HealthReply()"
+    },
+    {
+      "name": "FreezeReply",
+      "kind": "interface",
+      "signature": "FreezeReply()"
+    },
+    {
+      "name": "PromoteRequest",
+      "kind": "interface",
+      "signature": "PromoteRequest()"
+    },
+    {
+      "name": "ProbeReply",
+      "kind": "interface",
+      "signature": "ProbeReply()"
+    },
+    {
+      "name": "PrepareReply",
+      "kind": "interface",
+      "signature": "PrepareReply()"
+    },
+    {
+      "name": "HandoverCommand",
+      "kind": "interface",
+      "signature": "HandoverCommand()"
+    },
+    {
+      "name": "HandoverEnvelope",
+      "kind": "interface",
+      "signature": "HandoverEnvelope()"
+    }
+  ]
+}

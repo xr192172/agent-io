@@ -1,0 +1,21 @@
+{
+  "//": "Design DB —— package/src/index.js（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "package/src/index.js",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "name",
+      "kind": "const",
+      "signature": "const name = 'catpet-desktop-pet'"
+    },
+    {
+      "name": "inject",
+      "kind": "const",
+      "signature": "const inject = []"
+    }
+  ]
+}

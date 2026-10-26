@@ -1,0 +1,91 @@
+{
+  "//": "Design DB —— packages/switchboard/test/spawn-dshhome.test.mjs（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/switchboard/test/spawn-dshhome.test.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "HERE",
+      "kind": "const",
+      "signature": "const HERE = dirname(fileURLToPath(import.meta.url))"
+    },
+    {
+      "name": "PKG",
+      "kind": "const",
+      "signature": "const PKG = join(HERE, '..')"
+    },
+    {
+      "name": "SRC",
+      "kind": "const",
+      "signature": "const SRC = join(PKG, 'src')"
+    },
+    {
+      "name": "n",
+      "kind": "const",
+      "signature": "const n = 0"
+    },
+    {
+      "name": "red",
+      "kind": "const",
+      "signature": "const red = 0"
+    },
+    {
+      "name": "rd",
+      "kind": "const",
+      "signature": "const rd = (p) => readFileSync(p, 'utf8')"
+    },
+    {
+      "name": "s",
+      "kind": "const",
+      "signature": "const s = rd(join(SRC, 'spawner.ts'))"
+    },
+    {
+      "name": "fnBody",
+      "kind": "const",
+      "signature": "const fnBody = s.slice(s.indexOf('export function spawnGen'))"
+    },
+    {
+      "name": "iSpread",
+      "kind": "const",
+      "signature": "const iSpread = fnBody.indexOf('...opts.envExtra')"
+    },
+    {
+      "name": "iHome",
+      "kind": "const",
+      "signature": "const iHome = fnBody.indexOf('DSH_HOME: opts.dshHome')"
+    },
+    {
+      "name": "libSpawner",
+      "kind": "const",
+      "signature": "const libSpawner = join(PKG, 'lib', 'spawner.js')"
+    },
+    {
+      "name": "real",
+      "kind": "const",
+      "signature": "const real = realpathSync(libSpawner)"
+    },
+    {
+      "name": "m",
+      "kind": "const",
+      "signature": "const m = rd(join(SRC, 'main.ts'))"
+    },
+    {
+      "name": "stripLineComment",
+      "kind": "const",
+      "signature": "const stripLineComment = (l) => { const i = l.indexOf('//') return i === -1 ? l : …"
+    },
+    {
+      "name": "offenders",
+      "kind": "const",
+      "signature": "const offenders = s .split('\\n') .map((l, i) => ({ code: stripLineComment(l…"
+    },
+    {
+      "name": "ctrl",
+      "kind": "const",
+      "signature": "const ctrl = ' const env = childEnv(process.env)'"
+    }
+  ]
+}

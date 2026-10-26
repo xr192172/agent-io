@@ -156,7 +156,7 @@
       "name": "backfillChunk",
       "kind": "function",
       "line": 111,
-      "signature": "backfillChunk(db: Database,\r\n  root: string,\r\n  opts: { batch?: number } = {},): Promise<{ synced: number; failed: number; remaining: number; total: number }>"
+      "signature": "backfillChunk(db: Database,\n  root: string,\n  opts: { batch?: number } = {},): Promise<{ synced: number; failed: number; remaining: number; total: number }>"
     },
     {
       "name": "scheduleBackfill",

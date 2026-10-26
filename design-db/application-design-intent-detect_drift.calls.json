@@ -80,7 +80,7 @@
         },
         {
           "name": "scope",
-          "type": ": { mode: 'changed' | 'all'; since_ref: string | null; changed_files: number }",
+          "type": ": { mode: 'changed' | 'all'; since_ref: string | null; changed_files: number; unchecked_ledger_files: number }",
           "optional": false,
           "member_kind": "property"
         },
@@ -155,13 +155,13 @@
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 269,
+      "line": 285,
       "signature": "touchedOf(input: DetectDriftInput): Touched"
     },
     {
       "name": "detectDrift",
       "kind": "function",
-      "line": 286,
+      "line": 302,
       "signature": "detectDrift(input: DetectDriftInput): Promise<TouchedProduct<DriftData & { message: string }>>"
     }
   ],

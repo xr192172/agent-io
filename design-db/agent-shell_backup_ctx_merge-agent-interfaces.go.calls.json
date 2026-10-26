@@ -1,0 +1,171 @@
+{
+  "//": "Design DB —— agent-shell_backup_ctx_merge/agent/interfaces.go（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell_backup_ctx_merge/agent/interfaces.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "Provider",
+      "kind": "type",
+      "signature": "Provider()"
+    },
+    {
+      "name": "ToolRunner",
+      "kind": "type",
+      "signature": "ToolRunner()"
+    },
+    {
+      "name": "PermissionGate",
+      "kind": "type",
+      "signature": "PermissionGate()"
+    },
+    {
+      "name": "Decision",
+      "kind": "type",
+      "signature": "Decision()"
+    },
+    {
+      "name": "ContextManager",
+      "kind": "type",
+      "signature": "ContextManager()"
+    },
+    {
+      "name": "ToolSubscriptionProvider",
+      "kind": "type",
+      "signature": "ToolSubscriptionProvider()"
+    },
+    {
+      "name": "ToolRatingProvider",
+      "kind": "type",
+      "signature": "ToolRatingProvider()"
+    },
+    {
+      "name": "ToolRating",
+      "kind": "type",
+      "signature": "ToolRating()"
+    },
+    {
+      "name": "TaskListOp",
+      "kind": "type",
+      "signature": "TaskListOp()"
+    },
+    {
+      "name": "TaskListOpResult",
+      "kind": "type",
+      "signature": "TaskListOpResult()"
+    },
+    {
+      "name": "TaskEntry",
+      "kind": "type",
+      "signature": "TaskEntry()"
+    },
+    {
+      "name": "ContextCheckpoint",
+      "kind": "type",
+      "signature": "ContextCheckpoint()"
+    },
+    {
+      "name": "ReadinessResult",
+      "kind": "type",
+      "signature": "ReadinessResult()"
+    },
+    {
+      "name": "SessionManager",
+      "kind": "type",
+      "signature": "SessionManager()"
+    },
+    {
+      "name": "SessionSummary",
+      "kind": "type",
+      "signature": "SessionSummary()"
+    },
+    {
+      "name": "MemoryBuilder",
+      "kind": "type",
+      "signature": "MemoryBuilder()"
+    },
+    {
+      "name": "SearchEntry",
+      "kind": "type",
+      "signature": "SearchEntry()"
+    },
+    {
+      "name": "NodeDetail",
+      "kind": "type",
+      "signature": "NodeDetail()"
+    },
+    {
+      "name": "SkillEntry",
+      "kind": "type",
+      "signature": "SkillEntry()"
+    },
+    {
+      "name": "HookRunner",
+      "kind": "type",
+      "signature": "HookRunner()"
+    },
+    {
+      "name": "HookEvent",
+      "kind": "type",
+      "signature": "HookEvent()"
+    },
+    {
+      "name": "HookResult",
+      "kind": "type",
+      "signature": "HookResult()"
+    },
+    {
+      "name": "HookData",
+      "kind": "type",
+      "signature": "HookData()"
+    },
+    {
+      "name": "BackgroundJobs",
+      "kind": "type",
+      "signature": "BackgroundJobs()"
+    },
+    {
+      "name": "Job",
+      "kind": "type",
+      "signature": "Job()"
+    },
+    {
+      "name": "JobState",
+      "kind": "type",
+      "signature": "JobState()"
+    },
+    {
+      "name": "AgentOption",
+      "kind": "type",
+      "signature": "AgentOption()"
+    },
+    {
+      "name": "agentConfig",
+      "kind": "type",
+      "signature": "agentConfig()"
+    },
+    {
+      "name": "ToolJournalRecorder",
+      "kind": "type",
+      "signature": "ToolJournalRecorder()"
+    },
+    {
+      "name": "Approver",
+      "kind": "type",
+      "signature": "Approver()"
+    },
+    {
+      "name": "ToolCallProvider",
+      "kind": "type",
+      "signature": "ToolCallProvider()"
+    },
+    {
+      "name": "ToolDefProvider",
+      "kind": "type",
+      "signature": "ToolDefProvider()"
+    }
+  ]
+}

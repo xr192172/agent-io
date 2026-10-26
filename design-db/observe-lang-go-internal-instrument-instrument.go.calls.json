@@ -682,12 +682,6 @@
     }
   ],
   "reverse_calls": [
-    "observe-lang-go/internal/instrument/contract_test.go#TestInstrumentFile_ContractMode_Filtered",
-    "observe-lang-go/internal/instrument/contract_test.go#TestInstrumentFile_ContractMode_Multiple",
-    "observe-lang-go/internal/instrument/contract_test.go#TestInstrumentFile_ContractMode_PackageFilter",
-    "observe-lang-go/internal/instrument/contract_test.go#TestInstrumentFile_ExploreMode_Full",
-    "observe-lang-go/internal/instrument/effects_test.go#TestEffectProbes_DryRun",
-    "observe-lang-go/internal/instrument/effects_test.go#TestEffectProbes_WriteAndIdempotent",
     "observe-lang-go/internal/instrument/instrument.go#InstrumentDir",
     "observe-lang-go/internal/instrument/instrument.go#InstrumentFile",
     "observe-lang-go/internal/instrument/instrument.go#RestoreInstrumented",
@@ -707,22 +701,6 @@
     "observe-lang-go/internal/instrument/instrument.go#returnCapture",
     "observe-lang-go/internal/instrument/instrument.go#terminatesFunction",
     "observe-lang-go/internal/instrument/instrument.go#terminatesSwitchBody",
-    "observe-lang-go/internal/instrument/instrument.go#walkStmts",
-    "observe-lang-go/internal/instrument/instrument_test.go#TestBackupRootAutoInferAndRestore",
-    "observe-lang-go/internal/instrument/instrument_test.go#TestBlockingReturnSingleRecv",
-    "observe-lang-go/internal/instrument/instrument_test.go#TestCollectGoFilesSkips",
-    "observe-lang-go/internal/instrument/instrument_test.go#TestDeepCapture",
-    "observe-lang-go/internal/instrument/instrument_test.go#TestDryRunNoWrite",
-    "observe-lang-go/internal/instrument/instrument_test.go#TestFuncDeclName_RecvAndInit",
-    "observe-lang-go/internal/instrument/instrument_test.go#TestIdempotent",
-    "observe-lang-go/internal/instrument/instrument_test.go#TestInstrumentFile_EnterExitIO",
-    "observe-lang-go/internal/instrument/instrument_test.go#TestInstrument_MethodRecvInProbeName",
-    "observe-lang-go/internal/instrument/instrument_test.go#TestInstrument_TwoInitsDistinct",
-    "observe-lang-go/internal/instrument/instrument_test.go#TestMultiFunctionInjectSyntaxPreserved",
-    "observe-lang-go/internal/instrument/instrument_test.go#TestNamedReturnExitUsesDefer",
-    "observe-lang-go/internal/instrument/instrument_test.go#TestRecvTypeName",
-    "observe-lang-go/internal/instrument/instrument_test.go#TestRestoreInstrumented",
-    "observe-lang-go/internal/instrument/terminates_test.go#TestInstrumentTerminalFormsCompile",
-    "observe-lang-go/internal/instrument/terminates_test.go#lastStmtTerminates"
+    "observe-lang-go/internal/instrument/instrument.go#walkStmts"
   ]
 }

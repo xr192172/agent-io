@@ -1,0 +1,41 @@
+{
+  "//": "Design DB —— sleep.go（★ 全量、与实际 DB 同构；从 design/agent-memory.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/agent-memory.dsl.json",
+  "path": "sleep.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "HebbianRecord",
+      "kind": "type",
+      "signature": "HebbianRecord()"
+    },
+    {
+      "name": "PromotionRecord",
+      "kind": "type",
+      "signature": "PromotionRecord()"
+    },
+    {
+      "name": "NremReplay",
+      "kind": "type",
+      "signature": "NremReplay()"
+    },
+    {
+      "name": "PendingRefineRecord",
+      "kind": "type",
+      "signature": "PendingRefineRecord()"
+    },
+    {
+      "name": "DreamEntry",
+      "kind": "type",
+      "signature": "DreamEntry()"
+    },
+    {
+      "name": "judgeResult",
+      "kind": "type",
+      "signature": "judgeResult()"
+    }
+  ]
+}

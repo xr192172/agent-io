@@ -1,0 +1,171 @@
+{
+  "//": "Design DB —— bridge/test-bridge.mjs（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "bridge/test-bridge.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "sleep",
+      "kind": "const",
+      "signature": "const sleep = (ms) => new Promise((r) => setTimeout(r, ms))"
+    },
+    {
+      "name": "passed",
+      "kind": "const",
+      "signature": "const passed = 0"
+    },
+    {
+      "name": "results",
+      "kind": "const",
+      "signature": "const results = []"
+    },
+    {
+      "name": "HUB_PORT",
+      "kind": "const",
+      "signature": "const HUB_PORT = 15981"
+    },
+    {
+      "name": "DSH_PORT",
+      "kind": "const",
+      "signature": "const DSH_PORT = 15982"
+    },
+    {
+      "name": "hub",
+      "kind": "const",
+      "signature": "const hub = startMockHub(HUB_PORT)"
+    },
+    {
+      "name": "dsh",
+      "kind": "const",
+      "signature": "const dsh = startMockDsh(DSH_PORT)"
+    },
+    {
+      "name": "tmp",
+      "kind": "const",
+      "signature": "const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'bridge-test-'))"
+    },
+    {
+      "name": "journalRoot",
+      "kind": "const",
+      "signature": "const journalRoot = path.join(tmp, 'sessions')"
+    },
+    {
+      "name": "sid",
+      "kind": "const",
+      "signature": "const sid = 'sess-test'"
+    },
+    {
+      "name": "journalFile",
+      "kind": "const",
+      "signature": "const journalFile = path.join(journalRoot, 'p1', sid, 'session.jsonl')"
+    },
+    {
+      "name": "writeJournal",
+      "kind": "const",
+      "signature": "const writeJournal = (recs) => fs.writeFileSync(journalFile, recs.map((r) => J…"
+    },
+    {
+      "name": "bridge",
+      "kind": "const",
+      "signature": "const bridge = createBridge({ hub: `ws://127.0.0.1:${HUB_PORT}/ws`, role…"
+    },
+    {
+      "name": "waitWelcome",
+      "kind": "const",
+      "signature": "const waitWelcome = () => new Promise((r, j) => { const t0 = Date.now() const…"
+    },
+    {
+      "name": "hello",
+      "kind": "const",
+      "signature": "const hello = hub.state.messages.find((m) => m.type === 'session.hello')"
+    },
+    {
+      "name": "before",
+      "kind": "const",
+      "signature": "const before = dsh.state.prompts.length"
+    },
+    {
+      "name": "p",
+      "kind": "const",
+      "signature": "const p = dsh.state.prompts[before]"
+    },
+    {
+      "name": "ack",
+      "kind": "const",
+      "signature": "const ack = hub.state.messages.find((m) => m.type === 'event.notice' …"
+    },
+    {
+      "name": "byType",
+      "kind": "const",
+      "signature": "const byType = (t) => hub.state.messages.filter((m) => m.type === t)"
+    },
+    {
+      "name": "tc",
+      "kind": "const",
+      "signature": "const tc = byType('event.tool_call').at(-1)"
+    },
+    {
+      "name": "tr",
+      "kind": "const",
+      "signature": "const tr = byType('event.tool_result').at(-1)"
+    },
+    {
+      "name": "msg",
+      "kind": "const",
+      "signature": "const msg = byType('event.message').at(-1)"
+    },
+    {
+      "name": "td",
+      "kind": "const",
+      "signature": "const td = byType('event.turn_done').at(-1)"
+    },
+    {
+      "name": "rp",
+      "kind": "const",
+      "signature": "const rp = bridge.permissionRequest({ tool_name: 'dsh.swap', tool_ar…"
+    },
+    {
+      "name": "req",
+      "kind": "const",
+      "signature": "const req = hub.state.messages.filter((m) => m.type === 'permission.r…"
+    },
+    {
+      "name": "resp",
+      "kind": "const",
+      "signature": "const resp = await rp"
+    },
+    {
+      "name": "short",
+      "kind": "const",
+      "signature": "const short = createBridge({ hub: `ws://127.0.0.1:${HUB_PORT}/ws`, role…"
+    },
+    {
+      "name": "rejected",
+      "kind": "const",
+      "signature": "const rejected = hub.state.messages.filter((m) => m.type === 'event.notice…"
+    },
+    {
+      "name": "valid",
+      "kind": "const",
+      "signature": "const valid = '# 交接包 · 修测试\\n- depth: 1\\n- from: executor-alpha@1\\n- to:…"
+    },
+    {
+      "name": "hub2",
+      "kind": "const",
+      "signature": "const hub2 = startMockHub(HUB_PORT)"
+    },
+    {
+      "name": "t0",
+      "kind": "const",
+      "signature": "const t0 = Date.now()"
+    },
+    {
+      "name": "recs",
+      "kind": "const",
+      "signature": "const recs = readJournal(findJournalFile(journalRoot, sid))"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "//": "Design DB —— packages/key-pool-proxy/src/index.ts（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/key-pool-proxy/src/index.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "name",
+      "kind": "const",
+      "signature": "const name = 'key-pool-proxy'"
+    },
+    {
+      "name": "inject",
+      "kind": "const",
+      "signature": "const inject = []"
+    },
+    {
+      "name": "Config",
+      "kind": "interface",
+      "signature": "Config()"
+    }
+  ]
+}

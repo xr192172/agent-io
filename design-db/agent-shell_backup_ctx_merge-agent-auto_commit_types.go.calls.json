@@ -1,0 +1,46 @@
+{
+  "//": "Design DB —— agent-shell_backup_ctx_merge/agent/auto_commit_types.go（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell_backup_ctx_merge/agent/auto_commit_types.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "AutoCommitConfig",
+      "kind": "type",
+      "signature": "AutoCommitConfig()"
+    },
+    {
+      "name": "RawLoggingConfig",
+      "kind": "type",
+      "signature": "RawLoggingConfig()"
+    },
+    {
+      "name": "IntegrationConfig",
+      "kind": "type",
+      "signature": "IntegrationConfig()"
+    },
+    {
+      "name": "SmartThresholdConfig",
+      "kind": "type",
+      "signature": "SmartThresholdConfig()"
+    },
+    {
+      "name": "CacheConfig",
+      "kind": "type",
+      "signature": "CacheConfig()"
+    },
+    {
+      "name": "RawEntry",
+      "kind": "type",
+      "signature": "RawEntry()"
+    },
+    {
+      "name": "RawLogger",
+      "kind": "type",
+      "signature": "RawLogger()"
+    }
+  ]
+}

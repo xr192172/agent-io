@@ -62,7 +62,7 @@
       "name": "upgradeScanData",
       "kind": "function",
       "line": 200,
-      "signature": "upgradeScanData(res: ContractScanResult,\r\n  gates: StaticGateResult[] = [],\r\n  dynamicGates: DynamicGateResult[] = []): Record<string, unknown>"
+      "signature": "upgradeScanData(res: ContractScanResult,\n  gates: StaticGateResult[] = [],\n  dynamicGates: DynamicGateResult[] = []): Record<string, unknown>"
     },
     {
       "name": "UpgradeScanResult",

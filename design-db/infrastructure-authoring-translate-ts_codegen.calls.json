@@ -259,6 +259,7 @@
     }
   ],
   "reverse_calls": [
+    "src/infrastructure/authoring/translate/book.ts#renderTsSignature",
     "src/infrastructure/authoring/translate/pairs.ts#translateGoToTs",
     "src/infrastructure/authoring/translate/project.ts#assembleModule",
     "src/infrastructure/authoring/translate/receipt.ts#typeUnknowns",

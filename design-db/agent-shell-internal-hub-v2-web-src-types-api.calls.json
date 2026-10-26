@@ -1,0 +1,221 @@
+{
+  "//": "Design DB —— agent-shell/internal/hub/v2/web/src/types/api.ts（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell/internal/hub/v2/web/src/types/api.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "Contact",
+      "kind": "interface",
+      "signature": "Contact()"
+    },
+    {
+      "name": "UIConfig",
+      "kind": "interface",
+      "signature": "UIConfig()"
+    },
+    {
+      "name": "BrainStatus",
+      "kind": "interface",
+      "signature": "BrainStatus()"
+    },
+    {
+      "name": "SessionSummary",
+      "kind": "interface",
+      "signature": "SessionSummary()"
+    },
+    {
+      "name": "SessionDetail",
+      "kind": "interface",
+      "signature": "SessionDetail()"
+    },
+    {
+      "name": "TranscriptEntry",
+      "kind": "interface",
+      "signature": "TranscriptEntry()"
+    },
+    {
+      "name": "TranscriptMessage",
+      "kind": "interface",
+      "signature": "TranscriptMessage()"
+    },
+    {
+      "name": "Friend",
+      "kind": "interface",
+      "signature": "Friend()"
+    },
+    {
+      "name": "Theme",
+      "kind": "interface",
+      "signature": "Theme()"
+    },
+    {
+      "name": "WorkbenchSummary",
+      "kind": "interface",
+      "signature": "WorkbenchSummary()"
+    },
+    {
+      "name": "WorkbenchDetail",
+      "kind": "interface",
+      "signature": "WorkbenchDetail()"
+    },
+    {
+      "name": "Task",
+      "kind": "interface",
+      "signature": "Task()"
+    },
+    {
+      "name": "EventEntry",
+      "kind": "interface",
+      "signature": "EventEntry()"
+    },
+    {
+      "name": "ApprovalOption",
+      "kind": "interface",
+      "signature": "ApprovalOption()"
+    },
+    {
+      "name": "Approval",
+      "kind": "interface",
+      "signature": "Approval()"
+    },
+    {
+      "name": "StackFrame",
+      "kind": "interface",
+      "signature": "StackFrame()"
+    },
+    {
+      "name": "StackOp",
+      "kind": "type",
+      "signature": "StackOp()"
+    },
+    {
+      "name": "LlmTaskDay",
+      "kind": "interface",
+      "signature": "LlmTaskDay()"
+    },
+    {
+      "name": "LlmDay",
+      "kind": "interface",
+      "signature": "LlmDay()"
+    },
+    {
+      "name": "ToolNameDay",
+      "kind": "interface",
+      "signature": "ToolNameDay()"
+    },
+    {
+      "name": "ToolDay",
+      "kind": "interface",
+      "signature": "ToolDay()"
+    },
+    {
+      "name": "BrainDay",
+      "kind": "interface",
+      "signature": "BrainDay()"
+    },
+    {
+      "name": "DailyReport",
+      "kind": "interface",
+      "signature": "DailyReport()"
+    },
+    {
+      "name": "DailyReportResult",
+      "kind": "interface",
+      "signature": "DailyReportResult()"
+    },
+    {
+      "name": "ApiResponse",
+      "kind": "interface",
+      "signature": "ApiResponse()"
+    },
+    {
+      "name": "IntakeRequest",
+      "kind": "interface",
+      "signature": "IntakeRequest()"
+    },
+    {
+      "name": "IntakeResponse",
+      "kind": "interface",
+      "signature": "IntakeResponse()"
+    },
+    {
+      "name": "LLMTaskTotals",
+      "kind": "interface",
+      "signature": "LLMTaskTotals()"
+    },
+    {
+      "name": "LLMUsageRecord",
+      "kind": "interface",
+      "signature": "LLMUsageRecord()"
+    },
+    {
+      "name": "LLMUsageSnapshot",
+      "kind": "interface",
+      "signature": "LLMUsageSnapshot()"
+    },
+    {
+      "name": "RouterPoolConfig",
+      "kind": "interface",
+      "signature": "RouterPoolConfig()"
+    },
+    {
+      "name": "RouterRouteConfig",
+      "kind": "interface",
+      "signature": "RouterRouteConfig()"
+    },
+    {
+      "name": "RouterConfig",
+      "kind": "interface",
+      "signature": "RouterConfig()"
+    },
+    {
+      "name": "TemplateSummary",
+      "kind": "interface",
+      "signature": "TemplateSummary()"
+    },
+    {
+      "name": "ContextMetricPoint",
+      "kind": "interface",
+      "signature": "ContextMetricPoint()"
+    },
+    {
+      "name": "ContextMetricsSummary",
+      "kind": "interface",
+      "signature": "ContextMetricsSummary()"
+    },
+    {
+      "name": "ContextMetricsSnapshot",
+      "kind": "interface",
+      "signature": "ContextMetricsSnapshot()"
+    },
+    {
+      "name": "ToolStat",
+      "kind": "interface",
+      "signature": "ToolStat()"
+    },
+    {
+      "name": "TestMetricPoint",
+      "kind": "interface",
+      "signature": "TestMetricPoint()"
+    },
+    {
+      "name": "ErrorTypeEntry",
+      "kind": "interface",
+      "signature": "ErrorTypeEntry()"
+    },
+    {
+      "name": "TestMetricsSummary",
+      "kind": "interface",
+      "signature": "TestMetricsSummary()"
+    },
+    {
+      "name": "TestMetricsSnapshot",
+      "kind": "interface",
+      "signature": "TestMetricsSnapshot()"
+    }
+  ]
+}

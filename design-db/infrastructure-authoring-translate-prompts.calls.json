@@ -13,13 +13,13 @@
     {
       "name": "buildHolePrompts",
       "kind": "function",
-      "line": 38,
+      "line": 41,
       "signature": "buildHolePrompts(units: TransUnit[]): string[]"
     },
     {
       "name": "BatchUnitView",
       "kind": "interface",
-      "line": 43,
+      "line": 46,
       "signature": "BatchUnitView()",
       "members": [
         {
@@ -45,13 +45,19 @@
           "type": ": string[]",
           "optional": false,
           "member_kind": "property"
+        },
+        {
+          "name": "bookFacts",
+          "type": ": string[]",
+          "optional": true,
+          "member_kind": "property"
         }
       ]
     },
     {
       "name": "buildBatchFillPrompt",
       "kind": "function",
-      "line": 51,
+      "line": 56,
       "signature": "buildBatchFillPrompt(views: BatchUnitView[], projectNote?: string): string"
     }
   ],

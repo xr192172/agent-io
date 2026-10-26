@@ -1,0 +1,46 @@
+{
+  "//": "Design DB —— agent-shell/internal/external/a2a/protocol.go（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell/internal/external/a2a/protocol.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "TaskState",
+      "kind": "type",
+      "signature": "TaskState()"
+    },
+    {
+      "name": "Task",
+      "kind": "type",
+      "signature": "Task()"
+    },
+    {
+      "name": "Artifact",
+      "kind": "type",
+      "signature": "Artifact()"
+    },
+    {
+      "name": "Part",
+      "kind": "type",
+      "signature": "Part()"
+    },
+    {
+      "name": "AgentCard",
+      "kind": "type",
+      "signature": "AgentCard()"
+    },
+    {
+      "name": "Capabilities",
+      "kind": "type",
+      "signature": "Capabilities()"
+    },
+    {
+      "name": "Skill",
+      "kind": "type",
+      "signature": "Skill()"
+    }
+  ]
+}

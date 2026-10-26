@@ -1,0 +1,31 @@
+{
+  "//": "Design DB —— agent-shell/internal/hub/v2/brain_registry.go（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell/internal/hub/v2/brain_registry.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "BrainRegistry",
+      "kind": "type",
+      "signature": "BrainRegistry()"
+    },
+    {
+      "name": "brainSnapshot",
+      "kind": "type",
+      "signature": "brainSnapshot()"
+    },
+    {
+      "name": "ErrBrainAlreadyRegistered",
+      "kind": "type",
+      "signature": "ErrBrainAlreadyRegistered()"
+    },
+    {
+      "name": "ErrBrainNotFound",
+      "kind": "type",
+      "signature": "ErrBrainNotFound()"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "//": "Design DB —— sleep_rem.go（★ 全量、与实际 DB 同构；从 design/agent-memory.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/agent-memory.dsl.json",
+  "path": "sleep_rem.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "RemReplay",
+      "kind": "type",
+      "signature": "RemReplay()"
+    }
+  ]
+}

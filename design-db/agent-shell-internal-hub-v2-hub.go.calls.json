@@ -1,0 +1,41 @@
+{
+  "//": "Design DB —— agent-shell/internal/hub/v2/hub.go（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell/internal/hub/v2/hub.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "HubConfig",
+      "kind": "type",
+      "signature": "HubConfig()"
+    },
+    {
+      "name": "Hub",
+      "kind": "type",
+      "signature": "Hub()"
+    },
+    {
+      "name": "ToolJournalQuery",
+      "kind": "type",
+      "signature": "ToolJournalQuery()"
+    },
+    {
+      "name": "connCloser",
+      "kind": "type",
+      "signature": "connCloser()"
+    },
+    {
+      "name": "charsetWriter",
+      "kind": "type",
+      "signature": "charsetWriter()"
+    },
+    {
+      "name": "fragmentCollector",
+      "kind": "type",
+      "signature": "fragmentCollector()"
+    }
+  ]
+}

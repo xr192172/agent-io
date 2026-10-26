@@ -1,0 +1,141 @@
+{
+  "//": "Design DB —— evals/pilot/rename-target/check.mjs（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "evals/pilot/rename-target/check.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "HERE_DIR",
+      "kind": "const",
+      "signature": "const HERE_DIR = path.dirname(fileURLToPath(import.meta.url))"
+    },
+    {
+      "name": "_resolved",
+      "kind": "const",
+      "signature": "const _resolved = resolveRepoArgv()"
+    },
+    {
+      "name": "REPO",
+      "kind": "const",
+      "signature": "const REPO = path.resolve(_resolved.repo ?? '')"
+    },
+    {
+      "name": "HERE",
+      "kind": "const",
+      "signature": "const HERE = path.join(REPO, 'evals', 'pilot', 'rename-target')"
+    },
+    {
+      "name": "_missing",
+      "kind": "const",
+      "signature": "const _missing = ['math.js', 'store.js', 'index.js'].filter((f) => !fs.exi…"
+    },
+    {
+      "name": "OLD",
+      "kind": "const",
+      "signature": "const OLD = 'computeHash'"
+    },
+    {
+      "name": "NEW",
+      "kind": "const",
+      "signature": "const NEW = 'digestOf'"
+    },
+    {
+      "name": "NS",
+      "kind": "const",
+      "signature": "const NS = \"'computeHash-v1'\""
+    },
+    {
+      "name": "BASELINE",
+      "kind": "const",
+      "signature": "const BASELINE = ['h=1a47e90b', 'd=computeHash-v1/1a47e90b', 'put/get=one@…"
+    },
+    {
+      "name": "problems",
+      "kind": "const",
+      "signature": "const problems = []"
+    },
+    {
+      "name": "ok",
+      "kind": "const",
+      "signature": "const ok = []"
+    },
+    {
+      "name": "read",
+      "kind": "const",
+      "signature": "const read = (f) => fs.readFileSync(path.join(HERE, f), 'utf8')"
+    },
+    {
+      "name": "stripStrings",
+      "kind": "const",
+      "signature": "const stripStrings = (s) => s.replace(/'(?:[^'\\\\]|\\\\.)*'/g, \"''\").replace(/\"(?…"
+    },
+    {
+      "name": "countIdent",
+      "kind": "const",
+      "signature": "const countIdent = (s, id) => (stripStrings(s).match(new RegExp(`\\\\b${id}\\\\b…"
+    },
+    {
+      "name": "mod",
+      "kind": "const",
+      "signature": "const mod = await import(pathToFileURL(path.join(HERE, 'index.js')).h…"
+    },
+    {
+      "name": "got",
+      "kind": "const",
+      "signature": "const got = mod.selftestLines().join('\\n').trim()"
+    },
+    {
+      "name": "math",
+      "kind": "const",
+      "signature": "const math = read('math.js')"
+    },
+    {
+      "name": "store",
+      "kind": "const",
+      "signature": "const store = read('store.js')"
+    },
+    {
+      "name": "index",
+      "kind": "const",
+      "signature": "const index = read('index.js')"
+    },
+    {
+      "name": "checks2",
+      "kind": "const",
+      "signature": "const checks2 = [ ['math.js 导出新名', /export\\s+function\\s+digestOf\\s*\\(/.te…"
+    },
+    {
+      "name": "cStore",
+      "kind": "const",
+      "signature": "const cStore = countIdent(store, OLD)"
+    },
+    {
+      "name": "cIndex",
+      "kind": "const",
+      "signature": "const cIndex = countIdent(index, OLD)"
+    },
+    {
+      "name": "keepLocalDecl",
+      "kind": "const",
+      "signature": "const keepLocalDecl = /const\\s+computeHash\\s*=\\s*'legacy'/.test(math)"
+    },
+    {
+      "name": "keepLocalUse",
+      "kind": "const",
+      "signature": "const keepLocalUse = /return\\s+computeHash\\s*\\+/.test(math)"
+    },
+    {
+      "name": "headerUpdated",
+      "kind": "const",
+      "signature": "const headerUpdated = /^\\/\\/[^\\n]*`digestOf`/.test(math) && !/^\\/\\/[^\\n]*`compu…"
+    },
+    {
+      "name": "problems3",
+      "kind": "const",
+      "signature": "const problems3 = []"
+    }
+  ]
+}

@@ -56,9 +56,6 @@
   ],
   "reverse_calls": [
     "observe-lang-go/internal/instrument/contract.go#PackageFilter",
-    "observe-lang-go/internal/instrument/contract_test.go#TestMatchProbe",
-    "observe-lang-go/internal/instrument/contract_test.go#TestMatchProbe_ExploreNil",
-    "observe-lang-go/internal/instrument/contract_test.go#TestPackageFilter",
     "observe-lang-go/internal/instrument/instrument.go#InstrumentFile",
     "observe-lang-go/internal/instrument/instrument.go#processFunction",
     "observe-lang-go/internal/instrument/instrument.go#walkStmts"

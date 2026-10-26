@@ -97,7 +97,6 @@
   ],
   "reverse_calls": [
     "observe-lang-go/probe/export.go#exportIncident",
-    "observe-lang-go/probe/tiered.go#NewTiered",
-    "observe-lang-go/probe/tiered_test.go#TestExportGateQuota"
+    "observe-lang-go/probe/tiered.go#NewTiered"
   ]
 }

@@ -1,0 +1,36 @@
+{
+  "//": "Design DB —— gate_policy.go（★ 全量、与实际 DB 同构；从 design/agent-memory.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/agent-memory.dsl.json",
+  "path": "gate_policy.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "GateVocabulary",
+      "kind": "type",
+      "signature": "GateVocabulary()"
+    },
+    {
+      "name": "GatePolicy",
+      "kind": "type",
+      "signature": "GatePolicy()"
+    },
+    {
+      "name": "contractGatePolicy",
+      "kind": "type",
+      "signature": "contractGatePolicy()"
+    },
+    {
+      "name": "GateReceipt",
+      "kind": "type",
+      "signature": "GateReceipt()"
+    },
+    {
+      "name": "GateTransitionResult",
+      "kind": "type",
+      "signature": "GateTransitionResult()"
+    }
+  ]
+}

@@ -11,9 +11,15 @@
       "signature": "FaceId()"
     },
     {
+      "name": "MINIMAL_FACE_TOOLS",
+      "kind": "const",
+      "line": 59,
+      "signature": "const MINIMAL_FACE_TOOLS = [ 'edit_dsl', 'get_dsl', 'edit_code', 'consistency_check'…"
+    },
+    {
       "name": "ToolFaceView",
       "kind": "interface",
-      "line": 48,
+      "line": 69,
       "signature": "ToolFaceView()",
       "members": [
         {
@@ -51,25 +57,25 @@
     {
       "name": "uniq",
       "kind": "const",
-      "line": 60,
+      "line": 81,
       "signature": "const uniq = (xs: readonly string[]): string[] => [...new Set(xs)].sort()"
     },
     {
       "name": "facesOf",
       "kind": "function",
-      "line": 68,
+      "line": 89,
       "signature": "facesOf(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): ToolFaceView[]"
     },
     {
       "name": "mcpFace",
       "kind": "function",
-      "line": 112,
-      "signature": "mcpFace(): 'all' | 'composed'"
+      "line": 150,
+      "signature": "mcpFace(): 'all' | 'composed' | 'minimal'"
     },
     {
       "name": "renderFaces",
       "kind": "function",
-      "line": 116,
+      "line": 157,
       "signature": "renderFaces(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): string"
     }
   ],
@@ -88,6 +94,10 @@
     {
       "from": "src/application/meta/registry/tool_faces.ts#renderFaces",
       "to": "src/application/meta/registry/tool_faces.ts#facesOf"
+    },
+    {
+      "from": "src/application/meta/registry/tool_faces.ts#renderFaces",
+      "to": "src/application/meta/registry/tool_faces.ts#mcpFace"
     },
     {
       "from": "src/application/meta/registry/tool_faces.ts#renderFaces",

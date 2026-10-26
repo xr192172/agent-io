@@ -1,0 +1,31 @@
+{
+  "//": "Design DB —— packages/capability-bridge/src/notice.ts（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/capability-bridge/src/notice.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "CapChange",
+      "kind": "interface",
+      "signature": "CapChange()"
+    },
+    {
+      "name": "FoldState",
+      "kind": "interface",
+      "signature": "FoldState()"
+    },
+    {
+      "name": "initialFoldState",
+      "kind": "const",
+      "signature": "const initialFoldState = { foldedUpToSeq: -1, lastSnapshotHash: '' }"
+    },
+    {
+      "name": "FoldOutcome",
+      "kind": "type",
+      "signature": "FoldOutcome()"
+    }
+  ]
+}

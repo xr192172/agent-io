@@ -1,0 +1,56 @@
+{
+  "//": "Design DB —— packages/skill-tree/src/skill-tree.ts（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/skill-tree/src/skill-tree.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "MIN_FUZZY_TOKENS",
+      "kind": "const",
+      "signature": "const MIN_FUZZY_TOKENS = 2"
+    },
+    {
+      "name": "TIER2_JACCARD_GT",
+      "kind": "const",
+      "signature": "const TIER2_JACCARD_GT = 0.5"
+    },
+    {
+      "name": "TIER3_MIN_NORM_BYTES",
+      "kind": "const",
+      "signature": "const TIER3_MIN_NORM_BYTES = 20"
+    },
+    {
+      "name": "REJECTED_EDITS_MAX",
+      "kind": "const",
+      "signature": "const REJECTED_EDITS_MAX = 20"
+    },
+    {
+      "name": "ARCHIVE_SCORE_LT",
+      "kind": "const",
+      "signature": "const ARCHIVE_SCORE_LT = 0.1"
+    },
+    {
+      "name": "ARCHIVE_IDLE_MS",
+      "kind": "const",
+      "signature": "const ARCHIVE_IDLE_MS = 90 * 24 * 60 * 60 * 1000"
+    },
+    {
+      "name": "EvalReason",
+      "kind": "const",
+      "signature": "const EvalReason = { NoValidationSet: 'no validation set available', NoMatch…"
+    },
+    {
+      "name": "SkillTreeSnapshot",
+      "kind": "interface",
+      "signature": "SkillTreeSnapshot()"
+    },
+    {
+      "name": "SkillTree",
+      "kind": "class",
+      "signature": "SkillTree()"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "//": "Design DB —— packages/subagent-council/src/index.ts（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/subagent-council/src/index.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "name",
+      "kind": "const",
+      "signature": "const name = \"subagent-council\""
+    },
+    {
+      "name": "inject",
+      "kind": "const",
+      "signature": "const inject = [\"subagents\"]"
+    },
+    {
+      "name": "Config",
+      "kind": "const",
+      "signature": "const Config = z.object({ /** 启用哪个席位。首期只有 `architect`。 */ seat: z.string…"
+    },
+    {
+      "name": "LEGACY_ALIASES",
+      "kind": "const",
+      "signature": "const LEGACY_ALIASES = { architect: \"council-architect\", dev: \"council-dev\", rev…"
+    },
+    {
+      "name": "SEAT_PERSONAS",
+      "kind": "const",
+      "signature": "const SEAT_PERSONAS = Object.fromEntries( SEAT_DEFS.map((s) => [s.name, s.perso…"
+    },
+    {
+      "name": "SEAT_PROVIDER_NAMES",
+      "kind": "const",
+      "signature": "const SEAT_PROVIDER_NAMES = Object.fromEntries( SEAT_DEFS.map((s) => [s.name, s.name]…"
+    },
+    {
+      "name": "EVOLUTION_SEATS",
+      "kind": "const",
+      "signature": "const EVOLUTION_SEATS = SEAT_DEFS.map((s) => s.name).filter((n) => n.startsWith(\"…"
+    },
+    {
+      "name": "SEAT_DESCRIPTIONS",
+      "kind": "const",
+      "signature": "const SEAT_DESCRIPTIONS = Object.fromEntries( SEAT_DEFS.map((s) => [s.name, s.descr…"
+    },
+    {
+      "name": "SeatToolScope",
+      "kind": "type",
+      "signature": "SeatToolScope()"
+    },
+    {
+      "name": "READONLY_ALLOW",
+      "kind": "const",
+      "signature": "const READONLY_ALLOW = [ \"read\", \"glob\", \"grep\", \"read_image\", \"web_search\", \"as…"
+    },
+    {
+      "name": "SEAT_TOOL_SCOPE",
+      "kind": "const",
+      "signature": "const SEAT_TOOL_SCOPE = Object.fromEntries( SEAT_DEFS.map((s) => [s.name, s.tools…"
+    },
+    {
+      "name": "SeatProvider",
+      "kind": "class",
+      "signature": "SeatProvider()"
+    }
+  ]
+}

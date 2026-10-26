@@ -1,0 +1,66 @@
+{
+  "//": "Design DB —— packages/switchboard/test/gen-assembly.test.mjs（★ 全量、与实际 DB 同构；从 design/dsh-brain.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/dsh-brain.dsl.json",
+  "path": "packages/switchboard/test/gen-assembly.test.mjs",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "pass",
+      "kind": "const",
+      "signature": "const pass = 0"
+    },
+    {
+      "name": "fail",
+      "kind": "const",
+      "signature": "const fail = 0"
+    },
+    {
+      "name": "tmp",
+      "kind": "const",
+      "signature": "const tmp = mkdtempSync(join(tmpdir(), 'b2-genasm-'))"
+    },
+    {
+      "name": "y1",
+      "kind": "const",
+      "signature": "const y1 = renderAssemblyOverlay( { version: 'v1', pool: { enabled: …"
+    },
+    {
+      "name": "y2",
+      "kind": "const",
+      "signature": "const y2 = renderAssemblyOverlay({ version: 'v1', pool: { enabled: t…"
+    },
+    {
+      "name": "spec",
+      "kind": "const",
+      "signature": "const spec = resolveGenSpawnSpec({ file: join(tmp, 'gen-assembly.json'…"
+    },
+    {
+      "name": "specOtherGen",
+      "kind": "const",
+      "signature": "const specOtherGen = resolveGenSpawnSpec({ file: join(tmp, 'gen-assembly.json'…"
+    },
+    {
+      "name": "specNoProfile",
+      "kind": "const",
+      "signature": "const specNoProfile = resolveGenSpawnSpec({ file: join(tmp, 'no-profile.json'),…"
+    },
+    {
+      "name": "specMin",
+      "kind": "const",
+      "signature": "const specMin = resolveGenSpawnSpec({ file: undefined, genPort: 3045, gen…"
+    },
+    {
+      "name": "pj",
+      "kind": "const",
+      "signature": "const pj = projectAssembly({ file: join(tmp, 'gen-assembly.json'), c…"
+    },
+    {
+      "name": "pjMin",
+      "kind": "const",
+      "signature": "const pjMin = projectAssembly({ file: join(tmp, 'nope.json'), ctrlProfi…"
+    }
+  ]
+}

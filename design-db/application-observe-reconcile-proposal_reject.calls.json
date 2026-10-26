@@ -70,6 +70,14 @@
     },
     {
       "from": "src/application/observe/reconcile/proposal_reject.ts#rejectObserveProposal",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.get"
+    },
+    {
+      "from": "src/application/observe/reconcile/proposal_reject.ts#rejectObserveProposal",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.reject"
+    },
+    {
+      "from": "src/application/observe/reconcile/proposal_reject.ts#rejectObserveProposal",
       "to": "src/infrastructure/dictionary.ts#validateProjectRoot"
     }
   ],

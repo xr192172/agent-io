@@ -90,6 +90,10 @@
     {
       "from": "src/infrastructure/analysis/rename_symbol/languages/py.ts#analyzePythonSource",
       "to": "src/infrastructure/parse/loader.ts#getParser"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/py.ts#renamePythonSymbol",
+      "to": "src/infrastructure/source_write_port.ts#commitSourceWrite"
     }
   ],
   "expected_symbols": [

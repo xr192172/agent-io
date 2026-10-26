@@ -1074,6 +1074,7 @@
     }
   ],
   "reverse_calls": [
+    "src/application/dispatch.ts#dispatchWatch",
     "src/application/observe/runtime/watch_project_tool.ts#declareWatch",
     "src/application/observe/runtime/watch_project_tool.ts#doWork",
     "src/application/observe/runtime/watch_project_tool.ts#ensureObserveSink",
@@ -1085,6 +1086,7 @@
     "src/application/observe/runtime/watch_project_tool.ts#stopWatch",
     "src/application/observe/runtime/watch_project_tool.ts#watchProjectTool",
     "src/application/observe/runtime/watch_project_tool.ts#watchProjectToolCore",
+    "src/presentation/daemon/daemon.ts#main",
     "src/presentation/http/serve.ts#startServer",
     "src/presentation/mcp/server.ts#main",
     "src/presentation/mcp/server.ts#runAutoWatchHook"

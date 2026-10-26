@@ -1,0 +1,41 @@
+{
+  "//": "Design DB —— agent-shell_backup_ctx_merge/context/model_caps.go（★ 全量、与实际 DB 同构；从 design/ai-base.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/ai-base.dsl.json",
+  "path": "agent-shell_backup_ctx_merge/context/model_caps.go",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "MediaSupport",
+      "kind": "type",
+      "signature": "MediaSupport()"
+    },
+    {
+      "name": "MediaCapabilities",
+      "kind": "type",
+      "signature": "MediaCapabilities()"
+    },
+    {
+      "name": "ModelCapabilities",
+      "kind": "type",
+      "signature": "ModelCapabilities()"
+    },
+    {
+      "name": "CacheBoundary",
+      "kind": "type",
+      "signature": "CacheBoundary()"
+    },
+    {
+      "name": "DefaultCacheBoundary",
+      "kind": "type",
+      "signature": "DefaultCacheBoundary()"
+    },
+    {
+      "name": "AnthropicCacheBoundary",
+      "kind": "type",
+      "signature": "AnthropicCacheBoundary()"
+    }
+  ]
+}
