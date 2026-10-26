@@ -5,27 +5,5 @@
   "path": "tool_faces.ts",
   "symbols": [],
   "imports": [],
-  "calls": [],
-  "expected_symbols": [
-    {
-      "name": "FaceId",
-      "kind": "type",
-      "signature": "FaceId()"
-    },
-    {
-      "name": "MINIMAL_FACE_TOOLS",
-      "kind": "const",
-      "signature": "const MINIMAL_FACE_TOOLS = [ 'edit_dsl', 'get_dsl', 'edit_code', 'consistency_check'…"
-    },
-    {
-      "name": "ToolFaceView",
-      "kind": "interface",
-      "signature": "ToolFaceView()"
-    },
-    {
-      "name": "uniq",
-      "kind": "const",
-      "signature": "const uniq = (xs: readonly string[]): string[] => [...new Set(xs)].sort()"
-    }
-  ]
+  "calls": []
 }

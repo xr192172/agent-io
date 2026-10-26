@@ -5,22 +5,5 @@
   "path": "collect_functions.ts",
   "symbols": [],
   "imports": [],
-  "calls": [],
-  "expected_symbols": [
-    {
-      "name": "EntryKind",
-      "kind": "type",
-      "signature": "EntryKind()"
-    },
-    {
-      "name": "FunctionEntry",
-      "kind": "interface",
-      "signature": "FunctionEntry()"
-    },
-    {
-      "name": "FunctionRegistry",
-      "kind": "interface",
-      "signature": "FunctionRegistry()"
-    }
-  ]
+  "calls": []
 }

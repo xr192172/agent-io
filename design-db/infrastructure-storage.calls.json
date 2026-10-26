@@ -1300,6 +1300,7 @@
     "src/infrastructure/storage_overlay.ts#mergeDesignLayer",
     "src/infrastructure/storage_overlay.ts#saveOverlay",
     "src/infrastructure/task_history.ts#getTaskHistoryFile",
+    "src/infrastructure/task_history.ts#getTaskHistoryJsonlFile",
     "src/presentation/daemon/daemon.ts#dslWriteHandler",
     "src/presentation/http/serve.ts#handleApiFeatureDsl",
     "src/presentation/http/serve.ts#handleApiFeatureMeta",

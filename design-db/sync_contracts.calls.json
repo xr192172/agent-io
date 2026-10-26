@@ -5,17 +5,5 @@
   "path": "sync_contracts.ts",
   "symbols": [],
   "imports": [],
-  "calls": [],
-  "expected_symbols": [
-    {
-      "name": "SyncContractsInput",
-      "kind": "interface",
-      "signature": "SyncContractsInput()"
-    },
-    {
-      "name": "SyncContractsResult",
-      "kind": "interface",
-      "signature": "SyncContractsResult()"
-    }
-  ]
+  "calls": []
 }

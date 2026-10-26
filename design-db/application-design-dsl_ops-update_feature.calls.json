@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/application/design/dsl_ops/update_feature.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/design-canvas.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/design/dsl_ops/update_feature.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/agent-io.dsl.json, design/design-canvas.dsl.json, design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/design/dsl_ops/update_feature.ts",
   "symbols": [
     {
@@ -189,13 +189,13 @@
     {
       "name": "normRel",
       "kind": "function",
-      "line": 880,
+      "line": 881,
       "signature": "normRel(s: string): string"
     },
     {
       "name": "DecisionTarget",
       "kind": "interface",
-      "line": 885,
+      "line": 886,
       "signature": "DecisionTarget()",
       "members": [
         {
@@ -215,55 +215,55 @@
     {
       "name": "findDecisionTargetNode",
       "kind": "function",
-      "line": 903,
+      "line": 904,
       "signature": "findDecisionTargetNode(dsl: DesignDSL, raw: string): DecisionTarget['node'] | undefined"
     },
     {
       "name": "resolveDecisionTarget",
       "kind": "function",
-      "line": 922,
+      "line": 923,
       "signature": "resolveDecisionTarget(dsl: DesignDSL, id: string | undefined, data: Record<string, unknown>): DecisionTarget"
     },
     {
       "name": "parseAlternatives",
       "kind": "function",
-      "line": 942,
+      "line": 943,
       "signature": "parseAlternatives(v: unknown): { option: string; rejected_because: string }[]"
     },
     {
       "name": "parseDissent",
       "kind": "function",
-      "line": 961,
+      "line": 962,
       "signature": "parseDissent(v: unknown): DecisionDissent[]"
     },
     {
       "name": "applyDecisionOp",
       "kind": "function",
-      "line": 983,
+      "line": 984,
       "signature": "applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>, agent?: string, changeReason?: string): EditResult"
     },
     {
       "name": "applyNodeOp",
       "kind": "function",
-      "line": 1186,
+      "line": 1187,
       "signature": "applyNodeOp(feature: string, op: CheckedOperation<FeatureOperation>, agent?: string): EditResult"
     },
     {
       "name": "applyEdgeOp",
       "kind": "function",
-      "line": 1220,
+      "line": 1221,
       "signature": "applyEdgeOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult"
     },
     {
       "name": "applyFileOp",
       "kind": "function",
-      "line": 1255,
+      "line": 1256,
       "signature": "applyFileOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult"
     },
     {
       "name": "applyApiOp",
       "kind": "function",
-      "line": 1279,
+      "line": 1280,
       "signature": "applyApiOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult"
     }
   ],

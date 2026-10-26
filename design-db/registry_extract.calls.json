@@ -5,22 +5,5 @@
   "path": "registry_extract.ts",
   "symbols": [],
   "imports": [],
-  "calls": [],
-  "expected_symbols": [
-    {
-      "name": "RegistryTool",
-      "kind": "interface",
-      "signature": "RegistryTool()"
-    },
-    {
-      "name": "RegistryExtractResult",
-      "kind": "interface",
-      "signature": "RegistryExtractResult()"
-    },
-    {
-      "name": "extractImportMap",
-      "kind": "const",
-      "signature": "const extractImportMap = parseRelativeNamedImportMap"
-    }
-  ]
+  "calls": []
 }

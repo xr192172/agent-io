@@ -5,22 +5,5 @@
   "path": "cli_extract.ts",
   "symbols": [],
   "imports": [],
-  "calls": [],
-  "expected_symbols": [
-    {
-      "name": "CliCommand",
-      "kind": "interface",
-      "signature": "CliCommand()"
-    },
-    {
-      "name": "CliExtractResult",
-      "kind": "interface",
-      "signature": "CliExtractResult()"
-    },
-    {
-      "name": "extractImportMap",
-      "kind": "const",
-      "signature": "const extractImportMap = parseRelativeNamedImportMap"
-    }
-  ]
+  "calls": []
 }

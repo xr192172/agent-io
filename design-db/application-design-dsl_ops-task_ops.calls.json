@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/application/design/dsl_ops/task_ops.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/design-canvas.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/design/dsl_ops/task_ops.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/agent-io.dsl.json, design/design-canvas.dsl.json, design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/design/dsl_ops/task_ops.ts",
   "symbols": [
     {
@@ -479,25 +479,25 @@
     {
       "name": "applyTaskOp",
       "kind": "function",
-      "line": 2479,
+      "line": 2558,
       "signature": "applyTaskOp(feature: string,\n  op: TaskOpRequest,\n  agent?: string,): Promise<EditResult>"
     },
     {
       "name": "publishFromDiff",
       "kind": "function",
-      "line": 2555,
+      "line": 2634,
       "signature": "publishFromDiff(feature: string, nodeId: string): EditResult"
     },
     {
       "name": "voidTask",
       "kind": "function",
-      "line": 2590,
+      "line": 2669,
       "signature": "voidTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "TodoHit",
       "kind": "interface",
-      "line": 2644,
+      "line": 2723,
       "signature": "TodoHit()",
       "members": [
         {
@@ -523,79 +523,79 @@
     {
       "name": "findTodoCard",
       "kind": "function",
-      "line": 2654,
+      "line": 2733,
       "signature": "findTodoCard(feature: string, action: string, id: string): TodoHit"
     },
     {
       "name": "assertNoIdentityChange",
       "kind": "function",
-      "line": 2672,
+      "line": 2751,
       "signature": "assertNoIdentityChange(action: string, data: Record<string, unknown>): void"
     },
     {
       "name": "updateTodoCard",
       "kind": "function",
-      "line": 2693,
+      "line": 2772,
       "signature": "updateTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "retireTodoCard",
       "kind": "function",
-      "line": 2743,
+      "line": 2822,
       "signature": "retireTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "deleteTodoCard",
       "kind": "function",
-      "line": 2813,
+      "line": 2892,
       "signature": "deleteTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "applyExcludedOp",
       "kind": "function",
-      "line": 2917,
+      "line": 2996,
       "signature": "applyExcludedOp(feature: string, data: Record<string, unknown>): EditResult"
     },
     {
       "name": "moveTodoCardsToHistory",
       "kind": "function",
-      "line": 2944,
+      "line": 3023,
       "signature": "moveTodoCardsToHistory(feature: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "applyArchiveOp",
       "kind": "function",
-      "line": 3100,
+      "line": 3179,
       "signature": "applyArchiveOp(feature: string,\n  data: Record<string, unknown>,\n  agent: string | undefined,\n  mode: 'archive' | 'unarchive',): EditResult"
     },
     {
       "name": "followTodoCard",
       "kind": "function",
-      "line": 3228,
+      "line": 3307,
       "signature": "followTodoCard(feature: string, id: string, data: Record<string, unknown>, agent?: string): EditResult"
     },
     {
       "name": "applyTodoMutation",
       "kind": "function",
-      "line": 3281,
+      "line": 3360,
       "signature": "applyTodoMutation(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
     },
     {
       "name": "todoChainNote",
       "kind": "function",
-      "line": 3331,
+      "line": 3410,
       "signature": "todoChainNote(cards: readonly TaskSpec[], id: string): { head: string; detail: string }"
     },
     {
       "name": "applyTodoOp",
       "kind": "function",
-      "line": 3395,
+      "line": 3474,
       "signature": "applyTodoOp(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
     },
     {
       "name": "importTodoCards",
       "kind": "function",
-      "line": 3558,
+      "line": 3637,
       "signature": "importTodoCards(feature: string, data: Record<string, unknown>, agent?: string): EditResult"
     }
   ],

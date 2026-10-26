@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/application/design/dsl_ops/node_ops.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/design-canvas.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/design/dsl_ops/node_ops.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/agent-io.dsl.json, design/design-canvas.dsl.json, design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/design/dsl_ops/node_ops.ts",
   "symbols": [
     {
@@ -217,15 +217,27 @@
       ]
     },
     {
+      "name": "syncSemanticFileForFileNode",
+      "kind": "function",
+      "line": 177,
+      "signature": "syncSemanticFileForFileNode(dsl: DesignDSL, node: Node): void"
+    },
+    {
+      "name": "removeSemanticFileForFileNode",
+      "kind": "function",
+      "line": 214,
+      "signature": "removeSemanticFileForFileNode(dsl: DesignDSL, node: Node): void"
+    },
+    {
       "name": "addNode",
       "kind": "function",
-      "line": 162,
+      "line": 226,
       "signature": "addNode(input: AddNodeInput): EditResult"
     },
     {
       "name": "UpdateNodeInput",
       "kind": "interface",
-      "line": 270,
+      "line": 337,
       "signature": "UpdateNodeInput()",
       "members": [
         {
@@ -413,25 +425,25 @@
     {
       "name": "assertDecisionFieldShapes",
       "kind": "function",
-      "line": 322,
+      "line": 389,
       "signature": "assertDecisionFieldShapes(next: NodeDecision): void"
     },
     {
       "name": "applyDecisionWrite",
       "kind": "function",
-      "line": 364,
+      "line": 431,
       "signature": "applyDecisionWrite(prevDecision: NodeDecision | undefined,\n  history: DecisionHistoryEntry[] | undefined,\n  next: NodeDecision | null | undefined,\n  opts?: { author?: DecisionAuthor; agent?: string; note?: string; now?: string },): { decision: NodeDecision | undefined; decision_history: DecisionHistoryEntry[] | undefined }"
     },
     {
       "name": "updateNode",
       "kind": "function",
-      "line": 434,
+      "line": 501,
       "signature": "updateNode(input: UpdateNodeInput): EditResult"
     },
     {
       "name": "DeleteNodeInput",
       "kind": "interface",
-      "line": 553,
+      "line": 624,
       "signature": "DeleteNodeInput()",
       "members": [
         {
@@ -451,7 +463,7 @@
     {
       "name": "deleteNode",
       "kind": "function",
-      "line": 558,
+      "line": 629,
       "signature": "deleteNode(input: DeleteNodeInput): EditResult"
     }
   ],
@@ -539,6 +551,18 @@
     {
       "from": "src/application/design/dsl_ops/node_ops.ts#updateNode",
       "to": "src/application/design/dsl_ops/node_ops.ts#normalizeNodePath"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#deleteNode",
+      "to": "src/application/design/dsl_ops/node_ops.ts#removeSemanticFileForFileNode"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#addNode",
+      "to": "src/application/design/dsl_ops/node_ops.ts#syncSemanticFileForFileNode"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#updateNode",
+      "to": "src/application/design/dsl_ops/node_ops.ts#syncSemanticFileForFileNode"
     },
     {
       "from": "src/application/design/dsl_ops/node_ops.ts#addNode",
@@ -641,6 +665,7 @@
     "src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite",
     "src/application/design/dsl_ops/node_ops.ts#assertValidSchema",
     "src/application/design/dsl_ops/node_ops.ts#assertValidShapes",
+    "src/application/design/dsl_ops/node_ops.ts#deleteNode",
     "src/application/design/dsl_ops/node_ops.ts#updateNode",
     "src/application/design/dsl_ops/update_feature.ts#applyDecisionOp",
     "src/application/design/dsl_ops/update_feature.ts#applyNodeOp"

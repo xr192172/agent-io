@@ -11,21 +11,33 @@
       "signature": "getTaskHistoryFile(): string"
     },
     {
+      "name": "getTaskHistoryJsonlFile",
+      "kind": "function",
+      "line": 55,
+      "signature": "getTaskHistoryJsonlFile(): string"
+    },
+    {
+      "name": "exportTaskHistoryJsonl",
+      "kind": "function",
+      "line": 63,
+      "signature": "exportTaskHistoryJsonl(): { written: number; file: string } | null"
+    },
+    {
       "name": "SCHEMA_SQL",
       "kind": "const",
-      "line": 47,
+      "line": 80,
       "signature": "const SCHEMA_SQL = ` CREATE TABLE IF NOT EXISTS task_history ( id TEXT NOT N…"
     },
     {
       "name": "openTaskHistory",
       "kind": "function",
-      "line": 63,
+      "line": 96,
       "signature": "openTaskHistory(): DatabaseSync"
     },
     {
       "name": "TaskHistoryRow",
       "kind": "interface",
-      "line": 72,
+      "line": 105,
       "signature": "TaskHistoryRow()",
       "members": [
         {
@@ -81,19 +93,19 @@
     {
       "name": "recordTaskHistory",
       "kind": "function",
-      "line": 94,
+      "line": 127,
       "signature": "recordTaskHistory(rows: readonly TaskHistoryRow[]): number"
     },
     {
       "name": "dropTaskHistoryBatch",
       "kind": "function",
-      "line": 128,
+      "line": 163,
       "signature": "dropTaskHistoryBatch(feature: string, movedAt: string): number"
     },
     {
       "name": "TaskHistoryHit",
       "kind": "interface",
-      "line": 140,
+      "line": 175,
       "signature": "TaskHistoryHit()",
       "members": [
         {
@@ -107,7 +119,7 @@
     {
       "name": "TaskHistoryQuery",
       "kind": "interface",
-      "line": 146,
+      "line": 181,
       "signature": "TaskHistoryQuery()",
       "members": [
         {
@@ -145,13 +157,13 @@
     {
       "name": "queryTaskHistory",
       "kind": "function",
-      "line": 159,
+      "line": 194,
       "signature": "queryTaskHistory(q: TaskHistoryQuery): { total: number; rows: TaskHistoryHit[] }"
     },
     {
       "name": "countTaskHistory",
       "kind": "function",
-      "line": 215,
+      "line": 250,
       "signature": "countTaskHistory(feature?: string): number"
     }
   ],
@@ -179,8 +191,24 @@
       "to": "src/infrastructure/storage.ts#getStorageRoot"
     },
     {
+      "from": "src/infrastructure/task_history.ts#getTaskHistoryJsonlFile",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    },
+    {
+      "from": "src/infrastructure/task_history.ts#recordTaskHistory",
+      "to": "src/infrastructure/task_history.ts#exportTaskHistoryJsonl"
+    },
+    {
       "from": "src/infrastructure/task_history.ts#openTaskHistory",
       "to": "src/infrastructure/task_history.ts#getTaskHistoryFile"
+    },
+    {
+      "from": "src/infrastructure/task_history.ts#exportTaskHistoryJsonl",
+      "to": "src/infrastructure/task_history.ts#getTaskHistoryJsonlFile"
+    },
+    {
+      "from": "src/infrastructure/task_history.ts#exportTaskHistoryJsonl",
+      "to": "src/infrastructure/task_history.ts#openTaskHistory"
     },
     {
       "from": "src/infrastructure/task_history.ts#recordTaskHistory",
@@ -226,6 +254,7 @@
     "src/application/meta/explore/query_feature.ts#queryFeature",
     "src/infrastructure/task_history.ts#countTaskHistory",
     "src/infrastructure/task_history.ts#dropTaskHistoryBatch",
+    "src/infrastructure/task_history.ts#exportTaskHistoryJsonl",
     "src/infrastructure/task_history.ts#openTaskHistory",
     "src/infrastructure/task_history.ts#queryTaskHistory",
     "src/infrastructure/task_history.ts#recordTaskHistory"

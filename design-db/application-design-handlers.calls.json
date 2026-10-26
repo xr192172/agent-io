@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/application/design/handlers.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/design-canvas.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/design/handlers.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/agent-io.dsl.json, design/design-canvas.dsl.json, design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/design/handlers.ts",
   "symbols": [
     {
@@ -13,43 +13,43 @@
     {
       "name": "renderExpectationsSection",
       "kind": "function",
-      "line": 323,
+      "line": 350,
       "signature": "renderExpectationsSection(// ★ 判定器是 async ⇒ 这里要 `Awaited<>`（否则拿到的是 Promise）\n  exp: Awaited<ReturnType<typeof judgeExpectations>> | null,\n  notes: readonly string[],): string"
     },
     {
       "name": "detectDriftHandler",
       "kind": "const",
-      "line": 356,
+      "line": 383,
       "signature": "const detectDriftHandler = wrapData(async (a) => { const r = await detectDrift({ fea…"
     },
     {
       "name": "editDslHandler",
       "kind": "const",
-      "line": 374,
+      "line": 401,
       "signature": "const editDslHandler = wrap(async (a) => { // 视图写护栏：live 是代码快照，只能由 import/watch …"
     },
     {
       "name": "getDslHandler",
       "kind": "const",
-      "line": 606,
+      "line": 633,
       "signature": "const getDslHandler = wrapData(async (a) => queryFeature(a as never))"
     },
     {
       "name": "renderDesignHandler",
       "kind": "const",
-      "line": 620,
+      "line": 647,
       "signature": "const renderDesignHandler = wrap(async (a) => { // 默认 mindmap：现行思维导图架构（root → 目录分组 → …"
     },
     {
       "name": "groupExpectationFails",
       "kind": "function",
-      "line": 674,
+      "line": 701,
       "signature": "groupExpectationFails(items: readonly { verdict: string; expectation: Parameters<typeof expectationSubjectPath>[0] }[],\n  inScope: (p: string) => boolean,): { failByPath: Map<string, number>; outsideScope: string[]; unsupportedInScope: number; unsupportedOutside: number }"
     },
     {
       "name": "diffDesignSheetHandler",
       "kind": "const",
-      "line": 721,
+      "line": 748,
       "signature": "const diffDesignSheetHandler = wrapData(async (a) => { const feature = requireStr(a, 'fe…"
     }
   ],
