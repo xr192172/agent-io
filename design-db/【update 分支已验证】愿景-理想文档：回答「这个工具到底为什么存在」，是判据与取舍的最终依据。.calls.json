@@ -1,9 +1,0 @@
-{
-  "//": "Design DB —— 【update 分支已验证】愿景/理想文档：回答「这个工具到底为什么存在」，是判据与取舍的最终依据。（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
-  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
-  "path": "【update 分支已验证】愿景/理想文档：回答「这个工具到底为什么存在」，是判据与取舍的最终依据。",
-  "symbols": [],
-  "imports": [],
-  "calls": []
-}

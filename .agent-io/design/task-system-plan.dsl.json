@@ -59920,7 +59920,7 @@
         "label": "docs/VISION.md",
         "type": "file",
         "path": "docs/VISION.md",
-        "description": "【update 分支已验证】愿景/理想文档：回答「这个工具到底为什么存在」，是判据与取舍的最终依据。",
+        "description": "本仓的愿景/理想文档：回答「这个工具到底为什么存在」，是判据与取舍的最终依据。",
         "style": {}
       }
     ],
@@ -114300,7 +114300,7 @@
       {
         "id": "file_docs_vision_md",
         "path": "docs/VISION.md",
-        "responsibility": "【update 分支已验证】愿景/理想文档：回答「这个工具到底为什么存在」，是判据与取舍的最终依据。"
+        "responsibility": "本仓的愿景/理想文档：回答「这个工具到底为什么存在」，是判据与取舍的最终依据。"
       }
     ]
   },
@@ -114363,13 +114363,13 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-26T14:16:12.660Z",
+    "saved_at": "2026-10-26T14:25:02.368Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 440649849,
+    "age": 441179557,
     "dbSchemaVersion": 16,
-    "via": "tool:t24b-delete"
+    "via": "tool:cleanup"
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -117370,7 +117370,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1487,
+  "_dsl_rev": 1488,
   "feature_tree": {
     "features": [
       {
