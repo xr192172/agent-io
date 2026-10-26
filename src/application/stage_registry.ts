@@ -261,9 +261,14 @@ export const STAGES: readonly Stage[] = [
   //   它声明了一个**从不产物的流水阶段**：三个工作区全盘扫 `import_cache_*.db` ⇒ **0 个**。
   //   ⇒ 产物已随 featureCache 概念一起删除（乙方案：每项目有自己的索引）。
   {
+    // ★ 2026-10-26（T-#10 / 乙方案裁定）：owner 从 `dataHome` 改为 **`project`** ——
+    //   实际侧快照描述"**这个项目的代码现在长什么样**"，天然属于那个项目（一个项目独立拥有三个侧）。
+    //   ★ 它 `kind='pending'`（流水未接）⇒ 改 owner 只是**声明**，没有运行时后果。
+    //   ★ 下面那条 why 早就预判对了这个坑（`baseDir` 可覆盖 ⇒ 写读两侧可能不同根）——
+    //     接它之前必须先定"写读两侧怎么保证同一个根"，否则接上就是**更快的分叉**。
     id: 'dsl_live',
     kind: 'pending',
-    owner: 'dataHome',
+    owner: 'project',
     inputs: ['dsl_features'],
     note: '实际（代码现状）DSL 快照 live/<feature>.dsl.json',
     why: '产者同样是 import_project（live_only）。★ 且它带 baseDir 可覆盖（watch 时会落到被监听项目的根）⇒ 接之前必须先定"写读两侧怎么保证同一个根"，否则接上就是接一个**更快的分叉**。',
