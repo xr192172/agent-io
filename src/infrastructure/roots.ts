@@ -20,6 +20,7 @@
  *   这样本模块可以先接上去当"唯一事实"，再逐个角色改布局 —— 不会一次动到 50 处调用点。
  */
 import path from 'node:path';
+import fs from 'node:fs';
 import { DATA_DIR_NAME } from './data_dir.js';
 import { getStorageRoot } from './storage.js';
 
@@ -175,4 +176,44 @@ export function formatRootsReport(projectRoot?: string): string {
     );
   }
   return lines.join('\n');
+}
+
+/**
+ * 找出「本不该在这」的数据目录（偏离 `rootsOf` 期望位置的那些）。
+ *
+ * ## 为什么需要它（2026-10-26 实测）
+ * 光有"每种数据该住哪"的表还不够 —— 现实里会出现**多出来的根**：
+ *   实测同一台机器上有 4 个 `.agent-io`，其中 `<pkg>/src/application/.agent-io`（18MB）
+ *   是某个调用把**子目录**误当项目根算出来的纯垃圾。
+ * ⇒ 判据：在 projectRoot 下（深度 ≤ 4，跳过 `node_modules` / `.git`）扫所有名为 `.agent-io` 的目录，
+ *   与 `rootsOf(projectRoot)` 期望的**唯一**项目本地根比对 —— **多出来的就是可疑**。
+ *
+ * ★ 只说数、不下结论（与 `consistency_check` 的反向信号同纪律）：
+ *   多出来的可能是"历史遗留"、"误算的根"，也可能是"另一个合法项目嵌在这里" ⇒ **要人看一眼**。
+ */
+export function findStrayDataDirs(projectRoot: string, maxDepth = 4): string[] {
+  const root = path.resolve(projectRoot);
+  const expected = path.join(root, DATA_DIR_NAME);
+  const out: string[] = [];
+  const walk = (dir: string, depth: number): void => {
+    if (depth > maxDepth) return;
+    let ents: fs.Dirent[];
+    try {
+      ents = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return; // 无权限/已删 ⇒ 跳过
+    }
+    for (const e of ents) {
+      if (!e.isDirectory()) continue;
+      if (e.name === 'node_modules' || e.name === '.git') continue;
+      const p = path.join(dir, e.name);
+      if (e.name === DATA_DIR_NAME) {
+        if (path.resolve(p) !== expected) out.push(path.relative(root, p).replace(/\\/g, '/'));
+        continue; // 不再往数据目录里钻
+      }
+      walk(p, depth + 1);
+    }
+  };
+  walk(root, 1);
+  return out.sort();
 }

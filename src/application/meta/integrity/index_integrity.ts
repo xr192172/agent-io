@@ -23,6 +23,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb, projectCacheDbPath, SCHEMA_VERSION } from '../../../infrastructure/index/db.js';
+// ★★★ 2026-10-26（T-#5）：根清单与偏离检测**复用 roots.ts**（不许本文件自己再扫一套）
+import { findStrayDataDirs, formatRootsReport } from '../../../infrastructure/roots.js';
 import { DatabaseSync } from 'node:sqlite';
 import { reopenRefsTo, resolveCrossFileCalls } from '../../../infrastructure/index/symbols.js';
 import { getProjectView } from '../../../infrastructure/project_view.js';
@@ -117,6 +119,14 @@ export interface IndexIntegrityResult {
    * 报 blocker 的诊断必须**自带可行动信息**。与 `refs.stale_resolved` 同一把 WHERE 尺。
    */
   stale_names: StaleRefSite[];
+  /**
+   * ★★ 2026-10-26（T-#5）：**本项目下偏离 `rootsOf` 期望的数据目录**（最多扫 4 层）。
+   * 实测由来：同一台机器上曾有 4 个 `.agent-io`，其中 `<pkg>/src/application/.agent-io`（18MB）
+   * 是把**子目录**误当项目根算出来的。只说数、不下结论。
+   */
+  stray_data_dirs: string[];
+  /** 根清单（一个角色一个根）：每种数据住在哪，人读一遍就清楚 */
+  roots_report: string;
   freshness: {
     /** 已索引文件里 stat 与库记录不一致的个数（需要保鲜） */
     not_fresh: number;
@@ -417,6 +427,8 @@ async function indexIntegrityCore(opts: {
     return {
       // 无可用索引 ⇒ 没有陈旧断言可列（空数组，不是 undefined：类型要求它始终在场）
       stale_names: [],
+      stray_data_dirs: [],
+      roots_report: '',
       project_root: root,
       state: 'empty',
       refreshed,
@@ -479,6 +491,8 @@ async function indexIntegrityCore(opts: {
   if (!db) {
     return {
       stale_names: [],
+      stray_data_dirs: [],
+      roots_report: '',
       project_root: root,
       state: 'empty',
       refreshed,
@@ -730,6 +744,23 @@ async function indexIntegrityCore(opts: {
   //     —— 幽灵行**压根没进这条式子**（算了 `ghosts`、却没拿它定 headline）。
   //   现在：凡 blocker 级 issue，或有幽灵行 ⇒ `untrusted`；无索引 ⇒ `unknown`；其余 ⇒ `trusted`。
   //   `ghosts > 0` 单列（它是 warn，但按判据"索引指向不存在的东西"必须进 headline）。
+  // ★ 2026-10-26（T-#5）：**根偏离** —— 项目下多出来的 .agent-io（判据住 roots.ts#findStrayDataDirs）
+  //   只说数、不下结论：可能是历史遗留 / 误算的根 / 嵌在这里的另一个项目 ⇒ 要人看一眼。
+  let strayDataDirs: string[] = [];
+  try {
+    strayDataDirs = findStrayDataDirs(root);
+  } catch {
+    strayDataDirs = []; // 扫不动不假阳性
+  }
+  if (strayDataDirs.length) {
+    issues.push({
+      code: 'stray_data_dirs',
+      severity: 'warn',
+      message: `项目下发现 ${strayDataDirs.length} 个**多余的数据目录**（偏离 rootsOf 期望）：${strayDataDirs.join(' · ')}`,
+      fix: '先确认它不是另一个合法项目（嵌套仓）；确认是垃圾再删。根清单见 roots.ts#formatRootsReport',
+    });
+  }
+
   const hasBlocker = issues.some((i) => i.severity === 'blocker');
   const verdict = integrityVerdict({ hasIndex: state !== 'empty', hasBlocker, hasGhost: ghosts > 0 });
   const trustworthy = verdict === 'trusted';
@@ -791,6 +822,9 @@ async function indexIntegrityCore(opts: {
     summary,
     // ★ 2026-10-26：与 refs.stale_resolved 同一把尺的名单（让 blocker 可行动）
     stale_names: listStaleResolvedRefs(db, 20),
+    // ★ 2026-10-26（T-#5）：根偏离 + 根清单（让「根」在工具面上可见）
+    stray_data_dirs: strayDataDirs,
+    roots_report: formatRootsReport(root),
   };
 }
 
