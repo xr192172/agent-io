@@ -111,6 +111,12 @@ export interface IndexIntegrityResult {
     stale_resolved: number;
   };
 
+  /**
+   * ★★ 2026-10-26：**陈旧断言的名单**（最多 20 条，`file:line` + 名字）。
+   * 为什么加：原先只报计数「13 条（涉及 8 个符号名）」⇒ 既判断不了根因、也验证不了 repair。
+   * 报 blocker 的诊断必须**自带可行动信息**。与 `refs.stale_resolved` 同一把 WHERE 尺。
+   */
+  stale_names: StaleRefSite[];
   freshness: {
     /** 已索引文件里 stat 与库记录不一致的个数（需要保鲜） */
     not_fresh: number;
@@ -178,18 +184,79 @@ const NOT_FRESH_SAMPLE = 20;
  * `indexIntegrityCore` 的 `staleCount()` 与 claim 前置提醒（`indexTrustReminderForClaim`）
  * 共用这一份 —— 不许第二把尺。表坏/查询失败 ⇒ 0（调用方各自按"没发现"处理，不假阳性）。
  */
+/**
+ * ★★★ P0 保鲜链第 4 环（2026-10-26）：**陈旧断言判据的唯一 SQL 住处**。
+ * `indexIntegrityCore` 的 `staleCount()`、claim 前置提醒（`indexTrustReminderForClaim`）、
+ * 以及**名单**（`listStaleResolvedRefs`）共用这一份 WHERE —— 不许第二把尺。
+ * 表坏/查询失败 ⇒ 0 / []（调用方各自按"没发现"处理，不假阳性）。
+ *
+ * ★★★ 2026-10-26 · **本 WHERE 是【临时补丁】，不是根治** —— 待 schema v17 取代（写死，别让它变永久）：
+ *   病根：`unresolved_refs` **没有 `resolved_node_id`** —— 解析成功时（`symbols.ts:1853`
+ *   `UPDATE unresolved_refs SET status='resolved'`）**把"解析到哪个节点"当场丢了**，
+ *   之后只能靠 `reference_name` 反推。而成员调用的 `reference_name` 是**接收者变量名.方法**
+ *   （实测 13 条：`ps.reject` / `reg.register` / `dsl.load` / `storage.getDataHome`），
+ *   `nodes.name` 存的是裸名 ⇒ **100% 假阳性**，`refresh` 重解析也只是把同一批名字重开一遍。
+ *   ⇒ 下面的 `name_tail` / `qualified_name` 兜底是**在消费者端猜生产者本该记下的事实**。
+ *   ⇒ **根治**：schema v17 加 `resolved_node_id TEXT`，写路径落库，判据改成
+ *     `status='resolved' AND (resolved_node_id IS NULL OR NOT EXISTS(SELECT 1 FROM nodes n WHERE n.id = u.resolved_node_id))`
+ *     —— 那时本 WHERE 的三段匹配全部删除，不再有别名 / 接收者前缀 / tail 的任何猜测。
+ */
+const STALE_RESOLVED_WHERE = `u.status = 'resolved'
+           AND NOT EXISTS (
+             SELECT 1 FROM nodes n
+             WHERE n.name = u.reference_name
+                OR n.qualified_name = u.reference_name
+                OR (u.name_tail <> '' AND n.name = u.name_tail)
+           )`;
+
 export function countStaleResolvedRefs(db: ReturnType<typeof getProjectCacheDb>): number {
   try {
     const row = db
-      .prepare(
-        `SELECT COUNT(*) c FROM unresolved_refs u
-         WHERE u.status = 'resolved'
-           AND NOT EXISTS (SELECT 1 FROM nodes n WHERE n.name = u.reference_name)`,
-      )
+      .prepare(`SELECT COUNT(*) c FROM unresolved_refs u WHERE ${STALE_RESOLVED_WHERE}`)
       .get() as { c: number } | undefined;
     return row?.c ?? 0;
   } catch {
     return 0;
+  }
+}
+
+/** 一条陈旧断言的定位信息（`file:line` + 名字）—— 让 blocker **可行动** */
+export interface StaleRefSite {
+  name: string;
+  file: string;
+  line: number;
+}
+
+/**
+ * ★★ 2026-10-26：**陈旧断言的名单**（与 `countStaleResolvedRefs` 共用同一把 WHERE 尺）。
+ *
+ * 为什么必须给名单：本工具原先只报「陈旧断言 13 条（涉及 8 个符号名）」——**不说是哪 13 条**；
+ * 而 `refresh:true` 的 repair 之后**仍是 13** ⇒ 光有计数，人既判断不了根因、也验证不了修复。
+ * ★ 一个报 blocker 的诊断**没有可行动信息**，等于把修复路径堵死（本仓头号病的又一变体）。
+ *
+ * 读 `v_unresolved_refs` 视图（带 `file_path`）而非裸表 —— 表里只有 `file_id`。
+ */
+export function listStaleResolvedRefs(
+  db: ReturnType<typeof getProjectCacheDb>,
+  limit = 20,
+): StaleRefSite[] {
+  try {
+    const rows = db
+      .prepare(
+        `SELECT u.reference_name AS name, u.file_path AS file, u.line AS line
+         FROM v_unresolved_refs u
+         WHERE ${STALE_RESOLVED_WHERE}
+         ORDER BY u.file_path, u.line
+         LIMIT ?`,
+      )
+      .all(limit) as Array<{ name: string; file: string; line: number }>;
+    return rows.map((r) => ({
+      name: String(r.name ?? ''),
+      file: String(r.file ?? ''),
+      line: Number(r.line ?? 0),
+    }));
+  } catch {
+    return [];
   }
 }
 
@@ -353,6 +420,8 @@ async function indexIntegrityCore(opts: {
       fix: '调 `import_project` 重建索引（或在确认可丢缓存后 `index_integrity({refresh:true})` 就地重建）',
     };
     return {
+      // 无可用索引 ⇒ 没有陈旧断言可列（空数组，不是 undefined：类型要求它始终在场）
+      stale_names: [],
       project_root: root,
       state: 'empty',
       refreshed,
@@ -414,6 +483,7 @@ async function indexIntegrityCore(opts: {
   // ── 还没有可用索引 ──
   if (!db) {
     return {
+      stale_names: [],
       project_root: root,
       state: 'empty',
       refreshed,
@@ -724,6 +794,8 @@ async function indexIntegrityCore(opts: {
     trustworthy,
     ...(refreshReport !== null ? { refresh_receipt: receiptOf(refreshReport, state) } : {}),
     summary,
+    // ★ 2026-10-26：与 refs.stale_resolved 同一把尺的名单（让 blocker 可行动）
+    stale_names: listStaleResolvedRefs(db, 20),
   };
 }
 

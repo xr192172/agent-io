@@ -143,6 +143,22 @@ if (missing.length > 0) {
 }
 console.log(`[clean_dist] 反向检查：${srcTs.length} 个源文件，缺产物 0 个 ✓`);
 
+// ★★ 2026-10-26：写「构建戳」`dist/.build-stamp`。
+//   为什么需要它（实测根因，不是补丁）：
+//     tsconfig.json:21 是 `incremental: true`（tsBuildInfoFile 在 node_modules/.cache）⇒
+//     一个文件"改了又改回原样"时，tsc 按 tsbuildinfo 的哈希判定**未变更** ⇒ **跳过 emit**
+//     ⇒ 该产物 mtime 停在旧值，而源 mtime 是新的 ⇒ `staleSourceWarning`（src 最大 mtime > dist 最大 mtime）
+//     **永远喊脏**（假阳性；实测：test_contract.ts 源 14:57 vs 产物 01:33，内容其实一致）。
+//   ⇒ 把戳写进 dist/ 里，现有的 `newestMtime(DIST_DIR)` 会自动把它算进最大 mtime ⇒ **一处生效、零改判据代码**；
+//     而"真的改了 src 没 build"仍然会告警（戳不刷新）✓ —— 判据语义不变，只是基准变准。
+if (!dryRun) {
+  try {
+    fs.writeFileSync(path.join(DIST, '.build-stamp'), `${new Date().toISOString()}\n`);
+  } catch {
+    console.log('[clean_dist] ⚠ 构建戳写入失败（不影响产物，只影响 STALE_SOURCE 判据的基准）');
+  }
+}
+
 if (orphans.length === 0) {
   console.log('[clean_dist] ⇒ dist 与源码一一对应 ✓（无孤儿 · 无缺失）');
   process.exit(0);
