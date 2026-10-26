@@ -1,145 +1,145 @@
 {
-  "//": "Design DB —— src/infrastructure/index/db.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/infrastructure/index/db.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/infrastructure/index/db.ts",
   "symbols": [
     {
       "name": "Database",
       "kind": "type",
-      "line": 27,
+      "line": 29,
       "signature": "Database()"
     },
     {
       "name": "txDepth",
       "kind": "const",
-      "line": 39,
+      "line": 41,
       "signature": "const txDepth = new WeakMap<object, number>()"
     },
     {
       "name": "inTransaction",
       "kind": "function",
-      "line": 42,
+      "line": 44,
       "signature": "inTransaction(db: Database): boolean"
     },
     {
       "name": "beginBatch",
       "kind": "function",
-      "line": 72,
+      "line": 74,
       "signature": "beginBatch(db: Database): void"
     },
     {
       "name": "endBatch",
       "kind": "function",
-      "line": 80,
+      "line": 82,
       "signature": "endBatch(db: Database, rollback = false): void"
     },
     {
       "name": "SCHEMA_VERSION",
       "kind": "const",
-      "line": 91,
-      "signature": "const SCHEMA_VERSION = 16"
+      "line": 93,
+      "signature": "const SCHEMA_VERSION = 17"
     },
     {
       "name": "getDbFile",
       "kind": "function",
-      "line": 94,
+      "line": 96,
       "signature": "getDbFile(): string"
     },
     {
       "name": "projectCacheDbPath",
       "kind": "function",
-      "line": 129,
-      "signature": "projectCacheDbPath(root: string): string"
-    },
-    {
-      "name": "featureCacheDbPath",
-      "kind": "function",
       "line": 134,
-      "signature": "featureCacheDbPath(feature: string): string"
+      "signature": "projectCacheDbPath(root: string): string"
     },
     {
       "name": "findCacheDb",
       "kind": "function",
-      "line": 153,
+      "line": 166,
       "signature": "findCacheDb(opts: { feature?: string; sourceRoot?: string } = {}): string | null"
     },
     {
       "name": "nearestCacheDb",
       "kind": "function",
-      "line": 169,
+      "line": 182,
       "signature": "nearestCacheDb(dir: string): string | null"
     },
     {
       "name": "tableExists",
       "kind": "function",
-      "line": 188,
+      "line": 201,
       "signature": "tableExists(db: Database, name: string): boolean"
     },
     {
       "name": "hasColumn",
       "kind": "function",
-      "line": 192,
+      "line": 205,
       "signature": "hasColumn(db: Database, table: string, column: string): boolean"
     },
     {
       "name": "readSchemaVersion",
       "kind": "function",
-      "line": 198,
+      "line": 211,
       "signature": "readSchemaVersion(db: Database): number | null"
     },
     {
       "name": "V16_TABLES",
       "kind": "const",
-      "line": 205,
+      "line": 218,
       "signature": "const V16_TABLES = ['identifiers', 'imports', 'unresolved_refs', 'symbol_dif…"
     },
     {
       "name": "V16_INDEXES",
       "kind": "const",
-      "line": 208,
+      "line": 221,
       "signature": "const V16_INDEXES = [ 'idx_identifiers_name', 'idx_imports_file', 'idx_unreso…"
     },
     {
       "name": "migrateV15ToV16",
       "kind": "function",
-      "line": 230,
+      "line": 243,
       "signature": "migrateV15ToV16(db: Database): string"
     },
     {
       "name": "migrateCacheIfNeeded",
       "kind": "function",
-      "line": 310,
+      "line": 323,
       "signature": "migrateCacheIfNeeded(db: Database): string"
+    },
+    {
+      "name": "requireDbFile",
+      "kind": "function",
+      "line": 368,
+      "signature": "requireDbFile(): never"
     },
     {
       "name": "openDb",
       "kind": "function",
-      "line": 336,
-      "signature": "openDb(dbFile: string = getDbFile()): Database"
+      "line": 376,
+      "signature": "openDb(dbFile: string = requireDbFile()): Database"
     },
     {
       "name": "projectCachePool",
       "kind": "const",
-      "line": 434,
+      "line": 474,
       "signature": "const projectCachePool = new Map<string, Database>()"
     },
     {
       "name": "getProjectCacheDb",
       "kind": "function",
-      "line": 443,
+      "line": 483,
       "signature": "getProjectCacheDb(projectRoot: string): Database"
     },
     {
       "name": "closeAllProjectCacheDbs",
       "kind": "function",
-      "line": 454,
+      "line": 494,
       "signature": "closeAllProjectCacheDbs(): void"
     },
     {
       "name": "closeProjectCacheDb",
       "kind": "function",
-      "line": 466,
+      "line": 506,
       "signature": "closeProjectCacheDb(projectRoot: string): void"
     }
   ],
@@ -165,14 +165,18 @@
       "kind": "relative"
     },
     {
+      "source": "../roots.js",
+      "kind": "relative"
+    },
+    {
       "source": "./schema.js",
       "kind": "relative"
     }
   ],
   "calls": [
     {
-      "from": "src/infrastructure/index/db.ts#findCacheDb",
-      "to": "src/infrastructure/index/db.ts#featureCacheDbPath"
+      "from": "src/infrastructure/index/db.ts#migrateCacheIfNeeded",
+      "to": "src/infrastructure/index/db.ts#hasColumn"
     },
     {
       "from": "src/infrastructure/index/db.ts#migrateCacheIfNeeded",
@@ -211,11 +215,11 @@
       "to": "src/infrastructure/index/db.ts#tableExists"
     },
     {
-      "from": "src/infrastructure/index/db.ts#getDbFile",
-      "to": "src/infrastructure/storage.ts#getStorageRoot"
+      "from": "src/infrastructure/index/db.ts#projectCacheDbPath",
+      "to": "src/infrastructure/roots.ts#rootsOf"
     },
     {
-      "from": "src/infrastructure/index/db.ts#featureCacheDbPath",
+      "from": "src/infrastructure/index/db.ts#getDbFile",
       "to": "src/infrastructure/storage.ts#getStorageRoot"
     }
   ],
@@ -233,7 +237,17 @@
     {
       "name": "SCHEMA_VERSION",
       "kind": "const",
-      "signature": "const SCHEMA_VERSION = 8"
+      "signature": "const SCHEMA_VERSION = 17"
+    },
+    {
+      "name": "V16_TABLES",
+      "kind": "const",
+      "signature": "const V16_TABLES = ['identifiers', 'imports', 'unresolved_refs', 'symbol_dif…"
+    },
+    {
+      "name": "V16_INDEXES",
+      "kind": "const",
+      "signature": "const V16_INDEXES = [ 'idx_identifiers_name', 'idx_imports_file', 'idx_unreso…"
     },
     {
       "name": "projectCachePool",

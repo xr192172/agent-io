@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/application/design/line/design_line.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/design/line/design_line.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/design/line/design_line.ts",
   "symbols": [
     {
@@ -424,6 +424,51 @@
     }
   ],
   "expected_symbols": [
+    {
+      "name": "LineStep",
+      "kind": "interface",
+      "signature": "LineStep()"
+    },
+    {
+      "name": "LineReport",
+      "kind": "interface",
+      "signature": "LineReport()"
+    },
+    {
+      "name": "n",
+      "kind": "const",
+      "signature": "const n = (x: number): string => x.toLocaleString('en-US')"
+    },
+    {
+      "name": "MustHaveSymbol",
+      "kind": "interface",
+      "signature": "MustHaveSymbol()"
+    },
+    {
+      "name": "MustHaveReport",
+      "kind": "interface",
+      "signature": "MustHaveReport()"
+    },
+    {
+      "name": "AnyDesignNode",
+      "kind": "type",
+      "signature": "AnyDesignNode()"
+    },
+    {
+      "name": "mhNorm",
+      "kind": "const",
+      "signature": "const mhNorm = (p: string): string => String(p).replace(/\\\\/g, '/').repl…"
+    },
+    {
+      "name": "BriefSymbol",
+      "kind": "interface",
+      "signature": "BriefSymbol()"
+    },
+    {
+      "name": "BriefReport",
+      "kind": "interface",
+      "signature": "BriefReport()"
+    },
     {
       "name": "lineReport",
       "kind": "function",

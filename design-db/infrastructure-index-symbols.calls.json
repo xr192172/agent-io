@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/infrastructure/index/symbols.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/infrastructure/index/symbols.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/infrastructure/index/symbols.ts",
   "symbols": [
     {
@@ -707,31 +707,31 @@
     {
       "name": "BUILTIN_TYPES",
       "kind": "const",
-      "line": 2017,
+      "line": 2023,
       "signature": "const BUILTIN_TYPES = new Set([ 'string', 'number', 'boolean', 'void', 'any', '…"
     },
     {
       "name": "findCrossFileTarget",
       "kind": "function",
-      "line": 2027,
+      "line": 2033,
       "signature": "findCrossFileTarget(db: Database,\n  relImportsByFile: Map<string, Array<{ source: string; line: number }>>,\n  projectRoot: string,\n  fromRel: string,\n  name: string,\n  namesByFile: Map<string, Set<string>>,\n  /** 目标必须是的符号 kind（call → function/const；type_ref → interface/type/class）；缺省不限 */\n  kinds?: readonly string[],\n  /** 没建边的原因出口（re-export 那一段会往里投「为什么跳过」） */\n  miss?: ReexportMiss[],\n  /** 已建索引的文件集：区分「目标不在索引里」与「目标里没这个符号」 */\n  indexedFiles?: ReadonlySet<string>,): { file: string; qn: string } | null"
     },
     {
       "name": "makeImportedTypeMemberLookup",
       "kind": "function",
-      "line": 2120,
+      "line": 2126,
       "signature": "makeImportedTypeMemberLookup(db: Database,\n  projectRoot: string,\n  fromRel: string,\n  relImportSources: readonly string[],): (\n  typeName: string,\n  memberName: string,\n) => { kind: 'hit'; file: string; qn: string } | { kind: 'type-in-repo-no-member'; file: string } | { kind: 'no-type' }"
     },
     {
       "name": "pruneDeletedFiles",
       "kind": "function",
-      "line": 2185,
+      "line": 2191,
       "signature": "pruneDeletedFiles(db: Database,\n  projectRoot: string,\n  absPaths: string[],\n  retainedOut?: string[],): string[]"
     },
     {
       "name": "CachedSymbol",
       "kind": "interface",
-      "line": 2222,
+      "line": 2228,
       "signature": "CachedSymbol()",
       "members": [
         {
@@ -781,7 +781,7 @@
     {
       "name": "CachedImport",
       "kind": "interface",
-      "line": 2233,
+      "line": 2239,
       "signature": "CachedImport()",
       "members": [
         {
@@ -807,7 +807,7 @@
     {
       "name": "CachedFileParse",
       "kind": "interface",
-      "line": 2239,
+      "line": 2245,
       "signature": "CachedFileParse()",
       "members": [
         {
@@ -833,55 +833,55 @@
     {
       "name": "getFileParse",
       "kind": "function",
-      "line": 2250,
+      "line": 2256,
       "signature": "getFileParse(db: Database, relPath: string): CachedFileParse | null"
     },
     {
       "name": "searchSymbols",
       "kind": "function",
-      "line": 2272,
+      "line": 2278,
       "signature": "searchSymbols(db: Database, query: string, limit = 20): SymbolHit[]"
     },
     {
       "name": "getIndexStats",
       "kind": "function",
-      "line": 2288,
+      "line": 2294,
       "signature": "getIndexStats(db: Database): IndexStats"
     },
     {
       "name": "hasAnyIndexedFiles",
       "kind": "function",
-      "line": 2301,
+      "line": 2307,
       "signature": "hasAnyIndexedFiles(db: Database): boolean"
     },
     {
       "name": "isFileIndexed",
       "kind": "function",
-      "line": 2307,
+      "line": 2313,
       "signature": "isFileIndexed(db: Database, relPath: string): boolean"
     },
     {
       "name": "getResolvedImportTargets",
       "kind": "function",
-      "line": 2317,
+      "line": 2323,
       "signature": "getResolvedImportTargets(db: Database, relPath: string): string[]"
     },
     {
       "name": "getResolvedImportSources",
       "kind": "function",
-      "line": 2329,
+      "line": 2335,
       "signature": "getResolvedImportSources(db: Database, relPath: string): string[]"
     },
     {
       "name": "getRawImportsOfFile",
       "kind": "function",
-      "line": 2341,
+      "line": 2347,
       "signature": "getRawImportsOfFile(db: Database,\n  relPath: string,): Array<{ source: string; kind: 'relative' | 'package'; type_only: boolean; line: number }>"
     },
     {
       "name": "findFilesImportingAnySource",
       "kind": "function",
-      "line": 2365,
+      "line": 2371,
       "signature": "findFilesImportingAnySource(db: Database, sources: string[]): string[]"
     }
   ],
@@ -1214,6 +1214,16 @@
       "signature": "SymbolStatus()"
     },
     {
+      "name": "SymbolBodyReject",
+      "kind": "type",
+      "signature": "SymbolBodyReject()"
+    },
+    {
+      "name": "SymbolBodyRead",
+      "kind": "type",
+      "signature": "SymbolBodyRead()"
+    },
+    {
       "name": "SyncPrelude",
       "kind": "interface",
       "signature": "SyncPrelude()"
@@ -1224,9 +1234,59 @@
       "signature": "PreludeResult()"
     },
     {
+      "name": "ReceiverType",
+      "kind": "interface",
+      "signature": "ReceiverType()"
+    },
+    {
+      "name": "CALL_GUARD_BUILTIN_TYPES",
+      "kind": "const",
+      "signature": "const CALL_GUARD_BUILTIN_TYPES = new Set([ 'Set', 'Map', 'WeakMap', 'WeakSet', 'ReadonlySe…"
+    },
+    {
+      "name": "CallVerdict",
+      "kind": "type",
+      "signature": "CallVerdict()"
+    },
+    {
       "name": "ReopenRefsResult",
       "kind": "interface",
       "signature": "ReopenRefsResult()"
+    },
+    {
+      "name": "goPackageCache",
+      "kind": "const",
+      "signature": "const goPackageCache = new Map<string, { mtimeMs: number; pkg: string | null }>()"
+    },
+    {
+      "name": "ReexportSource",
+      "kind": "interface",
+      "signature": "ReexportSource()"
+    },
+    {
+      "name": "ReexportMiss",
+      "kind": "interface",
+      "signature": "ReexportMiss()"
+    },
+    {
+      "name": "ReexportIndex",
+      "kind": "interface",
+      "signature": "ReexportIndex()"
+    },
+    {
+      "name": "reexportCache",
+      "kind": "const",
+      "signature": "const reexportCache = new Map<string, { mtimeMs: number; idx: ReexportIndex }>()"
+    },
+    {
+      "name": "nsImportCache",
+      "kind": "const",
+      "signature": "const nsImportCache = new Map<string, { mtimeMs: number; map: Map<string, strin…"
+    },
+    {
+      "name": "dynImportCache",
+      "kind": "const",
+      "signature": "const dynImportCache = new Map<string, { mtimeMs: number; map: Map<string, strin…"
     },
     {
       "name": "BUILTIN_PREFIXES",

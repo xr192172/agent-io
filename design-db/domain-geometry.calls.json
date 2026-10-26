@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/domain/geometry.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/domain/geometry.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/domain/geometry.ts",
   "symbols": [
     {
@@ -890,9 +890,24 @@
       "signature": "NodeContent()"
     },
     {
+      "name": "NODE_GATES",
+      "kind": "const",
+      "signature": "const NODE_GATES = ['gated', 'exempt'] as const"
+    },
+    {
+      "name": "NodeGate",
+      "kind": "type",
+      "signature": "NodeGate()"
+    },
+    {
       "name": "Node",
       "kind": "interface",
       "signature": "Node()"
+    },
+    {
+      "name": "NodeIntent",
+      "kind": "type",
+      "signature": "NodeIntent()"
     },
     {
       "name": "DecisionAuthor",

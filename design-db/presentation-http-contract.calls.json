@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/presentation/http/contract.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/presentation/http/contract.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/presentation/http/contract.ts",
   "symbols": [
     {
@@ -114,16 +114,6 @@
       "signature": "const mindMapResp = apiVersion .extend({ success: z.literal(true), mind_map: …"
     },
     {
-      "name": "archifyDemoItem",
-      "kind": "const",
-      "signature": "const archifyDemoItem = z .object({ type: z.enum(['architecture', 'workflow', 'se…"
-    },
-    {
-      "name": "archifyDemoResp",
-      "kind": "const",
-      "signature": "const archifyDemoResp = apiVersion .extend({ delivered: z.boolean(), manifest: z.…"
-    },
-    {
       "name": "schemas",
       "kind": "const",
       "signature": "const schemas = { features: featuresResp, save: saveResp, overview: overv…"
@@ -132,6 +122,16 @@
       "name": "ResponseSchemaKey",
       "kind": "type",
       "signature": "ResponseSchemaKey()"
+    },
+    {
+      "name": "archifyDemoItem",
+      "kind": "const",
+      "signature": "const archifyDemoItem = z .object({ type: z.enum(['architecture', 'workflow', 'se…"
+    },
+    {
+      "name": "archifyDemoResp",
+      "kind": "const",
+      "signature": "const archifyDemoResp = apiVersion .extend({ delivered: z.boolean(), manifest: z.…"
     }
   ]
 }

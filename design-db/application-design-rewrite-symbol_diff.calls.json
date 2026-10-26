@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/application/design/rewrite/symbol_diff.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/design/rewrite/symbol_diff.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/design/rewrite/symbol_diff.ts",
   "symbols": [
     {
@@ -266,6 +266,46 @@
     }
   ],
   "expected_symbols": [
+    {
+      "name": "norm",
+      "kind": "const",
+      "signature": "const norm = (s: unknown): string => String(s ?? '').replace(/\\\\/g, '/')"
+    },
+    {
+      "name": "COMPARABLE",
+      "kind": "const",
+      "signature": "const COMPARABLE = { function: 'signature', class: null, type: null, interfa…"
+    },
+    {
+      "name": "DESIGN_DB_KINDS",
+      "kind": "const",
+      "signature": "const DESIGN_DB_KINDS = new Set(['function', 'class', 'type', 'interface', 'const'])"
+    },
+    {
+      "name": "inDesignScope",
+      "kind": "const",
+      "signature": "const inDesignScope = (kind: string): boolean => DESIGN_DB_KINDS.has(kind)"
+    },
+    {
+      "name": "isTopLevel",
+      "kind": "const",
+      "signature": "const isTopLevel = (sym: SideSymbol): boolean => sym.parent == null"
+    },
+    {
+      "name": "SideSymbol",
+      "kind": "interface",
+      "signature": "SideSymbol()"
+    },
+    {
+      "name": "SymbolDiffArgs",
+      "kind": "interface",
+      "signature": "SymbolDiffArgs()"
+    },
+    {
+      "name": "SymbolDiffResult",
+      "kind": "interface",
+      "signature": "SymbolDiffResult()"
+    },
     {
       "name": "sourceRelOf",
       "kind": "function",

@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/domain/task_schema.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/domain/task_schema.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/domain/task_schema.ts",
   "symbols": [
     {
@@ -748,7 +748,7 @@
     {
       "name": "TASK_STATES",
       "kind": "const",
-      "signature": "const TASK_STATES = ['candidate', 'claimed', 'done', 'void', 'superseded'] as…"
+      "signature": "const TASK_STATES = ['candidate', 'preparing', 'claimed', 'done', 'void'] as …"
     },
     {
       "name": "TaskState",
@@ -756,9 +756,19 @@
       "signature": "TaskState()"
     },
     {
-      "name": "TERMINAL_TASK_STATES",
-      "kind": "type",
-      "signature": "const TERMINAL_TASK_STATES = ['done', 'void', 'superseded'] as const"
+      "name": "CLOSED_TASK_STATES",
+      "kind": "const",
+      "signature": "const CLOSED_TASK_STATES = ['done', 'void'] as const"
+    },
+    {
+      "name": "PROGRESS_BY_STATE",
+      "kind": "const",
+      "signature": "const PROGRESS_BY_STATE = { candidate: 'draft', // ★ `preparing` = 领了但**还不能干**（判据没补…"
+    },
+    {
+      "name": "NodeProgress",
+      "kind": "interface",
+      "signature": "NodeProgress()"
     },
     {
       "name": "TaskDiscussion",
@@ -771,9 +781,74 @@
       "signature": "TaskEvidenceRecord()"
     },
     {
+      "name": "TASK_EVIDENCE_KEYS",
+      "kind": "const",
+      "signature": "const TASK_EVIDENCE_KEYS = [ 'kind', 'at', 'by', 'agent', 'verdict', 'fingerprint', …"
+    },
+    {
+      "name": "TaskEvidenceKey",
+      "kind": "type",
+      "signature": "TaskEvidenceKey()"
+    },
+    {
+      "name": "ABSENT_FILE_HASH",
+      "kind": "const",
+      "signature": "const ABSENT_FILE_HASH = '<absent>'"
+    },
+    {
+      "name": "TaskEvidenceFingerprint",
+      "kind": "interface",
+      "signature": "TaskEvidenceFingerprint()"
+    },
+    {
+      "name": "EvidenceFreshness",
+      "kind": "type",
+      "signature": "EvidenceFreshness()"
+    },
+    {
+      "name": "TaskHistoryEntry",
+      "kind": "interface",
+      "signature": "TaskHistoryEntry()"
+    },
+    {
+      "name": "TaskReadSetSymbol",
+      "kind": "interface",
+      "signature": "TaskReadSetSymbol()"
+    },
+    {
+      "name": "TaskReadSetFile",
+      "kind": "interface",
+      "signature": "TaskReadSetFile()"
+    },
+    {
+      "name": "TaskReadSetBasis",
+      "kind": "type",
+      "signature": "TaskReadSetBasis()"
+    },
+    {
+      "name": "TaskReadSet",
+      "kind": "interface",
+      "signature": "TaskReadSet()"
+    },
+    {
+      "name": "PreparedSnapshot",
+      "kind": "interface",
+      "signature": "PreparedSnapshot()"
+    },
+    {
       "name": "TaskSpec",
       "kind": "interface",
       "signature": "TaskSpec()"
+    },
+    {
+      "name": "CriteriaHome",
+      "kind": "interface",
+      "signature": "CriteriaHome()"
+    },
+    {
+      "name": "TERMINAL_TASK_STATES",
+      "kind": "type",
+      "signature": "const TERMINAL_TASK_STATES = ['done', 'void', 'superseded'] as const"
     },
     {
       "name": "isTaskState",

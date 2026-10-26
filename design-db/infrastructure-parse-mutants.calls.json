@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/infrastructure/parse/mutants.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/infrastructure/parse/mutants.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/infrastructure/parse/mutants.ts",
   "symbols": [
     {
@@ -118,6 +118,21 @@
     }
   ],
   "expected_symbols": [
+    {
+      "name": "Mutant",
+      "kind": "interface",
+      "signature": "Mutant()"
+    },
+    {
+      "name": "COMPARISON_SWAPS",
+      "kind": "const",
+      "signature": "const COMPARISON_SWAPS = { '===': '!==', '!==': '===', '==': '!=', '!=': '==', }"
+    },
+    {
+      "name": "NodeLike",
+      "kind": "interface",
+      "signature": "NodeLike()"
+    },
     {
       "name": "extractMutants",
       "kind": "function",

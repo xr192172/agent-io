@@ -11,20 +11,6 @@
     "height": 6394,
     "nodes": [
       {
-        "id": "dir_certs_design-contracts",
-        "label": "📁 design-contracts",
-        "x": 80,
-        "y": 110,
-        "width": 630,
-        "height": 654,
-        "type": "module",
-        "style": {
-          "bg": "#152141",
-          "color": "#90caf9",
-          "borderRadius": 8
-        }
-      },
-      {
         "id": "dir_certs",
         "label": "📁 certs",
         "x": 60,
@@ -73,20 +59,6 @@
         "y": 210,
         "width": 1330,
         "height": 446,
-        "type": "module",
-        "style": {
-          "bg": "#152141",
-          "color": "#90caf9",
-          "borderRadius": 8
-        }
-      },
-      {
-        "id": "dir_src_application_design_bricks",
-        "label": "📁 bricks",
-        "x": 3040,
-        "y": 210,
-        "width": 1330,
-        "height": 342,
         "type": "module",
         "style": {
           "bg": "#152141",
@@ -373,38 +345,6 @@
           "color": "#90caf9",
           "borderRadius": 8
         }
-      },
-      {
-        "id": "file__tmp-audit2_mjs",
-        "label": ".tmp-audit2.mjs · 0 APIs",
-        "x": 60,
-        "y": 6170,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": ".tmp-audit2.mjs",
-        "style": {
-          "bg": "#37474f",
-          "color": "#eceff1",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file__tmp-readend_mjs",
-        "label": ".tmp-readend.mjs · 0 APIs",
-        "x": 60,
-        "y": 5962,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": ".tmp-readend.mjs",
-        "style": {
-          "bg": "#37474f",
-          "color": "#eceff1",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
       },
       {
         "id": "file_certs_observe-skeleton-cert_mjs",
@@ -3494,25 +3434,6 @@
           "reopened_from": "agent:workbuddy-glm5"
         },
         "status": "done",
-        "decision": {
-          "summary": "get_dsl 工具 schema 扩展：query 枚举加 overview，新增 detail 参数（query=history 概览/详情两级）。",
-          "expectations": [
-            {
-              "kind": "source-has",
-              "must": [
-                "'overview'",
-                "detail: z.boolean().optional()"
-              ],
-              "path": "src/application/design/index.ts",
-              "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明——否则 schema 与实现脱节（工具签名门会拦）"
-            }
-          ],
-          "rationale": "task-system-plan 侧改造 query=history 为概览/详情两级并新增 query=overview，schema 住在本文件；跨 feature 同一施工的 schema 侧。",
-          "acceptance": "npm run verify 过（含 MCP 工具签名门：zod 与实现接线）",
-          "thread": "history",
-          "updated_at": "2026-10-23T17:50:47.023Z",
-          "author": "llm"
-        },
         "overlay": {
           "path": "src/application/design/index.ts",
           "kind": "file",
@@ -4645,12 +4566,6 @@
         "label": "contains"
       },
       {
-        "id": "contains_certs_certs_design-contracts",
-        "from": "dir_certs",
-        "to": "dir_certs_design-contracts",
-        "label": "contains"
-      },
-      {
         "id": "contains_observe-lang-go_observe-lang-go_cmd",
         "from": "dir_observe-lang-go",
         "to": "dir_observe-lang-go_cmd",
@@ -4732,12 +4647,6 @@
         "id": "contains_src_application_design_src_application_design_board",
         "from": "dir_src_application_design",
         "to": "dir_src_application_design_board",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_application_design_src_application_design_bricks",
-        "from": "dir_src_application_design",
-        "to": "dir_src_application_design_bricks",
         "label": "contains"
       },
       {
@@ -4975,13 +4884,6 @@
         "type": "dashed"
       },
       {
-        "id": "dep_file_src_application_design_index_ts_dir_src_application_design_bricks",
-        "from": "file_src_application_design_index_ts",
-        "to": "dir_src_application_design_bricks",
-        "label": "imports ×3",
-        "type": "dashed"
-      },
-      {
         "id": "dep_file_src_application_design_index_ts_dir_src_application_design_dsl_ops",
         "from": "file_src_application_design_index_ts",
         "to": "dir_src_application_design_dsl_ops",
@@ -4992,80 +4894,6 @@
   },
   "semantic": {
     "files": [
-      {
-        "id": "file__tmp-audit2_mjs",
-        "path": ".tmp-audit2.mjs",
-        "responsibility": "核心层 · 根目录 — 0 个 API（导入自 1 个模块）",
-        "symbols": [
-          {
-            "name": "p",
-            "kind": "const",
-            "line": 2,
-            "end_line": 2,
-            "signature": "const p = 'docs/DESIGN.md'"
-          },
-          {
-            "name": "s",
-            "kind": "const",
-            "line": 3,
-            "end_line": 3,
-            "signature": "const s = fs.readFileSync(p, 'utf8')"
-          },
-          {
-            "name": "SECTION",
-            "kind": "const",
-            "line": 5,
-            "end_line": 8,
-            "signature": "const SECTION = ` ### ★★★ 工具审计（2026-10-18；用户要求：「结构重构过多次，工具可能是早期遗留，都看看」） ★…"
-          }
-        ],
-        "lines": 32,
-        "layer": "core"
-      },
-      {
-        "id": "file__tmp-readend_mjs",
-        "path": ".tmp-readend.mjs",
-        "responsibility": "核心层 · 根目录 — 0 个 API（导入自 1 个模块）",
-        "symbols": [
-          {
-            "name": "p",
-            "kind": "const",
-            "line": 2,
-            "end_line": 2,
-            "signature": "const p = 'src/application/patrol/task_drift.ts'"
-          },
-          {
-            "name": "s",
-            "kind": "const",
-            "line": 3,
-            "end_line": 3,
-            "signature": "const s = fs.readFileSync(p, 'utf8')"
-          },
-          {
-            "name": "before",
-            "kind": "const",
-            "line": 4,
-            "end_line": 4,
-            "signature": "const before = s"
-          },
-          {
-            "name": "log",
-            "kind": "const",
-            "line": 5,
-            "end_line": 5,
-            "signature": "const log = []"
-          },
-          {
-            "name": "marker",
-            "kind": "const",
-            "line": 21,
-            "end_line": 21,
-            "signature": "const marker = ' // ── 5. 租约：只产出事件（★ 不静默改 state） ──'"
-          }
-        ],
-        "lines": 45,
-        "layer": "core"
-      },
       {
         "id": "file_certs_observe-skeleton-cert_mjs",
         "path": "certs/observe-skeleton-cert.mjs",
@@ -26997,13 +26825,13 @@
     }
   ],
   "annotations": [],
-  "_dsl_rev": 185,
+  "_dsl_rev": 190,
   "_sync": {
-    "saved_at": "2026-10-24T12:55:47.413Z",
+    "saved_at": "2026-10-26T10:25:02.324Z",
     "source": "design_sheet",
     "feature": "design-canvas",
     "scanRev": 1792582983534,
-    "age": 263563879,
+    "age": 427318790,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },

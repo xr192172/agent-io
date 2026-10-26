@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/infrastructure/task_history.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/infrastructure/task_history.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/infrastructure/task_history.ts",
   "symbols": [
     {
@@ -197,6 +197,28 @@
     {
       "from": "src/infrastructure/task_history.ts#countTaskHistory",
       "to": "src/infrastructure/task_history.ts#openTaskHistory"
+    }
+  ],
+  "expected_symbols": [
+    {
+      "name": "SCHEMA_SQL",
+      "kind": "const",
+      "signature": "const SCHEMA_SQL = ` CREATE TABLE IF NOT EXISTS task_history ( id TEXT NOT N…"
+    },
+    {
+      "name": "TaskHistoryRow",
+      "kind": "interface",
+      "signature": "TaskHistoryRow()"
+    },
+    {
+      "name": "TaskHistoryHit",
+      "kind": "interface",
+      "signature": "TaskHistoryHit()"
+    },
+    {
+      "name": "TaskHistoryQuery",
+      "kind": "interface",
+      "signature": "TaskHistoryQuery()"
     }
   ],
   "reverse_calls": [

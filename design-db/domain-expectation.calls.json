@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/domain/expectation.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/domain/expectation.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/domain/expectation.ts",
   "symbols": [
     {
@@ -163,7 +163,7 @@
     {
       "name": "PHASE_BY_KIND",
       "kind": "const",
-      "signature": "const PHASE_BY_KIND = { 'file-exists': 'post', 'symbol-exists': 'post', 'signat…"
+      "signature": "const PHASE_BY_KIND = { // ★ run 是「跑起来看结果」⇒ 必然属【后态】（跑之前谈不上结果） run: 'post', 'sou…"
     },
     {
       "name": "expectationPhase",

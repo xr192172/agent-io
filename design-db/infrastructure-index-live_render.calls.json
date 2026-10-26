@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/infrastructure/index/live_render.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/infrastructure/index/live_render.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/infrastructure/index/live_render.ts",
   "symbols": [
     {
@@ -271,7 +271,7 @@
     {
       "name": "MAX_FILES",
       "kind": "const",
-      "signature": "const MAX_FILES = 200"
+      "signature": "const MAX_FILES = Number.POSITIVE_INFINITY"
     },
     {
       "name": "LANG_COLORS",

@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/application/write_gate.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/write_gate.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/write_gate.ts",
   "symbols": [
     {
@@ -743,11 +743,6 @@
       "signature": "WriteThroughOutcome()"
     },
     {
-      "name": "SourceWriteReport",
-      "kind": "interface",
-      "signature": "SourceWriteReport()"
-    },
-    {
       "name": "EMPTY_CROSS",
       "kind": "const",
       "signature": "const EMPTY_CROSS = { total: 0, resolved: 0, external: 0, failed: 0 }"
@@ -763,6 +758,26 @@
       "signature": "TaskGateOutcome()"
     },
     {
+      "name": "WriteSubject",
+      "kind": "type",
+      "signature": "WriteSubject()"
+    },
+    {
+      "name": "PRODUCT_TOP_DIRS",
+      "kind": "const",
+      "signature": "const PRODUCT_TOP_DIRS = new Set(['.agent-io', '.agent', 'design-db', 'dist', 'nod…"
+    },
+    {
+      "name": "GATE_REJECTION_PREFIX",
+      "kind": "const",
+      "signature": "const GATE_REJECTION_PREFIX = '拒绝落盘'"
+    },
+    {
+      "name": "AUTHORIZE_ESCAPE_HATCH",
+      "kind": "const",
+      "signature": "const AUTHORIZE_ESCAPE_HATCH = ` ③ 本批文件**同属一个范围**、且你已在该范围内领了卡 ⇒ 用「按 run 授权」**一次放行整批**（免逐…"
+    },
+    {
       "name": "TaskGateBasis",
       "kind": "type",
       "signature": "TaskGateBasis()"
@@ -773,6 +788,11 @@
       "signature": "GateCoverageFeature()"
     },
     {
+      "name": "GateExemption",
+      "kind": "interface",
+      "signature": "GateExemption()"
+    },
+    {
       "name": "GateCoverage",
       "kind": "interface",
       "signature": "GateCoverage()"
@@ -781,6 +801,11 @@
       "name": "WriteActor",
       "kind": "type",
       "signature": "WriteActor()"
+    },
+    {
+      "name": "SourceWriteReport",
+      "kind": "interface",
+      "signature": "SourceWriteReport()"
     },
     {
       "name": "hasLiveIndex",

@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/application/stage_registry.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/stage_registry.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/stage_registry.ts",
   "symbols": [
     {
@@ -13,13 +13,13 @@
     {
       "name": "StageOwner",
       "kind": "type",
-      "line": 83,
+      "line": 82,
       "signature": "StageOwner()"
     },
     {
       "name": "StageCtx",
       "kind": "interface",
-      "line": 85,
+      "line": 84,
       "signature": "StageCtx()",
       "members": [
         {
@@ -45,7 +45,7 @@
     {
       "name": "StageBase",
       "kind": "interface",
-      "line": 105,
+      "line": 104,
       "signature": "StageBase()",
       "members": [
         {
@@ -83,7 +83,7 @@
     {
       "name": "DerivedStage",
       "kind": "interface",
-      "line": 117,
+      "line": 116,
       "signature": "DerivedStage()",
       "members": [
         {
@@ -109,7 +109,7 @@
     {
       "name": "SourceStage",
       "kind": "interface",
-      "line": 126,
+      "line": 125,
       "signature": "SourceStage()",
       "members": [
         {
@@ -129,7 +129,7 @@
     {
       "name": "PendingStage",
       "kind": "interface",
-      "line": 132,
+      "line": 131,
       "signature": "PendingStage()",
       "members": [
         {
@@ -149,61 +149,61 @@
     {
       "name": "Stage",
       "kind": "type",
-      "line": 137,
+      "line": 136,
       "signature": "Stage()"
     },
     {
       "name": "STAGES",
       "kind": "const",
-      "line": 143,
+      "line": 142,
       "signature": "const STAGES = [ // ── 已接上产者（4 道）───────────────────────────────────────…"
     },
     {
       "name": "BY_ID",
       "kind": "const",
-      "line": 374,
+      "line": 373,
       "signature": "const BY_ID = new Map(STAGES.map((s) => [s.id, s]))"
     },
     {
       "name": "getStage",
       "kind": "function",
-      "line": 376,
+      "line": 375,
       "signature": "getStage(id: StageId): Stage"
     },
     {
       "name": "pendingStages",
       "kind": "function",
-      "line": 383,
+      "line": 382,
       "signature": "pendingStages(): PendingStage[]"
     },
     {
       "name": "weakFreshnessStages",
       "kind": "function",
-      "line": 388,
+      "line": 387,
       "signature": "weakFreshnessStages(): DerivedStage[]"
     },
     {
       "name": "assertAcyclic",
       "kind": "function",
-      "line": 396,
+      "line": 395,
       "signature": "assertAcyclic(): void"
     },
     {
       "name": "renderStageTable",
       "kind": "function",
-      "line": 413,
+      "line": 412,
       "signature": "renderStageTable(): string"
     },
     {
       "name": "PRODUCE_ATTEMPTS",
       "kind": "const",
-      "line": 428,
+      "line": 427,
       "signature": "const PRODUCE_ATTEMPTS = 3"
     },
     {
       "name": "EnsureResult",
       "kind": "interface",
-      "line": 430,
+      "line": 429,
       "signature": "EnsureResult()",
       "members": [
         {
@@ -223,43 +223,43 @@
     {
       "name": "ensureStage",
       "kind": "function",
-      "line": 455,
+      "line": 454,
       "signature": "ensureStage(id: StageId, ctx: StageCtx = {}): Promise<EnsureResult>"
     },
     {
       "name": "ensureUpstream",
       "kind": "function",
-      "line": 482,
+      "line": 481,
       "signature": "ensureUpstream(id: StageId, ctx: StageCtx): Promise<void>"
     },
     {
       "name": "LocateState",
       "kind": "type",
-      "line": 509,
+      "line": 508,
       "signature": "LocateState()"
     },
     {
       "name": "locateState",
       "kind": "function",
-      "line": 515,
+      "line": 514,
       "signature": "locateState(stage: Stage, ctx: StageCtx): LocateState"
     },
     {
       "name": "isFresh",
       "kind": "function",
-      "line": 526,
+      "line": 525,
       "signature": "isFresh(stage: DerivedStage, ctx: StageCtx): boolean"
     },
     {
       "name": "produceWithRetry",
       "kind": "function",
-      "line": 552,
+      "line": 551,
       "signature": "produceWithRetry(stage: DerivedStage, ctx: StageCtx = {}): Promise<void>"
     },
     {
       "name": "needFeature",
       "kind": "function",
-      "line": 567,
+      "line": 566,
       "signature": "needFeature(ctx: StageCtx): string"
     }
   ],

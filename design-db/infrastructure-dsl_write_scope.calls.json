@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/infrastructure/dsl_write_scope.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/infrastructure/dsl_write_scope.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/infrastructure/dsl_write_scope.ts",
   "symbols": [
     {
@@ -68,6 +68,23 @@
     }
   ],
   "calls": [],
+  "expected_symbols": [
+    {
+      "name": "DslWriteVia",
+      "kind": "type",
+      "signature": "DslWriteVia()"
+    },
+    {
+      "name": "DslWriteGrant",
+      "kind": "interface",
+      "signature": "DslWriteGrant()"
+    },
+    {
+      "name": "als",
+      "kind": "const",
+      "signature": "const als = new AsyncLocalStorage<DslWriteGrant>()"
+    }
+  ],
   "reverse_calls": [
     "src/application/design/derive/opl.ts#oplIntegrate",
     "src/application/design/dsl_ops/update_feature.ts#updateFeatureCore",

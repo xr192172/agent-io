@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/presentation/http/serve.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/presentation/http/serve.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/presentation/http/serve.ts",
   "symbols": [
     {
@@ -133,235 +133,235 @@
     {
       "name": "buildSplitPlanMarkdown",
       "kind": "function",
-      "line": 507,
+      "line": 512,
       "signature": "buildSplitPlanMarkdown(r: FileMonolithReport, relPath: string, generatedAt: string): string"
     },
     {
       "name": "handleApiSplitPlan",
       "kind": "function",
-      "line": 573,
+      "line": 578,
       "signature": "handleApiSplitPlan(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiMonolith",
       "kind": "function",
-      "line": 624,
+      "line": 629,
       "signature": "handleApiMonolith(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiRevealFile",
       "kind": "function",
-      "line": 670,
+      "line": 675,
       "signature": "handleApiRevealFile(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "collectChainInfo",
       "kind": "function",
-      "line": 718,
+      "line": 723,
       "signature": "collectChainInfo(dsl: {\n    geometry: { nodes: Array<{ id: string; x?: number; host?: string; layer?: string; label?: string; description?: string }> };\n    semantic?: { files?: Array<{ id: string; path: string }> };\n  },\n  nodeId: string,\n  projectRoot: string,): { steps: TraceStepSpec[]; infos: ChainNodeInfo[] }"
     },
     {
       "name": "locateHostSource",
       "kind": "function",
-      "line": 782,
+      "line": 787,
       "signature": "locateHostSource(dsl: { semantic?: { files?: Array<{ id: string; path: string }> } },\n  nodeId: string,\n  projectRoot: string,): string | null"
     },
     {
       "name": "handleApiTraceExec",
       "kind": "function",
-      "line": 797,
+      "line": 802,
       "signature": "handleApiTraceExec(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiReconcileChain",
       "kind": "function",
-      "line": 844,
+      "line": 849,
       "signature": "handleApiReconcileChain(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiFunctionOutline",
       "kind": "function",
-      "line": 872,
+      "line": 877,
       "signature": "handleApiFunctionOutline(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiFunctionRun",
       "kind": "function",
-      "line": 898,
+      "line": 903,
       "signature": "handleApiFunctionRun(req: http.IncomingMessage, res: http.ServerResponse, sourceRoot?: string): Promise<void>"
     },
     {
       "name": "handleApiChainExec",
       "kind": "function",
-      "line": 937,
+      "line": 942,
       "signature": "handleApiChainExec(req: http.IncomingMessage, res: http.ServerResponse, sourceRoot?: string): Promise<void>"
     },
     {
       "name": "handleApiFunctionExample",
       "kind": "function",
-      "line": 965,
+      "line": 970,
       "signature": "handleApiFunctionExample(req: http.IncomingMessage, res: http.ServerResponse, sourceRoot?: string): Promise<void>"
     },
     {
       "name": "handleApiFeatureLine",
       "kind": "function",
-      "line": 1009,
+      "line": 1014,
       "signature": "handleApiFeatureLine(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiFocus",
       "kind": "function",
-      "line": 1028,
+      "line": 1033,
       "signature": "handleApiFocus(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiLayout",
       "kind": "function",
-      "line": 1054,
+      "line": 1059,
       "signature": "handleApiLayout(req: http.IncomingMessage, res: http.ServerResponse, layoutType: 'dag' | 'force' | 'grid'): Promise<void>"
     },
     {
       "name": "handleApiConsistency",
       "kind": "function",
-      "line": 1102,
+      "line": 1107,
       "signature": "handleApiConsistency(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiDiffImpact",
       "kind": "function",
-      "line": 1119,
+      "line": 1124,
       "signature": "handleApiDiffImpact(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiMindMap",
       "kind": "function",
-      "line": 1144,
+      "line": 1149,
       "signature": "handleApiMindMap(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiMindMapTeachGet",
       "kind": "function",
-      "line": 1168,
+      "line": 1173,
       "signature": "handleApiMindMapTeachGet(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiMindMapGet",
       "kind": "function",
-      "line": 1189,
+      "line": 1194,
       "signature": "handleApiMindMapGet(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiOverview",
       "kind": "function",
-      "line": 1213,
+      "line": 1218,
       "signature": "handleApiOverview(req: http.IncomingMessage,\n  res: http.ServerResponse,\n  method: string,): Promise<void>"
     },
     {
       "name": "handleApiOpl",
       "kind": "function",
-      "line": 1267,
+      "line": 1272,
       "signature": "handleApiOpl(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiDiffViews",
       "kind": "function",
-      "line": 1323,
+      "line": 1328,
       "signature": "handleApiDiffViews(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiFeatureMeta",
       "kind": "function",
-      "line": 1340,
+      "line": 1345,
       "signature": "handleApiFeatureMeta(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiFeatureDsl",
       "kind": "function",
-      "line": 1376,
+      "line": 1381,
       "signature": "handleApiFeatureDsl(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiObserveProposals",
       "kind": "function",
-      "line": 1435,
+      "line": 1440,
       "signature": "handleApiObserveProposals(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiObserveApprove",
       "kind": "function",
-      "line": 1455,
+      "line": 1460,
       "signature": "handleApiObserveApprove(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiObserveReject",
       "kind": "function",
-      "line": 1480,
+      "line": 1485,
       "signature": "handleApiObserveReject(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiSemanticSearch",
       "kind": "function",
-      "line": 1501,
+      "line": 1506,
       "signature": "handleApiSemanticSearch(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiArchLayer",
       "kind": "function",
-      "line": 1519,
+      "line": 1524,
       "signature": "handleApiArchLayer(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiLanguageConcepts",
       "kind": "function",
-      "line": 1537,
+      "line": 1542,
       "signature": "handleApiLanguageConcepts(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiGuidedTour",
       "kind": "function",
-      "line": 1555,
+      "line": 1560,
       "signature": "handleApiGuidedTour(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiDictQuery",
       "kind": "function",
-      "line": 1576,
+      "line": 1581,
       "signature": "handleApiDictQuery(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiDictHighlight",
       "kind": "function",
-      "line": 1602,
+      "line": 1607,
       "signature": "handleApiDictHighlight(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiDictIngest",
       "kind": "function",
-      "line": 1620,
+      "line": 1625,
       "signature": "handleApiDictIngest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiDictGenerate",
       "kind": "function",
-      "line": 1642,
+      "line": 1647,
       "signature": "handleApiDictGenerate(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiGitDiff",
       "kind": "function",
-      "line": 1664,
+      "line": 1669,
       "signature": "handleApiGitDiff(_req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiRegistry",
       "kind": "function",
-      "line": 1698,
+      "line": 1703,
       "signature": "handleApiRegistry(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "Narrations",
       "kind": "type",
-      "line": 1736,
+      "line": 1741,
       "signature": "Narrations()",
       "members": [
         {
@@ -387,85 +387,85 @@
     {
       "name": "EXPLAIN_SCRIPT",
       "kind": "const",
-      "line": 1738,
+      "line": 1743,
       "signature": "const EXPLAIN_SCRIPT = [ { title: '入口：MCP 服务', n: { newbie: 'agent-io 的\"大门\"是一个叫 …"
     },
     {
       "name": "handleApiExplain",
       "kind": "function",
-      "line": 1854,
+      "line": 1859,
       "signature": "handleApiExplain(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleApiExplainGenerate",
       "kind": "function",
-      "line": 1880,
+      "line": 1885,
       "signature": "handleApiExplainGenerate(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiTour",
       "kind": "function",
-      "line": 1953,
+      "line": 1958,
       "signature": "handleApiTour(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "handleTourPage",
       "kind": "function",
-      "line": 1992,
+      "line": 1997,
       "signature": "handleTourPage(res: http.ServerResponse): void"
     },
     {
       "name": "handleExplainPage",
       "kind": "function",
-      "line": 2097,
+      "line": 2102,
       "signature": "handleExplainPage(res: http.ServerResponse): void"
     },
     {
       "name": "handleStaticFile",
       "kind": "function",
-      "line": 2283,
+      "line": 2288,
       "signature": "handleStaticFile(req: http.IncomingMessage, res: http.ServerResponse): void"
     },
     {
       "name": "MAX_BODY_SIZE",
       "kind": "const",
-      "line": 2330,
+      "line": 2335,
       "signature": "const MAX_BODY_SIZE = 5 * 1024 * 1024"
     },
     {
       "name": "readBody",
       "kind": "function",
-      "line": 2332,
+      "line": 2337,
       "signature": "readBody(req: http.IncomingMessage, maxSize = MAX_BODY_SIZE): Promise<Buffer>"
     },
     {
       "name": "handleApiGateway",
       "kind": "function",
-      "line": 2354,
+      "line": 2359,
       "signature": "handleApiGateway(req: http.IncomingMessage, res: http.ServerResponse, method: string, url: string): Promise<void>"
     },
     {
       "name": "handleOpenAICompat",
       "kind": "function",
-      "line": 2441,
+      "line": 2446,
       "signature": "handleOpenAICompat(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "safeOriginPattern",
       "kind": "const",
-      "line": 2456,
+      "line": 2461,
       "signature": "const safeOriginPattern = /^https?:\\/\\/(localhost|127\\.0\\.0\\.1|\\[::1\\]|0\\.0\\.0\\.0)(…"
     },
     {
       "name": "isSafeOrigin",
       "kind": "function",
-      "line": 2457,
+      "line": 2462,
       "signature": "isSafeOrigin(origin: string | undefined): boolean"
     },
     {
       "name": "RouteCtx",
       "kind": "interface",
-      "line": 2478,
+      "line": 2483,
       "signature": "RouteCtx()",
       "members": [
         {
@@ -491,7 +491,7 @@
     {
       "name": "HttpRoute",
       "kind": "interface",
-      "line": 2484,
+      "line": 2489,
       "signature": "HttpRoute()",
       "members": [
         {
@@ -523,43 +523,43 @@
     {
       "name": "assertRouteTable",
       "kind": "function",
-      "line": 2500,
+      "line": 2505,
       "signature": "assertRouteTable(routes: readonly HttpRoute[]): void"
     },
     {
       "name": "coerceArgsFor",
       "kind": "function",
-      "line": 2529,
+      "line": 2534,
       "signature": "coerceArgsFor(schema: ToolDef['inputSchema'], raw: Record<string, unknown>): Record<string, unknown>"
     },
     {
       "name": "messageOf",
       "kind": "function",
-      "line": 2560,
+      "line": 2565,
       "signature": "messageOf(text: string): string"
     },
     {
       "name": "handleApiTool",
       "kind": "function",
-      "line": 2585,
+      "line": 2590,
       "signature": "handleApiTool(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>"
     },
     {
       "name": "handleApiTools",
       "kind": "function",
-      "line": 2628,
+      "line": 2633,
       "signature": "handleApiTools(res: http.ServerResponse): void"
     },
     {
       "name": "ROUTES",
       "kind": "const",
-      "line": 2643,
+      "line": 2648,
       "signature": "const ROUTES = [ // ★★ 派生路由（2026-10-22）：**能力注册一次，HTTP 自动获得** —— 与 MCP(`r…"
     },
     {
       "name": "startServer",
       "kind": "function",
-      "line": 2807,
+      "line": 2812,
       "signature": "startServer(port?: number): Promise<void>"
     }
   ],
@@ -1026,14 +1026,6 @@
       "to": "src/infrastructure/graph/import_project.ts#importProject"
     },
     {
-      "from": "src/presentation/http/serve.ts#handleApiImport",
-      "to": "src/infrastructure/index/db.ts#featureCacheDbPath"
-    },
-    {
-      "from": "src/presentation/http/serve.ts#handleApiImport",
-      "to": "src/infrastructure/index/db.ts#featureCacheDbPath"
-    },
-    {
       "from": "src/presentation/http/serve.ts#handleApiLiveRebuild",
       "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
     },
@@ -1048,6 +1040,14 @@
     {
       "from": "src/presentation/http/serve.ts#handleApiImport",
       "to": "src/infrastructure/index/db.ts#openDb"
+    },
+    {
+      "from": "src/presentation/http/serve.ts#handleApiImport",
+      "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
+    },
+    {
+      "from": "src/presentation/http/serve.ts#handleApiImport",
+      "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
     },
     {
       "from": "src/presentation/http/serve.ts#handleApiFunctionOutline",
@@ -2220,7 +2220,7 @@
     {
       "name": "LIVE_FILE",
       "kind": "const",
-      "signature": "const LIVE_FILE = getLiveDslFile()"
+      "signature": "const LIVE_FILE = getDesignSheetFile(process.env.AGENT_IO_FEATURE ?? 'task-…"
     },
     {
       "name": "sseClients",
@@ -2251,6 +2251,26 @@
       "name": "MAX_BODY_SIZE",
       "kind": "const",
       "signature": "const MAX_BODY_SIZE = 5 * 1024 * 1024"
+    },
+    {
+      "name": "safeOriginPattern",
+      "kind": "const",
+      "signature": "const safeOriginPattern = /^https?:\\/\\/(localhost|127\\.0\\.0\\.1|\\[::1\\]|0\\.0\\.0\\.0)(…"
+    },
+    {
+      "name": "RouteCtx",
+      "kind": "interface",
+      "signature": "RouteCtx()"
+    },
+    {
+      "name": "HttpRoute",
+      "kind": "interface",
+      "signature": "HttpRoute()"
+    },
+    {
+      "name": "ROUTES",
+      "kind": "const",
+      "signature": "const ROUTES = [ // ★★ 派生路由（2026-10-22）：**能力注册一次，HTTP 自动获得** —— 与 MCP(`r…"
     },
     {
       "name": "broadcastSSE",

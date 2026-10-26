@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/presentation/mcp/server.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/presentation/mcp/server.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/presentation/mcp/server.ts",
   "symbols": [
     {
@@ -196,22 +196,12 @@
     {
       "name": "resources",
       "kind": "const",
-      "signature": "const resources = listFeatures() .filter((d) => (d.canvas_notes ?? []).leng…"
+      "signature": "const resources = listDesignSheets() .map((d) => ({ uri: `agent-io://${d.fe…"
     },
     {
       "name": "feature",
       "kind": "const",
       "signature": "const feature = String(variables.feature ?? '').replace(/[^a-zA-Z0-9_-]/g…"
-    },
-    {
-      "name": "resolved",
-      "kind": "const",
-      "signature": "const resolved = resolveCanvasNoteTargets(feature)"
-    },
-    {
-      "name": "digest",
-      "kind": "const",
-      "signature": "const digest = renderCanvasNotesDigest(feature, resolved)"
     },
     {
       "name": "dsl",
@@ -227,6 +217,16 @@
       "name": "toc",
       "kind": "const",
       "signature": "const toc = man.docs .map((d) => `- \\`${d.id}\\`（${d.lines} 行${d.tagge…"
+    },
+    {
+      "name": "resolved",
+      "kind": "const",
+      "signature": "const resolved = resolveCanvasNoteTargets(feature)"
+    },
+    {
+      "name": "digest",
+      "kind": "const",
+      "signature": "const digest = renderCanvasNotesDigest(feature, resolved)"
     }
   ],
   "reverse_calls": [

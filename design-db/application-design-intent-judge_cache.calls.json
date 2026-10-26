@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/application/design/intent/judge_cache.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/design/intent/judge_cache.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/design/intent/judge_cache.ts",
   "symbols": [
     {
@@ -99,6 +99,28 @@
     {
       "from": "src/application/design/intent/judge_cache.ts#saveJudgeCache",
       "to": "src/application/design/intent/judge_cache.ts#cacheFile"
+    }
+  ],
+  "expected_symbols": [
+    {
+      "name": "JudgeCacheEntry",
+      "kind": "interface",
+      "signature": "JudgeCacheEntry()"
+    },
+    {
+      "name": "JudgeCache",
+      "kind": "type",
+      "signature": "JudgeCache()"
+    },
+    {
+      "name": "CACHE_VERSION",
+      "kind": "const",
+      "signature": "const CACHE_VERSION = 1"
+    },
+    {
+      "name": "VERDICTS",
+      "kind": "const",
+      "signature": "const VERDICTS = ['pass', 'fail', 'unsupported', 'pending']"
     }
   ],
   "reverse_calls": [

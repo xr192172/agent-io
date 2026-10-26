@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/infrastructure/analysis/project_root/index.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/infrastructure/analysis/project_root/index.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/infrastructure/analysis/project_root/index.ts",
   "symbols": [
     {
@@ -1049,6 +1049,7 @@
     }
   ],
   "reverse_calls": [
+    "src/application/design/intent/consistency.ts#checkConsistencyReport",
     "src/application/design/intent/detect_drift.ts#detectDriftCore",
     "src/application/refactor/find/field_refs.ts#collectFieldRefs",
     "src/application/refactor/find/field_refs.ts#collectTypeConstructCandidates",
@@ -1084,6 +1085,7 @@
     "src/infrastructure/analysis/project_root/index.ts#walkProjectFiles",
     "src/infrastructure/analysis/rename_symbol/core.ts#renameSymbolCore",
     "src/infrastructure/analysis/rename_symbol/languages/ts.ts#renameTsSymbol",
+    "src/presentation/mcp/server_registry.ts#firstContactBackfill",
     "src/presentation/mcp/server_registry.ts#resolveRootFromArgs"
   ]
 }

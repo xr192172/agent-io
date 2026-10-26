@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/application/meta/explore/explore_code.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/meta/explore/explore_code.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/meta/explore/explore_code.ts",
   "symbols": [
     {
@@ -894,7 +894,7 @@
     {
       "name": "EXPLORE_ACTIONS",
       "kind": "const",
-      "signature": "const EXPLORE_ACTIONS = [ 'search', 'read', 'diff_impact', 'arch_layer', 'guided_…"
+      "signature": "const EXPLORE_ACTIONS = [ 'search', 'read', // ★ facts：**选择性读 DB**（索引事实），与 read（读…"
     },
     {
       "name": "ExploreAction",
@@ -925,6 +925,46 @@
       "name": "ReadCodeData",
       "kind": "interface",
       "signature": "ReadCodeData()"
+    },
+    {
+      "name": "FACTS_COLUMNS",
+      "kind": "const",
+      "signature": "const FACTS_COLUMNS = { kind: 'kind', signature: 'signature', params: 'params',…"
+    },
+    {
+      "name": "FactsField",
+      "kind": "type",
+      "signature": "FactsField()"
+    },
+    {
+      "name": "FACTS_FIELDS",
+      "kind": "const",
+      "signature": "const FACTS_FIELDS = Object.keys(FACTS_COLUMNS) as FactsField[]"
+    },
+    {
+      "name": "FACTS_DEFAULT_FIELDS",
+      "kind": "const",
+      "signature": "const FACTS_DEFAULT_FIELDS = [ 'kind', 'signature', 'params', 'return_type', 'start_li…"
+    },
+    {
+      "name": "FACTS_DEFAULT_LIMIT",
+      "kind": "const",
+      "signature": "const FACTS_DEFAULT_LIMIT = 50"
+    },
+    {
+      "name": "FACTS_JSON_FIELDS",
+      "kind": "const",
+      "signature": "const FACTS_JSON_FIELDS = new Set<FactsField>(['params', 'type_params', 'modifiers'…"
+    },
+    {
+      "name": "FactsInput",
+      "kind": "interface",
+      "signature": "FactsInput()"
+    },
+    {
+      "name": "FactsData",
+      "kind": "interface",
+      "signature": "FactsData()"
     },
     {
       "name": "exploreCode",

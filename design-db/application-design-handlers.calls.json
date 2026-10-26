@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/application/design/handlers.ts（★ 全量、与实际 DB 同构；从 design/design-canvas.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/design/handlers.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/design-canvas.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/design-canvas.dsl.json, design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/design-canvas.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/design/handlers.ts",
   "symbols": [
     {
@@ -13,43 +13,43 @@
     {
       "name": "renderExpectationsSection",
       "kind": "function",
-      "line": 308,
+      "line": 323,
       "signature": "renderExpectationsSection(// ★ 判定器是 async ⇒ 这里要 `Awaited<>`（否则拿到的是 Promise）\n  exp: Awaited<ReturnType<typeof judgeExpectations>> | null,\n  notes: readonly string[],): string"
     },
     {
       "name": "detectDriftHandler",
       "kind": "const",
-      "line": 341,
+      "line": 356,
       "signature": "const detectDriftHandler = wrapData(async (a) => { const r = await detectDrift({ fea…"
     },
     {
       "name": "editDslHandler",
       "kind": "const",
-      "line": 359,
+      "line": 374,
       "signature": "const editDslHandler = wrap(async (a) => { // 视图写护栏：live 是代码快照，只能由 import/watch …"
     },
     {
       "name": "getDslHandler",
       "kind": "const",
-      "line": 591,
+      "line": 606,
       "signature": "const getDslHandler = wrapData(async (a) => queryFeature(a as never))"
     },
     {
       "name": "renderDesignHandler",
       "kind": "const",
-      "line": 605,
+      "line": 620,
       "signature": "const renderDesignHandler = wrap(async (a) => { // 默认 mindmap：现行思维导图架构（root → 目录分组 → …"
     },
     {
       "name": "groupExpectationFails",
       "kind": "function",
-      "line": 659,
+      "line": 674,
       "signature": "groupExpectationFails(items: readonly { verdict: string; expectation: Parameters<typeof expectationSubjectPath>[0] }[],\n  inScope: (p: string) => boolean,): { failByPath: Map<string, number>; outsideScope: string[]; unsupportedInScope: number; unsupportedOutside: number }"
     },
     {
       "name": "diffDesignSheetHandler",
       "kind": "const",
-      "line": 706,
+      "line": 721,
       "signature": "const diffDesignSheetHandler = wrapData(async (a) => { const feature = requireStr(a, 'fe…"
     }
   ],
@@ -164,11 +164,6 @@
       "signature": "const getDslHandler = wrapData(async (a) => queryFeature(a as never))"
     },
     {
-      "name": "manageFeatureHandler",
-      "kind": "type",
-      "signature": "const manageFeatureHandler = wrapData(async (a) => manageFeature(a as never))"
-    },
-    {
       "name": "renderDesignHandler",
       "kind": "const",
       "signature": "const renderDesignHandler = wrap(async (a) => { // 默认 mindmap：现行思维导图架构（root → 目录分组 → …"
@@ -177,6 +172,11 @@
       "name": "diffDesignSheetHandler",
       "kind": "const",
       "signature": "const diffDesignSheetHandler = wrapData(async (a) => { const feature = requireStr(a, 'fe…"
+    },
+    {
+      "name": "manageFeatureHandler",
+      "kind": "type",
+      "signature": "const manageFeatureHandler = wrapData(async (a) => manageFeature(a as never))"
     }
   ]
 }

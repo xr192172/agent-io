@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/application/design/dsl_ops/task_ops.ts（★ 全量、与实际 DB 同构；从 design/design-canvas.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/design/dsl_ops/task_ops.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/design-canvas.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/design-canvas.dsl.json, design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/design-canvas.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/design/dsl_ops/task_ops.ts",
   "symbols": [
     {
@@ -1770,9 +1770,39 @@
       "signature": "Loaded()"
     },
     {
+      "name": "CriteriaGap",
+      "kind": "interface",
+      "signature": "CriteriaGap()"
+    },
+    {
+      "name": "EvidencePlanBucket",
+      "kind": "type",
+      "signature": "EvidencePlanBucket()"
+    },
+    {
+      "name": "EvidencePlanItem",
+      "kind": "interface",
+      "signature": "EvidencePlanItem()"
+    },
+    {
+      "name": "EvidencePlanCard",
+      "kind": "interface",
+      "signature": "EvidencePlanCard()"
+    },
+    {
+      "name": "EvidenceWhatSource",
+      "kind": "type",
+      "signature": "EvidenceWhatSource()"
+    },
+    {
       "name": "ConstructBasis",
       "kind": "interface",
       "signature": "ConstructBasis()"
+    },
+    {
+      "name": "TodoHit",
+      "kind": "interface",
+      "signature": "TodoHit()"
     },
     {
       "name": "codeFingerprintAt",
@@ -1916,12 +1946,12 @@
   "requirements_calls": [
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
-      "to": "certs/t348-phase-classification-cert.mjs#cardStanding",
+      "to": "src/domain/task_machine.ts#cardStanding",
       "why": "★ 讨论 2 · P30：claim 读**可领**那一侧（work/violated 才可领）；satisfied 必拒（没活干不许领）"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
-      "to": "certs/t348-phase-classification-cert.mjs#isSatisfied",
+      "to": "src/domain/task_machine.ts#isSatisfied",
       "why": "★ 讨论 2 · P30 的结构判据：complete 读**可收口**那一侧（isSatisfied），★ 不许再与 claim 共用同一个判据 —— 共用会放行 violated 卡（后态全过、前态越权）"
     },
     {

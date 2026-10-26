@@ -1,13 +1,13 @@
 {
-  "//": "Design DB —— src/application/meta/integrity/index_integrity.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/meta/integrity/index_integrity.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/meta/integrity/index_integrity.ts",
   "symbols": [
     {
       "name": "FileKindCounts",
       "kind": "interface",
-      "line": 39,
+      "line": 41,
       "signature": "FileKindCounts()",
       "members": [
         {
@@ -39,7 +39,7 @@
     {
       "name": "IntegrityIssue",
       "kind": "interface",
-      "line": 50,
+      "line": 52,
       "signature": "IntegrityIssue()",
       "members": [
         {
@@ -71,7 +71,7 @@
     {
       "name": "IndexIntegrityResult",
       "kind": "interface",
-      "line": 61,
+      "line": 63,
       "signature": "IndexIntegrityResult()",
       "members": [
         {
@@ -107,6 +107,24 @@
         {
           "name": "refs",
           "type": ": {\n    /** 未决（还没解析，可能是拼图没长到） */\n    pending: number;\n    /** 已解析（连上了符号） */\n    resolved: number;\n    /** 外部/内置（不建边，正常） */\n    external: number;\n    /** 明确连不上 */\n    failed: number;\n    /**\n     * ★★ **陈旧断言**：说自己 resolved，但 `reference_name` 已不在索引里。\n     * 这些行对应的边早已被 FK 级联删掉且不会重建 ⇒ find_references / impact **静默漏报**。\n     * 可信度报告里这是**唯一一个 blocker 级**的指标。\n     */\n    stale_resolved: number;\n  }",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stale_names",
+          "type": ": StaleRefSite[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "stray_data_dirs",
+          "type": ": string[]",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "roots_report",
+          "type": ": string",
           "optional": false,
           "member_kind": "property"
         },
@@ -163,67 +181,105 @@
     {
       "name": "NOT_FRESH_SAMPLE",
       "kind": "const",
-      "line": 174,
+      "line": 190,
       "signature": "const NOT_FRESH_SAMPLE = 20"
+    },
+    {
+      "name": "STALE_RESOLVED_WHERE",
+      "kind": "const",
+      "line": 211,
+      "signature": "const STALE_RESOLVED_WHERE = `u.status = 'resolved' AND ( u.resolved_node_id IS NULL O…"
     },
     {
       "name": "countStaleResolvedRefs",
       "kind": "function",
-      "line": 181,
+      "line": 217,
       "signature": "countStaleResolvedRefs(db: ReturnType<typeof getProjectCacheDb>): number"
+    },
+    {
+      "name": "StaleRefSite",
+      "kind": "interface",
+      "line": 229,
+      "signature": "StaleRefSite()",
+      "members": [
+        {
+          "name": "name",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "file",
+          "type": ": string",
+          "optional": false,
+          "member_kind": "property"
+        },
+        {
+          "name": "line",
+          "type": ": number",
+          "optional": false,
+          "member_kind": "property"
+        }
+      ]
+    },
+    {
+      "name": "listStaleResolvedRefs",
+      "kind": "function",
+      "line": 244,
+      "signature": "listStaleResolvedRefs(db: ReturnType<typeof getProjectCacheDb>,\n  limit = 20,): StaleRefSite[]"
     },
     {
       "name": "indexTrustReminderForClaim",
       "kind": "function",
-      "line": 203,
+      "line": 275,
       "signature": "indexTrustReminderForClaim(projectRoot: string): string"
     },
     {
       "name": "repairStaleResolvedRefs",
       "kind": "function",
-      "line": 230,
+      "line": 302,
       "signature": "repairStaleResolvedRefs(db: ReturnType<typeof getProjectCacheDb>,\n  root: string,): { names: number; reopened: number; cross: { total: number; resolved: number; external: number; failed: number } }"
     },
     {
       "name": "integrityVerdict",
       "kind": "function",
-      "line": 267,
+      "line": 339,
       "signature": "integrityVerdict(args: {\n  /** 有没有可用索引（`false` ⇒ 查不了） */\n  hasIndex: boolean;\n  /** 有没有 blocker 级问题（陈旧断言 / 未保鲜文件 …） */\n  hasBlocker: boolean;\n  /** 有没有幽灵行（索引有、磁盘无） */\n  hasGhost: boolean;\n}): 'trusted' | 'untrusted' | 'unknown'"
     },
     {
       "name": "receiptOf",
       "kind": "function",
-      "line": 280,
+      "line": 352,
       "signature": "receiptOf(r: FreshnessReport,\n  state: IndexState,): NonNullable<IndexIntegrityResult['refresh_receipt']>"
     },
     {
       "name": "readRawSchemaVersion",
       "kind": "function",
-      "line": 304,
+      "line": 376,
       "signature": "readRawSchemaVersion(root: string): { exists: boolean; version: number | null }"
     },
     {
       "name": "indexIntegrityCore",
       "kind": "function",
-      "line": 329,
+      "line": 401,
       "signature": "indexIntegrityCore(opts: {\n  project_dir: string;\n  refresh?: boolean;\n  sample?: number;\n}): Promise<IndexIntegrityResult>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 737,
+      "line": 838,
       "signature": "touchedOf(opts: { project_dir: string; project_dir_explicit?: boolean }): Touched"
     },
     {
       "name": "indexIntegrity",
       "kind": "function",
-      "line": 757,
+      "line": 858,
       "signature": "indexIntegrity(opts: {\n  project_dir: string;\n  /** ★ 调用方是否**显式**给了 `project_dir`：`false` ⇒ `touched.project_dir` 整项省略（见 {@link touchedOf}）。\n   *  缺省 `true`（保守：直接调本函数、未经\"自定位兜底\"的调用方，视为显式给了根）。 */\n  project_dir_explicit?: boolean;\n  refresh?: boolean;\n  sample?: number;\n}): Promise<TouchedProduct<IndexIntegrityResult>>"
     },
     {
       "name": "renderIntegrity",
       "kind": "function",
-      "line": 770,
+      "line": 871,
       "signature": "renderIntegrity(r: IndexIntegrityResult): string"
     }
   ],
@@ -238,6 +294,10 @@
     },
     {
       "source": "../../../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/roots.js",
       "kind": "relative"
     },
     {
@@ -317,6 +377,10 @@
     {
       "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
       "to": "src/application/meta/integrity/index_integrity.ts#integrityVerdict"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/application/meta/integrity/index_integrity.ts#listStaleResolvedRefs"
     },
     {
       "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
@@ -441,6 +505,14 @@
     {
       "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
       "to": "src/infrastructure/project_view.ts#getProjectView"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/infrastructure/roots.ts#findStrayDataDirs"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/infrastructure/roots.ts#formatRootsReport"
     }
   ],
   "expected_symbols": [
@@ -463,6 +535,16 @@
       "name": "NOT_FRESH_SAMPLE",
       "kind": "const",
       "signature": "const NOT_FRESH_SAMPLE = 20"
+    },
+    {
+      "name": "STALE_RESOLVED_WHERE",
+      "kind": "const",
+      "signature": "const STALE_RESOLVED_WHERE = `u.status = 'resolved' AND ( u.resolved_node_id IS NULL O…"
+    },
+    {
+      "name": "StaleRefSite",
+      "kind": "interface",
+      "signature": "StaleRefSite()"
     },
     {
       "name": "repairStaleResolvedRefs",

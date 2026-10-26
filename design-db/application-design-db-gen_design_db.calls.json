@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/application/design/db/gen_design_db.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/design/db/gen_design_db.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/design/db/gen_design_db.ts",
   "symbols": [
     {
@@ -524,6 +524,71 @@
     }
   ],
   "expected_symbols": [
+    {
+      "name": "RawExpectation",
+      "kind": "type",
+      "signature": "RawExpectation()"
+    },
+    {
+      "name": "AnyNode",
+      "kind": "type",
+      "signature": "AnyNode()"
+    },
+    {
+      "name": "norm",
+      "kind": "const",
+      "signature": "const norm = (s: unknown): string => String(s ?? '').replace(/\\\\/g, '/')"
+    },
+    {
+      "name": "outNameOf",
+      "kind": "const",
+      "signature": "const outNameOf = (rel: string): string => rel.replace(/^src\\//, '').replac…"
+    },
+    {
+      "name": "designDbDir",
+      "kind": "const",
+      "signature": "const designDbDir = (root: string): string => path.join(root, 'design-db')"
+    },
+    {
+      "name": "DesignDbHolder",
+      "kind": "interface",
+      "signature": "DesignDbHolder()"
+    },
+    {
+      "name": "DesignDbPlanItem",
+      "kind": "interface",
+      "signature": "DesignDbPlanItem()"
+    },
+    {
+      "name": "DesignDbConflict",
+      "kind": "interface",
+      "signature": "DesignDbConflict()"
+    },
+    {
+      "name": "expectationKey",
+      "kind": "const",
+      "signature": "const expectationKey = (e: RawExpectation): string => JSON.stringify([ e.kind ??…"
+    },
+    {
+      "name": "GenDesignDbOptions",
+      "kind": "interface",
+      "signature": "GenDesignDbOptions()"
+    },
+    {
+      "name": "GenDesignDbResult",
+      "kind": "interface",
+      "signature": "GenDesignDbResult()"
+    },
+    {
+      "name": "renderConflict",
+      "kind": "const",
+      "signature": "const renderConflict = (c: DesignDbConflict): string => `${c.path}: ${c.detail} …"
+    },
+    {
+      "name": "DesignDbStructureResult",
+      "kind": "interface",
+      "signature": "DesignDbStructureResult()"
+    },
     {
       "name": "planDesignDb",
       "kind": "function",

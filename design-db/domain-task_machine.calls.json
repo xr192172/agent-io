@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/domain/task_machine.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/domain/task_machine.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/domain/task_machine.ts",
   "symbols": [
     {
@@ -499,6 +499,11 @@
       "signature": "const RED_DISPOSITION = { own: 'claim', orphan: 'claim', 'dep-pending': 'wait', '…"
     },
     {
+      "name": "ClaimIntent",
+      "kind": "type",
+      "signature": "ClaimIntent()"
+    },
+    {
       "name": "SatisfactionVerdict",
       "kind": "interface",
       "signature": "SatisfactionVerdict()"
@@ -507,6 +512,16 @@
       "name": "LeaseReleaseEvent",
       "kind": "interface",
       "signature": "LeaseReleaseEvent()"
+    },
+    {
+      "name": "LEASE_STATES",
+      "kind": "const",
+      "signature": "const LEASE_STATES = ['preparing', 'claimed'] as const"
+    },
+    {
+      "name": "LEASE_TTL_MS",
+      "kind": "const",
+      "signature": "const LEASE_TTL_MS = (() => { const raw = Number(process.env.AGENT_IO_LEASE_TT…"
     },
     {
       "name": "TransitionState",

@@ -1,0 +1,31 @@
+{
+  "//": "Design DB —— tool_faces.ts（★ 全量、与实际 DB 同构；从 design/agent-io-toolface.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/agent-io-toolface.dsl.json",
+  "path": "tool_faces.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "FaceId",
+      "kind": "type",
+      "signature": "FaceId()"
+    },
+    {
+      "name": "MINIMAL_FACE_TOOLS",
+      "kind": "const",
+      "signature": "const MINIMAL_FACE_TOOLS = [ 'edit_dsl', 'get_dsl', 'edit_code', 'consistency_check'…"
+    },
+    {
+      "name": "ToolFaceView",
+      "kind": "interface",
+      "signature": "ToolFaceView()"
+    },
+    {
+      "name": "uniq",
+      "kind": "const",
+      "signature": "const uniq = (xs: readonly string[]): string[] => [...new Set(xs)].sort()"
+    }
+  ]
+}

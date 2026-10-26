@@ -1,7 +1,7 @@
 {
-  "//": "Design DB —— src/application/meta/explore/explore_arg_spec.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//": "Design DB —— src/application/meta/explore/explore_arg_spec.ts（★ 全量、与实际 DB 同构；从 design/agent-io.dsl.json, design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/task-system-plan.dsl.json",
+  "//source": "design/agent-io.dsl.json, design/task-system-plan.dsl.json",
   "path": "src/application/meta/explore/explore_arg_spec.ts",
   "symbols": [
     {
@@ -51,7 +51,7 @@
     {
       "name": "EXPLORE_REQUIRED",
       "kind": "const",
-      "signature": "const EXPLORE_REQUIRED = { run_simulation: ['feature'], reset_simulation: ['featur…"
+      "signature": "const EXPLORE_REQUIRED = { // ★ facts（2026-10-21）：描述里点名\"**硬必填 file**\" ⇒ 收进来（缺了在【入口…"
     },
     {
       "name": "assertExploreArgKeys",

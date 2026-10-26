@@ -1,0 +1,91 @@
+{
+  "//": "Design DB —— capability_map.ts（★ 全量、与实际 DB 同构；从 design/agent-io-toolface.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/agent-io-toolface.dsl.json",
+  "path": "capability_map.ts",
+  "symbols": [],
+  "imports": [],
+  "calls": [],
+  "expected_symbols": [
+    {
+      "name": "LANE_IDS",
+      "kind": "const",
+      "signature": "const LANE_IDS = ['design', 'refactor', 'observe', 'harvest', 'cross', 'me…"
+    },
+    {
+      "name": "LaneId",
+      "kind": "type",
+      "signature": "LaneId()"
+    },
+    {
+      "name": "ToolCatalogEntry",
+      "kind": "interface",
+      "signature": "ToolCatalogEntry()"
+    },
+    {
+      "name": "LaneTool",
+      "kind": "interface",
+      "signature": "LaneTool()"
+    },
+    {
+      "name": "Lane",
+      "kind": "interface",
+      "signature": "Lane()"
+    },
+    {
+      "name": "LaneAssign",
+      "kind": "interface",
+      "signature": "LaneAssign()"
+    },
+    {
+      "name": "LANE_META",
+      "kind": "const",
+      "signature": "const LANE_META = [ { id: 'design', label: '设计 / 活文档', desc: 'DSL 读写、featur…"
+    },
+    {
+      "name": "WHEN_OVERRIDES",
+      "kind": "const",
+      "signature": "const WHEN_OVERRIDES = { // ★ T202：与 `diagnose` 的分工是**本工具最容易选错的地方** ⇒ 必写。 diagno…"
+    },
+    {
+      "name": "_toolDefs",
+      "kind": "const",
+      "signature": "const _toolDefs = null"
+    },
+    {
+      "name": "_laneOf",
+      "kind": "const",
+      "signature": "const _laneOf = null"
+    },
+    {
+      "name": "DomainNavView",
+      "kind": "interface",
+      "signature": "DomainNavView()"
+    },
+    {
+      "name": "_domains",
+      "kind": "const",
+      "signature": "const _domains = null"
+    },
+    {
+      "name": "BuiltLanes",
+      "kind": "interface",
+      "signature": "BuiltLanes()"
+    },
+    {
+      "name": "CapabilityMapInput",
+      "kind": "interface",
+      "signature": "CapabilityMapInput()"
+    },
+    {
+      "name": "InputPath",
+      "kind": "interface",
+      "signature": "InputPath()"
+    },
+    {
+      "name": "ChainHopVerdict",
+      "kind": "interface",
+      "signature": "ChainHopVerdict()"
+    }
+  ]
+}
