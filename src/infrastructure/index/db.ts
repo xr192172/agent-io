@@ -16,7 +16,7 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { getStorageRoot } from '../storage.js';
 // ★★★ 2026-10-26（T-#4 / 用户选 A）：索引路径走 `roots.ts` 的唯一解析器
-import { rootsOf } from '../roots.js';
+import { rootsOf, featureCachePath } from '../roots.js';
 import { SCHEMA_SQL } from './schema.js';
 
 // ★ 2026-10-04：从 `createRequire` 绕路**改回静态 import**。
@@ -137,9 +137,12 @@ export function projectCacheDbPath(root: string): string {
   return rootsOf(root).cache.path;
 }
 
-/** ② feature 的导入缓存路径（`<dataHome>/import_cache_<feature>.db`）。**不查存在**。 */
+/** ② feature 的册索引路径。**不查存在**。★ 路径由 `roots.ts` 唯一解析（T-#4b）。 */
 export function featureCacheDbPath(feature: string): string {
-  return path.join(getStorageRoot(), `import_cache_${feature}.db`);
+  // ★ 2026-10-26（T-#4b）：这是**册索引**（主键 = feature，跨项目）⇒ 住 shared 根；
+  //   与项目索引 `cache`（主键 = 项目根）是**两种作用域**，不是两套寻址。
+  //   ★ 路径与实际逐字相同（`<dataHome>/.agent-io/import_cache_<feature>.db`）⇒ 零行为变更。
+  return featureCachePath(feature);
 }
 
 /**
@@ -352,7 +355,22 @@ function migrateCacheIfNeeded(db: Database): string {
  *   - **更旧的库：仍清空重建**（缓存是派生物）。v1→v2 加 imports 表时留下的教训：
  *     旧 files 行没有原始 import 数据，留着会让 import_project 缓存路径静默丢包导入依赖边。
  */
-export function openDb(dbFile: string = getDbFile()): Database {
+/**
+ * ★ 2026-10-26（T-#4b）：**无主键兜底已退场**。
+ * 原先 `openDb(dbFile: string = getDbFile())` 的默认值 = `<dataHome>/.agent-io/cache.db`
+ * —— 那是"没有项目根也没有 feature 时随便找一个库"，正是用户那句「**越兜越多**」的活标本
+ * （兜底会自我繁殖：因为"反正总有一个能用"，就没人去保证**正确的那个**存在）。
+ * ⇒ 现在默认值是一个**必抛**：宁可响亮失败，不要静默读错库。
+ */
+function requireDbFile(): never {
+  throw new Error(
+    'openDb 必须显式给 dbFile（无主键兜底已退场）：\n' +
+      '  · 项目索引 ⇒ rootsOf(projectRoot).cache.path\n' +
+      '  · 册索引   ⇒ rootsOf(undefined, feature).featureCache.path',
+  );
+}
+
+export function openDb(dbFile: string = requireDbFile()): Database {
   fs.mkdirSync(path.dirname(dbFile), { recursive: true });
   const db = new DatabaseSync(dbFile);
   db.exec('PRAGMA journal_mode = WAL');
