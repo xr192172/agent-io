@@ -43,6 +43,39 @@ export function getTaskHistoryFile(): string {
   return path.join(getStorageRoot(), 'task-history.db');
 }
 
+/**
+ * ★★★ 2026-10-26（T-#14 / 寄风选的第三条路）：历史的**文本镜像** `task-history.jsonl`。
+ *
+ * 为什么需要两份投影：`.db` 是二进制 —— 进 git 会在仓库里堆版本，且**不可 diff / 不可 review**；
+ * 而 history 是 `derivable: false`（不可重建、要随仓移交）⇒ **必须有文本载体**。
+ * ⇒ 判据：**工作库用 .db**（快、有索引、有主键），**移交载体用 .jsonl**（文本、可 diff）。
+ *   两者是同一份事实的两个投影，**同一次写入产生**（见 recordTaskHistory 尾部）。
+ * ⇒ gitignore：`.db` 由通用 `**\u002f.agent-io/*.db*` 规则忽略，`.jsonl` 进 git。
+ */
+export function getTaskHistoryJsonlFile(): string {
+  return path.join(getStorageRoot(), 'task-history.jsonl');
+}
+
+/**
+ * 把历史导出成 JSONL（一行一条，按 moved_at 排序 —— 纯文本、可 diff）。
+ * ★ 失败**不影响主写**（只告警）：导出是镜像，主库才是权威。
+ */
+export function exportTaskHistoryJsonl(): { written: number; file: string } | null {
+  try {
+    const db = openTaskHistory();
+    const rows = db.prepare('SELECT id, feature, node_id, state, summary, card_json, moved_at, reason FROM task_history ORDER BY moved_at, feature, id').all();
+    db.close();
+    const lines: string[] = [];
+    for (const r of rows as Array<Record<string, unknown>>) lines.push(JSON.stringify(r));
+    const file = getTaskHistoryJsonlFile();
+    fs.writeFileSync(file, lines.join('\n') + (lines.length > 0 ? '\n' : ''));
+    return { written: lines.length, file };
+  } catch (e) {
+    process.stderr.write('[task_history] JSONL mirror export failed: ' + String(e) + '\n');
+    return null;
+  }
+}
+
 /** 建表语句（幂等；★ 表结构只在这一处） */
 const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS task_history (
@@ -112,6 +145,8 @@ export function recordTaskHistory(rows: readonly TaskHistoryRow[]): number {
   } finally {
     db.close();
   }
+  // ★ T-#14：主库写完立刻刷文本镜像（同一份事实的两个投影，同一次写入产生）
+  exportTaskHistoryJsonl();
   return rows.length;
 }
 

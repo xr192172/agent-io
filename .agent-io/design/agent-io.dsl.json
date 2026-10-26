@@ -10725,7 +10725,68 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_task_history_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure — 6 个函数（导入自 4 个模块）（src/infrastructure/task_history.ts） ← 节点 file_src_infrastructure_task_history_ts",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_task_history_ts\"].responsibility"
+          },
+          "owner": "agent:wish-machine",
+          "claimed_at": "2026-10-26T10:54:46.770Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/infrastructure/roots.ts",
+                "content_hash": "db528b919b181f72b943377c572b16b9f814c951"
+              },
+              {
+                "path": "src/infrastructure/task_history.ts",
+                "content_hash": "f778eb4e66e06467f574ee479555b322c1b7a634"
+              }
+            ],
+            "computed_at": "2026-10-26T10:54:46.617Z",
+            "basis": [
+              "declared"
+            ]
+          }
+        },
+        "status": "in_progress",
+        "decision": {
+          "summary": "已了结任务卡的归档库：.db 是工作库、.jsonl 是可随仓移交的文本镜像",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "exportTaskHistoryJsonl"
+              ],
+              "path": "src/infrastructure/task_history.ts",
+              "why": "任务历史要能随仓移交（derivable=false），但 .db 是二进制、不可 diff ⇒ 必须导出文本镜像"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "task-history.jsonl"
+              ],
+              "path": "src/infrastructure/roots.ts",
+              "why": "roots 里 history 角色的跟踪产物必须指向 .jsonl（文本），而不是 .db（二进制）"
+            }
+          ],
+          "acceptance": "① 每次写入/删除后都把历史导出一份 JSONL 文本（<storageRoot>/task-history.jsonl），供 git 跟踪与 review；② 导出失败不得影响主写（只告警）；③ roots.ts 里 history 角色的跟踪产物是 .jsonl，.db 由通用 *.db* 规则忽略。",
+          "status": "active",
+          "tags": [
+            "task-history",
+            "root",
+            "git"
+          ],
+          "updated_at": "2026-10-26T10:54:46.737Z",
+          "author": "llm",
+          "agent": "agent:wish-machine"
+        }
       },
       {
         "id": "file_src_infrastructure_text_arg_suggest_ts",
@@ -60515,7 +60576,8 @@
           }
         ],
         "lines": 227,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_text_arg_suggest_ts",
@@ -61521,13 +61583,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 49,
+  "_dsl_rev": 50,
   "_sync": {
-    "saved_at": "2026-10-26T10:33:17.199Z",
+    "saved_at": "2026-10-26T10:54:46.791Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 9800062,
+    "age": 11089654,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

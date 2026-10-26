@@ -219,7 +219,7 @@ out/
 **/.agent-io/observe
 **/.agent-io/translate
 !/.agent-io/design
-!/.agent-io/task-history.db
+!/.agent-io/task-history.jsonl
 !/.agent-io/design/
 !/.agent-io/design/**
 # <<< GENERATED
