@@ -12088,26 +12088,33 @@
         "arch_layer": "data",
         "task": {
           "id": "file_src_infrastructure_storage_ts",
-          "summary": "storage：getDesignSheetFile 查项目注册表（设计随项目根；读写同口径）",
+          "summary": "storage：getDesignSheetFile 查注册表 + 旧位置回落点名（§7.4 ②）",
           "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_storage_ts\"].responsibility"
           },
           "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T14:48:00.811Z",
+          "claimed_at": "2026-10-26T15:49:12.644Z",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/infrastructure/storage.ts",
+                "name": "getDSL",
+                "fp": "368ab8c2ef96cd80f7cfd0bd3a1431dec1c77524"
+              }
+            ],
             "files": [
               {
                 "path": "src/infrastructure/storage.ts",
-                "content_hash": "a289d72ce7e47f927af33edb9a7b53224faefdeb"
+                "content_hash": "11e38c0cb705265385b697c6e5e00b81289be852"
               }
             ],
-            "computed_at": "2026-10-26T14:48:00.752Z",
+            "computed_at": "2026-10-26T15:49:12.591Z",
             "basis": [
-              "declared"
+              "declared",
+              "expectations"
             ]
           },
           "evidence": [
@@ -12140,15 +12147,30 @@
                   "src/infrastructure/storage.ts"
                 ]
               }
+            },
+            {
+              "kind": "expectations",
+              "at": "2026-10-26T15:50:06.717Z",
+              "by": "llm",
+              "agent": "agent:wish-machine",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_infrastructure_storage_ts（3 条判据）",
+                "input": "4e600e702efaa5d1817936000ccdca4f540043d4",
+                "code": "a5038d4175886eb5fe4d8535d723e00f04f15c71",
+                "covers": [
+                  "src/infrastructure/storage.ts"
+                ]
+              }
             }
           ],
           "reopened_at": null,
-          "reopen_reason": "T-#27：getDesignSheetFile 查项目注册表（读写同口径，设计随项目根生效）",
+          "reopen_reason": "T-#29：getDSL 旧位置回落 + 点名（ROOTS.md §7.4 ② 迁移通道）",
           "reopened_from": "agent:wish-machine"
         },
         "status": "done",
         "decision": {
-          "summary": "storage：getDesignSheetFile 查项目注册表（设计随项目根；读写同口径）",
+          "summary": "storage：getDesignSheetFile 查注册表 + 旧位置回落点名（§7.4 ②）",
           "expectations": [
             {
               "kind": "source-has",
@@ -12156,7 +12178,15 @@
                 "projectRootOf"
               ],
               "path": "src/infrastructure/storage.ts",
-              "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表，否则 getDSL 永远只能落 data home"
+              "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "旧位置"
+              ],
+              "path": "src/infrastructure/storage.ts",
+              "why": "§7.4 ② 的迁移通道：注册表指向新位置而文件还在旧位置时必须回读旧位置并点名，否则未迁移的 feature 会静默变 null"
             },
             {
               "kind": "symbol-exists",
@@ -12165,14 +12195,14 @@
               "why": "读入口必须仍在（回归底线）"
             }
           ],
-          "acceptance": "① `getDesignSheetFile(feature)` 未给 baseDir 时查项目注册表，解析到 `<项目根>/.agent-io/design/`（ROOTS.md §7.4）；② **读写必须同口径**（getDesignSheet 与 saveDesignSheet 都走它）；③ mkdir 必须与它同落点（否则在 data home 造空目录）；④ 注册表没登记 ⇒ 回旧位置（迁移通道，不是默认）。",
+          "acceptance": "① `getDesignSheetFile` 未给 baseDir 时查注册表（T-#27 已做）；② 注册表指向新位置但文件还在旧位置 ⇒ **读旧的 + 响亮点名**（§7.4 ② 迁移通道，不许静默）；③ 显式给了 baseDir 时**不走**回落（调用方已声明位置）。",
           "status": "active",
           "tags": [
             "registry",
-            "single-source",
+            "migration",
             "structural"
           ],
-          "updated_at": "2026-10-26T14:48:00.856Z",
+          "updated_at": "2026-10-26T15:49:12.690Z",
           "author": "llm",
           "agent": "agent:wish-machine"
         },
@@ -12223,6 +12253,41 @@
               "agent": "agent:wish-machine"
             },
             "note": "T-#27：注册表读端接线",
+            "author": "llm",
+            "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-10-26T15:49:12.690Z",
+            "decision": {
+              "summary": "storage：getDesignSheetFile 查项目注册表（设计随项目根；读写同口径）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "projectRootOf"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表，否则 getDSL 永远只能落 data home"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSL",
+                  "why": "读入口必须仍在（回归底线）"
+                }
+              ],
+              "acceptance": "① `getDesignSheetFile(feature)` 未给 baseDir 时查项目注册表，解析到 `<项目根>/.agent-io/design/`（ROOTS.md §7.4）；② **读写必须同口径**（getDesignSheet 与 saveDesignSheet 都走它）；③ mkdir 必须与它同落点（否则在 data home 造空目录）；④ 注册表没登记 ⇒ 回旧位置（迁移通道，不是默认）。",
+              "status": "active",
+              "tags": [
+                "registry",
+                "single-source",
+                "structural"
+              ],
+              "updated_at": "2026-10-26T14:48:00.856Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "T-#29：§7.4 ② 迁移通道",
             "author": "llm",
             "agent": "agent:wish-machine"
           }
@@ -63170,13 +63235,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 82,
+  "_dsl_rev": 84,
   "_sync": {
-    "saved_at": "2026-10-26T15:43:04.123Z",
+    "saved_at": "2026-10-26T15:50:06.807Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 28386986,
+    "age": 28809670,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
