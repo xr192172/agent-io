@@ -307,6 +307,20 @@ type FileDiffRetire = 'awaiting_delete' | 'ready_to_archive';
 
 export interface ConsistencyResult {
   message: string;
+  /**
+   * ★★★ 2026-10-26（T-#1）：**本报告实际用的代码基准（绝对路径）** —— 生产者把事实落进结果。
+   *
+   * 为什么必须回传（病史，写死）：`consistency_check` 曾有两套基准，且**优先级正好相反** ——
+   *   · 本文件：`code_dir` 优先，否则 `source_root`；
+   *   · `handlers.ts#consistencyHandler` 判 expectations 时：`source_root` **优先**，否则 `code_dir`。
+   * ⇒ 调用方传的 `code_dir` 与册的 `source_root` 不同时，会出现
+   *   「fileResults 全 ❌ 不存在」与「expectations 全绿」并存，并附一条**误导性的反向信号**
+   *   （“实现里已经没了、设计侧没标 deprecated”）—— 会让人去给**在用的文件**打 deprecated。
+   * ⇒ 现在：唯一基准 = 本字段；handler 判 expectations 也读它，不再自己按相反优先级猜。
+   */
+  path_base: string;
+  /** `path_base` 的来源（让读者知道它凭什么） */
+  path_base_source: 'code_dir' | 'source_root' | 'fallback';
   fileResults: FileConsistency[];
   invariantResults: InvariantResult[];
   /**
@@ -1431,6 +1445,9 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
   lines.push('');
   return {
     message: lines.join('\n'),
+    // ★ 2026-10-26（T-#1）：把「本报告实际用的代码基准」落进结果 —— 消费者不许再自己猜一套
+    path_base: codeDir,
+    path_base_source: code_dir ? 'code_dir' : dsl.source_root ? 'source_root' : 'fallback',
     fileResults,
     retireFlow,
     baselineDrift,

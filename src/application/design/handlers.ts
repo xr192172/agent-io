@@ -47,9 +47,24 @@ export const consistencyHandler = wrapData(async (a) => {
   const feature = a.feature as string;
   const dsl = getDSLByView(feature, 'design');
   const expItems = dsl ? collectExpectations(dsl) : [];
-  const expRoot = dsl?.source_root ?? (typeof a.code_dir === 'string' ? a.code_dir : '');
+  // ★★★ 2026-10-26（T-#1）：**判据必须与文件层同基准**。
+  //   此前这里是 `dsl.source_root ?? code_dir`（source_root 优先），而 `checkConsistencyReport`
+  //   内部是 `code_dir ?? source_root`（code_dir 优先）—— **优先级正好相反** ⇒
+  //   调用方传的 code_dir 与册的 source_root 不同时，会出现「fileResults 全 ❌ 不存在」
+  //   与「expectations 全绿」并存，并附一条误导性的反向信号（会让人去给在用的文件打 deprecated）。
+  //   ⇒ 现在读生产者回传的事实：`r.path_base`（本报告实际用的代码基准）。
+  const expRoot = r.path_base;
   const exp = expItems.length && expRoot && dsl ? await judgeExpectations(expRoot, expItems) : null;
   const expNotes: string[] = [];
+  // ★ 基准不一致必须**响亮报出**（否则“文件全不存在”会被误读成“代码被删了”）
+  const declaredRoot = dsl?.source_root ? String(dsl.source_root).replace(/\\/g, '/') : '';
+  if (declaredRoot && String(expRoot).replace(/\\/g, '/') !== declaredRoot) {
+    expNotes.push(
+      `⚠ **基准不一致**：调用方 \`code_dir\`=${String(a.code_dir ?? '')} ≠ 册的 \`source_root\`=${dsl?.source_root}` +
+        ` —— 本报告统一按 \`${expRoot}\`（来源 \`${r.path_base_source}\`）判。` +
+        `文件层报“不存在”多半是**基准不对**，不是代码被删。`,
+    );
+  }
   if (expItems.length && !expRoot) {
     expNotes.push('决策卡上有 `expectations`，但**拿不到项目根**（`dsl.source_root` 与 `code_dir` 都没有）⇒ **一条都没判**（不是"都通过"）');
   }
