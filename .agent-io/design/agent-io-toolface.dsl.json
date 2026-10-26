@@ -4,7 +4,7 @@
   "feature": "agent-io-toolface",
   "version": "1.0.0",
   "title": "agent-io 工具面（TOOL_DEFS / 面 / 线 / 链）",
-  "source_root": "D:\\agentio\\dev\\agent-io\\src\\application\\meta\\registry",
+  "source_root": "D:/agentio/dev/agent-io",
   "geometry": {
     "layout": "free",
     "width": 1100,
@@ -55,7 +55,7 @@
           "updated_at": "2026-10-26T06:37:57.922Z",
           "agent": "agent:wish-machine"
         },
-        "path": "capability_map.ts"
+        "path": "src/application/meta/registry/capability_map.ts"
       },
       {
         "id": "file_cli_extract_ts",
@@ -72,7 +72,7 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "cli_extract.ts"
+        "path": "src/application/meta/registry/cli_extract.ts"
       },
       {
         "id": "file_collect_functions_ts",
@@ -89,7 +89,7 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "collect_functions.ts"
+        "path": "src/application/meta/registry/collect_functions.ts"
       },
       {
         "id": "file_registry_extract_ts",
@@ -106,7 +106,7 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "registry_extract.ts"
+        "path": "src/application/meta/registry/registry_extract.ts"
       },
       {
         "id": "file_sync_contracts_ts",
@@ -123,7 +123,7 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "sync_contracts.ts"
+        "path": "src/application/meta/registry/sync_contracts.ts"
       },
       {
         "id": "file_tool_faces_ts",
@@ -181,7 +181,7 @@
           "updated_at": "2026-10-26T06:37:57.918Z",
           "agent": "agent:wish-machine"
         },
-        "path": "tool_faces.ts"
+        "path": "src/application/meta/registry/tool_faces.ts"
       }
     ],
     "edges": [
@@ -226,7 +226,7 @@
     "files": [
       {
         "id": "file_capability_map_ts",
-        "path": "capability_map.ts",
+        "path": "src/application/meta/registry/capability_map.ts",
         "responsibility": "能力线元信息与导航：六条线的 LANE_META（含每线 direct 门名单）、工具→线归属派生、域表投影、以及接法路径的 collectInputPaths",
         "symbols": [
           {
@@ -347,7 +347,7 @@
       },
       {
         "id": "file_cli_extract_ts",
-        "path": "cli_extract.ts",
+        "path": "src/application/meta/registry/cli_extract.ts",
         "responsibility": "核心层 · 根目录 — 1 个函数（导入自 3 个模块）",
         "symbols": [
           {
@@ -377,7 +377,7 @@
       },
       {
         "id": "file_collect_functions_ts",
-        "path": "collect_functions.ts",
+        "path": "src/application/meta/registry/collect_functions.ts",
         "responsibility": "核心层 · 根目录 — 1 个函数（导入自 2 个模块）",
         "symbols": [
           {
@@ -407,7 +407,7 @@
       },
       {
         "id": "file_registry_extract_ts",
-        "path": "registry_extract.ts",
+        "path": "src/application/meta/registry/registry_extract.ts",
         "responsibility": "核心层 · 根目录 — 4 个函数（导入自 3 个模块）",
         "symbols": [
           {
@@ -437,7 +437,7 @@
       },
       {
         "id": "file_sync_contracts_ts",
-        "path": "sync_contracts.ts",
+        "path": "src/application/meta/registry/sync_contracts.ts",
         "responsibility": "核心层 · 根目录 — 7 个函数（导入自 6 个模块）",
         "symbols": [
           {
@@ -460,7 +460,7 @@
       },
       {
         "id": "file_tool_faces_ts",
-        "path": "tool_faces.ts",
+        "path": "src/application/meta/registry/tool_faces.ts",
         "responsibility": "工具「面」的唯一住处：三个面（all / composed / minimal）的定义与派生、极简白名单 MINIMAL_FACE_TOOLS、以及面与注册表的**跨层漂移自检**（列了但注册表找不到的名字）",
         "symbols": [
           {
@@ -506,14 +506,14 @@
       "count": 6
     }
   ],
-  "_dsl_rev": 6,
+  "_dsl_rev": 7,
   "_sync": {
-    "saved_at": "2026-10-26T13:44:17.785Z",
+    "saved_at": "2026-10-26T13:53:33.941Z",
     "source": "design_sheet",
     "feature": "agent-io-toolface",
     "scanRev": 1792996656444,
-    "age": 25601341,
+    "age": 26157497,
     "dbSchemaVersion": 16,
-    "via": "tool:t23-migrate"
+    "via": "tool:ruling-root"
   }
 }
