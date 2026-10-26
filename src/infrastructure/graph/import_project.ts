@@ -1557,7 +1557,11 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       //   ★ 与 `semantic.files[].path` 的关系：**指针只需一份**。这里是产者，先让它产出来；
       //     存量迁移与"语义表降为派生视图"是后续步骤（别一次改三处）。
       path: f.rel,
-      description: f.rel,
+      // ★★★ 2026-10-26（T-#34 / C 方案）：**不再写 `description`**。
+      //   实测：1050/1057 个 file 节点的 `description` 与 `path` **逐字相等**（纯副本），
+      //   另 7 条是 basename 变体 —— 而 `label` 已经持有 basename（上面那行）⇒ **零信息丢失**。
+      //   病历：这个副本被当成"路径"读了 5 次（design-check / write_gate 回落 / node.update 优先级 /
+      //   gen-db 文件名 / summary 里写死根路径）⇒ 产者停产是根治的第一刀。
       style: { ...colors, borderRadius: 4 },
     });
     // 目录归属边

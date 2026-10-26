@@ -1516,7 +1516,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/observe-skeleton-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1534,7 +1533,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/run-all-certs.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1552,7 +1550,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t136-unused-export-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1570,7 +1567,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t181-cert.sh",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1588,7 +1584,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t181-reset.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1606,7 +1601,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t182-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1624,7 +1618,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t182b-cert.sh",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1642,7 +1635,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t182b-tombstone-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1660,7 +1652,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t183-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1678,7 +1669,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t184-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1696,7 +1686,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t184b-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1714,7 +1703,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t184b-probe.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1732,7 +1720,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t185-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1750,7 +1737,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t185-reset.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1768,7 +1754,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t186-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1786,7 +1771,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t186b-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1804,7 +1788,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t187-probe.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1822,7 +1805,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t188-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1840,7 +1822,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t189-measure.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1858,7 +1839,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t189-sweep.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1876,7 +1856,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t190-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1894,7 +1873,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t191-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1912,7 +1890,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t192-flow.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1930,7 +1907,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t192-phantom.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1948,7 +1924,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t192-pointer-sweep.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1966,7 +1941,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t193-card.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1984,7 +1958,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t194-flat.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2002,7 +1975,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t195-gate-removal.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2020,7 +1992,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t196-pointers.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2038,7 +2009,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t197-args.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2056,7 +2026,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t197c-approvals-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2074,7 +2043,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t197sub-approval.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2092,7 +2060,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t197sub-flow-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2110,7 +2077,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t198-status.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2128,7 +2094,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t198sub-approval-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2146,7 +2111,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t200-goals.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2164,7 +2128,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t201-decoy.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2182,7 +2145,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t202-diagnose-loop.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2200,7 +2162,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t203-touched-audit.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2218,7 +2179,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t203b-declared.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2236,7 +2196,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t205-splitchain.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2254,7 +2213,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t212-regex-vs-ast.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2272,7 +2230,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t213-must-export.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2290,7 +2247,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t238-freshness-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2308,7 +2264,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t245-index-key-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2326,7 +2281,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t246-partial-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2344,7 +2298,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t247-coverage-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2362,7 +2315,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t251-data-parser-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2380,7 +2332,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t316-observe-pack-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2398,7 +2349,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t326-tool-surface-cost-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2416,7 +2366,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t328-progress-authority-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2434,7 +2383,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t329-scope-decision-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2452,7 +2400,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t330-pending-view-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2470,7 +2417,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t331-entry-size-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2488,7 +2434,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t332-requires-gate-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2506,7 +2451,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t333-attestation-binding-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2524,7 +2468,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t334-mcp-evidence-path-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2542,7 +2485,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t335-expectation-from-acceptance-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2560,7 +2502,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t336-design-to-diffblocks-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2578,7 +2519,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t337-design-sheet-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2596,7 +2536,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t338-design-sheet-ref-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2614,7 +2553,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t339-design-sheet-pending-home-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2632,7 +2570,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t340-edit-dsl-validate-gate-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2650,7 +2587,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t341-error-key-gate-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2668,7 +2604,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t342-anchor-broken-repair-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2686,7 +2621,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t343-contract-not-from-code-and-attestation-applies-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2704,7 +2638,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t344-design-sheet-resolved-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2722,7 +2655,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t345-read-side-facts-backfill-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2740,7 +2672,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t346-type-only-edge-verdict-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2758,7 +2689,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t347-receipt-completeness-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2776,7 +2706,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t348-phase-classification-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2794,7 +2723,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t349-task-home-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2812,7 +2740,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t350-publish-task-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2830,7 +2757,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t351-card-standing-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2848,7 +2774,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t352-write-gate-coverage-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2866,7 +2791,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t353-gate-principle-unblock-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2884,7 +2808,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t354-incremental-verify-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2902,7 +2825,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "dogfood/build_cache.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2919,7 +2841,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "dogfood/check_cache.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2936,7 +2857,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "dogfood/verify_space_bug.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2953,7 +2873,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "dogfood/verify_spec_form.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2970,7 +2889,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/cmd/instrument/main.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -2987,7 +2905,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/cmd/observev2-demo/main.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3004,7 +2921,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/cmd/observev2-record/main.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3021,7 +2937,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/internal/instrument/contract.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3038,7 +2953,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/internal/instrument/effects.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3055,7 +2969,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/internal/instrument/instrument.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3072,7 +2985,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/export.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3089,7 +3001,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/global.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3106,7 +3017,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/probe.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3123,7 +3033,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/run_recorder.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3140,7 +3049,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/tiered.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3157,7 +3065,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/trace.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3174,7 +3081,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-java/observe/probe/Camprobe.java",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3191,7 +3097,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-py/camprobe.py",
         "style": {
           "bg": "#1a5f3a",
           "color": "#ffffff",
@@ -3208,7 +3113,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/check-receipt.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3226,7 +3130,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/clean_dist.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3244,7 +3147,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/demo.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3262,7 +3164,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/dev.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3280,7 +3181,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/diff_language_rosters.py",
         "style": {
           "bg": "#1a5f3a",
           "color": "#ffffff",
@@ -3298,7 +3198,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/freeze_grammar_sources.py",
         "style": {
           "bg": "#1a5f3a",
           "color": "#ffffff",
@@ -3316,7 +3215,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/gen_agents.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3334,7 +3232,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/gen_cognition.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3352,7 +3249,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/gen_endpoints_schema.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3370,7 +3266,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/gen_manifest.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3388,7 +3283,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/gen_teach.cjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3406,7 +3300,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/grammar_shim.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3424,7 +3317,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/hook-task-gate.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3470,7 +3362,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/hub.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3488,7 +3379,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/install_global_skill.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3506,7 +3396,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/install_mcp.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3552,7 +3441,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/mcp/mcp_call.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3570,7 +3458,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/mcp/mcp_scan.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3588,7 +3475,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/mcp/mcp_smoke.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3606,7 +3492,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/measure_b_contract.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3624,7 +3509,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/merge_language_roster.py",
         "style": {
           "bg": "#1a5f3a",
           "color": "#ffffff",
@@ -3642,7 +3526,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/net_probe.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3660,7 +3543,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/new-observe-lang.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3678,7 +3560,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/plan-assertions.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3696,7 +3577,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_cc_equiv.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3714,7 +3594,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_closure_multi.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3732,7 +3611,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_demand_side.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3750,7 +3628,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_edge_diff.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3768,7 +3645,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_extract_hard.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3786,7 +3662,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_extract_quality.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3804,7 +3679,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_impact_reverse.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3822,7 +3696,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_tool_smells.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3840,7 +3713,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_tool_surface.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3858,7 +3730,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_verdict_grid.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3876,7 +3747,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_xfile_resolve.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3894,7 +3764,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/promote_agent_io_mcp.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3912,7 +3781,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/rebuild_feature.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3930,7 +3798,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/rebuild_teach.cjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3948,7 +3815,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/relink_specifiers.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3966,7 +3832,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/run-invariant-checks.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3984,7 +3849,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/scan_canvas.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4002,7 +3866,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/setup.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4020,7 +3883,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/task-system-static.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4038,7 +3900,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/ts_kernel_probe.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4056,7 +3917,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/verify-changed.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4101,7 +3961,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/verify.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4119,7 +3978,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/verify_grammar_rebuild.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4137,7 +3995,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/vocabulary.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4155,7 +4012,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/cross/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4172,7 +4028,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/api_signature.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4189,7 +4044,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/derive/derive_algorithm.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4206,7 +4060,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/derive/derive_chain.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4223,7 +4076,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/derive/derive_split.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4240,7 +4092,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/derive/opl.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4257,7 +4108,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/api_ops.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4860,7 +4710,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/edge_ops.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -5229,7 +5078,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/edit_result.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -5309,7 +5157,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/feature_ops.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -5592,7 +5439,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/file_ops.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -5954,7 +5800,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/node_ops.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6772,7 +6617,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/op_data_spec.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10687,7 +10531,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/status_tools.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11091,7 +10934,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/task_ops.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -13342,7 +13184,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/update_feature.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17410,7 +17251,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/handlers.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17538,7 +17378,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17578,7 +17417,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/intent/consistency.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17595,7 +17433,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/intent/detect_drift.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17612,7 +17449,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/intent/expectations.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17738,7 +17574,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/intent/set_design_intent.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17755,7 +17590,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/lifecycle/simulation.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17772,7 +17606,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/lifecycle/snapshot.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17789,7 +17622,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/no_file_entries.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17806,7 +17638,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/workbench/code_workbench.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17823,7 +17654,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/workbench/dag_layout.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17840,7 +17670,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/dispatch.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17857,7 +17686,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/harvest/extract_contracts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17874,7 +17702,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/harvest/handlers.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17891,7 +17718,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/harvest/harvest_closure.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17908,7 +17734,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/harvest/harvest_decisions.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17925,7 +17750,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/harvest/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17942,7 +17766,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/diagnosis/diagnose_loop.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17959,7 +17782,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/docs/project_docs.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17976,7 +17798,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/explore/contract_page.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17993,7 +17814,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/explore/explore_arg_spec.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18010,7 +17830,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/explore/explore_code.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18027,7 +17846,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/explore/first_hop_args.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18044,7 +17862,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/explore/next_hop_args.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18061,7 +17878,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/explore/query_feature.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18215,7 +18031,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/handlers.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18232,7 +18047,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/impact/impact_report.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18249,7 +18063,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18266,7 +18079,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/integrity/index_integrity.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18283,7 +18095,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/llm/llm_decider.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18300,7 +18111,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/llm/semantic_search.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18317,7 +18127,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/registry/capability_map.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18334,7 +18143,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/registry/cli_extract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18351,7 +18159,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/registry/collect_functions.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18368,7 +18175,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/registry/registry_extract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18385,7 +18191,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/registry/sync_contracts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18402,7 +18207,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/registry/tool_faces.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18419,7 +18223,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/upgrade/upgrade.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18436,7 +18239,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/view/derive_anim_flow.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18453,7 +18255,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/view/derive_mind_map.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18470,7 +18271,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/view/explain_gen.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18487,7 +18287,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/view/overview.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18504,7 +18303,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/capture/feature_line.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18521,7 +18319,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/capture/memory_observe.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18538,7 +18335,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/capture/narrate_step.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18555,7 +18351,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/capture/observe_points.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18572,7 +18367,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/capture/observe_trace.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18589,7 +18383,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/capture/trace_evidence.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18606,7 +18399,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/handlers.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18623,7 +18415,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18640,7 +18431,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/reconcile/reason_validator.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18657,7 +18447,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/reconcile/reconcile_chain.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18674,7 +18463,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/reconcile/reconcile_effects.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18691,7 +18479,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/runtime/run_tests.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18708,7 +18495,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/runtime/stale_check.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18725,7 +18511,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/runtime/watch_project_tool.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -18742,7 +18527,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/patrol/task_drift.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19100,7 +18884,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/plumbing.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19200,7 +18983,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/annotate/function_annotation.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19217,7 +18999,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/deprecate_offline/deprecate_offline.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19234,7 +19015,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/diff_views/diff_views.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19398,7 +19178,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/edit/apply_writes.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19415,7 +19194,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/edit/edit_code.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19432,7 +19210,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/edit/remove_dead_imports.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19508,7 +19285,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/find/ast_suggest.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19525,7 +19301,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/find/field_refs.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19542,7 +19317,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/find/find_references.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19559,7 +19333,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/find/similar_names.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19576,7 +19349,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/handlers.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19593,7 +19365,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19782,7 +19553,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/parse_capability/parse_capability.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19799,7 +19569,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/pipeline/refactor_judge.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19816,7 +19585,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/pipeline/refactor_pipeline.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19833,7 +19601,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/pipeline/refactor_plan.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19850,7 +19617,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rename/move_domain.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19867,7 +19633,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rename/rename_file.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19884,7 +19649,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rename/rename_files.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19901,7 +19665,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rename/rename_local.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19918,7 +19681,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rename/rename_symbols.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19935,7 +19697,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rename/symbol_move.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19952,7 +19713,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rule_library/rule_apply.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19969,7 +19729,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rule_library/rule_extract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -19986,7 +19745,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rule_library/rule_library.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -20003,7 +19761,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/snapshot/file_snapshot.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -20020,7 +19777,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/stage_registry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -20037,7 +19793,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/tool_registry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -20054,7 +19809,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/types.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -20071,7 +19825,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/write_gate.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -24089,7 +23842,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/animation.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -25150,7 +24902,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/b_terms.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -25881,7 +25632,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/chain_wiring.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -28927,7 +28677,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/contract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -29343,7 +29092,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/design_sheet.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -30928,7 +30676,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/diff_blocks.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -31223,7 +30970,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/discussion_log.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -31957,7 +31703,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/dsl_removal.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -32114,7 +31859,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/expectation.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -33225,7 +32969,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/geometry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -34675,7 +34418,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/mindmap.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -35431,7 +35173,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/narration.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -35783,7 +35524,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/overlay.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -39827,7 +39567,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/reasoning.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -40298,7 +40037,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/scope.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -40961,7 +40699,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/semantic.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -42217,7 +41954,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/simulation.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -42588,7 +42324,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/task_machine.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -46587,7 +46322,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/task_schema.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -47338,7 +47072,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/types.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -48098,7 +47831,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/validator.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -49967,7 +49699,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/alert_inbox.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -49984,7 +49715,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/capability/capability_matrix.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50001,7 +49731,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/capability/language_concepts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50018,7 +49747,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/capability/register_capabilities.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50035,7 +49763,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/core.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50052,7 +49779,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50069,7 +49795,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/languages/c.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50086,7 +49811,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/languages/cs.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50103,7 +49827,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/languages/go.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50120,7 +49843,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/languages/java.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50137,7 +49859,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/languages/py.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50154,7 +49875,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/languages/registry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50171,7 +49891,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/languages/ts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50188,7 +49907,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/parts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50205,7 +49923,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/cross_repo/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50222,7 +49939,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/deadcode/dead_statements.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50239,7 +49955,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50256,7 +49971,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/candidate_locator.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50273,7 +49987,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/chain_tracer.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50290,7 +50003,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/contract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50307,7 +50019,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/diagnose.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50324,7 +50035,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/impact_analyzer.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50341,7 +50051,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/repair.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50358,7 +50067,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50375,7 +50083,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/symptom_parser.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50392,7 +50099,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/verifier.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50409,7 +50115,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/health/health_cache.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50426,7 +50131,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/health/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50443,7 +50147,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/impact/diff.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50460,7 +50163,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/impact/diff_impact.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50477,7 +50179,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/impact/impact_ledger_store.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50494,7 +50195,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/impact/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50511,7 +50211,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/approve_gated.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50528,7 +50227,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/chain.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50545,7 +50243,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/contract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50562,7 +50259,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/decl_review.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50579,7 +50275,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/dsl_store.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50596,7 +50291,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/go_instrument.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50695,7 +50389,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50712,7 +50405,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/instrument.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50729,7 +50421,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/instrument_java.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50746,7 +50437,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/instrument_py.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50763,7 +50453,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/instrument_skeleton.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50780,7 +50469,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/judge.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50797,7 +50485,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/judge_guard.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50814,7 +50501,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/judge_service.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50831,7 +50517,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/ledger_fold.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50848,7 +50533,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/log_query.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50865,7 +50549,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/observe_langs.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50882,7 +50565,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/probe.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50899,7 +50581,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/proposal_store.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50916,7 +50597,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/run_loop.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50933,7 +50613,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/run_sentinel.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50950,7 +50629,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/run_trace_replay.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50967,7 +50645,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/snapshot_needle.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -50984,7 +50661,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/trace_exec.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51001,7 +50677,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/verify_gate.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51018,7 +50693,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/package_migration/core.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51035,7 +50709,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/package_migration/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51052,7 +50725,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/package_migration/languages/go.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51069,7 +50741,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/package_migration/languages/py.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51086,7 +50757,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/package_migration/languages/registry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51103,7 +50773,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/package_migration/languages/ts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51120,7 +50789,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/package_migration/parts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51137,7 +50805,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/project_root/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51154,7 +50821,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/refactor/langs/java/executor.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51171,7 +50837,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/refactor/langs/java/layering.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51188,7 +50853,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51205,7 +50869,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/refactor/langs/python/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51222,7 +50885,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/refactor/langs/python/verify_commands.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51239,7 +50901,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/refactor/protect.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51256,7 +50917,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/refactor/refactor_langs.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51273,7 +50933,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/core.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51290,7 +50949,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51307,7 +50965,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/languages/c.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51324,7 +50981,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/languages/cs.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51341,7 +50997,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/languages/go.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51358,7 +51013,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/languages/java.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51375,7 +51029,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/languages/py.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51392,7 +51045,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/languages/registry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51409,7 +51061,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/languages/ts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51426,7 +51077,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/namespace_family.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51443,7 +51093,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/parts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51460,7 +51109,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/analyze_monolith.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51477,7 +51125,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/arch_layer.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51494,7 +51141,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/cfg.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51511,7 +51157,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/derive_feature_tree.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51528,7 +51173,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/feature_map.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51545,7 +51189,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/layer_detect.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51562,7 +51205,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/monolith.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51579,7 +51221,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/role_title.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51596,7 +51237,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/structure_gap.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51613,7 +51253,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/submit_gate/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51630,7 +51269,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/behavior/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51647,7 +51285,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/const_eval.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51664,7 +51301,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/fill.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51681,7 +51317,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/fixers.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51698,7 +51333,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/go_extractor.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51715,7 +51349,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/llm.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51732,7 +51365,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/pairs.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51749,7 +51381,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/project.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51766,7 +51397,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/prompts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51783,7 +51413,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/referenced.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51800,7 +51429,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/tool.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51817,7 +51445,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/ts_codegen.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51834,7 +51461,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/unit.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51851,7 +51477,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/verify.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51868,7 +51493,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/verify_behavior.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51885,7 +51509,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/adapters/c.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51902,7 +51525,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/adapters/csharp.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51919,7 +51541,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/adapters/go.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51936,7 +51557,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/adapters/java.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51953,7 +51573,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/adapters/node.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51970,7 +51589,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/adapters/python.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -51987,7 +51605,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52004,7 +51621,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/adapters/types.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52021,7 +51637,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/detect.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52038,7 +51653,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/features.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52055,7 +51669,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/gate.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52072,7 +51685,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/removed.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52089,7 +51701,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/rewrite.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52106,7 +51717,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/toolchain.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52123,7 +51733,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/daemon/client.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52140,7 +51749,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/data_dir.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52157,7 +51765,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/dictionary.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52174,7 +51781,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/dogfood_coverage.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52191,7 +51797,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/dogfood_stats.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52208,7 +51813,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/exec_guard.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52225,7 +51829,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/git.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52242,7 +51845,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/graph/dead_deps.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52259,7 +51861,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/graph/import_graph.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52276,7 +51877,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/graph/import_project.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52293,7 +51893,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/db.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52310,7 +51909,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/file_facts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52327,7 +51925,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/function_outline.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52344,7 +51941,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/guided_tour.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52361,7 +51957,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/index_backfill.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52378,7 +51973,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/index_freshness.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52395,7 +51989,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/live_render.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52412,7 +52005,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/registry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52429,7 +52021,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/scan_rev.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52446,7 +52037,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/schema.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52576,7 +52166,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/self_writes.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52593,7 +52182,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/symbols.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52610,7 +52198,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/watch_project.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52627,7 +52214,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/llm_agnes.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52644,7 +52230,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/llm_focus.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52661,7 +52246,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/llm_gateway.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52678,7 +52262,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/llm_pool.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52695,7 +52278,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/packages/package_pins.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52712,7 +52294,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/packages/template_compat.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52729,7 +52310,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/ast_node.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52746,7 +52326,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/ast_parser.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52763,7 +52342,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/ast_rename.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52780,7 +52358,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/comments.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52797,7 +52374,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/fuzzy_match.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52814,7 +52390,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/import_resolve.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52831,7 +52406,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/import_text.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52848,7 +52422,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52865,7 +52438,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/kernel.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52972,7 +52544,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/lang_hint.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -52989,7 +52560,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/languages.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -53006,7 +52576,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/loader.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -53023,7 +52592,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/module_analysis.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -53040,7 +52608,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/probe.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -53057,7 +52624,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/source_exts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -53074,7 +52640,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/type_members.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -53091,7 +52656,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/project_view.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -53108,7 +52672,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/render/anim_core.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -53125,7 +52688,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/render/dataflow_core.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -53142,7 +52704,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/render/export.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -53159,7 +52720,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/render/inject_replay.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -53176,7 +52736,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/render/simulation_engine.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -53193,7 +52752,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/rules/rule_match.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -53210,7 +52768,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/rules/rule_tokens.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -53227,7 +52784,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/scan_bounds.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -53244,7 +52800,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/storage.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56396,7 +55951,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/storage_overlay.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56413,7 +55967,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/text/arg_suggest.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56430,7 +55983,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/text/line_utils.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56447,7 +55999,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/text/refs_text.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56464,7 +56015,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/verify_refactor.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56481,7 +56031,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/cli/cli.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56498,7 +56047,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/cli/diagnose_loop_cli.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56515,7 +56063,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/cli/install_package_cli.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56532,7 +56079,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/daemon/daemon.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56549,7 +56095,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/daemon/memory_watch.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56566,7 +56111,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/daemon/server.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56583,7 +56127,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/http/contract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56600,7 +56143,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/http/dict_gen.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56617,7 +56159,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/http/serve.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56677,7 +56218,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/mcp/lifecycle.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56694,7 +56234,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/mcp/server.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56748,7 +56287,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/mcp/server_registry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56849,7 +56387,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/mcp/tool_warnings.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -56913,7 +56450,6 @@
           "updated_at": "2026-10-22T14:53:55.381Z",
           "agent": "all-externalize"
         },
-        "description": "src/application/design/board/pool.ts",
         "decision_history": [
           {
             "at": "2026-10-19T01:47:37.698Z",
@@ -57178,7 +56714,6 @@
         "label": "design_line.ts",
         "type": "file",
         "path": "src/application/design/line/design_line.ts",
-        "description": "src/application/design/line/design_line.ts",
         "decision": {
           "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
           "expectations": [
@@ -57322,7 +56857,6 @@
         "label": "gen_design_db.ts",
         "type": "file",
         "path": "src/application/design/db/gen_design_db.ts",
-        "description": "src/application/design/db/gen_design_db.ts",
         "decision": {
           "summary": "设计 DB 每文件投影新增 reverse_calls（谁调我：一跳反向调用，事实取 cache.db 边表反向索引），回答「改这里会炸哪里」的第一跳；跨文件传递闭包由消费者沿 reverse_calls 行走，不落库（渐进式披露）。",
           "expectations": [
@@ -57587,7 +57121,6 @@
         "label": "symbol_diff.ts",
         "type": "file",
         "path": "src/application/design/rewrite/symbol_diff.ts",
-        "description": "src/application/design/rewrite/symbol_diff.ts",
         "decision": {
           "summary": "「设计 DB vs 源码」的**符号级判据**，全仓唯一一份。三条纪律：① 可比性由 kind 决定（function 比 signature；class/type/interface/const 不可比）；② uncompared 必须显式报数（算进一致是最坏的谎）；③ 配对不能只用 name（同名多义按 line 距离最近配，配不上进 unpaired）。",
           "expectations": [
@@ -57652,7 +57185,6 @@
         "label": "rewrite.ts",
         "type": "file",
         "path": "src/application/design/rewrite/rewrite.ts",
-        "description": "src/application/design/rewrite/rewrite.ts",
         "decision": {
           "summary": "⑥「设计 DB → 源码」的执行器（`design_line action=rewrite`）。只做一件事：源码签名与设计签名不一致时，把源码改回设计签名。★ 2026-10-20 体检发现：它的 `ok:true` 同时表示「做了且复核干净 / 没事可做 / 路径写错 / 这类符号我不管」——**四种情况输出逐字相同**。",
           "expectations": [
@@ -57757,7 +57289,6 @@
         "label": "design_diff.ts",
         "type": "file",
         "path": "src/application/design/line/design_diff.ts",
-        "description": "src/application/design/line/design_diff.ts",
         "decision": {
           "summary": "设计侧 × 实际侧的**节点级 diff**（像 git diff，只报不一致）：`+` 只在设计侧 · `-` 只在实际侧 · `~` 两边都有但内容不同。★ 只比「有意义的字段」（decision / task / label / type / arch_layer / description），不渲染噪声。★ 只在设计侧的**边**要再判一次：源码里确有引用 ⇒ 扫描遗漏（live 漏抓），源码里找不到 ⇒ 真要建。",
           "expectations": [
@@ -57846,7 +57377,6 @@
         "label": "mutants.ts",
         "type": "file",
         "path": "src/infrastructure/parse/mutants.ts",
-        "description": "src/infrastructure/parse/mutants.ts",
         "decision": {
           "summary": "从 parse 的树里抽【可变异点】—— 目前只做 TS 的二元比较运算符（`===` / `!==` / `==` / `!=`），每个点带 {op, line, from, to, startIndex, endIndex}。★ 不动 `ParsedFile` 的契约（那是 550 个消费者的面），是一个**独立函数**。★ 树是现成的（`parseFileFull` 已在用），这里只是**多走一遍**，不重新 parse。",
           "expectations": [
@@ -57921,7 +57451,6 @@
         "label": "impl-mutate.mjs",
         "type": "file",
         "path": "scripts/impl-mutate.mjs",
-        "description": "scripts/impl-mutate.mjs",
         "decision": {
           "summary": "实现层变异器：拿 `extractMutants` 的可变异点（AST 给的，不是正则），逐个改 → 增量编译 → 跑夹具 → **必须先变红**（全绿 = 变异存活 = 该实现没被夹具覆盖）。★ 默认只试「改动行附近」的点（`--all` 才全跑）；★ 收尾必须还原源文件（try/finally）。",
           "expectations": [
@@ -57997,7 +57526,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t353-judge-port-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -58015,7 +57543,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t355-gate-exemption-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -58032,7 +57559,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t356-authorize-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -58049,7 +57575,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t357-pipeline-gate-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -58066,7 +57591,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t358-domain-five-values-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -58084,7 +57608,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/clean-dead-functions.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -58101,7 +57624,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/contract-calls.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -58118,7 +57640,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/coverage.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -58135,7 +57656,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/design-check.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -58152,7 +57672,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/gen-contracts.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -58169,7 +57688,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/gen-db-check.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -58186,7 +57704,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/impl-fixture.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -58203,7 +57720,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/mutate.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -58220,7 +57736,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/patrol.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -58237,7 +57752,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/claim_conflict.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58254,7 +57768,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/board/todo_journal.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58270,7 +57783,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/read_set.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58287,7 +57799,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/gate_note.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58304,7 +57815,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/source_writer.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58321,7 +57831,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/actor_spec.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58375,7 +57884,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/judge_port.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58492,7 +58000,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/todo_chain.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58540,7 +58047,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/book.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58557,7 +58063,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/go_tests.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58574,7 +58079,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/receipt.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58591,7 +58095,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/symbol_docstring.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58608,7 +58111,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/symbol_params.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58625,7 +58127,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/symbol_shape.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58642,7 +58143,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/archive/archive_node.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58660,7 +58160,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/reconcile/proposal_approve.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58678,7 +58177,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/reconcile/proposal_list.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58696,7 +58194,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/reconcile/proposal_reject.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58714,7 +58211,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/runtime/judge_observe_events.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58732,7 +58228,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/runtime/observe_log_query.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58750,7 +58245,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/test_contract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58768,7 +58262,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/source_write_port.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -58786,7 +58279,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/dsl_write_scope.ts",
         "style": {},
         "decision": {
           "summary": "基础设施 · 设计册写端的授权作用域（runDslWriteScope 的家）——设计侧写操作在这里判定「谁经什么通道写」",
@@ -58856,7 +58348,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/task_history.ts",
         "style": {},
         "decision": {
           "summary": "基础设施 · 已了结任务卡归档库（task-history.db 唯一读写口，append-only 审计；独立于可重建的 cache.db）",
@@ -58926,7 +58417,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/cmd/instrument/main.go",
         "style": {},
         "decision": {
           "summary": "observe-lang-go · instrument 命令行入口：从源码生成探针插桩（probeFromCode 驱动）",
@@ -58996,7 +58486,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/cmd/observev2-demo/main.go",
         "style": {},
         "decision": {
           "summary": "observe-lang-go · observev2 演示入口：跑下单/支付链路演示探针采集",
@@ -59066,7 +58555,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/cmd/observev2-record/main.go",
         "style": {},
         "decision": {
           "summary": "observe-lang-go · observev2 录制入口：录制链路运行产出基线事件",
@@ -59136,7 +58624,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/internal/instrument/contract.go",
         "style": {},
         "decision": {
           "summary": "observe-lang-go · 插桩契约层：包过滤与探针命名（PackageFilter/MatchProbe）",
@@ -59206,7 +58693,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/internal/instrument/effects.go",
         "style": {},
         "decision": {
           "summary": "observe-lang-go · 插桩副作用分析：语句级效果判定（effectInStmt/effectTargetOfLHS）",
@@ -59276,7 +58762,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/internal/instrument/instrument.go",
         "style": {},
         "decision": {
           "summary": "observe-lang-go · 插桩引擎核心：文件收集/备份/改写（37 符号的最大件）",
@@ -59346,7 +58831,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/export.go",
         "style": {},
         "decision": {
           "summary": "observe-lang-go · 探针导出门：事件分流与直方图过滤",
@@ -59416,7 +58900,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/global.go",
         "style": {},
         "decision": {
           "summary": "observe-lang-go · 探针全局状态：全局 sink 与错误上报",
@@ -59486,7 +58969,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/probe.go",
         "style": {},
         "decision": {
           "summary": "observe-lang-go · 探针核心：sink 构造/字段消毒/限流（newRateLimiter）",
@@ -59556,7 +59038,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/run_recorder.go",
         "style": {},
         "decision": {
           "summary": "observe-lang-go · 运行录制器：录 (args, ret) 供行为基线",
@@ -59607,7 +59088,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/tiered.go",
         "style": {},
         "decision": {
           "summary": "observe-lang-go · 分层探针：环形缓冲预算 + 全量 sink（17 符号的最大件）",
@@ -59677,7 +59157,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/trace.go",
         "style": {},
         "decision": {
           "summary": "observe-lang-go · 追踪探针：Enter/TraceID/作用域（TraceIDFromContext）",
@@ -59747,7 +59226,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-java/observe/probe/Camprobe.java",
         "style": {},
         "decision": {
           "summary": "observe-lang-java · Camprobe 探针（java 侧唯一探针类，单符号）",
@@ -59804,7 +59282,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-py/camprobe.py",
         "style": {},
         "decision": {
           "summary": "observe-lang-py · Camprobe 探针（9 符号：全局 sink/捕获/lambda 包装）",
@@ -59863,7 +59340,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/intent/judge_cache.ts",
         "style": {},
         "decision": {
           "summary": "判据求值缓存（judge-cache.json）：key = sha256(判据形状 ‖ 目标文件 content_hash)，只缓存 symbol-exists/signature-matches/source-has 三类文件解析判定；写侧原子（tmp+rename）；损坏留痕不静默。",
@@ -59959,7 +59435,6 @@
         "label": "docs/VISION.md",
         "type": "file",
         "path": "docs/VISION.md",
-        "description": "本仓的愿景/理想文档：回答「这个工具到底为什么存在」，是判据与取舍的最终依据。",
         "style": {}
       }
     ],
@@ -114442,13 +113917,13 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-26T15:59:33.115Z",
+    "saved_at": "2026-10-26T16:09:25.581Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 446850304,
+    "age": 447442770,
     "dbSchemaVersion": 16,
-    "via": "edit_dsl:edit_dsl"
+    "via": "tool:t34-last"
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -117449,7 +116924,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1497,
+  "_dsl_rev": 1499,
   "feature_tree": {
     "features": [
       {

@@ -1404,7 +1404,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/observe-skeleton-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1421,7 +1420,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/run-all-certs.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1438,7 +1436,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t136-unused-export-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1455,7 +1452,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t181-cert.sh",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1472,7 +1468,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t181-reset.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1489,7 +1484,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t182-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1506,7 +1500,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t182b-cert.sh",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1523,7 +1516,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t182b-tombstone-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1540,7 +1532,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t183-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1557,7 +1548,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t184-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1574,7 +1564,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t184b-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1591,7 +1580,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t184b-probe.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1608,7 +1596,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t185-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1625,7 +1612,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t185-reset.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1642,7 +1628,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t186-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1659,7 +1644,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t186b-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1676,7 +1660,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t187-probe.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1693,7 +1676,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t188-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1710,7 +1692,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t189-measure.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1727,7 +1708,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t189-sweep.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1744,7 +1724,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t190-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1761,7 +1740,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t191-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1778,7 +1756,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t192-flow.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1795,7 +1772,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t192-phantom.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1812,7 +1788,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t192-pointer-sweep.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1829,7 +1804,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t193-card.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1846,7 +1820,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t194-flat.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1863,7 +1836,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t195-gate-removal.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1880,7 +1852,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t196-pointers.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1897,7 +1868,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t197-args.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1914,7 +1884,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t197c-approvals-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1931,7 +1900,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t197sub-approval.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1948,7 +1916,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t197sub-flow-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1965,7 +1932,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t198-status.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1982,7 +1948,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t198sub-approval-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -1999,7 +1964,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t200-goals.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2016,7 +1980,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t201-decoy.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2033,7 +1996,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t202-diagnose-loop.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2051,7 +2013,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t203-touched-audit.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2069,7 +2030,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t203b-declared.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2086,7 +2046,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t205-splitchain.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2103,7 +2062,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t212-regex-vs-ast.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2120,7 +2078,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t213-must-export.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2137,7 +2094,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t238-freshness-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2154,7 +2110,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t245-index-key-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2171,7 +2126,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t246-partial-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2188,7 +2142,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t247-coverage-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2205,7 +2158,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t251-data-parser-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2222,7 +2174,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t316-observe-pack-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2239,7 +2190,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t326-tool-surface-cost-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2256,7 +2206,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t328-progress-authority-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2273,7 +2222,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t329-scope-decision-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2290,7 +2238,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t330-pending-view-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2307,7 +2254,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t331-entry-size-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2324,7 +2270,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t332-requires-gate-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2341,7 +2286,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t333-attestation-binding-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2358,7 +2302,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t334-mcp-evidence-path-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2375,7 +2318,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t335-expectation-from-acceptance-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2392,7 +2334,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t336-design-to-diffblocks-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2409,7 +2350,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t337-design-sheet-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2426,7 +2366,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t338-design-sheet-ref-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2443,7 +2382,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t339-design-sheet-pending-home-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2460,7 +2398,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t340-edit-dsl-validate-gate-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2477,7 +2414,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t341-error-key-gate-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2494,7 +2430,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t342-anchor-broken-repair-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2511,7 +2446,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t343-contract-not-from-code-and-attestation-applies-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2528,7 +2462,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t344-design-sheet-resolved-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2545,7 +2478,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t345-read-side-facts-backfill-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2562,7 +2494,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t346-type-only-edge-verdict-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2579,7 +2510,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t347-receipt-completeness-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2596,7 +2526,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t348-phase-classification-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2613,7 +2542,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t349-task-home-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2630,7 +2558,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t350-publish-task-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2647,7 +2574,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t351-card-standing-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2664,7 +2590,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t352-write-gate-coverage-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2681,7 +2606,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t353-gate-principle-unblock-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2698,7 +2622,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t353-judge-port-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2715,7 +2638,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t354-incremental-verify-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2732,7 +2654,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t355-gate-exemption-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2749,7 +2670,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t356-authorize-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2766,7 +2686,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t357-pipeline-gate-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2784,7 +2703,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t358-domain-five-values-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2801,7 +2719,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t359-l1-two-rulers-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2818,7 +2735,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t360-lease-ttl-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2835,7 +2751,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t360-two-phase-claim-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2852,7 +2767,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t361-hook-task-gate-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2869,7 +2783,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t362-install-mcp-workbuddy-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2886,7 +2799,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t363-reopen-complete-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2903,7 +2815,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t364-set-node-semantic-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2920,7 +2831,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t365-progress-authority-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2937,7 +2847,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "certs/t366-evidence-plan-cert.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2954,7 +2863,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "dogfood/build_cache.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2971,7 +2879,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "dogfood/check_cache.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -2988,7 +2895,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "dogfood/verify_space_bug.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3005,7 +2911,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "dogfood/verify_spec_form.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3022,7 +2927,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/cmd/instrument/main.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3039,7 +2943,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/cmd/observev2-demo/main.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3056,7 +2959,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/cmd/observev2-record/main.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3073,7 +2975,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/internal/instrument/contract.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3090,7 +2991,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/internal/instrument/effects.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3107,7 +3007,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/internal/instrument/instrument.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3124,7 +3023,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/export.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3141,7 +3039,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/global.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3158,7 +3055,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/probe.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3175,7 +3071,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/run_recorder.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3192,7 +3087,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/tiered.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3209,7 +3103,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-go/probe/trace.go",
         "style": {
           "bg": "#1a4a7a",
           "color": "#ffffff",
@@ -3226,7 +3119,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-java/observe/probe/Camprobe.java",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3243,7 +3135,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "observe-lang-py/camprobe.py",
         "style": {
           "bg": "#1a5f3a",
           "color": "#ffffff",
@@ -3260,7 +3151,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/check-receipt.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3277,7 +3167,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/clean-dead-functions.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3294,7 +3183,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/clean_dist.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3392,7 +3280,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/contract-calls.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3409,7 +3296,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/coverage.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3426,7 +3312,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/demo.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3443,7 +3328,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/derive-touches.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3460,7 +3344,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/design-check.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3478,7 +3361,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/design-node-coverage.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3495,7 +3377,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/design_txn.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3512,7 +3393,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/dev.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3529,7 +3409,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/diff_language_rosters.py",
         "style": {
           "bg": "#1a5f3a",
           "color": "#ffffff",
@@ -3546,7 +3425,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/freeze_grammar_sources.py",
         "style": {
           "bg": "#1a5f3a",
           "color": "#ffffff",
@@ -3563,7 +3441,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/gen-contracts.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3580,7 +3457,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/gen-db-check.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3597,7 +3473,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/gen-facts.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3614,7 +3489,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/gen_agents.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3631,7 +3505,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/gen_cognition.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3648,7 +3521,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/gen_endpoints_schema.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3665,7 +3537,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/gen_manifest.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3682,7 +3553,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/gen_teach.cjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3699,7 +3569,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/grammar_shim.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3716,7 +3585,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/hook-task-gate.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3733,7 +3601,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/hub.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3750,7 +3617,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/impl-fixture.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3767,7 +3633,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/impl-mutate.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3784,7 +3649,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/install_global_skill.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3801,7 +3665,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/install_mcp.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3818,7 +3681,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/mcp/mcp_call.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3835,7 +3697,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/mcp/mcp_scan.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3852,7 +3713,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/mcp/mcp_smoke.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3869,7 +3729,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/measure_b_contract.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3886,7 +3745,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/merge_language_roster.py",
         "style": {
           "bg": "#1a5f3a",
           "color": "#ffffff",
@@ -3903,7 +3761,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/migrate-node-tasks-to-todos.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3920,7 +3777,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/mutate.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3937,7 +3793,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/net_probe.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3954,7 +3809,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/new-observe-lang.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3971,7 +3825,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/patrol.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -3988,7 +3841,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/plan-assertions.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4005,7 +3857,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_cc_equiv.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4023,7 +3874,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_closure_multi.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4040,7 +3890,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_demand_side.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4057,7 +3906,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_edge_diff.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4075,7 +3923,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_extract_hard.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4092,7 +3939,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_extract_quality.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4109,7 +3955,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_impact_reverse.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4127,7 +3972,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_tool_smells.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4145,7 +3989,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_tool_surface.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4163,7 +4006,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_verdict_grid.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4181,7 +4023,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/probe_xfile_resolve.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4198,7 +4039,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/promote_agent_io_mcp.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4215,7 +4055,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/rebuild_feature.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4232,7 +4071,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/rebuild_teach.cjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4249,7 +4087,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/relink_specifiers.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4266,7 +4103,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/run-invariant-checks.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4283,7 +4119,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/scan_canvas.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4300,7 +4135,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/setup.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4317,7 +4151,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/stat-raw-writes.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4334,7 +4167,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/task-system-static.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4351,7 +4183,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/ts_kernel_probe.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4368,7 +4199,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/verify-changed.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4385,7 +4215,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/verify.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4402,7 +4231,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/verify_grammar_rebuild.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4419,7 +4247,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "scripts/vocabulary.mjs",
         "style": {
           "bg": "#37474f",
           "color": "#eceff1",
@@ -4436,7 +4263,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/claim_conflict.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4453,7 +4279,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/cross/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4589,7 +4414,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/api_signature.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4606,7 +4430,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/board/pool.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4623,7 +4446,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/board/todo_journal.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4640,7 +4462,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/db/gen_design_db.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4776,7 +4597,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/derive/derive_algorithm.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4793,7 +4613,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/derive/derive_chain.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4810,7 +4629,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/derive/derive_split.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4827,7 +4645,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/derive/opl.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4844,7 +4661,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/api_ops.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4861,7 +4677,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/edge_ops.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4878,7 +4693,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/edit_result.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4895,7 +4709,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/feature_ops.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4912,7 +4725,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/file_ops.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -4929,7 +4741,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/node_ops.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -5160,7 +4971,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/op_data_spec.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -5178,7 +4988,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/status_tools.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -5195,7 +5004,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/task_ops.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -5348,7 +5156,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/dsl_ops/update_feature.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -5508,7 +5315,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/handlers.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -5677,7 +5483,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -5778,7 +5583,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/intent/consistency.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -5949,7 +5753,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/intent/detect_drift.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -5966,7 +5769,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/intent/expectations.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -5983,7 +5785,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/intent/judge_cache.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6000,7 +5801,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/intent/set_design_intent.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6017,7 +5817,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/ledger_membership.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6034,7 +5833,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/lifecycle/simulation.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6051,7 +5849,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/lifecycle/snapshot.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6068,7 +5865,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/line/design_diff.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6085,7 +5881,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/line/design_line.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6102,7 +5897,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/no_file_entries.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6119,7 +5913,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/rewrite/rewrite.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6136,7 +5929,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/rewrite/symbol_diff.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6153,7 +5945,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/workbench/code_workbench.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6170,7 +5961,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/design/workbench/dag_layout.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6187,7 +5977,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/dispatch.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6204,7 +5993,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/harvest/extract_contracts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6221,7 +6009,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/harvest/handlers.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6238,7 +6025,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/harvest/harvest_closure.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6255,7 +6041,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/harvest/harvest_decisions.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6272,7 +6057,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/harvest/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6289,7 +6073,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/diagnosis/diagnose_loop.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6306,7 +6089,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/docs/project_docs.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6323,7 +6105,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/explore/contract_page.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6340,7 +6121,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/explore/explore_arg_spec.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6357,7 +6137,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/explore/explore_code.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6374,7 +6153,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/explore/first_hop_args.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6391,7 +6169,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/explore/next_hop_args.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6408,7 +6185,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/explore/query_feature.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6425,7 +6201,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/handlers.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6442,7 +6217,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/impact/impact_report.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6459,7 +6233,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6476,7 +6249,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/integrity/index_integrity.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6644,7 +6416,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/llm/llm_decider.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6661,7 +6432,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/llm/semantic_search.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6678,7 +6448,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/registry/capability_map.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6695,7 +6464,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/registry/cli_extract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6712,7 +6480,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/registry/collect_functions.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6729,7 +6496,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/registry/registry_extract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6746,7 +6512,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/registry/sync_contracts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6763,7 +6528,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/registry/tool_faces.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6780,7 +6544,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/upgrade/upgrade.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6797,7 +6560,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/view/derive_anim_flow.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6814,7 +6576,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/view/derive_mind_map.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6831,7 +6592,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/view/explain_gen.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6848,7 +6608,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/meta/view/overview.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6865,7 +6624,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/capture/feature_line.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6882,7 +6640,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/capture/memory_observe.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6899,7 +6656,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/capture/narrate_step.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6916,7 +6672,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/capture/observe_points.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6933,7 +6688,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/capture/observe_trace.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6950,7 +6704,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/capture/trace_evidence.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6967,7 +6720,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/handlers.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -6984,7 +6736,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7001,7 +6752,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/reconcile/proposal_approve.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7018,7 +6768,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/reconcile/proposal_list.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7035,7 +6784,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/reconcile/proposal_reject.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7052,7 +6800,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/reconcile/reason_validator.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7069,7 +6816,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/reconcile/reconcile_chain.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7086,7 +6832,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/reconcile/reconcile_effects.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7103,7 +6848,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/runtime/judge_observe_events.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7120,7 +6864,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/runtime/observe_log_query.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7137,7 +6880,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/runtime/run_tests.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7154,7 +6896,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/runtime/stale_check.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7254,7 +6995,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/observe/runtime/watch_project_tool.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7271,7 +7011,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/patrol/task_drift.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7288,7 +7027,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/plumbing.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7305,7 +7043,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/read_set.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7322,7 +7059,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/annotate/function_annotation.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7339,7 +7075,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/deprecate_offline/deprecate_offline.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7356,7 +7091,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/diff_views/diff_views.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7373,7 +7107,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/edit/apply_writes.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7390,7 +7123,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/edit/edit_code.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7407,7 +7139,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/edit/remove_dead_imports.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7424,7 +7155,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/find/ast_suggest.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7441,7 +7171,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/find/field_refs.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7458,7 +7187,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/find/find_references.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7475,7 +7203,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/find/similar_names.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7492,7 +7219,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/gate_note.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7509,7 +7235,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/handlers.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7526,7 +7251,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7543,7 +7267,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/parse_capability/parse_capability.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7560,7 +7283,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/pipeline/refactor_judge.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7577,7 +7299,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/pipeline/refactor_pipeline.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7594,7 +7315,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/pipeline/refactor_plan.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7611,7 +7331,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rename/move_domain.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7628,7 +7347,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rename/rename_file.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7645,7 +7363,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rename/rename_files.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7662,7 +7379,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rename/rename_local.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7679,7 +7395,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rename/rename_symbols.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7696,7 +7411,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rename/symbol_move.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7713,7 +7427,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rule_library/rule_apply.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7730,7 +7443,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rule_library/rule_extract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7747,7 +7459,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/rule_library/rule_library.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7764,7 +7475,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/refactor/snapshot/file_snapshot.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7781,7 +7491,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/source_writer.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7798,7 +7507,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/stage_registry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -7993,7 +7701,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/tool_registry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8010,7 +7717,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/types.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8027,7 +7733,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/application/write_gate.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8044,7 +7749,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/actor_spec.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8061,7 +7765,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/animation.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8078,7 +7781,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/b_terms.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8095,7 +7797,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/chain_wiring.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8112,7 +7813,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/contract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8129,7 +7829,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/design_sheet.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8146,7 +7845,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/diff_blocks.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8163,7 +7861,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/discussion_log.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8180,7 +7877,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/dsl_removal.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8197,7 +7893,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/expectation.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8214,7 +7909,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/geometry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8231,7 +7925,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/judge_port.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8248,7 +7941,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/mindmap.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8265,7 +7957,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/narration.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8282,7 +7973,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/overlay.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8299,7 +7989,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/reasoning.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8316,7 +8005,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/scope.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8333,7 +8021,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/semantic.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8350,7 +8037,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/simulation.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8367,7 +8053,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/task_machine.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8384,7 +8069,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/task_schema.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8401,7 +8085,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/todo_chain.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8418,7 +8101,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/types.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8435,7 +8117,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/domain/validator.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8452,7 +8133,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/alert_inbox.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8469,7 +8149,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/capability/capability_matrix.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8486,7 +8165,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/capability/language_concepts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8503,7 +8181,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/capability/register_capabilities.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8520,7 +8197,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/core.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8537,7 +8213,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8554,7 +8229,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/languages/c.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8571,7 +8245,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/languages/cs.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8588,7 +8261,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/languages/go.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8605,7 +8277,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/languages/java.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8622,7 +8293,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/languages/py.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8639,7 +8309,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/languages/registry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8656,7 +8325,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/languages/ts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8673,7 +8341,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/contract_gate/parts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8690,7 +8357,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/cross_repo/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8707,7 +8373,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/deadcode/dead_statements.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8724,7 +8389,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8741,7 +8405,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/candidate_locator.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8758,7 +8421,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/chain_tracer.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8775,7 +8437,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/contract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8792,7 +8453,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/diagnose.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8809,7 +8469,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/impact_analyzer.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8826,7 +8485,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/repair.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8843,7 +8501,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8860,7 +8517,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/symptom_parser.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8877,7 +8533,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/test_contract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8894,7 +8549,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/diagnosis/verifier.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8911,7 +8565,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/health/health_cache.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8928,7 +8581,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/health/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8945,7 +8597,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/impact/diff.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8962,7 +8613,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/impact/diff_impact.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8979,7 +8629,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/impact/impact_ledger_store.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -8996,7 +8645,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/impact/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9013,7 +8661,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/approve_gated.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9030,7 +8677,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/chain.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9047,7 +8693,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/contract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9064,7 +8709,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/decl_review.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9081,7 +8725,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/dsl_store.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9098,7 +8741,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/go_instrument.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9115,7 +8757,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9132,7 +8773,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/instrument.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9149,7 +8789,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/instrument_java.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9166,7 +8805,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/instrument_py.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9183,7 +8821,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/instrument_skeleton.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9200,7 +8837,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/judge.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9217,7 +8853,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/judge_guard.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9234,7 +8869,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/judge_service.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9251,7 +8885,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/ledger_fold.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9268,7 +8901,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/log_query.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9285,7 +8917,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/observe_langs.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9302,7 +8933,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/probe.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9319,7 +8949,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/proposal_store.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9336,7 +8965,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/run_loop.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9353,7 +8981,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/run_sentinel.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9370,7 +8997,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/run_trace_replay.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9387,7 +9013,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/snapshot_needle.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9404,7 +9029,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/trace_exec.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9421,7 +9045,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/observe/verify_gate.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9438,7 +9061,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/package_migration/core.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9455,7 +9077,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/package_migration/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9472,7 +9093,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/package_migration/languages/go.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9489,7 +9109,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/package_migration/languages/py.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9506,7 +9125,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/package_migration/languages/registry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9523,7 +9141,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/package_migration/languages/ts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9540,7 +9157,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/package_migration/parts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9557,7 +9173,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/project_root/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9574,7 +9189,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/refactor/langs/java/executor.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9591,7 +9205,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/refactor/langs/java/layering.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9608,7 +9221,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9625,7 +9237,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/refactor/langs/python/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9642,7 +9253,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/refactor/langs/python/verify_commands.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9659,7 +9269,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/refactor/protect.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9676,7 +9285,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/refactor/refactor_langs.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9693,7 +9301,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/core.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9710,7 +9317,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9727,7 +9333,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/languages/c.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9744,7 +9349,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/languages/cs.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9761,7 +9365,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/languages/go.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9778,7 +9381,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/languages/java.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9795,7 +9397,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/languages/py.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9812,7 +9413,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/languages/registry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9829,7 +9429,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/languages/ts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9846,7 +9445,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/namespace_family.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9863,7 +9461,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/rename_symbol/parts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9880,7 +9477,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/analyze_monolith.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9897,7 +9493,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/arch_layer.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9914,7 +9509,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/cfg.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9931,7 +9525,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/derive_feature_tree.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9948,7 +9541,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/feature_map.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9965,7 +9557,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/layer_detect.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9982,7 +9573,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/monolith.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -9999,7 +9589,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/role_title.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10016,7 +9605,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/structure/structure_gap.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10033,7 +9621,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/analysis/submit_gate/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10050,7 +9637,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/behavior/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10067,7 +9653,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/book.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10084,7 +9669,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/const_eval.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10101,7 +9685,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/fill.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10118,7 +9701,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/fixers.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10135,7 +9717,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/go_extractor.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10152,7 +9733,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/go_tests.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10169,7 +9749,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/llm.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10186,7 +9765,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/pairs.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10203,7 +9781,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/project.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10220,7 +9797,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/prompts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10237,7 +9813,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/receipt.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10254,7 +9829,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/referenced.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10271,7 +9845,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/tool.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10288,7 +9861,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/ts_codegen.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10305,7 +9877,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/unit.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10322,7 +9893,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/verify.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10339,7 +9909,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/translate/verify_behavior.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10356,7 +9925,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/adapters/c.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10373,7 +9941,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/adapters/csharp.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10390,7 +9957,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/adapters/go.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10407,7 +9973,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/adapters/java.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10424,7 +9989,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/adapters/node.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10441,7 +10005,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/adapters/python.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10458,7 +10021,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10475,7 +10037,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/adapters/types.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10492,7 +10053,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/detect.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10509,7 +10069,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/features.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10526,7 +10085,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/gate.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10543,7 +10101,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/removed.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10560,7 +10117,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/rewrite.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10577,7 +10133,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/authoring/version_upgrade/toolchain.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10594,7 +10149,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/daemon/client.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10611,7 +10165,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/data_dir.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10628,7 +10181,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/dictionary.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10645,7 +10197,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/dogfood_coverage.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10662,7 +10213,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/dogfood_stats.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10679,7 +10229,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/dsl_write_scope.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10696,7 +10245,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/exec_guard.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10713,7 +10261,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/git.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10730,7 +10277,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/graph/dead_deps.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10747,7 +10293,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/graph/import_graph.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10764,7 +10309,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/graph/import_project.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -10773,24 +10317,24 @@
         "arch_layer": "core",
         "task": {
           "id": "file_src_infrastructure_graph_import_project_ts",
-          "summary": "import_project：file 节点带 path + 重建闸两层报全 + 登记 feature → 项目根",
-          "state": "done",
+          "summary": "import_project：file 节点带 path + 登记注册表 + **不再写 description**",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_import_project_ts\"].responsibility"
           },
           "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T14:44:12.666Z",
+          "claimed_at": "2026-10-26T16:08:42.149Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/infrastructure/graph/import_project.ts",
-                "content_hash": "474a5a6ba243199948d968b4572841399699a88b"
+                "content_hash": "bbb51c4faaca27c28f9ff1f266065c85eecdced7"
               }
             ],
-            "computed_at": "2026-10-26T14:44:12.596Z",
+            "computed_at": "2026-10-26T16:08:42.095Z",
             "basis": [
               "declared"
             ]
@@ -10843,12 +10387,12 @@
             }
           ],
           "reopened_at": null,
-          "reopen_reason": "T-#26：import_project 登记 feature → 项目根（ROOTS.md §7.3 ③ 的唯一写端）",
+          "reopen_reason": "T-#34：import_project 不再写 description（它是 path 的纯副本；C 方案第一刀：先停产者）",
           "reopened_from": "agent:wish-machine"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision": {
-          "summary": "import_project：file 节点带 path + 重建闸两层报全 + 登记 feature → 项目根",
+          "summary": "import_project：file 节点带 path + 登记注册表 + **不再写 description**",
           "expectations": [
             {
               "kind": "source-has",
@@ -10856,15 +10400,7 @@
                 "path: f.rel"
               ],
               "path": "src/infrastructure/graph/import_project.ts",
-              "why": "扫描产物里的 file 节点必须自己持有 path"
-            },
-            {
-              "kind": "source-has",
-              "must": [
-                "allow_design_drop"
-              ],
-              "path": "src/infrastructure/graph/import_project.ts",
-              "why": "重建闸必须仍在（回归底线）"
+              "why": "扫描产物里的 file 节点必须自己持有 path（路径的权威）"
             },
             {
               "kind": "source-has",
@@ -10872,17 +10408,25 @@
                 "registerFeature"
               ],
               "path": "src/infrastructure/graph/import_project.ts",
-              "why": "项目注册表的唯一写端：不登记则 getDSL 只能落 data home ⇒ 所有 feature 的册混一个目录"
+              "why": "项目注册表的唯一写端"
+            },
+            {
+              "kind": "source-has",
+              "mustNot": [
+                "description: f.rel"
+              ],
+              "path": "src/infrastructure/graph/import_project.ts",
+              "why": "C 方案：description 是 path 的纯副本（实测 1050/1057 逐字相等）⇒ 产者不再写它，否则副本永远重生"
             }
           ],
-          "acceptance": "① file 节点带 path（T-#23）；② 重建闸两层报全（T-#16）；③ **import_project 必须登记 feature → 项目根**（ROOTS.md §7.3 ③ 的唯一写端）—— 因为 getDSL(feature) 没有 baseDir 参数，只能靠这张表找到册。",
+          "acceptance": "① file 节点带 `path`（T-#23）；② 重建闸两层报全（T-#16）；③ 登记 feature → 项目根（T-#26）；④ **不再写 `description`**（C 方案：description 是 path 的纯副本，1050/1057 逐字相等，另 7 条是 basename 变体而 label 已持 basename）。",
           "status": "active",
           "tags": [
             "single-source",
-            "registry",
+            "path-fact",
             "structural"
           ],
-          "updated_at": "2026-10-26T14:44:12.728Z",
+          "updated_at": "2026-10-26T16:08:42.198Z",
           "author": "llm",
           "agent": "agent:wish-machine",
           "rationale": "一个「文件」实体被拆成两行：geometry.nodes 有几何+决策卡+任务但没有 path，semantic.files 有 path+4 个字段但没有 decision/task。write_gate 的 nodeFilePath 已是「path 优先、回落 description」，说明权威本该在节点上。⇒ 先让产者写 path，再迁存量，最后 semantic.files 降为派生视图。"
@@ -10972,6 +10516,52 @@
             "note": "T-#26：登记 feature → 项目根",
             "author": "llm",
             "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-10-26T16:08:42.198Z",
+            "decision": {
+              "summary": "import_project：file 节点带 path + 重建闸两层报全 + 登记 feature → 项目根",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "path: f.rel"
+                  ],
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "why": "扫描产物里的 file 节点必须自己持有 path"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "allow_design_drop"
+                  ],
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "why": "重建闸必须仍在（回归底线）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "registerFeature"
+                  ],
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "why": "项目注册表的唯一写端：不登记则 getDSL 只能落 data home ⇒ 所有 feature 的册混一个目录"
+                }
+              ],
+              "acceptance": "① file 节点带 path（T-#23）；② 重建闸两层报全（T-#16）；③ **import_project 必须登记 feature → 项目根**（ROOTS.md §7.3 ③ 的唯一写端）—— 因为 getDSL(feature) 没有 baseDir 参数，只能靠这张表找到册。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "registry",
+                "structural"
+              ],
+              "updated_at": "2026-10-26T14:44:12.728Z",
+              "author": "llm",
+              "agent": "agent:wish-machine",
+              "rationale": "一个「文件」实体被拆成两行：geometry.nodes 有几何+决策卡+任务但没有 path，semantic.files 有 path+4 个字段但没有 decision/task。write_gate 的 nodeFilePath 已是「path 优先、回落 description」，说明权威本该在节点上。⇒ 先让产者写 path，再迁存量，最后 semantic.files 降为派生视图。"
+            },
+            "note": "T-#34：产者停止写 description（C 方案第一刀）",
+            "author": "llm",
+            "agent": "agent:wish-machine"
           }
         ],
         "path": "src/infrastructure/graph/import_project.ts"
@@ -10984,7 +10574,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/db.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11263,7 +10852,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/file_facts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11280,7 +10868,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/function_outline.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11297,7 +10884,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/guided_tour.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11314,7 +10900,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/index_backfill.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11331,7 +10916,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/index_freshness.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11348,7 +10932,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/live_render.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11365,7 +10948,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/registry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11382,7 +10964,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/scan_rev.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11399,7 +10980,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/schema.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11416,7 +10996,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/self_writes.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11433,7 +11012,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/symbols.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11450,7 +11028,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/index/watch_project.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11467,7 +11044,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/llm_agnes.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11484,7 +11060,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/llm_focus.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11501,7 +11076,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/llm_gateway.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11518,7 +11092,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/llm_pool.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11535,7 +11108,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/packages/package_pins.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11552,7 +11124,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/packages/template_compat.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11569,7 +11140,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/ast_node.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11586,7 +11156,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/ast_parser.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11603,7 +11172,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/ast_rename.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11620,7 +11188,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/comments.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11637,7 +11204,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/fuzzy_match.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11654,7 +11220,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/import_resolve.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11671,7 +11236,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/import_text.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11688,7 +11252,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/index.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11705,7 +11268,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/kernel.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11722,7 +11284,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/lang_hint.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11739,7 +11300,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/languages.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11756,7 +11316,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/loader.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11773,7 +11332,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/module_analysis.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11790,7 +11348,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/mutants.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11807,7 +11364,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/probe.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11824,7 +11380,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/source_exts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11841,7 +11396,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/symbol_docstring.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11858,7 +11412,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/symbol_params.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11875,7 +11428,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/symbol_shape.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11892,7 +11444,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/parse/type_members.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11909,7 +11460,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/project_view.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11926,7 +11476,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/render/anim_core.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11943,7 +11492,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/render/dataflow_core.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11960,7 +11508,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/render/export.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11977,7 +11524,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/render/inject_replay.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -11994,7 +11540,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/render/simulation_engine.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12011,7 +11556,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/rules/rule_match.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12028,7 +11572,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/rules/rule_tokens.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12045,7 +11588,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/scan_bounds.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12062,7 +11604,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/source_write_port.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12079,7 +11620,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/storage.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12301,7 +11841,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/storage_overlay.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12318,7 +11857,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/task_history.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12424,7 +11962,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/text/arg_suggest.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12441,7 +11978,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/text/line_utils.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12458,7 +11994,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/text/refs_text.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12475,7 +12010,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/infrastructure/verify_refactor.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12492,7 +12026,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/cli/cli.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12509,7 +12042,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/cli/diagnose_loop_cli.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12526,7 +12058,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/cli/install_package_cli.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12543,7 +12074,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/daemon/daemon.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12560,7 +12090,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/daemon/memory_watch.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12577,7 +12106,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/daemon/server.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12594,7 +12122,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/http/contract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12611,7 +12138,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/http/dict_gen.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12628,7 +12154,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/http/serve.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12819,7 +12344,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/mcp/lifecycle.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12836,7 +12360,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/mcp/server.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -12853,7 +12376,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/mcp/server_registry.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -13084,7 +12606,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "src/presentation/mcp/tool_warnings.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -13101,7 +12622,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "tests/helpers/i1_fixture.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -59789,7 +59309,7 @@
         ],
         "lines": 1642,
         "layer": "core",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_index_db_ts",
@@ -63325,15 +62845,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 87,
+  "_dsl_rev": 89,
   "_sync": {
-    "saved_at": "2026-10-26T15:57:50.991Z",
+    "saved_at": "2026-10-26T16:09:05.484Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 29273854,
+    "age": 29948347,
     "dbSchemaVersion": 17,
-    "via": "edit_dsl:edit_dsl"
+    "via": "tool:t34-strip-description"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）"

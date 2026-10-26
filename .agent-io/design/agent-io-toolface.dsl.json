@@ -18,7 +18,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "capability_map.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -65,7 +64,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "cli_extract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -82,7 +80,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "collect_functions.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -99,7 +96,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "registry_extract.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -116,7 +112,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "sync_contracts.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -133,7 +128,6 @@
         "width": 240,
         "height": 64,
         "type": "file",
-        "description": "tool_faces.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -506,14 +500,14 @@
       "count": 6
     }
   ],
-  "_dsl_rev": 7,
+  "_dsl_rev": 8,
   "_sync": {
-    "saved_at": "2026-10-26T13:53:33.941Z",
+    "saved_at": "2026-10-26T16:09:05.460Z",
     "source": "design_sheet",
     "feature": "agent-io-toolface",
     "scanRev": 1792996656444,
-    "age": 26157497,
+    "age": 34289016,
     "dbSchemaVersion": 16,
-    "via": "tool:ruling-root"
+    "via": "tool:t34-strip-description"
   }
 }
