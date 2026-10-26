@@ -138,7 +138,8 @@ export interface AddNodeInput {
   path?: string;
   /** ★ 写闸豁免声明（`'gated' | 'exempt'`；**缺省 = gated**）—— 见 `Node.gate` / `NODE_GATES` */
   gate?: NodeGate;
-  description?: string;
+  /** ★ 人读说明（**原 `description`，T-#35 改名**：`Node.description` 已删）—— **路径请用 `path`** */
+  title?: string;
   status?: DiagramStatus;
   swimlane?: string;
   content?: NodeContent;
@@ -224,7 +225,7 @@ function removeSemanticFileForFileNode(dsl: DesignDSL, node: Node): void {
 }
 
 export function addNode(input: AddNodeInput): EditResult {
-  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, path: nodePathInput, gate: gateInput, description, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, agent } = input;
+  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, path: nodePathInput, gate: gateInput, title, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, agent } = input;
 
   const dsl = getDSL(feature);
   if (!dsl) {
@@ -284,8 +285,8 @@ export function addNode(input: AddNodeInput): EditResult {
     type: nodeType,
     path: nodePathValue,
     gate: gateValue,
-    // ★ T-#35：Node.description 已删 ⇒ 入参名保留 description（调用方兼容），**存储到 title**。
-    title: description,
+    // ★ T-#35：入参已从 `description` 改名为 `title`（与 `Node.title` 同名）。
+    title,
     // ★★★ T328：**不再把 `status` 落进 base**（旧轴直写）。进度改走权威（下面的 `updateStatus`）——
     //   它同时也是 evidence 闸的入口：不带证据置 `done` ⇒ 当场拒（"不许默默勾上"）。
     swimlane,
@@ -355,7 +356,8 @@ export interface UpdateNodeInput {
   path?: string | null;
   /** ★ 写闸豁免声明；`null` = 清除（回到缺省 = 受闸）。见 `Node.gate` / `NODE_GATES` */
   gate?: NodeGate | null;
-  description?: string;
+  /** ★ 人读说明（**原 `description`，T-#35 改名**）—— **路径请用 `path`** */
+  title?: string;
   status?: DiagramStatus;
   swimlane?: string;
   content?: NodeContent;
@@ -500,7 +502,7 @@ export function applyDecisionWrite(
 }
 
 export function updateNode(input: UpdateNodeInput): EditResult {
-  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, path: nodePathInput, gate: gateInput, description, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, decision_note, author, agent } = input;
+  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, path: nodePathInput, gate: gateInput, title, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, decision_note, author, agent } = input;
 
   const dsl = getDSL(feature);
   if (!dsl) {
@@ -535,7 +537,7 @@ export function updateNode(input: UpdateNodeInput): EditResult {
   } else {
     node.gate = normalizeGate(gateInput);
   }
-  if (description !== undefined) node.title = description; // ★ T-#35：入参名保留，存储到 title
+  if (title !== undefined) node.title = title; // ★ T-#35：入参已改名 title
   // ★★★ T328：进度**不在此裸写** `Node.status`（旧轴/base）—— 见下方 saveDSL 后的 `updateStatus`。
   if (swimlane !== undefined) node.swimlane = swimlane;
   if (content !== undefined) node.content = content;

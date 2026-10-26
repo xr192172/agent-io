@@ -653,7 +653,7 @@ function applySnapshotOp(feature: string, op: CheckedOperation<FeatureOperation>
       const r = saveSnapshot({
         feature,
         label: data.label as string,
-        description: data.description as string | undefined,
+        description: data.description as string | undefined, // ★ 这是 **snapshot** 分支的（SaveSnapshotInput 确有 description）—— 与 Node 无关，保持原样
       });
       return { message: r.message, feature };
     }
@@ -885,7 +885,7 @@ export function normRel(s: string): string {
 
 /** 决策写入口的目标节点：`id` 可为 **节点 id** 或 **仓库相对路径**（文件/文档/service 节点） */
 interface DecisionTarget {
-  node: { id: string; type?: string; description?: string; decision?: NodeDecision; decision_history?: import('../../../domain/types.js').DecisionHistoryEntry[]; task?: import('../../../domain/task_schema.js').TaskSpec };
+  node: { id: string; type?: string; title?: string; path?: string; decision?: NodeDecision; decision_history?: import('../../../domain/types.js').DecisionHistoryEntry[]; task?: import('../../../domain/task_schema.js').TaskSpec };
   /** 目标的仓库相对路径（人读回执用；取不到给节点 id） */
   path: string;
 }
@@ -937,7 +937,7 @@ function resolveDecisionTarget(dsl: DesignDSL, id: string | undefined, data: Rec
         `决策卡挂 type=file / type=doc / type=service 的节点（I1 起放开 service —— 架构决策的落点常是服务级节点）。`,
     );
   }
-  return { node, path: node.description ?? node.id };
+  return { node, path: nodePath(node as never) }; // ★ T-#35：不再读已删的 description（否则静默退成 id）
 }
 
 /** 逐条校验 `alternatives`（已排除的方案 + **否决原因**）。★ 缺 `rejected_because` ⇒ 抛，并指向 `dissent`。 */

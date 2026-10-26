@@ -84,7 +84,7 @@ export const OP_SPECS: readonly OpSpec[] = [
     note:
       '★ `data` 的**领域字段**（★ **全部可选** —— 一个都不给也能建/改，只是信息少）。' +
       '★ `feature` / `node_id` **不要放 data**（前者走顶层，后者走 `operations[].id`）：\n' +
-      '        · 文字与样式：`label` `description` `type` `status` `bg` `color` `border` `borderRadius` ' +
+      '        · 文字与样式：`label` `title`（人读说明） `type` `status` `bg` `color` `border` `borderRadius` ' +
       '`shape`(rect|rounded|circle|diamond|freeform) `shadow` `opacity`\n' +
       '        · 几何：`x` `y` `width` `height`\n' +
       '        · 结构与内容：`layer` `host`(宿主节点 id) `swimlane` `shapes` `content` `sub_dsl`(子图 DSL) ' +
@@ -375,7 +375,7 @@ const BY_TYPE = new Map(OP_SPECS.map((s) => [s.type, s]));
  */
 export const NODE_DATA_KEYS = [
   'label',
-  'description',
+  'title',
   'type',
   'status',
   'bg',
