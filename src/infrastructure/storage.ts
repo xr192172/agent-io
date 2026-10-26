@@ -14,6 +14,7 @@
 import { DATA_DIR_NAME, PKG_NAME } from './data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import type { DesignDSL } from '../domain/types.js';
 import { createHash } from 'node:crypto';
@@ -831,9 +832,34 @@ export function onDslChange(cb: DslChangeCallback): void {
 // 真要写系统派生 ⇒ 包一层 `runDslWriteScope`，**留下一行能被 grep 和审阅点名的声明**。
 // ─────────────────────────────────────────────────────────────
 
-/** `AGENT_IO_HOME` 指到包根之外 = 沙盒（certs / mcp_scan 的临时 home）⇒ 写的不是真设计册。 */
+/**
+ * 沙盒判据（**唯一住处**）：数据根在【临时区】或显式开关 ⇒ 写的不是真设计册。
+ *
+ * ★★★ 2026-10-26（T-#3）：**判据语义纠正** —— 原先这里是
+ *   `getDataHome() !== getPackageRoot()`，即「数据不在包根里 = 沙盒」。后果双向都是坑：
+ *     ① 默认（不设 AGENT_IO_HOME）⇒ 数据根 = 包根 ⇒ **册写进源码仓**（本仓被会话产物污染的机制）；
+ *     ② 一旦把数据挪到**仓外**（正常部署！）⇒ 被判沙盒 ⇒ **写闸静默放行**（安全门失效）。
+ *   ⇒ 这是把「数据位置」和「安全门」焊在一起，让“正确的部署”顺手关掉安全。
+ *   ⇒ 现在只问一件事：**这个数据根是不是一次性的临时区**（可丢、可随便写）——
+ *     `os.tmpdir()` 之下 / `<pkg>/certs/.work` 之下 / `<pkg>/.inspect` 之下，或显式 `AGENT_IO_SANDBOX=1`。
+ *   ★ 为什么这是**结构性**而非补丁：35 个 cert 与 `mcp_scan` 的夹具目录**本来就落在临时区**
+ *     （`mkdtempSync` / `certs/.work/tmp*` / `.inspect/_scan_home`）⇒ **它们一行都不用改**；
+ *     而“部署到 `~/.agent-io`”从“沙盒”变回“真册” ✓ —— 位置自由了，安全门不再被位置绑架。
+ */
 function isSandboxDataHome(): boolean {
-  return path.resolve(getDataHome()) !== path.resolve(getPackageRoot());
+  if (process.env.AGENT_IO_SANDBOX === '1') return true;
+  if (process.env.AGENT_IO_SANDBOX === '0') return false; // 显式否决：即使落在临时区也当真册（谨慎使用）
+  const inside = (child: string, parent: string): boolean => {
+    const rel = path.relative(path.resolve(parent), path.resolve(child));
+    return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
+  };
+  const home = getDataHome();
+  const pkgRoot = getPackageRoot();
+  return (
+    inside(home, os.tmpdir()) ||
+    inside(home, path.join(pkgRoot, 'certs', '.work')) ||
+    inside(home, path.join(pkgRoot, '.inspect'))
+  );
 }
 
 /**
