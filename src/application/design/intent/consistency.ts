@@ -45,6 +45,8 @@ import { extractFuncName } from '../api_signature.js';
 import { getDSL, getBaselineFacts } from '../../../infrastructure/storage.js';
 // ★ T85/D3：线 1 的"现取事实"入口 —— 与 `import_project` 锚基线事实时**用的是同一个 accessor**（同源）
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
+// ★★★ 2026-10-26（T-#11 / 乙方案）：册的 source_root 是不是**项目根**——判据复用这一个上溯原语
+import { resolveProjectRoot } from '../../../infrastructure/analysis/project_root/index.js';
 // ★ T184b：② 的**第二个输入来源** —— overlay 上的墓碑（`loadOverlay`）。此前它只读 base（`getDSL`）。
 import { loadOverlay } from '../../../infrastructure/storage_overlay.js';
 import { parseFileSymbols, ParsedSymbol, isSupportedFile } from '../../../infrastructure/parse/ast_parser.js';
@@ -1443,6 +1445,28 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
   if (coverageSection) lines.push(coverageSection);
   lines.push(renderBaselineDriftSection(baselineDrift));
   lines.push('');
+  // ★★★ 2026-10-26（T-#11 / 乙方案）：**册的 `source_root` 必须是项目根**。
+  //   Maven 模型：项目根由 marker（`.git` / `package.json` / `go.mod` …）定义 —— **子目录不是根**。
+  //   实测两个反例：
+  //     · agent-io-toolface → `<agent-io>/src/application/meta/registry`（**子目录**，无 marker）
+  //     · task-system-plan  → `D:/project_develop/design-canvas`（**另一个项目**的根）
+  //   ⇒ 乙方案下“册随 source_root 走” ⇒ 假 source_root 会把册送到**假的家**
+  //     （前者落进源码树，后者落进别人的仓）。
+  //   ★ 判据复用 `resolveProjectRoot`（与索引根上溯、`resolveRootFromArgs` 级 2 同一把尺），不新造第二套。
+  if (dsl.source_root) {
+    const declared = path.resolve(dsl.source_root);
+    const real = path.resolve(resolveProjectRoot(declared));
+    if (real !== declared) {
+      lines.push(
+        `⚠ **册的 source_root 不是项目根**：\`${declared}\``,
+        `  按 marker（.git / manifest）上溯，真项目根是 \`${real}\`。`,
+        `  ⇒ 乙方案下“册随 source_root 走”，这个假根会把册送错地方（落进源码子目录或别人的仓）。`,
+        `  修法：把 source_root 改成真根；“只分析这个子目录”用**范围**表达，不要拿 project_dir 兼着。`,
+        '',
+      );
+    }
+  }
+
   return {
     message: lines.join('\n'),
     // ★ 2026-10-26（T-#1）：把「本报告实际用的代码基准」落进结果 —— 消费者不许再自己猜一套
