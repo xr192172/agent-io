@@ -88,7 +88,7 @@ export function endBatch(db: Database, rollback = false): void {
   txDepth.set(key, d - 1);
 }
 
-export const SCHEMA_VERSION = 16; // v16：file_path → files.id 外键（identifiers/imports/unresolved_refs/symbol_diffs；nodes 保留 file_path）—— 保留式迁移，行数即证据（见 migrateV15ToV16） // v15：nodes.body_text / body_hash（函数体原文 + sha1） // v14：nodes.return_type / type_params / modifiers（返回类型 / 泛型 / 修饰符）—— 旧库无此列，清库重解析 // v13：nodes.params（函数/方法形参 JSON）—— 旧库无此列，清库重解析 // v12：imports.start_index/end_index（整句 span）—— 旧库无此列，清库重解析 // v11：identifiers 表（标识符位置）—— 旧库无此表，清库重解析 // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
+export const SCHEMA_VERSION = 17; // v17：unresolved_refs.resolved_node_id（解析到的节点 id；ALTER 补列 + 已解析引用重开为 pending 重解析） // v16：file_path → files.id 外键（identifiers/imports/unresolved_refs/symbol_diffs；nodes 保留 file_path）—— 保留式迁移，行数即证据（见 migrateV15ToV16） // v15：nodes.body_text / body_hash（函数体原文 + sha1） // v14：nodes.return_type / type_params / modifiers（返回类型 / 泛型 / 修饰符）—— 旧库无此列，清库重解析 // v13：nodes.params（函数/方法形参 JSON）—— 旧库无此列，清库重解析 // v12：imports.start_index/end_index（整句 span）—— 旧库无此列，清库重解析 // v11：identifiers 表（标识符位置）—— 旧库无此表，清库重解析 // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
 
 /** 默认 db 文件路径：<dataHome>/.agent-io/cache.db */
 export function getDbFile(): string {
@@ -309,9 +309,21 @@ function migrateV15ToV16(db: Database): string {
  */
 function migrateCacheIfNeeded(db: Database): string {
   if (!tableExists(db, 'files')) return '';
-  if (hasColumn(db, 'files', 'id')) return '';
+  // ★★★ v16 → v17（2026-10-26）：**只补一列**，不清库。
+  //   为什么要补：解析成功时把"解析到哪个节点"丢了（symbols.ts 只写 status='resolved'）⇒
+  //   陈旧断言判据只能靠名字反推 ⇒ 成员调用（`ps.reject`）100% 假阳性。
+  //   ★ 补列后旧行的 `resolved_node_id` 是 NULL，而 NULL 本身不是"陈旧"的证据 ⇒
+  //     必须把已解析的引用**重开为 pending**，让下一次解析把 id 真正落进去（否则这一列永远空着，
+  //     判据退化成"所有 resolved 都陈旧"）。
+  let v17 = '';
+  if (hasColumn(db, 'files', 'id') && !hasColumn(db, 'unresolved_refs', 'resolved_node_id')) {
+    db.exec('ALTER TABLE unresolved_refs ADD COLUMN resolved_node_id TEXT');
+    db.exec("UPDATE unresolved_refs SET status = 'pending', resolved_node_id = NULL WHERE status = 'resolved'");
+    v17 = '；v16→v17 补 unresolved_refs.resolved_node_id（已解析引用重开为 pending，待重解析落 id）';
+  }
+  if (hasColumn(db, 'files', 'id')) return v17;
   const prev = readSchemaVersion(db);
-  if (prev !== null && prev >= 15) return migrateV15ToV16(db);
+  if (prev !== null && prev >= 15) return v17 + migrateV15ToV16(db);
   // v15 之前的库：**不搬迁**（沿用「缓存是派生物」的老策略），只把形状换成 v16。
   // 顺序：先子后父；nodes_fts 是 external-content 虚表，跟着 nodes 一起拆（否则重建后索引残留）。
   for (const t of ['edges', 'unresolved_refs', 'identifiers', 'imports', 'symbol_diffs', 'nodes_fts', 'nodes', 'files']) {

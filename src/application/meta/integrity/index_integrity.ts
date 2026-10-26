@@ -190,23 +190,18 @@ const NOT_FRESH_SAMPLE = 20;
  * 以及**名单**（`listStaleResolvedRefs`）共用这一份 WHERE —— 不许第二把尺。
  * 表坏/查询失败 ⇒ 0 / []（调用方各自按"没发现"处理，不假阳性）。
  *
- * ★★★ 2026-10-26 · **本 WHERE 是【临时补丁】，不是根治** —— 待 schema v17 取代（写死，别让它变永久）：
- *   病根：`unresolved_refs` **没有 `resolved_node_id`** —— 解析成功时（`symbols.ts:1853`
- *   `UPDATE unresolved_refs SET status='resolved'`）**把"解析到哪个节点"当场丢了**，
- *   之后只能靠 `reference_name` 反推。而成员调用的 `reference_name` 是**接收者变量名.方法**
- *   （实测 13 条：`ps.reject` / `reg.register` / `dsl.load` / `storage.getDataHome`），
- *   `nodes.name` 存的是裸名 ⇒ **100% 假阳性**，`refresh` 重解析也只是把同一批名字重开一遍。
- *   ⇒ 下面的 `name_tail` / `qualified_name` 兜底是**在消费者端猜生产者本该记下的事实**。
- *   ⇒ **根治**：schema v17 加 `resolved_node_id TEXT`，写路径落库，判据改成
- *     `status='resolved' AND (resolved_node_id IS NULL OR NOT EXISTS(SELECT 1 FROM nodes n WHERE n.id = u.resolved_node_id))`
- *     —— 那时本 WHERE 的三段匹配全部删除，不再有别名 / 接收者前缀 / tail 的任何猜测。
+ * ★★★ 2026-10-26 · **已根治（schema v17）**：判据不再靠名字猜，而是读生产者落库的 `resolved_node_id`。
+ *   病史（写死，别再退回）：v16 之前解析成功只写 `status='resolved'`，把「解析到哪个节点」当场丢了
+ *   ⇒ 陈旧判据只能拿 `reference_name` 去比 `nodes.name`，而成员调用的 reference_name 是
+ *   「接收者变量名.方法」（实测 13 条：ps.reject / reg.register / dsl.load / storage.getDataHome），
+ *   nodes.name 存裸名 ⇒ **100% 假阳性**，`refresh` 重解析也只是把同一批名字重开一遍（空转）。
+ *   ⇒ 现在：解析成功时落 `resolved_node_id`（`symbols.ts` 的 updResolved），判据 = 该 id 已不在 nodes。
+ *   ★ `resolved_node_id IS NULL` 也算陈旧：resolved 却不知道目标 = 断言不可验证，宁可报。
  */
 const STALE_RESOLVED_WHERE = `u.status = 'resolved'
-           AND NOT EXISTS (
-             SELECT 1 FROM nodes n
-             WHERE n.name = u.reference_name
-                OR n.qualified_name = u.reference_name
-                OR (u.name_tail <> '' AND n.name = u.name_tail)
+           AND (
+             u.resolved_node_id IS NULL
+             OR NOT EXISTS (SELECT 1 FROM nodes n WHERE n.id = u.resolved_node_id)
            )`;
 
 export function countStaleResolvedRefs(db: ReturnType<typeof getProjectCacheDb>): number {

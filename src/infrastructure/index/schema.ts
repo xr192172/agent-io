@@ -262,6 +262,13 @@ CREATE TABLE IF NOT EXISTS unresolved_refs (
     language TEXT NOT NULL DEFAULT 'unknown',
     status TEXT NOT NULL DEFAULT 'pending',
     name_tail TEXT NOT NULL DEFAULT '',
+    -- ★★★ v17（2026-10-26）：解析到**哪个节点**（形如 '<file>#<qn>'，与 edges.target 同形）。
+    --   为什么必须落库：原先解析成功只写 status='resolved'，把目标**当场丢了** ⇒
+    --   「陈旧断言」只能靠 reference_name 反推名字，而成员调用的 reference_name 是
+    --   「接收者变量名.方法」（实测 ps.reject / reg.register / dsl.load / storage.getDataHome），
+    --   nodes.name 存的是裸名 ⇒ **100% 假阳性**（实测 13 条全部如此，且 refresh 重解析无效）。
+    --   ★ 有了本列：陈旧 = resolved 且该 id 已不在 nodes ⇒ **不再有任何名字猜测**。
+    resolved_node_id TEXT,
     FOREIGN KEY (from_node_id) REFERENCES nodes(id) ON DELETE CASCADE,
     FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
 );

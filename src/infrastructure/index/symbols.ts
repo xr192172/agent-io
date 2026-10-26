@@ -1850,7 +1850,13 @@ export function resolveCrossFileCalls(
     }
     return f;
   };
-  const updResolved = db.prepare("UPDATE unresolved_refs SET status='resolved' WHERE id = $i");
+  // ★★★ v17（2026-10-26）：解析成功时**把目标节点 id 一起落库**。
+  //   原先只写 status='resolved'，把「解析到哪个节点」**当场丢了** ⇒ 陈旧断言判据只能靠
+  //   reference_name 反推名字，而成员调用的 reference_name 是「接收者变量名.方法」
+  //   （实测 ps.reject / reg.register / dsl.load / storage.getDataHome）⇒ 100% 假阳性。
+  const updResolved = db.prepare(
+    "UPDATE unresolved_refs SET status='resolved', resolved_node_id = $n WHERE id = $i",
+  );
   // ★ 2026-10-21：状态与**原因标签**一起写（candidates 列）——「没建边」不许静默：
   //   external = 目标在仓外（不是漏连）· failed = 证不出来（suspect/unknown），要能查到为什么。
   const updExternal = db.prepare("UPDATE unresolved_refs SET status='external', candidates=$cd WHERE id = $i");
@@ -1898,7 +1904,7 @@ export function resolveCrossFileCalls(
         ?? findGoSamePackageTarget(db, rel, expr, ['interface', 'type', 'class'], goFilesByDir);
       if (t) {
         insEdge.run({ src: r.from_node_id, tgt: `${t.file}#${t.qn}`, k: 'type_ref', ln: r.line, md: CROSS_META });
-        updResolved.run({ i: r.id });
+        updResolved.run({ i: r.id, n: `${t.file}#${t.qn}` });
         stats.resolved++;
       } else {
         // ★ 2026-10-22：把 re-export 那条路「为什么没建边」写进 failed 的 why（不再是笼统的 not-found）
@@ -1932,7 +1938,7 @@ export function resolveCrossFileCalls(
         const look = typeLookupFor(rel)(recvType, member);
         if (look.kind === 'hit') {
           insEdge.run({ src: r.from_node_id, tgt: `${look.file}#${look.qn}`, k: 'call', ln: r.line, md: CROSS_META });
-          updResolved.run({ i: r.id });
+          updResolved.run({ i: r.id, n: `${look.file}#${look.qn}` });
           stats.resolved++;
           stats.cross_type = (stats.cross_type ?? 0) + 1;
           continue;
@@ -1951,7 +1957,7 @@ export function resolveCrossFileCalls(
       const nsTarget = findNamespaceMemberTarget(db, projectRoot, rel, expr);
       if (nsTarget) {
         insEdge.run({ src: r.from_node_id, tgt: `${nsTarget.file}#${nsTarget.qn}`, k: 'call', ln: r.line, md: CROSS_META });
-        updResolved.run({ i: r.id });
+        updResolved.run({ i: r.id, n: `${nsTarget.file}#${nsTarget.qn}` });
         stats.resolved++;
       } else {
         // ★ 有类型提示就把**原判定**写回去（`receiver-type-external:T` = 类型在仓外）；
@@ -1998,7 +2004,7 @@ export function resolveCrossFileCalls(
       ?? findGoSamePackageTarget(db, rel, expr, ['function'], goFilesByDir);
     if (target) {
       insEdge.run({ src: r.from_node_id, tgt: `${target.file}#${target.qn}`, k: 'call', ln: r.line, md: CROSS_META });
-      updResolved.run({ i: r.id });
+      updResolved.run({ i: r.id, n: `${target.file}#${target.qn}` });
       stats.resolved++;
     } else {
       // ★ 2026-10-22：别名再导出没接上时，failed 的 why 要说清楚是哪一种（歧义/仓外/未索引/符号不在）
