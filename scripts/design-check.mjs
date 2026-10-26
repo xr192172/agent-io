@@ -22,6 +22,7 @@
  *   node scripts/design-check.mjs --json           # 机器可读
  */
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -117,25 +118,61 @@ for (const c of criteria) {
 const count = (v) => results.filter((r) => r.verdict === v).length;
 
 // ★★★ 2026-10-26（T-#19 / 寄风）：**截断不是丢信息，是换句柄**。
-//   原来失败项写的是 `c.expect.slice(0, 90)` —— **硬切 90 字**，要看全只能**重跑本脚本**
-//   （实测：为了看 D1/D4/D9 的完整 expect，我今天重跑了一次 `design-check --json`）。
-//   ⇒ 现在超长时把**完整 expect** 落到 `.agent-io/.spill/`，detail 里给句柄：
-//     用 `read offset/limit` 翻页，**不必重跑**。
-//   ★ DSH 的 `grep` / `pwsh` 早就是这个范式（"Full output stored at <path>"）。
-//   ★ 为什么先写在这里而不是抽公共：**唯一消费者只有一个**，现在就抽 = 凭想象定接口。
-//     第二个消费者出现时再提到 `application/plumbing.ts`（唯一住处）。
-const SPILL_DIR = path.join(ROOT, '.agent-io', '.spill');
-const SPILL_STAMP = new Date().toISOString().replace(/[:.]/g, '-');
+//   原来失败项写的是 `c.expect.slice(0, 90)` —— **硬切 90 字**，要看全只能**重跑本脚本**。
+//   ⇒ 超长时把**完整 expect** 落到 spill 文件，detail 里给句柄：用 `read offset/limit` 翻页，**不必重跑**。
+//
+// ★★★ 位置：**os.tmpdir()**，不是项目内（寄风：为什么不能做成 DSH 一样）——
+//   DSH 的 grep 落 `%TEMP%\dsh-spill-<随机>\`；而本仓 `storage.ts#isSandboxDataHome()`
+//   早已把 `os.tmpdir()` 定义为"**一次性、可丢**" ⇒ spill 住临时区就是**复用同一条判据**。
+//   ★ 住项目内的后果（第一版就是这样，已改）：污染 .gitignore + 无限增长 + 删项目即失。
+//
+// ★★ 回收（寄风：回收机制怎么做）—— git 的 `gc --prune` 形状，不需要守护进程：
+//   · **TTL 管跨会话**：每次 spill 顺手扫兄弟目录，`mtime > 24h` ⇒ rm -rf（清上个进程的残留）
+//   · **LRU 管会话内**：自己目录超过 200 份 ⇒ 删最旧的
+//   · **不在进程退出时删**：MCP 常驻，退出时删会让 agent 还没读就没了
+const SPILL_ROOT = path.join(os.tmpdir(), 'agentio-spill');
+const SPILL_DIR = path.join(SPILL_ROOT, `${process.pid}-${Math.random().toString(36).slice(2, 8)}`);
+const SPILL_TTL_MS = 24 * 60 * 60 * 1000;
+const SPILL_MAX_FILES = 200;
+function sweepSpillRoot() {
+  try {
+    for (const d of fs.readdirSync(SPILL_ROOT, { withFileTypes: true })) {
+      if (!d.isDirectory()) continue;
+      const p = path.join(SPILL_ROOT, d.name);
+      if (p === SPILL_DIR) continue; // 不动自己
+      try {
+        if (Date.now() - fs.statSync(p).mtimeMs > SPILL_TTL_MS) fs.rmSync(p, { recursive: true, force: true });
+      } catch {
+        /* 单目录失败不影响别人 */
+      }
+    }
+  } catch {
+    /* 根目录不存在 ⇒ 无残留可清 */
+  }
+}
+function pruneSpillDir() {
+  try {
+    const files = fs.readdirSync(SPILL_DIR).map((n) => path.join(SPILL_DIR, n));
+    if (files.length <= SPILL_MAX_FILES) return;
+    const withM = files.map((f) => ({ f, m: fs.statSync(f).mtimeMs })).sort((a, b) => a.m - b.m);
+    for (const x of withM.slice(0, files.length - SPILL_MAX_FILES)) fs.rmSync(x.f, { force: true });
+  } catch {
+    /* 删不动就算了：它是临时产物 */
+  }
+}
 function spillText(text, kind) {
   try {
     fs.mkdirSync(SPILL_DIR, { recursive: true });
+    sweepSpillRoot();
     const file = path.join(SPILL_DIR, `${kind}-${SPILL_STAMP}.txt`);
     fs.writeFileSync(file, text);
+    pruneSpillDir();
     return { file, bytes: Buffer.byteLength(text) };
   } catch {
     return null;
   }
 }
+const SPILL_STAMP = new Date().toISOString().replace(/[:.]/g, '-');
 // 回填：失败项把完整 expect 换成一个**句柄**（JSON 与文本两条路径共用）
 for (const r of results) {
   if (r.verdict !== 'fail' || !r.__fullExpect) continue;
