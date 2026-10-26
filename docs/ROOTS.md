@@ -130,3 +130,77 @@
 2. **算不出来的东西不许留空白。** 清单里算不出的角色要显式写"（需 feature）"，否则读起来像"没有这个根"。
 3. **根和范围是两个概念。** `project_dir` = 哪个项目；"分析范围"是另一个参数。今天的 71.7MB stray **全部**来自"拿范围当根"。
 4. **上溯必须响亮。** 自动上溯到真根时，响应里必须写 `索引根已上溯：<given> → <root>`，不许静默换根。
+
+---
+
+## 7. 项目注册表（`feature → 项目根`）
+
+### 7.1 为什么必须有它（实证，2026-10-26）
+
+```ts
+export function getDSL(feature: string): DesignDSL | null     // ★ 没有 baseDir 参数
+export function getDesignDir(baseDir?: string)                // ★ baseDir ?? getDataHome()
+```
+
+⇒ `getDSL(feature)` **拿不到项目根** ⇒ 只能落到 `getDataHome()` ⇒ **每个 feature 的册都住在 agent-io 的数据家里**。
+
+实测后果：`D:/agentio/dev/review-hub/.agent-io/design` **不存在**，而 `review-hub.dsl.json` 住在
+`D:/agentio/dev/agent-io/.agent-io/design/`。同一现象的更严重后果是 `design-db/` 里混进了
+**4 个项目**（agent-shell 500 份 / archify 33 份 / 别的 packages 76 份），而且全部进了 git。
+
+★ 这正是 §6.1 的实证：**可选参数 = 两个归属 = 迟早分叉。**
+★ 但**只把 4 个 getter 的 `baseDir` 改成必填是无效的** —— 真锁在 `getDSL`：它不传 `baseDir`，
+  所以上游怎么改都白改。而给 `getDSL` 加参数 = ~200 个调用点全部要传 ⇒ 不可接受。
+⇒ **所以必须先有注册表**：`getDSL` 内部查表拿项目根，调用点一个都不用改。
+
+### 7.2 形状（唯一一处，别再加第二份）
+
+住 **`<dataHome>/.agent-io/projects.json`**，扁平 `feature → 项目根`：
+
+```jsonc
+{
+  "version": 1,
+  "features": {
+    "agent-io":          { "project_root": "D:/agentio/dev/agent-io", "registered_at": "…", "registered_by": "import_project" },
+    "task-system-plan":  { "project_root": "D:/agentio/dev/agent-io" },
+    "agent-io-toolface": { "project_root": "D:/agentio/dev/agent-io" },
+    "review-hub":        { "project_root": "D:/agentio/dev/review-hub" }
+  }
+}
+```
+
+**为什么是扁平 `feature → 项目根`**（不是 `项目 → features[]`）：一个 feature **只属于一个**项目根；
+反过来"一个项目有多个 feature"是常态（agent-io 就有 3 个）。⇒ 扁平表是**函数**，反向表是**索引**；
+函数只有一个真相，索引可以现算。
+
+### 7.3 三条裁定
+
+| # | 裁定 | 理由 |
+|---|---|---|
+| **①** | 它**必须全局唯一**（跨项目索引**不能**住任何项目里） | 它的职责就是"跨项目"。住进某个项目 ⇒ 那个项目一删全表没了 |
+| **②** | 它**不进 git**（机器本地路径） | 路径含盘符/用户名 ⇒ 换机器即错；它是**本机登记**，不是设计 |
+| **③** | **写端 = `import_project`**（唯一） | 它同时知道 `project_dir` 与 `feature` —— 唯一天然的登记时刻。别处再写 = 第二个真相 |
+
+### 7.4 读端顺序（**不许回落 data home 当默认**）
+
+```
+getDSL(feature)
+  ① 查注册表 ⇒ project_root ⇒ <root>/.agent-io/design/<feature>.dsl.json
+  ② 注册表没有 ⇒ 查 <dataHome>/.agent-io/design/<feature>.dsl.json（旧位置的存量）
+       命中 ⇒ 一次性自动登记 + 回执点名"已登记 <feature> → <root>"
+  ③ 都没有 ⇒ 报错并提示"先 import_project"
+★ ② 是迁移通道，不是兜底：它写注册表（把存量转成 ① 的常态），且每次命中都要点名。
+★ 禁止：注册表没有、旧位置也没有 ⇒ 直接读 data home 当默认（那正是今天的分叉来源）。
+```
+
+### 7.5 迁移（一次性，可验证）
+
+1. 扫 `<dataHome>/.agent-io/design/*.dsl.json`，读每份顶层 `source_root` ⇒ 写注册表
+2. 按注册表把册搬到 `<project_root>/.agent-io/design/`（`git mv` 语义，保留历史）
+3. `designDb` 也按同一张表落到 `<project_root>/.agent-io/design-db/`（它现在是仓根硬编码）
+4. 验收：`review-hub` 的册出现在 `<review-hub>/.agent-io/design/`，且 agent-io 家只剩自己的 3 个
+
+### 7.6 做完之后
+
+**每个项目的册 + design-db 都在自己的 `.agent-io/` 里** ⇒ git 各自管各自的，
+**不会再出现"4 个项目混一个 `design-db/`"**（今天 1057→380 那次清理正是这个病的症状）。
