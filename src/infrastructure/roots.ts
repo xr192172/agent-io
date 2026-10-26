@@ -152,9 +152,38 @@ export function featureCachePath(feature: string): string {
   return path.join(getStorageRoot(), spec.fileTemplate.replace('{feature}', feature));
 }
 
+/**
+ * **三个侧**（寄风的口径：一个项目独立拥有三个侧）+ 一个跨项目任务系统。
+ * ★ 2026-10-26 澄清：原先写成“三本册”是语音把**侧**误识别成**册**；模型是“侧”。
+ */
+export type RootSide = 'design' | 'live' | 'translate' | 'task';
+
+/** 每个角色属于哪个侧（唯一住处；分组渲染与后续迁移都读它） */
+const ROLE_SIDE: Record<RootRole, RootSide> = {
+  design: 'design', // 设计侧：意图（决策卡/期望/判据）
+  judgeCache: 'design', // 判据缓存服务判据 ⇒ 跟设计侧
+  cache: 'live', // 实际侧：事实
+  featureCache: 'live',
+  live: 'live',
+  baseline: 'live',
+  snapshot: 'live',
+  observe: 'live',
+  impact: 'live',
+  translate: 'translate', // 翻译侧
+  history: 'task', // 任务系统（跨项目，不属于任何一侧）
+};
+
+/** 侧的展示名与一句话说明 */
+const SIDE_LABEL: Record<RootSide, string> = {
+  design: '设计侧（意图：决策卡 / 期望 / 判据）',
+  live: '实际侧（事实：代码现在长什么样；全部可由源码重建）',
+  translate: '翻译侧（跨语言映射）',
+  task: '任务系统（跨项目；不属于任何一个侧）',
+};
+
 /** 人读清单（doctor / 诊断用）：把"每种数据住在哪"一次说清 */
 export function formatRootsReport(projectRoot?: string): string {
-  const lines: string[] = ['══ 根清单（一个角色一个根）══'];
+  const lines: string[] = ['══ 根清单（按【三个侧】分组）══'];
   const sharedHome = getStorageRoot();
   lines.push(`shared 根：${sharedHome}   ← 跨项目、要备份（像 ~/.m2）`);
   if (projectRoot) {
@@ -168,14 +197,21 @@ export function formatRootsReport(projectRoot?: string): string {
     return lines.join('\n');
   }
   const table = rootsOf(projectRoot);
-  for (const role of Object.keys(table) as RootRole[]) {
-    const r = table[role];
-    // ★ 算不出来的角色（featureCache 缺 feature）如实标「需 feature」，不留空白
-    const shownPath = r.available ? r.path : '（需 feature）';
-    lines.push(
-      `  ${role.padEnd(11)} ${r.kind.padEnd(8)} ${r.derivable ? '可删重建' : '禁止脚本删'}  ${shownPath}\n` +
-        `  ${' '.repeat(11)} ${r.note}`,
-    );
+  // ★ 按【侧】分组渲染（寄风的模型：一个项目独立拥有三个侧）
+  const order: RootSide[] = ['design', 'live', 'translate', 'task'];
+  for (const side of order) {
+    const roles = (Object.keys(table) as RootRole[]).filter((r) => ROLE_SIDE[r] === side);
+    if (roles.length === 0) continue;
+    lines.push(`\n■ ${SIDE_LABEL[side]}`);
+    for (const role of roles) {
+      const r = table[role];
+      // ★ 算不出来的角色（featureCache 缺 feature）如实标「需 feature」，不留空白
+      const shownPath = r.available ? r.path : '（需 feature）';
+      lines.push(
+        `  ${role.padEnd(11)} ${r.kind.padEnd(8)} ${r.derivable ? '可删重建' : '禁止脚本删'}  ${shownPath}\n` +
+          `  ${' '.repeat(11)} ${r.note}`,
+      );
+    }
   }
   return lines.join('\n');
 }
