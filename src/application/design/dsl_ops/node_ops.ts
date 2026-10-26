@@ -203,6 +203,26 @@ function syncSemanticFileForFileNode(dsl: DesignDSL, node: Node): void {
   (dsl as unknown as { semantic?: unknown }).semantic = { ...sem, files };
 }
 
+/**
+ * ★★★ 2026-10-26（T-#22 续2）：**删 file 节点 ⇒ 同时删掉对应的 `semantic.files` 条目**。
+ *
+ * 为什么：只删 `geometry.nodes` 而留着语义条目 ⇒ 册里会出现**指向已不存在文件的孤儿**，
+ * 而 D1 [覆盖]（以及所有读 `semantic.files` 的地方）会**假装它还在册里**。
+ * ★ 与 `syncSemanticFileForFileNode` 同一处判据（`type==='file' && path`），方向相反。
+ * ★ 没找到对应条目 ⇒ **不动**（不凭空造、也不报错）。
+ */
+function removeSemanticFileForFileNode(dsl: DesignDSL, node: Node): void {
+  const raw = typeof node.path === 'string' ? node.path.trim() : '';
+  if (!raw || node.type !== 'file') return;
+  const norm = (s: string): string => s.replace(/\\/g, '/').replace(/^\.\//, '');
+  const p = norm(raw);
+  const sem = (dsl.semantic ?? {}) as unknown as { files?: Array<Record<string, unknown>> };
+  if (!Array.isArray(sem.files)) return;
+  const files = sem.files.filter((f) => !(f && norm(String((f as { path?: string }).path ?? '')) === p));
+  if (files.length === sem.files.length) return; // 没有对应条目 ⇒ 不动
+  (dsl as unknown as { semantic?: unknown }).semantic = { ...sem, files };
+}
+
 export function addNode(input: AddNodeInput): EditResult {
   const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, path: nodePathInput, gate: gateInput, description, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, agent } = input;
 
@@ -625,6 +645,9 @@ export function deleteNode(input: DeleteNodeInput): EditResult {
   const removedEdges = (dsl.geometry.edges ?? []).filter(e => e.from === node_id || e.to === node_id);
   dsl.geometry.edges = (dsl.geometry.edges ?? []).filter(e => e.from !== node_id && e.to !== node_id);
 
+  // ★★★ 2026-10-26（T-#22 续2）：**delete 也要同步** —— 否则语义表留孤儿条目，
+  //   而读 `semantic.files` 的判据（如 D1）会假装那个文件还在册里。
+  removeSemanticFileForFileNode(dsl, removedNode);
   saveDSL(dsl);
 
   return {

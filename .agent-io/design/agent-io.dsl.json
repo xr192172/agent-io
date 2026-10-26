@@ -4631,14 +4631,14 @@
         "arch_layer": "core",
         "task": {
           "id": "file_src_application_design_dsl_ops_node_ops_ts",
-          "summary": "node.add/update：file 型节点必须同步写 semantic.files（两张表不许分叉）",
+          "summary": "node.add/update/delete：file 型节点都必须同步 semantic.files（两张表不许分叉）",
           "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_node_ops_ts\"].responsibility"
           },
           "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T13:27:01.453Z",
+          "claimed_at": "2026-10-26T13:34:46.174Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
@@ -4651,10 +4651,10 @@
             "files": [
               {
                 "path": "src/application/design/dsl_ops/node_ops.ts",
-                "content_hash": "e5244e88dd2e333c0189740ab75ccdcf3027a605"
+                "content_hash": "7add0f4276ebc001eefd23ca4eaba40f4bf883f5"
               }
             ],
-            "computed_at": "2026-10-26T13:27:01.372Z",
+            "computed_at": "2026-10-26T13:34:46.024Z",
             "basis": [
               "declared",
               "expectations"
@@ -4675,15 +4675,30 @@
                   "src/application/design/dsl_ops/node_ops.ts"
                 ]
               }
+            },
+            {
+              "kind": "expectations",
+              "at": "2026-10-26T13:28:06.837Z",
+              "by": "llm",
+              "agent": "agent:wish-machine",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_application_design_dsl_ops_node_ops_ts（3 条判据）",
+                "input": "ea7a20bf5f85283a6930231dbf1ca3c3db6216ae",
+                "code": "130b82dd6bdc863a6a6eee7fdaa2c3a64ed12024",
+                "covers": [
+                  "src/application/design/dsl_ops/node_ops.ts"
+                ]
+              }
             }
           ],
           "reopened_at": null,
-          "reopen_reason": "T-#22 续：node.update 也要同步 semantic.files（否则改 path 时两张表分叉）",
+          "reopen_reason": "T-#22 续2：deleteNode 也要同步 semantic.files（否则删 file 节点后语义表留孤儿条目）",
           "reopened_from": "agent:wish-machine"
         },
         "status": "in_progress",
         "decision": {
-          "summary": "node.add/update：file 型节点必须同步写 semantic.files（两张表不许分叉）",
+          "summary": "node.add/update/delete：file 型节点都必须同步 semantic.files（两张表不许分叉）",
           "expectations": [
             {
               "kind": "source-has",
@@ -4691,7 +4706,7 @@
                 "semantic"
               ],
               "path": "src/application/design/dsl_ops/node_ops.ts",
-              "why": "实测 node_ops.ts 原对 semantic 零引用 ⇒ node.add 只建几何节点、不写 semantic.files ⇒ D1 结构上修不了"
+              "why": "node_ops.ts 原对 semantic 零引用 ⇒ 两张表分叉"
             },
             {
               "kind": "symbol-exists",
@@ -4702,21 +4717,22 @@
             {
               "kind": "source-has",
               "must": [
-                "update 也要同步"
+                "update 也要同步",
+                "delete 也要同步"
               ],
               "path": "src/application/design/dsl_ops/node_ops.ts",
-              "why": "只改 addNode 不够：改一个 file 节点的 path 时 semantic.files 会留旧路径 ⇒ 同一病反方向再犯一次"
+              "why": "add / update / delete 三条路径必须都同步 —— 漏 delete 则语义表留孤儿条目"
             }
           ],
           "rationale": "几何节点（geometry.nodes）与语义文件（semantic.files）由两个不同 op 写且互不同步 ⇒ 同一事实两处，必分叉。实测后果：docs/VISION.md 建了 file 节点但 semantic.files 仍 0 命中 ⇒ D1 [覆盖] 永远红，且没有合法写入口能修（type:'file' 被写闸拒、node.add 不写语义表）。",
-          "acceptance": "① `node.add` / `node.update` 在 `data.type==='file' && data.path` 时都必须**同步维护 `semantic.files`**（同一事实的两个投影不许分叉）；② 不得改变非 file 节点（module/doc）的行为；③ 已存在的条目走 upsert（更新分支要测）。",
+          "acceptance": "① node.add / node.update / **node.delete** 三条路径在 file 型节点上都同步维护 semantic.files；② delete 分支必须删掉对应语义条目（不留孤儿）；③ 不得改变非 file 节点行为。",
           "status": "active",
           "tags": [
             "single-source",
             "semantic-files",
             "structural"
           ],
-          "updated_at": "2026-10-26T13:27:01.498Z",
+          "updated_at": "2026-10-26T13:34:46.219Z",
           "author": "llm",
           "agent": "agent:wish-machine"
         },
@@ -4764,6 +4780,50 @@
               "agent": "agent:wish-machine"
             },
             "note": "T-#22 续：update 同步 + 已存在分支要测",
+            "author": "llm",
+            "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-10-26T13:34:46.219Z",
+            "decision": {
+              "summary": "node.add/update：file 型节点必须同步写 semantic.files（两张表不许分叉）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "semantic"
+                  ],
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "why": "实测 node_ops.ts 原对 semantic 零引用 ⇒ node.add 只建几何节点、不写 semantic.files ⇒ D1 结构上修不了"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "symbol": "addNode",
+                  "why": "节点写入口必须仍在（回归底线）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "update 也要同步"
+                  ],
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "why": "只改 addNode 不够：改一个 file 节点的 path 时 semantic.files 会留旧路径 ⇒ 同一病反方向再犯一次"
+                }
+              ],
+              "rationale": "几何节点（geometry.nodes）与语义文件（semantic.files）由两个不同 op 写且互不同步 ⇒ 同一事实两处，必分叉。实测后果：docs/VISION.md 建了 file 节点但 semantic.files 仍 0 命中 ⇒ D1 [覆盖] 永远红，且没有合法写入口能修（type:'file' 被写闸拒、node.add 不写语义表）。",
+              "acceptance": "① `node.add` / `node.update` 在 `data.type==='file' && data.path` 时都必须**同步维护 `semantic.files`**（同一事实的两个投影不许分叉）；② 不得改变非 file 节点（module/doc）的行为；③ 已存在的条目走 upsert（更新分支要测）。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "semantic-files",
+                "structural"
+              ],
+              "updated_at": "2026-10-26T13:27:01.498Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "T-#22 续2：delete 同步（同族第三个缺口）",
             "author": "llm",
             "agent": "agent:wish-machine"
           }
@@ -62275,13 +62335,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 69,
+  "_dsl_rev": 71,
   "_sync": {
-    "saved_at": "2026-10-26T13:27:01.548Z",
+    "saved_at": "2026-10-26T13:34:46.275Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 20224411,
+    "age": 20689138,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
