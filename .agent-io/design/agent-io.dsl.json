@@ -9701,7 +9701,64 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_graph_import_project_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure/graph — 13 个函数（导入自 19 个模块）（src/infrastructure/graph/import_project.ts） ← 节点 file_src_infrastructure_graph_import_project_ts",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_import_project_ts\"].responsibility"
+          },
+          "owner": "agent:wish-machine",
+          "claimed_at": "2026-10-26T11:48:33.373Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/infrastructure/graph/import_project.ts",
+                "content_hash": "0f3874d987532037b65e056c6f844e713be15c8f"
+              }
+            ],
+            "computed_at": "2026-10-26T11:48:33.138Z",
+            "basis": [
+              "declared"
+            ]
+          }
+        },
+        "status": "in_progress",
+        "decision": {
+          "summary": "import_project：重建闸（节点级 + 意图级）一次报全；放行时两类丢失都进回执",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "lostIntentNow"
+              ],
+              "path": "src/infrastructure/graph/import_project.ts",
+              "why": "两层闸必须一次报全 —— 实测第一层先抛后，用户只看到“丢 1 个节点”就传了 allow_design_drop，结果决策卡也丢了却没被告知"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "allow_design_drop"
+              ],
+              "path": "src/infrastructure/graph/import_project.ts",
+              "why": "重建闸的开关必须仍在（回归底线）"
+            }
+          ],
+          "acceptance": "① rebuild_design 的两层闸（节点级 willDrop + 意图级 lostIntent）必须**一次报全**，不得第一层先抛、第二层永远看不见；② allow_design_drop=true 放行时，丢掉的节点与意图都要进 designDropNote（可读回执）；③ 不得改变任何放行/拒绝的判定（只改报告完整性）。",
+          "status": "active",
+          "tags": [
+            "gate",
+            "rebuild-design",
+            "informed-consent"
+          ],
+          "updated_at": "2026-10-26T11:48:33.343Z",
+          "author": "llm",
+          "agent": "agent:wish-machine"
+        }
       },
       {
         "id": "file_src_infrastructure_index_db_ts",
@@ -58231,7 +58288,8 @@
           }
         ],
         "lines": 1642,
-        "layer": "core"
+        "layer": "core",
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_index_db_ts",
@@ -61767,13 +61825,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 55,
+  "_dsl_rev": 56,
   "_sync": {
-    "saved_at": "2026-10-26T11:05:15.938Z",
+    "saved_at": "2026-10-26T11:48:33.392Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 11718801,
+    "age": 14316255,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

@@ -1109,18 +1109,49 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
           //   于是 T88 新加的 `doc_*` 被误判成"人手加的"（真跑复现见该常量注释）。
           .filter((id) => !isScannedNodeId(id));
         const willDrop = nonScanned.filter((id) => !nextIds.has(id)).sort();
-        if (willDrop.length && input.allow_design_drop !== true) {
-          throw new Error(
-            `拒绝重建设计 DSL：本次重建会**抹掉 ${willDrop.length} 个"扫描产不出的"节点**（多半是人手加的）：\n` +
+        // ★★★ 2026-10-26（T-#16）：**两层闸要一次报全**。
+        //   病史（实测 2026-10-26）：第一层（节点级）先抛，第二层（意图级）**永远没机会报** ⇒
+        //   用户只看到"会抹掉 1 个节点"就传了 `allow_design_drop=true`，结果**决策卡也一起丢了、却没被告知**。
+        //   ⇒ 现在第一层在抛之前**把意图损失也算出来一起报**，让 `allow_design_drop` 变成**真·知情同意**。
+        //   ★ 判据不合并、只合并**报告**：两层各自的条件仍然独立（见下面第二层），这里只是提前算一份用于告知。
+        const nextById0 = new Map((layered.geometry?.nodes ?? []).map((n) => [n.id, n]));
+        const lostIntentNow = (prevDesign.geometry?.nodes ?? [])
+          .filter((n) => n.decision || n.task)
+          .filter((n) => {
+            const nx = nextById0.get(n.id);
+            return !nx || (!nx.decision && !nx.task);
+          });
+        if ((willDrop.length > 0 || lostIntentNow.length > 0) && input.allow_design_drop !== true) {
+          const nodePart = willDrop.length
+            ? `\n① 扫描产不出的**节点** ${willDrop.length} 个（多半是人手加的）：\n` +
               willDrop.slice(0, 20).map((id) => `  · ${id}`).join('\n') +
-              (willDrop.length > 20 ? `\n  …另有 ${willDrop.length - 20} 个` : '') +
-              `\n⇒ 三选一：① 只想刷新"实际"、不动设计 ⇒ 传 \`live_only=true\`（**设计会被完整保住**）；` +
-              `② 确定要放弃这些节点 ⇒ 传 \`allow_design_drop=true\`；` +
-              `③ 想留住它们 ⇒ 先手工把它们记进设计（或等"人手结构的登记处"落地）。`,
+              (willDrop.length > 20 ? `\n  …另有 ${willDrop.length - 20} 个` : '')
+            : '\n① 扫描产不出的节点：**0 个**';
+          const intentPart = lostIntentNow.length
+            ? `\n② 节点 id 还在、但**意图会被抹成 undefined** ${lostIntentNow.length} 处（decision / task）：\n` +
+              lostIntentNow
+                .slice(0, 20)
+                .map((n) => `  · ${n.id}（${[n.decision ? 'decision' : '', n.task ? 'task' : ''].filter(Boolean).join('+')}）`)
+                .join('\n') +
+              (lostIntentNow.length > 20 ? `\n  …另有 ${lostIntentNow.length - 20} 处` : '')
+            : '\n② 意图损失：**0 处**';
+          throw new Error(
+            `拒绝重建设计 DSL：本次重建会丢掉**两层设计内容**（都要显式同意）：` +
+              nodePart +
+              intentPart +
+              `\n\n⇒ 三选一：① 只想刷新"实际"、不动设计 ⇒ 传 \`live_only=true\`（**设计完整保住**）；` +
+              `\n          ② 确定要放弃以上**全部** ⇒ 传 \`allow_design_drop=true\`；` +
+              `\n          ③ 想留住它们 ⇒ 别重建（\`rebuild_design\` 不传即可，默认 false）。` +
+              '\n★ `git diff .agent-io/design/` 是你的保险 —— 万一真丢了，`git checkout` 能救回来。',
           );
         }
         if (willDrop.length) {
           designDropNote = `★ 本次重建**丢掉了 ${willDrop.length} 个扫描产不出的节点**（已显式允许）：${willDrop.slice(0, 10).join(', ')}${willDrop.length > 10 ? ' …' : ''}`;
+        }
+        if (lostIntentNow.length) {
+          designDropNote +=
+            `\n★ 本次重建**丢掉了 ${lostIntentNow.length} 处设计意图**（decision/task，已显式允许）：` +
+            `${lostIntentNow.slice(0, 10).map((n) => n.id).join(', ')}${lostIntentNow.length > 10 ? ' …' : ''}`;
         }
       }
       // ★★★ 2026-10-18：**意图保护**（这是"② 重算抹掉设计"的堵口）。
