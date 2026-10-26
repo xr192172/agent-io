@@ -868,14 +868,9 @@ function applyTagOp(feature: string, op: CheckedOperation<FeatureOperation>): Ed
 // decision：决策卡写入口（把候选落到**文件/文档/service 节点**的 `decision`）
 //   ★★ 语义分叉（本 op 的头号纪律）：**未决分歧**住 `data.dissent`，
 //      **不是** `data.alternatives`（后者 = 已排除的方案 + 否决原因）。见 `domain/b_terms.ts` 的 `dissent`。
-//   ★★ 住 **base**（"设计只住一处"）：本 op 只改 base，**不写 overlay** ——
-//      `syncDecisionsToOverlay` **已于 2026-10-19 退役**（见本文件第 20-22 行；退役理由是"写两处会分叉"）。
-//   ★★ 由此产生的事实（**必须知道，2026-10-26 实测**）：`rebuild_design=true` 会把它抹掉 ——
-//      这是**已知且被闸保护的**（`import_project.ts` 的两层闸：节点级 `willDrop` + 意图级 `lostIntent`；
-//      默认**拒绝**并**两层一次报全**，要真放弃须显式 `allow_design_drop=true`）。
-//   ★ 只想刷新实际侧、不动设计 ⇒ 用 `live_only=true`（**设计完整保住**）。
-//   ★ 本注释原写「收口处 `updateFeature` 调 `syncDecisionsToOverlay`」—— 那是**过期信息**（函数已删），
-//     曾让人误以为"决策卡有 overlay 保护"。别再把"计划"写成"现状"。
+//   ★★ 住 base（"设计只住一处"）：本 op 只改 base，不写 overlay。
+//   ★★ `rebuild_design=true` 会抹掉它 —— 由 `import_project.ts` 的两层闸保护（节点级 + 意图级，默认拒绝）。
+//      只想刷新实际侧、不动设计 ⇒ 用 `live_only=true`（设计完整保住）。
 // ─────────────────────────────────────────────────────────────
 
 /**

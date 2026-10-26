@@ -4694,61 +4694,132 @@
         "arch_layer": "core",
         "task": {
           "id": "file_src_application_design_dsl_ops_update_feature_ts",
-          "summary": "【L1 待建构】核心层 · src/application/design/dsl_ops — 22 个函数（导入自 25 个模块）（src/application/design/dsl_ops/update_feature.ts） ← 节点 file_src_application_design_dsl_ops_update_feature_ts",
+          "summary": "decision 写入口：只住 base；rebuild_design 会抹掉它，由 import_project 两层闸保护",
           "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_update_feature_ts\"].responsibility"
           },
           "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T11:53:38.840Z",
+          "claimed_at": "2026-10-26T11:58:22.770Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/update_feature.ts",
-                "content_hash": "470ba7d5eff1215d65eb29aa33c6da5216e626e8"
+                "content_hash": "5a4117e7c307cf7c3b7e49f73ac2f30b7646314b"
               }
             ],
-            "computed_at": "2026-10-26T11:53:38.699Z",
+            "computed_at": "2026-10-26T11:58:22.699Z",
             "basis": [
               "declared"
             ]
-          }
+          },
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-26T11:54:00.252Z",
+              "by": "llm",
+              "agent": "agent:wish-machine",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_application_design_dsl_ops_update_feature_ts（2 条判据）",
+                "input": "c14fead9c14ca12fe8688b5c7e7b392ae3b8a243",
+                "code": "89a15ada9207fefa0eee24e36668a9d0af3429b4",
+                "covers": [
+                  "src/application/design/dsl_ops/update_feature.ts"
+                ]
+              }
+            }
+          ],
+          "reopened_at": null,
+          "reopen_reason": "T-#18：注释只留“现在”，历史叙事搬进决策卡（寄风：这种注释本身没有住进文件的价值）",
+          "reopened_from": "agent:wish-machine"
         },
         "status": "in_progress",
         "decision": {
-          "summary": "decision 写入口的归属说明：只住 base，重建会丢但被两层闸保护",
+          "summary": "decision 写入口：只住 base；rebuild_design 会抹掉它，由 import_project 两层闸保护",
           "expectations": [
             {
               "kind": "source-has",
               "must": [
-                "已于 2026-10-19 退役"
+                "live_only",
+                "两层闸"
               ],
               "path": "src/application/design/dsl_ops/update_feature.ts",
-              "why": "过期注释说“收口处会调 syncDecisionsToOverlay”，而它已删 —— 实测这条注释骗了我一次（让我以为决策卡有 overlay 保护）"
+              "why": "注释必须指向真实存在的安全路径与保护（现状），而不是历史"
             },
             {
               "kind": "source-has",
-              "must": [
-                "live_only"
+              "mustNot": [
+                "曾让人误以为"
               ],
               "path": "src/application/design/dsl_ops/update_feature.ts",
-              "why": "必须指向真实存在的安全路径（只刷新实际侧用 live_only），而不是已删的函数"
+              "why": "历史叙事（“当年误了谁”）不该住源文件 —— 它的家在册的 rationale/note 与 commit message"
             }
           ],
-          "acceptance": "① 本文件不得再声称 `syncDecisionsToOverlay` 会被调用（它已 2026-10-19 退役）；② decision 的存储归属必须写清（只住 base）；③ 必须指向真实存在的保护（import_project 的两层闸 + live_only），不得指向已删的东西。",
+          "acceptance": "① 注释只写“现在是什么”（decision 住 base + 重建会丢 + 谁保护它 + 安全路径），不写“当年怎么退役/曾经误过谁”；② 历史叙事住本卡的 rationale/note，不住源文件；③ 判据只看现状文本。",
           "status": "active",
           "tags": [
-            "stale-comment",
             "decision",
-            "gate"
+            "gate",
+            "comment-discipline"
           ],
-          "updated_at": "2026-10-26T11:53:38.808Z",
+          "updated_at": "2026-10-26T11:58:22.812Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
-        }
+          "agent": "agent:wish-machine",
+          "rationale": "【历史，2026-10-26】T75 曾用 syncDecisionsToOverlay 把 decision 同步进 overlay（防 base 重建冲掉）；2026-10-19 因“设计只住一处”（写两处会分叉）主动退役 —— 但退役所依赖的前提“design/ 重建不碰它”对 rebuild_design=true 不成立（实测会碰）。真正的保护在 import_project 的两层闸（节点级 willDrop + 意图级 lostIntent，默认拒绝、两层一次报全）。原注释写“收口处会调 syncDecisionsToOverlay”是过期信息，曾误导一次判断（以为决策卡有 overlay 保护）。"
+        },
+        "overlay": {
+          "path": "src/application/design/dsl_ops/update_feature.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "all_green": true,
+            "kind": "expectations",
+            "unsupported": 0
+          }
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-26T11:58:22.812Z",
+            "decision": {
+              "summary": "decision 写入口的归属说明：只住 base，重建会丢但被两层闸保护",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "已于 2026-10-19 退役"
+                  ],
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "why": "过期注释说“收口处会调 syncDecisionsToOverlay”，而它已删 —— 实测这条注释骗了我一次（让我以为决策卡有 overlay 保护）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "live_only"
+                  ],
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "why": "必须指向真实存在的安全路径（只刷新实际侧用 live_only），而不是已删的函数"
+                }
+              ],
+              "acceptance": "① 本文件不得再声称 `syncDecisionsToOverlay` 会被调用（它已 2026-10-19 退役）；② decision 的存储归属必须写清（只住 base）；③ 必须指向真实存在的保护（import_project 的两层闸 + live_only），不得指向已删的东西。",
+              "status": "active",
+              "tags": [
+                "stale-comment",
+                "decision",
+                "gate"
+              ],
+              "updated_at": "2026-10-26T11:53:38.808Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "T-#18：注释只留现状，历史搬进本卡",
+            "author": "llm",
+            "agent": "agent:wish-machine"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_handlers_ts",
@@ -61910,13 +61981,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 58,
+  "_dsl_rev": 60,
   "_sync": {
-    "saved_at": "2026-10-26T11:53:38.864Z",
+    "saved_at": "2026-10-26T11:58:22.861Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 14621727,
+    "age": 14905724,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
