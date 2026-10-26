@@ -61142,6 +61142,31 @@
           ],
           "updated_at": "2026-10-24T12:55:24.165Z"
         }
+      },
+      {
+        "id": "file_docs_vision_md",
+        "label": "docs/VISION.md",
+        "type": "file",
+        "path": "docs/VISION.md",
+        "decision": {
+          "acceptance": "docs/VISION.md 存在且被 source-has 判据引用时能读到。",
+          "author": "llm",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "docs/VISION.md",
+              "why": "D1 [覆盖] 要求所有 expectations 用到的 path 都必须是某个节点的 path；docs/VISION.md 盘上存在（6221 B）但不在 semantic.files 里"
+            }
+          ],
+          "status": "active",
+          "summary": "愿景文档入册：它是判据与取舍的最终依据（如「完全不需要人工外力，LLM + 程序内部自洽」）",
+          "tags": [
+            "docs",
+            "vision"
+          ],
+          "updated_at": "2026-10-26T13:15:27.523Z",
+          "agent": "agent:wish-machine"
+        }
       }
     ],
     "edges": [
@@ -119034,13 +119059,13 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-26T12:52:14.222Z",
+    "saved_at": "2026-10-26T13:15:27.555Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 435611411,
+    "age": 437004744,
     "dbSchemaVersion": 16,
-    "via": "tool:t20-criteria-entry"
+    "via": "edit_dsl:edit_dsl"
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -119394,7 +119419,10 @@
               "回执必须点名缺什么（给哪个 node 补几条哪类判据，可照做）—— 只说『请补判据』不算（判据 D）"
             ]
           },
-          "executor": "claimTask"
+          "executor": "claimTask",
+          "state": {
+            "kind": "ready"
+          }
         },
         {
           "id": "t_start",
@@ -119408,7 +119436,10 @@
               "不回滚、不重写判据：这一段只认账（判据已经在 decision 里，是 prepare 期间写进去的）"
             ]
           },
-          "executor": "startTask"
+          "executor": "startTask",
+          "state": {
+            "kind": "ready"
+          }
         },
         {
           "id": "t_abandon",
@@ -119422,7 +119453,10 @@
               "还原与改态在同一次 saveDSL：不留『判据回了一半』的中间态"
             ]
           },
-          "executor": "releaseTask / expireTasks"
+          "executor": "releaseTask / expireTasks",
+          "state": {
+            "kind": "ready"
+          }
         }
       ],
       "terminal_states": [],
@@ -122031,7 +122065,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1433,
+  "_dsl_rev": 1434,
   "feature_tree": {
     "features": [
       {

@@ -2440,6 +2440,28 @@ export function applyTaskPlanOp(feature: string, op: TaskOpRequest): EditResult 
       guard: { clauses: [...(clauses as string[])] },
     };
     if (typeof t.executor === 'string' && t.executor.trim()) nextTr.executor = t.executor;
+    // ★★★ 2026-10-26（T-#21）：**`state` 也要能写**。
+    //   病史：D4 [迁移状态] 要求**每条** transition 有 `state.kind`（`applicableTransitions` 靠它过滤：
+    //   只返回 `kind==='ready'` 的）。而本写端原先**不产 `state`** ⇒ 后来加的
+    //   `t_prepare` / `t_start` / `t_abandon`（2026-10-23 的 preparing 三态）永远缺它
+    //   （实测 7/10 有、3/10 没有；那 7 条是**手改 JSON** 留下的）。
+    //   ⇒ 判据要求的东西，写端必须产得出来 —— 否则 D4 永远红，而人会以为"再写一次就好"。
+    const trState = (t as { state?: unknown }).state;
+    if (trState !== undefined) {
+      const st = trState as Record<string, unknown> | null;
+      if (!st || typeof st !== 'object') {
+        throw new Error('task_plan.update 被拒：`data.transition.state` 必须是对象。');
+      }
+      const k = typeof st.kind === 'string' ? st.kind.trim() : '';
+      if (!['ready', 'blocked', 'unimplemented'].includes(k)) {
+        throw new Error(
+          `task_plan.update 被拒：\`data.transition.state.kind\` 必须是 ready / blocked / unimplemented（收到 ${JSON.stringify(
+            st.kind,
+          )}）。`,
+        );
+      }
+      nextTr.state = { ...st, kind: k };
+    }
     if (idx >= 0) list[idx] = { ...list[idx], ...nextTr };
     else list.push(nextTr);
     sm.transitions = list;

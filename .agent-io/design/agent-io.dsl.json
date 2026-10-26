@@ -4680,32 +4680,52 @@
         "arch_layer": "core",
         "task": {
           "id": "file_src_application_design_dsl_ops_task_ops_ts",
-          "summary": "【L1 待建构】核心层 · src/application/design/dsl_ops — 44 个函数（导入自 19 个模块）（src/application/design/dsl_ops/task_ops.ts） ← 节点 file_src_application_design_dsl_ops_task_ops_ts",
+          "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind",
           "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_task_ops_ts\"].responsibility"
           },
           "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T12:51:00.153Z",
+          "claimed_at": "2026-10-26T13:14:39.734Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "b581b10c55c089d7bf3eab1c3cbf968ef0586fd3"
+                "content_hash": "ef570fd0b55041aefe1442f578ba3a72742ab4d4"
               }
             ],
-            "computed_at": "2026-10-26T12:50:59.896Z",
+            "computed_at": "2026-10-26T13:14:39.657Z",
             "basis": [
               "declared"
             ]
-          }
+          },
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-26T12:52:58.140Z",
+              "by": "llm",
+              "agent": "agent:wish-machine",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_application_design_dsl_ops_task_ops_ts（2 条判据）",
+                "input": "fe189f29da5f6795b53cf1fadc8c071d2d1d4137",
+                "code": "9352d73912ea49979fd434f0d727e00e27205730",
+                "covers": [
+                  "src/application/design/dsl_ops/task_ops.ts"
+                ]
+              }
+            }
+          ],
+          "reopened_at": null,
+          "reopen_reason": "T-#21：task_plan.update 的 transition 写端补 state（否则新写的迁移永远缺 state.kind，D4 永远红）",
+          "reopened_from": "agent:wish-machine"
         },
         "status": "in_progress",
         "decision": {
-          "summary": "task_plan.update：state_machine 与 criteria 的写端；criteria 按 id upsert 且 why 必填、expect 写前试解析",
+          "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind",
           "expectations": [
             {
               "kind": "source-has",
@@ -4723,19 +4743,77 @@
               ],
               "path": "src/application/design/dsl_ops/task_ops.ts",
               "why": "expect 写前必须试解析：design:check 用 new Function 求值，写坏一个字节就让整道门崩"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "unimplemented"
+              ],
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "why": "transition 写端必须支持 state.kind 的三个取值（ready/blocked/unimplemented）—— 否则 D4 永远红"
             }
           ],
-          "acceptance": "① task_plan.update 必须能写 `criteria`（按 id upsert），否则项目级判据只能手改 JSON（绕过写闸）；② `why` 必填；③ `expect` 写前必须用 new Function 试解析（写坏会让 design:check 整体崩）；④ 不得改动 state_machine 现有行为。",
+          "acceptance": "① task_plan.update 必须能写 `criteria`（按 id upsert）；② **transition 写端必须支持 `state`**（kind: ready|blocked|unimplemented）—— 实测 D4 要求每条有 state.kind，而写端产不出，导致 t_prepare/t_start/t_abandon 三条永远缺；③ `expect` 写前必须用 new Function 试解析。",
           "status": "active",
           "tags": [
             "task-plan",
             "criteria",
-            "write-entry"
+            "state-machine"
           ],
-          "updated_at": "2026-10-26T12:51:00.103Z",
+          "updated_at": "2026-10-26T13:14:39.779Z",
           "author": "llm",
           "agent": "agent:wish-machine"
-        }
+        },
+        "overlay": {
+          "path": "src/application/design/dsl_ops/task_ops.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "all_green": true,
+            "kind": "expectations",
+            "unsupported": 0
+          }
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-26T13:14:39.779Z",
+            "decision": {
+              "summary": "task_plan.update：state_machine 与 criteria 的写端；criteria 按 id upsert 且 why 必填、expect 写前试解析",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "design_completeness",
+                    "criteria"
+                  ],
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "why": "项目级判据（criteria）的写入口 —— 实测 src/ 里 design_completeness 零引用 ⇒ 它只有读端没有写端"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "new Function"
+                  ],
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "why": "expect 写前必须试解析：design:check 用 new Function 求值，写坏一个字节就让整道门崩"
+                }
+              ],
+              "acceptance": "① task_plan.update 必须能写 `criteria`（按 id upsert），否则项目级判据只能手改 JSON（绕过写闸）；② `why` 必填；③ `expect` 写前必须用 new Function 试解析（写坏会让 design:check 整体崩）；④ 不得改动 state_machine 现有行为。",
+              "status": "active",
+              "tags": [
+                "task-plan",
+                "criteria",
+                "write-entry"
+              ],
+              "updated_at": "2026-10-26T12:51:00.103Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "T-#21：transition 写端补 state",
+            "author": "llm",
+            "agent": "agent:wish-machine"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -62057,13 +62135,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 64,
+  "_dsl_rev": 66,
   "_sync": {
-    "saved_at": "2026-10-26T12:52:35.331Z",
+    "saved_at": "2026-10-26T13:14:39.834Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 18158194,
+    "age": 19482697,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
