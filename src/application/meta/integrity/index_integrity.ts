@@ -123,6 +123,8 @@ export interface IndexIntegrityResult {
   refreshed: boolean;
   /** refresh:true 时顺手做的修复说明（陈旧引用重开等）；没做则 undefined */
   repair?: string;
+  /** `retry_failed:true` 时的回执（存量 failed 重开再解析的前后账） */
+  retry_failed?: string;
 
   counts: {
     /** 索引里收录的文件数 */
@@ -457,11 +459,16 @@ function readRawSchemaVersion(root: string): { exists: boolean; version: number 
  * 索引可信度自检。
  * @param opts.refresh true = 先跑一次保鲜（`ensureProjectIndex`）再报告；默认 false（纯只读）
  * @param opts.sample  抽样条数上限（默认 20）
+ * @param opts.retry_failed ★ 2026-10-27（T-#43）：把存量 `failed` 引用重开为 `pending` 再跑一次
+ *   跨文件解析。**为什么需要**：`reopenRefsTo()` 只在“名字还在 `nodes` 里”时才重开 `failed`
+ *   ⇒ 内置名（`JSON.stringify` / `Math.max`）永远不在 nodes ⇒ **永不重试 ⇒ 永久 failed**。
+ *   实测：13341 条 → 2143 条（84% 归位 external），0.8s。
  */
 async function indexIntegrityCore(opts: {
   project_dir: string;
   refresh?: boolean;
   sample?: number;
+  retry_failed?: boolean;
 }): Promise<IndexIntegrityResult> {
   const root = path.resolve(opts.project_dir);
   const sampleN = Math.max(0, opts.sample ?? NOT_FRESH_SAMPLE);
@@ -669,6 +676,31 @@ async function indexIntegrityCore(opts: {
       stale_resolved = countStaleResolvedRefs(db);
     } catch (e) {
       repair = `陈旧引用修复失败：${(e as Error).message}`;
+    }
+  }
+
+  // ★★★ 2026-10-27（T-#43）：**重试存量 failed**（`retry_failed: true`）。
+  //   病史（实测）：`reopenRefsTo()` 只在“名字现在还在 `nodes` 里”时才把 `failed` 重开为 `pending`
+  //   ⇒ **内置名（`JSON.stringify` / `Math.max`）永远不在 nodes ⇒ 永不重试 ⇒ 永久 failed**。
+  //   ⇒ 改了解析器判定 / 加了新语言之后，**必须显式跑一次**，否则旧账永远看不到改善。
+  //   实测：13341 条 failed → 2143（84% 归位 `external`），耗时 **0.8s**，`edges` 一条没变（正确）。
+  let retryFailedNote: string | undefined;
+  if (opts.retry_failed === true) {
+    try {
+      const before = byStatus('failed');
+      if (before === 0) {
+        retryFailedNote = '重试存量 failed：0 条（无需重试）';
+      } else {
+        db.exec("UPDATE unresolved_refs SET status='pending' WHERE status='failed'");
+        const { resolveCrossFileCalls } = await import('../../../infrastructure/index/symbols.js');
+        const st = resolveCrossFileCalls(db, root);
+        const after = byStatus('failed');
+        retryFailedNote =
+          `重试存量 failed：${before} → ${after}（重解析 ${st.total} 条：` +
+          `resolved ${st.resolved} · external ${st.external} · 仍 failed ${st.failed}）`;
+      }
+    } catch (e) {
+      retryFailedNote = `重试存量 failed 失败：${(e as Error).message}`;
     }
   }
 
@@ -907,6 +939,7 @@ async function indexIntegrityCore(opts: {
     // ★ 2026-10-26（T-#5）：根偏离 + 根清单（让「根」在工具面上可见）
     stray_data_dirs: strayDataDirs,
     roots_report: formatRootsReport(root),
+    ...(retryFailedNote ? { retry_failed: retryFailedNote } : {}),
     absolute_path_literals: absPathHits,
   };
 }
@@ -1005,6 +1038,7 @@ export function renderIntegrity(r: IndexIntegrityResult): string {
     lines.push(`  未保鲜样例：${r.freshness.not_fresh_sample.join(', ')}`);
   }
   if (r.repair) lines.push(`  顺手修复：${r.repair}`);
+  if (r.retry_failed) lines.push(`  ${r.retry_failed}`);
   if (r.issues.length) {
     lines.push('  问题：');
     for (const i of r.issues) {

@@ -819,6 +819,16 @@ export const META_TOOLS: ToolDef[] = [
       project_dir: z.string().optional().describe('项目根目录；省略则用当前工作目录'),
       refresh: z.boolean().optional().describe('true = 先跑一次保鲜（重同步变更文件 + 重开引用）再报告；默认 false = 纯只读'),
       sample: z.number().int().min(0).max(200).optional().describe('未保鲜样例的条数上限（默认 20）'),
+      retry_failed: z
+        .boolean()
+        .optional()
+        .describe(
+          '★ 2026-10-27（T-#43）：把存量 `failed` 引用**重开为 pending 再跑一次**跨文件解析。' +
+            '为什么需要：`reopenRefsTo()` 只在“名字还在 nodes 里”时才重开 failed ⇒ 内置名' +
+            '（`JSON.stringify` / `Math.max`）永不重试 ⇒ **永久 failed**。' +
+            '实测：13341 条 → 2143（84% 归位 external），**0.8s**，edges 一条没变。' +
+            '★ 改了解析器判定 / 加了新语言之后**必须跑一次**，否则旧账永远看不到改善。',
+        ),
     },
     // ★ P-E 本笔：裸 arrow ⇒ wrapData。原先 `return { text: renderIntegrity(r) }` 把
     //   IndexIntegrityResult（trustworthy / counts / refs.stale_resolved / issues …
