@@ -1009,6 +1009,28 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       semantic: { files: semanticFiles },
     } as DesignDSL;
 
+    // ★★★ 2026-10-26（T-#26 / `docs/ROOTS.md` §7.3 ③）：**登记 `feature → 项目根`**（唯一写端）。
+    //   这是唯一天然的登记时刻：本函数同时知道 `project_dir`（项目根）与 `feature`。
+    //   ★ 为什么必须登记：`storage.ts#getDSL(feature)` **没有 baseDir 参数** ⇒ 它只能靠这张表
+    //     才知道该去哪个项目的 `.agent-io/design/` 找册。没有登记 ⇒ 只能落 `getDataHome()`
+    //     ⇒ 所有 feature 的册混在一个目录（今天 `design-db/` 混了 4 个项目就是这么来的）。
+    //   ★ 登记失败**不许阻断导入**（册已经算出来了，登记只是记账）—— 但必须**响亮**，不静默。
+    //   ★ 用动态 import：本文件是基础设施层，加一条静态 import 会牵动它的 import 块；
+    //     模块缓存保证只加载一次。
+    try {
+      const { registerFeature } = await import('../project_registry.js');
+      const reg = registerFeature(feature, input.source_root ?? input.project_dir, 'import_project');
+      if (reg.changed) {
+        console.warn(`[project_registry] 已登记 ${feature} → ${reg.entry.project_root}`);
+      }
+    } catch (e) {
+      console.warn(
+        `[project_registry] 登记失败（导入继续，但 getDSL 可能找不到该册）：${String(
+          (e as Error).message,
+        ).slice(0, 160)}`,
+      );
+    }
+
     const layered = detectArchLayers(dsl);
 
     let roleNote: string | null = null;

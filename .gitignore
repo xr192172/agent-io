@@ -223,3 +223,6 @@ out/
 !/.agent-io/design/
 !/.agent-io/design/**
 # <<< GENERATED
+
+# ★★ 2026-10-26（ROOTS.md §7.3 ②）：项目注册表是**本机登记**（路径含盘符），不进 git
+.agent-io/projects.json
