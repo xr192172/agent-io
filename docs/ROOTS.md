@@ -42,29 +42,34 @@
 
 ---
 
-## 2. 角色表（11 项，标注"已接 / 未接"）
+## 2. 角色表（10 项，标注"已接 / 未接"）
 
 | # | 角色 | 属于哪侧 | 现状住哪 | 目标住哪 | 已接 `rootsOf` |
 |---|---|---|---|---|---|
 | 1 | `design` | 设计侧 | **数据仓**（按 feature） | **项目内** | ✗ |
 | 2 | `judgeCache` | 设计侧 | 数据仓 | 项目内 | ✗ |
 | 3 | `cache` | 实际侧 | **项目内** | 项目内 | ✅ |
-| 4 | `featureCache` | 实际侧 | 数据仓（按 feature） | **删除**（实测 0 产物，见 §5） | ✅ |
-| 5 | `live` | 实际侧 | **数据仓**（`baseDir ?? getDataHome()`） | **项目内** | ✗ |
-| 6 | `baseline` | 实际侧 | 数据仓（同上） | 项目内 | ✗ |
-| 7 | `snapshot` | 实际侧 | 项目内（**未核实**） | 项目内 | ✗ |
-| 8 | `observe` | 实际侧 | 项目内（**未核实**） | 项目内 | ✗ |
-| 9 | `impact` | 实际侧 | 项目内（**未核实**） | 项目内 | ✗ |
-| 10 | `translate` | 翻译侧 | **不存在**（三个项目全无该目录） | 项目内 | ✗ |
+| 4 | `live` | 实际侧 | **数据仓**（`baseDir ?? getDataHome()`） | **项目内** | ✗ |
+| 5 | `baseline` | 实际侧 | 数据仓（同上） | 项目内 | ✗ |
+| 6 | `snapshot` | 实际侧 | 项目内（**未核实**） | 项目内 | ✗ |
+| 7 | `observe` | 实际侧 | 项目内（**未核实**） | 项目内 | ✗ |
+| 8 | `impact` | 实际侧 | 项目内（**未核实**） | 项目内 | ✗ |
+| 9 | `translate` | 翻译侧 | **不存在**（三个项目全无该目录） | 项目内 | ✗ |
+| 10 | `history` | 任务系统 | 数据仓 | 项目内 `tasks.db` | ✗ |
 
-★ **「未落地」≠「未核实」**：`translate` 是**规划中的侧**，三个项目的 `.agent-io/translate/` 全不存在、
-  `*translate*` 落盘文件 0 个 ⇒ 它不是"住在哪"的问题，是**还没落地**。
-| 11 | `history` | 任务系统 | 数据仓 | 项目内 `tasks.db` | ✗ |
+★ **`featureCache` 已于 2026-10-26 删除**（实测三个工作区 0 个 `import_cache_*.db`，且 HTTP 面是可视化预留、没人用）
+  ⇒ 角色数 **11 → 10**。取证见 §5。
 
 ★ **"未核实"= 我没读决定它位置的那段代码**，只从"目录出现在哪"推的。
   这正是今天犯过的错（用观察推规范）⇒ 实施时**先读代码再定**，别照表抄。
 ★ **`live`/`baseline` 的"现状住数据仓"是实证**：`getLiveDir/getBaselineDir` = `baseDir ?? getDataHome()`
   ⇒ 归属由**每次调用**决定，所以 `live/` 同时出现在数据仓和两个项目目录里。
+★ **`translate` 是"未落地"而不是"未核实"**：三个项目的 `.agent-io/translate/` 全不存在、`*translate*` 落盘文件 0 个。
+
+★ **代码里早就记着同一个坑**（2026-10-26 发现）：`stage_registry.ts` 的 `dsl_live` 条目 `why` 写着
+  「带 `baseDir` 可覆盖（watch 时会落到被监听项目的根）⇒ 接之前必须先定"写读两侧怎么保证同一个根"」——
+  **这就是今天从磁盘盘点重新发现的 live 归属问题**。⇒ 记在注释里**没有生效**，还是得靠判据。
+
 
 ---
 
@@ -93,6 +98,7 @@
 | 7 | `getLiveDir/getBaselineDir/getDesignDir` 的 `baseDir` 改**必填**，调用点补 `source_root` | ⬜ |
 | 8 | 聚合视图（`overview`/`query=todo` 扫注册表） | ⬜ |
 | 9 | 清 8 个 stray 目录（71.7MB，`index_integrity` 已能报） | ⬜ 等尘埃落定 |
+| 10 | **清过期注释**（`import_cache` / "两级候选" 仍写在 7 处）：`db.ts:152`（`findCacheDb` 的**权威 doc** 还说"两级"）、`function_outline.ts:2/10/197`、`scan_rev.ts:13/46`、`file_facts.ts:25/72`、`live_render.ts:111`、`design/index.ts:166`（工具参数描述，**用户可见**）、`serve.ts:875`、`stage_registry.ts`（声明了一个**从不产物的流水阶段** `import_cache`） | ⬜ **欠账** |
 
 ---
 
