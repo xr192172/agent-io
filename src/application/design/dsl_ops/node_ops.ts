@@ -159,6 +159,42 @@ export interface AddNodeInput {
   agent?: string;
 }
 
+/**
+ * ★★★ 2026-10-26（T-#22）：**file 型节点 ⇒ 同步 upsert 进 `semantic.files`**。
+ *
+ * ## 为什么要它（实测病史）
+ * `node.add` 原先只推 `geometry.nodes`，`semantic.files` 一个字不碰
+ * （实测：本文件对 `semantic` **零引用**）。后果：一个 `type:'file'` 节点在册里“存在”，
+ * 但 D1 [覆盖]（“所有 expectations 的 path 都必须是某个节点的 path”）**仍报它不在** ——
+ * 因为那份判据读的是 `semantic.files`。
+ * ⇒ 更糟：**没有合法写入口能补** —— `type:'file' op:'add'` 被写闸拒（索引不收 `.md`），
+ *   `node.add` 又不写语义表 ⇒ `.md` 这类文件**永远入不了册**。
+ *
+ * ## 判据（只动这一种）
+ * `node.type === 'file'` 且 `node.path` 非空 ⇒ upsert。其它 kind（module / doc / symbol）
+ * **不动**语义表 —— 它们不是“一个源码文件”，塞进去会让“文件数”读数变假。
+ */
+function syncSemanticFileForFileNode(dsl: DesignDSL, node: Node): void {
+  const raw = typeof node.path === 'string' ? node.path.trim() : '';
+  if (!raw || node.type !== 'file') return;
+  const norm = (s: string): string => s.replace(/\\/g, '/').replace(/^\.\//, '');
+  const p = norm(raw);
+  const sem = (dsl.semantic ?? {}) as unknown as { files?: Array<Record<string, unknown>> };
+  const files = Array.isArray(sem.files) ? [...sem.files] : [];
+  const i = files.findIndex((f) => f && norm(String((f as { path?: string }).path ?? '')) === p);
+  const prev = i >= 0 ? files[i] : undefined;
+  const next: Record<string, unknown> = {
+    ...(prev ?? {}),
+    id: (prev?.id as string | undefined) ?? node.id,
+    path: p,
+    responsibility:
+      (prev?.responsibility as string | undefined) ?? node.description ?? node.label ?? p,
+  };
+  if (i >= 0) files[i] = next;
+  else files.push(next);
+  (dsl as unknown as { semantic?: unknown }).semantic = { ...sem, files };
+}
+
 export function addNode(input: AddNodeInput): EditResult {
   const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, path: nodePathInput, gate: gateInput, description, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, agent } = input;
 
@@ -234,6 +270,9 @@ export function addNode(input: AddNodeInput): EditResult {
   };
 
   dsl.geometry.nodes.push(node);
+  // ★★★ 2026-10-26（T-#22）：**两张表不许分叉** —— file 型节点同时 upsert 进 `semantic.files`。
+  //   （病史与判据见 `syncSemanticFileForFileNode` 的头注释；同一次 `saveDSL` 落盘。）
+  syncSemanticFileForFileNode(dsl, node);
   saveDSL(dsl);
 
   // ★★★ T328：进度走权威（`overlay.progress` + 闸 + 投影回 base）；节点已落盘 ⇒ `updateStatus` 能查到它。

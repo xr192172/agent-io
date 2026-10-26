@@ -61148,25 +61148,7 @@
         "label": "docs/VISION.md",
         "type": "file",
         "path": "docs/VISION.md",
-        "decision": {
-          "acceptance": "docs/VISION.md 存在且被 source-has 判据引用时能读到。",
-          "author": "llm",
-          "expectations": [
-            {
-              "kind": "file-exists",
-              "path": "docs/VISION.md",
-              "why": "D1 [覆盖] 要求所有 expectations 用到的 path 都必须是某个节点的 path；docs/VISION.md 盘上存在（6221 B）但不在 semantic.files 里"
-            }
-          ],
-          "status": "active",
-          "summary": "愿景文档入册：它是判据与取舍的最终依据（如「完全不需要人工外力，LLM + 程序内部自洽」）",
-          "tags": [
-            "docs",
-            "vision"
-          ],
-          "updated_at": "2026-10-26T13:15:27.523Z",
-          "agent": "agent:wish-machine"
-        }
+        "description": "本仓的愿景/理想文档：它回答「这个工具到底为什么存在」—— 是判据与取舍的最终依据。"
       }
     ],
     "edges": [
@@ -118997,6 +118979,11 @@
         "id": "file_src_application_design_intent_judge_cache_ts",
         "path": "src/application/design/intent/judge_cache.ts",
         "responsibility": "基础设施 · 判据求值缓存（judge-cache.json：一阶文件哈希，基线/增量/全量三档的载体）"
+      },
+      {
+        "id": "file_docs_vision_md",
+        "path": "docs/VISION.md",
+        "responsibility": "本仓的愿景/理想文档：它回答「这个工具到底为什么存在」—— 是判据与取舍的最终依据。"
       }
     ]
   },
@@ -119059,13 +119046,13 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-26T13:15:27.555Z",
+    "saved_at": "2026-10-26T13:23:17.241Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 437004744,
+    "age": 437474430,
     "dbSchemaVersion": 16,
-    "via": "edit_dsl:edit_dsl"
+    "via": "tool:t22-d1"
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -120341,8 +120328,9 @@
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
           "debt": "D-design-completeness",
           "gap_rule": "判据的分母必须【可算】：所有 debt/steps_pending/OQ 解决路径里出现的 src 路径 ∪ 所有 expectations 的 path ⊆ nodes.path",
-          "expect": "(() => {\n    // ★ 只算\"可算的那一半\"：所有 expectations 里出现的 path，都必须是某个节点的 path。\n    //   \"debt/steps/OQ 里提到的 src 路径\"没法算（那些是散文）⇒ 那句话留在 note 里，不假装算全。\n    const need = new Set();\n    for (const n of nodes) for (const e of (n.decision?.expectations ?? [])) {\n      if (typeof e.path === 'string' && e.path.trim()) need.add(e.path.replace(/\\\\/g, '/').trim());\n    }\n    const have = new Set(paths);\n    const missing = [...need].filter((p) => !have.has(p));\n    return missing.length === 0;\n  })()",
-          "expect_note": "★ 只覆盖\"expectations 的 path ⊆ nodes.path\"这一半；\"debt/steps/OQ 里的 src 路径\"是散文，算不了"
+          "expect": "(() => {\n  // ★ 2026-10-26：**用结构（node.path / semantic.files.path），不用散文（node.description）**。\n  //   病史：原判据的 `paths` 是 design-check 从 node.description 推的 —— 扫描建的节点恰好\n  //   description === path，所以一直\"看起来对\"；而手写的 file 节点 description 写的是职责句\n  //   ⇒ 被判成\"path 不存在\"（实测：docs/VISION.md 入册 + semantic.files 也有它，D1 仍红）。\n  const norm = (s) => String(s ?? '').replace(/\\\\/g, '/').replace(/^\\.\\//, '').trim();\n  const need = new Set();\n  for (const n of nodes) for (const e of (n.decision?.expectations ?? [])) {\n    const p = norm(e.path);\n    if (p) need.add(p);\n  }\n  const have = new Set();\n  for (const n of nodes) { const p = norm(n.path); if (p) have.add(p); }\n  for (const f of (dsl.semantic?.files ?? [])) { const p = norm(f.path); if (p) have.add(p); }\n  const missing = [...need].filter((p) => !have.has(p));\n  return missing.length === 0;\n})()",
+          "expect_note": "★ 只覆盖\"expectations 的 path ⊆ nodes.path\"这一半；\"debt/steps/OQ 里的 src 路径\"是散文，算不了",
+          "why": "“所有 expectations 的 path 都必须是某个节点的 path”必须用**结构字段**（node.path / semantic.files.path）判，不能用 node.description（散文）—— 后者只有扫描建的节点恰好等于路径，手写节点一律误判。"
         },
         {
           "id": "D2",
@@ -122065,7 +122053,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1434,
+  "_dsl_rev": 1436,
   "feature_tree": {
     "features": [
       {
