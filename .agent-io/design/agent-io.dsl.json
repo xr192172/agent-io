@@ -4711,7 +4711,7 @@
         "task": {
           "id": "file_src_application_design_handlers_ts",
           "summary": "consistencyHandler：expRoot 读 path_base；card_id 读卡上 read_set 当对拍范围",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_handlers_ts\"].responsibility"
@@ -4754,13 +4754,28 @@
                   "src/application/design/handlers.ts"
                 ]
               }
+            },
+            {
+              "kind": "expectations",
+              "at": "2026-10-26T11:05:15.742Z",
+              "by": "llm",
+              "agent": "agent:wish-machine",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_application_design_handlers_ts（3 条判据）",
+                "input": "85f41d51fdac07399c587ced6c2cbc16e99496fd",
+                "code": "1af601e15ac2bd211c8760ccb2149d779a220bd5",
+                "covers": [
+                  "src/application/design/handlers.ts"
+                ]
+              }
             }
           ],
           "reopened_at": null,
           "reopen_reason": "T-#15：consistency_check 接受 card_id，直接读卡上 read_set 当对拍范围（不重算）",
           "reopened_from": "agent:wish-machine"
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "consistencyHandler：expRoot 读 path_base；card_id 读卡上 read_set 当对拍范围",
           "expectations": [
@@ -4864,7 +4879,7 @@
         "task": {
           "id": "file_src_application_design_index_ts",
           "summary": "【L1 待建构】入口层 · src/application/design — 0 个函数（导入自 18 个模块）（src/application/design/index.ts） ← 节点 file_src_application_design_index_ts",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
@@ -4884,9 +4899,26 @@
             "basis": [
               "declared"
             ]
-          }
+          },
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-26T11:05:15.861Z",
+              "by": "llm",
+              "agent": "agent:wish-machine",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_application_design_index_ts（2 条判据）",
+                "input": "93d09317ad9d5531071209552cc9ee70eb4f792b",
+                "code": "10a63437b2c2847b2edd7a81c5b6c3970d0246a6",
+                "covers": [
+                  "src/application/design/index.ts"
+                ]
+              }
+            }
+          ]
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "设计工具的 schema 声明（get_dsl 的 overview/detail + consistency_check 的 card_id）",
           "expectations": [
@@ -4917,6 +4949,16 @@
           "updated_at": "2026-10-26T11:03:39.724Z",
           "author": "llm",
           "agent": "agent:wish-machine"
+        },
+        "overlay": {
+          "path": "src/application/design/index.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "all_green": true,
+            "kind": "expectations",
+            "unsupported": 0
+          }
         }
       },
       {
@@ -45233,7 +45275,7 @@
         ],
         "lines": 779,
         "layer": "api",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_index_ts",
@@ -45250,7 +45292,7 @@
         ],
         "lines": 884,
         "layer": "entry",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -61725,13 +61767,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 53,
+  "_dsl_rev": 55,
   "_sync": {
-    "saved_at": "2026-10-26T11:03:39.777Z",
+    "saved_at": "2026-10-26T11:05:15.938Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 11622640,
+    "age": 11718801,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
