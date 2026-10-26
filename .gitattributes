@@ -15,3 +15,12 @@
 
 # 文档与决策记录
 *.md     text eol=lf
+# ★★★ 2026-10-26：**二进制必须显式声明**，不能靠 `text=auto` 的启发式。
+#   实测（check-attr）：`.agent-io/cache.db` 拿到的是 `text: auto` + `eol: lf` ——
+#   而 `eol=lf` 作用在二进制上会在 checkout 时**改坏文件**（把二进制里的 CRLF 翻成 LF）。
+#   本仓的 sqlite 库（cache.db / task-history.db）都是"工作库"，绝不能被行尾转换碰。
+*.db    binary
+*.db-wal binary
+*.db-shm binary
+# ★ 文本镜像要显式 text（它是要 diff / review 的）
+*.jsonl text eol=lf
