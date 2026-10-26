@@ -532,11 +532,35 @@ export function firstContactBackfill(rawRoot: string | null): string {
   if (!rawRoot) return NO_PROJECT_ROOT_NOTE;
   if (process.env.AGENT_IO_AUTO_BACKFILL === '0') return '';
   try {
-    const abs = path.resolve(rawRoot);
-    if (!existsSync(abs) || !statSync(abs).isDirectory()) return ''; // 幻觉路径不建库
-    if (hasLiveIndex(abs)) return backfillProgressNote(abs); // 已有索引：只承担"在建中标注"
+    const given = path.resolve(rawRoot);
+    if (!existsSync(given)) return ''; // 幻觉路径不建库
+    // ★ 2026-10-26 实测补：**传文件路径也要能上溯**（寄风的原话就是"解析某文件 ⇒ 自动建索引"）。
+    //   原先这里是 `!statSync(given).isDirectory() ⇒ return ''` —— 文件在**上溯之前**就被挡掉了，
+    //   于是 `firstContactBackfill('<某个 .ts 文件>')` 恒返回空串（验证时当场发现）。
+    const givenDir = statSync(given).isDirectory() ? given : path.dirname(given);
+    // ★★★ 2026-10-26（T-#7）：**索引根必须上溯到真项目根**。
+    //   寄风的设想：「能不能自己分析，向上回溯定位真实项目根，达成解析某文件/子目录就自动建项目索引」——
+    //   能，而且 `resolveProjectRoot` 就是干这个的（① 向上找 `.git` ② 最近 manifest ③ 兜底所在目录）。
+    //
+    //   病史：这里原先 `const abs = path.resolve(rawRoot)` —— **入参原样当根**。
+    //   而 `openDb` 第一句就是 `mkdirSync` ⇒ 任何"只想分析这个子目录"的调用都会在子目录里
+    //   长出一个完整 cache.db。实测 8 个（71.7MB），子代理用「库内 applied_at vs usage 的 ts-ms」
+    //   毫秒级定位到 5 个出自 code_health、1 个出自 import_project。
+    //
+    //   ★ 判据复用**级 2 的那一把尺**（`resolveRootFromArgs` 里 T244 已论证：marker 优先，
+    //     不用 `nearestCacheDb` —— 那是产物，会被"碰巧存在"骗过），不新造第二套。
+    //   ★ 只影响**建索引**：工具自己的分析范围仍用调用方给的原值
+    //     （要限定范围是另一个参数的事，见 docs/ROOTS.md §2 硬纪律 ①）。
+    const abs = resolveProjectRoot(givenDir);
+    const ascended =
+      path.resolve(abs) !== givenDir
+        ? `★ **索引根已上溯**：\`${given}\` → \`${abs}\`\n` +
+          `  （按 git 根 / 最近 manifest 判定真项目根；索引建在真根，**不在子目录**里另起一个）\n`
+        : '';
+    if (!existsSync(abs) || !statSync(abs).isDirectory()) return ascended;
+    if (hasLiveIndex(abs)) return ascended + backfillProgressNote(abs); // 已有索引：只承担"在建中标注"
     scheduleBackfill(abs, { batch: 20, intervalMs: 200 }); // 幂等单飞；首个批次在 +200ms 后台起
-    return backfillProgressNote(abs);
+    return ascended + backfillProgressNote(abs);
   } catch {
     return '';
   }
