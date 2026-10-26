@@ -4710,26 +4710,33 @@
         "arch_layer": "api",
         "task": {
           "id": "file_src_application_design_handlers_ts",
-          "summary": "【L1 待建构】API 层 · src/application/design — 2 个函数（导入自 18 个模块）（src/application/design/handlers.ts） ← 节点 file_src_application_design_handlers_ts",
-          "state": "done",
+          "summary": "consistencyHandler：expRoot 读 path_base；card_id 读卡上 read_set 当对拍范围",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_handlers_ts\"].responsibility"
           },
           "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T08:00:17.927Z",
+          "claimed_at": "2026-10-26T11:03:39.457Z",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/application/design/handlers.ts",
+                "name": "consistencyHandler",
+                "fp": "3cf6a40677235dffdb7a5ac1a9999b7fccdda293"
+              }
+            ],
             "files": [
               {
                 "path": "src/application/design/handlers.ts",
-                "content_hash": "19514e29870db4085d3f9858dcc4fe2f9414fee9"
+                "content_hash": "9db6d5ab24be1d7a58ada193d1e22da153d6fbbc"
               }
             ],
-            "computed_at": "2026-10-26T08:00:17.786Z",
+            "computed_at": "2026-10-26T11:03:39.373Z",
             "basis": [
-              "declared"
+              "declared",
+              "expectations"
             ]
           },
           "evidence": [
@@ -4748,11 +4755,14 @@
                 ]
               }
             }
-          ]
+          ],
+          "reopened_at": null,
+          "reopen_reason": "T-#15：consistency_check 接受 card_id，直接读卡上 read_set 当对拍范围（不重算）",
+          "reopened_from": "agent:wish-machine"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision": {
-          "summary": "consistencyHandler 的 expRoot 读报告 path_base，并在基准不一致时告警",
+          "summary": "consistencyHandler：expRoot 读 path_base；card_id 读卡上 read_set 当对拍范围",
           "expectations": [
             {
               "kind": "symbol-exists",
@@ -4767,15 +4777,25 @@
               ],
               "path": "src/application/design/handlers.ts",
               "why": "判 expectations 必须读报告的 path_base（读事实，不猜）"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "card_id",
+                "read_set"
+              ],
+              "path": "src/application/design/handlers.ts",
+              "why": "对拍范围 = 卡的读集（寄风：直接读集不重算）—— 读集已在 claim 时算好存在卡上"
             }
           ],
-          "acceptance": "① 判 expectations 的根必须读报告的 path_base，不得自建 source_root 优先的第二套；② code_dir 与 source_root 不一致时必须显式告警（不许静默二选一）；③ 拿不到基准时如实说“一条都没判”。",
+          "acceptance": "① expRoot 读报告的 path_base（不自建第二套）；② 基准不一致时显式告警；③ **card_id 参数必须直接读卡上的 read_set.files 当对拍范围**（不重算、不新造节点群概念），且卡上没 read_set 时如实报「无法确定范围」而不回落全仓。",
           "status": "active",
           "tags": [
             "path-base",
-            "single-judge"
+            "read-set",
+            "diff"
           ],
-          "updated_at": "2026-10-26T08:00:17.895Z",
+          "updated_at": "2026-10-26T11:03:39.499Z",
           "author": "llm",
           "agent": "agent:wish-machine"
         },
@@ -4788,7 +4808,43 @@
             "kind": "expectations",
             "unsupported": 0
           }
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-26T11:03:39.499Z",
+            "decision": {
+              "summary": "consistencyHandler 的 expRoot 读报告 path_base，并在基准不一致时告警",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/handlers.ts",
+                  "symbol": "consistencyHandler",
+                  "why": "对账工具的处理器入口必须存在"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "path_base"
+                  ],
+                  "path": "src/application/design/handlers.ts",
+                  "why": "判 expectations 必须读报告的 path_base（读事实，不猜）"
+                }
+              ],
+              "acceptance": "① 判 expectations 的根必须读报告的 path_base，不得自建 source_root 优先的第二套；② code_dir 与 source_root 不一致时必须显式告警（不许静默二选一）；③ 拿不到基准时如实说“一条都没判”。",
+              "status": "active",
+              "tags": [
+                "path-base",
+                "single-judge"
+              ],
+              "updated_at": "2026-10-26T08:00:17.895Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "T-#15：card_id → read_set → scope",
+            "author": "llm",
+            "agent": "agent:wish-machine"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_index_ts",
@@ -4804,7 +4860,64 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "task": {
+          "id": "file_src_application_design_index_ts",
+          "summary": "【L1 待建构】入口层 · src/application/design — 0 个函数（导入自 18 个模块）（src/application/design/index.ts） ← 节点 file_src_application_design_index_ts",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
+          },
+          "owner": "agent:wish-machine",
+          "claimed_at": "2026-10-26T11:03:39.759Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/design/index.ts",
+                "content_hash": "9ec18d1c644164347abd4536916a88a88a15360f"
+              }
+            ],
+            "computed_at": "2026-10-26T11:03:39.616Z",
+            "basis": [
+              "declared"
+            ]
+          }
+        },
+        "status": "in_progress",
+        "decision": {
+          "summary": "设计工具的 schema 声明（get_dsl 的 overview/detail + consistency_check 的 card_id）",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "'overview'",
+                "detail: z.boolean().optional()"
+              ],
+              "path": "src/application/design/index.ts",
+              "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "card_id"
+              ],
+              "path": "src/application/design/index.ts",
+              "why": "consistency_check 必须声明 card_id 参数 —— 否则“对拍一个任务”只能手工拼 scope"
+            }
+          ],
+          "acceptance": "① get_dsl schema 必须声明 overview 与 detail；② consistency_check 的 inputSchema 必须声明 card_id（对拍范围 = 卡的读集）。",
+          "status": "active",
+          "tags": [
+            "tool-schema",
+            "read-set"
+          ],
+          "updated_at": "2026-10-26T11:03:39.724Z",
+          "author": "llm",
+          "agent": "agent:wish-machine"
+        }
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -10729,7 +10842,7 @@
         "task": {
           "id": "file_src_infrastructure_task_history_ts",
           "summary": "【L1 待建构】核心层 · src/infrastructure — 6 个函数（导入自 4 个模块）（src/infrastructure/task_history.ts） ← 节点 file_src_infrastructure_task_history_ts",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_task_history_ts\"].responsibility"
@@ -10753,9 +10866,27 @@
             "basis": [
               "declared"
             ]
-          }
+          },
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-26T10:55:30.615Z",
+              "by": "llm",
+              "agent": "agent:wish-machine",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_infrastructure_task_history_ts（2 条判据）",
+                "input": "48a0247ec7288daf28af49254455e9350f345656",
+                "code": "00ef133788430f4358718f44b45fe8a826deefc2",
+                "covers": [
+                  "src/infrastructure/roots.ts",
+                  "src/infrastructure/task_history.ts"
+                ]
+              }
+            }
+          ]
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "已了结任务卡的归档库：.db 是工作库、.jsonl 是可随仓移交的文本镜像",
           "expectations": [
@@ -10786,6 +10917,16 @@
           "updated_at": "2026-10-26T10:54:46.737Z",
           "author": "llm",
           "agent": "agent:wish-machine"
+        },
+        "overlay": {
+          "path": "src/infrastructure/task_history.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "all_green": true,
+            "kind": "expectations",
+            "unsupported": 0
+          }
         }
       },
       {
@@ -45092,7 +45233,7 @@
         ],
         "lines": 779,
         "layer": "api",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_index_ts",
@@ -45108,7 +45249,8 @@
           }
         ],
         "lines": 884,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -60577,7 +60719,7 @@
         ],
         "lines": 227,
         "layer": "core",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_text_arg_suggest_ts",
@@ -61583,13 +61725,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 50,
+  "_dsl_rev": 53,
   "_sync": {
-    "saved_at": "2026-10-26T10:54:46.791Z",
+    "saved_at": "2026-10-26T11:03:39.777Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 11089654,
+    "age": 11622640,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

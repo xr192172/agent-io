@@ -95,7 +95,34 @@ export const consistencyHandler = wrapData(async (a) => {
   //   ★ 不给 `scope` ⇒ **与改造前逐字等价**（原样返回三个字段，行为零变化）。
   //   ★ 给 `scope` ⇒ 只在框定范围内对账，并把差异按**可命名区域**聚成块（块名由 `formatScope` 生成，
   //     见 `domain/diff_blocks.ts` 纪律 1：块名必须稳定，才谈得上"这块我上轮改过了"）。
-  const scopeText = typeof a.scope === 'string' && a.scope.trim() ? a.scope.trim() : '';
+  // ★★★ 2026-10-26（T-#15 / 寄风）：**对拍范围 = 卡的读集**（读，不重算）。
+  //
+  // 判据（寄风原话）：「这个节点群不就是任务卡或决策卡的读集吗」「直接读集不重算不就可以了」。
+  // ⇒ 读集已经**唯一实现**（`claim_conflict.ts` 的 `TaskReadSet`：`declared`/`expectations`/`node-path`
+  //   三源归一），且 **claim 时算好存在卡上**（`task_schema.ts` 的 `read_set?`）⇒ 这里**只读**。
+  // ★ 不新造"节点群"概念、不重算 —— 拼一行 `scope` 表达式即可复用**现成的差异块**能力。
+  let scopeText = typeof a.scope === 'string' && a.scope.trim() ? a.scope.trim() : '';
+  const cardId = typeof a.card_id === 'string' ? a.card_id.trim() : '';
+  if (!scopeText && cardId && dsl) {
+    const card =
+      (dsl.todos ?? []).find((t) => t.id === cardId) ??
+      (dsl.geometry?.nodes ?? [])
+        .map((n) => n.task)
+        .find((t) => t?.id === cardId);
+    const files = (card?.read_set?.files ?? [])
+      .map((f) => (typeof f === 'string' ? f : (f as { path?: string }).path ?? ''))
+      .filter((f): f is string => !!f);
+    if (files.length > 0) {
+      scopeText = `files:${files.map((f) => normPath(f)).join(',')}`;
+    } else {
+      // ★ 卡上没有读集 ⇒ **不猜、不回落全仓**（回落全仓会把"这个任务的差异"淹在全仓差异里）
+      expNotes.push(
+        `★ 卡 \`${cardId}\` ${card ? '**没有 `read_set`**（多半没被 claim 过 —— 读集是 claim 时才算的）' : '**没找到**'}` +
+          ` ⇒ **对拍范围无法确定**（不猜、不回落全仓）。\n` +
+          `  怎么办：① 先 \`claim\` 一次（claim 时才算读集）；或 ② 显式传 \`scope\`。`,
+      );
+    }
+  }
   if (!scopeText) {
     // ★ 不给 scope ⇒ **差异块那部分与改造前逐字等价**；只是多带一节「验收执行」（`expectation_results`）。
     const expSection = renderExpectationsSection(exp, expNotes);

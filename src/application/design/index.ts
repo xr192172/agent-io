@@ -375,6 +375,15 @@ export const DESIGN_TOOLS: ToolDef[] = [
             '★ 不给 = 与原来完全一致（全量报告）；给了 ⇒ 只报该范围内的差异，**且按区域聚成块**。' +
             '★ 块名稳定（同一片区域任何时候同一个名字）⇒ 可当"这块我改过了/还在欠账"的钥匙。',
         ),
+      card_id: z
+        .string()
+        .optional()
+        .describe(
+          '★★ 2026-10-26（T-#15）：**对拍一个任务** —— 给卡 id，对拍范围直接取**该卡上的 `read_set.files`**' +
+            '（claim 时算好存在卡上，**读、不重算**；读集 = 任务卡的 declared + 决策卡的 expectations.path + 节点文件，三源归一）。' +
+            '★ 与 `scope` 二选一，`scope` 优先。' +
+            '★ 卡上没有 `read_set`（多半没 claim 过）⇒ 如实报「范围无法确定」，**不猜、不回落全仓**。',
+        ),
       fail_on_violation: z
         .boolean()
         .optional()
