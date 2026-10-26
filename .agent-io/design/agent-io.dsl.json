@@ -12637,24 +12637,24 @@
         "arch_layer": "core",
         "task": {
           "id": "file_src_presentation_http_serve_ts",
-          "summary": "【L1 待建构】核心层 · src/presentation/http — 50 个函数（导入自 53 个模块）（src/presentation/http/serve.ts） ← 节点 file_src_presentation_http_serve_ts",
+          "summary": "画布三格/批注层退场：注释不得再指向不存在的 canvas_store",
           "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_http_serve_ts\"].responsibility"
           },
           "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T09:26:29.693Z",
+          "claimed_at": "2026-10-26T15:56:36.515Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/presentation/http/serve.ts",
-                "content_hash": "6d16e2c8d1d1fa2a9ede8a4f52f97d8687496ddb"
+                "content_hash": "954757ab308f57f18a25f7f2b0bfd8522d5a4edc"
               }
             ],
-            "computed_at": "2026-10-26T09:26:29.434Z",
+            "computed_at": "2026-10-26T15:56:36.466Z",
             "basis": [
               "declared"
             ]
@@ -12674,38 +12674,54 @@
                   "src/presentation/http/serve.ts"
                 ]
               }
+            },
+            {
+              "kind": "expectations",
+              "at": "2026-10-26T15:57:50.907Z",
+              "by": "llm",
+              "agent": "agent:wish-machine",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_presentation_http_serve_ts（2 条判据）",
+                "input": "b04cbdb8dde4e1d5c5ddd17cb5938e91479a99fe",
+                "code": "b317a43c9bf52afaaaa4a8bee30f36335b96b8e5",
+                "covers": [
+                  "src/presentation/http/serve.ts"
+                ]
+              }
             }
-          ]
+          ],
+          "reopened_at": null,
+          "reopen_reason": "T-#31：清掉 12 处指向不存在的 canvas_store 的注释（批注层退场登记）",
+          "reopened_from": "agent:wish-machine"
         },
         "status": "done",
         "decision": {
-          "summary": "HTTP 面的两处导入用项目自己的索引；不再向数据仓写跨项目的按 feature 索引",
+          "summary": "画布三格/批注层退场：注释不得再指向不存在的 canvas_store",
           "expectations": [
             {
               "kind": "source-has",
-              "must": [
-                "projectCacheDbPath"
+              "mustNot": [
+                "canvas_store"
               ],
               "path": "src/presentation/http/serve.ts",
-              "why": "导入必须用项目自己的索引（乙方案：每项目三侧，没有“跨项目的按 feature 索引”这个角色）"
+              "why": "serve.ts 里 3 处曾说“落点改为 canvas_store”，紧跟一行又说“端点已删除” ⇒ 两行自相矛盾；而 canvas_store.ts 从未存在"
             },
             {
-              "kind": "source-has",
-              "mustNot": [
-                "featureCacheDbPath"
-              ],
+              "kind": "symbol-exists",
               "path": "src/presentation/http/serve.ts",
-              "why": "featureCache 已删（实测 0 产物，且 HTTP 面是可视化预留、没人用）—— 旧调用必须清干净"
+              "symbol": "getServeProjectRoot",
+              "why": "HTTP 服务入口仍在（回归底线；原写 serve 是错的，该文件里没这个符号）"
             }
           ],
-          "acceptance": "① HTTP 面不得再引用 featureCacheDbPath（那概念已删）；② 两处导入都改用**项目自己的索引** projectCacheDbPath(project_dir/source_root)；③ upload 模式会失去跨次复用（原 featureCache 的唯一用途）—— 这一点必须在注释里写明，不静默。",
+          "acceptance": "① `src/` 里**不得再有**“搬去 `canvas_store`”的说法（唯一例外：types.ts 里那句“曾计划但从未存在”是**反证**，不是指向）；② 12 处注释改成一行现状 + 指向 `docs/ROOTS.md` §8；③ 不得改变任何代码行为（只改注释）。",
           "status": "active",
           "tags": [
-            "root",
-            "http",
-            "convergence"
+            "stale-comment",
+            "retired-layer",
+            "structural"
           ],
-          "updated_at": "2026-10-26T09:26:29.637Z",
+          "updated_at": "2026-10-26T15:57:50.215Z",
           "author": "llm",
           "agent": "agent:wish-machine"
         },
@@ -12719,7 +12735,81 @@
             "unsupported": 0
           }
         },
-        "path": "src/presentation/http/serve.ts"
+        "path": "src/presentation/http/serve.ts",
+        "decision_history": [
+          {
+            "at": "2026-10-26T15:56:36.560Z",
+            "decision": {
+              "summary": "HTTP 面的两处导入用项目自己的索引；不再向数据仓写跨项目的按 feature 索引",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "projectCacheDbPath"
+                  ],
+                  "path": "src/presentation/http/serve.ts",
+                  "why": "导入必须用项目自己的索引（乙方案：每项目三侧，没有“跨项目的按 feature 索引”这个角色）"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "featureCacheDbPath"
+                  ],
+                  "path": "src/presentation/http/serve.ts",
+                  "why": "featureCache 已删（实测 0 产物，且 HTTP 面是可视化预留、没人用）—— 旧调用必须清干净"
+                }
+              ],
+              "acceptance": "① HTTP 面不得再引用 featureCacheDbPath（那概念已删）；② 两处导入都改用**项目自己的索引** projectCacheDbPath(project_dir/source_root)；③ upload 模式会失去跨次复用（原 featureCache 的唯一用途）—— 这一点必须在注释里写明，不静默。",
+              "status": "active",
+              "tags": [
+                "root",
+                "http",
+                "convergence"
+              ],
+              "updated_at": "2026-10-26T09:26:29.637Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "T-#31：批注层退场登记 —— canvas_store 从未存在",
+            "author": "llm",
+            "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-10-26T15:57:50.215Z",
+            "decision": {
+              "summary": "画布三格/批注层退场：注释不得再指向不存在的 canvas_store",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "canvas_store"
+                  ],
+                  "path": "src/presentation/http/serve.ts",
+                  "why": "serve.ts 里 3 处说“落点改为 canvas_store”，紧跟一行又说“端点已删除” ⇒ 两行自相矛盾；而 canvas_store.ts 从未存在"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/presentation/http/serve.ts",
+                  "symbol": "serve",
+                  "why": "HTTP 服务入口必须仍在（回归底线）"
+                }
+              ],
+              "acceptance": "① `src/` 里**不得再有**“搬去 `canvas_store`”的说法 —— 那个模块**从未存在**；② 12 处注释改成一行现状 + 指向 `docs/ROOTS.md` §8；③ 不得改变任何代码行为（只改注释）。",
+              "status": "active",
+              "tags": [
+                "stale-comment",
+                "retired-layer",
+                "structural"
+              ],
+              "updated_at": "2026-10-26T15:56:36.560Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "T-#31：批注层退场登记（判据已按实际符号校正）",
+            "author": "llm",
+            "agent": "agent:wish-machine"
+          }
+        ]
       },
       {
         "id": "file_src_presentation_mcp_lifecycle_ts",
@@ -63235,13 +63325,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 84,
+  "_dsl_rev": 87,
   "_sync": {
-    "saved_at": "2026-10-26T15:50:06.807Z",
+    "saved_at": "2026-10-26T15:57:50.991Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 28809670,
+    "age": 29273854,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

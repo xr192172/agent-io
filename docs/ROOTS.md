@@ -204,3 +204,37 @@ getDSL(feature)
 
 **每个项目的册 + design-db 都在自己的 `.agent-io/` 里** ⇒ git 各自管各自的，
 **不会再出现"4 个项目混一个 `design-db/`"**（今天 1057→380 那次清理正是这个病的症状）。
+
+---
+
+## 8. 退场登记（**别把"计划"写成"现状"**）
+
+### 8.1 画布三格 / 批注层（2026-10-23，整体退场）
+
+用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」。
+
+**三步走完了前两步，第三步从未做**：
+
+| 步 | 内容 | 状态 |
+|---|---|---|
+| ① | `annotations` / `canvas_notes` / `user_nodes` 三格从 `DesignDSL` 移除 | ✅ 已做 |
+| ② | HTTP 端点（`/api/annotations` · `/api/user_nodes` · `/api/canvas-notes`）删除 | ✅ 已做 |
+| ③ | 建 `canvas_store.ts` 承接（`.agent-io/canvas/<f>.json`） | ❌ **从未做** |
+
+⇒ **`src/infrastructure/canvas_store.ts` 不存在**（`src`/`dist` 里零文件），`.agent-io/canvas/` 也不存在。
+
+**★ 曾有一段时间，`src/` 里 12 处注释（7 个文件）写着"搬去 `canvas_store`"** —— 那是把**计划**写成了**现状**。
+其中 `serve.ts` 的 3 处尤其自相矛盾：**"落点改为 `canvas_store`" 紧跟一行 "端点已删除"**。
+2026-10-26 全部改成一行现状 + 指向本节。
+
+### 8.2 一句话判据
+
+> **一个模块只有在 `src/` 里 grep 得到时，才许在注释里说"读写走它"。**
+
+（同族的另外三次"散文当结构"：`design-check` 拿 `description` 当 path · `write_gate` 回落 `description` ·
+`gen-db` 拿 `description` 当文件名 —— 都已在 2026-10-26 对齐到"`path` 优先"。）
+
+### 8.3 另一处"退役只做一半"（待核）
+
+`featureCache` 属于同型：`featureCacheDbPath` 已于 2026-10-26 删除，
+但 `serve.ts` 里那两处 `openDb(...)` 调用**我没有逐处核对**是否已跟着改。⇒ 记在这里，别当成已清。

@@ -223,7 +223,7 @@ export function buildSyncMeta(input: {
   refreshScanRev?: boolean;
   /**
    * ★★ 2026-10-22：**这次写是谁授权的**（`edit_dsl:<…>` / `import:<…>` / `tool:<…>` / `sandbox`）。
-   * ★ 2026-10-23：`canvas-patch` 这个值**已退场** —— 画布那三格搬去了 `canvas_store.ts`，不再走 `saveDSL`。
+   * ★ 2026-10-23：`canvas-patch` 这个值**已退场** —— 画布三格与批注层整体退场（详见 `docs/ROOTS.md` §8），不再走 `saveDSL`。
    * 由 `saveDSL` 从 `dsl_write_scope` 取；**不传则继承上一份** —— `saveDesignSheet` / `saveLiveFeature`
    * 这类不经过 `saveDSL` 的落盘口不该把别人的留痕冲掉。
    */
@@ -883,7 +883,7 @@ export function onDslChange(cb: DslChangeCallback): void {
 // ## ★★★ 2026-10-23：**原第三条「画布补丁」已删**（用户裁定：「我们本身是要和那个做切割的呀」）
 // 昨天那条是：与磁盘比**只**动了 `annotations` / `user_nodes` / `canvas_notes` ⇒ 放行。
 // ★ 它是**为了让浏览器画布不断而开的洞**（昨天那位 subagent 的原话：「serve.ts 那 5 个写点靠 ③ 兜住」）。
-// ⇒ 现在这三格**整体搬出设计 DSL**（`src/infrastructure/canvas_store.ts`，落 `.agent-io/canvas/<f>.json`）：
+// ⇒ 现在这三格**整体退场**（批注层不做，见 `docs/ROOTS.md` §8）：
 //   画布写**不再经过 `saveDSL`** ⇒ 这里**不需要**为它开洞。
 // ★ 以后若有人想再开一条「某某字段不算设计」的短路 ⇒ 正确的做法是**把那个字段搬走**，不是在这里加分支。
 //

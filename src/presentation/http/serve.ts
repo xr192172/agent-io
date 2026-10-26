@@ -239,7 +239,7 @@ async function handleApiSave(_req: http.IncomingMessage, res: http.ServerRespons
         'POST /api/annotations（annotations）',
         'POST /api/user_nodes（user_nodes）',
         'POST /api/canvas-notes ｜ POST /api/canvas-notes/status（canvas_notes）',
-        '★ 画布三格已搬离设计 DSL：落 .agent-io/canvas/<feature>.json（infrastructure/canvas_store.ts）',
+        '★ 画布三格与批注层已整体退场（前端只是显示屏）—— 见 docs/ROOTS.md §8',
       ],
     },
     saved_at: new Date().toISOString(),
@@ -1253,8 +1253,7 @@ async function handleApiOverview(
  *  GET ?feature=X —— 返回该 feature 全部 annotations（前端只渲染 human 便签）
  *  POST {feature, notes:[{id,target_id,text,pos}]} —— 全量替换 human 注解
  *  （llm/系统注解保留不动）。
- *  ★★★ 2026-10-23：落点从 `DSL.annotations` 改为 `canvas_store`（`.agent-io/canvas/<f>.json`）——
- *  画布与设计 DSL 已切割（用户裁定：「我们本身是要和那个做切割的呀」）。行为（形状/过滤/截断）不变。 */
+ *  ★★★ 2026-10-23：画布三格与批注层**整体退场**（端点已删；详见 docs/ROOTS.md §8）。 */
 // ★★★ 2026-10-23（和前端切割·第二步）：画布端点（annotations / user_nodes / canvas-notes）**已删除**。
 //   用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」。
 //   ⇒ 这些是【人往回写】的入口，人不直接插手了，它们就没有存在的理由（不是改成只读，是退场）。
@@ -1262,7 +1261,7 @@ async function handleApiOverview(
 /** GET/POST /api/user_nodes：思维导图上用户手写的节点（人机共笔的结构性扩展）
  *  GET ?feature=X —— 返回该 feature 全部 user_nodes
  *  POST {feature, nodes:[{id,parent_id,parent_label,text}]} —— 全量替换。
- *  ★★★ 2026-10-23：落点从 `DSL.user_nodes` 改为 `canvas_store`（`.agent-io/canvas/<f>.json`）。 */
+ *  ★★★ 2026-10-23：画布三格与批注层**整体退场**（端点已删；详见 docs/ROOTS.md §8）。 */
 // ★★★ 2026-10-23（和前端切割·第二步）：画布端点（annotations / user_nodes / canvas-notes）**已删除**。
 //   用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」。
 //   ⇒ 这些是【人往回写】的入口，人不直接插手了，它们就没有存在的理由（不是改成只读，是退场）。
@@ -1397,8 +1396,7 @@ function handleApiFeatureDsl(req: http.IncomingMessage, res: http.ServerResponse
   }
 }
 
-/** GET /api/canvas-notes?feature=<name>：返回某 feature 的批注层数据
- *  ★ 2026-10-23：读 `canvas_store`（`.agent-io/canvas/<f>.json`），缺失返回空数组。 */
+/** GET /api/canvas-notes?feature=<name>（★ 2026-10-23 已退场：端点已删，详见 docs/ROOTS.md §8） */
 // ★★★ 2026-10-23（和前端切割·第二步）：画布端点（annotations / user_nodes / canvas-notes）**已删除**。
 //   用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」。
 //   ⇒ 这些是【人往回写】的入口，人不直接插手了，它们就没有存在的理由（不是改成只读，是退场）。

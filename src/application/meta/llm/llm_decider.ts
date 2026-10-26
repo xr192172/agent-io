@@ -26,7 +26,7 @@ type ResolvedNoteStub = { id?: string; status?: string; text?: string; node_id?:
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL } from '../../../infrastructure/storage.js';
-// ★ 2026-10-23：`canvas_notes` 已搬出设计 DSL ⇒ 状态回写走 `canvas_store`。
+// ★ 2026-10-23 画布三格与批注层**整体退场**（前端只是显示屏，用户裁定）：DSL 字段已删、端点已删、没有替代住家 —— 详见 docs/ROOTS.md §8。
 import { loadLlmConfig, callChat, type LlmConfig, type ChatMessage } from '../../../infrastructure/llm_focus.js';
 import { proposeChange, type ChangeKind, type ChangeOp } from '../../design/workbench/code_workbench.js';
 import { listProjectDocs, buildDocsPromptBlock, type DocTargetSet } from '../docs/project_docs.js';

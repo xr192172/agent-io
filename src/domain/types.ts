@@ -228,10 +228,11 @@ export interface DesignDSL {
   /** 语义层（无则纯示意图） */
   semantic?: Semantic;
   /**
-   * ★★★ 2026-10-23：`annotations` / `canvas_notes` / `user_nodes` 三格**已搬出设计 DSL**
-   * （用户裁定：「我们本身是要和那个做切割的呀」）。它们的住家 = `infrastructure/canvas_store.ts`
-   * （`.agent-io/canvas/<f>.json`，结构逐字照抄）。
+   * ★★★ 2026-10-23：`annotations` / `canvas_notes` / `user_nodes` 三格**已整体退场**
+   * （用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」）。
+   * DSL 字段已删、HTTP 端点已删、**没有替代住家**（曾计划 `canvas_store.ts`，**从未存在**）。
    * ★ 别把它们加回来：它们是**批注层**，不是设计内容；加回来就得再给写闸开一个洞。
+   * 详见 `docs/ROOTS.md` §8（退场登记）。
    */
   /** 动画序列（旧版阶段快照式，保留向后兼容） */
   animations?: Animation[];

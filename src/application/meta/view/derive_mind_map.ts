@@ -25,8 +25,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL, getStorageRoot, getPackageRoot } from '../../../infrastructure/storage.js';
-// ★ 2026-10-23：画布三格（annotations / user_nodes / canvas_notes）已搬出设计 DSL，
-//   读端跟到**新的唯一住家**（`canvas_store`）—— 否则导图上主人写的批注/构想会“看不见了”。
+// ★ 2026-10-23 画布三格与批注层**整体退场**（前端只是显示屏，用户裁定）：DSL 字段已删、端点已删、没有替代住家 —— 详见 docs/ROOTS.md §8。
 import { extractJsonObject } from './explain_gen.js';
 import { loadAgentConfig, callChat } from '../../../infrastructure/llm_focus.js';
 import type { ChatMessage } from '../../../infrastructure/llm_focus.js';

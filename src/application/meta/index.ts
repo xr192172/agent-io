@@ -50,7 +50,7 @@ import { diagnoseLoop } from './diagnosis/diagnose_loop.js';
 import type { DiagnoseInput } from '../../infrastructure/analysis/diagnosis/contract.js';
 import { formatDiagnoseText, runDiagnosis } from '../../infrastructure/analysis/diagnosis/diagnose.js';
 import { getDSL, saveDSL, requireProjectRoot } from '../../infrastructure/storage.js';
-// ★ 2026-10-23：画布三格已搬出设计 DSL ⇒ `canvas_notes` 的读写走 `canvas_store`。
+// ★ 2026-10-23 画布三格（annotations / user_nodes / canvas_notes）与批注层**整体退场**：前端只是显示屏、人不直接插手（用户裁定）。DSL 字段已删、HTTP 端点已删、**没有替代住家** —— 详见 docs/ROOTS.md §8。
 import { readStructureConfig } from '../../infrastructure/analysis/structure/structure_gap.js';
 import { archiveNode, listArchive } from './archive/archive_node.js';
 // ★ T186（2026-10-12）：「待确认的 PR」的读与定 —— ★ **PR 的确认人是下一个接手的 Agent**，不是人

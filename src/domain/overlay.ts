@@ -660,8 +660,8 @@ export function seedOverlayFromDsl(dsl: DesignDSL | null): DesignOverlay {
   const anchors: Record<string, OverlayAnchor> = {};
   const global: OverlayGlobal = {};
 
-  // ★★★ 2026-10-23：画布不再是 DSL 字段 ⇒ 首次迁移不再从 `dsl.annotations` 建索引。
-  //   （字段本身已从 `DesignDSL` 删除；画布的读写统一走 `infrastructure/canvas_store.ts`。）
+  // ★★★ 2026-10-23 画布三格与批注层**整体退场**（前端只是显示屏，用户裁定）：
+  //   字段已从 `DesignDSL` 删除、HTTP 端点已删、**没有替代住家** —— 详见 docs/ROOTS.md §8。
 
   // ★★ T182：文件级 `lifecycle` 的锚点 id = `semantic.files[].id`（与同名几何节点同 id）
   //   ⇒ 先建索引，铺完几何节点后**合并进同一锚点**（不能直接覆盖：决策卡也挂同一个 id）。
@@ -719,7 +719,7 @@ export function seedOverlayFromDsl(dsl: DesignDSL | null): DesignOverlay {
 
   if (dsl?.title) global.title = dsl.title;
   if (dsl?.theme) global.theme = dsl.theme;
-  // ★★★ 2026-10-23：`dsl.user_nodes` 已不在设计 DSL 上（画布搬去 canvas_store）⇒ 不再播种。
+  // ★★★ 2026-10-23：`dsl.user_nodes` 已不在设计 DSL 上（批注层整体退场，见 docs/ROOTS.md §8）⇒ 不再播种。
   const meta = (dsl as unknown as { meta?: { storyboard?: unknown; goals?: OverlayGoal[]; function_tags?: Record<string, string[]> } } | null)?.meta;
   if (meta?.storyboard) global.storyboard = meta.storyboard;
   if (meta?.goals && meta.goals.length > 0) global.goals = meta.goals;
