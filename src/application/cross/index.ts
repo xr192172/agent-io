@@ -123,6 +123,15 @@ export const CROSS_TOOLS: ToolDef[] = [
 
   {
     name: 'code_health',
+    // ★★★ 2026-10-26（T-#6）：**入口层不要为它建索引**。
+    //   实测（子代理毫秒级取证：库内 schema_versions.applied_at 与调用起点 Δ≤15ms）：
+    //   6 个"多余 .agent-io"里 **5 个**由 code_health 的入口钩子产生 ——
+    //   src/application 23.5MB · dsh-brain/scripts 24.8MB · packages 10.8MB · switchboard 7.4MB · bridge 1.0MB。
+    //   链路：server_registry:847 `firstContactBackfill(project_dir 原样当根)`
+    //        → getProjectCacheDb → db.ts:373 `openDb` 第一句就是 mkdirSync ⇒ 子目录里长出完整索引。
+    //   ★ 而 code_health **根本不读 cache.db**（infrastructure/analysis/health/index.ts:1094 自述"不另建图、不读 cache.db"）
+    //     ⇒ 为它建的索引 100% 白建。同一约定见 import_project（design/index.ts:614）、index_integrity（meta/index.ts:842）。
+    noAutoFresh: true,
     title: 'Code health - dead code / complexity / layer violation',
     description:
       '代码健康度（选材体检）：对 project_dir 全项目做三层体检，输出健康分 + 问题清单。' +
