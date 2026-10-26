@@ -62,9 +62,34 @@ export function getPackageRoot(): string {
  *
  * 注意：必须在调用时读取 env（不能模块加载时缓存），保证 vitest setup 生效。
  */
+let _legacyHomeWarned = false;
+/** 迁移期告警（每进程一次）：旧数据根还在用，新默认为空 —— 不许静默换家。 */
+function warnLegacyDataHomeOnce(legacyHome: string, modernHome: string): void {
+  if (_legacyHomeWarned) return;
+  _legacyHomeWarned = true;
+  process.stderr.write(
+    `[agent-io] ⚠ 数据根仍在**旧位置**：${legacyHome}（新默认 ${modernHome} 还不存在）\n` +
+      `  ⇒ 为了不静默换家，本次继续用旧位置。要迁到新默认：把 ${path.join(legacyHome, DATA_DIR_NAME)} 整个移到 ${modernHome} 下；\n` +
+      `     或显式设 AGENT_IO_HOME=<旧/新目录> 自己钉死（推荐，部署时明确声明比隐式默认好）。\n`,
+  );
+}
+
 export function getDataHome(): string {
   if (process.env.AGENT_IO_HOME) return process.env.AGENT_IO_HOME;
-  return getPackageRoot();
+  // ★★★ 2026-10-26（T-#3 / 用户选 C）：默认数据主目录 = **用户主目录** ⇒ 册在 `~/.agent-io`。
+  //   Maven 的 `~/.m2` 模型：**数据仓库与代码仓解耦**，不再默认写进源码仓
+  //   （旧行为 `return getPackageRoot()` 正是"本仓被会话产物污染"的机制）。
+  //   `AGENT_IO_HOME` 可覆盖回任何位置（含包根 = 旧行为）⇒ C 方案：两者都支持、默认新位置。
+  const userHome = os.homedir();
+  const modernData = path.join(userHome, DATA_DIR_NAME); // ~/.agent-io
+  const legacyRoot = getPackageRoot();
+  const legacyData = path.join(legacyRoot, DATA_DIR_NAME); // <pkg>/.agent-io（旧默认）
+  // ★ 迁移期**不许静默换家**：新默认还不存在、而旧位置已有数据 ⇒ 继续用旧的，并响亮告警一次。
+  if (!fs.existsSync(modernData) && fs.existsSync(legacyData)) {
+    warnLegacyDataHomeOnce(legacyRoot, userHome);
+    return legacyRoot;
+  }
+  return userHome;
 }
 
 /**
