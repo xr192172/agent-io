@@ -421,7 +421,27 @@ export function saveDesignSheet(dsl: DesignDSL, baseDir?: string): string {
 export function getDesignSheet(feature: string, baseDir?: string): DesignDSL | null {
   // ★ 2026-10-23：事务进行中 ⇒ 读工作副本（否则"改了工作副本、读的却是正式册"，preview 与 edit 不一致）
   const file = txnRedirect(getDesignSheetFile(feature, baseDir));
-  if (!fs.existsSync(file)) return null;
+  if (!fs.existsSync(file)) {
+    // ★★★ 2026-10-26（T-#29 / ROOTS.md §7.4 ②）：**迁移通道** —— 注册表指向新位置、而册还在旧位置。
+    //   ⇒ 读旧的 + **响亮点名**（不许静默返回 null：那会让未迁移的 feature 看起来“没有设计”）。
+    //   ★ 只在调用方**没显式给** baseDir 时才回落（给了 = 已声明位置，不许替它猜）。
+    const regRoot = baseDir === undefined ? projectRootOf(feature) : null;
+    if (regRoot) {
+      const legacy = txnRedirect(path.join(getDataHome(), DATA_DIR_NAME, 'design', `${feature}.dsl.json`));
+      if (fs.existsSync(legacy)) {
+        console.warn(
+          `[getDSL] 册还在**旧位置**：注册表说 ${feature} → ${regRoot}，但文件在 ${legacy}\n` +
+            `  ⇒ 本次读旧位置；请迁移到 ${getDesignSheetFile(feature)}`,
+        );
+        try {
+          return JSON.parse(fs.readFileSync(legacy, 'utf-8')) as DesignDSL;
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  }
   try {
     return JSON.parse(fs.readFileSync(file, 'utf-8')) as DesignDSL;
   } catch {

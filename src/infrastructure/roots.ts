@@ -61,8 +61,13 @@ export interface RootSpec {
 
 /** 角色表：**归属与可派生性只住这里**（别在调用点再判） */
 const ROLE_SPECS: ReadonlyArray<Omit<RootSpec, 'path'>> = [
-  { role: 'design', kind: 'shared', derivable: false, note: '设计册：意图 + 决策 + 判据（丢了不可重建）' },
-  { role: 'history', kind: 'shared', derivable: false, note: '任务历史（已了结的卡，丢了不可重建）—— ★ 跟踪产物是 .jsonl 文本镜像，.db 工作库由通用 *.db* 规则忽略', fileName: 'task-history.jsonl' },
+  // ★★★ 2026-10-26（T-#29）：`design` / `history` 从 `shared` 改 `project`。
+  //   实测证据：`rootsOf('review-hub').design.path` 曾是 **agent-io 的数据家**
+  //   （而 `cache` 正确落在 review-hub）⇒ `rootsOf` 与事实矛盾。
+  //   ⇒ 两者都住 `<项目根>/.agent-io/`、都是 `derivable:false`（意图，随仓移交）⇒ 它们是**项目本地**角色。
+  //   ★ `gitignoreRules()` 只看 `derivable`，不看 `kind` ⇒ 本改动**不影响** gitignore。
+  { role: 'design', kind: 'project', derivable: false, note: '设计册：意图 + 决策 + 判据（丢了不可重建）' },
+  { role: 'history', kind: 'project', derivable: false, note: '任务历史（已了结的卡，丢了不可重建）—— ★ 跟踪产物是 .jsonl 文本镜像，.db 工作库由通用 *.db* 规则忽略', fileName: 'task-history.jsonl' },
   { role: 'judgeCache', kind: 'shared', derivable: true, note: '判据缓存（按 feature+文件哈希，删了会重算）', fileName: 'judge-cache.json' },
   { role: 'cache', kind: 'project', derivable: true, note: '符号索引 cache.db（A 方案：项目本地）', fileName: 'cache.db' },
   // ★ 2026-10-26（T-#8）：**`featureCache` 已删**（原为“按 feature 寻址的跨项目索引”）。
