@@ -38,7 +38,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "builder.go"
       },
       {
         "id": "file_compat_types_go",
@@ -54,7 +55,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "compat_types.go"
       },
       {
         "id": "file_embedder_go",
@@ -70,7 +72,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "embedder.go"
       },
       {
         "id": "file_explorer_go",
@@ -86,7 +89,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "explorer.go"
       },
       {
         "id": "file_gate_go",
@@ -102,7 +106,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "gate.go"
       },
       {
         "id": "file_gate_policy_go",
@@ -118,7 +123,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "gate_policy.go"
       },
       {
         "id": "file_graph_cache_go",
@@ -134,7 +140,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "graph_cache.go"
       },
       {
         "id": "file_graph_writer_go",
@@ -150,7 +157,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "graph_writer.go"
       },
       {
         "id": "file_gravity_field_go",
@@ -166,7 +174,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "gravity_field.go"
       },
       {
         "id": "file_heat_go",
@@ -182,7 +191,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "heat.go"
       },
       {
         "id": "file_index_text_go",
@@ -198,7 +208,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "index_text.go"
       },
       {
         "id": "file_knowledge_go",
@@ -214,7 +225,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "knowledge.go"
       },
       {
         "id": "file_llm_go",
@@ -230,7 +242,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "llm.go"
       },
       {
         "id": "file_logging_file_go",
@@ -246,7 +259,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "logging/file.go"
       },
       {
         "id": "file_logging_logging_go",
@@ -262,7 +276,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "logging/logging.go"
       },
       {
         "id": "file_logging_rotate_go",
@@ -278,7 +293,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "logging/rotate.go"
       },
       {
         "id": "file_logging_router_go",
@@ -294,7 +310,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "logging/router.go"
       },
       {
         "id": "file_memory_store_go",
@@ -310,7 +327,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "memory_store.go"
       },
       {
         "id": "file_meta_skill_go",
@@ -326,7 +344,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "meta_skill.go"
       },
       {
         "id": "file_query_rewriter_go",
@@ -342,7 +361,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "query_rewriter.go"
       },
       {
         "id": "file_remote_embedder_go",
@@ -358,7 +378,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "remote_embedder.go"
       },
       {
         "id": "file_reranker_go",
@@ -374,7 +395,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "reranker.go"
       },
       {
         "id": "file_retrieval_pipeline_go",
@@ -390,7 +412,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "retrieval_pipeline.go"
       },
       {
         "id": "file_retriever_go",
@@ -406,7 +429,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "retriever.go"
       },
       {
         "id": "file_retriever_DeepRetriever_go",
@@ -422,7 +446,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "retriever_DeepRetriever.go"
       },
       {
         "id": "file_retriever_ShallowRetriever_go",
@@ -438,7 +463,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "retriever_ShallowRetriever.go"
       },
       {
         "id": "file_rrf_go",
@@ -454,7 +480,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "rrf.go"
       },
       {
         "id": "file_sandbox_go",
@@ -470,7 +497,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "sandbox.go"
       },
       {
         "id": "file_shallow_writer_go",
@@ -486,7 +514,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "shallow_writer.go"
       },
       {
         "id": "file_skill_gate_go",
@@ -502,7 +531,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "skill_gate.go"
       },
       {
         "id": "file_skill_import_go",
@@ -518,7 +548,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "skill_import.go"
       },
       {
         "id": "file_skill_registry_go",
@@ -534,7 +565,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "skill_registry.go"
       },
       {
         "id": "file_skill_tree_go",
@@ -550,7 +582,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "skill_tree.go"
       },
       {
         "id": "file_sleep_go",
@@ -566,7 +599,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "sleep.go"
       },
       {
         "id": "file_sleep_config_go",
@@ -582,7 +616,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "sleep_config.go"
       },
       {
         "id": "file_sleep_experiment_go",
@@ -598,7 +633,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "sleep_experiment.go"
       },
       {
         "id": "file_sleep_prune_go",
@@ -614,7 +650,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "sleep_prune.go"
       },
       {
         "id": "file_sleep_rem_go",
@@ -630,7 +667,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "sleep_rem.go"
       },
       {
         "id": "file_sleep_scheduler_go",
@@ -646,7 +684,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "sleep_scheduler.go"
       },
       {
         "id": "file_sleep_wander_go",
@@ -662,7 +701,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "sleep_wander.go"
       },
       {
         "id": "file_sqlite_store_go",
@@ -678,7 +718,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "sqlite_store.go"
       },
       {
         "id": "file_tool_feedback_go",
@@ -694,7 +735,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "tool_feedback.go"
       },
       {
         "id": "file_vector_store_go",
@@ -710,7 +752,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "vector_store.go"
       },
       {
         "id": "project_agent-memory",
@@ -2328,14 +2371,14 @@
       "count": 43
     }
   ],
-  "_dsl_rev": 3,
+  "_dsl_rev": 4,
   "_sync": {
-    "saved_at": "2026-10-24T12:54:44.968Z",
+    "saved_at": "2026-10-26T13:44:17.824Z",
     "source": "design_sheet",
     "feature": "agent-memory",
     "scanRev": 1792844049247,
-    "age": 2435721,
+    "age": 178208577,
     "dbSchemaVersion": 16,
-    "via": "edit_dsl:edit_dsl"
+    "via": "tool:t23-migrate"
   }
 }

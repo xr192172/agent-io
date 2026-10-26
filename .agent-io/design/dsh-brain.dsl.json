@@ -777,7 +777,8 @@
             "kind": "expectations",
             "unsupported": 0
           }
-        }
+        },
+        "path": "bridge/hub-bridge.mjs"
       },
       {
         "id": "file_bridge_smoke_mjs",
@@ -793,7 +794,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "bridge/smoke.mjs"
       },
       {
         "id": "file_bridge_test-bridge_mjs",
@@ -809,7 +811,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "bridge/test-bridge.mjs"
       },
       {
         "id": "file_evals_checks_cli-0004_mjs",
@@ -825,7 +828,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "evals/checks/cli-0004.mjs"
       },
       {
         "id": "file_evals_checks_cli-0006_mjs",
@@ -841,7 +845,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "evals/checks/cli-0006.mjs"
       },
       {
         "id": "file_evals_checks_cli-0007_mjs",
@@ -857,7 +862,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "evals/checks/cli-0007.mjs"
       },
       {
         "id": "file_evals_fixtures_demo-skill_first_line_sh",
@@ -873,7 +879,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "evals/fixtures/demo-skill/first_line.sh"
       },
       {
         "id": "file_evals_pilot_rename-target_check_mjs",
@@ -889,7 +896,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "evals/pilot/rename-target/check.mjs"
       },
       {
         "id": "file_evals_pilot_rename-target_index_js",
@@ -905,7 +913,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "evals/pilot/rename-target/index.js"
       },
       {
         "id": "file_evals_pilot_rename-target_math_js",
@@ -921,7 +930,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "evals/pilot/rename-target/math.js"
       },
       {
         "id": "file_evals_pilot_rename-target_store_js",
@@ -937,7 +947,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "data"
+        "arch_layer": "data",
+        "path": "evals/pilot/rename-target/store.js"
       },
       {
         "id": "file_package_client_index_js",
@@ -953,7 +964,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "package/client/index.js"
       },
       {
         "id": "file_package_src_index_js",
@@ -969,7 +981,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "package/src/index.js"
       },
       {
         "id": "file_packages_agent-io-bridge_src_index_ts",
@@ -985,7 +998,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "packages/agent-io-bridge/src/index.ts"
       },
       {
         "id": "file_packages_arm-isolation_src_index_ts",
@@ -1001,7 +1015,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "packages/arm-isolation/src/index.ts"
       },
       {
         "id": "file_packages_arm-isolation_test_isolation-check_mjs",
@@ -1017,7 +1032,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/arm-isolation/test/isolation-check.mjs"
       },
       {
         "id": "file_packages_capability-bridge_src_index_ts",
@@ -1033,7 +1049,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "packages/capability-bridge/src/index.ts"
       },
       {
         "id": "file_packages_capability-bridge_src_notice_ts",
@@ -1049,7 +1066,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/capability-bridge/src/notice.ts"
       },
       {
         "id": "file_packages_key-pool-proxy_src_headers_ts",
@@ -1065,7 +1083,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/key-pool-proxy/src/headers.ts"
       },
       {
         "id": "file_packages_key-pool-proxy_src_index_ts",
@@ -1081,7 +1100,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "packages/key-pool-proxy/src/index.ts"
       },
       {
         "id": "file_packages_key-pool-proxy_src_test_ts",
@@ -1097,7 +1117,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/key-pool-proxy/src/test.ts"
       },
       {
         "id": "file_packages_skill-tree_src_index_ts",
@@ -1113,7 +1134,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "packages/skill-tree/src/index.ts"
       },
       {
         "id": "file_packages_skill-tree_src_skill-tree_ts",
@@ -1129,7 +1151,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/skill-tree/src/skill-tree.ts"
       },
       {
         "id": "file_packages_skill-tree_src_text_tokenize_ts",
@@ -1145,7 +1168,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/skill-tree/src/text/tokenize.ts"
       },
       {
         "id": "file_packages_skill-tree_test_ablation-check_mjs",
@@ -1161,7 +1185,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/skill-tree/test/ablation-check.mjs"
       },
       {
         "id": "file_packages_skill-tree_test_skill-tree_test_mjs",
@@ -1177,7 +1202,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/skill-tree/test/skill-tree.test.mjs"
       },
       {
         "id": "file_packages_skill-tree_test_tokenize_test_mjs",
@@ -1193,7 +1219,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/skill-tree/test/tokenize.test.mjs"
       },
       {
         "id": "file_packages_subagent-council_src_index_ts",
@@ -1209,7 +1236,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "packages/subagent-council/src/index.ts"
       },
       {
         "id": "file_packages_subagent-council_src_seat-registry_generated_ts",
@@ -1225,7 +1253,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/subagent-council/src/seat-registry.generated.ts"
       },
       {
         "id": "file_packages_subagent-council_test_seats-check_mjs",
@@ -1241,7 +1270,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/subagent-council/test/seats-check.mjs"
       },
       {
         "id": "file_packages_switchboard-mcp_server_mjs",
@@ -1257,7 +1287,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "packages/switchboard-mcp/server.mjs"
       },
       {
         "id": "file_packages_switchboard__lib_legacy_b1788832467348_adminclient_js",
@@ -1273,7 +1304,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/_lib_legacy_b1788832467348/adminclient.js"
       },
       {
         "id": "file_packages_switchboard__lib_legacy_b1788832467348_coordinator_js",
@@ -1289,7 +1321,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/_lib_legacy_b1788832467348/coordinator.js"
       },
       {
         "id": "file_packages_switchboard__lib_legacy_b1788832467348_handover-protocol_js",
@@ -1305,7 +1338,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/_lib_legacy_b1788832467348/handover-protocol.js"
       },
       {
         "id": "file_packages_switchboard__lib_legacy_b1788832467348_lease_js",
@@ -1321,7 +1355,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/_lib_legacy_b1788832467348/lease.js"
       },
       {
         "id": "file_packages_switchboard__lib_legacy_b1788832467348_main_js",
@@ -1337,7 +1372,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "packages/switchboard/_lib_legacy_b1788832467348/main.js"
       },
       {
         "id": "file_packages_switchboard__lib_legacy_b1788832467348_overlay_js",
@@ -1353,7 +1389,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/_lib_legacy_b1788832467348/overlay.js"
       },
       {
         "id": "file_packages_switchboard__lib_legacy_b1788832467348_proxy_js",
@@ -1369,7 +1406,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/_lib_legacy_b1788832467348/proxy.js"
       },
       {
         "id": "file_packages_switchboard__lib_legacy_b1788832467348_spawner_js",
@@ -1385,7 +1423,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/_lib_legacy_b1788832467348/spawner.js"
       },
       {
         "id": "file_packages_switchboard_bin_cjs",
@@ -1401,7 +1440,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "packages/switchboard/bin.cjs"
       },
       {
         "id": "file_packages_switchboard_scripts_build-flip_mjs",
@@ -1417,7 +1457,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/scripts/build-flip.mjs"
       },
       {
         "id": "file_packages_switchboard_scripts_build_mjs",
@@ -1433,7 +1474,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/scripts/build.mjs"
       },
       {
         "id": "file_packages_switchboard_src_admin_ts",
@@ -1449,7 +1491,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/admin.ts"
       },
       {
         "id": "file_packages_switchboard_src_adminclient_ts",
@@ -1465,7 +1508,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/adminclient.ts"
       },
       {
         "id": "file_packages_switchboard_src_boot-health_ts",
@@ -1481,7 +1525,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/boot-health.ts"
       },
       {
         "id": "file_packages_switchboard_src_brains_ts",
@@ -1497,7 +1542,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/brains.ts"
       },
       {
         "id": "file_packages_switchboard_src_build-stamp_ts",
@@ -1513,7 +1559,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/build-stamp.ts"
       },
       {
         "id": "file_packages_switchboard_src_coordinator_ts",
@@ -1529,7 +1576,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/coordinator.ts"
       },
       {
         "id": "file_packages_switchboard_src_deploy_ts",
@@ -1545,7 +1593,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/deploy.ts"
       },
       {
         "id": "file_packages_switchboard_src_drain_ts",
@@ -1561,7 +1610,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/drain.ts"
       },
       {
         "id": "file_packages_switchboard_src_gen-assembly_ts",
@@ -1577,7 +1627,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/gen-assembly.ts"
       },
       {
         "id": "file_packages_switchboard_src_guard_ts",
@@ -1593,7 +1644,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "middleware"
+        "arch_layer": "middleware",
+        "path": "packages/switchboard/src/guard.ts"
       },
       {
         "id": "file_packages_switchboard_src_handover-protocol_ts",
@@ -1609,7 +1661,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/handover-protocol.ts"
       },
       {
         "id": "file_packages_switchboard_src_index_ts",
@@ -1625,7 +1678,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "packages/switchboard/src/index.ts"
       },
       {
         "id": "file_packages_switchboard_src_inventory_ts",
@@ -1641,7 +1695,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/inventory.ts"
       },
       {
         "id": "file_packages_switchboard_src_lease_ts",
@@ -1657,7 +1712,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/lease.ts"
       },
       {
         "id": "file_packages_switchboard_src_main_ts",
@@ -1673,7 +1729,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "packages/switchboard/src/main.ts"
       },
       {
         "id": "file_packages_switchboard_src_mgmt_ts",
@@ -1689,7 +1746,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/mgmt.ts"
       },
       {
         "id": "file_packages_switchboard_src_overlay_ts",
@@ -1705,7 +1763,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/overlay.ts"
       },
       {
         "id": "file_packages_switchboard_src_pool_ts",
@@ -1721,7 +1780,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/pool.ts"
       },
       {
         "id": "file_packages_switchboard_src_preflight-contract_ts",
@@ -1737,7 +1797,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/preflight-contract.ts"
       },
       {
         "id": "file_packages_switchboard_src_preflight_ts",
@@ -1753,7 +1814,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/preflight.ts"
       },
       {
         "id": "file_packages_switchboard_src_preseed_ts",
@@ -1769,7 +1831,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/preseed.ts"
       },
       {
         "id": "file_packages_switchboard_src_protocol_ts",
@@ -1785,7 +1848,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/protocol.ts"
       },
       {
         "id": "file_packages_switchboard_src_proxy_ts",
@@ -1801,7 +1865,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/proxy.ts"
       },
       {
         "id": "file_packages_switchboard_src_snapshot_ts",
@@ -1817,7 +1882,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/snapshot.ts"
       },
       {
         "id": "file_packages_switchboard_src_spawner_ts",
@@ -1833,7 +1899,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "packages/switchboard/src/spawner.ts"
       },
       {
         "id": "file_packages_switchboard_test_e2e_fixtures_bad-apply-throws_mjs",
@@ -1849,7 +1916,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/switchboard/test/e2e/fixtures/bad-apply-throws.mjs"
       },
       {
         "id": "file_packages_switchboard_test_e2e_fixtures_bad-missing-dep_mjs",
@@ -1865,7 +1933,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/switchboard/test/e2e/fixtures/bad-missing-dep.mjs"
       },
       {
         "id": "file_packages_switchboard_test_e2e_fixtures_bad-throws_mjs",
@@ -1881,7 +1950,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/switchboard/test/e2e/fixtures/bad-throws.mjs"
       },
       {
         "id": "file_packages_switchboard_test_e2e_fixtures_cmd-plugin_mjs",
@@ -1897,7 +1967,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/switchboard/test/e2e/fixtures/cmd-plugin.mjs"
       },
       {
         "id": "file_packages_switchboard_test_e2e_fixtures_good-plugin_mjs",
@@ -1913,7 +1984,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/switchboard/test/e2e/fixtures/good-plugin.mjs"
       },
       {
         "id": "file_packages_switchboard_test_e2e_fixtures_silent-plugin_mjs",
@@ -1929,7 +2001,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/switchboard/test/e2e/fixtures/silent-plugin.mjs"
       },
       {
         "id": "file_packages_switchboard_test_e2e_run-preflight-e2e-extra_sh",
@@ -1945,7 +2018,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/switchboard/test/e2e/run-preflight-e2e-extra.sh"
       },
       {
         "id": "file_packages_switchboard_test_e2e_run-preflight-e2e_sh",
@@ -1961,7 +2035,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/switchboard/test/e2e/run-preflight-e2e.sh"
       },
       {
         "id": "file_packages_switchboard_test_e2e_summarize_mjs",
@@ -1977,7 +2052,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/switchboard/test/e2e/summarize.mjs"
       },
       {
         "id": "file_packages_switchboard_test_e2e_verify-discard_mjs",
@@ -1993,7 +2069,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/switchboard/test/e2e/verify-discard.mjs"
       },
       {
         "id": "file_packages_switchboard_test_gen-assembly_test_mjs",
@@ -2009,7 +2086,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/switchboard/test/gen-assembly.test.mjs"
       },
       {
         "id": "file_packages_switchboard_test_placement-consistency_test_mjs",
@@ -2025,7 +2103,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/switchboard/test/placement-consistency.test.mjs"
       },
       {
         "id": "file_packages_switchboard_test_preflight_test_mjs",
@@ -2041,7 +2120,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/switchboard/test/preflight.test.mjs"
       },
       {
         "id": "file_packages_switchboard_test_spawn-dshhome_test_mjs",
@@ -2057,7 +2137,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/switchboard/test/spawn-dshhome.test.mjs"
       },
       {
         "id": "file_packages_tool-evolution_src_index_ts",
@@ -2073,7 +2154,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "packages/tool-evolution/src/index.ts"
       },
       {
         "id": "file_packages_tool-evolution_src_spec_ts",
@@ -2089,7 +2171,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "test"
+        "arch_layer": "test",
+        "path": "packages/tool-evolution/src/spec.ts"
       },
       {
         "id": "file_scripts_ablate-l3_mjs",
@@ -2105,7 +2188,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/ablate-l3.mjs"
       },
       {
         "id": "file_scripts_add-preset-council_mjs",
@@ -2121,7 +2205,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/add-preset-council.mjs"
       },
       {
         "id": "file_scripts_analyze-idle-gap_mjs",
@@ -2137,7 +2222,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/analyze-idle-gap.mjs"
       },
       {
         "id": "file_scripts_append-memory_mjs",
@@ -2153,7 +2239,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/append-memory.mjs"
       },
       {
         "id": "file_scripts_arm-ports_mjs",
@@ -2169,7 +2256,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/arm-ports.mjs"
       },
       {
         "id": "file_scripts_arm-probe_mjs",
@@ -2185,7 +2273,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/arm-probe.mjs"
       },
       {
         "id": "file_scripts_arm-stop_mjs",
@@ -2201,7 +2290,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/arm-stop.mjs"
       },
       {
         "id": "file_scripts_arm-up_mjs",
@@ -2217,7 +2307,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/arm-up.mjs"
       },
       {
         "id": "file_scripts_arms-registry_mjs",
@@ -2233,7 +2324,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/arms-registry.mjs"
       },
       {
         "id": "file_scripts_audit-partial-packages_mjs",
@@ -2249,7 +2341,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/audit-partial-packages.mjs"
       },
       {
         "id": "file_scripts_build-experiment-kernel_mjs",
@@ -2265,7 +2358,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/build-experiment-kernel.mjs"
       },
       {
         "id": "file_scripts_canvas-determinism-probe_mjs",
@@ -2281,7 +2375,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/canvas-determinism-probe.mjs"
       },
       {
         "id": "file_scripts_capability-gate_mjs",
@@ -2297,7 +2392,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/capability-gate.mjs"
       },
       {
         "id": "file_scripts_capability-intake_mjs",
@@ -2313,7 +2409,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/capability-intake.mjs"
       },
       {
         "id": "file_scripts_capability-registry_mjs",
@@ -2329,7 +2426,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/capability-registry.mjs"
       },
       {
         "id": "file_scripts_capability-snapshot_mjs",
@@ -2345,7 +2443,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/capability-snapshot.mjs"
       },
       {
         "id": "file_scripts_capability-sources_mjs",
@@ -2361,7 +2460,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/capability-sources.mjs"
       },
       {
         "id": "file_scripts_capability-store_mjs",
@@ -2377,7 +2477,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/capability-store.mjs"
       },
       {
         "id": "file_scripts_cdp-probe_mjs",
@@ -2393,7 +2494,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/cdp-probe.mjs"
       },
       {
         "id": "file_scripts_change-classify_mjs",
@@ -2409,7 +2511,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/change-classify.mjs"
       },
       {
         "id": "file_scripts_check-all_mjs",
@@ -2425,7 +2528,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-all.mjs"
       },
       {
         "id": "file_scripts_check-bom_mjs",
@@ -2441,7 +2545,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-bom.mjs"
       },
       {
         "id": "file_scripts_check-cmd-lineendings_mjs",
@@ -2457,7 +2562,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-cmd-lineendings.mjs"
       },
       {
         "id": "file_scripts_check-code-mode-surface_mjs",
@@ -2473,7 +2579,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-code-mode-surface.mjs"
       },
       {
         "id": "file_scripts_check-compaction-fallback-shape_mjs",
@@ -2489,7 +2596,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-compaction-fallback-shape.mjs"
       },
       {
         "id": "file_scripts_check-config-tolerance_mjs",
@@ -2505,7 +2613,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-config-tolerance.mjs"
       },
       {
         "id": "file_scripts_check-desktop-launcher_mjs",
@@ -2521,7 +2630,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-desktop-launcher.mjs"
       },
       {
         "id": "file_scripts_check-import-safe_mjs",
@@ -2537,7 +2647,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-import-safe.mjs"
       },
       {
         "id": "file_scripts_check-newdata_mjs",
@@ -2553,7 +2664,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-newdata.mjs"
       },
       {
         "id": "file_scripts_check-node-modules-links_mjs",
@@ -2569,7 +2681,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-node-modules-links.mjs"
       },
       {
         "id": "file_scripts_check-plugin-hygiene_mjs",
@@ -2585,7 +2698,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-plugin-hygiene.mjs"
       },
       {
         "id": "file_scripts_check-prepare-switch-idle_mjs",
@@ -2601,7 +2715,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-prepare-switch-idle.mjs"
       },
       {
         "id": "file_scripts_check-preset_mjs",
@@ -2617,7 +2732,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-preset.mjs"
       },
       {
         "id": "file_scripts_check-session-integrity_mjs",
@@ -2633,7 +2749,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-session-integrity.mjs"
       },
       {
         "id": "file_scripts_check-undeclared-deps_mjs",
@@ -2649,7 +2766,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-undeclared-deps.mjs"
       },
       {
         "id": "file_scripts_check-upstream-drift_mjs",
@@ -2665,7 +2783,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-upstream-drift.mjs"
       },
       {
         "id": "file_scripts_compaction-probe_mjs",
@@ -2681,7 +2800,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/compaction-probe.mjs"
       },
       {
         "id": "file_scripts_compaction-repro_mjs",
@@ -2697,7 +2817,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/compaction-repro.mjs"
       },
       {
         "id": "file_scripts_crash-observe_mjs",
@@ -2713,7 +2834,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/crash-observe.mjs"
       },
       {
         "id": "file_scripts_delegation_ablate-l2-behavioral_mjs",
@@ -2729,7 +2851,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/ablate-l2-behavioral.mjs"
       },
       {
         "id": "file_scripts_delegation_audit-delegates_mjs",
@@ -2745,7 +2868,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/audit-delegates.mjs"
       },
       {
         "id": "file_scripts_delegation_dsh-delegate_mjs",
@@ -2761,7 +2885,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/dsh-delegate.mjs"
       },
       {
         "id": "file_scripts_delegation_dump-session_mjs",
@@ -2777,7 +2902,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/dump-session.mjs"
       },
       {
         "id": "file_scripts_delegation_find-injection_mjs",
@@ -2793,7 +2919,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/find-injection.mjs"
       },
       {
         "id": "file_scripts_delegation_isolated-instance_mjs",
@@ -2809,7 +2936,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/isolated-instance.mjs"
       },
       {
         "id": "file_scripts_delegation_last-say_mjs",
@@ -2825,7 +2953,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/last-say.mjs"
       },
       {
         "id": "file_scripts_delegation_launch-arm_mjs",
@@ -2841,7 +2970,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/launch-arm.mjs"
       },
       {
         "id": "file_scripts_delegation_list-external-deps_mjs",
@@ -2857,7 +2987,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/list-external-deps.mjs"
       },
       {
         "id": "file_scripts_delegation_probe-approval-answer_mjs",
@@ -2873,7 +3004,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/probe-approval-answer.mjs"
       },
       {
         "id": "file_scripts_delegation_probe-permission_mjs",
@@ -2889,7 +3021,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/probe-permission.mjs"
       },
       {
         "id": "file_scripts_delegation_resume-session_mjs",
@@ -2905,7 +3038,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/resume-session.mjs"
       },
       {
         "id": "file_scripts_delegation_round_mjs",
@@ -2921,7 +3055,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/round.mjs"
       },
       {
         "id": "file_scripts_delegation_steer_mjs",
@@ -2937,7 +3072,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/steer.mjs"
       },
       {
         "id": "file_scripts_delegation_test-arm-isolation-guard_mjs",
@@ -2953,7 +3089,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/test-arm-isolation-guard.mjs"
       },
       {
         "id": "file_scripts_delegation_test-arm-isolation-wiring_mjs",
@@ -2969,7 +3106,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/test-arm-isolation-wiring.mjs"
       },
       {
         "id": "file_scripts_delegation_test-arm-stop_mjs",
@@ -2985,7 +3123,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/test-arm-stop.mjs"
       },
       {
         "id": "file_scripts_delegation_test-dev-mode_mjs",
@@ -3001,7 +3140,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/test-dev-mode.mjs"
       },
       {
         "id": "file_scripts_delegation_test-evo-seats-mount_mjs",
@@ -3017,7 +3157,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/test-evo-seats-mount.mjs"
       },
       {
         "id": "file_scripts_delegation_test-mgmt-surface_mjs",
@@ -3033,7 +3174,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/test-mgmt-surface.mjs"
       },
       {
         "id": "file_scripts_delegation_test-oldshape-guard_mjs",
@@ -3049,7 +3191,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/test-oldshape-guard.mjs"
       },
       {
         "id": "file_scripts_delegation_test-pool-command-contract_mjs",
@@ -3065,7 +3208,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/test-pool-command-contract.mjs"
       },
       {
         "id": "file_scripts_delegation_test-r2-handover-only_mjs",
@@ -3081,7 +3225,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/test-r2-handover-only.mjs"
       },
       {
         "id": "file_scripts_delegation_test-sentinel-pool_mjs",
@@ -3097,7 +3242,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/test-sentinel-pool.mjs"
       },
       {
         "id": "file_scripts_delegation_wait-sessions_mjs",
@@ -3113,7 +3259,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/delegation/wait-sessions.mjs"
       },
       {
         "id": "file_scripts_diff-arm-toolsets_mjs",
@@ -3129,7 +3276,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/diff-arm-toolsets.mjs"
       },
       {
         "id": "file_scripts_diff-dc-capability-map_mjs",
@@ -3145,7 +3293,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/diff-dc-capability-map.mjs"
       },
       {
         "id": "file_scripts_drop-conveyor-from-profile_mjs",
@@ -3161,7 +3310,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/drop-conveyor-from-profile.mjs"
       },
       {
         "id": "file_scripts_ds-token-count_mjs",
@@ -3177,7 +3327,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/ds-token-count.mjs"
       },
       {
         "id": "file_scripts_dump-dc-tool-catalog_mjs",
@@ -3193,7 +3344,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/dump-dc-tool-catalog.mjs"
       },
       {
         "id": "file_scripts_dump-header-shapes_mjs",
@@ -3209,7 +3361,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/dump-header-shapes.mjs"
       },
       {
         "id": "file_scripts_dump-memory-modules_mjs",
@@ -3225,7 +3378,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/dump-memory-modules.mjs"
       },
       {
         "id": "file_scripts_dump-request-tools_mjs",
@@ -3241,7 +3395,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/dump-request-tools.mjs"
       },
       {
         "id": "file_scripts_e2e-handover_mjs",
@@ -3257,7 +3412,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/e2e-handover.mjs"
       },
       {
         "id": "file_scripts_eval-baseline-store_mjs",
@@ -3273,7 +3429,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/eval-baseline-store.mjs"
       },
       {
         "id": "file_scripts_eval-holdout-run_mjs",
@@ -3289,7 +3446,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/eval-holdout-run.mjs"
       },
       {
         "id": "file_scripts_eval-isolation-audit_mjs",
@@ -3305,7 +3463,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/eval-isolation-audit.mjs"
       },
       {
         "id": "file_scripts_eval-run_mjs",
@@ -3321,7 +3480,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/eval-run.mjs"
       },
       {
         "id": "file_scripts_eval-seal-git_mjs",
@@ -3337,7 +3497,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/eval-seal-git.mjs"
       },
       {
         "id": "file_scripts_eval-shadow-ab_mjs",
@@ -3353,7 +3514,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/eval-shadow-ab.mjs"
       },
       {
         "id": "file_scripts_eval-signal-check_mjs",
@@ -3369,7 +3531,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/eval-signal-check.mjs"
       },
       {
         "id": "file_scripts_eval-task-applicability_mjs",
@@ -3385,7 +3548,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/eval-task-applicability.mjs"
       },
       {
         "id": "file_scripts_eval-validate_mjs",
@@ -3401,7 +3565,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/eval-validate.mjs"
       },
       {
         "id": "file_scripts_eval-wt-new_mjs",
@@ -3417,7 +3582,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/eval-wt-new.mjs"
       },
       {
         "id": "file_scripts_evals_holdout_oracle-count-guard_mjs",
@@ -3433,7 +3599,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/evals/holdout/oracle-count-guard.mjs"
       },
       {
         "id": "file_scripts_evals_holdout_oracle-fail-closed_mjs",
@@ -3449,7 +3616,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/evals/holdout/oracle-fail-closed.mjs"
       },
       {
         "id": "file_scripts_evals_holdout_oracle-hash-comparison_mjs",
@@ -3465,7 +3633,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/evals/holdout/oracle-hash-comparison.mjs"
       },
       {
         "id": "file_scripts_evals_holdout_oracle-intersection-guard_mjs",
@@ -3481,7 +3650,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/evals/holdout/oracle-intersection-guard.mjs"
       },
       {
         "id": "file_scripts_evals_holdout_oracle-l3-enforcement_mjs",
@@ -3497,7 +3667,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/evals/holdout/oracle-l3-enforcement.mjs"
       },
       {
         "id": "file_scripts_evals_holdout_oracle-l3-holdout-hash_mjs",
@@ -3513,7 +3684,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/evals/holdout/oracle-l3-holdout-hash.mjs"
       },
       {
         "id": "file_scripts_evals_holdout_oracle-misevolution-soft-door_mjs",
@@ -3529,7 +3701,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/evals/holdout/oracle-misevolution-soft-door.mjs"
       },
       {
         "id": "file_scripts_evals_holdout_oracle-prooflevel-stays-l1_mjs",
@@ -3545,7 +3718,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/evals/holdout/oracle-prooflevel-stays-l1.mjs"
       },
       {
         "id": "file_scripts_evals_holdout_oracle-r1-path-guard-v2_mjs",
@@ -3561,7 +3735,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/evals/holdout/oracle-r1-path-guard-v2.mjs"
       },
       {
         "id": "file_scripts_evals_holdout_oracle-r1-path-guard_mjs",
@@ -3577,7 +3752,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/evals/holdout/oracle-r1-path-guard.mjs"
       },
       {
         "id": "file_scripts_evolve_mjs",
@@ -3593,7 +3769,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/evolve.mjs"
       },
       {
         "id": "file_scripts_face-audit_mjs",
@@ -3609,7 +3786,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/face-audit.mjs"
       },
       {
         "id": "file_scripts_fetch-missing-img-colour_mjs",
@@ -3625,7 +3803,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/fetch-missing-img-colour.mjs"
       },
       {
         "id": "file_scripts_fix-cmd-lineendings_mjs",
@@ -3641,7 +3820,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/fix-cmd-lineendings.mjs"
       },
       {
         "id": "file_scripts_gate-commit-check_mjs",
@@ -3657,7 +3837,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gate-commit-check.mjs"
       },
       {
         "id": "file_scripts_gate-contract-check_mjs",
@@ -3673,7 +3854,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gate-contract-check.mjs"
       },
       {
         "id": "file_scripts_gate-impl-broken_mjs",
@@ -3689,7 +3871,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gate-impl-broken.mjs"
       },
       {
         "id": "file_scripts_gate-impl-reference_mjs",
@@ -3705,7 +3888,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gate-impl-reference.mjs"
       },
       {
         "id": "file_scripts_gate-vector-run_mjs",
@@ -3721,7 +3905,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gate-vector-run.mjs"
       },
       {
         "id": "file_scripts_gate_cli_mjs",
@@ -3737,7 +3922,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gate/cli.mjs"
       },
       {
         "id": "file_scripts_gate_core_chain_mjs",
@@ -3753,7 +3939,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "scripts/gate/core/chain.mjs"
       },
       {
         "id": "file_scripts_gate_core_journal_mjs",
@@ -3769,7 +3956,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "scripts/gate/core/journal.mjs"
       },
       {
         "id": "file_scripts_gate_core_ledger_mjs",
@@ -3785,7 +3973,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "scripts/gate/core/ledger.mjs"
       },
       {
         "id": "file_scripts_gate_core_policy_mjs",
@@ -3801,7 +3990,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "scripts/gate/core/policy.mjs"
       },
       {
         "id": "file_scripts_gate_core_repo_mjs",
@@ -3817,7 +4007,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "scripts/gate/core/repo.mjs"
       },
       {
         "id": "file_scripts_gen-archive_mjs",
@@ -3833,7 +4024,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gen-archive.mjs"
       },
       {
         "id": "file_scripts_gen-compare_mjs",
@@ -3849,7 +4041,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gen-compare.mjs"
       },
       {
         "id": "file_scripts_grep-session_mjs",
@@ -3865,7 +4058,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/grep-session.mjs"
       },
       {
         "id": "file_scripts_handover-normal_mjs",
@@ -3881,7 +4075,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/handover-normal.mjs"
       },
       {
         "id": "file_scripts_handover-poll_mjs",
@@ -3897,7 +4092,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/handover-poll.mjs"
       },
       {
         "id": "file_scripts_health-self-heal_mjs",
@@ -3913,7 +4109,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/health-self-heal.mjs"
       },
       {
         "id": "file_scripts_install-desktop-icon_mjs",
@@ -3929,7 +4126,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/install-desktop-icon.mjs"
       },
       {
         "id": "file_scripts_lib-safe-fs_mjs",
@@ -3945,7 +4143,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/lib-safe-fs.mjs"
       },
       {
         "id": "file_scripts_lib-tool-failure_mjs",
@@ -3961,7 +4160,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/lib-tool-failure.mjs"
       },
       {
         "id": "file_scripts_make-bigseed-fork_mjs",
@@ -3977,7 +4177,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/make-bigseed-fork.mjs"
       },
       {
         "id": "file_scripts_make-council-preset_mjs",
@@ -3993,7 +4194,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/make-council-preset.mjs"
       },
       {
         "id": "file_scripts_make-g0-preset_mjs",
@@ -4009,7 +4211,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/make-g0-preset.mjs"
       },
       {
         "id": "file_scripts_make-profile-variant_mjs",
@@ -4025,7 +4228,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/make-profile-variant.mjs"
       },
       {
         "id": "file_scripts_make-seeded-fork_mjs",
@@ -4041,7 +4245,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/make-seeded-fork.mjs"
       },
       {
         "id": "file_scripts_measure-arm-face_mjs",
@@ -4057,7 +4262,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/measure-arm-face.mjs"
       },
       {
         "id": "file_scripts_measure-context-efficiency_mjs",
@@ -4073,7 +4279,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/measure-context-efficiency.mjs"
       },
       {
         "id": "file_scripts_measure-delegation-reuse_mjs",
@@ -4089,7 +4296,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/measure-delegation-reuse.mjs"
       },
       {
         "id": "file_scripts_mem-arm_mjs",
@@ -4105,7 +4313,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/mem-arm.mjs"
       },
       {
         "id": "file_scripts_mem-seq_mjs",
@@ -4121,7 +4330,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/mem-seq.mjs"
       },
       {
         "id": "file_scripts_memory-effect-judge_mjs",
@@ -4137,7 +4347,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/memory-effect-judge.mjs"
       },
       {
         "id": "file_scripts_memory-judge-poison-check_mjs",
@@ -4153,7 +4364,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/memory-judge-poison-check.mjs"
       },
       {
         "id": "file_scripts_memory-stub_mjs",
@@ -4169,7 +4381,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/memory-stub.mjs"
       },
       {
         "id": "file_scripts_meter-replay_mjs",
@@ -4185,7 +4398,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/meter-replay.mjs"
       },
       {
         "id": "file_scripts_patch-agent-loop-hardening_mjs",
@@ -4201,7 +4415,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/patch-agent-loop-hardening.mjs"
       },
       {
         "id": "file_scripts_patch-anchors_mjs",
@@ -4217,7 +4432,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/patch-anchors.mjs"
       },
       {
         "id": "file_scripts_patch-app-boot-bom_mjs",
@@ -4233,7 +4449,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/patch-app-boot-bom.mjs"
       },
       {
         "id": "file_scripts_patch-goal-round-driver_mjs",
@@ -4249,7 +4466,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/patch-goal-round-driver.mjs"
       },
       {
         "id": "file_scripts_patch-profile-deps_mjs",
@@ -4265,7 +4483,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/patch-profile-deps.mjs"
       },
       {
         "id": "file_scripts_patch-web-app-public-url_mjs",
@@ -4281,7 +4500,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/patch-web-app-public-url.mjs"
       },
       {
         "id": "file_scripts_pending-approval_mjs",
@@ -4297,7 +4517,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/pending-approval.mjs"
       },
       {
         "id": "file_scripts_pool-key-selftest_mjs",
@@ -4313,7 +4534,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/pool-key-selftest.mjs"
       },
       {
         "id": "file_scripts_probe-config-resolveconfig_mjs",
@@ -4329,7 +4551,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-config-resolveconfig.mjs"
       },
       {
         "id": "file_scripts_probe-dc-arg-suggest-mcp_mjs",
@@ -4345,7 +4568,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-dc-arg-suggest-mcp.mjs"
       },
       {
         "id": "file_scripts_probe-dc-backfill-cost_mjs",
@@ -4361,7 +4585,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-dc-backfill-cost.mjs"
       },
       {
         "id": "file_scripts_probe-dc-backfill-profile_mjs",
@@ -4377,7 +4602,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-dc-backfill-profile.mjs"
       },
       {
         "id": "file_scripts_probe-dc-capability-map-mcp_mjs",
@@ -4393,7 +4619,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-dc-capability-map-mcp.mjs"
       },
       {
         "id": "file_scripts_probe-dc-cold-start_mjs",
@@ -4409,7 +4636,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-dc-cold-start.mjs"
       },
       {
         "id": "file_scripts_probe-dc-locality_mjs",
@@ -4425,7 +4653,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-dc-locality.mjs"
       },
       {
         "id": "file_scripts_probe-dc-observe-points_mjs",
@@ -4441,7 +4670,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-dc-observe-points.mjs"
       },
       {
         "id": "file_scripts_probe-dc-resolve-cost_mjs",
@@ -4457,7 +4687,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-dc-resolve-cost.mjs"
       },
       {
         "id": "file_scripts_probe-dc-reverse-edges_mjs",
@@ -4473,7 +4704,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-dc-reverse-edges.mjs"
       },
       {
         "id": "file_scripts_probe-dc-snapshot-mcp_mjs",
@@ -4489,7 +4721,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-dc-snapshot-mcp.mjs"
       },
       {
         "id": "file_scripts_probe-dc-watch-refresh_mjs",
@@ -4505,7 +4738,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-dc-watch-refresh.mjs"
       },
       {
         "id": "file_scripts_probe-dc-write-through_mjs",
@@ -4521,7 +4755,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-dc-write-through.mjs"
       },
       {
         "id": "file_scripts_probe-dc-zero-setup-mcp_mjs",
@@ -4537,7 +4772,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-dc-zero-setup-mcp.mjs"
       },
       {
         "id": "file_scripts_probe-delegate-once_mjs",
@@ -4553,7 +4789,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-delegate-once.mjs"
       },
       {
         "id": "file_scripts_probe-delegation-live_mjs",
@@ -4569,7 +4806,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-delegation-live.mjs"
       },
       {
         "id": "file_scripts_probe-gen-boot_mjs",
@@ -4585,7 +4823,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-gen-boot.mjs"
       },
       {
         "id": "file_scripts_probe-gen-port_mjs",
@@ -4601,7 +4840,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-gen-port.mjs"
       },
       {
         "id": "file_scripts_probe-node-procs_mjs",
@@ -4617,7 +4857,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-node-procs.mjs"
       },
       {
         "id": "file_scripts_probe-prefix-stability_mjs",
@@ -4633,7 +4874,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-prefix-stability.mjs"
       },
       {
         "id": "file_scripts_probe-preset-and-mode_mjs",
@@ -4649,7 +4891,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-preset-and-mode.mjs"
       },
       {
         "id": "file_scripts_probe-session-tools_mjs",
@@ -4665,7 +4908,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-session-tools.mjs"
       },
       {
         "id": "file_scripts_probe-subagent-api_mjs",
@@ -4681,7 +4925,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-subagent-api.mjs"
       },
       {
         "id": "file_scripts_probe-ui-subagent_mjs",
@@ -4697,7 +4942,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-ui-subagent.mjs"
       },
       {
         "id": "file_scripts_probe-verify-council_mjs",
@@ -4713,7 +4959,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe-verify-council.mjs"
       },
       {
         "id": "file_scripts_refetch-lock-packages_mjs",
@@ -4729,7 +4976,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/refetch-lock-packages.mjs"
       },
       {
         "id": "file_scripts_relaunch-switchboard_mjs",
@@ -4745,7 +4993,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/relaunch-switchboard.mjs"
       },
       {
         "id": "file_scripts_remove-desktop-pets_mjs",
@@ -4761,7 +5010,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/remove-desktop-pets.mjs"
       },
       {
         "id": "file_scripts_repair-session-message-id_mjs",
@@ -4777,7 +5027,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/repair-session-message-id.mjs"
       },
       {
         "id": "file_scripts_repair-session-seq-gap_mjs",
@@ -4793,7 +5044,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/repair-session-seq-gap.mjs"
       },
       {
         "id": "file_scripts_restart-fast_mjs",
@@ -4809,7 +5061,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/restart-fast.mjs"
       },
       {
         "id": "file_scripts_run-experiment_mjs",
@@ -4825,7 +5078,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/run-experiment.mjs"
       },
       {
         "id": "file_scripts_scan-shallow-share_mjs",
@@ -4841,7 +5095,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/scan-shallow-share.mjs"
       },
       {
         "id": "file_scripts_scan-unknown-tool_mjs",
@@ -4857,7 +5112,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/scan-unknown-tool.mjs"
       },
       {
         "id": "file_scripts_scan-workspace-root_mjs",
@@ -4873,7 +5129,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/scan-workspace-root.mjs"
       },
       {
         "id": "file_scripts_seats_check-seat-defs_mjs",
@@ -4889,7 +5146,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/seats/check-seat-defs.mjs"
       },
       {
         "id": "file_scripts_seats_gen-roster_mjs",
@@ -4905,7 +5163,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/seats/gen-roster.mjs"
       },
       {
         "id": "file_scripts_seats_gen-seat-registry_mjs",
@@ -4921,7 +5180,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/seats/gen-seat-registry.mjs"
       },
       {
         "id": "file_scripts_seats_handoff-contract_mjs",
@@ -4937,7 +5197,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/seats/handoff-contract.mjs"
       },
       {
         "id": "file_scripts_seats_patch-dev-handoff_mjs",
@@ -4953,7 +5214,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/seats/patch-dev-handoff.mjs"
       },
       {
         "id": "file_scripts_seats_seat-contract_mjs",
@@ -4969,7 +5231,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/seats/seat-contract.mjs"
       },
       {
         "id": "file_scripts_seats_test-evo-seats-online_mjs",
@@ -4985,7 +5248,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/seats/test-evo-seats-online.mjs"
       },
       {
         "id": "file_scripts_seats_test-handoff_mjs",
@@ -5001,7 +5265,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/seats/test-handoff.mjs"
       },
       {
         "id": "file_scripts_seats_test-seat-contract_mjs",
@@ -5017,7 +5282,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/seats/test-seat-contract.mjs"
       },
       {
         "id": "file_scripts_seats_test-seat-toolscope-continuable_mjs",
@@ -5033,7 +5299,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/seats/test-seat-toolscope-continuable.mjs"
       },
       {
         "id": "file_scripts_seats_test-seat-toolscope-e2e_mjs",
@@ -5049,7 +5316,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/seats/test-seat-toolscope-e2e.mjs"
       },
       {
         "id": "file_scripts_seats_test-seat-toolscope_mjs",
@@ -5065,7 +5333,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/seats/test-seat-toolscope.mjs"
       },
       {
         "id": "file_scripts_seats_validate-seat-output_mjs",
@@ -5081,7 +5350,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/seats/validate-seat-output.mjs"
       },
       {
         "id": "file_scripts_seats_vocabulary-check_mjs",
@@ -5097,7 +5367,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/seats/vocabulary-check.mjs"
       },
       {
         "id": "file_scripts_self-dev-brief_mjs",
@@ -5113,7 +5384,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/self-dev-brief.mjs"
       },
       {
         "id": "file_scripts_seqtime_mjs",
@@ -5129,7 +5401,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/seqtime.mjs"
       },
       {
         "id": "file_scripts_session-create_mjs",
@@ -5145,7 +5418,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/session-create.mjs"
       },
       {
         "id": "file_scripts_session-drive_mjs",
@@ -5161,7 +5435,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/session-drive.mjs"
       },
       {
         "id": "file_scripts_session-scan_mjs",
@@ -5177,7 +5452,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/session-scan.mjs"
       },
       {
         "id": "file_scripts_session-summary_mjs",
@@ -5193,7 +5469,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/session-summary.mjs"
       },
       {
         "id": "file_scripts_session-tail_mjs",
@@ -5209,7 +5486,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/session-tail.mjs"
       },
       {
         "id": "file_scripts_skill-factory_mjs",
@@ -5225,7 +5503,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/skill-factory.mjs"
       },
       {
         "id": "file_scripts_skill-sieve_mjs",
@@ -5241,7 +5520,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/skill-sieve.mjs"
       },
       {
         "id": "file_scripts_skill-to-preset_mjs",
@@ -5257,7 +5537,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/skill-to-preset.mjs"
       },
       {
         "id": "file_scripts_spike_hub-bridge_mjs",
@@ -5273,7 +5554,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/spike/hub-bridge.mjs"
       },
       {
         "id": "file_scripts_spike_hub-ui_mjs",
@@ -5289,7 +5571,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/spike/hub-ui.mjs"
       },
       {
         "id": "file_scripts_spike_hubconn_mjs",
@@ -5305,7 +5588,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/spike/hubconn.mjs"
       },
       {
         "id": "file_scripts_spike_probe-hub_mjs",
@@ -5321,7 +5605,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/spike/probe-hub.mjs"
       },
       {
         "id": "file_scripts_switchboard-flip_mjs",
@@ -5337,7 +5622,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/switchboard-flip.mjs"
       },
       {
         "id": "file_scripts_switchboard_test-availability-surface_mjs",
@@ -5353,7 +5639,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/switchboard/test-availability-surface.mjs"
       },
       {
         "id": "file_scripts_switchboard_test-lease-liveness-guard_mjs",
@@ -5369,7 +5656,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/switchboard/test-lease-liveness-guard.mjs"
       },
       {
         "id": "file_scripts_switchboard_test-mgmt-nonblocking_mjs",
@@ -5385,7 +5673,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/switchboard/test-mgmt-nonblocking.mjs"
       },
       {
         "id": "file_scripts_switchboard_test-selfcheck-tristate_mjs",
@@ -5401,7 +5690,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/switchboard/test-selfcheck-tristate.mjs"
       },
       {
         "id": "file_scripts_task-bank_mjs",
@@ -5417,7 +5707,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/task-bank.mjs"
       },
       {
         "id": "file_scripts_test-ablation-h_mjs",
@@ -5433,7 +5724,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-ablation-h.mjs"
       },
       {
         "id": "file_scripts_test-ablation-merge_mjs",
@@ -5449,7 +5741,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-ablation-merge.mjs"
       },
       {
         "id": "file_scripts_test-boot-health_mjs",
@@ -5465,7 +5758,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-boot-health.mjs"
       },
       {
         "id": "file_scripts_test-capability-bridge_mjs",
@@ -5481,7 +5775,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-capability-bridge.mjs"
       },
       {
         "id": "file_scripts_test-capability-gate_mjs",
@@ -5497,7 +5792,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-capability-gate.mjs"
       },
       {
         "id": "file_scripts_test-capability-notice-wiring_mjs",
@@ -5513,7 +5809,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-capability-notice-wiring.mjs"
       },
       {
         "id": "file_scripts_test-capability-notice_mjs",
@@ -5529,7 +5826,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-capability-notice.mjs"
       },
       {
         "id": "file_scripts_test-compare_mjs",
@@ -5545,7 +5843,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-compare.mjs"
       },
       {
         "id": "file_scripts_test-gen-port-alloc_mjs",
@@ -5561,7 +5860,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-gen-port-alloc.mjs"
       },
       {
         "id": "file_scripts_test-handover-drain_mjs",
@@ -5577,7 +5877,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-handover-drain.mjs"
       },
       {
         "id": "file_scripts_test-injected-message-shape_mjs",
@@ -5593,7 +5894,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-injected-message-shape.mjs"
       },
       {
         "id": "file_scripts_test-l2_mjs",
@@ -5609,7 +5911,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-l2.mjs"
       },
       {
         "id": "file_scripts_test-patch-anchors_mjs",
@@ -5625,7 +5928,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-patch-anchors.mjs"
       },
       {
         "id": "file_scripts_test-plugin-hygiene_mjs",
@@ -5641,7 +5945,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-plugin-hygiene.mjs"
       },
       {
         "id": "file_scripts_test-provider_js",
@@ -5657,7 +5962,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-provider.js"
       },
       {
         "id": "file_scripts_test-provider_mjs",
@@ -5673,7 +5979,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-provider.mjs"
       },
       {
         "id": "file_scripts_test-r2-l3-0003_mjs",
@@ -5689,7 +5996,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-r2-l3-0003.mjs"
       },
       {
         "id": "file_scripts_test-r2-selfcheck_mjs",
@@ -5705,7 +6013,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-r2-selfcheck.mjs"
       },
       {
         "id": "file_scripts_test-seeds_mjs",
@@ -5721,7 +6030,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/test-seeds.mjs"
       },
       {
         "id": "file_scripts_tool-pool_mjs",
@@ -5737,7 +6047,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/tool-pool.mjs"
       },
       {
         "id": "file_scripts_verify-boot-health-on-real-3083_mjs",
@@ -5753,7 +6064,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/verify-boot-health-on-real-3083.mjs"
       },
       {
         "id": "file_scripts_verify-drain-after-swap_mjs",
@@ -5769,7 +6081,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/verify-drain-after-swap.mjs"
       },
       {
         "id": "file_scripts_verify-p4-after-swap_mjs",
@@ -5785,7 +6098,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/verify-p4-after-swap.mjs"
       },
       {
         "id": "file_scripts_w36-verify-swap_mjs",
@@ -5801,7 +6115,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/w36-verify-swap.mjs"
       },
       {
         "id": "file_scripts_w61-out-arm-coverage_mjs",
@@ -5817,7 +6132,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/w61-out-arm-coverage.mjs"
       },
       {
         "id": "file_scripts_w61-verify-swap_mjs",
@@ -5833,7 +6149,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/w61-verify-swap.mjs"
       },
       {
         "id": "file_scripts_w66-assert_mjs",
@@ -5849,7 +6166,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/w66-assert.mjs"
       },
       {
         "id": "file_scripts_w66-run_mjs",
@@ -5865,7 +6183,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/w66-run.mjs"
       },
       {
         "id": "file_vitest_config_mjs",
@@ -5881,7 +6200,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "vitest.config.mjs"
       },
       {
         "id": "council_hub",
@@ -56429,15 +56749,15 @@
       "count": 15
     }
   ],
-  "_dsl_rev": 44,
+  "_dsl_rev": 45,
   "_sync": {
-    "saved_at": "2026-10-26T05:40:44.025Z",
+    "saved_at": "2026-10-26T13:44:17.878Z",
     "source": "design_sheet",
     "feature": "dsh-brain",
     "scanRev": 1792913992327,
-    "age": 79251698,
+    "age": 108265551,
     "dbSchemaVersion": 16,
-    "via": "edit_dsl:edit_dsl"
+    "via": "tool:t23-migrate"
   },
   "overlay_global": {
     "title": "dsh-brain"

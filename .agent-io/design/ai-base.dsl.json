@@ -1396,7 +1396,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell-client/agent_shell_client/__init__.py"
       },
       {
         "id": "file_agent-shell-client_agent_shell_client_client_py",
@@ -1412,7 +1413,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell-client/agent_shell_client/client.py"
       },
       {
         "id": "file_agent-shell-client_agent_shell_client_protocol_py",
@@ -1428,7 +1430,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell-client/agent_shell_client/protocol.py"
       },
       {
         "id": "file_agent-shell-client_examples_basic_connect_py",
@@ -1444,7 +1447,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell-client/examples/basic_connect.py"
       },
       {
         "id": "file_agent-shell-client_examples_e2e_brain_probe_py",
@@ -1460,7 +1464,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell-client/examples/e2e_brain_probe.py"
       },
       {
         "id": "file_agent-shell_cmd_conveyor-validation_main_go",
@@ -1476,7 +1481,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "agent-shell/cmd/conveyor-validation/main.go"
       },
       {
         "id": "file_agent-shell_cmd_gatecheck_main_go",
@@ -1492,7 +1498,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "agent-shell/cmd/gatecheck/main.go"
       },
       {
         "id": "file_agent-shell_cmd_hub-test_main_go",
@@ -1508,7 +1515,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "agent-shell/cmd/hub-test/main.go"
       },
       {
         "id": "file_agent-shell_cmd_long-task-driver_main_go",
@@ -1524,7 +1532,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "agent-shell/cmd/long-task-driver/main.go"
       },
       {
         "id": "file_agent-shell_cmd_memface_main_go",
@@ -1540,7 +1549,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "agent-shell/cmd/memface/main.go"
       },
       {
         "id": "file_agent-shell_cmd_memprompt_main_go",
@@ -1556,7 +1566,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "agent-shell/cmd/memprompt/main.go"
       },
       {
         "id": "file_agent-shell_cmd_summary-density-exp_main_go",
@@ -1572,7 +1583,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "agent-shell/cmd/summary-density-exp/main.go"
       },
       {
         "id": "file_agent-shell_cmd_task-boundary-debug_main_go",
@@ -1588,7 +1600,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "agent-shell/cmd/task-boundary-debug/main.go"
       },
       {
         "id": "file_agent-shell_cmd_task-boundary-exp_main_go",
@@ -1604,7 +1617,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "agent-shell/cmd/task-boundary-exp/main.go"
       },
       {
         "id": "file_agent-shell_config_config_go",
@@ -1620,7 +1634,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "config"
+        "arch_layer": "config",
+        "path": "agent-shell/config/config.go"
       },
       {
         "id": "file_agent-shell_config_settings_go",
@@ -1636,7 +1651,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "config"
+        "arch_layer": "config",
+        "path": "agent-shell/config/settings.go"
       },
       {
         "id": "file_agent-shell_gen_e2e_form_py",
@@ -1652,7 +1668,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/gen_e2e_form.py"
       },
       {
         "id": "file_agent-shell_internal_adapters_adapters_go",
@@ -1668,7 +1685,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/adapters/adapters.go"
       },
       {
         "id": "file_agent-shell_internal_adapters_noop_go",
@@ -1684,7 +1702,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/adapters/noop.go"
       },
       {
         "id": "file_agent-shell_internal_agent_agent_go",
@@ -1700,7 +1719,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/agent.go"
       },
       {
         "id": "file_agent-shell_internal_agent_auto_checkpoint_service_go",
@@ -1716,7 +1736,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/auto_checkpoint_service.go"
       },
       {
         "id": "file_agent-shell_internal_agent_auto_commit_hook_go",
@@ -1732,7 +1753,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/auto_commit_hook.go"
       },
       {
         "id": "file_agent-shell_internal_agent_auto_commit_types_go",
@@ -1748,7 +1770,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/auto_commit_types.go"
       },
       {
         "id": "file_agent-shell_internal_agent_brain_go",
@@ -1764,7 +1787,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/brain.go"
       },
       {
         "id": "file_agent-shell_internal_agent_brain_config_go",
@@ -1780,7 +1804,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/brain_config.go"
       },
       {
         "id": "file_agent-shell_internal_agent_config_go",
@@ -1796,7 +1821,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/config.go"
       },
       {
         "id": "file_agent-shell_internal_agent_controller_go",
@@ -1812,7 +1838,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "path": "agent-shell/internal/agent/controller.go"
       },
       {
         "id": "file_agent-shell_internal_agent_fullref_go",
@@ -1828,7 +1855,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/fullref.go"
       },
       {
         "id": "file_agent-shell_internal_agent_hub_controller_go",
@@ -1844,7 +1872,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/hub_controller.go"
       },
       {
         "id": "file_agent-shell_internal_agent_hub_permission_gate_go",
@@ -1860,7 +1889,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/hub_permission_gate.go"
       },
       {
         "id": "file_agent-shell_internal_agent_inproc_brain_go",
@@ -1876,7 +1906,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/inproc_brain.go"
       },
       {
         "id": "file_agent-shell_internal_agent_integrate_changelog_go",
@@ -1892,7 +1923,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/integrate_changelog.go"
       },
       {
         "id": "file_agent-shell_internal_agent_interfaces_go",
@@ -1908,7 +1940,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/interfaces.go"
       },
       {
         "id": "file_agent-shell_internal_agent_noop_impls_go",
@@ -1924,7 +1957,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/noop_impls.go"
       },
       {
         "id": "file_agent-shell_internal_agent_replay_middleware_go",
@@ -1940,7 +1974,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/replay_middleware.go"
       },
       {
         "id": "file_agent-shell_internal_agent_soul_go",
@@ -1956,7 +1991,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/soul.go"
       },
       {
         "id": "file_agent-shell_internal_agent_task_doc_archiver_go",
@@ -1972,7 +2008,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/task/doc_archiver.go"
       },
       {
         "id": "file_agent-shell_internal_agent_task_signal_handler_go",
@@ -1988,7 +2025,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/task/signal_handler.go"
       },
       {
         "id": "file_agent-shell_internal_agent_task_task_manager_go",
@@ -2004,7 +2042,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/task/task_manager.go"
       },
       {
         "id": "file_agent-shell_internal_agent_task_types_go",
@@ -2020,7 +2059,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/task/types.go"
       },
       {
         "id": "file_agent-shell_internal_agent_tdd_hook_go",
@@ -2036,7 +2076,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/tdd_hook.go"
       },
       {
         "id": "file_agent-shell_internal_agent_test_runner_go",
@@ -2052,7 +2093,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/test_runner.go"
       },
       {
         "id": "file_agent-shell_internal_agent_tool_filter_go",
@@ -2068,7 +2110,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/tool_filter.go"
       },
       {
         "id": "file_agent-shell_internal_agent_tool_middleware_go",
@@ -2084,7 +2127,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/tool_middleware.go"
       },
       {
         "id": "file_agent-shell_internal_agent_tool_summary_go",
@@ -2100,7 +2144,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/tool_summary.go"
       },
       {
         "id": "file_agent-shell_internal_agent_toolcall_sanitize_go",
@@ -2116,7 +2161,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/agent/toolcall_sanitize.go"
       },
       {
         "id": "file_agent-shell_internal_background_manager_go",
@@ -2132,7 +2178,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/background/manager.go"
       },
       {
         "id": "file_agent-shell_internal_bootstrap_bootstrap_go",
@@ -2148,7 +2195,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/bootstrap/bootstrap.go"
       },
       {
         "id": "file_agent-shell_internal_browser_cdp_go",
@@ -2164,7 +2212,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/browser/cdp.go"
       },
       {
         "id": "file_agent-shell_internal_browser_cdp_CDPClient_go",
@@ -2180,7 +2229,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/browser/cdp_CDPClient.go"
       },
       {
         "id": "file_agent-shell_internal_browser_cdp_PageSession_go",
@@ -2196,7 +2246,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/browser/cdp_PageSession.go"
       },
       {
         "id": "file_agent-shell_internal_browser_cdp_ext_go",
@@ -2212,7 +2263,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/browser/cdp_ext.go"
       },
       {
         "id": "file_agent-shell_internal_browser_cdp_ext_PageSession_go",
@@ -2228,7 +2280,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/browser/cdp_ext_PageSession.go"
       },
       {
         "id": "file_agent-shell_internal_client_credential_pool_go",
@@ -2244,7 +2297,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/client/credential_pool.go"
       },
       {
         "id": "file_agent-shell_internal_client_deepseek_go",
@@ -2260,7 +2314,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/client/deepseek.go"
       },
       {
         "id": "file_agent-shell_internal_client_errors_go",
@@ -2276,7 +2331,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/client/errors.go"
       },
       {
         "id": "file_agent-shell_internal_client_pricing_go",
@@ -2292,7 +2348,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/client/pricing.go"
       },
       {
         "id": "file_agent-shell_internal_context_active_skills_injection_go",
@@ -2308,7 +2365,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/active_skills_injection.go"
       },
       {
         "id": "file_agent-shell_internal_context_arch_knowledge_go",
@@ -2324,7 +2382,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/arch_knowledge.go"
       },
       {
         "id": "file_agent-shell_internal_context_assembler_go",
@@ -2340,7 +2399,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/assembler.go"
       },
       {
         "id": "file_agent-shell_internal_context_cache_alert_go",
@@ -2356,7 +2416,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/cache_alert.go"
       },
       {
         "id": "file_agent-shell_internal_context_cache_metrics_go",
@@ -2372,7 +2433,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/cache_metrics.go"
       },
       {
         "id": "file_agent-shell_internal_context_context_metrics_go",
@@ -2388,7 +2450,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/context_metrics.go"
       },
       {
         "id": "file_agent-shell_internal_context_corpus_journal_go",
@@ -2404,7 +2467,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/corpus_journal.go"
       },
       {
         "id": "file_agent-shell_internal_context_cross_round_notes_go",
@@ -2420,7 +2484,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/cross_round_notes.go"
       },
       {
         "id": "file_agent-shell_internal_context_current_round_go",
@@ -2436,7 +2501,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/current_round.go"
       },
       {
         "id": "file_agent-shell_internal_context_cutpoint_go",
@@ -2452,7 +2518,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/cutpoint.go"
       },
       {
         "id": "file_agent-shell_internal_context_decision_splitter_go",
@@ -2468,7 +2535,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/decision_splitter.go"
       },
       {
         "id": "file_agent-shell_internal_context_file_buffer_go",
@@ -2484,7 +2552,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/file_buffer.go"
       },
       {
         "id": "file_agent-shell_internal_context_file_replacer_go",
@@ -2500,7 +2569,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/file_replacer.go"
       },
       {
         "id": "file_agent-shell_internal_context_l0_go",
@@ -2516,7 +2586,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/l0.go"
       },
       {
         "id": "file_agent-shell_internal_context_layer_go",
@@ -2532,7 +2603,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/layer.go"
       },
       {
         "id": "file_agent-shell_internal_context_media_replacer_go",
@@ -2548,7 +2620,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/media_replacer.go"
       },
       {
         "id": "file_agent-shell_internal_context_model_caps_go",
@@ -2564,7 +2637,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/model_caps.go"
       },
       {
         "id": "file_agent-shell_internal_context_readonly_snapshot_go",
@@ -2580,7 +2654,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/readonly_snapshot.go"
       },
       {
         "id": "file_agent-shell_internal_context_retrieval_cache_go",
@@ -2596,7 +2671,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/retrieval_cache.go"
       },
       {
         "id": "file_agent-shell_internal_context_search_buffer_go",
@@ -2612,7 +2688,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/search_buffer.go"
       },
       {
         "id": "file_agent-shell_internal_context_section_go",
@@ -2628,7 +2705,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/section.go"
       },
       {
         "id": "file_agent-shell_internal_context_semantic_watcher_go",
@@ -2644,7 +2722,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/semantic_watcher.go"
       },
       {
         "id": "file_agent-shell_internal_context_session_state_go",
@@ -2660,7 +2739,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/session_state.go"
       },
       {
         "id": "file_agent-shell_internal_context_sidecar_buffer_go",
@@ -2676,7 +2756,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/sidecar_buffer.go"
       },
       {
         "id": "file_agent-shell_internal_context_summary_zone_go",
@@ -2692,7 +2773,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/summary_zone.go"
       },
       {
         "id": "file_agent-shell_internal_context_task_context_go",
@@ -2708,7 +2790,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/task_context.go"
       },
       {
         "id": "file_agent-shell_internal_context_tasklist_go",
@@ -2724,7 +2807,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/tasklist.go"
       },
       {
         "id": "file_agent-shell_internal_context_token_counter_go",
@@ -2740,7 +2824,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/token_counter.go"
       },
       {
         "id": "file_agent-shell_internal_context_tool_journal_go",
@@ -2756,7 +2841,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/tool_journal.go"
       },
       {
         "id": "file_agent-shell_internal_context_tool_llm_summarizer_go",
@@ -2772,7 +2858,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/tool_llm_summarizer.go"
       },
       {
         "id": "file_agent-shell_internal_context_tool_ratings_go",
@@ -2788,7 +2875,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/tool_ratings.go"
       },
       {
         "id": "file_agent-shell_internal_context_tool_subscriptions_go",
@@ -2804,7 +2892,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/tool_subscriptions.go"
       },
       {
         "id": "file_agent-shell_internal_context_tools_used_recently_go",
@@ -2820,7 +2909,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/tools_used_recently.go"
       },
       {
         "id": "file_agent-shell_internal_context_topic_detector_go",
@@ -2836,7 +2926,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/topic_detector.go"
       },
       {
         "id": "file_agent-shell_internal_context_v2_manager_go",
@@ -2852,7 +2943,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/context/v2_manager.go"
       },
       {
         "id": "file_agent-shell_internal_email_code_go",
@@ -2868,7 +2960,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/email/code.go"
       },
       {
         "id": "file_agent-shell_internal_email_imap_go",
@@ -2884,7 +2977,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/email/imap.go"
       },
       {
         "id": "file_agent-shell_internal_event_event_go",
@@ -2900,7 +2994,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/event/event.go"
       },
       {
         "id": "file_agent-shell_internal_external_a2a_adapter_go",
@@ -2916,7 +3011,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/external/a2a/adapter.go"
       },
       {
         "id": "file_agent-shell_internal_external_a2a_protocol_go",
@@ -2932,7 +3028,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/external/a2a/protocol.go"
       },
       {
         "id": "file_agent-shell_internal_external_mcp_bridge_go",
@@ -2948,7 +3045,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/external/mcp_bridge.go"
       },
       {
         "id": "file_agent-shell_internal_external_mcp_bridge_sse_go",
@@ -2964,7 +3062,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/external/mcp_bridge_sse.go"
       },
       {
         "id": "file_agent-shell_internal_external_mcp_bridge_stdio_go",
@@ -2980,7 +3079,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/external/mcp_bridge_stdio.go"
       },
       {
         "id": "file_agent-shell_internal_external_modal_service_go",
@@ -2996,7 +3096,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/external/modal_service.go"
       },
       {
         "id": "file_agent-shell_internal_external_ocr_service_go",
@@ -3012,7 +3113,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/external/ocr_service.go"
       },
       {
         "id": "file_agent-shell_internal_external_skill_registry_go",
@@ -3028,7 +3130,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/external/skill_registry.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_brain_interface_go",
@@ -3044,7 +3147,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/brain_interface.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_brain_manager_go",
@@ -3060,7 +3164,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/brain_manager.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_brain_registry_go",
@@ -3076,7 +3181,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/brain_registry.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_brainsleep_service_go",
@@ -3092,7 +3198,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/brainsleep/service.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_brainsoul_service_go",
@@ -3108,7 +3215,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/brainsoul/service.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_builtin_services_go",
@@ -3124,7 +3232,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/builtin_services.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_builtin_services_Hub_go",
@@ -3140,7 +3249,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/builtin_services_Hub.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_context_metrics_go",
@@ -3156,7 +3266,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/context_metrics.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_examples_memory_view_plugin_go",
@@ -3172,7 +3283,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/examples/memory_view_plugin.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_examples_project_index_plugin_go",
@@ -3188,7 +3300,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/examples/project_index_plugin.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_friendadapter_service_go",
@@ -3204,7 +3317,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/friendadapter/service.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_friendadapter_unzip_go",
@@ -3220,7 +3334,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/friendadapter/unzip.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_friends_a2a_brain_go",
@@ -3236,7 +3351,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/friends/a2a_brain.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_friends_manager_go",
@@ -3252,7 +3368,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/friends/manager.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_friends_mcp_brain_go",
@@ -3268,7 +3385,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/friends/mcp_brain.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_friends_persistence_go",
@@ -3284,7 +3402,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/friends/persistence.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_friends_service_go",
@@ -3300,7 +3419,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/friends/service.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_friends_types_go",
@@ -3316,7 +3436,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/friends/types.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_friends_ws_brain_go",
@@ -3332,7 +3453,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/friends/ws_brain.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_hub_go",
@@ -3348,7 +3470,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/hub.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_hub_Hub_go",
@@ -3364,7 +3487,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/hub_Hub.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_hub_HubConfig_go",
@@ -3380,7 +3504,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/hub_HubConfig.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_hubsettings_service_go",
@@ -3396,7 +3521,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/hubsettings/service.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_mcp_server_plugin_go",
@@ -3412,7 +3538,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/mcp_server_plugin.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_mcp_server_plugin_MCPServerPlugin_go",
@@ -3428,7 +3555,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/mcp_server_plugin_MCPServerPlugin.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_mcp_server_plugin_sseResponseWriter_go",
@@ -3444,7 +3572,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/mcp_server_plugin_sseResponseWriter.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_media_service_go",
@@ -3460,7 +3589,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/media_service.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_middleware_go",
@@ -3476,7 +3606,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/middleware.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_openapi_go",
@@ -3492,7 +3623,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/openapi.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_approval_go",
@@ -3508,7 +3640,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/approval.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_approval_policy_go",
@@ -3524,7 +3657,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/approval_policy.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_engine_go",
@@ -3540,7 +3674,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/engine.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_engine_Engine_go",
@@ -3556,7 +3691,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/engine_Engine.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_engine_NoopNotifier_go",
@@ -3572,7 +3708,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/engine_NoopNotifier.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_engine_approval_go",
@@ -3588,7 +3725,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/engine_approval.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_engine_approval_Engine_go",
@@ -3604,7 +3742,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/engine_approval_Engine.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_event_log_go",
@@ -3620,7 +3759,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/event_log.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_hub_adapter_go",
@@ -3636,7 +3776,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/hub_adapter.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_intake_api_go",
@@ -3652,7 +3793,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/intake_api.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_refine_go",
@@ -3668,7 +3810,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/refine.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_service_go",
@@ -3684,7 +3827,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/service.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_signal_parser_go",
@@ -3700,7 +3844,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/signal_parser.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_stack_go",
@@ -3716,7 +3861,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/stack.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_stack_persistence_go",
@@ -3732,7 +3878,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/stack_persistence.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_state_machine_go",
@@ -3748,7 +3895,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/state_machine.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_task_manager_go",
@@ -3764,7 +3912,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/task_manager.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_triage_go",
@@ -3780,7 +3929,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/triage.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_types_go",
@@ -3796,7 +3946,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/types.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_workbench_go",
@@ -3812,7 +3963,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/workbench.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_orchestrator_workflow_template_go",
@@ -3828,7 +3980,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/orchestrator/workflow_template.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_panel_service_go",
@@ -3844,7 +3997,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/panel_service.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_pipeline_go",
@@ -3860,7 +4014,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/pipeline.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_pipeline_Hub_go",
@@ -3876,7 +4031,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/pipeline_Hub.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_plugin_go",
@@ -3892,7 +4048,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/plugin.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_plugins_memory_view_adapter_go",
@@ -3908,7 +4065,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/plugins/memory_view/adapter.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_plugins_memory_view_plugin_go",
@@ -3924,7 +4082,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/plugins/memory_view/plugin.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_protocol_go",
@@ -3940,7 +4099,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/protocol.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_response_registry_go",
@@ -3956,7 +4116,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/response_registry.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_rest_helpers_go",
@@ -3972,7 +4133,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/rest_helpers.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_router_go",
@@ -3988,7 +4150,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/router.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_session_go",
@@ -4004,7 +4167,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/session.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_smsplugin_service_go",
@@ -4020,7 +4184,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/smsplugin/service.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_test_metrics_go",
@@ -4036,7 +4201,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/test_metrics.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_themes_service_go",
@@ -4052,7 +4218,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/themes/service.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_themes_theme_go",
@@ -4068,7 +4235,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/themes/theme.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_postcss_config_js",
@@ -4084,7 +4252,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/postcss.config.js"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_analyze-colors_cjs",
@@ -4100,7 +4269,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/analyze-colors.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_analyze-content_cjs",
@@ -4116,7 +4286,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/analyze-content.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_analyze-png-alpha_cjs",
@@ -4132,7 +4303,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/analyze-png-alpha.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_compose-preview_cjs",
@@ -4148,7 +4320,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/compose-preview.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_fix_layer_seams_py",
@@ -4164,7 +4337,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/fix_layer_seams.py"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_generate-layered-whale-v10_cjs",
@@ -4180,7 +4354,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/generate-layered-whale-v10.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_generate-layered-whale-v11_cjs",
@@ -4196,7 +4371,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/generate-layered-whale-v11.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_generate-layered-whale-v2_cjs",
@@ -4212,7 +4388,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/generate-layered-whale-v2.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_generate-layered-whale-v3_cjs",
@@ -4228,7 +4405,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/generate-layered-whale-v3.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_generate-layered-whale-v4_cjs",
@@ -4244,7 +4422,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/generate-layered-whale-v4.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_generate-layered-whale-v5_cjs",
@@ -4260,7 +4439,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/generate-layered-whale-v5.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_generate-layered-whale-v6_cjs",
@@ -4276,7 +4456,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/generate-layered-whale-v6.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_generate-layered-whale-v7_cjs",
@@ -4292,7 +4473,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/generate-layered-whale-v7.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_generate-layered-whale-v8_cjs",
@@ -4308,7 +4490,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/generate-layered-whale-v8.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_generate-layered-whale-v9_cjs",
@@ -4324,7 +4507,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/generate-layered-whale-v9.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_generate-layered-whale_cjs",
@@ -4340,7 +4524,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/generate-layered-whale.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_normalize-png_cjs",
@@ -4356,7 +4541,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/normalize-png.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_process-ai-src_py",
@@ -4372,7 +4558,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/process-ai-src.py"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_remove-bg_cjs",
@@ -4388,7 +4575,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/remove-bg.cjs"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_sam_batch_segment_py",
@@ -4404,7 +4592,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/sam_batch_segment.py"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_scripts_sam_segment_layers_py",
@@ -4420,7 +4609,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/scripts/sam_segment_layers.py"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_App_tsx",
@@ -4436,7 +4626,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/App.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_api_rest_ts",
@@ -4452,7 +4643,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "path": "agent-shell/internal/hub/v2/web/src/api/rest.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_api_ws_ts",
@@ -4468,7 +4660,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "path": "agent-shell/internal/hub/v2/web/src/api/ws.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_components_AppErrorBoundary_tsx",
@@ -4484,7 +4677,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/components/AppErrorBoundary.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_components_ApprovalModal_tsx",
@@ -4500,7 +4694,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/components/ApprovalModal.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_components_ConfirmModal_tsx",
@@ -4516,7 +4711,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/components/ConfirmModal.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_components_DesktopPet_tsx",
@@ -4532,7 +4728,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/components/DesktopPet.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_components_ExecutionStack_tsx",
@@ -4548,7 +4745,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/components/ExecutionStack.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_components_FriendAvatar_tsx",
@@ -4564,7 +4762,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/components/FriendAvatar.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_components_KeyboardShortcuts_tsx",
@@ -4580,7 +4779,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/components/KeyboardShortcuts.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_components_MainContent_tsx",
@@ -4596,7 +4796,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/components/MainContent.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_components_MarkdownView_tsx",
@@ -4612,7 +4813,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/components/MarkdownView.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_components_NotificationPanel_tsx",
@@ -4628,7 +4830,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/components/NotificationPanel.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_components_PanelSection_tsx",
@@ -4644,7 +4847,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/components/PanelSection.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_components_RightPanel_tsx",
@@ -4660,7 +4864,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/components/RightPanel.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_approval_ApprovalPanel_tsx",
@@ -4676,7 +4881,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/approval/ApprovalPanel.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_chat_ChatView_tsx",
@@ -4692,7 +4898,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/chat/ChatView.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_dashboard_DashboardView_tsx",
@@ -4708,7 +4915,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/dashboard/DashboardView.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_metrics_LLMUsagePage_tsx",
@@ -4724,7 +4932,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/metrics/LLMUsagePage.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_metrics_MetricsPanel_tsx",
@@ -4740,7 +4949,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/metrics/MetricsPanel.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_metrics_MetricsView_tsx",
@@ -4756,7 +4966,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/metrics/MetricsView.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_metrics_TestMetricsPanel_tsx",
@@ -4772,7 +4983,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/metrics/TestMetricsPanel.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pages_pageRegistration_tsx",
@@ -4788,7 +5000,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pages/pageRegistration.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pages_pageRegistry_tsx",
@@ -4804,7 +5017,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pages/pageRegistry.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_panels_panelRegistration_tsx",
@@ -4820,7 +5034,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/panels/panelRegistration.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_panels_panelRegistry_ts",
@@ -4836,7 +5051,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/panels/panelRegistry.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_panels_panelStore_ts",
@@ -4852,7 +5068,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/panels/panelStore.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_AvatarRenderer_interface_ts",
@@ -4868,7 +5085,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/AvatarRenderer.interface.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_PetContextMenu_tsx",
@@ -4884,7 +5102,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/PetContextMenu.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_PetErrorBoundary_tsx",
@@ -4900,7 +5119,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/PetErrorBoundary.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_PetManager_ts",
@@ -4916,7 +5136,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/PetManager.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_PetRuleEngine_ts",
@@ -4932,7 +5153,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/PetRuleEngine.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_SkinBuilder_tsx",
@@ -4948,7 +5170,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/SkinBuilder.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_SkinCatalog_ts",
@@ -4964,7 +5187,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/SkinCatalog.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_WorkingLaptop_tsx",
@@ -4980,7 +5204,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/WorkingLaptop.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_rendererStatus_ts",
@@ -4996,7 +5221,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/rendererStatus.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_renderers_FBXRenderer_tsx",
@@ -5012,7 +5238,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/renderers/FBXRenderer.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_renderers_ImageRenderer_tsx",
@@ -5028,7 +5255,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/renderers/ImageRenderer.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_renderers_LayeredRenderer_tsx",
@@ -5044,7 +5272,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/renderers/LayeredRenderer.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_renderers_LazyRenderer_tsx",
@@ -5060,7 +5289,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/renderers/LazyRenderer.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_renderers_Live2dRenderer_tsx",
@@ -5076,7 +5306,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/renderers/Live2dRenderer.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_renderers_PMXRenderer_tsx",
@@ -5092,7 +5323,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/renderers/PMXRenderer.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_renderers_SpriteRenderer_tsx",
@@ -5108,7 +5340,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/renderers/SpriteRenderer.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_renderers_SvgRenderer_tsx",
@@ -5124,7 +5357,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/renderers/SvgRenderer.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_renderers_ThreeRenderer_tsx",
@@ -5140,7 +5374,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/renderers/ThreeRenderer.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_renderers_VRMRenderer_tsx",
@@ -5156,7 +5391,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/renderers/VRMRenderer.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_renderers_boneNormalizer_ts",
@@ -5172,7 +5408,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/renderers/boneNormalizer.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_renderers_svg_PetRobotSvg_tsx",
@@ -5188,7 +5425,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/renderers/svg/PetRobotSvg.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_pet_types_ts",
@@ -5204,7 +5442,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/pet/types.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_profile_ProfilePage_tsx",
@@ -5220,7 +5459,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/profile/ProfilePage.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_report_DailyReportView_tsx",
@@ -5236,7 +5476,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/report/DailyReportView.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_router_RouterView_tsx",
@@ -5252,7 +5493,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/router/RouterView.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_sessions_SessionList_tsx",
@@ -5268,7 +5510,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/sessions/SessionList.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_sessions_TargetSelector_tsx",
@@ -5284,7 +5527,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/sessions/TargetSelector.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_settings_BrainSettingsPage_tsx",
@@ -5300,7 +5544,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/settings/BrainSettingsPage.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_settings_DreamSettingsPage_tsx",
@@ -5316,7 +5561,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/settings/DreamSettingsPage.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_settings_HubSettingsPage_tsx",
@@ -5332,7 +5578,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/settings/HubSettingsPage.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_sidebar_AddFriendModal_tsx",
@@ -5348,7 +5595,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/sidebar/AddFriendModal.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_sidebar_Sidebar_tsx",
@@ -5364,7 +5612,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/sidebar/Sidebar.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_sms_SMSPanel_tsx",
@@ -5380,7 +5629,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/sms/SMSPanel.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_theme_ThemeProvider_tsx",
@@ -5396,7 +5646,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/theme/ThemeProvider.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_theme_ThemeSwitcher_tsx",
@@ -5412,7 +5663,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/theme/ThemeSwitcher.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_workbench_CompletedTasks_tsx",
@@ -5428,7 +5680,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/workbench/CompletedTasks.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_workbench_PendingTasks_tsx",
@@ -5444,7 +5697,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/workbench/PendingTasks.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_workbench_StackPanel_tsx",
@@ -5460,7 +5714,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/workbench/StackPanel.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_features_workbench_WorkbenchView_tsx",
@@ -5476,7 +5731,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/features/workbench/WorkbenchView.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_hooks_useHubClient_ts",
@@ -5492,7 +5748,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/hooks/useHubClient.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_lib_utils_ts",
@@ -5508,7 +5765,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/lib/utils.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_main_tsx",
@@ -5524,7 +5782,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/main.tsx"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_store_router_ts",
@@ -5540,7 +5799,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/store/router.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_store_store_ts",
@@ -5556,7 +5816,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/store/store.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_types_api_ts",
@@ -5572,7 +5833,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "path": "agent-shell/internal/hub/v2/web/src/types/api.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_src_types_protocol_ts",
@@ -5588,7 +5850,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/src/types/protocol.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_tailwind_config_js",
@@ -5604,7 +5867,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/tailwind.config.js"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_vite_config_js",
@@ -5620,7 +5884,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/vite.config.js"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_vite_config_ts",
@@ -5636,7 +5901,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web/vite.config.ts"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_embed_go",
@@ -5652,7 +5918,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web_embed.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_embed_noembed_go",
@@ -5668,7 +5935,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web_embed_noembed.go"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_legacy_js_actions_js",
@@ -5684,7 +5952,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web_legacy/js/actions.js"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_legacy_js_api_js",
@@ -5700,7 +5969,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "path": "agent-shell/internal/hub/v2/web_legacy/js/api.js"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_legacy_js_app_js",
@@ -5716,7 +5986,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web_legacy/js/app.js"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_legacy_js_msg-router_js",
@@ -5732,7 +6003,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web_legacy/js/msg-router.js"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_legacy_js_render_js",
@@ -5748,7 +6020,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web_legacy/js/render.js"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_legacy_js_state_js",
@@ -5764,7 +6037,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web_legacy/js/state.js"
       },
       {
         "id": "file_agent-shell_internal_hub_v2_web_legacy_js_utils_js",
@@ -5780,7 +6054,8 @@
           "color": "#fff9c4",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hub/v2/web_legacy/js/utils.js"
       },
       {
         "id": "file_agent-shell_internal_hubclient_v2_client_go",
@@ -5796,7 +6071,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hubclient/v2/client.go"
       },
       {
         "id": "file_agent-shell_internal_hubclient_v2_pending_go",
@@ -5812,7 +6088,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hubclient/v2/pending.go"
       },
       {
         "id": "file_agent-shell_internal_hubclient_v2_reconnect_go",
@@ -5828,7 +6105,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hubclient/v2/reconnect.go"
       },
       {
         "id": "file_agent-shell_internal_hubclient_v2_sink_adapter_go",
@@ -5844,7 +6122,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hubclient/v2/sink_adapter.go"
       },
       {
         "id": "file_agent-shell_internal_hubclient_v2_stream_adapter_go",
@@ -5860,7 +6139,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/hubclient/v2/stream_adapter.go"
       },
       {
         "id": "file_agent-shell_internal_keyboard_keyboard_go",
@@ -5876,7 +6156,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/keyboard/keyboard.go"
       },
       {
         "id": "file_agent-shell_internal_keyboard_keyboard_other_go",
@@ -5892,7 +6173,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/keyboard/keyboard_other.go"
       },
       {
         "id": "file_agent-shell_internal_keyboard_keyboard_windows_go",
@@ -5908,7 +6190,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/keyboard/keyboard_windows.go"
       },
       {
         "id": "file_agent-shell_internal_keyboard_keymap_go",
@@ -5924,7 +6207,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/keyboard/keymap.go"
       },
       {
         "id": "file_agent-shell_internal_logging_file_go",
@@ -5940,7 +6224,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/logging/file.go"
       },
       {
         "id": "file_agent-shell_internal_logging_logging_go",
@@ -5956,7 +6241,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/logging/logging.go"
       },
       {
         "id": "file_agent-shell_internal_logging_rotate_go",
@@ -5972,7 +6258,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/logging/rotate.go"
       },
       {
         "id": "file_agent-shell_internal_logging_router_go",
@@ -5988,7 +6275,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/logging/router.go"
       },
       {
         "id": "file_agent-shell_internal_memory_builder_go",
@@ -6004,7 +6292,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/builder.go"
       },
       {
         "id": "file_agent-shell_internal_memory_embedder_go",
@@ -6020,7 +6309,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/embedder.go"
       },
       {
         "id": "file_agent-shell_internal_memory_explorer_go",
@@ -6036,7 +6326,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/explorer.go"
       },
       {
         "id": "file_agent-shell_internal_memory_gate_go",
@@ -6052,7 +6343,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/gate.go"
       },
       {
         "id": "file_agent-shell_internal_memory_gate_policy_go",
@@ -6068,7 +6360,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/gate_policy.go"
       },
       {
         "id": "file_agent-shell_internal_memory_graph_cache_go",
@@ -6084,7 +6377,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/graph_cache.go"
       },
       {
         "id": "file_agent-shell_internal_memory_graph_writer_go",
@@ -6100,7 +6394,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/graph_writer.go"
       },
       {
         "id": "file_agent-shell_internal_memory_gravity_field_go",
@@ -6116,7 +6411,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/gravity_field.go"
       },
       {
         "id": "file_agent-shell_internal_memory_heat_go",
@@ -6132,7 +6428,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/heat.go"
       },
       {
         "id": "file_agent-shell_internal_memory_index_text_go",
@@ -6148,7 +6445,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/index_text.go"
       },
       {
         "id": "file_agent-shell_internal_memory_knowledge_go",
@@ -6164,7 +6462,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/knowledge.go"
       },
       {
         "id": "file_agent-shell_internal_memory_memory_store_go",
@@ -6180,7 +6479,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/memory_store.go"
       },
       {
         "id": "file_agent-shell_internal_memory_meta_skill_go",
@@ -6196,7 +6496,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/meta_skill.go"
       },
       {
         "id": "file_agent-shell_internal_memory_query_rewriter_go",
@@ -6212,7 +6513,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/query_rewriter.go"
       },
       {
         "id": "file_agent-shell_internal_memory_remote_embedder_go",
@@ -6228,7 +6530,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/remote_embedder.go"
       },
       {
         "id": "file_agent-shell_internal_memory_reranker_go",
@@ -6244,7 +6547,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/reranker.go"
       },
       {
         "id": "file_agent-shell_internal_memory_retrieval_pipeline_go",
@@ -6260,7 +6564,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/retrieval_pipeline.go"
       },
       {
         "id": "file_agent-shell_internal_memory_retriever_go",
@@ -6276,7 +6581,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/retriever.go"
       },
       {
         "id": "file_agent-shell_internal_memory_retriever_DeepRetriever_go",
@@ -6292,7 +6598,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/retriever_DeepRetriever.go"
       },
       {
         "id": "file_agent-shell_internal_memory_retriever_ShallowRetriever_go",
@@ -6308,7 +6615,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/retriever_ShallowRetriever.go"
       },
       {
         "id": "file_agent-shell_internal_memory_rrf_go",
@@ -6324,7 +6632,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/rrf.go"
       },
       {
         "id": "file_agent-shell_internal_memory_shallow_writer_go",
@@ -6340,7 +6649,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/shallow_writer.go"
       },
       {
         "id": "file_agent-shell_internal_memory_skill_gate_go",
@@ -6356,7 +6666,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/skill_gate.go"
       },
       {
         "id": "file_agent-shell_internal_memory_skill_import_go",
@@ -6372,7 +6683,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/skill_import.go"
       },
       {
         "id": "file_agent-shell_internal_memory_skill_tree_go",
@@ -6388,7 +6700,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/skill_tree.go"
       },
       {
         "id": "file_agent-shell_internal_memory_sleep_go",
@@ -6404,7 +6717,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/sleep.go"
       },
       {
         "id": "file_agent-shell_internal_memory_sleep_config_go",
@@ -6420,7 +6734,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/sleep_config.go"
       },
       {
         "id": "file_agent-shell_internal_memory_sleep_experiment_go",
@@ -6436,7 +6751,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/sleep_experiment.go"
       },
       {
         "id": "file_agent-shell_internal_memory_sleep_prune_go",
@@ -6452,7 +6768,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/sleep_prune.go"
       },
       {
         "id": "file_agent-shell_internal_memory_sleep_rem_go",
@@ -6468,7 +6785,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/sleep_rem.go"
       },
       {
         "id": "file_agent-shell_internal_memory_sleep_scheduler_go",
@@ -6484,7 +6802,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/sleep_scheduler.go"
       },
       {
         "id": "file_agent-shell_internal_memory_sleep_wander_go",
@@ -6500,7 +6819,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/sleep_wander.go"
       },
       {
         "id": "file_agent-shell_internal_memory_sqlite_store_go",
@@ -6516,7 +6836,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/sqlite_store.go"
       },
       {
         "id": "file_agent-shell_internal_memory_tool_feedback_go",
@@ -6532,7 +6853,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/tool_feedback.go"
       },
       {
         "id": "file_agent-shell_internal_memory_vector_store_go",
@@ -6548,7 +6870,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/memory/vector_store.go"
       },
       {
         "id": "file_agent-shell_internal_mouse_replay_go",
@@ -6564,7 +6887,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/mouse/replay.go"
       },
       {
         "id": "file_agent-shell_internal_mouse_replay_other_go",
@@ -6580,7 +6904,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/mouse/replay_other.go"
       },
       {
         "id": "file_agent-shell_internal_mouse_replay_windows_go",
@@ -6596,7 +6921,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/mouse/replay_windows.go"
       },
       {
         "id": "file_agent-shell_internal_mouse_trajectory_go",
@@ -6612,7 +6938,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/mouse/trajectory.go"
       },
       {
         "id": "file_agent-shell_internal_mouse_transform_go",
@@ -6628,7 +6955,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/mouse/transform.go"
       },
       {
         "id": "file_agent-shell_internal_permission_danger_go",
@@ -6644,7 +6972,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/permission/danger.go"
       },
       {
         "id": "file_agent-shell_internal_permission_dimension_go",
@@ -6660,7 +6989,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/permission/dimension.go"
       },
       {
         "id": "file_agent-shell_internal_permission_dimensions_go",
@@ -6676,7 +7006,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/permission/dimensions.go"
       },
       {
         "id": "file_agent-shell_internal_permission_gate_go",
@@ -6692,7 +7023,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/permission/gate.go"
       },
       {
         "id": "file_agent-shell_internal_permission_policy_go",
@@ -6708,7 +7040,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/permission/policy.go"
       },
       {
         "id": "file_agent-shell_internal_provider_config_go",
@@ -6724,7 +7057,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/provider/config.go"
       },
       {
         "id": "file_agent-shell_internal_provider_prefix_cache_probe_go",
@@ -6740,7 +7074,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/provider/prefix_cache_probe.go"
       },
       {
         "id": "file_agent-shell_internal_provider_provider_go",
@@ -6756,7 +7091,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/provider/provider.go"
       },
       {
         "id": "file_agent-shell_internal_provider_router_go",
@@ -6772,7 +7108,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/provider/router.go"
       },
       {
         "id": "file_agent-shell_internal_provider_usage_go",
@@ -6788,7 +7125,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/provider/usage.go"
       },
       {
         "id": "file_agent-shell_internal_report_daily_go",
@@ -6804,7 +7142,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/report/daily.go"
       },
       {
         "id": "file_agent-shell_internal_session_session_go",
@@ -6820,7 +7159,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/session/session.go"
       },
       {
         "id": "file_agent-shell_internal_sms_forward_receiver_go",
@@ -6836,7 +7176,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/sms/forward_receiver.go"
       },
       {
         "id": "file_agent-shell_internal_sms_inbox_go",
@@ -6852,7 +7193,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/sms/inbox.go"
       },
       {
         "id": "file_agent-shell_internal_sms_sms_go",
@@ -6868,7 +7210,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/sms/sms.go"
       },
       {
         "id": "file_agent-shell_internal_tools_agent_log_go",
@@ -6884,7 +7227,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/agent_log.go"
       },
       {
         "id": "file_agent-shell_internal_tools_background_registry_go",
@@ -6900,7 +7244,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/background_registry.go"
       },
       {
         "id": "file_agent-shell_internal_tools_bash_go",
@@ -6916,7 +7261,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/bash.go"
       },
       {
         "id": "file_agent-shell_internal_tools_bash_bg_tools_go",
@@ -6932,7 +7278,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/bash_bg_tools.go"
       },
       {
         "id": "file_agent-shell_internal_tools_batch_edit_go",
@@ -6948,7 +7295,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/batch_edit.go"
       },
       {
         "id": "file_agent-shell_internal_tools_browser_go",
@@ -6964,7 +7312,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/browser.go"
       },
       {
         "id": "file_agent-shell_internal_tools_browser_ext_go",
@@ -6980,7 +7329,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/browser_ext.go"
       },
       {
         "id": "file_agent-shell_internal_tools_combo_go",
@@ -6996,7 +7346,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/combo.go"
       },
       {
         "id": "file_agent-shell_internal_tools_doc_archive_go",
@@ -7012,7 +7363,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/doc_archive.go"
       },
       {
         "id": "file_agent-shell_internal_tools_doc_edit_go",
@@ -7028,7 +7380,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/doc_edit.go"
       },
       {
         "id": "file_agent-shell_internal_tools_doc_init_go",
@@ -7044,7 +7397,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/doc_init.go"
       },
       {
         "id": "file_agent-shell_internal_tools_doc_search_go",
@@ -7060,7 +7414,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/doc_search.go"
       },
       {
         "id": "file_agent-shell_internal_tools_doc_section_go",
@@ -7076,7 +7431,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/doc_section.go"
       },
       {
         "id": "file_agent-shell_internal_tools_doc_sync_go",
@@ -7092,7 +7448,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/doc_sync.go"
       },
       {
         "id": "file_agent-shell_internal_tools_draft_go",
@@ -7108,7 +7465,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/draft.go"
       },
       {
         "id": "file_agent-shell_internal_tools_email_go",
@@ -7124,7 +7482,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/email.go"
       },
       {
         "id": "file_agent-shell_internal_tools_feedback_go",
@@ -7140,7 +7499,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/feedback.go"
       },
       {
         "id": "file_agent-shell_internal_tools_file_go",
@@ -7156,7 +7516,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/file.go"
       },
       {
         "id": "file_agent-shell_internal_tools_file_recall_go",
@@ -7172,7 +7533,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/file_recall.go"
       },
       {
         "id": "file_agent-shell_internal_tools_git_commit_go",
@@ -7188,7 +7550,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/git_commit.go"
       },
       {
         "id": "file_agent-shell_internal_tools_git_read_go",
@@ -7204,7 +7567,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/git_read.go"
       },
       {
         "id": "file_agent-shell_internal_tools_glob_go",
@@ -7220,7 +7584,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/glob.go"
       },
       {
         "id": "file_agent-shell_internal_tools_grep_go",
@@ -7236,7 +7601,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/grep.go"
       },
       {
         "id": "file_agent-shell_internal_tools_index_go",
@@ -7252,7 +7618,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/index.go"
       },
       {
         "id": "file_agent-shell_internal_tools_keyboard_go",
@@ -7268,7 +7635,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/keyboard.go"
       },
       {
         "id": "file_agent-shell_internal_tools_knowledge_tools_go",
@@ -7284,7 +7652,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/knowledge_tools.go"
       },
       {
         "id": "file_agent-shell_internal_tools_knowledge_verify_go",
@@ -7300,7 +7669,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/knowledge_verify.go"
       },
       {
         "id": "file_agent-shell_internal_tools_lesion_scan_go",
@@ -7316,7 +7686,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/lesion_scan.go"
       },
       {
         "id": "file_agent-shell_internal_tools_lsp_client_go",
@@ -7332,7 +7703,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/lsp_client.go"
       },
       {
         "id": "file_agent-shell_internal_tools_lsp_tool_go",
@@ -7348,7 +7720,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/lsp_tool.go"
       },
       {
         "id": "file_agent-shell_internal_tools_mcp_call_go",
@@ -7364,7 +7737,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/mcp_call.go"
       },
       {
         "id": "file_agent-shell_internal_tools_media_ingest_go",
@@ -7380,7 +7754,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/media_ingest.go"
       },
       {
         "id": "file_agent-shell_internal_tools_memory_go",
@@ -7396,7 +7771,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/memory.go"
       },
       {
         "id": "file_agent-shell_internal_tools_memory_recall_go",
@@ -7412,7 +7788,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/memory_recall.go"
       },
       {
         "id": "file_agent-shell_internal_tools_memory_retrieve_go",
@@ -7428,7 +7805,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/memory_retrieve.go"
       },
       {
         "id": "file_agent-shell_internal_tools_mouse_go",
@@ -7444,7 +7822,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/mouse.go"
       },
       {
         "id": "file_agent-shell_internal_tools_ocr_go",
@@ -7460,7 +7839,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/ocr.go"
       },
       {
         "id": "file_agent-shell_internal_tools_python_subagent_tool_go",
@@ -7476,7 +7856,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/python_subagent_tool.go"
       },
       {
         "id": "file_agent-shell_internal_tools_sandbox_job_object_other_go",
@@ -7492,7 +7873,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/sandbox/job_object_other.go"
       },
       {
         "id": "file_agent-shell_internal_tools_sandbox_job_object_windows_go",
@@ -7508,7 +7890,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/sandbox/job_object_windows.go"
       },
       {
         "id": "file_agent-shell_internal_tools_skill_go",
@@ -7524,7 +7907,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/skill.go"
       },
       {
         "id": "file_agent-shell_internal_tools_skill_search_go",
@@ -7540,7 +7924,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/skill_search.go"
       },
       {
         "id": "file_agent-shell_internal_tools_skill_tool_registrar_go",
@@ -7556,7 +7941,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/skill_tool_registrar.go"
       },
       {
         "id": "file_agent-shell_internal_tools_smart_read_go",
@@ -7572,7 +7958,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/smart_read.go"
       },
       {
         "id": "file_agent-shell_internal_tools_sms_go",
@@ -7588,7 +7975,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/sms.go"
       },
       {
         "id": "file_agent-shell_internal_tools_subagent_go",
@@ -7604,7 +7992,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/subagent.go"
       },
       {
         "id": "file_agent-shell_internal_tools_subagent_config_go",
@@ -7620,7 +8009,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/subagent_config.go"
       },
       {
         "id": "file_agent-shell_internal_tools_task_context_append_go",
@@ -7636,7 +8026,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/task_context_append.go"
       },
       {
         "id": "file_agent-shell_internal_tools_task_list_tool_go",
@@ -7652,7 +8043,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/task_list_tool.go"
       },
       {
         "id": "file_agent-shell_internal_tools_task_manage_tools_go",
@@ -7668,7 +8060,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/task_manage_tools.go"
       },
       {
         "id": "file_agent-shell_internal_tools_tasklist_ops_tool_go",
@@ -7684,7 +8077,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/tasklist_ops_tool.go"
       },
       {
         "id": "file_agent-shell_internal_tools_tool_history_go",
@@ -7700,7 +8094,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/tool_history.go"
       },
       {
         "id": "file_agent-shell_internal_tools_tool_metadata_go",
@@ -7716,7 +8111,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/tool_metadata.go"
       },
       {
         "id": "file_agent-shell_internal_tools_toollist_go",
@@ -7732,7 +8128,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/toollist.go"
       },
       {
         "id": "file_agent-shell_internal_tools_tools_go",
@@ -7748,7 +8145,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/tools.go"
       },
       {
         "id": "file_agent-shell_internal_tools_vault_go",
@@ -7764,7 +8162,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/vault.go"
       },
       {
         "id": "file_agent-shell_internal_tools_video_processor_go",
@@ -7780,7 +8179,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tools/video_processor.go"
       },
       {
         "id": "file_agent-shell_internal_tracecap_tracecap_go",
@@ -7796,7 +8196,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/tracecap/tracecap.go"
       },
       {
         "id": "file_agent-shell_internal_vault_vault_go",
@@ -7812,7 +8213,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/vault/vault.go"
       },
       {
         "id": "file_agent-shell_internal_ws_ws_go",
@@ -7828,7 +8230,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "agent-shell/internal/ws/ws.go"
       },
       {
         "id": "file_agent-shell_main_go",
@@ -7844,7 +8247,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "agent-shell/main.go"
       },
       {
         "id": "file_agent-shell_main_auto_checkpoint_go",
@@ -7860,7 +8264,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/main_auto_checkpoint.go"
       },
       {
         "id": "file_agent-shell_main_brainsoul_go",
@@ -7876,7 +8281,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/main_brainsoul.go"
       },
       {
         "id": "file_agent-shell_main_contextmetrics_go",
@@ -7892,7 +8298,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/main_contextmetrics.go"
       },
       {
         "id": "file_agent-shell_main_friendadapter_go",
@@ -7908,7 +8315,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/main_friendadapter.go"
       },
       {
         "id": "file_agent-shell_main_friends_go",
@@ -7924,7 +8332,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/main_friends.go"
       },
       {
         "id": "file_agent-shell_main_hubsettings_go",
@@ -7940,7 +8349,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/main_hubsettings.go"
       },
       {
         "id": "file_agent-shell_main_metrics_go",
@@ -7956,7 +8366,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/main_metrics.go"
       },
       {
         "id": "file_agent-shell_main_orchestrator_go",
@@ -7972,7 +8383,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/main_orchestrator.go"
       },
       {
         "id": "file_agent-shell_main_sleepconfig_go",
@@ -7988,7 +8400,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/main_sleepconfig.go"
       },
       {
         "id": "file_agent-shell_main_sms_go",
@@ -8004,7 +8417,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/main_sms.go"
       },
       {
         "id": "file_agent-shell_main_soul_go",
@@ -8020,7 +8434,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/main_soul.go"
       },
       {
         "id": "file_agent-shell_main_testmetrics_go",
@@ -8036,7 +8451,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/main_testmetrics.go"
       },
       {
         "id": "file_agent-shell_main_themes_go",
@@ -8052,7 +8468,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/main_themes.go"
       },
       {
         "id": "file_agent-shell_main_tooljournal_go",
@@ -8068,7 +8485,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/main_tooljournal.go"
       },
       {
         "id": "file_agent-shell_main_usage_go",
@@ -8084,7 +8502,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/main_usage.go"
       },
       {
         "id": "file_agent-shell_run_standalone_py",
@@ -8100,7 +8519,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/run_standalone.py"
       },
       {
         "id": "file_agent-shell_scripts_migrate_sessions_py",
@@ -8116,7 +8536,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/scripts/migrate_sessions.py"
       },
       {
         "id": "file_agent-shell_scripts_migrate_sessions_backfill_context_py",
@@ -8132,7 +8553,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/scripts/migrate_sessions_backfill_context.py"
       },
       {
         "id": "file_agent-shell_scripts_start-all_sh",
@@ -8148,7 +8570,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/scripts/start-all.sh"
       },
       {
         "id": "file_agent-shell_scripts_start-brain_sh",
@@ -8164,7 +8587,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/scripts/start-brain.sh"
       },
       {
         "id": "file_agent-shell_scripts_start-client_sh",
@@ -8180,7 +8604,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/scripts/start-client.sh"
       },
       {
         "id": "file_agent-shell_scripts_start-hub_sh",
@@ -8196,7 +8621,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell/scripts/start-hub.sh"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_adapters_adapters_go",
@@ -8212,7 +8638,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/adapters/adapters.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_adapters_noop_go",
@@ -8228,7 +8655,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/adapters/noop.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_agent_go",
@@ -8244,7 +8672,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/agent.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_auto_checkpoint_service_go",
@@ -8260,7 +8689,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/auto_checkpoint_service.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_auto_commit_hook_go",
@@ -8276,7 +8706,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/auto_commit_hook.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_auto_commit_types_go",
@@ -8292,7 +8723,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/auto_commit_types.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_brain_go",
@@ -8308,7 +8740,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/brain.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_brain_config_go",
@@ -8324,7 +8757,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/brain_config.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_config_go",
@@ -8340,7 +8774,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "config"
+        "arch_layer": "config",
+        "path": "agent-shell_backup_ctx_merge/agent/config.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_controller_go",
@@ -8356,7 +8791,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "path": "agent-shell_backup_ctx_merge/agent/controller.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_fullref_go",
@@ -8372,7 +8808,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/fullref.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_hub_controller_go",
@@ -8388,7 +8825,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/hub_controller.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_hub_permission_gate_go",
@@ -8404,7 +8842,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/hub_permission_gate.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_inproc_brain_go",
@@ -8420,7 +8859,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/inproc_brain.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_integrate_changelog_go",
@@ -8436,7 +8876,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/integrate_changelog.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_interfaces_go",
@@ -8452,7 +8893,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "types"
+        "arch_layer": "types",
+        "path": "agent-shell_backup_ctx_merge/agent/interfaces.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_noop_impls_go",
@@ -8468,7 +8910,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/noop_impls.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_replay_middleware_go",
@@ -8484,7 +8927,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/replay_middleware.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_soul_go",
@@ -8500,7 +8944,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/soul.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_task_doc_archiver_go",
@@ -8516,7 +8961,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/task/doc_archiver.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_task_signal_handler_go",
@@ -8532,7 +8978,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/task/signal_handler.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_task_task_manager_go",
@@ -8548,7 +8995,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/task/task_manager.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_task_types_go",
@@ -8564,7 +9012,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "types"
+        "arch_layer": "types",
+        "path": "agent-shell_backup_ctx_merge/agent/task/types.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_tdd_hook_go",
@@ -8580,7 +9029,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/tdd_hook.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_test_runner_go",
@@ -8596,7 +9046,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/test_runner.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_tool_filter_go",
@@ -8612,7 +9063,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/tool_filter.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_tool_middleware_go",
@@ -8628,7 +9080,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/tool_middleware.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_tool_summary_go",
@@ -8644,7 +9097,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/tool_summary.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_agent_toolcall_sanitize_go",
@@ -8660,7 +9114,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/agent/toolcall_sanitize.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_background_manager_go",
@@ -8676,7 +9131,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/background/manager.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_bootstrap_bootstrap_go",
@@ -8692,7 +9148,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/bootstrap/bootstrap.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_browser_cdp_go",
@@ -8708,7 +9165,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/browser/cdp.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_browser_cdp_CDPClient_go",
@@ -8724,7 +9182,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/browser/cdp_CDPClient.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_browser_cdp_PageSession_go",
@@ -8740,7 +9199,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/browser/cdp_PageSession.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_browser_cdp_ext_go",
@@ -8756,7 +9216,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/browser/cdp_ext.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_browser_cdp_ext_PageSession_go",
@@ -8772,7 +9233,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/browser/cdp_ext_PageSession.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_cameradogfood_adapt_go",
@@ -8788,7 +9250,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/cameradogfood/adapt.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_client_credential_pool_go",
@@ -8804,7 +9267,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/client/credential_pool.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_client_deepseek_go",
@@ -8820,7 +9284,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/client/deepseek.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_client_errors_go",
@@ -8836,7 +9301,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/client/errors.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_client_pricing_go",
@@ -8852,7 +9318,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/client/pricing.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_active_skills_injection_go",
@@ -8868,7 +9335,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/active_skills_injection.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_arch_knowledge_go",
@@ -8884,7 +9352,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/arch_knowledge.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_assembler_go",
@@ -8900,7 +9369,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/assembler.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_cache_alert_go",
@@ -8916,7 +9386,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/cache_alert.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_cache_metrics_go",
@@ -8932,7 +9403,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/cache_metrics.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_context_metrics_go",
@@ -8948,7 +9420,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/context_metrics.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_corpus_journal_go",
@@ -8964,7 +9437,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/corpus_journal.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_cross_round_notes_go",
@@ -8980,7 +9454,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/cross_round_notes.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_current_round_go",
@@ -8996,7 +9471,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/current_round.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_cutpoint_go",
@@ -9012,7 +9488,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/cutpoint.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_decision_splitter_go",
@@ -9028,7 +9505,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/decision_splitter.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_file_buffer_go",
@@ -9044,7 +9522,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/file_buffer.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_file_replacer_go",
@@ -9060,7 +9539,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/file_replacer.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_l0_go",
@@ -9076,7 +9556,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/l0.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_layer_go",
@@ -9092,7 +9573,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/layer.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_media_replacer_go",
@@ -9108,7 +9590,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/media_replacer.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_model_caps_go",
@@ -9124,7 +9607,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/model_caps.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_readonly_snapshot_go",
@@ -9140,7 +9624,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/readonly_snapshot.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_retrieval_cache_go",
@@ -9156,7 +9641,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/retrieval_cache.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_search_buffer_go",
@@ -9172,7 +9658,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/search_buffer.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_section_go",
@@ -9188,7 +9675,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/section.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_semantic_watcher_go",
@@ -9204,7 +9692,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/semantic_watcher.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_session_state_go",
@@ -9220,7 +9709,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/session_state.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_sidecar_buffer_go",
@@ -9236,7 +9726,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/sidecar_buffer.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_summary_zone_go",
@@ -9252,7 +9743,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/summary_zone.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_task_context_go",
@@ -9268,7 +9760,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/task_context.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_tasklist_go",
@@ -9284,7 +9777,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/tasklist.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_token_counter_go",
@@ -9300,7 +9794,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/token_counter.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_tool_journal_go",
@@ -9316,7 +9811,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/tool_journal.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_tool_llm_summarizer_go",
@@ -9332,7 +9828,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/tool_llm_summarizer.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_tool_ratings_go",
@@ -9348,7 +9845,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/tool_ratings.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_tool_subscriptions_go",
@@ -9364,7 +9862,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/tool_subscriptions.go"
       },
       {
         "id": "file_agent-shell_backup_ctx_merge_context_tools_used_recently_go",
@@ -9380,7 +9879,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "agent-shell_backup_ctx_merge/context/tools_used_recently.go"
       },
       {
         "id": "project_ai-base",
@@ -32571,14 +33071,14 @@
       "count": 10
     }
   ],
-  "_dsl_rev": 3,
+  "_dsl_rev": 4,
   "_sync": {
-    "saved_at": "2026-10-24T12:55:00.532Z",
+    "saved_at": "2026-10-26T13:44:17.837Z",
     "source": "design_sheet",
     "feature": "ai-base",
     "scanRev": 1792837688173,
-    "age": 8812359,
+    "age": 184569664,
     "dbSchemaVersion": 16,
-    "via": "edit_dsl:edit_dsl"
+    "via": "tool:t23-migrate"
   }
 }

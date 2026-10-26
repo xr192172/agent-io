@@ -54,7 +54,8 @@
           ],
           "updated_at": "2026-10-26T06:37:57.922Z",
           "agent": "agent:wish-machine"
-        }
+        },
+        "path": "capability_map.ts"
       },
       {
         "id": "file_cli_extract_ts",
@@ -70,7 +71,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "cli_extract.ts"
       },
       {
         "id": "file_collect_functions_ts",
@@ -86,7 +88,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "collect_functions.ts"
       },
       {
         "id": "file_registry_extract_ts",
@@ -102,7 +105,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "registry_extract.ts"
       },
       {
         "id": "file_sync_contracts_ts",
@@ -118,7 +122,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "sync_contracts.ts"
       },
       {
         "id": "file_tool_faces_ts",
@@ -175,7 +180,8 @@
           ],
           "updated_at": "2026-10-26T06:37:57.918Z",
           "agent": "agent:wish-machine"
-        }
+        },
+        "path": "tool_faces.ts"
       }
     ],
     "edges": [
@@ -500,14 +506,14 @@
       "count": 6
     }
   ],
-  "_dsl_rev": 5,
+  "_dsl_rev": 6,
   "_sync": {
-    "saved_at": "2026-10-26T06:37:57.922Z",
+    "saved_at": "2026-10-26T13:44:17.785Z",
     "source": "design_sheet",
     "feature": "agent-io-toolface",
     "scanRev": 1792996656444,
-    "age": 21478,
+    "age": 25601341,
     "dbSchemaVersion": 16,
-    "via": "edit_dsl:edit_dsl"
+    "via": "tool:t23-migrate"
   }
 }

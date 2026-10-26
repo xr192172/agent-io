@@ -218,7 +218,8 @@
             "all_green": true,
             "unsupported": 0
           }
-        }
+        },
+        "path": "src/protocol.ts"
       },
       {
         "id": "file_src_queue_ts",
@@ -264,7 +265,8 @@
             "concurrency"
           ],
           "updated_at": "2026-10-26T02:11:07.438Z"
-        }
+        },
+        "path": "src/queue.ts"
       },
       {
         "id": "file_src_registry_ts",
@@ -654,7 +656,8 @@
             "note": "P2-b：补一条 source-has 判据把双索引寻址与编号即身份钉住，并把六个方法写进契约（2 → 8）",
             "agent": "agent:wish-machine"
           }
-        ]
+        ],
+        "path": "src/registry.ts"
       },
       {
         "id": "file_src_server_ts",
@@ -702,7 +705,8 @@
             "identity"
           ],
           "updated_at": "2026-10-26T02:11:07.439Z"
-        }
+        },
+        "path": "src/server.ts"
       },
       {
         "id": "file_test_helpers_ts",
@@ -870,7 +874,8 @@
             "all_green": true,
             "unsupported": 0
           }
-        }
+        },
+        "path": "test/helpers.ts"
       }
     ],
     "edges": [
@@ -1340,15 +1345,15 @@
       "count": 1
     }
   ],
-  "_dsl_rev": 27,
+  "_dsl_rev": 28,
   "_sync": {
-    "saved_at": "2026-10-26T04:56:43.994Z",
+    "saved_at": "2026-10-26T13:44:17.891Z",
     "source": "design_sheet",
     "feature": "review-hub",
     "scanRev": 1792980096465,
-    "age": 10507529,
+    "age": 42161426,
     "dbSchemaVersion": 16,
-    "via": "edit_dsl:edit_dsl"
+    "via": "tool:t23-migrate"
   },
   "overlay_global": {
     "title": "review-hub"

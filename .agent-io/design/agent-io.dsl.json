@@ -1410,7 +1410,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/observe-skeleton-cert.mjs"
       },
       {
         "id": "file_certs_run-all-certs_mjs",
@@ -1426,7 +1427,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/run-all-certs.mjs"
       },
       {
         "id": "file_certs_t136-unused-export-cert_mjs",
@@ -1442,7 +1444,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t136-unused-export-cert.mjs"
       },
       {
         "id": "file_certs_t181-cert_sh",
@@ -1458,7 +1461,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t181-cert.sh"
       },
       {
         "id": "file_certs_t181-reset_mjs",
@@ -1474,7 +1478,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t181-reset.mjs"
       },
       {
         "id": "file_certs_t182-cert_mjs",
@@ -1490,7 +1495,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t182-cert.mjs"
       },
       {
         "id": "file_certs_t182b-cert_sh",
@@ -1506,7 +1512,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t182b-cert.sh"
       },
       {
         "id": "file_certs_t182b-tombstone-cert_mjs",
@@ -1522,7 +1529,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t182b-tombstone-cert.mjs"
       },
       {
         "id": "file_certs_t183-cert_mjs",
@@ -1538,7 +1546,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t183-cert.mjs"
       },
       {
         "id": "file_certs_t184-cert_mjs",
@@ -1554,7 +1563,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t184-cert.mjs"
       },
       {
         "id": "file_certs_t184b-cert_mjs",
@@ -1570,7 +1580,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t184b-cert.mjs"
       },
       {
         "id": "file_certs_t184b-probe_mjs",
@@ -1586,7 +1597,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t184b-probe.mjs"
       },
       {
         "id": "file_certs_t185-cert_mjs",
@@ -1602,7 +1614,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t185-cert.mjs"
       },
       {
         "id": "file_certs_t185-reset_mjs",
@@ -1618,7 +1631,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t185-reset.mjs"
       },
       {
         "id": "file_certs_t186-cert_mjs",
@@ -1634,7 +1648,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t186-cert.mjs"
       },
       {
         "id": "file_certs_t186b-cert_mjs",
@@ -1650,7 +1665,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t186b-cert.mjs"
       },
       {
         "id": "file_certs_t187-probe_mjs",
@@ -1666,7 +1682,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t187-probe.mjs"
       },
       {
         "id": "file_certs_t188-cert_mjs",
@@ -1682,7 +1699,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t188-cert.mjs"
       },
       {
         "id": "file_certs_t189-measure_mjs",
@@ -1698,7 +1716,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t189-measure.mjs"
       },
       {
         "id": "file_certs_t189-sweep_mjs",
@@ -1714,7 +1733,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t189-sweep.mjs"
       },
       {
         "id": "file_certs_t190-cert_mjs",
@@ -1730,7 +1750,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t190-cert.mjs"
       },
       {
         "id": "file_certs_t191-cert_mjs",
@@ -1746,7 +1767,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t191-cert.mjs"
       },
       {
         "id": "file_certs_t192-flow_mjs",
@@ -1762,7 +1784,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t192-flow.mjs"
       },
       {
         "id": "file_certs_t192-phantom_mjs",
@@ -1778,7 +1801,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t192-phantom.mjs"
       },
       {
         "id": "file_certs_t192-pointer-sweep_mjs",
@@ -1794,7 +1818,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t192-pointer-sweep.mjs"
       },
       {
         "id": "file_certs_t193-card_mjs",
@@ -1810,7 +1835,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t193-card.mjs"
       },
       {
         "id": "file_certs_t194-flat_mjs",
@@ -1826,7 +1852,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t194-flat.mjs"
       },
       {
         "id": "file_certs_t195-gate-removal_mjs",
@@ -1842,7 +1869,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t195-gate-removal.mjs"
       },
       {
         "id": "file_certs_t196-pointers_mjs",
@@ -1858,7 +1886,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t196-pointers.mjs"
       },
       {
         "id": "file_certs_t197-args_mjs",
@@ -1874,7 +1903,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t197-args.mjs"
       },
       {
         "id": "file_certs_t197c-approvals-cert_mjs",
@@ -1890,7 +1920,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t197c-approvals-cert.mjs"
       },
       {
         "id": "file_certs_t197sub-approval_mjs",
@@ -1906,7 +1937,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t197sub-approval.mjs"
       },
       {
         "id": "file_certs_t197sub-flow-cert_mjs",
@@ -1922,7 +1954,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t197sub-flow-cert.mjs"
       },
       {
         "id": "file_certs_t198-status_mjs",
@@ -1938,7 +1971,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t198-status.mjs"
       },
       {
         "id": "file_certs_t198sub-approval-cert_mjs",
@@ -1954,7 +1988,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t198sub-approval-cert.mjs"
       },
       {
         "id": "file_certs_t200-goals_mjs",
@@ -1970,7 +2005,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t200-goals.mjs"
       },
       {
         "id": "file_certs_t201-decoy_mjs",
@@ -1986,7 +2022,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t201-decoy.mjs"
       },
       {
         "id": "file_certs_t202-diagnose-loop_mjs",
@@ -2003,7 +2040,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t202-diagnose-loop.mjs"
       },
       {
         "id": "file_certs_t203-touched-audit_mjs",
@@ -2020,7 +2058,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t203-touched-audit.mjs"
       },
       {
         "id": "file_certs_t203b-declared_mjs",
@@ -2036,7 +2075,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t203b-declared.mjs"
       },
       {
         "id": "file_certs_t205-splitchain_mjs",
@@ -2052,7 +2092,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t205-splitchain.mjs"
       },
       {
         "id": "file_certs_t212-regex-vs-ast_mjs",
@@ -2068,7 +2109,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t212-regex-vs-ast.mjs"
       },
       {
         "id": "file_certs_t213-must-export_mjs",
@@ -2084,7 +2126,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t213-must-export.mjs"
       },
       {
         "id": "file_certs_t238-freshness-cert_mjs",
@@ -2100,7 +2143,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t238-freshness-cert.mjs"
       },
       {
         "id": "file_certs_t245-index-key-cert_mjs",
@@ -2116,7 +2160,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t245-index-key-cert.mjs"
       },
       {
         "id": "file_certs_t246-partial-cert_mjs",
@@ -2132,7 +2177,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t246-partial-cert.mjs"
       },
       {
         "id": "file_certs_t247-coverage-cert_mjs",
@@ -2148,7 +2194,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t247-coverage-cert.mjs"
       },
       {
         "id": "file_certs_t251-data-parser-cert_mjs",
@@ -2164,7 +2211,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t251-data-parser-cert.mjs"
       },
       {
         "id": "file_certs_t316-observe-pack-cert_mjs",
@@ -2180,7 +2228,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t316-observe-pack-cert.mjs"
       },
       {
         "id": "file_certs_t326-tool-surface-cost-cert_mjs",
@@ -2196,7 +2245,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t326-tool-surface-cost-cert.mjs"
       },
       {
         "id": "file_certs_t328-progress-authority-cert_mjs",
@@ -2212,7 +2262,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t328-progress-authority-cert.mjs"
       },
       {
         "id": "file_certs_t329-scope-decision-cert_mjs",
@@ -2228,7 +2279,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t329-scope-decision-cert.mjs"
       },
       {
         "id": "file_certs_t330-pending-view-cert_mjs",
@@ -2244,7 +2296,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t330-pending-view-cert.mjs"
       },
       {
         "id": "file_certs_t331-entry-size-cert_mjs",
@@ -2260,7 +2313,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t331-entry-size-cert.mjs"
       },
       {
         "id": "file_certs_t332-requires-gate-cert_mjs",
@@ -2276,7 +2330,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t332-requires-gate-cert.mjs"
       },
       {
         "id": "file_certs_t333-attestation-binding-cert_mjs",
@@ -2292,7 +2347,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t333-attestation-binding-cert.mjs"
       },
       {
         "id": "file_certs_t334-mcp-evidence-path-cert_mjs",
@@ -2308,7 +2364,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t334-mcp-evidence-path-cert.mjs"
       },
       {
         "id": "file_certs_t335-expectation-from-acceptance-cert_mjs",
@@ -2324,7 +2381,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t335-expectation-from-acceptance-cert.mjs"
       },
       {
         "id": "file_certs_t336-design-to-diffblocks-cert_mjs",
@@ -2340,7 +2398,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t336-design-to-diffblocks-cert.mjs"
       },
       {
         "id": "file_certs_t337-design-sheet-cert_mjs",
@@ -2356,7 +2415,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t337-design-sheet-cert.mjs"
       },
       {
         "id": "file_certs_t338-design-sheet-ref-cert_mjs",
@@ -2372,7 +2432,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t338-design-sheet-ref-cert.mjs"
       },
       {
         "id": "file_certs_t339-design-sheet-pending-home-cert_mjs",
@@ -2388,7 +2449,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t339-design-sheet-pending-home-cert.mjs"
       },
       {
         "id": "file_certs_t340-edit-dsl-validate-gate-cert_mjs",
@@ -2404,7 +2466,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t340-edit-dsl-validate-gate-cert.mjs"
       },
       {
         "id": "file_certs_t341-error-key-gate-cert_mjs",
@@ -2420,7 +2483,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t341-error-key-gate-cert.mjs"
       },
       {
         "id": "file_certs_t342-anchor-broken-repair-cert_mjs",
@@ -2436,7 +2500,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t342-anchor-broken-repair-cert.mjs"
       },
       {
         "id": "file_certs_t343-contract-not-from-code-and-attestation-applies-cert_mjs",
@@ -2452,7 +2517,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t343-contract-not-from-code-and-attestation-applies-cert.mjs"
       },
       {
         "id": "file_certs_t344-design-sheet-resolved-cert_mjs",
@@ -2468,7 +2534,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t344-design-sheet-resolved-cert.mjs"
       },
       {
         "id": "file_certs_t345-read-side-facts-backfill-cert_mjs",
@@ -2484,7 +2551,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t345-read-side-facts-backfill-cert.mjs"
       },
       {
         "id": "file_certs_t346-type-only-edge-verdict-cert_mjs",
@@ -2500,7 +2568,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t346-type-only-edge-verdict-cert.mjs"
       },
       {
         "id": "file_certs_t347-receipt-completeness-cert_mjs",
@@ -2516,7 +2585,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t347-receipt-completeness-cert.mjs"
       },
       {
         "id": "file_certs_t348-phase-classification-cert_mjs",
@@ -2532,7 +2602,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t348-phase-classification-cert.mjs"
       },
       {
         "id": "file_certs_t349-task-home-cert_mjs",
@@ -2548,7 +2619,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t349-task-home-cert.mjs"
       },
       {
         "id": "file_certs_t350-publish-task-cert_mjs",
@@ -2564,7 +2636,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t350-publish-task-cert.mjs"
       },
       {
         "id": "file_certs_t351-card-standing-cert_mjs",
@@ -2580,7 +2653,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t351-card-standing-cert.mjs"
       },
       {
         "id": "file_certs_t352-write-gate-coverage-cert_mjs",
@@ -2596,7 +2670,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t352-write-gate-coverage-cert.mjs"
       },
       {
         "id": "file_certs_t353-gate-principle-unblock-cert_mjs",
@@ -2612,7 +2687,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t353-gate-principle-unblock-cert.mjs"
       },
       {
         "id": "file_certs_t353-judge-port-cert_mjs",
@@ -2628,7 +2704,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t353-judge-port-cert.mjs"
       },
       {
         "id": "file_certs_t354-incremental-verify-cert_mjs",
@@ -2644,7 +2721,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t354-incremental-verify-cert.mjs"
       },
       {
         "id": "file_certs_t355-gate-exemption-cert_mjs",
@@ -2660,7 +2738,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t355-gate-exemption-cert.mjs"
       },
       {
         "id": "file_certs_t356-authorize-cert_mjs",
@@ -2676,7 +2755,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t356-authorize-cert.mjs"
       },
       {
         "id": "file_certs_t357-pipeline-gate-cert_mjs",
@@ -2693,7 +2773,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t357-pipeline-gate-cert.mjs"
       },
       {
         "id": "file_certs_t358-domain-five-values-cert_mjs",
@@ -2709,7 +2790,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t358-domain-five-values-cert.mjs"
       },
       {
         "id": "file_certs_t359-l1-two-rulers-cert_mjs",
@@ -2725,7 +2807,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t359-l1-two-rulers-cert.mjs"
       },
       {
         "id": "file_certs_t360-lease-ttl-cert_mjs",
@@ -2741,7 +2824,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t360-lease-ttl-cert.mjs"
       },
       {
         "id": "file_certs_t360-two-phase-claim-cert_mjs",
@@ -2757,7 +2841,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t360-two-phase-claim-cert.mjs"
       },
       {
         "id": "file_certs_t361-hook-task-gate-cert_mjs",
@@ -2773,7 +2858,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t361-hook-task-gate-cert.mjs"
       },
       {
         "id": "file_certs_t362-install-mcp-workbuddy-cert_mjs",
@@ -2789,7 +2875,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t362-install-mcp-workbuddy-cert.mjs"
       },
       {
         "id": "file_certs_t363-reopen-complete-cert_mjs",
@@ -2805,7 +2892,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t363-reopen-complete-cert.mjs"
       },
       {
         "id": "file_certs_t364-set-node-semantic-cert_mjs",
@@ -2821,7 +2909,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t364-set-node-semantic-cert.mjs"
       },
       {
         "id": "file_certs_t365-progress-authority-cert_mjs",
@@ -2837,7 +2926,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t365-progress-authority-cert.mjs"
       },
       {
         "id": "file_certs_t366-evidence-plan-cert_mjs",
@@ -2853,7 +2943,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t366-evidence-plan-cert.mjs"
       },
       {
         "id": "file_dogfood_build_cache_mjs",
@@ -2869,7 +2960,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "dogfood/build_cache.mjs"
       },
       {
         "id": "file_dogfood_check_cache_mjs",
@@ -2885,7 +2977,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "dogfood/check_cache.mjs"
       },
       {
         "id": "file_dogfood_verify_space_bug_mjs",
@@ -2901,7 +2994,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "dogfood/verify_space_bug.mjs"
       },
       {
         "id": "file_dogfood_verify_spec_form_mjs",
@@ -2917,7 +3011,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "dogfood/verify_spec_form.mjs"
       },
       {
         "id": "file_observe-lang-go_cmd_instrument_main_go",
@@ -2933,7 +3028,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "observe-lang-go/cmd/instrument/main.go"
       },
       {
         "id": "file_observe-lang-go_cmd_observev2-demo_main_go",
@@ -2949,7 +3045,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "observe-lang-go/cmd/observev2-demo/main.go"
       },
       {
         "id": "file_observe-lang-go_cmd_observev2-record_main_go",
@@ -2965,7 +3062,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "observe-lang-go/cmd/observev2-record/main.go"
       },
       {
         "id": "file_observe-lang-go_internal_instrument_contract_go",
@@ -2981,7 +3079,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "observe-lang-go/internal/instrument/contract.go"
       },
       {
         "id": "file_observe-lang-go_internal_instrument_effects_go",
@@ -2997,7 +3096,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "observe-lang-go/internal/instrument/effects.go"
       },
       {
         "id": "file_observe-lang-go_internal_instrument_instrument_go",
@@ -3013,7 +3113,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "observe-lang-go/internal/instrument/instrument.go"
       },
       {
         "id": "file_observe-lang-go_probe_export_go",
@@ -3029,7 +3130,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "observe-lang-go/probe/export.go"
       },
       {
         "id": "file_observe-lang-go_probe_global_go",
@@ -3045,7 +3147,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "observe-lang-go/probe/global.go"
       },
       {
         "id": "file_observe-lang-go_probe_probe_go",
@@ -3061,7 +3164,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "observe-lang-go/probe/probe.go"
       },
       {
         "id": "file_observe-lang-go_probe_run_recorder_go",
@@ -3077,7 +3181,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "observe-lang-go/probe/run_recorder.go"
       },
       {
         "id": "file_observe-lang-go_probe_tiered_go",
@@ -3093,7 +3198,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "observe-lang-go/probe/tiered.go"
       },
       {
         "id": "file_observe-lang-go_probe_trace_go",
@@ -3109,7 +3215,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "observe-lang-go/probe/trace.go"
       },
       {
         "id": "file_observe-lang-java_observe_probe_Camprobe_java",
@@ -3125,7 +3232,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "observe-lang-java/observe/probe/Camprobe.java"
       },
       {
         "id": "file_observe-lang-py_camprobe_py",
@@ -3141,7 +3249,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "observe-lang-py/camprobe.py"
       },
       {
         "id": "file_scripts_check-receipt_mjs",
@@ -3157,7 +3266,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/check-receipt.mjs"
       },
       {
         "id": "file_scripts_clean-dead-functions_mjs",
@@ -3173,7 +3283,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/clean-dead-functions.mjs"
       },
       {
         "id": "file_scripts_clean_dist_mjs",
@@ -3270,7 +3381,8 @@
             "kind": "expectations",
             "unsupported": 0
           }
-        }
+        },
+        "path": "scripts/clean_dist.mjs"
       },
       {
         "id": "file_scripts_contract-calls_mjs",
@@ -3286,7 +3398,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/contract-calls.mjs"
       },
       {
         "id": "file_scripts_coverage_mjs",
@@ -3302,7 +3415,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/coverage.mjs"
       },
       {
         "id": "file_scripts_demo_mjs",
@@ -3318,7 +3432,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/demo.mjs"
       },
       {
         "id": "file_scripts_derive-touches_mjs",
@@ -3334,7 +3449,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/derive-touches.mjs"
       },
       {
         "id": "file_scripts_design-check_mjs",
@@ -3351,7 +3467,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/design-check.mjs"
       },
       {
         "id": "file_scripts_design-node-coverage_mjs",
@@ -3367,7 +3484,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/design-node-coverage.mjs"
       },
       {
         "id": "file_scripts_design_txn_mjs",
@@ -3383,7 +3501,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/design_txn.mjs"
       },
       {
         "id": "file_scripts_dev_mjs",
@@ -3399,7 +3518,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/dev.mjs"
       },
       {
         "id": "file_scripts_diff_language_rosters_py",
@@ -3415,7 +3535,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/diff_language_rosters.py"
       },
       {
         "id": "file_scripts_freeze_grammar_sources_py",
@@ -3431,7 +3552,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/freeze_grammar_sources.py"
       },
       {
         "id": "file_scripts_gen-contracts_mjs",
@@ -3447,7 +3569,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gen-contracts.mjs"
       },
       {
         "id": "file_scripts_gen-db-check_mjs",
@@ -3463,7 +3586,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gen-db-check.mjs"
       },
       {
         "id": "file_scripts_gen-facts_mjs",
@@ -3479,7 +3603,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gen-facts.mjs"
       },
       {
         "id": "file_scripts_gen_agents_mjs",
@@ -3495,7 +3620,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gen_agents.mjs"
       },
       {
         "id": "file_scripts_gen_cognition_mjs",
@@ -3511,7 +3637,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gen_cognition.mjs"
       },
       {
         "id": "file_scripts_gen_endpoints_schema_mjs",
@@ -3527,7 +3654,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gen_endpoints_schema.mjs"
       },
       {
         "id": "file_scripts_gen_manifest_mjs",
@@ -3543,7 +3671,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gen_manifest.mjs"
       },
       {
         "id": "file_scripts_gen_teach_cjs",
@@ -3559,7 +3688,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gen_teach.cjs"
       },
       {
         "id": "file_scripts_grammar_shim_mjs",
@@ -3575,7 +3705,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/grammar_shim.mjs"
       },
       {
         "id": "file_scripts_hook-task-gate_mjs",
@@ -3591,7 +3722,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/hook-task-gate.mjs"
       },
       {
         "id": "file_scripts_hub_mjs",
@@ -3607,7 +3739,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/hub.mjs"
       },
       {
         "id": "file_scripts_impl-fixture_mjs",
@@ -3623,7 +3756,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/impl-fixture.mjs"
       },
       {
         "id": "file_scripts_impl-mutate_mjs",
@@ -3639,7 +3773,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/impl-mutate.mjs"
       },
       {
         "id": "file_scripts_install_global_skill_mjs",
@@ -3655,7 +3790,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/install_global_skill.mjs"
       },
       {
         "id": "file_scripts_install_mcp_mjs",
@@ -3671,7 +3807,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/install_mcp.mjs"
       },
       {
         "id": "file_scripts_mcp_mcp_call_mjs",
@@ -3687,7 +3824,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/mcp/mcp_call.mjs"
       },
       {
         "id": "file_scripts_mcp_mcp_scan_mjs",
@@ -3703,7 +3841,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/mcp/mcp_scan.mjs"
       },
       {
         "id": "file_scripts_mcp_mcp_smoke_mjs",
@@ -3719,7 +3858,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/mcp/mcp_smoke.mjs"
       },
       {
         "id": "file_scripts_measure_b_contract_mjs",
@@ -3735,7 +3875,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/measure_b_contract.mjs"
       },
       {
         "id": "file_scripts_merge_language_roster_py",
@@ -3751,7 +3892,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/merge_language_roster.py"
       },
       {
         "id": "file_scripts_migrate-node-tasks-to-todos_mjs",
@@ -3767,7 +3909,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/migrate-node-tasks-to-todos.mjs"
       },
       {
         "id": "file_scripts_mutate_mjs",
@@ -3783,7 +3926,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/mutate.mjs"
       },
       {
         "id": "file_scripts_net_probe_mjs",
@@ -3799,7 +3943,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/net_probe.mjs"
       },
       {
         "id": "file_scripts_new-observe-lang_mjs",
@@ -3815,7 +3960,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/new-observe-lang.mjs"
       },
       {
         "id": "file_scripts_patrol_mjs",
@@ -3831,7 +3977,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/patrol.mjs"
       },
       {
         "id": "file_scripts_plan-assertions_mjs",
@@ -3847,7 +3994,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/plan-assertions.mjs"
       },
       {
         "id": "file_scripts_probe_cc_equiv_mjs",
@@ -3864,7 +4012,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_cc_equiv.mjs"
       },
       {
         "id": "file_scripts_probe_closure_multi_mjs",
@@ -3880,7 +4029,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe_closure_multi.mjs"
       },
       {
         "id": "file_scripts_probe_demand_side_mjs",
@@ -3896,7 +4046,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe_demand_side.mjs"
       },
       {
         "id": "file_scripts_probe_edge_diff_mjs",
@@ -3913,7 +4064,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_edge_diff.mjs"
       },
       {
         "id": "file_scripts_probe_extract_hard_mjs",
@@ -3929,7 +4081,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe_extract_hard.mjs"
       },
       {
         "id": "file_scripts_probe_extract_quality_mjs",
@@ -3945,7 +4098,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe_extract_quality.mjs"
       },
       {
         "id": "file_scripts_probe_impact_reverse_mjs",
@@ -3962,7 +4116,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_impact_reverse.mjs"
       },
       {
         "id": "file_scripts_probe_tool_smells_mjs",
@@ -3979,7 +4134,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_tool_smells.mjs"
       },
       {
         "id": "file_scripts_probe_tool_surface_mjs",
@@ -3996,7 +4152,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_tool_surface.mjs"
       },
       {
         "id": "file_scripts_probe_verdict_grid_mjs",
@@ -4013,7 +4170,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_verdict_grid.mjs"
       },
       {
         "id": "file_scripts_probe_xfile_resolve_mjs",
@@ -4029,7 +4187,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/probe_xfile_resolve.mjs"
       },
       {
         "id": "file_scripts_promote_agent_io_mcp_mjs",
@@ -4045,7 +4204,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/promote_agent_io_mcp.mjs"
       },
       {
         "id": "file_scripts_rebuild_feature_mjs",
@@ -4061,7 +4221,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/rebuild_feature.mjs"
       },
       {
         "id": "file_scripts_rebuild_teach_cjs",
@@ -4077,7 +4238,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/rebuild_teach.cjs"
       },
       {
         "id": "file_scripts_relink_specifiers_mjs",
@@ -4093,7 +4255,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/relink_specifiers.mjs"
       },
       {
         "id": "file_scripts_run-invariant-checks_mjs",
@@ -4109,7 +4272,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/run-invariant-checks.mjs"
       },
       {
         "id": "file_scripts_scan_canvas_ts",
@@ -4125,7 +4289,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/scan_canvas.ts"
       },
       {
         "id": "file_scripts_setup_mjs",
@@ -4141,7 +4306,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/setup.mjs"
       },
       {
         "id": "file_scripts_stat-raw-writes_mjs",
@@ -4157,7 +4323,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/stat-raw-writes.mjs"
       },
       {
         "id": "file_scripts_task-system-static_mjs",
@@ -4173,7 +4340,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/task-system-static.mjs"
       },
       {
         "id": "file_scripts_ts_kernel_probe_mjs",
@@ -4189,7 +4357,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/ts_kernel_probe.mjs"
       },
       {
         "id": "file_scripts_verify-changed_mjs",
@@ -4205,7 +4374,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/verify-changed.mjs"
       },
       {
         "id": "file_scripts_verify_mjs",
@@ -4221,7 +4391,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/verify.mjs"
       },
       {
         "id": "file_scripts_verify_grammar_rebuild_mjs",
@@ -4237,7 +4408,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/verify_grammar_rebuild.mjs"
       },
       {
         "id": "file_scripts_vocabulary_mjs",
@@ -4253,7 +4425,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/vocabulary.mjs"
       },
       {
         "id": "file_src_application_claim_conflict_ts",
@@ -4269,7 +4442,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/claim_conflict.ts"
       },
       {
         "id": "file_src_application_cross_index_ts",
@@ -4404,7 +4578,8 @@
             "kind": "expectations",
             "unsupported": 0
           }
-        }
+        },
+        "path": "src/application/cross/index.ts"
       },
       {
         "id": "file_src_application_design_api_signature_ts",
@@ -4420,7 +4595,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/api_signature.ts"
       },
       {
         "id": "file_src_application_design_board_pool_ts",
@@ -4436,7 +4612,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/board/pool.ts"
       },
       {
         "id": "file_src_application_design_board_todo_journal_ts",
@@ -4452,7 +4629,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/board/todo_journal.ts"
       },
       {
         "id": "file_src_application_design_db_gen_design_db_ts",
@@ -4468,7 +4646,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "data"
+        "arch_layer": "data",
+        "path": "src/application/design/db/gen_design_db.ts"
       },
       {
         "id": "file_src_application_design_derive_derive_algorithm_ts",
@@ -4484,7 +4663,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/derive/derive_algorithm.ts"
       },
       {
         "id": "file_src_application_design_derive_derive_chain_ts",
@@ -4500,7 +4680,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/derive/derive_chain.ts"
       },
       {
         "id": "file_src_application_design_derive_derive_split_ts",
@@ -4516,7 +4697,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/derive/derive_split.ts"
       },
       {
         "id": "file_src_application_design_derive_opl_ts",
@@ -4532,7 +4714,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/derive/opl.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_api_ops_ts",
@@ -4548,7 +4731,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/dsl_ops/api_ops.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_edge_ops_ts",
@@ -4564,7 +4748,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/dsl_ops/edge_ops.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_edit_result_ts",
@@ -4580,7 +4765,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/dsl_ops/edit_result.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_feature_ops_ts",
@@ -4596,7 +4782,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/dsl_ops/feature_ops.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_file_ops_ts",
@@ -4612,7 +4799,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/dsl_ops/file_ops.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_node_ops_ts",
@@ -4842,7 +5030,8 @@
             "author": "llm",
             "agent": "agent:wish-machine"
           }
-        ]
+        ],
+        "path": "src/application/design/dsl_ops/node_ops.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_op_data_spec_ts",
@@ -4859,7 +5048,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "src/application/design/dsl_ops/op_data_spec.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_status_tools_ts",
@@ -4875,7 +5065,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/dsl_ops/status_tools.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_task_ops_ts",
@@ -5027,7 +5218,8 @@
             "author": "llm",
             "agent": "agent:wish-machine"
           }
-        ]
+        ],
+        "path": "src/application/design/dsl_ops/task_ops.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -5186,7 +5378,8 @@
             "author": "llm",
             "agent": "agent:wish-machine"
           }
-        ]
+        ],
+        "path": "src/application/design/dsl_ops/update_feature.ts"
       },
       {
         "id": "file_src_application_design_handlers_ts",
@@ -5354,7 +5547,8 @@
             "author": "llm",
             "agent": "agent:wish-machine"
           }
-        ]
+        ],
+        "path": "src/application/design/handlers.ts"
       },
       {
         "id": "file_src_application_design_index_ts",
@@ -5454,7 +5648,8 @@
             "kind": "expectations",
             "unsupported": 0
           }
-        }
+        },
+        "path": "src/application/design/index.ts"
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -5624,7 +5819,8 @@
             "author": "llm",
             "agent": "agent:wish-machine"
           }
-        ]
+        ],
+        "path": "src/application/design/intent/consistency.ts"
       },
       {
         "id": "file_src_application_design_intent_detect_drift_ts",
@@ -5640,7 +5836,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/intent/detect_drift.ts"
       },
       {
         "id": "file_src_application_design_intent_expectations_ts",
@@ -5656,7 +5853,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/intent/expectations.ts"
       },
       {
         "id": "file_src_application_design_intent_judge_cache_ts",
@@ -5672,7 +5870,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/intent/judge_cache.ts"
       },
       {
         "id": "file_src_application_design_intent_set_design_intent_ts",
@@ -5688,7 +5887,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/intent/set_design_intent.ts"
       },
       {
         "id": "file_src_application_design_ledger_membership_ts",
@@ -5704,7 +5904,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/ledger_membership.ts"
       },
       {
         "id": "file_src_application_design_lifecycle_simulation_ts",
@@ -5720,7 +5921,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/lifecycle/simulation.ts"
       },
       {
         "id": "file_src_application_design_lifecycle_snapshot_ts",
@@ -5736,7 +5938,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/lifecycle/snapshot.ts"
       },
       {
         "id": "file_src_application_design_line_design_diff_ts",
@@ -5752,7 +5955,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/line/design_diff.ts"
       },
       {
         "id": "file_src_application_design_line_design_line_ts",
@@ -5768,7 +5972,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/line/design_line.ts"
       },
       {
         "id": "file_src_application_design_no_file_entries_ts",
@@ -5784,7 +5989,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/no_file_entries.ts"
       },
       {
         "id": "file_src_application_design_rewrite_rewrite_ts",
@@ -5800,7 +6006,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/rewrite/rewrite.ts"
       },
       {
         "id": "file_src_application_design_rewrite_symbol_diff_ts",
@@ -5816,7 +6023,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/rewrite/symbol_diff.ts"
       },
       {
         "id": "file_src_application_design_workbench_code_workbench_ts",
@@ -5832,7 +6040,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/workbench/code_workbench.ts"
       },
       {
         "id": "file_src_application_design_workbench_dag_layout_ts",
@@ -5848,7 +6057,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/workbench/dag_layout.ts"
       },
       {
         "id": "file_src_application_dispatch_ts",
@@ -5864,7 +6074,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/dispatch.ts"
       },
       {
         "id": "file_src_application_harvest_extract_contracts_ts",
@@ -5880,7 +6091,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/harvest/extract_contracts.ts"
       },
       {
         "id": "file_src_application_harvest_handlers_ts",
@@ -5896,7 +6108,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "path": "src/application/harvest/handlers.ts"
       },
       {
         "id": "file_src_application_harvest_harvest_closure_ts",
@@ -5912,7 +6125,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/harvest/harvest_closure.ts"
       },
       {
         "id": "file_src_application_harvest_harvest_decisions_ts",
@@ -5928,7 +6142,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/harvest/harvest_decisions.ts"
       },
       {
         "id": "file_src_application_harvest_index_ts",
@@ -5944,7 +6159,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/application/harvest/index.ts"
       },
       {
         "id": "file_src_application_meta_diagnosis_diagnose_loop_ts",
@@ -5960,7 +6176,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/diagnosis/diagnose_loop.ts"
       },
       {
         "id": "file_src_application_meta_docs_project_docs_ts",
@@ -5976,7 +6193,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/docs/project_docs.ts"
       },
       {
         "id": "file_src_application_meta_explore_contract_page_ts",
@@ -5992,7 +6210,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/explore/contract_page.ts"
       },
       {
         "id": "file_src_application_meta_explore_explore_arg_spec_ts",
@@ -6008,7 +6227,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/explore/explore_arg_spec.ts"
       },
       {
         "id": "file_src_application_meta_explore_explore_code_ts",
@@ -6024,7 +6244,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/explore/explore_code.ts"
       },
       {
         "id": "file_src_application_meta_explore_first_hop_args_ts",
@@ -6040,7 +6261,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/explore/first_hop_args.ts"
       },
       {
         "id": "file_src_application_meta_explore_next_hop_args_ts",
@@ -6056,7 +6278,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/explore/next_hop_args.ts"
       },
       {
         "id": "file_src_application_meta_explore_query_feature_ts",
@@ -6072,7 +6295,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/explore/query_feature.ts"
       },
       {
         "id": "file_src_application_meta_handlers_ts",
@@ -6088,7 +6312,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "path": "src/application/meta/handlers.ts"
       },
       {
         "id": "file_src_application_meta_impact_impact_report_ts",
@@ -6104,7 +6329,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/impact/impact_report.ts"
       },
       {
         "id": "file_src_application_meta_index_ts",
@@ -6120,7 +6346,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/application/meta/index.ts"
       },
       {
         "id": "file_src_application_meta_integrity_index_integrity_ts",
@@ -6287,7 +6514,8 @@
             "author": "llm",
             "agent": "agent:wish-machine"
           }
-        ]
+        ],
+        "path": "src/application/meta/integrity/index_integrity.ts"
       },
       {
         "id": "file_src_application_meta_llm_llm_decider_ts",
@@ -6303,7 +6531,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/llm/llm_decider.ts"
       },
       {
         "id": "file_src_application_meta_llm_semantic_search_ts",
@@ -6319,7 +6548,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/llm/semantic_search.ts"
       },
       {
         "id": "file_src_application_meta_registry_capability_map_ts",
@@ -6335,7 +6565,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/registry/capability_map.ts"
       },
       {
         "id": "file_src_application_meta_registry_cli_extract_ts",
@@ -6351,7 +6582,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/registry/cli_extract.ts"
       },
       {
         "id": "file_src_application_meta_registry_collect_functions_ts",
@@ -6367,7 +6599,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/registry/collect_functions.ts"
       },
       {
         "id": "file_src_application_meta_registry_registry_extract_ts",
@@ -6383,7 +6616,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/registry/registry_extract.ts"
       },
       {
         "id": "file_src_application_meta_registry_sync_contracts_ts",
@@ -6399,7 +6633,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/registry/sync_contracts.ts"
       },
       {
         "id": "file_src_application_meta_registry_tool_faces_ts",
@@ -6415,7 +6650,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/registry/tool_faces.ts"
       },
       {
         "id": "file_src_application_meta_upgrade_upgrade_ts",
@@ -6431,7 +6667,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/upgrade/upgrade.ts"
       },
       {
         "id": "file_src_application_meta_view_derive_anim_flow_ts",
@@ -6447,7 +6684,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "ui"
+        "arch_layer": "ui",
+        "path": "src/application/meta/view/derive_anim_flow.ts"
       },
       {
         "id": "file_src_application_meta_view_derive_mind_map_ts",
@@ -6463,7 +6701,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "ui"
+        "arch_layer": "ui",
+        "path": "src/application/meta/view/derive_mind_map.ts"
       },
       {
         "id": "file_src_application_meta_view_explain_gen_ts",
@@ -6479,7 +6718,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "ui"
+        "arch_layer": "ui",
+        "path": "src/application/meta/view/explain_gen.ts"
       },
       {
         "id": "file_src_application_meta_view_overview_ts",
@@ -6495,7 +6735,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "ui"
+        "arch_layer": "ui",
+        "path": "src/application/meta/view/overview.ts"
       },
       {
         "id": "file_src_application_observe_capture_feature_line_ts",
@@ -6511,7 +6752,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/capture/feature_line.ts"
       },
       {
         "id": "file_src_application_observe_capture_memory_observe_ts",
@@ -6527,7 +6769,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/capture/memory_observe.ts"
       },
       {
         "id": "file_src_application_observe_capture_narrate_step_ts",
@@ -6543,7 +6786,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/capture/narrate_step.ts"
       },
       {
         "id": "file_src_application_observe_capture_observe_points_ts",
@@ -6559,7 +6803,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/capture/observe_points.ts"
       },
       {
         "id": "file_src_application_observe_capture_observe_trace_ts",
@@ -6575,7 +6820,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/capture/observe_trace.ts"
       },
       {
         "id": "file_src_application_observe_capture_trace_evidence_ts",
@@ -6591,7 +6837,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/capture/trace_evidence.ts"
       },
       {
         "id": "file_src_application_observe_handlers_ts",
@@ -6607,7 +6854,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "path": "src/application/observe/handlers.ts"
       },
       {
         "id": "file_src_application_observe_index_ts",
@@ -6623,7 +6871,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/application/observe/index.ts"
       },
       {
         "id": "file_src_application_observe_reconcile_proposal_approve_ts",
@@ -6639,7 +6888,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/reconcile/proposal_approve.ts"
       },
       {
         "id": "file_src_application_observe_reconcile_proposal_list_ts",
@@ -6655,7 +6905,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/reconcile/proposal_list.ts"
       },
       {
         "id": "file_src_application_observe_reconcile_proposal_reject_ts",
@@ -6671,7 +6922,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/reconcile/proposal_reject.ts"
       },
       {
         "id": "file_src_application_observe_reconcile_reason_validator_ts",
@@ -6687,7 +6939,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/reconcile/reason_validator.ts"
       },
       {
         "id": "file_src_application_observe_reconcile_reconcile_chain_ts",
@@ -6703,7 +6956,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/reconcile/reconcile_chain.ts"
       },
       {
         "id": "file_src_application_observe_reconcile_reconcile_effects_ts",
@@ -6719,7 +6973,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/reconcile/reconcile_effects.ts"
       },
       {
         "id": "file_src_application_observe_runtime_judge_observe_events_ts",
@@ -6735,7 +6990,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/runtime/judge_observe_events.ts"
       },
       {
         "id": "file_src_application_observe_runtime_observe_log_query_ts",
@@ -6751,7 +7007,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/runtime/observe_log_query.ts"
       },
       {
         "id": "file_src_application_observe_runtime_run_tests_ts",
@@ -6767,7 +7024,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/runtime/run_tests.ts"
       },
       {
         "id": "file_src_application_observe_runtime_stale_check_ts",
@@ -6866,7 +7124,8 @@
             "kind": "expectations",
             "unsupported": 0
           }
-        }
+        },
+        "path": "src/application/observe/runtime/stale_check.ts"
       },
       {
         "id": "file_src_application_observe_runtime_watch_project_tool_ts",
@@ -6882,7 +7141,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/runtime/watch_project_tool.ts"
       },
       {
         "id": "file_src_application_patrol_task_drift_ts",
@@ -6898,7 +7158,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/patrol/task_drift.ts"
       },
       {
         "id": "file_src_application_plumbing_ts",
@@ -6914,7 +7175,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/plumbing.ts"
       },
       {
         "id": "file_src_application_read_set_ts",
@@ -6930,7 +7192,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/read_set.ts"
       },
       {
         "id": "file_src_application_refactor_annotate_function_annotation_ts",
@@ -6946,7 +7209,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/annotate/function_annotation.ts"
       },
       {
         "id": "file_src_application_refactor_deprecate_offline_deprecate_offline_ts",
@@ -6962,7 +7226,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/deprecate_offline/deprecate_offline.ts"
       },
       {
         "id": "file_src_application_refactor_diff_views_diff_views_ts",
@@ -6978,7 +7243,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/diff_views/diff_views.ts"
       },
       {
         "id": "file_src_application_refactor_edit_apply_writes_ts",
@@ -6994,7 +7260,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/edit/apply_writes.ts"
       },
       {
         "id": "file_src_application_refactor_edit_edit_code_ts",
@@ -7010,7 +7277,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/edit/edit_code.ts"
       },
       {
         "id": "file_src_application_refactor_edit_remove_dead_imports_ts",
@@ -7026,7 +7294,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/edit/remove_dead_imports.ts"
       },
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
@@ -7042,7 +7311,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/find/ast_suggest.ts"
       },
       {
         "id": "file_src_application_refactor_find_field_refs_ts",
@@ -7058,7 +7328,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/find/field_refs.ts"
       },
       {
         "id": "file_src_application_refactor_find_find_references_ts",
@@ -7074,7 +7345,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/find/find_references.ts"
       },
       {
         "id": "file_src_application_refactor_find_similar_names_ts",
@@ -7090,7 +7362,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/find/similar_names.ts"
       },
       {
         "id": "file_src_application_refactor_gate_note_ts",
@@ -7106,7 +7379,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/gate_note.ts"
       },
       {
         "id": "file_src_application_refactor_handlers_ts",
@@ -7122,7 +7396,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "path": "src/application/refactor/handlers.ts"
       },
       {
         "id": "file_src_application_refactor_index_ts",
@@ -7138,7 +7413,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/application/refactor/index.ts"
       },
       {
         "id": "file_src_application_refactor_parse_capability_parse_capability_ts",
@@ -7154,7 +7430,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/parse_capability/parse_capability.ts"
       },
       {
         "id": "file_src_application_refactor_pipeline_refactor_judge_ts",
@@ -7170,7 +7447,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/pipeline/refactor_judge.ts"
       },
       {
         "id": "file_src_application_refactor_pipeline_refactor_pipeline_ts",
@@ -7186,7 +7464,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/pipeline/refactor_pipeline.ts"
       },
       {
         "id": "file_src_application_refactor_pipeline_refactor_plan_ts",
@@ -7202,7 +7481,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/pipeline/refactor_plan.ts"
       },
       {
         "id": "file_src_application_refactor_rename_move_domain_ts",
@@ -7218,7 +7498,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rename/move_domain.ts"
       },
       {
         "id": "file_src_application_refactor_rename_rename_file_ts",
@@ -7234,7 +7515,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rename/rename_file.ts"
       },
       {
         "id": "file_src_application_refactor_rename_rename_files_ts",
@@ -7250,7 +7532,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rename/rename_files.ts"
       },
       {
         "id": "file_src_application_refactor_rename_rename_local_ts",
@@ -7266,7 +7549,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rename/rename_local.ts"
       },
       {
         "id": "file_src_application_refactor_rename_rename_symbols_ts",
@@ -7282,7 +7566,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rename/rename_symbols.ts"
       },
       {
         "id": "file_src_application_refactor_rename_symbol_move_ts",
@@ -7298,7 +7583,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rename/symbol_move.ts"
       },
       {
         "id": "file_src_application_refactor_rule_library_rule_apply_ts",
@@ -7314,7 +7600,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rule_library/rule_apply.ts"
       },
       {
         "id": "file_src_application_refactor_rule_library_rule_extract_ts",
@@ -7330,7 +7617,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rule_library/rule_extract.ts"
       },
       {
         "id": "file_src_application_refactor_rule_library_rule_library_ts",
@@ -7346,7 +7634,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rule_library/rule_library.ts"
       },
       {
         "id": "file_src_application_refactor_snapshot_file_snapshot_ts",
@@ -7362,7 +7651,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/snapshot/file_snapshot.ts"
       },
       {
         "id": "file_src_application_source_writer_ts",
@@ -7378,7 +7668,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/source_writer.ts"
       },
       {
         "id": "file_src_application_stage_registry_ts",
@@ -7572,7 +7863,8 @@
             "kind": "expectations",
             "unsupported": 0
           }
-        }
+        },
+        "path": "src/application/stage_registry.ts"
       },
       {
         "id": "file_src_application_tool_registry_ts",
@@ -7588,7 +7880,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/tool_registry.ts"
       },
       {
         "id": "file_src_application_types_ts",
@@ -7604,7 +7897,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "types"
+        "arch_layer": "types",
+        "path": "src/application/types.ts"
       },
       {
         "id": "file_src_application_write_gate_ts",
@@ -7620,7 +7914,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/write_gate.ts"
       },
       {
         "id": "file_src_domain_actor_spec_ts",
@@ -7636,7 +7931,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/actor_spec.ts"
       },
       {
         "id": "file_src_domain_animation_ts",
@@ -7652,7 +7948,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/animation.ts"
       },
       {
         "id": "file_src_domain_b_terms_ts",
@@ -7668,7 +7965,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/b_terms.ts"
       },
       {
         "id": "file_src_domain_chain_wiring_ts",
@@ -7684,7 +7982,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/chain_wiring.ts"
       },
       {
         "id": "file_src_domain_contract_ts",
@@ -7700,7 +7999,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/contract.ts"
       },
       {
         "id": "file_src_domain_design_sheet_ts",
@@ -7716,7 +8016,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/design_sheet.ts"
       },
       {
         "id": "file_src_domain_diff_blocks_ts",
@@ -7732,7 +8033,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/diff_blocks.ts"
       },
       {
         "id": "file_src_domain_discussion_log_ts",
@@ -7748,7 +8050,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/discussion_log.ts"
       },
       {
         "id": "file_src_domain_dsl_removal_ts",
@@ -7764,7 +8067,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/dsl_removal.ts"
       },
       {
         "id": "file_src_domain_expectation_ts",
@@ -7780,7 +8084,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/expectation.ts"
       },
       {
         "id": "file_src_domain_geometry_ts",
@@ -7796,7 +8101,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/geometry.ts"
       },
       {
         "id": "file_src_domain_judge_port_ts",
@@ -7812,7 +8118,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/judge_port.ts"
       },
       {
         "id": "file_src_domain_mindmap_ts",
@@ -7828,7 +8135,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/mindmap.ts"
       },
       {
         "id": "file_src_domain_narration_ts",
@@ -7844,7 +8152,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/narration.ts"
       },
       {
         "id": "file_src_domain_overlay_ts",
@@ -7860,7 +8169,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/overlay.ts"
       },
       {
         "id": "file_src_domain_reasoning_ts",
@@ -7876,7 +8186,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/reasoning.ts"
       },
       {
         "id": "file_src_domain_scope_ts",
@@ -7892,7 +8203,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/scope.ts"
       },
       {
         "id": "file_src_domain_semantic_ts",
@@ -7908,7 +8220,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/semantic.ts"
       },
       {
         "id": "file_src_domain_simulation_ts",
@@ -7924,7 +8237,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/simulation.ts"
       },
       {
         "id": "file_src_domain_task_machine_ts",
@@ -7940,7 +8254,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/task_machine.ts"
       },
       {
         "id": "file_src_domain_task_schema_ts",
@@ -7956,7 +8271,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/task_schema.ts"
       },
       {
         "id": "file_src_domain_todo_chain_ts",
@@ -7972,7 +8288,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/todo_chain.ts"
       },
       {
         "id": "file_src_domain_types_ts",
@@ -7988,7 +8305,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/types.ts"
       },
       {
         "id": "file_src_domain_validator_ts",
@@ -8004,7 +8322,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/domain/validator.ts"
       },
       {
         "id": "file_src_infrastructure_alert_inbox_ts",
@@ -8020,7 +8339,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/alert_inbox.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_capability_capability_matrix_ts",
@@ -8036,7 +8356,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/capability/capability_matrix.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_capability_language_concepts_ts",
@@ -8052,7 +8373,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/capability/language_concepts.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_capability_register_capabilities_ts",
@@ -8068,7 +8390,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/capability/register_capabilities.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_core_ts",
@@ -8084,7 +8407,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/infrastructure/analysis/contract_gate/core.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_index_ts",
@@ -8100,7 +8424,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/contract_gate/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_c_ts",
@@ -8116,7 +8441,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/contract_gate/languages/c.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_cs_ts",
@@ -8132,7 +8458,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/contract_gate/languages/cs.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_go_ts",
@@ -8148,7 +8475,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/contract_gate/languages/go.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_java_ts",
@@ -8164,7 +8492,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/contract_gate/languages/java.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_py_ts",
@@ -8180,7 +8509,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/contract_gate/languages/py.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_registry_ts",
@@ -8196,7 +8526,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/contract_gate/languages/registry.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_ts_ts",
@@ -8212,7 +8543,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/contract_gate/languages/ts.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_parts_ts",
@@ -8228,7 +8560,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/contract_gate/parts.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_cross_repo_index_ts",
@@ -8244,7 +8577,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/cross_repo/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_deadcode_dead_statements_ts",
@@ -8260,7 +8594,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/deadcode/dead_statements.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_deadcode_detect_dead_imports_ts",
@@ -8276,7 +8611,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_candidate_locator_ts",
@@ -8292,7 +8628,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/candidate_locator.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_chain_tracer_ts",
@@ -8308,7 +8645,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/chain_tracer.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_contract_ts",
@@ -8324,7 +8662,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/contract.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_diagnose_ts",
@@ -8340,7 +8679,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/diagnose.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_impact_analyzer_ts",
@@ -8356,7 +8696,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/impact_analyzer.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_repair_ts",
@@ -8372,7 +8713,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/repair.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_root_cause_aggregator_ts",
@@ -8388,7 +8730,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_symptom_parser_ts",
@@ -8404,7 +8747,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/symptom_parser.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_test_contract_ts",
@@ -8420,7 +8764,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/test_contract.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_verifier_ts",
@@ -8436,7 +8781,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/verifier.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_health_health_cache_ts",
@@ -8452,7 +8798,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/health/health_cache.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_health_index_ts",
@@ -8468,7 +8815,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/health/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_diff_ts",
@@ -8484,7 +8832,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/impact/diff.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_diff_impact_ts",
@@ -8500,7 +8849,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/impact/diff_impact.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_impact_ledger_store_ts",
@@ -8516,7 +8866,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/impact/impact_ledger_store.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_index_ts",
@@ -8532,7 +8883,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/impact/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_approve_gated_ts",
@@ -8548,7 +8900,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/approve_gated.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_chain_ts",
@@ -8564,7 +8917,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/chain.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_contract_ts",
@@ -8580,7 +8934,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/contract.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_decl_review_ts",
@@ -8596,7 +8951,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/decl_review.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_dsl_store_ts",
@@ -8612,7 +8968,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/dsl_store.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_go_instrument_ts",
@@ -8628,7 +8985,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/go_instrument.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_index_ts",
@@ -8644,7 +9002,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/observe/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_instrument_ts",
@@ -8660,7 +9019,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/instrument.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_instrument_java_ts",
@@ -8676,7 +9036,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/instrument_java.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_instrument_py_ts",
@@ -8692,7 +9053,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/instrument_py.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_instrument_skeleton_ts",
@@ -8708,7 +9070,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/instrument_skeleton.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_judge_ts",
@@ -8724,7 +9087,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/judge.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_judge_guard_ts",
@@ -8740,7 +9104,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/judge_guard.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_judge_service_ts",
@@ -8756,7 +9121,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/judge_service.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_ledger_fold_ts",
@@ -8772,7 +9138,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/ledger_fold.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_log_query_ts",
@@ -8788,7 +9155,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/log_query.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_observe_langs_ts",
@@ -8804,7 +9172,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/observe_langs.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_probe_ts",
@@ -8820,7 +9189,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/probe.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_proposal_store_ts",
@@ -8836,7 +9206,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/proposal_store.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_run_loop_ts",
@@ -8852,7 +9223,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/run_loop.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_run_sentinel_ts",
@@ -8868,7 +9240,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/run_sentinel.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_run_trace_replay_ts",
@@ -8884,7 +9257,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/run_trace_replay.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_snapshot_needle_ts",
@@ -8900,7 +9274,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/snapshot_needle.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_trace_exec_ts",
@@ -8916,7 +9291,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/trace_exec.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_verify_gate_ts",
@@ -8932,7 +9308,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/verify_gate.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_core_ts",
@@ -8948,7 +9325,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/infrastructure/analysis/package_migration/core.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_index_ts",
@@ -8964,7 +9342,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/package_migration/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_languages_go_ts",
@@ -8980,7 +9359,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/package_migration/languages/go.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_languages_py_ts",
@@ -8996,7 +9376,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/package_migration/languages/py.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_languages_registry_ts",
@@ -9012,7 +9393,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/package_migration/languages/registry.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_languages_ts_ts",
@@ -9028,7 +9410,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/package_migration/languages/ts.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_parts_ts",
@@ -9044,7 +9427,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/package_migration/parts.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_project_root_index_ts",
@@ -9060,7 +9444,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/project_root/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_java_executor_ts",
@@ -9076,7 +9461,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/refactor/langs/java/executor.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_java_layering_ts",
@@ -9092,7 +9478,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/refactor/langs/java/layering.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_python_dead_imports_ts",
@@ -9108,7 +9495,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_python_index_ts",
@@ -9124,7 +9512,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/refactor/langs/python/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_python_verify_commands_ts",
@@ -9140,7 +9529,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/refactor/langs/python/verify_commands.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_protect_ts",
@@ -9156,7 +9546,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/refactor/protect.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_refactor_langs_ts",
@@ -9172,7 +9563,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/refactor/refactor_langs.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_core_ts",
@@ -9188,7 +9580,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/infrastructure/analysis/rename_symbol/core.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_index_ts",
@@ -9204,7 +9597,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/rename_symbol/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_c_ts",
@@ -9220,7 +9614,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/languages/c.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_cs_ts",
@@ -9236,7 +9631,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/languages/cs.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_go_ts",
@@ -9252,7 +9648,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/languages/go.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_java_ts",
@@ -9268,7 +9665,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/languages/java.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_py_ts",
@@ -9284,7 +9682,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/languages/py.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_registry_ts",
@@ -9300,7 +9699,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/languages/registry.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_ts_ts",
@@ -9316,7 +9716,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/languages/ts.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_namespace_family_ts",
@@ -9332,7 +9733,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/namespace_family.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_parts_ts",
@@ -9348,7 +9750,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/parts.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_analyze_monolith_ts",
@@ -9364,7 +9767,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/analyze_monolith.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_arch_layer_ts",
@@ -9380,7 +9784,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/arch_layer.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_cfg_ts",
@@ -9396,7 +9801,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/cfg.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_derive_feature_tree_ts",
@@ -9412,7 +9818,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/derive_feature_tree.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_feature_map_ts",
@@ -9428,7 +9835,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/feature_map.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_layer_detect_ts",
@@ -9444,7 +9852,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/layer_detect.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_monolith_ts",
@@ -9460,7 +9869,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/monolith.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_role_title_ts",
@@ -9476,7 +9886,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/role_title.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_structure_gap_ts",
@@ -9492,7 +9903,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/structure_gap.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_submit_gate_index_ts",
@@ -9508,7 +9920,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/submit_gate/index.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_behavior_index_ts",
@@ -9524,7 +9937,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/authoring/behavior/index.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_book_ts",
@@ -9540,7 +9954,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/book.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_const_eval_ts",
@@ -9556,7 +9971,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/const_eval.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_fill_ts",
@@ -9572,7 +9988,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/fill.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_fixers_ts",
@@ -9588,7 +10005,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/fixers.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_go_extractor_ts",
@@ -9604,7 +10022,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/go_extractor.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_go_tests_ts",
@@ -9620,7 +10039,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/go_tests.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_llm_ts",
@@ -9636,7 +10056,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/llm.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_pairs_ts",
@@ -9652,7 +10073,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/pairs.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_project_ts",
@@ -9668,7 +10090,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/project.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_prompts_ts",
@@ -9684,7 +10107,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/prompts.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_receipt_ts",
@@ -9700,7 +10124,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/receipt.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_referenced_ts",
@@ -9716,7 +10141,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/referenced.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_tool_ts",
@@ -9732,7 +10158,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "utility"
+        "arch_layer": "utility",
+        "path": "src/infrastructure/authoring/translate/tool.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_ts_codegen_ts",
@@ -9748,7 +10175,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/ts_codegen.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_unit_ts",
@@ -9764,7 +10192,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/unit.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_verify_ts",
@@ -9780,7 +10209,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/verify.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_verify_behavior_ts",
@@ -9796,7 +10226,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/verify_behavior.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_c_ts",
@@ -9812,7 +10243,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/adapters/c.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_csharp_ts",
@@ -9828,7 +10260,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/adapters/csharp.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_go_ts",
@@ -9844,7 +10277,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/adapters/go.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_java_ts",
@@ -9860,7 +10294,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/adapters/java.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_node_ts",
@@ -9876,7 +10311,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/adapters/node.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_python_ts",
@@ -9892,7 +10328,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/adapters/python.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_registry_ts",
@@ -9908,7 +10345,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_types_ts",
@@ -9924,7 +10362,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "types"
+        "arch_layer": "types",
+        "path": "src/infrastructure/authoring/version_upgrade/adapters/types.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_detect_ts",
@@ -9940,7 +10379,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/detect.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_features_ts",
@@ -9956,7 +10396,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/features.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_gate_ts",
@@ -9972,7 +10413,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/gate.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_removed_ts",
@@ -9988,7 +10430,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/removed.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_rewrite_ts",
@@ -10004,7 +10447,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/rewrite.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_toolchain_ts",
@@ -10020,7 +10464,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/toolchain.ts"
       },
       {
         "id": "file_src_infrastructure_daemon_client_ts",
@@ -10036,7 +10481,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/daemon/client.ts"
       },
       {
         "id": "file_src_infrastructure_data_dir_ts",
@@ -10052,7 +10498,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/data_dir.ts"
       },
       {
         "id": "file_src_infrastructure_dictionary_ts",
@@ -10068,7 +10515,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/dictionary.ts"
       },
       {
         "id": "file_src_infrastructure_dogfood_coverage_ts",
@@ -10084,7 +10532,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/dogfood_coverage.ts"
       },
       {
         "id": "file_src_infrastructure_dogfood_stats_ts",
@@ -10100,7 +10549,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/dogfood_stats.ts"
       },
       {
         "id": "file_src_infrastructure_dsl_write_scope_ts",
@@ -10116,7 +10566,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/dsl_write_scope.ts"
       },
       {
         "id": "file_src_infrastructure_exec_guard_ts",
@@ -10132,7 +10583,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/exec_guard.ts"
       },
       {
         "id": "file_src_infrastructure_git_ts",
@@ -10148,7 +10600,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/git.ts"
       },
       {
         "id": "file_src_infrastructure_graph_dead_deps_ts",
@@ -10164,7 +10617,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/graph/dead_deps.ts"
       },
       {
         "id": "file_src_infrastructure_graph_import_graph_ts",
@@ -10180,7 +10634,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/graph/import_graph.ts"
       },
       {
         "id": "file_src_infrastructure_graph_import_project_ts",
@@ -10200,7 +10655,7 @@
         "task": {
           "id": "file_src_infrastructure_graph_import_project_ts",
           "summary": "import_project：扫描出的 file 节点必须带 path（路径事实的权威落在节点上）",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_import_project_ts\"].responsibility"
@@ -10236,13 +10691,28 @@
                   "src/infrastructure/graph/import_project.ts"
                 ]
               }
+            },
+            {
+              "kind": "expectations",
+              "at": "2026-10-26T13:39:42.197Z",
+              "by": "llm",
+              "agent": "agent:wish-machine",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_infrastructure_graph_import_project_ts（2 条判据）",
+                "input": "136442f47ce2ba730045882a5237ff3c7868f4a1",
+                "code": "ffed57aa6682da2263de143bddfbcda46460f063",
+                "covers": [
+                  "src/infrastructure/graph/import_project.ts"
+                ]
+              }
             }
           ],
           "reopened_at": null,
           "reopen_reason": "T-#23：import_project 建 file 节点时补 path（否则 560 个扫描节点都没 path，路径事实只能住在 semantic.files）",
           "reopened_from": "agent:wish-machine"
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "import_project：扫描出的 file 节点必须带 path（路径事实的权威落在节点上）",
           "expectations": [
@@ -10323,7 +10793,8 @@
             "author": "llm",
             "agent": "agent:wish-machine"
           }
-        ]
+        ],
+        "path": "src/infrastructure/graph/import_project.ts"
       },
       {
         "id": "file_src_infrastructure_index_db_ts",
@@ -10601,7 +11072,8 @@
             "author": "llm",
             "agent": "agent:wish-machine"
           }
-        ]
+        ],
+        "path": "src/infrastructure/index/db.ts"
       },
       {
         "id": "file_src_infrastructure_index_file_facts_ts",
@@ -10617,7 +11089,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/file_facts.ts"
       },
       {
         "id": "file_src_infrastructure_index_function_outline_ts",
@@ -10633,7 +11106,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/function_outline.ts"
       },
       {
         "id": "file_src_infrastructure_index_guided_tour_ts",
@@ -10649,7 +11123,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/guided_tour.ts"
       },
       {
         "id": "file_src_infrastructure_index_index_backfill_ts",
@@ -10665,7 +11140,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/index_backfill.ts"
       },
       {
         "id": "file_src_infrastructure_index_index_freshness_ts",
@@ -10681,7 +11157,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/index_freshness.ts"
       },
       {
         "id": "file_src_infrastructure_index_live_render_ts",
@@ -10697,7 +11174,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/live_render.ts"
       },
       {
         "id": "file_src_infrastructure_index_registry_ts",
@@ -10713,7 +11191,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/registry.ts"
       },
       {
         "id": "file_src_infrastructure_index_scan_rev_ts",
@@ -10729,7 +11208,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/scan_rev.ts"
       },
       {
         "id": "file_src_infrastructure_index_schema_ts",
@@ -10745,7 +11225,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "data"
+        "arch_layer": "data",
+        "path": "src/infrastructure/index/schema.ts"
       },
       {
         "id": "file_src_infrastructure_index_self_writes_ts",
@@ -10761,7 +11242,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/self_writes.ts"
       },
       {
         "id": "file_src_infrastructure_index_symbols_ts",
@@ -10777,7 +11259,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/symbols.ts"
       },
       {
         "id": "file_src_infrastructure_index_watch_project_ts",
@@ -10793,7 +11276,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/watch_project.ts"
       },
       {
         "id": "file_src_infrastructure_llm_agnes_ts",
@@ -10809,7 +11293,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/llm_agnes.ts"
       },
       {
         "id": "file_src_infrastructure_llm_focus_ts",
@@ -10825,7 +11310,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/llm_focus.ts"
       },
       {
         "id": "file_src_infrastructure_llm_gateway_ts",
@@ -10841,7 +11327,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/llm_gateway.ts"
       },
       {
         "id": "file_src_infrastructure_llm_pool_ts",
@@ -10857,7 +11344,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/llm_pool.ts"
       },
       {
         "id": "file_src_infrastructure_packages_package_pins_ts",
@@ -10873,7 +11361,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/packages/package_pins.ts"
       },
       {
         "id": "file_src_infrastructure_packages_template_compat_ts",
@@ -10889,7 +11378,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/packages/template_compat.ts"
       },
       {
         "id": "file_src_infrastructure_parse_ast_node_ts",
@@ -10905,7 +11395,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/ast_node.ts"
       },
       {
         "id": "file_src_infrastructure_parse_ast_parser_ts",
@@ -10921,7 +11412,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/ast_parser.ts"
       },
       {
         "id": "file_src_infrastructure_parse_ast_rename_ts",
@@ -10937,7 +11429,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/ast_rename.ts"
       },
       {
         "id": "file_src_infrastructure_parse_comments_ts",
@@ -10953,7 +11446,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/comments.ts"
       },
       {
         "id": "file_src_infrastructure_parse_fuzzy_match_ts",
@@ -10969,7 +11463,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/fuzzy_match.ts"
       },
       {
         "id": "file_src_infrastructure_parse_import_resolve_ts",
@@ -10985,7 +11480,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/import_resolve.ts"
       },
       {
         "id": "file_src_infrastructure_parse_import_text_ts",
@@ -11001,7 +11497,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/import_text.ts"
       },
       {
         "id": "file_src_infrastructure_parse_index_ts",
@@ -11017,7 +11514,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/parse/index.ts"
       },
       {
         "id": "file_src_infrastructure_parse_kernel_ts",
@@ -11033,7 +11531,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "utility"
+        "arch_layer": "utility",
+        "path": "src/infrastructure/parse/kernel.ts"
       },
       {
         "id": "file_src_infrastructure_parse_lang_hint_ts",
@@ -11049,7 +11548,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/lang_hint.ts"
       },
       {
         "id": "file_src_infrastructure_parse_languages_ts",
@@ -11065,7 +11565,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/languages.ts"
       },
       {
         "id": "file_src_infrastructure_parse_loader_ts",
@@ -11081,7 +11582,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/loader.ts"
       },
       {
         "id": "file_src_infrastructure_parse_module_analysis_ts",
@@ -11097,7 +11599,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/module_analysis.ts"
       },
       {
         "id": "file_src_infrastructure_parse_mutants_ts",
@@ -11113,7 +11616,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/mutants.ts"
       },
       {
         "id": "file_src_infrastructure_parse_probe_ts",
@@ -11129,7 +11633,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/probe.ts"
       },
       {
         "id": "file_src_infrastructure_parse_source_exts_ts",
@@ -11145,7 +11650,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/source_exts.ts"
       },
       {
         "id": "file_src_infrastructure_parse_symbol_docstring_ts",
@@ -11161,7 +11667,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/symbol_docstring.ts"
       },
       {
         "id": "file_src_infrastructure_parse_symbol_params_ts",
@@ -11177,7 +11684,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/symbol_params.ts"
       },
       {
         "id": "file_src_infrastructure_parse_symbol_shape_ts",
@@ -11193,7 +11701,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/symbol_shape.ts"
       },
       {
         "id": "file_src_infrastructure_parse_type_members_ts",
@@ -11209,7 +11718,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/type_members.ts"
       },
       {
         "id": "file_src_infrastructure_project_view_ts",
@@ -11225,7 +11735,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/project_view.ts"
       },
       {
         "id": "file_src_infrastructure_render_anim_core_ts",
@@ -11241,7 +11752,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/render/anim_core.ts"
       },
       {
         "id": "file_src_infrastructure_render_dataflow_core_ts",
@@ -11257,7 +11769,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/render/dataflow_core.ts"
       },
       {
         "id": "file_src_infrastructure_render_export_ts",
@@ -11273,7 +11786,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/render/export.ts"
       },
       {
         "id": "file_src_infrastructure_render_inject_replay_ts",
@@ -11289,7 +11803,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/render/inject_replay.ts"
       },
       {
         "id": "file_src_infrastructure_render_simulation_engine_ts",
@@ -11305,7 +11820,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/render/simulation_engine.ts"
       },
       {
         "id": "file_src_infrastructure_rules_rule_match_ts",
@@ -11321,7 +11837,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/rules/rule_match.ts"
       },
       {
         "id": "file_src_infrastructure_rules_rule_tokens_ts",
@@ -11337,7 +11854,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/rules/rule_tokens.ts"
       },
       {
         "id": "file_src_infrastructure_scan_bounds_ts",
@@ -11353,7 +11871,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/scan_bounds.ts"
       },
       {
         "id": "file_src_infrastructure_source_write_port_ts",
@@ -11369,7 +11888,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/source_write_port.ts"
       },
       {
         "id": "file_src_infrastructure_storage_ts",
@@ -11470,7 +11990,8 @@
             "kind": "expectations",
             "unsupported": 0
           }
-        }
+        },
+        "path": "src/infrastructure/storage.ts"
       },
       {
         "id": "file_src_infrastructure_storage_overlay_ts",
@@ -11486,7 +12007,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/storage_overlay.ts"
       },
       {
         "id": "file_src_infrastructure_task_history_ts",
@@ -11591,7 +12113,8 @@
             "kind": "expectations",
             "unsupported": 0
           }
-        }
+        },
+        "path": "src/infrastructure/task_history.ts"
       },
       {
         "id": "file_src_infrastructure_text_arg_suggest_ts",
@@ -11607,7 +12130,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/text/arg_suggest.ts"
       },
       {
         "id": "file_src_infrastructure_text_line_utils_ts",
@@ -11623,7 +12147,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/text/line_utils.ts"
       },
       {
         "id": "file_src_infrastructure_text_refs_text_ts",
@@ -11639,7 +12164,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/text/refs_text.ts"
       },
       {
         "id": "file_src_infrastructure_verify_refactor_ts",
@@ -11655,7 +12181,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/verify_refactor.ts"
       },
       {
         "id": "file_src_presentation_cli_cli_ts",
@@ -11671,7 +12198,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/cli/cli.ts"
       },
       {
         "id": "file_src_presentation_cli_diagnose_loop_cli_ts",
@@ -11687,7 +12215,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/cli/diagnose_loop_cli.ts"
       },
       {
         "id": "file_src_presentation_cli_install_package_cli_ts",
@@ -11703,7 +12232,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/cli/install_package_cli.ts"
       },
       {
         "id": "file_src_presentation_daemon_daemon_ts",
@@ -11719,7 +12249,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/daemon/daemon.ts"
       },
       {
         "id": "file_src_presentation_daemon_memory_watch_ts",
@@ -11735,7 +12266,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/daemon/memory_watch.ts"
       },
       {
         "id": "file_src_presentation_daemon_server_ts",
@@ -11751,7 +12283,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/presentation/daemon/server.ts"
       },
       {
         "id": "file_src_presentation_http_contract_ts",
@@ -11767,7 +12300,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/http/contract.ts"
       },
       {
         "id": "file_src_presentation_http_dict_gen_ts",
@@ -11783,7 +12317,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/http/dict_gen.ts"
       },
       {
         "id": "file_src_presentation_http_serve_ts",
@@ -11883,7 +12418,8 @@
             "kind": "expectations",
             "unsupported": 0
           }
-        }
+        },
+        "path": "src/presentation/http/serve.ts"
       },
       {
         "id": "file_src_presentation_mcp_lifecycle_ts",
@@ -11899,7 +12435,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/mcp/lifecycle.ts"
       },
       {
         "id": "file_src_presentation_mcp_server_ts",
@@ -11915,7 +12452,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/presentation/mcp/server.ts"
       },
       {
         "id": "file_src_presentation_mcp_server_registry_ts",
@@ -12145,7 +12683,8 @@
             "author": "llm",
             "agent": "agent:wish-machine"
           }
-        ]
+        ],
+        "path": "src/presentation/mcp/server_registry.ts"
       },
       {
         "id": "file_src_presentation_mcp_tool_warnings_ts",
@@ -12161,7 +12700,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/mcp/tool_warnings.ts"
       },
       {
         "id": "file_tests_helpers_i1_fixture_ts",
@@ -12177,7 +12717,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "utility"
+        "arch_layer": "utility",
+        "path": "tests/helpers/i1_fixture.ts"
       }
     ],
     "edges": [
@@ -58857,7 +59398,7 @@
         ],
         "lines": 1642,
         "layer": "core",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_index_db_ts",
@@ -62393,15 +62934,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 73,
+  "_dsl_rev": 75,
   "_sync": {
-    "saved_at": "2026-10-26T13:38:47.843Z",
+    "saved_at": "2026-10-26T13:44:17.810Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 20930706,
+    "age": 21260673,
     "dbSchemaVersion": 17,
-    "via": "edit_dsl:edit_dsl"
+    "via": "tool:t23-migrate"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）"

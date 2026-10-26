@@ -1523,7 +1523,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/observe-skeleton-cert.mjs"
       },
       {
         "id": "file_certs_run-all-certs_mjs",
@@ -1540,7 +1541,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/run-all-certs.mjs"
       },
       {
         "id": "file_certs_t136-unused-export-cert_mjs",
@@ -1557,7 +1559,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t136-unused-export-cert.mjs"
       },
       {
         "id": "file_certs_t181-cert_sh",
@@ -1574,7 +1577,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t181-cert.sh"
       },
       {
         "id": "file_certs_t181-reset_mjs",
@@ -1591,7 +1595,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t181-reset.mjs"
       },
       {
         "id": "file_certs_t182-cert_mjs",
@@ -1608,7 +1613,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t182-cert.mjs"
       },
       {
         "id": "file_certs_t182b-cert_sh",
@@ -1625,7 +1631,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t182b-cert.sh"
       },
       {
         "id": "file_certs_t182b-tombstone-cert_mjs",
@@ -1642,7 +1649,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t182b-tombstone-cert.mjs"
       },
       {
         "id": "file_certs_t183-cert_mjs",
@@ -1659,7 +1667,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t183-cert.mjs"
       },
       {
         "id": "file_certs_t184-cert_mjs",
@@ -1676,7 +1685,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t184-cert.mjs"
       },
       {
         "id": "file_certs_t184b-cert_mjs",
@@ -1693,7 +1703,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t184b-cert.mjs"
       },
       {
         "id": "file_certs_t184b-probe_mjs",
@@ -1710,7 +1721,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t184b-probe.mjs"
       },
       {
         "id": "file_certs_t185-cert_mjs",
@@ -1727,7 +1739,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t185-cert.mjs"
       },
       {
         "id": "file_certs_t185-reset_mjs",
@@ -1744,7 +1757,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t185-reset.mjs"
       },
       {
         "id": "file_certs_t186-cert_mjs",
@@ -1761,7 +1775,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t186-cert.mjs"
       },
       {
         "id": "file_certs_t186b-cert_mjs",
@@ -1778,7 +1793,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t186b-cert.mjs"
       },
       {
         "id": "file_certs_t187-probe_mjs",
@@ -1795,7 +1811,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t187-probe.mjs"
       },
       {
         "id": "file_certs_t188-cert_mjs",
@@ -1812,7 +1829,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t188-cert.mjs"
       },
       {
         "id": "file_certs_t189-measure_mjs",
@@ -1829,7 +1847,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t189-measure.mjs"
       },
       {
         "id": "file_certs_t189-sweep_mjs",
@@ -1846,7 +1865,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t189-sweep.mjs"
       },
       {
         "id": "file_certs_t190-cert_mjs",
@@ -1863,7 +1883,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t190-cert.mjs"
       },
       {
         "id": "file_certs_t191-cert_mjs",
@@ -1880,7 +1901,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t191-cert.mjs"
       },
       {
         "id": "file_certs_t192-flow_mjs",
@@ -1897,7 +1919,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t192-flow.mjs"
       },
       {
         "id": "file_certs_t192-phantom_mjs",
@@ -1914,7 +1937,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t192-phantom.mjs"
       },
       {
         "id": "file_certs_t192-pointer-sweep_mjs",
@@ -1931,7 +1955,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t192-pointer-sweep.mjs"
       },
       {
         "id": "file_certs_t193-card_mjs",
@@ -1948,7 +1973,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t193-card.mjs"
       },
       {
         "id": "file_certs_t194-flat_mjs",
@@ -1965,7 +1991,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t194-flat.mjs"
       },
       {
         "id": "file_certs_t195-gate-removal_mjs",
@@ -1982,7 +2009,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t195-gate-removal.mjs"
       },
       {
         "id": "file_certs_t196-pointers_mjs",
@@ -1999,7 +2027,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t196-pointers.mjs"
       },
       {
         "id": "file_certs_t197-args_mjs",
@@ -2016,7 +2045,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t197-args.mjs"
       },
       {
         "id": "file_certs_t197c-approvals-cert_mjs",
@@ -2033,7 +2063,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t197c-approvals-cert.mjs"
       },
       {
         "id": "file_certs_t197sub-approval_mjs",
@@ -2050,7 +2081,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t197sub-approval.mjs"
       },
       {
         "id": "file_certs_t197sub-flow-cert_mjs",
@@ -2067,7 +2099,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t197sub-flow-cert.mjs"
       },
       {
         "id": "file_certs_t198-status_mjs",
@@ -2084,7 +2117,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t198-status.mjs"
       },
       {
         "id": "file_certs_t198sub-approval-cert_mjs",
@@ -2101,7 +2135,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t198sub-approval-cert.mjs"
       },
       {
         "id": "file_certs_t200-goals_mjs",
@@ -2118,7 +2153,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t200-goals.mjs"
       },
       {
         "id": "file_certs_t201-decoy_mjs",
@@ -2135,7 +2171,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t201-decoy.mjs"
       },
       {
         "id": "file_certs_t202-diagnose-loop_mjs",
@@ -2152,7 +2189,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t202-diagnose-loop.mjs"
       },
       {
         "id": "file_certs_t203-touched-audit_mjs",
@@ -2169,7 +2207,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t203-touched-audit.mjs"
       },
       {
         "id": "file_certs_t203b-declared_mjs",
@@ -2186,7 +2225,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t203b-declared.mjs"
       },
       {
         "id": "file_certs_t205-splitchain_mjs",
@@ -2203,7 +2243,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t205-splitchain.mjs"
       },
       {
         "id": "file_certs_t212-regex-vs-ast_mjs",
@@ -2220,7 +2261,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t212-regex-vs-ast.mjs"
       },
       {
         "id": "file_certs_t213-must-export_mjs",
@@ -2237,7 +2279,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t213-must-export.mjs"
       },
       {
         "id": "file_certs_t238-freshness-cert_mjs",
@@ -2254,7 +2297,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t238-freshness-cert.mjs"
       },
       {
         "id": "file_certs_t245-index-key-cert_mjs",
@@ -2271,7 +2315,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t245-index-key-cert.mjs"
       },
       {
         "id": "file_certs_t246-partial-cert_mjs",
@@ -2288,7 +2333,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t246-partial-cert.mjs"
       },
       {
         "id": "file_certs_t247-coverage-cert_mjs",
@@ -2305,7 +2351,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t247-coverage-cert.mjs"
       },
       {
         "id": "file_certs_t251-data-parser-cert_mjs",
@@ -2322,7 +2369,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t251-data-parser-cert.mjs"
       },
       {
         "id": "file_certs_t316-observe-pack-cert_mjs",
@@ -2339,7 +2387,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t316-observe-pack-cert.mjs"
       },
       {
         "id": "file_certs_t326-tool-surface-cost-cert_mjs",
@@ -2356,7 +2405,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t326-tool-surface-cost-cert.mjs"
       },
       {
         "id": "file_certs_t328-progress-authority-cert_mjs",
@@ -2373,7 +2423,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t328-progress-authority-cert.mjs"
       },
       {
         "id": "file_certs_t329-scope-decision-cert_mjs",
@@ -2390,7 +2441,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t329-scope-decision-cert.mjs"
       },
       {
         "id": "file_certs_t330-pending-view-cert_mjs",
@@ -2407,7 +2459,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t330-pending-view-cert.mjs"
       },
       {
         "id": "file_certs_t331-entry-size-cert_mjs",
@@ -2424,7 +2477,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t331-entry-size-cert.mjs"
       },
       {
         "id": "file_certs_t332-requires-gate-cert_mjs",
@@ -2441,7 +2495,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t332-requires-gate-cert.mjs"
       },
       {
         "id": "file_certs_t333-attestation-binding-cert_mjs",
@@ -2458,7 +2513,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t333-attestation-binding-cert.mjs"
       },
       {
         "id": "file_certs_t334-mcp-evidence-path-cert_mjs",
@@ -2475,7 +2531,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t334-mcp-evidence-path-cert.mjs"
       },
       {
         "id": "file_certs_t335-expectation-from-acceptance-cert_mjs",
@@ -2492,7 +2549,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t335-expectation-from-acceptance-cert.mjs"
       },
       {
         "id": "file_certs_t336-design-to-diffblocks-cert_mjs",
@@ -2509,7 +2567,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t336-design-to-diffblocks-cert.mjs"
       },
       {
         "id": "file_certs_t337-design-sheet-cert_mjs",
@@ -2526,7 +2585,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t337-design-sheet-cert.mjs"
       },
       {
         "id": "file_certs_t338-design-sheet-ref-cert_mjs",
@@ -2543,7 +2603,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t338-design-sheet-ref-cert.mjs"
       },
       {
         "id": "file_certs_t339-design-sheet-pending-home-cert_mjs",
@@ -2560,7 +2621,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t339-design-sheet-pending-home-cert.mjs"
       },
       {
         "id": "file_certs_t340-edit-dsl-validate-gate-cert_mjs",
@@ -2577,7 +2639,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t340-edit-dsl-validate-gate-cert.mjs"
       },
       {
         "id": "file_certs_t341-error-key-gate-cert_mjs",
@@ -2594,7 +2657,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t341-error-key-gate-cert.mjs"
       },
       {
         "id": "file_certs_t342-anchor-broken-repair-cert_mjs",
@@ -2611,7 +2675,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t342-anchor-broken-repair-cert.mjs"
       },
       {
         "id": "file_certs_t343-contract-not-from-code-and-attestation-applies-cert_mjs",
@@ -2628,7 +2693,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t343-contract-not-from-code-and-attestation-applies-cert.mjs"
       },
       {
         "id": "file_certs_t344-design-sheet-resolved-cert_mjs",
@@ -2645,7 +2711,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t344-design-sheet-resolved-cert.mjs"
       },
       {
         "id": "file_certs_t345-read-side-facts-backfill-cert_mjs",
@@ -2662,7 +2729,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t345-read-side-facts-backfill-cert.mjs"
       },
       {
         "id": "file_certs_t346-type-only-edge-verdict-cert_mjs",
@@ -2679,7 +2747,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t346-type-only-edge-verdict-cert.mjs"
       },
       {
         "id": "file_certs_t347-receipt-completeness-cert_mjs",
@@ -2696,7 +2765,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t347-receipt-completeness-cert.mjs"
       },
       {
         "id": "file_certs_t348-phase-classification-cert_mjs",
@@ -2713,7 +2783,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t348-phase-classification-cert.mjs"
       },
       {
         "id": "file_certs_t349-task-home-cert_mjs",
@@ -2730,7 +2801,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t349-task-home-cert.mjs"
       },
       {
         "id": "file_certs_t350-publish-task-cert_mjs",
@@ -2747,7 +2819,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t350-publish-task-cert.mjs"
       },
       {
         "id": "file_certs_t351-card-standing-cert_mjs",
@@ -2764,7 +2837,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t351-card-standing-cert.mjs"
       },
       {
         "id": "file_certs_t352-write-gate-coverage-cert_mjs",
@@ -2781,7 +2855,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t352-write-gate-coverage-cert.mjs"
       },
       {
         "id": "file_certs_t353-gate-principle-unblock-cert_mjs",
@@ -2798,7 +2873,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t353-gate-principle-unblock-cert.mjs"
       },
       {
         "id": "file_certs_t354-incremental-verify-cert_mjs",
@@ -2815,7 +2891,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t354-incremental-verify-cert.mjs"
       },
       {
         "id": "file_dogfood_build_cache_mjs",
@@ -2831,7 +2908,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "dogfood/build_cache.mjs"
       },
       {
         "id": "file_dogfood_check_cache_mjs",
@@ -2847,7 +2925,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "dogfood/check_cache.mjs"
       },
       {
         "id": "file_dogfood_verify_space_bug_mjs",
@@ -2863,7 +2942,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "dogfood/verify_space_bug.mjs"
       },
       {
         "id": "file_dogfood_verify_spec_form_mjs",
@@ -2879,7 +2959,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "dogfood/verify_spec_form.mjs"
       },
       {
         "id": "file_observe-lang-go_cmd_instrument_main_go",
@@ -2895,7 +2976,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "observe-lang-go/cmd/instrument/main.go"
       },
       {
         "id": "file_observe-lang-go_cmd_observev2-demo_main_go",
@@ -2911,7 +2993,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "observe-lang-go/cmd/observev2-demo/main.go"
       },
       {
         "id": "file_observe-lang-go_cmd_observev2-record_main_go",
@@ -2927,7 +3010,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "observe-lang-go/cmd/observev2-record/main.go"
       },
       {
         "id": "file_observe-lang-go_internal_instrument_contract_go",
@@ -2943,7 +3027,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "observe-lang-go/internal/instrument/contract.go"
       },
       {
         "id": "file_observe-lang-go_internal_instrument_effects_go",
@@ -2959,7 +3044,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "observe-lang-go/internal/instrument/effects.go"
       },
       {
         "id": "file_observe-lang-go_internal_instrument_instrument_go",
@@ -2975,7 +3061,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "observe-lang-go/internal/instrument/instrument.go"
       },
       {
         "id": "file_observe-lang-go_probe_export_go",
@@ -2991,7 +3078,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "observe-lang-go/probe/export.go"
       },
       {
         "id": "file_observe-lang-go_probe_global_go",
@@ -3007,7 +3095,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "observe-lang-go/probe/global.go"
       },
       {
         "id": "file_observe-lang-go_probe_probe_go",
@@ -3023,7 +3112,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "observe-lang-go/probe/probe.go"
       },
       {
         "id": "file_observe-lang-go_probe_run_recorder_go",
@@ -3039,7 +3129,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "observe-lang-go/probe/run_recorder.go"
       },
       {
         "id": "file_observe-lang-go_probe_tiered_go",
@@ -3055,7 +3146,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "observe-lang-go/probe/tiered.go"
       },
       {
         "id": "file_observe-lang-go_probe_trace_go",
@@ -3071,7 +3163,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "observe-lang-go/probe/trace.go"
       },
       {
         "id": "file_observe-lang-java_observe_probe_Camprobe_java",
@@ -3087,7 +3180,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "observe-lang-java/observe/probe/Camprobe.java"
       },
       {
         "id": "file_observe-lang-py_camprobe_py",
@@ -3103,7 +3197,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "observe-lang-py/camprobe.py"
       },
       {
         "id": "file_scripts_check-receipt_mjs",
@@ -3120,7 +3215,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/check-receipt.mjs"
       },
       {
         "id": "file_scripts_clean_dist_mjs",
@@ -3137,7 +3233,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/clean_dist.mjs"
       },
       {
         "id": "file_scripts_demo_mjs",
@@ -3154,7 +3251,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/demo.mjs"
       },
       {
         "id": "file_scripts_dev_mjs",
@@ -3171,7 +3269,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/dev.mjs"
       },
       {
         "id": "file_scripts_diff_language_rosters_py",
@@ -3188,7 +3287,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/diff_language_rosters.py"
       },
       {
         "id": "file_scripts_freeze_grammar_sources_py",
@@ -3205,7 +3305,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/freeze_grammar_sources.py"
       },
       {
         "id": "file_scripts_gen_agents_mjs",
@@ -3222,7 +3323,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/gen_agents.mjs"
       },
       {
         "id": "file_scripts_gen_cognition_mjs",
@@ -3239,7 +3341,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/gen_cognition.mjs"
       },
       {
         "id": "file_scripts_gen_endpoints_schema_mjs",
@@ -3256,7 +3359,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/gen_endpoints_schema.mjs"
       },
       {
         "id": "file_scripts_gen_manifest_mjs",
@@ -3273,7 +3377,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/gen_manifest.mjs"
       },
       {
         "id": "file_scripts_gen_teach_cjs",
@@ -3290,7 +3395,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/gen_teach.cjs"
       },
       {
         "id": "file_scripts_grammar_shim_mjs",
@@ -3307,7 +3413,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/grammar_shim.mjs"
       },
       {
         "id": "file_scripts_hook-task-gate_mjs",
@@ -3352,7 +3459,8 @@
             "observed": "t361 PASS=10 FAIL=0（消融摘 description 回落 ⇒ 8/2）。增量入口实跑：改 scripts/hook-task-gate.mjs ⇒ 命中 1 条契约（source-has must=collectGateCoverage/rootFeatureCount）+ 1 张证 t361 ⇒ 全绿。",
             "at": "2026-10-22T07:45:12.813Z"
           }
-        }
+        },
+        "path": "scripts/hook-task-gate.mjs"
       },
       {
         "id": "file_scripts_hub_mjs",
@@ -3369,7 +3477,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/hub.mjs"
       },
       {
         "id": "file_scripts_install_global_skill_mjs",
@@ -3386,7 +3495,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/install_global_skill.mjs"
       },
       {
         "id": "file_scripts_install_mcp_mjs",
@@ -3431,7 +3541,8 @@
             "observed": "PASS=7 FAIL=0；真 home `--check`：10 平台、WorkBuddy「与期望等价」。消融（env 逐字比）⇒ 6/1（④ 红）。",
             "at": "2026-10-22T07:45:12.813Z"
           }
-        }
+        },
+        "path": "scripts/install_mcp.mjs"
       },
       {
         "id": "file_scripts_mcp_mcp_call_mjs",
@@ -3448,7 +3559,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/mcp/mcp_call.mjs"
       },
       {
         "id": "file_scripts_mcp_mcp_scan_mjs",
@@ -3465,7 +3577,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/mcp/mcp_scan.mjs"
       },
       {
         "id": "file_scripts_mcp_mcp_smoke_mjs",
@@ -3482,7 +3595,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/mcp/mcp_smoke.mjs"
       },
       {
         "id": "file_scripts_measure_b_contract_mjs",
@@ -3499,7 +3613,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/measure_b_contract.mjs"
       },
       {
         "id": "file_scripts_merge_language_roster_py",
@@ -3516,7 +3631,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/merge_language_roster.py"
       },
       {
         "id": "file_scripts_net_probe_mjs",
@@ -3533,7 +3649,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/net_probe.mjs"
       },
       {
         "id": "file_scripts_new-observe-lang_mjs",
@@ -3550,7 +3667,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/new-observe-lang.mjs"
       },
       {
         "id": "file_scripts_plan-assertions_mjs",
@@ -3567,7 +3685,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/plan-assertions.mjs"
       },
       {
         "id": "file_scripts_probe_cc_equiv_mjs",
@@ -3584,7 +3703,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_cc_equiv.mjs"
       },
       {
         "id": "file_scripts_probe_closure_multi_mjs",
@@ -3601,7 +3721,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_closure_multi.mjs"
       },
       {
         "id": "file_scripts_probe_demand_side_mjs",
@@ -3618,7 +3739,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_demand_side.mjs"
       },
       {
         "id": "file_scripts_probe_edge_diff_mjs",
@@ -3635,7 +3757,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_edge_diff.mjs"
       },
       {
         "id": "file_scripts_probe_extract_hard_mjs",
@@ -3652,7 +3775,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_extract_hard.mjs"
       },
       {
         "id": "file_scripts_probe_extract_quality_mjs",
@@ -3669,7 +3793,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_extract_quality.mjs"
       },
       {
         "id": "file_scripts_probe_impact_reverse_mjs",
@@ -3686,7 +3811,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_impact_reverse.mjs"
       },
       {
         "id": "file_scripts_probe_tool_smells_mjs",
@@ -3703,7 +3829,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_tool_smells.mjs"
       },
       {
         "id": "file_scripts_probe_tool_surface_mjs",
@@ -3720,7 +3847,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_tool_surface.mjs"
       },
       {
         "id": "file_scripts_probe_verdict_grid_mjs",
@@ -3737,7 +3865,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_verdict_grid.mjs"
       },
       {
         "id": "file_scripts_probe_xfile_resolve_mjs",
@@ -3754,7 +3883,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/probe_xfile_resolve.mjs"
       },
       {
         "id": "file_scripts_promote_agent_io_mcp_mjs",
@@ -3771,7 +3901,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/promote_agent_io_mcp.mjs"
       },
       {
         "id": "file_scripts_rebuild_feature_mjs",
@@ -3788,7 +3919,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/rebuild_feature.mjs"
       },
       {
         "id": "file_scripts_rebuild_teach_cjs",
@@ -3805,7 +3937,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/rebuild_teach.cjs"
       },
       {
         "id": "file_scripts_relink_specifiers_mjs",
@@ -3822,7 +3955,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/relink_specifiers.mjs"
       },
       {
         "id": "file_scripts_run-invariant-checks_mjs",
@@ -3839,7 +3973,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/run-invariant-checks.mjs"
       },
       {
         "id": "file_scripts_scan_canvas_ts",
@@ -3856,7 +3991,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/scan_canvas.ts"
       },
       {
         "id": "file_scripts_setup_mjs",
@@ -3873,7 +4009,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/setup.mjs"
       },
       {
         "id": "file_scripts_task-system-static_mjs",
@@ -3890,7 +4027,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/task-system-static.mjs"
       },
       {
         "id": "file_scripts_ts_kernel_probe_mjs",
@@ -3907,7 +4045,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/ts_kernel_probe.mjs"
       },
       {
         "id": "file_scripts_verify-changed_mjs",
@@ -3951,7 +4090,8 @@
             "observed": "PASS=14 FAIL=0。输出新增 why（摘要）列；③' 现在命中 1 条 source-has（册子路径唯一处 .agent-io/design/）。消融：摘掉该契约 ⇒ ③' 红；why 置空 ⇒ ②③' 红。",
             "at": "2026-10-22T07:45:12.813Z"
           }
-        }
+        },
+        "path": "scripts/verify-changed.mjs"
       },
       {
         "id": "file_scripts_verify_mjs",
@@ -3968,7 +4108,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/verify.mjs"
       },
       {
         "id": "file_scripts_verify_grammar_rebuild_mjs",
@@ -3985,7 +4126,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/verify_grammar_rebuild.mjs"
       },
       {
         "id": "file_scripts_vocabulary_mjs",
@@ -4002,7 +4144,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "scripts/vocabulary.mjs"
       },
       {
         "id": "file_src_application_cross_index_ts",
@@ -4018,7 +4161,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/application/cross/index.ts"
       },
       {
         "id": "file_src_application_design_api_signature_ts",
@@ -4034,7 +4178,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/api_signature.ts"
       },
       {
         "id": "file_src_application_design_derive_derive_algorithm_ts",
@@ -4050,7 +4195,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/derive/derive_algorithm.ts"
       },
       {
         "id": "file_src_application_design_derive_derive_chain_ts",
@@ -4066,7 +4212,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/derive/derive_chain.ts"
       },
       {
         "id": "file_src_application_design_derive_derive_split_ts",
@@ -4082,7 +4229,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/derive/derive_split.ts"
       },
       {
         "id": "file_src_application_design_derive_opl_ts",
@@ -4098,7 +4246,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/derive/opl.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_annotation_tools_ts",
@@ -4458,7 +4607,8 @@
             "agent": "workbuddy-main"
           }
         ],
-        "intent": "retired"
+        "intent": "retired",
+        "path": "src/application/design/dsl_ops/annotation_tools.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_api_ops_ts",
@@ -5060,7 +5210,8 @@
             "observed": "t364 PASS=7 FAIL=0；增量入口：12 条契约全 pass + t364 绿。改动 = setNodeSemantic 不再 saveDSL；node_id≠file_id 当场拒。",
             "at": "2026-10-22T07:45:12.813Z"
           }
-        }
+        },
+        "path": "src/application/design/dsl_ops/api_ops.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_edge_ops_ts",
@@ -5428,7 +5579,8 @@
             },
             "agent": "all-externalize"
           }
-        ]
+        ],
+        "path": "src/application/design/dsl_ops/edge_ops.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_edit_result_ts",
@@ -5507,7 +5659,8 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "path": "src/application/design/dsl_ops/edit_result.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_feature_ops_ts",
@@ -5789,7 +5942,8 @@
             },
             "agent": "all-externalize"
           }
-        ]
+        ],
+        "path": "src/application/design/dsl_ops/feature_ops.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_file_ops_ts",
@@ -6150,7 +6304,8 @@
           "released_by": "deepseek-v4.1-flash",
           "released_at": "2026-10-20T10:26:33.324Z"
         },
-        "status": "draft"
+        "status": "draft",
+        "path": "src/application/design/dsl_ops/file_ops.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_node_ops_ts",
@@ -6967,7 +7122,8 @@
             },
             "agent": "all-externalize"
           }
-        ]
+        ],
+        "path": "src/application/design/dsl_ops/node_ops.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_op_data_spec_ts",
@@ -10881,7 +11037,8 @@
           "reopened_at": "2026-10-24T09:13:51.966Z",
           "reopen_reason": "口语清洗第二批（op_data_spec.ts）：清洗工具描述串里的随意口语（如 350 行干完了/放回去/不做了、135 行默默勾上、136 行没判、271 行还在跑/正在干等约 5 处），只改字符串字面量、不改任何代码逻辑",
           "reopened_from": "agent:subagent-colloquial-clean"
-        }
+        },
+        "path": "src/application/design/dsl_ops/op_data_spec.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_status_tools_ts",
@@ -11284,7 +11441,8 @@
             "why": "只改了一行注释（split 的转义写错），7 条后态判据仍全过；本次收口就是 t363 修好的那条正路（done→claim(modify)→complete(attestation)）",
             "source_node_id": "file_src_application_design_dsl_ops_status_tools_ts"
           }
-        }
+        },
+        "path": "src/application/design/dsl_ops/status_tools.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_task_ops_ts",
@@ -13534,7 +13692,8 @@
             "from_claimed_at": "2026-10-24T03:01:18.255Z",
             "age_hours": 5.7
           }
-        }
+        },
+        "path": "src/application/design/dsl_ops/task_ops.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -17601,7 +17760,8 @@
             "kind": "reading",
             "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）"
           }
-        }
+        },
+        "path": "src/application/design/dsl_ops/update_feature.ts"
       },
       {
         "id": "file_src_application_design_handlers_ts",
@@ -17728,7 +17888,8 @@
             "kind": "expectations",
             "unsupported": 0
           }
-        }
+        },
+        "path": "src/application/design/handlers.ts"
       },
       {
         "id": "file_src_application_design_index_ts",
@@ -17767,7 +17928,8 @@
           "updated_at": "2026-10-26T10:24:46.023Z",
           "author": "llm",
           "agent": "agent:wish-machine"
-        }
+        },
+        "path": "src/application/design/index.ts"
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -17783,7 +17945,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/intent/consistency.ts"
       },
       {
         "id": "file_src_application_design_intent_detect_drift_ts",
@@ -17799,7 +17962,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/intent/detect_drift.ts"
       },
       {
         "id": "file_src_application_design_intent_expectations_ts",
@@ -17924,7 +18088,8 @@
             "at": "2026-10-24T08:30:00Z",
             "verdict": "pass"
           }
-        }
+        },
+        "path": "src/application/design/intent/expectations.ts"
       },
       {
         "id": "file_src_application_design_intent_set_design_intent_ts",
@@ -17940,7 +18105,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/intent/set_design_intent.ts"
       },
       {
         "id": "file_src_application_design_lifecycle_simulation_ts",
@@ -17956,7 +18122,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/lifecycle/simulation.ts"
       },
       {
         "id": "file_src_application_design_lifecycle_snapshot_ts",
@@ -17972,7 +18139,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/lifecycle/snapshot.ts"
       },
       {
         "id": "file_src_application_design_no_file_entries_ts",
@@ -17988,7 +18156,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/no_file_entries.ts"
       },
       {
         "id": "file_src_application_design_workbench_code_workbench_ts",
@@ -18004,7 +18173,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/workbench/code_workbench.ts"
       },
       {
         "id": "file_src_application_design_workbench_dag_layout_ts",
@@ -18020,7 +18190,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/design/workbench/dag_layout.ts"
       },
       {
         "id": "file_src_application_dispatch_ts",
@@ -18036,7 +18207,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/dispatch.ts"
       },
       {
         "id": "file_src_application_harvest_extract_contracts_ts",
@@ -18052,7 +18224,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/harvest/extract_contracts.ts"
       },
       {
         "id": "file_src_application_harvest_handlers_ts",
@@ -18068,7 +18241,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "path": "src/application/harvest/handlers.ts"
       },
       {
         "id": "file_src_application_harvest_harvest_closure_ts",
@@ -18084,7 +18258,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/harvest/harvest_closure.ts"
       },
       {
         "id": "file_src_application_harvest_harvest_decisions_ts",
@@ -18100,7 +18275,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/harvest/harvest_decisions.ts"
       },
       {
         "id": "file_src_application_harvest_index_ts",
@@ -18116,7 +18292,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/application/harvest/index.ts"
       },
       {
         "id": "file_src_application_meta_diagnosis_diagnose_loop_ts",
@@ -18132,7 +18309,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/diagnosis/diagnose_loop.ts"
       },
       {
         "id": "file_src_application_meta_docs_project_docs_ts",
@@ -18148,7 +18326,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/docs/project_docs.ts"
       },
       {
         "id": "file_src_application_meta_explore_contract_page_ts",
@@ -18164,7 +18343,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/explore/contract_page.ts"
       },
       {
         "id": "file_src_application_meta_explore_explore_arg_spec_ts",
@@ -18180,7 +18360,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/explore/explore_arg_spec.ts"
       },
       {
         "id": "file_src_application_meta_explore_explore_code_ts",
@@ -18196,7 +18377,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/explore/explore_code.ts"
       },
       {
         "id": "file_src_application_meta_explore_first_hop_args_ts",
@@ -18212,7 +18394,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/explore/first_hop_args.ts"
       },
       {
         "id": "file_src_application_meta_explore_next_hop_args_ts",
@@ -18228,7 +18411,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/explore/next_hop_args.ts"
       },
       {
         "id": "file_src_application_meta_explore_query_feature_ts",
@@ -18381,7 +18565,8 @@
             "note": "口语清洗：一眼全貌→总览视图；负重主源→主要体积来源",
             "agent": "subagent-colloquial-clean"
           }
-        ]
+        ],
+        "path": "src/application/meta/explore/query_feature.ts"
       },
       {
         "id": "file_src_application_meta_handlers_ts",
@@ -18397,7 +18582,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "path": "src/application/meta/handlers.ts"
       },
       {
         "id": "file_src_application_meta_impact_impact_report_ts",
@@ -18413,7 +18599,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/impact/impact_report.ts"
       },
       {
         "id": "file_src_application_meta_index_ts",
@@ -18429,7 +18616,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/application/meta/index.ts"
       },
       {
         "id": "file_src_application_meta_integrity_index_integrity_ts",
@@ -18445,7 +18633,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/integrity/index_integrity.ts"
       },
       {
         "id": "file_src_application_meta_llm_llm_decider_ts",
@@ -18461,7 +18650,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/llm/llm_decider.ts"
       },
       {
         "id": "file_src_application_meta_llm_semantic_search_ts",
@@ -18477,7 +18667,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/llm/semantic_search.ts"
       },
       {
         "id": "file_src_application_meta_registry_capability_map_ts",
@@ -18493,7 +18684,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/registry/capability_map.ts"
       },
       {
         "id": "file_src_application_meta_registry_cli_extract_ts",
@@ -18509,7 +18701,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/registry/cli_extract.ts"
       },
       {
         "id": "file_src_application_meta_registry_collect_functions_ts",
@@ -18525,7 +18718,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/registry/collect_functions.ts"
       },
       {
         "id": "file_src_application_meta_registry_registry_extract_ts",
@@ -18541,7 +18735,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/registry/registry_extract.ts"
       },
       {
         "id": "file_src_application_meta_registry_sync_contracts_ts",
@@ -18557,7 +18752,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/registry/sync_contracts.ts"
       },
       {
         "id": "file_src_application_meta_registry_tool_faces_ts",
@@ -18573,7 +18769,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/registry/tool_faces.ts"
       },
       {
         "id": "file_src_application_meta_upgrade_upgrade_ts",
@@ -18589,7 +18786,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/meta/upgrade/upgrade.ts"
       },
       {
         "id": "file_src_application_meta_view_derive_anim_flow_ts",
@@ -18605,7 +18803,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "ui"
+        "arch_layer": "ui",
+        "path": "src/application/meta/view/derive_anim_flow.ts"
       },
       {
         "id": "file_src_application_meta_view_derive_mind_map_ts",
@@ -18621,7 +18820,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "ui"
+        "arch_layer": "ui",
+        "path": "src/application/meta/view/derive_mind_map.ts"
       },
       {
         "id": "file_src_application_meta_view_explain_gen_ts",
@@ -18637,7 +18837,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "ui"
+        "arch_layer": "ui",
+        "path": "src/application/meta/view/explain_gen.ts"
       },
       {
         "id": "file_src_application_meta_view_overview_ts",
@@ -18653,7 +18854,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "ui"
+        "arch_layer": "ui",
+        "path": "src/application/meta/view/overview.ts"
       },
       {
         "id": "file_src_application_observe_capture_feature_line_ts",
@@ -18669,7 +18871,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/capture/feature_line.ts"
       },
       {
         "id": "file_src_application_observe_capture_memory_observe_ts",
@@ -18685,7 +18888,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/capture/memory_observe.ts"
       },
       {
         "id": "file_src_application_observe_capture_narrate_step_ts",
@@ -18701,7 +18905,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/capture/narrate_step.ts"
       },
       {
         "id": "file_src_application_observe_capture_observe_points_ts",
@@ -18717,7 +18922,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/capture/observe_points.ts"
       },
       {
         "id": "file_src_application_observe_capture_observe_trace_ts",
@@ -18733,7 +18939,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/capture/observe_trace.ts"
       },
       {
         "id": "file_src_application_observe_capture_trace_evidence_ts",
@@ -18749,7 +18956,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/capture/trace_evidence.ts"
       },
       {
         "id": "file_src_application_observe_handlers_ts",
@@ -18765,7 +18973,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "path": "src/application/observe/handlers.ts"
       },
       {
         "id": "file_src_application_observe_index_ts",
@@ -18781,7 +18990,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/application/observe/index.ts"
       },
       {
         "id": "file_src_application_observe_reconcile_approval_ts",
@@ -18803,7 +19013,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（src/application/observe/reconcile/approval.ts）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "src/application/observe/reconcile/approval.ts"
       },
       {
         "id": "file_src_application_observe_reconcile_reason_validator_ts",
@@ -18819,7 +19030,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/reconcile/reason_validator.ts"
       },
       {
         "id": "file_src_application_observe_reconcile_reconcile_chain_ts",
@@ -18835,7 +19047,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/reconcile/reconcile_chain.ts"
       },
       {
         "id": "file_src_application_observe_reconcile_reconcile_effects_ts",
@@ -18851,7 +19064,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/reconcile/reconcile_effects.ts"
       },
       {
         "id": "file_src_application_observe_runtime_run_tests_ts",
@@ -18867,7 +19081,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/runtime/run_tests.ts"
       },
       {
         "id": "file_src_application_observe_runtime_stale_check_ts",
@@ -18883,7 +19098,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/runtime/stale_check.ts"
       },
       {
         "id": "file_src_application_observe_runtime_watch_project_tool_ts",
@@ -18899,7 +19115,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/observe/runtime/watch_project_tool.ts"
       },
       {
         "id": "file_src_application_patrol_task_drift_ts",
@@ -19256,7 +19473,8 @@
             },
             "agent": "all-externalize"
           }
-        ]
+        ],
+        "path": "src/application/patrol/task_drift.ts"
       },
       {
         "id": "file_src_application_plumbing_ts",
@@ -19355,7 +19573,8 @@
             "kind": "reading",
             "observed": "file_src_application_plumbing_ts 2/2 pass（symbol-exists CALL_ACTOR_FIELD ✓ ｜ source-has export const CALL_ACTOR_FIELD + actor: z ✓）"
           }
-        }
+        },
+        "path": "src/application/plumbing.ts"
       },
       {
         "id": "file_src_application_refactor_annotate_function_annotation_ts",
@@ -19371,7 +19590,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/annotate/function_annotation.ts"
       },
       {
         "id": "file_src_application_refactor_deprecate_offline_deprecate_offline_ts",
@@ -19387,7 +19607,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/deprecate_offline/deprecate_offline.ts"
       },
       {
         "id": "file_src_application_refactor_diff_views_diff_views_ts",
@@ -19550,7 +19771,8 @@
             "kind": "expectations",
             "unsupported": 0
           }
-        }
+        },
+        "path": "src/application/refactor/diff_views/diff_views.ts"
       },
       {
         "id": "file_src_application_refactor_edit_apply_writes_ts",
@@ -19566,7 +19788,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/edit/apply_writes.ts"
       },
       {
         "id": "file_src_application_refactor_edit_edit_code_ts",
@@ -19582,7 +19805,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/edit/edit_code.ts"
       },
       {
         "id": "file_src_application_refactor_edit_remove_dead_imports_ts",
@@ -19657,7 +19881,8 @@
             "all_green": true,
             "unsupported": 0
           }
-        }
+        },
+        "path": "src/application/refactor/edit/remove_dead_imports.ts"
       },
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
@@ -19673,7 +19898,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/find/ast_suggest.ts"
       },
       {
         "id": "file_src_application_refactor_find_field_refs_ts",
@@ -19689,7 +19915,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/find/field_refs.ts"
       },
       {
         "id": "file_src_application_refactor_find_find_references_ts",
@@ -19705,7 +19932,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/find/find_references.ts"
       },
       {
         "id": "file_src_application_refactor_find_similar_names_ts",
@@ -19721,7 +19949,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/find/similar_names.ts"
       },
       {
         "id": "file_src_application_refactor_handlers_ts",
@@ -19737,7 +19966,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "path": "src/application/refactor/handlers.ts"
       },
       {
         "id": "file_src_application_refactor_index_ts",
@@ -19925,7 +20155,8 @@
             "kind": "reading",
             "observed": "术语全名化第一批（54 处注释替换）后 verdict 分布 {pass:711}，fail/pending/unsupported 均 0，无新增 fail；npm run build 通过、npm run verify 全部 9 道门通过（exit=0）"
           }
-        }
+        },
+        "path": "src/application/refactor/index.ts"
       },
       {
         "id": "file_src_application_refactor_parse_capability_parse_capability_ts",
@@ -19941,7 +20172,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/parse_capability/parse_capability.ts"
       },
       {
         "id": "file_src_application_refactor_pipeline_refactor_judge_ts",
@@ -19957,7 +20189,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/pipeline/refactor_judge.ts"
       },
       {
         "id": "file_src_application_refactor_pipeline_refactor_pipeline_ts",
@@ -19973,7 +20206,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/pipeline/refactor_pipeline.ts"
       },
       {
         "id": "file_src_application_refactor_pipeline_refactor_plan_ts",
@@ -19989,7 +20223,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/pipeline/refactor_plan.ts"
       },
       {
         "id": "file_src_application_refactor_rename_move_domain_ts",
@@ -20005,7 +20240,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rename/move_domain.ts"
       },
       {
         "id": "file_src_application_refactor_rename_rename_file_ts",
@@ -20021,7 +20257,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rename/rename_file.ts"
       },
       {
         "id": "file_src_application_refactor_rename_rename_files_ts",
@@ -20037,7 +20274,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rename/rename_files.ts"
       },
       {
         "id": "file_src_application_refactor_rename_rename_local_ts",
@@ -20053,7 +20291,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rename/rename_local.ts"
       },
       {
         "id": "file_src_application_refactor_rename_rename_symbols_ts",
@@ -20069,7 +20308,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rename/rename_symbols.ts"
       },
       {
         "id": "file_src_application_refactor_rename_symbol_move_ts",
@@ -20085,7 +20325,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rename/symbol_move.ts"
       },
       {
         "id": "file_src_application_refactor_rule_library_rule_apply_ts",
@@ -20101,7 +20342,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rule_library/rule_apply.ts"
       },
       {
         "id": "file_src_application_refactor_rule_library_rule_extract_ts",
@@ -20117,7 +20359,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rule_library/rule_extract.ts"
       },
       {
         "id": "file_src_application_refactor_rule_library_rule_library_ts",
@@ -20133,7 +20376,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/rule_library/rule_library.ts"
       },
       {
         "id": "file_src_application_refactor_snapshot_file_snapshot_ts",
@@ -20149,7 +20393,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/refactor/snapshot/file_snapshot.ts"
       },
       {
         "id": "file_src_application_stage_registry_ts",
@@ -20165,7 +20410,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/stage_registry.ts"
       },
       {
         "id": "file_src_application_tool_registry_ts",
@@ -20181,7 +20427,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/tool_registry.ts"
       },
       {
         "id": "file_src_application_types_ts",
@@ -20197,7 +20444,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "types"
+        "arch_layer": "types",
+        "path": "src/application/types.ts"
       },
       {
         "id": "file_src_application_write_gate_ts",
@@ -24214,7 +24462,8 @@
             "why": "claim 被拒的读数：该节点 29 条后态判据全过（isSatisfied=true）⇒ 原卡已满足；本条只把它收口，便于接手新改动（write_gate.ts 的 snapshotAndRecordSelfWrite 补 actor）",
             "source_node_id": "file_src_application_write_gate_ts"
           }
-        }
+        },
+        "path": "src/application/write_gate.ts"
       },
       {
         "id": "file_src_domain_animation_ts",
@@ -25274,7 +25523,8 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "path": "src/domain/animation.ts"
       },
       {
         "id": "file_src_domain_annotation_ts",
@@ -25627,7 +25877,8 @@
             "agent": "workbuddy-main"
           }
         ],
-        "intent": "retired"
+        "intent": "retired",
+        "path": "src/domain/annotation.ts"
       },
       {
         "id": "file_src_domain_b_terms_ts",
@@ -26357,7 +26608,8 @@
           "released_by": "subagent:account",
           "released_at": "2026-10-21T10:10:27.238Z"
         },
-        "status": "draft"
+        "status": "draft",
+        "path": "src/domain/b_terms.ts"
       },
       {
         "id": "file_src_domain_canvas_note_ts",
@@ -26484,7 +26736,8 @@
             "agent": "workbuddy-main"
           }
         ],
-        "intent": "retired"
+        "intent": "retired",
+        "path": "src/domain/canvas_note.ts"
       },
       {
         "id": "file_src_domain_chain_wiring_ts",
@@ -29529,7 +29782,8 @@
           "released_by": "deepseek-v4.1-flash",
           "released_at": "2026-10-20T10:26:35.768Z"
         },
-        "status": "draft"
+        "status": "draft",
+        "path": "src/domain/chain_wiring.ts"
       },
       {
         "id": "file_src_domain_contract_ts",
@@ -29944,7 +30198,8 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "path": "src/domain/contract.ts"
       },
       {
         "id": "file_src_domain_design_sheet_ts",
@@ -31528,7 +31783,8 @@
           "released_by": "subagent:comment-clean",
           "released_at": "2026-10-22T05:59:52.132Z"
         },
-        "status": "draft"
+        "status": "draft",
+        "path": "src/domain/design_sheet.ts"
       },
       {
         "id": "file_src_domain_diff_blocks_ts",
@@ -31822,7 +32078,8 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "path": "src/domain/diff_blocks.ts"
       },
       {
         "id": "file_src_domain_discussion_log_ts",
@@ -32555,7 +32812,8 @@
           "released_by": "deepseek-v4.1-flash",
           "released_at": "2026-10-20T10:26:38.253Z"
         },
-        "status": "draft"
+        "status": "draft",
+        "path": "src/domain/discussion_log.ts"
       },
       {
         "id": "file_src_domain_dsl_removal_ts",
@@ -32711,7 +32969,8 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "path": "src/domain/dsl_removal.ts"
       },
       {
         "id": "file_src_domain_expectation_ts",
@@ -33821,7 +34080,8 @@
             "kind": "reading",
             "observed": "verify 9/9；behavior-cases 试点判据 verdict=pass（normSignature 2/2 case 现跑一致）；消融三段（正向 pass/改坏 fail/还原 pass）由 subagent:subagent-behavior-cases 实测并经主控 git diff 核验还原态"
           }
-        }
+        },
+        "path": "src/domain/expectation.ts"
       },
       {
         "id": "file_src_domain_geometry_ts",
@@ -35270,7 +35530,8 @@
           "released_by": "workbuddy",
           "released_at": "2026-10-20T10:49:13.921Z"
         },
-        "status": "draft"
+        "status": "draft",
+        "path": "src/domain/geometry.ts"
       },
       {
         "id": "file_src_domain_mindmap_ts",
@@ -36025,7 +36286,8 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "path": "src/domain/mindmap.ts"
       },
       {
         "id": "file_src_domain_narration_ts",
@@ -36376,7 +36638,8 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "path": "src/domain/narration.ts"
       },
       {
         "id": "file_src_domain_overlay_ts",
@@ -40419,7 +40682,8 @@
             "observed": "第一问 0 命中；第二问命中 L545 / L687 / L774（前两处即本轮改动）",
             "at": "2026-10-20T10:50:00.000Z"
           }
-        }
+        },
+        "path": "src/domain/overlay.ts"
       },
       {
         "id": "file_src_domain_reasoning_ts",
@@ -40889,7 +41153,8 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "path": "src/domain/reasoning.ts"
       },
       {
         "id": "file_src_domain_scope_ts",
@@ -41551,7 +41816,8 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "path": "src/domain/scope.ts"
       },
       {
         "id": "file_src_domain_semantic_ts",
@@ -42806,7 +43072,8 @@
           "released_by": "deepseek-v4.1-flash",
           "released_at": "2026-10-20T10:26:39.494Z"
         },
-        "status": "draft"
+        "status": "draft",
+        "path": "src/domain/semantic.ts"
       },
       {
         "id": "file_src_domain_simulation_ts",
@@ -43176,7 +43443,8 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "path": "src/domain/simulation.ts"
       },
       {
         "id": "file_src_domain_task_machine_ts",
@@ -47174,7 +47442,8 @@
             "why": "src/domain/task_machine.ts 的 TRANSITIONS.t_void 已补 4 条语义 clause（void=弃做 / 单向闸 / 非终态 / 不改不删判据）+ 文件头三出口一句；verify 7 门全绿，t349/t350/t351/t353/t358/t359 全生（184 条断言）",
             "source_node_id": "file_src_domain_task_machine_ts"
           }
-        }
+        },
+        "path": "src/domain/task_machine.ts"
       },
       {
         "id": "file_src_domain_task_schema_ts",
@@ -47924,7 +48193,8 @@
             "observed": "T365 汇总：PASS=15 FAIL=0（三个读端对同一节点同答案；overlay=done+task=candidate ⇒ 都报 draft）；真仓 task-system-plan 欠账从『旧口径 0 条』变『12 条』（= 11 个 candidate 节点 + 1 个刚重开的 task_schema）；消融 A/B/C ⇒ PASS 12/10/5",
             "at": "2026-10-22T23:15:00+08:00"
           }
-        }
+        },
+        "path": "src/domain/task_schema.ts"
       },
       {
         "id": "file_src_domain_types_ts",
@@ -48683,7 +48953,8 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "path": "src/domain/types.ts"
       },
       {
         "id": "file_src_domain_validator_ts",
@@ -50551,7 +50822,8 @@
             },
             "note": "2026-10-19 读数快照漏洞：reading_now 停在 10-16（说 12 条红，实跑 0 条）⇒ 删快照 + 给 validator 加第三项检查（不变量 #2 的可判形态）。"
           }
-        ]
+        ],
+        "path": "src/domain/validator.ts"
       },
       {
         "id": "file_src_infrastructure_alert_inbox_ts",
@@ -50567,7 +50839,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/alert_inbox.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_capability_capability_matrix_ts",
@@ -50583,7 +50856,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/capability/capability_matrix.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_capability_language_concepts_ts",
@@ -50599,7 +50873,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/capability/language_concepts.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_capability_register_capabilities_ts",
@@ -50615,7 +50890,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/capability/register_capabilities.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_core_ts",
@@ -50631,7 +50907,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/infrastructure/analysis/contract_gate/core.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_index_ts",
@@ -50647,7 +50924,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/contract_gate/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_c_ts",
@@ -50663,7 +50941,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/contract_gate/languages/c.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_cs_ts",
@@ -50679,7 +50958,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/contract_gate/languages/cs.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_go_ts",
@@ -50695,7 +50975,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/contract_gate/languages/go.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_java_ts",
@@ -50711,7 +50992,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/contract_gate/languages/java.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_py_ts",
@@ -50727,7 +51009,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/contract_gate/languages/py.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_registry_ts",
@@ -50743,7 +51026,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/contract_gate/languages/registry.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_ts_ts",
@@ -50759,7 +51043,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/contract_gate/languages/ts.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_parts_ts",
@@ -50775,7 +51060,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/contract_gate/parts.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_cross_repo_index_ts",
@@ -50791,7 +51077,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/cross_repo/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_deadcode_dead_statements_ts",
@@ -50807,7 +51094,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/deadcode/dead_statements.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_deadcode_detect_dead_imports_ts",
@@ -50823,7 +51111,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_candidate_locator_ts",
@@ -50839,7 +51128,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/candidate_locator.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_chain_tracer_ts",
@@ -50855,7 +51145,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/chain_tracer.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_contract_ts",
@@ -50871,7 +51162,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/contract.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_diagnose_ts",
@@ -50887,7 +51179,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/diagnose.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_impact_analyzer_ts",
@@ -50903,7 +51196,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/impact_analyzer.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_repair_ts",
@@ -50919,7 +51213,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/repair.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_root_cause_aggregator_ts",
@@ -50935,7 +51230,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_symptom_parser_ts",
@@ -50951,7 +51247,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/symptom_parser.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_verifier_ts",
@@ -50967,7 +51264,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/diagnosis/verifier.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_health_health_cache_ts",
@@ -50983,7 +51281,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/health/health_cache.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_health_index_ts",
@@ -50999,7 +51298,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/health/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_diff_ts",
@@ -51015,7 +51315,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/impact/diff.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_diff_impact_ts",
@@ -51031,7 +51332,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/impact/diff_impact.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_impact_ledger_store_ts",
@@ -51047,7 +51349,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/impact/impact_ledger_store.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_index_ts",
@@ -51063,7 +51366,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/impact/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_approve_gated_ts",
@@ -51079,7 +51383,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/approve_gated.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_chain_ts",
@@ -51095,7 +51400,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/chain.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_contract_ts",
@@ -51111,7 +51417,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/contract.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_decl_review_ts",
@@ -51127,7 +51434,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/decl_review.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_dsl_store_ts",
@@ -51143,7 +51451,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/dsl_store.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_go_instrument_ts",
@@ -51241,7 +51550,8 @@
             "why": "锚点卡 src/infrastructure/analysis/observe/go_instrument.ts：go.mod 裸写已搬进 commitSourceWrite（第 4 参 SourceWriteHook），vendor/unvendor 两处加了分类注释；build=0、verify=0（7 门）、t349~t361 14 份证全 exit=0",
             "source_node_id": "file_src_infrastructure_analysis_observe_go_instrument_ts"
           }
-        }
+        },
+        "path": "src/infrastructure/analysis/observe/go_instrument.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_index_ts",
@@ -51257,7 +51567,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/observe/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_instrument_ts",
@@ -51273,7 +51584,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/instrument.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_instrument_java_ts",
@@ -51289,7 +51601,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/instrument_java.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_instrument_py_ts",
@@ -51305,7 +51618,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/instrument_py.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_instrument_skeleton_ts",
@@ -51321,7 +51635,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/instrument_skeleton.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_judge_ts",
@@ -51337,7 +51652,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/judge.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_judge_guard_ts",
@@ -51353,7 +51669,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/judge_guard.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_judge_service_ts",
@@ -51369,7 +51686,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/judge_service.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_ledger_fold_ts",
@@ -51385,7 +51703,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/ledger_fold.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_log_query_ts",
@@ -51401,7 +51720,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/log_query.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_observe_langs_ts",
@@ -51417,7 +51737,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/observe_langs.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_probe_ts",
@@ -51433,7 +51754,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/probe.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_proposal_store_ts",
@@ -51449,7 +51771,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/proposal_store.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_run_loop_ts",
@@ -51465,7 +51788,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/run_loop.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_run_sentinel_ts",
@@ -51481,7 +51805,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/run_sentinel.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_run_trace_replay_ts",
@@ -51497,7 +51822,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/run_trace_replay.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_snapshot_needle_ts",
@@ -51513,7 +51839,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/snapshot_needle.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_trace_exec_ts",
@@ -51529,7 +51856,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/trace_exec.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_verify_gate_ts",
@@ -51545,7 +51873,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/observe/verify_gate.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_core_ts",
@@ -51561,7 +51890,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/infrastructure/analysis/package_migration/core.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_index_ts",
@@ -51577,7 +51907,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/package_migration/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_languages_go_ts",
@@ -51593,7 +51924,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/package_migration/languages/go.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_languages_py_ts",
@@ -51609,7 +51941,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/package_migration/languages/py.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_languages_registry_ts",
@@ -51625,7 +51958,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/package_migration/languages/registry.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_languages_ts_ts",
@@ -51641,7 +51975,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/package_migration/languages/ts.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_parts_ts",
@@ -51657,7 +51992,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/package_migration/parts.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_project_root_index_ts",
@@ -51673,7 +52009,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/project_root/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_java_executor_ts",
@@ -51689,7 +52026,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/refactor/langs/java/executor.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_java_layering_ts",
@@ -51705,7 +52043,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/refactor/langs/java/layering.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_python_dead_imports_ts",
@@ -51721,7 +52060,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_python_index_ts",
@@ -51737,7 +52077,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/refactor/langs/python/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_python_verify_commands_ts",
@@ -51753,7 +52094,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/refactor/langs/python/verify_commands.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_protect_ts",
@@ -51769,7 +52111,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/refactor/protect.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_refactor_langs_ts",
@@ -51785,7 +52128,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/refactor/refactor_langs.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_core_ts",
@@ -51801,7 +52145,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "path": "src/infrastructure/analysis/rename_symbol/core.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_index_ts",
@@ -51817,7 +52162,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/rename_symbol/index.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_c_ts",
@@ -51833,7 +52179,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/languages/c.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_cs_ts",
@@ -51849,7 +52196,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/languages/cs.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_go_ts",
@@ -51865,7 +52213,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/languages/go.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_java_ts",
@@ -51881,7 +52230,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/languages/java.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_py_ts",
@@ -51897,7 +52247,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/languages/py.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_registry_ts",
@@ -51913,7 +52264,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/languages/registry.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_ts_ts",
@@ -51929,7 +52281,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/languages/ts.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_namespace_family_ts",
@@ -51945,7 +52298,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/namespace_family.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_parts_ts",
@@ -51961,7 +52315,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/rename_symbol/parts.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_analyze_monolith_ts",
@@ -51977,7 +52332,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/analyze_monolith.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_arch_layer_ts",
@@ -51993,7 +52349,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/arch_layer.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_cfg_ts",
@@ -52009,7 +52366,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/cfg.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_derive_feature_tree_ts",
@@ -52025,7 +52383,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/derive_feature_tree.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_feature_map_ts",
@@ -52041,7 +52400,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/feature_map.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_layer_detect_ts",
@@ -52057,7 +52417,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/layer_detect.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_monolith_ts",
@@ -52073,7 +52434,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/monolith.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_role_title_ts",
@@ -52089,7 +52451,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/role_title.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_structure_structure_gap_ts",
@@ -52105,7 +52468,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/analysis/structure/structure_gap.ts"
       },
       {
         "id": "file_src_infrastructure_analysis_submit_gate_index_ts",
@@ -52121,7 +52485,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/analysis/submit_gate/index.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_behavior_index_ts",
@@ -52137,7 +52502,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/authoring/behavior/index.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_const_eval_ts",
@@ -52153,7 +52519,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/const_eval.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_fill_ts",
@@ -52169,7 +52536,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/fill.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_fixers_ts",
@@ -52185,7 +52553,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/fixers.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_go_extractor_ts",
@@ -52201,7 +52570,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/go_extractor.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_llm_ts",
@@ -52217,7 +52587,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/llm.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_pairs_ts",
@@ -52233,7 +52604,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/pairs.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_project_ts",
@@ -52249,7 +52621,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/project.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_prompts_ts",
@@ -52265,7 +52638,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/prompts.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_referenced_ts",
@@ -52281,7 +52655,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/referenced.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_tool_ts",
@@ -52297,7 +52672,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "utility"
+        "arch_layer": "utility",
+        "path": "src/infrastructure/authoring/translate/tool.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_ts_codegen_ts",
@@ -52313,7 +52689,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/ts_codegen.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_unit_ts",
@@ -52329,7 +52706,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/unit.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_verify_ts",
@@ -52345,7 +52723,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/verify.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_verify_behavior_ts",
@@ -52361,7 +52740,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/verify_behavior.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_c_ts",
@@ -52377,7 +52757,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/adapters/c.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_csharp_ts",
@@ -52393,7 +52774,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/adapters/csharp.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_go_ts",
@@ -52409,7 +52791,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/adapters/go.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_java_ts",
@@ -52425,7 +52808,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/adapters/java.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_node_ts",
@@ -52441,7 +52825,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/adapters/node.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_python_ts",
@@ -52457,7 +52842,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/adapters/python.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_registry_ts",
@@ -52473,7 +52859,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_types_ts",
@@ -52489,7 +52876,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "types"
+        "arch_layer": "types",
+        "path": "src/infrastructure/authoring/version_upgrade/adapters/types.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_detect_ts",
@@ -52505,7 +52893,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/detect.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_features_ts",
@@ -52521,7 +52910,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/features.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_gate_ts",
@@ -52537,7 +52927,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/gate.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_removed_ts",
@@ -52553,7 +52944,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/removed.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_rewrite_ts",
@@ -52569,7 +52961,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/rewrite.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_toolchain_ts",
@@ -52585,7 +52978,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/version_upgrade/toolchain.ts"
       },
       {
         "id": "file_src_infrastructure_daemon_client_ts",
@@ -52601,7 +52995,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/daemon/client.ts"
       },
       {
         "id": "file_src_infrastructure_data_dir_ts",
@@ -52617,7 +53012,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/data_dir.ts"
       },
       {
         "id": "file_src_infrastructure_dictionary_ts",
@@ -52633,7 +53029,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/dictionary.ts"
       },
       {
         "id": "file_src_infrastructure_dogfood_coverage_ts",
@@ -52649,7 +53046,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/dogfood_coverage.ts"
       },
       {
         "id": "file_src_infrastructure_dogfood_stats_ts",
@@ -52665,7 +53063,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/dogfood_stats.ts"
       },
       {
         "id": "file_src_infrastructure_exec_guard_ts",
@@ -52681,7 +53080,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/exec_guard.ts"
       },
       {
         "id": "file_src_infrastructure_git_ts",
@@ -52697,7 +53097,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/git.ts"
       },
       {
         "id": "file_src_infrastructure_graph_dead_deps_ts",
@@ -52713,7 +53114,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/graph/dead_deps.ts"
       },
       {
         "id": "file_src_infrastructure_graph_import_graph_ts",
@@ -52729,7 +53131,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/graph/import_graph.ts"
       },
       {
         "id": "file_src_infrastructure_graph_import_project_ts",
@@ -52745,7 +53148,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/graph/import_project.ts"
       },
       {
         "id": "file_src_infrastructure_index_db_ts",
@@ -52761,7 +53165,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "data"
+        "arch_layer": "data",
+        "path": "src/infrastructure/index/db.ts"
       },
       {
         "id": "file_src_infrastructure_index_file_facts_ts",
@@ -52777,7 +53182,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/file_facts.ts"
       },
       {
         "id": "file_src_infrastructure_index_function_outline_ts",
@@ -52793,7 +53199,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/function_outline.ts"
       },
       {
         "id": "file_src_infrastructure_index_guided_tour_ts",
@@ -52809,7 +53216,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/guided_tour.ts"
       },
       {
         "id": "file_src_infrastructure_index_index_backfill_ts",
@@ -52825,7 +53233,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/index_backfill.ts"
       },
       {
         "id": "file_src_infrastructure_index_index_freshness_ts",
@@ -52841,7 +53250,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/index_freshness.ts"
       },
       {
         "id": "file_src_infrastructure_index_live_render_ts",
@@ -52857,7 +53267,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/live_render.ts"
       },
       {
         "id": "file_src_infrastructure_index_registry_ts",
@@ -52873,7 +53284,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/registry.ts"
       },
       {
         "id": "file_src_infrastructure_index_scan_rev_ts",
@@ -52889,7 +53301,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/scan_rev.ts"
       },
       {
         "id": "file_src_infrastructure_index_schema_ts",
@@ -53018,7 +53431,8 @@
             "all_green": true,
             "unsupported": 0
           }
-        }
+        },
+        "path": "src/infrastructure/index/schema.ts"
       },
       {
         "id": "file_src_infrastructure_index_self_writes_ts",
@@ -53034,7 +53448,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/self_writes.ts"
       },
       {
         "id": "file_src_infrastructure_index_symbols_ts",
@@ -53050,7 +53465,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/symbols.ts"
       },
       {
         "id": "file_src_infrastructure_index_watch_project_ts",
@@ -53066,7 +53482,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/index/watch_project.ts"
       },
       {
         "id": "file_src_infrastructure_llm_agnes_ts",
@@ -53082,7 +53499,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/llm_agnes.ts"
       },
       {
         "id": "file_src_infrastructure_llm_focus_ts",
@@ -53098,7 +53516,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/llm_focus.ts"
       },
       {
         "id": "file_src_infrastructure_llm_gateway_ts",
@@ -53114,7 +53533,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/llm_gateway.ts"
       },
       {
         "id": "file_src_infrastructure_llm_pool_ts",
@@ -53130,7 +53550,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/llm_pool.ts"
       },
       {
         "id": "file_src_infrastructure_packages_package_pins_ts",
@@ -53146,7 +53567,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/packages/package_pins.ts"
       },
       {
         "id": "file_src_infrastructure_packages_template_compat_ts",
@@ -53162,7 +53584,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/packages/template_compat.ts"
       },
       {
         "id": "file_src_infrastructure_parse_ast_node_ts",
@@ -53178,7 +53601,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/ast_node.ts"
       },
       {
         "id": "file_src_infrastructure_parse_ast_parser_ts",
@@ -53194,7 +53618,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/ast_parser.ts"
       },
       {
         "id": "file_src_infrastructure_parse_ast_rename_ts",
@@ -53210,7 +53635,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/ast_rename.ts"
       },
       {
         "id": "file_src_infrastructure_parse_comments_ts",
@@ -53226,7 +53652,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/comments.ts"
       },
       {
         "id": "file_src_infrastructure_parse_fuzzy_match_ts",
@@ -53242,7 +53669,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/fuzzy_match.ts"
       },
       {
         "id": "file_src_infrastructure_parse_import_resolve_ts",
@@ -53258,7 +53686,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/import_resolve.ts"
       },
       {
         "id": "file_src_infrastructure_parse_import_text_ts",
@@ -53274,7 +53703,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/import_text.ts"
       },
       {
         "id": "file_src_infrastructure_parse_index_ts",
@@ -53290,7 +53720,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/infrastructure/parse/index.ts"
       },
       {
         "id": "file_src_infrastructure_parse_kernel_ts",
@@ -53396,7 +53827,8 @@
             "all_green": true,
             "unsupported": 0
           }
-        }
+        },
+        "path": "src/infrastructure/parse/kernel.ts"
       },
       {
         "id": "file_src_infrastructure_parse_lang_hint_ts",
@@ -53412,7 +53844,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/lang_hint.ts"
       },
       {
         "id": "file_src_infrastructure_parse_languages_ts",
@@ -53428,7 +53861,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/languages.ts"
       },
       {
         "id": "file_src_infrastructure_parse_loader_ts",
@@ -53444,7 +53878,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/loader.ts"
       },
       {
         "id": "file_src_infrastructure_parse_module_analysis_ts",
@@ -53460,7 +53895,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/module_analysis.ts"
       },
       {
         "id": "file_src_infrastructure_parse_probe_ts",
@@ -53476,7 +53912,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/probe.ts"
       },
       {
         "id": "file_src_infrastructure_parse_source_exts_ts",
@@ -53492,7 +53929,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/source_exts.ts"
       },
       {
         "id": "file_src_infrastructure_parse_type_members_ts",
@@ -53508,7 +53946,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/type_members.ts"
       },
       {
         "id": "file_src_infrastructure_project_view_ts",
@@ -53524,7 +53963,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/project_view.ts"
       },
       {
         "id": "file_src_infrastructure_render_anim_core_ts",
@@ -53540,7 +53980,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/render/anim_core.ts"
       },
       {
         "id": "file_src_infrastructure_render_dataflow_core_ts",
@@ -53556,7 +53997,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/render/dataflow_core.ts"
       },
       {
         "id": "file_src_infrastructure_render_export_ts",
@@ -53572,7 +54014,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/render/export.ts"
       },
       {
         "id": "file_src_infrastructure_render_inject_replay_ts",
@@ -53588,7 +54031,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/render/inject_replay.ts"
       },
       {
         "id": "file_src_infrastructure_render_simulation_engine_ts",
@@ -53604,7 +54048,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/render/simulation_engine.ts"
       },
       {
         "id": "file_src_infrastructure_rules_rule_match_ts",
@@ -53620,7 +54065,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/rules/rule_match.ts"
       },
       {
         "id": "file_src_infrastructure_rules_rule_tokens_ts",
@@ -53636,7 +54082,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/rules/rule_tokens.ts"
       },
       {
         "id": "file_src_infrastructure_scan_bounds_ts",
@@ -53652,7 +54099,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/scan_bounds.ts"
       },
       {
         "id": "file_src_infrastructure_storage_ts",
@@ -56803,7 +57251,8 @@
             "note": "口语清洗：判据没跟→判据未同步更新",
             "agent": "subagent-colloquial-clean"
           }
-        ]
+        ],
+        "path": "src/infrastructure/storage.ts"
       },
       {
         "id": "file_src_infrastructure_storage_overlay_ts",
@@ -56819,7 +57268,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/storage_overlay.ts"
       },
       {
         "id": "file_src_infrastructure_text_arg_suggest_ts",
@@ -56835,7 +57285,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/text/arg_suggest.ts"
       },
       {
         "id": "file_src_infrastructure_text_line_utils_ts",
@@ -56851,7 +57302,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/text/line_utils.ts"
       },
       {
         "id": "file_src_infrastructure_text_refs_text_ts",
@@ -56867,7 +57319,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/text/refs_text.ts"
       },
       {
         "id": "file_src_infrastructure_verify_refactor_ts",
@@ -56883,7 +57336,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/verify_refactor.ts"
       },
       {
         "id": "file_src_presentation_cli_cli_ts",
@@ -56899,7 +57353,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/cli/cli.ts"
       },
       {
         "id": "file_src_presentation_cli_diagnose_loop_cli_ts",
@@ -56915,7 +57370,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/cli/diagnose_loop_cli.ts"
       },
       {
         "id": "file_src_presentation_cli_install_package_cli_ts",
@@ -56931,7 +57387,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/cli/install_package_cli.ts"
       },
       {
         "id": "file_src_presentation_daemon_daemon_ts",
@@ -56947,7 +57404,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/daemon/daemon.ts"
       },
       {
         "id": "file_src_presentation_daemon_memory_watch_ts",
@@ -56963,7 +57421,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/daemon/memory_watch.ts"
       },
       {
         "id": "file_src_presentation_daemon_server_ts",
@@ -56979,7 +57438,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "path": "src/presentation/daemon/server.ts"
       },
       {
         "id": "file_src_presentation_http_archify_archify_mappers_ts",
@@ -57001,7 +57461,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（src/presentation/http/archify/archify_mappers.ts）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "src/presentation/http/archify/archify_mappers.ts"
       },
       {
         "id": "file_src_presentation_http_archify_archify_pipeline_ts",
@@ -57023,7 +57484,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（src/presentation/http/archify/archify_pipeline.ts）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "src/presentation/http/archify/archify_pipeline.ts"
       },
       {
         "id": "file_src_presentation_http_archify_archify_project_ts",
@@ -57045,7 +57507,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（src/presentation/http/archify/archify_project.ts）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "src/presentation/http/archify/archify_project.ts"
       },
       {
         "id": "file_src_presentation_http_archify_archify_runner_ts",
@@ -57067,7 +57530,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（src/presentation/http/archify/archify_runner.ts）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "src/presentation/http/archify/archify_runner.ts"
       },
       {
         "id": "file_src_presentation_http_archify_archify_semantics_ts",
@@ -57089,7 +57553,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（src/presentation/http/archify/archify_semantics.ts）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "src/presentation/http/archify/archify_semantics.ts"
       },
       {
         "id": "file_src_presentation_http_archify_view_inputs_ts",
@@ -57111,7 +57576,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（src/presentation/http/archify/view_inputs.ts）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "src/presentation/http/archify/view_inputs.ts"
       },
       {
         "id": "file_src_presentation_http_contract_ts",
@@ -57127,7 +57593,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/http/contract.ts"
       },
       {
         "id": "file_src_presentation_http_dict_gen_ts",
@@ -57143,7 +57610,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/http/dict_gen.ts"
       },
       {
         "id": "file_src_presentation_http_serve_ts",
@@ -57202,7 +57670,8 @@
             ]
           }
         },
-        "status": "draft"
+        "status": "draft",
+        "path": "src/presentation/http/serve.ts"
       },
       {
         "id": "file_src_presentation_mcp_lifecycle_ts",
@@ -57218,7 +57687,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/mcp/lifecycle.ts"
       },
       {
         "id": "file_src_presentation_mcp_server_ts",
@@ -57271,7 +57741,8 @@
             "kind": "reading",
             "observed": "verify 9/9；设计 DB 自动保鲜已挂 runAutoWatchHook 初始导入后（check 无 drift 不落盘，有 drift 才真跑），工作项 B 落地"
           }
-        }
+        },
+        "path": "src/presentation/mcp/server.ts"
       },
       {
         "id": "file_src_presentation_mcp_server_registry_ts",
@@ -57371,7 +57842,8 @@
             "kind": "reading",
             "observed": "file_src_presentation_mcp_server_registry_ts 2/2 pass（symbol-exists withCallActor ✓ ｜ source-has 含 CALL_ACTOR_FIELD 且无 const CALL_ACTOR_FIELD = { ✓，定义已改 import 自 application/plumbing）"
           }
-        }
+        },
+        "path": "src/presentation/mcp/server_registry.ts"
       },
       {
         "id": "file_src_presentation_mcp_tool_warnings_ts",
@@ -57387,7 +57859,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/presentation/mcp/tool_warnings.ts"
       },
       {
         "id": "file_third_party_archify_delta_architecture-delta_mjs",
@@ -57409,7 +57882,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/delta/architecture-delta.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/delta/architecture-delta.mjs"
       },
       {
         "id": "file_third_party_archify_migrations_workflow-v2_mjs",
@@ -57431,7 +57905,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/migrations/workflow-v2.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/migrations/workflow-v2.mjs"
       },
       {
         "id": "file_third_party_archify_recipes_scenarios_mjs",
@@ -57453,7 +57928,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/recipes/scenarios.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/recipes/scenarios.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_architecture_grid_mjs",
@@ -57475,7 +57951,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/architecture/grid.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/architecture/grid.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_architecture_render-architecture_mjs",
@@ -57497,7 +57974,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/architecture/render-architecture.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/architecture/render-architecture.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_dataflow_render-dataflow_mjs",
@@ -57519,7 +57997,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/dataflow/render-dataflow.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/dataflow/render-dataflow.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_lifecycle_render-lifecycle_mjs",
@@ -57541,7 +58020,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/lifecycle/render-lifecycle.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/lifecycle/render-lifecycle.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_sequence_render-sequence_mjs",
@@ -57563,7 +58043,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/sequence/render-sequence.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/sequence/render-sequence.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_shared_brand-marks_mjs",
@@ -57585,7 +58066,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/shared/brand-marks.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/shared/brand-marks.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_shared_cli_mjs",
@@ -57607,7 +58089,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/shared/cli.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/shared/cli.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_shared_desktop-readability_mjs",
@@ -57629,7 +58112,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/shared/desktop-readability.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/shared/desktop-readability.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_shared_diagnostics_mjs",
@@ -57651,7 +58135,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/shared/diagnostics.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/shared/diagnostics.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_shared_engineering-profiles_mjs",
@@ -57673,7 +58158,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/shared/engineering-profiles.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/shared/engineering-profiles.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_shared_generated-brand-marks_mjs",
@@ -57695,7 +58181,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/shared/generated-brand-marks.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/shared/generated-brand-marks.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_shared_generated-validators_mjs",
@@ -57717,7 +58204,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/shared/generated-validators.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/shared/generated-validators.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_shared_geometry_mjs",
@@ -57739,7 +58227,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/shared/geometry.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/shared/geometry.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_shared_i18n_mjs",
@@ -57761,7 +58250,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/shared/i18n.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/shared/i18n.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_shared_layout-report_mjs",
@@ -57783,7 +58273,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/shared/layout-report.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/shared/layout-report.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_shared_legend_mjs",
@@ -57805,7 +58296,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/shared/legend.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/shared/legend.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_shared_output-path_mjs",
@@ -57827,7 +58319,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/shared/output-path.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/shared/output-path.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_shared_repository-evidence_mjs",
@@ -57849,7 +58342,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/shared/repository-evidence.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/shared/repository-evidence.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_shared_text-fit_mjs",
@@ -57871,7 +58365,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/shared/text-fit.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/shared/text-fit.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_shared_utils_mjs",
@@ -57893,7 +58388,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/shared/utils.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/shared/utils.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_shared_validator_mjs",
@@ -57915,7 +58411,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/shared/validator.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/shared/validator.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_workflow_render-workflow_mjs",
@@ -57937,7 +58434,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/workflow/render-workflow.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/workflow/render-workflow.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_workflow_workflow-compiler_mjs",
@@ -57959,7 +58457,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/workflow/workflow-compiler.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/workflow/workflow-compiler.mjs"
       },
       {
         "id": "file_third_party_archify_renderers_workflow_workflow-migration-geometry_mjs",
@@ -57981,7 +58480,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/renderers/workflow/workflow-migration-geometry.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/renderers/workflow/workflow-migration-geometry.mjs"
       },
       {
         "id": "file_third_party_archify_scripts_check-render-output_mjs",
@@ -58003,7 +58503,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/scripts/check-render-output.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/scripts/check-render-output.mjs"
       },
       {
         "id": "file_third_party_archify_scripts_check-update_mjs",
@@ -58025,7 +58526,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/scripts/check-update.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/scripts/check-update.mjs"
       },
       {
         "id": "file_third_party_archify_scripts_generate-brand-marks_mjs",
@@ -58047,7 +58549,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/scripts/generate-brand-marks.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/scripts/generate-brand-marks.mjs"
       },
       {
         "id": "file_third_party_archify_scripts_generate-validators_mjs",
@@ -58069,7 +58572,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/scripts/generate-validators.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/scripts/generate-validators.mjs"
       },
       {
         "id": "file_third_party_archify_scripts_render-examples_mjs",
@@ -58091,7 +58595,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/scripts/render-examples.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/scripts/render-examples.mjs"
       },
       {
         "id": "file_third_party_archify_scripts_update-contract_mjs",
@@ -58113,7 +58618,8 @@
           "summary": "★ 2026-10-23 标 to_delete：文件已不存在（third_party/archify/scripts/update-contract.mjs）",
           "expectations": [],
           "updated_at": "2026-10-23"
-        }
+        },
+        "path": "third_party/archify/scripts/update-contract.mjs"
       },
       {
         "id": "file_src_application_design_board_pool_ts",
@@ -59261,7 +59767,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t353-judge-port-cert.mjs"
       },
       {
         "id": "file_certs_t355-gate-exemption-cert_mjs",
@@ -59277,7 +59784,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t355-gate-exemption-cert.mjs"
       },
       {
         "id": "file_certs_t356-authorize-cert_mjs",
@@ -59293,7 +59801,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t356-authorize-cert.mjs"
       },
       {
         "id": "file_certs_t357-pipeline-gate-cert_mjs",
@@ -59309,7 +59818,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "certs/t357-pipeline-gate-cert.mjs"
       },
       {
         "id": "file_certs_t358-domain-five-values-cert_mjs",
@@ -59326,7 +59836,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "gate": "exempt"
+        "gate": "exempt",
+        "path": "certs/t358-domain-five-values-cert.mjs"
       },
       {
         "id": "file_scripts_clean-dead-functions_mjs",
@@ -59342,7 +59853,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/clean-dead-functions.mjs"
       },
       {
         "id": "file_scripts_contract-calls_mjs",
@@ -59358,7 +59870,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/contract-calls.mjs"
       },
       {
         "id": "file_scripts_coverage_mjs",
@@ -59374,7 +59887,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/coverage.mjs"
       },
       {
         "id": "file_scripts_dep_mjs",
@@ -59390,7 +59904,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/dep.mjs"
       },
       {
         "id": "file_scripts_design-check_mjs",
@@ -59406,7 +59921,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/design-check.mjs"
       },
       {
         "id": "file_scripts_gen-contracts_mjs",
@@ -59422,7 +59938,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gen-contracts.mjs"
       },
       {
         "id": "file_scripts_gen-db-check_mjs",
@@ -59438,7 +59955,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/gen-db-check.mjs"
       },
       {
         "id": "file_scripts_impl-fixture_mjs",
@@ -59454,7 +59972,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/impl-fixture.mjs"
       },
       {
         "id": "file_scripts_mutate_mjs",
@@ -59470,7 +59989,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/mutate.mjs"
       },
       {
         "id": "file_scripts_patrol_mjs",
@@ -59486,7 +60006,8 @@
           "color": "#eceff1",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "scripts/patrol.mjs"
       },
       {
         "id": "file_src_application_claim_conflict_ts",
@@ -59502,7 +60023,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/claim_conflict.ts"
       },
       {
         "id": "file_src_application_design_board_todo_journal_ts",
@@ -59517,7 +60039,8 @@
           "bg": "#1565c0",
           "color": "#ffffff",
           "borderRadius": 4
-        }
+        },
+        "path": "src/application/design/board/todo_journal.ts"
       },
       {
         "id": "file_src_application_read_set_ts",
@@ -59533,7 +60056,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/read_set.ts"
       },
       {
         "id": "file_src_application_refactor_gate_note_ts",
@@ -59549,7 +60073,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "path": "src/application/refactor/gate_note.ts"
       },
       {
         "id": "file_src_application_source_writer_ts",
@@ -59565,7 +60090,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/application/source_writer.ts"
       },
       {
         "id": "file_src_domain_actor_spec_ts",
@@ -59618,7 +60144,8 @@
           ],
           "updated_at": "2026-10-22T10:20:00+08:00",
           "agent": "agent:workbuddy"
-        }
+        },
+        "path": "src/domain/actor_spec.ts"
       },
       {
         "id": "file_src_domain_judge_port_ts",
@@ -59734,7 +60261,8 @@
             "at": "2026-10-24T08:32:00Z",
             "verdict": "pass"
           }
-        }
+        },
+        "path": "src/domain/judge_port.ts"
       },
       {
         "id": "file_src_domain_todo_chain_ts",
@@ -59781,7 +60309,8 @@
           ],
           "updated_at": "2026-10-22T10:20:00+08:00",
           "agent": "agent:workbuddy"
-        }
+        },
+        "path": "src/domain/todo_chain.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_book_ts",
@@ -59797,7 +60326,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/book.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_go_tests_ts",
@@ -59813,7 +60343,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/go_tests.ts"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_receipt_ts",
@@ -59829,7 +60360,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/authoring/translate/receipt.ts"
       },
       {
         "id": "file_src_infrastructure_parse_symbol_docstring_ts",
@@ -59845,7 +60377,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/symbol_docstring.ts"
       },
       {
         "id": "file_src_infrastructure_parse_symbol_params_ts",
@@ -59861,7 +60394,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/symbol_params.ts"
       },
       {
         "id": "file_src_infrastructure_parse_symbol_shape_ts",
@@ -59877,7 +60411,8 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "path": "src/infrastructure/parse/symbol_shape.ts"
       },
       {
         "id": "file_application_meta_archive_archive_node_ts",
@@ -60082,7 +60617,8 @@
             "note": "给 file_src_infrastructure_dsl_write_scope_ts 决策卡追加 signature-matches 判据：从 design-db/infrastructure-dsl_write_scope.calls.json 投影逐字抄 runDslWriteScope / currentDslWriteScope 的真实签名，补齐签名级判据（期望加深，subagent-expectation-deepen）",
             "agent": "subagent-expectation-deepen"
           }
-        ]
+        ],
+        "path": "src/infrastructure/dsl_write_scope.ts"
       },
       {
         "id": "file_src_infrastructure_task_history_ts",
@@ -60151,7 +60687,8 @@
             "note": "给 file_src_infrastructure_task_history_ts 决策卡追加 signature-matches 判据：从 design-db/infrastructure-task_history.calls.json 投影逐字抄 recordTaskHistory / queryTaskHistory 的真实签名（期望加深，subagent-expectation-deepen）",
             "agent": "subagent-expectation-deepen"
           }
-        ]
+        ],
+        "path": "src/infrastructure/task_history.ts"
       },
       {
         "id": "file_observe_lang_go_cmd_instrument_main_go",
@@ -60220,7 +60757,8 @@
             "note": "给 file_observe_lang_go_cmd_instrument_main_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-cmd-instrument-main.go.calls.json 投影逐字抄 probeFromCode / main 的真实签名（期望加深，subagent-expectation-deepen）",
             "agent": "subagent-expectation-deepen"
           }
-        ]
+        ],
+        "path": "observe-lang-go/cmd/instrument/main.go"
       },
       {
         "id": "file_observe_lang_go_cmd_observev2_demo_main_go",
@@ -60289,7 +60827,8 @@
             "note": "给 file_observe_lang_go_cmd_observev2_demo_main_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-cmd-observev2-demo-main.go.calls.json 投影逐字抄 placeOrder / chargePayment 的真实签名（期望加深，subagent-expectation-deepen）",
             "agent": "subagent-expectation-deepen"
           }
-        ]
+        ],
+        "path": "observe-lang-go/cmd/observev2-demo/main.go"
       },
       {
         "id": "file_observe_lang_go_cmd_observev2_record_main_go",
@@ -60358,7 +60897,8 @@
             "note": "给 file_observe_lang_go_cmd_observev2_record_main_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-cmd-observev2-record-main.go.calls.json 投影逐字抄 mark / placeOrder 的真实签名（期望加深，subagent-expectation-deepen）",
             "agent": "subagent-expectation-deepen"
           }
-        ]
+        ],
+        "path": "observe-lang-go/cmd/observev2-record/main.go"
       },
       {
         "id": "file_observe_lang_go_internal_instrument_contract_go",
@@ -60427,7 +60967,8 @@
             "note": "给 file_observe_lang_go_internal_instrument_contract_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-internal-instrument-contract.go.calls.json 投影逐字抄 packageFromProbe / MatchProbe 的真实签名（期望加深，subagent-expectation-deepen）",
             "agent": "subagent-expectation-deepen"
           }
-        ]
+        ],
+        "path": "observe-lang-go/internal/instrument/contract.go"
       },
       {
         "id": "file_observe_lang_go_internal_instrument_effects_go",
@@ -60496,7 +61037,8 @@
             "note": "给 file_observe_lang_go_internal_instrument_effects_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-internal-instrument-effects.go.calls.json 投影逐字抄 effectInStmt / effectTargetOfLHS 的真实签名（期望加深，subagent-expectation-deepen）",
             "agent": "subagent-expectation-deepen"
           }
-        ]
+        ],
+        "path": "observe-lang-go/internal/instrument/effects.go"
       },
       {
         "id": "file_observe_lang_go_internal_instrument_instrument_go",
@@ -60565,7 +61107,8 @@
             "note": "给 file_observe_lang_go_internal_instrument_instrument_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-internal-instrument-instrument.go.calls.json 投影逐字抄 collectGoFiles / backupOriginal 的真实签名（期望加深，subagent-expectation-deepen）",
             "agent": "subagent-expectation-deepen"
           }
-        ]
+        ],
+        "path": "observe-lang-go/internal/instrument/instrument.go"
       },
       {
         "id": "file_observe_lang_go_probe_export_go",
@@ -60634,7 +61177,8 @@
             "note": "给 file_observe_lang_go_probe_export_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-probe-export.go.calls.json 投影逐字抄 newExportGate / filterHistos 的真实签名（期望加深，subagent-expectation-deepen）",
             "agent": "subagent-expectation-deepen"
           }
-        ]
+        ],
+        "path": "observe-lang-go/probe/export.go"
       },
       {
         "id": "file_observe_lang_go_probe_global_go",
@@ -60703,7 +61247,8 @@
             "note": "给 file_observe_lang_go_probe_global_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-probe-global.go.calls.json 投影逐字抄 SetGlobalSink / reportProbeError 的真实签名（期望加深，subagent-expectation-deepen）",
             "agent": "subagent-expectation-deepen"
           }
-        ]
+        ],
+        "path": "observe-lang-go/probe/global.go"
       },
       {
         "id": "file_observe_lang_go_probe_probe_go",
@@ -60772,7 +61317,8 @@
             "note": "给 file_observe_lang_go_probe_probe_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-probe-probe.go.calls.json 投影逐字抄 NewSink / sanitizeFields 的真实签名（期望加深，subagent-expectation-deepen）",
             "agent": "subagent-expectation-deepen"
           }
-        ]
+        ],
+        "path": "observe-lang-go/probe/probe.go"
       },
       {
         "id": "file_observe_lang_go_probe_run_recorder_go",
@@ -60822,7 +61368,8 @@
             "note": "给 file_observe_lang_go_probe_run_recorder_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-probe-run_recorder.go.calls.json 投影逐字抄 newRunRecorder 的真实签名（期望加深，subagent-expectation-deepen）",
             "agent": "subagent-expectation-deepen"
           }
-        ]
+        ],
+        "path": "observe-lang-go/probe/run_recorder.go"
       },
       {
         "id": "file_observe_lang_go_probe_tiered_go",
@@ -60891,7 +61438,8 @@
             "note": "给 file_observe_lang_go_probe_tiered_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-probe-tiered.go.calls.json 投影逐字抄 newRingBuf / WithFullSink 的真实签名（期望加深，subagent-expectation-deepen）",
             "agent": "subagent-expectation-deepen"
           }
-        ]
+        ],
+        "path": "observe-lang-go/probe/tiered.go"
       },
       {
         "id": "file_observe_lang_go_probe_trace_go",
@@ -60960,7 +61508,8 @@
             "note": "给 file_observe_lang_go_probe_trace_go 决策卡追加 signature-matches 判据：从 design-db/observe-lang-go-probe-trace.go.calls.json 投影逐字抄 Enter / TraceIDFromContext 的真实签名（期望加深，subagent-expectation-deepen）",
             "agent": "subagent-expectation-deepen"
           }
-        ]
+        ],
+        "path": "observe-lang-go/probe/trace.go"
       },
       {
         "id": "file_observe_lang_java_observe_probe_Camprobe_java",
@@ -61016,7 +61565,8 @@
             "note": "给 file_observe_lang_java_observe_probe_Camprobe_java 决策卡追加 source-has 判据：从 observe-lang-java/observe/probe/Camprobe.java 实际内容抄 setGlobalSink / capture 两行关键定义（java 符号级判不了，py/java 例外走文本判据；期望加深，subagent-expectation-deepen）",
             "agent": "subagent-expectation-deepen"
           }
-        ]
+        ],
+        "path": "observe-lang-java/observe/probe/Camprobe.java"
       },
       {
         "id": "file_observe_lang_py_camprobe_py",
@@ -61074,7 +61624,8 @@
             "note": "给 file_observe_lang_py_camprobe_py 决策卡追加 source-has 判据：从 observe-lang-py/camprobe.py 实际内容抄 cam_lambda / _scrub 两行关键定义（py 符号级判不了，走文本判据；期望加深，subagent-expectation-deepen）",
             "agent": "subagent-expectation-deepen"
           }
-        ]
+        ],
+        "path": "observe-lang-py/camprobe.py"
       },
       {
         "id": "file_src_application_design_intent_judge_cache_ts",
@@ -61109,7 +61660,8 @@
             }
           ],
           "updated_at": "2026-10-24T08:29:06.055Z"
-        }
+        },
+        "path": "src/application/design/intent/judge_cache.ts"
       },
       {
         "id": "project_task-system-plan",
@@ -119047,13 +119599,13 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-26T13:35:14.340Z",
+    "saved_at": "2026-10-26T13:44:17.965Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 438191529,
+    "age": 438735154,
     "dbSchemaVersion": 16,
-    "via": "tool:t22-del"
+    "via": "tool:t23-migrate"
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -122054,7 +122606,7 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 1440,
+  "_dsl_rev": 1441,
   "feature_tree": {
     "features": [
       {
