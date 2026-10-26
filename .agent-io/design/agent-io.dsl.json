@@ -4695,7 +4695,7 @@
         "task": {
           "id": "file_src_application_design_dsl_ops_update_feature_ts",
           "summary": "decision 写入口：只住 base；rebuild_design 会抹掉它，由 import_project 两层闸保护",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_update_feature_ts\"].responsibility"
@@ -4731,13 +4731,28 @@
                   "src/application/design/dsl_ops/update_feature.ts"
                 ]
               }
+            },
+            {
+              "kind": "expectations",
+              "at": "2026-10-26T11:58:43.242Z",
+              "by": "llm",
+              "agent": "agent:wish-machine",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_application_design_dsl_ops_update_feature_ts（2 条判据）",
+                "input": "752c1f50feb681ec8b7db61a1a9a16e26d5ffc5c",
+                "code": "f1c2466e4be665b31f150c7bc66588e3fbc948ae",
+                "covers": [
+                  "src/application/design/dsl_ops/update_feature.ts"
+                ]
+              }
             }
           ],
           "reopened_at": null,
           "reopen_reason": "T-#18：注释只留“现在”，历史叙事搬进决策卡（寄风：这种注释本身没有住进文件的价值）",
           "reopened_from": "agent:wish-machine"
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "decision 写入口：只住 base；rebuild_design 会抹掉它，由 import_project 两层闸保护",
           "expectations": [
@@ -45436,7 +45451,7 @@
         ],
         "lines": 1319,
         "layer": "core",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_handlers_ts",
@@ -61981,13 +61996,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 60,
+  "_dsl_rev": 61,
   "_sync": {
-    "saved_at": "2026-10-26T11:58:22.861Z",
+    "saved_at": "2026-10-26T11:58:43.328Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 14905724,
+    "age": 14926191,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

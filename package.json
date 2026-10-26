@@ -113,7 +113,9 @@
     "design:fixture": "node scripts/impl-fixture.mjs",
     "design:impl-mutate": "node scripts/impl-mutate.mjs",
     "verify:changed": "node scripts/derive-touches.mjs && node scripts/verify-changed.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "gitignore:check": "node scripts/gen_gitignore.mjs --check",
+    "gate": "npm run typecheck && npm run gitignore:check && npm run design:check && npm run contract"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
