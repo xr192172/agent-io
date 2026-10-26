@@ -15,6 +15,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { getStorageRoot } from '../storage.js';
+// ★★★ 2026-10-26（T-#4 / 用户选 A）：索引路径走 `roots.ts` 的唯一解析器
+import { rootsOf } from '../roots.js';
 import { SCHEMA_SQL } from './schema.js';
 
 // ★ 2026-10-04：从 `createRequire` 绕路**改回静态 import**。
@@ -125,9 +127,14 @@ export function getDbFile(): string {
 //   让临时目录测试的 rmSync 失败；`infrastructure/analysis/project_root/index.ts` 里记着这笔账）。
 // ─────────────────────────────────────────────────────────────
 
-/** ① 已知项目根 ⇒ 该项目的符号缓存文件路径（`<root>/.agent-io/cache.db`）。**不查存在**。 */
+/** ① 已知项目根 ⇒ 该项目的符号缓存文件路径。**不查存在**。★ 路径由 `roots.ts` 唯一解析（T-#4）。 */
 export function projectCacheDbPath(root: string): string {
-  return path.join(path.resolve(root), DATA_DIR_NAME, 'cache.db');
+  // ★★★ 2026-10-26（T-#4 / 用户选 A：索引归**项目本地**）：路径由 `roots.ts#rootsOf(root).cache.path` 算。
+  //   此前这里自己拼 `path.join(root, DATA_DIR_NAME, 'cache.db')`，与
+  //   `featureCacheDbPath`（dataHome/import_cache_<feature>.db）、`getDbFile`（dataHome/cache.db）
+  //   构成**三套索引寻址** ⇒ 实测同一台机器上出现 4 个互不知道的索引根。
+  //   ★ 本轮**只换寻址、不改实际路径**（仍是 `<root>/.agent-io/cache.db`）⇒ 零行为变更。
+  return rootsOf(root).cache.path;
 }
 
 /** ② feature 的导入缓存路径（`<dataHome>/import_cache_<feature>.db`）。**不查存在**。 */
