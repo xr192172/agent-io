@@ -74,6 +74,14 @@ function warnLegacyDataHomeOnce(legacyHome: string, modernHome: string): void {
   );
 }
 
+// ★★★ 2026-10-26（T-#27）：注册表读端。放在这里（顶层、函数声明之前）而非文件头，
+//   是为了让它**紧挨**唯一使用点 —— ESM 的 import 会 hoist，位置不影响语义。
+import { projectRootOf } from './project_registry.js';
+// ★★★ 2026-10-26（T-#27 / `docs/ROOTS.md` §7.4）：**读端接线** —— `getDesignSheetFile` 未给 baseDir 时
+//   查项目注册表，把 feature 解析到它自己的项目根。
+//   ★ 循环依赖是**安全的**：两边都只在**调用时**用对方的绑定（`project_registry` 只在 `registryFile()`
+//     里调 `getDataHome`；本文件只在 `getDesignSheetFile()` 里调 `projectRootOf`），而两边都是函数声明
+//     ⇒ 模块初始化顺序无关。
 export function getDataHome(): string {
   if (process.env.AGENT_IO_HOME) return process.env.AGENT_IO_HOME;
   // ★★★ 2026-10-26（T-#3 / 用户选 C）：默认数据主目录 = **用户主目录** ⇒ 册在 `~/.agent-io`。
@@ -336,7 +344,13 @@ export function getDesignSheetFile(feature: string, baseDir?: string): string {
   if (!/^[a-zA-Z0-9_-]+$/.test(feature)) {
     throw new Error(`非法 feature 名: "${feature}"，必须匹配 ^[a-zA-Z0-9_-]+$`);
   }
-  return path.join(getDesignDir(baseDir), `${feature}.dsl.json`);
+  // ★★★ 2026-10-26（T-#27 / ROOTS.md §7.4）：**注册表优先**。
+  //   未显式给 `baseDir` ⇒ 查 `feature → 项目根` ⇒ `<root>/.agent-io/design/<f>.dsl.json`。
+  //   ★ 为什么单点在这里：`getDesignSheet`（读）与 `saveDesignSheet`（写）**都走本函数**
+  //     ⇒ 改一处即读写同口径（只改读 = 写去 data home、读去项目根 = 静默分叉）。
+  //   ★ 注册表没有 ⇒ 回 `getDataHome()`（旧位置 = **迁移通道**，不是默认）。
+  const resolvedBase = baseDir ?? projectRootOf(feature) ?? undefined;
+  return path.join(getDesignDir(resolvedBase), `${feature}.dsl.json`);
 }
 
 /** 保存设计图（**手写**那一份；带 `_sync` 标记，与 `saveLiveFeature` 同形 ⇒ 两份文件形状一致） */
@@ -390,7 +404,8 @@ export function saveDesignSheet(dsl: DesignDSL, baseDir?: string): string {
   // ★★ 2026-10-22：与 `saveDSL` **同一道闸** —— 它写的是**同一个文件**（`design/<f>.dsl.json`）。
   //   只闸 `saveDSL` 而放它 = 把门焊上又在旁边留个洞（`task_ops` 用它落盘，那条路在 edit_dsl 作用域内）。
   const via = assertDslWriteAllowed(dsl, 'saveDesignSheet');
-  const dir = getDesignDir(baseDir);
+  // ★★★ 2026-10-26（T-#27）：mkdir 与 `getDesignSheetFile` 同落点（理由同 `saveDSL`）。
+  const dir = path.dirname(getDesignSheetFile(dsl.feature, baseDir));
   fs.mkdirSync(dir, { recursive: true });
   // ★ 2026-10-23：事务进行中 ⇒ 落工作副本（见上方 txnRedirect 的论证）
   const file = txnRedirect(getDesignSheetFile(dsl.feature, baseDir));
@@ -931,7 +946,9 @@ export function saveDSL(
   //   再 mkdir 它 = 「360 装回来了」。
   // ★★★ 2026-10-20：saveDSL 写的是**设计侧**（下面 `getDesignSheetFile`）⇒
   //   写之前先保证落点目录在（不是测试夹具的问题，是真写端缺口）。
-  fs.mkdirSync(getDesignDir(), { recursive: true });
+  // ★★★ 2026-10-26（T-#27）：mkdir 必须跟 `getDesignSheetFile` **同一个落点** ——
+  //   否则会在 data home 里造一个**空**的 design/ 目录（写却去了项目根）。
+  fs.mkdirSync(path.dirname(getDesignSheetFile(dsl.feature)), { recursive: true });
   // 乐观锁：读当前 rev 对比 base
   if (base_dsl_rev !== undefined) {
     const cur = currentDslRev(dsl.feature);

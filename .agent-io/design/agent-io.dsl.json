@@ -10654,24 +10654,24 @@
         "arch_layer": "core",
         "task": {
           "id": "file_src_infrastructure_graph_import_project_ts",
-          "summary": "import_project：扫描出的 file 节点必须带 path（路径事实的权威落在节点上）",
+          "summary": "import_project：file 节点带 path + 重建闸两层报全 + 登记 feature → 项目根",
           "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_import_project_ts\"].responsibility"
           },
           "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T13:38:47.742Z",
+          "claimed_at": "2026-10-26T14:44:12.666Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/infrastructure/graph/import_project.ts",
-                "content_hash": "e5bab6875992cbc57360a73549ac21337a4875ec"
+                "content_hash": "474a5a6ba243199948d968b4572841399699a88b"
               }
             ],
-            "computed_at": "2026-10-26T13:38:47.675Z",
+            "computed_at": "2026-10-26T14:44:12.596Z",
             "basis": [
               "declared"
             ]
@@ -10706,15 +10706,30 @@
                   "src/infrastructure/graph/import_project.ts"
                 ]
               }
+            },
+            {
+              "kind": "expectations",
+              "at": "2026-10-26T14:45:10.254Z",
+              "by": "llm",
+              "agent": "agent:wish-machine",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_infrastructure_graph_import_project_ts（3 条判据）",
+                "input": "0befbc2d05c944b1fd59fd58b48d0daa6d107543",
+                "code": "7a758c72357a322c4275dc2c70fcbe04cd9efe9a",
+                "covers": [
+                  "src/infrastructure/graph/import_project.ts"
+                ]
+              }
             }
           ],
           "reopened_at": null,
-          "reopen_reason": "T-#23：import_project 建 file 节点时补 path（否则 560 个扫描节点都没 path，路径事实只能住在 semantic.files）",
+          "reopen_reason": "T-#26：import_project 登记 feature → 项目根（ROOTS.md §7.3 ③ 的唯一写端）",
           "reopened_from": "agent:wish-machine"
         },
         "status": "done",
         "decision": {
-          "summary": "import_project：扫描出的 file 节点必须带 path（路径事实的权威落在节点上）",
+          "summary": "import_project：file 节点带 path + 重建闸两层报全 + 登记 feature → 项目根",
           "expectations": [
             {
               "kind": "source-has",
@@ -10722,7 +10737,7 @@
                 "path: f.rel"
               ],
               "path": "src/infrastructure/graph/import_project.ts",
-              "why": "扫描产物里的 file 节点必须自己持有 path —— 否则 write_gate / D1 只能回落 description（散文），这正是 D1 误判手写节点的根源"
+              "why": "扫描产物里的 file 节点必须自己持有 path"
             },
             {
               "kind": "source-has",
@@ -10731,16 +10746,24 @@
               ],
               "path": "src/infrastructure/graph/import_project.ts",
               "why": "重建闸必须仍在（回归底线）"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "registerFeature"
+              ],
+              "path": "src/infrastructure/graph/import_project.ts",
+              "why": "项目注册表的唯一写端：不登记则 getDSL 只能落 data home ⇒ 所有 feature 的册混一个目录"
             }
           ],
-          "acceptance": "① 扫描出来的 file 节点必须带 `path`（仓库相对路径）—— 实测现状：569 个 file 节点里 560 个**没有** path，路径事实只住在 semantic.files ⇒ 两份事实（write_gate.ts:1003 已把它们数过：semantic.files 515 + node.description 508）；② write_gate 的 `nodeFilePath` 本就「`path` 优先、回落 `description`」⇒ 补 path 是让权威落在节点上；③ 不得改动 semantic.files 的现有字段。",
+          "acceptance": "① file 节点带 path（T-#23）；② 重建闸两层报全（T-#16）；③ **import_project 必须登记 feature → 项目根**（ROOTS.md §7.3 ③ 的唯一写端）—— 因为 getDSL(feature) 没有 baseDir 参数，只能靠这张表找到册。",
           "status": "active",
           "tags": [
             "single-source",
-            "path-fact",
+            "registry",
             "structural"
           ],
-          "updated_at": "2026-10-26T13:38:47.786Z",
+          "updated_at": "2026-10-26T14:44:12.728Z",
           "author": "llm",
           "agent": "agent:wish-machine",
           "rationale": "一个「文件」实体被拆成两行：geometry.nodes 有几何+决策卡+任务但没有 path，semantic.files 有 path+4 个字段但没有 decision/task。write_gate 的 nodeFilePath 已是「path 优先、回落 description」，说明权威本该在节点上。⇒ 先让产者写 path，再迁存量，最后 semantic.files 降为派生视图。"
@@ -10790,6 +10813,44 @@
               "agent": "agent:wish-machine"
             },
             "note": "T-#23：产者先产 —— file 节点带 path",
+            "author": "llm",
+            "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-10-26T14:44:12.728Z",
+            "decision": {
+              "summary": "import_project：扫描出的 file 节点必须带 path（路径事实的权威落在节点上）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "path: f.rel"
+                  ],
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "why": "扫描产物里的 file 节点必须自己持有 path —— 否则 write_gate / D1 只能回落 description（散文），这正是 D1 误判手写节点的根源"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "allow_design_drop"
+                  ],
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "why": "重建闸必须仍在（回归底线）"
+                }
+              ],
+              "acceptance": "① 扫描出来的 file 节点必须带 `path`（仓库相对路径）—— 实测现状：569 个 file 节点里 560 个**没有** path，路径事实只住在 semantic.files ⇒ 两份事实（write_gate.ts:1003 已把它们数过：semantic.files 515 + node.description 508）；② write_gate 的 `nodeFilePath` 本就「`path` 优先、回落 `description`」⇒ 补 path 是让权威落在节点上；③ 不得改动 semantic.files 的现有字段。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "path-fact",
+                "structural"
+              ],
+              "updated_at": "2026-10-26T13:38:47.786Z",
+              "author": "llm",
+              "agent": "agent:wish-machine",
+              "rationale": "一个「文件」实体被拆成两行：geometry.nodes 有几何+决策卡+任务但没有 path，semantic.files 有 path+4 个字段但没有 decision/task。write_gate 的 nodeFilePath 已是「path 优先、回落 description」，说明权威本该在节点上。⇒ 先让产者写 path，再迁存量，最后 semantic.files 降为派生视图。"
+            },
+            "note": "T-#26：登记 feature → 项目根",
             "author": "llm",
             "agent": "agent:wish-machine"
           }
@@ -11908,24 +11969,24 @@
         "arch_layer": "data",
         "task": {
           "id": "file_src_infrastructure_storage_ts",
-          "summary": "【L1 待建构】数据层 · src/infrastructure — 50 个函数（导入自 9 个模块）（src/infrastructure/storage.ts） ← 节点 file_src_infrastructure_storage_ts",
-          "state": "done",
+          "summary": "storage：getDesignSheetFile 查项目注册表（设计随项目根；读写同口径）",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_storage_ts\"].responsibility"
           },
           "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T08:09:39.110Z",
+          "claimed_at": "2026-10-26T14:48:00.811Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/infrastructure/storage.ts",
-                "content_hash": "0477b918218f3279d917ffa263b79e4e5e1063f6"
+                "content_hash": "a289d72ce7e47f927af33edb9a7b53224faefdeb"
               }
             ],
-            "computed_at": "2026-10-26T08:09:38.859Z",
+            "computed_at": "2026-10-26T14:48:00.752Z",
             "basis": [
               "declared"
             ]
@@ -11946,38 +12007,38 @@
                 ]
               }
             }
-          ]
+          ],
+          "reopened_at": null,
+          "reopen_reason": "T-#27：getDesignSheetFile 查项目注册表（读写同口径，设计随项目根生效）",
+          "reopened_from": "agent:wish-machine"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision": {
-          "summary": "数据根与代码仓解耦：默认 ~/.agent-io，AGENT_IO_HOME 可覆盖；沙盒只看临时区/显式开关",
+          "summary": "storage：getDesignSheetFile 查项目注册表（设计随项目根；读写同口径）",
           "expectations": [
             {
               "kind": "source-has",
               "must": [
-                "AGENT_IO_SANDBOX",
-                "tmpdir"
+                "projectRootOf"
               ],
               "path": "src/infrastructure/storage.ts",
-              "why": "沙盒必须基于【临时区】或显式开关 —— 用“是否等于包根”会把正常部署（数据在仓外）误判为沙盒，从而静默关掉写闸"
+              "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表，否则 getDSL 永远只能落 data home"
             },
             {
-              "kind": "source-has",
-              "must": [
-                "homedir"
-              ],
+              "kind": "symbol-exists",
               "path": "src/infrastructure/storage.ts",
-              "why": "默认数据主目录必须是用户主目录（Maven 的 ~/.m2 模型），不再默认写进源码仓"
+              "symbol": "getDSL",
+              "why": "读入口必须仍在（回归底线）"
             }
           ],
-          "acceptance": "① 沙盒判据 = 数据根在【临时区】（os.tmpdir / certs/.work / .inspect）或显式 AGENT_IO_SANDBOX=1，**不再**用「是否等于包根」；② 默认数据主目录 = 用户主目录（⇒ 册在 ~/.agent-io，与代码仓解耦），AGENT_IO_HOME 可覆盖回仓内；③ 旧位置（<pkg>/.agent-io）有数据而新默认为空时，退回旧位置并**显式告警**（不许静默换家）。",
+          "acceptance": "① `getDesignSheetFile(feature)` 未给 baseDir 时查项目注册表，解析到 `<项目根>/.agent-io/design/`（ROOTS.md §7.4）；② **读写必须同口径**（getDesignSheet 与 saveDesignSheet 都走它）；③ mkdir 必须与它同落点（否则在 data home 造空目录）；④ 注册表没登记 ⇒ 回旧位置（迁移通道，不是默认）。",
           "status": "active",
           "tags": [
-            "root",
-            "maven-model",
-            "sandbox"
+            "registry",
+            "single-source",
+            "structural"
           ],
-          "updated_at": "2026-10-26T08:09:39.050Z",
+          "updated_at": "2026-10-26T14:48:00.856Z",
           "author": "llm",
           "agent": "agent:wish-machine"
         },
@@ -11991,7 +12052,47 @@
             "unsupported": 0
           }
         },
-        "path": "src/infrastructure/storage.ts"
+        "path": "src/infrastructure/storage.ts",
+        "decision_history": [
+          {
+            "at": "2026-10-26T14:48:00.856Z",
+            "decision": {
+              "summary": "数据根与代码仓解耦：默认 ~/.agent-io，AGENT_IO_HOME 可覆盖；沙盒只看临时区/显式开关",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "AGENT_IO_SANDBOX",
+                    "tmpdir"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "沙盒必须基于【临时区】或显式开关 —— 用“是否等于包根”会把正常部署（数据在仓外）误判为沙盒，从而静默关掉写闸"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "homedir"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "默认数据主目录必须是用户主目录（Maven 的 ~/.m2 模型），不再默认写进源码仓"
+                }
+              ],
+              "acceptance": "① 沙盒判据 = 数据根在【临时区】（os.tmpdir / certs/.work / .inspect）或显式 AGENT_IO_SANDBOX=1，**不再**用「是否等于包根」；② 默认数据主目录 = 用户主目录（⇒ 册在 ~/.agent-io，与代码仓解耦），AGENT_IO_HOME 可覆盖回仓内；③ 旧位置（<pkg>/.agent-io）有数据而新默认为空时，退回旧位置并**显式告警**（不许静默换家）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "maven-model",
+                "sandbox"
+              ],
+              "updated_at": "2026-10-26T08:09:39.050Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "T-#27：注册表读端接线",
+            "author": "llm",
+            "agent": "agent:wish-machine"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_storage_overlay_ts",
@@ -61874,7 +61975,7 @@
         ],
         "lines": 1107,
         "layer": "data",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_storage_overlay_ts",
@@ -62934,15 +63035,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 75,
+  "_dsl_rev": 78,
   "_sync": {
-    "saved_at": "2026-10-26T13:44:17.810Z",
+    "saved_at": "2026-10-26T14:48:00.904Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 21260673,
+    "age": 25083767,
     "dbSchemaVersion": 17,
-    "via": "tool:t23-migrate"
+    "via": "edit_dsl:edit_dsl"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）"
