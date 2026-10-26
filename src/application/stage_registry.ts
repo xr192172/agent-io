@@ -59,7 +59,6 @@ export type StageId =
   | 'source_files'
   | 'symbol_index'
   | 'embedding_cache'
-  | 'import_cache'
   | 'dsl_features'
   | 'dsl_live'
   | 'dsl_baseline'
@@ -258,14 +257,9 @@ export const STAGES: readonly Stage[] = [
     note: '符号向量缓存（cache.db 里的一张表）',
     why: '产者是语义搜索的 miss 路径（边查边填），没有"独立做一遍"的入口；且**无 TTL、无淘汰** ⇒ 真要接，得先定失效判据。',
   },
-  {
-    id: 'import_cache',
-    kind: 'pending',
-    owner: 'dataHome',
-    inputs: ['source_files'],
-    note: '按 feature 的导入缓存 import_cache_<feature>.db',
-    why: '产者是 import_project 全量导入（重）。接它要先决定"重做"的粒度（全量 or 增量），否则 ensure 一次 = 全项目重扫。',
-  },
+  // ★ 2026-10-26（T-#9）：`import_cache`（按 feature 的导入缓存）条目已删 ——
+  //   它声明了一个**从不产物的流水阶段**：三个工作区全盘扫 `import_cache_*.db` ⇒ **0 个**。
+  //   ⇒ 产物已随 featureCache 概念一起删除（乙方案：每项目有自己的索引）。
   {
     id: 'dsl_live',
     kind: 'pending',
