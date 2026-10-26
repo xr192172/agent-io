@@ -170,8 +170,10 @@ export function formatRootsReport(projectRoot?: string): string {
   const table = rootsOf(projectRoot);
   for (const role of Object.keys(table) as RootRole[]) {
     const r = table[role];
+    // ★ 算不出来的角色（featureCache 缺 feature）如实标「需 feature」，不留空白
+    const shownPath = r.available ? r.path : '（需 feature）';
     lines.push(
-      `  ${role.padEnd(11)} ${r.kind.padEnd(8)} ${r.derivable ? '可删重建' : '禁止脚本删'}  ${r.path}\n` +
+      `  ${role.padEnd(11)} ${r.kind.padEnd(8)} ${r.derivable ? '可删重建' : '禁止脚本删'}  ${shownPath}\n` +
         `  ${' '.repeat(11)} ${r.note}`,
     );
   }
