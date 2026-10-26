@@ -233,19 +233,19 @@
     {
       "name": "requirementsOf",
       "kind": "function",
-      "line": 295,
+      "line": 304,
       "signature": "requirementsOf(item: DesignDbPlanItem): Array<Record<string, unknown>>"
     },
     {
       "name": "requirementCallsOf",
       "kind": "function",
-      "line": 305,
+      "line": 314,
       "signature": "requirementCallsOf(item: DesignDbPlanItem): Array<{ from: string; target: string; why?: string }>"
     },
     {
       "name": "GenDesignDbOptions",
       "kind": "interface",
-      "line": 315,
+      "line": 324,
       "signature": "GenDesignDbOptions()",
       "members": [
         {
@@ -265,7 +265,7 @@
     {
       "name": "GenDesignDbResult",
       "kind": "interface",
-      "line": 322,
+      "line": 331,
       "signature": "GenDesignDbResult()",
       "members": [
         {
@@ -333,19 +333,19 @@
     {
       "name": "renderConflict",
       "kind": "const",
-      "line": 346,
+      "line": 355,
       "signature": "const renderConflict = (c: DesignDbConflict): string => `${c.path}: ${c.detail} …"
     },
     {
       "name": "genDesignDb",
       "kind": "function",
-      "line": 357,
+      "line": 366,
       "signature": "genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDesignDbResult"
     },
     {
       "name": "DesignDbStructureResult",
       "kind": "interface",
-      "line": 534,
+      "line": 543,
       "signature": "DesignDbStructureResult()",
       "members": [
         {
@@ -395,7 +395,7 @@
     {
       "name": "checkDesignDbStructure",
       "kind": "function",
-      "line": 564,
+      "line": 573,
       "signature": "checkDesignDbStructure(root: string): DesignDbStructureResult"
     }
   ],

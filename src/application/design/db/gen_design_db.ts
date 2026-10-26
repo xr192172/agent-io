@@ -246,7 +246,8 @@ export function planDesignDb(
   // ① 按路径收集**所有**持有者（同一路径允许被多个 feature 各持一个节点）
   // ★ 2026-10-24（管辖范围收口，裁 A）：范围权威从硬编码 `startsWith('src/')` 迁到**每册的 excluded 清单**——
   //   observe-lang 等非 src 产品文件由此入投影；certs/scripts 等量具由 excluded 挡住。
-  //   判据不变的一条：仍以 `description` 存路径（fork 的既有形态，两翼分工：geometry 存路径、semantic 存符号）。
+  //   ★ 2026-10-26（T-#28）：路径取法已改为 **`path` 优先、回落 `description`**（见下面 `rel` 处）；
+  //     原先只认 `description` ⇒ 手写节点的散文会变成文件名。
   const excludedAll: Array<{ path: string; reason: string }> = [];
   for (const f of files) {
     const dsl = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8'));
@@ -258,7 +259,15 @@ export function planDesignDb(
     const dsl = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8'));
     const feature = f.replace(/\.dsl\.json$/, '');
     for (const raw of (dsl.geometry?.nodes ?? []) as AnyNode[]) {
-      const rel = norm(raw.description);
+      // ★★★ 2026-10-26（T-#28）：**`path` 优先、回落 `description`** —— 与 `write_gate#nodeFilePath` 同口径。
+      //   病史：这里原先**只**取 `description` ⇒ 手写节点（`description` 是职责散文）的整句中文
+      //   会变成 design-db 的**文件名**。实测产出过：
+      //     design-db/本仓的愿景-理想文档：回答「这个工具到底为什么存在」，是判据与取舍的最终依据。.calls.json
+      //   旧 dump 里更夸张：“考古冻结声明（不挂判据、不阻断任何工具）.calls.json”。
+      //   ★ 这是第 4 处“散文当结构”（前 3 处：`design-check` 拿 description 当 path ·
+      //     `write_gate` 回落 description · `node.update` 的 responsibility 优先级）。
+      //   ★ T-#23 已让 `import_project` 给 file 节点写 `path` ⇒ 扫描节点走 path 分支，产出不变。
+      const rel = norm((raw as { path?: string }).path ?? raw.description);
       if (!rel) continue;
       if (isExcludedPath(rel)) continue;
       plan.nodes += 1;

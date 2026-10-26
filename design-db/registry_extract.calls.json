@@ -1,9 +1,0 @@
-{
-  "//": "Design DB —— registry_extract.ts（★ 全量、与实际 DB 同构；从 design/agent-io-toolface.dsl.json 的节点生成）",
-  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
-  "//source": "design/agent-io-toolface.dsl.json",
-  "path": "registry_extract.ts",
-  "symbols": [],
-  "imports": [],
-  "calls": []
-}

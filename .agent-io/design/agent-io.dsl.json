@@ -4647,7 +4647,62 @@
           "borderRadius": 4
         },
         "arch_layer": "data",
-        "path": "src/application/design/db/gen_design_db.ts"
+        "path": "src/application/design/db/gen_design_db.ts",
+        "task": {
+          "id": "file_src_application_design_db_gen_design_db_ts",
+          "summary": "【L1 待建构】数据层 · src/application/design/db — 6 个函数（导入自 3 个模块）（src/application/design/db/gen_design_db.ts） ← 节点 file_src_application_design_db_gen_design_db_ts",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_db_gen_design_db_ts\"].responsibility"
+          },
+          "owner": "agent:wish-machine",
+          "claimed_at": "2026-10-26T15:42:06.557Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/design/db/gen_design_db.ts",
+                "content_hash": "944b14c2701e7f6b9db7dbf70be1f8eb9f352e07"
+              }
+            ],
+            "computed_at": "2026-10-26T15:42:06.366Z",
+            "basis": [
+              "declared"
+            ]
+          }
+        },
+        "status": "in_progress",
+        "decision": {
+          "summary": "gen-db：路径取法 path 优先（与 write_gate 同口径）",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "raw.path ?? raw.description"
+              ],
+              "path": "src/application/design/db/gen_design_db.ts",
+              "why": "实测：只取 description ⇒ 手写节点的散文变成 design-db 文件名（整句中文）。write_gate 早就是 path 优先，gen-db 是唯一例外"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/db/gen_design_db.ts",
+              "symbol": "genDesignDb",
+              "why": "生成器本体必须仍在（回归底线）"
+            }
+          ],
+          "acceptance": "① gen-db 算路径必须 **`path` 优先、回落 `description`**（与 `write_gate#nodeFilePath` 同口径）；② 手写节点的散文 description 不得再变成 design-db 的文件名；③ 不得改变已带 path 的扫描节点的产出。",
+          "status": "active",
+          "tags": [
+            "single-source",
+            "path-fact",
+            "structural"
+          ],
+          "updated_at": "2026-10-26T15:42:06.526Z",
+          "author": "llm",
+          "agent": "agent:wish-machine"
+        }
       },
       {
         "id": "file_src_application_design_derive_derive_algorithm_ts",
@@ -45676,7 +45731,8 @@
           }
         ],
         "lines": 620,
-        "layer": "data"
+        "layer": "data",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_derive_derive_algorithm_ts",
@@ -63050,13 +63106,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 79,
+  "_dsl_rev": 80,
   "_sync": {
-    "saved_at": "2026-10-26T14:49:05.278Z",
+    "saved_at": "2026-10-26T15:42:06.576Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 25148141,
+    "age": 28329439,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
