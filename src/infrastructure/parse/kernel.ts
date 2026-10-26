@@ -846,6 +846,60 @@ const TS_LIKE_IMPORT_BINDINGS = (node: SyntaxNodeLike): string[] => {
   return [...new Set(out)];
 };
 
+/**
+ * ★★★ 2026-10-27：**加新语言时的验货清单**（本轮实测结论，不是推测）
+ *
+ * ## 为什么写在这里
+ * 本表是「新增一门语言」的唯一落点（`scripts/new-observe-lang.mjs` 生成骨架，规则都填进这里）。
+ * 本轮量出**四个跨语言通用的坑**，每一个都会让「引用解析率」看起来很差、而其实是判定错。
+ * ⇒ 加语言前先读这一节，加完按 §5 逐条验。
+ *
+ * ## §1 三种「解析失败」必须分开，否则会误判成「能力不够」
+ * `unresolved_refs.status` 四值语义：
+ *   · `resolved` = 建了边（本仓内找到目标）
+ *   · `external` = 外部包 / 语言内置 / 内置类型 ⇒ **正常，本来就不该建仓内边**
+ *   · `failed`   = 本仓内找不到目标 ⇒ **这才是债**
+ *   · `pending`  = 索引未完整，留待再判
+ * ⇒ ★ **别把 `external` 混进「解析率」分母**：实测「解析率 13.6%」里 `external` 占 41%
+ *   （12271/29658）⇒ **真实本仓解析率 >94%**。指标口径错会直接导致「以为要上 LSP」。
+ *
+ * ## §2 存量 `failed` 会**永久钉住**，必须显式重算
+ * `reopenRefsTo()` 只在「该名字现在还在 `nodes` 里」时才把 `failed` 重开为 `pending`。
+ * ⇒ **内置名（`JSON.stringify` / `Math.max`）永远不在 nodes ⇒ 永不重试 ⇒ 永久 failed。**
+ * 实测：把 13341 条 `failed` 一次性改回 `pending` 再跑 `resolveCrossFileCalls`：
+ *   **0.8s ⇒ 11199 条归位 `external`（84%）**，`failed` 13341 → 2143，**edges 一条没变**（正确）。
+ * ⇒ **加了新语言 / 改了判定之后，必须跑一次「重试存量 failed」**，否则旧账永远看不到改善。
+ *
+ * ## §3 嵌套函数是**最大的真洞**（跨语言）
+ * 实测：`const walk = (dir) => {…}` **定义在函数体内**（缩进>0）时**不被收集**，
+ * 而调用它的引用全部 `failed`（`walk` 147 · `need` 21 · `make` 19 · `declare` 19 · `run` 17…）。
+ * 同文件**顶层**同名 `const` **会被收集** ⇒ **不一致，是 bug 不是设计**。
+ * 源码统计：`const X = (...) =>` 全仓 211 处，其中**嵌套 110 处**；
+ * 而 `nodes.is_closure=1` 只有 **48**（且全是 `method`/`interface`，**没有一个 `const`**）。
+ * ⇒ ★ **加语言时必验**：该语言「函数体内的具名函数/箭头」能不能进 `nodes` 且标 `is_closure: true`。
+ * ⇒ ★ `is_closure` 的**用途**：标了它 = **不算设计契约面** ⇒ 索引它们**不污染契约**，
+ *   却**能让调用边建起来**。这是「既全又干净」的唯一办法。
+ *
+ * ## §4 每门语言都要有**自己的内置表**，否则内置符号会落进 `failed`
+ * 现状只有 TS 的 `BUILTIN_TYPES` / `BUILTIN_CALLEES`。实测 Go 的 `bool`/`int`/`int64`
+ * 与 `@types/node` 的全局类型（`ServerResponse`/`IncomingMessage`/`RegExpExecArray`/`Dirent`）
+ * 都落进了 `failed`。
+ * ⇒ 加语言时同时补三样：**内置类型表** + **内置可调用表** + **该语言的「全局声明」来源**
+ *   （TS = `lib.*.d.ts` + `@types/*`；Go = `builtin` 包；Python = `builtins`；Java = `java.lang`）。
+ *
+ * ## §5 加完一门语言的验收（逐条可跑）
+ *   ① `nodes` 里该语言的文件有节点，且**函数有 signature / params / return_type**
+ *      （实测基线：全仓 signature 93.9%；functions+methods 的 params **100%**、return_type 94%）
+ *   ② 该语言的 `failed` 占比 —— **先把内置表（§4）补齐再看这个数**
+ *   ③ 嵌套函数是否进了 `nodes`（§3）—— 抽样看该语言文件的 `is_closure` 计数
+ *   ④ `edges.call` / `unresolved_refs.call` —— 实测全仓只有 **24%**（5964/24625），
+ *      主因就是 §3 ⇒ **新语言若低于这个数，先怀疑嵌套函数，别急着上类型推断**
+ *   ⑤ **跑一次「重试存量 failed」**（§2），确认旧账归位
+ *
+ * ## §6 一句话
+ * > **「解析率低」先怀疑判定（§1/§4），再怀疑收集（§3），最后才怀疑「需要类型推断」。**
+ * > 实测本仓 **82%** 的 `failed` 是内置/外部符号被错标 —— **一张内置表的事，不是 LSP 的事。**
+ */
 export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   go: {
     callNode: 'call_expression',
