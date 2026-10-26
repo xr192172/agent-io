@@ -201,3 +201,16 @@ go-observe/MIGRATED_FROM_AI_BASE.md
 #   ★ 理由：黑盒实验的**被试读得到仓里的一切**，而实验报告/预期读数**就是答案**（实测污染过一轮）。
 #   ★ 本行是**防复发**：原来那个 out/ 已整体搬到 _design-canvas-labs/out-2026-10-11/
 out/
+
+
+# ★★★ 2026-10-26：**任何嵌套的 .agent-io 都不进 git**（唯一例外：仓根的 .agent-io/design/）
+#   依据 = roots.ts 的 derivable：cache/live/baseline/snapshot/observe/impact/translate/judgeCache
+#   全是**可由源码重建**的派生数据；只有 design（册/意图）是 derivable:false，要随仓移交。
+#   ★ `!` 那三条必须带**前导斜杠**（根锚定）—— 否则 `!.agent-io/` 会在任意层级生效，
+#     把嵌套的 .agent-io 全 un-ignore 掉（2026-10-26 实测踩过）。
+#   病史：src/application/.agent-io/cache.db（23.5MB）曾被提交进 git —— 因为原规则
+#   `.agent-io/*` 只锚在仓根，盖不到 src/**/.agent-io/。
+**/.agent-io/
+!/.agent-io/
+!/.agent-io/design/
+!/.agent-io/design/**
