@@ -148,6 +148,31 @@ const SIDE_LABEL: Record<RootSide, string> = {
   task: '任务系统（跨项目；不属于任何一个侧）',
 };
 
+/**
+ * ★★★ 2026-10-26（T-#13）：**由角色表生成 .gitignore 规则** —— 唯一住处。
+ *
+ * 为什么必须生成而不是手写：哪些该忽略、哪些该进 git，**不是口味，是 `derivable`**：
+ *   · `derivable: true` ⇒ 派生数据、可由源码重建 ⇒ **不进 git**
+ *   · `derivable: false` ⇒ 意图（册/历史）⇒ **随仓移交**
+ * 病史：手写的 `.agent-io/*` 只锚在仓根 ⇒ `src/application/.agent-io/cache.db`（23.5MB）进了 git。
+ * ⇒ 布局一变（例如三侧落地、shared 角色搬到 `~/.agent-io`）只需重跑 `scripts/gen_gitignore.mjs`，
+ *   规则自动跟随；且可用 `--check` 当门比对。
+ */
+export function gitignoreRules(): { ignore: string[]; keep: string[] } {
+  const ignore: string[] = [];
+  const keep: string[] = [];
+  for (const spec of ROLE_SPECS) {
+    const sub = ROLE_SUBDIR[spec.role];
+    const name = sub === '.' ? (spec.fileName ?? '') : sub;
+    if (!name) continue;
+    const rel = `${DATA_DIR_NAME}/${name}`;
+    (spec.derivable ? ignore : keep).push(rel);
+  }
+  // sqlite 的三个伴生文件（-wal / -shm）跟着主库一起忽略
+  ignore.push(`${DATA_DIR_NAME}/*.db*`);
+  return { ignore: [...new Set(ignore)].sort(), keep: [...new Set(keep)].sort() };
+}
+
 /** 人读清单（doctor / 诊断用）：把"每种数据住在哪"一次说清 */
 export function formatRootsReport(projectRoot?: string): string {
   const lines: string[] = ['══ 根清单（按【三个侧】分组）══'];
