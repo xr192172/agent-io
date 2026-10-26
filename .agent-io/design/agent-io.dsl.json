@@ -5490,7 +5490,7 @@
         "task": {
           "id": "file_src_application_meta_integrity_index_integrity_ts",
           "summary": "index_integrity 报告根偏离 + 绝对路径字面量（两条都只说数不下结论）",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_integrity_index_integrity_ts\"].responsibility"
@@ -5526,13 +5526,28 @@
                   "src/application/meta/integrity/index_integrity.ts"
                 ]
               }
+            },
+            {
+              "kind": "expectations",
+              "at": "2026-10-26T10:33:17.102Z",
+              "by": "llm",
+              "agent": "agent:wish-machine",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_application_meta_integrity_index_integrity_ts（3 条判据）",
+                "input": "ef9f6a19dade6bef08b713a9502a6874583be3b7",
+                "code": "4a193eccf2d3247fdb8eac6af73717f59718524b",
+                "covers": [
+                  "src/application/meta/integrity/index_integrity.ts"
+                ]
+              }
             }
           ],
           "reopened_at": null,
           "reopen_reason": "T-#12：新增 absolute_path_literal 检查（让「不许硬编码绝对路径」这条规矩有牙）",
           "reopened_from": "agent:wish-machine"
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "index_integrity 报告根偏离 + 绝对路径字面量（两条都只说数不下结论）",
           "expectations": [
@@ -46837,7 +46852,7 @@
         ],
         "lines": 898,
         "layer": "core",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_application_meta_llm_llm_decider_ts",
@@ -61506,13 +61521,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 48,
+  "_dsl_rev": 49,
   "_sync": {
-    "saved_at": "2026-10-26T10:32:24.851Z",
+    "saved_at": "2026-10-26T10:33:17.199Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 9747714,
+    "age": 9800062,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
