@@ -1620,8 +1620,10 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
         height: FILE_H,
         type: 'doc',
         // ★★★ 2026-10-15（进度轴收归，T328）：同上面两处 —— 扫描侧的 `status: 'done'` **不再落库**。
-        // ★ 与 file 节点同款：**路径放 `description`** ⇒ `nodePath()` 的 else 分支能原样取到 ✓
-        title: rel, // ★ T-#35：description 已删（rel 就是路径 ⇒ 它只住 path；这里只留人读标题）
+        // ★★★ 2026-10-27（T-#35 修正）：doc 节点的**路径住 `path`**（不是 `title`）。
+        //   原先写 `description: rel`（老写法：“路径放 description，nodePath 的 else 分支能取到”）；
+        //   `description` 删了之后我一时改成了 `title: rel` —— **错的**：rel 是路径，不是“人读标题”。
+        path: rel,
         style: { ...DEFAULT_FILE_COLOR, borderRadius: 4 },
       });
     });

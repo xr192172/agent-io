@@ -67,6 +67,15 @@ for (const f of fs.readdirSync(DESIGN_DIR).filter((x) => x.endsWith('.dsl.json')
       const hit = (sum.match(/[A-Za-z]:[\\/][^\s，。）)]*/g) ?? []).slice(0, 2).join(' ');
       problems.push({ feature, id: n.id, rule: 'C', msg: `decision.summary 里写死绝对路径（${hit}）⇒ 权威是 source_root` });
     }
+    // D：title 里塞了路径（说明位被当成路径用）
+    // ★ 2026-10-27（T-#35 修正）：删 Node.description 时我一度把两处**路径值**改存 `title`
+    //   （import_project 的 doc 节点、live_render 的 file 节点）—— 语义上错：title 是"人读标题"。
+    //   ⇒ 加这条规则：说明位（title）里出现路径形状 ⇒ 红。**这就是"改错了怎么办"的结构答案**：
+    //     不靠我逐处判对，靠门在下一轮当场指出来。
+    const t = norm(n.title);
+    if (t && looksLikeRepoPath(t)) {
+      problems.push({ feature, id: n.id, rule: 'D', msg: `title 里是路径形状（${t}）⇒ 说明位被当成路径用；路径该住 path` });
+    }
   }
 }
 
