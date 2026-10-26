@@ -234,7 +234,14 @@ getDSL(feature)
 （同族的另外三次"散文当结构"：`design-check` 拿 `description` 当 path · `write_gate` 回落 `description` ·
 `gen-db` 拿 `description` 当文件名 —— 都已在 2026-10-26 对齐到"`path` 优先"。）
 
-### 8.3 另一处"退役只做一半"（待核）
+### 8.3 `featureCache`：**已核，债已清**（原先记的"待核"是假警报）
 
-`featureCache` 属于同型：`featureCacheDbPath` 已于 2026-10-26 删除，
-但 `serve.ts` 里那两处 `openDb(...)` 调用**我没有逐处核对**是否已跟着改。⇒ 记在这里，别当成已清。
+写这一节时我怀疑：`featureCacheDbPath` 删了，而 `serve.ts` 里那两处 `openDb(...)` 没跟着改。**核完了**：
+
+- `serve.ts:437` / `:489` 都是 **`openDb(projectCacheDbPath(...))`** —— 项目本地缓存，**正确**
+- `src/` 里 `featureCache` 的 7 处命中**全是注释**（说明"已删除"），**零代码引用**
+
+⇒ **债不存在。**
+
+★ 教训：**"我记得有条债"也要核。** 记一条**不存在**的债，和漏一条真债一样有害 ——
+前者会浪费下一个人去看，而且会让人**不再相信这份登记**。
