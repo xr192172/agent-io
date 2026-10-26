@@ -31,28 +31,21 @@ import path from 'node:path';
 // ★「只在设计侧」⇒ 必含符号（`must_have`）。逻辑落在 `design_line.ts`（设计链的读数层），
 //   这里只负责把结果并进 diff 的回执 —— 判据一处，别在 diff 里再写一把。
 import { mustHaveFor, type MustHaveReport } from './design_line.js';
+// ★ T-#38/T-#39：**引用真类型** —— `Node` 是 DSL 节点形状的唯一源头（`domain/geometry.ts`）
+import type { Node } from '../../../domain/geometry.js';
 
 /**
- * ★★★ 2026-10-27（T-#38 / 「五」）：**已知字段必须显式声明，不许靠索引签名兜**。
+ * ★★★ 2026-10-27（T-#38/T-#39 修正）：**引用真类型，不手写字段**。
  *
- * 原来只有 `{ id?: string } & Record<string, unknown>` ⇒ **`node.description` 的类型是 `unknown`**
- * ⇒ tsc 不管 ⇒ 那个"读已删字段、永远 undefined、静默失效"的 bug 就是这么躲过编译器的。
- * ⇒ 现在把**用得到的字段**逐个写出来（`path` / `label` / `type` / `title` / …），
- *   只保留 `Record<string, unknown>` 兜"其余未知字段"。
- * ★ 判据：**用到的字段就必须声明** —— 声明了 tsc 才管得着。
+ * 上一版我逐个手写了 `path?/label?/type?/title?/…` —— 那是**又造了一份影子**：
+ * `Node` 以后加字段，这份手写清单**不会跟着长**，于是又漂。
+ *
+ * ⇒ 现在 `Partial<Node>` 直接**引用真源头**（`domain/geometry.ts#Node`）：
+ *    · `Node` 有什么，这里就有什么（自动跟）
+ *    · `Node` 删了什么（如 `description`），这里读它**当场 tsc 红**
+ *   `& Record<string, unknown>` 只兜"JSON 文件里可能有、而 Node 没声明的字段"（diff 读的是任意文件）。
  */
-type AnyNode = {
-  id?: string;
-  path?: string;
-  label?: string;
-  type?: string;
-  title?: string;
-  layer?: string;
-  host?: string;
-  style?: unknown;
-  shapes?: unknown;
-  decision?: unknown;
-} & Record<string, unknown>;
+type AnyNode = Partial<Node> & Record<string, unknown>;
 type AnyEdge = { from?: string; to?: string; label?: string };
 
 export interface DesignDiffResult {
