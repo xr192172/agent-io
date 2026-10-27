@@ -659,6 +659,15 @@ export const DESIGN_TOOLS: ToolDef[] = [
             '设计已存在就**只刷新"实际"、完全不碰设计**。' +
             '★ 重建会抹掉"扫描产不出"的节点（人手加的那些）⇒ 受 `allow_design_drop` 把关（默认拒绝并列出）。',
         ),
+      staged: z
+        .boolean()
+        .optional()
+        .describe(
+          '★ 2026-10-27（T-#48）：**分步建索引** —— true ⇒ 只做「快的那半」（走查 + 几何节点 + 设计册骨架）' +
+            '**立即返回**（实测 536 文件 51.4s → 亚秒级），符号解析交给 `scheduleBackfill()` 后台分小批续建。' +
+            '★ 代价：本次回执的 **API 面为空、依赖边为 0** ⇒ **判据 / consistency_check / design:check 会得出假结论**，' +
+            '必须等续建完成（用 `index_integrity` 看进度）再跑。默认 false = 同步解析完再返回（正确优先）。',
+        ),
       allow_design_drop: z
         .boolean()
         .optional()

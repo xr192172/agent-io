@@ -41,6 +41,7 @@ import { parseFileFull, listSupportedExtensions, resolveProjectImport } from '..
 import type { ParsedImport } from '../parse/index.js';
 import { countLines, assessLines } from '../analysis/structure/monolith.js';
 import { getProjectCacheDb, type Database } from '../index/db.js'; // ★ T-#47：cache_db 缺失时自动打开
+import { scheduleBackfill } from '../index/index_backfill.js'; // ★ T-#48：分步建索引（后台续建）
 import { syncProject, getFileParse, pruneDeletedFiles, resolveCrossFileCalls } from '../index/symbols.js';
 import { generateFileRoleTitles } from '../analysis/structure/role_title.js';
 
@@ -83,6 +84,25 @@ export interface ImportProjectInput {
    * 变更文件由 syncFile 解析并写回缓存，下次运行受益。
    */
   cache_db?: Database;
+  /**
+   * ★★★ 2026-10-27（T-#48）：**分步建索引** —— 快速返回，符号解析交给后台续建。
+   *
+   * ## 为什么需要
+   * 实测全量解析 **536 文件 = 51.4s**（同步）⇒ 工具调用会卡住半分钟。
+   * 用户的要求：「偏慢可以后台跑，工具使用的时候基本可以无感即可（分步建立数据）」。
+   *
+   * ## 语义
+   * · `staged: false`（**默认**）⇒ 同步解析完再返回（**契约/判据看到的是完整数据**）
+   * · `staged: true` ⇒ 只做「快的那半」（走查 + 几何节点 + 设计册骨架）后**立即返回**，
+   *   符号解析交给 `scheduleBackfill()`（分小批、每批让出事件循环）
+   *   ⇒ 回执里 `symbols_found: 0` + 明确说「API 面还没建完」
+   *
+   * ## 为什么默认**不是** true
+   * `consistency_check` / `design:check` / 判据**都读 API 面** ⇒ 数据没建完就判 = **假结论**。
+   * ⇒ **默认同步**（正确优先）；要快就显式 `staged: true`，并且知道自己在看半成品。
+   * ★ `staged: true` 时**不跑空索引守卫**（那是「解析失败」的判据，而分步是**故意**不解析）。
+   */
+  staged?: boolean;
   /**
    * 可选：仅生成"实际 DSL"（代码实时快照，写 live/ 目录，不覆盖设计 DSL）。
    * 供 watch_project 变更回调 / serve 重建实际视图用。默认 false=写设计 DSL。
@@ -921,7 +941,18 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     // 缓存路径：syncProject 内部按 content_hash 增量——未变更文件不重解析，
     // 随后从 cache.db 读回符号与原始 import（含 Go 包路径 / Python 点分模块）
     const db = input.cache_db ?? getProjectCacheDb(root);
-    const sync = await syncProject(db, root, absFiles);
+    // ★ T-#48：分步模式 ⇒ 不跑同步解析，改交后台续建（非阻塞，分小批）
+    const sync =
+      input.staged === true
+        ? { results: [] as Array<{ path: string; status: string; error?: string }> }
+        : await syncProject(db, root, absFiles);
+    if (input.staged === true) {
+      scheduleBackfill(root, { batch: 20, intervalMs: 200 });
+      skipped.push(
+        '★ 分步建索引（staged:true）：符号解析已交给**后台续建** ⇒ 本次回执的 API 面为空、依赖边为 0。' +
+          '稍后用 `index_integrity` 看续建进度；**判据/一致性检查请等续建完成再跑**（否则是假结论）。',
+      );
+    }
     cacheStats = { hits: 0, reparsed: 0, failed: 0 };
     // 删除侦测：清掉磁盘上确实不存在的文件的缓存行（比对基准是截断前完整列表）
     // ★ 回执分两种，不许混成一句：prune 的候选里有"磁盘真没了"和"走查规则主动跳过但文件还在"，
@@ -942,6 +973,11 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     }
     const byPath = new Map(sync.results.map((r) => [r.path, r]));
     for (const f of files) {
+      // ★ T-#48：分步模式 ⇒ 故意还没解析，不算「解析失败」（不能刷 536 条假警报）
+      if (input.staged === true) {
+        parsed.set(f.rel, { symbols: [], nonFuncSymbols: [], imports: [] });
+        continue;
+      }
       const r = byPath.get(f.rel);
       const cached = r && r.status !== 'failed' ? getFileParse(db, f.rel) : null;
       if (!r || r.status === 'failed' || !cached) {
@@ -1292,7 +1328,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       // ⇒ 索引被建成"有文件节点、`nodes` 表为空" ⇒ 之后任何基于索引的查询**静默返回空**。
       // ⇒ 判据：`probeSyms > 0 && symbolsFound === 0` ⇒ **不可能是"项目真没符号"**（预检已经反证了）
       //   ⇒ 直接拒，且**在写设计册之前**。
-      if (probeSyms > 0 && symbolsFound === 0) {
+      if (input.staged !== true && probeSyms > 0 && symbolsFound === 0) {
         throw new Error(
           `导入被拒：**批量解析路径出 0 个符号，而预检解析能出 ${probeSyms} 个** —— 这是解析管线的 bug，不是"项目没符号"。\n` +
             `★ 症状：索引会被建成"有文件节点、\`nodes\` 表为空" ⇒ 之后任何基于索引的查询都会**静默返回空**。\n` +
