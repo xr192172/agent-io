@@ -2097,6 +2097,28 @@ export function resolveCrossFileCalls(
     const rel = r.from_node_id.split('#')[0];
     const expr = r.reference_name;
     const kind = r.reference_kind as 'call' | 'type_ref';
+    // ★★★ 2026-10-27（T-#65）：**重判必须尊重已有判定证据**。
+    //
+    // ## 病史（本轮实测抓到的真凶）
+    // 为做 A/B，我把全部引用重置成 `pending` 再跑一遍 ⇒ **failed 24 → 100**。
+    // 那 100 条是：`resolve` 16 · `reject` 13 · `fn` 8 · `run` 6 · `match` 4 · `onError` 3 · `wake` 2 …
+    // —— **全是 `syncFile` 已经正确判成 `external: local-binding` 的局部绑定**。
+    //
+    // ## 根因：判定能力不对称
+    // `syncFile`（`classifyCall` + T-#55/T-#59/T-#61 的作用域栈）**有 AST** ⇒ 判得出"这是参数/局部 const"；
+    // `resolveCrossFileCalls` **只有 DB 行** ⇒ 判不出 ⇒ 一律落 `failed`。
+    // ⇒ **两套判定不幂等** —— 同一批引用，走哪条路得到不同答案。
+    //   ★ 这就是整个会话里数字一直漂（4049 → 4088 → 4094 → 3855 → 4103）的**根因**。
+    //
+    // ## 修法
+    // `candidates` 是**上一次判定留下的证据**（`{"verdict":"external","why":"local-binding:<fn>"}`）。
+    // 重判时**先读它**：已经有 `local-binding` 结论的 ⇒ **保持 external，不重判**
+    // （这条结论只有 AST 能给，DB 层无法推翻）。
+    if (typeof r.candidates === 'string' && r.candidates.includes('local-binding')) {
+      updExternal.run({ i: r.id, cd: r.candidates });
+      stats.external++;
+      continue;
+    }
     // ★ T-#51：**局部绑定先判** —— 参数不是符号，不建边，但也不该是 failed
     const bindFn = localBindingOf(rel, expr, r.line);
     if (bindFn) {
