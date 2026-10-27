@@ -1017,7 +1017,18 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
         fid: fileId,
         lang: ext,
         nt: c.callee,
-        st: verdict.kind === 'external' ? 'external' : 'failed',
+        // ★★★ 2026-10-27（T-#68）：**`suspect` 不该落 `failed`，该落 `pending`**。
+        //
+        // ## 数据（T-#67 的两层对账，实测）
+        //   suspect→external 331 · unknown→external 40 · suspect→resolved 40 · suspect→failed 24
+        //   ⇒ **`suspect` 379 条里 355 条（94%）被跨文件层推翻** —— AST 的"我判不准"几乎没用。
+        //
+        // ## 为什么这是结构问题而不是调参
+        // `suspect` 的语义是**"这一层判不准"** ⇒ 它**没有资格**把引用钉成 `failed`（那是"结论"）。
+        // 原先落 `failed` ⇒ ① `failed` 里混进 94% 的假债（读数失真）；
+        //              ② 靠 `retry_failed` 事后补救（补丁式）。
+        // ⇒ 现在落 `pending`：**`failed` 只剩"跨文件层也救不回"** —— 一个**真正**的债指标。
+        st: verdict.kind === 'external' ? 'external' : 'pending',
         // ★★ T-#66 **纠错**：这里**不能**标 `source: 'ast'`。
         //   我第一版给所有 `classifyCall` 判定都标了"AST 不可推翻" ⇒ 实测灾难：
         //   `JSON.stringify` / `lines.push` 这类被 `classifyCall` 判成 `suspect`（**它判不准**），
@@ -1742,6 +1753,21 @@ export interface CrossFileResolveStats {
   /** 未匹配到目标符号，标 status='failed'（不再重试） */
   failed: number;
   /**
+   * ★★★ 2026-10-27（T-#67）：**度量「哪一层判得准」** —— `上一次判定 → 本次判定` 的计数。
+   *
+   * ## 为什么要它
+   * 仓里有两层判定：`syncFile`（有 AST）与 `resolveCrossFileCalls`（只有 DB 行）。
+   * 两层**谁更准**一直是靠我推理 —— 而 T-#66 那次我推理错了（把 `suspect` 锁死，`failed` 暴涨到 11322）。
+   * ⇒ 改成**看数据**：每行处理前记下它的 `candidates.verdict`（上一次的结论），
+   *   处理后再看 `status` ⇒ 得到 `suspect→external` / `suspect→failed` / `external→external` … 的分布。
+   *
+   * ## 怎么读
+   * · `suspect→external` 多 ⇒ 跨文件层**救回了 AST 判不准的**（它的价值）
+   * · `suspect→failed` 多 ⇒ 跨文件层也救不回（这些是真债或更深的能力缺口）
+   * · `external→*` 非恒等 ⇒ **两层不一致**（该查）
+   */
+  overrides?: Record<string, number>;
+  /**
    * ★ 2026-10-22：re-export 没建边的**原因分布**（why → 条数）。
    * 为什么开这一栏：任务卡判据要求「连上多少 / 跳过多少」必须一起报 ——
    * 只回一个 resolved，跳过的那批就是**静默少报**。
@@ -2100,6 +2126,21 @@ export function resolveCrossFileCalls(
     return null;
   };
 
+  // ★★★ 2026-10-27（T-#67）：**处理前记下每行的「上一次判定」** —— 用于事后算 `上一次 → 本次` 的分布。
+  //   这就是「哪一层判得准」的度量。T-#66 我**推理错过一次**（把 `suspect` 锁死 ⇒ failed 11322），
+  //   所以这件事**改成看数据**，不再靠推理。
+  const priorVerdict = new Map<number, string>();
+  for (const r0 of rows) {
+    const c0 = (r0 as { candidates?: string | null }).candidates;
+    if (typeof c0 !== 'string' || !c0) continue;
+    try {
+      const v0 = (JSON.parse(c0) as { verdict?: string })?.verdict;
+      if (v0) priorVerdict.set(r0.id, v0);
+    } catch {
+      /* 坏 JSON 跳过 */
+    }
+  }
+
   for (const r of rows) {
     const rel = r.from_node_id.split('#')[0];
     const expr = r.reference_name;
@@ -2425,6 +2466,20 @@ export function resolveCrossFileCalls(
         markUnresolved(r.id, missWhy2 ?? 'cross-target-not-found', miss[0]?.detail);
       }
     }
+  }
+  // ★ T-#67：**算「上一次判定 → 本次判定」的分布**（一次性扫，不做 N 次点查）
+  if (priorVerdict.size > 0) {
+    const overrides: Record<string, number> = {};
+    const nowRows = db
+      .prepare("SELECT id, status FROM unresolved_refs WHERE status IN ('resolved','external','failed')")
+      .all() as Array<{ id: number; status: string }>;
+    for (const row of nowRows) {
+      const pv = priorVerdict.get(row.id);
+      if (!pv) continue;
+      const key = `${pv}→${row.status}`;
+      overrides[key] = (overrides[key] ?? 0) + 1;
+    }
+    stats.overrides = overrides;
   }
   if (ownTx) db.exec('COMMIT');
     } catch (e) {
