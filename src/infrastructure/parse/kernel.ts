@@ -1000,6 +1000,31 @@ const TS_LIKE_IMPORT_BINDINGS = (node: SyntaxNodeLike): string[] => {
  *      主因就是 §3 ⇒ **新语言若低于这个数，先怀疑嵌套函数，别急着上类型推断**
  *   ⑤ **跑一次「重试存量 failed」**（§2），确认旧账归位
  *
+ * ## §7 加语言的**必填项**：`resolveImport`（2026-10-27 补）
+ *
+ * ### 现状（实测，别当成"已经支持"）
+ * 本表有 **26 个语言**，但**只有 2 个**声明了 `resolveImport`（`go` · `java`），
+ * 加上 TS 走默认路径（`resolveImportTarget` 的相对路径逻辑）⇒ **实际只有 3/26 能解析导入**。
+ * ⇒ 其余 23 个（rust · c_sharp · c · cpp · ruby · kotlin · php · scala · groovy · julia ·
+ *   haskell · elixir · bash · fish · ocaml · solidity · crystal · swift …）
+ *   **跨文件引用一条都解析不到**。
+ * ★ 本仓每种只有 0-4 个文件 ⇒ **完全不可测量**；换个项目就是**大面积漏**。
+ *   ⇒ 这是"看条数看不见、看种类一眼就有"的典型。
+ *
+ * ### 加语言时必须同时回答
+ * 1. **import 语句长什么样**（`import_nodes` 已覆盖）
+ * 2. **怎么把 import 的 source 映射到项目内文件** ⇒ 填 `resolveImport`
+ *    · `[]` = 明确外部（标准库/第三方）· `string[]` = 候选文件 · `null` = 本语言不管
+ * 3. **`*_BUILTIN_*` 表是不是在掩盖"没有 resolveImport"**
+ *    ★ 已应验三次：`BUILTIN_TYPES` 的 tail 名（掩盖 `type_ref` 丢 receiver）·
+ *      `GO_BUILTIN_TYPES` 的 stdlib 名（同上）· `JAVA_BUILTIN_TYPES`（掩盖 Java 无 resolveImport）
+ *    ⇒ **每张 `*_BUILTIN_*` 表都要问这一句**。
+ *
+ * ### 已实现的三种约定（可照抄）
+ * · **Go**：本仓 module 前缀 → 目录 → 该目录所有 `.go`（`readGoModules` 提供 module→dir）
+ * · **Java**：`a.b.C` → 路径以 `a/b/C.java` 结尾（目录=包，语言强制）
+ * · **Python**：`a.b` → `a/b.py` / `a/b/__init__.py`；`.` 前缀按点数上溯
+ *
  * ## §6 一句话
  * > **「解析率低」先怀疑判定（§1/§4），再怀疑收集（§3），最后才怀疑「需要类型推断」。**
  * > 实测本仓 **82%** 的 `failed` 是内置/外部符号被错标 —— **一张内置表的事，不是 LSP 的事。**
@@ -1063,6 +1088,38 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     },
   },
   python: {
+    // ★★★ 2026-10-27（T-#81）：**Python 的导入解析**（原先**没有** ⇒ 类级盲区）。
+    //
+    // ## 判据（Python 的模块 = 文件/包 约定）
+    // `import a.b` / `from a.b import C` ⇒ 候选 `a/b.py` 与 `a/b/__init__.py`
+    // 相对导入 `from . import x` / `from ..a import x` ⇒ 按**点数上溯**当前文件所在目录
+    // ★ 不认识的（标准库 / 第三方）⇒ `[]`（明确外部）；调用方还会试 `pkgSrc`，不会误判。
+    resolveImport: (source: string, fromRel: string, ctx) => {
+      const s = source.trim();
+      if (!s) return [];
+      const dir = fromRel.includes('/') ? fromRel.slice(0, fromRel.lastIndexOf('/')) : '';
+      const out: string[] = [];
+      const addModule = (base: string): void => {
+        const p = base.replace(/\./g, '/');
+        if (!p) return;
+        for (const f of ctx.files) {
+          if (f === `${p}.py` || f === `${p}/__init__.py`) out.push(f);
+        }
+      };
+      if (s.startsWith('.')) {
+        // 相对导入：`from .a import x`（1 个点 = 当前包）· `from ..a import x`（2 个点 = 上一级）
+        const dots = /^\.+/.exec(s)![0].length;
+        const rest = s.slice(dots).replace(/^\./, '');
+        const parts = dir.split('/').filter(Boolean);
+        const up = parts.slice(0, Math.max(0, parts.length - (dots - 1)));
+        addModule([...up, rest.replace(/\./g, '/')].filter(Boolean).join('/'));
+      } else {
+        addModule(s);
+        // ★ 也试"相对于当前文件目录"（`sys.path` 把脚本目录加进去的常见情形）
+        addModule([dir, s.replace(/\./g, '/')].filter(Boolean).join('/'));
+      }
+      return out;
+    },
     callNode: 'call',
     topLevelCall: true,
     // ★ 数据：`f(x)` → (call function: (identifier))；签名 `def f(self)` 剥 self、返回 ' -> '
