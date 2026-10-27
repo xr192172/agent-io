@@ -2089,7 +2089,18 @@ function localBindingsOfDecl(
     for (let i = 0; i < lefts.length; i++) {
       const ln = lefts[i];
       if (ln.type !== 'identifier' || !isValidIdentifier(ln.text)) continue;
-      out.push({ name: ln.text, isFnValue: isFn(rights[i] ?? null) });
+      // ★★★ 2026-10-27（T-#74）：**Go 的局部 func_literal 一律当「局部绑定」，不当符号**。
+      //
+      // ## 病史（读数据定位）
+      // `processFunction`（L568-657）里：`probeName := func(…)`（L592）声明、
+      // `probeName("enter")`（L600/603/623/630/644/653）**同一函数内**调用。
+      // 原先 `isFnValue` 判为 true ⇒ 被 `collectLocalBindings` 里
+      // `if (!b.isFnValue) out.push(…)` **跳过** —— 那条规则的假设是
+      // 「函数值 ⇒ 它已经是 nodes 里的符号」（对 TS 的 `const X = () => {}` 成立，
+      // 由 T-#45/T-#52 收进 nodes）；**但 Go 的 `:= func` 从不进 nodes**
+      // ⇒ **两条路都漏** ⇒ 永远 `failed`（实测 13 条）。
+      // ⇒ 修法：Go 分支**永远 `isFnValue: false`**（它的 func_literal 不是符号）。
+      out.push({ name: ln.text, isFnValue: false });
     }
     return out;
   }
