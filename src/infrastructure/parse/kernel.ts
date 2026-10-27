@@ -497,6 +497,30 @@ function traverseAndExtract(
           parent,
           is_closure: isClosureLit || nestedFnDecl ? true : undefined, // ★ T-#45：嵌套函数体里的标闭包
         });
+        // ★★★ 2026-10-27（T-#52）：**值是函数 ⇒ 继续往下走**（进它的 body，作用域标「函数内」）。
+        //
+        // ## 原先这里一路 `return` 的代价（实测）
+        // 这个分支末尾是 `return;` ⇒ **初始化器整棵子树被跳过** ⇒
+        // **嵌在 `const X = () => {}` 里的箭头函数永远看不见**。
+        // 证据（同一文件里两种形态的对比）：
+        //   `live_render.ts`：`DirNode@194(closure)` `ensureDir@203` `layoutDir@229` **都在**
+        //                     —— 它们嵌在 `function` 里；而 `ownerOf@249`（嵌在 const 箭头里）**不在**
+        //   `module_analysis.ts`：`handleImport@189(closure)` 在，`pushEdge@194`（在它里面）**不在**
+        // ⇒ 这就是"同一把尺量出两种结果"的根源。
+        //
+        // ## 修法
+        // 只对**值是函数**的声明往下走（`const x = 1` / `const h = wrap(...)` 不碰，避免噪音），
+        // 且把子级作用域标成「函数内」⇒ 里面的具名箭头会被 T-#45 的判据收进来并标 `is_closure`。
+        if (
+          valueNode &&
+          ['arrow_function', 'function_expression', 'function', 'generator_function'].includes(valueNode.type)
+        ) {
+          const childParent = parent === undefined ? nameNode.text : `${parent}.${nameNode.text}`;
+          for (let ci = 0; ci < valueNode.childCount; ci++) {
+            const cc = valueNode.child(ci);
+            if (cc) traverseAndExtract(cc, lang, symbols, childParent, depth + 1, true);
+          }
+        }
       }
     }
     return;

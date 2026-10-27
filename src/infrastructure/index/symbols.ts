@@ -2123,6 +2123,36 @@ export function resolveCrossFileCalls(
       continue;
     }
 
+    // ★★★ 2026-10-27（T-#53）：**同文件内的裸名调用** —— 原先**从来没查过**。
+    //
+    // ## 病史（实测）
+    // 下面整段只做**跨文件**：`pkgSrc` → imports 绑定 → `findCrossFileTarget`（**只走 imports**）
+    // → Go 同包 → 否则 failed。
+    // ⇒ **同文件里定义的函数永远找不到** ⇒ `pushEdge` 4 · `ownerOf` 4 · `walk` 10 · `run` 6 全卡在这。
+    // ⇒ 而且我上一轮把 `pushEdge`/`ownerOf` 索引进 `nodes` 之后**仍然 failed** ——
+    //   证明问题不在"有没有节点"，在"**有没有人去查同文件**"。
+    //
+    // ## 为什么安全
+    // 同文件的符号**不需要"证明来源"**（它就在这个文件里，作用域天然成立）——
+    // 那条"必须由 import 绑定"的纪律是为**跨文件**防误连写的，不该套到同文件上。
+    const sameFileSym = symbolsByFile.get(rel)?.has(expr)
+      ? (db
+          .prepare('SELECT kind, qualified_name FROM nodes WHERE file_path = $f AND name = $n LIMIT 1')
+          .get({ f: rel, n: expr }) as { kind: string; qualified_name: string } | undefined)
+      : undefined;
+    if (sameFileSym) {
+      insEdge.run({
+        src: r.from_node_id,
+        tgt: `${rel}#${sameFileSym.qualified_name}`,
+        k: 'call',
+        ln: r.line,
+        md: null,
+      });
+      updResolved.run({ i: r.id, n: `${rel}#${sameFileSym.qualified_name}` });
+      stats.resolved++;
+      continue;
+    }
+
     // ★ 2026-10-21：跨文件建边也要**能证明来源** —— 这个裸名必须真的从某个相对导入绑定进来
     //   （静态 `import { x }` 或动态 `const { x } = await import()`）。只靠「目标文件里恰好有同名符号」
     //   会把本地闭包/形参连到别的文件（实测 3 条：sanitize / reject / langOfFile）。
