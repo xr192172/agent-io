@@ -67,6 +67,9 @@ import { newFileLedgerWarning } from '../../design/ledger_membership.js';
 //   ★ 判定在写闸（`write_gate` 是唯一判据处），这里只**带出**读数 + 写后刷新写者自己的基线。
 import { assumptionLines, refreshAfterOwnWrite, type AssumptionCheck } from '../../read_set.js';
 import { toIndexKey } from '../../../infrastructure/index/symbols.js';
+// ★ 2026-10-28：出口闭环的一行读数（判据唯一实现在 plan_exit_check.ts，这里只调用）
+import { readRewritePlan } from '../../design/db/rewrite_plan.js';
+import { checkRewriteExit, renderExitCheck } from '../../design/db/plan_exit_check.js';
 import { locateReplaceText, realignNewTextTo, FUZZY_LEVEL_LABEL } from '../../../infrastructure/parse/fuzzy_match.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
@@ -516,6 +519,29 @@ interface GateReceipt {
   assumption?: AssumptionCheck;
 }
 
+/**
+ * ★★★ 2026-10-28（重写计划层 · 迭代 ①）：**出口闭环的一行读数**。
+ *
+ * ## 为什么要有"人类可读"这一层
+ * 回执的读者**就是 agent 自己**（模型），不是装饰 —— 结构化字段没人打印 = 写了没人读。
+ * 但也不能刷屏（今晚刚为 40 行散文减过版面）：**只在有异常时出声**，全绿就闭嘴。
+ *
+ * ## 判据
+ * 有画布 ∧（有 `not_yet` / `stale_anchor` / `unjudgeable` / 计划外符号）⇒ 出一行；
+ * 否则空串。没有画布 ⇒ 空串（写前的 `planGate` 已经点名，不重复）。
+ */
+function planExitNote(projectRoot: string, relPath: string): string {
+  try {
+    if (!readRewritePlan(projectRoot, relPath)) return '';
+    const r = checkRewriteExit(projectRoot, relPath);
+    const abnormal = r.entries.filter((e) => e.verdict !== 'realized').length + r.unplanned.length;
+    if (!abnormal) return '';
+    return `\n★ ${renderExitCheck(r)}`;
+  } catch {
+    return ''; // 对账是增强：失败不许把编辑拖下水（写前 planGate 的 warning 仍在）
+  }
+}
+
 async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise<{ message: string; data?: unknown }> {
   const { op } = args;
   const projectRoot = path.resolve(args.project_dir);
@@ -670,7 +696,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     return {
       message:
         `✓ 已替换 ${relPath} 的 ${args.symbol} body（L${body.startLine}-${body.endLine}），` +
-        `签名与大括号保留，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${preview}`,
+        `签名与大括号保留，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${preview}` + planExitNote(projectRoot, relPath),
     };
   }
 
@@ -731,7 +757,8 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     return {
       message:
         `✓ range 编辑 ${relPath} L${start}-L${end}（${count} 行 → ${aligned.length} 行），` +
-        `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}\n${preview}`,
+        `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}\n${preview}` +
+        planExitNote(projectRoot, relPath),
     };
   }
 
@@ -777,7 +804,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
       message:
         `✓ replace_text ${relPath} L${plan.hit.start_line}（${plan.matchedLineCount} 行 → ${plan.hit.new_lines} 行，` +
         `匹配 L${plan.hit.level}·${plan.hit.label}）${plan.levelNote}，` +
-        `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${plan.preview}`,
+        `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${plan.preview}` + planExitNote(projectRoot, relPath),
       data: { hit: plan.hit, index_synced: sync.status, ...(sync.symbol_diff ? { symbol_diff: sync.symbol_diff } : {}) },
     };
   }
@@ -942,7 +969,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     return {
       message:
         `✓ 已删除 ${relPath} 的 ${delSym}（L${lineOp.startIdx + 1} 起 ${lineOp.count} 行），` +
-        `符号 ${before} → ${after}，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}`,
+        `符号 ${before} → ${after}，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}` + planExitNote(projectRoot, relPath),
     };
   }
   if (op === 'insert') {
@@ -965,7 +992,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     message:
       `✓ 已替换 ${relPath} 的 ${args.symbol}（原 L${lineOp.startIdx + 1}-${lineOp.startIdx + lineOp.count}，` +
       `${lineOp.count} 行 → ${lineOp.insert.length} 行），索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}\n` +
-      `文件符号: ${before} → ${after}`,
+      `文件符号: ${before} → ${after}` + planExitNote(projectRoot, relPath),
   };
 }
 
