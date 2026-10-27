@@ -1684,6 +1684,9 @@ const BUILTIN_CALLEES = new Set([
   //   源码里不 import ⇒ `packageBindingsByFile` 看不到 ⇒ 只能靠这张表。
   'setTimeout', 'setInterval', 'setImmediate', 'clearTimeout', 'clearInterval', 'clearImmediate',
   'queueMicrotask', 'structuredClone', 'fetch', 'atob', 'btoa', 'require',
+  // ★ T-#50：**`import` 是关键字不是函数** —— 动态 `await import(spec)` 被抽成 call 引用，
+  //   它永远不可能对应仓内符号（实测 25 条落 failed）。
+  'import',
 ]);
 
 export interface CrossFileResolveStats {
@@ -1891,18 +1894,76 @@ export function resolveCrossFileCalls(
   const ownTx = !inTransaction(db);
   if (ownTx) db.exec('BEGIN IMMEDIATE');
   try {
+  // ★★★ 2026-10-27（T-#50）：**本仓的泛型参数名，按文件收集** —— `T`/`U`/`K` 这类引用**不是符号**，
+  //   它们只是类型参数的形参名 ⇒ 必须判 `external`，不能落 `failed`（实测 `T` 独占 79 条）。
+  //   ★ 判据：`nodes.type_params`（T-#21 起就有，形状是 JSON 数组）—— **不猜，查索引**。
+  const genericParamsByFile = new Map<string, Set<string>>();
+  for (const gp of db
+    .prepare("SELECT file_path, type_params FROM nodes WHERE type_params IS NOT NULL AND TRIM(type_params) <> ''")
+    .all() as Array<{ file_path: string; type_params: string }>) {
+    let arr: unknown;
+    try {
+      arr = JSON.parse(gp.type_params);
+    } catch {
+      continue;
+    }
+    if (!Array.isArray(arr)) continue;
+    let set = genericParamsByFile.get(gp.file_path);
+    if (!set) {
+      set = new Set();
+      genericParamsByFile.set(gp.file_path, set);
+    }
+    for (const p of arr) {
+      const nm = typeof p === 'string' ? p : (p as { name?: unknown })?.name;
+      if (nm) set.add(String(nm));
+    }
+  }
+
   for (const r of rows) {
     const rel = r.from_node_id.split('#')[0];
     const expr = r.reference_name;
-    const kind = r.reference_kind as 'call' | 'type_ref';
+    const kind = r.reference_kind as 'call' | 'type_ref'; // ★ 恢复（上一刀误删）
     // ★ T-#44：Go 的内置表**只对 .go 文件**启用（避免 int/max/close 误伤本仓同名符号）
     const isGoFile = rel.endsWith('.go');
+    // ★ T-#50：Java 内置类型同理，只对 .java 启用
+    const isJavaFile = rel.endsWith('.java');
     // ★ 2026-10-22：本条引用的「没建边原因」暂存器（一行一个，不复用：上一条的原因不能写进下一条）
     const miss: ReexportMiss[] = [];
 
     if (kind === 'type_ref') {
       if (BUILTIN_TYPES.has(expr) || (isGoFile && GO_BUILTIN_TYPES.has(expr))) {
         updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'builtin-type' }) });
+        stats.external++;
+        continue;
+      }
+      // ★ T-#50：**泛型参数**（`T`/`U`/`K`…）不是符号 ⇒ external
+      if (genericParamsByFile.get(rel)?.has(expr)) {
+        updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: `generic-param:${expr}` }) });
+        stats.external++;
+        continue;
+      }
+      // ★ T-#50：**Java 内置类型**（String/Map/Object/Exception…）
+      if (isJavaFile && JAVA_BUILTIN_TYPES.has(expr)) {
+        updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'builtin-type-java' }) });
+        stats.external++;
+        continue;
+      }
+      // ★★★ 2026-10-27（T-#50）：**带点的类型引用**（`http.ServerResponse` / `fs.Dirent`）——
+      //   实测 **142 条**落 failed，而 `call` 分支（下面 `expr.includes('.')`）早就处理了带点形态，
+      //   **`type_ref` 分支漏了** ⇒ 所有 `http.X` / `fs.X` 全落 failed。
+      //   判据：receiver 是 **package 命名空间**（`import * as http` / `import fs from 'node:fs'`）
+      //   ⇒ 它的成员是**外部包的类型** ⇒ external（不问能不能解析，它本来就不在仓内）。
+      if (expr.includes('.')) {
+        const dotAt = lastReceiverDot(expr);
+        const recv = dotAt > 0 ? expr.slice(0, dotAt).trim() : '';
+        const pkg = recv ? packageBindingsByFile.get(rel)?.get(recv) : undefined;
+        updExternal.run({
+          i: r.id,
+          cd: JSON.stringify({
+            verdict: 'external',
+            why: pkg ? `namespace-member-of-package:${pkg}` : `dotted-type-unprovable:${recv || '?'}`,
+          }),
+        });
         stats.external++;
         continue;
       }
@@ -1981,7 +2042,12 @@ export function resolveCrossFileCalls(
       continue;
     }
 
-    if (BUILTIN_CALLEES.has(expr) || (isGoFile && GO_BUILTIN_CALLEES.has(expr))) {
+    // ★ T-#44 + ★ T-#50：**类型转换也是 call 形态**（`int64(x)` / `float64(x)`）
+    //   ⇒ 只看 `GO_BUILTIN_CALLEES` 会漏掉它们（实测 int64 11 · float64 9 · Int64 7 落 failed）。
+    if (
+      BUILTIN_CALLEES.has(expr) ||
+      (isGoFile && (GO_BUILTIN_CALLEES.has(expr) || GO_BUILTIN_TYPES.has(expr)))
+    ) {
       updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'builtin-callee' }) });
       stats.external++;
       continue;
@@ -2044,6 +2110,16 @@ const BUILTIN_TYPES = new Set([
   'AsyncIterableIterator', 'Iterator', 'IteratorResult', 'Disposable', 'AsyncDisposable',
   // ★ @types/node 的全局（不需 import 就能用）
   'Buffer', 'NodeJS', 'NodeRequire', 'Timer', 'NodeJS.Timeout',
+  // ★★★ 2026-10-27（T-#50）：**@types/node 的常用类型名**（实测落 failed 的前三名）。
+  //   ★★ 根因不是“表不够”：`type_ref` **只记 tail** —— 源码 `http.ServerResponse`
+  //     在索引里就是 `ServerResponse`（receiver 在**解析阶段**就丢了）
+  //     ⇒ 没法靠“带点”判它是外部包成员 ⇒ 只能靠这张表。
+  //   ★ 真修法：解析器给 `type_ref` 记**全名**（像 `call` 那样）—— 但那会动到所有边，另开一张卡。
+  'ServerResponse', 'IncomingMessage', 'ClientRequest', 'Server', 'Socket', 'AddressInfo',
+  'Dirent', 'Stats', 'StatsFs', 'BigIntStats', 'EventEmitter', 'Readable', 'Writable',
+  'Duplex', 'Transform', 'PassThrough', 'ChildProcess', 'Worker', 'MessagePort', 'AbortSignal',
+  // ★ T-#50：`node:sqlite` 的类（实测 DatabaseSync 9 条）
+  'DatabaseSync', 'StatementSync',
 ]);
 
 /**
@@ -2059,10 +2135,30 @@ const GO_BUILTIN_TYPES = new Set([
   'bool', 'byte', 'complex64', 'complex128', 'error', 'float32', 'float64',
   'int', 'int8', 'int16', 'int32', 'int64', 'rune', 'string',
   'uint', 'uint8', 'uint16', 'uint32', 'uint64', 'uintptr', 'any', 'comparable',
+  // ★★★ 2026-10-27（T-#50）：**Go 标准库类型名的 tail**（`go/ast` / `go/token` / `time` …）。
+  //   ★★ 同一根因：`ast.Ident` 在索引里只剩 `Ident`（receiver 在解析阶段丢了）
+  //     ⇒ 没法靠“带点”判 ⇒ 只能靠表。实测 Ident 12 · Time 11 · Stmt 11 · SelectorExpr 11 …
+  'Ident', 'Object', 'Scope', 'File', 'Package', 'SelectorExpr', 'CallExpr', 'FuncDecl',
+  'Stmt', 'Expr', 'Decl', 'Spec', 'Node', 'Token', 'Position', 'Pos', 'Comment', 'Field',
+  'Time', 'Duration', 'Location', 'Month', 'Weekday', 'Buffer', 'Reader', 'Writer', 'Context',
 ]);
 const GO_BUILTIN_CALLEES = new Set([
   'len', 'cap', 'make', 'new', 'append', 'copy', 'delete', 'close',
   'panic', 'recover', 'print', 'println', 'complex', 'real', 'imag', 'min', 'max', 'clear',
+]);
+
+/**
+ * ★ T-#50：**Java 内置类型**（`java.lang` 不需 import）—— 只对 `.java` 文件启用。
+ * 实测 `String` / `Map` / `Object` / `Exception` 等落进 failed。
+ * ★ 为什么不并进 `BUILTIN_TYPES`：`String` / `Object` 在 TS 里也是常用名，
+ *   并表会把本仓同名符号判成 external ⇒ 丢边（同 Go 的教训）。
+ */
+const JAVA_BUILTIN_TYPES = new Set([
+  'String', 'Object', 'Integer', 'Long', 'Short', 'Byte', 'Character', 'Boolean', 'Double', 'Float',
+  'Number', 'Math', 'System', 'Exception', 'RuntimeException', 'Error', 'Throwable',
+  'Map', 'HashMap', 'List', 'ArrayList', 'Set', 'HashSet', 'Collection', 'Iterable', 'Iterator',
+  'Optional', 'Stream', 'Thread', 'Runnable', 'Class', 'Enum', 'Record', 'Override',
+  'StringBuilder', 'StringBuffer', 'CharSequence', 'Comparable', 'Comparator', 'AutoCloseable',
 ]);
 
 /** 沿源文件的 relative imports 找符号对应的目标符号（首个命中）；找不到返回 null。
