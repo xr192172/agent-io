@@ -122,6 +122,38 @@ withEnv({}, () => {
   );
 });
 
+// ── ⑥ 回归钉：`baseDir` 的语义是**项目根**，不是数据仓 ─────────────
+//   （2026-10-27 实测踩过：把 `getDesignDir/getArchiveDir` 统一写成 `getStorageRoot()` ⇒
+//    `getDesignSheetFile('agent-io')` 变成 `<proj>/design/…`，少了 `.agent-io` 一段 ⇒ 册全读不到）
+{
+  const proj = path.join(TMP, 'proj-with-cards');
+  fs.mkdirSync(proj, { recursive: true });
+  const designDir = storage.getDesignDir(proj);
+  const sheetFile = storage.getDesignSheetFile('t370x', proj);
+  const archiveDir = storage.getArchiveDir('t370x', proj);
+  chk(
+    designDir === path.join(proj, '.agent-io', 'design'),
+    '⑥-a `getDesignDir(项目根)` 带 `.agent-io` 这一段',
+    `= ${designDir}`,
+  );
+  chk(
+    sheetFile === path.join(proj, '.agent-io', 'design', 't370x.dsl.json'),
+    '⑥-b `getDesignSheetFile(feature, 项目根)` 同口径（册必须能定位到）',
+    `= ${sheetFile}`,
+  );
+  chk(
+    archiveDir === path.join(proj, '.agent-io', 'archive', 't370x'),
+    '⑥-c `getArchiveDir(feature, 项目根)` 同口径',
+    `= ${archiveDir}`,
+  );
+  // 不给 baseDir ⇒ 落到**数据仓**（迁移通道），而不是"项目根下少一段"
+  chk(
+    storage.getDesignDir() === path.join(storage.getStorageRoot(), 'design'),
+    '⑥-d 不给 baseDir ⇒ 落数据仓的 `design/`（迁移通道，不是少一段）',
+    `= ${storage.getDesignDir()}`,
+  );
+}
+
 console.log(`\n═══ T370 读数：PASS=${P} FAIL=${F} ═══`);
 console.log(`════ 汇总：PASS=${P}  FAIL=${F}`);
 process.exit(F === 0 ? 0 : 1);

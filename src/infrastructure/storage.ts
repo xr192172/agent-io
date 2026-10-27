@@ -387,7 +387,11 @@ export function getLiveFeature(feature: string, projectRoot: string): DesignDSL 
  * | live 缓存 / 索引 | `<projectRoot>/.agent-io/cache.db` 等 | ❌ |
  */
 export function getDesignDir(baseDir?: string): string {
-  return path.join(baseDir ?? getStorageRoot(), 'design');
+  // ★ `baseDir` 的语义是**项目根**（⇒ `<proj>/.agent-io/design`），不是数据仓；
+  //   不给才轮到数据仓（迁移通道：老册还躺在数据仓的 `design/` 里）。
+  //   ★★ 2026-10-27 实测踩到：把这里统一写成 `getStorageRoot()` 会让
+  //   `getDesignSheetFile('agent-io')` 变成 `<proj>/design/…`（少了 `.agent-io` 一段）⇒ 册全读不到。
+  return baseDir ? path.join(baseDir, DATA_DIR_NAME, 'design') : path.join(getStorageRoot(), 'design');
 }
 
 /** 设计图文件路径：<baseDir>/.agent-io/design/<feature>.dsl.json（★ 与 live/<f>.dsl.json 同 schema） */
@@ -902,7 +906,10 @@ export interface ArchiveEntry {
 export function getArchiveDir(feature: string, baseDir?: string): string {
   // ★ `baseDir ?? getDataHome()` 是**默认值**、不是兜底（判据见 `requireProjectRoot` 上方那张表）：
   //   dataHome 是这份数据的**合法归属**（同一件事），而 `?? process.cwd()` 是**换题**。
-  return path.join(baseDir ?? getStorageRoot(), 'archive', feature);
+  // ★ 同 `getDesignDir`：`baseDir` = 项目根（`<proj>/.agent-io/archive/…`）；不给才落数据仓。
+  return baseDir
+    ? path.join(baseDir, DATA_DIR_NAME, 'archive', feature)
+    : path.join(getStorageRoot(), 'archive', feature);
 }
 
 /** 归档条目文件路径 */
