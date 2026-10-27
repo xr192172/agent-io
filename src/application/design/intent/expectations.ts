@@ -145,6 +145,55 @@ export function indexStaleFor(root: string, rels: readonly string[]): string | n
   return null;
 }
 
+/**
+ * ★★★ 2026-10-27（**D6/D9 假红的根因，用户问"能不能修"**）：
+ * `call-exists` / `edge-*` **只能读派生索引**（符号能现解析，依赖边不能）⇒ 索引一陈旧就判 `unsupported`，
+ * 而 D6 的判据是"`unsupported === 0`" ⇒ 表现成 **"接线断了"**（实测：改完符号没重扫，gate 直接红，
+ * 我一开始还去改对的代码）。
+ *
+ * ## 为什么"先修索引再判"是安全的
+ * 索引是**派生数据**（`derivable: true`），刷新它永远安全且幂等（`ensureFreshIndex` 内部按
+ * mtime/size 先筛、再 `content_hash` 二道闸，没变的不重解析）。而"拿旧事实说通过"是不安全的
+ * —— 所以顺序必须是 **先刷新、后判**，不是"判不了就放行"。
+ *
+ * ## 边界（不许无限自愈）
+ * · 先做**便宜探测**（`indexStaleFor` 只算目标文件的内容 hash，不扫全仓）：不陈旧就一次都不刷；
+ * · 刷新失败 / 仍判不了 ⇒ **保持 `unsupported` 并如实报**（仍然红，但红得有理：说明索引真的修不动）。
+ */
+async function ensureIndexFreshForJudge(root: string, items: readonly JudgeItem[]): Promise<void> {
+  // ★ `Expectation` 是联合类型：只有一部分 kind 带 `path`（edge-* 是 from/to）⇒ 只收带 path 的
+  const rels = [
+    ...new Set(
+      items
+        .map((i) => {
+          const p = (i.expectation as { path?: unknown }).path;
+          return typeof p === 'string' && p ? normPath(p) : '';
+        })
+        .filter((p): p is string => !!p),
+    ),
+  ];
+  if (!rels.length) return;
+  let stale = false;
+  for (const rel of rels) {
+    try {
+      if (indexStaleFor(root, [rel]) !== null) {
+        stale = true;
+        break;
+      }
+    } catch {
+      /* 探测本身出错 ⇒ 当作"不陈旧"，后续判据会如实报 unsupported */
+    }
+  }
+  if (!stale) return;
+  try {
+    // ★ 动态 import：`index_freshness` 依赖面很宽，这里只在真的陈旧时用一次
+    const { ensureFreshIndex } = await import('../../../infrastructure/index/index_freshness.js');
+    await ensureFreshIndex(getProjectCacheDb(root), root);
+  } catch {
+    /* 刷新尽力而为：失败就让它照旧报 unsupported（不掩盖） */
+  }
+}
+
 /** 该文件的**依赖事实是否完整**（不完整 ⇒ 与依赖有关的检查一律判不了） */
 function depFactsIncomplete(root: string, relPath: string): string | null {
   const facts = fileFacts(root, relPath);
@@ -260,6 +309,8 @@ export async function judgeExpectations(
   root: string,
   items: readonly JudgeItem[],
 ): Promise<ExpectationsReport> {
+  // ★ 先保鲜、后判（判据见 ensureIndexFreshForJudge：索引是派生数据，先修它永远安全）
+  await ensureIndexFreshForJudge(root, items);
   const out: ExpectationItem[] = [];
   const push = (it: JudgeItem, verdict: Verdict, detail: string): void => {
     out.push({ ...it, verdict, detail });
