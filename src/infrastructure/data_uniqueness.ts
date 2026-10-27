@@ -52,23 +52,74 @@ const ROLE_SUBDIR_OF = { design: 'design', tasks: 'tasks.db' } as const;
 /** 意图角色：可以报，**永远不自动删** */
 const INTENT_ROLES: ReadonlySet<RootRole> = new Set<RootRole>(['design', 'tasks', 'history']);
 
-/** 目录/文件的"内容指纹"：目录 = 相对路径 + 文件哈希的有序串；文件 = 自身哈希 */
-function fingerprint(target: string): string | null {
+/** 一次目录扫描的"形状"：文件数 / 总字节 / 每个文件的 (相对路径, 大小, mtime) —— **不算哈希** */
+interface TreeShape {
+  kind: 'file' | 'dir';
+  size: number;
+  count: number;
+  entries: string; // 有序的 `rel:size:mtime` 串（定长比较用）
+}
+
+function shapeOf(target: string): TreeShape | null {
   try {
     const st = fs.statSync(target);
-    if (st.isFile()) return `f:${st.size}:${fs.readFileSync(target).toString('base64').length}:${hashOf(target)}`;
+    if (st.isFile()) return { kind: 'file', size: st.size, count: 1, entries: `:${st.size}` };
     const parts: string[] = [];
+    let size = 0;
     const walk = (dir: string): void => {
       for (const e of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
         const p = path.join(dir, e.name);
         if (e.isDirectory()) walk(p);
-        else if (e.isFile()) parts.push(`${path.relative(target, p).replace(/\\/g, '/')}:${hashOf(p)}`);
+        else if (e.isFile()) {
+          const fst = fs.statSync(p);
+          size += fst.size;
+          parts.push(`${path.relative(target, p).replace(/\\/g, '/')}:${fst.size}`);
+        }
       }
     };
     walk(target);
-    return `d:${parts.join('|')}`;
+    return { kind: 'dir', size, count: parts.length, entries: parts.join('|') };
   } catch {
     return null;
+  }
+}
+
+/**
+ * 两份**内容是否逐字节相同**（判据两级，先便宜后贵）：
+ *   ① **形状**（文件数 / 总字节 / 每个文件的相对路径与大小）不同 ⇒ **立刻 false**，一个字节都不读；
+ *      ← 实测这是绝大多数情况（"旧代数据"的文件数或大小本来就不同），省掉整棵树的哈希；
+ *   ② 形状相同 ⇒ 再逐个文件比 sha256（形状相同但内容不同是可能的：同大小同 mtime 的改动）。
+ * ★ **mtime 不进判据**（2026-10-27 实测踩到）：它不是"内容"属性 —— 把同内容复制到别处，mtime 必然不同，\n *   拿它比会把"逐字节相同"误判成"不一致" ⇒ 该删的删不掉（宁可多读一次哈希）。\n * ★ 为什么不能只比形状：形状相同 ≠ 内容相同（这正是"逐字节相同才删"的底线）；
+ * ★ 为什么不能只比哈希：200MB 级的 canonical 每次全量哈希，在 watch 里每 10 分钟跑一次不划算。
+ */
+function sameContent(a: string, b: string): boolean {
+  const sa = shapeOf(a);
+  const sb = shapeOf(b);
+  if (!sa || !sb) return false;
+  if (sa.kind !== sb.kind || sa.count !== sb.count || sa.size !== sb.size) return false;
+  if (sa.entries !== sb.entries) return false; // 相对路径 + 大小逐项一致
+  // 形状一致 ⇒ 只对**这一对**做哈希（单个文件就一次，目录就逐个）
+  try {
+    if (sa.kind === 'file') return hashOf(a) === hashOf(b);
+    const files = (root: string): string[] => {
+      const out: string[] = [];
+      const walk = (dir: string): void => {
+        for (const e of fs.readdirSync(dir, { withFileTypes: true }).sort((x, y) => x.name.localeCompare(y.name))) {
+          const p = path.join(dir, e.name);
+          if (e.isDirectory()) walk(p);
+          else if (e.isFile()) out.push(path.relative(root, p).replace(/\\/g, '/'));
+        }
+      };
+      walk(root);
+      return out;
+    };
+    const fa = files(a);
+    for (const rel of fa) {
+      if (hashOf(path.join(a, rel)) !== hashOf(path.join(b, rel))) return false;
+    }
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -109,7 +160,7 @@ export function ensureProjectDataUniqueness(
       });
       continue;
     }
-    const same = fingerprint(twin) === fingerprint(spec.path);
+    const same = sameContent(twin, spec.path); // ★ 先形状后哈希（见 sameContent 的论证）
     if (INTENT_ROLES.has(role)) {
       findings.push({
         kind: 'duplicate_in_data_root',
