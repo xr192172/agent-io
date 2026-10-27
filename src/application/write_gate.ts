@@ -945,6 +945,17 @@ export function exemptionLines(exempted: readonly GateExemption[]): string {
  *   （交接期两轴并存，派生值优先 —— 与 `overlay.ts#applyOverlay` 同一把尺）。
  */
 /**
+ * ★★★ 2026-10-28（重写计划层 · 迭代 ②）：**把 `plan_exit` 搬进人读回执的唯一渲染处**。
+ * 与 `gateHumanLines(task_gate)` 同款：结构化读数在写穿结果里（机器侧），这里只出一行给人/agent 看。
+ * ★ 只在**有异常**时出声（全绿闭嘴）—— 版面孔径与今晚"40 行散文"那条一致。
+ */
+export function planExitHumanLine(out: WriteThroughOutcome | null | undefined): string {
+  const lines = out?.plan_exit ?? [];
+  if (!lines.length) return '';
+  return lines.map((l) => `  ★ ${l}`).join('\n');
+}
+
+/**
  * ★★★ 2026-10-28（重写计划层 · 第 3 步）：**"先读懂再改"的闸** —— 与任务闸**并列**的一条独立判据。
  *
  * ## 判据（一句话）

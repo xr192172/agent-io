@@ -52,6 +52,8 @@ import { removeDeadImportsWithVerify } from './edit/remove_dead_imports.js';
 import { renameFiles } from './rename/rename_files.js';
 // ★ 2026-10-20：三条写路共用的闸读数人读侧（机器侧字段仍是 `task_gate`，形状照抄 `edit_code`）
 import { gateHumanLines } from './gate_note.js';
+// ★ 2026-10-28：出口闭环的人读渲染（唯一实现在 write_gate.ts，与 gateHumanLines 同款）
+import { planExitHumanLine } from '../write_gate.js';
 import { renameSymbols } from './rename/rename_symbols.js';
 import { applyRulesToFiles, collectRuleTargets, loadBaseline, ratchetDelta, runFixtures, writeBaseline } from './rule_library/rule_apply.js';
 import { extractRule } from './rule_library/rule_extract.js';
@@ -1033,6 +1035,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         // ★ 2026-10-20：闸的放行读数/豁免点名（`applyWrites` 回执已带上，这里只往人读消息里搬）
         const gateLine = gateHumanLines(receipt.task_gate);
         if (gateLine) parts.push(gateLine);
+        // ★ 2026-10-28（迭代 ②）：出口闭环也搬进人读消息（结构化读数在 receipt.index.plan_exit，判据只一处）
+        const planExitLine = planExitHumanLine(receipt.index);
+        if (planExitLine) parts.push(planExitLine);
         // ★★★ 2026-10-21（写闸授权检查回执闭合）：闸读数**机器侧也要有**（此前只进了上面的 message）——
         //   来源就是 `applyWrites` 回执的 `task_gate`，本层不重判。
         return {
@@ -1624,6 +1629,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
           {
             const gateLine = gateHumanLines(receipt.task_gate);
             if (gateLine) lines.push(gateLine);
+            // ★ 2026-10-28（迭代 ②）：出口闭环也搬进人读消息
+            const exitLine = planExitHumanLine(receipt.index);
+            if (exitLine) lines.push(exitLine);
           }
         } else {
           lines.push(``, `（dry_run：未写盘。确认后传 dry_run=false 落盘）`);
