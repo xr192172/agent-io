@@ -1905,23 +1905,23 @@ function collectLocalBindings(nodes: readonly SyntaxNodeLike[]): string[] {
     ) {
       return;
     }
-    if (n.type === 'lexical_declaration' || n.type === 'variable_declaration') {
-      for (let i = 0; i < n.childCount; i++) {
-        const dec = n.child(i);
-        if (!dec || dec.type !== 'variable_declarator') continue;
-        const nameNode = dec.childForFieldName('name');
-        const valueNode = dec.childForFieldName('value');
-        if (!nameNode) continue;
-        const isFnValue =
-          !!valueNode &&
-          ['arrow_function', 'function_expression', 'function', 'generator_function'].includes(valueNode.type);
-        if (isFnValue) continue; // 函数值 = 符号，不收
-        // ★★★ 2026-10-27（T-#60 护栏·AST 版）：**从 import 解构出来的名字不收**。
-        //   `const { saveDSL } = await import('../../storage.js')` ⇒ `saveDSL` 是**导入绑定**，
-        //   不是局部变量 ⇒ 当成局部变量会丢真边（实测 edges -5）。
-        //   ★ 判据看**语法结构**（`import` 是节点类型），不看文本 —— 字串里带 `import(` 不会误跳。
-        if (isImportCallNode(valueNode)) continue;
-        collectIds(nameNode);
+    // ★★★ 2026-10-27（T-#61）：**形态收敛到 `localBindingsOfDecl`**（TS + Go 两种已在里面）。
+    //   以后加语言只需在那一处加一支 —— 不再在这里散落 if。
+    const binds = localBindingsOfDecl(n);
+    if (binds) {
+      // ★ T-#60 护栏（AST 版）：**从 import 解构出来的名字不收** ——
+      //   `const { saveDSL } = await import('…')` ⇒ `saveDSL` 是**导入绑定**，不是局部变量
+      //   （当成局部变量会丢真边，实测 edges -5）。判据看语法结构，不看文本。
+      let hasImport = false;
+      for (let i = 0; i < n.childCount && !hasImport; i++) {
+        const c = n.child(i);
+        if (!c) continue;
+        const v = c.type === 'variable_declarator' ? c.childForFieldName('value') : c;
+        if (isImportCallNode(v)) hasImport = true;
+      }
+      if (!hasImport) {
+        // 函数值不收（那是符号，收进来会抢在 classifyCall 前面丢边）；其余都算局部绑定
+        for (const b of binds) if (!b.isFnValue) out.push(b.name);
       }
     }
     for (let k = 0; k < n.childCount; k++) {
@@ -1961,6 +1961,84 @@ function isImportCallNode(n: SyntaxNodeLike | null | undefined): boolean {
     if (fn && (fn.type === 'import' || fn.text === 'import')) return true;
   }
   return false;
+}
+
+/**
+ * ★★★ 2026-10-27（T-#61）：**把"局部函数绑定"的语法形态收敛到一处**（TS / Go 两种已实现）。
+ *
+ * ## 为什么需要（这正是"多语言 AST 却不能自动解锁"的活例）
+ * T-#45 / T-#59 只认 TS 的 `lexical_declaration` ⇒ 而 **Go 的局部闭包是另一种形态**：
+ *   `probeName := func(kind string) string { … }`
+ *   ⇒ `short_var_declaration` + `left: expression_list` + `right: expression_list` + `func_literal`
+ *   ⇒ **没被认出来** ⇒ `probeName` / `offsetOf` / `mk` / `add` / `opt` 全落 `failed`（实测 13 条）。
+ * ⇒ 修法不是"再写一个 if"，而是**把形态收敛成一个函数**：以后加语言只在这里加一支。
+ *
+ * ## 返回
+ * `[{ name, isFnValue }]` —— `isFnValue` 区分"绑定的是函数"（是符号）还是"普通值"（局部变量）。
+ */
+function localBindingsOfDecl(
+  node: SyntaxNodeLike,
+): Array<{ name: string; isFnValue: boolean }> | null {
+  const FN_TYPES = ['arrow_function', 'function_expression', 'function', 'generator_function', 'func_literal', 'lambda'];
+  const isFn = (v: SyntaxNodeLike | null): boolean => !!v && FN_TYPES.includes(v.type);
+  const out: Array<{ name: string; isFnValue: boolean }> = [];
+  // ── 形态 ① TS/JS：lexical_declaration / variable_declaration → variable_declarator(name,value)
+  if (node.type === 'lexical_declaration' || node.type === 'variable_declaration') {
+    for (let i = 0; i < node.childCount; i++) {
+      const dec = node.child(i);
+      if (!dec || dec.type !== 'variable_declarator') continue;
+      const nameNode = dec.childForFieldName('name');
+      const valueNode = dec.childForFieldName('value');
+      if (!nameNode) continue;
+      if (nameNode.type === 'identifier') {
+        if (isValidIdentifier(nameNode.text)) out.push({ name: nameNode.text, isFnValue: isFn(valueNode) });
+      } else {
+        // 解构：把里面的标识符逐个收（`const { a, b } = x`）
+        const ids: string[] = [];
+        const walkIds = (n: SyntaxNodeLike): void => {
+          if (n.type.includes('identifier') || n.type === 'shorthand_property_identifier_pattern') {
+            if (isValidIdentifier(n.text)) ids.push(n.text);
+            return;
+          }
+          for (let k = 0; k < n.childCount; k++) {
+            const c = n.child(k);
+            if (c) walkIds(c);
+          }
+        };
+        walkIds(nameNode);
+        for (const id of ids) out.push({ name: id, isFnValue: false });
+      }
+    }
+    return out;
+  }
+  // ── 形态 ② Go：short_var_declaration → left(expression_list) = right(expression_list)
+  //    `probeName := func(…) string { … }` / `a, b := 1, f()` 都走这一支
+  if (node.type === 'short_var_declaration' || node.type === 'var_declaration') {
+    const left = node.childForFieldName('left') ?? node.childForFieldName('name');
+    const right = node.childForFieldName('right') ?? node.childForFieldName('value');
+    const lefts: SyntaxNodeLike[] = [];
+    const rights: SyntaxNodeLike[] = [];
+    const flatten = (n: SyntaxNodeLike | null, into: SyntaxNodeLike[]): void => {
+      if (!n) return;
+      if (n.type === 'expression_list' || n.type === 'var_spec') {
+        for (let k = 0; k < n.childCount; k++) {
+          const c = n.child(k);
+          if (c) flatten(c, into);
+        }
+        return;
+      }
+      into.push(n);
+    };
+    flatten(left, lefts);
+    flatten(right, rights);
+    for (let i = 0; i < lefts.length; i++) {
+      const ln = lefts[i];
+      if (ln.type !== 'identifier' || !isValidIdentifier(ln.text)) continue;
+      out.push({ name: ln.text, isFnValue: isFn(rights[i] ?? null) });
+    }
+    return out;
+  }
+  return null;
 }
 
 function extractCallsFromBody(
@@ -2070,7 +2148,9 @@ function traverseAndExtractCalls(
   symbols: ParsedSymbol[],
   calls: ParsedCall[],
   funcStack: string[] = [],
-  depth: number = 0
+  depth: number = 0,
+  /** ★ T-#61：**外层作用域的局部绑定** —— 嵌套具名函数要**继承**它（否则内层引外层参数就判不了） */
+  outerScope: Set<string> = new Set(),
 ): void {
   if (depth > 200) return;
   if (isSymbolNode(node, lang)) {
@@ -2082,9 +2162,11 @@ function traverseAndExtractCalls(
       if (body) {
         funcStack.push(qn);
         // ★ T-#55：**本函数的参数进作用域** —— 引用参数不是符号（实测 resolve/reject/fn …）
-        // ★ T-#59：**加上预扫的局部绑定**（`const fn = …` / 解构）—— 它们是兄弟关系，
-        //   递归时的 childScope 传不过去 ⇒ 必须在函数层提升。
+        // ★ T-#59：**加上预扫的局部绑定**（`const fn = …` / 解构 / Go 的 `x := func(){}`）
+        // ★ T-#61：**再加上外层作用域** —— 嵌套具名函数的体走的是本函数的递归，
+        //   不继承外层的话，内层引用外层的 `probeName` 就判不了（实测 Go 剩下的 11 条）。
         const ownParams = new Set<string>([
+          ...outerScope,
           ...paramsOf(node, lang.field_map.parameters || 'parameters', lang.name)
             .map((p) => p.name)
             .filter((n): n is string => !!n),
@@ -2094,8 +2176,8 @@ function traverseAndExtractCalls(
           // 本函数体调用（跳过嵌套函数子树）
           for (const child of body) extractCallsFromBody(child, lang, qn, calls, symbols, depth + 1, ownParams);
         }
-        // 继续递归找方法/嵌套函数
-        for (const child of body) traverseAndExtractCalls(child, lang, symbols, calls, funcStack, depth + 1);
+        // 继续递归找方法/嵌套函数（★ T-#61：把本层作用域传下去，嵌套函数要继承）
+        for (const child of body) traverseAndExtractCalls(child, lang, symbols, calls, funcStack, depth + 1, ownParams);
         funcStack.pop();
       }
       return;
