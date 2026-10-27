@@ -2496,7 +2496,30 @@ function traverseAndExtractImports(
         ...(bindings.via ? { bindings_via: bindings.via } : {}),
       });
     }
-    return; // import 节点内部不再递归
+    // ★★★ 2026-10-27（T-#72）：**`export_statement` 带 declaration 时必须继续递归**。
+    //
+    // ## 根因（T-#70/T-#71 都没查出来的那个）
+    // `typescript.import_nodes = ['import_statement', 'export_statement']`
+    // —— 收 `export_statement` 是为了 `export { x } from 'y'`（**有 source**）。
+    // 但 **`export async function f() { … }` 也是 `export_statement`** ⇒ 原先无条件 `return`
+    // ⇒ **整个函数体被跳过** ⇒ 函数体内的 `await import(…)` **永远看不到**。
+    //
+    // ## 为什么 `.mjs` 一直正常
+    // `certs/*.mjs` 的动态 import 在**模块顶层**（`const { saveDSL } = await import(…)`），
+    // 不在任何 `export_statement` 里 ⇒ 遍历走到它 ⇒ 能抽到。
+    // ⇒ 这正好解释了「同一函数、同一次遍历，静态的抽到了、动态的连块都没进」的自相矛盾。
+    //
+    // ## 判据
+    // 命中 `import_nodes` **但没有抽出任何 source**、且带 `declaration` 子节点
+    // ⇒ 它是「导出声明」（不是导出语句）⇒ **必须继续递归**。
+    const hasDecl = !!node.childForFieldName('declaration');
+    if (sources.values.length === 0 && hasDecl) {
+      for (let i = 0; i < node.childCount; i++) {
+        const child = node.child(i);
+        if (child) traverseAndExtractImports(child, lang, imports, depth + 1);
+      }
+    }
+    return; // 真正的 import / 再导出语句内部不再递归
   }
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i);
