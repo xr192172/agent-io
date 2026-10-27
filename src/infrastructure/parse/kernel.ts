@@ -192,6 +192,20 @@ export interface ParsedTypeRef {
 function nodeTypeToKind(nodeType: string, parent?: string): ParsedSymbol['kind'] {
   if (nodeType.includes('class') || nodeType === 'object_declaration') return 'class'; // kotlin object（单例）也是类型
   if (nodeType.includes('interface')) return 'interface';
+  // ★★★ 2026-10-27（T-#58）：**类型别名/类型定义永远是 `type`，不因嵌套而降级成 `method`**。
+  //   实测：`type OverviewJudge = {…}` 声明在**函数体内**（`query_feature.ts:1808`）
+  //   ⇒ 原先掉进下面 `includes('type')` 分支的 `if (parent) return 'method'`
+  //   ⇒ 它变成 `kind='method'` ⇒ 被 `typeNamesByFile`（只收 interface/type/class）**排除**
+  //   ⇒ **引用它的 type_ref 永远解析不到**（同型：`Span` / `Row` / `QueueItem` / `CallResult` …）。
+  if (
+    nodeType === 'type_alias_declaration' ||
+    nodeType === 'type_definition' ||
+    nodeType === 'type_spec' ||
+    nodeType === 'type_declaration' ||
+    nodeType === 'type_item'
+  ) {
+    return 'type';
+  }
   // enum 是类型也是值：映射 'type' 才能被跨文件 type_ref 解析命中
   // （resolveCrossFileCalls 的 typeNamesByFile 只认 interface/type/class；
   // 落到末尾的 'function' 会漏——v7 清库重解析后生效）

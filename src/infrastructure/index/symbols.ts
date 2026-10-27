@@ -1704,6 +1704,11 @@ const BUILTIN_CALLEES = new Set([
   // ★ T-#50：**`import` 是关键字不是函数** —— 动态 `await import(spec)` 被抽成 call 引用，
   //   它永远不可能对应仓内符号（实测 25 条落 failed）。
   'import',
+  // ★ T-#58：**`super` 是关键字**（`super(message)` / `super()` 构造函数调用）—— 实测 2 条。
+  'super',
+  // ★ T-#58：Python 内置异常（`raise SystemExit(...)` 被抽成 call）
+  'SystemExit', 'BaseException', 'StopIteration', 'AssertionError', 'NotImplementedError',
+  'RuntimeError', 'TypeError', 'ImportError', 'OSError', 'IOError', 'AttributeError',
 ]);
 
 export interface CrossFileResolveStats {
@@ -2272,6 +2277,10 @@ const BUILTIN_TYPES = new Set([
   'Uint8Array', 'Int8Array', 'Uint16Array', 'Int16Array', 'Uint32Array', 'Int32Array',
   'Float32Array', 'Float64Array', 'BigInt64Array', 'BigUint64Array', 'ArrayBuffer', 'SharedArrayBuffer',
   'DataView', 'PromiseRejectedResult', 'PromiseFulfilledResult', 'PromiseSettledResult',
+  // ★ T-#58：实测落 failed 的第三批（@types/node / 第三方库的类型尾部名）
+  'Timeout', 'ErrnoException', 'FSWatcher', 'StatsWatcher', 'Ignore', 'CompilerOptions',
+  'McpServer', 'ZodRawShape', 'ZodType', 'Parser', 'Ajv', 'ErrorObject', 'SpawnSyncReturns',
+  'SpawnSyncReturns', 'ChildProcessWithoutNullStreams', 'ServerResponse', 'IncomingMessage',
 ]);
 
 /**
