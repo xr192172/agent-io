@@ -343,6 +343,13 @@ function childIndexOf(node: SyntaxNodeLike, target: SyntaxNodeLike | null): numb
  */
 function resolveName(node: SyntaxNodeLike, lang: LanguageEntry): { name: string; fromIndex: number | null } {
   const a = LANG_ADAPTERS[lang.name];
+  // ★ T-#93：赋值形态（`X.y = function y(){…}`）的名字 = **函数自己**的 `name` 字段。
+  //   不走下面的三级下钻：那三级都是给“声明节点自带名字字段”的形态用的。
+  const assigned = assignSymbolValue(node, lang);
+  if (assigned) {
+    const own = assigned.childForFieldName(a!.assignSymbol!.nameField);
+    if (own && isValidIdentifier(own.text)) return { name: own.text, fromIndex: null };
+  }
   const byField = node.childForFieldName(lang.field_map.name);
   if (byField && isValidIdentifier(byField.text)) {
     return { name: byField.text, fromIndex: childIndexOf(node, byField) };
@@ -557,7 +564,11 @@ function traverseAndExtract(
     const { name, fromIndex } = resolveName(node, lang);
     if (name) {
       const kind = symbolKind(node, lang, parent);
-      const signature = buildSignature(node, lang.field_map, lang);
+      // ★ T-#93：形参 / 体 / 返回类型都挂在**承载函数的那个节点**上 ——
+      //   一般符号就是自己，赋值形态（`X.y = function y(){…}`）是右侧的函数表达式。
+      const innerNode = symbolInner(node, lang);
+      const isAssignSymbol = innerNode !== node;
+      const signature = buildSignature(innerNode, lang.field_map, lang);
       // Go 方法：receiver 类型即“所属类型”。只填 parent（供社区按类型聚合），
       // 不改 qualified_name（保留 "Method" 短名，避免破坏既有调用边解析契约）。
       // ★ 2026-09-29：`lang.name === 'go'` → 数据字段 parentFromReceiver。
@@ -567,10 +578,17 @@ function traverseAndExtract(
         const receiverMatch = stripParens(receiver).match(/(?:\*\s*)?(\w+)$/);
         if (receiverMatch) symbolParent = receiverMatch[1];
       }
-      const qn = parent ? `${parent}.${name}` : name;
+      // ★ T-#93：赋值形态的所属类型来自左端的接收者（`Route.prototype.dispatch` ⇒ `Route`）。
+      //   ★ 只有**赋值形态**用它参与限定名：Go 的 receiver 明确"只进 parent 不改 qn"（既有契约）。
+      if (isAssignSymbol && !symbolParent) {
+        const recv = assignReceiverOf(node);
+        if (recv) symbolParent = recv;
+      }
+      const qnBase = isAssignSymbol ? symbolParent : parent;
+      const qn = qnBase ? `${qnBase}.${name}` : name;
       // ★ v15：函数/方法从 **AST 的体节点**取原文（规则表 = LANG_ADAPTERS 的 bodyFields / bodyNodeTypes）。
       //   取不到（type/class 走不到这里；解析器没给体）⇒ undefined ⇒ 落库 NULL（不是空串）。
-      const bodyOfSymbol = kind === 'function' || kind === 'method' ? bodyTextOf(node, lang) : undefined;
+      const bodyOfSymbol = kind === 'function' || kind === 'method' ? bodyTextOf(innerNode, lang) : undefined;
       // ★ 2026-10-21：文档注释（`symbol_docstring.ts` 唯一出处）——对 function / method / class /
       //   interface / type 一视同仁；取不到 ⇒ undefined ⇒ 落库 NULL（不是空串）。
       const docOfSymbol = docstringOf(node, lang.name);
@@ -588,14 +606,14 @@ function traverseAndExtract(
         // ★ 2026-10-20（v13）：函数/方法把**形参表**抽出来（`symbol_params.ts` 早就有，只是没接上）
         ...(kind === 'function' || kind === 'method'
           ? {
-              params: paramsOf(node, lang.field_map.parameters || 'parameters', lang.name),
+              params: paramsOf(innerNode, lang.field_map.parameters || 'parameters', lang.name),
               // ★ v15：体原文（见 bodyTextOf 的注释：原文照录，含/不含外层花括号由语法树决定）
               ...(bodyOfSymbol ? { bodyText: bodyOfSymbol } : {}),
             }
           : {}),
         // ★ 2026-10-21（v14）：**返回类型 / 泛型参数 / 修饰符**（`symbol_shape.ts` 唯一出处）。
         //   三样都是「抽不到就省略」⇒ 落库 NULL；抽得到但为空 ⇒ `[]`（见 schema 注释）。
-        ...shapeOf(node, lang.name),
+        ...shapeOf(innerNode, lang.name),
         // ★ 2026-10-21：文档注释原文（规则表 / 紧邻判据见 symbol_docstring.ts）
         ...(docOfSymbol ? { docstring: docOfSymbol } : {}),
         signature,
@@ -700,6 +718,40 @@ interface LangImportAdapter {
    * ★ **没填 = 本语言没有局部绑定概念**（调用方按“没有”处理，不会误判）。
    */
   localBindingNodes?: string[];
+
+  /**
+   * ★★★ 2026-10-27（T-#93）：**赋值右侧的具名函数也是符号**（数据，不是代码分支）。
+   *
+   * ## 为什么需要（express 4.21.2 实测，不是推测）
+   * CJS 项目里“给属性挂函数”是主力形态，而它**不在** `symbol_nodes` 里：
+   *   `Route.prototype.dispatch = function dispatch(req, res, done) {…}`   （`lib/router/route.js`）
+   *   `module.exports = function renderFile(fileName, options, callback) {…}`（`test/support/tmpl.js`）
+   * ⇒ 这两个函数不成符号，后果有两层：
+   *   ① 形参不进作用域 ⇒ 体内（含嵌套函数）引用它们 **判 failed**
+   *      （实测 `done` 3 条 · `callback` 2 条）
+   *   ② 它们的体被当**模块作用域** ⇒ 体内嵌套函数 `next` 的 `parent` 也是空
+   *
+   * ## 判据（只收“自带名字”的）
+   * `stmt` 节点的 `valueField` 是 `valueTypes` 之一，且该值节点**自己带名字**
+   * （`function named(){}`）。匿名函数（`module.exports = () => {}` / 回调）**不收**：
+   * 没有可靠的符号名，硬编名字就是造假符号；它们的形参由作用域边界负责
+   * （`extractCallsFromBody` 的 T-#55 / `traverseAndExtractCalls` 的同名逻辑）。
+   *
+   * ## 加语言时怎么填
+   * 该语言“把函数值赋给某个已有的名字”的语句形态：
+   *   TS/JS ⇒ `assignment_expression` + `right` + `function_expression` 家族
+   *   其余语言要**实测语法树**再填；没填 = 本语言没有这种形态（行为逐字不变）。
+   */
+  assignSymbol?: {
+    /** 赋值语句的节点类型（TS/JS：`assignment_expression`） */
+    stmt: string;
+    /** 右侧值的字段名（TS/JS：`right`） */
+    valueField: string;
+    /** 右侧哪些节点类型算函数值 */
+    valueTypes: string[];
+    /** 函数值**自己**的名字字段（TS/JS：`name`）；缺失即视为不满足判据 */
+    nameField: string;
+  };
 
   /** 调用节点类型（数组 = 该语言有多种调用形态，如 PHP 三种 / Groovy 两种） */
   callNode?: string | string[];
@@ -941,6 +993,19 @@ function namedChildrenOfType(node: SyntaxNodeLike, type: string): SyntaxNodeLike
  * 找不到就判 `failed` —— 实测有 2,728 条 `failed`，绝大多数是 `node:fs` / `node:path` 解构出来的名字。
  * 有了它，这些能判成 `external`（正确语义），`failed` 才会只剩"真·设计/实现不一致"。
  */
+/**
+ * ★★★ 2026-10-27（T-#93）：**TS 系四门共享的「赋值右侧具名函数」判据**。
+ *
+ * 与 `TS_LIKE_IMPORT_BINDINGS` 同理：四门语法同源，各写一份就是四个会各自漂移的副本。
+ * 判据本身与病史见 `LangImportAdapter.assignSymbol` 的注释（express 实测：`done` 3 + `callback` 2）。
+ */
+const TS_LIKE_ASSIGN_SYMBOL = {
+  stmt: 'assignment_expression',
+  valueField: 'right',
+  valueTypes: ['function_expression', 'arrow_function', 'generator_function', 'function'],
+  nameField: 'name',
+};
+
 const TS_LIKE_IMPORT_BINDINGS = (node: SyntaxNodeLike): string[] => {
   const out: string[] = [];
   const walk = (n: SyntaxNodeLike): void => {
@@ -1507,10 +1572,13 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
      *    【共享】—— 它们语法同源，各写一份就是四个会各自漂移的副本。
      */
     extractImportBindings: TS_LIKE_IMPORT_BINDINGS,
+    // ★ T-#93：`X.prototype.m = function m(…){}` 也是符号（kind=method，所属类型取左端接收者）
+    assignSymbol: TS_LIKE_ASSIGN_SYMBOL,
+    nodeKindOverride: { assignment_expression: 'method' },
   },
-  tsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'] },
-  javascript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'] },
-  jsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'] },
+  tsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'], assignSymbol: TS_LIKE_ASSIGN_SYMBOL, nodeKindOverride: { assignment_expression: 'method' } },
+  javascript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'], assignSymbol: TS_LIKE_ASSIGN_SYMBOL, nodeKindOverride: { assignment_expression: 'method' } },
+  jsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'], assignSymbol: TS_LIKE_ASSIGN_SYMBOL, nodeKindOverride: { assignment_expression: 'method' } },
 
   // ═══════════════════════════════════════════════════════════════════
   // 2026-09-29 新增 5 门（scala / groovy / julia / haskell / elixir）
@@ -1887,12 +1955,74 @@ function isCallNode(node: SyntaxNodeLike, lang: LanguageEntry): boolean {
  *   「哪个字段的文本命中哪些值才算声明」，命中即符号节点（该表兼作 kind 表）。
  */
 function isSymbolNode(node: SyntaxNodeLike, lang: LanguageEntry): boolean {
-  if (!lang.symbol_nodes.includes(node.type)) return false;
   const a = LANG_ADAPTERS[lang.name];
+  // ★★★ T-#93：赋值右侧的具名函数表达式也是符号（CJS 主力形态，判据见 adapter.assignSymbol）
+  if (a?.assignSymbol && node.type === a.assignSymbol.stmt) return assignSymbolValue(node, lang) !== null;
+  if (!lang.symbol_nodes.includes(node.type)) return false;
   if (a?.symbolRequireFields && !a.symbolRequireFields.some((f) => node.childForFieldName(f) !== null)) return false;
   const d = a?.symbolDispatch;
   if (!d) return true;
   return Object.prototype.hasOwnProperty.call(d.kinds, fieldText(node, d.field));
+}
+
+/**
+ * ★★★ 2026-10-27（T-#93）：赋值语句 → **右侧那个具名函数节点**；不是这种形态返回 null。
+ *
+ * 判据三件（全在 adapter.assignSymbol 里，内核不认识任何具体语言）：
+ *   ① 本节点类型 = `stmt`；② `valueField` 的值类型 ∈ `valueTypes`；
+ *   ③ 该值节点自己的 `nameField` 是合法标识符（匿名函数不收，见 adapter 注释）。
+ */
+function assignSymbolValue(node: SyntaxNodeLike, lang: LanguageEntry): SyntaxNodeLike | null {
+  const asg = LANG_ADAPTERS[lang.name]?.assignSymbol;
+  if (!asg || node.type !== asg.stmt) return null;
+  const value = node.childForFieldName(asg.valueField);
+  if (!value || !asg.valueTypes.includes(value.type)) return null;
+  const own = value.childForFieldName(asg.nameField);
+  return own && isValidIdentifier(own.text) ? value : null;
+}
+
+/**
+ * ★ T-#93：符号节点 → **承载其余事实的那个节点**（形参 / 体 / 返回类型都挂在它上面）。
+ * 一般符号就是自己；赋值形态是右侧的函数表达式。所有“取形参/取体/取形状”的地方都过它，
+ * 否则赋值形态的 `params` / `body_text` / `return_type` 全落空。
+ */
+function symbolInner(node: SyntaxNodeLike, lang: LanguageEntry): SyntaxNodeLike {
+  return assignSymbolValue(node, lang) ?? node;
+}
+
+/**
+ * ★★★ 2026-10-27（T-#93 续）：**声明节点所绑的函数值**（`const f = () => {…}` ⇒ 那个箭头）。
+ *
+ * 判据全数据驱动、不认语言：
+ *   ① 本节点类型必须在本语言的 `localBindingNodes` 里（"这是局部绑定声明"）；
+ *   ② 直接子节点里，带 `value` 字段、且该值节点是函数形态（`FUNCTION_SCOPE_NODE_TYPES`）的那个。
+ *   ★ 只查**一层**（declarator → value）：`const h = wrap(() => {…})` 不算 —— 与 T-#52 的符号侧判据一致
+ *     （"值是函数"才是符号的值；值是调用结果就不是）。
+ */
+function declaredFunctionValue(node: SyntaxNodeLike, lang: LanguageEntry): { name: string; value: SyntaxNodeLike } | null {
+  if (!LANG_ADAPTERS[lang.name]?.localBindingNodes?.includes(node.type)) return null;
+  for (let i = 0; i < node.childCount; i++) {
+    const child = node.child(i);
+    if (!child) continue;
+    const value = child.childForFieldName('value');
+    if (!value || !isFunctionScopeNode(value)) continue;
+    const nameNode = child.childForFieldName('name');
+    if (nameNode && isValidIdentifier(nameNode.text)) return { name: nameNode.text, value };
+  }
+  return null;
+}
+
+/**
+ * ★ T-#93：赋值形态的**所属类型**（`Route.prototype.dispatch = …` ⇒ `Route`）。
+ * `module` / `exports` / `this` 这类接收者不是“所属类型” ⇒ 不给 parent。
+ */
+function assignReceiverOf(node: SyntaxNodeLike): string | null {
+  const left = node.childForFieldName('left');
+  if (!left || left.type !== 'member_expression') return null;
+  const m = left.text.match(/^([A-Za-z_$][\w$]*)(?:\.prototype)?\.[A-Za-z_$][\w$]*$/);
+  if (!m) return null;
+  const recv = m[1];
+  return ['module', 'exports', 'this', 'window', 'globalThis'].includes(recv) ? null : recv;
 }
 
 /** 符号节点的 kind：symbolDispatch（宏即声明）＞ nodeKindOverride（覆盖表）＞ 通用启发式 */
@@ -1919,6 +2049,8 @@ function symbolKind(node: SyntaxNodeLike, lang: LanguageEntry, parent?: string):
  * 返回 null = 没找到体（调用方按"该符号无体"处理）。
  */
 function bodyChildren(node: SyntaxNodeLike, lang: LanguageEntry, nameIndex: number | null): SyntaxNodeLike[] | null {
+  // ★ T-#93：赋值形态的体在右侧函数上（`X.y = function y() { … }`）
+  node = symbolInner(node, lang);
   const a = LANG_ADAPTERS[lang.name];
   // ★ 先判"体字段的值**自身**就是一条语句"（ocaml 的 `let foo () = bar ()`）——
   //   必须排在下面按 bodyFields 取"体的子节点"之前，否则那条调用节点会被丢掉。
@@ -1987,6 +2119,8 @@ function bodyChildren(node: SyntaxNodeLike, lang: LanguageEntry, nameIndex: numb
  * ★ 空串 ⇒ undefined（"有一个零宽度的体"不是事实；空串会污染 `body_hash` 的语义）。
  */
 function bodyTextOf(node: SyntaxNodeLike, lang: LanguageEntry): string | undefined {
+  // ★ T-#93：赋值形态的体在右侧函数上（与 bodyChildren 同一份规则）
+  node = symbolInner(node, lang);
   const a = LANG_ADAPTERS[lang.name];
   for (const f of a?.bodyFields ?? DEFAULT_BODY_FIELDS) {
     const c = node.childForFieldName(f);
@@ -2404,11 +2538,51 @@ function traverseAndExtractCalls(
   outerScope: Set<string> = new Set(),
 ): void {
   if (depth > 200) return;
+  // ★★★ T-#93 续：**声明节点绑了函数值**（`const f = () => {…}` / `var h = function () {…}`）。
+  //
+  // ## 为什么必须单独一支
+  // `lexical_declaration` / `variable_declaration` **不是** `symbol_nodes`（见 languages.ts）——
+  //   `const f = …` 的**符号**是符号提取器单独一支造的（kind=const，T-#45/T-#52）。
+  //   于是这里落到通用递归 ⇒ 体内调用归到 `<module>`（或最后一个外层符号）⇒
+  //   `syncFile` 的 FK 防御（`nodeIdSet.has('<file>#<module>')` 为假）**静默丢弃**：
+  //   实测 `const arrowProbe = () => { helper2(1) }` ⇒ **edges 0 条、unresolved_refs 0 条**（TS 同形一致）。
+  // ⇒ 归属必须给到那个 `const` 符号（与符号侧 qn 逐字一致），体的调用才既建边、又不静默消失。
+  const decl = declaredFunctionValue(node, lang);
+  if (decl) {
+    const declEnclosing = funcStack.length > 0 ? funcStack[funcStack.length - 1] : null;
+    const declQn = declEnclosing ? `${declEnclosing}.${decl.name}` : decl.name;
+    const declBody = bodyChildren(decl.value, lang, null);
+    if (declBody) {
+      funcStack.push(declQn);
+      const declScope = new Set<string>([
+        ...outerScope,
+        ...paramsOf(decl.value, lang.field_map.parameters || 'parameters', lang.name)
+          .map((p) => p.name)
+          .filter((n): n is string => !!n),
+        ...collectLocalBindings(declBody, lang.name),
+      ]);
+      for (const child of declBody) extractCallsFromBody(child, lang, declQn, calls, symbols, depth + 1, declScope);
+      for (const child of declBody) traverseAndExtractCalls(child, lang, symbols, calls, funcStack, depth + 1, declScope);
+      funcStack.pop();
+    }
+    return;
+  }
   if (isSymbolNode(node, lang)) {
     const { name, fromIndex } = resolveName(node, lang);
     if (name) {
-      const qn = funcStack.length > 0 ? `${funcStack[funcStack.length - 1]}.${name}` : name;
+      // ★★★ T-#93：**限定名算法必须与「符号提取器」逐字一致**。
+      //   病史（本轮实测出来的）：符号提取器按 `parent ?? 接收者` 拼 qn（`Outer.dispatch`），
+      //   而这里原先是 `funcStack.top ?? name`（`dispatch`）⇒ 同一颗节点两个 id
+      //   ⇒ `syncFile` 的 FK 防御（`nodeIdSet.has(srcId)`）判定"坏边"**静默跳过**
+      //   ⇒ 赋值形态方法体内的**调用边一条不建**（express 实测：`proto.handle.next` 一族 16 条边消失）。
+      //   ⇒ 两处共用同一条规则：`enclosing ?? 接收者`。
+      const enclosingQn = funcStack.length > 0 ? funcStack[funcStack.length - 1] : null;
+      const assignRecv = assignSymbolValue(node, lang) ? assignReceiverOf(node) : null;
+      const qnBase = enclosingQn ?? assignRecv;
+      const qn = qnBase ? `${qnBase}.${name}` : name;
       const kind = symbolKind(node, lang, funcStack.length > 0 ? funcStack[funcStack.length - 1] : undefined);
+      // ★★★ T-#93 续：`const f = () => {…}` 这类声明**不是** symbol_node（见 languages.ts 的 symbol_nodes），
+      //   它的体由下面「声明绑定函数值」那一支负责；这里只管真符号。
       const body = bodyChildren(node, lang, fromIndex);
       if (body) {
         funcStack.push(qn);
@@ -2418,7 +2592,8 @@ function traverseAndExtractCalls(
         //   不继承外层的话，内层引用外层的 `probeName` 就判不了（实测 Go 剩下的 11 条）。
         const ownParams = new Set<string>([
           ...outerScope,
-          ...paramsOf(node, lang.field_map.parameters || 'parameters', lang.name)
+          // ★ T-#93：形参挂在**承载函数的节点**上（赋值形态是右侧函数，不是赋值语句本身）
+          ...paramsOf(symbolInner(node, lang), lang.field_map.parameters || 'parameters', lang.name)
             .map((p) => p.name)
             .filter((n): n is string => !!n),
           ...collectLocalBindings(body, lang.name),
@@ -2449,8 +2624,33 @@ function traverseAndExtractCalls(
     if (LANG_ADAPTERS[lang.name]?.topLevelCall && funcStack.length === 0) {
       extractCallsFromBody(child, lang, '<module>', calls, symbols, depth + 1);
     }
-    if (child) traverseAndExtractCalls(child, lang, symbols, calls, funcStack, depth + 1);
+    // ★★★ T-#93：**非符号的函数节点也是作用域边界**。
+    //   病史：这条递归原样把 `outerScope` 丢掉了，而"不成符号的函数"（匿名回调、
+    //   未带名字的函数表达式）的形参只存在于 AST ⇒ 体内嵌套函数引用它们就判不了。
+    //   实测（express `lib/router/route.js`）：`Route.prototype.dispatch = function dispatch(req,res,done)`
+    //   里的 `next` 引用 `done` ⇒ failed。修法是让作用域**逐层继承**，与 `extractCallsFromBody`
+    //   的 T-#55 同一条判据（同一张节点名单，见 FUNCTION_SCOPE_NODE_TYPES）。
+    const childScope = isFunctionScopeNode(child)
+      ? new Set<string>([
+          ...outerScope,
+          ...paramsOf(child, lang.field_map.parameters || 'parameters', lang.name)
+            .map((p) => p.name)
+            .filter((n): n is string => !!n),
+        ])
+      : outerScope;
+    if (child) traverseAndExtractCalls(child, lang, symbols, calls, funcStack, depth + 1, childScope);
   }
+}
+
+/**
+ * ★ T-#93：**引入新作用域的函数形态**（TS/JS 的箭头 + 三种函数表达式形态）。
+ * 只在 `traverseAndExtractCalls` 里用；`extractCallsFromBody` 的 T-#55 判据是同一份名单，
+ * 下次合并成一处即可（两处都在本文件，暂时各自内联以免扩大本次改动面）。
+ */
+const FUNCTION_SCOPE_NODE_TYPES = new Set(['arrow_function', 'function_expression', 'function', 'generator_function']);
+
+function isFunctionScopeNode(node: SyntaxNodeLike): boolean {
+  return FUNCTION_SCOPE_NODE_TYPES.has(node.type);
 }
 
 // ─────────────────────────────────────────────────────────────

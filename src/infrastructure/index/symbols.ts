@@ -1744,6 +1744,30 @@ const BUILTIN_CALLEES = new Set([
   'decodeURIComponent', 'encodeURIComponent', 'decodeURI', 'encodeURI', 'escape', 'unescape',
 ]);
 
+/**
+ * ★★★ 2026-10-27（T-#93）：**JS 宿主的「注入全局」表**（只对 JS 系文件启用）。
+ *
+ * ## 为什么这不是“补偿性表项”
+ * T-#78 删掉过 100+ 条补偿表项 —— 那些是在**掩盖“没有 resolveImport”**（把仓内符号误当外部），
+ * 与本表性质相反：这些名字在源码里**根本没有声明处**，是运行器在加载文件时注入的。
+ * kernel.ts §4 明确要求每门语言回答「本语言的全局声明来源」——
+ * TS 是 `lib.*.d.ts` / `@types/*`，Go 是 `builtin` 包，JS **就是宿主注入**（Node / 浏览器 / 测试运行器）。
+ *
+ * ## 实测（express 4.21.2：152 文件 / 337 条引用）
+ * `failed` 14 条里 **9 条**是测试运行器全局：`it` 8 · `describe` 2（其余 5 条是函数表达式形参，T-#93 另一半）。
+ *
+ * ## 范围
+ * 只收「**调用点一定没有 import**」的名字：测试框架的 DSL（mocha / jest / vitest / tap 都会注入）。
+ * ★ 不收 `expect` / `assert` 这类**既可能裸用也可能 import** 的：裸用时它们会走 local-binding
+ *   或 package 绑定判 external，不该由本表兜（兜了就会掩盖真实漏连）。
+ */
+const JS_HOST_GLOBALS = new Set([
+  // 测试框架 DSL（mocha / jest / vitest / tap / node:test 的注入形态）
+  'it', 'xit', 'fit', 'test', 'xtest', 'specify', 'describe', 'xdescribe', 'fdescribe',
+  'context', 'xcontext', 'suite', 'bench',
+  'before', 'after', 'beforeEach', 'afterEach', 'beforeAll', 'afterAll',
+]);
+
 export interface CrossFileResolveStats {
   total: number;
   /** import 限定解析成功，已写 edges(kind=call, cross) */
@@ -2204,6 +2228,8 @@ export function resolveCrossFileCalls(
     const isJavaFile = rel.endsWith('.java');
     // ★ T-#51：**Shell 脚本的外部命令**（`printf` / `node` / `grep` / `echo` …）
     const isShellFile = rel.endsWith('.sh') || rel.endsWith('.bash') || rel.endsWith('.zsh');
+    // ★ T-#93：JS 系（含 TS）—— 宿主注入的全局名只对这几门启用
+    const isJsFamily = /\.(?:[cm]?js|jsx|ts|tsx)$/.test(rel);
     // ★ 2026-10-22：本条引用的「没建边原因」暂存器（一行一个，不复用：上一条的原因不能写进下一条）
     const miss: ReexportMiss[] = [];
 
@@ -2435,6 +2461,14 @@ export function resolveCrossFileCalls(
         i: r.id,
         cd: JSON.stringify({ verdict: 'external', why: 'local-binding', detail: bareLocalFn }),
       });
+      stats.external++;
+      continue;
+    }
+    // ★★★ 2026-10-27（T-#93）：**JS 宿主注入的全局名** ⇒ external（不是本仓漏连）。
+    //   放在 local-binding 之后：局部绑定会 shadow 全局（JS 与 Go 一致），那条更强。
+    //   实测 express 4.21.2：`it` 8 · `describe` 2 —— 测试运行器注入，源码无声明处。
+    if (isJsFamily && JS_HOST_GLOBALS.has(expr)) {
+      updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: `host-global:${expr}` }) });
       stats.external++;
       continue;
     }
