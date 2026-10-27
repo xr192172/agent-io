@@ -139,7 +139,6 @@
 
 | 编号 | 缺口 | 证据 | 在哪 |
 |---|---|---|---|
-| T-#94b | **匿名函数体内的 `const` 仍以模块级身份进 `nodes`**（"假顶层 const"）—— 匿名默认导出那类已随 T-#94a 一起修好，其余匿名回调里的声明还在 | 同形态抽样：普通匿名回调体内的 `const x = …` 仍落顶层（axios 已从 403 → 398，剩的同类还在别的形态里） | `parse/kernel.ts`（const 支与 `traverseAndExtract` 的作用域传递） |
-| T-#94c | 声明绑定函数值的**形参**没进 `nodes.params` | `const f = function g(seed){…}` ⇒ `nodes` 里 `f` 是 `kind=const` 且 `params` 为空 | 同上（const 支取 `valueNode` 的 params） |
 | T-#94d | 浏览器 bundle 里 `typeof X === "function"` 引用的**宿主名**靠表兜 | socket.io `addEventListener` 已补进 `JS_HOST_GLOBALS`；同类名字会继续冒（`postMessage`/`Worker`…） —— 想清楚要不要按"宿主声明来源"成批登记 | `index/symbols.ts` |
 | T-#94e | `verify` 里 `t360-two-phase-claim-cert` **基线就红**（PASS=25 FAIL=10） | 把 T-#93 两个文件 `git checkout` 回 T-#92 后重跑，同样 10 条失败 ⇒ 与解析改动无关 | `certs/t360-two-phase-claim-cert.mjs` |
+| T-#94f | **IIFE 里的 bundle ⇒ 契约面为空**（`is_closure` 全打上） | socket.io `client-dist/socket.io.js` 104 个符号全 `is_closure` ⇒ 空索引守卫曾误拒（已改成数总数）；这类仓库的"对外 API"只能在 `wrapper.mjs` 那层看见 | `graph/import_project.ts` · `parse/kernel.ts` |

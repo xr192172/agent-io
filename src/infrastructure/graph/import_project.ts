@@ -931,7 +931,13 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     if (syms.length > 50) {
       skipped.push(`${rel}: 符号数 ${syms.length} 超上限，仅收录前 50 个 API`);
     }
-    symbolsFound += funcApis.length;
+    // ★★★ 2026-10-27（T-#94b）：**计"解析出来的符号总数"，不是"契约面 API 数"**。
+    //   病史（socket.io 4 实测）：`client-dist/socket.io.js` 整包裹在一个 IIFE 里
+    //   ⇒ 里面每个函数都带 `is_closure: true`（语义正确：它们不是该模块的对外 API）
+    //   ⇒ `funcApis` 为 0 ⇒ 空索引守卫（`probeSyms > 0 && symbolsFound === 0`）**误判成"解析管线坏了"**
+    //     并拒绝导入 —— 而当时 `nodes` 里其实已经写出 104 个符号。
+    //   ⇒ 守卫问的是"解析到底出没出东西"，那就该数**总数**；契约面为空是另一件事（另有读数）。
+    symbolsFound += syms.length;
     parsed.set(rel, { symbols: funcApis, nonFuncSymbols, imports: imps });
   };
 

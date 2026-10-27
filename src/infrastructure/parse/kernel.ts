@@ -468,8 +468,15 @@ function traverseAndExtract(
   //   ★ `parent` 也填上（供社区/聚合按所属函数归组）
   //   ★ 顶层行为**一字不变**（`parent === undefined` 分支照旧）。
   const isDeclNode = node.type === 'lexical_declaration' || node.type === 'variable_declaration';
+  // ★★★ 2026-10-27（T-#94b）：**"函数内"是判据，不要求 `parent` 有值**。
+  //   病史：原先这里要求 `parent !== undefined`，而"匿名函数"（回调/`export default x => …`）
+  //   **不产生 parent** ⇒ 它体内的 `const parsed = {}` 一路被当成**模块级**声明
+  //   ⇒ `nodes` 里冒出一堆"假顶层 const"（axios `parseHeaders.js` 的 parsed/key/val/i 就是），
+  //     而且它们还会被 `fileScopeNames` 当成模块作用域的名字。
+  //   ⇒ 现在：只要**在函数里**（`enclosingIsFunction`），普通声明不再建顶层符号；
+  //     函数值声明（T-#45）依旧进 `nodes` 并标 `is_closure`。
   const nestedFnDecl =
-    isDeclNode && parent !== undefined && enclosingIsFunction
+    isDeclNode && enclosingIsFunction
       ? (() => {
           const ds: SyntaxNodeLike[] = [];
           for (let i = 0; i < node.childCount; i++) {
@@ -483,7 +490,7 @@ function traverseAndExtract(
           return !!vn && ['arrow_function', 'function_expression', 'function', 'generator_function'].includes(vn.type);
         })()
       : false;
-  if (isDeclNode && (parent === undefined || nestedFnDecl)) {
+  if (isDeclNode && ((parent === undefined && !enclosingIsFunction) || nestedFnDecl)) {
     const declarators: SyntaxNodeLike[] = [];
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i);
@@ -502,6 +509,9 @@ function traverseAndExtract(
         //   （适配器 closureLiteralNodeTypes）。
         const vt = valueNode?.type;
         const isClosureLit = !!vt && (LANG_ADAPTERS[lang.name]?.closureLiteralNodeTypes ?? []).includes(vt);
+        // ★ T-#94c：绑的是函数值 ⇒ **形参也是这个 const 的事实**（`const f = function g(seed){}`）。
+        //   原先只落下 `bodyText`，`params` 恒为空 ⇒ `brief`/`契约` 面上"这个函数收什么"看不见。
+        const valueIsFn = !!vt && isFunctionScopeNode(valueNode!);
         // ★ 2026-10-21（v14）：顶层 const 绑定的**函数值**（`const h = async (): Promise<X> => …`）
         //   也抽返回类型/泛型/修饰符 —— 这类 handler 是本仓的主体结构（server_registry 等）。
         //   ★ 导出关键字在**声明节点**的父级（export_statement），不在值节点上 ⇒ 单独补第一项。
@@ -523,9 +533,12 @@ function traverseAndExtract(
           start_line: node.startPosition.row + 1,
           end_line: node.endPosition.row + 1,
           qualified_name: parent ? `${parent}.${nameNode.text}` : nameNode.text, // ★ T-#45：嵌套时带父名，同名不冲突
-          ...valueShape,
+          ...(valueShape ?? {}),
           ...(constMods ? { modifiers: [...new Set(constMods)] } : {}),
           ...(valueBody ? { bodyText: valueBody } : {}),
+          ...(valueIsFn && valueNode
+            ? { params: paramsOf(valueNode, lang.field_map.parameters || 'parameters', lang.name) }
+            : {}),
           ...(valueDoc ? { docstring: valueDoc } : {}),
           signature: `const ${nameNode.text} = ${valueBrief}`,
           parent,
@@ -680,7 +693,9 @@ function traverseAndExtract(
 
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i);
-    if (child) traverseAndExtract(child, lang, symbols, parent, depth + 1, enclosingIsFunction);
+    // ★ T-#94b：**匿名函数也是作用域边界** —— 进它的子树要标「函数内」，
+    //   否则它体内的普通 `const` 会被当成模块级符号（"假顶层 const"）。
+    if (child) traverseAndExtract(child, lang, symbols, parent, depth + 1, enclosingIsFunction || isFunctionScopeNode(child));
   }
 }
 
