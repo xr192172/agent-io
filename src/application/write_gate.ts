@@ -53,6 +53,7 @@
 
 import { selfWritesPath, SELF_WRITE_TTL_MS, readSelfWrites, type SelfWriteEntry } from '../infrastructure/index/self_writes.js';
 import fs from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
 import os from 'node:os';
 import path from 'node:path';
 import { getProjectCacheDb, beginBatch, endBatch, projectCacheDbPath, type Database } from '../infrastructure/index/db.js';
@@ -66,7 +67,7 @@ import { indexCoversDisk } from '../infrastructure/index/index_freshness.js';
 import { listDesignSheets, getDSL, saveDSL } from '../infrastructure/storage.js';
 import { loadOverlay } from '../infrastructure/storage_overlay.js';
 // ★ 2026-10-28（重写计划层 · 第 3 步）：判据的唯一实现住 `rewrite_plan.ts#planGaps`，这里只调用
-import { readRewritePlan, planGaps, planFileFor } from './design/db/rewrite_plan.js';
+import { readRewritePlan, planGaps, planFileFor, planCoverageGaps, planUntouchedGaps } from './design/db/rewrite_plan.js';
 import { checkRewriteExit, renderExitCheck } from './design/db/plan_exit_check.js';
 // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：豁免判据的**取值域**住 `domain/geometry.ts`，
 //   本文件**只读**它（`nodes[].gate`）—— **不按路径前缀判**（路径前缀 = 本仓头号病根）。
@@ -970,12 +971,30 @@ export function planExitHumanLine(out: WriteThroughOutcome | null | undefined): 
  *   · **严格**：`AGENT_IO_REQUIRE_PLAN=1` ⇒ **拒绝落盘**（迁移完成后由人打开这一档）。
  * ★ 迁移口径与 T360 的 `judge_gate` 同一路数：**存量先记账，新规矩从人明确打开那一刻起生效**。
  */
+/** 该文件在**实际 DB**里的符号名（排除 `kind='file'`）；拿不到 ⇒ 空数组（判据如实降级，不猜） */
+function symbolsInFileOf(projectRoot: string, rel: string): string[] {
+  try {
+    const dbFile = projectCacheDbPath(path.resolve(projectRoot));
+    if (!fs.existsSync(dbFile)) return [];
+    const db = new DatabaseSync(dbFile, { readOnly: true });
+    const rows = db.prepare("SELECT name FROM nodes WHERE file_path = ? AND kind != 'file'").all(rel) as Array<{
+      name: string;
+    }>;
+    db.close();
+    return rows.map((r) => r.name);
+  } catch {
+    return [];
+  }
+}
+
 function planGate(projectRoot: string, rels: readonly string[]): { warnings: string[]; blocking: string[] } {
   const warnings: string[] = [];
   const blocking: string[] = [];
   for (const rel of rels) {
     const plan = readRewritePlan(projectRoot, rel);
-    const gaps = planGaps(plan);
+    // ★ 2026-10-28（迭代 ③）：**"通读"的可判形态** —— 符号全集逐个表态。
+    //   符号清单只从实际 DB 取（`cache.db` 的 nodes）；取不到 ⇒ 不判（如实降级，不猜）。
+    const gaps = [...planGaps(plan), ...planUntouchedGaps(plan), ...planCoverageGaps(plan, symbolsInFileOf(projectRoot, rel))];
     if (!gaps.length) continue;
     const head = `· ${rel} 没有够格的重写计划（${gaps.length} 处）：`;
     const body = gaps.slice(0, 4).map((g) => `    - ${g}`).join('\n');

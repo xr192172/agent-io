@@ -48,6 +48,16 @@ export interface RewritePlan {
   /** 冻结那一刻的底片指纹（用文件内容哈希，便于判"底片换没换"） */
   base?: { content_hash?: string };
   entries: RewritePlanEntry[];
+  /**
+   * ★★★ 2026-10-28（用户："模型喜欢补丁式修改，这套流程应该强迫全貌浏览"）：
+   * **该文件里"我看过、但不动"的符号** —— 每个符号要么在 `entries`（要改），要么在这里（不动 + 为什么）。
+   *
+   * ## 为什么要它
+   * 只有 `entries` 的话，"计划里只列 1 个符号、也只改这 1 个符号"是**完全合规的补丁式修改** ——
+   * 全貌浏览仍然靠自觉。加了这一格，"通读"才有了**可判形态**：漏掉的符号会以"**未表态**"被抓出来。
+   * ★ 判据不住这里（这里是形状）：判定在 `planCoverageGaps`。
+   */
+  untouched?: Array<{ symbol: string; why: string }>;
 }
 
 /** 计划目录：`<proj>/.agent-io/plan`（`rootsOf().plan` 的唯一解析器，别在别处再拼） */
@@ -98,4 +108,35 @@ export function planGaps(plan: RewritePlan | null): string[] {
     if (e.status === 'stale') gaps.push(`${who} —— 锚点已过期（stale）⇒ 先核对再改`);
   }
   return gaps;
+}
+/**
+ * ★★★ 2026-10-28（迭代 ③）：**"通读"的可判形态** —— 该文件的符号是否**逐个表过态**。
+ *
+ * 判据：文件名里的符号（实际 DB 的 `nodes`，排除 `kind='file'`）**每一个**必须满足其一：
+ *   ① 在 `entries[].anchor.symbol` 里（要改）；② 在 `untouched[].symbol` 里（不动 + 有理由）。
+ * 两者都没有 ⇒ **未表态** ⇒ 报出来（默认档点名，严格档拦）。
+ *
+ * ★ 为什么这是"强迫全貌"的那一格：没有它，模型可以只列 1 个符号改 1 个符号，
+ *   全程合规，而**文件里其他 20 个符号它根本没看**。有了它，"没看"会变成一条可见的缺口。
+ * ★ 纯函数（符号清单由调用方从实际 DB 取）：这样判据可单测，且不把 `cache.db` 依赖塞进本模块。
+ */
+export function planCoverageGaps(plan: RewritePlan | null, symbolsInFile: readonly string[]): string[] {
+  if (!plan) return [];
+  const planned = new Set(plan.entries.map((e) => e.anchor?.symbol).filter((s): s is string => !!s));
+  const declared = new Set((plan.untouched ?? []).map((u) => u.symbol).filter(Boolean));
+  const silent = [...new Set(symbolsInFile)].filter((s) => !planned.has(s) && !declared.has(s));
+  if (!silent.length) return [];
+  return [
+    `该文件有 ${silent.length} 个符号**没表态**（既不在 \`entries\`、也不在 \`untouched\`）：${silent.slice(0, 6).join(', ')}` +
+      (silent.length > 6 ? ` 等 ${silent.length} 个` : '') +
+      `\n      ⇒ 要么把它写进 entries（要改），要么写进 untouched（看过、不动，附一句 why）`,
+  ];
+}
+
+/** `untouched` 的每条都要有理由（空理由 = 等于没表态） */
+export function planUntouchedGaps(plan: RewritePlan | null): string[] {
+  if (!plan?.untouched?.length) return [];
+  const bad = plan.untouched.filter((u) => !u.symbol?.trim() || !u.why?.trim());
+  if (!bad.length) return [];
+  return [`untouched 里有 ${bad.length} 条缺 symbol 或 why（空理由 = 没表态）`];
 }
