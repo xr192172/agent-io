@@ -2757,6 +2757,9 @@ function vmFoldExpr(node: SyntaxNodeLike, consts: Map<string, unknown>, filePath
     fileURLToPath: nodeFileURLToPath,
     // `import.meta` 不是合法标识符 ⇒ 源码里替换成 `importMeta` 再注入
     importMeta: { url: `file:///${abs}`, filename: abs, dirname: dir },
+    // ★ T-#92：**CJS 的 `__dirname` / `__filename`**（与 `import.meta.*` 同语义）
+    __dirname: dir,
+    __filename: abs,
   };
   for (const [k, v] of consts) sandbox[k] = v;
   const code = `(() => { const import_meta = importMeta; return (${exprText.replace(/\bimport\.meta\b/g, 'import_meta')}); })()`;
@@ -2788,6 +2791,19 @@ function foldToPath(node: SyntaxNodeLike | null, consts: Map<string, unknown>, f
   }
   // ── 标识符 ⇒ 查同文件 const 折叠表（★ 表里可能是数组/对象 ⇒ 只取字符串）
   if (t === 'identifier') {
+    // ★★★ 2026-10-27（T-#92）：**`__dirname` / `__filename`** —— **CJS 最常见的路径写法**。
+    //
+    // ## 为什么必须有（这是"迁移到别的项目"的可用性保障）
+    // 本仓是 ESM（`import.meta.url`），用 `__dirname` 只有 7 行 ⇒ **本仓看不出问题**。
+    // 但 **Node CJS 项目里 `path.join(__dirname, …)` 是最常见的 import 路径写法**
+    // ⇒ 不认它 ⇒ **那些项目会大面积落 `computed`**（依赖事实在、路径拿不到）。
+    // ⇒ 我们**有文件绝对路径** ⇒ 这两个值**完全可算**（不是近似）：
+    //     `__filename` = 该文件的绝对路径（posix）
+    //     `__dirname`  = 它的目录
+    // ★ 与 `import.meta.dirname` / `import.meta.filename` 语义一致 ⇒ 两条写法收敛到同一结果。
+    const absFile = filePath.replace(/\\/g, '/');
+    if (node.text === '__filename') return absFile;
+    if (node.text === '__dirname') return absFile.slice(0, absFile.lastIndexOf('/')) || '/';
     const v = consts.get(node.text);
     return typeof v === 'string' ? v : null;
   }
