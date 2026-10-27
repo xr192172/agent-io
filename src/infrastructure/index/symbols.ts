@@ -2264,6 +2264,29 @@ export function resolveCrossFileCalls(
         stats.resolved++;
         continue;
       }
+      // ★★★ 2026-10-27（T-#79）：**`type_ref` 也要查 package 绑定**。
+      //
+      // ## 病史（删掉补偿表才暴露出来的真洞）
+      // T-#78 删掉 `BUILTIN_TYPES` 里那批补偿表项后，`failed` 14 → 30，
+      // 新增的主要是 `DatabaseSync 8` · `Dirent 2`。查数据：
+      //   `index_integrity.ts` 的 imports 里**明明有** `[package] node:sqlite ["DatabaseSync"]`
+      //   而那条引用是 **`reference_kind = 'type_ref'`**。
+      // ⇒ **`pkgSrc`（package 绑定）只在 `call` 路径检查，`type_ref` 路径从来没查**！
+      //   `import { DatabaseSync } from 'node:sqlite'` 的**类型**引用永远判不到
+      //   ⇒ 以前全靠 `BUILTIN_TYPES` 里硬堆名字**掩盖**（那正是"补丁的化石"的危害：
+      //     它让真洞看不见，换个项目就漏）。
+      //
+      // ## 修法
+      // `type_ref` 走和 `call` 一样的判据：名字是本文件的 **package 导入绑定** ⇒ external（有据）。
+      const typePkgSrc = packageBindingsByFile.get(rel)?.get(expr);
+      if (typePkgSrc) {
+        updExternal.run({
+          i: r.id,
+          cd: JSON.stringify({ verdict: 'external', why: 'package-import', detail: typePkgSrc }),
+        });
+        stats.external++;
+        continue;
+      }
       const t =
         findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, typeNamesByFile, ['interface', 'type', 'class'], miss, indexedFiles)
         ?? findGoSamePackageTarget(db, rel, expr, ['interface', 'type', 'class'], goFilesByDir)
@@ -2507,24 +2530,25 @@ const BUILTIN_TYPES = new Set([
   'AsyncIterableIterator', 'Iterator', 'IteratorResult', 'Disposable', 'AsyncDisposable',
   // ★ @types/node 的全局（不需 import 就能用）
   'Buffer', 'NodeJS', 'NodeRequire', 'Timer', 'NodeJS.Timeout',
-  // ★★★ 2026-10-27（T-#50）：**@types/node 的常用类型名**（实测落 failed 的前三名）。
-  //   ★★ 根因不是“表不够”：`type_ref` **只记 tail** —— 源码 `http.ServerResponse`
-  //     在索引里就是 `ServerResponse`（receiver 在**解析阶段**就丢了）
-  //     ⇒ 没法靠“带点”判它是外部包成员 ⇒ 只能靠这张表。
-  //   ★ 真修法：解析器给 `type_ref` 记**全名**（像 `call` 那样）—— 但那会动到所有边，另开一张卡。
-  'ServerResponse', 'IncomingMessage', 'ClientRequest', 'Server', 'Socket', 'AddressInfo',
-  'Dirent', 'Stats', 'StatsFs', 'BigIntStats', 'EventEmitter', 'Readable', 'Writable',
-  'Duplex', 'Transform', 'PassThrough', 'ChildProcess', 'Worker', 'MessagePort', 'AbortSignal',
-  // ★ T-#50：`node:sqlite` 的类（实测 DatabaseSync 9 条）
-  'DatabaseSync', 'StatementSync',
-  // ★ T-#54：TypedArray / Promise 结果类型（TS lib，实测 Uint8Array · PromiseRejectedResult）
+  // ★ T-#54：TypedArray / Promise 结果类型（**TS lib 全局**，不需 import）
   'Uint8Array', 'Int8Array', 'Uint16Array', 'Int16Array', 'Uint32Array', 'Int32Array',
   'Float32Array', 'Float64Array', 'BigInt64Array', 'BigUint64Array', 'ArrayBuffer', 'SharedArrayBuffer',
   'DataView', 'PromiseRejectedResult', 'PromiseFulfilledResult', 'PromiseSettledResult',
-  // ★ T-#58：实测落 failed 的第三批（@types/node / 第三方库的类型尾部名）
-  'Timeout', 'ErrnoException', 'FSWatcher', 'StatsWatcher', 'Ignore', 'CompilerOptions',
-  'McpServer', 'ZodRawShape', 'ZodType', 'Parser', 'Ajv', 'ErrorObject', 'SpawnSyncReturns',
-  'SpawnSyncReturns', 'ChildProcessWithoutNullStreams', 'ServerResponse', 'IncomingMessage',
+  // ★★★ 2026-10-27（T-#78）：**删掉一整批"补偿性表项"** —— 它们是 T-#50/T-#58 为
+  //   「`type_ref` 丢 receiver」这个 bug 打的补丁：因为 `http.ServerResponse` 在索引里只剩
+  //   `ServerResponse`（receiver 丢了），判不出它是外部包成员 ⇒ 只能在这里硬堆名字。
+  //   **T-#77 修好真因**（带点类型记全名 ⇒ 走 `namespace-member-of-package` 有据判定）后，
+  //   这批表项**成了补丁的化石**：留着会掩盖真问题，而且**换个项目就漏**。
+  //   ⇒ 已删：ServerResponse · IncomingMessage · ClientRequest · Server · Socket · AddressInfo ·
+  //     Dirent · Stats · StatsFs · BigIntStats · EventEmitter · Readable · Writable · Duplex ·
+  //     Transform · PassThrough · ChildProcess · Worker · MessagePort · AbortSignal ·
+  //     DatabaseSync · StatementSync · FSWatcher · StatsWatcher · Ignore · CompilerOptions ·
+  //     McpServer · ZodRawShape · ZodType · Parser · Ajv · ErrorObject · SpawnSyncReturns ·
+  //     ChildProcessWithoutNullStreams
+  //   ★ 保留 `Timeout` / `ErrnoException` —— 它们是 **`NodeJS.X` 的尾名**，
+  //     源码里常以**裸名**出现（`import type { Timeout } from 'node:timers'` 之后），
+  //     带点判定救不到，且它们是**真全局类型**。
+  'Timeout', 'ErrnoException',
 ]);
 
 /**
@@ -2553,22 +2577,22 @@ const GO_BUILTIN_TYPES = new Set([
   'bool', 'byte', 'complex64', 'complex128', 'error', 'float32', 'float64',
   'int', 'int8', 'int16', 'int32', 'int64', 'rune', 'string',
   'uint', 'uint8', 'uint16', 'uint32', 'uint64', 'uintptr', 'any', 'comparable',
-  // ★★★ 2026-10-27（T-#50）：**Go 标准库类型名的 tail**（`go/ast` / `go/token` / `time` …）。
-  //   ★★ 同一根因：`ast.Ident` 在索引里只剩 `Ident`（receiver 在解析阶段丢了）
-  //     ⇒ 没法靠“带点”判 ⇒ 只能靠表。实测 Ident 12 · Time 11 · Stmt 11 · SelectorExpr 11 …
-  'Ident', 'Object', 'Scope', 'File', 'Package', 'SelectorExpr', 'CallExpr', 'FuncDecl',
-  'Stmt', 'Expr', 'Decl', 'Spec', 'Node', 'Token', 'Position', 'Pos', 'Comment', 'Field',
-  'Time', 'Duration', 'Location', 'Month', 'Weekday', 'Buffer', 'Reader', 'Writer', 'Context',
-  // ★ T-#51：**go/ast + go/token + sync 的类型名**（实测 IndexExpr 7 · BlockStmt 7 · Mutex 5 …）
-  'IndexExpr', 'BlockStmt', 'ReturnStmt', 'ParenExpr', 'UnaryExpr', 'BinaryExpr', 'BasicLit',
-  'TypeSwitchStmt', 'SwitchStmt', 'IfStmt', 'ForStmt', 'RangeStmt', 'AssignStmt', 'ExprStmt',
-  'DeclStmt', 'LabeledStmt', 'BranchStmt', 'DeferStmt', 'GoStmt', 'IncDecStmt', 'SendStmt',
-  'FileSet', 'Mutex', 'RWMutex', 'WaitGroup', 'Once', 'Map', 'Pool', 'Cond',
-  'Int64', 'Uint64', 'Float64', 'AtomicInt64', 'FuncLit', 'CompositeLit', 'KeyValueExpr',
-  // ★ T-#54：又一批实测落 failed 的（go/ast + go/token + strings + os + runtime）
-  'GenDecl', 'ValueSpec', 'TypeSpec', 'ImportSpec', 'SelectStmt', 'CaseClause', 'CommClause',
-  'StarExpr', 'IndexListExpr', 'IndexExpr', 'FieldList', 'ArrayType', 'MapType', 'ChanType',
-  'InterfaceType', 'StructType', 'FuncType', 'Ellipsis', 'Builder', 'DirEntry', 'MemStats', 'Bool',
+  // ★★★ 2026-10-27（T-#78）：**删掉 Go 标准库类型名的 tail** —— 与 TS 侧同一个理由。
+  //   它们是 T-#50/T-#51/T-#54 为「`type_ref` 丢 receiver」打的补丁：
+  //   `ast.Ident` 在索引里只剩 `Ident` ⇒ 判不出是外部包成员 ⇒ 只能硬堆名字。
+  //   **T-#77 修好真因**（带点类型记全名 ⇒ `namespace-member-of-package` 有据判定）后，
+  //   这批表项成了**补丁的化石**（而且换个项目就漏）。
+  //   ⇒ 已删：Ident · Object · Scope · File · Package · SelectorExpr · CallExpr · FuncDecl ·
+  //     Stmt · Expr · Decl · Spec · Node · Token · Position · Pos · Comment · Field · Time ·
+  //     Duration · Location · Month · Weekday · Buffer · Reader · Writer · Context · IndexExpr ·
+  //     BlockStmt · ReturnStmt · ParenExpr · UnaryExpr · BinaryExpr · BasicLit · TypeSwitchStmt ·
+  //     SwitchStmt · IfStmt · ForStmt · RangeStmt · AssignStmt · ExprStmt · DeclStmt · LabeledStmt ·
+  //     BranchStmt · DeferStmt · GoStmt · IncDecStmt · SendStmt · FileSet · Mutex · RWMutex ·
+  //     WaitGroup · Once · Map · Pool · Cond · Int64 · Uint64 · Float64 · AtomicInt64 · FuncLit ·
+  //     CompositeLit · KeyValueExpr · GenDecl · ValueSpec · TypeSpec · ImportSpec · SelectStmt ·
+  //     CaseClause · CommClause · StarExpr · IndexListExpr · FieldList · ArrayType · MapType ·
+  //     ChanType · InterfaceType · StructType · FuncType · Ellipsis · Builder · DirEntry · MemStats
+  //   ★ 只保留**真正的 Go 内置原始类型**（它们在语法上就没有包前缀）。
 ]);
 /**
  * ★ T-#51：**Shell 外部命令 / 内建** —— 只对 `.sh`/`.bash`/`.zsh` 启用。
