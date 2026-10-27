@@ -44,10 +44,15 @@ const run = (args, env = {}) => {
 
 const FIND = ['find_references', 'symbol=normRoot', 'file=src/infrastructure/project_registry.ts', 'project_dir=.'];
 
-// ── ① 首次（新进程）⇒ 全貌 5 条 ────────────────────────────
-const full = run(FIND);
+// ── ① 默认无状态：3 条 + 指针；`full` 才摊全 ──────────────
+//   ★★ 2026-10-28 修正判据：原先是"本进程第一次给全貌"，但**读的人会换**（上下文压缩 / 子代理从没看过），
+//   服务端却记着"已给过" ⇒ 新读者永远只见 3 条还以为是全貌。⇒ 改成无状态，全貌靠**显式**开关。
+const dflt = run(FIND);
+const dfltEdges = dflt.split('\n').filter((l) => / ←  touched\./.test(l));
+chk(dfltEdges.length === 3, '① 默认 ⇒ 3 条边（无状态：不靠"上次看过"这种隐藏记忆）', `边行=${dfltEdges.length}`);
+const full = run(FIND, { AGENT_IO_HANDOFF: 'full' });
 const edgeLines = full.split('\n').filter((l) => / ←  touched\./.test(l));
-chk(edgeLines.length >= 5, '① 首次出现接续段 ⇒ **全貌**（5 条边全列，这时它是指南）', `边行=${edgeLines.length}`);
+chk(edgeLines.length >= 5, '①-b `AGENT_IO_HANDOFF=full` ⇒ **全貌**（5 条边全列）', `边行=${edgeLines.length}`);
 
 // ── ② brief ⇒ 3 条 + 一行指针 ─────────────────────────────
 const brief = run(FIND, { AGENT_IO_HANDOFF: 'brief' });

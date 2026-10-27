@@ -130,8 +130,6 @@ import { nextHopsOf, universalHopsOf, applyChainEdge, SCOPE_PATHS } from '../../
  * ★ 单一来源：**两个消费点共用本 shape**，避免"同一个 `touched` 两处各声明一份"（本仓头号病：判据分叉）。
  * ★ **不改** `Touched` 本身的类型（`b_terms.ts`）—— 本笔只改"入参怎么声明"。
  */
-/** ★ 2026-10-27：本进程里「接续段已经给过全貌」的工具（渐进披露的判据，见 `renderHandoffPanel`） */
-const handoffPanelShown = new Set<string>();
 
 const handoffTouchedShape = {
   feature: z.string().optional().describe('作用到的 feature（DSL 活文档单元）'),
@@ -1161,15 +1159,19 @@ export function renderHandoffPanel(
   //   ★ 为什么用进程内 Set 而不落盘：这是**读的人**的状态，不是项目数据；长驻 MCP server 天然记住，
   //     `npm run tool` 每次新进程 ⇒ 每次都全给（人读 CLI 时正需要指南）。
   //   ★ 显式覆盖：`AGENT_IO_HANDOFF=full|brief`（不熟工具设 full，批量跑设 brief）。
+  //    ★★ 2026-10-28 修正（用户追问「压缩上下文或交给子代理会不会影响」）：**会** ——
+  //    原先是"本进程第一次给全貌"，但**读的人会换**：上下文被压缩后我不记得看过，子代理更是从没看过，
+  //    而服务端仍记着"已给过" ⇒ 新读者永远只见 3 条、还以为是全貌。**隐藏状态与读者不匹配**，删掉。
+  //    ⇒ 现在**无状态**：默认 3 条 + 一行**跑得通**的"看全貌"指针（全貌永远一次调用可达）；
+  //      要整段摊开就 `AGENT_IO_HANDOFF=full`（人读 CLI / 第一次摸某个工具时用）。
   const handoffMode = (process.env.AGENT_IO_HANDOFF ?? '').toLowerCase();
-  const firstTime = !handoffPanelShown.has(fromTool);
-  if (firstTime) handoffPanelShown.add(fromTool);
-  const showAll = handoffMode === 'full' || (handoffMode !== 'brief' && firstTime);
+  const showAll = handoffMode === 'full';
   const SHOW = showAll ? Number.POSITIVE_INFINITY : 3;
   const more = (n: number): string[] =>
     n > SHOW
       ? [
-          `    …另有 ${n - SHOW} 条 —— 看全貌跑：\`next_hop_args(touched=<本回执 ---DATA--- 里的 touched>)\`（会把每个下游入参逐格填好）`,
+          `    …另有 ${n - SHOW} 条 —— 看全貌跑：\`next_hop_args(touched=<本回执 ---DATA--- 里的 touched>)\`（会把每个下游入参逐格填好）` +
+            '；★ 第一次接这个工具就先跑它，那份回执就是指南',
         ]
       : [];
   if (ready.length) L.push('', `  ★ **直接可用**（值已取好 · 共 ${ready.length} 条）：`, ...ready.slice(0, SHOW), ...more(ready.length));
