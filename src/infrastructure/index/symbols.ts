@@ -2219,11 +2219,8 @@ export function resolveCrossFileCalls(
         continue;
       }
       // ★ T-#50：**Java 内置类型**（String/Map/Object/Exception…）
-      if (isJavaFile && JAVA_BUILTIN_TYPES.has(expr)) {
-        updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'builtin-type-java' }) });
-        stats.external++;
-        continue;
-      }
+      // ★ T-#80：`JAVA_BUILTIN_TYPES` 已删 —— Java 的标准库类型走 `pkgSrc`（package 绑定，有据）。
+      //   原表只是重复，且掩盖了“Java 没有 resolveImport”这个真问题（已补）。
       // ★★★ 2026-10-27（T-#50）：**带点的类型引用**（`http.ServerResponse` / `fs.Dirent`）——
       //   实测 **142 条**落 failed，而 `call` 分支（下面 `expr.includes('.')`）早就处理了带点形态，
       //   **`type_ref` 分支漏了** ⇒ 所有 `http.X` / `fs.X` 全落 failed。
@@ -2614,23 +2611,16 @@ const GO_BUILTIN_CALLEES = new Set([
 ]);
 
 /**
- * ★ T-#50：**Java 内置类型**（`java.lang` 不需 import）—— 只对 `.java` 文件启用。
- * 实测 `String` / `Map` / `Object` / `Exception` 等落进 failed。
- * ★ 为什么不并进 `BUILTIN_TYPES`：`String` / `Object` 在 TS 里也是常用名，
- *   并表会把本仓同名符号判成 external ⇒ 丢边（同 Go 的教训）。
+ * ★★★ 2026-10-27（T-#80）：**`JAVA_BUILTIN_TYPES` 已删除** —— 它是**化石**。
+ *
+ * 它原先把 `String` / `Map` / `Object` / `IOException` … 硬堆成"Java 内置类型"，
+ * 但真正的判据早就有了：Java 的 `import java.io.IOException;` 会进 `imports`（kind='package'）
+ * ⇒ `packageBindingsByFile` 里有 `IOException → java.io.IOException` ⇒ `pkgSrc` 判 external（**有据**）。
+ * ⇒ 那张表只是**重复**，而且掩盖了一个更大的问题：**Java 根本没有 `resolveImport`**
+ *   （`LANG_ADAPTERS` 里只有 Go 有）⇒ 仓内 Java 之间的引用**一条都解析不到**。
+ * ⇒ T-#80 已补上 Java 的 `resolveImport`（目录=包 约定）⇒ 这张表失去存在理由。
  */
-const JAVA_BUILTIN_TYPES = new Set([
-  'String', 'Object', 'Integer', 'Long', 'Short', 'Byte', 'Character', 'Boolean', 'Double', 'Float',
-  'Number', 'Math', 'System', 'Exception', 'RuntimeException', 'Error', 'Throwable',
-  'Map', 'HashMap', 'List', 'ArrayList', 'Set', 'HashSet', 'Collection', 'Iterable', 'Iterator',
-  'Optional', 'Stream', 'Thread', 'Runnable', 'Class', 'Enum', 'Record', 'Override',
-  'StringBuilder', 'StringBuffer', 'CharSequence', 'Comparable', 'Comparator', 'AutoCloseable',
-  // ★ T-#54：实测落 failed 的（java.io / java.nio / java.util）
-  'Path', 'Paths', 'Files', 'IOException', 'UncheckedIOException', 'Entry', 'LinkedHashMap',
-  'LinkedHashSet', 'TreeMap', 'TreeSet', 'Deque', 'ArrayDeque', 'UUID', 'LocalDate', 'LocalDateTime',
-  'Instant', 'Duration', 'Arrays', 'Objects', 'Collections', 'AtomicBoolean', 'AtomicLong',
-  'AtomicInteger', 'ConcurrentHashMap', 'ExecutorService', 'CompletableFuture',
-]);
+
 
 /** 沿源文件的 relative imports 找符号对应的目标符号（首个命中）；找不到返回 null。
  *  namesByFile：候选符号名集合（call=全符号表，type_ref=仅 interface/type/class） */

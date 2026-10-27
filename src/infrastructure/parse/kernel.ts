@@ -1128,6 +1128,31 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   },
   java: {
     callNode: 'method_invocation',
+    // ★★★ 2026-10-27（T-#80）：**Java 的导入解析**（原先**完全没有** ⇒ 类级盲区）。
+    //
+    // ## 病史
+    // `LANG_ADAPTERS` 里**只有 Go 有 `resolveImport`** ⇒ Java 的跨文件/跨包引用
+    // **一条都解析不到**。本仓只有 1 个 Java 文件所以看不出问题
+    // （82 条引用全是 `external`，靠 `JAVA_BUILTIN_TYPES` 表把标准库名字盖住）
+    // ⇒ **换个 Java 项目就全漏**。
+    //
+    // ## 判据（Java 的「目录 = 包」约定）
+    // `import a.b.C;` ⇒ 找路径**以 `a/b/C.java` 结尾**的文件；
+    // `import a.b.*;` ⇒ 找 `a/b/` 目录下的所有 `.java`。
+    // ★ `java.*` / `javax.*` / `jdk.*` / `sun.*` ⇒ **标准库 ⇒ `[]`（明确外部）**。
+    // ★ 不需要额外配置：Java 的包名与目录结构的对应关系是**语言强制**的。
+    resolveImport: (source: string, _fromRel: string, ctx) => {
+      const s = source.trim();
+      if (!s) return [];
+      if (/^(java|javax|jdk|sun|com\.sun)\./.test(s)) return []; // 标准库 ⇒ 明确外部
+      const files = [...ctx.files].filter((f) => f.endsWith('.java'));
+      if (s.endsWith('.*')) {
+        const pkgDir = s.slice(0, -2).replace(/\./g, '/');
+        return files.filter((f) => f.includes(`/${pkgDir}/`));
+      }
+      const asPath = `${s.replace(/\./g, '/')}.java`;
+      return files.filter((f) => f.endsWith(asPath));
+    },
     // ★ 数据：Java 把对象与方法名分在两个字段（object='Bar'、name='run'）——
     //   原先这里是 kernel 里的一条**按语言分支**（只对 Java 取 object 字段拼 callee_expr），
     //   现为表项数据 calleeObjectField，内核不认识"java"。Groovy 用同一个字段。
