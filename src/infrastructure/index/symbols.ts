@@ -2174,7 +2174,21 @@ export function resolveCrossFileCalls(
         stats.resolved++;
       } else {
         // ★ 2026-10-22：把 re-export 那条路「为什么没建边」写进 failed 的 why（不再是笼统的 not-found）
-        markUnresolved(r.id, miss[0]?.why ?? 'cross-target-not-found', miss[0]?.detail);
+        // ★ T-#63：「目标存在但不在索引 / 在仓外」⇒ **明确外部**，不是漏连
+        const missWhy = miss[0]?.why;
+        if (missWhy === 'reexport-target-not-indexed' || missWhy === 'reexport-target-outside-repo') {
+          updExternal.run({
+            i: r.id,
+            cd: JSON.stringify({
+              verdict: 'external',
+              why: missWhy,
+              ...(miss[0]?.detail ? { detail: miss[0].detail } : {}),
+            }),
+          });
+          stats.external++;
+        } else {
+          markUnresolved(r.id, missWhy ?? 'cross-target-not-found', miss[0]?.detail);
+        }
       }
       continue;
     }
@@ -2333,7 +2347,21 @@ export function resolveCrossFileCalls(
       stats.resolved++;
     } else {
       // ★ 2026-10-22：别名再导出没接上时，failed 的 why 要说清楚是哪一种（歧义/仓外/未索引/符号不在）
-      markUnresolved(r.id, miss[0]?.why ?? 'cross-target-not-found', miss[0]?.detail);
+      // ★ T-#63：「目标存在但不在索引 / 在仓外」⇒ **明确外部**，不是漏连（实测 dist import 13 条）
+      const missWhy2 = miss[0]?.why;
+      if (missWhy2 === 'reexport-target-not-indexed' || missWhy2 === 'reexport-target-outside-repo') {
+        updExternal.run({
+          i: r.id,
+          cd: JSON.stringify({
+            verdict: 'external',
+            why: missWhy2,
+            ...(miss[0]?.detail ? { detail: miss[0].detail } : {}),
+          }),
+        });
+        stats.external++;
+      } else {
+        markUnresolved(r.id, missWhy2 ?? 'cross-target-not-found', miss[0]?.detail);
+      }
     }
   }
   if (ownTx) db.exec('COMMIT');
@@ -2487,7 +2515,16 @@ function findCrossFileTarget(
     if (!target || seen.has(target)) continue;
     seen.add(target);
     const syms = namesByFile.get(target);
-    if (syms && syms.has(name)) {
+    // ★★★ 2026-10-27（T-#63 修）：**目标文件解析到了、但它不在索引里** ⇒ 必须记进 `miss`。
+    //   病史：`certs/*.mjs` / `scripts/*.mjs` 从 `dist/` import —— `dist` 磁盘上存在（`resolveImportTarget`
+    //   的 `existsSync` 通过）但**不在索引里** ⇒ `namesByFile.get(target)` 是 `undefined`
+    //   ⇒ 下面什么都不命中 ⇒ **`miss` 空** ⇒ 落到兜底 `cross-target-not-found` ⇒ 看起来像"漏连"。
+    //   而语义上它**是明确的外部**（目标文件已知、只是没索引）。
+    if (!syms) {
+      miss?.push({ why: 'reexport-target-not-indexed', detail: target });
+      continue;
+    }
+    if (syms.has(name)) {
       // 目标文件确有该符号 → 取 qualified_name（重名取首个，v1 近似）
       const q = db
         .prepare('SELECT kind, qualified_name FROM nodes WHERE file_path = $tp AND name = $n LIMIT 1')
