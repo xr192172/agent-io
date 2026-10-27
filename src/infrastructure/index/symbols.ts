@@ -1709,6 +1709,8 @@ const BUILTIN_CALLEES = new Set([
   // ★ T-#58：Python 内置异常（`raise SystemExit(...)` 被抽成 call）
   'SystemExit', 'BaseException', 'StopIteration', 'AssertionError', 'NotImplementedError',
   'RuntimeError', 'TypeError', 'ImportError', 'OSError', 'IOError', 'AttributeError',
+  // ★ T-#60：**JS 全局函数**（不需 import 就能用）—— 实测 decodeURIComponent 落 failed
+  'decodeURIComponent', 'encodeURIComponent', 'decodeURI', 'encodeURI', 'escape', 'unescape',
 ]);
 
 export interface CrossFileResolveStats {

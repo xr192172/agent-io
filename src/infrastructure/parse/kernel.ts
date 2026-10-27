@@ -1916,11 +1916,11 @@ function collectLocalBindings(nodes: readonly SyntaxNodeLike[]): string[] {
           !!valueNode &&
           ['arrow_function', 'function_expression', 'function', 'generator_function'].includes(valueNode.type);
         if (isFnValue) continue; // 函数值 = 符号，不收
-        // ★★★ 2026-10-27（T-#59 护栏）：**从 import 解构出来的名字不收**。
-        //   病史：`const { saveDSL } = await import('../../storage.js')` 被我当成"局部绑定"
-        //   ⇒ 判成 `external: local-binding` ⇒ **丢掉 5 条真边**（实测 edges 13588 → 13583）。
-        //   ⇒ 凡绑定值里带 `import(...)` 的声明，一律跳过（它们是**导入**，不是局部变量）。
-        if (valueNode && /(^|\s)(await\s+)?import\s*\(/.test(valueNode.text)) continue;
+        // ★★★ 2026-10-27（T-#60 护栏·AST 版）：**从 import 解构出来的名字不收**。
+        //   `const { saveDSL } = await import('../../storage.js')` ⇒ `saveDSL` 是**导入绑定**，
+        //   不是局部变量 ⇒ 当成局部变量会丢真边（实测 edges -5）。
+        //   ★ 判据看**语法结构**（`import` 是节点类型），不看文本 —— 字串里带 `import(` 不会误跳。
+        if (isImportCallNode(valueNode)) continue;
         collectIds(nameNode);
       }
     }
@@ -1931,6 +1931,36 @@ function collectLocalBindings(nodes: readonly SyntaxNodeLike[]): string[] {
   };
   for (const n of nodes) walk(n, 0);
   return out;
+}
+
+/**
+ * ★★★ 2026-10-27（T-#60）：**这个值节点是不是一次 import 调用**（AST 判定，不用文本正则）。
+ *
+ * 为什么需要它：`const { saveDSL } = await import('../../storage.js')` 里的 `saveDSL`
+ * 是**导入绑定**，不是局部变量 —— 当成局部变量会**丢真边**（实测 edges -5）。
+ *
+ * 为什么不用正则：上一版用 `/(^|\s)(await\s+)?import\s*\(/` 去匹 `valueNode.text`
+ * —— 字串里恰好带 `import(` 就会误跳（比如报错文案），且不同语法的节点形态不一样。
+ * ⇒ 改为**看语法结构**：`import` 是一个**节点类型**（不是标识符）。
+ */
+function isImportCallNode(n: SyntaxNodeLike | null | undefined): boolean {
+  if (!n) return false;
+  // 有的语法把 `import(...)` 直接做成 import 节点
+  if (n.type === 'import' || n.type === 'import_expression' || n.type === 'dynamic_import') return true;
+  // `await import(...)` / `(await import(...))` ⇒ 往里走一层
+  if (n.type === 'await_expression' || n.type === 'parenthesized_expression') {
+    for (let i = 0; i < n.childCount; i++) {
+      const c = n.child(i);
+      if (c && isImportCallNode(c)) return true;
+    }
+    return false;
+  }
+  // 普通调用：看被调方是不是 `import`
+  if (n.type === 'call_expression') {
+    const fn = n.childForFieldName('function');
+    if (fn && (fn.type === 'import' || fn.text === 'import')) return true;
+  }
+  return false;
 }
 
 function extractCallsFromBody(
