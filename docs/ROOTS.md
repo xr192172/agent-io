@@ -94,7 +94,7 @@
 | 2 | `code_health` 标 `noAutoFresh`（它不读 cache.db，为它建索引纯属白建） | ✅ `5f91fe2e` |
 | 3 | 根偏离检测（`findStrayDataDirs` → `index_integrity`） | ✅ `f53d65ee` |
 | 4 | 根清单按**三个侧**分组渲染 | ✅ 本次 |
-| 5 | 建**项目注册表**（`projects.json`）+ 读入口 | ⬜ |
+| 5 | 建**项目注册表**（`projects.json`）+ 读入口 | ✅ 2026-10-26（T-#27 读端接线 / T-#29 迁移）：写端=`import_project`→`registerFeature`，读端=`getDesignSheetFile`→`projectRootOf`；本机已有 4 条登记（agent-io / agent-io-toolface / review-hub / task-system-plan） |
 | 6 | `todos[]` 从 DSL 搬出 → `<proj>/.agent-io/tasks.db`（活卡+历史同库） | ⬜ **最大一次** |
 | 7 | `getLiveDir`/`getBaselineDir` 的根改**必填**（路径只问 `rootPath`）；`getDesignDir` **不**改必填，改由注册表解析（`getDSL` 拿不到根，见 §7.1） | ✅ T-#98 |
 | 8 | 聚合视图（`overview`/`query=todo` 扫注册表） | ⬜（**设计册那一路已通**：`listDesignSheets` 改扫注册表，T-#98b） |
