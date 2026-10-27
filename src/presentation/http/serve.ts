@@ -873,8 +873,8 @@ async function handleApiReconcileChain(req: http.IncomingMessage, res: http.Serv
 //   它是「把前端编辑 IR 树渲染成 5 类 showcase HTML」—— 前端只做只读显示屏的裁定下，这条不需要。
 
 /** GET /api/function-outline?feature=<feature>[&project_dir=<root>]：函数级大纲
- *  （目录 → 文件 → 函数 + 调用/被调用/回环），数据源 = import_cache_<feature>.db 或
- *  <source_root>/.agent-io/cache.db。派生只读，不写回任何存储。 */
+ *  （目录 → 文件 → 函数 + 调用/被调用/回环），数据源 = 该项目的 `<project_dir>/.agent-io/cache.db`
+ *  （库定位只有一级，见 `index/db.ts#findCacheDb`）。派生只读，不写回任何存储。 */
 function handleApiFunctionOutline(req: http.IncomingMessage, res: http.ServerResponse): void {
   try {
     const url = new URL(req.url || '/', 'http://localhost');

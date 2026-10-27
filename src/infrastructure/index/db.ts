@@ -149,25 +149,22 @@ export function projectCacheDbPath(root: string): string {
 //     而不是在数据仓里再长一个平行索引（那正是“同一事实两处”的病）。
 
 /**
- * ③ 候选优先级：`import_cache_<feature>.db`(dataHome) > `<sourceRoot>/.agent-io/cache.db`，
- * 取**第一个存在的**；一个都不存在 ⇒ `null`。
+ * ③ 候选：**只有一级** —— `<sourceRoot>/.agent-io/cache.db`（该项目的符号索引）。
+ * 不存在 ⇒ `null`（**不降级**成"用别的库"，调用方自己决定怎么办）。
  *
- * ★ 为什么这个顺序必须单点：两级候选是**两个不同的锚**——dataHome = 本进程的导入缓存、
- *   sourceRoot = 被分析的项目。顺序一改，**所有读入口**的命中目标一起变。
- * ★ 一个候选都没有 ⇒ 返回 null，**不降级**成"用最后一个"（调用方自己决定怎么办）。
- *
- * ★★ 2026-10-01 **删掉了原来的第三级候选 `<cwd>/.agent-io/cache.db`**（用户一句「越兜越多」逼出来的）。
- *   为什么删：`cwd` 与被分析项目**没有任何关系** —— 它不是"更弱的答案"，是**另一个项目的答案**。
- *   把它当兜底 ⇒ 一个没有自己索引的项目会**静默读到 cwd 那个项目的数据**。
- *   ★ 而且兜底会**自我繁殖**：因为"反正总有一个能用"，就没人去保证**正确的那个**存在。
- *   ⇒ 现在**两级就是两级**，都没有就响亮地返回 null（"响亮是接上溯源的前提"，
+ * ★ 为什么只剩一级（两次裁定，都是取证后删的，不是口味）：
+ *   · 原第三级 `<cwd>/.agent-io/cache.db`（2026-10-01 删）：`cwd` 与被分析项目**没有任何关系**
+ *     —— 它不是"更弱的答案"，是**另一个项目的答案**。把它当兜底 ⇒ 一个没有自己索引的项目
+ *     会**静默读到 cwd 那个项目的数据**；而且兜底会**自我繁殖**（"反正总有一个能用"，
+ *     就没人去保证**正确的那个**存在）。
+ *   · 原第一级 `import_cache_<feature>.db`(dataHome)（2026-10-26 / T-#8 删）：三个工作区全盘扫
+ *     ⇒ **0 个**，从未产生过任何产物（见下方 `featureCacheDbPath` 的退场登记）。
+ *   ⇒ 现在是"**只有一个答案**"：没有就响亮地返回 null（"响亮是接上溯源的前提"，
  *     见 `storage.ts#requireProjectRoot` 的注释）。
+ *   ★ 因此 `opts.feature` **不参与寻址**（只为不改调用方签名而保留）。
  */
 export function findCacheDb(opts: { feature?: string; sourceRoot?: string } = {}): string | null {
   const { sourceRoot } = opts;
-  // ★★ 2026-10-26（T-#8）：候选从**两级降为一级** —— 只剩项目索引。
-  //   原先候选①是 `import_cache_<feature>.db`（dataHome），实测**从未产生过任何产物**（三工作区全盘扫 = 0 个），已删。
-  //   `feature` 入参保留只为不改调用方签名 —— **它不再参与寻址**（“按册找索引”在乙方案下不存在）。
   const candidates = [sourceRoot ? projectCacheDbPath(sourceRoot) : ''];
   return candidates.find((p) => p && fs.existsSync(p)) ?? null;
 }

@@ -163,7 +163,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       thread: z.string().optional().describe('query=decisions 时：按功能线过滤（不传=全部，按 thread 分组输出）'),
       decision_status: z.enum(['active', 'draft']).optional().describe('query=decisions 时：按决策状态过滤（active=生效中/draft=草案）。★ 原 superseded 已退场'),
       file_id: z.string().optional().describe('query=file/calls 时：文件 ID（对应 SemanticFile.id = geometry Node.id）'),
-      project_dir: z.string().optional().describe('query=calls/functions 时：项目根目录（用于定位 cache.db / import_cache_*.db 查询函数级数据）'),
+      project_dir: z.string().optional().describe('query=calls/functions 时：项目根目录 —— 用它定位**该项目自己的**符号索引 `<project_dir>/.agent-io/cache.db`（没有别的候选，不存在就报缺失，不猜）'),
       layer: z.enum(['main', 'error', 'detail']).optional().describe('query=nodes/edges 时：按职责分层过滤'),
       type: z.string().optional().describe('query=nodes 时：按节点类型过滤（如 service/module/database/api/queue/ui）'),
       file_layer: z.string().optional().describe('query=files 时：按架构层过滤（如 api/service/data/ui）'),

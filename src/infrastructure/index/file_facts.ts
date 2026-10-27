@@ -22,11 +22,12 @@
  *   2. **连接复用**：读者多在**逐文件循环**里调用 ⇒ 若每次 `openDb` 会开 N 个连接且不关闭
  *      ⇒ 本模块按 dbPath **缓存连接**（与 `db.ts` 的 `projectCachePool` 同一条纪律：**不 close**）。
  *
- * ★ 库的定位：复用**唯一权威** `db.ts#findCacheDb`（**两级**：`import_cache_<f>.db`(dataHome) >
- *   `<source_root>/.agent-io/cache.db`），**不新造查找顺序**。
- *   ★ 2026-10-06 更正：本注释原写着**三级**（多一个 `<cwd>/.agent-io/cache.db`），与 `db.ts` 的
- *   现状**不符** —— 那个第三级已于 2026-10-01 删除（「越兜越多」的裁定，见 `db.ts#findCacheDb`）。
- *   这是**派生注释没跟上真源**的老毛病（把唯一权威的候选列表在别处抄了一遍）。
+ * ★ 库的定位：复用**唯一权威** `db.ts#findCacheDb`（**只有一级**：`<source_root>/.agent-io/cache.db`），
+ *   **不新造查找顺序**。
+ *   ★ 这条注释前后改过两次，都是"派生注释没跟上真源"：2026-10-06 更正过一次（当时它还写着**三级**，
+ *   第三级 `<cwd>/.agent-io/cache.db` 已于 2026-10-01 删）；2026-10-27 再更正一次
+ *   （`import_cache_<f>.db` 那一级已随 `featureCache` 退场，2026-10-26 / T-#8）⇒ **现在只剩一级**。
+ *   教训见 `docs/ROOTS.md` §8.2：候选列表只在 `findCacheDb` 里有一份，别处只许指路。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -69,7 +70,8 @@ const EMPTY: FileFacts = { apis: [], deps: [], source: null, matched_path: null 
  *   Windows 上删项目目录 **EBUSY**（`db.ts` 的 `closeProjectCacheDb` 存在的**唯一理由**就是这个，
  *   见它的注释："收尾删项目/临时目录前释放文件句柄…"。自造第二个池 = 把那个坑重挖一遍。
  *   ⇒ 走 `projectCachePool`：它的 close 机制现成，测试侧 `closeAllProjectCacheDbs()` 一并管住。
- *   ⇒ 非项目库（`import_cache_<f>.db`）**每次 open**，与既有 `function_outline.ts:212` 同一行为（不缓存）。
+ *   ⇒ 非本项目根的库（传进来的 `root` 与索引所属的项目根不是同一个时才会走到）**每次 open** —— 不缓存，
+ *     与 `function_outline.ts` 里同一处理（那里也对非项目库直接 `openDb`）。
  */
 function pickDb(root: string, dbPath: string): Database {
   return dbPath === projectCacheDbPath(root) ? getProjectCacheDb(root) : openDb(dbPath);

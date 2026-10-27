@@ -10,8 +10,8 @@
  *   不一致 ⇒ 这份快照落在一代之前的扫描上（**别拿它下结论**）。
  *
  * ## 纪律
- * · ★ 库的定位**复用唯一权威** `db.ts#findCacheDb`（两级：`import_cache_<f>.db` >
- *   `<source_root>/.agent-io/cache.db`）⇒ **不新造查找顺序**（同 `file_facts.ts`）。
+ * · ★ 库的定位**复用唯一权威** `db.ts#findCacheDb`（**只有一级**：`<source_root>/.agent-io/cache.db`）
+ *   ⇒ **不新造查找顺序**（同 `file_facts.ts`；原先这里抄的是"两级"，那一级已随 T-#8 退场）。
  * · ★ **只读打开**（`readOnly: true`）：本模块**绝不**改真仓的 `cache.db`
  *   （读一次扫描代不该产生副作用；WAL 下只读也需要 -shm，但那不是"改数据"）。
  * · ★ **缺库 / 缺表 ⇒ `null`（不是 0）**：`null` = "本轮没有可自证的扫描代"，
@@ -42,9 +42,9 @@ export interface ScanRev {
 const NONE: ScanRev = { rev: null, db: null, schemaVersion: null };
 
 /**
- * 取某 feature / 项目根的**当前扫描代**。
- * @param opts.feature    feature 名（候选链第一级 `import_cache_<f>.db`）
- * @param opts.sourceRoot 被分析项目根（候选链第二级 `<root>/.agent-io/cache.db`）
+ * 取某项目根的**当前扫描代**。
+ * @param opts.feature    **不参与寻址**（只为不改调用方签名而保留；"按册找索引"在乙方案下不存在）
+ * @param opts.sourceRoot 被分析项目根 —— 唯一一级候选 `<root>/.agent-io/cache.db`
  */
 export function scanRevOf(opts: { feature?: string; sourceRoot?: string } = {}): ScanRev {
   const dbFile = findCacheDb(opts);

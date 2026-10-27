@@ -1,13 +1,15 @@
 /**
- * function_outline —— 函数级大纲：从项目缓存（cache.db / import_cache_<feature>.db）汇聚
+ * function_outline —— 函数级大纲：从**项目缓存**（`<source_root>/.agent-io/cache.db`）汇聚
  * 「目录 → 文件 → 函数」三级函数树 + 每函数的调用/被谁调用/自递归。
  *
  * 定位：把 DSL/Archify 展示粒度扩充到函数级，像编辑器/编译器一样精确到函数。
  * 函数符号与调用边（kind='call'）已由 ts_kernel 提取并落进缓存（syncFile 写 nodes/edges，
  * resolveCrossFileCalls 做跨文件解析），本模块只做「汇聚成大纲」的纯函数，不重新解析代码。
  *
- * 缓存定位顺序（★ **唯一权威在 `./db.ts` 的 `findCacheDb`**，本模块不自持一份）：
- *   import_cache_<feature>.db（dataHome） > <source_root>/.agent-io/cache.db > cwd/.agent-io/cache.db
+ * 库怎么找：**唯一权威在 `./db.ts` 的 `findCacheDb`**，本模块不自持一份候选列表。
+ *   ★ 2026-10-27 更正：本行原先抄着"三级候选"（`import_cache_<feature>.db` > 项目 > cwd），
+ *     而三级里前两级早已退场（cwd 级 2026-10-01 删、features 级 2026-10-26 / T-#8 删）
+ *     ⇒ **现在只有一级：该项目自己的 `cache.db`**。抄候选列表 = 迟早与真源分叉（`docs/ROOTS.md` §8.2）。
  */
 import path from 'node:path';
 import fs from 'node:fs';
@@ -194,7 +196,14 @@ function withCacheDb<T>(
 ): { ok: boolean; note?: string; data: T } {
   const dbFile = findCacheDb({ feature, sourceRoot });
   if (!dbFile) {
-    return { ok: false, note: '未找到函数索引（cache.db / import_cache_*.db）——本视图按 feature 取索引：对本项目跑一次带 feature 的 import_project（或任一读入口）即可建立。', data: undefined as unknown as T };
+    return {
+      ok: false,
+      note:
+        '未找到该项目的符号索引（cache.db）——' +
+        `本视图的库定位只有一级：<项目根>/.agent-io/cache.db（给定项目根=${sourceRoot ?? '(未给)'}）；` +
+        '对本项目跑一次 import_project（或任一读入口）即可建立。',
+      data: undefined as unknown as T,
+    };
   }
   let db;
   try {

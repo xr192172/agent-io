@@ -108,7 +108,7 @@ export function renderLiveFromDb(feature: string): DesignDSL | null {
     return null;
   }
 
-  // ── 1. 库：复用唯一权威 findCacheDb（两级候选，取第一个存在的）；一个都不存在 ⇒ null ──
+  // ── 1. 库：复用唯一权威 findCacheDb（**只有一级**：该项目的 cache.db）；不存在 ⇒ null ──
   const dbFile = findCacheDb({ feature, sourceRoot: root });
   if (!dbFile) return null;
 
