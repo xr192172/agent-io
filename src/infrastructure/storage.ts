@@ -76,7 +76,7 @@ function warnLegacyDataHomeOnce(legacyHome: string, modernHome: string): void {
 
 // ★★★ 2026-10-26（T-#27）：注册表读端。放在这里（顶层、函数声明之前）而非文件头，
 //   是为了让它**紧挨**唯一使用点 —— ESM 的 import 会 hoist，位置不影响语义。
-import { projectRootOf } from './project_registry.js';
+import { projectRootOf, readRegistry } from './project_registry.js';
 // ★ T-#98：目录 getter 的唯一实现（roles 表在 roots.ts，别在这里再拼一遍路径）
 import { rootPath } from './roots.js';
 // ★★★ 2026-10-26（T-#27 / `docs/ROOTS.md` §7.4）：**读端接线** —— `getDesignSheetFile` 未给 baseDir 时
@@ -1174,7 +1174,7 @@ export function getDSLByView(feature: string, view: DSLView = 'design'): DesignD
 }
 
 /**
- * ★★★ 列出**设计侧**全部 sheet（`<dataHome>/.agent-io/design/<f>.dsl.json`）。
+ * ★★★ 列出**设计侧**全部 sheet（册已按项目分居 ⇒ **枚举源是注册表**，不是一个目录）。
  *
  * ## 为什么需要它（2026-10-20 实测）
  * 原 `listFeatures()` 读 `features/` —— 那个目录 2026-10-18 搬走后**只剩 overlay**，
@@ -1183,25 +1183,46 @@ export function getDSLByView(feature: string, view: DSLView = 'design'): DesignD
  * 而写闸的 `collectGateCoverage` 用它 ⇒ `rootFeatureCount === 0` ⇒ `applicable:false`
  * ⇒ **闸对全仓源码恒放行**（连"提醒"那一支都没走到）。
  *
+ * ## 2026-10-27（T-#98b）：枚举源从"数据家那一个目录"改成"注册表"
+ * 病史：设计册按 `feature → 项目根` 分居之后（§7.4 ①），本函数**仍只 readdir 数据家**那个目录
+ * ⇒ 别的项目的册**它看不见**（实测 review-hub 的册在 `review-hub/.agent-io/design/`，
+ * 本函数返回的 3 份里一份都不是它）⇒ 写闸的 `rootFeatureCount` 偏小 = 同一类"闸看不见就等于放行"。
+ * ⇒ 现在两步：**① 注册表里的每个 feature**（唯一清单）→ ② 数据家旧目录里**还没登记**的存量（迁移通道）。
+ *
  * ## 口径（★ 与 `getDSL` 同一处）
- * 逐文件走 `getDesignSheet`（= `getDSL` 的底层读端），**不另写解析器、不接受第二份清单**。
+ * 逐 feature 走 `getDesignSheet`（= `getDSL` 的底层读端），**不另写解析器、不接受第二份清单**。
  * ★ 只认 `.dsl.json`。
- * ★ 读不出来 / 缺 `feature` 名 ⇒ **抛**（静默跳过会让"闸看不见某个 feature"变成放行理由）。
+ * ★ 册文件**在**但读不出来 / 缺 `feature` 名 ⇒ **抛**（静默跳过会让"闸看不见某个 feature"变成放行理由）。
+ * ★ 注册表里有、册还没落的 feature ⇒ **跳过**（登记早于建册是常态，不算错）。
  */
 export function listDesignSheets(): DesignDSL[] {
-  const dir = getDesignDir();
-  if (!fs.existsSync(dir)) return [];
+  const seen = new Set<string>();
   const out: DesignDSL[] = [];
-  for (const f of fs.readdirSync(dir)) {
-    if (!f.endsWith('.dsl.json')) continue;
-    const feature = f.slice(0, -'.dsl.json'.length);
-    // ★ 读端唯一：getDesignSheet（非法 feature 名由 getDesignSheetFile 抛）
+
+  const take = (feature: string): void => {
+    if (seen.has(feature)) return;
+    seen.add(feature);
+    const file = getDesignSheetFile(feature); // 读端唯一：注册表 → 项目根；未登记才回落旧位置
+    if (!fs.existsSync(file)) return; // 登记早于建册 / 册还没迁过来 ⇒ 跳过
     const dsl = getDesignSheet(feature);
-    if (!dsl) throw new Error(`设计侧文件读不出来（JSON 损坏？）：${path.join(dir, f)}`);
+    if (!dsl) throw new Error(`设计侧文件读不出来（JSON 损坏？）：${file}`);
     if (typeof dsl.feature !== 'string' || !dsl.feature) {
-      throw new Error(`设计侧文件缺 feature 名：${path.join(dir, f)}`);
+      throw new Error(`设计侧文件缺 feature 名：${file}`);
     }
     out.push(dsl);
+  };
+
+  // ① 注册表 = 唯一清单（跨项目）
+  for (const feature of Object.keys(readRegistry().features).sort()) take(feature);
+
+  // ② 迁移通道：数据家旧目录里还躺着、且注册表没有的存量
+  const legacyDir = path.join(getDataHome(), DATA_DIR_NAME, 'design');
+  if (fs.existsSync(legacyDir)) {
+    for (const f of fs.readdirSync(legacyDir).sort()) {
+      if (!f.endsWith('.dsl.json')) continue;
+      take(f.slice(0, -'.dsl.json'.length));
+    }
   }
+
   return out.sort((a, b) => a.feature.localeCompare(b.feature));
 }

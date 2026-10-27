@@ -97,7 +97,6 @@
 | T49 | 写用户源码没有单一可检查通道 | `src/application/refactor/edit/apply_writes.ts` | 未做 |
 | T333 | `fork` 没工具化；`_forked_from` 无 TS 源写入 | `package.json` · `.agent-io/design/` | 未做（`npm run fork` 指向的脚本不存在） |
 | T328 | 进度轴收归到 `progress`@overlay | `src/infrastructure/storage_overlay.ts` | 未做 |
-| T-#98b | `listDesignSheets()` 仍只扫 `<dataHome>/.agent-io/design`；册按项目分居后它看不见别的项目的册 ⇒ 写闸 `rootFeatureCount` 偏小 | `src/infrastructure/storage.ts` | 未做（ROOTS.md 步 8 聚合视图） |
 | T-#98c | 数据家里还留着旧落点副本（`review-hub.dsl.json` 的 live + baseline 等），现在读不到 = stray | `<dataHome>/.agent-io/live` · `baseline` | 未做（ROOTS.md 步 9 清理） |
 
 ## 四、证与探针

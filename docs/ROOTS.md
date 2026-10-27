@@ -97,7 +97,7 @@
 | 5 | 建**项目注册表**（`projects.json`）+ 读入口 | ⬜ |
 | 6 | `todos[]` 从 DSL 搬出 → `<proj>/.agent-io/tasks.db`（活卡+历史同库） | ⬜ **最大一次** |
 | 7 | `getLiveDir`/`getBaselineDir` 的根改**必填**（路径只问 `rootPath`）；`getDesignDir` **不**改必填，改由注册表解析（`getDSL` 拿不到根，见 §7.1） | ✅ T-#98 |
-| 8 | 聚合视图（`overview`/`query=todo` 扫注册表） | ⬜ |
+| 8 | 聚合视图（`overview`/`query=todo` 扫注册表） | ⬜（**设计册那一路已通**：`listDesignSheets` 改扫注册表，T-#98b） |
 | 9 | 清 8 个 stray 目录（71.7MB，`index_integrity` 已能报） | ⬜ 等尘埃落定 |
 | 10 | **清过期注释**（`import_cache` / "两级候选" 仍写在 7 处）：`db.ts:152`（`findCacheDb` 的**权威 doc** 还说"两级"）、`function_outline.ts:2/10/197`、`scan_rev.ts:13/46`、`file_facts.ts:25/72`、`live_render.ts:111`、`design/index.ts:166`（工具参数描述，**用户可见**）、`serve.ts:875`、`stage_registry.ts`（声明了一个**从不产物的流水阶段** `import_cache`） | ⬜ **欠账** |
 
@@ -236,8 +236,9 @@ getDSL(feature)
 
 **留下的两笔账**（别当它已清）：
 
-- `listDesignSheets()` 仍只扫 `<dataHome>/.agent-io/design` ⇒ 册已按项目分居后，
-  它看不见别的项目的册 ⇒ 写闸的 `rootFeatureCount` 会偏小。归**步 8 聚合视图**。
+- ~~`listDesignSheets()` 仍只扫 `<dataHome>/.agent-io/design`~~ ⇒ **已清（T-#98b）**：枚举源改成
+  **注册表**（`feature → 项目根`）优先 + 数据家旧目录只作**迁移通道**（未登记的存量）；
+  实测本仓由 3 份变 4 份（`review-hub` 的册终于被看见）。
 - 数据家里还有 `review-hub.dsl.json`（live + baseline）等**旧落点副本** —— 现在读不到，
   属 stray，归**步 9 清理**。
 
