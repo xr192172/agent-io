@@ -149,6 +149,9 @@ docs/*
 !docs/todo.md
 !docs/discussion-log.md
 !docs/frictions.jsonl
+# ★ 2026-10-27：方法论（六条判据 + 能力边界）—— 活资产，必须进版本控制。
+#   它是【判据】不是【现状】：现状进 PITFALLS.md，判断方式进这里。
+!docs/METHOD.md
 # 内部交接/狗食试产产物
 HANDOVER_DOGFOOD.md
 # 内部后续开发路径规划（含竞品/许可/变现/缺陷审计等内部结论，不入发布仓库）
