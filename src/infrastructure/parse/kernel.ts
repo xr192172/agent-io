@@ -22,6 +22,9 @@
  */
 
 import path from 'node:path';
+// ★ T-#87：import source 的**通用求值**兜底（`vm` 沙箱 —— Node 内置，零新依赖）
+import vm from 'node:vm';
+import { pathToFileURL as nodePathToFileURL, fileURLToPath as nodeFileURLToPath } from 'node:url';
 import type Parser from 'tree-sitter';
 import { findLanguageByExt, LANGUAGES, LanguageEntry } from './languages.js';
 import { isLanguageInstalled, isExtSupported, listSupportedExts, probeInstalledLanguages } from './probe.js';
@@ -2581,8 +2584,69 @@ export function isTypeOnlyModuleStatement(text: string): boolean {
  * 不支持（⇒ 保持 `computed`）：`process.env.*` · 函数调用结果 · 正则 replace · 动态拼接
  */
 
+/**
+ * ★★★ 2026-10-27（T-#87）：**通用求值兜底** —— `vm` 沙箱（不是手写规则）。
+ *
+ * ## 为什么需要（T-#86 的折叠器"不够通用"）
+ * T-#86 手写了 `path.join` / `pathToFileURL` / `new URL` / 一个 replace idiom ——
+ * **认一个 API 就得加一条 if**，遇到 `os.homedir()` / `[a,b].join('/')` / 任意 `.replace` 就漏。
+ * 那是**打补丁的形状**，不是结构。
+ *
+ * ## 通用解：把表达式交给 `vm` 真求值
+ * 我们有 `node.text`（**原文**）⇒ 直接 `vm.runInNewContext(expr)`。
+ * 沙箱里放的是**真的 `node:path` / `node:url`** ⇒ **语义精确，不是近似**。
+ * ★ 这是 Node 内置能力 ⇒ **零新依赖**（对比 Babel `path.evaluate()`：要引入**第二套 parser**，
+ *   而我们已有 tree-sitter ⇒ 双解析的代价不值得）。
+ *
+ * ## 安全边界（必读 —— `vm` 官方说它**不是**安全沙箱）
+ * 威胁模型：求值的是**被分析项目的源码**，可能不可信。因此：
+ *   · 沙箱**只给白名单**：`path` / `url` / `URL` / `importMeta` + 已折叠的 const
+ *     ⇒ **没有 `process` / `require` / `fs` / 网络**
+ *   · `contextCodeGeneration: { strings: false, wasm: false }` ⇒ **禁掉 `new Function` / `eval`**
+ *     ⇒ 挡住经典逃逸链 `this.constructor.constructor('return process')()`
+ *   · `timeout: 50ms` ⇒ 挡住 `while(true)`
+ *   · 只接受**字符串结果**（或带 `.href` 的对象）⇒ 不把任意对象带回
+ * ★ 若将来要跑**完全不可信**的代码，应改用独立进程 + seccomp/容器 —— `vm` 不够。
+ *   当前场景（分析本仓/用户自己的仓库）用 `vm` + 上述三道闸是合适的。
+ */
+function vmFoldExpr(exprText: string, consts: Map<string, unknown>, filePath: string): unknown {
+  // ★★★ T-#87 **安全护栏（实测踩到）**：只求值**纯同步表达式**。
+  //   病史：一次全量重建末尾崩了 —— `ReferenceError: runOnce is not defined`，
+  //   来自 `evalmachine.<anonymous>`，即 `vm` 求值了一个含 `await runOnce()` 的表达式。
+  //   而 **`await` 产生的 Promise rejection 逃出了 try/catch**（异步不受同步 catch 管）
+  //   ⇒ 必须**先按文本过滤**，不能指望 catch 兜住。
+  //   拒绝：`await` / `yield` / `function` / 箭头 / 语句分隔符（这些不该出现在 import 路径表达式里）
+  if (/await|yield|function|=>|;/.test(exprText)) return null;
+  const abs = filePath.replace(/\\/g, '/');
+  const dir = abs.slice(0, abs.lastIndexOf('/')) || '/';
+  const sandbox: Record<string, unknown> = {
+    path,
+    url: { pathToFileURL: nodePathToFileURL, fileURLToPath: nodeFileURLToPath },
+    URL,
+    // `import.meta` 不是合法标识符 ⇒ 源码里替换成 `importMeta` 再注入
+    importMeta: { url: `file:///${abs}`, filename: abs, dirname: dir },
+  };
+  for (const [k, v] of consts) sandbox[k] = v;
+  const code = `(() => { const import_meta = importMeta; return (${exprText.replace(/\bimport\.meta\b/g, 'import_meta')}); })()`;
+  try {
+    const out = vm.runInNewContext(code, sandbox, {
+      timeout: 50,
+      contextCodeGeneration: { strings: false, wasm: false },
+    });
+    if (typeof out === 'string') return out.replace(/\\/g, '/');
+    const href = (out as { href?: unknown } | null)?.href;
+    if (typeof href === 'string') return href.replace(/\\/g, '/');
+    // ★ T-#87：**任意值都返回**（数组/对象也要）—— 常量表要能存 `['a','b']`，
+    //   否则 `const P = PARTS.join('/')` 这类依赖数组的常量永远算不出。
+    if (out === undefined || typeof out === 'function') return null;
+    return out;
+  } catch {
+    return null; // 算不出（有副作用 / 用了白名单外的 API / 超时）⇒ 诚实返回 null
+  }
+}
+
 /** 折叠结果：绝对路径（posix 分隔）或 null（算不出来） */
-function foldToPath(node: SyntaxNodeLike | null, consts: Map<string, string>, filePath: string): string | null {
+function foldToPath(node: SyntaxNodeLike | null, consts: Map<string, unknown>, filePath: string): string | null {
   if (!node) return null;
   const t = node.type;
   // ── 字面量
@@ -2590,8 +2654,11 @@ function foldToPath(node: SyntaxNodeLike | null, consts: Map<string, string>, fi
     const raw = node.text.replace(/^['"`]|['"`]$/g, '');
     return raw.includes('${') ? null : raw; // 有插值 ⇒ 不猜
   }
-  // ── 标识符 ⇒ 查同文件 const 折叠表
-  if (t === 'identifier') return consts.get(node.text) ?? null;
+  // ── 标识符 ⇒ 查同文件 const 折叠表（★ 表里可能是数组/对象 ⇒ 只取字符串）
+  if (t === 'identifier') {
+    const v = consts.get(node.text);
+    return typeof v === 'string' ? v : null;
+  }
   // ── import.meta.url / .dirname / .filename
   if (t === 'member_expression') {
     const obj = node.childForFieldName('object');
@@ -2646,7 +2713,7 @@ function foldToPath(node: SyntaxNodeLike | null, consts: Map<string, string>, fi
 /** 调用的折叠（返回 `{path}` 或 `{kind:'fileurl', path}`；算不出 ⇒ null） */
 function foldCall(
   node: SyntaxNodeLike,
-  consts: Map<string, string>,
+  consts: Map<string, unknown>,
   filePath: string,
 ): { path: string } | { kind: 'fileurl'; path: string } | null {
   const fn = node.childForFieldName('function');
@@ -2728,8 +2795,8 @@ function foldCall(
 }
 
 /** 预扫：同文件 `const X = <可折叠表达式>` ⇒ `X → 折叠值`（两趟，处理 const 之间的依赖） */
-function buildConstStringMap(root: SyntaxNodeLike, filePath: string): Map<string, string> {
-  const consts = new Map<string, string>();
+function buildConstStringMap(root: SyntaxNodeLike, filePath: string): Map<string, unknown> {
+  const consts = new Map<string, unknown>();
   const decls: Array<{ name: string; value: SyntaxNodeLike }> = [];
   const walk = (n: SyntaxNodeLike, depth: number): void => {
     if (depth > 200) return;
@@ -2745,10 +2812,14 @@ function buildConstStringMap(root: SyntaxNodeLike, filePath: string): Map<string
   };
   walk(root, 0);
   // 两趟：第一趟可能因依赖顺序折叠不出来，第二趟补上
+  // ★ T-#87：**常量表本身也走策略链**（① 内置折叠 ⇒ ② `vm` 兜底）。
+  //   否则 `const P = PARTS.join('/')` 这类内置算不出的常量会**留在表外**
+  //   ⇒ 下游 `path.join(HERE, '..', P)` 在沙箱里拿不到 `P` ⇒ 整条链断。
   for (let pass = 0; pass < 2; pass++) {
     for (const d of decls) {
       if (consts.has(d.name)) continue;
-      const v = foldToPath(d.value, consts, filePath);
+      let v = foldToPath(d.value, consts, filePath);
+      if (v === null) v = vmFoldExpr(d.value.text, consts, filePath) as string | null;
       if (v !== null) consts.set(d.name, v);
     }
   }
@@ -2761,7 +2832,7 @@ function traverseAndExtractImports(
   imports: ParsedImport[],
   depth: number = 0,
   /** ★ T-#86：常量折叠上下文（算得出就变成真 source，算不出保持 computed） */
-  foldCtx?: { filePath: string; consts: Map<string, string> },
+  foldCtx?: { filePath: string; consts: Map<string, unknown> },
 ): void {
   if (depth > 100 || !lang.import_nodes || lang.import_nodes.length === 0) return;
   // ★★★ 2026-10-27（T-#64）：**动态 import 也是一等公民**（这是 `parseFileFull` 走的路径）。
@@ -2844,7 +2915,15 @@ function traverseAndExtractImports(
       if (!isLiteralSrc && srcNode && foldCtx) {
         // ★ T-#86 修：`pathToFileURL(X).href` 折叠出的是 **`file:///abs`（URL）**，不是路径
         //   ⇒ 先剥 `file://` 再算相对（否则 `startsWith('/')` 判不过 ⇒ 又落回 computed）。
-        const rawFolded = foldToPath(srcNode, foldCtx.consts, foldCtx.filePath);
+        // ★ T-#87：**策略链** —— ① 内置折叠（快、纯静态、零风险）⇒ ② `vm` 沙箱（通用）
+        //   ⇒ 「认一个 API 加一条 if」不再是唯一出路；未知 API 交给通用求值。
+        let rawFolded = foldToPath(srcNode, foldCtx.consts, foldCtx.filePath);
+        if (rawFolded === null) {
+          const vmOut = vmFoldExpr(srcNode.text, foldCtx.consts, foldCtx.filePath);
+          if (typeof vmOut === 'string') rawFolded = vmOut;
+          else if (typeof (vmOut as { href?: unknown } | null)?.href === 'string')
+            rawFolded = (vmOut as { href: string }).href;
+        }
         const abs = rawFolded ? rawFolded.replace(/^file:\/\//, '') : null;
         if (abs && abs.startsWith('/')) {
           const fromDir = foldCtx.filePath.replace(/\\/g, '/').replace(/\/[^/]*$/, '');
