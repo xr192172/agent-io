@@ -1919,14 +1919,72 @@ export function resolveCrossFileCalls(
     }
   }
 
+  // ★★★ 2026-10-27（T-#51）：**局部绑定（函数参数）按文件收集**。
+  //
+  // ## 为什么需要
+  // `new Promise((resolve, reject) => …)` 里的 `resolve`/`reject`、`fn(c)` 里的 `fn`
+  // 都是**函数参数** —— 它们**不是符号**（不建边），但**引用它们是合法的**。
+  // ⇒ 落 `failed` 就是**假债**（实测 63 条）。
+  //
+  // ## 判定用**已有数据**，不需要改解析器
+  // `nodes.params`（T-#21 起就有）+ 函数行范围（`start_line`/`end_line`）
+  // ⇒ 引用位置落在某函数的范围内、且名字在它的参数表里 ⇒ 它就是那个参数。
+  //
+  // ## 为什么不标 `resolved`
+  // 参数**不是仓内符号**（没有节点可指）⇒ 不能冒充“解析成功”。
+  // 标 `external` + `why: 'local-binding:<fn>'` —— **说真话**：它不在仓内符号表里，
+  // 本来就不该建边，而 `why` 把“为什么”写清楚了。
+  const localBindingsByFile = new Map<string, Array<{ nm: string; fn: string; from: number; to: number }>>();
+  for (const row of db
+    .prepare(
+      "SELECT file_path, qualified_name, start_line, end_line, params FROM nodes WHERE params IS NOT NULL AND TRIM(params) <> ''",
+    )
+    .all() as Array<{ file_path: string; qualified_name: string; start_line: number; end_line: number; params: string }>) {
+    let arr: unknown;
+    try {
+      arr = JSON.parse(row.params);
+    } catch {
+      continue;
+    }
+    if (!Array.isArray(arr)) continue;
+    let list = localBindingsByFile.get(row.file_path);
+    if (!list) {
+      list = [];
+      localBindingsByFile.set(row.file_path, list);
+    }
+    for (const p of arr) {
+      const nm = typeof p === 'string' ? p : (p as { name?: unknown })?.name;
+      if (nm) list.push({ nm: String(nm), fn: row.qualified_name, from: row.start_line, to: row.end_line });
+    }
+  }
+  /** 引用是不是某个函数的参数（局部绑定）⇒ 返回那个函数名，否则 null */
+  const localBindingOf = (rel: string, nm: string, line: number): string | null => {
+    for (const b of localBindingsByFile.get(rel) ?? []) {
+      if (b.nm === nm && line >= b.from && line <= b.to) return b.fn;
+    }
+    return null;
+  };
+
   for (const r of rows) {
     const rel = r.from_node_id.split('#')[0];
     const expr = r.reference_name;
-    const kind = r.reference_kind as 'call' | 'type_ref'; // ★ 恢复（上一刀误删）
+    const kind = r.reference_kind as 'call' | 'type_ref';
+    // ★ T-#51：**局部绑定先判** —— 参数不是符号，不建边，但也不该是 failed
+    const bindFn = localBindingOf(rel, expr, r.line);
+    if (bindFn) {
+      updExternal.run({
+        i: r.id,
+        cd: JSON.stringify({ verdict: 'external', why: `local-binding:${bindFn}` }),
+      });
+      stats.external++;
+      continue;
+    }
     // ★ T-#44：Go 的内置表**只对 .go 文件**启用（避免 int/max/close 误伤本仓同名符号）
     const isGoFile = rel.endsWith('.go');
     // ★ T-#50：Java 内置类型同理，只对 .java 启用
     const isJavaFile = rel.endsWith('.java');
+    // ★ T-#51：**Shell 脚本的外部命令**（`printf` / `node` / `grep` / `echo` …）
+    const isShellFile = rel.endsWith('.sh') || rel.endsWith('.bash') || rel.endsWith('.zsh');
     // ★ 2026-10-22：本条引用的「没建边原因」暂存器（一行一个，不复用：上一条的原因不能写进下一条）
     const miss: ReexportMiss[] = [];
 
@@ -2046,7 +2104,8 @@ export function resolveCrossFileCalls(
     //   ⇒ 只看 `GO_BUILTIN_CALLEES` 会漏掉它们（实测 int64 11 · float64 9 · Int64 7 落 failed）。
     if (
       BUILTIN_CALLEES.has(expr) ||
-      (isGoFile && (GO_BUILTIN_CALLEES.has(expr) || GO_BUILTIN_TYPES.has(expr)))
+      (isGoFile && (GO_BUILTIN_CALLEES.has(expr) || GO_BUILTIN_TYPES.has(expr))) ||
+      (isShellFile && SHELL_CALLEES.has(expr))
     ) {
       updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'builtin-callee' }) });
       stats.external++;
@@ -2141,7 +2200,27 @@ const GO_BUILTIN_TYPES = new Set([
   'Ident', 'Object', 'Scope', 'File', 'Package', 'SelectorExpr', 'CallExpr', 'FuncDecl',
   'Stmt', 'Expr', 'Decl', 'Spec', 'Node', 'Token', 'Position', 'Pos', 'Comment', 'Field',
   'Time', 'Duration', 'Location', 'Month', 'Weekday', 'Buffer', 'Reader', 'Writer', 'Context',
+  // ★ T-#51：**go/ast + go/token + sync 的类型名**（实测 IndexExpr 7 · BlockStmt 7 · Mutex 5 …）
+  'IndexExpr', 'BlockStmt', 'ReturnStmt', 'ParenExpr', 'UnaryExpr', 'BinaryExpr', 'BasicLit',
+  'TypeSwitchStmt', 'SwitchStmt', 'IfStmt', 'ForStmt', 'RangeStmt', 'AssignStmt', 'ExprStmt',
+  'DeclStmt', 'LabeledStmt', 'BranchStmt', 'DeferStmt', 'GoStmt', 'IncDecStmt', 'SendStmt',
+  'FileSet', 'Mutex', 'RWMutex', 'WaitGroup', 'Once', 'Map', 'Pool', 'Cond',
+  'Int64', 'Uint64', 'Float64', 'AtomicInt64', 'FuncLit', 'CompositeLit', 'KeyValueExpr',
 ]);
+/**
+ * ★ T-#51：**Shell 外部命令 / 内建** —— 只对 `.sh`/`.bash`/`.zsh` 启用。
+ * 实测 `printf` 6 · `node` 5 · `grep` 2 · `echo` 2 · `tr` 1 · `cut` 1 落 failed。
+ * ★ 为什么不分语言不行：`node` / `printf` / `echo` 在 TS 里可能是真函数名。
+ */
+const SHELL_CALLEES = new Set([
+  'printf', 'echo', 'node', 'npx', 'npm', 'pnpm', 'yarn', 'grep', 'egrep', 'sed', 'awk', 'cut',
+  'tr', 'sort', 'uniq', 'wc', 'head', 'tail', 'cat', 'tee', 'find', 'xargs', 'dirname', 'basename',
+  'read', 'local', 'export', 'source', 'eval', 'exec', 'test', 'true', 'false', 'exit', 'cd',
+  'pushd', 'popd', 'pwd', 'mkdir', 'rmdir', 'rm', 'cp', 'mv', 'ln', 'chmod', 'chown', 'touch',
+  'git', 'curl', 'wget', 'jq', 'sleep', 'kill', 'wait', 'shift', 'set', 'unset', 'trap', 'date',
+  'python', 'python3', 'pip', 'go', 'cargo', 'make', 'cmake', 'docker', 'ssh', 'scp', 'rsync',
+]);
+
 const GO_BUILTIN_CALLEES = new Set([
   'len', 'cap', 'make', 'new', 'append', 'copy', 'delete', 'close',
   'panic', 'recover', 'print', 'println', 'complex', 'real', 'imag', 'min', 'max', 'clear',
