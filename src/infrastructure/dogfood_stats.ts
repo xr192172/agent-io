@@ -95,6 +95,195 @@ export function recordDogfoodUsage(u: DogfoodUsage): void {
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// ★★★ 2026-10-27（用户问的"GC"）：**这份账本的保留期 + 聚合压缩**
+//
+// ## 为什么要 GC（实测）
+// `usage.jsonl` **只加不减**（设计如此：原始日志）。实测一晚就从 61KB 长到 141KB / 1475 行；
+// 按今天这个调用密度，一年是几十万行 —— 每次 `tool_usage` 都要整份读一遍并逐行 `JSON.parse`。
+//
+// ## 判据：**删掉的是"逐次明细"，不是"统计"**
+//   · 原始行答的是「**某一次**调用什么时候、多慢、为什么失败」—— 只有排查那一次时才需要；
+//   · 统计答的是「每个工具调了多少次 / 成功率 / 有没有给下一棒」—— **长期都要**。
+//   ⇒ 保留期（默认 30 天）内的行**原样留着**；更老的行折成
+//     `<账本同目录>/usage-rollup.json` 的 `(日 × 工具 × 来源 × 动作)` 计数桶 ——
+//     **次数、成功/失败、下一棒全都守恒**，丢掉的只有 `ms` 明细与"具体哪一次"。
+//
+// ## 三条硬规矩（缺一条就会变成"悄悄丢数据"）
+//   ① **默认 dry-run**：不写盘，只回读数与计划；
+//   ② **先写 rollup、回读校验守恒，再改账本**（`归档行数 == 新增桶计数之和`）；
+//   ③ 账本改写走**临时文件 + rename**（同目录，原子）：半截账本比旧账本更坏。
+//
+// ## 与读端的关系（必须一起看）
+// `snapshotDogfoodStats` 现在会把 rollup 一起算进来 ⇒ **GC 之后读数不缩水**。
+// ★ 反过来：如果谁只删账本不写 rollup，读数会凭空变小 —— 所以别手工删这个文件。
+// ─────────────────────────────────────────────────────────────
+
+/** 聚合桶：一天 × 一个工具 × 一个来源 × 一个动作 */
+interface UsageBucket {
+  day: string; // YYYY-MM-DD（UTC）
+  tool: string;
+  via: string;
+  action: string;
+  ok: number;
+  failed: number;
+  hinted: number;
+}
+
+export interface UsageRollup {
+  version: number;
+  /** 已压缩到哪个时刻（不含）：这个时刻之前**原样行**已不在账本里 */
+  compacted_before: string | null;
+  buckets: UsageBucket[];
+}
+
+/** rollup 文件路径：与账本**同目录**（`AGENT_IO_DOGFOOD_FILE` 覆写时也跟着走） */
+export function usageRollupFile(): string {
+  return path.join(path.dirname(logFile()), 'usage-rollup.json');
+}
+
+export function readUsageRollup(): UsageRollup {
+  const f = usageRollupFile();
+  try {
+    const j = JSON.parse(fs.readFileSync(f, 'utf-8')) as Partial<UsageRollup>;
+    return {
+      version: typeof j.version === 'number' ? j.version : 1,
+      compacted_before: typeof j.compacted_before === 'string' ? j.compacted_before : null,
+      buckets: Array.isArray(j.buckets) ? (j.buckets as UsageBucket[]) : [],
+    };
+  } catch {
+    return { version: 1, compacted_before: null, buckets: [] };
+  }
+}
+
+export interface UsageGcReport {
+  file: string;
+  rollup_file: string;
+  /** 保留期（天） */
+  keep_days: number;
+  /** 分界线：早于它的原始行会被压缩 */
+  cutoff: string;
+  /** 账本原来多少行（可解析的） / 保留多少 / 归档多少 */
+  lines_before: number;
+  lines_keep: number;
+  lines_archive: number;
+  /** 坏行（JSON 解析失败）：**保留在账本里**，不参与压缩（先修好再说，别顺手删证据） */
+  lines_broken: number;
+  /** 压缩后 rollup 的桶数与总计数 */
+  buckets: number;
+  bucket_calls: number;
+  /** 是否真写了盘 */
+  applied: boolean;
+}
+
+/**
+ * 账本 GC：把早于 `keepDays` 的原始行折进 rollup。
+ * ★ 默认 **dry-run**（`apply:true` 才写盘）；写盘前的守恒校验不过 ⇒ **抛，什么都不改**。
+ */
+export function compactUsageLog(
+  opts: { keepDays?: number; apply?: boolean; now?: Date } = {},
+): UsageGcReport {
+  const keepDays = Math.max(1, Math.floor(opts.keepDays ?? 30));
+  const now = opts.now ?? new Date();
+  const cutoffMs = now.getTime() - keepDays * 24 * 3600 * 1000;
+  const cutoff = new Date(cutoffMs).toISOString();
+  const file = logFile();
+  const rollupFile = usageRollupFile();
+
+  const raw = fs.existsSync(file) ? fs.readFileSync(file, 'utf-8').split('\n') : [];
+  const keep: string[] = [];
+  const archive: DogfoodUsage[] = [];
+  let broken = 0;
+  let parsed = 0;
+  for (const line of raw) {
+    if (!line.trim()) continue;
+    let r: DogfoodUsage;
+    try {
+      r = JSON.parse(line) as DogfoodUsage;
+    } catch {
+      broken++;
+      keep.push(line); // ★ 坏行留在账本里（不许借 GC 抹掉证据）
+      continue;
+    }
+    parsed++;
+    const ts = Date.parse(String(r.ts));
+    if (Number.isFinite(ts) && ts < cutoffMs) archive.push(r);
+    else keep.push(line);
+  }
+
+  // 折叠：只加不改
+  const merged = new Map<string, UsageBucket>();
+  const keyOf = (b: Pick<UsageBucket, 'day' | 'tool' | 'via' | 'action'>) => `${b.day}|${b.tool}|${b.via}|${b.action}`;
+  const old = readUsageRollup();
+  for (const b of old.buckets) merged.set(keyOf(b), { ...b });
+  for (const r of archive) {
+    const day = String(r.ts).slice(0, 10);
+    const b: UsageBucket = {
+      day,
+      tool: r.tool ?? '(unknown)',
+      via: r.via ?? 'unknown',
+      action: r.action ?? '—',
+      ok: r.ok ? 1 : 0,
+      failed: r.ok ? 0 : 1,
+      hinted: typeof r.nextHops === 'number' && r.nextHops > 0 ? 1 : 0,
+    };
+    const k = keyOf(b);
+    const hit = merged.get(k);
+    if (hit) {
+      hit.ok += b.ok;
+      hit.failed += b.failed;
+      hit.hinted += b.hinted;
+    } else merged.set(k, b);
+  }
+  const buckets = [...merged.values()].sort(
+    (a, b) => a.day.localeCompare(b.day) || a.tool.localeCompare(b.tool) || a.via.localeCompare(b.via),
+  );
+  const next: UsageRollup = {
+    version: 1,
+    compacted_before: archive.length ? cutoff : old.compacted_before,
+    buckets,
+  };
+
+  const rep: UsageGcReport = {
+    file,
+    rollup_file: rollupFile,
+    keep_days: keepDays,
+    cutoff,
+    lines_before: parsed,
+    lines_keep: keep.length,
+    lines_archive: archive.length,
+    lines_broken: broken,
+    buckets: buckets.length,
+    bucket_calls: buckets.reduce((n, b) => n + b.ok + b.failed, 0),
+    applied: false,
+  };
+  if (!opts.apply || !archive.length) return rep;
+
+  // ── 守恒校验：归档多少条 ⇒ 桶里必须多出同样多条 ────────────
+  const beforeCalls = old.buckets.reduce((n, b) => n + b.ok + b.failed, 0);
+  if (rep.bucket_calls !== beforeCalls + archive.length) {
+    throw new Error(
+      `账本 GC 中止：守恒校验不过（旧桶 ${beforeCalls} + 归档 ${archive.length} ≠ 新桶 ${rep.bucket_calls}）—— 一个字节都没改`,
+    );
+  }
+  const writeAtomic = (target: string, text: string): void => {
+    const tmp = `${target}.tmp-${process.pid}`;
+    fs.writeFileSync(tmp, text, 'utf-8');
+    fs.renameSync(tmp, target);
+  };
+  fs.mkdirSync(path.dirname(rollupFile), { recursive: true });
+  writeAtomic(rollupFile, JSON.stringify(next, null, 2) + '\n');
+  // 回读校验（写坏了就不动账本）
+  const back = readUsageRollup();
+  const backCalls = back.buckets.reduce((n, b) => n + b.ok + b.failed, 0);
+  if (backCalls !== rep.bucket_calls) {
+    throw new Error(`账本 GC 中止：rollup 回读不一致（期望 ${rep.bucket_calls}，读到 ${backCalls}）—— 账本未改`);
+  }
+  writeAtomic(file, keep.length ? keep.join('\n') + '\n' : '');
+  rep.applied = true;
+  return rep;
+}
+
 /** 子动作明细统计。 */
 export interface DogfoodActionStat {
   calls: number;
@@ -223,6 +412,29 @@ export function snapshotDogfoodStats(opts: { includeSweeps?: boolean } = {}): Do
     }
   } catch {
     /* 无日志文件 → 空快照 */
+  }
+
+  // ★★★ 2026-10-27（GC）：**把压缩掉的那段也一起算**，否则 GC 之后读数会凭空变小。
+  //   桶里存的是 (日 × 工具 × 来源 × 动作) 的计数 —— 次数 / 成功失败 / 下一棒都守恒，
+  //   只有 `ms` 明细与"具体哪一次"不在（那正是 GC 要换掉的东西）。
+  for (const b of readUsageRollup().buckets) {
+    const v = statForVia((b.via ?? 'unknown') as DogfoodVia | 'unknown');
+    v.calls += b.ok + b.failed;
+    v.ok += b.ok;
+    v.failed += b.failed;
+    if (!includeSweeps && (b.via === 'sweep' || b.via === 'gate')) {
+      excluded += b.ok + b.failed;
+      continue;
+    }
+    const t = ensureTool(b.tool);
+    t.calls += b.ok + b.failed;
+    t.ok += b.ok;
+    t.failed += b.failed;
+    t.hinted += b.hinted;
+    const a = statFor(t, b.action || '—');
+    a.calls += b.ok + b.failed;
+    a.ok += b.ok;
+    a.failed += b.failed;
   }
 
   // ★ 固定顺序（mcp/cli/cert/sweep/gate/unknown）—— 别让输出顺序随「账本里谁先出现」而变
