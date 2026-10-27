@@ -1644,6 +1644,17 @@ function dynamicImportsOf(projectRoot: string, rel: string): Map<string, string[
 }
 
 /**
+ * ★★★ 2026-10-27（T-#64）：**`dynamicImportsOf()` 已删除**。
+ *
+ * 它原先用一条文本正则去扫 `const { a } = await import('x')`：
+ *   `/(?:const|let|var)\s*\{([^}]*)\}\s*=\s*await\s+import\(\s*['"]([^'"]+)['"]/g`
+ * ⇒ 脆（换行/别名/字串都会漏），且**与索引是两套尺**。
+ * 现在动态 import 在**解析期**就被记成 `imports` 行（`module_analysis.handleDynamicImport`），
+ * 走的是与静态 import **完全同一张**绑定表（`relImportsByFile` / `relBindingsByFile`）。
+ * ★ 保留这个空壳只为让历史读者知道“它去哪了”—— 删掉的是**两套尺**，不是能力。
+ */
+
+/**
  * `X.foo()` 且 X 是 `import * as X` ⇒ 目标模块里的**可调用**符号（唯一才建边）。
  * ★ 限度：若同名符号有多个、或模块里没有 ⇒ 不建边（留 external，宁漏不错）。
  */
@@ -2331,8 +2342,10 @@ export function resolveCrossFileCalls(
     // ★ 2026-10-21：跨文件建边也要**能证明来源** —— 这个裸名必须真的从某个相对导入绑定进来
     //   （静态 `import { x }` 或动态 `const { x } = await import()`）。只靠「目标文件里恰好有同名符号」
     //   会把本地闭包/形参连到别的文件（实测 3 条：sanitize / reject / langOfFile）。
-    const boundByImport = relBindingsByFile.get(rel)?.has(expr) ?? false;
-    const boundByName = boundByImport || (dynamicImportsOf(projectRoot, rel).get(expr)?.length ?? 0) > 0;
+    // ★★★ 2026-10-27（T-#64）：**动态 import 已进索引**（`module_analysis` 在解析期记 `imports` 行）
+    //   ⇒ 不再需要 `dynamicImportsOf()` 那条**事后文本正则** ——
+    //   **一张绑定表同时服务静态与动态导入**（这正是“两套尺”病根的修法）。
+    const boundByName = relBindingsByFile.get(rel)?.has(expr) ?? false;
     // 无点调用：沿 relative imports 定位目标文件（目标必须是**可调用**符号）
     const target =
       (boundByName
@@ -2521,10 +2534,11 @@ function findCrossFileTarget(
     //   ⇒ 下面什么都不命中 ⇒ **`miss` 空** ⇒ 落到兜底 `cross-target-not-found` ⇒ 看起来像"漏连"。
     //   而语义上它**是明确的外部**（目标文件已知、只是没索引）。
     if (!syms) {
+      // ★★ 2026-10-27 二次修正：**不能 `continue`** —— 第一版在这里 `continue`，
+      //   结果**跳过了下面的 barrel 再导出那条路** ⇒ 实测 `resolved` 掉 **237 条**。
+      //   ⇒ 只记 `miss`，**照旧往下走**（目标文件没索引 ≠ 它没有 barrel）。
       miss?.push({ why: 'reexport-target-not-indexed', detail: target });
-      continue;
-    }
-    if (syms.has(name)) {
+    } else if (syms.has(name)) {
       // 目标文件确有该符号 → 取 qualified_name（重名取首个，v1 近似）
       const q = db
         .prepare('SELECT kind, qualified_name FROM nodes WHERE file_path = $tp AND name = $n LIMIT 1')

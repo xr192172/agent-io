@@ -2391,6 +2391,69 @@ function traverseAndExtractImports(
   depth: number = 0
 ): void {
   if (depth > 100 || !lang.import_nodes || lang.import_nodes.length === 0) return;
+  // ★★★ 2026-10-27（T-#64）：**动态 import 也是一等公民**（这是 `parseFileFull` 走的路径）。
+  //
+  // ## 病史（结构性）
+  // `imports.kind` 只有 `relative` / `package` —— 这两者描述的是 **source 的形态**，
+  // **不是"静态/动态"** ⇒ 动态 import **本该也能记进来**，却**从来没被抽过**
+  // （`lang.import_nodes` 只含 `import_statement` 之类，`await import('x')` 是 `call_expression`）。
+  // 后果：`const { saveDSL } = await import('../../dist/src/storage.js')` 的 `saveDSL`
+  // 在索引里**没有绑定** ⇒ 裸名解析判 `boundByName=false` ⇒ **永远 failed**（实测 12 条）。
+  //
+  // ## 当时的绕法（本次删掉）
+  // `symbols.dynamicImportsOf()` —— 一个**事后文本正则扫描**，脆且**与索引两套尺**。
+  //
+  // ## 现在
+  // 在解析期就记一行 ⇒ **同一张绑定表**（`relImportsByFile` / `relBindingsByFile`）
+  // 同时服务静态与动态导入。
+  if (node.type === 'call_expression' || node.type === 'import_expression' || node.type === 'dynamic_import') {
+    const fnNode = node.type === 'call_expression' ? node.childForFieldName('function') : null;
+    const isDynamicImport =
+      node.type !== 'call_expression' || (!!fnNode && (fnNode.type === 'import' || fnNode.text === 'import'));
+    if (isDynamicImport) {
+      const args = node.childForFieldName('arguments') ?? node.childForFieldName('argument');
+      // ★ 取第一个**非括号**子节点 —— `arguments` 的 children 里含 `(` / `)` / `,` token
+      //   （实测拿 `child(0)` 会得到 `(` ⇒ source 变成 `(`，绑定对但路径错）
+      let srcNode: SyntaxNodeLike | null = null;
+      if (args) {
+        for (let i = 0; i < args.childCount; i++) {
+          const c = args.child(i);
+          if (!c) continue;
+          if (c.type === '(' || c.type === ')' || c.type === ',') continue;
+          srcNode = c;
+          break;
+        }
+      }
+      const src = srcNode ? srcNode.text.replace(/^['"`]|['"`]$/g, '') : '';
+      if (src) {
+        // 绑定名：`const { a, b } = await import(…)` ⇒ 解构里的名字
+        const bindings: string[] = [];
+        let p = node.parent;
+        if (p && p.type === 'await_expression') p = p.parent;
+        if (p && p.type === 'variable_declarator') {
+          const nm = p.childForFieldName('name');
+          const collect = (x: SyntaxNodeLike): void => {
+            if (x.type.includes('identifier') || x.type === 'shorthand_property_identifier_pattern') {
+              if (isValidIdentifier(x.text)) bindings.push(x.text);
+              return;
+            }
+            for (let k = 0; k < x.childCount; k++) {
+              const c = x.child(k);
+              if (c) collect(c);
+            }
+          };
+          if (nm) collect(nm);
+        }
+        imports.push({
+          source: src,
+          kind: src.startsWith('.') ? 'relative' : 'package',
+          line: node.startPosition.row + 1,
+          ...(bindings.length > 0 ? { bindings } : {}),
+        });
+      }
+    }
+    // ★ 不 return：参数里还可能有嵌套调用/引用
+  }
   if (lang.import_nodes.includes(node.type)) {
     const sources = extractImportSources(node, lang.name);
     // TS 系 type-only 语句（`import type` / `export type` / 全 type 内联说明符）运行时擦除

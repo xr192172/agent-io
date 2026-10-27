@@ -317,6 +317,75 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
       return;
     }
 
+    // ★★★ 2026-10-27（T-#64）：**动态 import 也是一等公民**（在解析期就记成 `imports` 行）。
+    //
+    // ## 病史（结构性）
+    // `imports.kind` 只有 `relative` / `package` —— 而这两者描述的是 **source 的形态**，
+    // **不是"静态/动态"** ⇒ 动态 import **本该也能记进来**，却**从来没被抽过**。
+    // 后果：`const { saveDSL } = await import('../../dist/src/storage.js')` 的 `saveDSL`
+    // 在索引里**没有绑定** ⇒ 裸名解析判 `boundByName=false` ⇒ **永远 failed**（实测 12 条）。
+    //
+    // ## 当时的绕法（本次删掉）
+    // `symbols.dynamicImportsOf()` —— 一个**事后文本正则扫描**，脆且**与索引两套尺**。
+    //
+    // ## 现在
+    // 在这里按 `ImportEdge` 的**真实形状**（一条绑定一行）记下来 ⇒
+    // **同一张绑定表**同时服务静态与动态导入。
+    if (t === 'call_expression') {
+      const fn = node.childForFieldName('function');
+      if (fn && (fn.type === 'import' || fn.text === 'import')) {
+        const args = node.childForFieldName('arguments');
+        // ★ 取第一个**非括号**子节点（同 kernel：`arguments` 的 children 含 `(` / `)` token）
+        let srcNode: N | null = null;
+        if (args) {
+          for (let i = 0; i < args.childCount; i++) {
+            const c = args.child(i);
+            if (!c) continue;
+            if (c.type === '(' || c.type === ')' || c.type === ',') continue;
+            srcNode = c;
+            break;
+          }
+        }
+        const src = srcNode ? stripQuotes(srcNode.text) : '';
+        if (src) {
+          // 绑定名：`const { a, b } = await import(…)` ⇒ 解构里的名字（`N` 未声明 parent ⇒ 显式窄化）
+          const bindings: string[] = [];
+          let p = (node as unknown as { parent?: N }).parent;
+          if (p && p.type === 'await_expression') p = (p as unknown as { parent?: N }).parent;
+          if (p && p.type === 'variable_declarator') {
+            const nm = p.childForFieldName('name');
+            const collect = (x: N): void => {
+              if (x.type.includes('identifier') || x.type === 'shorthand_property_identifier_pattern') {
+                if (/^[A-Za-z_$][\w$]*$/.test(x.text)) bindings.push(x.text);
+                return;
+              }
+              for (let k = 0; k < x.childCount; k++) {
+                const c = x.child(k);
+                if (c) collect(c);
+              }
+            };
+            if (nm) collect(nm);
+          }
+          // ★ 一条绑定一行（与静态 import 同形）；无绑定（裸 `import('x')`）也要记一条，
+          //   否则「这个文件依赖了 x」这条事实会丢。
+          const names = bindings.length > 0 ? bindings : [null];
+          for (const nm of names) {
+            // ★ 直接 push（`pushEdge` 是 `handleImport` 里的局部闭包，`walk` 作用域里没有）
+            imports.push({
+              source: src,
+              remoteName: null,
+              remoteOffset: null,
+              localName: nm,
+              typeOnly: false,
+              star: false,
+              isReexport: false,
+            });
+          }
+        }
+      }
+      // ★ 不 return：参数里还可能有引用/嵌套调用，继续走通用递归
+    }
+
     if (t === 'import_statement') {
       handleImport(node);
       return;
