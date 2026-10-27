@@ -44,8 +44,26 @@ export function loadOverlay(feature: string): DesignOverlay | null {
   const anchors: Record<string, OverlayAnchor> = {};
   for (const n of dsl.geometry?.nodes ?? []) if (n.overlay) anchors[n.id] = n.overlay;
   const global = (dsl as unknown as { overlay_global?: OverlayGlobal }).overlay_global;
-  if (!Object.keys(anchors).length && !global) return null;
-  return { version: 1, feature, anchors, ...(global ? { global } : {}) };
+  // ★★★ 2026-10-28（T-#98d）：**边意图也要从册里重建**。2026-10-23 overlay 并入设计册之后，
+  //   边意图就住在 `geometry.edges[].intent`；而本函数原先只重建 anchors + global ⇒
+  //   `loadOverlay(feature).edges` 恒为 undefined ⇒ `write_gate` 的 `requires` 前置闸**永远读不到**
+  //   （= 死闸，谁写 `requires` 都没用）。这里补上重建，读侧便一处不用改。
+  const edges: Record<string, import('../domain/overlay.js').OverlayEdgeIntent> = {};
+  for (const e of dsl.geometry?.edges ?? []) {
+    const it = e.intent;
+    if (!it) continue;
+    if (it.reason === undefined && it.boundary === undefined && !it.requires && it.status === undefined) continue;
+    edges[e.id] = { from: e.from, to: e.to, reason: it.reason, boundary: it.boundary, requires: it.requires, status: it.status };
+  }
+  if (!Object.keys(anchors).length && !global && !Object.keys(edges).length) return null;
+  return {
+    version: 1,
+    feature,
+    anchors,
+    ...(global ? { global } : {}),
+    // ★ 2026-10-28：重建出来的边意图必须**带出去**（少了这一行就等于没重建）
+    ...(Object.keys(edges).length ? { edges } : {}),
+  };
 }
 
 export interface MergeResult {

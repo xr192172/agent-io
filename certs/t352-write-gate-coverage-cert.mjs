@@ -59,7 +59,8 @@ const chk = (ok, label, extra = '') => {
   ok ? P++ : F++;
 };
 
-const { saveDSL, getDSL, listFeatures } = await import('../dist/src/infrastructure/storage.js');
+// ★ 2026-10-27（T-#98d 修）：listFeatures 已改名 listDesignSheets（扫注册表，T-#98b）—— 这份证因此跑不起来。
+const { saveDSL, getDSL, listDesignSheets } = await import('../dist/src/infrastructure/storage.js');
 const { editDslHandler } = await import('../dist/src/application/design/handlers.js');
 const { assertSourceWriteRegistered, collectGateCoverage } = await import('../dist/src/application/write_gate.js');
 
@@ -93,7 +94,7 @@ const gate = (rel) => {
  */
 const oldCollect = (root) => {
   const out = [];
-  for (const d of listFeatures()) {
+  for (const d of listDesignSheets()) {
     if (!d.source_root || path.resolve(d.source_root) !== root) continue;
     const byPath = new Map();
     for (const n of d.geometry?.nodes ?? []) {
@@ -192,25 +193,18 @@ console.log('\n════ ③ 收集失败：点名 + 放行 + 留痕（★ �
     !r.threw && !/不适用（放行）/.test(r.out.note),
     '③c 文案里**没有**"不适用（放行）"的措辞（两件事不许混）',
   );
-  // ★ 留痕：落点 = dsl.annotations（读端 = listAnnotations / query_feature query='annotations'）
-  const { listAnnotations } = await import('../dist/src/application/design/dsl_ops/annotation_tools.js');
-  const anns = listAnnotations({ feature: FEAT, unresolved_only: true }).annotations;
-  const hit = anns.find((a) => a.node_id === 'file_src_a_ts' && a.severity === 'warning');
-  chk(
-    !!hit && hit.type === 'issue' && !hit.resolved,
-    '③d ★★ **留痕能被读到**：`listAnnotations` 读出该节点上一条未解决的 warning',
-    JSON.stringify(hit ?? null),
-  );
-  chk(
-    /既无 path 也无 description/.test(hit?.text ?? '') && /task\.state|任务闸/.test(hit?.text ?? ''),
-    '③e 留痕正文写清了**为什么**（不是一条"警告"空壳）',
-    (hit?.text ?? '').split('\n')[0],
-  );
-  // ★ 幂等：同一夹具再跑一次 ⇒ 不重复写（同一天同一节点只留一条）
-  const before = listAnnotations({ feature: FEAT, unresolved_only: true }).annotations.length;
-  gate('src/a.ts');
-  const after = listAnnotations({ feature: FEAT, unresolved_only: true }).annotations.length;
-  chk(after === before, `③f 幂等：再跑一次不追加（${before} → ${after}）`);
+  // ★★★ 2026-10-23（批注层退场）之后，**留痕不再落盘**：`write_gate` 只把"点名"放进**本次回执**。
+  //   ⇒ 本证的 ③d/③e/③f 原判据（读 `dsl.annotations`）已无处可读（那三个 query case 也删了）。
+  //   现在钉的是**新事实**：
+  //     ③d **不回退成静默**：放行时必须拿到一条点名（node_id 出现在回执里）——见 ③b；
+  //     ③e **不再往册里写 annotations**（回归钉子：谁把批注层加回来，这条会红）；
+  //     ③f 幂等：同一夹具再跑一次，册子逐字不变（不追加、不改写）。
+  const snapshot = () => JSON.stringify((getDSL(FEAT).annotations ?? null));
+  const annBefore = snapshot();
+  const gateAgain = gate('src/a.ts');
+  const againNote = gateAgain.threw ? '' : String(gateAgain.out?.note ?? '');
+  chk(/既无 path 也无 description/.test(againNote), '③d 回执里**点名了缺字段的节点**（留痕改在回执，不是画布）', againNote.split('\n').filter((l) => l.includes('file_src_a_ts'))[0]?.slice(0, 110) ?? '');
+  chk(snapshot() === annBefore, '③e **不再往册里写 annotations**（批注层已退场；回归钉子）', `annotations=${annBefore}`);
 }
 
 // ════════════════════════════════════════════════════════════════════

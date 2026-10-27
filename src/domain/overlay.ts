@@ -619,7 +619,20 @@ export function applyOverlay(base: DesignDSL, overlay: DesignOverlay): DesignDSL
     const edges = (base.geometry?.edges ?? []).map((e) => {
       const ei = overlay.edges![e.id];
       if (!ei || ei.orphaned) return e;
-      return { ...e, intent: { reason: ei.reason, boundary: ei.boundary } };
+      // ★★★ 2026-10-28（T-#98d 挖到的真 bug）：这里原先**只带 reason / boundary** ⇒ `requires`（任务前置）
+      //   和 `status` 在"overlay → 册"这一步被**静默丢掉**；而 2026-10-23 之后 overlay 不再独立落盘
+      //   （意图就住在册里）⇒ `requires` 无处安放 ⇒ `write_gate` 的前置闸**永远读不到**它 = **死闸**。
+      //   ⇒ 边意图的**全部字段**都要投影回来（册是唯一源）。
+      return {
+        ...e,
+        intent: {
+          reason: ei.reason,
+          boundary: ei.boundary,
+          // 显式传入即覆盖（含空数组 = 解除前置）；未传沿用原值（不静默清空）
+          requires: ei.requires ?? e.intent?.requires,
+          status: ei.status ?? e.intent?.status,
+        },
+      };
     });
     out.geometry = { ...out.geometry, edges };
   }

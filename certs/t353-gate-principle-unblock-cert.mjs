@@ -11,6 +11,16 @@
  *      （此前 `NODE_DATA_KEYS` 没有 `path` ⇒ 只能给老节点挂卡）· 且**乱造被拒**（id 重 / path 空 / 绝对路径 / kind 非法）；
  *   ③ **写闸收集失败 ⇒ 点名 + 放行 + 留痕**（从"抛错"退一步；留痕落 `dsl.annotations`，读端 = `listAnnotations`）。
  *
+ * ## ★★★ 2026-10-28（T-#98d 修证时的发现）：本证 ①''' 那 6 条与 T360 **冲突，未决**
+ *   T360（2026-10-27）上了**两段式领取**：`claim` 先进 `preparing`，而 `start` 要求「后态判据 ≥1」。
+ *   本证 ①''' 钉的是「**L1 建构卡**（0 条期望）可 claim 即可做」—— 那是 T360 之前的行为。
+ *   实测：L1 卡 claim 后卡在 `preparing`，回执说「该节点的后态判据 0 条 ⇒ 先补 2 条再 start」。
+ *   ⇒ 这是**两张证的判据互相矛盾**，不是夹具问题：
+ *     · L1 建构卡的"活"是**写出可判的期望**（它本来就没有后态判据）；
+ *     · 而 T360 的闸要求"没有后态判据不许开工"。
+ *   ⇒ 需要一个**决定**（见 `docs/todo.md` 的 T-#98d-2）。**在此之前这 6 条保持红** ——
+ *     不许改成"跳过"或"待定"，那等于把矛盾藏起来（今早那张"基线红"就是这么烂了一天的）。
+ *
  * ## 判据（每条亲手跑，读数见 stdout）
  *   ①a 无 decision ⇒ publish **成功**且级别 L1（旧行为 = 拒 —— 同一次读数里用旧谓词复刻对照）；
  *   ①b L1 卡上 **0 条期望**（★ **没有编造的实现判据**：逐条看过，数组为空）；
@@ -65,7 +75,6 @@ const chk = (ok, label, extra = '') => {
 const { saveDSL, getDSL } = await import('../dist/src/infrastructure/storage.js');
 const { editDslHandler } = await import('../dist/src/application/design/handlers.js');
 const { assertSourceWriteRegistered, collectGateCoverage } = await import('../dist/src/application/write_gate.js');
-const { listAnnotations } = await import('../dist/src/application/design/dsl_ops/annotation_tools.js');
 const { postExpectations } = await import('../dist/src/domain/expectation.js');
 const { taskLevel } = await import('../dist/src/domain/task_schema.js');
 /** ★ 2026-10-22（task.expectations 去副本）：级别从**唯一的判据住处**（decision）现取 */
@@ -318,17 +327,21 @@ console.log('\n════ ③ 写闸收集失败：点名 + 放行 + 留痕（
     '③b **点名**（"点名"这条没退回静默）',
     g.threw ? '' : g.out.note.split('\n').find((l) => l.includes(P_GATE)) ?? '',
   );
-  const anns = listAnnotations({ feature: FEAT, unresolved_only: true }).annotations;
-  const hit = anns.find((a) => a.node_id === P_GATE && a.severity === 'warning');
+  // ★★★ 2026-10-23（批注层退场）之后**留痕不再落盘**：点名只进**本次回执**。
+  //   ⇒ 原 ③c/③c'（读 `dsl.annotations` / `listAnnotations`）已无处可读（那个 query case 也删了；
+  //     `annotation_tools.ts` 整个模块不存在）。现在钉**新事实**：
+  //     ③c 放行时的**点名在回执里**（node_id + 原因），③c' 正文写清"为什么放行"，
+  //     ③c'' **不再往册里写 annotations**（谁把批注层加回来，这条红）。
+  const noteText = g.threw ? '' : String(g.out.note ?? '');
   chk(
-    !!hit && hit.type === 'issue' && !hit.resolved,
-    '③c ★★ **留痕能被读到**（`listAnnotations` = `query_feature {query:\'annotations\'}` 的同一个读端）',
-    JSON.stringify(hit ? { id: hit.id, node_id: hit.node_id, severity: hit.severity, type: hit.type, author: hit.author } : null),
+    noteText.includes(P_GATE) && /既无 path 也无 description/.test(noteText),
+    '③c ★★ **点名在回执里**（留痕改在回执，不是画布）',
+    noteText.split('\n').find((l) => l.includes(P_GATE))?.slice(0, 110) ?? '',
   );
   chk(
-    /既无 path 也无 description/.test(hit?.text ?? '') && /不损坏数据/.test(hit?.text ?? ''),
-    '③c\' 留痕正文写清"为什么放行"（不是一条空壳警告）',
-    (hit?.text ?? '').split('\n')[1] ?? '',
+    /不损坏数据|只是"这次写没在账上"/.test(noteText),
+    '③c\' 回执正文写清"为什么放行"（不是一句空壳警告）',
+    noteText.split('\n').find((l) => /不损坏数据|没在账上/.test(l))?.slice(0, 110) ?? '',
   );
   chk(
     (g.out?.warnings ?? []).length >= 1 && /query_feature/.test(g.out.warnings.join('\n')),

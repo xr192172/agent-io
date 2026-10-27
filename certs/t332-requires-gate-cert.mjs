@@ -75,19 +75,25 @@ async function registerNode(feature, nodeId, rel) {
     n.id === nodeId
       ? {
           ...n,
-          task: {
-            id: nodeId,
-            summary: `T332 夹具：${nodeId} 的任务格`,
+          // ★ 2026-10-27（T-#98d 修）：**判据只住 `decision.expectations`** —— 卡里带 `expectations`
+          //   会被写端结构不变量直接拒（本证因此跑不起来）。夹具改成"节点 decision 里挂一条未满足的后态判据
+          //   + 卡只放 state"，判据内容与 `requires` 无关（这里只为把节点领到 claimed）。
+          decision: {
+            ...(n.decision ?? {}),
+            summary: `T332 夹具：${nodeId} 的前提判据`,
             expectations: [
               {
                 // ★ 2026-10-17（T13 · cardStanding）：`satisfied` 卡**不可领**（没活干不许领）⇒
                 //   夹具的判据必须是"有活干"的那一格（一条**未满足**的后态判据）。
-                //   ★ 不是本证判据变松：这里只为把节点领到 claimed，判据内容与 requires 无关。
                 kind: 'file-exists',
                 path: `${rel}.todo`,
                 why: 'T332 夹具：未满足的后态判据 ⇒ standing=work ⇒ 可领（仅为登记该节点）',
               },
             ],
+          },
+          task: {
+            id: nodeId,
+            summary: `T332 夹具：${nodeId} 的任务格`,
             state: 'candidate',
           },
         }

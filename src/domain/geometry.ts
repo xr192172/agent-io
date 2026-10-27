@@ -458,8 +458,12 @@ export interface Edge {
   arrow?: 'forward' | 'reverse' | 'both' | 'none';
   /** 职责分层：缺省时自动推导——任一端点为深层节点则跟随较深层（detail > error > main） */
   layer?: NodeLayer;
-  /** 设计意图（overlay 落库到 base 的边级意图）：A 为何依赖 B / 边界归属 */
-  intent?: { reason?: string; boundary?: string };
+  /**
+   * 设计意图（边级）：A 为何依赖 B / 边界归属 / **任务前置**。
+   * ★ 2026-10-28：`requires` 与 `status` 原先只活在 overlay，而 2026-10-23 overlay 并入设计册后
+   *   投影时被丢掉 ⇒ `write_gate` 的前置闸永远读不到 = **死闸**。现在它们与 reason/boundary 同住这里。
+   */
+  intent?: { reason?: string; boundary?: string; requires?: string[]; status?: 'open' | 'resolved' };
 }
 
 /** 泳道（横向分组） */
