@@ -1742,6 +1742,9 @@ const BUILTIN_CALLEES = new Set([
   'RuntimeError', 'TypeError', 'ImportError', 'OSError', 'IOError', 'AttributeError',
   // ★ T-#60：**JS 全局函数**（不需 import 就能用）—— 实测 decodeURIComponent 落 failed
   'decodeURIComponent', 'encodeURIComponent', 'decodeURI', 'encodeURI', 'escape', 'unescape',
+  // ★ T-#94：`Function` 也是全局构造器（`Function(a, b, 'return …')` 动态建函数）——
+  //   实测 lodash 4.17 `template.js:259` 落 failed。它跟 `Object`/`Array` 同级，只是原先漏了。
+  'Function',
 ]);
 
 /**
@@ -1766,6 +1769,11 @@ const JS_HOST_GLOBALS = new Set([
   'it', 'xit', 'fit', 'test', 'xtest', 'specify', 'describe', 'xdescribe', 'fdescribe',
   'context', 'xcontext', 'suite', 'bench',
   'before', 'after', 'beforeEach', 'afterEach', 'beforeAll', 'afterAll',
+  // ★ T-#94：**浏览器宿主的裸函数**（不经 `window.` 限定也能调用）。
+  //   实测 socket.io 4 的 `client-dist/socket.io.js`：`addEventListener("beforeunload", …)` 写成裸名，
+  //   且源码自己用 `typeof addEventListener === "function"` 当环境判据 ⇒ 它确实不是仓内符号。
+  'addEventListener', 'removeEventListener', 'dispatchEvent',
+  'requestAnimationFrame', 'cancelAnimationFrame',
 ]);
 
 export interface CrossFileResolveStats {

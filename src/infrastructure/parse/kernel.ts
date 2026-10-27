@@ -2198,6 +2198,26 @@ function extractCallee(callNode: SyntaxNodeLike, langName: string): { name: stri
  * · **不收**：`const x = () => {}`（它是**符号**，在 `nodes` 里 ⇒ 收进来会抢在 classifyCall 前面丢边）
  * · **不收**：嵌套函数体内的东西（那是它自己的作用域）
  */
+/**
+ * ★★★ 2026-10-27（T-#94）：**这条声明会不会在符号侧变成 `const` 符号**。
+ *
+ * 判据必须与 `traverseAndExtract` 的 const 支**逐字一致**：
+ *   「单 `variable_declarator` + `name` 是普通 identifier」⇒ 该名字会进 `nodes`（kind=const）。
+ * ⇒ 这类名字**不能**当局部绑定：调用它应当走 `classifyCall` 建边（走本表就丢边）。
+ * ★ 只对 TS 系形态成立（Go 的 `var`/`:=` 不建 const 符号）；没有 `variable_declarator` 子节点 ⇒ false。
+ */
+function declarationBecomesSymbol(decl: SyntaxNodeLike): boolean {
+  let count = 0;
+  let nameNode: SyntaxNodeLike | null = null;
+  for (let i = 0; i < decl.childCount; i++) {
+    const c = decl.child(i);
+    if (!c || c.type !== 'variable_declarator') continue;
+    count++;
+    nameNode = c.childForFieldName('name');
+  }
+  return count === 1 && !!nameNode && nameNode.type === 'identifier';
+}
+
 function collectLocalBindings(nodes: readonly SyntaxNodeLike[], langName?: string): string[] {
   const out: string[] = [];
   const collectIds = (n: SyntaxNodeLike): void => {
@@ -2247,6 +2267,43 @@ function collectLocalBindings(nodes: readonly SyntaxNodeLike[], langName?: strin
     }
   };
   for (const n of nodes) walk(n, 0);
+  return out;
+}
+
+/**
+ * ★★★ 2026-10-27（T-#94）：**文件（模块）作用域里的局部名** —— 每个函数的外层作用域。
+ *
+ * ## 病史（axios 1.7 实测，18 条 failed 里 16 条是它）
+ * `lib/utils.js` 顶部是解构式绑定：
+ * ```js
+ * const {toString} = Object.prototype;
+ * const {getPrototypeOf} = Object;
+ * const {isArray} = Array;
+ * ```
+ * 它们在**模块作用域**声明，却被函数体内的 `isArray(obj)` / `getPrototypeOf(val)` 引用。
+ * 原实现只在「同一个函数体内」收局部绑定（`collectLocalBindings(body)`）⇒
+ * 模块级的名字对任何函数都不可见 ⇒ 一律落 `failed`。
+ * ★ 与语言无关的真相：**模块作用域是文件里每个函数的外层作用域**（TS/JS/Python/Go 皆然）。
+ *
+ * ## 判据（不认语言，数据驱动）
+ * 只看**直接挂在文件根下的声明语句**（`localBindingNodes` 声明过的那几种），
+ * 用 `collectLocalBindings` 收名字（含解构、排除函数值符号）。
+ * ★ 刻意**不下钻** `if (…) { const x = 1 }` 这类块：块内的名字不是文件作用域，
+ *   收进来会掩盖「真漏连」（把本该 failed 的引用静默判成 local）。
+ */
+function fileScopeNames(root: SyntaxNodeLike, lang: LanguageEntry): Set<string> {
+  const out = new Set<string>();
+  const a = LANG_ADAPTERS[lang.name];
+  if (!a?.localBindingNodes) return out;
+  for (let i = 0; i < root.childCount; i++) {
+    const stmt = root.child(i);
+    if (!stmt || !a.localBindingNodes.includes(stmt.type)) continue;
+    // ★ T-#94：**会变成 `const` 符号的声明跳过**（单声明器 + 普通标识符 ⇒ `nodes` 里有它）。
+    //   这类名字必须走 `classifyCall` 建边；收进作用域就会被判 local ⇒ **真边丢掉**
+    //   （实测 express call 边 123 → 36）。函数体内不适用：局部 `const x = 1` 不建符号（见 const 支）。
+    if (declarationBecomesSymbol(stmt)) continue;
+    for (const name of collectLocalBindings([stmt], lang.name)) out.add(name);
+  }
   return out;
 }
 
@@ -2478,48 +2535,31 @@ function extractCallsFromBody(
       .filter((n): n is string => !!n);
     if (names.length > 0) childScope = new Set([...scope, ...names]);
   }
-  // ★★★ 2026-10-27（T-#59）：**函数体内的局部 const 绑定进作用域**（解构 + 非函数值）。
+  // ★★★ 2026-10-27（T-#94）：**同块内后续语句也看得见这些声明** —— 所以作用域要**逐语句累加**。
   //
-  // ## 为什么
-  // 实测剩 89 条里有一大类是**局部绑定**却被当成"漏连"：
-  //   `const { onChange, onError } = opts`  ⇒ 解构出来的名字不在 `nodes`（`paramsOf` 只给 `opts`）
-  //   `const fn = cond ? a : b`            ⇒ 绑定值**不是函数** ⇒ 不进 nodes（T-#45 只收函数值）
-  //   `const run = opts.run ?? defaultRun` ⇒ 同上
-  // ⇒ 它们**不是符号**，引用它们**合法** ⇒ 该判 `local-binding`，不该 `failed`。
+  // ## 病史（axios 实测 8 条 failed）
+  // 原来的 T-#59 只在**访问那一颗声明节点时**把名字并进 `childScope`，而 `childScope` 只作用于
+  // **该节点自己的子树**：`const cb = args.pop();` 之后几条兄弟语句里的 `cb()` **仍然不在作用域里**
+  // ⇒ 判 failed。实测三形态：
+  //   `function (x2) { const z2 = x2; return z2(); }`          ⇒ z2 failed
+  //   `function (args) { const z3 = args.pop(); return function inner(){ z3(); } }` ⇒ z3 failed
+  //   `let flushUpload; … function done(){ flushUpload && flushUpload() }`        ⇒ failed
+  // ⇒ JS/TS 的 `const/let` 是**块作用域**，不是"单语句作用域"：名字对同块后续语句可见。
   //
-  // ## 为什么不收"函数值"的 const
-  // `const walk = () => {}` **是符号**（在 `nodes` 里，T-#45/T-#52 已收）⇒ 若也塞进作用域，
-  // 下面的 `local: true` 会**抢在** `classifyCall` 前面把它判成 external ⇒ **丢掉真边**。
-  // ⇒ 只收**绑定值不是函数**的那些。
-  if (node.type === 'lexical_declaration' || node.type === 'variable_declaration') {
-    for (let i = 0; i < node.childCount; i++) {
-      const dec = node.child(i);
-      if (!dec || dec.type !== 'variable_declarator') continue;
-      const nameNode = dec.childForFieldName('name');
-      const valueNode = dec.childForFieldName('value');
-      if (!nameNode) continue;
-      const isFnValue =
-        !!valueNode &&
-        ['arrow_function', 'function_expression', 'function', 'generator_function'].includes(valueNode.type);
-      if (isFnValue) continue; // 函数值 = 符号，交给 nodes/classifyCall
-      const bound: string[] = [];
-      const collectIds = (n: SyntaxNodeLike): void => {
-        if (n.type.includes('identifier') || n.type === 'shorthand_property_identifier_pattern') {
-          if (isValidIdentifier(n.text)) bound.push(n.text);
-          return;
-        }
-        for (let k = 0; k < n.childCount; k++) {
-          const c = n.child(k);
-          if (c) collectIds(c);
-        }
-      };
-      collectIds(nameNode);
-      if (bound.length > 0) childScope = new Set([...childScope, ...bound]);
-    }
-  }
+  // ## 判据
+  // 每访问完一个子语句，就把它的**非函数值绑定**（`collectLocalBindings`：含解构、排除函数值符号）
+  // 并进 `runningScope`，后续兄弟语句继承。函数值不收 —— 那是符号，收进来会抢在 classifyCall 前丢真边。
+  let runningScope = childScope;
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i);
-    if (child) extractCallsFromBody(child, lang, callerQn, calls, symbols, depth + 1, childScope);
+    if (!child) continue;
+    extractCallsFromBody(child, lang, callerQn, calls, symbols, depth + 1, runningScope);
+    // ★ **只对声明语句做收集**（`localBindingNodes` 数据门控）：
+    //   ① 语义正确：块内的声明不泄漏到块外（`if (…) { const a = 1 }` 之后不可见）；
+    //   ② 成本：逐个兄弟语句去扫整棵子树是 O(n²)（实测本仓 47s → 99s），门控后回到 O(声明数)。
+    if (!LANG_ADAPTERS[lang.name]?.localBindingNodes?.includes(child.type)) continue;
+    const declared = collectLocalBindings([child], lang.name);
+    if (declared.length > 0) runningScope = new Set([...runningScope, ...declared]);
   }
 }
 
@@ -2630,12 +2670,17 @@ function traverseAndExtractCalls(
     //   实测（express `lib/router/route.js`）：`Route.prototype.dispatch = function dispatch(req,res,done)`
     //   里的 `next` 引用 `done` ⇒ failed。修法是让作用域**逐层继承**，与 `extractCallsFromBody`
     //   的 T-#55 同一条判据（同一张节点名单，见 FUNCTION_SCOPE_NODE_TYPES）。
+    // ★ T-#94：**匿名函数的体内声明也进作用域**（axios 实测 8 条）：
+    //   `new Promise(function (resolve, reject) { let flushUpload; function done(){ flushUpload && flushUpload() } })`
+    //   —— `flushUpload` 是**匿名的那个函数**的局部声明，只有形参进了作用域 ⇒ 内层引用判 failed。
+    //   `collectLocalBindings` 本来就只收"非函数值"的声明，正是这里要的。
     const childScope = isFunctionScopeNode(child)
       ? new Set<string>([
           ...outerScope,
           ...paramsOf(child, lang.field_map.parameters || 'parameters', lang.name)
             .map((p) => p.name)
             .filter((n): n is string => !!n),
+          ...collectLocalBindings(bodyChildren(child, lang, null) ?? [], lang.name),
         ])
       : outerScope;
     if (child) traverseAndExtractCalls(child, lang, symbols, calls, funcStack, depth + 1, childScope);
@@ -3625,7 +3670,8 @@ export async function parseFileFull(filePath: string, content: string): Promise<
     const typeRefs: ParsedTypeRef[] = [];
     traverseAndExtract(tree.rootNode, lang, symbols, undefined);
     traverseAndExtractImports(tree.rootNode, lang, imports, 0, { filePath, consts: buildConstStringMap(tree.rootNode, filePath) });
-    traverseAndExtractCalls(tree.rootNode, lang, symbols, calls);
+    // ★ T-#94：模块级绑定是文件里**每个函数的外层作用域**（病史见 fileScopeNames）
+    traverseAndExtractCalls(tree.rootNode, lang, symbols, calls, [], 0, fileScopeNames(tree.rootNode, lang));
     traverseAndExtractTypeRefs(tree.rootNode, lang, symbols, typeRefs);
     const identifiers: ParsedIdentifier[] = [];
     traverseAndExtractIdentifiers(tree.rootNode, identifiers);
@@ -3682,7 +3728,8 @@ export function parseFileFullSync(filePath: string, content: string): ParsedFile
     const typeRefs: ParsedTypeRef[] = [];
     traverseAndExtract(tree.rootNode, lang, symbols, undefined);
     traverseAndExtractImports(tree.rootNode, lang, imports, 0, { filePath, consts: buildConstStringMap(tree.rootNode, filePath) });
-    traverseAndExtractCalls(tree.rootNode, lang, symbols, calls);
+    // ★ T-#94：模块级绑定是文件里**每个函数的外层作用域**（病史见 fileScopeNames）
+    traverseAndExtractCalls(tree.rootNode, lang, symbols, calls, [], 0, fileScopeNames(tree.rootNode, lang));
     traverseAndExtractTypeRefs(tree.rootNode, lang, symbols, typeRefs);
     const identifiers: ParsedIdentifier[] = [];
     traverseAndExtractIdentifiers(tree.rootNode, identifiers);
