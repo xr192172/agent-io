@@ -2130,7 +2130,20 @@ export function resolveCrossFileCalls(
           i: r.id,
           cd: JSON.stringify({
             verdict: 'external',
-            why: hint ? `receiver-type-external:${hint}` : 'dotted-unprovable',
+            // ★★★ 2026-10-27（T-#56）：**把 `dotted-unprovable` 拆细**。
+            //
+            // 实测（T-#55 之后）：`dotted-unprovable` **13953 条（48%）** 是全仓最大的一个桶，
+            // 而用 tsc checker 抽样量（`serve.ts` 405 条）：
+            //   **94.6% 是外部/内置** · 1.2% 是本仓符号 · 4.2% 仍判不了。
+            // ⇒ **它不是盲区，是标签太粗**。这里不靠 checker（太贵），只按**接收者名**分两档：
+            //   · 接收者是已知全局命名空间（`Math` / `JSON` / `console` / `process` …）⇒ `builtin-namespace`
+            //   · 其余（局部变量/参数，类型证不出）⇒ `local-receiver-untyped`
+            // ★ 状态都是 `external`（本来就不是债）—— 改的只是 `why` 的可读性。
+            why: hint
+              ? `receiver-type-external:${hint}`
+              : BUILTIN_NAMESPACES.has(recv)
+                ? `builtin-namespace:${recv}`
+                : `local-receiver-untyped:${recv || '?'}`,
           }),
         });
         stats.external++;
@@ -2262,6 +2275,19 @@ const BUILTIN_TYPES = new Set([
  * ⇒ 判据：**只对 `.go` 文件启用这两张表**（`rel.endsWith('.go')`，零查询）。
  * ★ 这就是「每门语言都要有自己的内置表」的落地形态（见 `parse/kernel.ts#LANG_ADAPTERS` 的 §4）。
  */
+/**
+ * ★ T-#56：**已知全局命名空间**（带点调用的接收者如果是它们，就不是“判不了”，而是“本来就外部”）。
+ * 用途：把 `dotted-unprovable` 这个 13953 条的大桶拆成 `builtin-namespace` / `local-receiver-untyped`。
+ * ★ 只用于**细分 `why`**，不参与建边决策 —— 所以宁可多列，不误伤（判错只影响标签可读性）。
+ */
+const BUILTIN_NAMESPACES = new Set([
+  'Math', 'JSON', 'Object', 'Array', 'String', 'Number', 'Boolean', 'Date', 'RegExp', 'Promise',
+  'Reflect', 'Symbol', 'Intl', 'Map', 'Set', 'WeakMap', 'WeakSet', 'ArrayBuffer', 'DataView',
+  'console', 'process', 'global', 'globalThis', 'Buffer', 'structuredClone',
+  'fs', 'path', 'os', 'url', 'util', 'crypto', 'http', 'https', 'net', 'tls', 'stream', 'events',
+  'child_process', 'zlib', 'readline', 'assert', 'querystring', 'worker_threads', 'sqlite',
+]);
+
 const GO_BUILTIN_TYPES = new Set([
   'bool', 'byte', 'complex64', 'complex128', 'error', 'float32', 'float64',
   'int', 'int8', 'int16', 'int32', 'int64', 'rune', 'string',

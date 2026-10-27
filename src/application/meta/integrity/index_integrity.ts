@@ -688,16 +688,28 @@ async function indexIntegrityCore(opts: {
   if (opts.retry_failed === true) {
     try {
       const before = byStatus('failed');
-      if (before === 0) {
+      // ★ T-#56：**连 `dotted-unprovable` 一起重开** —— 它和 `failed` 同属「判定可能已过时」：
+      //   状态是 `external`（不是债），但 `why` 太粗（13953 条全挤在一个桶里）。
+      //   细分标签后需要**重判一次**，否则新标签永远写不进去。
+      const relabelRow = db
+        .prepare("SELECT COUNT(*) c FROM unresolved_refs WHERE status='external' AND candidates LIKE '%dotted-unprovable%'")
+        .get() as { c: number } | undefined;
+      const relabel = relabelRow?.c ?? 0;
+      if (before === 0 && relabel === 0) {
         retryFailedNote = '重试存量 failed：0 条（无需重试）';
       } else {
-        db.exec("UPDATE unresolved_refs SET status='pending' WHERE status='failed'");
+        if (before > 0) db.exec("UPDATE unresolved_refs SET status='pending' WHERE status='failed'");
+        if (relabel > 0)
+          db.exec(
+            "UPDATE unresolved_refs SET status='pending' WHERE status='external' AND candidates LIKE '%dotted-unprovable%'",
+          );
         const { resolveCrossFileCalls } = await import('../../../infrastructure/index/symbols.js');
         const st = resolveCrossFileCalls(db, root);
         const after = byStatus('failed');
         retryFailedNote =
           `重试存量 failed：${before} → ${after}（重解析 ${st.total} 条：` +
-          `resolved ${st.resolved} · external ${st.external} · 仍 failed ${st.failed}）`;
+          `resolved ${st.resolved} · external ${st.external} · 仍 failed ${st.failed}）` +
+          (relabel > 0 ? `；另重判 ${relabel} 条粗标签（dotted-unprovable）` : '');
       }
     } catch (e) {
       retryFailedNote = `重试存量 failed 失败：${(e as Error).message}`;
