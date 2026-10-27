@@ -688,11 +688,20 @@ async function indexIntegrityCore(opts: {
   if (opts.retry_failed === true) {
     try {
       const before = byStatus('failed');
-      // ★ T-#56：**连 `dotted-unprovable` 一起重开** —— 它和 `failed` 同属「判定可能已过时」：
-      //   状态是 `external`（不是债），但 `why` 太粗（13953 条全挤在一个桶里）。
-      //   细分标签后需要**重判一次**，否则新标签永远写不进去。
+      // ★ T-#56：**连"粗标签"一起重开** —— 它们和 `failed` 同属「判定可能已过时」：
+      //   状态是 `external`（不是债），但 `why` 太粗；细分后必须**重判一次**，否则新标签写不进去。
+      //   ★ 2026-10-27 二次修正：原来只列 `dotted-unprovable`，而它拆完后**归零**了
+      //     ⇒ 新产生的 `local-receiver-untyped` / `literal-receiver` / `builtin-namespace`
+      //     反而永远重判不到。⇒ 改成**所有粗标签**都重开。
+      const COARSE = [
+        'dotted-unprovable',
+        'local-receiver-untyped',
+        'literal-receiver',
+        'builtin-namespace',
+      ] as const;
+      const coarseWhere = COARSE.map((w) => `candidates LIKE '%${w}%'`).join(' OR ');
       const relabelRow = db
-        .prepare("SELECT COUNT(*) c FROM unresolved_refs WHERE status='external' AND candidates LIKE '%dotted-unprovable%'")
+        .prepare(`SELECT COUNT(*) c FROM unresolved_refs WHERE status='external' AND (${coarseWhere})`)
         .get() as { c: number } | undefined;
       const relabel = relabelRow?.c ?? 0;
       if (before === 0 && relabel === 0) {
@@ -700,16 +709,14 @@ async function indexIntegrityCore(opts: {
       } else {
         if (before > 0) db.exec("UPDATE unresolved_refs SET status='pending' WHERE status='failed'");
         if (relabel > 0)
-          db.exec(
-            "UPDATE unresolved_refs SET status='pending' WHERE status='external' AND candidates LIKE '%dotted-unprovable%'",
-          );
+          db.exec(`UPDATE unresolved_refs SET status='pending' WHERE status='external' AND (${coarseWhere})`);
         const { resolveCrossFileCalls } = await import('../../../infrastructure/index/symbols.js');
         const st = resolveCrossFileCalls(db, root);
         const after = byStatus('failed');
         retryFailedNote =
           `重试存量 failed：${before} → ${after}（重解析 ${st.total} 条：` +
           `resolved ${st.resolved} · external ${st.external} · 仍 failed ${st.failed}）` +
-          (relabel > 0 ? `；另重判 ${relabel} 条粗标签（dotted-unprovable）` : '');
+          (relabel > 0 ? `；另重判 ${relabel} 条粗标签` : '');
       }
     } catch (e) {
       retryFailedNote = `重试存量 failed 失败：${(e as Error).message}`;

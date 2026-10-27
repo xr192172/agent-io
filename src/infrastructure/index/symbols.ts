@@ -2139,11 +2139,19 @@ export function resolveCrossFileCalls(
             //   · 接收者是已知全局命名空间（`Math` / `JSON` / `console` / `process` …）⇒ `builtin-namespace`
             //   · 其余（局部变量/参数，类型证不出）⇒ `local-receiver-untyped`
             // ★ 状态都是 `external`（本来就不是债）—— 改的只是 `why` 的可读性。
+            // ★ T-#56 修 1：**取根标识符** —— 实测大量接收者是**调用/括号表达式**：
+            //   `path.relative(a,b).split` ⇒ 根是 `path`（该算 builtin-namespace）
+            //   `[...].map` ⇒ 根是空（该算 literal-receiver，287 条）
+            //   `new Date().toISOString` ⇒ 根是空（105 条）
+            //   `(dsl).filter` ⇒ 根是空（74 条）
+            //   我原来拿整个 `recv` 去比，全部落进 `local-receiver-untyped` ⇒ 桶被灌水。
             why: hint
               ? `receiver-type-external:${hint}`
-              : BUILTIN_NAMESPACES.has(recv)
-                ? `builtin-namespace:${recv}`
-                : `local-receiver-untyped:${recv || '?'}`,
+              : !/^[A-Za-z_$]/.test(recv)
+                ? `literal-receiver:${recv.slice(0, 24)}`
+                : BUILTIN_NAMESPACES.has(/^[A-Za-z_$][\w$]*/.exec(recv)?.[0] ?? '')
+                  ? `builtin-namespace:${/^[A-Za-z_$][\w$]*/.exec(recv)?.[0]}`
+                  : `local-receiver-untyped:${/^[A-Za-z_$][\w$]*/.exec(recv)?.[0] ?? '?'}`,
           }),
         });
         stats.external++;
