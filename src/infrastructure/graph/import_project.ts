@@ -819,6 +819,45 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   for (const c of index.collisions) skipped.push(`同名碰撞: ${c}`);
   const goModules = readGoModules(root);
 
+  // ★★★ 2026-10-27（T-#46）：**预检 —— 解析器真的能出符号吗？**（在写索引**之前**）
+  //
+  // ## 实测事故（本日）
+  // 删 `cache.db` 后 `importProject` 报「文件: 536 个 → 635 节点（**符号 0 个**，依赖 0 条）」——
+  // **耗时 0.2s、不报错**，而 `nodes` 表是空的 ⇒ 之后**任何"基于索引"的查询都静默返回空**。
+  // ⇒ 这是最危险的一类失效：**"建好了"与"空的"在回执上长得一模一样**。
+  //
+  // ## 修法：写索引之前先试解析，全 0 就抛，一个字节都不写
+  // ★ 为什么不先查 `parserReadyForFile()`：实测它对目标文件返回 `false`，
+  //   而 `parseFile()` 却能正常出 9 个符号 ⇒ 它的语义不可靠（可能判的是批量解析器的就绪状态）。
+  //   ⇒ **只信实际解析结果**，不问原因。
+  // ★ 为什么是 3 个文件：够判"整体是否就绪"，又够便宜（毫秒级）。
+  const probeFiles = absFiles
+    .filter((f) => codeSourceExtSet().has(path.extname(f).toLowerCase()))
+    .slice(0, 3);
+  /** ★ T-#46：预检拿到的符号数（**外面声明**，供解析循环之后的对照断言用） */
+  let probeSyms = 0;
+  if (probeFiles.length > 0) {
+    const { parseFile: probeParseFile } = await import('../parse/kernel.js');
+    for (const pf of probeFiles) {
+      try {
+        probeSyms += (await probeParseFile(pf, fs.readFileSync(pf, 'utf8'))).length;
+      } catch {
+        /* 单文件失败不单独算，看整体是否为 0 */
+      }
+    }
+    if (probeSyms === 0) {
+      throw new Error(
+        `导入被拒：**解析器出不了符号**（预检 ${probeFiles.length} 个代码文件，合计 0 个符号）\n` +
+          `  · 预检样例：${probeFiles.map((p) => path.relative(root, p)).join(' · ')}\n` +
+          `★ 症状：若不拦，索引会被建成"有文件节点、但 \`nodes\` 表为空"——` +
+          `之后任何基于索引的查询都会**静默返回空**（"建好了"与"空的"在回执上长得一样）。\n` +
+          `★ 已知成因：tree-sitter 语法包未加载（冷启未 prewarm）/ 从裸 node 进程调用` +
+          `（MCP server 启动时会 prewarm，裸进程不会）。\n` +
+          `★ 本次**一个字节都没写**（预检在写索引之前）⇒ 已有索引不受影响。`,
+      );
+    }
+  }
+
   // 2. 解析符号 + import（顺带统计行数，零成本复用已读内容做单文件监控）
   const parsed = new Map<string, { symbols: ExpectedApi[]; nonFuncSymbols: Symbol[]; imports: ParsedImport[] }>();
   const lineCounts = new Map<string, number>();
@@ -1235,6 +1274,23 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       // ★★★ 2026-10-22（A1）：`via:'import'` = 「我是扫描产物，不是人改设计」。
       //   这条声明是**能被 grep 到的**（`grep -rn "via: 'import'"`），而 2026-10-22 之前
       //   这种写和"脚本顺手直写设计册"在代码里长得**一模一样**——那正是这张卡要治的病。
+      // ★★★ 2026-10-27（T-#46）：**对照断言** —— 预检能出符号、而批量路径出 0 ⇒ 一定是 bug。
+      //
+      // 实测（本日）：2 个 `.ts` 的临时项目 —— `parseFile()` 能出 3 个符号，
+      // 而 `importProject` 的批量路径出 **0 个**（`symbols_found = 0`，**不报错**）
+      // ⇒ 索引被建成"有文件节点、`nodes` 表为空" ⇒ 之后任何基于索引的查询**静默返回空**。
+      // ⇒ 判据：`probeSyms > 0 && symbolsFound === 0` ⇒ **不可能是"项目真没符号"**（预检已经反证了）
+      //   ⇒ 直接拒，且**在写设计册之前**。
+      if (probeSyms > 0 && symbolsFound === 0) {
+        throw new Error(
+          `导入被拒：**批量解析路径出 0 个符号，而预检解析能出 ${probeSyms} 个** —— 这是解析管线的 bug，不是"项目没符号"。\n` +
+            `★ 症状：索引会被建成"有文件节点、\`nodes\` 表为空" ⇒ 之后任何基于索引的查询都会**静默返回空**。\n` +
+            `★ 对照：预检走 \`parseFile()\`（单文件直解）出 ${probeSyms} 个；批量路径走的是缓存/分批那条` +
+            ` ⇒ **两条路的结论不一致**，这本身就是 bug。\n` +
+            `★ 本次**没写设计册**（断言在 \`saveDSL\` 之前）；但索引可能已被部分写入` +
+            ` ⇒ 建议重跑 \`import_project\`，或用 \`index_integrity\` 确认 \`nodes\` 非空。`,
+        );
+      }
       runDslWriteScope({ via: 'import', who: 'import_project', feature }, () => {
         saveDSL(designDsl, 'mcp', undefined, { refreshScanRev: true });
       });
