@@ -2304,6 +2304,35 @@ function traverseAndExtractTypeRefs(
       return;
     }
   }
+  // ★★★ 2026-10-27（T-#77）：**带点的类型引用要保留 receiver**（`http.ServerResponse` / `fs.Dirent`）。
+  //
+  // ## 病史（和 T-#75 的"事实丢失"同一种病）
+  // 本函数原先只认 `type_identifier`（**裸名**）。而 `http.ServerResponse` 的 AST 是
+  // `nested_type_identifier`（TS）/ `qualified_type`（Go）⇒ 遍历只看到**内层** `ServerResponse`
+  // ⇒ **receiver `http` 丢了**。
+  // 后果：解析器无法判"这是**外部包**的成员" ⇒ 只能靠 `BUILTIN_TYPES` 里硬堆
+  //   `ServerResponse` / `IncomingMessage` / `Dirent` … 来猜（**那是补丁，不是结构**）。
+  // ⇒ **能知道的 receiver 不该丢**。
+  //
+  // ## 修法
+  // 命中带点的类型节点 ⇒ 记**全名**（`http.ServerResponse`），`resolved: false`（裸名查不到它）；
+  // 交给 `resolveCrossFileCalls` 的**带点分支**（T-#50）判 —— 那里会看 receiver 是不是 package 命名空间
+  // ⇒ 判出 `namespace-member-of-package:http` ⇒ **external（有据）**，不再靠表猜。
+  // ★ 子节点不再处理（否则内层 `type_identifier` 会**重复记一条裸名**）。
+  if (
+    (node.type === 'nested_type_identifier' ||
+      node.type === 'qualified_type' ||
+      node.type === 'scoped_type_identifier') &&
+    stack.length > 0
+  ) {
+    const top = stack[stack.length - 1];
+    const text = node.text.replace(/\s+/g, '');
+    const row = node.startPosition.row;
+    if (text.includes('.') && text.length <= 120) {
+      typeRefs.push({ referrer: top.qn, type_name: text, line: row + 1, resolved: false });
+    }
+    return; // 带点类型节点已消费，内层不再单独记
+  }
   if (node.type === 'type_identifier' && stack.length > 0) {
     const top = stack[stack.length - 1];
     const text = node.text;
