@@ -159,6 +159,16 @@ export interface ParsedCall {
   resolved: boolean;
   /** resolved 时对应的同文件符号 qualified_name */
   callee_qn?: string;
+  /**
+   * ★★★ 2026-10-27（T-#55）：**这个名字是某个祖先作用域的“参数”**（不是符号）。
+   *
+   * 为什么要在这里标（而不是事后从 `nodes` 反推）：
+   *   `new Promise((resolve, reject) => { … })` 里的 `resolve`/`reject` 是**匿名箭头**的参数
+   *   —— 匿名箭头**没有名字** ⇒ 不进 `nodes` ⇒ **没有行范围可匹配**
+   *   ⇒ 现有数据**永远判不了**它（实测 ~50 条落 failed）。
+   * 而解析时**作用域就在手上** ⇒ 只有在这里标得准。
+   */
+  local?: boolean;
 }
 
 /** 类型引用边（同文件内）：函数/类签名或体内引用了 interface/type/class 符号。
@@ -1848,7 +1858,9 @@ function extractCallsFromBody(
   callerQn: string,
   calls: ParsedCall[],
   symbols: ParsedSymbol[],
-  depth: number = 0
+  depth: number = 0,
+  /** ★ T-#55：**当前可见的局部绑定名**（祖先函数的参数 + 逐层匿名箭头/函数表达式的参数） */
+  scope: Set<string> = new Set()
 ): void {
   if (depth > 200) return;
   if (isSymbolNode(node, lang)) return;
@@ -1856,21 +1868,37 @@ function extractCallsFromBody(
     const c = extractCallee(node, lang.name);
     if (c) {
       const sym = symbols.find((s) => s.name === c.name);
+      // ★ T-#55：名字命中作用域参数 ⇒ 它是**局部绑定**，不可能对应仓内符号
+      const isLocal = scope.has(c.name);
       calls.push({
         caller: callerQn,
         callee: c.name,
         callee_expr: c.expr,
         line: node.startPosition.row + 1,
-        resolved: !!sym,
-        callee_qn: sym ? sym.qualified_name : undefined,
+        resolved: !isLocal && !!sym,
+        callee_qn: !isLocal && sym ? sym.qualified_name : undefined,
+        ...(isLocal ? { local: true } : {}),
       });
     }
     // 继续递归子节点：参数/回调中可能嵌套调用（如 fmt.Println(hello(x)) / arr.map(fn)）
     // callee 表达式（identifier/selector）不是 call 节点，不会被误提取
   }
+  // ★ T-#55：**匿名函数自己引入作用域** —— 它的参数只存在于 AST，不进 nodes ⇒ 只能在这里记
+  let childScope = scope;
+  if (
+    node.type === 'arrow_function' ||
+    node.type === 'function_expression' ||
+    node.type === 'function' ||
+    node.type === 'generator_function'
+  ) {
+    const names = paramsOf(node, 'parameters', lang.name)
+      .map((p) => p.name)
+      .filter((n): n is string => !!n);
+    if (names.length > 0) childScope = new Set([...scope, ...names]);
+  }
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i);
-    if (child) extractCallsFromBody(child, lang, callerQn, calls, symbols, depth + 1);
+    if (child) extractCallsFromBody(child, lang, callerQn, calls, symbols, depth + 1, childScope);
   }
 }
 
@@ -1895,9 +1923,15 @@ function traverseAndExtractCalls(
       const body = bodyChildren(node, lang, fromIndex);
       if (body) {
         funcStack.push(qn);
+        // ★ T-#55：**本函数的参数进作用域** —— 引用参数不是符号（实测 resolve/reject/fn …）
+        const ownParams = new Set<string>(
+          paramsOf(node, lang.field_map.parameters || 'parameters', lang.name)
+            .map((p) => p.name)
+            .filter((n): n is string => !!n),
+        );
         if (kind === 'function' || kind === 'method') {
           // 本函数体调用（跳过嵌套函数子树）
-          for (const child of body) extractCallsFromBody(child, lang, qn, calls, symbols, depth + 1);
+          for (const child of body) extractCallsFromBody(child, lang, qn, calls, symbols, depth + 1, ownParams);
         }
         // 继续递归找方法/嵌套函数
         for (const child of body) traverseAndExtractCalls(child, lang, symbols, calls, funcStack, depth + 1);

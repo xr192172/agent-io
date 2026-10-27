@@ -926,6 +926,23 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
     for (const c of parsed.calls) {
       const srcId = idOf(c.caller);
       if (!nodeIdSet.has(srcId)) continue; // qn 漂移坏边：跳过不炸事务
+      // ★★★ 2026-10-27（T-#55）：**局部绑定（参数）** —— 解析期已判准（kernel 带作用域栈），
+      //   这里直接落 `external` **说真话**：它不是符号、不建边，但**不是漏连**。
+      //   ★ 为什么必须在解析期判：`new Promise((resolve, reject) => …)` 的箭头**没有名字**
+      //     ⇒ 不进 `nodes` ⇒ 事后从库里反推**永远判不了**（实测 ~50 条卡在这）。
+      if (c.local) {
+        insUnresolvedTagged.run({
+          from: srcId,
+          rn: c.callee_expr,
+          ln: c.line,
+          fid: fileId,
+          lang: ext,
+          nt: c.callee,
+          st: 'external',
+          cd: JSON.stringify({ verdict: 'external', why: `local-binding:${c.caller}` }),
+        });
+        continue;
+      }
       const verdict = classifyCall({
         content,
         symbols: parsed.symbols,
