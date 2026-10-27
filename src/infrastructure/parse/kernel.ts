@@ -123,7 +123,7 @@ export interface ParsedImport {
   start_index?: number;
   end_index?: number;
   /** relative = 相对路径（./ ../ 或 Python 前导点）；package = 包路径 */
-  kind: 'relative' | 'package';
+  kind: 'relative' | 'package' | 'computed';
   line: number;
   /**
    * TS 系 `import type { X } from ...`——整条语句运行时擦除（零运行时依赖）。
@@ -2455,15 +2455,26 @@ function traverseAndExtractImports(
           break;
         }
       }
-      // ★ T-#75 护栏：**只认字面量 source**。
-      //   实测 `certs/t136` 是 `require(path.join(REPO, 'dist/…/health/index.js'))`、
-      //   `certs/t238` 是 `require(dist('infrastructure/…'))` —— **计算出来的路径**。
-      //   原先我把整个表达式文本当 source 记下来 ⇒ 塞进一条**永远解析不到的假 import**
-      //   （比不记更坏：它污染 imports 表、还会让 `relBindingsByFile` 以为有绑定）。
-      //   ⇒ 只认 `string` / `template_string` 这类**字面量节点**；表达式一律不记。
+      // ★★★ 2026-10-27（T-#76）：**计算路径的 import 也要记 —— 记事实，标不可解析**。
+      //
+      // ## 病史（T-#75 的取舍失误）
+      // 上一版对「source 不是字面量」的 import **整行丢掉** ⇒ 包括
+      //   `const { saveDSL } = await import(pathToFileURL(STORAGE_JS).href)`
+      // 这类**真实的依赖事实**。丢掉的后果：
+      //   · `relBindingsByFile` 不知道 `saveDSL` 是导入绑定
+      //   · `dep_edges` / `dead_deps` / `impact_analysis` **少一条依赖边**
+      //   · 「谁动态加载了模块」这类查询**查不到它**
+      // ⇒ **能知道的事实不该因为"source 解析不了"而丢**。
+      //
+      // ## 正确做法（两件事分开）
+      //   · **source 解析不了** ⇒ `kind: 'computed'`（有依赖事实、路径是算出来的）
+      //   · **绑定是真的** ⇒ 照常写 `bindings`
+      //   ⇒ `relImportsByFile` 只收 `kind='relative'` ⇒ **computed 不进跨文件查找**
+      //     （不制造假解析），但 **imports 表里有这一行**（依赖事实保留）。
       const isLiteralSrc =
         !!srcNode && (srcNode.type === 'string' || srcNode.type === 'template_string' || /string/.test(srcNode.type));
-      const src = isLiteralSrc && srcNode ? srcNode.text.replace(/^['"`]|['"`]$/g, '') : '';
+      const rawSrc = srcNode ? srcNode.text.replace(/^['"`]|['"`]$/g, '') : '';
+      const src = isLiteralSrc ? rawSrc : srcNode ? srcNode.text.replace(/\s+/g, ' ').slice(0, 200) : '';
       if (src) {
         // 绑定名：`const { a, b } = await import(…)` ⇒ 解构里的名字
         const bindings: string[] = [];
@@ -2485,7 +2496,8 @@ function traverseAndExtractImports(
         }
         imports.push({
           source: src,
-          kind: src.startsWith('.') ? 'relative' : 'package',
+          // ★ 字面量 ⇒ 按 source 形态归；**算出来 ⇒ 'computed'**（有事实，路径解析不了）
+          kind: isLiteralSrc ? (rawSrc.startsWith('.') ? 'relative' : 'package') : 'computed',
           line: node.startPosition.row + 1,
           ...(bindings.length > 0 ? { bindings } : {}),
         });
