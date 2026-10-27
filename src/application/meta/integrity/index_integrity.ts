@@ -716,7 +716,18 @@ async function indexIntegrityCore(opts: {
         retryFailedNote =
           `重试存量 failed：${before} → ${after}（重解析 ${st.total} 条：` +
           `resolved ${st.resolved} · external ${st.external} · 仍 failed ${st.failed}）` +
-          (relabel > 0 ? `；另重判 ${relabel} 条粗标签` : '');
+          (relabel > 0 ? `；另重判 ${relabel} 条粗标签` : '') +
+          // ★★★ T-#67：**两层对账（上一次判定 → 本次）** —— 让"哪一层判得准"在**工具面可见**，
+          //   不再只能靠脚本/推理。★ `suspect→external` 多 = 跨文件层救回了 AST 判不准的；
+          //   `external→resolved` 非 0 = **AST 判 external 判错了**（保守过头，该查）。
+          (st.overrides && Object.keys(st.overrides).length > 0
+            ? `\n  ★ 两层对账（上一次判定→本次）：` +
+              Object.entries(st.overrides)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 6)
+                .map(([k, v]) => `${k} ${v}`)
+                .join(' · ')
+            : '');
       }
     } catch (e) {
       retryFailedNote = `重试存量 failed 失败：${(e as Error).message}`;
