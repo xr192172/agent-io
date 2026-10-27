@@ -92,7 +92,8 @@ export interface BaselineDrift {
  */
 export function checkBaselineDrift(feature: string, codeDir: string): BaselineDrift {
   const notes: string[] = [];
-  const baseline = getBaselineFacts(feature);
+  // ★ T-#98：根必填 ⇒ 用本函数的 `codeDir`（它就是这条线在看的项目根）
+  const baseline = getBaselineFacts(feature, codeDir);
   if (!baseline) {
     return {
       compared: 0,

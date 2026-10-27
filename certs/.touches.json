@@ -536,6 +536,18 @@
     "src/application/design/dsl_ops/task_ops.js",
     "src/domain/task_machine.js"
   ],
+  "t360-two-phase-claim-cert.mjs": [
+    "src/application/design/handlers.js",
+    "src/domain/t360_abandon.ts",
+    "src/domain/t360_empty.ts",
+    "src/domain/t360_fixture_absent.ts",
+    "src/domain/t360_has_post.ts",
+    "src/domain/t360_legacy.ts",
+    "src/domain/t360_timeout.ts",
+    "src/domain/task_machine.ts",
+    "src/domain/task_schema.js",
+    "src/infrastructure/storage.js"
+  ],
   "t361-hook-task-gate-cert.mjs": [
     "src/candidate.ts",
     "src/claimed.ts",
@@ -554,5 +566,22 @@
   ],
   "t364-set-node-semantic-cert.mjs": [
     "src/application/design/dsl_ops/api_ops.ts"
+  ],
+  "t365-progress-authority-cert.mjs": [
+    "src/a.ts",
+    "src/application/meta/explore/query_feature.js",
+    "src/application/write_gate.js",
+    "src/b.ts",
+    "src/domain/overlay.js",
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage_overlay.js"
+  ],
+  "t366-evidence-plan-cert.mjs": [
+    "src/__t366_absent__.ts",
+    "src/__t366_other__.ts",
+    "src/application/design/dsl_ops/task_ops.js",
+    "src/application/design/dsl_ops/task_ops.ts",
+    "src/domain/task_schema.js",
+    "src/domain/task_schema.ts"
   ]
 }

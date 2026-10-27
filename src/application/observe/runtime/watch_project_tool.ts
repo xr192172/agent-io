@@ -432,7 +432,7 @@ async function doWork(entry: ActiveWatch): Promise<void> {
   if (entry.rebuild && entry.feature) {
     try {
       const db = getProjectCacheDb(entry.project_dir);
-      await importProject({ project_dir: entry.project_dir, feature: entry.feature, cache_db: db, live_only: true, live_dir: entry.project_dir });
+      await importProject({ project_dir: entry.project_dir, feature: entry.feature, cache_db: db, live_only: true });
       entry.last_rebuild_at = new Date().toISOString();
       entry.error = undefined; // 上次失败已修复
 

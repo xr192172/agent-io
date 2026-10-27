@@ -77,6 +77,8 @@ function warnLegacyDataHomeOnce(legacyHome: string, modernHome: string): void {
 // ★★★ 2026-10-26（T-#27）：注册表读端。放在这里（顶层、函数声明之前）而非文件头，
 //   是为了让它**紧挨**唯一使用点 —— ESM 的 import 会 hoist，位置不影响语义。
 import { projectRootOf } from './project_registry.js';
+// ★ T-#98：目录 getter 的唯一实现（roles 表在 roots.ts，别在这里再拼一遍路径）
+import { rootPath } from './roots.js';
 // ★★★ 2026-10-26（T-#27 / `docs/ROOTS.md` §7.4）：**读端接线** —— `getDesignSheetFile` 未给 baseDir 时
 //   查项目注册表，把 feature 解析到它自己的项目根。
 //   ★ 循环依赖是**安全的**：两边都只在**调用时**用对方的绑定（`project_registry` 只在 `registryFile()`
@@ -153,19 +155,24 @@ export function requireProjectRoot(cands: Record<string, unknown>): string {
  *   那个目录里已没有任何活物）。feature 的唯一主体 = `design/<f>.dsl.json`。
  */
 
-/** 实际 DSL 目录（动态快照）：<dataHome>/.agent-io/live */
-export function getLiveDir(baseDir?: string): string {
-  // ★ `baseDir ?? getDataHome()` 是**默认值**、不是兜底（判据见 `requireProjectRoot` 上方那张表）：
-  //   dataHome 是这份数据的**合法归属**（同一件事），而 `?? process.cwd()` 是**换题**。
-  return path.join(baseDir ?? getDataHome(), DATA_DIR_NAME, 'live');
+/**
+ * 实际 DSL 目录（动态快照）：**`<项目根>/.agent-io/live`**。
+ *
+ * ★★★ 2026-10-27（T-#98 / ROOTS.md 步 7）：`baseDir` **改成必填**，且路径问 `rootPath`（唯一解析器）。
+ * 病史：原先 `baseDir ?? getDataHome()` —— 不传就**静默落到数据家** ⇒ 项目内一行没有、
+ *   数据家里却住着每个项目的 live（实测本仓自己就是这样）。拼路径的规则还与 `roots.ts#ROLE_SUBDIR` 重复。
+ * ⇒ 现在：不给项目根就是**编译错**（能修的都在编译期解决），不再有"另一个地方"的默认值。
+ */
+export function getLiveDir(projectRoot: string): string {
+  return rootPath('live', projectRoot);
 }
 
 /** 实际 DSL 文件路径：<dataHome>/.agent-io/live/<feature>.dsl.json */
-export function getLiveFeatureFile(feature: string, baseDir?: string): string {
+export function getLiveFeatureFile(feature: string, projectRoot: string): string {
   if (!/^[a-zA-Z0-9_-]+$/.test(feature)) {
     throw new Error(`非法 feature 名: "${feature}"，必须匹配 ^[a-zA-Z0-9_-]+$`);
   }
-  return path.join(getLiveDir(baseDir), `${feature}.dsl.json`);
+  return path.join(getLiveDir(projectRoot), `${feature}.dsl.json`);
 }
 
 /**
@@ -276,10 +283,10 @@ function syncMeta(dsl: DesignDSL, source: string, refreshScanRev?: boolean): Rec
 /** 保存实际 DSL（动态快照，带 _sync 标记；不触发 dslChangeCallback，避免打扰设计视图刷新）
  *  baseDir 可选：指定写入的项目根（默认 dataHome）。watch_project 监听任意项目时传 project_dir，
  *  使实际 DSL 与该项目 cache.db 同目录归位。 */
-export function saveLiveFeature(dsl: DesignDSL, baseDir?: string): string {
-  const dir = getLiveDir(baseDir);
+export function saveLiveFeature(dsl: DesignDSL, projectRoot: string): string {
+  const dir = getLiveDir(projectRoot);
   fs.mkdirSync(dir, { recursive: true });
-  const file = getLiveFeatureFile(dsl.feature, baseDir);
+  const file = getLiveFeatureFile(dsl.feature, projectRoot);
   const data = {
     ...dsl,
     _sync: syncMeta(dsl, 'live', true),
@@ -289,8 +296,8 @@ export function saveLiveFeature(dsl: DesignDSL, baseDir?: string): string {
 }
 
 /** 读取实际 DSL，不存在返回 null */
-export function getLiveFeature(feature: string, baseDir?: string): DesignDSL | null {
-  const file = getLiveFeatureFile(feature, baseDir);
+export function getLiveFeature(feature: string, projectRoot: string): DesignDSL | null {
+  const file = getLiveFeatureFile(feature, projectRoot);
   if (!fs.existsSync(file)) return null;
   try {
     return JSON.parse(fs.readFileSync(file, 'utf-8')) as DesignDSL;
@@ -321,19 +328,19 @@ export function getLiveFeature(feature: string, baseDir?: string): DesignDSL | n
 // ─────────────────────────────────────────────────────────────
 
 /**
- * 设计图目录：`<baseDir>/.agent-io/design`（★ **唯一位置**，2026-10-18 定）
+ * 设计图目录：`<projectRoot>/.agent-io/design`（★ **唯一位置**，2026-10-18 定）
  *
  * ## 为什么回到这里（而不是 docs/）
- * 曾经试过放 `<baseDir>/docs`（为了让 git 能收），但结果出现**两处**：
- * `docs/<f>.dsl.json` 和 `<baseDir>/.agent-io/design/<f>.dsl.json` ⇒ 语义盘根错节。
+ * 曾经试过放 `<projectRoot>/docs`（为了让 git 能收），但结果出现**两处**：
+ * `docs/<f>.dsl.json` 和 `<projectRoot>/.agent-io/design/<f>.dsl.json` ⇒ 语义盘根错节。
  * ⇒ **现在只有一处。**git 能不能收，由 `.gitignore` 的白名单决定，不由目录位置决定。
  *
  * | 文件 | 位置 | 进 git |
  * |---|---|---|
- * | ★ **设计 DSL**（手写权威） | `<baseDir>/.agent-io/design/<f>.dsl.json` | ✅ **白名单 `!.agent-io/design/`** |
- * | 实际 DSL（扫描产物） | `<baseDir>/.agent-io/live/<f>.dsl.json` | ❌ |
- * | 派生（扫描 ⊕ overlay） | `<baseDir>/.agent-io/features/<f>.json` | ❌ |
- * | live 缓存 / 索引 | `<baseDir>/.agent-io/cache.db` 等 | ❌ |
+ * | ★ **设计 DSL**（手写权威） | `<projectRoot>/.agent-io/design/<f>.dsl.json` | ✅ **白名单 `!.agent-io/design/`** |
+ * | 实际 DSL（扫描产物） | `<projectRoot>/.agent-io/live/<f>.dsl.json` | ❌ |
+ * | 派生（扫描 ⊕ overlay） | `<projectRoot>/.agent-io/features/<f>.json` | ❌ |
+ * | live 缓存 / 索引 | `<projectRoot>/.agent-io/cache.db` 等 | ❌ |
  */
 export function getDesignDir(baseDir?: string): string {
   return path.join(baseDir ?? getDataHome(), DATA_DIR_NAME, 'design');
@@ -470,18 +477,18 @@ export function getDesignSheet(feature: string, baseDir?: string): DesignDSL | n
  * ★★ 它是**实际侧**的快照，**不是设计侧的回滚点** —— 别拿它当设计快照用。
  * 与 baseDir 归位规则和 live 一致（watch_project 监听任意项目时传 project_dir）。
  */
-export function getBaselineDir(baseDir?: string): string {
-  // ★ `baseDir ?? getDataHome()` 是**默认值**、不是兜底（判据见 `requireProjectRoot` 上方那张表）：
-  //   dataHome 是这份数据的**合法归属**（同一件事），而 `?? process.cwd()` 是**换题**。
-  return path.join(baseDir ?? getDataHome(), DATA_DIR_NAME, 'baseline');
+export function getBaselineDir(projectRoot: string): string {
+  // ★ T-#98：与 `getLiveDir` 同一条判据 —— `projectRoot` 必填，路径问 `rootPath`（唯一解析器）。
+  //   病史同上：原先 `baseDir ?? getDataHome()` ⇒ 基线也住在数据家（项目内没有）。
+  return rootPath('baseline', projectRoot);
 }
 
 /** 基线 DSL 文件路径：<dataHome>/.agent-io/baseline/<feature>.dsl.json */
-export function getBaselineFeatureFile(feature: string, baseDir?: string): string {
+export function getBaselineFeatureFile(feature: string, projectRoot: string): string {
   if (!/^[a-zA-Z0-9_-]+$/.test(feature)) {
     throw new Error(`非法 feature 名: "${feature}"，必须匹配 ^[a-zA-Z0-9_-]+$`);
   }
-  return path.join(getBaselineDir(baseDir), `${feature}.dsl.json`);
+  return path.join(getBaselineDir(projectRoot), `${feature}.dsl.json`);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -518,16 +525,16 @@ export interface BaselineFactsFile {
 }
 
 /** 基线事实文件路径（与 `.dsl.json` 并列，**同目录、同名族**） */
-export function getBaselineFactsFile(feature: string, baseDir?: string): string {
+export function getBaselineFactsFile(feature: string, projectRoot: string): string {
   if (!/^[a-zA-Z0-9_-]+$/.test(feature)) {
     throw new Error(`非法 feature 名: "${feature}"，必须匹配 ^[a-zA-Z0-9_-]+$`);
   }
-  return path.join(getBaselineDir(baseDir), `${feature}.facts.json`);
+  return path.join(getBaselineDir(projectRoot), `${feature}.facts.json`);
 }
 
 /** 读取基线事实；不存在返回 `null`（★ 老 feature 没有它 ⇒ 调用方要能处理"没有基线事实"） */
-export function getBaselineFacts(feature: string, baseDir?: string): BaselineFactsFile | null {
-  const file = getBaselineFactsFile(feature, baseDir);
+export function getBaselineFacts(feature: string, projectRoot: string): BaselineFactsFile | null {
+  const file = getBaselineFactsFile(feature, projectRoot);
   if (!fs.existsSync(file)) return null;
   try {
     return JSON.parse(fs.readFileSync(file, 'utf-8')) as BaselineFactsFile;
@@ -549,9 +556,10 @@ export function saveBaselineFactsIfAbsent(
   sourceRoot: string,
   rels: readonly string[],
   readFacts: (rel: string) => { apis: readonly string[]; deps: readonly string[] },
-  baseDir?: string,
 ): { written: boolean; file: string; files: number } {
-  const file = getBaselineFactsFile(feature, baseDir);
+  // ★ T-#98：**根只有 `sourceRoot` 一个** —— 原先还有第 5 个参数 `projectRoot?`（可选 ⇒ 传进来是 undefined
+  //   就落数据家）。同一个函数两个根参数，本仓头号病；而 `sourceRoot` 本来就是"这个 feature 的项目根"。
+  const file = getBaselineFactsFile(feature, sourceRoot);
   if (fs.existsSync(file)) return { written: false, file, files: 0 };
   const files: BaselineFactsFile['files'] = {};
   for (const rel of rels) {
@@ -572,10 +580,10 @@ export function saveBaselineFactsIfAbsent(
 }
 
 /** 保存基线 DSL（带 _sync 标记；不触发 dslChangeCallback，避免打扰设计视图刷新） */
-export function saveBaselineFeature(dsl: DesignDSL, baseDir?: string): string {
-  const dir = getBaselineDir(baseDir);
+export function saveBaselineFeature(dsl: DesignDSL, projectRoot: string): string {
+  const dir = getBaselineDir(projectRoot);
   fs.mkdirSync(dir, { recursive: true });
-  const file = getBaselineFeatureFile(dsl.feature, baseDir);
+  const file = getBaselineFeatureFile(dsl.feature, projectRoot);
   const data = {
     ...dsl,
     // ★★ 2026-10-22（B2）：`content_hash` = **实际侧内容指纹**。
@@ -587,8 +595,8 @@ export function saveBaselineFeature(dsl: DesignDSL, baseDir?: string): string {
 }
 
 /** 读取基线 DSL，不存在返回 null */
-export function getBaselineFeature(feature: string, baseDir?: string): DesignDSL | null {
-  const file = getBaselineFeatureFile(feature, baseDir);
+export function getBaselineFeature(feature: string, projectRoot: string): DesignDSL | null {
+  const file = getBaselineFeatureFile(feature, projectRoot);
   if (!fs.existsSync(file)) return null;
   try {
     return JSON.parse(fs.readFileSync(file, 'utf-8')) as DesignDSL;
@@ -685,11 +693,11 @@ export function dslContentHash(dsl: DesignDSL): string {
  *   那时再算 drift 只能算出"和它自己比"（= 恒空，假绿）。
  * ★ 调用点只有一处：`graph/import_project.ts` 扫成功后（`grep rebuildBaseline` 应只有一个调用）。
  */
-export function rebuildBaseline(dsl: DesignDSL, baseDir?: string): { file: string; drift: BaselineDrift } {
-  const prev = getBaselineFeatureResolved(dsl.feature, baseDir);
+export function rebuildBaseline(dsl: DesignDSL, projectRoot: string): { file: string; drift: BaselineDrift } {
+  const prev = getBaselineFeatureResolved(dsl.feature, projectRoot);
   const drift = diffBaselineFiles(prev, dsl);
-  saveBaselineFeature(dsl, baseDir);
-  return { file: getBaselineFeatureFile(dsl.feature, baseDir), drift };
+  saveBaselineFeature(dsl, projectRoot);
+  return { file: getBaselineFeatureFile(dsl.feature, projectRoot), drift };
 }
 
 /**
@@ -720,7 +728,11 @@ export function viewBaseDirCandidates(feature: string, explicit?: string): strin
   // ★ 用 readDSLRaw：只是在**反查 source_root**，不该因为"事实外置"而触发一次 DB 现渲染。
   const sr = readDSLRaw(feature)?.source_root;
   if (sr) out.push(sr);
-  out.push(getDataHome());
+  // ★★★ 2026-10-27（T-#98）：**候选链末尾的 `getDataHome()` 已删**。
+  //   病史：它是"数据家也是合法落点"的最后一道口子 —— live/baseline 写在项目里、读却还能从数据家
+  //   读到旧的那份 ⇒ 两处落点谁都说不清哪份是真的。ROOTS.md 的判据是「**三侧全在项目内**，
+  //   数据仓只留 projects.json + 可重建缓存」⇒ 数据家不再装 live/baseline，候选链也就不该再列它。
+  //   ★ 空链 = "**不知道这个 feature 的根**" ⇒ 调用方按"读不到"处理（不许用数据家冒充）。
   return [...new Set(out.map((d) => path.resolve(d)))];
 }
 
@@ -763,9 +775,9 @@ export function getBaselineFeatureResolved(feature: string, explicit?: string): 
  * 本函数保留的唯一理由：`stage_registry` 的 `dsl_baseline` 工序要能"缺了就补"，
  * 而补缺**永不覆盖**已有基线（覆盖 = 把"上次扫描"这个答案删掉）。
  */
-export function ensureBaseline(dsl: DesignDSL, baseDir?: string): void {
-  if (getBaselineFeature(dsl.feature, baseDir)) return;
-  saveBaselineFeature(dsl, baseDir);
+export function ensureBaseline(dsl: DesignDSL, projectRoot: string): void {
+  if (getBaselineFeature(dsl.feature, projectRoot)) return;
+  saveBaselineFeature(dsl, projectRoot);
 }
 
 // ─────────────────────────────────────────────
@@ -796,7 +808,7 @@ export interface ArchiveEntry {
   archived_at: string;
 }
 
-/** 下线库目录：<baseDir>/.agent-io/archive/<feature>/ */
+/** 下线库目录：<projectRoot>/.agent-io/archive/<feature>/ */
 export function getArchiveDir(feature: string, baseDir?: string): string {
   // ★ `baseDir ?? getDataHome()` 是**默认值**、不是兜底（判据见 `requireProjectRoot` 上方那张表）：
   //   dataHome 是这份数据的**合法归属**（同一件事），而 `?? process.cwd()` 是**换题**。

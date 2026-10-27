@@ -128,11 +128,12 @@ export interface ImportProjectInput {
    * ★ 为什么默认拒绝：破坏性操作不该是"默认且静默"的。
    */
   allow_design_drop?: boolean;
-  /**
-   * 可选：live_only 时实际 DSL 归属的项目根（默认 dataHome）。
-   * watch_project 监听任意项目时传 project_dir，使实际 DSL 与该项目 cache.db 同目录归位。
-   */
-  live_dir?: string;
+  // ★★★ 2026-10-27（T-#98）：**`live_dir` 已删**。
+  //   病史：它的说明是「live_only 时实际 DSL 归属的项目根（默认 dataHome）」—— 也就是说
+  //   **不传就落到数据家**，等于给 live 留了「第二个家」的入口；而全仓（src / certs / tests / scripts）
+  //   **一次都没人传过它**（实测 grep）⇒ 它只是那个洞的开关。
+  //   ⇒ 现在 live / baseline 一律落 `rootPath(role, 项目根)`（`roots.ts` 是唯一解析器），
+  //     本项目自己的 `project_dir` 就是答案，不需要第二个参数。
   /**
    * 可选：是否用 LLM 为每个文件节点生成中文职责主标题（node.title）。
    * 默认 false（不引入 LLM 依赖与延迟）；自分析/讲解场景开启。未配置 LLM 时静默跳过。
@@ -1214,7 +1215,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     if (!wantsDesign) {
       // 只刷新"实际"：设计被完整保住
       designAction = '（★ 本次**只刷新了"实际"**：设计 DSL 未被触碰 —— 这就是"有设计就不动、只对比"）';
-      saveLiveFeature(layered, input.live_dir);
+      saveLiveFeature(layered, root);
     } else {
       // ★★★ 2026-10-09（T77 落地）：**重建设计会抹掉"扫描产不出"的节点** ⇒ 先算差集，非空就**拒绝**。
       //   为什么必须拦：实测（2026-10-09）手工 `edit_dsl` 加的节点 `node_manual_1` 一重建就**消失**，
@@ -1361,7 +1362,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       // live 快照，换项目后聚类会因语义基准为空被判"db 不相关"而拒生成 → 导图平铺。
       // 导入即落一份 live，保证换项目后功能树可稳定聚类。（live_dir 缺省 = 默认 dataHome，
       // 与 getLiveFeature 默认读取路径一致。）
-      saveLiveFeature(layered, input.live_dir);
+      saveLiveFeature(layered, root);
     }
     // fork 基线：首次导入（无论 live_only 与否）即锚定契约创立时刻的参考基准，
     // 之后 live 随代码演进更新、设计 DSL 随意图演进，二者都相对 baseline 各自前进，
@@ -1382,7 +1383,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     //
     // ## ★ 为什么必须先算 drift 再重建
     // 覆盖写之后旧快照就没了 ⇒ "变了什么"必须在**写之前**算，否则重建 = 把答案一起删掉。
-    const { drift } = rebuildBaseline(layered, input.live_dir);
+    const { drift } = rebuildBaseline(layered, root);
     {
       const touchedFiles = [...drift.added, ...drift.changed];
       // ★ B3 的判据：变了、但**不在本工具的自写登记**里 ⇒ "被人用工具以外的方式改了"。
@@ -1448,7 +1449,6 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
             deps: facts.deps ?? [],
           };
         },
-        input.live_dir,
       );
       if (res.written) baselineFactsNote = `基线事实已锚定：${res.files} 个文件 → ${path.basename(res.file)}`;
     } catch (e) {

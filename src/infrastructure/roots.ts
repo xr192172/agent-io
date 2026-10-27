@@ -126,6 +126,24 @@ export function rootsOf(projectRoot?: string): Record<RootRole, RootSpec> {
 //   要恢复“上传模式跨次复用”，正确做法是给项目注册表加 feature→cache 映射，不是再长一个平行索引。
 
 /**
+ * ★★★ 2026-10-27（T-#98）：**某个角色在某个项目里的绝对路径** —— 目录 getter 的唯一实现。
+ *
+ * ## 病史（ROOTS.md 步 7 的那个洞）
+ * `storage.ts` 里的 `getLiveDir` / `getBaselineDir` / `getDesignDir` 各自拼了一遍
+ * `path.join(baseDir ?? getDataHome(), '.agent-io', '<子目录>')`：
+ *   · `baseDir` **可选** ⇒ 不传就**静默落到数据家**（`<dataHome>/.agent-io/live`）；
+ *   · 拼路径的规则**又写了一份**（`ROLE_SUBDIR` 在 roots.ts 里已经有一份）
+ * ⇒ 一个事实两处各算一遍，而且默认值是"另一个地方"。
+ * 实测后果：本仓自己的 `live/` `baseline/` 全在数据家，项目内一行没有。
+ *
+ * ## 判据
+ * getter 只许问本函数；`projectRoot` **必填**（`rootsOf` 里 project 角色缺失就抛，不兜 cwd、不兜数据家）。
+ */
+export function rootPath(role: RootRole, projectRoot: string): string {
+  return rootsOf(projectRoot)[role].path;
+}
+
+/**
  * **三个侧**（寄风的口径：一个项目独立拥有三个侧）+ 一个跨项目任务系统。
  * ★ 2026-10-26 澄清：原先写成“三本册”是语音把**侧**误识别成**册**；模型是“侧”。
  */

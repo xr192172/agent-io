@@ -49,8 +49,8 @@
 | 1 | `design` | 设计侧 | **数据仓**（按 feature） | **项目内** | ✗ |
 | 2 | `judgeCache` | 设计侧 | 数据仓 | 项目内 | ✗ |
 | 3 | `cache` | 实际侧 | **项目内** | 项目内 | ✅ |
-| 4 | `live` | 实际侧 | **数据仓**（`baseDir ?? getDataHome()`） | **项目内** | ✗ |
-| 5 | `baseline` | 实际侧 | 数据仓（同上） | 项目内 | ✗ |
+| 4 | `live` | 实际侧 | **项目内**（T-#98：`rootPath('live', 项目根)`） | 项目内 | ✅ |
+| 5 | `baseline` | 实际侧 | **项目内**（同上；`rootPath('baseline', 项目根)`） | 项目内 | ✅ |
 | 6 | `snapshot` | 实际侧 | 项目内（**未核实**） | 项目内 | ✗ |
 | 7 | `observe` | 实际侧 | 项目内（**未核实**） | 项目内 | ✗ |
 | 8 | `impact` | 实际侧 | 项目内（**未核实**） | 项目内 | ✗ |
@@ -62,8 +62,9 @@
 
 ★ **"未核实"= 我没读决定它位置的那段代码**，只从"目录出现在哪"推的。
   这正是今天犯过的错（用观察推规范）⇒ 实施时**先读代码再定**，别照表抄。
-★ **`live`/`baseline` 的"现状住数据仓"是实证**：`getLiveDir/getBaselineDir` = `baseDir ?? getDataHome()`
+★ **`live`/`baseline` 的"现状住数据仓"曾是实证**：旧 getter = `baseDir ?? getDataHome()`
   ⇒ 归属由**每次调用**决定，所以 `live/` 同时出现在数据仓和两个项目目录里。
+  **2026-10-27（T-#98）已收口**：两者都只问 `rootPath(role, 项目根)`，`projectRoot` 必填（详见 §7.7）。
 ★ **`translate` 是"未落地"而不是"未核实"**：三个项目的 `.agent-io/translate/` 全不存在、`*translate*` 落盘文件 0 个。
 
 ★ **代码里早就记着同一个坑**（2026-10-26 发现）：`stage_registry.ts` 的 `dsl_live` 条目 `why` 写着
@@ -95,7 +96,7 @@
 | 4 | 根清单按**三个侧**分组渲染 | ✅ 本次 |
 | 5 | 建**项目注册表**（`projects.json`）+ 读入口 | ⬜ |
 | 6 | `todos[]` 从 DSL 搬出 → `<proj>/.agent-io/tasks.db`（活卡+历史同库） | ⬜ **最大一次** |
-| 7 | `getLiveDir/getBaselineDir/getDesignDir` 的 `baseDir` 改**必填**，调用点补 `source_root` | ⬜ |
+| 7 | `getLiveDir`/`getBaselineDir` 的根改**必填**（路径只问 `rootPath`）；`getDesignDir` **不**改必填，改由注册表解析（`getDSL` 拿不到根，见 §7.1） | ✅ T-#98 |
 | 8 | 聚合视图（`overview`/`query=todo` 扫注册表） | ⬜ |
 | 9 | 清 8 个 stray 目录（71.7MB，`index_integrity` 已能报） | ⬜ 等尘埃落定 |
 | 10 | **清过期注释**（`import_cache` / "两级候选" 仍写在 7 处）：`db.ts:152`（`findCacheDb` 的**权威 doc** 还说"两级"）、`function_outline.ts:2/10/197`、`scan_rev.ts:13/46`、`file_facts.ts:25/72`、`live_render.ts:111`、`design/index.ts:166`（工具参数描述，**用户可见**）、`serve.ts:875`、`stage_registry.ts`（声明了一个**从不产物的流水阶段** `import_cache`） | ⬜ **欠账** |
@@ -204,6 +205,41 @@ getDSL(feature)
 
 **每个项目的册 + design-db 都在自己的 `.agent-io/` 里** ⇒ git 各自管各自的，
 **不会再出现"4 个项目混一个 `design-db/`"**（今天 1057→380 那次清理正是这个病的症状）。
+
+### 7.7 步 7 落地读数（T-#98，2026-10-27）
+
+**改了什么**（判据仍是 §6.1「可选参数 = 两个归属」）：
+
+| 处 | 改法 |
+|---|---|
+| `roots.ts#rootPath(role, projectRoot)` | 新增：目录 getter 的**唯一**实现（原先 `storage.ts` 里 3 个 getter 各拼一遍 `path.join(baseDir ?? getDataHome(), '.agent-io', …)`） |
+| `getLiveDir` / `getBaselineDir` 及其文件族 | `projectRoot` **必填** ⇒ 不传是**编译错**，不是"静默落到数据家" |
+| `saveBaselineFactsIfAbsent` | 删掉第 5 个可选根参数（同一函数两个根 = 头号病），只认 `sourceRoot` |
+| `viewBaseDirCandidates` | 候选链末尾的 `getDataHome()` **删** ⇒ 链空 = "不知道这个 feature 的根" |
+| `import_project` | 删 `live_dir` 入参（全仓一次没传过；它就是那个洞的开关），一律落 `rootPath(role, project_dir)` |
+| 调用点 | `watch_project` / `stage_registry`（`dsl_baseline` 读写两侧）/ `consistency.ts` / `serve.ts#/api/live` |
+
+**验收读数**（脚本 `.agent-io/scratch/verify-t98-roots.mjs`，隔离 home + express 真项目，PASS=12 FAIL=0）：
+
+```
+① 项目内落 live        <proj>/.agent-io/live/proj-express-t98.dsl.json
+② 项目内落 baseline    <proj>/.agent-io/baseline/proj-express-t98.dsl.json
+③ 项目内落 baseline 事实 <proj>/.agent-io/baseline/proj-express-t98.facts.json
+④ 数据家里**没有** live 目录      ⑤ 数据家里**没有** baseline 目录
+⑥⑦⑧ 往数据家塞一份旧副本 ⇒ 读端仍读到项目内那份，候选链里没有数据家
+⑩⑪⑫ 陌生 feature ⇒ 链空 ⇒ 返回 null（不再拿数据家冒充）
+```
+
+**为什么 `getDesignDir` 不一起改必填**：设计侧的唯一入口是 `getDSL(feature)` —— 它**拿不到项目根**
+（§7.1 的原始病历），所以设计侧的正确解是**注册表**（§7.4 ①），不是必填参数。
+`<dataHome>/.agent-io/design` 只剩**迁移通道**（命中就点名 + 自动登记），不是默认落点。
+
+**留下的两笔账**（别当它已清）：
+
+- `listDesignSheets()` 仍只扫 `<dataHome>/.agent-io/design` ⇒ 册已按项目分居后，
+  它看不见别的项目的册 ⇒ 写闸的 `rootFeatureCount` 会偏小。归**步 8 聚合视图**。
+- 数据家里还有 `review-hub.dsl.json`（live + baseline）等**旧落点副本** —— 现在读不到，
+  属 stray，归**步 9 清理**。
 
 ---
 

@@ -214,7 +214,14 @@ export const STAGES: readonly Stage[] = [
     // ★ 与**读侧同一候选链**：报**第一个存在的**；都不存在 ⇒ 报优先级最高那个（"它该在哪"）。
     locate: (ctx) => {
       const feature = needFeature(ctx);
+      // ★ T-#98：候选链里已经没有"数据家"这道兜底 ⇒ 链空 = **不知道这个 feature 的根** ⇒ 明说，不冒充。
       const bases = viewBaseDirCandidates(feature);
+      if (bases.length === 0) {
+        throw new Error(
+          `工序 dsl_baseline：feature "${feature}" 的项目根取不到（设计册里没有 source_root）` +
+            ' ⇒ 基线住在《项目根》/.agent-io/baseline，没有项目根就没有落点（数据家不再兜底）',
+        );
+      }
       const hit = bases.find((b) => fs.existsSync(getBaselineFeatureFile(feature, b)));
       return getBaselineFeatureFile(feature, hit ?? bases[0]);
     },
@@ -230,9 +237,13 @@ export const STAGES: readonly Stage[] = [
       //   ⇒ 走**同一候选链**，但 ★ **写侧不新造落点**：**已有就写在它已在的那处**，
       //     都没有才落 `dataHome`（写侧的默认位置）。★ 刻意**不**写 `source_root` —— 那会给
       //     "从没在项目根放过 baseline"的 feature **凭空造出第二份**，正是本仓要防的"同一份数据两处落点"。
+      // ★ T-#98：**写侧也只能有一个根** —— 已有就写它所在的那处，否则写**本 feature 的项目根**
+      //   （`dsl.source_root`）。原先 `existing` 可能 undefined ⇒ `ensureBaseline` 静默落数据家。
       const bases = viewBaseDirCandidates(feature);
       const existing = bases.find((b) => fs.existsSync(getBaselineFeatureFile(feature, b)));
-      ensureBaseline(dsl, existing);
+      const root = existing ?? dsl.source_root;
+      if (!root) throw new Error(`工序 dsl_baseline：feature "${feature}" 没有项目根（source_root 缺）⇒ 不写`);
+      ensureBaseline(dsl, root);
     },
   },
   {

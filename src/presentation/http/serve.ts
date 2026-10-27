@@ -17,7 +17,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, exec } from 'node:child_process';
-import { getDSL, getDesignSheetFile, getLiveFeature, onDslChange, getStorageRoot, listDesignSheets } from '../../infrastructure/storage.js';
+import { getDSL, getDesignSheetFile, getLiveFeatureResolved, onDslChange, getStorageRoot, listDesignSheets } from '../../infrastructure/storage.js';
 // ★★★ 2026-10-23：画布（annotations / user_nodes / canvas_notes）搬出设计 DSL 后的唯一读写口。
 //   serve 的 4 个画布端点只碰它，**不再** import `saveDSL` —— 这是「和前端切割」的接线点。
 import { enableObserveFromEnv } from '../../infrastructure/analysis/observe/run_sentinel.js';
@@ -351,7 +351,8 @@ function handleApiLive(req: http.IncomingMessage, res: http.ServerResponse): voi
       sendError(res, 400, '缺少 feature 参数');
       return;
     }
-    const dsl = getLiveFeature(feature);
+    // ★ T-#98：根必填 ⇒ 走候选链解析器（explicit → 设计册 source_root；都没有 ⇒ null，不再拿数据家冒充）
+    const dsl = getLiveFeatureResolved(feature);
     if (!dsl) {
       sendError(res, 404, '实际 DSL 未生成，请先 POST /api/live/rebuild 或等待自动同步');
       return;
