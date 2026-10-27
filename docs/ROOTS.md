@@ -55,10 +55,13 @@
 | 7 | `observe` | 实际侧 | 项目内（**未核实**） | 项目内 | ✗ |
 | 8 | `impact` | 实际侧 | 项目内（**未核实**） | 项目内 | ✗ |
 | 9 | `translate` | 翻译侧 | **不存在**（三个项目全无该目录） | 项目内 | ✗ |
-| 10 | `history` | 任务系统 | 数据仓 | 项目内 `tasks.db` | ✗ |
+| 10 | `history` | 任务系统 | 数据仓 | 项目内 `tasks.db` | ✗（slice 3 退场） |
+| 11 | `tasks` | 任务系统 | **不存在**（卡还在册上 `todos[]`） | **项目内** `<proj>/.agent-io/tasks.db`（活卡+历史同库） | ✅ 2026-10-27（T-#368 / 步 6 slice 1：影子同步） |
 
 ★ **`featureCache` 已于 2026-10-26 删除**（实测三个工作区 0 个 `import_cache_*.db`，且 HTTP 面是可视化预留、没人用）
-  ⇒ 角色数 **11 → 10**。取证见 §5。
+  ⇒ 角色数 **11 → 10**。
+★ **2026-10-27 又加回一格**：`tasks`（用户拍板走**乙方案**：每项目一库 + 注册表聚合）⇒ 角色数 **10 → 11**。
+  它与 `history` 是**同一件事的两个阶段**（历史迟早并进 `tasks.db`），所以并存的这段是迁移态，不是两个角色各管一摊。
 
 ★ **"未核实"= 我没读决定它位置的那段代码**，只从"目录出现在哪"推的。
   这正是今天犯过的错（用观察推规范）⇒ 实施时**先读代码再定**，别照表抄。
@@ -83,6 +86,7 @@
 | 2026-10-26 | 册/侧的总体模型 | **乙方案：一个项目独立拥有三个侧** |
 | 2026-10-26 | `project_dir` 能不能填子目录 | **不允许**；但**不报错**——自动上溯到真项目根（`resolveProjectRoot`），已实施 |
 | 2026-10-26 | 任务系统住哪 | 倾向**每项目一库 + 注册表聚合**（"聚合说明本身是解耦的"）；**待最终确认** |
+| 2026-10-27 | 同上，**用户拍板** | **乙方案**：每项目 `<proj>/.agent-io/tasks.db`（活卡+历史同库），跨项目卡按 §5 自动消解 |
 
 ---
 
@@ -95,7 +99,7 @@
 | 3 | 根偏离检测（`findStrayDataDirs` → `index_integrity`） | ✅ `f53d65ee` |
 | 4 | 根清单按**三个侧**分组渲染 | ✅ 本次 |
 | 5 | 建**项目注册表**（`projects.json`）+ 读入口 | ✅ 2026-10-26（T-#27 读端接线 / T-#29 迁移）：写端=`import_project`→`registerFeature`，读端=`getDesignSheetFile`→`projectRootOf`；本机已有 4 条登记（agent-io / agent-io-toolface / review-hub / task-system-plan） |
-| 6 | `todos[]` 从 DSL 搬出 → `<proj>/.agent-io/tasks.db`（活卡+历史同库） | ⬜ **最大一次** |
+| 6 | `todos[]` 从 DSL 搬出 → `<proj>/.agent-io/tasks.db`（活卡+历史同库） | 🔄 **最大一次**，分三片：slice 1 ✅ 2026-10-27（角色 `tasks` + 建库 + `syncTasksFromDsl` 影子同步 + `parityTasks` 对拍，证 `t368` PASS=9/0，**读写路径一字节未改**）· slice 2 ⬜ 切读写（`task_ops` 改走库）· slice 3 ⬜ 旧 `history` 角色退场 + 历史迁入同库 |
 | 7 | `getLiveDir`/`getBaselineDir` 的根改**必填**（路径只问 `rootPath`）；`getDesignDir` **不**改必填，改由注册表解析（`getDSL` 拿不到根，见 §7.1） | ✅ T-#98 |
 | 8 | 聚合视图（`overview`/`query=todo` 扫注册表） | ⬜（**设计册那一路已通**：`listDesignSheets` 改扫注册表，T-#98b） |
 | 9 | 清 8 个 stray 目录（71.7MB，`index_integrity` 已能报） | ⬜ 等尘埃落定 |

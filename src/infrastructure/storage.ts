@@ -63,6 +63,8 @@ export function getPackageRoot(): string {
  * 注意：必须在调用时读取 env（不能模块加载时缓存），保证 vitest setup 生效。
  */
 let _legacyHomeWarned = false;
+/** ★ 2026-10-27：开发期"数据要落到 ~"的提醒（每进程一次，见 getDataHome 里那段注释） */
+let _devHomeWarned = false;
 /** 迁移期告警（每进程一次）：旧数据根还在用，新默认为空 —— 不许静默换家。 */
 function warnLegacyDataHomeOnce(legacyHome: string, modernHome: string): void {
   if (_legacyHomeWarned) return;
@@ -98,6 +100,20 @@ export function getDataHome(): string {
   if (!fs.existsSync(modernData) && fs.existsSync(legacyData)) {
     warnLegacyDataHomeOnce(legacyRoot, userHome);
     return legacyRoot;
+  }
+  // ★★★ 2026-10-27（用户提问"数据为什么装到 C 盘"逼出来的）：**开发本仓时数据会静默落到 `~`**。
+  //   现象：`getDataHome()` 没有 `AGENT_IO_HOME` 就返回 `os.homedir()` ⇒ 本仓的开发期数据
+  //   （注册表 / 工具使用日志…）全写进 `C:\Users\<me>\.agent-io`，与"项目的数据随项目走"这条规范正相反。
+  //   ★ 不改默认值（T-#3 的 Maven `~/.m2` 模型是**给已安装/跨项目**用的，那是另一件事），
+  //     只**响亮提醒一次**：本仓自己有 `.agent-io/` 却没用它 ⇒ 开发期请显式钉住。
+  if (fs.existsSync(legacyData) && !_devHomeWarned) {
+    _devHomeWarned = true;
+    process.stderr.write(
+      `[agent-io] ⚠ 本进程**没有** AGENT_IO_HOME，而本仓自己有数据目录：${legacyData}\n` +
+        `  ⇒ 跨项目数据（注册表 projects.json / 工具使用日志）会写到 ${modernData}\n` +
+        `  ⇒ 开发本仓时请显式钉住：AGENT_IO_HOME=${legacyRoot}（脚本 / MCP 均如此；` +
+        `项目内数据不受影响 —— live/baseline/design/cache/tasks 都落在各项目自己的 .agent-io/ 里）\n`,
+    );
   }
   return userHome;
 }

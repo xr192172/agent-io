@@ -222,6 +222,7 @@ out/
 **/.agent-io/judge-cache.json
 **/.agent-io/live
 **/.agent-io/observe
+**/.agent-io/tasks.db
 **/.agent-io/translate
 !/.agent-io/design
 !/.agent-io/task-history.jsonl

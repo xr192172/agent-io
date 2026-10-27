@@ -33,6 +33,7 @@ export type RootRole =
   | 'live' // 实际侧 DSL 快照
   | 'baseline' // 上一次扫描的实际侧基线
   | 'snapshot' // 写闸快照（可撤回）
+  | 'tasks' // 任务卡（活卡 + 已了结卡，**同库**；ROOTS 步 6 / 乙方案）
   | 'observe' // 观测事件（events.jsonl 等）
   | 'impact' // 影响链报告
   | 'translate'; // 翻译侧
@@ -77,6 +78,13 @@ const ROLE_SPECS: ReadonlyArray<Omit<RootSpec, 'path'>> = [
   { role: 'live', kind: 'project', derivable: true, note: '实际侧 DSL 快照（由源码现算）' },
   { role: 'baseline', kind: 'project', derivable: true, note: '上一次扫描的实际侧基线' },
   { role: 'snapshot', kind: 'project', derivable: true, note: '写闸快照（可撤回；保留期由策略定）' },
+  // ★★★ 2026-10-27（ROOTS 步 6 / 乙方案，用户确认）：**任务卡搬出 DSL** ⇒ 每项目一库
+  //   `<proj>/.agent-io/tasks.db`，**活卡与历史同库**（§3 的裁定："每项目一库 + 注册表聚合"）。
+  //   ★ `derivable` **现在是 `true`，这是 slice 1 的实话**：库里的卡是从册上 `todos[]` 投影来的
+  //     ⇒ 删了能从册重建。**切读写（slice 2）时必须改成 `false`**，并按 T-#14 的判据补一份
+  //     `tasks.jsonl` 文本镜像做移交载体（二进制 .db 不进 git：不可 diff、不可 review）。
+  //     在那之前把它标 false 会把一个二进制库塞进 git —— 正是 T-#14 否掉的做法。
+  { role: 'tasks', kind: 'project', derivable: true, note: '任务卡：活卡 + 已了结卡同库（slice 1 影子期，可从册重建）', fileName: 'tasks.db' },
   { role: 'observe', kind: 'project', derivable: true, note: '观测事件与调用树' },
   { role: 'impact', kind: 'project', derivable: true, note: '影响链报告' },
   { role: 'translate', kind: 'project', derivable: true, note: '翻译侧（Go→TS 等）' },
@@ -91,6 +99,7 @@ const ROLE_SUBDIR: Record<RootRole, string> = {
   live: 'live',
   baseline: 'baseline',
   snapshot: 'code-snapshots',
+  tasks: '.', // tasks.db 直接落在根下
   observe: 'observe',
   impact: 'impact',
   translate: 'translate',
@@ -157,6 +166,8 @@ const ROLE_SIDE: Record<RootRole, RootSide> = {
   live: 'live',
   baseline: 'live',
   snapshot: 'live',
+  // ★ 2026-10-27（ROOTS 步 6）：任务卡属**任务系统那一侧**（跨 feature 的过程数据）
+  tasks: 'task',
   observe: 'live',
   impact: 'live',
   translate: 'translate', // 翻译侧
