@@ -2417,32 +2417,28 @@ function traverseAndExtractImports(
   // ## 现在
   // 在解析期就记一行 ⇒ **同一张绑定表**（`relImportsByFile` / `relBindingsByFile`）
   // 同时服务静态与动态导入。
-  // ★★★ 2026-10-27（T-#72）：**动态 import 的抽取**。
+  // ★★★ 2026-10-27（T-#75）：**`import(…)` 与 `require(…)` 是同一类**（模块引用，只是语法不同）。
   //
-  // ## 真根因（只在 `languages.ts` 的一行数据里，别处都看不出来）
-  //   `typescript.import_nodes = ['import_statement', 'export_statement']`
-  // 收 `export_statement` 是为了 `export { x } from 'y'`（**有 source**）；
-  // 但 **`export async function f() { … }` 也是 `export_statement`** ⇒ 本函数末尾那句
-  // 无条件 `return` 会把**整个函数体跳过** ⇒ 函数体内的 `await import(…)` 永远看不到。
-  // ★ 为什么 `.mjs` 一直正常：它的动态 import 在**模块顶层**，不在任何 `export_statement` 里。
-  // ★ 已在函数末尾修掉（命中 import_nodes 但**没抽出 source** 且带 `declaration` ⇒ 继续递归）。
+  // ## 为什么必须修（寄风的判据）
+  // 「**收益不看条数，看问题种类数**」——
+  // 本仓只有 ~3 条真 CJS `require`，但**真实 JS 项目里 CJS 是主流形态**
+  // （Node 生态大量 `const x = require('y')`）⇒ 这是**类级盲区**，不是 3 条个案。
+  // 按"当前项目条数"判会把它永远押后 ⇒ **换个项目就大面积漏**。
   //
-  // ## 这里的兜底（防 future grammar 变化）
-  // 取"被调方"/"参数表"时**先看命名字段、没有就取结构位置**：
-  //   `childForFieldName('function') ?? child(0)`
-  //   `childForFieldName('arguments') ?? childForFieldName('argument') ?? child(childCount-1)`
-  // ⇒ 跨 grammar 稳定（实测 TS 的 `call_expression` 两个字段都有名，但别的 grammar 未必）。
+  // ## 判据
+  // 被调方是 `import` **或** `require` 的调用 ⇒ 都是模块引用：
+  //   `import('x')` / `require('x')` / `const { a } = require('x')` / `const x = require('x')`
+  // ⇒ 抽成一条 `ParsedImport`（kind 按 source 形态归），与 ES `import` **进同一张绑定表**。
   //
-  // ## 历史（两次走弯路，留作教训）
-  //   T-#70：一度把"只对 .mjs 有效"当**能力边界**登记进注释 —— **那是把错误固化**。
-  //   T-#71：按节点类型判失效后改字段兜底 —— 更健壮，但**不修 TS**（真因在 import_nodes）。
-  //   ⇒ 教训：**先读配置/DSL/DB，再写探针**。
+  // ## 与 T-#72 的关系
+  // T-#72 修的是「`export_statement` 短路导致本块走不到」；本块本身负责"看见就记"。
+  // 两者缺一不可：`export function f() { const x = require('y') }` 需要两个都修好。
   if (node.type === 'call_expression' || node.type === 'import_expression' || node.type === 'dynamic_import') {
-    const fnNode =
-      node.childForFieldName('function') ?? (node.childCount > 0 ? node.child(0) : null);
-    const isDynamicImport =
-      node.type !== 'call_expression' || (!!fnNode && (fnNode.type === 'import' || fnNode.text === 'import'));
-    if (isDynamicImport) {
+    const fnNode = node.childForFieldName('function') ?? (node.childCount > 0 ? node.child(0) : null);
+    const isModuleRef =
+      node.type !== 'call_expression' ||
+      (!!fnNode && (fnNode.type === 'import' || fnNode.type === 'require' || fnNode.text === 'import' || fnNode.text === 'require'));
+    if (isModuleRef) {
       const args =
         node.childForFieldName('arguments') ??
         node.childForFieldName('argument') ??
@@ -2459,7 +2455,15 @@ function traverseAndExtractImports(
           break;
         }
       }
-      const src = srcNode ? srcNode.text.replace(/^['"`]|['"`]$/g, '') : '';
+      // ★ T-#75 护栏：**只认字面量 source**。
+      //   实测 `certs/t136` 是 `require(path.join(REPO, 'dist/…/health/index.js'))`、
+      //   `certs/t238` 是 `require(dist('infrastructure/…'))` —— **计算出来的路径**。
+      //   原先我把整个表达式文本当 source 记下来 ⇒ 塞进一条**永远解析不到的假 import**
+      //   （比不记更坏：它污染 imports 表、还会让 `relBindingsByFile` 以为有绑定）。
+      //   ⇒ 只认 `string` / `template_string` 这类**字面量节点**；表达式一律不记。
+      const isLiteralSrc =
+        !!srcNode && (srcNode.type === 'string' || srcNode.type === 'template_string' || /string/.test(srcNode.type));
+      const src = isLiteralSrc && srcNode ? srcNode.text.replace(/^['"`]|['"`]$/g, '') : '';
       if (src) {
         // 绑定名：`const { a, b } = await import(…)` ⇒ 解构里的名字
         const bindings: string[] = [];
