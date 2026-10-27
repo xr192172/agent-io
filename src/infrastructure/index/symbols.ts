@@ -2219,8 +2219,15 @@ export function resolveCrossFileCalls(
         continue;
       }
       // ★ T-#50：**Java 内置类型**（String/Map/Object/Exception…）
-      // ★ T-#80：`JAVA_BUILTIN_TYPES` 已删 —— Java 的标准库类型走 `pkgSrc`（package 绑定，有据）。
-      //   原表只是重复，且掩盖了“Java 没有 resolveImport”这个真问题（已补）。
+      // ★ T-#84：**`java.lang` 的真全局**（不需要 import ⇒ `pkgSrc` 看不见 ⇒ 必须靠表）。
+      //   ★ 我 T-#80 把整张表删了是错的：`java.io`/`java.nio`/`java.util` 那些走 `pkgSrc`（有据），
+      //     但 `java.lang`（`String`/`Object`/`Exception`/`StringBuilder` …）**不走** ⇒ 删了就落 failed。
+      //   实测：删表后全量重建 failed 14 → 43，新增 29 条全是 `.java` 里的 `java.lang` 名字。
+      if (isJavaFile && JAVA_LANG_TYPES.has(expr)) {
+        updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'java-lang-global' }) });
+        stats.external++;
+        continue;
+      }
       // ★★★ 2026-10-27（T-#50）：**带点的类型引用**（`http.ServerResponse` / `fs.Dirent`）——
       //   实测 **142 条**落 failed，而 `call` 分支（下面 `expr.includes('.')`）早就处理了带点形态，
       //   **`type_ref` 分支漏了** ⇒ 所有 `http.X` / `fs.X` 全落 failed。
@@ -2611,15 +2618,41 @@ const GO_BUILTIN_CALLEES = new Set([
 ]);
 
 /**
- * ★★★ 2026-10-27（T-#80）：**`JAVA_BUILTIN_TYPES` 已删除** —— 它是**化石**。
+ * ★★★ 2026-10-27（T-#84）：**`java.lang` 的真全局** —— 只对 `.java` 文件启用。
  *
- * 它原先把 `String` / `Map` / `Object` / `IOException` … 硬堆成"Java 内置类型"，
- * 但真正的判据早就有了：Java 的 `import java.io.IOException;` 会进 `imports`（kind='package'）
- * ⇒ `packageBindingsByFile` 里有 `IOException → java.io.IOException` ⇒ `pkgSrc` 判 external（**有据**）。
- * ⇒ 那张表只是**重复**，而且掩盖了一个更大的问题：**Java 根本没有 `resolveImport`**
- *   （`LANG_ADAPTERS` 里只有 Go 有）⇒ 仓内 Java 之间的引用**一条都解析不到**。
- * ⇒ T-#80 已补上 Java 的 `resolveImport`（目录=包 约定）⇒ 这张表失去存在理由。
+ * ## 病史（我 T-#80 删错了一次，**全量重建**才抓出来）
+ * T-#80 我把整张 `JAVA_BUILTIN_TYPES` 当"化石"删了，理由是
+ * 「`import java.io.IOException;` 会进 `pkgSrc`，表是重复的」。**那只对了一半**：
+ *   · `java.io` / `java.nio` / `java.util` 的类 **需要 import** ⇒ `pkgSrc` 能看见 ⇒ **确实是化石**
+ *   · **`java.lang` 的类【不需要 import】**（`String` / `Object` / `Exception` / `StringBuilder` …）
+ *     ⇒ `pkgSrc` **永远看不见** ⇒ **表是必要的**
+ * 实测：删表后全量重建 `failed` 14 → **43**，新增 29 条全是
+ *   `String 14 · Object 6 · StringBuilder 4 · Throwable 2 · Number · Exception · Boolean`
+ *   —— **全在 `.java` 文件里**。
+ *
+ * ## 判据（这张表该放什么、不该放什么）
+ * ✅ **放**：语法上**不需要 import** 就能用的名字（`java.lang`）
+ * ❌ **不放**：需要 import 的包成员（`java.io.IOException` / `java.nio.file.Path` / `java.util.List` …）
+ *   —— 那些走 `pkgSrc`（package 绑定），**有据**。
+ * ★ 这是「每张 `*_BUILTIN_*` 表都要问一句：它是不是在掩盖缺失的解析能力」的**反面**：
+ *   问完还要再问一句「**这些名字真的不需要 import 吗**」——
+ *   **两个问题都答对了，表才是对的**。
+ *
+ * ★ 为什么不并进 `BUILTIN_TYPES`：`String` / `Object` / `Number` 在 TS 里也是常用名，
+ *   并表会把本仓同名符号判成 external ⇒ 丢边（同 Go 的教训）。
  */
+const JAVA_LANG_TYPES = new Set([
+  // 基本类型的包装类 + 字符串
+  'String', 'Object', 'Integer', 'Long', 'Short', 'Byte', 'Character', 'Boolean', 'Double', 'Float',
+  'Number', 'Void', 'CharSequence', 'StringBuilder', 'StringBuffer',
+  // 异常体系
+  'Exception', 'RuntimeException', 'Error', 'Throwable', 'StackTraceElement',
+  // 工具 / 系统
+  'Math', 'StrictMath', 'System', 'Runtime', 'Process', 'Class', 'Package', 'Module',
+  // 类型体系 / 常用接口
+  'Enum', 'Record', 'Override', 'Runnable', 'Thread', 'ThreadLocal', 'Iterable', 'Iterator',
+  'Comparable', 'Comparator', 'AutoCloseable', 'Cloneable', 'Appendable', 'Readable',
+]);
 
 
 /** 沿源文件的 relative imports 找符号对应的目标符号（首个命中）；找不到返回 null。

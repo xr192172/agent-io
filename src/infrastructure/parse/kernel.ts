@@ -677,6 +677,27 @@ interface LangImportAdapter {
    */
   resolveImport?: (source: string, fromRel: string, ctx: ResolveImportCtx) => string[] | null;
 
+  /**
+   * ★★★ 2026-10-27（T-#83）：**局部绑定声明的节点类型**（数据，不是代码分支）。
+   *
+   * ## 为什么需要
+   * `localBindingsOfDecl` 原先按 `node.type` 硬编码 TS/Go 两种形态 ⇒ **加语言要改代码**。
+   * 而且它有个**隐蔽 bug**：`var_declaration` 在 TS 分支和 Go 分支**都出现**，
+   * TS 分支先 `return` ⇒ **Go 的 `var x T = …` 永远收不到**。
+   * ⇒ 改成**按语言门控**：本字段声明“本语言哪些节点是局部绑定声明”，
+   *   `localBindingsOfDecl(node, langName)` 先看本字段，命中才往下抽。
+   *   ★ 门控后两个分支可以**安全地重叠**（`var_declaration` 两边都要）。
+   *
+   * ## 加语言时怎么填
+   * 看该语言“在函数体内给名字赋值”的 AST 节点类型：
+   *   TS/JS ⇒ `lexical_declaration`（const/let）· `variable_declaration`（var）
+   *   Go    ⇒ `short_var_declaration`（`:=`）· `var_declaration`（`var`）
+   *   Python⇒ `assignment`（★ 尚未实现抽取分支，见 `docs/GUIDE-LANGUAGE.md`）
+   *   Rust  ⇒ `let_declaration`（★ 同上）
+   * ★ **没填 = 本语言没有局部绑定概念**（调用方按“没有”处理，不会误判）。
+   */
+  localBindingNodes?: string[];
+
   /** 调用节点类型（数组 = 该语言有多种调用形态，如 PHP 三种 / Groovy 两种） */
   callNode?: string | string[];
   /**
@@ -1032,6 +1053,8 @@ const TS_LIKE_IMPORT_BINDINGS = (node: SyntaxNodeLike): string[] => {
 export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   go: {
     callNode: 'call_expression',
+    // ★ T-#83：Go 的局部绑定声明（`x := …` / `var x = …`）—— 数据，不是代码分支。
+    localBindingNodes: ['short_var_declaration', 'var_declaration'],
     // ★★★ 2026-10-27（T-#62）：**Go 的导入解析** —— 本仓 module 下的包路径 → 目录 → 该目录下的 .go 文件。
     //
     // ## 病史
@@ -1437,6 +1460,8 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   //     每门都是独立 npm 包 + 独立扩展名，表项自足才符合"加语言 = 加一行"。
   typescript: {
     callNode: 'call_expression',
+    // ★ T-#83：TS 的局部绑定声明（`const/let` = lexical_declaration · `var` = variable_declaration）
+    localBindingNodes: ['lexical_declaration', 'variable_declaration'],
     calleeFields: ['function'],
     importSourceField: 'source',
     erasedModuleStatements: true,
@@ -1462,9 +1487,9 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
      */
     extractImportBindings: TS_LIKE_IMPORT_BINDINGS,
   },
-  tsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS },
-  javascript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS },
-  jsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS },
+  tsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration'] },
+  javascript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration'] },
+  jsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration'] },
 
   // ═══════════════════════════════════════════════════════════════════
   // 2026-09-29 新增 5 门（scala / groovy / julia / haskell / elixir）
@@ -2018,7 +2043,7 @@ function extractCallee(callNode: SyntaxNodeLike, langName: string): { name: stri
  * · **不收**：`const x = () => {}`（它是**符号**，在 `nodes` 里 ⇒ 收进来会抢在 classifyCall 前面丢边）
  * · **不收**：嵌套函数体内的东西（那是它自己的作用域）
  */
-function collectLocalBindings(nodes: readonly SyntaxNodeLike[]): string[] {
+function collectLocalBindings(nodes: readonly SyntaxNodeLike[], langName?: string): string[] {
   const out: string[] = [];
   const collectIds = (n: SyntaxNodeLike): void => {
     if (n.type.includes('identifier') || n.type === 'shorthand_property_identifier_pattern') {
@@ -2044,7 +2069,7 @@ function collectLocalBindings(nodes: readonly SyntaxNodeLike[]): string[] {
     }
     // ★★★ 2026-10-27（T-#61）：**形态收敛到 `localBindingsOfDecl`**（TS + Go 两种已在里面）。
     //   以后加语言只需在那一处加一支 —— 不再在这里散落 if。
-    const binds = localBindingsOfDecl(n);
+    const binds = localBindingsOfDecl(n, langName);
     if (binds) {
       // ★ T-#60 护栏（AST 版）：**从 import 解构出来的名字不收** ——
       //   `const { saveDSL } = await import('…')` ⇒ `saveDSL` 是**导入绑定**，不是局部变量
@@ -2115,7 +2140,16 @@ function isImportCallNode(n: SyntaxNodeLike | null | undefined): boolean {
  */
 function localBindingsOfDecl(
   node: SyntaxNodeLike,
+  langName?: string,
 ): Array<{ name: string; isFnValue: boolean }> | null {
+  // ★★★ T-#83：**按语言门控** —— 本语言没声明 `localBindingNodes` ⇒ 直接“不是局部绑定声明”。
+  //   ★ 这同时修掉一个隐蔽 bug：`var_declaration` 在 TS 分支和 Go 分支**都出现**，
+  //     TS 分支先 `return` ⇒ **Go 的 `var x T = …` 永远收不到**。
+  //     门控后只有本语言自己的分支会被走到 ⇒ 两边可以安全重叠。
+  if (langName) {
+    const allowed = LANG_ADAPTERS[langName]?.localBindingNodes;
+    if (!allowed || !allowed.includes(node.type)) return null;
+  }
   const FN_TYPES = ['arrow_function', 'function_expression', 'function', 'generator_function', 'func_literal', 'lambda'];
   const isFn = (v: SyntaxNodeLike | null): boolean => !!v && FN_TYPES.includes(v.type);
   const out: Array<{ name: string; isFnValue: boolean }> = [];
@@ -2318,7 +2352,7 @@ function traverseAndExtractCalls(
           ...paramsOf(node, lang.field_map.parameters || 'parameters', lang.name)
             .map((p) => p.name)
             .filter((n): n is string => !!n),
-          ...collectLocalBindings(body),
+          ...collectLocalBindings(body, lang.name),
         ]);
         if (kind === 'function' || kind === 'method') {
           // 本函数体调用（跳过嵌套函数子树）
