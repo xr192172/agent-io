@@ -123,7 +123,11 @@ const run = async (ops, reason) => {
 const first = (s) => {
   const opLine = s.split('\n').find((l) => /^\s*\[\d+\/\d+\]/.test(l));
   if (opLine) return opLine.replace(/^\s*\[\d+\/\d+\]\s*/, '');
-  return s.split('\n').find((l) => l.trim()) ?? '';
+  // ★ 2026-10-27（修 T-#94e 时踩到）：原来只回**第一行** ⇒ 自洽性闸把"新引入的错误原文"放在后面几行，
+  //   全被截掉 ⇒ 读数只剩"新增 N 条"，看的人以为"接线断了"，实际是 schema 不认 `null`。
+  //   ⇒ 这里给**前 6 行**（够看到错误原文，又不至于刷屏）。
+  const lines = s.split('\n').filter((l) => l.trim());
+  return lines.slice(0, 6).join('\n     ');
 };
 const nodeOf = (id) => (getDSL(FEAT).geometry.nodes ?? []).find((n) => n.id === id);
 const cardOf = (id) => nodeOf(id)?.task;

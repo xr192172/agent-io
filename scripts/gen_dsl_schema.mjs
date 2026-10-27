@@ -79,10 +79,21 @@ function namedOf(type) {
 function mapType(type) {
   // union
   if (type.isUnion()) {
-    const parts = type.types.filter((t) => !(t.flags & ts.TypeFlags.Undefined) && !(t.flags & ts.TypeFlags.Null));
+    const isNull = (t) => !!(t.flags & ts.TypeFlags.Null);
+    const hasNull = type.types.some(isNull);
+    // `undefined` 仍剥（"可选"由 required 列表表达）；**`null` 不剥** —— 见下方说明
+    const parts = type.types.filter((t) => !(t.flags & ts.TypeFlags.Undefined) && !isNull(t));
+    const base =
+      parts.length === 0 ? { type: 'null' } : parts.length === 1 ? mapType(parts[0]) : { anyOf: parts.map(mapType) };
+    // ★★★ 2026-10-27（**T360 红十条的真因**）：`X | null` 里的 null **不许被剥掉**。
+    //   病史：本行原先把 Null 一起 filter 掉 ⇒ `prepared_snapshot?: PreparedSnapshot | null` 在 schema 里
+    //   变成"只允许 object" ⇒ 两段式领取用 `prepared_snapshot: null` 表示"删掉快照"的**合法写入**
+    //   被判 `[type] … must be object` ⇒ 自洽性闸拒提交 ⇒ `t360` 的 B5/B6/B7 与 C2–C8 全红
+    //   （而 gate 里那张红一直挂着，每次都被当"基线红"放过）。
+    //   ⇒ TS 类型说可以为 null，schema 就必须允许 null：`anyOf: [<非空分支…>, {type:'null'}]`。
+    if (!hasNull) return base;
     if (parts.length === 0) return { type: 'null' };
-    if (parts.length === 1) return mapType(parts[0]);
-    return { anyOf: parts.map(mapType) };
+    return { anyOf: [...(base.anyOf ?? [base]), { type: 'null' }] };
   }
   // 字面量
   if (type.isStringLiteral?.()) return { const: type.value };

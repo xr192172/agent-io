@@ -149,6 +149,5 @@
 | 编号 | 缺口 | 证据 | 在哪 |
 |---|---|---|---|
 | T-#94d | 浏览器 bundle 里 `typeof X === "function"` 引用的**宿主名**靠表兜 | socket.io `addEventListener` 已补进 `JS_HOST_GLOBALS`；同类名字会继续冒（`postMessage`/`Worker`…） —— 想清楚要不要按"宿主声明来源"成批登记 | `index/symbols.ts` |
-| T-#94e | `verify` 里 `t360-two-phase-claim-cert` **基线就红**（PASS=25 FAIL=10） | 把 T-#93 两个文件 `git checkout` 回 T-#92 后重跑，同样 10 条失败 ⇒ 与解析改动无关 | `certs/t360-two-phase-claim-cert.mjs` |
 | T-#94f | **IIFE 里的 bundle ⇒ 契约面为空**（`is_closure` 全打上） | socket.io `client-dist/socket.io.js` 104 个符号全 `is_closure` ⇒ 空索引守卫曾误拒（已改成数总数）；这类仓库的"对外 API"只能在 `wrapper.mjs` 那层看见 | `graph/import_project.ts` · `parse/kernel.ts` |
 | T-#97b | **工具回执里"接续 / 分工"散文每次约 40 行**（本次实测：find/rename 三次调用各占屏）—— 这才是"信息太多"，不是 DB 太细 | `find_references` 6s / `rename_symbols` dry_run 7.5s / 落盘 14.8s，其中回执散文占输出 70%+ | `application/meta/registry/*` · `presentation/cli/cli.ts`（回执渲染） |
