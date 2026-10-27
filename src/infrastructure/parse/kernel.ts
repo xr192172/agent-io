@@ -1075,7 +1075,7 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   go: {
     callNode: 'call_expression',
     // ★ T-#83：Go 的局部绑定声明（`x := …` / `var x = …`）—— 数据，不是代码分支。
-    localBindingNodes: ['short_var_declaration', 'var_declaration'],
+    localBindingNodes: ['short_var_declaration', 'var_declaration', 'range_clause'],
     // ★★★ 2026-10-27（T-#62）：**Go 的导入解析** —— 本仓 module 下的包路径 → 目录 → 该目录下的 .go 文件。
     //
     // ## 病史
@@ -1482,7 +1482,7 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   typescript: {
     callNode: 'call_expression',
     // ★ T-#83：TS 的局部绑定声明（`const/let` = lexical_declaration · `var` = variable_declaration）
-    localBindingNodes: ['lexical_declaration', 'variable_declaration'],
+    localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'],
     calleeFields: ['function'],
     importSourceField: 'source',
     erasedModuleStatements: true,
@@ -1508,9 +1508,9 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
      */
     extractImportBindings: TS_LIKE_IMPORT_BINDINGS,
   },
-  tsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration'] },
-  javascript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration'] },
-  jsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration'] },
+  tsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'] },
+  javascript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'] },
+  jsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'] },
 
   // ═══════════════════════════════════════════════════════════════════
   // 2026-09-29 新增 5 门（scala / groovy / julia / haskell / elixir）
@@ -2201,6 +2201,54 @@ function localBindingsOfDecl(
         for (const id of ids) out.push({ name: id, isFnValue: false });
       }
     }
+    return out;
+  }
+  // ── 形态 ③ **循环解构**：TS `for (const {a,b} of xs)` · Go `for _, v := range xs`
+  //
+  // ## 病史（实测 AST 才看出来的）
+  // 两条 remaining failed 全是这个形态：
+  //   TS `for (const { re, make } of GO_HOLD_RES) … make(m)` —— `make` 是解构出的函数值
+  //   Go `for _, opt := range opts { opt(t) }` —— `opt` 是 range 变量
+  //
+  // ## ★ 为什么形态① 抓不到（关键）
+  // TS 的 `for_in_statement` 里**没有 `lexical_declaration`**！
+  // 实测 AST：`for_in_statement` → `for` · `(` · **`const`（裸 token）** ·
+  //   **`object_pattern`（直接子节点）** · `of` · `identifier` · `)` · `statement_block`
+  // ⇒ `const` 只是个 token，**没有声明节点包着它** ⇒ 形态①（`lexical_declaration`）**永不命中**。
+  // Go 同理：`for _, v := range xs` 是 `range_clause`，**不是** `short_var_declaration`。
+  if (node.type === 'for_in_statement' || node.type === 'range_clause') {
+    const ids: string[] = [];
+    const collectIds = (x: SyntaxNodeLike): void => {
+      if (x.type === 'pair_pattern') {
+        const v = x.childForFieldName('value');
+        if (v) collectIds(v);
+        return;
+      }
+      if (x.type.includes('identifier') || x.type === 'shorthand_property_identifier_pattern') {
+        // Go 的 `_` 是空标识符 ⇒ 不是绑定
+        if (isValidIdentifier(x.text) && x.text !== '_') ids.push(x.text);
+        return;
+      }
+      for (let k = 0; k < x.childCount; k++) {
+        const c = x.child(k);
+        if (c) collectIds(c);
+      }
+    };
+    if (node.type === 'range_clause') {
+      // Go：`range_clause` 的 left 是 expression_list（`_, v`）
+      const left = node.childForFieldName('left') ?? node.childForFieldName('name');
+      if (left) collectIds(left);
+    } else {
+      // TS：直接子节点里的 pattern（`object_pattern` / `array_pattern` / `identifier`）
+      for (let i = 0; i < node.childCount; i++) {
+        const c = node.child(i);
+        if (!c) continue;
+        if (c.type === 'object_pattern' || c.type === 'array_pattern' || c.type === 'identifier') {
+          collectIds(c);
+        }
+      }
+    }
+    for (const nm of ids) out.push({ name: nm, isFnValue: false });
     return out;
   }
   // ── 形态 ② Go：short_var_declaration → left(expression_list) = right(expression_list)
@@ -3028,7 +3076,20 @@ function traverseAndExtractImports(
         if (p && p.type === 'await_expression') p = p.parent;
         if (p && p.type === 'variable_declarator') {
           const nm = p.childForFieldName('name');
+          // ★★★ T-#89：**解构里的别名要记 `remote as local`**（同 T-#85 的静态 import）。
+          //   病史：`const { editCode: ec } = await import('…'); await ec(…)`
+          //   ⇒ 原先 `collect` 把 `editCode` 和 `ec` **两个都当独立绑定**
+          //     ⇒ 去目标文件找 `ec` ⇒ 找不到 ⇒ 永远 failed（实测 2 条）。
+          //   ⇒ `pair_pattern`（`editCode: ec`）要出 `editCode as ec`。
           const collect = (x: SyntaxNodeLike): void => {
+            if (x.type === 'pair_pattern') {
+              const k = x.childForFieldName('key');
+              const v = x.childForFieldName('value');
+              if (k?.type === 'property_identifier' && v?.type.includes('identifier') && isValidIdentifier(v.text)) {
+                bindings.push(`${k.text} as ${v.text}`);
+                return;
+              }
+            }
             if (x.type.includes('identifier') || x.type === 'shorthand_property_identifier_pattern') {
               if (isValidIdentifier(x.text)) bindings.push(x.text);
               return;

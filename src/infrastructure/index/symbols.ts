@@ -2420,6 +2420,24 @@ export function resolveCrossFileCalls(
     //   这是"查绑定表"而不是"猜"：`import { readdirSync } from 'node:fs'` 让 readdirSync
     //   有了明确来源 ⇒ 它不可能是"项目内未解析的调用"，判 external 才诚实。
     //   ★ 放在 relative 查找【之前】：package 绑定是更强的证据（它是声明出来的）。
+    // ★★★ 2026-10-27（T-#89）：**裸名是局部绑定 ⇒ external**（不是跨文件引用）。
+    //
+    // ## 病史（读数据定位，两条都是“循环解构出来的局部变量”）
+    //   TS：`for (const { re, make } of …) holds.push(make(m))` —— `make` 是解构出的函数值
+    //   Go：`for _, opt := range opts { opt(t) }` —— `opt` 是 range 变量
+    //   ⇒ 两者都是**局部变量**，而裸名路径**从不查 `localBindingOf`**
+    //     （它只在**带点接收者**那条路用过，判 `local-receiver-untyped`）
+    //     ⇒ 白白落 `failed`。
+    // ★ 放在 `pkgSrc` **之前**：局部绑定会 **shadow** 导入（JS/Go 都是）。
+    const bareLocalFn = localBindingOf(rel, expr, r.line);
+    if (bareLocalFn) {
+      updExternal.run({
+        i: r.id,
+        cd: JSON.stringify({ verdict: 'external', why: 'local-binding', detail: bareLocalFn }),
+      });
+      stats.external++;
+      continue;
+    }
     const pkgSrc = packageBindingsByFile.get(rel)?.get(expr);
     if (pkgSrc) {
       updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'package-import' }) });
