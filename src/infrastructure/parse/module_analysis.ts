@@ -434,6 +434,19 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
           }
         }
       }
+      // ★★★ 2026-10-27（T-#97a）：**返回类型 / 泛型参数也要 walk** —— 原先只走「形参 + 体」。
+      //
+      // ## 病史（用本仓工具改本仓时自己撞出来的）
+      // `const globalsOf = (r: string): ReturnType<typeof mergeGlobals> => {…}`
+      // ⇒ `return_type` 字段（`type_annotation`）**没人走** ⇒ `typeof mergeGlobals` 里的 identifier
+      //   既不进 `rootRefs`、也不会被 rename 改 ⇒ **4 处只改 3 处，typecheck 红**
+      //   （实测 `error TS2304: Cannot find name 'mergeGlobals'`）。
+      // 同族还有：`function f(): Map<Foo, Bar>` 的 `Foo`/`Bar`、`<T extends Base>` 的 `Base`
+      //   —— 全是**类型位置的引用**，一律漏。⇒ 一次补齐三个字段：`return_type` / `type_parameters` / `type`。
+      for (const f of ['return_type', 'type_parameters', 'type'] as const) {
+        const tn = node.childForFieldName(f);
+        if (tn) walk(tn, depth + 1);
+      }
       const body = node.childForFieldName('body') || node.childForFieldName('suite');
       if (body) walk(body, depth + 1);
       stack.pop();
