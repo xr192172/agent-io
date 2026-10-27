@@ -2813,6 +2813,21 @@ function foldToPath(node: SyntaxNodeLike | null, consts: Map<string, unknown>, f
     }
     return null;
   }
+  // ── ★★★ T-#91：**字符串拼接 `+`**（实测占 computed 的 23/54，最大的一类）
+  //   形态：`'file://' + REPO.replace(/\\/g, '/') + '/dist/src/x.js'`
+  //   原先 `foldToPath` 只认字面量/标识符/调用/成员 ⇒ `binary_expression` 直接落 null
+  //   ⇒ 整条链断（连 `REPO` 已经折叠好了也没用）。这是**我们没做**，不是"算不出"。
+  if (t === 'binary_expression') {
+    const l = node.childForFieldName('left');
+    const r = node.childForFieldName('right');
+    // 只处理 `+`（`==`/`&&` 等不是路径拼接）
+    if (l && r && node.text.includes('+')) {
+      const lv = foldToPath(l, consts, filePath);
+      const rv = foldToPath(r, consts, filePath);
+      if (lv !== null && rv !== null) return lv + rv;
+    }
+    return null;
+  }
   // ── 调用
   if (t === 'call_expression') {
     const r = foldCall(node, consts, filePath);
@@ -2892,6 +2907,14 @@ function foldCall(
           const s = base.replace(/\/+$/, '');
           return { path: s.slice(0, s.lastIndexOf('/')) || '/' };
         }
+      }
+      // ★★★ T-#91：**通用「反斜杠归一」** —— `X.replace(/\\/g, '/')`（Windows 路径转 posix）。
+      //   实测这是 `'file://' + REPO.replace(/\\/g, '/') + '…'` 那 23 条里的必经一环。
+      //   语义明确（把 `\` 换成 `/`）⇒ 不是盲求值。
+      const toSlash = argsList.length >= 2 && /^(['"])\/\1$/.test(argsList[1].text.trim());
+      if (toSlash && /^\/\\\\\/g$|^\/\\\\\/$|^\/\\\\\/g[uimsy]*$/.test(rx.trim())) {
+        const base = foldToPath(obj, consts, filePath);
+        if (base) return { path: base.replace(/\\/g, '/') };
       }
       return null;
     }
