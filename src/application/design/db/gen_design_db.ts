@@ -50,6 +50,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { symbolSelectSql, projectSymbolRow } from './design_db_projection.js';
 
 // ★ 2026-10-20：`GenDesignDbOptions` / `GenDesignDbResult` 已下移到归并逻辑旁边
 //   （与 `DesignDbPlanItem` / `DesignDbConflict` 同住）—— 此前它们在这里，改归并时又在下面
@@ -393,10 +394,9 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
 
   const dbPath = path.join(root, '.agent-io', 'cache.db');
   const db = new DatabaseSync(dbPath, { readOnly: true });
-  const qSymbols = db.prepare(
-    // ★ 2026-10-20：带上 members（type/interface 的定义；function 恒为 NULL）
-    "SELECT name, kind, start_line, signature, members FROM nodes WHERE file_path = ? AND parent IS NULL AND kind != 'file' ORDER BY start_line",
-  );
+  // ★★★ 2026-10-28（同构漂移修复）：**SQL 由映射表派生**，不再手写列名 ——
+  //   手写是漂移入口（实测：实际侧 21 列、设计侧只投影 5 键，`sym_hash` 这种重写锚点整整缺了一个月）。
+  const qSymbols = db.prepare(symbolSelectSql());
   const qImports = db.prepare('SELECT source, kind, type_only FROM v_imports WHERE file_path = ? ORDER BY line');
   const qCallsOut = db.prepare("SELECT source, target FROM edges WHERE kind = 'call' AND source LIKE ? ORDER BY target");
   const qHome = db.prepare(
@@ -450,16 +450,8 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
       let imports: Array<Record<string, unknown>> = [];
       let calls: Array<Record<string, unknown>> = [];
       try {
-        symbols = (qSymbols.all(rel) as Array<{ name: string; kind: string; start_line: number; signature: string | null; members: string | null }>).map(
-          (r) => ({
-            name: r.name,
-            kind: r.kind,
-            line: r.start_line,
-            ...(r.signature ? { signature: r.signature } : {}),
-            // ★ 2026-10-20：类型成员（JSON 里存的是字符串，这里还原成数组）
-            ...(r.members ? { members: JSON.parse(String(r.members)) } : {}),
-          }),
-        );
+        // ★ 2026-10-28：投影走**唯一映射表**（`design_db_projection.ts`）——每列要么投影、要么写明为什么不投影
+        symbols = (qSymbols.all(rel) as Array<Record<string, unknown>>).map(projectSymbolRow);
         imports = (qImports.all(rel) as Array<{ source: string; kind: string; type_only: number | null }>).map((r) => ({
           source: r.source,
           kind: r.kind,
