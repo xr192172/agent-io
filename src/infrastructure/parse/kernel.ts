@@ -599,6 +599,39 @@ function traverseAndExtract(
     return;
   }
 
+  // ★★★ 2026-10-27（T-#95b）：**「持有函数类型」的变量声明也是函数符号**（Go `var X func(…)`）。
+  //   病史见 `LangImportAdapter.typedFuncSymbol`：gin `binding` 里 `DebugPrintFunc` /
+  //   `DebugPrintRouteFunc` 是 `var X func(...)`，它们**没有体、没有 func 关键字**
+  //   ⇒ 既不是 symbol_node 也不是 assignSymbol ⇒ 调用它们的地方全部 failed。
+  //   ★ 一个 `var ( … )` 块里有多个 spec ⇒ 一次全收（判据在 typedFuncSpecs 里，数据驱动）。
+  const typedFns = typedFuncSpecs(node, lang);
+  if (typedFns.length) {
+    const doc = docstringOf(node, lang.name);
+    for (const t of typedFns) {
+      const params = storedParams(t.typeNode, lang);
+      const result = fieldText(t.typeNode, lang.field_map.return_type || '');
+      const sep = LANG_ADAPTERS[lang.name]?.returnSep ?? ' ';
+      symbols.push({
+        name: t.name,
+        kind: 'function',
+        start_line: node.startPosition.row + 1,
+        end_line: node.endPosition.row + 1,
+        qualified_name: parent ? `${parent}.${t.name}` : t.name,
+        params,
+        // 返回类型 / 泛型 / 修饰符：与普通函数同一处（symbol_shape.ts）
+        ...shapeOf(t.typeNode, lang.name),
+        ...(doc ? { docstring: doc } : {}),
+        signature: `${t.name}${fieldText(t.typeNode, lang.field_map.parameters || 'parameters')}${
+          result ? sep + result : ''
+        }`,
+        parent,
+        // 变量本身是"值"，函数体内声明的仍算内部辅助（与 const 函数值同一条判据）
+        is_closure: enclosingIsFunction ? true : undefined,
+      });
+    }
+    return;
+  }
+
   if (isSymbolNode(node, lang)) {
     const { name, fromIndex } = resolveName(node, lang);
     if (name) {
@@ -811,6 +844,49 @@ interface LangImportAdapter {
     valueTypes: string[];
     /** 函数值**自己**的名字字段（TS/JS：`name`）；缺失即视为不满足判据 */
     nameField: string;
+  };
+
+  /**
+   * ★★★ 2026-10-27（T-#95b）：**「变量声明持有函数类型」也是函数符号**（Go 的 `var X func(…)`）。
+   *
+   * ## 为什么需要（gin 1.10 实测，不是推测）
+   * Go 允许**用类型声明一个函数值变量**，它到处被调用，却从来不成符号：
+   *   ```go
+   *   var (
+   *       DebugPrintRouteFunc func(httpMethod, absolutePath, handlerName string)
+   *       DebugPrintFunc      func(format string, values ...any)
+   *   )
+   *   ```
+   *   `binding/binding.go`。它没有体、没有 `func` 关键字 ⇒ 既不在 `symbol_nodes` 里，
+   *   也不是 `assignSymbol`（那个要求"值是具名函数表达式"）⇒ 调用它的地方一律 `failed`
+   *   （实测 `DebugPrintFunc` / `DebugPrintRouteFunc` 各 1 条）。
+   *   ★ Go 只索引 func/method/type（`languages.ts` 的 symbol_nodes）是**对的**：
+   *     `var x = 1` 不该成符号；缺的是**函数类型**这一小类。
+   *
+   * ## 判据（AST 结构，不看文本）
+   * 声明语句 `decl` 里、每个 `spec` 子节点，若它的 `typeField` 子节点类型 ∈ `typeKinds`
+   * 且它自带合法 `name` ⇒ 那是一个**函数符号**：形参/返回值/文档都挂在那个类型节点上。
+   *
+   * ## 加语言时怎么填
+   * 没填 = 本语言没有这种形态（行为逐字不变）。
+   * Go ⇒ `var_declaration` / `var_spec` / `type` / `['function_type']`（含 `var ( … )` 块，多个 spec）。
+   */
+  typedFuncSymbol?: {
+    /** 声明语句节点类型（Go：`var_declaration`） */
+    decl: string;
+    /** 声明里的规格节点类型（Go：`var_spec`；一个声明里可以有多个） */
+    spec: string;
+    /**
+     * `var ( … )` 块形态里包住规格的那一层（Go：`var_spec_list`）。
+     * ★ 实测（2026-10-27，走本仓 loader 取的那份语法）：块形态是
+     *   `var_declaration → var_spec_list → var_spec`，**不是**直接子节点
+     *   —— 少了这一层，`var ( A func(); B func() )` 一条都抽不出来（单行 `var A func()` 却可以）。
+     */
+    specList?: string;
+    /** 规格上「类型」的字段名（Go：`type`） */
+    typeField: string;
+    /** 哪些类型节点算「这是函数值」（Go：`function_type`） */
+    typeKinds: string[];
   };
 
   /** 调用节点类型（数组 = 该语言有多种调用形态，如 PHP 三种 / Groovy 两种） */
@@ -1257,6 +1333,14 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     signatureHasReceiver: true,
     parentFromReceiver: true,
     closureLiteralNodeTypes: ['func_literal'],
+    // ★ T-#95b：`var X func(…)` —— 持有**函数类型**的包级变量也是函数符号（gin `binding` 实测）
+    typedFuncSymbol: {
+      decl: 'var_declaration',
+      spec: 'var_spec',
+      specList: 'var_spec_list',
+      typeField: 'type',
+      typeKinds: ['function_type'],
+    },
     extractImportSources(node) {
       const p = fieldText(node, 'path');
       return p ? [stripQuotes(p)] : [];
@@ -2079,6 +2163,45 @@ function assignSymbolValue(node: SyntaxNodeLike, lang: LanguageEntry): SyntaxNod
  */
 function symbolInner(node: SyntaxNodeLike, lang: LanguageEntry): SyntaxNodeLike {
   return assignSymbolValue(node, lang) ?? node;
+}
+
+/**
+ * ★★★ 2026-10-27（T-#95b）：**声明语句里"持有函数类型"的那些规格**（Go `var X func(…)`）。
+ *
+ * 判据全是适配器数据（`typedFuncSymbol`），内核不认识任何具体语言：
+ *   ① 本节点类型 = `decl`；
+ *   ② 它的 `spec` 子节点们，各自 `typeField` 的子节点类型 ∈ `typeKinds`；
+ *   ③ 该 spec 自带合法 `name`（`var ( a, b func() )` 这种多名字形态取不到 name 字段 ⇒ 不收，宁漏不错）。
+ * ★ 返回的是**函数类型节点**：形参 / 返回类型 / 形状都挂在它上面，名字挂在 spec 上。
+ */
+function typedFuncSpecs(
+  node: SyntaxNodeLike,
+  lang: LanguageEntry,
+): Array<{ name: string; typeNode: SyntaxNodeLike }> {
+  const t = LANG_ADAPTERS[lang.name]?.typedFuncSymbol;
+  if (!t || node.type !== t.decl) return [];
+  const out: Array<{ name: string; typeNode: SyntaxNodeLike }> = [];
+  const specs: SyntaxNodeLike[] = [];
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (!c) continue;
+    if (c.type === t.spec) specs.push(c);
+    // ★ 块形态（`var ( … )`）多包一层 `specList`：实测 `var_declaration → var_spec_list → var_spec`
+    else if (t.specList && c.type === t.specList) {
+      for (let j = 0; j < c.childCount; j++) {
+        const g = c.child(j);
+        if (g && g.type === t.spec) specs.push(g);
+      }
+    }
+  }
+  for (const spec of specs) {
+    const typeNode = spec.childForFieldName(t.typeField);
+    if (!typeNode || !t.typeKinds.includes(typeNode.type)) continue;
+    const nameNode = spec.childForFieldName(lang.field_map.name);
+    if (!nameNode || !isValidIdentifier(nameNode.text)) continue;
+    out.push({ name: nameNode.text, typeNode });
+  }
+  return out;
 }
 
 /**

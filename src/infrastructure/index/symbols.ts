@@ -1471,18 +1471,154 @@ export function removeFile(db: Database, projectRoot: string, absPath: string): 
  * 为什么两半都要：Go 规定一个目录只能有一个包，但外部测试包 `foo_test` 会打破这个假设 ——
  * 只看目录会把 `_test` 里的裸名连到主包的私有函数上（那是**误连**，比缺边更坏）。
  * 按 mtime 缓存：每批解析都要判，31 个 Go 文件不值得每次全读。
+ *
+ * ★ T-#95c：顺手把**构建约束**一起读出来（同一次读盘，不读第二遍）。
  */
-const goPackageCache = new Map<string, { mtimeMs: number; pkg: string | null }>();
-function goPackageName(projectRoot: string, rel: string): string | null {
+const goPackageCache = new Map<string, { mtimeMs: number; pkg: string | null; build: GoBuildVerdict }>();
+function goFileFacts(projectRoot: string, rel: string): { pkg: string | null; build: GoBuildVerdict } {
   const key = `${projectRoot}|${rel}`;
   const abs = path.join(projectRoot, rel);
   const st = fs.statSync(abs);
   const hit = goPackageCache.get(key);
-  if (hit && hit.mtimeMs === st.mtimeMs) return hit.pkg;
-  const m = fs.readFileSync(abs, 'utf8').match(/^\s*package\s+([A-Za-z_]\w*)/m);
+  if (hit && hit.mtimeMs === st.mtimeMs) return { pkg: hit.pkg, build: hit.build };
+  const text = fs.readFileSync(abs, 'utf8');
+  const m = text.match(/^\s*package\s+([A-Za-z_]\w*)/m);
   const pkg = m ? m[1] : null;
-  goPackageCache.set(key, { mtimeMs: st.mtimeMs, pkg });
-  return pkg;
+  const build = goBuildVerdictOf(text);
+  goPackageCache.set(key, { mtimeMs: st.mtimeMs, pkg, build });
+  return { pkg, build };
+}
+
+/**
+ * ★★★ 2026-10-27（T-#95c）：这份 Go 源文件在「**默认构建上下文**」下参不参与构建。
+ *
+ * ## 为什么需要（gin `binding` 实测，10 条 failed 的真因）
+ * `binding.go` 的头是 `//go:build !nomsgpack`，`binding_nomsgpack.go` 的是 `//go:build nomsgpack`
+ * —— 两个文件里**都有** `func validate(obj any) error`。我们索引的是**全仓真相**
+ * （两份都在 `nodes` 里，这是对的），于是同包同名 ⇒ 候选不唯一 ⇒ 按"不猜"纪律落 `failed`。
+ * 但这两份**不是真的重名**：构建约束决定了它们互斥。
+ *
+ * ## 判据（三值，刻意**不依赖宿主平台**）
+ * 这个索引回答的是"仓里有什么"，不是"这台机器怎么编译"。所以：
+ *   · **自定义 tag 一律按「未设置」**（本次索引没有开任何 tag）⇒ `false`
+ *     ⇒ `!nomsgpack` = `true`（`binding.go` **确凿在**）、`nomsgpack` = `false`（那份**确凿不在**）⇒ 唯一；
+ *   · **平台/工具链类标识符**（GOOS / GOARCH 名、`cgo`、`go1.x`、`unix`…）⇒ `'unknown'`
+ *     —— 它们取决于宿主与工具链，同一份仓在两台机器上答案不同（与 T149「候选序非确定性」同族，别引入）。
+ *   ⇒ 只要剩下的候选里还有两个落在 `'unknown'`，仍然**不猜**（返回 null，与改造前行为一致）。
+ */
+type GoBuildVerdict = boolean | 'unknown';
+type Tri = boolean | 'unknown';
+
+/** GOOS / GOARCH 已知值 —— 这些**不是**自定义 tag，答案取决于宿主 ⇒ 一律 'unknown' */
+const GO_PLATFORM_TAGS: ReadonlySet<string> = new Set([
+  // GOOS
+  'aix', 'android', 'darwin', 'dragonfly', 'freebsd', 'hurd', 'illumos', 'ios', 'js', 'linux', 'netbsd',
+  'openbsd', 'plan9', 'solaris', 'wasip1', 'windows',
+  // GOARCH
+  '386', 'amd64', 'arm', 'arm64', 'loong64', 'mips', 'mips64', 'mips64le', 'mipsle', 'ppc64', 'ppc64le',
+  'riscv64', 's390x', 'wasm',
+  // 工具链 / 平台族
+  'cgo', 'gc', 'gccgo', 'unix', 'msvc', 'purego',
+]);
+
+function tagVerdict(tag: string): Tri {
+  if (/^go1(\.\d+)?$/.test(tag)) return 'unknown'; // 工具链版本：取决于谁的 Go
+  if (GO_PLATFORM_TAGS.has(tag)) return 'unknown';
+  return false; // 自定义 tag：本次索引没开任何 tag ⇒ 未设置
+}
+
+function triNot(a: Tri): Tri {
+  return a === 'unknown' ? 'unknown' : !a;
+}
+function triAnd(a: Tri, b: Tri): Tri {
+  if (a === false || b === false) return false;
+  return a === 'unknown' || b === 'unknown' ? 'unknown' : true;
+}
+function triOr(a: Tri, b: Tri): Tri {
+  if (a === true || b === true) return true;
+  return a === 'unknown' || b === 'unknown' ? 'unknown' : false;
+}
+
+/** `//go:build` 表达式求值（`||` / `&&` / `!` / 括号 / tag）—— 结构判据，不认"注释里写着" */
+function evalGoBuildExpr(expr: string): Tri {
+  const tokens = expr.match(/\(|\)|!|&&|\|\||[A-Za-z0-9_.]+/g) ?? [];
+  let i = 0;
+  const peek = (): string | undefined => tokens[i];
+  const parseOr = (): Tri => {
+    let v = parseAnd();
+    while (peek() === '||') {
+      i++;
+      v = triOr(v, parseAnd());
+    }
+    return v;
+  };
+  const parseAnd = (): Tri => {
+    let v = parseUnary();
+    while (peek() === '&&') {
+      i++;
+      v = triAnd(v, parseUnary());
+    }
+    return v;
+  };
+  const parseUnary = (): Tri => {
+    const t = peek();
+    if (t === '!') {
+      i++;
+      return triNot(parseUnary());
+    }
+    if (t === '(') {
+      i++;
+      const v = parseOr();
+      if (peek() === ')') i++;
+      return v;
+    }
+    if (t === undefined || t === ')' || t === '&&' || t === '||') return 'unknown'; // 残缺表达式 ⇒ 判不了
+    i++;
+    return tagVerdict(t);
+  };
+  return parseOr();
+}
+
+/** 旧式 `// +build linux,amd64 darwin`：空格 = 或、逗号 = 与、`!` = 非；多行之间是「与」 */
+function evalGoPlusBuildLine(line: string): Tri {
+  const terms = line.split(/\s+/).filter(Boolean);
+  let v: Tri = false;
+  for (const term of terms) {
+    let and: Tri = true;
+    for (const atom of term.split(',')) {
+      const neg = atom.startsWith('!');
+      const name = neg ? atom.slice(1) : atom;
+      const val = tagVerdict(name);
+      and = triAnd(and, neg ? triNot(val) : val);
+    }
+    v = triOr(v, and);
+  }
+  return v;
+}
+
+/** 从文件文本里取构建约束并求值（`//go:build` 优先，没有才看旧式 `// +build`） */
+function goBuildVerdictOf(text: string): GoBuildVerdict {
+  const head = text.slice(0, 4000).split(/\r?\n/);
+  const goBuild: string[] = [];
+  const plusBuild: string[] = [];
+  for (const line of head) {
+    if (/^\s*package\s+[A-Za-z_]/.test(line)) break;
+    const g = line.match(/^\s*\/\/go:build\s+(.+?)\s*$/);
+    if (g) goBuild.push(g[1]);
+    const p = line.match(/^\s*\/\/\s*\+build\s+(.+?)\s*$/);
+    if (p) plusBuild.push(p[1]);
+  }
+  if (goBuild.length) {
+    let v: Tri = true;
+    for (const e of goBuild) v = triAnd(v, evalGoBuildExpr(e));
+    return v;
+  }
+  if (plusBuild.length) {
+    let v: Tri = true;
+    for (const line of plusBuild) v = triAnd(v, evalGoPlusBuildLine(line));
+    return v;
+  }
+  return true; // 没有约束 ⇒ 一定参与构建
 }
 
 /**
@@ -1491,13 +1627,16 @@ function goPackageName(projectRoot: string, rel: string): string | null {
  * ★ 成因（实测 2026-10-21）：`relImportsByFile` 只装 kind='relative'，而 Go 是 package 导入
  *   ⇒ 同包其它文件的函数**结构上永远进不了** import 表 ⇒ 83 条同包互调全丢。
  * ★ 命中数必须**恰好 1**：0 条 = 没有；>1 条 = 同包重名（Go 不允许，真出现就**不猜**）。
+ * ★ T-#95c：候选里**按构建约束剔除**「确定不参与构建」的那份（`binding.go` vs `binding_nomsgpack.go`）；
+ *   判不了的（`'unknown'`）仍留着 ⇒ 若还剩两个，照旧**不猜**。
  */
 function findGoSamePackageTarget(
   db: Database,
+  projectRoot: string,
   fromRel: string,
   name: string,
   kinds: readonly string[],
-  goFilesByDir: ReadonlyMap<string, ReadonlyArray<{ file: string; pkg: string }>>,
+  goFilesByDir: ReadonlyMap<string, ReadonlyArray<{ file: string; pkg: string; build: GoBuildVerdict }>>,
 ): { file: string; qn: string } | null {
   if (!fromRel.endsWith('.go')) return null;
   const group = goFilesByDir.get(path.posix.dirname(fromRel));
@@ -1507,6 +1646,8 @@ function findGoSamePackageTarget(
   const hits: Array<{ file: string; qn: string }> = [];
   for (const e of group) {
     if (e.file === fromRel || e.pkg !== fromPkg) continue;
+    // ★ T-#95c：**确凿不参与构建**的同类文件不算候选（构建约束互斥，不是真重名）
+    if (e.build === false) continue;
     const row = db
       .prepare('SELECT kind, qualified_name FROM nodes WHERE file_path = $f AND name = $n LIMIT 1')
       .get({ f: e.file, n: name }) as { kind: string; qualified_name: string } | undefined;
@@ -2080,13 +2221,13 @@ export function resolveCrossFileCalls(
 
   // ★ 2026-10-21：Go 同包索引（目录 → [{file, pkg}]）。判据 = 同目录 **且** package 子句同名，
   //   见 findGoSamePackageTarget 的注释（`foo_test` 外部测试包会打破「一目录一包」）。
-  const goFilesByDir = new Map<string, Array<{ file: string; pkg: string }>>();
+  const goFilesByDir = new Map<string, Array<{ file: string; pkg: string; build: GoBuildVerdict }>>();
   for (const row of db.prepare("SELECT path FROM files WHERE language = 'go'").all() as Array<{ path: string }>) {
-    const pkg = goPackageName(projectRoot, row.path);
-    if (!pkg) continue;
+    const facts = goFileFacts(projectRoot, row.path);
+    if (!facts.pkg) continue;
     const dir = path.posix.dirname(row.path);
     const arr = goFilesByDir.get(dir) ?? [];
-    arr.push({ file: row.path, pkg });
+    arr.push({ file: row.path, pkg: facts.pkg, build: facts.build });
     goFilesByDir.set(dir, arr);
   }
 
@@ -2410,7 +2551,7 @@ export function resolveCrossFileCalls(
       }
       const t =
         findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, typeNamesByFile, ['interface', 'type', 'class'], miss, indexedFiles)
-        ?? findGoSamePackageTarget(db, rel, expr, ['interface', 'type', 'class'], goFilesByDir)
+        ?? findGoSamePackageTarget(db, projectRoot, rel, expr, ['interface', 'type', 'class'], goFilesByDir)
         // ★ T-#62：**适配器驱动的跨包/跨文件解析**（Go 的 module 路径 → 目录就在这层生效）
         ?? resolveViaAdapter(rel, expr, ['interface', 'type', 'class'])
         // ★★★ 2026-10-27（T-#97c）：**值空间的类型引用** —— 	ypeof X（T-#97c 起才进索引）。
@@ -2616,7 +2757,7 @@ export function resolveCrossFileCalls(
       (boundByName
         ? findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, symbolsByFile, ['function', 'const'], miss, indexedFiles)
         : null)
-      ?? findGoSamePackageTarget(db, rel, expr, ['function'], goFilesByDir)
+      ?? findGoSamePackageTarget(db, projectRoot, rel, expr, ['function'], goFilesByDir)
       // ★ T-#62：**适配器驱动的跨包/跨文件解析**（Go 的 module 路径 → 目录就在这层生效）
       ?? resolveViaAdapter(rel, expr, ['function', 'const', 'method', 'type']);
     if (target) {

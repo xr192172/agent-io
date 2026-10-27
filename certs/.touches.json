@@ -583,5 +583,10 @@
     "src/application/design/dsl_ops/task_ops.ts",
     "src/domain/task_schema.js",
     "src/domain/task_schema.ts"
+  ],
+  "t367-go-var-func-buildtag-cert.mjs": [
+    "src/infrastructure/graph/import_project.js",
+    "src/infrastructure/index/symbols.ts",
+    "src/infrastructure/parse/kernel.ts"
   ]
 }

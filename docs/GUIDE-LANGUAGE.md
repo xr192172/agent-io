@@ -199,6 +199,42 @@ console.log(k.LANG_ADAPTERS.python.resolveImport('a.b','x.py',ctx))" --input-typ
 > 判 `namespace-member-of-package`（**有据**）。
 > **新语言如果也有"限定类型"，加进那个三元组。**
 
+### 2.5 加"**变量持有函数类型**"这类符号（适配器 `typedFuncSymbol`）
+
+有些语言允许**用类型声明一个函数值变量**，它会被到处调用，却不是 `func` 声明：
+
+```go
+var DebugPrintRouteFunc func(httpMethod, absolutePath, handlerName string)   // gin/binding
+var (                                                                        // 块形态
+	Before func(route string)
+	After  func(route string)
+)
+```
+
+它**没有体、没有 `func` 关键字** ⇒ 不是 `symbol_nodes`，也不是 `assignSymbol`
+（那个要求"值是具名函数表达式"）⇒ 调用它的地方全是 `failed`（gin 实测 2 条）。
+
+**填法**（`kernel.ts` 的 `LANG_ADAPTERS[语言].typedFuncSymbol`）：
+
+| 字段 | Go 的取值 | 说明 |
+|---|---|---|
+| `decl` | `var_declaration` | 声明语句节点类型 |
+| `spec` | `var_spec` | 声明里的规格节点（一个声明可含多个） |
+| `specList` | `var_spec_list` | 块形态（`var ( … )`）多包的那一层 —— **实测必须填**，否则块里一条都抽不出来 |
+| `typeField` | `type` | 规格上"类型"的字段名 |
+| `typeKinds` | `['function_type']` | 哪些类型节点算"这是函数值" |
+
+★ 没填 = 本语言没有这种形态，行为逐字不变。
+
+**同族的判据（`index/symbols.ts#findGoSamePackageTarget`）**：Go 允许同一目录、
+同一 package 的**两个文件**各定义一个同名函数 —— 只要它们的 `//go:build` 互斥
+（`binding.go` 是 `!nomsgpack`、`binding_nomsgpack.go` 是 `nomsgpack`）。
+本仓"索引全仓"，所以两份都会成符号 ⇒ 候选不唯一 ⇒ 按"不猜"纪律落 `failed`。
+**判据**：按"**默认构建上下文**"求值 `//go:build`（三值）——
+自定义 tag 一律视为**未设置**（本次索引没开任何 tag）⇒ 互斥的那份**确凿不在**、定到唯一；
+**平台/工具链类标识符**（GOOS/GOARCH 名、`cgo`、`go1.x`…）一律 `unknown`
+（取决于宿主与工具链，同一份仓两台机器答案不同，别引入非确定性）⇒ 剩余候选里还有两个判不了就**仍然不猜**。
+
 ---
 
 ## 3 · 已知未实现的（**别当成"已支持"**）
