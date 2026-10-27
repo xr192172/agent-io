@@ -945,8 +945,26 @@ const TS_LIKE_IMPORT_BINDINGS = (node: SyntaxNodeLike): string[] => {
     if (t === 'import_specifier') {
       const alias = n.childForFieldName('alias');
       const name = n.childForFieldName('name');
-      const local = (alias ?? name)?.text;
-      if (local) out.push(local);
+      // ★★★ 2026-10-27（T-#85）：**别名导入要保留【远端名】**（`import { remote as local }`）。
+      //
+      // ## 病史（读数据定位的类级 bug）
+      // 原先只记 `local`（`(alias ?? name).text`）⇒ **远端名丢了**。
+      // 后果：`findCrossFileTarget` 拿**本地名**去目标文件找 ⇒ 目标里只有**远端名**
+      //   ⇒ 永远找不到 ⇒ 永远 failed。实测 6/14 条剩余 failed 全是这个：
+      //   `import { designDbDir as designDbDirOf }` · `import { … listDesignSheets as listStoredFeatures }`
+      //   · `Insertion as SkeletonInsertion` · `editCode as ec`
+      // ⇒ 真实项目里 `as` 极常见 ⇒ **类级盲区**，不是个案。
+      //
+      // ## 格式（**不改 schema**，只改 `bindings` 字符串的形态）
+      //   有别名 ⇒ `"remote as local"`；无别名 ⇒ 原名
+      //   读取端：`localOf()` 取本地名（`boundByName` / `pkgSrc` 用）
+      //            `remoteOf()` 取远端名（**去目标文件里搜符号时用**）
+      if (alias && name) {
+        out.push(`${name.text} as ${alias.text}`);
+      } else {
+        const local = (alias ?? name)?.text;
+        if (local) out.push(local);
+      }
       return;
     }
     if (t === 'namespace_import') {

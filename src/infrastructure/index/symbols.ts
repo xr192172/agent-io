@@ -1917,9 +1917,9 @@ export function resolveCrossFileCalls(
     }
     set.add(s.name);
   }
-  // 预加载：文件 → relative imports
-  const relImportsByFile = new Map<string, Array<{ source: string; line: number }>>();
-  for (const i of db.prepare("SELECT file_path, source, line FROM v_imports WHERE kind='relative'").all() as Array<{ file_path: string; source: string; line: number }>) {
+  // 预加载：文件 → relative imports（★ T-#85 带 `bindings` —— 解析时要拿【远端名】去目标文件搜符号）
+  const relImportsByFile = new Map<string, Array<{ source: string; line: number; bindings?: string | null }>>();
+  for (const i of db.prepare("SELECT file_path, source, line, bindings FROM v_imports WHERE kind='relative'").all() as Array<{ file_path: string; source: string; line: number; bindings: string | null }>) {
     let arr = relImportsByFile.get(i.file_path);
     if (!arr) {
       arr = [];
@@ -1951,7 +1951,7 @@ export function resolveCrossFileCalls(
     let set = relBindingsByFile.get(i.file_path);
     if (!set) relBindingsByFile.set(i.file_path, (set = new Set()));
     try {
-      for (const nm of JSON.parse(i.bindings) as string[]) set.add(nm);
+      for (const nm of JSON.parse(i.bindings) as string[]) set.add(localOf(nm));
     } catch {
       /* 坏 JSON 跳过（与 packageBindingsByFile 同口径；坏了也不能让整个解析挂掉） */
     }
@@ -1979,7 +1979,8 @@ export function resolveCrossFileCalls(
     }
     try {
       for (const name of JSON.parse(row.bindings) as string[]) {
-        if (!m.has(name)) m.set(name, row.source);
+        const loc = localOf(name);
+        if (!m.has(loc)) m.set(loc, row.source);
       }
     } catch {
       /* 坏 JSON 跳过（不该发生；坏了也不能让整个解析挂掉） */
@@ -2657,9 +2658,25 @@ const JAVA_LANG_TYPES = new Set([
 
 /** 沿源文件的 relative imports 找符号对应的目标符号（首个命中）；找不到返回 null。
  *  namesByFile：候选符号名集合（call=全符号表，type_ref=仅 interface/type/class） */
+/**
+ * ★★★ 2026-10-27（T-#85）：**`bindings` 里的别名形态**（`"remote as local"`）。
+ *
+ * `localOf` 取**本地名**（`boundByName` / `pkgSrc` 用）
+ * `remoteOf` 取**远端名**（★ **去目标文件里搜符号时必须用它**）
+ * ★ 无别名的条目原样返回 ⇒ 对旧数据 / 绝大多数情况零影响。
+ */
+const localOf = (b: string): string => {
+  const i = b.indexOf(' as ');
+  return i >= 0 ? b.slice(i + 4) : b;
+};
+const remoteOf = (b: string): string => {
+  const i = b.indexOf(' as ');
+  return i >= 0 ? b.slice(0, i) : b;
+};
+
 function findCrossFileTarget(
   db: Database,
-  relImportsByFile: Map<string, Array<{ source: string; line: number }>>,
+  relImportsByFile: Map<string, Array<{ source: string; line: number; bindings?: string | null }>>,
   projectRoot: string,
   fromRel: string,
   name: string,
@@ -2679,6 +2696,24 @@ function findCrossFileTarget(
     if (!target || seen.has(target)) continue;
     seen.add(target);
     const syms = namesByFile.get(target);
+    // ★★★ 2026-10-27（T-#85）：**别名导入要去目标文件找【远端名】**（`import { remote as local }`）。
+    //   病史：原先拿本地名 `name` 去搜 ⇒ `import { designDbDir as designDbDirOf }` 永远找不到
+    //   （目标文件里只有 `designDbDir`）⇒ 永远 failed。实测 6/14 条剩余 failed 全是这个。
+    //   ★ 只对**本条 import** 生效：它的 `bindings` 里有 `"X as name"` ⇒ 用 `X`；否则用 `name`。
+    let want = name;
+    if (imp.bindings) {
+      try {
+        for (const b of JSON.parse(imp.bindings) as string[]) {
+          if (b === name) break; // 无别名同名词条 ⇒ 用原名
+          if (localOf(b) === name) {
+            want = remoteOf(b);
+            break;
+          }
+        }
+      } catch {
+        /* 坏 JSON ⇒ 用原名 */
+      }
+    }
     // ★★★ 2026-10-27（T-#63 修）：**目标文件解析到了、但它不在索引里** ⇒ 必须记进 `miss`。
     //   病史：`certs/*.mjs` / `scripts/*.mjs` 从 `dist/` import —— `dist` 磁盘上存在（`resolveImportTarget`
     //   的 `existsSync` 通过）但**不在索引里** ⇒ `namesByFile.get(target)` 是 `undefined`
@@ -2689,11 +2724,11 @@ function findCrossFileTarget(
       //   结果**跳过了下面的 barrel 再导出那条路** ⇒ 实测 `resolved` 掉 **237 条**。
       //   ⇒ 只记 `miss`，**照旧往下走**（目标文件没索引 ≠ 它没有 barrel）。
       miss?.push({ why: 'reexport-target-not-indexed', detail: target });
-    } else if (syms.has(name)) {
+    } else if (syms.has(want)) {
       // 目标文件确有该符号 → 取 qualified_name（重名取首个，v1 近似）
       const q = db
         .prepare('SELECT kind, qualified_name FROM nodes WHERE file_path = $tp AND name = $n LIMIT 1')
-        .get({ tp: target, n: name }) as { kind: string; qualified_name: string } | undefined;
+        .get({ tp: target, n: want }) as { kind: string; qualified_name: string } | undefined;
       if (q && (!kinds || kinds.includes(q.kind))) return { file: target, qn: q.qualified_name };
     }
     // ★ 2026-10-21：barrel re-export —— 目标文件只是 `export { x } from './kernel.js'`，符号在下一层。
