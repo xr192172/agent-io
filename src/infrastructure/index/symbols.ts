@@ -21,6 +21,8 @@ import { parseFileFull, parseFileFullSync, resolveImportPath, type ParsedFile, t
 //   + 小写归一 + 进程内缓存）——本文件不再用 `isSupported`（那是"能不能解析"，不是"算不算源码"），
 //   也不再自拼 `new Set(...map(lower))` 那套用法。
 import { codeSourceExtSet } from '../parse/source_exts.js';
+// ★ T-#62：**多语言导入解析的适配器表** —— 本文件不再按语言写 if，而是问它
+import { LANG_ADAPTERS, type ResolveImportCtx } from '../parse/kernel.js';
 // ★ 写路径挂钩（§19）：ProjectView 的缓存在「磁盘被改过」时必须失效。
 //   syncFile/syncFileSync 是**全部 15 个写工具**的公共落点 ⇒ 挂这一处即覆盖所有写入，
 //   不必让每个写工具自己记得调 —— 「靠自觉的接线」正是本项目反复踩的坑。
@@ -1750,6 +1752,42 @@ export interface CrossFileResolveStats {
  *
  * 幂等：只处理 status='pending' 的行；syncProject 全量同步后调用（跨文件匹配需要全库符号表）。
  */
+/**
+ * ★ T-#62：**轻量 go.mod 扫描**（只取 `module → 目录`）。
+ * ★ 为什么不直接调 `import_project.readGoModules`：那个文件 import 本文件 ⇒ **循环依赖**。
+ *   这里只做一件事、十几行，宁可小幅重复也不制造环。
+ */
+function readGoModulesLite(root: string): Array<{ module: string; dir: string }> {
+  const out: Array<{ module: string; dir: string }> = [];
+  const stack: string[] = [root];
+  while (stack.length > 0) {
+    const dir = stack.pop()!;
+    let ents: fs.Dirent[];
+    try {
+      ents = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const e of ents) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        if (!e.name.startsWith('.') && e.name !== 'node_modules') stack.push(full);
+      } else if (e.name === 'go.mod') {
+        try {
+          const m = fs.readFileSync(full, 'utf8').match(/^\s*module\s+(\S+)/m);
+          if (m) {
+            const rel = path.relative(root, dir).replace(/\\/g, '/');
+            out.push({ module: m[1], dir: rel === '.' ? '' : rel });
+          }
+        } catch {
+          /* 读不到就算了 */
+        }
+      }
+    }
+  }
+  return out;
+}
+
 export function resolveCrossFileCalls(
   db: Database,
   projectRoot: string,
@@ -1787,6 +1825,44 @@ export function resolveCrossFileCalls(
     }
     set.add(s.name);
   }
+  // ★★★ 2026-10-27（T-#62）：**多语言导入解析（适配器驱动）**。
+  //
+  // 这是“有什么语言就自动解锁什么语言”的落地：
+  //   本文件不再按语言写 if，而是问 `LANG_ADAPTERS[lang].resolveImport`。
+  //   未声明该字段的语言 ⇒ 返回 null ⇒ 调用方走默认（TS 相对路径）逻辑，**行为不变**。
+  const langByFile = new Map<string, string>();
+  for (const row of db.prepare('SELECT path, language FROM files').all() as Array<{ path: string; language: string }>) {
+    langByFile.set(row.path, row.language);
+  }
+  const importCtx: ResolveImportCtx = {
+    projectRoot,
+    files: new Set<string>(langByFile.keys()),
+    goModules: readGoModulesLite(projectRoot),
+  };
+  /** 走适配器的 `resolveImport`：命中返回目标，未声明/未命中返回 null（**不抢默认逻辑**） */
+  const resolveViaAdapter = (
+    rel: string,
+    expr: string,
+    kinds: readonly string[],
+  ): { file: string; qn: string } | null => {
+    const lang = langByFile.get(rel);
+    if (!lang) return null;
+    const a = LANG_ADAPTERS[lang];
+    if (!a?.resolveImport) return null;
+    for (const imp of allImportsByFile.get(rel) ?? []) {
+      const cands = a.resolveImport(imp.source, rel, importCtx);
+      if (!cands || cands.length === 0) continue;
+      for (const f of cands) {
+        if (f === rel) continue;
+        const row = db
+          .prepare('SELECT kind, qualified_name FROM nodes WHERE file_path = $f AND name = $n LIMIT 1')
+          .get({ f, n: expr }) as { kind: string; qualified_name: string } | undefined;
+        if (row && kinds.includes(row.kind)) return { file: f, qn: row.qualified_name };
+      }
+    }
+    return null;
+  };
+
   // 预加载：文件 → 类型符号名集合（type_ref 目标限定 interface/type/class）
   const typeNamesByFile = new Map<string, Set<string>>();
   for (const s of db.prepare("SELECT name, file_path FROM nodes WHERE kind IN ('interface','type','class')").all() as Array<{ name: string; file_path: string }>) {
@@ -1809,6 +1885,23 @@ export function resolveCrossFileCalls(
   }
 
   /** 文件 → 相对导入绑定的本地名（判「这个裸名到底是从哪个相对模块 import 进来的」） */
+  // ★★★ 2026-10-27（T-#62）：**全部导入（不分 kind）** —— 适配器的 `resolveImport` 必须看到
+  //   **package 导入**（Go 的 `github.com/x/…/internal/instrument` / Python 的点分模块）。
+  //   病史：`relImportsByFile` 只装 `kind='relative'` ⇒ Go 跨包引用永远进不了适配器
+  //   （实测改了适配器只 +2 条，就是因为这一层没接）。
+  const allImportsByFile = new Map<string, Array<{ source: string; line: number }>>();
+  for (const i of db.prepare('SELECT file_path, source, line FROM v_imports').all() as Array<{
+    file_path: string;
+    source: string;
+    line: number;
+  }>) {
+    let arr = allImportsByFile.get(i.file_path);
+    if (!arr) {
+      arr = [];
+      allImportsByFile.set(i.file_path, arr);
+    }
+    arr.push(i);
+  }
   const relBindingsByFile = new Map<string, Set<string>>();
   for (const i of db.prepare("SELECT file_path, bindings FROM v_imports WHERE kind='relative' AND bindings IS NOT NULL").all() as Array<{ file_path: string; bindings: string }>) {
     let set = relBindingsByFile.get(i.file_path);
@@ -2072,7 +2165,9 @@ export function resolveCrossFileCalls(
       }
       const t =
         findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, typeNamesByFile, ['interface', 'type', 'class'], miss, indexedFiles)
-        ?? findGoSamePackageTarget(db, rel, expr, ['interface', 'type', 'class'], goFilesByDir);
+        ?? findGoSamePackageTarget(db, rel, expr, ['interface', 'type', 'class'], goFilesByDir)
+        // ★ T-#62：**适配器驱动的跨包/跨文件解析**（Go 的 module 路径 → 目录就在这层生效）
+        ?? resolveViaAdapter(rel, expr, ['interface', 'type', 'class']);
       if (t) {
         insEdge.run({ src: r.from_node_id, tgt: `${t.file}#${t.qn}`, k: 'type_ref', ln: r.line, md: CROSS_META });
         updResolved.run({ i: r.id, n: `${t.file}#${t.qn}` });
@@ -2229,7 +2324,9 @@ export function resolveCrossFileCalls(
       (boundByName
         ? findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, symbolsByFile, ['function', 'const'], miss, indexedFiles)
         : null)
-      ?? findGoSamePackageTarget(db, rel, expr, ['function'], goFilesByDir);
+      ?? findGoSamePackageTarget(db, rel, expr, ['function'], goFilesByDir)
+      // ★ T-#62：**适配器驱动的跨包/跨文件解析**（Go 的 module 路径 → 目录就在这层生效）
+      ?? resolveViaAdapter(rel, expr, ['function', 'const', 'method', 'type']);
     if (target) {
       insEdge.run({ src: r.from_node_id, tgt: `${target.file}#${target.qn}`, k: 'call', ln: r.line, md: CROSS_META });
       updResolved.run({ i: r.id, n: `${target.file}#${target.qn}` });

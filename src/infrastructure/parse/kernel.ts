@@ -647,7 +647,36 @@ function traverseAndExtract(
  *   全部收敛成**下表字段**。kernel 只消费数据，不写按语言分支（判据见
  *   `tests/tools/kernel_no_lang_branch.test.ts`）。加语言 = 加一行数据。
  */
+/**
+ * ★★★ 2026-10-27（T-#62）：**导入解析的上下文**。
+ * 把“解析 import source 需要知道什么”显式化，而不是让每个语言实现去猜。
+ */
+export interface ResolveImportCtx {
+  projectRoot: string;
+  /** 项目内已有的文件（仓库相对路径，posix 分隔） */
+  files: ReadonlySet<string>;
+  /** 该项目的 Go module 表（`module → 目录`）；非 Go 语言可忽略 */
+  goModules: ReadonlyArray<{ module: string; dir: string }>;
+}
+
 interface LangImportAdapter {
+  /**
+   * ★★★ 2026-10-27（T-#62）：**把 import source 解析成项目内的候选文件**。
+   *
+   * ## 为什么必须进适配器（这是“有什么语言就自动解锁什么语言”的关键）
+   * 病史：解析器是多语言的（本表），但**导入解析是硬编码的** ——
+   *   `resolveImportTarget` 只走 TS 的相对路径 + IMPORT_EXTS；
+   *   `findGoSamePackageTarget` 是 Go 特例且**只认同目录**。
+   * ⇒ **加一门语言，它的跨文件/跨包解析不会自动具备**。
+   *
+   * ## 语义
+   * · `undefined`（未声明）⇒ 调用方按**默认 TS 逻辑**处理（相对路径 + 扩展名）
+   * · `null` ⇒ 本语言不管这条 source（调用方继续试别的路子）
+   * · `[]` ⇒ **明确解析不到**（标准库 / 第三方 ⇒ 外部，不该算漏连）
+   * · `string[]` ⇒ 项目内候选文件（调用方在这些文件里找符号）
+   */
+  resolveImport?: (source: string, fromRel: string, ctx: ResolveImportCtx) => string[] | null;
+
   /** 调用节点类型（数组 = 该语言有多种调用形态，如 PHP 三种 / Groovy 两种） */
   callNode?: string | string[];
   /**
@@ -978,6 +1007,32 @@ const TS_LIKE_IMPORT_BINDINGS = (node: SyntaxNodeLike): string[] => {
 export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   go: {
     callNode: 'call_expression',
+    // ★★★ 2026-10-27（T-#62）：**Go 的导入解析** —— 本仓 module 下的包路径 → 目录 → 该目录下的 .go 文件。
+    //
+    // ## 病史
+    // 原先只有 `findGoSamePackageTarget`（**只认同目录**）⇒ 跨包引用（`instrument.ContractProbe`、
+    // `probe.Tiered`）永远解析不到 ⇒ 落 failed。而数据其实全都有：
+    //   · `readGoModules()` 已产出 `module → dir`
+    //   · `imports.source` 已记完整包路径（`github.com/x/agent-io/observe-lang-go/internal/instrument`）
+    // ⇒ **只是没接线**。
+    //
+    // ## 判据
+    // · source 是本仓 module 的前缀（或相等）⇒ 取剩余路径拼到 module 目录下，返回该目录所有 `.go`
+    // · 否则（标准库 `fmt` / 第三方）⇒ 返回 `[]`（**明确外部**，不该算漏连）
+    resolveImport: (source: string, _fromRel: string, ctx) => {
+      for (const m of ctx.goModules) {
+        if (source !== m.module && !source.startsWith(`${m.module}/`)) continue;
+        const rest = source.slice(m.module.length).replace(/^\//, '');
+        const dir = [m.dir, rest].filter(Boolean).join('/');
+        const out: string[] = [];
+        for (const f of ctx.files) {
+          if (!f.endsWith('.go')) continue;
+          if (dir === '' ? !f.includes('/') : f.startsWith(`${dir}/`)) out.push(f);
+        }
+        return out;
+      }
+      return [];
+    },
     // ★ 数据（原先散在 kernel 里的按语言 if）：
     //   calleeFields —— `fmt.Println(x)` → (call_expression function: (selector_expression) …)
     //   returnSep=' ' / signatureHasReceiver / parentFromReceiver —— Go 特有的
