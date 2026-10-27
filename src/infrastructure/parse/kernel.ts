@@ -2609,20 +2609,104 @@ export function isTypeOnlyModuleStatement(text: string): boolean {
  * ★ 若将来要跑**完全不可信**的代码，应改用独立进程 + seccomp/容器 —— `vm` 不够。
  *   当前场景（分析本仓/用户自己的仓库）用 `vm` + 上述三道闸是合适的。
  */
-function vmFoldExpr(exprText: string, consts: Map<string, unknown>, filePath: string): unknown {
-  // ★★★ T-#87 **安全护栏（实测踩到）**：只求值**纯同步表达式**。
-  //   病史：一次全量重建末尾崩了 —— `ReferenceError: runOnce is not defined`，
-  //   来自 `evalmachine.<anonymous>`，即 `vm` 求值了一个含 `await runOnce()` 的表达式。
-  //   而 **`await` 产生的 Promise rejection 逃出了 try/catch**（异步不受同步 catch 管）
-  //   ⇒ 必须**先按文本过滤**，不能指望 catch 兜住。
-  //   拒绝：`await` / `yield` / `function` / 箭头 / 语句分隔符（这些不该出现在 import 路径表达式里）
-  if (/await|yield|function|=>|;/.test(exprText)) return null;
+/**
+ * ★★★ 2026-10-27（T-#88）：**纯同步表达式判据 —— 用 AST 节点类型，不用正则**。
+ *
+ * ## 为什么换掉正则（上一版的副作用）
+ * T-#87 用 `/await|yield|function|=>|;/` 过滤文本。**副作用**：
+ *   `import(path.join(R, 'await/x.js'))` —— 字符串字面量里含 `await` ⇒ **被误杀**。
+ *   同理目录名带 `function`、文件名带 `=>` 都会误杀。**文本判据不认结构**。
+ *
+ * ## 正解：AST 递归白名单
+ * 我们**已经有 AST** ⇒ 判"是不是纯同步表达式"应该看**节点类型**：
+ *   · 白名单：字面量 / 标识符 / 成员 / 调用 / new / 二元 / 三元 / 数组 / 下标 / 括号 / 模板
+ *   · 黑名单（出现即拒）：`await_expression` · `yield_expression` ·
+ *     `function*` / `arrow_function` / `function_expression` · `assignment_expression` ·
+ *     `sequence_expression` · `statement_block`
+ * ⇒ **字符串字面量里的 `await` 不会被误判**（它是 `string` 节点，白名单直接收）。
+ *
+ * ## 为什么这次"按类型判"是对的（与 T-#71/T-#86 的教训不矛盾）
+ * 那两次错在**拿类型猜 grammar 的细节**（`import.meta` 是哪种节点、`function` 字段在不在）。
+ * 这里判的是**语义类别**（"有没有 await/函数"），而 `await_expression` 这类节点
+ * **在所有 tree-sitter JS/TS grammar 里都叫这个名字** ⇒ 稳定。
+ * ★ 若将来某 grammar 用别的名字，**表现为"白名单外 ⇒ 拒绝"**（安全方向，不会误求值）。
+ */
+const PURE_EXPR_NODES = new Set([
+  'string', 'template_string', 'number', 'true', 'false', 'null', 'undefined',
+  'identifier', 'property_identifier', 'this',
+  'member_expression', 'subscript_expression', 'call_expression', 'new_expression',
+  'binary_expression', 'unary_expression', 'ternary_expression', 'parenthesized_expression',
+  'array', 'object', 'template_substitution', 'regex',
+  // ★ T-#88 修：**`arguments` 必须收** —— 否则 `PARTS.join('/')` 这种调用**整条被拒**
+  //   （实测：漏了它 ⇒ vm 那一档完全不起作用，`computed` 一条都降不下来）。
+  'arguments',
+]);
+
+/** ★ T-#88：**字面量节点** —— 按叶子处理（它们在 tree-sitter 里有 `*_fragment` 子节点，不能递归） */
+const LITERAL_NODES = new Set(['string', 'template_string', 'number', 'true', 'false', 'null', 'undefined', 'regex']);
+
+/** 纯同步表达式？（递归判子树；白名单外一律拒绝 —— 安全方向） */
+function isPureSyncExpr(node: SyntaxNodeLike | null, depth = 0): boolean {
+  if (!node) return false;
+  if (depth > 40) return false; // 防御：异常深的表达式不求值
+  if (!PURE_EXPR_NODES.has(node.type)) return false;
+  // ★★★ T-#88 **实测踩到的坑**：字面量在 tree-sitter 里**不是叶子** ——
+  //   `string` 有 `string_fragment` 子节点、`template_string` 有 `template_chars`…
+  //   这些子节点不在白名单 ⇒ 递归时整条被拒 ⇒ **vm 那一档从没生效**。
+  //   ⇒ 字面量按**叶子**处理，不递归。
+  if (LITERAL_NODES.has(node.type)) return true;
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (!c) continue;
+    // 标点/token 子节点（`(` `)` `,` `.` 等）不是表达式 ⇒ 跳过
+    if (!PURE_EXPR_NODES.has(c.type) && !/^[()\[\]{},.:?]$/.test(c.text)) return false;
+    if (PURE_EXPR_NODES.has(c.type) && !isPureSyncExpr(c, depth + 1)) return false;
+  }
+  return true;
+}
+
+/**
+ * ★★★ 2026-10-27（T-#87/T-#88）：**通用求值（可选档）** —— `vm` 沙箱。
+ *
+ * ## 默认**关闭**（寄风的判断，2026-10-27 —— 已用 A/B 实测确认）
+ * 「vm 求值这部分有必要吗 —— 未来整个开发区会整沙箱，那时安全问题归外层」
+ *
+ * **A/B 实测（同一次全量重建，两档对照）**：
+ *   · vm 关：**64.8s** · `computed` **54** · failed 5 · edges 13856
+ *   · vm 开：**77.7s** · `computed` **52** · failed 5 · edges 13856
+ *   ⇒ 边际收益 **2 条 / 14000 = 0.014%**，代价 **+12.9s（+20%）**
+ * ⇒ **常开不值**。改成**可选档**：
+ *   · 默认：只用内置折叠（快、零安全面）
+ *   · `AGENT_IO_EVAL_VM=1` 时：额外启用本函数（**在已沙箱化的环境里**用，安全归外层）
+ * ★ 这样"通用性"是可插拔的，而不是用**每个项目都付 20% 重建时间**换 0.014%。
+ * ★ 若将来外层沙箱化后 vm 变成"免费"，把默认值翻过来即可（一处改）。
+ *
+ * ## 安全边界（仍保留，纵深防御）
+ * 白名单沙箱（无 `process`/`require`/`fs`）· 禁代码生成（挡 `constructor.constructor` 逃逸）
+ * · `timeout: 50ms`（挡死循环）· **`isPureSyncExpr` AST 判据**（挡 await/函数/赋值）。
+ */
+function vmEvalEnabled(): boolean {
+  return process.env.AGENT_IO_EVAL_VM === '1';
+}
+
+function vmFoldExpr(node: SyntaxNodeLike, consts: Map<string, unknown>, filePath: string): unknown {
+  if (!vmEvalEnabled()) return null;
+  // ★ T-#88：**AST 判据替代正则** —— 只求值纯同步表达式（`await`/函数/赋值一律拒绝）。
+  if (!isPureSyncExpr(node)) return null;
+  const exprText = node.text;
   const abs = filePath.replace(/\\/g, '/');
   const dir = abs.slice(0, abs.lastIndexOf('/')) || '/';
   const sandbox: Record<string, unknown> = {
     path,
     url: { pathToFileURL: nodePathToFileURL, fileURLToPath: nodeFileURLToPath },
     URL,
+    // ★★★ T-#88 **实测踩到的关键坑**：源码里是**裸名**（`import { fileURLToPath } from 'node:url'`），
+    //   而我只把它们放在 `url.` 下面 ⇒ 沙箱里 `fileURLToPath(...)` 报
+    //   `ReferenceError: fileURLToPath is not defined` ⇒ 被 catch 吞掉 ⇒ **vm 那一档从没真正生效过**
+    //   （`computed` 一条都没降，而我误以为是"表达式太复杂"）。
+    //   ⇒ 命名导入必须**同时**给顶层裸名。
+    pathToFileURL: nodePathToFileURL,
+    fileURLToPath: nodeFileURLToPath,
     // `import.meta` 不是合法标识符 ⇒ 源码里替换成 `importMeta` 再注入
     importMeta: { url: `file:///${abs}`, filename: abs, dirname: dir },
   };
@@ -2819,7 +2903,7 @@ function buildConstStringMap(root: SyntaxNodeLike, filePath: string): Map<string
     for (const d of decls) {
       if (consts.has(d.name)) continue;
       let v = foldToPath(d.value, consts, filePath);
-      if (v === null) v = vmFoldExpr(d.value.text, consts, filePath) as string | null;
+      if (v === null) v = vmFoldExpr(d.value, consts, filePath) as string | null;
       if (v !== null) consts.set(d.name, v);
     }
   }
@@ -2919,7 +3003,7 @@ function traverseAndExtractImports(
         //   ⇒ 「认一个 API 加一条 if」不再是唯一出路；未知 API 交给通用求值。
         let rawFolded = foldToPath(srcNode, foldCtx.consts, foldCtx.filePath);
         if (rawFolded === null) {
-          const vmOut = vmFoldExpr(srcNode.text, foldCtx.consts, foldCtx.filePath);
+          const vmOut = vmFoldExpr(srcNode, foldCtx.consts, foldCtx.filePath);
           if (typeof vmOut === 'string') rawFolded = vmOut;
           else if (typeof (vmOut as { href?: unknown } | null)?.href === 'string')
             rawFolded = (vmOut as { href: string }).href;
