@@ -2711,13 +2711,16 @@ function findCrossFileTarget(
   const seen = new Set<string>();
   for (const imp of imports) {
     const target = resolveImportTarget(projectRoot, fromRel, imp.source);
-    if (!target || seen.has(target)) continue;
-    seen.add(target);
-    const syms = namesByFile.get(target);
-    // ★★★ 2026-10-27（T-#85）：**别名导入要去目标文件找【远端名】**（`import { remote as local }`）。
-    //   病史：原先拿本地名 `name` 去搜 ⇒ `import { designDbDir as designDbDirOf }` 永远找不到
-    //   （目标文件里只有 `designDbDir`）⇒ 永远 failed。实测 6/14 条剩余 failed 全是这个。
-    //   ★ 只对**本条 import** 生效：它的 `bindings` 里有 `"X as name"` ⇒ 用 `X`；否则用 `name`。
+    if (!target) continue;
+    // ★★★ 2026-10-27（T-#90）：**`want` 必须在去重之前算**，且**去重键要含 `want`**。
+    //
+    // ## 病史（DB 逐步复现才抓到的）
+    // `code_workbench.ts` 有 **3 条** import 指向 `edit_code.js`：
+    //   第 1 条 bindings 里**没有**别名 ⇒ `want = 'ec'` ⇒ 目标里没有 `ec` ⇒ 未命中
+    //   第 2/3 条 bindings 是 `["editCode as ec"]` ⇒ `want = 'editCode'` ⇒ **本该命中**
+    // 但原先 `seen` 按 **目标文件** 去重 ⇒ 第 1 条就把 `edit_code.ts` 标成"见过"
+    // ⇒ 第 2/3 条被 `seen.has(target)` **跳过** ⇒ `editCode` 永远搜不到 ⇒ failed。
+    // ⇒ 修法：**先算 `want`，再按 `(target, want)` 去重**（同一目标、不同远端名 = 两次不同的查找）。
     let want = name;
     if (imp.bindings) {
       try {
@@ -2732,6 +2735,10 @@ function findCrossFileTarget(
         /* 坏 JSON ⇒ 用原名 */
       }
     }
+    const seenKey = `${target}\u0000${want}`;
+    if (seen.has(seenKey)) continue;
+    seen.add(seenKey);
+    const syms = namesByFile.get(target);
     // ★★★ 2026-10-27（T-#63 修）：**目标文件解析到了、但它不在索引里** ⇒ 必须记进 `miss`。
     //   病史：`certs/*.mjs` / `scripts/*.mjs` 从 `dist/` import —— `dist` 磁盘上存在（`resolveImportTarget`
     //   的 `existsSync` 通过）但**不在索引里** ⇒ `namesByFile.get(target)` 是 `undefined`

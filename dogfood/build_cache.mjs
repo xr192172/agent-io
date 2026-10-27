@@ -15,9 +15,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // 从 dist 引入（tsc 产物，含 tree-sitter 解析器）
-import { getProjectCacheDb, closeAllProjectCacheDbs } from '../dist/src/db/db.js';
-import { syncProject } from '../dist/src/db/symbols.js';
-import { isSupported } from '../dist/src/tools/ts_kernel/index.js';
+import { getProjectCacheDb, closeAllProjectCacheDbs } from '../dist/src/infrastructure/index/db.js';
+import { syncProject } from '../dist/src/infrastructure/index/symbols.js';
+import { isSupported } from '../dist/src/infrastructure/parse/kernel.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(process.argv[2] || path.join(here, '..'));
