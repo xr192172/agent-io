@@ -18,6 +18,10 @@ import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { importProject } from '../../../infrastructure/graph/import_project.js';
+// ★ 2026-10-27：watch 兼任「同项目同数据独一性」守卫（判据住 data_uniqueness.ts，不在这里再判一遍）
+import { ensureProjectDataUniqueness, renderUniquenessLine } from '../../../infrastructure/data_uniqueness.js';
+// ★ 2026-10-27：账本 GC 也归 watch（用户口径"watch 兼任 gc"）—— 同一个函数，不另造一套
+import { compactUsageLog } from '../../../infrastructure/dogfood_stats.js';
 import { diffViews, type DiffViewsResult } from '../../refactor/diff_views/diff_views.js';
 import { detectDrift, type DriftData } from '../../design/intent/detect_drift.js';
 import { diffImpact } from '../../../infrastructure/analysis/impact/diff_impact.js';
@@ -149,6 +153,14 @@ interface ActiveWatch {
   /** 变更后自动生成影响报告（Step 2）：摘要行入 alerts 队列，全文落盘 impact/ 目录 */
   impact_on_change: boolean;
   /**
+   * ★ 2026-10-27（用户口径）：**watch 兼任"同项目同数据独一性"守卫**（默认 true）。
+   * 增量最容易留下"第二份"（数据仓旧副本 / 项目内 stray `.agent-io`）⇒ doWork 里节流跑
+   * `ensureProjectDataUniqueness`（首次必跑，之后每 10 分钟一次）。
+   */
+  uniqueness: boolean;
+  /** 上次跑独一性检查的时刻（节流用） */
+  last_uniqueness_at?: string;
+  /**
    * 未消费的改前预告声明队列（Impact Ledger）。多条并存（并行任务的预告互不覆盖），
    * doWork 按声明的 declared_files ∩ 本次变更文件 匹配消费（可多条并集对比）；
    * 无匹配时回退消费最旧一条（保持会话级对比语义：改了没预告的文件也要报警）。
@@ -184,6 +196,8 @@ interface ActiveWatch {
 const active = new Map<string, ActiveWatch>();
 
 /** alerts 队列上限：超出丢最旧（全文已落盘，摘要行只是提醒） */
+/** 独一性守卫的节流间隔（10 分钟）：增量跑着顺手清/报「第二份」，不必每批变更都扫盘 */
+const LAST_UNIQUENESS_EVERY_MS = 10 * 60 * 1000;
 const ALERTS_CAP = 20;
 
 // ─────────────────────────────────────────────────────────────
@@ -274,6 +288,8 @@ export interface WatchProjectToolInput {
    * action=impact 按序号取全文。feature 可选（缺省纯缓存分析）。
    */
   impact_on_change?: boolean;
+  /** ★ 2026-10-27：**数据独一性守卫**（默认开）—— watch 增量跑着就顺手清/报"第二份" */
+  uniqueness?: boolean;
   /** action=impact 时指定报告序号；缺省取最近一份 */
   seq?: number;
   /** action=declare 时必填：打算修改的文件（相对项目根或绝对路径）。登记后下一次影响报告自动对比，计划外波及报警 */
@@ -296,6 +312,8 @@ export interface WatchProjectToolResult {
   feature?: string;
   rebuild: boolean;
   diff_on_change: boolean;
+  /** ★ 2026-10-27：数据独一性守卫是否开启（默认 true） */
+  uniqueness?: boolean;
   started_at?: string;
   last_change_at?: string;
   last_rebuild_at?: string;
@@ -419,7 +437,7 @@ async function onBatchChange(entry: ActiveWatch, summary: WatchBatchSummary): Pr
     for (const f of summary.files) entry.pending_drift_files.add(f); // drift 作用域取本次变更（不依赖 rebuild）
   }
   if (!entry.throttle) return;
-  if (!entry.rebuild && !entry.impact_on_change && !entry.drift_on_change) return;
+  if (!entry.rebuild && !entry.impact_on_change && !entry.drift_on_change && !entry.uniqueness) return;
   entry.throttle.trigger();
 }
 
@@ -428,6 +446,35 @@ async function onBatchChange(entry: ActiveWatch, summary: WatchBatchSummary): Pr
  * 各阶段独立成败：rebuild 失败不影响 drift/impact（缓存已在 watch 增量同步过）。
  */
 async function doWork(entry: ActiveWatch): Promise<void> {
+  // ⓿ 数据独一性守卫（★ 2026-10-27：watch 是增量的，必须顺带保证「同项目同数据只有一份」）
+  //   首次必跑；之后按 LAST_UNIQUENESS_EVERY_MS 节流。失败只记 error，不影响 rebuild/drift/impact。
+  if (entry.uniqueness) {
+    const nowMs = Date.now();
+    const lastMs = entry.last_uniqueness_at ? Date.parse(entry.last_uniqueness_at) : 0;
+    if (!lastMs || nowMs - lastMs >= LAST_UNIQUENESS_EVERY_MS) {
+      try {
+        const rep = ensureProjectDataUniqueness(entry.project_dir, { apply: true });
+        entry.last_uniqueness_at = new Date().toISOString();
+        if (rep.findings.length) {
+          const line = renderUniquenessLine(rep);
+          process.stderr.write('[watch] ' + line + '\n');
+          entry.alerts.unshift({ seq: entry.last_impact_seq ?? 0, created_at: entry.last_uniqueness_at, line });
+          if (entry.alerts.length > ALERTS_CAP) entry.alerts.length = ALERTS_CAP;
+        }
+      } catch (e) {
+        entry.error = '数据独一性检查失败: ' + (e as Error).message;
+      }
+    }
+    // 账本 GC（用户口径：watch 兼任 gc）—— 保留期压缩，读数守恒由 compactUsageLog 自己校验；
+    // 没有可归档的行时它什么都不做（幂等、便宜）。失败只记 error。
+    try {
+      const g = compactUsageLog({ keepDays: 30, apply: true });
+      if (g.applied) process.stderr.write('[watch] 账本 GC：归档 ' + g.lines_archive + ' 行 ⇒ 桶 ' + g.buckets + ' 个\n');
+    } catch (e) {
+      entry.error = '账本 GC 失败: ' + (e as Error).message;
+    }
+  }
+
   // ① rebuild（live/，不覆盖设计 DSL）
   if (entry.rebuild && entry.feature) {
     try {
@@ -589,6 +636,10 @@ function startWatch(input: WatchProjectToolInput): WatchProjectToolResult {
   const diffOnChange = input.diff_on_change ?? false;
   const driftOnChange = input.drift_on_change ?? false;
   const impactOnChange = input.impact_on_change ?? false;
+  // ★★★ 2026-10-27（用户口径）：「watch 虽然是增量的，但也要保证同项目同数据独一性」
+  //   ⇒ watch **兼任"数据独一性"守卫**（默认开）：首次 doWork 与之后每 10 分钟跑一次
+  //   `ensureProjectDataUniqueness`（判据在 `infrastructure/data_uniqueness.ts`）。
+  const uniqueness = input.uniqueness ?? true;
   const debounceMs = input.debounce_ms ?? 150;
 
   const existing = active.get(key);
@@ -597,7 +648,7 @@ function startWatch(input: WatchProjectToolInput): WatchProjectToolResult {
       action: 'start', project_dir: path.resolve(input.project_dir),
       watching: true, running: true, feature: existing.feature, rebuild: existing.rebuild,
       diff_on_change: existing.diff_on_change, drift_on_change: existing.drift_on_change,
-      impact_on_change: existing.impact_on_change,
+      impact_on_change: existing.impact_on_change, uniqueness: existing.uniqueness,
       started_at: existing.started_at, last_change_at: existing.last_change_at,
       last_summary: existing.last_summary, last_impact_seq: existing.last_impact_seq,
       message: '已在监听（幂等复用既有句柄）' + (existing.error ? '；上次出错: ' + existing.error : ''),
@@ -612,6 +663,7 @@ function startWatch(input: WatchProjectToolInput): WatchProjectToolResult {
     diff_on_change: diffOnChange,
     drift_on_change: driftOnChange,
     impact_on_change: impactOnChange,
+    uniqueness,
     declarations: [],
     started_at: new Date().toISOString(),
     pending_files: new Set(),
@@ -620,7 +672,7 @@ function startWatch(input: WatchProjectToolInput): WatchProjectToolResult {
   };
 
   // 节流：rebuild/drift/影响报告任一开启即建（冷却窗口内编辑风暴合并为一次工作）
-  if ((rebuild && feature) || (driftOnChange && feature) || impactOnChange) {
+  if ((rebuild && feature) || (driftOnChange && feature) || impactOnChange || uniqueness) {
     entry.throttle = createRebuildThrottler({
       windowMs: input.rebuild_window_ms ?? 2000,
       run: () => doWork(entry),
@@ -671,7 +723,7 @@ function startWatch(input: WatchProjectToolInput): WatchProjectToolResult {
   return {
     action: 'start', project_dir: entry.project_dir, watching: true, running: true,
     feature, rebuild, diff_on_change: diffOnChange, drift_on_change: driftOnChange,
-    impact_on_change: impactOnChange,
+    impact_on_change: impactOnChange, uniqueness,
     pending_declarations: entry.declarations.length,
     started_at: entry.started_at,
     message: `已开始监听 ${path.resolve(input.project_dir)}`
@@ -730,7 +782,7 @@ function statusWatch(projectDir: string): WatchProjectToolResult {
   return {
     action: 'status', project_dir: entry.project_dir, watching: st.watching, running: st.watching,
     feature: entry.feature, rebuild: entry.rebuild, diff_on_change: entry.diff_on_change,
-    drift_on_change: entry.drift_on_change, impact_on_change: entry.impact_on_change,
+    drift_on_change: entry.drift_on_change, impact_on_change: entry.impact_on_change, uniqueness: entry.uniqueness,
     pending_declarations: entry.declarations.length,
     unresolved_violations: openViolations,
     started_at: entry.started_at, last_change_at: entry.last_change_at,
@@ -768,7 +820,7 @@ async function stopWatch(projectDir: string): Promise<WatchProjectToolResult> {
   return {
     action: 'stop', project_dir: entry.project_dir, watching: false, running: false,
     feature: entry.feature, rebuild: entry.rebuild, diff_on_change: entry.diff_on_change,
-    impact_on_change: entry.impact_on_change,
+    impact_on_change: entry.impact_on_change, uniqueness: entry.uniqueness,
     started_at: entry.started_at, last_change_at: entry.last_change_at,
     last_rebuild_at: entry.last_rebuild_at, last_diff_at: entry.last_diff_at,
     last_summary: entry.last_summary, last_reconcile: entry.last_reconcile,

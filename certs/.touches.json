@@ -622,5 +622,10 @@
     "src/infrastructure/storage.ts",
     "src/infrastructure/task_history.js",
     "src/infrastructure/task_history.ts"
+  ],
+  "t374-data-uniqueness-cert.mjs": [
+    "src/application/observe/runtime/watch_project_tool.ts",
+    "src/infrastructure/data_uniqueness.js",
+    "src/infrastructure/data_uniqueness.ts"
   ]
 }

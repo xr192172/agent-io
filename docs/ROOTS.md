@@ -112,7 +112,7 @@ dogfood 日志 / 旧 task-history）。同名合并 = T-#98 之前那种"一个�
 | 6 | `todos[]` 从 DSL 搬出 → `<proj>/.agent-io/tasks.db`（活卡+历史同库） | 🔄 **最大一次**，分三片：slice 1 ✅ 2026-10-27（角色 `tasks` + 建库 + `syncTasksFromDsl` 影子同步 + `parityTasks` 对拍，证 `t368` PASS=9/0，**读写路径一字节未改**）· slice 2a ✅ 2026-10-27（册落盘即投影，证 `t369` 8/0，`task_ops` 一行未改）· slice 2b ✅ 2026-10-27（**读走库**：`getDesignSheet` 读出端 hydrate，`task_ops` 20+ 处读点一处未改，证 `t371` 6/0）· slice 2c ✅ 2026-10-27（**册不再写卡**：`withoutTodos` + 角色改 `derivable:false` + 文本载体 `tasks.jsonl` 进 git、`.db` 忽略；证 `t373` 8/0，`design_line` 的卡数读数改问库）· slice 3 ⬜ 真仓历史迁入同库 + 旧 `history` 角色退场 |
 | 7 | `getLiveDir`/`getBaselineDir` 的根改**必填**（路径只问 `rootPath`）；`getDesignDir` **不**改必填，改由注册表解析（`getDSL` 拿不到根，见 §7.1） | ✅ T-#98 |
 | 8 | 聚合视图（`overview`/`query=todo` 扫注册表） | ⬜（**设计册那一路已通**：`listDesignSheets` 改扫注册表，T-#98b） |
-| 9 | 清 8 个 stray 目录（71.7MB，`index_integrity` 已能报） | ⬜ 等尘埃落定 |
+| 9 | 清 stray 目录（71.7MB，`index_integrity` 已能报） | 🔄 **2026-10-27 改由 watch 兼任**：`data_uniqueness.ts#ensureProjectDataUniqueness` 在 watch 的 `doWork` 里节流跑（首次 + 每 10 分钟），派生 stray 自动清、含意图数据的只报；证 `t374` 7/0。历史那 8 个目录仍待一次性人清（不自动删非本项目的东西） |
 | 10 | **清过期注释**（`import_cache` / "两级候选" 仍写在 7 处） | ✅ 2026-10-27（T-#10）：`db.ts`（`findCacheDb` 的权威 doc）/ `function_outline.ts`（头注 + 缺库提示）/ `scan_rev.ts`（头注 + `@param`）/ `file_facts.ts`（头注 + 连接池说明）/ `live_render.ts`（取库那行）/ `serve.ts`（`/api/function-outline` 注释）/ `design/index.ts:166`（**用户可见**的工具参数描述）。剩下的 `import_cache` 命中**全是退场登记**（"已删/已退场/原先"），故意留。★ 另外两处**已无需再做**：`stage_registry` 的"从不产物的流水阶段"`import_cache` 早在 2026-10-26（T-#9）删掉了，本行原先把它记成待办 |
 
 ---
