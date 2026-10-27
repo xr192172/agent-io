@@ -1296,6 +1296,9 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     },
     callNode: 'call',
     topLevelCall: true,
+    // ★ T-#95a：Python 的"局部绑定声明"就是**赋值**（`x = …`）与循环变量（`for x in …`）——
+    //   `localBindingsOfDecl` 里有对应的结构分支（形态 ④）。没有这条声明，python 局部名一律进不了作用域。
+    localBindingNodes: ['assignment', 'for_statement', 'named_expression'],
     // ★ 数据：`f(x)` → (call function: (identifier))；签名 `def f(self)` 剥 self、返回 ' -> '
     calleeFields: ['function'],
     returnSep: ' -> ',
@@ -2056,6 +2059,33 @@ function symbolInner(node: SyntaxNodeLike, lang: LanguageEntry): SyntaxNodeLike 
 }
 
 /**
+ * ★★★ 2026-10-27（T-#95a）：**作用域用的形参名** —— 含被 `stripSelfParam` 剥掉的那一个。
+ *
+ * ## 病史（flask 实测，1 条但同族会一直冒）
+ * `paramsOf` 按纪律把 Python 的 `self`/`cls` 跳过（签名/形参表两侧要一致，见 symbol_params.ts 注释 4）。
+ * 但**作用域里它们仍然是绑定**：`class View: @classmethod def as_view(cls, name, …): … cls(*args)`
+ * ⇒ `cls` 被剥 ⇒ 不在作用域 ⇒ 调用判 `failed`。
+ *
+ * ## 判据
+ * `paramsOf` 的结果 + **`parameters` 字段节点上直接的 `identifier` 子节点**（就是被剥掉的那个裸形参）。
+ * 其它语言的形参节点是 `required_parameter`/`parameter_declaration` 这类包装节点，不会命中，行为不变。
+ */
+function paramNamesForScope(node: SyntaxNodeLike, lang: LanguageEntry): string[] {
+  const field = lang.field_map.parameters || 'parameters';
+  const out = paramsOf(node, field, lang.name)
+    .map((p) => p.name)
+    .filter((n): n is string => !!n);
+  const raw = node.childForFieldName(field);
+  if (raw) {
+    for (let i = 0; i < raw.childCount; i++) {
+      const c = raw.child(i);
+      if (c && c.type === 'identifier' && isValidIdentifier(c.text) && !out.includes(c.text)) out.push(c.text);
+    }
+  }
+  return out;
+}
+
+/**
  * ★★★ 2026-10-27（T-#93 续）：**声明节点所绑的函数值**（`const f = () => {…}` ⇒ 那个箭头）。
  *
  * 判据全数据驱动、不认语言：
@@ -2568,6 +2598,36 @@ function localBindingsOfDecl(
     }
     return out;
   }
+  // ── 形态 ④ Python：`x = …`（assignment）· `for x in …`（for_statement）· `x := …`（named_expression）
+  //
+  // ## 为什么必须单开一支（flask 3.0 实测）
+  // Python **没有声明关键字**：局部名就是"赋值出来的"。原先 `localBindingsOfDecl` 只有 TS/Go 两形态
+  // ⇒ Python 函数内的 `x = …` 不进作用域 ⇒ 引用它们全判 `failed`
+  // （flask 剩 16 条里 10 条是 `self_ref` / `processor` / `url_func` / `attr` / `cls` / `handler` 这类局部名）。
+  //
+  // ## 判据（AST 结构，不认语言名）
+  // 有 `left` 字段的赋值形态；`left` 是 `attribute` / `subscript` 的**不是新绑定**（`self.x = …` / `d[k] = …`）；
+  // 其余（`identifier` / `pattern_list` / `tuple_pattern` / `list_pattern`）逐个收标识符。
+  if (node.type === 'assignment' || node.type === 'for_statement' || node.type === 'named_expression') {
+    const left = node.childForFieldName('left') ?? node.childForFieldName('name');
+    const right = node.childForFieldName('right') ?? node.childForFieldName('value');
+    if (!left) return out;
+    if (left.type === 'attribute' || left.type === 'subscript') return out;
+    const ids: string[] = [];
+    const collectPy = (x: SyntaxNodeLike): void => {
+      if (x.type === 'identifier') {
+        if (isValidIdentifier(x.text)) ids.push(x.text);
+        return;
+      }
+      for (let k = 0; k < x.childCount; k++) {
+        const c = x.child(k);
+        if (c && !c.type.includes('comment')) collectPy(c);
+      }
+    };
+    collectPy(left);
+    for (const nm of ids) out.push({ name: nm, isFnValue: isFn(right) });
+    return out;
+  }
   return null;
 }
 
@@ -2618,9 +2678,7 @@ function extractCallsFromBody(
     node.type === 'function' ||
     node.type === 'generator_function'
   ) {
-    const names = paramsOf(node, 'parameters', lang.name)
-      .map((p) => p.name)
-      .filter((n): n is string => !!n);
+    const names = paramNamesForScope(node, lang);
     if (names.length > 0) childScope = new Set([...scope, ...names]);
   }
   // ★★★ 2026-10-27（T-#94）：**同块内后续语句也看得见这些声明** —— 所以作用域要**逐语句累加**。
@@ -2684,9 +2742,7 @@ function traverseAndExtractCalls(
       funcStack.push(declQn);
       const declScope = new Set<string>([
         ...outerScope,
-        ...paramsOf(decl.value, lang.field_map.parameters || 'parameters', lang.name)
-          .map((p) => p.name)
-          .filter((n): n is string => !!n),
+        ...paramNamesForScope(decl.value, lang),
         ...collectLocalBindings(declBody, lang.name),
       ]);
       for (const child of declBody) extractCallsFromBody(child, lang, declQn, calls, symbols, depth + 1, declScope);
@@ -2721,9 +2777,7 @@ function traverseAndExtractCalls(
         const ownParams = new Set<string>([
           ...outerScope,
           // ★ T-#93：形参挂在**承载函数的节点**上（赋值形态是右侧函数，不是赋值语句本身）
-          ...paramsOf(symbolInner(node, lang), lang.field_map.parameters || 'parameters', lang.name)
-            .map((p) => p.name)
-            .filter((n): n is string => !!n),
+          ...paramNamesForScope(symbolInner(node, lang), lang),
           ...collectLocalBindings(body, lang.name),
         ]);
         if (kind === 'function' || kind === 'method') {
@@ -2765,9 +2819,7 @@ function traverseAndExtractCalls(
     const childScope = isFunctionScopeNode(child)
       ? new Set<string>([
           ...outerScope,
-          ...paramsOf(child, lang.field_map.parameters || 'parameters', lang.name)
-            .map((p) => p.name)
-            .filter((n): n is string => !!n),
+          ...paramNamesForScope(child, lang),
           ...collectLocalBindings(bodyChildren(child, lang, null) ?? [], lang.name),
         ])
       : outerScope;

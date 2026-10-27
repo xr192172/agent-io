@@ -137,14 +137,15 @@
 > 现状（2026-10-27 收盘）：
 > · **JS 系七个**：express 4.21.2 · commander 11 · chalk 5 · axios 1.7 · zod 3 · lodash 4.17 · socket.io 4
 >   ⇒ `failed` **全 0**、相对导入落地率 **全 100%**
-> · **换语言两个**：gin 1.10（Go）`failed 12` · flask 3.0（Python）`failed 16`
+> · **换语言两个**：gin 1.10（Go）`failed 12` · flask 3.0（Python）`failed 1`
 >   ⇒ import 边：gin **188**（原先 0）· flask **177/182 = 97.3%**（原先 0）
+>   ⇒ flask 那 1 条是 `sansio/app.py:534 DispatchingJinjaLoader`：该文件**没有 import 它**
+>     （只有 `flask/app.py` 里 import）⇒ 按"能证明才建边"的纪律落 failed 是对的，属上游可疑写法
 
 | 编号 | 缺口 | 证据 | 在哪 |
 |---|---|---|---|
 | T-#94d | 浏览器 bundle 里 `typeof X === "function"` 引用的**宿主名**靠表兜 | socket.io `addEventListener` 已补进 `JS_HOST_GLOBALS`；同类名字会继续冒（`postMessage`/`Worker`…） —— 想清楚要不要按"宿主声明来源"成批登记 | `index/symbols.ts` |
 | T-#94e | `verify` 里 `t360-two-phase-claim-cert` **基线就红**（PASS=25 FAIL=10） | 把 T-#93 两个文件 `git checkout` 回 T-#92 后重跑，同样 10 条失败 ⇒ 与解析改动无关 | `certs/t360-two-phase-claim-cert.mjs` |
 | T-#94f | **IIFE 里的 bundle ⇒ 契约面为空**（`is_closure` 全打上） | socket.io `client-dist/socket.io.js` 104 个符号全 `is_closure` ⇒ 空索引守卫曾误拒（已改成数总数）；这类仓库的"对外 API"只能在 `wrapper.mjs` 那层看见 | `graph/import_project.ts` · `parse/kernel.ts` |
-| T-#95a | **Python 的赋值式局部绑定没进作用域** | flask 剩 16 条 failed 里绝大多数是函数内局部名（`self_ref` / `processor` / `url_func` / `attr` / `cls` / `decorator` / `deferred` / `func` / `handler`）—— Python 的"声明"就是赋值（`x = …`），`localBindingNodes` 只声明了 `assignment` 而 `localBindingsOfDecl` **没有 python 分支** | `parse/kernel.ts`（`localBindingsOfDecl`） |
 | T-#95b | **Go 的包级 `var` 持有函数**不成符号 | gin `binding`：`DebugPrintRouteFunc` / `DebugPrintFunc` 是模块级 `var X func(...)`，被当函数调用 ⇒ failed；Go 只索引 func/method/type | `parse/kernel.ts`（consts 支是 TS 形态） |
 | T-#95c | **同包同名函数（build-tag 变体）判 failed** | gin `binding/`：`func validate` 同时出现在 `binding.go` 与 `binding_nomsgpack.go`（`//go:build` 二选一）⇒ 候选不唯一 ⇒ 按"不猜"纪律落 failed（10 条）。要不要按 build tag 择一，是判据问题不是 bug | `index/symbols.ts`（`findGoSamePackageTarget`） |
