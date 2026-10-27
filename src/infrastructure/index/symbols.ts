@@ -941,7 +941,7 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
           lang: ext,
           nt: c.callee,
           st: 'external',
-          cd: JSON.stringify({ verdict: 'external', why: `local-binding:${c.caller}` }),
+          cd: JSON.stringify({ verdict: 'external', why: `local-binding:${c.caller}`, source: 'ast' }),
         });
         continue;
       }
@@ -1018,6 +1018,13 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
         lang: ext,
         nt: c.callee,
         st: verdict.kind === 'external' ? 'external' : 'failed',
+        // ★★ T-#66 **纠错**：这里**不能**标 `source: 'ast'`。
+        //   我第一版给所有 `classifyCall` 判定都标了"AST 不可推翻" ⇒ 实测灾难：
+        //   `JSON.stringify` / `lines.push` 这类被 `classifyCall` 判成 `suspect`（**它判不准**），
+        //   而 `resolveCrossFileCalls` 本来能纠正成 `external: builtin-*`
+        //   ⇒ 被我一锁 ⇒ **failed 暴涨到 11322**。
+        //   ★ 正确边界：**只有「AST 独有的事实」才不可推翻**（如 `local-binding` —— DB 层永远判不出
+        //     「这个名字是某函数的参数」）。而 `suspect` 是**「我判不准」**，必须允许被更好的判定纠正。
         cd: JSON.stringify({ verdict: verdict.kind, why: verdict.why }),
       });
     }
@@ -2114,9 +2121,29 @@ export function resolveCrossFileCalls(
     // `candidates` 是**上一次判定留下的证据**（`{"verdict":"external","why":"local-binding:<fn>"}`）。
     // 重判时**先读它**：已经有 `local-binding` 结论的 ⇒ **保持 external，不重判**
     // （这条结论只有 AST 能给，DB 层无法推翻）。
-    if (typeof r.candidates === 'string' && r.candidates.includes('local-binding')) {
-      updExternal.run({ i: r.id, cd: r.candidates });
-      stats.external++;
+    // ★★★ 2026-10-27（T-#66）：**升成原则 —— AST 得出的判定，DB 层不得推翻**。
+    //   `syncFile` 在解析期（**手里有 AST**）判过的行，`candidates` 里带 `"source":"ast"`。
+    //   这些结论（`local-binding` / `bare-not-in-scope` / `literal-receiver` / `chain-receiver` …）
+    //   **只有 AST 能给** —— DB 层只有行数据，重判必然得出**更差的答案**
+    //   （实测：全量重判后 100 条假 failed，全是 `syncFile` 已正确判成 external 的局部绑定）。
+    //   ★ 关键：**保留原判**，不是一律 external ——
+    //     `verdict==='external'` ⇒ external；其余（`suspect`/`unknown`）⇒ 维持 failed。
+    //   ★ 兼容老数据：无 `source` 标记但 `why` 含 `local-binding` 的，同样按 AST 结论处理。
+    const candStr = typeof r.candidates === 'string' ? r.candidates : '';
+    if (candStr.includes('"source":"ast"') || candStr.includes('local-binding')) {
+      let astVerdict: string | undefined;
+      try {
+        astVerdict = (JSON.parse(candStr) as { verdict?: string })?.verdict;
+      } catch {
+        /* 坏 JSON ⇒ 按非 external 处理（安全方向） */
+      }
+      if (astVerdict === 'external') {
+        updExternal.run({ i: r.id, cd: candStr });
+        stats.external++;
+      } else {
+        updFailed.run({ i: r.id, cd: candStr });
+        stats.failed++;
+      }
       continue;
     }
     // ★ T-#51：**局部绑定先判** —— 参数不是符号，不建边，但也不该是 failed
