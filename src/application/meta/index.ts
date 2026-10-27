@@ -130,6 +130,9 @@ import { nextHopsOf, universalHopsOf, applyChainEdge, SCOPE_PATHS } from '../../
  * ★ 单一来源：**两个消费点共用本 shape**，避免"同一个 `touched` 两处各声明一份"（本仓头号病：判据分叉）。
  * ★ **不改** `Touched` 本身的类型（`b_terms.ts`）—— 本笔只改"入参怎么声明"。
  */
+/** ★ 2026-10-27：本进程里「接续段已经给过全貌」的工具（渐进披露的判据，见 `renderHandoffPanel`） */
+const handoffPanelShown = new Set<string>();
+
 const handoffTouchedShape = {
   feature: z.string().optional().describe('作用到的 feature（DSL 活文档单元）'),
   project_dir: z.string().optional().describe('作用到的项目根（解析后的绝对路径）'),
@@ -1146,9 +1149,29 @@ export function renderHandoffPanel(
   //   实测：一次 `find_references`（只有 3 行结果）里，接续段 16 行 / 2064B = **回执的 80%** ——
   //   它是个**固定版面税**，小结果时最刺眼。而"还有几条"用一次 `next_hop_args` 就能拿到，
   //   不必把整张表摊在每次调用里（★ 与"信息只留一处"同一条理）。
-  const SHOW = 3;
+  // ★★ 2026-10-27（用户追问「给指针是什么意思」时抓到的真 bug）：**指针必须指得通**。
+  //   第一版写成 `next_hop_args(tool='find_references')` —— 而该工具的必填是 **`touched`**，
+  //   照着这行走会直接报"缺必填：touched"⇒ 指针形同虚设（比不给指针更糟：让人以为全貌拿不到）。
+  //   ⇒ 现在指到**两次都跑得通**的调用：`next_hop_args(touched=…本回执 ---DATA--- 里的那个…)`
+  //     （它会把每个下游的入参**逐格填好**、只留意图位），以及 `capability_map(from_tool, touched)`。
+  // ★★★ 2026-10-27（用户追问「默认只列 3 条能看清全貌吗 / 我把这段当使用指南」）：
+  //   ⇒ **首次给全貌，之后才收敛**（渐进披露）：
+  //     · 本进程第一次在这个工具上出现接续段 ⇒ 全给（这时它是**指南**：教怎么接下一棒）；
+  //     · 已经看过一次 ⇒ 只给前 3 条 + 一行「看全貌跑什么」（这时它是**提示**：别再摊一遍）。
+  //   ★ 为什么用进程内 Set 而不落盘：这是**读的人**的状态，不是项目数据；长驻 MCP server 天然记住，
+  //     `npm run tool` 每次新进程 ⇒ 每次都全给（人读 CLI 时正需要指南）。
+  //   ★ 显式覆盖：`AGENT_IO_HANDOFF=full|brief`（不熟工具设 full，批量跑设 brief）。
+  const handoffMode = (process.env.AGENT_IO_HANDOFF ?? '').toLowerCase();
+  const firstTime = !handoffPanelShown.has(fromTool);
+  if (firstTime) handoffPanelShown.add(fromTool);
+  const showAll = handoffMode === 'full' || (handoffMode !== 'brief' && firstTime);
+  const SHOW = showAll ? Number.POSITIVE_INFINITY : 3;
   const more = (n: number): string[] =>
-    n > SHOW ? [`    …另有 ${n - SHOW} 条：\`next_hop_args(tool='${fromTool}')\` 列全，或用 \`to_tool\` 只看一条`] : [];
+    n > SHOW
+      ? [
+          `    …另有 ${n - SHOW} 条 —— 看全貌跑：\`next_hop_args(touched=<本回执 ---DATA--- 里的 touched>)\`（会把每个下游入参逐格填好）`,
+        ]
+      : [];
   if (ready.length) L.push('', `  ★ **直接可用**（值已取好 · 共 ${ready.length} 条）：`, ...ready.slice(0, SHOW), ...more(ready.length));
   if (needPick.length)
     L.push('', `  ★ **要你选一个**：${needPick.length} 条（**不替你选**）`, ...needPick.slice(0, SHOW), ...more(needPick.length));
@@ -1164,6 +1187,10 @@ export function renderHandoffPanel(
   //   实测占输出一半以上，而内容对任何工具都一样）。完整规则仍住 `capability_map` 与 `docs/GUIDE-USAGE.md`。
   //   ★ 保留的两条是**读法陷阱**（多条边要合起来看、候选不替你选），其余（"只读""非接口""当年跑过"）是**契约级说明**，
   //     不该占每次调用的版面。
-  L.push('', '  ★ 接续只给**位置与对象**（意图你给 · 候选不替你选 · 多条边要合看）；本段只读、非"跑通过"证明。');
+  L.push(
+    '',
+    '  ★ 接续只给**位置与对象**（意图你给 · 候选不替你选 · 多条边要合看）；本段只读、非"跑通过"证明。' +
+      `规则与全表：\`capability_map(from_tool='${fromTool}', touched=<本回执里的 touched>)\``,
+  );
   return L.join('\n');
 }
