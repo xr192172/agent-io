@@ -2406,26 +2406,31 @@ function traverseAndExtractImports(
   // ## 现在
   // 在解析期就记一行 ⇒ **同一张绑定表**（`relImportsByFile` / `relBindingsByFile`）
   // 同时服务静态与动态导入。
-  // ★★★ 2026-10-27（T-#70）：**动态 import 判定** —— ★ **只对 `.mjs`/`.js` 有效**。
+  // ★★★ 2026-10-27（T-#71）：**动态 import 判定 —— 不依赖命名字段**。
   //
-  // ## 已实测的边界（如实登记，别当成通用能力）
-  // · tree-sitter-**javascript**：`call_expression` + `function=import` **有效**
-  //   （`certs/t332.mjs` 抽出 6 条 ✓）
-  // · tree-sitter-**typescript**：**完全失效** —— 最小复现：一个只有
-  //   `const { x } = await import('../y.js')` 的 `.ts` 文件 ⇒ `imports = 0`。
-  //   试过「按节点类型判」和「按文本形状 `/^import\s*\(/` 判」**两种都不生效**
-  //   ⇒ 说明 **TS 下本遍历根本没走到那个节点**（根因未明，待查）。
+  // ## 根因（T-#70 没查出来的那个）
+  // 实测 dump TS 的 AST：
+  //   `call_expression «import('../x.js')»`
+  //     `└ import «import»`          ← ★ **不是 `function` 字段**（`childForFieldName('function')` 返回 null）
+  //         `└ import «import»`
+  // ⇒ 原判据 `fnNode.type === 'import'` 因为 `fnNode === null` **永远不命中**
+  //   ⇒ `.ts` 的动态 import **一条都抽不出来**（实测最小复现 `imports = 0`）。
+  //   ★ 而 tree-sitter-**javascript** 上 `function` 字段是有的 ⇒ `.mjs` 一直正常。
   //
-  // ## 为什么还留着（而不是删掉）
-  // 它对 JS 系**确实有效且已验证**（+249 条 imports 进索引、12 条 failed 归位）。
-  // ⇒ 保留 + **明确标注适用范围**，好过删掉能力。
-  // ★ 未做：TS 的那一半。根因查清后应让两条路都通。
+  // ## 修法
+  // ① 取"被调方"时**先看命名字段、没有就取第一个子节点**；
+  // ② 取"参数表"时**同样加兜底**（TS 下 `arguments` 字段也可能没有名字）。
+  //   ⇒ 两个都靠**结构位置**，不靠字段名 —— 跨 grammar 稳定。
   if (node.type === 'call_expression' || node.type === 'import_expression' || node.type === 'dynamic_import') {
-    const fnNode = node.type === 'call_expression' ? node.childForFieldName('function') : null;
+    const fnNode =
+      node.childForFieldName('function') ?? (node.childCount > 0 ? node.child(0) : null);
     const isDynamicImport =
       node.type !== 'call_expression' || (!!fnNode && (fnNode.type === 'import' || fnNode.text === 'import'));
     if (isDynamicImport) {
-      const args = node.childForFieldName('arguments') ?? node.childForFieldName('argument');
+      const args =
+        node.childForFieldName('arguments') ??
+        node.childForFieldName('argument') ??
+        (node.childCount > 0 ? node.child(node.childCount - 1) : null);
       // ★ 取第一个**非括号**子节点 —— `arguments` 的 children 里含 `(` / `)` / `,` token
       //   （实测拿 `child(0)` 会得到 `(` ⇒ source 变成 `(`，绑定对但路径错）
       let srcNode: SyntaxNodeLike | null = null;
