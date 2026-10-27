@@ -36,6 +36,12 @@ export type RootRole =
   | 'baseline' // 上一次扫描的实际侧基线
   | 'snapshot' // 写闸快照（可撤回）
   | 'tasks' // 任务卡（活卡 + 已了结卡，**同库**；ROOTS 步 6 / 乙方案）
+  /**
+   * ★★★ 2026-10-28：**重写计划（画布）** —— 每个路径一份 `<path>.plan.json`。
+   * 写源码前"通读 → 选范围 → 写完细节"的产物就住这里；**人/模型写，生成器只读不写**。
+   * ★ 为什么必须是独立角色：`design-db/`（底片）整目录被 gitignore ⇒ 画布放那里换机就丢。
+   */
+  | 'plan'
   | 'observe' // 观测事件（events.jsonl 等）
   | 'impact' // 影响链报告
   | 'translate'; // 翻译侧
@@ -92,6 +98,12 @@ const ROLE_SPECS: ReadonlyArray<Omit<RootSpec, 'path'>> = [
   //     `tasks.jsonl` 文本镜像做移交载体（二进制 .db 不进 git：不可 diff、不可 review）。
   //     在那之前把它标 false 会把一个二进制库塞进 git —— 正是 T-#14 否掉的做法。
   { role: 'tasks', kind: 'project', derivable: false, note: '任务卡：活卡 + 已了结卡同库（意图数据，丢了不可重建）', fileName: 'tasks.db', carrier: 'tasks.jsonl' },
+  {
+    role: 'plan',
+    kind: 'project',
+    derivable: false, // ★ 意图数据：人写的重写计划，算不出来、丢了不可重建 ⇒ 必须进 git
+    note: '重写计划（画布）：每个源码路径一份 <path>.plan.json —— 写码前"选范围 + 写完细节"的产物',
+  },
   { role: 'observe', kind: 'project', derivable: true, note: '观测事件与调用树' },
   { role: 'impact', kind: 'project', derivable: true, note: '影响链报告' },
   { role: 'translate', kind: 'project', derivable: true, note: '翻译侧（Go→TS 等）' },
@@ -105,7 +117,8 @@ const ROLE_SUBDIR: Record<RootRole, string> = {
   live: 'live',
   baseline: 'baseline',
   snapshot: 'code-snapshots',
-  tasks: '.', // tasks.db 直接落在根下
+  tasks: '.',
+  plan: 'plan',
   observe: 'observe',
   impact: 'impact',
   translate: 'translate',
@@ -174,6 +187,7 @@ const ROLE_SIDE: Record<RootRole, RootSide> = {
   snapshot: 'live',
   // ★ 2026-10-27（ROOTS 步 6）：任务卡属**任务系统那一侧**（跨 feature 的过程数据）
   tasks: 'task',
+  plan: 'design',
   observe: 'live',
   impact: 'live',
   translate: 'translate', // 翻译侧

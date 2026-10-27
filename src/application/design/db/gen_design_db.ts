@@ -25,7 +25,8 @@
  * ## 每份的形状（与实际 DB 同构）
  * ```
  * { "//"…, "path": <仓库相对路径>, "symbols": […], "imports": […], "calls": […],
- *   "reverse_calls"?: [<被谁调：source 节点 id，一跳反向，排序可复现>],
+ *   ★ 2026-10-28：`reverse_calls` **已删除** —— 它是 `calls` 的一跳反向（算得出来）⇒ 落盘即第二份事实；
+ *     要"谁调我"请从 `calls` 现算。
  *   "requirements"?: […], "requirements_calls"?: […] }
  * ```
  * ★ `calls` 是**全量镜像**（必然全绿）；`requirements_calls` 才是"设计说必须有"的
@@ -403,22 +404,9 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
     'SELECT file_path FROM nodes WHERE name = ? AND parent IS NULL ORDER BY (file_path = ?) DESC LIMIT 1',
   );
 
-  // ★★★ 2026-10-24（影响面 · 决策卡 file_src_application_design_db_gen_design_db_ts）：
-  //   **反向调用索引**（一次性建）：target 文件 → 谁调它（source 节点 id 集合）。
-  //   ★ 事实只取 cache.db 边表（与 calls 同源反向，不引第二份事实源）；
-  //   ★ 一跳落库；跨文件传递闭包由消费者沿 reverse_calls 行走（渐进式披露：DSL 浅 → DB 深一层）。
-  const reverseByFile = new Map<string, Set<string>>();
-  for (const e of db.prepare("SELECT source, target FROM edges WHERE kind = 'call'").all() as Array<{
-    source: string;
-    target: string;
-  }>) {
-    const i = e.target.lastIndexOf('#');
-    if (i <= 0) continue;
-    const targetFile = norm(e.target.slice(0, i));
-    let set = reverseByFile.get(targetFile);
-    if (!set) reverseByFile.set(targetFile, (set = new Set()));
-    set.add(norm(e.source));
-  }
+  // ★★★ 2026-10-28（同构纪律的第二步）：**`reverse_calls` 删掉** —— 它是 `calls` 的一跳反向，
+  //   **算得出来**（`calls[].to` 按文件归并即可）⇒ 落盘就是第二份事实，必然烂；
+  //   而且实测**零消费者**（全仓只有本文件在写它）。要"谁调我"就用 `calls` 现算。
 
   // ★ 2026-10-24（裁 A 落地）：**期望段上投影** —— 设计册的符号期望（无行号）与现状并列，
   //   gap 一眼可见。意图的源在设计册，gen-db 幂等重生成 ⇒ 不需要锁（VISION §冲突已裁：calls 只读、dep 已退役）。
@@ -480,8 +468,7 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
       }
 
       const sources = item.sources.join(', ');
-      // ★ 2026-10-24（影响面）：谁调我 —— 一跳反向调用（source 节点 id，排序保证可复现）。
-      const reverseCalls = [...(reverseByFile.get(norm(rel)) ?? [])].sort();
+
       const payload = {
         '//': `Design DB —— ${rel}（★ 全量、与实际 DB 同构；从 ${sources} 的节点生成）`,
         '//generated_by': 'scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）',
@@ -492,7 +479,7 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
         imports,
         calls,
         ...(expectedByPath.get(norm(rel))?.length ? { expected_symbols: expectedByPath.get(norm(rel)) } : {}),
-        ...(reverseCalls.length ? { reverse_calls: reverseCalls } : {}),
+
         ...(requirementsOf(item).length ? { requirements: requirementsOf(item) } : {}),
         ...(requirementsCalls.length ? { requirements_calls: requirementsCalls } : {}),
       };
