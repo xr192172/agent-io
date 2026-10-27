@@ -81,6 +81,13 @@ function warnLegacyDataHomeOnce(legacyHome: string, modernHome: string): void {
 import { projectRootOf, readRegistry } from './project_registry.js';
 // ★ T-#98：目录 getter 的唯一实现（roles 表在 roots.ts，别在这里再拼一遍路径）
 import { rootPath } from './roots.js';
+// ★★★ 2026-10-27（ROOTS 步 6 / slice 2a）：册落盘时把卡投影进 `tasks.db`，**就在唯一写入出口做**。
+//   ★ 与 `task_history` 是**静态**互相 import（成环），安全性同上面 `project_registry` 那一段：
+//     两边都只在**调用时**用对方的绑定（`task_history` 只在函数体里调 `getStorageRoot()`），
+//     且都是 `export function`（声明会 hoist）⇒ 模块初始化顺序无关。
+//   ★ 选静态而不是动态 import：动态的"触发即走、不等结果" 会让"投影失败"变成**延迟且不确定**的
+//     一行 stderr（证也抓不住）；静态同步 ≈ 一次小库写（毫秒级），换来"册落盘 ⇒ 库已跟上"这条确定性。
+import { syncTasksFromDsl } from './task_history.js';
 // ★★★ 2026-10-26（T-#27 / `docs/ROOTS.md` §7.4）：**读端接线** —— `getDesignSheetFile` 未给 baseDir 时
 //   查项目注册表，把 feature 解析到它自己的项目根。
 //   ★ 循环依赖是**安全的**：两边都只在**调用时**用对方的绑定（`project_registry` 只在 `registryFile()`
@@ -423,6 +430,50 @@ function txnRedirect(file: string): string {
   }
 }
 
+/**
+ * ★★★ 2026-10-27（ROOTS 步 6 / 乙方案 slice 2a）：**每一笔册落盘，顺手把卡投影进 `tasks.db`**。
+ *
+ * ## 为什么放在这个收口（而不是去改 `task_ops` 那 10 处落盘点）
+ * `task_ops` 里有 10 处 `saveDesignSheet(...)`，形状一模一样；逐个改 = 10 个入口，
+ * 迟早有人新增第 11 处又忘了同步（本仓头号病："记得调"类型的纪律）。
+ * ⇒ 收口在**唯一的写入出口**：册一变，库跟着变，**无论谁改的**。
+ *
+ * ## 这一片是**影子**（读仍然走册）
+ *   · 失败**不阻断主写**（册才是权威），但**必须出声**（stderr 一行，带 `[tasks-shadow]` 前缀）；
+ *   · 不知道是哪个项目（注册表没登记、也没给 baseDir）⇒ **不写**别人的库（"不猜"）；
+ *   · 册上没有卡 ⇒ 不建库（空库不是"零张卡"的证据，是噪音）。
+ *
+ * ## 切读写时这里会变成主路径
+ * 届时本函数改为"**写库 + 检查册**"，`derivable` 改 false，并按 T-#14 补 `tasks.jsonl` 镜像。
+ */
+function shadowSyncTasks(dsl: DesignDSL, baseDir?: string): void {
+  const todos = Array.isArray(dsl?.todos) ? dsl.todos : [];
+  if (!todos.length) return;
+  // ★ 根的解析顺序与读侧同一条纪律：注册表（这个 feature 属于哪个项目）⇒ 册自己声明的 `source_root`
+  //   ⇒ 显式 baseDir。都没有 ⇒ **不猜**（绝不把卡写进"别人的"项目库或数据家）。
+  const root = projectRootOf(dsl.feature) ?? dsl.source_root ?? baseDir ?? null;
+  if (!root) {
+    process.stderr.write(
+      `[tasks-shadow] "${dsl.feature}" 不知道属于哪个项目（注册表没登记、也没给 baseDir）⇒ 本次不投影卡\n`,
+    );
+    return;
+  }
+  // ★ 静态同步：册落盘 ⇒ 库已跟上（见文件头 import 处的论证）
+  try {
+    const rep = syncTasksFromDsl(root, dsl.feature, {
+      todos: todos as unknown as ReadonlyArray<Record<string, unknown>>,
+    });
+    if (rep.added || rep.updated || rep.removed || rep.skipped_archived) {
+      process.stderr.write(
+        `[tasks-shadow] ${dsl.feature} → ${path.basename(rep.file)}：+${rep.added} ~${rep.updated} -${rep.removed}` +
+          `（已在历史、不复活 ${rep.skipped_archived}）\n`,
+      );
+    }
+  } catch (e) {
+    process.stderr.write(`[tasks-shadow] 投影失败（册已落盘，库未跟上）：${String(e).slice(0, 200)}\n`);
+  }
+}
+
 export function saveDesignSheet(dsl: DesignDSL, baseDir?: string): string {
   // ★★ 2026-10-22：与 `saveDSL` **同一道闸** —— 它写的是**同一个文件**（`design/<f>.dsl.json`）。
   //   只闸 `saveDSL` 而放它 = 把门焊上又在旁边留个洞（`task_ops` 用它落盘，那条路在 edit_dsl 作用域内）。
@@ -437,6 +488,8 @@ export function saveDesignSheet(dsl: DesignDSL, baseDir?: string): string {
     _sync: { ...syncMeta(dsl, 'design_sheet'), via },
   };
   fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8');
+  // ★ slice 2a：册落盘即投影（见 shadowSyncTasks 的论证）
+  shadowSyncTasks(dsl, baseDir);
   return file;
 }
 
@@ -1053,6 +1106,8 @@ export function saveDSL(
     fs.renameSync(tmp, target);
   };
   writeAtomic(file, JSON.stringify(dsl, null, 2));
+  // ★ slice 2a：册落盘即投影（同一收口，理由见 shadowSyncTasks）
+  shadowSyncTasks(dsl);
 
   // ★★★ 2026-10-18：**停写活态文件**（`agent-io.json`）。
   //   它是"第三份"：读侧已统一到 design/（`readDSLRaw` → `getDesignSheet`），
