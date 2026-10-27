@@ -419,10 +419,37 @@ function traverseAndExtract(
   // 只索引顶层（parent===undefined）：局部 const 同名多、噪音大且定位价值低；
   // 解构（object_pattern）与多声明器跳过（符号名无法稳定表达）。不进 body 递归
   // ——初始化器内的局部 function 不提升为顶层符号（闭包私有，本就不该独立可见）。
-  if (
-    parent === undefined &&
-    (node.type === 'lexical_declaration' || node.type === 'variable_declaration')
-  ) {
+  // ★★★ 2026-10-27（T-#45）：**函数体内也索引“值是函数”的单声明器**（标 `is_closure`）。
+  //
+  // ## 为什么改（实测病史）
+  // 原设计（见上面注释）：“只索引顶层：局部 const 同名多、噪音大且定位价值低”。
+  // 但那个取舍算错了：**定义确实噪音大，可引用它们的调用需要目标才能建边** ——
+  // 实测 `const walk = (dir) => {…}` 定义在函数体内时**不被收集** ⇒ 调用它的引用全 `failed`
+  // （`walk` 147 条 · `need` 21 · `make` 19 · `declare` 19 …）⇒ **call 边只覆盖 24%**（5964/24625）。
+  //
+  // ## 新判据（只放“值是函数”的那一类，不让 `const x = 1` 爆炸）
+  //   · 函数体内 ∧ 单声明器 ∧ 具名 identifier ∧ **值是函数**（箭头/函数表达式/生成器）
+  //   ⇒ 索引，且 **`is_closure: true`**（不进契约面 —— 那正是这个字段的用途）
+  //   ⇒ `qualified_name = <parent>.<name>` ⇒ **同名不冲突**（`main.walk` vs `other.walk`）
+  //   ★ `parent` 也填上（供社区/聚合按所属函数归组）
+  //   ★ 顶层行为**一字不变**（`parent === undefined` 分支照旧）。
+  const isDeclNode = node.type === 'lexical_declaration' || node.type === 'variable_declaration';
+  const nestedFnDecl =
+    isDeclNode && parent !== undefined && enclosingIsFunction
+      ? (() => {
+          const ds: SyntaxNodeLike[] = [];
+          for (let i = 0; i < node.childCount; i++) {
+            const c = node.child(i);
+            if (c && c.type === 'variable_declarator') ds.push(c);
+          }
+          if (ds.length !== 1) return false;
+          const nn = ds[0].childForFieldName('name');
+          if (!nn || nn.type !== 'identifier' || !isValidIdentifier(nn.text)) return false;
+          const vn = ds[0].childForFieldName('value');
+          return !!vn && ['arrow_function', 'function_expression', 'function', 'generator_function'].includes(vn.type);
+        })()
+      : false;
+  if (isDeclNode && (parent === undefined || nestedFnDecl)) {
     const declarators: SyntaxNodeLike[] = [];
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i);
@@ -461,14 +488,14 @@ function traverseAndExtract(
           kind: 'const',
           start_line: node.startPosition.row + 1,
           end_line: node.endPosition.row + 1,
-          qualified_name: nameNode.text,
+          qualified_name: parent ? `${parent}.${nameNode.text}` : nameNode.text, // ★ T-#45：嵌套时带父名，同名不冲突
           ...valueShape,
           ...(constMods ? { modifiers: [...new Set(constMods)] } : {}),
           ...(valueBody ? { bodyText: valueBody } : {}),
           ...(valueDoc ? { docstring: valueDoc } : {}),
           signature: `const ${nameNode.text} = ${valueBrief}`,
-          parent: undefined,
-          is_closure: isClosureLit ? true : undefined,
+          parent,
+          is_closure: isClosureLit || nestedFnDecl ? true : undefined, // ★ T-#45：嵌套函数体里的标闭包
         });
       }
     }
