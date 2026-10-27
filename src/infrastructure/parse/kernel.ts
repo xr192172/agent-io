@@ -2406,6 +2406,20 @@ function traverseAndExtractImports(
   // ## 现在
   // 在解析期就记一行 ⇒ **同一张绑定表**（`relImportsByFile` / `relBindingsByFile`）
   // 同时服务静态与动态导入。
+  // ★★★ 2026-10-27（T-#70）：**动态 import 判定** —— ★ **只对 `.mjs`/`.js` 有效**。
+  //
+  // ## 已实测的边界（如实登记，别当成通用能力）
+  // · tree-sitter-**javascript**：`call_expression` + `function=import` **有效**
+  //   （`certs/t332.mjs` 抽出 6 条 ✓）
+  // · tree-sitter-**typescript**：**完全失效** —— 最小复现：一个只有
+  //   `const { x } = await import('../y.js')` 的 `.ts` 文件 ⇒ `imports = 0`。
+  //   试过「按节点类型判」和「按文本形状 `/^import\s*\(/` 判」**两种都不生效**
+  //   ⇒ 说明 **TS 下本遍历根本没走到那个节点**（根因未明，待查）。
+  //
+  // ## 为什么还留着（而不是删掉）
+  // 它对 JS 系**确实有效且已验证**（+249 条 imports 进索引、12 条 failed 归位）。
+  // ⇒ 保留 + **明确标注适用范围**，好过删掉能力。
+  // ★ 未做：TS 的那一半。根因查清后应让两条路都通。
   if (node.type === 'call_expression' || node.type === 'import_expression' || node.type === 'dynamic_import') {
     const fnNode = node.type === 'call_expression' ? node.childForFieldName('function') : null;
     const isDynamicImport =
