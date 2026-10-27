@@ -40,7 +40,7 @@ import { detectArchLayers } from '../analysis/structure/layer_detect.js';
 import { parseFileFull, listSupportedExtensions, resolveProjectImport } from '../parse/index.js';
 import type { ParsedImport } from '../parse/index.js';
 import { countLines, assessLines } from '../analysis/structure/monolith.js';
-import type { Database } from '../index/db.js';
+import { getProjectCacheDb, type Database } from '../index/db.js'; // ★ T-#47：cache_db 缺失时自动打开
 import { syncProject, getFileParse, pruneDeletedFiles, resolveCrossFileCalls } from '../index/symbols.js';
 import { generateFileRoleTitles } from '../analysis/structure/role_title.js';
 
@@ -906,10 +906,21 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     parsed.set(rel, { symbols: funcApis, nonFuncSymbols, imports: imps });
   };
 
-  if (input.cache_db) {
+  // ★★★ 2026-10-27（T-#47）：**解析段无条件执行** —— `cache_db` 从“要不要解析”降级为“用哪个库”。
+  //
+  // ## 实测事故（本日，我亲手撞的）
+  // 这里原先是 `if (input.cache_db) { … }` 而 **没有 else** ⇒ **不传 `cache_db` ⇒ 整段解析被跳过**
+  // ⇒ `parsed` 全空 ⇒ `symbolsFound = 0` ⇒ **索引被建成“有文件节点、`nodes` 表为空”，且不报错**。
+  // 实测：裸 node 进程调 `importProject({project_dir, feature})`（536 文件）⇒ **0 符号 · 0.2s**。
+  // ⇒ **一个“可选入参”决定了要不要干活** —— 这是最危险的形态（不传 = 静默不解析）。
+  //
+  // ## 修法
+  // `cache_db` 缺省 ⇒ **自动打开该项目自己的库**（`projectCacheDbPath(root)`，本来就在那里）。
+  // ⇒ 解析**永远执行**；`cache_db` 只剩“用哪个库”的含义。
+  {
     // 缓存路径：syncProject 内部按 content_hash 增量——未变更文件不重解析，
     // 随后从 cache.db 读回符号与原始 import（含 Go 包路径 / Python 点分模块）
-    const db = input.cache_db;
+    const db = input.cache_db ?? getProjectCacheDb(root);
     const sync = await syncProject(db, root, absFiles);
     cacheStats = { hits: 0, reparsed: 0, failed: 0 };
     // 删除侦测：清掉磁盘上确实不存在的文件的缓存行（比对基准是截断前完整列表）
