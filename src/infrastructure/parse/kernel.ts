@@ -2406,21 +2406,26 @@ function traverseAndExtractImports(
   // ## 现在
   // 在解析期就记一行 ⇒ **同一张绑定表**（`relImportsByFile` / `relBindingsByFile`）
   // 同时服务静态与动态导入。
-  // ★★★ 2026-10-27（T-#71）：**动态 import 判定 —— 不依赖命名字段**。
+  // ★★★ 2026-10-27（T-#72）：**动态 import 的抽取**。
   //
-  // ## 根因（T-#70 没查出来的那个）
-  // 实测 dump TS 的 AST：
-  //   `call_expression «import('../x.js')»`
-  //     `└ import «import»`          ← ★ **不是 `function` 字段**（`childForFieldName('function')` 返回 null）
-  //         `└ import «import»`
-  // ⇒ 原判据 `fnNode.type === 'import'` 因为 `fnNode === null` **永远不命中**
-  //   ⇒ `.ts` 的动态 import **一条都抽不出来**（实测最小复现 `imports = 0`）。
-  //   ★ 而 tree-sitter-**javascript** 上 `function` 字段是有的 ⇒ `.mjs` 一直正常。
+  // ## 真根因（只在 `languages.ts` 的一行数据里，别处都看不出来）
+  //   `typescript.import_nodes = ['import_statement', 'export_statement']`
+  // 收 `export_statement` 是为了 `export { x } from 'y'`（**有 source**）；
+  // 但 **`export async function f() { … }` 也是 `export_statement`** ⇒ 本函数末尾那句
+  // 无条件 `return` 会把**整个函数体跳过** ⇒ 函数体内的 `await import(…)` 永远看不到。
+  // ★ 为什么 `.mjs` 一直正常：它的动态 import 在**模块顶层**，不在任何 `export_statement` 里。
+  // ★ 已在函数末尾修掉（命中 import_nodes 但**没抽出 source** 且带 `declaration` ⇒ 继续递归）。
   //
-  // ## 修法
-  // ① 取"被调方"时**先看命名字段、没有就取第一个子节点**；
-  // ② 取"参数表"时**同样加兜底**（TS 下 `arguments` 字段也可能没有名字）。
-  //   ⇒ 两个都靠**结构位置**，不靠字段名 —— 跨 grammar 稳定。
+  // ## 这里的兜底（防 future grammar 变化）
+  // 取"被调方"/"参数表"时**先看命名字段、没有就取结构位置**：
+  //   `childForFieldName('function') ?? child(0)`
+  //   `childForFieldName('arguments') ?? childForFieldName('argument') ?? child(childCount-1)`
+  // ⇒ 跨 grammar 稳定（实测 TS 的 `call_expression` 两个字段都有名，但别的 grammar 未必）。
+  //
+  // ## 历史（两次走弯路，留作教训）
+  //   T-#70：一度把"只对 .mjs 有效"当**能力边界**登记进注释 —— **那是把错误固化**。
+  //   T-#71：按节点类型判失效后改字段兜底 —— 更健壮，但**不修 TS**（真因在 import_nodes）。
+  //   ⇒ 教训：**先读配置/DSL/DB，再写探针**。
   if (node.type === 'call_expression' || node.type === 'import_expression' || node.type === 'dynamic_import') {
     const fnNode =
       node.childForFieldName('function') ?? (node.childCount > 0 ? node.child(0) : null);
