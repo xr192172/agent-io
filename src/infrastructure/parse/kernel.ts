@@ -2558,11 +2558,210 @@ export function isTypeOnlyModuleStatement(text: string): boolean {
   return false;
 }
 
+/**
+ * ★★★ 2026-10-27（T-#86）：**import source 的常量折叠**（bounded static evaluator）。
+ *
+ * ## 为什么需要（我上一轮判错了）
+ * 我曾把 `import(pathToFileURL(X).href)` 判成「**结构不可解**」——**错了**。
+ * 实测那 5 条全是这种形态，且**都可静态算出**：
+ *   `const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')`
+ *   `const STORAGE_JS = path.join(ROOT, 'dist', 'src', 'infrastructure', 'storage.js')`
+ *   `await import(pathToFileURL(STORAGE_JS).href)`
+ * ⇒ 我们有**文件绝对路径**（⇒ `import.meta.url` / `import.meta.dirname` 可算），
+ *   而 `path.join` / `path.resolve` / `pathToFileURL` 的语义**简单且固定** ⇒ **能算**。
+ *
+ * ## 为什么 LSP/tsc 帮不上
+ * TS 的模块解析要求 specifier 是**字符串字面量**；`import(expr)` 是运行期值 ⇒ tsc **不解析**。
+ * ⇒ 这件事只能我们自己做（而我们恰好有 tsc 没有的：**明确的文件路径 + 项目根**）。
+ *
+ * ## 边界（**算不出来就诚实返回 null**，不猜）
+ * 支持：字符串/模板字面量 · 同文件 `const` 折叠 · `import.meta.url` / `.dirname` / `.filename`
+ *      · `path.join` / `path.resolve` / `path.dirname` / `path.basename`
+ *      · `fileURLToPath(x)` / `pathToFileURL(x)`（含 `.href`）· `new URL(x, base)`
+ * 不支持（⇒ 保持 `computed`）：`process.env.*` · 函数调用结果 · 正则 replace · 动态拼接
+ */
+
+/** 折叠结果：绝对路径（posix 分隔）或 null（算不出来） */
+function foldToPath(node: SyntaxNodeLike | null, consts: Map<string, string>, filePath: string): string | null {
+  if (!node) return null;
+  const t = node.type;
+  // ── 字面量
+  if (t === 'string' || t === 'template_string') {
+    const raw = node.text.replace(/^['"`]|['"`]$/g, '');
+    return raw.includes('${') ? null : raw; // 有插值 ⇒ 不猜
+  }
+  // ── 标识符 ⇒ 查同文件 const 折叠表
+  if (t === 'identifier') return consts.get(node.text) ?? null;
+  // ── import.meta.url / .dirname / .filename
+  if (t === 'member_expression') {
+    const obj = node.childForFieldName('object');
+    const prop = node.childForFieldName('property');
+    // ★ T-#86 修：`import.meta` 在 tree-sitter-javascript 里是 **`member_expression`**（不是 `meta_property`）
+    //   实测 dump：`member_expression «import.meta.url»` → `member_expression «import.meta»`。
+    //   ⇒ 判据**看文本不看类型**（跨 grammar 稳定，同 T-#71 的教训）。
+    if (obj && obj.text.replace(/\s+/g, '') === 'import.meta' && prop) {
+      const abs = filePath.replace(/\\/g, '/');
+      if (prop.text === 'url') return `file:///${abs}`;
+      if (prop.text === 'filename') return abs;
+      if (prop.text === 'dirname') return abs.slice(0, abs.lastIndexOf('/')) || '/';
+      return null;
+    }
+    // `pathToFileURL(X).href` ⇒ 语义 = `file://` + X
+    if (prop?.text === 'href' && obj && obj.type === 'call_expression') {
+      const inner = foldCall(obj, consts, filePath);
+      if (inner && 'kind' in inner && inner.kind === 'fileurl') return `file://${inner.path}`;
+      return null;
+    }
+    return null;
+  }
+  // ── 调用
+  if (t === 'call_expression') {
+    const r = foldCall(node, consts, filePath);
+    return r ? r.path : null;
+  }
+  // ── new URL(x, base)
+  if (t === 'new_expression') {
+    const ctor = node.childForFieldName('constructor');
+    const args = node.childForFieldName('arguments');
+    if (ctor?.text === 'URL' && args) {
+      const parts: Array<SyntaxNodeLike | null> = [];
+      for (let i = 0; i < args.childCount; i++) {
+        const c = args.child(i);
+        if (c && c.type !== '(' && c.type !== ')' && c.type !== ',') parts.push(c);
+      }
+      const a = foldToPath(parts[0] ?? null, consts, filePath);
+      if (a === null) return null;
+      if (parts.length < 2) return a;
+      const b = foldToPath(parts[1], consts, filePath);
+      if (b === null) return null;
+      // base 是 file://…/dir/ ⇒ 拼接
+      const basePath = b.replace(/^file:\/\//, '');
+      return basePath.endsWith('/') ? `${basePath}${a}` : `${basePath.slice(0, basePath.lastIndexOf('/') + 1)}${a}`;
+    }
+    return null;
+  }
+  return null;
+}
+
+/** 调用的折叠（返回 `{path}` 或 `{kind:'fileurl', path}`；算不出 ⇒ null） */
+function foldCall(
+  node: SyntaxNodeLike,
+  consts: Map<string, string>,
+  filePath: string,
+): { path: string } | { kind: 'fileurl'; path: string } | null {
+  const fn = node.childForFieldName('function');
+  const args = node.childForFieldName('arguments');
+  if (!fn || !args) return null;
+  const argsList: SyntaxNodeLike[] = [];
+  for (let i = 0; i < args.childCount; i++) {
+    const c = args.child(i);
+    if (c && c.type !== '(' && c.type !== ')' && c.type !== ',') argsList.push(c);
+  }
+  const foldAll = (): string[] | null => {
+    const out: string[] = [];
+    for (const a of argsList) {
+      const v = foldToPath(a, consts, filePath);
+      if (v === null) return null;
+      out.push(v);
+    }
+    return out;
+  };
+  const joinPosix = (segs: string[]): string => {
+    const parts: string[] = [];
+    for (const s of segs) {
+      for (const p of s.replace(/\\/g, '/').split('/')) {
+        if (!p || p === '.') continue;
+        if (p === '..') parts.pop();
+        else parts.push(p);
+      }
+    }
+    return '/' + parts.join('/');
+  };
+  // `path.join(...)` / `path.resolve(...)`
+  if (fn.type === 'member_expression') {
+    const obj = fn.childForFieldName('object');
+    const prop = fn.childForFieldName('property');
+    // ★ T-#86：**ESM 的"取父目录"idiom** —— `X.replace(/[\\/][^\\/]+$/, '')`。
+    //   语义明确（去掉最后一段路径）⇒ 等价于 `dirname(X)`，**不是**盲求值。
+    //   实测来源：`const REPO = import.meta.dirname.replace(/[\\/][^\\/]+$/, '')`（certs/t357）。
+    if (prop?.text === 'replace' && obj && argsList.length >= 1) {
+      const rx = argsList[0].text;
+      const empty = argsList.length >= 2 && /^(['"])\1$/.test(argsList[1].text.trim());
+      if (empty && /\[\\\\?\/\]\[\^\\\\?\/\]\+\$/.test(rx)) {
+        const base = foldToPath(obj, consts, filePath);
+        if (base) {
+          const s = base.replace(/\/+$/, '');
+          return { path: s.slice(0, s.lastIndexOf('/')) || '/' };
+        }
+      }
+      return null;
+    }
+    if (obj?.text === 'path' && prop) {
+      const vals = foldAll();
+      if (!vals) return null;
+      if (prop.text === 'join' || prop.text === 'resolve') return { path: joinPosix(vals) };
+      if (prop.text === 'dirname' && vals[0]) {
+        const s = vals[0].replace(/\/+$/, '');
+        return { path: s.slice(0, s.lastIndexOf('/')) || '/' };
+      }
+      if (prop.text === 'basename' && vals[0]) {
+        const s = vals[0].replace(/\/+$/, '');
+        return { path: s.slice(s.lastIndexOf('/') + 1) };
+      }
+      return null;
+    }
+    return null;
+  }
+  // `fileURLToPath(x)` ⇒ 去 `file://`
+  if (fn.type === 'identifier' && fn.text === 'fileURLToPath') {
+    const vals = foldAll();
+    if (!vals || !vals[0]) return null;
+    return { path: vals[0].replace(/^file:\/\//, '') };
+  }
+  // `pathToFileURL(x)` ⇒ 标成 fileurl（外层 `.href` 或直接当路径用）
+  if (fn.type === 'identifier' && fn.text === 'pathToFileURL') {
+    const vals = foldAll();
+    if (!vals || !vals[0]) return null;
+    return { kind: 'fileurl', path: vals[0] };
+  }
+  return null;
+}
+
+/** 预扫：同文件 `const X = <可折叠表达式>` ⇒ `X → 折叠值`（两趟，处理 const 之间的依赖） */
+function buildConstStringMap(root: SyntaxNodeLike, filePath: string): Map<string, string> {
+  const consts = new Map<string, string>();
+  const decls: Array<{ name: string; value: SyntaxNodeLike }> = [];
+  const walk = (n: SyntaxNodeLike, depth: number): void => {
+    if (depth > 200) return;
+    if (n.type === 'variable_declarator') {
+      const nm = n.childForFieldName('name');
+      const v = n.childForFieldName('value');
+      if (nm?.type === 'identifier' && v) decls.push({ name: nm.text, value: v });
+    }
+    for (let i = 0; i < n.childCount; i++) {
+      const c = n.child(i);
+      if (c) walk(c, depth + 1);
+    }
+  };
+  walk(root, 0);
+  // 两趟：第一趟可能因依赖顺序折叠不出来，第二趟补上
+  for (let pass = 0; pass < 2; pass++) {
+    for (const d of decls) {
+      if (consts.has(d.name)) continue;
+      const v = foldToPath(d.value, consts, filePath);
+      if (v !== null) consts.set(d.name, v);
+    }
+  }
+  return consts;
+}
+
 function traverseAndExtractImports(
   node: SyntaxNodeLike,
   lang: LanguageEntry,
   imports: ParsedImport[],
-  depth: number = 0
+  depth: number = 0,
+  /** ★ T-#86：常量折叠上下文（算得出就变成真 source，算不出保持 computed） */
+  foldCtx?: { filePath: string; consts: Map<string, string> },
 ): void {
   if (depth > 100 || !lang.import_nodes || lang.import_nodes.length === 0) return;
   // ★★★ 2026-10-27（T-#64）：**动态 import 也是一等公民**（这是 `parseFileFull` 走的路径）。
@@ -2637,7 +2836,28 @@ function traverseAndExtractImports(
       const isLiteralSrc =
         !!srcNode && (srcNode.type === 'string' || srcNode.type === 'template_string' || /string/.test(srcNode.type));
       const rawSrc = srcNode ? srcNode.text.replace(/^['"`]|['"`]$/g, '') : '';
-      const src = isLiteralSrc ? rawSrc : srcNode ? srcNode.text.replace(/\s+/g, ' ').slice(0, 200) : '';
+      // ★★★ T-#86：**非字面量 ⇒ 试常量折叠**（`import(pathToFileURL(path.join(ROOT, 'dist/x.js')).href)`）。
+      //   算得出 ⇒ 变成**真正的相对路径**（kind 按相对路径归）⇒ 后续正常解析；
+      //   算不出 ⇒ 保持 `computed`（**诚实**：有依赖事实、但路径拿不到）。
+      //   ★ 折叠出的是**绝对路径** ⇒ 转成相对本文件目录的形式（`./` / `../`）。
+      let foldedRel: string | null = null;
+      if (!isLiteralSrc && srcNode && foldCtx) {
+        // ★ T-#86 修：`pathToFileURL(X).href` 折叠出的是 **`file:///abs`（URL）**，不是路径
+        //   ⇒ 先剥 `file://` 再算相对（否则 `startsWith('/')` 判不过 ⇒ 又落回 computed）。
+        const rawFolded = foldToPath(srcNode, foldCtx.consts, foldCtx.filePath);
+        const abs = rawFolded ? rawFolded.replace(/^file:\/\//, '') : null;
+        if (abs && abs.startsWith('/')) {
+          const fromDir = foldCtx.filePath.replace(/\\/g, '/').replace(/\/[^/]*$/, '');
+          const a = abs.split('/').filter(Boolean);
+          const b = fromDir.split('/').filter(Boolean);
+          let i = 0;
+          while (i < a.length && i < b.length && a[i] === b[i]) i++;
+          const ups = b.length - i;
+          const tail = a.slice(i).join('/');
+          foldedRel = ups === 0 ? `./${tail}` : `${'../'.repeat(ups)}${tail}`;
+        }
+      }
+      const src = foldedRel ?? (isLiteralSrc ? rawSrc : srcNode ? srcNode.text.replace(/\s+/g, ' ').slice(0, 200) : '');
       if (src) {
         // 绑定名：`const { a, b } = await import(…)` ⇒ 解构里的名字
         const bindings: string[] = [];
@@ -2659,8 +2879,8 @@ function traverseAndExtractImports(
         }
         imports.push({
           source: src,
-          // ★ 字面量 ⇒ 按 source 形态归；**算出来 ⇒ 'computed'**（有事实，路径解析不了）
-          kind: isLiteralSrc ? (rawSrc.startsWith('.') ? 'relative' : 'package') : 'computed',
+          // ★ 字面量或**折叠成功** ⇒ 按 source 形态归；**算出来 ⇒ 'computed'**（有事实，路径拿不到）
+          kind: isLiteralSrc || foldedRel ? (src.startsWith('.') ? 'relative' : 'package') : 'computed',
           line: node.startPosition.row + 1,
           ...(bindings.length > 0 ? { bindings } : {}),
         });
@@ -2711,14 +2931,14 @@ function traverseAndExtractImports(
     if (sources.values.length === 0 && hasDecl) {
       for (let i = 0; i < node.childCount; i++) {
         const child = node.child(i);
-        if (child) traverseAndExtractImports(child, lang, imports, depth + 1);
+        if (child) traverseAndExtractImports(child, lang, imports, depth + 1, foldCtx);
       }
     }
     return; // 真正的 import / 再导出语句内部不再递归
   }
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i);
-    if (child) traverseAndExtractImports(child, lang, imports, depth + 1);
+    if (child) traverseAndExtractImports(child, lang, imports, depth + 1, foldCtx);
   }
 }
 
@@ -2941,7 +3161,7 @@ export async function parseFileFull(filePath: string, content: string): Promise<
     const calls: ParsedCall[] = [];
     const typeRefs: ParsedTypeRef[] = [];
     traverseAndExtract(tree.rootNode, lang, symbols, undefined);
-    traverseAndExtractImports(tree.rootNode, lang, imports);
+    traverseAndExtractImports(tree.rootNode, lang, imports, 0, { filePath, consts: buildConstStringMap(tree.rootNode, filePath) });
     traverseAndExtractCalls(tree.rootNode, lang, symbols, calls);
     traverseAndExtractTypeRefs(tree.rootNode, lang, symbols, typeRefs);
     const identifiers: ParsedIdentifier[] = [];
@@ -2998,7 +3218,7 @@ export function parseFileFullSync(filePath: string, content: string): ParsedFile
     const calls: ParsedCall[] = [];
     const typeRefs: ParsedTypeRef[] = [];
     traverseAndExtract(tree.rootNode, lang, symbols, undefined);
-    traverseAndExtractImports(tree.rootNode, lang, imports);
+    traverseAndExtractImports(tree.rootNode, lang, imports, 0, { filePath, consts: buildConstStringMap(tree.rootNode, filePath) });
     traverseAndExtractCalls(tree.rootNode, lang, symbols, calls);
     traverseAndExtractTypeRefs(tree.rootNode, lang, symbols, typeRefs);
     const identifiers: ParsedIdentifier[] = [];
