@@ -508,13 +508,14 @@ export function saveDesignSheet(dsl: DesignDSL, baseDir?: string): string {
   fs.mkdirSync(dir, { recursive: true });
   // ★ 2026-10-23：事务进行中 ⇒ 落工作副本（见上方 txnRedirect 的论证）
   const file = txnRedirect(getDesignSheetFile(dsl.feature, baseDir));
+  // ★★★ 2026-10-27（slice 2c）：**册不再写 `todos`** —— 卡的家在 `tasks.db`。
+  //   写之前先投影（顺序不能反：先写库成功、再落册；库失败就整笔不落，宁可报错也不留"册上没有、库里也没有"）。
+  shadowSyncTasks(dsl, baseDir);
   const data = {
-    ...dsl,
+    ...withoutTodos(dsl),
     _sync: { ...syncMeta(dsl, 'design_sheet'), via },
   };
   fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8');
-  // ★ slice 2a：册落盘即投影（见 shadowSyncTasks 的论证）
-  shadowSyncTasks(dsl, baseDir);
   return file;
 }
 
@@ -565,6 +566,19 @@ function hydrateTodosFromTasks(dsl: DesignDSL, baseDir?: string): DesignDSL {
   return { ...dsl, todos: fromDb };
 }
 
+/**
+ * ★★★ 2026-10-27（slice 2c）：落盘前把 `todos` 摘掉 —— **卡的家在 `tasks.db`**。
+ *
+ * 为什么摘：`todos[]` 是"过程数据"，住进册会让"重建册"必须小心别把卡抹掉
+ * （`import_project` 的 `allow_design_drop` 拦的就是这个）。搬出来之后册只答"设计要什么"。
+ * ★ 内存里的 `dsl` **仍然带 `todos`**（读端 `hydrateTodosFromTasks` 会补回来）⇒
+ *   调用方（`task_ops` / `write_gate` / `query_feature`）一个都不用改。
+ * ★ 只在**落盘**这一刻摘，别把这个函数当"清理工具"到处用。
+ */
+function withoutTodos(dsl: DesignDSL): Omit<DesignDSL, 'todos'> {
+  const { todos: _drop, ...rest } = dsl as DesignDSL & { todos?: unknown };
+  return rest;
+}
 /** 读取设计图，不存在返回 null */
 export function getDesignSheet(feature: string, baseDir?: string): DesignDSL | null {
   // ★ 2026-10-23：事务进行中 ⇒ 读工作副本（否则"改了工作副本、读的却是正式册"，preview 与 edit 不一致）
@@ -1181,9 +1195,9 @@ export function saveDSL(
     fs.writeFileSync(tmp, text, 'utf-8');
     fs.renameSync(tmp, target);
   };
-  writeAtomic(file, JSON.stringify(dsl, null, 2));
-  // ★ slice 2a：册落盘即投影（同一收口，理由见 shadowSyncTasks）
+  // ★ slice 2c：先投影进库，再落册（且册里不写 `todos`）
   shadowSyncTasks(dsl);
+  writeAtomic(file, JSON.stringify(withoutTodos(dsl), null, 2));
 
   // ★★★ 2026-10-18：**停写活态文件**（`agent-io.json`）。
   //   它是"第三份"：读侧已统一到 design/（`readDSLRaw` → `getDesignSheet`），

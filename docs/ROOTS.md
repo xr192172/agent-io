@@ -109,7 +109,7 @@ dogfood 日志 / 旧 task-history）。同名合并 = T-#98 之前那种"一个�
 | 3 | 根偏离检测（`findStrayDataDirs` → `index_integrity`） | ✅ `f53d65ee` |
 | 4 | 根清单按**三个侧**分组渲染 | ✅ 本次 |
 | 5 | 建**项目注册表**（`projects.json`）+ 读入口 | ✅ 2026-10-26（T-#27 读端接线 / T-#29 迁移）：写端=`import_project`→`registerFeature`，读端=`getDesignSheetFile`→`projectRootOf`；本机已有 4 条登记（agent-io / agent-io-toolface / review-hub / task-system-plan） |
-| 6 | `todos[]` 从 DSL 搬出 → `<proj>/.agent-io/tasks.db`（活卡+历史同库） | 🔄 **最大一次**，分三片：slice 1 ✅ 2026-10-27（角色 `tasks` + 建库 + `syncTasksFromDsl` 影子同步 + `parityTasks` 对拍，证 `t368` PASS=9/0，**读写路径一字节未改**）· slice 2a ✅ 2026-10-27（册落盘即投影，证 `t369` 8/0，`task_ops` 一行未改）· slice 2b ✅ 2026-10-27（**读走库**：`getDesignSheet` 读出端 hydrate，`task_ops` 20+ 处读点一处未改，证 `t371` 6/0）· slice 3 ⬜ 旧 `history` 角色退场 + 历史迁入同库 |
+| 6 | `todos[]` 从 DSL 搬出 → `<proj>/.agent-io/tasks.db`（活卡+历史同库） | 🔄 **最大一次**，分三片：slice 1 ✅ 2026-10-27（角色 `tasks` + 建库 + `syncTasksFromDsl` 影子同步 + `parityTasks` 对拍，证 `t368` PASS=9/0，**读写路径一字节未改**）· slice 2a ✅ 2026-10-27（册落盘即投影，证 `t369` 8/0，`task_ops` 一行未改）· slice 2b ✅ 2026-10-27（**读走库**：`getDesignSheet` 读出端 hydrate，`task_ops` 20+ 处读点一处未改，证 `t371` 6/0）· slice 2c ✅ 2026-10-27（**册不再写卡**：`withoutTodos` + 角色改 `derivable:false` + 文本载体 `tasks.jsonl` 进 git、`.db` 忽略；证 `t373` 8/0，`design_line` 的卡数读数改问库）· slice 3 ⬜ 真仓历史迁入同库 + 旧 `history` 角色退场 |
 | 7 | `getLiveDir`/`getBaselineDir` 的根改**必填**（路径只问 `rootPath`）；`getDesignDir` **不**改必填，改由注册表解析（`getDSL` 拿不到根，见 §7.1） | ✅ T-#98 |
 | 8 | 聚合视图（`overview`/`query=todo` 扫注册表） | ⬜（**设计册那一路已通**：`listDesignSheets` 改扫注册表，T-#98b） |
 | 9 | 清 8 个 stray 目录（71.7MB，`index_integrity` 已能报） | ⬜ 等尘埃落定 |

@@ -588,5 +588,39 @@
     "src/infrastructure/graph/import_project.js",
     "src/infrastructure/index/symbols.ts",
     "src/infrastructure/parse/kernel.ts"
+  ],
+  "t368-tasks-db-shadow-cert.mjs": [
+    "src/infrastructure/roots.ts",
+    "src/infrastructure/task_history.js",
+    "src/infrastructure/task_history.ts"
+  ],
+  "t369-save-projects-tasks-cert.mjs": [
+    "src/infrastructure/roots.js",
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage.ts",
+    "src/infrastructure/task_history.js",
+    "src/infrastructure/task_history.ts"
+  ],
+  "t370-data-root-cert.mjs": [
+    "src/infrastructure/data_dir.ts",
+    "src/infrastructure/storage.ts"
+  ],
+  "t371-read-from-tasks-cert.mjs": [
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage.ts",
+    "src/infrastructure/task_history.js",
+    "src/infrastructure/task_history.ts"
+  ],
+  "t372-usage-gc-cert.mjs": [
+    "src/infrastructure/dogfood_stats.js",
+    "src/infrastructure/dogfood_stats.ts"
+  ],
+  "t373-tasks-out-of-book-cert.mjs": [
+    "src/infrastructure/roots.js",
+    "src/infrastructure/roots.ts",
+    "src/infrastructure/storage.js",
+    "src/infrastructure/storage.ts",
+    "src/infrastructure/task_history.js",
+    "src/infrastructure/task_history.ts"
   ]
 }

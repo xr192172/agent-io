@@ -27,6 +27,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { designDbDir } from '../db/gen_design_db.js';
+// ★ slice 2c：卡已搬出册 ⇒ 卡数读数必须问库（getDesignSheet 是唯一读端，含 hydrate）
+import { getDesignSheet } from '../../../infrastructure/storage.js';
 
 /** 单步读数 */
 export interface LineStep {

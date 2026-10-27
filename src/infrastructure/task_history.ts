@@ -191,9 +191,37 @@ export function syncTasksFromDsl(
   } finally {
     db.close();
   }
+  // ★ slice 2c：主库写完就刷文本载体（同一份事实的两个投影，同一次写入产生 —— 同 task-history.jsonl 的判据）
+  exportTasksJsonl(projectRoot);
   return rep;
 }
 
+/**
+ * ★★★ 2026-10-27（slice 2c）：**文本移交载体** `<proj>/.agent-io/tasks.jsonl`。
+ *
+ * 为什么要有它：`tasks.db` 是二进制（不可 diff / 不可 review），而卡是 `derivable:false` 的**意图数据**
+ * ⇒ 按 T-#14 的判据：**工作库用 `.db`（不进 git），移交载体用 `.jsonl`（进 git）**。
+ * 本文件是**投影**，不是第二份权威：`tasks.db` 才是权威，删了它下次同步会重建。
+ */
+export function getTasksJsonlFile(projectRoot: string): string {
+  return path.join(path.dirname(getTasksDbFile(projectRoot)), 'tasks.jsonl');
+}
+
+/** 把某项目的活卡导出成 JSONL（一行一张，按 feature+id 排序 ⇒ 可 diff）。失败只告警，不影响主写。 */
+export function exportTasksJsonl(projectRoot: string): { written: number; file: string } | null {
+  try {
+    const rows = listLiveCards(projectRoot);
+    const file = getTasksJsonlFile(projectRoot);
+    const lines = rows.map((r) =>
+      JSON.stringify({ feature: r.feature, id: r.id, state: r.state, card: r.card ?? null, updated_at: r.updated_at }),
+    );
+    fs.writeFileSync(file, lines.join('\n') + (lines.length ? '\n' : ''), 'utf-8');
+    return { written: lines.length, file };
+  } catch (e) {
+    process.stderr.write(`[tasks] JSONL 镜像导出失败（主库才是权威）：${String(e).slice(0, 160)}\n`);
+    return null;
+  }
+}
 /** 活卡表的一行（读出口：`card` 已解析回来；坏了就是 null，不猜） */
 export interface LiveCardHit {
   id: string;

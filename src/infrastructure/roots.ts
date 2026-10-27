@@ -56,6 +56,12 @@ export interface RootSpec {
    * 被「零行为变更校验」当场抓住（新解析器算出的路径必须与旧拼法**逐字相同**）。
    */
   fileName?: string;
+  /**
+   * ★★★ 2026-10-27（slice 2c）：**文本移交载体**（如 `tasks.jsonl`）。
+   * 二进制工作库不进 git（T-#14：不可 diff / 不可 review），而 `derivable:false` 的东西**必须随仓移交**
+   * ⇒ 声明载体后：`.db` 被忽略、载体被放行。没声明 = 没有载体（保持既有行为）。
+   */
+  carrier?: string;
   // ★ 2026-10-26（T-#8）：`fileTemplate` / `available` 已随 `featureCache` 一并删除 ——
   //   它们只为那一个角色存在（占位符文件名 + “算不出来就标不可用”）。真没用就删，不留抽象。
 }
@@ -84,7 +90,7 @@ const ROLE_SPECS: ReadonlyArray<Omit<RootSpec, 'path'>> = [
   //     ⇒ 删了能从册重建。**切读写（slice 2）时必须改成 `false`**，并按 T-#14 的判据补一份
   //     `tasks.jsonl` 文本镜像做移交载体（二进制 .db 不进 git：不可 diff、不可 review）。
   //     在那之前把它标 false 会把一个二进制库塞进 git —— 正是 T-#14 否掉的做法。
-  { role: 'tasks', kind: 'project', derivable: true, note: '任务卡：活卡 + 已了结卡同库（slice 1 影子期，可从册重建）', fileName: 'tasks.db' },
+  { role: 'tasks', kind: 'project', derivable: false, note: '任务卡：活卡 + 已了结卡同库（意图数据，丢了不可重建）', fileName: 'tasks.db', carrier: 'tasks.jsonl' },
   { role: 'observe', kind: 'project', derivable: true, note: '观测事件与调用树' },
   { role: 'impact', kind: 'project', derivable: true, note: '影响链报告' },
   { role: 'translate', kind: 'project', derivable: true, note: '翻译侧（Go→TS 等）' },
@@ -200,7 +206,13 @@ export function gitignoreRules(): { ignore: string[]; keep: string[] } {
     const name = sub === '.' ? (spec.fileName ?? '') : sub;
     if (!name) continue;
     const rel = `${DATA_DIR_NAME}/${name}`;
-    (spec.derivable ? ignore : keep).push(rel);
+    if (!spec.derivable && spec.carrier) {
+      // ★ 二进制工作库 + 文本载体：库不进 git、载体进 git（T-#14 的判据）
+      ignore.push(rel);
+      keep.push(`${DATA_DIR_NAME}/${spec.carrier}`);
+    } else {
+      (spec.derivable ? ignore : keep).push(rel);
+    }
   }
   // sqlite 的三个伴生文件（-wal / -shm）跟着主库一起忽略
   ignore.push(`${DATA_DIR_NAME}/*.db*`);
