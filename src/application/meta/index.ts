@@ -1120,7 +1120,8 @@ export function renderHandoffPanel(
     const miss = declaredRequiredMembersOf(pathsOf(to))
       .map((p) => p.path)
       .filter((k) => k !== toPath && k !== filledTop && !SCOPE_PATHS.has(k));
-    return miss.length ? `\n        ★ 下游**还要给**：${miss.join(', ')}` : '\n        ★ 下游必填**已填满**';
+    // ★ 2026-10-27（T-#97b）：并进边自己那一行 —— 原先换行 ⇒ **每条边占两行**，5 条边就是 10 行版面税。
+    return miss.length ? `　· 还要给：${miss.join(', ')}` : '　· **必填已填满**';
   };
 
   for (const e of nextHopsOf(fromTool)) {
@@ -1141,24 +1142,28 @@ export function renderHandoffPanel(
     uni.push(`    ${e.fromKey.padEnd(12)} → 任何 [B].${e.toPath}${r.ok ? `  =  ${r.value}` : '（这次没产出它）'}`);
   }
 
-  if (ready.length) L.push('', `  ★ **直接可用**（值已取好，零手工拼字段名）：${ready.length} 条`, ...ready);
-  if (needPick.length) L.push('', `  ★ **要你选一个**：${needPick.length} 条（选是语义判断 —— 本工具**不替你选**）`, ...needPick);
-  if (blocked.length) L.push('', `  ★ 接不上（上游这次没产出该键）：${blocked.length} 条`, ...blocked);
-  if (ready.length || needPick.length) {
-    // ★★ 读起来会卡的地方（实测）：**同一对工具之间常有多条边**（如 `rename_symbols → edit_code` 有
-    //   `written_files→file` 与 `symbols→symbol` 两条），于是每条边上那句"还要给"**要合起来看**才算全
-    //   （单看 `symbol` 那条会说"还要给 file"，而 `file` 其实由**另一条边**给了）。
-    L.push('', '  ★ 注意：**同一对工具之间常有多条边** ⇒ 上面每条的"还要给"要**合起来看**（例：`file` 由另一条边已给）。');
-  }
-  if (uni.length) L.push('', '  ★ 全称规则（对**任何**工具都成立，只提一次、不展开）：', ...uni);
+  // ★★★ 2026-10-27（T-#97b）：**默认只列前 3 条**，其余给指针。
+  //   实测：一次 `find_references`（只有 3 行结果）里，接续段 16 行 / 2064B = **回执的 80%** ——
+  //   它是个**固定版面税**，小结果时最刺眼。而"还有几条"用一次 `next_hop_args` 就能拿到，
+  //   不必把整张表摊在每次调用里（★ 与"信息只留一处"同一条理）。
+  const SHOW = 3;
+  const more = (n: number): string[] =>
+    n > SHOW ? [`    …另有 ${n - SHOW} 条：\`next_hop_args(tool='${fromTool}')\` 列全，或用 \`to_tool\` 只看一条`] : [];
+  if (ready.length) L.push('', `  ★ **直接可用**（值已取好 · 共 ${ready.length} 条）：`, ...ready.slice(0, SHOW), ...more(ready.length));
+  if (needPick.length)
+    L.push('', `  ★ **要你选一个**：${needPick.length} 条（**不替你选**）`, ...needPick.slice(0, SHOW), ...more(needPick.length));
+  if (blocked.length) L.push('', `  ★ 接不上（上游没产出该键）：${blocked.length} 条`, ...blocked.slice(0, SHOW), ...more(blocked.length));
+
+  if (uni.length) L.push('', '  ★ 全称：' + uni.map((u) => u.trim().replace(/\s+/g, ' ')).join('；'));
   const unused = Object.keys(cur).filter((k) => !used.has(k));
   if (unused.length) L.push('', `  ★ touched 里**没被任何边用到**的键：${unused.join(', ')}（不是错误，只是本表没接它）`);
   if (!ready.length && !needPick.length && !blocked.length) {
     L.push('', '  （该工具在接法表里**没有对象类出边** ⇒ 它通常是"链的终点"；作用域键见下面的全称规则）');
   }
-  L.push('', '  ★★ **接续的分工**：它只负责**位置与对象**；"**要做什么操作 / 改成什么名 / 移到哪**"是**意图**，'
-    + '由你给 —— ★ **没有一条边能替你填满下游必填**，这是分工，不是缺陷。'
-    + '（同一条道理：本段在多个候选时也**不替你选下标**。）');
-  L.push('', '  ★ 本段**只读**：不改任何东西，也**不代表"这条链跑通过"**（那是 `CHAINS` 的 `[ran]` 标签说的 —— ★ 标签 = 当年跑过、**非实时验证**）。');
+  // ★★★ 2026-10-27（T-#97b）：**不变的长散文压成一行**（历史：这四段每段都印在每个工具的回执里，
+  //   实测占输出一半以上，而内容对任何工具都一样）。完整规则仍住 `capability_map` 与 `docs/GUIDE-USAGE.md`。
+  //   ★ 保留的两条是**读法陷阱**（多条边要合起来看、候选不替你选），其余（"只读""非接口""当年跑过"）是**契约级说明**，
+  //     不该占每次调用的版面。
+  L.push('', '  ★ 接续只给**位置与对象**（意图你给 · 候选不替你选 · 多条边要合看）；本段只读、非"跑通过"证明。');
   return L.join('\n');
 }

@@ -627,5 +627,19 @@
     "src/application/observe/runtime/watch_project_tool.ts",
     "src/infrastructure/data_uniqueness.js",
     "src/infrastructure/data_uniqueness.ts"
+  ],
+  "t375-history-in-tasks-db-cert.mjs": [
+    "src/infrastructure/project_registry.js",
+    "src/infrastructure/roots.js",
+    "src/infrastructure/roots.ts",
+    "src/infrastructure/task_history.js",
+    "src/infrastructure/task_history.ts"
+  ],
+  "t376-stale-index-selfheal-cert.mjs": [
+    "src/application/design/intent/expectations.js",
+    "src/application/design/intent/expectations.ts",
+    "src/callee.ts",
+    "src/caller.ts",
+    "src/infrastructure/graph/import_project.js"
   ]
 }

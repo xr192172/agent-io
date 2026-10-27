@@ -1001,18 +1001,21 @@ export function universalHopsOf(): readonly ChainEdge[] {
 export function renderNextHops(tool: string): string {
   const edges = nextHopsOf(tool);
   if (edges.length === 0) return '';
-  const lines = edges.map((e) => {
+  // ★ 2026-10-27（T-#97b）：默认只列 3 条（其余给指针）—— 与 `renderHandoffPanel` 同一条判据
+  const SHOW = 3;
+  const lines = edges.slice(0, SHOW).map((e) => {
     const card = e.cardinality === 'single' ? '直接取' : '**下标由你给**';
     return `    ${chainExprOf(e).padEnd(26)} → ${e.to} · ${e.toPath}　（${card}）`;
   });
+  if (edges.length > SHOW) lines.push(`    …另有 ${edges.length - SHOW} 条：\`capability_map(tool='${tool}')\` 列全`);
+  // ★★★ 2026-10-27（T-#97b）：**不变的长散文不再每次刷**。
+  //   病史：这里原先把"提示不是接口 / 当年跑过非实时验证 / 想接才用 / 全称规则要单独讲一段"全印出来 ——
+  //   实测一次 `find_references` 输出 1300 字节里 **767 字节（59%）是这段散文**，而它**每个工具都一样**。
+  //   ⇒ 改成：**数据（边）照旧全给**，散文压成**一行**；完整规则本来就住在 `capability_map` 与 GUIDE-USAGE。
   return (
-    '\n── 下一棒（★ **提示**，不是链的接口：本工具**全部**跑过的出边 —— ★ 标签：**当年真跑过**、**非实时验证**，先全给、不收敛）──\n' +
+    '\n── 下一棒（提示，非契约 · 表达式版；完整规则见 `capability_map`）──\n' +
     lines.join('\n') +
-    '\n    ★ 想接才用；不接就直接结束。' +
-    '\n    ★ 另有**全称规则**（**提一次、不展开**，展开就是"每个工具都能接每个工具"= 零信息量）：\n' +
-    universalHopsOf()
-      .map((e) => `      ${chainExprOf(e)} → 任何 [B] · ${e.toPath}`)
-      .join('\n')
+    '\n    ★ 全称：`touched.project_dir / touched.feature` → 任何工具的 `project_dir / feature`'
   );
 }
 
