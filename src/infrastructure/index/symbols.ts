@@ -23,6 +23,9 @@ import { parseFileFull, parseFileFullSync, resolveImportPath, type ParsedFile, t
 import { codeSourceExtSet } from '../parse/source_exts.js';
 // ★ T-#62：**多语言导入解析的适配器表** —— 本文件不再按语言写 if，而是问它
 import { DEFAULT_EXPORT_SYMBOL, LANG_ADAPTERS, type ResolveImportCtx } from '../parse/kernel.js';
+// ★ T-#95：`files.language` 存的是**小写扩展名**（`py`/`ts`/`go`），适配器表的键是语言名
+//   （`python`/`typescript`/`go`）—— `go` 恰好同名，别的全查不到。这条映射必须有唯一出处。
+import { findLanguageByExt } from '../parse/languages.js';
 // ★ 写路径挂钩（§19）：ProjectView 的缓存在「磁盘被改过」时必须失效。
 //   syncFile/syncFileSync 是**全部 15 个写工具**的公共落点 ⇒ 挂这一处即覆盖所有写入，
 //   不必让每个写工具自己记得调 —— 「靠自觉的接线」正是本项目反复踩的坑。
@@ -319,6 +322,99 @@ export function resolveImportTarget(
   //   兜底到 `IMPORT_EXTS`，但对**空数组不兜底**（会只剩 index 候选）——见 import_resolve.ts
   //   resolveProjectImport 的同款注释。这里区分 undefined 与 []，调用方漏传时不会静默失能。
   return resolveImportPath(fromRel, source, (c) => fs.existsSync(path.join(projectRoot, c)), exts ? { exts } : {});
+}
+
+// ─────────────────────────────────────────────────────────────
+// 适配器感知的导入解析（T-#95）
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * ★★★ 2026-10-27（T-#95）：**非 TS 语言的 import 边一条都建不出来**（类级盲区）。
+ *
+ * ## 病史（两个真项目实测）
+ * · gin 1.10（Go，54 文件）：`imports` 里 185 条 package import ⇒ **import 边 0 条**
+ * · flask 3.0（Python，56 文件）：182 条相对导入 ⇒ **import 边 0 条**、跨模块调用 `resolved=2`
+ * 原因：建 import 边 / 找跨文件目标全部只调 `resolveImportTarget` —— 那是 **TS 的语义**
+ * （相对路径 + `IMPORT_EXTS`）。Go 的包路径、Python 的 `from .x import` 它认不出，
+ * 而**适配器里早就写了 `resolveImport`**（T-#62/T-#80/T-#81），只是**没人调用**。
+ *
+ * ## 判据
+ * ① 本文件语言声明了 `resolveImport` ⇒ 用它（候选都是**项目内相对路径**）；
+ * ② 它返回 `[]`（明确外部）或没命中 ⇒ 回落 `resolveImportTarget`（TS 行为逐字不变）。
+ * ★ 候选集合走**文件系统**（`projectFilesOf`），不走 `files` 表 —— `files` 行是按同步顺序写的，
+ *   早期文件解析时后面的文件还没入库（实测会让 Python 的相对导入全落空）。
+ */
+function projectFilesOf(db: Database, projectRoot: string): Set<string> {
+  let perDb = projectFileCache.get(db as unknown as object);
+  if (!perDb) {
+    perDb = new Map<string, Set<string>>();
+    projectFileCache.set(db as unknown as object, perDb);
+  }
+  const hit = perDb.get(projectRoot);
+  if (hit) return hit;
+  const out = new Set<string>();
+  const SKIP = new Set(['node_modules', '.git', '.agent-io', 'dist', 'build', 'vendor', '__pycache__', '.venv']);
+  const walk = (rel: string, depth: number): void => {
+    if (depth > 12) return;
+    let ents: fs.Dirent[];
+    try {
+      ents = fs.readdirSync(rel ? path.join(projectRoot, rel) : projectRoot, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of ents) {
+      const childRel = rel ? `${rel}/${e.name}` : e.name;
+      if (e.isDirectory()) {
+        if (!SKIP.has(e.name) && !e.name.startsWith('.')) walk(childRel, depth + 1);
+      } else {
+        out.add(childRel);
+      }
+    }
+  };
+  walk('', 0);
+  perDb.set(projectRoot, out);
+  return out;
+}
+
+const projectFileCache = new WeakMap<object, Map<string, Set<string>>>();
+
+/**
+ * ★★★ 2026-10-27（T-#95）：`files.language`（= 小写扩展名）→ **适配器表项**。
+ *
+ * ## 病史（一句话：两层用两套名字，只有 Go 恰好同名）
+ * `files.language` 存的是 `py` / `ts` / `go`（`SyncPrelude.ext`：小写扩展名），
+ * 而 `LANG_ADAPTERS` 的键是语言名 `python` / `typescript` / `go`
+ * ⇒ 直接 `LANG_ADAPTERS[language]` 时，**只有 Go 命中**；Python 的 `resolveImport`
+ *   明明写了却永远拿不到（实测 flask：182 条相对导入 ⇒ 0 条 import 边）。
+ */
+function adapterOfLanguageTag(tag: string | undefined): (typeof LANG_ADAPTERS)[string] | undefined {
+  if (!tag) return undefined;
+  const direct = LANG_ADAPTERS[tag];
+  if (direct) return direct;
+  const entry = findLanguageByExt(`.${tag}`);
+  return entry ? LANG_ADAPTERS[entry.name] : undefined;
+}
+
+/** 适配器感知的导入解析：返回项目内候选文件（相对路径，已排除自己）；无候选 ⇒ `[]` */
+function resolveImportFiles(db: Database, projectRoot: string, fromRel: string, source: string): string[] {
+  const row = db.prepare('SELECT language FROM files WHERE path = $p').get({ p: fromRel }) as
+    | { language: string }
+    | undefined;
+  const adapter = adapterOfLanguageTag(row?.language);
+  if (adapter?.resolveImport) {
+    const files = projectFilesOf(db, projectRoot);
+    const cands = adapter.resolveImport(source, fromRel, {
+      projectRoot,
+      files,
+      goModules: readGoModulesLite(projectRoot),
+    });
+    if (cands && cands.length > 0) {
+      const ok = cands.filter((f) => f !== fromRel && files.has(f));
+      if (ok.length > 0) return ok;
+    }
+  }
+  const fallback = resolveImportTarget(projectRoot, fromRel, source);
+  return fallback ? [fallback] : [];
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -867,15 +963,21 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
       'INSERT OR IGNORE INTO edges(source, target, kind, line, col, metadata) VALUES ($src, $tgt, $k, $ln, NULL, NULL)',
     );
     let edgeCount = 0;
+    // ★ T-#95：本文件语言若声明了 `resolveImport`（Go / Java / Python），**不按 kind 过滤** ——
+    //   Go 的包路径、Python 的绝对导入都记成 `package`，但它们能解析到项目内目录/文件。
+    const langRowForImports = db.prepare('SELECT language FROM files WHERE path = $p').get({ p: rel }) as
+      | { language: string }
+      | undefined;
+    const adapterResolves = !!langRowForImports && !!LANG_ADAPTERS[langRowForImports.language]?.resolveImport;
     for (const imp of parsed.imports) {
-      if (imp.kind !== 'relative') continue;
+      if (imp.kind !== 'relative' && !adapterResolves) continue;
       // TS `import type` 运行时擦除——不建 import 边（依赖图/闭包不算依赖）
       if (imp.type_only) continue;
-      const target = resolveImportTarget(projectRoot, rel, imp.source);
-      if (!target) continue;
-      ensureStub.run({ id: target, nm: path.posix.basename(target), qn: target, fp: target, ts: now });
-      insEdge.run({ src: fileNodeId, tgt: target, k: 'import', ln: imp.line });
-      edgeCount++;
+      for (const target of resolveImportFiles(db, projectRoot, rel, imp.source)) {
+        ensureStub.run({ id: target, nm: path.posix.basename(target), qn: target, fp: target, ts: now });
+        insEdge.run({ src: fileNodeId, tgt: target, k: 'import', ln: imp.line });
+        edgeCount++;
+      }
     }
 
     // 3.5 调用边（同文件函数级，kind='call'；未解析的跨文件/外部调用进 unresolved_refs）
@@ -1925,7 +2027,8 @@ export function resolveCrossFileCalls(
   ): { file: string; qn: string } | null => {
     const lang = langByFile.get(rel);
     if (!lang) return null;
-    const a = LANG_ADAPTERS[lang];
+    // ★ T-#95：`files.language` 是小写扩展名（`py`），适配器键是语言名（`python`）⇒ 必须过映射
+    const a = adapterOfLanguageTag(lang);
     if (!a?.resolveImport) return null;
     for (const imp of allImportsByFile.get(rel) ?? []) {
       const cands = a.resolveImport(imp.source, rel, importCtx);
@@ -1951,9 +2054,12 @@ export function resolveCrossFileCalls(
     }
     set.add(s.name);
   }
-  // 预加载：文件 → relative imports（★ T-#85 带 `bindings` —— 解析时要拿【远端名】去目标文件搜符号）
+  // 预加载：文件 → imports（★ T-#85 带 `bindings` —— 解析时要拿【远端名】去目标文件搜符号）
+  // ★ T-#95：**不再按 `kind='relative'` 过滤** —— 适配器的 `resolveImport` 要能看见
+  //   package 形态的导入（Go 的包路径、Python 的 `import a.b`）；TS 的 package 导入
+  //   在解析时解析不到 ⇒ 行为不变（同 T-#62 在「绑定表」那层的修法）。
   const relImportsByFile = new Map<string, Array<{ source: string; line: number; bindings?: string | null }>>();
-  for (const i of db.prepare("SELECT file_path, source, line, bindings FROM v_imports WHERE kind='relative'").all() as Array<{ file_path: string; source: string; line: number; bindings: string | null }>) {
+  for (const i of db.prepare('SELECT file_path, source, line, bindings FROM v_imports').all() as Array<{ file_path: string; source: string; line: number; bindings: string | null }>) {
     let arr = relImportsByFile.get(i.file_path);
     if (!arr) {
       arr = [];
@@ -2240,6 +2346,8 @@ export function resolveCrossFileCalls(
     const isShellFile = rel.endsWith('.sh') || rel.endsWith('.bash') || rel.endsWith('.zsh');
     // ★ T-#93：JS 系（含 TS）—— 宿主注入的全局名只对这几门启用
     const isJsFamily = /\.(?:[cm]?js|jsx|ts|tsx)$/.test(rel);
+    // ★ T-#95：Python 内置名（`builtins` 模块）只对 .py 启用
+    const isPyFile = rel.endsWith('.py');
     // ★ 2026-10-22：本条引用的「没建边原因」暂存器（一行一个，不复用：上一条的原因不能写进下一条）
     const miss: ReexportMiss[] = [];
 
@@ -2445,7 +2553,9 @@ export function resolveCrossFileCalls(
     if (
       BUILTIN_CALLEES.has(expr) ||
       (isGoFile && (GO_BUILTIN_CALLEES.has(expr) || GO_BUILTIN_TYPES.has(expr))) ||
-      (isShellFile && SHELL_CALLEES.has(expr))
+      (isShellFile && SHELL_CALLEES.has(expr)) ||
+      // ★ T-#95：Python 内置（`reversed` / `callable` / `__import__` / `issubclass` …）
+      (isPyFile && PY_BUILTINS.has(expr))
     ) {
       updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'builtin-callee' }) });
       stats.external++;
@@ -2681,6 +2791,40 @@ const GO_BUILTIN_CALLEES = new Set([
 ]);
 
 /**
+ * ★★★ 2026-10-27（T-#95）：**Python 的内置名**（`builtins` 模块的公开面）—— 只对 `.py` 启用。
+ *
+ * ## 为什么要有这张表（kernel §4 的「该语言的全局声明来源」）
+ * Python 的内置函数/异常**不 import**：`reversed(x)` / `callable(f)` / `__import__(m)` / `issubclass(A,B)`
+ * 在源码里**永远没有声明处** ⇒ 判 `failed` 就是假债。
+ * ## 实测（flask 3.0：56 个 .py，修 import 解析后剩 33 条 failed）
+ * `reversed 6` · `__import__ 2` · `callable 2` · `compile 2` · `issubclass 2` 全是这一类。
+ * ## 范围
+ * 只收 builtins 模块里**确定的**名字（函数 + 内建异常 + 内建类型）；不收可能被本地 shadow 的常见变量名。
+ */
+const PY_BUILTINS = new Set([
+  // 内建函数
+  'abs', 'aiter', 'all', 'anext', 'any', 'ascii', 'bin', 'bool', 'breakpoint', 'bytearray', 'bytes',
+  'callable', 'chr', 'classmethod', 'compile', 'complex', 'delattr', 'dict', 'dir', 'divmod',
+  'enumerate', 'eval', 'exec', 'filter', 'float', 'format', 'frozenset', 'getattr', 'globals',
+  'hasattr', 'hash', 'help', 'hex', 'id', 'input', 'int', 'isinstance', 'issubclass', 'iter', 'len',
+  'list', 'locals', 'map', 'max', 'memoryview', 'min', 'next', 'object', 'oct', 'open', 'ord', 'pow',
+  'print', 'property', 'range', 'repr', 'reversed', 'round', 'set', 'setattr', 'slice', 'sorted',
+  'staticmethod', 'str', 'sum', 'super', 'tuple', 'type', 'vars', 'zip',
+  '__import__', '__build_class__',
+  // 内建常量
+  'Ellipsis', 'NotImplemented', 'True', 'False', 'None',
+  // 内建异常
+  'BaseException', 'Exception', 'ArithmeticError', 'AssertionError', 'AttributeError', 'BufferError',
+  'EOFError', 'GeneratorExit', 'ImportError', 'ImportWarning', 'IndexError', 'KeyError',
+  'KeyboardInterrupt', 'LookupError', 'MemoryError', 'NameError', 'NotImplementedError', 'OSError',
+  'OverflowError', 'RecursionError', 'ReferenceError', 'RuntimeError', 'StopIteration', 'StopAsyncIteration',
+  'SyntaxError', 'SystemError', 'SystemExit', 'TypeError', 'UnboundLocalError', 'UnicodeDecodeError',
+  'UnicodeEncodeError', 'UnicodeError', 'UnicodeTranslateError', 'ValueError', 'ZeroDivisionError',
+  'FileNotFoundError', 'FileExistsError', 'PermissionError', 'IsADirectoryError', 'NotADirectoryError',
+  'TimeoutError', 'ConnectionError', 'ModuleNotFoundError', 'DeprecationWarning', 'UserWarning',
+]);
+
+/**
  * ★★★ 2026-10-27（T-#84）：**`java.lang` 的真全局** —— 只对 `.java` 文件启用。
  *
  * ## 病史（我 T-#80 删错了一次，**全量重建**才抓出来）
@@ -2763,8 +2907,9 @@ function findCrossFileTarget(
   if (!imports) return null;
   const seen = new Set<string>();
   for (const imp of imports) {
-    const target = resolveImportTarget(projectRoot, fromRel, imp.source);
-    if (!target) continue;
+    // ★ T-#95：一个 import 源可能对应**多个**项目内文件（Go 的包目录里有多份 .go；
+    //   Python 的 `from .x import y` 只有一份）。逐个试，命中即返回。
+    for (const target of resolveImportFiles(db, projectRoot, fromRel, imp.source)) {
     // ★★★ 2026-10-27（T-#90）：**`want` 必须在去重之前算**，且**去重键要含 `want`**。
     //
     // ## 病史（DB 逐步复现才抓到的）
@@ -2824,6 +2969,7 @@ function findCrossFileTarget(
     //   判据见 resolveReexportTarget：候选必须**唯一**，同 barrel 里同名冲突 ⇒ 不猜（保持 failed 并记 why）。
     const viaBarrel = resolveReexportTarget(db, projectRoot, target, name, namesByFile, kinds, 0, new Set(), miss, indexedFiles);
     if (viaBarrel) return viaBarrel;
+    }
   }
   return null;
 }
@@ -2891,11 +3037,10 @@ function makeImportedTypeMemberLookup(
   typeName: string,
   memberName: string,
 ) => { kind: 'hit'; file: string; qn: string } | { kind: 'type-in-repo-no-member'; file: string } | { kind: 'no-type' } {
-  // 本文件相对导入的目标文件集（与 import 边同口径：同一个 resolveImportTarget）
+  // 本文件导入的目标文件集（与 import 边同口径：同一个 resolveImportFiles —— T-#95 起含非 TS 语言）
   const targets = new Set<string>();
   for (const source of relImportSources) {
-    const t = resolveImportTarget(projectRoot, fromRel, source);
-    if (t) targets.add(t);
+    for (const t of resolveImportFiles(db, projectRoot, fromRel, source)) targets.add(t);
   }
   const qDecl = db.prepare("SELECT file_path FROM nodes WHERE name = $n AND kind IN ('class','interface','type')");
   const qMember = db.prepare('SELECT qualified_name, parent FROM nodes WHERE file_path = $f AND name = $m');
