@@ -50,7 +50,7 @@ export interface UniquenessReport {
 const ROLE_SUBDIR_OF = { design: 'design', tasks: 'tasks.db' } as const;
 
 /** 意图角色：可以报，**永远不自动删** */
-const INTENT_ROLES: ReadonlySet<RootRole> = new Set<RootRole>(['design', 'tasks', 'history']);
+const INTENT_ROLES: ReadonlySet<RootRole> = new Set<RootRole>(['design', 'tasks']);
 
 /** 一次目录扫描的"形状"：文件数 / 总字节 / 每个文件的 (相对路径, 大小, mtime) —— **不算哈希** */
 interface TreeShape {

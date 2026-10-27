@@ -231,7 +231,6 @@ out/
 **/.agent-io/tasks.db
 **/.agent-io/translate
 !/.agent-io/design
-!/.agent-io/task-history.jsonl
 !/.agent-io/tasks.jsonl
 !/.agent-io/design/
 !/.agent-io/design/**

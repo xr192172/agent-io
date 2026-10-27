@@ -107,7 +107,7 @@ import {
 import { appendTodoTombstone, todoJournalFile } from '../board/todo_journal.js';
 // ★★★ 2026-10-23（history 表）：已了结卡**出册**的落点 —— 项目级**独立库**
 //   `.agent-io/task-history.db`（★ 不是 cache.db：那个库会被 import_project 重建 ⇒ 审计数据会被删光）。
-import { dropTaskHistoryBatch, getTaskHistoryFile, recordTaskHistory, type TaskHistoryRow } from '../../../infrastructure/task_history.js';
+import { dropTaskHistoryBatch, taskHistoryDbPath, recordTaskHistory, type TaskHistoryRow } from '../../../infrastructure/task_history.js';
 // ★★★ 2026-10-21（跑环继任链）：链的**位置**（depth / total / children / broken）与**入口校验**
 //   （自指 / 悬挂 / 接作废卡 / 成环）**唯一住处** = `domain/todo_chain.ts` ——
 //   ★ 本文件只调它：读端（complete 的提示）与写端（add / follows）共读同一把尺，不各算一遍。
@@ -3122,7 +3122,7 @@ function moveTodoCardsToHistory(feature: string, data: Record<string, unknown>, 
   return {
     message:
       `已把 ${picked.length} 张已了结卡移入历史（★ 出册：todos[] 里不再有它们）· ${dist}：\n` +
-      `  落点：${getTaskHistoryFile()} 的 task_history 表（feature=${feature} · moved_at=${movedAt}）\n` +
+      `  落点：${taskHistoryDbPath(feature)} 的 task_history 表（**与活卡同库**）（feature=${feature} · moved_at=${movedAt}）\n` +
       `  todos[]：${todos.length} → ${stillInBook.length} 张` +
       (mirrored.length ? ` · 同时摘掉 ${mirrored.length} 个 node.task 派生投影` : '') +
       `\n  为什么：${reason}${agent ? ` · 谁：${agent}` : ''}\n` +
@@ -3137,7 +3137,7 @@ function moveTodoCardsToHistory(feature: string, data: Record<string, unknown>, 
       todos_after: stillInBook.length,
       node_projections_cleared: mirrored.map((n) => n.id),
       moved_at: movedAt,
-      history_file: getTaskHistoryFile(),
+      history_file: taskHistoryDbPath(feature),
     },
   };
 }

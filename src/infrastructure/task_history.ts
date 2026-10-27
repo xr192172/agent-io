@@ -38,6 +38,8 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { getStorageRoot } from './storage.js';
 import { rootPath } from './roots.js';
+// ★ slice 3：历史与活卡同库 ⇒ 按 feature 找项目根（注册表是唯一入口）
+import { projectRootOf, readRegistry } from './project_registry.js';
 
 // ─────────────────────────────────────────────────────────────
 // ★★★ 2026-10-27（ROOTS 步 6 / 乙方案，用户确认）：任务卡搬出 DSL ⇒ `<proj>/.agent-io/tasks.db`
@@ -210,11 +212,22 @@ export function getTasksJsonlFile(projectRoot: string): string {
 /** 把某项目的活卡导出成 JSONL（一行一张，按 feature+id 排序 ⇒ 可 diff）。失败只告警，不影响主写。 */
 export function exportTasksJsonl(projectRoot: string): { written: number; file: string } | null {
   try {
-    const rows = listLiveCards(projectRoot);
     const file = getTasksJsonlFile(projectRoot);
-    const lines = rows.map((r) =>
-      JSON.stringify({ feature: r.feature, id: r.id, state: r.state, card: r.card ?? null, updated_at: r.updated_at }),
+    const lines = listLiveCards(projectRoot).map((r) =>
+      JSON.stringify({ kind: 'live', feature: r.feature, id: r.id, state: r.state, card: r.card ?? null, updated_at: r.updated_at }),
     );
+    // ★ slice 3：**历史也进同一条载体**（活卡 + 历史 = 同一个 tasks.db 的两张表）
+    {
+      const db = openTasksDb(projectRoot);
+      try {
+        const hist = db
+          .prepare('SELECT feature, id, node_id, state, summary, moved_at, reason FROM task_history ORDER BY feature, moved_at, id')
+          .all() as Array<Record<string, unknown>>;
+        for (const h of hist) lines.push(JSON.stringify({ kind: 'history', ...h }));
+      } finally {
+        db.close();
+      }
+    }
     fs.writeFileSync(file, lines.join('\n') + (lines.length ? '\n' : ''), 'utf-8');
     return { written: lines.length, file };
   } catch (e) {
@@ -318,10 +331,10 @@ export function getTaskHistoryJsonlFile(): string {
  * 把历史导出成 JSONL（一行一条，按 moved_at 排序 —— 纯文本、可 diff）。
  * ★ 失败**不影响主写**（只告警）：导出是镜像，主库才是权威。
  */
-export function exportTaskHistoryJsonl(): { written: number; file: string } | null {
+export function exportTaskHistoryJsonl(feature: string): { written: number; file: string } | null {
   try {
-    const db = openTaskHistory();
-    const rows = db.prepare('SELECT id, feature, node_id, state, summary, card_json, moved_at, reason FROM task_history ORDER BY moved_at, feature, id').all();
+    const db = openTaskHistoryFor(feature);
+    const rows = db.prepare('SELECT id, feature, node_id, state, summary, card_json, moved_at, reason FROM task_history WHERE feature = ? ORDER BY moved_at, id').all(feature);
     db.close();
     const lines: string[] = [];
     for (const r of rows as Array<Record<string, unknown>>) lines.push(JSON.stringify(r));
@@ -350,13 +363,31 @@ CREATE TABLE IF NOT EXISTS task_history (
 CREATE INDEX IF NOT EXISTS idx_task_history_feature_state ON task_history(feature, state);
 `;
 
-/** 打开 history 库（不存在就建；**每次都新开、用完关** —— 这库很小，没有连接池的必要） */
-export function openTaskHistory(): DatabaseSync {
-  const file = getTaskHistoryFile();
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const db = new DatabaseSync(file);
-  db.exec(SCHEMA_SQL);
-  return db;
+/**
+ * ★★★ 2026-10-27（乙方案 slice 3）：**历史与活卡同库** —— 打开 `feature` 所属项目的 `tasks.db`。
+ *
+ * 病史：历史原先住 `<数据仓>/task-history.db`（跨项目一个大库）。而乙方案是"每项目一库"，
+ * 卡与它的历史天然属于同一个项目 ⇒ 拆成两处就会出现"这个 feature 的历史在哪个库"这种问题。
+ * ⇒ 现在只有一条：`<proj>/.agent-io/tasks.db` 的 `task_history` 表（表结构在 `TASKS_SCHEMA_SQL` 里，
+ *   与旧表**同列**，所以旧数据可以直接搬）。
+ *
+ * ★ 拿不到项目根（注册表没登记）⇒ **抛**，不猜、不落数据仓（"响亮是接上溯源的前提"）。
+ */
+function openTaskHistoryFor(feature: string): DatabaseSync {
+  const root = projectRootOf(feature);
+  if (!root) {
+    throw new Error(
+      `feature "${feature}" 没有项目根登记 ⇒ 历史无处安放（先 import_project 登记它，别落到数据仓）`,
+    );
+  }
+  return openTasksDb(root);
+}
+
+/** 历史库路径（回执/读数用）：`<proj>/.agent-io/tasks.db` —— 与活卡同库 */
+export function taskHistoryDbPath(feature: string): string {
+  const root = projectRootOf(feature);
+  if (!root) return `（feature "${feature}" 没有项目根登记）`;
+  return getTasksDbFile(root);
 }
 
 /** 一条历史记录（写入口的入参 —— ★ 与表列同形，不另造一层 DTO） */
@@ -384,27 +415,40 @@ export interface TaskHistoryRow {
  */
 export function recordTaskHistory(rows: readonly TaskHistoryRow[]): number {
   if (!rows.length) return 0;
-  const db = openTaskHistory();
-  try {
-    db.exec('BEGIN IMMEDIATE');
+  // ★ slice 3：按 feature 分组写进**各项目自己的** tasks.db（一个 feature 一次事务）
+  const byFeature = new Map<string, TaskHistoryRow[]>();
+  for (const r of rows) {
+    const arr = byFeature.get(r.feature) ?? [];
+    arr.push(r);
+    byFeature.set(r.feature, arr);
+  }
+  for (const [feature, group] of byFeature) {
+    const db = openTaskHistoryFor(feature);
     try {
-      const stmt = db.prepare(
-        `INSERT INTO task_history (id, feature, node_id, state, summary, card_json, moved_at, reason)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      );
-      for (const r of rows) {
-        stmt.run(r.id, r.feature, r.node_id ?? null, r.state, r.summary, r.card_json, r.moved_at, r.reason);
+      db.exec('BEGIN IMMEDIATE');
+      try {
+        const stmt = db.prepare(
+          `INSERT INTO task_history (id, feature, node_id, state, summary, card_json, moved_at, reason)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        );
+        for (const r of group) {
+          stmt.run(r.id, r.feature, r.node_id ?? null, r.state, r.summary, r.card_json, r.moved_at, r.reason);
+        }
+        db.exec('COMMIT');
+      } catch (e) {
+        db.exec('ROLLBACK');
+        throw e;
       }
-      db.exec('COMMIT');
-    } catch (e) {
-      db.exec('ROLLBACK');
-      throw e;
+    } finally {
+      db.close();
     }
-  } finally {
-    db.close();
   }
   // ★ T-#14：主库写完立刻刷文本镜像（同一份事实的两个投影，同一次写入产生）
-  exportTaskHistoryJsonl();
+  // ★ slice 3：镜像统一成 `tasks.jsonl`（活卡 + 历史同一条载体），逐 feature 刷
+  for (const feature of byFeature.keys()) {
+    const root = projectRootOf(feature);
+    if (root) exportTasksJsonl(root);
+  }
   return rows.length;
 }
 
@@ -419,7 +463,7 @@ export function recordTaskHistory(rows: readonly TaskHistoryRow[]): number {
  * @returns 实际删掉的行数
  */
 export function dropTaskHistoryBatch(feature: string, movedAt: string): number {
-  const db = openTaskHistory();
+  const db = openTaskHistoryFor(feature);
   try {
     const stmt = db.prepare('DELETE FROM task_history WHERE feature = ? AND moved_at = ?');
     const r = stmt.run(feature, movedAt);
@@ -450,7 +494,7 @@ export interface TaskHistoryQuery {
 
 /** 历史库的读端（★ 纯读：不建表以外不写任何东西） */
 export function queryTaskHistory(q: TaskHistoryQuery): { total: number; rows: TaskHistoryHit[] } {
-  const db = openTaskHistory();
+  const db = openTaskHistoryFor(q.feature);
   try {
     const where = ['feature = ?'];
     const args: Array<string | number> = [q.feature];
@@ -504,17 +548,25 @@ export function queryTaskHistory(q: TaskHistoryQuery): { total: number; rows: Ta
   }
 }
 
-/** 表里的行数（★ 判据 A/C 的读数口：`feature` 省略 = 全库） */
+/**
+ * 表里的行数。
+ * @param feature 给了 ⇒ 只数这个 feature（在它**自己项目**的 tasks.db 里数）；
+ *                不给 ⇒ 数**注册表里所有项目**的合计（★ 不再有"一个大库"可数）
+ */
 export function countTaskHistory(feature?: string): number {
-  const db = openTaskHistory();
-  try {
-    const sql = feature
-      ? 'SELECT COUNT(*) AS n FROM task_history WHERE feature = ?'
-      : 'SELECT COUNT(*) AS n FROM task_history';
-    const stmt = db.prepare(sql);
-    const row = (feature ? stmt.get(feature) : stmt.get()) as { n?: number } | undefined;
-    return Number(row?.n ?? 0);
-  } finally {
-    db.close();
-  }
+  const countIn = (feat: string): number => {
+    const db = openTaskHistoryFor(feat);
+    try {
+      const row = db.prepare('SELECT COUNT(*) AS n FROM task_history WHERE feature = ?').get(feat) as
+        | { n?: number }
+        | undefined;
+      return Number(row?.n ?? 0);
+    } finally {
+      db.close();
+    }
+  };
+  if (feature) return countIn(feature);
+  let total = 0;
+  for (const feat of Object.keys(readRegistry().features)) total += countIn(feat);
+  return total;
 }

@@ -70,7 +70,7 @@ dogfood 日志 / 旧 task-history）。同名合并 = T-#98 之前那种"一个�
 
 ★ **`featureCache` 已于 2026-10-26 删除**（实测三个工作区 0 个 `import_cache_*.db`，且 HTTP 面是可视化预留、没人用）
   ⇒ 角色数 **11 → 10**。
-★ **2026-10-27 又加回一格**：`tasks`（用户拍板走**乙方案**：每项目一库 + 注册表聚合）⇒ 角色数 **10 → 11**。
+★ **2026-10-27 又加回一格**：`tasks`（用户拍板走**乙方案**：每项目一库 + 注册表聚合）⇒ 角色数 **10 → 11**；同日 slice 3 让 `history` 退场 ⇒ **回到 10**。
   它与 `history` 是**同一件事的两个阶段**（历史迟早并进 `tasks.db`），所以并存的这段是迁移态，不是两个角色各管一摊。
 
 ★ **"未核实"= 我没读决定它位置的那段代码**，只从"目录出现在哪"推的。
@@ -109,7 +109,7 @@ dogfood 日志 / 旧 task-history）。同名合并 = T-#98 之前那种"一个�
 | 3 | 根偏离检测（`findStrayDataDirs` → `index_integrity`） | ✅ `f53d65ee` |
 | 4 | 根清单按**三个侧**分组渲染 | ✅ 本次 |
 | 5 | 建**项目注册表**（`projects.json`）+ 读入口 | ✅ 2026-10-26（T-#27 读端接线 / T-#29 迁移）：写端=`import_project`→`registerFeature`，读端=`getDesignSheetFile`→`projectRootOf`；本机已有 4 条登记（agent-io / agent-io-toolface / review-hub / task-system-plan） |
-| 6 | `todos[]` 从 DSL 搬出 → `<proj>/.agent-io/tasks.db`（活卡+历史同库） | 🔄 **最大一次**，分三片：slice 1 ✅ 2026-10-27（角色 `tasks` + 建库 + `syncTasksFromDsl` 影子同步 + `parityTasks` 对拍，证 `t368` PASS=9/0，**读写路径一字节未改**）· slice 2a ✅ 2026-10-27（册落盘即投影，证 `t369` 8/0，`task_ops` 一行未改）· slice 2b ✅ 2026-10-27（**读走库**：`getDesignSheet` 读出端 hydrate，`task_ops` 20+ 处读点一处未改，证 `t371` 6/0）· slice 2c ✅ 2026-10-27（**册不再写卡**：`withoutTodos` + 角色改 `derivable:false` + 文本载体 `tasks.jsonl` 进 git、`.db` 忽略；证 `t373` 8/0，`design_line` 的卡数读数改问库）· slice 3 ⬜ 真仓历史迁入同库 + 旧 `history` 角色退场 |
+| 6 | `todos[]` 从 DSL 搬出 → `<proj>/.agent-io/tasks.db`（活卡+历史同库） | 🔄 **最大一次**，分三片：slice 1 ✅ 2026-10-27（角色 `tasks` + 建库 + `syncTasksFromDsl` 影子同步 + `parityTasks` 对拍，证 `t368` PASS=9/0，**读写路径一字节未改**）· slice 2a ✅ 2026-10-27（册落盘即投影，证 `t369` 8/0，`task_ops` 一行未改）· slice 2b ✅ 2026-10-27（**读走库**：`getDesignSheet` 读出端 hydrate，`task_ops` 20+ 处读点一处未改，证 `t371` 6/0）· slice 2c ✅ 2026-10-27（**册不再写卡**：`withoutTodos` + 角色改 `derivable:false` + 文本载体 `tasks.jsonl` 进 git、`.db` 忽略；证 `t373` 8/0，`design_line` 的卡数读数改问库）· slice 3 ✅ 2026-10-27（**历史并入同库**：`task_history` 表就在 `tasks.db` 里，读写按 feature 找项目根；旧「数据仓一个大库」与 `history` 角色退场；文本载体统一 `tasks.jsonl`（live + history 两种行）；证 `t375` 7/0）——**乙方案完结** |
 | 7 | `getLiveDir`/`getBaselineDir` 的根改**必填**（路径只问 `rootPath`）；`getDesignDir` **不**改必填，改由注册表解析（`getDSL` 拿不到根，见 §7.1） | ✅ T-#98 |
 | 8 | 聚合视图（`overview`/`query=todo` 扫注册表） | ⬜（**设计册那一路已通**：`listDesignSheets` 改扫注册表，T-#98b） |
 | 9 | 清 stray 目录（71.7MB，`index_integrity` 已能报） | 🔄 **2026-10-27 改由 watch 兼任**：`data_uniqueness.ts#ensureProjectDataUniqueness` 在 watch 的 `doWork` 里节流跑（首次 + 每 10 分钟），派生 stray 自动清、含意图数据的只报；证 `t374` 7/0。历史那 8 个目录仍待一次性人清（不自动删非本项目的东西） |

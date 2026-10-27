@@ -27,7 +27,9 @@ import { getStorageRoot } from './storage.js';
 /** 数据角色（一个角色 = 一种数据 = 一个根） */
 export type RootRole =
   | 'design' // 设计册（features/<feature>.dsl.json）
-  | 'history' // 任务历史（task-history.db）
+  // ★ 2026-10-27（乙方案 slice 3）：`history` 角色**已退场** —— 历史并入 `tasks` 角色的
+  //   `task_history` 表（同一个 `tasks.db`）。旧 `<数据仓>/task-history.db` 与
+  //   `<proj>/.agent-io/task-history.jsonl` 都不再有写者；文本载体统一成 `tasks.jsonl`。
   | 'judgeCache' // 判据缓存（按 feature + 文件哈希）
   | 'cache' // 符号索引（cache.db，项目本地）
   | 'live' // 实际侧 DSL 快照
@@ -74,7 +76,6 @@ const ROLE_SPECS: ReadonlyArray<Omit<RootSpec, 'path'>> = [
   //   ⇒ 两者都住 `<项目根>/.agent-io/`、都是 `derivable:false`（意图，随仓移交）⇒ 它们是**项目本地**角色。
   //   ★ `gitignoreRules()` 只看 `derivable`，不看 `kind` ⇒ 本改动**不影响** gitignore。
   { role: 'design', kind: 'project', derivable: false, note: '设计册：意图 + 决策 + 判据（丢了不可重建）' },
-  { role: 'history', kind: 'project', derivable: false, note: '任务历史（已了结的卡，丢了不可重建）—— ★ 跟踪产物是 .jsonl 文本镜像，.db 工作库由通用 *.db* 规则忽略', fileName: 'task-history.jsonl' },
   { role: 'judgeCache', kind: 'shared', derivable: true, note: '判据缓存（按 feature+文件哈希，删了会重算）', fileName: 'judge-cache.json' },
   { role: 'cache', kind: 'project', derivable: true, note: '符号索引 cache.db（A 方案：项目本地）', fileName: 'cache.db' },
   // ★ 2026-10-26（T-#8）：**`featureCache` 已删**（原为“按 feature 寻址的跨项目索引”）。
@@ -99,7 +100,6 @@ const ROLE_SPECS: ReadonlyArray<Omit<RootSpec, 'path'>> = [
 /** 各角色在根下的子目录名（与今天的实际布局**逐字相同**，迁移期零变更） */
 const ROLE_SUBDIR: Record<RootRole, string> = {
   design: 'design',
-  history: '.', // task-history.db 直接落在根下
   judgeCache: '.', // judge-cache.json 直接落在根下
   cache: '.', // cache.db 直接落在根下
   live: 'live',
@@ -177,7 +177,6 @@ const ROLE_SIDE: Record<RootRole, RootSide> = {
   observe: 'live',
   impact: 'live',
   translate: 'translate', // 翻译侧
-  history: 'task', // 任务系统（跨项目，不属于任何一侧）
 };
 
 /** 侧的展示名与一句话说明 */

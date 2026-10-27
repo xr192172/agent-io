@@ -79,7 +79,7 @@ import { getSimulationState } from '../../design/lifecycle/simulation.js';
 import { listPool } from '../../design/board/pool.js';
 // ★★★ 2026-10-23（history 表）：已了结卡出册后的**唯一读端** —— 住独立库（不参与索引重建），
 //   所以读它**不走 DSL**（`todos[]` 里已经没有这些卡了）。
-import { countTaskHistory, getTaskHistoryFile, queryTaskHistory } from '../../../infrastructure/task_history.js';
+import { countTaskHistory, queryTaskHistory, taskHistoryDbPath } from '../../../infrastructure/task_history.js';
 import { judgeExpectations } from '../../design/intent/expectations.js';
 import { collectExpectations } from '../../../domain/expectation.js';
 // ★ 2026-10-22（D-T8 上架读端）：在挂的卡要报「挂了多久 / 租约过没过」⇒ TTL 取 domain 的唯一那份定义，
@@ -1743,7 +1743,7 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
       const lines: string[] = [
         `══ feature "${feature}" 的历史 · ${wantState ? `state=${wantState}` : '全部'} · 命中 ${rows.length}/${total} 条 ${viewTag} ══`,
         '',
-        `  库：${getTaskHistoryFile()}（★ 项目级独立库 —— 索引重建 / import_project **不碰它**）`,
+        `  库：${taskHistoryDbPath(feature)}（★ 与活卡**同库** —— 索引重建 / import_project **不碰它**）`,
         `  口径：这里只放**已了结**（done / void）的卡；活卡在 todos[] 里（get_dsl query=todo）。`,
       ];
       if (rows.length === 0) {
