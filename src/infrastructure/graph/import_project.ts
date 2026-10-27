@@ -378,7 +378,14 @@ export function walkFiles(
       if (e.isDirectory()) {
         if (SKIP_DIRS.has(e.name) || e.name.startsWith('.')) continue;
         // 归档目录默认跳过（不索引）；include_archive=true 才深入
-        if (!includeArchive && ARCHIVE_DIRS.has(e.name)) continue;
+        // ★★★ 2026-10-27（T-#49）：**只认项目根下的第一层**（原来任意层级命中）。
+        //   实测：`src/application/meta/archive/archive_node.ts` 是**活代码**（`storage.ts` /
+        //   `todo_journal.ts` 都在 import 它），却因为目录名叫 `archive` 被当成遗留归档堆跳过
+        //   ⇒ 它的 3 个符号（saveArchiveEntry / listArchiveEntries / ArchiveEntry）在索引里消失
+        //   ⇒ **16 条引用从 resolved 掉成 failed**（对账已证实）。
+        //   ★ 判据：`ARCHIVE_DIRS` 的语义是「遗留项目里已弃用但保留的代码堆（如 `_archive/`）」——
+        //     那是**根级**概念，不是「`src` 里任何叫 `archive` 的业务模块」。
+        if (!includeArchive && ARCHIVE_DIRS.has(path.relative(root, full).split(path.sep)[0] ?? '')) continue;
         if (isGitignored(chain, full, true)) continue;
         stack.push({ dir: full, chain: childChain });
       } else if (e.isFile()) {
@@ -406,8 +413,10 @@ export function walkFiles(
 
 /** 路径是否落在某个归档目录下 */
 function inArchiveDir(p: string): boolean {
+  // ★ T-#49：**只看第一段** —— 与走查判据同一口径。
+  //   原先 `parts.some(...)` 会命中任意层级 ⇒ `src/application/meta/archive/` 被误判为归档堆。
   const parts = p.split(path.sep);
-  return parts.some((seg) => ARCHIVE_DIRS.has(seg));
+  return parts.length > 0 && ARCHIVE_DIRS.has(parts[0] ?? '');
 }
 
 // ─────────────────────────────────────────────────────────────
