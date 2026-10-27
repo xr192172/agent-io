@@ -26,6 +26,8 @@ import { DEFAULT_EXPORT_SYMBOL, LANG_ADAPTERS, type ResolveImportCtx } from '../
 // ★ T-#95：`files.language` 存的是**小写扩展名**（`py`/`ts`/`go`），适配器表的键是语言名
 //   （`python`/`typescript`/`go`）—— `go` 恰好同名，别的全查不到。这条映射必须有唯一出处。
 import { findLanguageByExt } from '../parse/languages.js';
+// ★ T-#96：**内置名/宿主全局名的唯一数据出处** —— 本文件不再自建表，只做「COMMON + 本语言」的合并
+import { COMMON_GLOBALS, mergeGlobals } from '../parse/globals.js';
 // ★ 写路径挂钩（§19）：ProjectView 的缓存在「磁盘被改过」时必须失效。
 //   syncFile/syncFileSync 是**全部 15 个写工具**的公共落点 ⇒ 挂这一处即覆盖所有写入，
 //   不必让每个写工具自己记得调 —— 「靠自觉的接线」正是本项目反复踩的坑。
@@ -1805,80 +1807,11 @@ function findNamespaceMemberTarget(
   return hits.length === 1 ? hits[0] : null;
 }
 
-/** 有点调用前缀：内置对象 / 内置模块 / 全局对象（外部，非项目符号） */
-const BUILTIN_PREFIXES = new Set([
-  'Math', 'JSON', 'Array', 'Object', 'String', 'Number', 'Boolean', 'Promise', 'console', 'Date',
-  'Set', 'Map', 'WeakMap', 'WeakSet', 'RegExp', 'Symbol', 'BigInt', 'globalThis', 'window',
-  'document', 'navigator', 'URL', 'TextEncoder', 'TextDecoder', 'Buffer', 'process', 'require',
-  'module', 'exports', 'Error', 'TypeError', 'RangeError', 'SyntaxError', 'ReferenceError',
-  'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'Intl', 'performance', 'structuredClone',
-  'queueMicrotask', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'undefined',
-  'NaN', 'Infinity', 'os', 'path', 'fs', 'http', 'https', 'net', 'zlib', 'util', 'assert',
-  'stream', 'events', 'crypto', 'child_process', 'url', 'querystring', 'dns', 'tls', 'buffer',
-  'node', 'String', 'Number', 'Math',
-  // Python 常用
-  'os', 'sys', 're', 'json', 'datetime', 'pathlib', 'collections', 'typing', 'functools',
-  'itertools', 'logging', 'random', 'time', 'socket', 'subprocess', 'threading', 'asyncio',
-]);
+// ★ T-#96：本表已迁到 `parse/globals.ts`（BUILTIN_PREFIXES → 适配器 `globals` 字段），此处不再重复
 
-/** 无点内置函数 / 构造器（外部，非项目符号） */
-const BUILTIN_CALLEES = new Set([
-  'String', 'Number', 'Boolean', 'Object', 'Array', 'Promise', 'Set', 'Map', 'Date', 'Math',
-  'Error', 'TypeError', 'RangeError', 'SyntaxError', 'ReferenceError', 'RegExp', 'Symbol',
-  'BigInt', 'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'typeof', 'instanceof',
-  // Python 内置
-  'print', 'len', 'range', 'str', 'int', 'float', 'list', 'dict', 'set', 'tuple', 'bool',
-  'type', 'isinstance', 'sum', 'min', 'max', 'sorted', 'enumerate', 'zip', 'map', 'filter',
-  'open', 'repr', 'abs', 'round', 'any', 'all', 'next', 'iter', 'hasattr', 'getattr',
-  'ValueError', 'KeyError', 'Exception',
-  // ★★★ 2026-10-27（T-#44）：**Node / 浏览器全局函数**（不需 import 就能用）。
-  //   实测 `setTimeout`(17) 落进了 failed —— 它是 `@types/node` 的全局函数，
-  //   源码里不 import ⇒ `packageBindingsByFile` 看不到 ⇒ 只能靠这张表。
-  'setTimeout', 'setInterval', 'setImmediate', 'clearTimeout', 'clearInterval', 'clearImmediate',
-  'queueMicrotask', 'structuredClone', 'fetch', 'atob', 'btoa', 'require',
-  // ★ T-#50：**`import` 是关键字不是函数** —— 动态 `await import(spec)` 被抽成 call 引用，
-  //   它永远不可能对应仓内符号（实测 25 条落 failed）。
-  'import',
-  // ★ T-#58：**`super` 是关键字**（`super(message)` / `super()` 构造函数调用）—— 实测 2 条。
-  'super',
-  // ★ T-#58：Python 内置异常（`raise SystemExit(...)` 被抽成 call）
-  'SystemExit', 'BaseException', 'StopIteration', 'AssertionError', 'NotImplementedError',
-  'RuntimeError', 'TypeError', 'ImportError', 'OSError', 'IOError', 'AttributeError',
-  // ★ T-#60：**JS 全局函数**（不需 import 就能用）—— 实测 decodeURIComponent 落 failed
-  'decodeURIComponent', 'encodeURIComponent', 'decodeURI', 'encodeURI', 'escape', 'unescape',
-  // ★ T-#94：`Function` 也是全局构造器（`Function(a, b, 'return …')` 动态建函数）——
-  //   实测 lodash 4.17 `template.js:259` 落 failed。它跟 `Object`/`Array` 同级，只是原先漏了。
-  'Function',
-]);
+// ★ T-#96：本表已迁到 `parse/globals.ts`（BUILTIN_CALLEES → 适配器 `globals` 字段），此处不再重复
 
-/**
- * ★★★ 2026-10-27（T-#93）：**JS 宿主的「注入全局」表**（只对 JS 系文件启用）。
- *
- * ## 为什么这不是“补偿性表项”
- * T-#78 删掉过 100+ 条补偿表项 —— 那些是在**掩盖“没有 resolveImport”**（把仓内符号误当外部），
- * 与本表性质相反：这些名字在源码里**根本没有声明处**，是运行器在加载文件时注入的。
- * kernel.ts §4 明确要求每门语言回答「本语言的全局声明来源」——
- * TS 是 `lib.*.d.ts` / `@types/*`，Go 是 `builtin` 包，JS **就是宿主注入**（Node / 浏览器 / 测试运行器）。
- *
- * ## 实测（express 4.21.2：152 文件 / 337 条引用）
- * `failed` 14 条里 **9 条**是测试运行器全局：`it` 8 · `describe` 2（其余 5 条是函数表达式形参，T-#93 另一半）。
- *
- * ## 范围
- * 只收「**调用点一定没有 import**」的名字：测试框架的 DSL（mocha / jest / vitest / tap 都会注入）。
- * ★ 不收 `expect` / `assert` 这类**既可能裸用也可能 import** 的：裸用时它们会走 local-binding
- *   或 package 绑定判 external，不该由本表兜（兜了就会掩盖真实漏连）。
- */
-const JS_HOST_GLOBALS = new Set([
-  // 测试框架 DSL（mocha / jest / vitest / tap / node:test 的注入形态）
-  'it', 'xit', 'fit', 'test', 'xtest', 'specify', 'describe', 'xdescribe', 'fdescribe',
-  'context', 'xcontext', 'suite', 'bench',
-  'before', 'after', 'beforeEach', 'afterEach', 'beforeAll', 'afterAll',
-  // ★ T-#94：**浏览器宿主的裸函数**（不经 `window.` 限定也能调用）。
-  //   实测 socket.io 4 的 `client-dist/socket.io.js`：`addEventListener("beforeunload", …)` 写成裸名，
-  //   且源码自己用 `typeof addEventListener === "function"` 当环境判据 ⇒ 它确实不是仓内符号。
-  'addEventListener', 'removeEventListener', 'dispatchEvent',
-  'requestAnimationFrame', 'cancelAnimationFrame',
-]);
+// ★ T-#96：本表已迁到 `parse/globals.ts`（JS_HOST_GLOBALS → 适配器 `globals` 字段），此处不再重复
 
 export interface CrossFileResolveStats {
   total: number;
@@ -2014,6 +1947,8 @@ export function resolveCrossFileCalls(
   for (const row of db.prepare('SELECT path, language FROM files').all() as Array<{ path: string; language: string }>) {
     langByFile.set(row.path, row.language);
   }
+  /** ★ T-#96：文件 → 合并后的全局名表（`COMMON` + 本语言），一次解析里复用 */
+  const globalsByRel = new Map<string, ReturnType<typeof mergeGlobals>>();
   const importCtx: ResolveImportCtx = {
     projectRoot,
     files: new Set<string>(langByFile.keys()),
@@ -2338,21 +2273,25 @@ export function resolveCrossFileCalls(
       stats.external++;
       continue;
     }
-    // ★ T-#44：Go 的内置表**只对 .go 文件**启用（避免 int/max/close 误伤本仓同名符号）
-    const isGoFile = rel.endsWith('.go');
-    // ★ T-#50：Java 内置类型同理，只对 .java 启用
-    const isJavaFile = rel.endsWith('.java');
-    // ★ T-#51：**Shell 脚本的外部命令**（`printf` / `node` / `grep` / `echo` …）
-    const isShellFile = rel.endsWith('.sh') || rel.endsWith('.bash') || rel.endsWith('.zsh');
-    // ★ T-#93：JS 系（含 TS）—— 宿主注入的全局名只对这几门启用
-    const isJsFamily = /\.(?:[cm]?js|jsx|ts|tsx)$/.test(rel);
-    // ★ T-#95：Python 内置名（`builtins` 模块）只对 .py 启用
-    const isPyFile = rel.endsWith('.py');
+    // ★★★ 2026-10-27（T-#96）：**本文件的全局名表** = `COMMON` + 本语言适配器声明的 `globals`。
+    //   病史：原先这里是 5 个 `isXxxFile` 判断 + 9 张散表（`BUILTIN_CALLEES` / `GO_BUILTIN_*` /
+    //   `JAVA_LANG_TYPES` / `SHELL_CALLEES` / `PY_BUILTINS` / `JS_HOST_GLOBALS` …）
+    //   ⇒ 加一门语言要改两处，而且「哪门语言没声明全局来源」查不出来。
+    //   ⇒ 现在只有一处：`parse/globals.ts` 是数据，`LANG_ADAPTERS[lang].globals` 是归属，
+    //     这里只做"合并 + 按文件缓存"（一次解析里同一文件会被问很多次）。
+    const globalsOf = (r: string): ReturnType<typeof mergeGlobals> => {
+      let g = globalsByRel.get(r);
+      if (!g) {
+        g = mergeGlobals(COMMON_GLOBALS, adapterOfLanguageTag(langByFile.get(r))?.globals);
+        globalsByRel.set(r, g);
+      }
+      return g;
+    };
     // ★ 2026-10-22：本条引用的「没建边原因」暂存器（一行一个，不复用：上一条的原因不能写进下一条）
     const miss: ReexportMiss[] = [];
 
     if (kind === 'type_ref') {
-      if (BUILTIN_TYPES.has(expr) || (isGoFile && GO_BUILTIN_TYPES.has(expr))) {
+      if (globalsOf(rel).types.has(expr)) {
         updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'builtin-type' }) });
         stats.external++;
         continue;
@@ -2363,16 +2302,10 @@ export function resolveCrossFileCalls(
         stats.external++;
         continue;
       }
-      // ★ T-#50：**Java 内置类型**（String/Map/Object/Exception…）
-      // ★ T-#84：**`java.lang` 的真全局**（不需要 import ⇒ `pkgSrc` 看不见 ⇒ 必须靠表）。
-      //   ★ 我 T-#80 把整张表删了是错的：`java.io`/`java.nio`/`java.util` 那些走 `pkgSrc`（有据），
-      //     但 `java.lang`（`String`/`Object`/`Exception`/`StringBuilder` …）**不走** ⇒ 删了就落 failed。
-      //   实测：删表后全量重建 failed 14 → 43，新增 29 条全是 `.java` 里的 `java.lang` 名字。
-      if (isJavaFile && JAVA_LANG_TYPES.has(expr)) {
-        updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'java-lang-global' }) });
-        stats.external++;
-        continue;
-      }
+      // ★ T-#50 / ★ T-#84：**Java 内置类型**（`java.lang` 的真全局：`String`/`Object`/`Exception`/`StringBuilder`…
+      //   —— 不需要 import ⇒ `pkgSrc` 看不见 ⇒ 必须靠表；`java.io`/`java.util` 那些走 `pkgSrc`，有据）。
+      // ★ T-#96：这条**已经并进上面那条 `types` 判定**（`JAVA_GLOBALS.types` 与 `COMMON_GLOBALS.types`
+      //   在 `globalsOf()` 里合并）⇒ 这里不再重复判 —— **同一条事实判两遍正是本仓头号病**。
       // ★★★ 2026-10-27（T-#50）：**带点的类型引用**（`http.ServerResponse` / `fs.Dirent`）——
       //   实测 **142 条**落 failed，而 `call` 分支（下面 `expr.includes('.')`）早就处理了带点形态，
       //   **`type_ref` 分支漏了** ⇒ 所有 `http.X` / `fs.X` 全落 failed。
@@ -2538,7 +2471,7 @@ export function resolveCrossFileCalls(
               ? `receiver-type-external:${hint}`
               : !/^[A-Za-z_$]/.test(recv)
                 ? `literal-receiver:${recv.slice(0, 24)}`
-                : BUILTIN_NAMESPACES.has(/^[A-Za-z_$][\w$]*/.exec(recv)?.[0] ?? '')
+                : globalsOf(rel).namespaces.has(/^[A-Za-z_$][\w$]*/.exec(recv)?.[0] ?? '')
                   ? `builtin-namespace:${/^[A-Za-z_$][\w$]*/.exec(recv)?.[0]}`
                   : `local-receiver-untyped:${/^[A-Za-z_$][\w$]*/.exec(recv)?.[0] ?? '?'}`,
           }),
@@ -2549,14 +2482,11 @@ export function resolveCrossFileCalls(
     }
 
     // ★ T-#44 + ★ T-#50：**类型转换也是 call 形态**（`int64(x)` / `float64(x)`）
-    //   ⇒ 只看 `GO_BUILTIN_CALLEES` 会漏掉它们（实测 int64 11 · float64 9 · Int64 7 落 failed）。
-    if (
-      BUILTIN_CALLEES.has(expr) ||
-      (isGoFile && (GO_BUILTIN_CALLEES.has(expr) || GO_BUILTIN_TYPES.has(expr))) ||
-      (isShellFile && SHELL_CALLEES.has(expr)) ||
-      // ★ T-#95：Python 内置（`reversed` / `callable` / `__import__` / `issubclass` …）
-      (isPyFile && PY_BUILTINS.has(expr))
-    ) {
+    //   ⇒ 只看内置**可调用**表会漏掉它们（实测 int64 11 · float64 9 · Int64 7 落 failed）。
+    // ★ T-#96：**原先这里是 4 张散表 + 3 个 isXxxFile 判断** —— 现在只剩一处：
+    //   `globalsOf(rel).callees` = `COMMON` + 本语言适配器声明的 `globals.callees`
+    //   （Go 的类型名并进了 `GO_GLOBALS.callees`，见 `parse/globals.ts`）。
+    if (globalsOf(rel).callees.has(expr)) {
       updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'builtin-callee' }) });
       stats.external++;
       continue;
@@ -2587,7 +2517,7 @@ export function resolveCrossFileCalls(
     // ★★★ 2026-10-27（T-#93）：**JS 宿主注入的全局名** ⇒ external（不是本仓漏连）。
     //   放在 local-binding 之后：局部绑定会 shadow 全局（JS 与 Go 一致），那条更强。
     //   实测 express 4.21.2：`it` 8 · `describe` 2 —— 测试运行器注入，源码无声明处。
-    if (isJsFamily && JS_HOST_GLOBALS.has(expr)) {
+    if (globalsOf(rel).hostCallees.has(expr)) {
       updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: `host-global:${expr}` }) });
       stats.external++;
       continue;
@@ -2689,44 +2619,7 @@ export function resolveCrossFileCalls(
   return stats;
 }
 
-/** TS/JS 内置与全局常见类型（type_ref 解析黑名单，external 不建边） */
-const BUILTIN_TYPES = new Set([
-  'string', 'number', 'boolean', 'void', 'any', 'unknown', 'never', 'object', 'symbol', 'bigint',
-  'null', 'undefined', 'readonly', 'Array', 'Record', 'Partial', 'Required', 'Readonly', 'Pick',
-  'Omit', 'Exclude', 'Extract', 'NonNullable', 'ReturnType', 'Parameters', 'Awaited', 'Promise',
-  'Function', 'Error', 'Date', 'RegExp', 'Map', 'Set', 'WeakMap', 'WeakSet', 'Iterable',
-  'IterableIterator', 'Generator', 'AsyncGenerator', 'HTMLElement', 'Event', 'Node',
-  // ★★★ 2026-10-27（T-#44）：补 **TS lib 内置类型**（实测漏了它们 ⇒ 落进 failed）。
-  //   `RegExpExecArray` 等在 `lib.es5.d.ts` 里是全局 interface，源码里**不需要 import**
-  //   ⇒ `packageBindingsByFile` 看不到它 ⇒ 只能靠这张表。
-  'RegExpExecArray', 'RegExpMatchArray', 'PropertyKey', 'ThisType', 'ThisParameterType',
-  'OmitThisParameter', 'TemplateStringsArray', 'Uppercase', 'Lowercase', 'Capitalize',
-  'Uncapitalize', 'InstanceType', 'ConstructorParameters', 'WeakRef', 'FinalizationRegistry',
-  // ★ 实测漏的：ReadonlySet(23) 等同族容器类型（TS lib，不需 import）
-  'ReadonlySet', 'ReadonlyMap', 'ReadonlyArray', 'ArrayLike', 'PromiseLike', 'AsyncIterable',
-  'AsyncIterableIterator', 'Iterator', 'IteratorResult', 'Disposable', 'AsyncDisposable',
-  // ★ @types/node 的全局（不需 import 就能用）
-  'Buffer', 'NodeJS', 'NodeRequire', 'Timer', 'NodeJS.Timeout',
-  // ★ T-#54：TypedArray / Promise 结果类型（**TS lib 全局**，不需 import）
-  'Uint8Array', 'Int8Array', 'Uint16Array', 'Int16Array', 'Uint32Array', 'Int32Array',
-  'Float32Array', 'Float64Array', 'BigInt64Array', 'BigUint64Array', 'ArrayBuffer', 'SharedArrayBuffer',
-  'DataView', 'PromiseRejectedResult', 'PromiseFulfilledResult', 'PromiseSettledResult',
-  // ★★★ 2026-10-27（T-#78）：**删掉一整批"补偿性表项"** —— 它们是 T-#50/T-#58 为
-  //   「`type_ref` 丢 receiver」这个 bug 打的补丁：因为 `http.ServerResponse` 在索引里只剩
-  //   `ServerResponse`（receiver 丢了），判不出它是外部包成员 ⇒ 只能在这里硬堆名字。
-  //   **T-#77 修好真因**（带点类型记全名 ⇒ 走 `namespace-member-of-package` 有据判定）后，
-  //   这批表项**成了补丁的化石**：留着会掩盖真问题，而且**换个项目就漏**。
-  //   ⇒ 已删：ServerResponse · IncomingMessage · ClientRequest · Server · Socket · AddressInfo ·
-  //     Dirent · Stats · StatsFs · BigIntStats · EventEmitter · Readable · Writable · Duplex ·
-  //     Transform · PassThrough · ChildProcess · Worker · MessagePort · AbortSignal ·
-  //     DatabaseSync · StatementSync · FSWatcher · StatsWatcher · Ignore · CompilerOptions ·
-  //     McpServer · ZodRawShape · ZodType · Parser · Ajv · ErrorObject · SpawnSyncReturns ·
-  //     ChildProcessWithoutNullStreams
-  //   ★ 保留 `Timeout` / `ErrnoException` —— 它们是 **`NodeJS.X` 的尾名**，
-  //     源码里常以**裸名**出现（`import type { Timeout } from 'node:timers'` 之后），
-  //     带点判定救不到，且它们是**真全局类型**。
-  'Timeout', 'ErrnoException',
-]);
+// ★ T-#96：本表已迁到 `parse/globals.ts`（BUILTIN_TYPES → 适配器 `globals` 字段），此处不再重复
 
 /**
  * ★★★ 2026-10-27（T-#44）：**Go 的内置类型 / 内置函数单独一张表**。
@@ -2737,129 +2630,16 @@ const BUILTIN_TYPES = new Set([
  * ⇒ 判据：**只对 `.go` 文件启用这两张表**（`rel.endsWith('.go')`，零查询）。
  * ★ 这就是「每门语言都要有自己的内置表」的落地形态（见 `parse/kernel.ts#LANG_ADAPTERS` 的 §4）。
  */
-/**
- * ★ T-#56：**已知全局命名空间**（带点调用的接收者如果是它们，就不是“判不了”，而是“本来就外部”）。
- * 用途：把 `dotted-unprovable` 这个 13953 条的大桶拆成 `builtin-namespace` / `local-receiver-untyped`。
- * ★ 只用于**细分 `why`**，不参与建边决策 —— 所以宁可多列，不误伤（判错只影响标签可读性）。
- */
-const BUILTIN_NAMESPACES = new Set([
-  'Math', 'JSON', 'Object', 'Array', 'String', 'Number', 'Boolean', 'Date', 'RegExp', 'Promise',
-  'Reflect', 'Symbol', 'Intl', 'Map', 'Set', 'WeakMap', 'WeakSet', 'ArrayBuffer', 'DataView',
-  'console', 'process', 'global', 'globalThis', 'Buffer', 'structuredClone',
-  'fs', 'path', 'os', 'url', 'util', 'crypto', 'http', 'https', 'net', 'tls', 'stream', 'events',
-  'child_process', 'zlib', 'readline', 'assert', 'querystring', 'worker_threads', 'sqlite',
-]);
+// ★ T-#96：本表已迁到 `parse/globals.ts`（BUILTIN_NAMESPACES → 适配器 `globals` 字段），此处不再重复
 
-const GO_BUILTIN_TYPES = new Set([
-  'bool', 'byte', 'complex64', 'complex128', 'error', 'float32', 'float64',
-  'int', 'int8', 'int16', 'int32', 'int64', 'rune', 'string',
-  'uint', 'uint8', 'uint16', 'uint32', 'uint64', 'uintptr', 'any', 'comparable',
-  // ★★★ 2026-10-27（T-#78）：**删掉 Go 标准库类型名的 tail** —— 与 TS 侧同一个理由。
-  //   它们是 T-#50/T-#51/T-#54 为「`type_ref` 丢 receiver」打的补丁：
-  //   `ast.Ident` 在索引里只剩 `Ident` ⇒ 判不出是外部包成员 ⇒ 只能硬堆名字。
-  //   **T-#77 修好真因**（带点类型记全名 ⇒ `namespace-member-of-package` 有据判定）后，
-  //   这批表项成了**补丁的化石**（而且换个项目就漏）。
-  //   ⇒ 已删：Ident · Object · Scope · File · Package · SelectorExpr · CallExpr · FuncDecl ·
-  //     Stmt · Expr · Decl · Spec · Node · Token · Position · Pos · Comment · Field · Time ·
-  //     Duration · Location · Month · Weekday · Buffer · Reader · Writer · Context · IndexExpr ·
-  //     BlockStmt · ReturnStmt · ParenExpr · UnaryExpr · BinaryExpr · BasicLit · TypeSwitchStmt ·
-  //     SwitchStmt · IfStmt · ForStmt · RangeStmt · AssignStmt · ExprStmt · DeclStmt · LabeledStmt ·
-  //     BranchStmt · DeferStmt · GoStmt · IncDecStmt · SendStmt · FileSet · Mutex · RWMutex ·
-  //     WaitGroup · Once · Map · Pool · Cond · Int64 · Uint64 · Float64 · AtomicInt64 · FuncLit ·
-  //     CompositeLit · KeyValueExpr · GenDecl · ValueSpec · TypeSpec · ImportSpec · SelectStmt ·
-  //     CaseClause · CommClause · StarExpr · IndexListExpr · FieldList · ArrayType · MapType ·
-  //     ChanType · InterfaceType · StructType · FuncType · Ellipsis · Builder · DirEntry · MemStats
-  //   ★ 只保留**真正的 Go 内置原始类型**（它们在语法上就没有包前缀）。
-]);
-/**
- * ★ T-#51：**Shell 外部命令 / 内建** —— 只对 `.sh`/`.bash`/`.zsh` 启用。
- * 实测 `printf` 6 · `node` 5 · `grep` 2 · `echo` 2 · `tr` 1 · `cut` 1 落 failed。
- * ★ 为什么不分语言不行：`node` / `printf` / `echo` 在 TS 里可能是真函数名。
- */
-const SHELL_CALLEES = new Set([
-  'printf', 'echo', 'node', 'npx', 'npm', 'pnpm', 'yarn', 'grep', 'egrep', 'sed', 'awk', 'cut',
-  'tr', 'sort', 'uniq', 'wc', 'head', 'tail', 'cat', 'tee', 'find', 'xargs', 'dirname', 'basename',
-  'read', 'local', 'export', 'source', 'eval', 'exec', 'test', 'true', 'false', 'exit', 'cd',
-  'pushd', 'popd', 'pwd', 'mkdir', 'rmdir', 'rm', 'cp', 'mv', 'ln', 'chmod', 'chown', 'touch',
-  'git', 'curl', 'wget', 'jq', 'sleep', 'kill', 'wait', 'shift', 'set', 'unset', 'trap', 'date',
-  'python', 'python3', 'pip', 'go', 'cargo', 'make', 'cmake', 'docker', 'ssh', 'scp', 'rsync',
-]);
+// ★ T-#96：本表已迁到 `parse/globals.ts`（GO_BUILTIN_TYPES → 适配器 `globals` 字段），此处不再重复
+// ★ T-#96：本表已迁到 `parse/globals.ts`（SHELL_CALLEES → 适配器 `globals` 字段），此处不再重复
 
-const GO_BUILTIN_CALLEES = new Set([
-  'len', 'cap', 'make', 'new', 'append', 'copy', 'delete', 'close',
-  'panic', 'recover', 'print', 'println', 'complex', 'real', 'imag', 'min', 'max', 'clear',
-]);
+// ★ T-#96：本表已迁到 `parse/globals.ts`（GO_BUILTIN_CALLEES → 适配器 `globals` 字段），此处不再重复
 
-/**
- * ★★★ 2026-10-27（T-#95）：**Python 的内置名**（`builtins` 模块的公开面）—— 只对 `.py` 启用。
- *
- * ## 为什么要有这张表（kernel §4 的「该语言的全局声明来源」）
- * Python 的内置函数/异常**不 import**：`reversed(x)` / `callable(f)` / `__import__(m)` / `issubclass(A,B)`
- * 在源码里**永远没有声明处** ⇒ 判 `failed` 就是假债。
- * ## 实测（flask 3.0：56 个 .py，修 import 解析后剩 33 条 failed）
- * `reversed 6` · `__import__ 2` · `callable 2` · `compile 2` · `issubclass 2` 全是这一类。
- * ## 范围
- * 只收 builtins 模块里**确定的**名字（函数 + 内建异常 + 内建类型）；不收可能被本地 shadow 的常见变量名。
- */
-const PY_BUILTINS = new Set([
-  // 内建函数
-  'abs', 'aiter', 'all', 'anext', 'any', 'ascii', 'bin', 'bool', 'breakpoint', 'bytearray', 'bytes',
-  'callable', 'chr', 'classmethod', 'compile', 'complex', 'delattr', 'dict', 'dir', 'divmod',
-  'enumerate', 'eval', 'exec', 'filter', 'float', 'format', 'frozenset', 'getattr', 'globals',
-  'hasattr', 'hash', 'help', 'hex', 'id', 'input', 'int', 'isinstance', 'issubclass', 'iter', 'len',
-  'list', 'locals', 'map', 'max', 'memoryview', 'min', 'next', 'object', 'oct', 'open', 'ord', 'pow',
-  'print', 'property', 'range', 'repr', 'reversed', 'round', 'set', 'setattr', 'slice', 'sorted',
-  'staticmethod', 'str', 'sum', 'super', 'tuple', 'type', 'vars', 'zip',
-  '__import__', '__build_class__',
-  // 内建常量
-  'Ellipsis', 'NotImplemented', 'True', 'False', 'None',
-  // 内建异常
-  'BaseException', 'Exception', 'ArithmeticError', 'AssertionError', 'AttributeError', 'BufferError',
-  'EOFError', 'GeneratorExit', 'ImportError', 'ImportWarning', 'IndexError', 'KeyError',
-  'KeyboardInterrupt', 'LookupError', 'MemoryError', 'NameError', 'NotImplementedError', 'OSError',
-  'OverflowError', 'RecursionError', 'ReferenceError', 'RuntimeError', 'StopIteration', 'StopAsyncIteration',
-  'SyntaxError', 'SystemError', 'SystemExit', 'TypeError', 'UnboundLocalError', 'UnicodeDecodeError',
-  'UnicodeEncodeError', 'UnicodeError', 'UnicodeTranslateError', 'ValueError', 'ZeroDivisionError',
-  'FileNotFoundError', 'FileExistsError', 'PermissionError', 'IsADirectoryError', 'NotADirectoryError',
-  'TimeoutError', 'ConnectionError', 'ModuleNotFoundError', 'DeprecationWarning', 'UserWarning',
-]);
+// ★ T-#96：本表已迁到 `parse/globals.ts`（PY_BUILTINS → 适配器 `globals` 字段），此处不再重复
 
-/**
- * ★★★ 2026-10-27（T-#84）：**`java.lang` 的真全局** —— 只对 `.java` 文件启用。
- *
- * ## 病史（我 T-#80 删错了一次，**全量重建**才抓出来）
- * T-#80 我把整张 `JAVA_BUILTIN_TYPES` 当"化石"删了，理由是
- * 「`import java.io.IOException;` 会进 `pkgSrc`，表是重复的」。**那只对了一半**：
- *   · `java.io` / `java.nio` / `java.util` 的类 **需要 import** ⇒ `pkgSrc` 能看见 ⇒ **确实是化石**
- *   · **`java.lang` 的类【不需要 import】**（`String` / `Object` / `Exception` / `StringBuilder` …）
- *     ⇒ `pkgSrc` **永远看不见** ⇒ **表是必要的**
- * 实测：删表后全量重建 `failed` 14 → **43**，新增 29 条全是
- *   `String 14 · Object 6 · StringBuilder 4 · Throwable 2 · Number · Exception · Boolean`
- *   —— **全在 `.java` 文件里**。
- *
- * ## 判据（这张表该放什么、不该放什么）
- * ✅ **放**：语法上**不需要 import** 就能用的名字（`java.lang`）
- * ❌ **不放**：需要 import 的包成员（`java.io.IOException` / `java.nio.file.Path` / `java.util.List` …）
- *   —— 那些走 `pkgSrc`（package 绑定），**有据**。
- * ★ 这是「每张 `*_BUILTIN_*` 表都要问一句：它是不是在掩盖缺失的解析能力」的**反面**：
- *   问完还要再问一句「**这些名字真的不需要 import 吗**」——
- *   **两个问题都答对了，表才是对的**。
- *
- * ★ 为什么不并进 `BUILTIN_TYPES`：`String` / `Object` / `Number` 在 TS 里也是常用名，
- *   并表会把本仓同名符号判成 external ⇒ 丢边（同 Go 的教训）。
- */
-const JAVA_LANG_TYPES = new Set([
-  // 基本类型的包装类 + 字符串
-  'String', 'Object', 'Integer', 'Long', 'Short', 'Byte', 'Character', 'Boolean', 'Double', 'Float',
-  'Number', 'Void', 'CharSequence', 'StringBuilder', 'StringBuffer',
-  // 异常体系
-  'Exception', 'RuntimeException', 'Error', 'Throwable', 'StackTraceElement',
-  // 工具 / 系统
-  'Math', 'StrictMath', 'System', 'Runtime', 'Process', 'Class', 'Package', 'Module',
-  // 类型体系 / 常用接口
-  'Enum', 'Record', 'Override', 'Runnable', 'Thread', 'ThreadLocal', 'Iterable', 'Iterator',
-  'Comparable', 'Comparator', 'AutoCloseable', 'Cloneable', 'Appendable', 'Readable',
-]);
+// ★ T-#96：本表已迁到 `parse/globals.ts`（JAVA_LANG_TYPES → 适配器 `globals` 字段），此处不再重复
 
 
 /** 沿源文件的 relative imports 找符号对应的目标符号（首个命中）；找不到返回 null。

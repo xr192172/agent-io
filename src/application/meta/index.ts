@@ -85,6 +85,9 @@ import {
   languageCatalog,
   renderAuditText,
 } from '../../infrastructure/analysis/capability/capability_matrix.js';
+// ★ T-#96：「全局声明来源」覆盖率读数（哪些语言适配器还没声明 `globals`）
+import { LANG_ADAPTERS } from '../../infrastructure/parse/kernel.js';
+import { languagesWithoutGlobals } from '../../infrastructure/parse/globals.js';
 // ★ 触发默认登记（**side-effect import**，确保矩阵被填充）—— 与 `capability_cli` 同款；
 //   漏了它会报"空矩阵"（`allCapabilities().length === 0`），那是**静默少报**而不是报错。
 import '../../infrastructure/analysis/capability/register_capabilities.js';
@@ -771,17 +774,33 @@ export const META_TOOLS: ToolDef[] = [
       const scope = useInstalled
         ? `已安装语言（${probeInstalledLanguages().length} 门）`
         : `语言名单全量（${languageCatalog().length} 门）`;
+      // ★★★ 2026-10-27（T-#96）：**「全局声明来源」覆盖率读数** —— 每门语言的适配器有没有声明 `globals`
+      //   （内置名 / 宿主全局名）。这不是门，只报读数：原先这些名字散在 9 张表 + 5 个 `isXxxFile` 判断里，
+      //   没人能回答"哪门语言漏了"；现在一行就看得见。
+      //   判据：清单里应当只剩**没有全局概念**的语言（纯标记语 / 骨架类）。
+      const langsAudited = useInstalled ? probeInstalledLanguages() : languageCatalog();
+      const globalsDeclared = langsAudited.filter((l) => LANG_ADAPTERS[l.name]?.globals).map((l) => l.name);
+      const globalsMissing = languagesWithoutGlobals(LANG_ADAPTERS, langsAudited);
+      const globalsReading = {
+        declared: globalsDeclared,
+        missing: globalsMissing,
+        note: '`globals` = 本语言的内置名/宿主全局名（callees · hostCallees · types · namespaces），数据住 parse/globals.ts',
+      };
       return {
         message:
           `能力矩阵审计（${scope}）：` +
           (totalNeed === 0
             ? '✅ 无缺口：所有功能对该语言名单均为 AST 全量'
             : `🔧 缺口总计 ${totalNeed} 个「功能×语言」对`) +
-          `\n已登记功能 ${capabilities.length} 项。`,
+          `\n已登记功能 ${capabilities.length} 项。` +
+          `\n全局声明来源：已声明 ${globalsDeclared.length} 门 · 未声明 ${globalsMissing.length} 门` +
+          (globalsMissing.length > 0
+            ? `（${globalsMissing.slice(0, 12).join(' · ')}${globalsMissing.length > 12 ? ' …' : ''}）`
+            : ''),
         data:
           a.gaps_only === true
-            ? { scope, totalNeed, gaps }
-            : { scope, totalNeed, gaps, matrix_text: renderAuditText(langNames), capabilities },
+            ? { scope, totalNeed, gaps, globals: globalsReading }
+            : { scope, totalNeed, gaps, matrix_text: renderAuditText(langNames), capabilities, globals: globalsReading },
       };
     }),
   },

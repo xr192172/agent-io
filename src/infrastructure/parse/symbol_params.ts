@@ -41,6 +41,12 @@ export interface ParsedParam {
   optional: boolean;
   /** `...rest` / `*args` / `**kw` / Go `...T` ⇒ true */
   variadic: boolean;
+  /**
+   * ★ T-#96：**receiver 形参**（Python 的 `self` / `cls`）。
+   * 它**不是"不存在"**（作用域里它是合法名字），只是**签名/契约面**要跳过它。
+   * 消费者：① 落库 `nodes.params` 时过滤掉；② 作用域计算时照常收 —— 同一个事实，两处各取所需。
+   */
+  receiver?: boolean;
 }
 
 const OPEN = '([{<';
@@ -258,7 +264,15 @@ export function paramsOfNode(paramsNode: SyntaxNodeLike, langName: string): Pars
     const node = byText.get(key);
     const p = (node ? parseChunkNode(node, langName) : null) ?? parseChunkText(raw, langName);
     if (!p) continue;
-    if (langName === 'python' && (p.name === 'self' || p.name === 'cls')) continue;
+    // T-#96：不丢，只标 —— self / cls 是「receiver」，不是「不存在」。
+    //
+    // 病史（两处消费者要两件事，原先只服务了一处）：
+    //   nodes.params（签名/契约面）要【跳过】它（与 buildSignature 的 stripSelfParam 同口径）；
+    //   而【作用域】要【包含】它 —— flask class View 的 @classmethod def as_view(cls, …) 里
+    //   cls(*args) 因为 cls 被丢掉而判 failed（T-#95a 当时我给作用域另写了个读取器 = 补丁）。
+    //   现在：paramsOf 返回【全部形参】，receiver 打 receiver: true；
+    //   落库的消费方自己过滤（storedParams），作用域直接全用 ⇒ 一个事实两处各取所需。
+    if (langName === 'python' && (p.name === 'self' || p.name === 'cls')) { p.receiver = true; }
     out.push(p);
   }
 

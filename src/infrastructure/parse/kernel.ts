@@ -32,6 +32,8 @@ import { getParser, getParserSync, clearLoaderCache } from './loader.js';
 import { missingLanguageHint } from './lang_hint.js';
 
 import { typeMembersOf, TYPE_DECL_NODES, type ParsedTypeMember } from './type_members.js';
+// ★ T-#96：**每门语言的「全局声明来源」= 适配器上的 `globals` 字段**（数据住 globals.ts）
+import { COMMON_GLOBALS, GO_GLOBALS, JAVA_GLOBALS, JS_GLOBALS, PY_GLOBALS, SHELL_GLOBALS, type GlobalsBucket } from './globals.js';
 import { paramsOf, type ParsedParam } from './symbol_params.js';
 import { shapeOf, type ParsedTypeParam } from './symbol_shape.js';
 import { docstringOf } from './symbol_docstring.js';
@@ -467,30 +469,16 @@ function traverseAndExtract(
   //   ⇒ `qualified_name = <parent>.<name>` ⇒ **同名不冲突**（`main.walk` vs `other.walk`）
   //   ★ `parent` 也填上（供社区/聚合按所属函数归组）
   //   ★ 顶层行为**一字不变**（`parent === undefined` 分支照旧）。
-  const isDeclNode = node.type === 'lexical_declaration' || node.type === 'variable_declaration';
-  // ★★★ 2026-10-27（T-#94b）：**"函数内"是判据，不要求 `parent` 有值**。
-  //   病史：原先这里要求 `parent !== undefined`，而"匿名函数"（回调/`export default x => …`）
-  //   **不产生 parent** ⇒ 它体内的 `const parsed = {}` 一路被当成**模块级**声明
-  //   ⇒ `nodes` 里冒出一堆"假顶层 const"（axios `parseHeaders.js` 的 parsed/key/val/i 就是），
-  //     而且它们还会被 `fileScopeNames` 当成模块作用域的名字。
-  //   ⇒ 现在：只要**在函数里**（`enclosingIsFunction`），普通声明不再建顶层符号；
-  //     函数值声明（T-#45）依旧进 `nodes` 并标 `is_closure`。
-  const nestedFnDecl =
-    isDeclNode && enclosingIsFunction
-      ? (() => {
-          const ds: SyntaxNodeLike[] = [];
-          for (let i = 0; i < node.childCount; i++) {
-            const c = node.child(i);
-            if (c && c.type === 'variable_declarator') ds.push(c);
-          }
-          if (ds.length !== 1) return false;
-          const nn = ds[0].childForFieldName('name');
-          if (!nn || nn.type !== 'identifier' || !isValidIdentifier(nn.text)) return false;
-          const vn = ds[0].childForFieldName('value');
-          return !!vn && ['arrow_function', 'function_expression', 'function', 'generator_function'].includes(vn.type);
-        })()
-      : false;
-  if (isDeclNode && ((parent === undefined && !enclosingIsFunction) || nestedFnDecl)) {
+  // ★★★ 2026-10-27（T-#96）：**"要不要建 const 符号"的唯一判据 = declaredSymbolName**。
+  //   病史：这里原先是**内联一份**（单声明器 + identifier + 「在文件作用域 或 值是函数」），
+  //   而我上一轮为 `fileScopeNames` 又写了**第二份**（declarationBecomesSymbol，只取前半段）
+  //   ⇒ 规则一分叉就会出现"这一侧说它是符号、那一侧说它是局部绑定"。本仓头号病。
+  //   ★ T-#94b 的结论保留在判据里：**"在不在函数里"决定要不要建**（`enclosingIsFunction`），
+  //     而不是"有没有 parent" —— 匿名函数（回调 / `export default x => …`）不产生 parent。
+  const declSymbolName = declaredSymbolName(node, lang, { nested: enclosingIsFunction });
+  const nestedFnDecl = !!declSymbolName && enclosingIsFunction;
+  const isDeclNode = declSymbolName !== null;
+  if (declSymbolName) {
     const declarators: SyntaxNodeLike[] = [];
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i);
@@ -537,7 +525,7 @@ function traverseAndExtract(
           ...(constMods ? { modifiers: [...new Set(constMods)] } : {}),
           ...(valueBody ? { bodyText: valueBody } : {}),
           ...(valueIsFn && valueNode
-            ? { params: paramsOf(valueNode, lang.field_map.parameters || 'parameters', lang.name) }
+            ? { params: storedParams(valueNode, lang) }
             : {}),
           ...(valueDoc ? { docstring: valueDoc } : {}),
           signature: `const ${nameNode.text} = ${valueBrief}`,
@@ -584,7 +572,7 @@ function traverseAndExtract(
     const dqn = parent ? `${parent}.${DEFAULT_EXPORT_SYMBOL}` : DEFAULT_EXPORT_SYMBOL;
     const dtxt = bodyTextOf(defaultExport, lang);
     const ddoc = docstringOf(node, lang.name);
-    const dparams = paramsOf(defaultExport, lang.field_map.parameters || 'parameters', lang.name);
+    const dparams = storedParams(defaultExport, lang);
     symbols.push({
       name: DEFAULT_EXPORT_SYMBOL,
       kind: 'function',
@@ -651,7 +639,7 @@ function traverseAndExtract(
         // ★ 2026-10-20（v13）：函数/方法把**形参表**抽出来（`symbol_params.ts` 早就有，只是没接上）
         ...(kind === 'function' || kind === 'method'
           ? {
-              params: paramsOf(innerNode, lang.field_map.parameters || 'parameters', lang.name),
+              params: storedParams(innerNode, lang),
               // ★ v15：体原文（见 bodyTextOf 的注释：原文照录，含/不含外层花括号由语法树决定）
               ...(bodyOfSymbol ? { bodyText: bodyOfSymbol } : {}),
             }
@@ -728,6 +716,25 @@ export interface ResolveImportCtx {
 }
 
 interface LangImportAdapter {
+  /**
+   * ★★★ 2026-10-27（T-#96）：**本语言的「全局声明来源」**（内置名 / 宿主全局名）。
+   *
+   * ## 为什么在适配器上（而不是散在符号索引里按扩展名 if）
+   * 原先这些名字是 `index/symbols.ts` 里 **9 张 Set** + 调用点 5 个 `isXxxFile` 判断
+   * ⇒ 加一门语言要改两处，且「**哪门语言没声明全局来源**」不可查（`AGENTS.md` 要的是"加语言 = 加一行"）。
+   * ⇒ 现在：数据住 `parse/globals.ts`，本表每门语言引用一行；
+   *   覆盖率读数由 `globals.ts#languagesWithoutGlobals` 提供（进 `capability_audit`，不新开门）。
+   *
+   * ## 三档语义（顺序有意义，别合并）
+   * · `callees`     —— 裸调用名，**在"局部绑定"判定之前**查（语言内置：Go `len` / Python `reversed`）
+   * · `hostCallees` —— 裸调用名，**在"局部绑定"判定之后**查（宿主注入：`it` / `addEventListener`；局部绑定可 shadow）
+   * · `types`       —— `type_ref` 名（TS lib / Go 内置类型 / `java.lang`）
+   * · `namespaces`  —— 带点调用的接收者根（只用于细分 `why`，不参与建边决策）
+   *
+   * ★ 没填 = 本语言只有 `COMMON_GLOBALS`（跨语言那批）。`COMMON` 由读取端统一打底。
+   */
+  globals?: GlobalsBucket;
+
   /**
    * ★★★ 2026-10-27（T-#62）：**把 import source 解析成项目内的候选文件**。
    *
@@ -1203,6 +1210,8 @@ const TS_LIKE_IMPORT_BINDINGS = (node: SyntaxNodeLike): string[] => {
  */
 export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   go: {
+    // ★ T-#96：Go 的全局声明来源（内置类型/可调用，见 globals.ts）
+    globals: GO_GLOBALS,
     callNode: 'call_expression',
     // ★ T-#83：Go 的局部绑定声明（`x := …` / `var x = …`）—— 数据，不是代码分支。
     localBindingNodes: ['short_var_declaration', 'var_declaration', 'range_clause'],
@@ -1262,6 +1271,8 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     },
   },
   python: {
+    // ★ T-#96：Python 的内置名（builtins 模块，见 globals.ts）
+    globals: PY_GLOBALS,
     // ★★★ 2026-10-27（T-#81）：**Python 的导入解析**（原先**没有** ⇒ 类级盲区）。
     //
     // ## 判据（Python 的模块 = 文件/包 约定）
@@ -1361,6 +1372,8 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     },
   },
   java: {
+    // ★ T-#96：`java.lang` 的真全局（见 globals.ts）
+    globals: JAVA_GLOBALS,
     callNode: 'method_invocation',
     // ★★★ 2026-10-27（T-#80）：**Java 的导入解析**（原先**完全没有** ⇒ 类级盲区）。
     //
@@ -1613,6 +1626,8 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   //     type-only 判定），现各自表项声明；四门形同一份数据，故意不合并成别名——
   //     每门都是独立 npm 包 + 独立扩展名，表项自足才符合"加语言 = 加一行"。
   typescript: {
+    // ★ T-#96：宿主注入的全局（测试框架 DSL / 浏览器裸函数，见 globals.ts）
+    globals: JS_GLOBALS,
     callNode: 'call_expression',
     // ★ T-#83：TS 的局部绑定声明（`const/let` = lexical_declaration · `var` = variable_declaration）
     localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'],
@@ -1644,9 +1659,9 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     assignSymbol: TS_LIKE_ASSIGN_SYMBOL,
     nodeKindOverride: { assignment_expression: 'method' },
   },
-  tsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'], assignSymbol: TS_LIKE_ASSIGN_SYMBOL, nodeKindOverride: { assignment_expression: 'method' } },
-  javascript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'], assignSymbol: TS_LIKE_ASSIGN_SYMBOL, nodeKindOverride: { assignment_expression: 'method' } },
-  jsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'], assignSymbol: TS_LIKE_ASSIGN_SYMBOL, nodeKindOverride: { assignment_expression: 'method' } },
+  tsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'], assignSymbol: TS_LIKE_ASSIGN_SYMBOL, nodeKindOverride: { assignment_expression: 'method' }, globals: JS_GLOBALS },
+  javascript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'], assignSymbol: TS_LIKE_ASSIGN_SYMBOL, nodeKindOverride: { assignment_expression: 'method' }, globals: JS_GLOBALS },
+  jsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS, localBindingNodes: ['lexical_declaration', 'variable_declaration', 'for_in_statement'], assignSymbol: TS_LIKE_ASSIGN_SYMBOL, nodeKindOverride: { assignment_expression: 'method' }, globals: JS_GLOBALS },
 
   // ═══════════════════════════════════════════════════════════════════
   // 2026-09-29 新增 5 门（scala / groovy / julia / haskell / elixir）
@@ -1904,6 +1919,8 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   //     所以**不会**改变这些语言已有的符号行为（逐条核对过 `a?.` 都是可选使用）。
   // ══════════════════════════════════════════════════════════════════════════════
   bash: {
+    // ★ T-#96：Shell 外部命令/内建（见 globals.ts）
+    globals: SHELL_GLOBALS,
     // 实测：`bar` 就是 `command` 节点，被调名在 **`name` 字段**（→ command_name → word）。
     //   `bar arg1` 只多出 `argument` 字段，`name` 不变 ⇒ 取法不受参数影响。
     //   ★ 必须用字段：若取整节点文本会得 `bar arg1`，尾部标识符正则反取成 `arg1`。
@@ -2059,30 +2076,23 @@ function symbolInner(node: SyntaxNodeLike, lang: LanguageEntry): SyntaxNodeLike 
 }
 
 /**
- * ★★★ 2026-10-27（T-#95a）：**作用域用的形参名** —— 含被 `stripSelfParam` 剥掉的那一个。
+ * ★★★ 2026-10-27（T-#96）：形参的**两副视图**（同一个事实 paramsOf，两处各取所需）。
  *
- * ## 病史（flask 实测，1 条但同族会一直冒）
- * `paramsOf` 按纪律把 Python 的 `self`/`cls` 跳过（签名/形参表两侧要一致，见 symbol_params.ts 注释 4）。
- * 但**作用域里它们仍然是绑定**：`class View: @classmethod def as_view(cls, name, …): … cls(*args)`
- * ⇒ `cls` 被剥 ⇒ 不在作用域 ⇒ 调用判 `failed`。
- *
- * ## 判据
- * `paramsOf` 的结果 + **`parameters` 字段节点上直接的 `identifier` 子节点**（就是被剥掉的那个裸形参）。
- * 其它语言的形参节点是 `required_parameter`/`parameter_declaration` 这类包装节点，不会命中，行为不变。
+ * 病史：Python 的 self/cls 原先被 paramsOf **直接丢掉**（因为签名要跳过它）⇒ **作用域**也拿不到
+ *   ⇒ flask class View 的 @classmethod def as_view(cls, …) 里 cls(*args) 判 failed。
+ *   我先给作用域另写了一个读取器（T-#95a 旧版 paramNamesForScope：paramsOf + 裸 identifier 扫描）—— 那是补丁。
+ * ⇒ 现在 paramsOf 返回**全部形参**并给 receiver 打标；下面两个投影是它唯一的两种取法：
+ *   · storedParams       —— 落库 nodes.params / 签名面：**跳过 receiver**（与 buildSignature 的 stripSelfParam 同口径）
+ *   · paramNamesForScope —— 作用域：**含 receiver**（局部绑定里它是合法名字）
  */
+function storedParams(node: SyntaxNodeLike, lang: LanguageEntry): ParsedParam[] {
+  return paramsOf(node, lang.field_map.parameters || 'parameters', lang.name).filter((p) => !p.receiver);
+}
+
 function paramNamesForScope(node: SyntaxNodeLike, lang: LanguageEntry): string[] {
-  const field = lang.field_map.parameters || 'parameters';
-  const out = paramsOf(node, field, lang.name)
+  return paramsOf(node, lang.field_map.parameters || 'parameters', lang.name)
     .map((p) => p.name)
     .filter((n): n is string => !!n);
-  const raw = node.childForFieldName(field);
-  if (raw) {
-    for (let i = 0; i < raw.childCount; i++) {
-      const c = raw.child(i);
-      if (c && c.type === 'identifier' && isValidIdentifier(c.text) && !out.includes(c.text)) out.push(c.text);
-    }
-  }
-  return out;
 }
 
 /**
@@ -2317,23 +2327,37 @@ function extractCallee(callNode: SyntaxNodeLike, langName: string): { name: stri
  * · **不收**：嵌套函数体内的东西（那是它自己的作用域）
  */
 /**
- * ★★★ 2026-10-27（T-#94）：**这条声明会不会在符号侧变成 `const` 符号**。
+ * ★★★ 2026-10-27（T-#96）：**「这条声明会不会变成 `const` 符号」的唯一判据** —— 返回符号名，不产出 ⇒ null。
  *
- * 判据必须与 `traverseAndExtract` 的 const 支**逐字一致**：
- *   「单 `variable_declarator` + `name` 是普通 identifier」⇒ 该名字会进 `nodes`（kind=const）。
- * ⇒ 这类名字**不能**当局部绑定：调用它应当走 `classifyCall` 建边（走本表就丢边）。
- * ★ 只对 TS 系形态成立（Go 的 `var`/`:=` 不建 const 符号）；没有 `variable_declarator` 子节点 ⇒ false。
+ * ## 为什么必须只有一处
+ * 原先这件事有**两份实现**、且规则略有不同（我上一轮就是照第二份抄的）：
+ *   ① `traverseAndExtract` 的 const 支：`单 variable_declarator + name 是 identifier`
+ *      —— 但**只在这个节点处于文件作用域时才建符号**（函数体内还要"值是函数"，T-#45）
+ *   ② `declarationBecomesSymbol()`（我 T-#94 加的，给 `fileScopeNames` 用）：只看了 ① 的前半段
+ *   两份规则一分叉，就会出现"这一侧说它是符号、那一侧说它是局部绑定" —— 本仓头号病。
+ * ⇒ 合成一个函数，两个消费者都问它：`{ nested }` 表达"在不在函数体内"。
+ *
+ * 判据（TS 系形态；Go 的 `var`/`:=`、Python 的赋值不建 const 符号 ⇒ 天然返回 null）：
+ *   · 恰好一个 `variable_declarator`，且 `name` 是普通 identifier（解构 / 多声明器不建）
+ *   · `nested: false`（文件作用域）⇒ 建
+ *   · `nested: true`（函数体内）⇒ **只有"值是函数"才建**（T-#45：内部具名函数要能建调用边）
  */
-function declarationBecomesSymbol(decl: SyntaxNodeLike): boolean {
+function declaredSymbolName(node: SyntaxNodeLike, lang: LanguageEntry, opts: { nested: boolean }): string | null {
+  if (!LANG_ADAPTERS[lang.name]?.localBindingNodes?.includes(node.type)) return null;
+  let declarator: SyntaxNodeLike | null = null;
   let count = 0;
-  let nameNode: SyntaxNodeLike | null = null;
-  for (let i = 0; i < decl.childCount; i++) {
-    const c = decl.child(i);
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
     if (!c || c.type !== 'variable_declarator') continue;
     count++;
-    nameNode = c.childForFieldName('name');
+    declarator = c;
   }
-  return count === 1 && !!nameNode && nameNode.type === 'identifier';
+  if (count !== 1 || !declarator) return null;
+  const nameNode = declarator.childForFieldName('name');
+  if (!nameNode || nameNode.type !== 'identifier' || !isValidIdentifier(nameNode.text)) return null;
+  if (!opts.nested) return nameNode.text;
+  const valueNode = declarator.childForFieldName('value');
+  return valueNode && isFunctionScopeNode(valueNode) ? nameNode.text : null;
 }
 
 function collectLocalBindings(nodes: readonly SyntaxNodeLike[], langName?: string): string[] {
@@ -2419,7 +2443,7 @@ function fileScopeNames(root: SyntaxNodeLike, lang: LanguageEntry): Set<string> 
     // ★ T-#94：**会变成 `const` 符号的声明跳过**（单声明器 + 普通标识符 ⇒ `nodes` 里有它）。
     //   这类名字必须走 `classifyCall` 建边；收进作用域就会被判 local ⇒ **真边丢掉**
     //   （实测 express call 边 123 → 36）。函数体内不适用：局部 `const x = 1` 不建符号（见 const 支）。
-    if (declarationBecomesSymbol(stmt)) continue;
+    if (declaredSymbolName(stmt, lang, { nested: false })) continue;
     for (const name of collectLocalBindings([stmt], lang.name)) out.add(name);
   }
   return out;
