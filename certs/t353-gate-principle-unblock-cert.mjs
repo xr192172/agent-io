@@ -11,15 +11,14 @@
  *      （此前 `NODE_DATA_KEYS` 没有 `path` ⇒ 只能给老节点挂卡）· 且**乱造被拒**（id 重 / path 空 / 绝对路径 / kind 非法）；
  *   ③ **写闸收集失败 ⇒ 点名 + 放行 + 留痕**（从"抛错"退一步；留痕落 `dsl.annotations`，读端 = `listAnnotations`）。
  *
- * ## ★★★ 2026-10-28（T-#98d 修证时的发现）：本证 ①''' 那 6 条与 T360 **冲突，未决**
- *   T360（2026-10-27）上了**两段式领取**：`claim` 先进 `preparing`，而 `start` 要求「后态判据 ≥1」。
- *   本证 ①''' 钉的是「**L1 建构卡**（0 条期望）可 claim 即可做」—— 那是 T360 之前的行为。
- *   实测：L1 卡 claim 后卡在 `preparing`，回执说「该节点的后态判据 0 条 ⇒ 先补 2 条再 start」。
- *   ⇒ 这是**两张证的判据互相矛盾**，不是夹具问题：
- *     · L1 建构卡的"活"是**写出可判的期望**（它本来就没有后态判据）；
- *     · 而 T360 的闸要求"没有后态判据不许开工"。
- *   ⇒ 需要一个**决定**（见 `docs/todo.md` 的 T-#98d-2）。**在此之前这 6 条保持红** ——
- *     不许改成"跳过"或"待定"，那等于把矛盾藏起来（今早那张"基线红"就是这么烂了一天的）。
+ * ## ★★★ 2026-10-28：本证已**跟上 T360 的两段式**（原先那 6 条红是"证比机制老"，不是两证矛盾）
+ *   T360（2026-10-27）上了两段式领取：`claim` 先进 `preparing`，`start` 要求「后态判据 ≥1」。
+ *   本证原来钉的是"L1 建构卡 claim ⇒ 直接 claimed"，那是 T360 之前的行为 ⇒ 6 条红。
+ *   ★ **更正我此前的判断**（当时以为是"两张证互相矛盾、要人等裁决"）：查了迁移表 ——
+ *     `preparing` 只有两条出边（`t_start`→claimed、`t_abandon`→candidate），**没有 preparing→done**；
+ *     而 L1 卡的"活"本来就是**去写判据**（写在 preparing 期间），写完 `start` 才拿写权 ⇒
+ *     **流程是通的**，只是本证没跟上。⇒ 现在 ①''' 按真流程钉：
+ *     claim⇒preparing · 补判据 · `start`⇒claimed · 判据未绿⇒complete 拒 · 转绿⇒complete 过 · 证据不丢。
  *
  * ## 判据（每条亲手跑，读数见 stdout）
  *   ①a 无 decision ⇒ publish **成功**且级别 L1（旧行为 = 拒 —— 同一次读数里用旧谓词复刻对照）；
@@ -222,27 +221,45 @@ console.log('\n════ ①\'\' 有可判的后态判据 ⇒ L2（逐字翻 
 console.log('\n════ ①\'\'\' L1 能领 / 能收口 / 收口后升 L2（证据不丢）════');
 {
   const cla = await run([{ type: 'task', op: 'claim', id: P_NONE, data: { owner: 'agent-t353' } }], `领取 L1 建构卡 ${P_NONE}`);
-  chk(!cla.isError && nodeOf(P_NONE)?.task?.state === 'claimed', '①\'\'\'a L1 可领（判据 = "DSL 建构完整吗" ⇒ 不完整 ⇒ 有活）', cla.text.split('\n')[1]?.trim() ?? '');
-  chk(/DSL 建构完整/.test(cla.text), '①\'\'\'b 回执点名 L1 的判据（不是对拍）');
-
-  const c1 = await run(
-    [{ type: 'task', op: 'complete', id: P_NONE, data: { evidence: { kind: 'attestation', by: 'human', at: new Date().toISOString(), why: 'T353 夹具：还没建构完，应当被拒' } } }],
-    `在 DSL 没建好时收口 ${P_NONE}`,
+  // ★★★ 2026-10-28（T353 跟上 T360）：L1 卡（后态判据 0 条）**不再直接 claimed** ——
+  //   两段式第一段进 `preparing`（领了不能开工），回执点名"补几条什么类判据"。
+  //   这不是"L1 被锁死"：L1 的活本来就是**去写判据**，写在 preparing 期间；写完 `start` 才拿写权。
+  chk(
+    !cla.isError && nodeOf(P_NONE)?.task?.state === 'preparing',
+    '①\'\'\'a L1 卡 claim ⇒ **preparing**（两段式第一段：领了不能开工）',
+    cla.text.split('\n')[1]?.trim() ?? '',
   );
-  chk(c1.isError && /L1 建构未完成/.test(c1.text), '①\'\'\'c 建构未完成 ⇒ complete **拒**并点名缺什么', c1.text.split('\n')[1]?.trim() ?? '');
+  chk(/后态判据 0 条|判据 0 条/.test(cla.text) && /start/.test(cla.text), '①\'\'\'b 回执点名**缺什么**并给出下一段（`start`）', cla.text.split('\n')[1]?.trim() ?? '');
+
+  // ★ 2026-10-28：「`preparing` 期间没有写权」**本证不覆盖** —— 判据在 `write_gate.ts` 的
+  //   `cards.find(c => c.task?.state === 'claimed')`，行为由 `certs/t360` 的 E 段钉住。
+  //   这里挑不出一条"只有 preparing 卡指着它"的夹具，与其做一个会误伤的检查，不如**如实不覆盖**。
 
   // ★ 建构：给该节点写 decision（summary + 一条 post 判据）
   const w = await run(
-    [{ type: 'decision', op: 'update', id: P_NONE, data: { summary: '把配置加载这一段落成设计 DSL', expectations: [{ kind: 'file-exists', path: 'src/domain/exists.ts', why: 'T353 夹具：后态判据（文件在）' }] } }],
+    [{ type: 'decision', op: 'update', id: P_NONE, data: { summary: '把配置加载这一段落成设计 DSL', expectations: [{ kind: 'file-exists', path: 'src/domain/t353_never_exists.ts', why: 'T353 夹具：后态判据（该文件**确实不存在** ⇒ 必红）' }] } }],
     `给 L1 卡对应的节点写决策卡 ${P_NONE}`,
   );
   chk(!w.isError, '①\'\'\'d 写决策卡成功（L1 的"做事"就是补 DSL）', w.text.split('\n')[1]?.trim() ?? '');
+  // ★ 2026-10-28（跟上 T360）：判据写完 ⇒ **第二段 `start`** 才进 claimed（一次落盘删快照 + 改态）
+  const st = await run([{ type: 'task', op: 'start', id: P_NONE, data: { owner: 'agent-t353' } }], `第二段 start ${P_NONE}`);
+  chk(!st.isError && nodeOf(P_NONE)?.task?.state === 'claimed', '①\'\'\'e 判据补齐 ⇒ `start` 进 **claimed**（第二段）', st.text.split('\n')[1]?.trim() ?? '');
+  chk(nodeOf(P_NONE)?.task?.prepared_snapshot == null, '①\'\'\'e\' 快照已删（与改态同一次落盘：不存在"claimed 但快照还在"）');
+  // ★ 判据未满足 ⇒ complete **拒**（此时级别已是 L2：判据有了，就得真绿）
   const c2 = await run(
-    [{ type: 'task', op: 'complete', id: P_NONE, data: { evidence: { kind: 'attestation', by: 'human', at: new Date().toISOString(), why: 'T353 夹具：decision.summary + 一条 post 判据已就位' } } }],
-    `建构完成后收口 ${P_NONE}`,
+    [{ type: 'task', op: 'complete', id: P_NONE, data: { evidence: { kind: 'attestation', by: 'human', at: new Date().toISOString(), why: 'T353 夹具：判据还没绿，应当被拒' } } }],
+    `判据未绿时收口 ${P_NONE}`,
   );
-  chk(!c2.isError && nodeOf(P_NONE)?.task?.state === 'done', '①\'\'\'e 建构完整 ⇒ complete **过**（L1 收口）', c2.text.split('\n')[1]?.trim() ?? '');
-  chk(!c2.isError && nodeOf(P_NONE)?.task?.state === 'done', '①\'\'\'e 建构完整 ⇒ complete **过**（★ 判据来自 decision：此时已是 L2 读数）', c2.text.split('\n')[1]?.trim() ?? '');
+  chk(c2.isError, '①\'\'\'f 判据未满足 ⇒ complete **拒**（L1 写完判据后就是 L2：要真绿）', c2.isError ? c2.text.split('\n')[1]?.trim() ?? '' : '★ 居然过了');
+
+  // ★ 2026-10-28（红转绿闭环）：把那条判据做成绿的 ⇒ complete **过**，且证据落盘
+  fs.mkdirSync(path.join(ROOT, 'src/domain'), { recursive: true });
+  fs.writeFileSync(path.join(ROOT, 'src/domain/t353_never_exists.ts'), 'export const t353 = 1;\n');
+  const c3 = await run(
+    [{ type: 'task', op: 'complete', id: P_NONE, data: { evidence: { kind: 'attestation', by: 'human', at: new Date().toISOString(), why: 'T353 夹具：判据已转绿' } } }],
+    `判据转绿后收口 ${P_NONE}`,
+  );
+  chk(!c3.isError && nodeOf(P_NONE)?.task?.state === 'done', '①\'\'\'g 判据转绿 ⇒ complete **过**（红转绿才算完）', c3.text.split('\n')[1]?.trim().slice(0, 110) ?? '');
   // ★★★ 2026-10-22（用户裁决 A）：原 ①'''f / ①'''g 已**删除** ——
   //   级别是派生值（`task_schema.ts#taskLevel`）。L1 卡一旦把 decision 的 post 判据写出来，
   //   `taskLevel(expectationsOf(node))` 当场就是 L2 ⇒「L1 收口（回执点名建构完整）→ publish 升一级」
