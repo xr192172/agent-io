@@ -2025,6 +2025,27 @@ export function resolveCrossFileCalls(
         stats.external++;
         continue;
       }
+      // ★★★ 2026-10-27（T-#54）：**同文件内的类型引用** —— T-#53 只修了 `call` 路径，
+      //   `type_ref` 有**同一个洞**（下面 `findCrossFileTarget` 同样只走 imports）。
+      //   实测：`OverviewJudge` / `OverviewRow` / `CallResult` 都是**同文件里声明的 interface**
+      //   （它们在 `nodes` 里，`is_closure=1`）却全落 failed。
+      const sameFileType = typeNamesByFile.get(rel)?.has(expr)
+        ? (db
+            .prepare('SELECT kind, qualified_name FROM nodes WHERE file_path = $f AND name = $n LIMIT 1')
+            .get({ f: rel, n: expr }) as { kind: string; qualified_name: string } | undefined)
+        : undefined;
+      if (sameFileType) {
+        insEdge.run({
+          src: r.from_node_id,
+          tgt: `${rel}#${sameFileType.qualified_name}`,
+          k: 'type_ref',
+          ln: r.line,
+          md: null,
+        });
+        updResolved.run({ i: r.id, n: `${rel}#${sameFileType.qualified_name}` });
+        stats.resolved++;
+        continue;
+      }
       const t =
         findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, typeNamesByFile, ['interface', 'type', 'class'], miss, indexedFiles)
         ?? findGoSamePackageTarget(db, rel, expr, ['interface', 'type', 'class'], goFilesByDir);
@@ -2209,6 +2230,10 @@ const BUILTIN_TYPES = new Set([
   'Duplex', 'Transform', 'PassThrough', 'ChildProcess', 'Worker', 'MessagePort', 'AbortSignal',
   // ★ T-#50：`node:sqlite` 的类（实测 DatabaseSync 9 条）
   'DatabaseSync', 'StatementSync',
+  // ★ T-#54：TypedArray / Promise 结果类型（TS lib，实测 Uint8Array · PromiseRejectedResult）
+  'Uint8Array', 'Int8Array', 'Uint16Array', 'Int16Array', 'Uint32Array', 'Int32Array',
+  'Float32Array', 'Float64Array', 'BigInt64Array', 'BigUint64Array', 'ArrayBuffer', 'SharedArrayBuffer',
+  'DataView', 'PromiseRejectedResult', 'PromiseFulfilledResult', 'PromiseSettledResult',
 ]);
 
 /**
@@ -2236,6 +2261,10 @@ const GO_BUILTIN_TYPES = new Set([
   'DeclStmt', 'LabeledStmt', 'BranchStmt', 'DeferStmt', 'GoStmt', 'IncDecStmt', 'SendStmt',
   'FileSet', 'Mutex', 'RWMutex', 'WaitGroup', 'Once', 'Map', 'Pool', 'Cond',
   'Int64', 'Uint64', 'Float64', 'AtomicInt64', 'FuncLit', 'CompositeLit', 'KeyValueExpr',
+  // ★ T-#54：又一批实测落 failed 的（go/ast + go/token + strings + os + runtime）
+  'GenDecl', 'ValueSpec', 'TypeSpec', 'ImportSpec', 'SelectStmt', 'CaseClause', 'CommClause',
+  'StarExpr', 'IndexListExpr', 'IndexExpr', 'FieldList', 'ArrayType', 'MapType', 'ChanType',
+  'InterfaceType', 'StructType', 'FuncType', 'Ellipsis', 'Builder', 'DirEntry', 'MemStats', 'Bool',
 ]);
 /**
  * ★ T-#51：**Shell 外部命令 / 内建** —— 只对 `.sh`/`.bash`/`.zsh` 启用。
@@ -2268,6 +2297,11 @@ const JAVA_BUILTIN_TYPES = new Set([
   'Map', 'HashMap', 'List', 'ArrayList', 'Set', 'HashSet', 'Collection', 'Iterable', 'Iterator',
   'Optional', 'Stream', 'Thread', 'Runnable', 'Class', 'Enum', 'Record', 'Override',
   'StringBuilder', 'StringBuffer', 'CharSequence', 'Comparable', 'Comparator', 'AutoCloseable',
+  // ★ T-#54：实测落 failed 的（java.io / java.nio / java.util）
+  'Path', 'Paths', 'Files', 'IOException', 'UncheckedIOException', 'Entry', 'LinkedHashMap',
+  'LinkedHashSet', 'TreeMap', 'TreeSet', 'Deque', 'ArrayDeque', 'UUID', 'LocalDate', 'LocalDateTime',
+  'Instant', 'Duration', 'Arrays', 'Objects', 'Collections', 'AtomicBoolean', 'AtomicLong',
+  'AtomicInteger', 'ConcurrentHashMap', 'ExecutorService', 'CompletableFuture',
 ]);
 
 /** 沿源文件的 relative imports 找符号对应的目标符号（首个命中）；找不到返回 null。
