@@ -65,6 +65,8 @@ import { indexCoversDisk } from '../infrastructure/index/index_freshness.js';
 //     那条路已在本仓跑过（它记"写前那一刻的决策"），此处**复用同一把尺**，不另立一套。
 import { listDesignSheets, getDSL, saveDSL } from '../infrastructure/storage.js';
 import { loadOverlay } from '../infrastructure/storage_overlay.js';
+// ★ 2026-10-28（重写计划层 · 第 3 步）：判据的唯一实现住 `rewrite_plan.ts#planGaps`，这里只调用
+import { readRewritePlan, planGaps, planFileFor } from './design/db/rewrite_plan.js';
 // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：豁免判据的**取值域**住 `domain/geometry.ts`，
 //   本文件**只读**它（`nodes[].gate`）—— **不按路径前缀判**（路径前缀 = 本仓头号病根）。
 import type { DiagramStatus, NodeGate } from '../domain/geometry.js';
@@ -923,6 +925,42 @@ export function exemptionLines(exempted: readonly GateExemption[]): string {
  *   （交接期两轴并存，派生值优先 —— 与 `overlay.ts#applyOverlay` 同一把尺）。
  */
 /**
+ * ★★★ 2026-10-28（重写计划层 · 第 3 步）：**"先读懂再改"的闸** —— 与任务闸**并列**的一条独立判据。
+ *
+ * ## 判据（一句话）
+ * 要写的文件必须有一份**够格的**重写计划（`<proj>/.agent-io/plan/<rel>.plan.json`）：
+ * 每条 entry 有锚点（符号名）· `detail` · **`judgement_ref`** · 无 `stale`。
+ * 判据的**唯一实现**在 `design/db/rewrite_plan.ts#planGaps`（这里不重写一遍）。
+ *
+ * ## 为什么默认只"点名"不"拦死"（`docs/gate-principle.md` §二）
+ * 本仓此刻**一份计划都还没有** ⇒ 一上来就硬拦，等于让所有源码都改不动（那正是"闸堵死流程"）。
+ * ⇒ 分两档：
+ *   · **默认**：把缺口**逐文件点名**进 warnings（可见、可追，不静默）；
+ *   · **严格**：`AGENT_IO_REQUIRE_PLAN=1` ⇒ **拒绝落盘**（迁移完成后由人打开这一档）。
+ * ★ 迁移口径与 T360 的 `judge_gate` 同一路数：**存量先记账，新规矩从人明确打开那一刻起生效**。
+ */
+function planGate(projectRoot: string, rels: readonly string[]): { warnings: string[]; blocking: string[] } {
+  const warnings: string[] = [];
+  const blocking: string[] = [];
+  for (const rel of rels) {
+    const plan = readRewritePlan(projectRoot, rel);
+    const gaps = planGaps(plan);
+    if (!gaps.length) continue;
+    const head = `· ${rel} 没有够格的重写计划（${gaps.length} 处）：`;
+    const body = gaps.slice(0, 4).map((g) => `    - ${g}`).join('\n');
+    const how =
+      `    ★ 怎么办：先通读该文件在设计里指向的区域 → 选定要改的符号 → 写 ` +
+      `\`${path.relative(projectRoot, planFileFor(projectRoot, rel)).replace(/\\/g, '/')}\`：\n` +
+      `      { "path": "${rel}", "entries": [{ "anchor": { "symbol": "<符号名>" }, "kind": "rewrite",\n` +
+      `        "detail": "<要改成什么样>", "judgement_ref": "<拿什么验>", "status": "open" }] }`;
+    const line = `${head}\n${body}\n${how}`;
+    warnings.push(line);
+    blocking.push(`${rel}（${gaps[0]}）`);
+  }
+  return { warnings, blocking };
+}
+
+/**
  * ★★★ **谁在写**（2026-10-17 · A7 · `docs/DESIGN.md` A7）。
  *
  * ## 它补的是什么洞
@@ -1138,6 +1176,21 @@ export function assertSourceWriteRegistered(
   opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[] },
 ): TaskGateOutcome {
   const out = evaluateTaskGate(projectRoot, files, opts);
+
+  // ★ 2026-10-28（第 3 步）：**重写计划闸** —— 与任务闸**并列**（不改上面任何一条判据）。
+  //   默认只点名（warnings），`AGENT_IO_REQUIRE_PLAN=1` 才拦。
+  const inRootRels = [...new Set(files.map((f) => toIndexKey(path.resolve(projectRoot), f)).filter((r): r is string => !!r))];
+  const planR = planGate(path.resolve(projectRoot), inRootRels);
+  if (planR.blocking.length && process.env.AGENT_IO_REQUIRE_PLAN === '1') {
+    throw new Error(
+      `拒绝落盘（重写计划闸）：这次要改的 ${planR.blocking.length} 个文件**没有够格的重写计划** —— ` +
+        `本仓纪律：写源码前必须"**通读 → 选定范围 → 写完细节**"，细节要落进 \`plan/<rel>.plan.json\`。\n` +
+        planR.warnings.join('\n') +
+        `\n★ 闸的范围（只此一条）：\`planGaps\` 的五态判据（没计划 / 空 entries / 缺锚点 / 缺 detail / 缺 judgement_ref / stale）。\n` +
+        `★ 为什么这样要求：计划写不下来的细节 = 还没想清楚；而"想清楚"是写完之后**没人能验**的东西。\n` +
+        `★ 关掉严格档：不设 \`AGENT_IO_REQUIRE_PLAN=1\` 即只报不拦（迁移期口径，与 T360 的 judge_gate 同一路数）。`,
+    );
+  }
   let ac: AssumptionCheck;
   try {
     ac = checkAssumptions({
@@ -1149,7 +1202,11 @@ export function assertSourceWriteRegistered(
     // ★ 检定是增强，不许把写入拖下水；但也**不许静默** ⇒ 读数里带 error。
     ac = { checked: 0, stale: [], readers: 0, error: (e as Error).message };
   }
-  return { ...out, assumption_check: ac };
+  return {
+    ...out,
+    warnings: [...out.warnings, ...planR.warnings],
+    assumption_check: ac,
+  };
 }
 
 function evaluateTaskGate(
