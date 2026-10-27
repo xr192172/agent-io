@@ -22,7 +22,7 @@ import { parseFileFull, parseFileFullSync, resolveImportPath, type ParsedFile, t
 //   也不再自拼 `new Set(...map(lower))` 那套用法。
 import { codeSourceExtSet } from '../parse/source_exts.js';
 // ★ T-#62：**多语言导入解析的适配器表** —— 本文件不再按语言写 if，而是问它
-import { DEFAULT_EXPORT_SYMBOL, LANG_ADAPTERS, type ResolveImportCtx } from '../parse/kernel.js';
+import { DEFAULT_EXPORT_SYMBOL, LANG_ADAPTERS, VALUE_KINDS, type ResolveImportCtx } from '../parse/kernel.js';
 // ★ T-#95：`files.language` 存的是**小写扩展名**（`py`/`ts`/`go`），适配器表的键是语言名
 //   （`python`/`typescript`/`go`）—— `go` 恰好同名，别的全查不到。这条映射必须有唯一出处。
 import { findLanguageByExt } from '../parse/languages.js';
@@ -1160,10 +1160,26 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
       `INSERT OR IGNORE INTO unresolved_refs(from_node_id, reference_name, reference_kind, line, col, file_id, language, status, name_tail)
        VALUES ($from, $rn, 'type_ref', $ln, 0, $fid, $lang, 'pending', $nt)`,
     );
+    // ★ T-#97c：`typeof <局部变量>` —— 解析期已判准（kernel 的作用域栈），这里**直接落 external 说真话**，
+    //   与 call 路径的 `c.local` 同一条判据（不是债，也不该进 pending→failed）。
+    const insUnresolvedTypeExternal = db.prepare(
+      `INSERT OR IGNORE INTO unresolved_refs(from_node_id, reference_name, reference_kind, line, col, file_id, language, status, name_tail, candidates)
+       VALUES ($from, $rn, 'type_ref', $ln, 0, $fid, $lang, 'external', $nt, $cd)`,
+    );
     for (const t of parsed.type_refs) {
       const srcId = idOf(t.referrer);
       if (!nodeIdSet.has(srcId)) continue; // 同上：qn 漂移坏边防御
-      if (t.resolved && t.target_qn && nodeIdSet.has(idOf(t.target_qn))) {
+      if (t.local) {
+        insUnresolvedTypeExternal.run({
+          from: srcId,
+          rn: t.type_name,
+          ln: t.line,
+          fid: fileId,
+          lang: ext,
+          nt: t.type_name,
+          cd: JSON.stringify({ verdict: 'external', why: 'local-binding' }),
+        });
+      } else if (t.resolved && t.target_qn && nodeIdSet.has(idOf(t.target_qn))) {
         insTypeRef.run({ src: srcId, tgt: idOf(t.target_qn), ln: t.line });
       } else {
         insUnresolvedType.run({ from: srcId, rn: t.type_name, ln: t.line, fid: fileId, lang: ext, nt: t.type_name });
@@ -2296,6 +2312,29 @@ export function resolveCrossFileCalls(
         stats.external++;
         continue;
       }
+      // ★★★ 2026-10-27（T-#97c）：**`typeof X` 是值空间引用 ⇒ 值空间的两条判定也要走**。
+      //
+      // 病史：`typeof` 引用自从进了索引（本轮）后，`typeof setInterval` / `typeof localVar` 这类
+      // 新落 failed（self-src 实测 7 条）。它们和 call 路径里同样两个洞一一对应：
+      //   ① 宿主/内置可调用（`typeof setInterval`）—— call 路径早在 T-#44/#60 就判 external，
+      //      type_ref 路径只查了 `types` 表，**没查 `callees`**；
+      //   ② 局部绑定（`typeof semanticFiles`）—— call 路径 T-#51/T-#89 判 local-binding，
+      //      type_ref 路径**从来没查过 localBindingOf**。
+      // ⇒ 两处共用同一判据（不是新写一套）：值空间的名字先问全局表、再问局部绑定表。
+      if (globalsOf(rel).callees.has(expr) || globalsOf(rel).hostCallees.has(expr)) {
+        updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: 'builtin-callee-type' }) });
+        stats.external++;
+        continue;
+      }
+      const typeLocal = localBindingOf(rel, expr, r.line);
+      if (typeLocal) {
+        updExternal.run({
+          i: r.id,
+          cd: JSON.stringify({ verdict: 'external', why: 'local-binding', detail: typeLocal }),
+        });
+        stats.external++;
+        continue;
+      }
       // ★ T-#50：**泛型参数**（`T`/`U`/`K`…）不是符号 ⇒ external
       if (genericParamsByFile.get(rel)?.has(expr)) {
         updExternal.run({ i: r.id, cd: JSON.stringify({ verdict: 'external', why: `generic-param:${expr}` }) });
@@ -2373,7 +2412,13 @@ export function resolveCrossFileCalls(
         findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, typeNamesByFile, ['interface', 'type', 'class'], miss, indexedFiles)
         ?? findGoSamePackageTarget(db, rel, expr, ['interface', 'type', 'class'], goFilesByDir)
         // ★ T-#62：**适配器驱动的跨包/跨文件解析**（Go 的 module 路径 → 目录就在这层生效）
-        ?? resolveViaAdapter(rel, expr, ['interface', 'type', 'class']);
+        ?? resolveViaAdapter(rel, expr, ['interface', 'type', 'class'])
+        // ★★★ 2026-10-27（T-#97c）：**值空间的类型引用** —— 	ypeof X（T-#97c 起才进索引）。
+        //   上面三步全按**类型空间**查（	ypeNamesByFile 只装 interface/	ype/class）
+        //   ⇒ 函数名永远查不到。这里再按**值空间**查一次（symbolsByFile = 该文件全部符号）。
+        //   ★ 不新增误连：合法 TS 里"类型位置写函数名"不成立，能命中的就是 	ypeof X 这种真依赖；
+        //     而且它排在类型空间三步**之后** ⇒ 原有判定一条不变，只接住原先会落 failed 的那些。
+        ?? findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, symbolsByFile, [...VALUE_KINDS], miss, indexedFiles);
       if (t) {
         insEdge.run({ src: r.from_node_id, tgt: `${t.file}#${t.qn}`, k: 'type_ref', ln: r.line, md: CROSS_META });
         updResolved.run({ i: r.id, n: `${t.file}#${t.qn}` });

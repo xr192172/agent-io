@@ -150,4 +150,3 @@
 | T-#95b | **Go 的包级 `var` 持有函数**不成符号 | gin `binding`：`DebugPrintRouteFunc` / `DebugPrintFunc` 是模块级 `var X func(...)`，被当函数调用 ⇒ failed；Go 只索引 func/method/type | `parse/kernel.ts`（consts 支是 TS 形态） |
 | T-#95c | **同包同名函数（build-tag 变体）判 failed** | gin `binding/`：`func validate` 同时出现在 `binding.go` 与 `binding_nomsgpack.go`（`//go:build` 二选一）⇒ 候选不唯一 ⇒ 按"不猜"纪律落 failed（10 条）。要不要按 build tag 择一，是判据问题不是 bug | `index/symbols.ts`（`findGoSamePackageTarget`） |
 | T-#97b | **工具回执里"接续 / 分工"散文每次约 40 行**（本次实测：find/rename 三次调用各占屏）—— 这才是"信息太多"，不是 DB 太细 | `find_references` 6s / `rename_symbols` dry_run 7.5s / 落盘 14.8s，其中回执散文占输出 70%+ | `application/meta/registry/*` · `presentation/cli/cli.ts`（回执渲染） |
-| T-#97c | `kernel` 的 `type_ref` 抽取只认 `type_identifier` ⇒ **`typeof X` 的位置不进 `unresolved_refs`**（T-#97a 修的是 refactor 侧 `rootRefs`，索引侧还是漏的） | `typeof mergeGlobals` 在 AST 里是 `type_query > identifier`；`identifiers` 表有它（278585 行），但 `type_ref` 判定看不见 ⇒ 相关断言/边无法表达 | `parse/kernel.ts`（type_ref 抽取） |

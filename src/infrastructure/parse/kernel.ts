@@ -188,6 +188,12 @@ export interface ParsedTypeRef {
   resolved: boolean;
   /** resolved 时对应的同文件类型符号 qualified_name */
   target_qn?: string;
+  /**
+   * ★ T-#97c：**名字属于"局部绑定"**（	ypeof semanticFiles 里的 semanticFiles 是函数内 const/形参）。
+   * 语义同 call 路径的 ParsedCall.local：它不是仓内符号、也不是外部包 ⇒ 判 xternal（why: local-binding），
+   * **不是债**。落库时由 symbols.ts 直接写成 external，不再走 pending→failed。
+   */
+  local?: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -2867,6 +2873,8 @@ function isFunctionScopeNode(node: SyntaxNodeLike): boolean {
 // ─────────────────────────────────────────────────────────────
 
 const TYPE_KINDS = new Set(['interface', 'type', 'class']);
+// ★ T-#97c：**值空间**的符号 kind —— 	ypeof X 取得是值（不是类型）⇒ 查这张表。
+export const VALUE_KINDS = new Set(['function', 'method', 'const', 'class']);
 
 /**
  * 遍历 AST 提取类型引用：TS 语法里类型位置的标识符是 type_identifier 节点
@@ -2882,17 +2890,29 @@ function traverseAndExtractTypeRefs(
   typeRefs: ParsedTypeRef[],
   stack: Array<{ qn: string; defName: string; defRow: number }> = [],
   depth: number = 0,
+  /**
+   * ★ T-#97c：**当前可见的局部绑定名** —— 与 call 路径（`traverseAndExtractCalls`）同一判据。
+   * 用途：`typeof semanticFiles` / `typeof fnRows` 这类**指向局部变量**的类型引用要能判出"这是局部绑定"，
+   * 否则会被当成"仓内找不到目标" ⇒ 假债（self-src 实测 7 条）。
+   */
+  scope: Set<string> = new Set(),
 ): void {
   if (depth > 200) return;
   if (isSymbolNode(node, lang)) {
-    const name = resolveName(node, lang).name;
+    const { name, fromIndex } = resolveName(node, lang);
     if (name) {
       const parent = stack.length > 0 ? stack[stack.length - 1].qn : undefined;
       const qn = parent ? `${parent}.${name}` : name;
       stack.push({ qn, defName: name, defRow: node.startPosition.row });
+      const body = bodyChildren(node, lang, fromIndex);
+      const ownScope = new Set<string>([
+        ...scope,
+        ...paramNamesForScope(symbolInner(node, lang), lang),
+        ...collectLocalBindings(body ?? [], lang.name),
+      ]);
       for (let i = 0; i < node.childCount; i++) {
         const child = node.child(i);
-        if (child) traverseAndExtractTypeRefs(child, lang, symbols, typeRefs, stack, depth + 1);
+        if (child) traverseAndExtractTypeRefs(child, lang, symbols, typeRefs, stack, depth + 1, ownScope);
       }
       stack.pop();
       return;
@@ -2945,9 +2965,46 @@ function traverseAndExtractTypeRefs(
     }
     return; // type_identifier 是叶子
   }
+  // ★★★ 2026-10-27（T-#97c）：**`typeof X` 也是类型引用，且它指向【值空间】的符号**。
+  //
+  // ## 病史（T-#97a 的另一半：refactor 侧已修，索引/判据侧还是漏的）
+  // `ReturnType<typeof mergeGlobals>` 在 AST 里是 `type_query > identifier` —— **既不是**
+  // `type_identifier`（本函数原先只认那个）**也不是**调用 ⇒ 索引里**根本没有这条依赖**。
+  //
+  // ## 判据
+  // `type_query` 的操作数（最后一个命名子节点）若是**裸标识符**，就在同文件符号表里按**值 kind** 找
+  // （`function`/`method`/`const`/`class` —— TS 的 `typeof` 取的是值）。
+  // ★ 带点的（`typeof ns.foo`）照样记全名、`resolved:false`：带点分支在 `resolveCrossFileCalls` 里判
+  //   （receiver 是 package 命名空间 ⇒ external，有据），与本文件其余带点类型同一条判据。
+  if (node.type === 'type_query' && stack.length > 0) {
+    const top = stack[stack.length - 1];
+    let operand: SyntaxNodeLike | null = null;
+    for (let i = node.childCount - 1; i >= 0; i--) {
+      const c = node.child(i);
+      if (c && c.isNamed) {
+        operand = c;
+        break;
+      }
+    }
+    const text = (operand?.text ?? '').replace(/\s+/g, '');
+    if (text && text.length <= 120) {
+      const sym = text.includes('.') ? undefined : symbols.find((s) => s.name === text && VALUE_KINDS.has(s.kind));
+      // ★ 裸名既不是文件符号、又是当前函数里的局部绑定 ⇒ 标 local（落库时直接写 external，不进 failed）
+      const isLocal = !sym && !text.includes('.') && scope.has(text);
+      typeRefs.push({
+        referrer: top.qn,
+        type_name: text,
+        line: node.startPosition.row + 1,
+        resolved: !!sym,
+        target_qn: sym ? sym.qualified_name : undefined,
+        ...(isLocal ? { local: true } : {}),
+      });
+    }
+    return; // type_query 已消费（内层 identifier 不再单独记）
+  }
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i);
-    if (child) traverseAndExtractTypeRefs(child, lang, symbols, typeRefs, stack, depth + 1);
+    if (child) traverseAndExtractTypeRefs(child, lang, symbols, typeRefs, stack, depth + 1, scope);
   }
 }
 
