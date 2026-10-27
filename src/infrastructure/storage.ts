@@ -87,7 +87,7 @@ import { rootPath } from './roots.js';
 //     且都是 `export function`（声明会 hoist）⇒ 模块初始化顺序无关。
 //   ★ 选静态而不是动态 import：动态的"触发即走、不等结果" 会让"投影失败"变成**延迟且不确定**的
 //     一行 stderr（证也抓不住）；静态同步 ≈ 一次小库写（毫秒级），换来"册落盘 ⇒ 库已跟上"这条确定性。
-import { syncTasksFromDsl } from './task_history.js';
+import { syncTasksFromDsl, listLiveCards, getTasksDbFile } from './task_history.js';
 // ★★★ 2026-10-26（T-#27 / `docs/ROOTS.md` §7.4）：**读端接线** —— `getDesignSheetFile` 未给 baseDir 时
 //   查项目注册表，把 feature 解析到它自己的项目根。
 //   ★ 循环依赖是**安全的**：两边都只在**调用时**用对方的绑定（`project_registry` 只在 `registryFile()`
@@ -518,6 +518,53 @@ export function saveDesignSheet(dsl: DesignDSL, baseDir?: string): string {
   return file;
 }
 
+/**
+ * ★★★ 2026-10-27（ROOTS 步 6 / 乙方案 **slice 2b**）：**读走库** —— 册一读出来，`todos` 以 `tasks.db` 为准。
+ *
+ * ## 为什么把读也收在"册的读出端"
+ * `task_ops` 里读 `dsl.todos` 有 20+ 处；逐个改 = 20 个入口，迟早漏一处（本仓头号病）。
+ * 而它们**都从一个地方拿到册** ⇒ 在这里换掉 `todos` 的来源，20 处一起变。
+ *
+ * ## 判据（三态，别合并）
+ *   · **库不存在** ⇒ 用册里的（迁移前 / 首次建库，行为与 slice 1 逐字相同）；
+ *   · **库里有卡** ⇒ **以库为准**（哪怕册上还留着旧的 `todos` 也不采信）；
+ *   · **库里 0 张、册上有** ⇒ 用册上的（还没投影过；下一次落盘会投影过去）。
+ *   ★ 与册上的内容**逐张相同**时不重写、不出声（避免热路径刷屏）。
+ *
+ * ## 现在还没做的事（别读成"已完成"）
+ * 册**仍然**会写 `todos`（slice 2a 的双写还在）—— 所以这一刻是"读库、写两边"。
+ * 等 slice 2c 证过对拍稳定，再停写册上的 `todos`、把角色改 `derivable:false` 并补 `tasks.jsonl` 镜像。
+ */
+function hydrateTodosFromTasks(dsl: DesignDSL, baseDir?: string): DesignDSL {
+  const root = projectRootOf(dsl.feature) ?? dsl.source_root ?? baseDir ?? null;
+  if (!root) return dsl;
+  let cards: Array<{ id: string; state: string; card: Record<string, unknown> | null }>;
+  try {
+    if (!fs.existsSync(getTasksDbFile(root))) return dsl;
+    cards = listLiveCards(root, dsl.feature);
+  } catch (e) {
+    process.stderr.write(`[tasks-hydrate] "${dsl.feature}" 读库失败 ⇒ 本次用册上的卡：${String(e).slice(0, 160)}\n`);
+    return dsl;
+  }
+  if (!cards.length) return dsl;
+  const fromDb = cards.map((c) => (c.card ?? { id: c.id, state: c.state })) as unknown as DesignDSL['todos'];
+  // 逐张比对（按 id 对齐，不比顺序：库按 id 排序、册按写入顺序，顺序不同不代表内容不同）
+  const asMap = (arr: ReadonlyArray<Record<string, unknown>> | undefined): Map<string, string> => {
+    const m = new Map<string, string>();
+    for (const t of arr ?? []) if (typeof t.id === 'string') m.set(t.id, JSON.stringify(t));
+    return m;
+  };
+  const a = asMap(dsl.todos as unknown as ReadonlyArray<Record<string, unknown>>);
+  const b = asMap(fromDb as unknown as ReadonlyArray<Record<string, unknown>>);
+  let same = a.size === b.size;
+  if (same) for (const [id, v] of b) if (a.get(id) !== v) { same = false; break; }
+  if (same) return dsl;
+  process.stderr.write(
+    `[tasks-hydrate] ${dsl.feature}：todos **以库为准**（库 ${b.size} 张 / 册上 ${a.size} 张）\n`,
+  );
+  return { ...dsl, todos: fromDb };
+}
+
 /** 读取设计图，不存在返回 null */
 export function getDesignSheet(feature: string, baseDir?: string): DesignDSL | null {
   // ★ 2026-10-23：事务进行中 ⇒ 读工作副本（否则"改了工作副本、读的却是正式册"，preview 与 edit 不一致）
@@ -528,14 +575,14 @@ export function getDesignSheet(feature: string, baseDir?: string): DesignDSL | n
     //   ★ 只在调用方**没显式给** baseDir 时才回落（给了 = 已声明位置，不许替它猜）。
     const regRoot = baseDir === undefined ? projectRootOf(feature) : null;
     if (regRoot) {
-      const legacy = txnRedirect(path.join(getDataHome(), DATA_DIR_NAME, 'design', `${feature}.dsl.json`));
+      const legacy = txnRedirect(path.join(getStorageRoot(), 'design', `${feature}.dsl.json`));
       if (fs.existsSync(legacy)) {
         console.warn(
           `[getDSL] 册还在**旧位置**：注册表说 ${feature} → ${regRoot}，但文件在 ${legacy}\n` +
             `  ⇒ 本次读旧位置；请迁移到 ${getDesignSheetFile(feature)}`,
         );
         try {
-          return JSON.parse(fs.readFileSync(legacy, 'utf-8')) as DesignDSL;
+          return hydrateTodosFromTasks(JSON.parse(fs.readFileSync(legacy, 'utf-8')) as DesignDSL, baseDir);
         } catch {
           return null;
         }
@@ -544,7 +591,7 @@ export function getDesignSheet(feature: string, baseDir?: string): DesignDSL | n
     return null;
   }
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf-8')) as DesignDSL;
+    return hydrateTodosFromTasks(JSON.parse(fs.readFileSync(file, 'utf-8')) as DesignDSL, baseDir);
   } catch {
     return null;
   }

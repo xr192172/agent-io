@@ -97,7 +97,8 @@
 | T49 | 写用户源码没有单一可检查通道 | `src/application/refactor/edit/apply_writes.ts` | 未做 |
 | T333 | `fork` 没工具化；`_forked_from` 无 TS 源写入 | `package.json` · `.agent-io/design/` | 未做（`npm run fork` 指向的脚本不存在） |
 | T328 | 进度轴收归到 `progress`@overlay | `src/infrastructure/storage_overlay.ts` | 未做 |
-| T-#98c | 数据家里还留着旧落点副本（`review-hub.dsl.json` 的 live + baseline 等），现在读不到 = stray | `<dataHome>/.agent-io/live` · `baseline` | 未做（ROOTS.md 步 9 清理） |
+| T-#98c | 数据家里还留着旧落点副本（`review-hub.dsl.json` 的 live + baseline 等），现在读不到 = stray | `<数据仓>/live` · `baseline` | 未做（ROOTS.md 步 9 清理） |
+| T-#GC | **数据仓卫生（GC）**：只允许删 `derivable: true` 且判据能证明可重建的东西；默认 dry-run、删前打清单与回滚方式。候选：`.agentio-data/*.bak-*`（本轮合并备份 2 份）· `.agent-io/cache.db.bak-before-*`（3 份旧索引）· 注册表里指向夹具的 `proj-express-t98` · slice 3 之后 `task-history.db` 并入 `tasks.db` | `.agentio-data` · `.agent-io` | 未做（判据见 ROOTS §1；先出清单再谈删） |
 
 ## 四、证与探针
 
