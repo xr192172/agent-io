@@ -226,7 +226,7 @@ export const SHELL_GLOBALS: GlobalsBucket = {
 };
 
 /** 合并：`COMMON` 打底 + 语言自己的追加（语言为准） */
-export function mergeGlobals(base: GlobalsBucket, extra: GlobalsBucket | undefined): {
+export function mergeGlobalsWithCommon(base: GlobalsBucket, extra: GlobalsBucket | undefined): {
   callees: Set<string>;
   hostCallees: Set<string>;
   types: Set<string>;

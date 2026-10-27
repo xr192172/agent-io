@@ -27,7 +27,7 @@ import { DEFAULT_EXPORT_SYMBOL, LANG_ADAPTERS, type ResolveImportCtx } from '../
 //   （`python`/`typescript`/`go`）—— `go` 恰好同名，别的全查不到。这条映射必须有唯一出处。
 import { findLanguageByExt } from '../parse/languages.js';
 // ★ T-#96：**内置名/宿主全局名的唯一数据出处** —— 本文件不再自建表，只做「COMMON + 本语言」的合并
-import { COMMON_GLOBALS, mergeGlobals } from '../parse/globals.js';
+import { COMMON_GLOBALS, mergeGlobalsWithCommon } from '../parse/globals.js';
 // ★ 写路径挂钩（§19）：ProjectView 的缓存在「磁盘被改过」时必须失效。
 //   syncFile/syncFileSync 是**全部 15 个写工具**的公共落点 ⇒ 挂这一处即覆盖所有写入，
 //   不必让每个写工具自己记得调 —— 「靠自觉的接线」正是本项目反复踩的坑。
@@ -1948,7 +1948,7 @@ export function resolveCrossFileCalls(
     langByFile.set(row.path, row.language);
   }
   /** ★ T-#96：文件 → 合并后的全局名表（`COMMON` + 本语言），一次解析里复用 */
-  const globalsByRel = new Map<string, ReturnType<typeof mergeGlobals>>();
+  const globalsByRel = new Map<string, ReturnType<typeof mergeGlobalsWithCommon>>();
   const importCtx: ResolveImportCtx = {
     projectRoot,
     files: new Set<string>(langByFile.keys()),
@@ -2279,10 +2279,10 @@ export function resolveCrossFileCalls(
     //   ⇒ 加一门语言要改两处，而且「哪门语言没声明全局来源」查不出来。
     //   ⇒ 现在只有一处：`parse/globals.ts` 是数据，`LANG_ADAPTERS[lang].globals` 是归属，
     //     这里只做"合并 + 按文件缓存"（一次解析里同一文件会被问很多次）。
-    const globalsOf = (r: string): ReturnType<typeof mergeGlobals> => {
+    const globalsOf = (r: string): ReturnType<typeof mergeGlobalsWithCommon> => {
       let g = globalsByRel.get(r);
       if (!g) {
-        g = mergeGlobals(COMMON_GLOBALS, adapterOfLanguageTag(langByFile.get(r))?.globals);
+        g = mergeGlobalsWithCommon(COMMON_GLOBALS, adapterOfLanguageTag(langByFile.get(r))?.globals);
         globalsByRel.set(r, g);
       }
       return g;
