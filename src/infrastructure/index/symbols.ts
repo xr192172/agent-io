@@ -22,7 +22,7 @@ import { parseFileFull, parseFileFullSync, resolveImportPath, type ParsedFile, t
 //   也不再自拼 `new Set(...map(lower))` 那套用法。
 import { codeSourceExtSet } from '../parse/source_exts.js';
 // ★ T-#62：**多语言导入解析的适配器表** —— 本文件不再按语言写 if，而是问它
-import { LANG_ADAPTERS, type ResolveImportCtx } from '../parse/kernel.js';
+import { DEFAULT_EXPORT_SYMBOL, LANG_ADAPTERS, type ResolveImportCtx } from '../parse/kernel.js';
 // ★ 写路径挂钩（§19）：ProjectView 的缓存在「磁盘被改过」时必须失效。
 //   syncFile/syncFileSync 是**全部 15 个写工具**的公共落点 ⇒ 挂这一处即覆盖所有写入，
 //   不必让每个写工具自己记得调 —— 「靠自觉的接线」正是本项目反复踩的坑。
@@ -616,8 +616,9 @@ export function classifyCall(args: {
 
   // ── 简单标识符接收者 ──
   if (/^[A-Za-z_$][\w$]*$/.test(receiver)) {
-    // 导入名（`import * as X` / 具名导入）上的成员 ⇒ 属于跨文件，本文件不建边
-    const imported = args.imports.some((im) => (im.bindings ?? []).includes(receiver));
+    // 导入名（`import * as X` / 具名导入 / 默认导入）上的成员 ⇒ 属于跨文件，本文件不建边
+    // ★ T-#94a：`bindings` 里可能带起点前缀（`remote as local` / `<default> as local`）⇒ 比本地名
+    const imported = args.imports.some((im) => (im.bindings ?? []).some((b) => bindingLocalName(b) === receiver));
     if (imported) return { kind: 'none' };
     const asType = args.symbols.find(
       (s) => s.name === receiver && (s.kind === 'class' || s.kind === 'interface' || s.kind === 'type'),
@@ -910,7 +911,8 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
     const relBound = new Set<string>();
     for (const imp of parsed.imports) {
       if (imp.kind !== 'relative') continue;
-      for (const b of imp.bindings ?? []) relBound.add(b);
+      // ★ T-#94a：按**本地名**登记（bindings 可能带 `remote as local` / `<default> as local` 前缀）
+      for (const b of imp.bindings ?? []) relBound.add(bindingLocalName(b));
     }
     const typeMemberOf = makeImportedTypeMemberLookup(
       db,
@@ -2734,6 +2736,15 @@ const remoteOf = (b: string): string => {
   return i >= 0 ? b.slice(0, i) : b;
 };
 
+/**
+ * ★ T-#94a：`bindings` 条目的**本地名**（给"这个裸名是不是导入来的"这类判断用）。
+ * 与 `localOf` 同义，但**函数声明**（提升）⇒ 可以放心用在本文件更早的定义里。
+ */
+function bindingLocalName(b: string): string {
+  const i = b.indexOf(' as ');
+  return i >= 0 ? b.slice(i + 4) : b;
+}
+
 function findCrossFileTarget(
   db: Database,
   relImportsByFile: Map<string, Array<{ source: string; line: number; bindings?: string | null }>>,
@@ -2791,12 +2802,21 @@ function findCrossFileTarget(
       //   结果**跳过了下面的 barrel 再导出那条路** ⇒ 实测 `resolved` 掉 **237 条**。
       //   ⇒ 只记 `miss`，**照旧往下走**（目标文件没索引 ≠ 它没有 barrel）。
       miss?.push({ why: 'reexport-target-not-indexed', detail: target });
-    } else if (syms.has(want)) {
-      // 目标文件确有该符号 → 取 qualified_name（重名取首个，v1 近似）
-      const q = db
-        .prepare('SELECT kind, qualified_name FROM nodes WHERE file_path = $tp AND name = $n LIMIT 1')
-        .get({ tp: target, n: want }) as { kind: string; qualified_name: string } | undefined;
-      if (q && (!kinds || kinds.includes(q.kind))) return { file: target, qn: q.qualified_name };
+    } else {
+      // ★★★ 2026-10-27（T-#94a）：默认导入要试**两个远端名**。
+      //   默认导入的远端名恒为 `<default>`（本地名是导入方起的），但目标文件可能把
+      //   **具名**符号默认导出（`export default mergeConfig`）—— 那种情况目标里没有 `<default>`，
+      //   只有 `mergeConfig`。两者都是事实，按序试，不猜：
+      //     ① `<default>` = 匿名默认导出（axios `lib/helpers/parseHeaders.js`）
+      //     ② 导入方的本地名 = 具名符号被默认导出（axios `lib/core/mergeConfig.js` 那一族）
+      const wants = want === DEFAULT_EXPORT_SYMBOL ? [DEFAULT_EXPORT_SYMBOL, name] : [want];
+      for (const w of wants) {
+        if (!syms.has(w)) continue;
+        const q = db
+          .prepare('SELECT kind, qualified_name FROM nodes WHERE file_path = $tp AND name = $n LIMIT 1')
+          .get({ tp: target, n: w }) as { kind: string; qualified_name: string } | undefined;
+        if (q && (!kinds || kinds.includes(q.kind))) return { file: target, qn: q.qualified_name };
+      }
     }
     // ★ 2026-10-21：barrel re-export —— 目标文件只是 `export { x } from './kernel.js'`，符号在下一层。
     // ★ 2026-10-22：别名再导出同样走这里（`import { A as B }; export { B }`）——

@@ -560,6 +560,38 @@ function traverseAndExtract(
     return;
   }
 
+  // ★★★ 2026-10-27（T-#94a）：**匿名默认导出也成符号**（`export default x => {…}`）。
+  //   病史（axios 实测）：`lib/helpers/parseHeaders.js` 是 `export default rawHeaders => {…}`，
+  //   目标文件里**没有**叫 `parseHeaders` 的符号 ⇒ 别人的默认导入永远解析不到 ⇒ failed。
+  //   ⇒ 记成名字固定为 `<default>` 的 function 符号（原因见 DEFAULT_EXPORT_SYMBOL 的注释），
+  //     默认导入的绑定记 `"<default> as 本地名"`。
+  //   ★ 只收**匿名**的：`export default function named(){}` 走 `declaration` 字段，本来就是符号。
+  const defaultExport = defaultExportValue(node, lang);
+  if (defaultExport) {
+    const dqn = parent ? `${parent}.${DEFAULT_EXPORT_SYMBOL}` : DEFAULT_EXPORT_SYMBOL;
+    const dtxt = bodyTextOf(defaultExport, lang);
+    const ddoc = docstringOf(node, lang.name);
+    const dparams = paramsOf(defaultExport, lang.field_map.parameters || 'parameters', lang.name);
+    symbols.push({
+      name: DEFAULT_EXPORT_SYMBOL,
+      kind: 'function',
+      start_line: node.startPosition.row + 1,
+      end_line: node.endPosition.row + 1,
+      qualified_name: dqn,
+      params: dparams,
+      ...(dtxt ? { bodyText: dtxt } : {}),
+      ...(ddoc ? { docstring: ddoc } : {}),
+      signature: `export default (${dparams.map((p) => p.name ?? '').join(', ')})`,
+      parent,
+      modifiers: ['export', 'default'],
+      is_closure: enclosingIsFunction ? true : undefined,
+    });
+    // 它的体照常往下走（体内的具名函数要进 nodes，标闭包 —— 与 T-#52 的 const 函数值同一条判据）
+    const dbody = bodyChildren(defaultExport, lang, null);
+    if (dbody) for (const c of dbody) traverseAndExtract(c, lang, symbols, dqn, depth + 1, true);
+    return;
+  }
+
   if (isSymbolNode(node, lang)) {
     const { name, fromIndex } = resolveName(node, lang);
     if (name) {
@@ -1006,6 +1038,17 @@ const TS_LIKE_ASSIGN_SYMBOL = {
   nameField: 'name',
 };
 
+/**
+ * ★★★ 2026-10-27（T-#94a）：**默认导出的合成符号名**。
+ *
+ * 为什么需要一个合成名（而不是"用文件名当名字"）：
+ *   `export default rawHeaders => {…}` 里函数**没有名字**，本地名由**导入方**自己起
+ *   （一个文件可能被别人 `import a from …` / `import b from …` 各起一个名）。
+ *   ⇒ 事实层面的唯一稳定身份是"**这是该模块的默认导出**" ⇒ 名字记 `<default>`（非法标识符，不会撞名）。
+ *   ⇒ 默认导入的绑定记 `"<default> as <本地名>"`，解析端按远端名 `<default>` 去目标文件里搜。
+ */
+export const DEFAULT_EXPORT_SYMBOL = '<default>';
+
 const TS_LIKE_IMPORT_BINDINGS = (node: SyntaxNodeLike): string[] => {
   const out: string[] = [];
   const walk = (n: SyntaxNodeLike): void => {
@@ -1045,7 +1088,14 @@ const TS_LIKE_IMPORT_BINDINGS = (node: SyntaxNodeLike): string[] => {
     if (t === 'import_clause') {
       for (let i = 0; i < n.childCount; i++) {
         const c = n.child(i);
-        if (c?.type === 'identifier' && c.text) out.push(c.text);
+        // ★★★ 2026-10-27（T-#94a）：**默认导入要记远端名 `<default>`**。
+        //   病史（axios 1.7 实测）：`lib/core/AxiosHeaders.js` 写 `import parseHeaders from '../helpers/parseHeaders.js'`，
+        //   目标文件是 `export default rawHeaders => {…}`（**匿名**默认导出）⇒ 目标里没有叫 `parseHeaders` 的符号
+        //   ⇒ 按本地名去搜永远搜不到 ⇒ failed（跨文件解析的最后一类）。
+        //   事实是：**默认导入的远端名就是 `<default>`**，本地名由导入方自己起。
+        //   ⇒ 记 `"<default> as parseHeaders"`（沿用 T-#85 的 `remote as local` 格式），
+        //     解析端按远端名 `<default>` 去目标文件里找那个符号（见 kernel 的匿名默认导出支）。
+        if (c?.type === 'identifier' && c.text) out.push(`${DEFAULT_EXPORT_SYMBOL} as ${c.text}`);
       }
     }
     for (let i = 0; i < n.childCount; i++) {
@@ -1999,6 +2049,29 @@ function symbolInner(node: SyntaxNodeLike, lang: LanguageEntry): SyntaxNodeLike 
  *   ★ 只查**一层**（declarator → value）：`const h = wrap(() => {…})` 不算 —— 与 T-#52 的符号侧判据一致
  *     （"值是函数"才是符号的值；值是调用结果就不是）。
  */
+/**
+ * ★★★ 2026-10-27（T-#94a）：**匿名默认导出的那个函数值**（`export default x => {…}`）。
+ *
+ * 判据（AST 结构，不看文本）：
+ *   ① 节点是 `export_statement`；② 它的 `value` 字段是函数形态；
+ *   ③ 该函数**自己没有名字**（具名的走 `declaration` 字段，本来就是符号）。
+ * ★ 只对"TS 系的适配器已声明 `assignSymbol`"的语言生效 —— 这一族语法（ESM `export default`）
+ *   就是 TS 系四门，其余语言的 `export` 形态各不相同，不在这里猜。
+ */
+function defaultExportValue(node: SyntaxNodeLike, lang: LanguageEntry): SyntaxNodeLike | null {
+  if (!LANG_ADAPTERS[lang.name]?.assignSymbol) return null;
+  if (node.type !== 'export_statement') return null;
+  const value = node.childForFieldName('value');
+  if (!value || !isFunctionScopeNode(value)) return null;
+  return value.childForFieldName('name') ? null : value;
+}
+
+/** ★ T-#94a：声明/导出形态 → 统一的 `{ 符号名, 函数值 }`（供调用归属与作用域使用） */
+function anonymousDefaultExport(node: SyntaxNodeLike, lang: LanguageEntry): { name: string; value: SyntaxNodeLike } | null {
+  const value = defaultExportValue(node, lang);
+  return value ? { name: DEFAULT_EXPORT_SYMBOL, value } : null;
+}
+
 function declaredFunctionValue(node: SyntaxNodeLike, lang: LanguageEntry): { name: string; value: SyntaxNodeLike } | null {
   if (!LANG_ADAPTERS[lang.name]?.localBindingNodes?.includes(node.type)) return null;
   for (let i = 0; i < node.childCount; i++) {
@@ -2587,7 +2660,7 @@ function traverseAndExtractCalls(
   //   `syncFile` 的 FK 防御（`nodeIdSet.has('<file>#<module>')` 为假）**静默丢弃**：
   //   实测 `const arrowProbe = () => { helper2(1) }` ⇒ **edges 0 条、unresolved_refs 0 条**（TS 同形一致）。
   // ⇒ 归属必须给到那个 `const` 符号（与符号侧 qn 逐字一致），体的调用才既建边、又不静默消失。
-  const decl = declaredFunctionValue(node, lang);
+  const decl = declaredFunctionValue(node, lang) ?? anonymousDefaultExport(node, lang);
   if (decl) {
     const declEnclosing = funcStack.length > 0 ? funcStack[funcStack.length - 1] : null;
     const declQn = declEnclosing ? `${declEnclosing}.${decl.name}` : decl.name;
