@@ -20,7 +20,7 @@
 import { DATA_DIR_NAME } from './data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDataHome } from './storage.js';
+import { getDataHome, getStorageRoot } from './storage.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型定义
@@ -122,7 +122,7 @@ export function validateProjectRoot(projectRoot: string, context = 'project_dir'
 
 /** 全局词典路径：<dataHome>/.agent-io/dict.global.json */
 export function getGlobalDictFile(): string {
-  return path.join(getDataHome(), DATA_DIR_NAME, 'dict.global.json');
+  return path.join(getStorageRoot(), 'dict.global.json');
 }
 
 /** 项目词典路径：<projectRoot>/.agent-io/dict.project.json

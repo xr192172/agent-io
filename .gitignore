@@ -44,6 +44,9 @@ certs/.work/
 .agent-io/design/.txn/
 # ★ 测试夹具里的 .agent-io（含 cache.db）不进 git
 certs/*/.agent-io/
+# ★★★ 2026-10-27：**数据仓**（跨项目那部分）与项目同根、单独一级 ⇒ 本机登记 + 二进制库，不入库。
+#   判别口径见 `src/infrastructure/data_dir.ts#DATA_ROOT_DIR_NAME` 与 `storage.ts#getStorageRoot`。
+.agentio-data/
 # DSL 布局/内容的自动备份目录（带时间戳成批生成，不入库，避免大体积误提交）
 .agent-io.bak-*/
 # MCP server 运行时 DSL（项目根，随使用场景变化，不入库）

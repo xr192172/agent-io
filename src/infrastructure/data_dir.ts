@@ -26,6 +26,24 @@
 export const DATA_DIR_NAME = '.agent-io';
 
 /**
+ * ★★★ 2026-10-27（用户口径）：**数据仓**（跨项目那部分）在同一项目根下的**单独一级**目录名。
+ *
+ * ## 为什么单开一级，而不是复用 `DATA_DIR_NAME`
+ * 用户原话：「maven 型是让你分离，但 maven 不也可以控制 `.m2` 放哪吗？能不能放现在的项目本体根目录
+ * 作为单独一级，同目录更好管理吧」。
+ * ⇒ 分离的**目的**是"代码仓不被会话产物污染"，不是"必须住 `~`"。而两者**不能同名**：
+ *   `<root>/.agent-io/` 装的是**这个项目自己的**东西（design / live / baseline / cache / tasks），
+ *   `<root>/.agentio-data/` 装的是**跨项目**的东西（projects.json 注册表 / judge-cache /
+ *   dogfood 日志 / 旧 task-history）—— 合在一起就是 T-#98 之前那种"同一个名字下住着两份不同归属的数据"。
+ *
+ * ## 解析顺序（唯一实现在 `storage.ts#getStorageRoot`）
+ *   ① `AGENT_IO_DATA_ROOT`（显式指定数据仓本身，等价于 Maven 的 `-Dmaven.repo.local`）
+ *   ② 包根下**存在** `<pkg>/.agentio-data` ⇒ 就用它（"目录存在"本身就是声明，不引入第二个配置文件）
+ *   ③ 都没有 ⇒ `<dataHome>/.agent-io`（`AGENT_IO_HOME` 或 `~/.agent-io`，给**已安装 / 无项目**场景）
+ */
+export const DATA_ROOT_DIR_NAME = '.agentio-data';
+
+/**
  * ★★ **设计 DSL 仓库**的数据目录名（★ 2026-10-05 合一化后权威已在本仓 TS 侧，
  *   Go 语言包只负责插桩与进程内采集，不再拥有这份仓库）。
  *

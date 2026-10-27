@@ -20,7 +20,7 @@ import { DATA_DIR_NAME } from './data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { getDataHome } from './storage.js';
+import { getDataHome, getStorageRoot } from './storage.js';
 
 /**
  * ★★ 2026-10-21：**这条调用是从哪儿来的** —— 缺了它，账本分不清「agent 真在用」
@@ -67,7 +67,7 @@ const MAX_ERR_LEN = 200;
 
 /** dogfood 日志目录（`<dataHome>/.agent-io/dogfood`）。★ T19：导出它 ⇒ 「归哪个根」可见（owner: dataHome）。 */
 export function dogfoodLogDir(): string {
-  return path.join(getDataHome(), DATA_DIR_NAME, 'dogfood');
+  return path.join(getStorageRoot(), 'dogfood');
 }
 function logFile(): string {
   // ★ 2026-10-21：账本落点的**显式覆写**。存在的唯一理由：有些调用方为了不污染真实数据目录，

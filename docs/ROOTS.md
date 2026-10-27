@@ -31,14 +31,24 @@
 | 根 | 路径 | 现在实际 | 目标 |
 |---|---|---|---|
 | **项目根** | `<projectRoot>/.agent-io` | 存在（review-hub / dsh-brain 都有） | 不变 |
-| **数据仓** | `<dataHome>/.agent-io` | 存在 | 只留**项目注册表** + 可重建缓存 |
+| **数据仓** | 见下方四候选（本仓 = `<包根>/.agentio-data`） | 存在 | 只留**项目注册表** + 可重建缓存 |
 
-`dataHome` 解析链（`storage.ts#getDataHome`）：
-1. `AGENT_IO_HOME`（显式声明，部署推荐）
-2. `os.homedir()` ⇒ `~/.agent-io`（Maven 的 `~/.m2` 模型）
-3. 迁移期兜底：`~/.agent-io` 不存在而 `<包根>/.agent-io` 有数据 ⇒ 继续用包根 + 每进程一次告警（**不许静默换家**）
+**数据仓解析链**（`storage.ts#getStorageRoot`，**唯一**；别再在别处拼 `<dataHome>/.agent-io`）：
 
-★ 现在 agent-io 自己的 `AGENT_IO_HOME` 钉在包根 ⇒ 项目根与数据仓是同一个目录。**清单会如实显示两者同路径。**
+1. `AGENT_IO_DATA_ROOT` —— 显式点明**数据仓本身**（Maven 的 `-Dmaven.repo.local`：位置随你）
+2. `AGENT_IO_HOME` —— 显式点明"放着 `.agent-io` 的那个目录"（既有语义；**必须**排在 3 之前，
+   否则 35 张证各自的临时 home 会被本仓的约定目录抢走）
+3. `<包根>/.agentio-data` —— **存在就用**：与项目同根、**单独一级**（用户 2026-10-27 口径：
+   "能不能放现在的项目本体根目录作为单独一级，同目录更好管理吧"）
+4. `<dataHome>/.agent-io` —— `os.homedir()`，Maven `~/.m2` 模型（**已安装 / 无项目**场景）
+
+`dataHome` 自身的老解析链（`getDataHome`，只在候选 4 生效）：`AGENT_IO_HOME` → `~` →
+迁移期兜底（`~/.agent-io` 不存在而 `<包根>/.agent-io` 有数据 ⇒ 用包根 + 每进程一次告警）。
+
+★ **两个根必须不同名**：`<root>/.agent-io/` 装**这个项目自己的**东西（design / live / baseline /
+cache / tasks），`<root>/.agentio-data/` 装**跨项目**的东西（projects.json / judge-cache /
+dogfood 日志 / 旧 task-history）。同名合并 = T-#98 之前那种"一个名字下住着两份归属"。
+★ 本仓 2026-10-27 起默认走候选 3 ⇒ **跨项目数据不再落 `~`**（取证：`certs/t370-data-root-cert.mjs`）。
 
 ---
 
@@ -160,7 +170,7 @@ export function getDesignDir(baseDir?: string)                // ★ baseDir ?? 
 
 ### 7.2 形状（唯一一处，别再加第二份）
 
-住 **`<dataHome>/.agent-io/projects.json`**，扁平 `feature → 项目根`：
+住 **`<数据仓>/projects.json`**（数据仓解析见 §1 四候选；本仓 = `<包根>/.agentio-data`），扁平 `feature → 项目根`：
 
 ```jsonc
 {
@@ -182,7 +192,7 @@ export function getDesignDir(baseDir?: string)                // ★ baseDir ?? 
 
 | # | 裁定 | 理由 |
 |---|---|---|
-| **①** | 它**必须全局唯一**（跨项目索引**不能**住任何项目里） | 它的职责就是"跨项目"。住进某个项目 ⇒ 那个项目一删全表没了 |
+| **①** | 它**必须每台机器唯一**（跨项目索引**不能**每个项目各一份） | 它的职责就是"跨项目"。**但"唯一"不等于"必须住 `~`"** —— 2026-10-27 起可住 `<包根>/.agentio-data`（§1 候选 3）：仍是同一份，只是位置随人 |
 | **②** | 它**不进 git**（机器本地路径） | 路径含盘符/用户名 ⇒ 换机器即错；它是**本机登记**，不是设计 |
 | **③** | **写端 = `import_project`**（唯一） | 它同时知道 `project_dir` 与 `feature` —— 唯一天然的登记时刻。别处再写 = 第二个真相 |
 

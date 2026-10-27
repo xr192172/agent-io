@@ -11,7 +11,7 @@
  *   - 人调整画布 → localStorage 暂存 + 可导出 agent-io.json
  */
 
-import { DATA_DIR_NAME, PKG_NAME } from './data_dir.js';
+import { DATA_DIR_NAME, DATA_ROOT_DIR_NAME, PKG_NAME } from './data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -134,8 +134,29 @@ export function getDataHome(): string {
  *   ★ 2026-10-23：原第 72 行那类「`<dataHome>/agent-io.json` 活态视图」已随 `getLiveDslFile()` 一并删除
  *     —— 落点现在只剩 `.agent-io/**` 一处，没有根级产物文件了。
  */
-/** 设计存储根目录：<dataHome>/.agent-io */
+/**
+ * ★★★ **数据仓**（跨项目那部分）的唯一解析器，**四个候选、按序取第一个"成立"的**：
+ *
+ *   ① `AGENT_IO_DATA_ROOT` —— 显式点明**数据仓本身**（不追加 `.agent-io`）。
+ *      等价于 Maven 的 `-Dmaven.repo.local`：位置随你，格式不变。
+ *   ② `AGENT_IO_HOME` —— 显式点明"放着 `.agent-io` 的那个目录"（既有语义，**必须**排在 ③ 之前）。
+ *   ③ `<包根>/.agentio-data` —— **存在就用**（用户 2026-10-27 口径：与项目同根、单独一级，
+ *      同目录更好管理）。"目录存在"本身就是声明 ⇒ 不引入第二个配置文件。
+ *   ④ `<dataHome>/.agent-io` —— `~/.agent-io`（**已安装 / 无项目**场景）。
+ *
+ * ★ 为什么 ③ 排在 ④ 前面：本仓自己就是"最常被开发的那个项目"，它的数据不该跑到 `~` 去；
+ *   而一个**装**在 node_modules 里的 agent-io 不会有这个目录 ⇒ 自然落回 ④。
+ * ★★ 为什么 ② 必须排在 ③ 前面：35 张证各自 `AGENT_IO_HOME=<tmp>` 造沙盒；若约定目录抢先，
+ *   证就会写进**真数据仓**、写闸还会判"非沙盒"（实测会踩）⇒ 显式声明永远赢过约定。
+ * ★ 不许别处再拼 `path.join(getDataHome(), '.agent-io', …)` —— 那会让 ①②③ 全部失效（T-#10 的病）。
+ */
 export function getStorageRoot(): string {
+  const dataRoot = process.env.AGENT_IO_DATA_ROOT?.trim();
+  if (dataRoot) return path.resolve(dataRoot);
+  const homeEnv = process.env.AGENT_IO_HOME?.trim();
+  if (homeEnv) return path.join(path.resolve(homeEnv), DATA_DIR_NAME);
+  const local = path.join(getPackageRoot(), DATA_ROOT_DIR_NAME);
+  if (fs.existsSync(local)) return local;
   return path.join(getDataHome(), DATA_DIR_NAME);
 }
 
@@ -366,7 +387,7 @@ export function getLiveFeature(feature: string, projectRoot: string): DesignDSL 
  * | live 缓存 / 索引 | `<projectRoot>/.agent-io/cache.db` 等 | ❌ |
  */
 export function getDesignDir(baseDir?: string): string {
-  return path.join(baseDir ?? getDataHome(), DATA_DIR_NAME, 'design');
+  return path.join(baseDir ?? getStorageRoot(), 'design');
 }
 
 /** 设计图文件路径：<baseDir>/.agent-io/design/<feature>.dsl.json（★ 与 live/<f>.dsl.json 同 schema） */
@@ -881,7 +902,7 @@ export interface ArchiveEntry {
 export function getArchiveDir(feature: string, baseDir?: string): string {
   // ★ `baseDir ?? getDataHome()` 是**默认值**、不是兜底（判据见 `requireProjectRoot` 上方那张表）：
   //   dataHome 是这份数据的**合法归属**（同一件事），而 `?? process.cwd()` 是**换题**。
-  return path.join(baseDir ?? getDataHome(), DATA_DIR_NAME, 'archive', feature);
+  return path.join(baseDir ?? getStorageRoot(), 'archive', feature);
 }
 
 /** 归档条目文件路径 */
@@ -994,12 +1015,13 @@ function isSandboxDataHome(): boolean {
     const rel = path.relative(path.resolve(parent), path.resolve(child));
     return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
   };
-  const home = getDataHome();
+  // ★ 2026-10-27：判的是**数据仓**（getStorageRoot），不是 dataHome —— 数据仓现在有四种来源。
+  const root = getStorageRoot();
   const pkgRoot = getPackageRoot();
   return (
-    inside(home, os.tmpdir()) ||
-    inside(home, path.join(pkgRoot, 'certs', '.work')) ||
-    inside(home, path.join(pkgRoot, '.inspect'))
+    inside(root, os.tmpdir()) ||
+    inside(root, path.join(pkgRoot, 'certs', '.work')) ||
+    inside(root, path.join(pkgRoot, '.inspect'))
   );
 }
 
@@ -1287,7 +1309,7 @@ export function listDesignSheets(): DesignDSL[] {
   for (const feature of Object.keys(readRegistry().features).sort()) take(feature);
 
   // ② 迁移通道：数据家旧目录里还躺着、且注册表没有的存量
-  const legacyDir = path.join(getDataHome(), DATA_DIR_NAME, 'design');
+  const legacyDir = path.join(getStorageRoot(), 'design');
   if (fs.existsSync(legacyDir)) {
     for (const f of fs.readdirSync(legacyDir).sort()) {
       if (!f.endsWith('.dsl.json')) continue;

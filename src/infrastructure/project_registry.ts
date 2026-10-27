@@ -21,7 +21,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDataHome } from './storage.js';
+import { getDataHome, getStorageRoot } from './storage.js';
 
 /** 注册表里的一条：项目根 + 登记痕迹（谁、何时 —— 登记是可考古的事实，不是配置） */
 export interface RegistryEntry {
@@ -40,7 +40,7 @@ export interface ProjectRegistry {
 
 /** 注册表文件的唯一住址：`<dataHome>/.agent-io/projects.json` */
 export function registryFile(): string {
-  return path.join(getDataHome(), '.agent-io', 'projects.json');
+  return path.join(getStorageRoot(), 'projects.json');
 }
 
 /** 路径归一（`\` → `/`，去尾斜杠）—— 与 `roots.ts` / `write_gate#nodeFilePath` 同口径 */

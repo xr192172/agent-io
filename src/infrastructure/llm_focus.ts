@@ -54,7 +54,7 @@ export function configFilePath(): string {
 export function configFileReadPath(): string {
   const home = configFilePath();
   if (fs.existsSync(home)) return home;
-  const legacy = path.join(storage.getDataHome(), DATA_DIR_NAME, 'config.json');
+  const legacy = path.join(storage.getStorageRoot(), 'config.json');
   return legacy !== home && fs.existsSync(legacy) ? legacy : home;
 }
 
