@@ -140,3 +140,84 @@ export function planUntouchedGaps(plan: RewritePlan | null): string[] {
   if (!bad.length) return [];
   return [`untouched 里有 ${bad.length} 条缺 symbol 或 why（空理由 = 没表态）`];
 }
+/**
+ * ★★★ 2026-10-28（迭代 ④）：**`judgement_ref` 的规范引用** —— 不收敛成可解析形式，就判不出"判据强不强"。
+ *
+ * ## 为什么要收敛（用户目标："这套流程还能发现逻辑 bug"）
+ * 判据能不能发现**逻辑错**，取决于它的**种类**：
+ * · **语义类**（能发现）：`behavior-cases`（给定输入⇒期望输出）· `call-exists`（必须调某函数）·
+ *   `edge-absent` / `edge-exists`（依赖关系对不对）· `run`（跑一段脚本看输出）；
+ * · **存在/结构类**（**永远发现不了逻辑错**）：`file-exists`（文件在不在）· `source-has`（某段文本在不在）·
+ *   `symbol-exists` · `signature-matches`（签名对不对）。
+ * ⇒ 自由文本（`cert:t383/②`）**机器读不出种类** ⇒ 强度判不了 ⇒ 只能靠人。收敛后才可判。
+ *
+ * ## 规范形态（只认这两种；其余算 `unparsed`，**点名但不猜**）
+ * · `decision:<node_id>#<index>` —— 判据住设计册该节点的 `decision.expectations[index]`（**首选**：判据的唯一住处）
+ * · `cert:<证文件名>#<检查号>` —— 证里的某一条（种类**不登记** ⇒ 强度按 `unknown` 处理，不假装强）
+ */
+export type JudgementRef = { kind: 'decision'; nodeId: string; index: number } | { kind: 'cert'; file: string; check: string };
+
+/** 解析规范引用；不是规范形态 ⇒ `null`（**不猜**，也不把自由文本当通过） */
+export function parseJudgementRef(ref: string | undefined): JudgementRef | null {
+  const s = (ref ?? '').trim();
+  const m1 = /^decision:([A-Za-z0-9_.:-]+)#(\d+)$/.exec(s);
+  if (m1) return { kind: 'decision', nodeId: m1[1], index: Number(m1[2]) };
+  const m2 = /^cert:([A-Za-z0-9_.-]+)#(.+)$/.exec(s);
+  if (m2) return { kind: 'cert', file: m2[1], check: m2[2] };
+  return null;
+}
+
+/** 判据强度：`semantic` 能发现逻辑错 · `existence` 发现不了 · `unknown` 判不出（不假装） */
+export type JudgementStrength = 'semantic' | 'existence' | 'unknown';
+
+const SEMANTIC_KINDS = new Set(['behavior-cases', 'call-exists', 'edge-absent', 'edge-exists', 'run']);
+const EXISTENCE_KINDS = new Set(['file-exists', 'source-has', 'symbol-exists', 'signature-matches']);
+
+/** 由一个判据的 `kind` 判强度（不认识 ⇒ `unknown`，**不许当成强**） */
+export function strengthOfKind(kind: string | undefined): JudgementStrength {
+  if (!kind) return 'unknown';
+  if (SEMANTIC_KINDS.has(kind)) return 'semantic';
+  if (EXISTENCE_KINDS.has(kind)) return 'existence';
+  return 'unknown';
+}
+
+/**
+ * 计划的**判据强度缺口**（本轮唯一新增的判据；`resolveKind` 由调用方注入 —— 本模块不读册、不读索引）。
+ *
+ * @param plan 画布
+ * @param resolveKind 把一条 entry 的判据解成 `kind`（解不出 ⇒ 返回 `undefined`）
+ * @returns 缺口描述（空数组 = 全都至少是语义类，或没有条目）
+ */
+export function planJudgementGaps(
+  plan: RewritePlan | null,
+  resolveKind: (entry: RewritePlanEntry) => { kind?: string; why_not?: string },
+): string[] {
+  if (!plan) return [];
+  const gaps: string[] = [];
+  for (const e of plan.entries) {
+    const who = `${e.kind}:${e.anchor?.symbol || '(缺 anchor)'}`;
+    const parsed = parseJudgementRef(e.judgement_ref);
+    if (!parsed) {
+      gaps.push(
+        `${who} —— \`judgement_ref\` 不是规范引用（\`${String(e.judgement_ref ?? '')}\`）⇒ 判不出它能不能发现逻辑错。` +
+          `\n      规范形态：\`decision:<node_id>#<index>\`（判据住册，首选）或 \`cert:<证文件名>#<检查号>\``,
+      );
+      continue;
+    }
+    const r = resolveKind(e);
+    if (r.why_not) {
+      gaps.push(`${who} —— 判据解不出来：${r.why_not}（**判不出强度 ≠ 强度合格**）`);
+      continue;
+    }
+    const s = strengthOfKind(r.kind);
+    if (s === 'existence') {
+      gaps.push(
+        `${who} —— 判据 \`${r.kind}\` 是**存在/结构类**，**永远发现不了逻辑错**。` +
+          `\n      要发现 bug 得换语义类：\`behavior-cases\`（给输入⇒期望输出）/ \`call-exists\` / \`edge-absent\``,
+      );
+    } else if (s === 'unknown') {
+      gaps.push(`${who} —— 判据种类 \`${String(r.kind ?? '?')}\` 不在已知分类里 ⇒ **判不出强度**（不假装强）`);
+    }
+  }
+  return gaps;
+}

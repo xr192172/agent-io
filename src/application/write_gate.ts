@@ -67,7 +67,15 @@ import { indexCoversDisk } from '../infrastructure/index/index_freshness.js';
 import { listDesignSheets, getDSL, saveDSL } from '../infrastructure/storage.js';
 import { loadOverlay } from '../infrastructure/storage_overlay.js';
 // ★ 2026-10-28（重写计划层 · 第 3 步）：判据的唯一实现住 `rewrite_plan.ts#planGaps`，这里只调用
-import { readRewritePlan, planGaps, planFileFor, planCoverageGaps, planUntouchedGaps } from './design/db/rewrite_plan.js';
+import {
+  readRewritePlan,
+  planGaps,
+  planFileFor,
+  planCoverageGaps,
+  planUntouchedGaps,
+  planJudgementGaps,
+  parseJudgementRef,
+} from './design/db/rewrite_plan.js';
 import { checkRewriteExit, renderExitCheck } from './design/db/plan_exit_check.js';
 // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：豁免判据的**取值域**住 `domain/geometry.ts`，
 //   本文件**只读**它（`nodes[].gate`）—— **不按路径前缀判**（路径前缀 = 本仓头号病根）。
@@ -971,6 +979,31 @@ export function planExitHumanLine(out: WriteThroughOutcome | null | undefined): 
  *   · **严格**：`AGENT_IO_REQUIRE_PLAN=1` ⇒ **拒绝落盘**（迁移完成后由人打开这一档）。
  * ★ 迁移口径与 T360 的 `judge_gate` 同一路数：**存量先记账，新规矩从人明确打开那一刻起生效**。
  */
+/**
+ * ★ 2026-10-28（迭代 ④）：把一条计划的 `judgement_ref` 解成**判据种类**。
+ * 只认 `decision:<node_id>#<index>`（判据的唯一住处 = 册里节点的 `decision.expectations`）；
+ * `cert:` 形态**解不出种类**（证的检查号不登记 kind）⇒ 如实报"解不出来"，不假装强。
+ */
+function resolveJudgementKind(entry: { judgement_ref?: string }): { kind?: string; why_not?: string } {
+  const parsed = parseJudgementRef(entry.judgement_ref);
+  if (!parsed) return { why_not: '引用不是规范形态' };
+  if (parsed.kind === 'cert') return { why_not: `\`cert:\` 形态不登记判据种类（${parsed.file}#${parsed.check}）` };
+  try {
+    const sheets = listDesignSheets();
+    for (const sheet of sheets) {
+      const node = (sheet.geometry?.nodes ?? []).find((n) => n.id === parsed.nodeId);
+      if (!node) continue;
+      const exps = node.decision?.expectations ?? [];
+      const e = exps[parsed.index];
+      if (!e) return { why_not: `节点 ${parsed.nodeId} 的 decision.expectations[${parsed.index}] 不存在（该节点有 ${exps.length} 条）` };
+      return { kind: String((e as { kind?: string }).kind ?? '') };
+    }
+    return { why_not: `设计册里找不到节点 ${parsed.nodeId}` };
+  } catch (err) {
+    return { why_not: `读册失败：${(err as Error).message}` };
+  }
+}
+
 /** 该文件在**实际 DB**里的符号名（排除 `kind='file'`）；拿不到 ⇒ 空数组（判据如实降级，不猜） */
 function symbolsInFileOf(projectRoot: string, rel: string): string[] {
   try {
@@ -994,7 +1027,13 @@ function planGate(projectRoot: string, rels: readonly string[]): { warnings: str
     const plan = readRewritePlan(projectRoot, rel);
     // ★ 2026-10-28（迭代 ③）：**"通读"的可判形态** —— 符号全集逐个表态。
     //   符号清单只从实际 DB 取（`cache.db` 的 nodes）；取不到 ⇒ 不判（如实降级，不猜）。
-    const gaps = [...planGaps(plan), ...planUntouchedGaps(plan), ...planCoverageGaps(plan, symbolsInFileOf(projectRoot, rel))];
+    const gaps = [
+      ...planGaps(plan),
+      ...planUntouchedGaps(plan),
+      ...planCoverageGaps(plan, symbolsInFileOf(projectRoot, rel)),
+      // ★ 迭代 ④：判据**强不强**（存在性判据发现不了逻辑错）
+      ...planJudgementGaps(plan, (e) => resolveJudgementKind(e)),
+    ];
     if (!gaps.length) continue;
     const head = `· ${rel} 没有够格的重写计划（${gaps.length} 处）：`;
     const body = gaps.slice(0, 4).map((g) => `    - ${g}`).join('\n');
