@@ -1866,6 +1866,73 @@ function extractCallee(callNode: SyntaxNodeLike, langName: string): { name: stri
  * 遍历函数体提取调用边（跳过嵌套函数声明子树——其调用归属嵌套函数自身，
  * 由 traverseAndExtractCalls 递归处理）。
  */
+/**
+ * ★★★ 2026-10-27（T-#59 修 2）：**预扫一个函数体，把所有局部绑定名收上来**。
+ *
+ * ## 为什么必须“预扫”而不能靠递归时的 childScope
+ * `extractCallsFromBody` 是**逐个 body 子句**调用的
+ * ⇒ `const onChange = opts.onChange;`（第 1 个子句）与 `onChange(summary)`（第 5 个子句）
+ *   是**兄弟关系** ⇒ 在子句内部扩展的 `childScope` **传不到兄弟**（实测 local 0 的真因）。
+ * ⇒ 只能在**函数层**把整段 body 扫一遍，把名字“提升”进初始作用域。
+ *
+ * ## 收什么 / 不收什么
+ * · 收：`const x = <非函数值>`（`opts.onChange` / `new Function(...)` / 三元 / `??`）
+ * · 收：解构 `const { a, b } = …` 里的 `a`/`b`
+ * · **不收**：`const x = () => {}`（它是**符号**，在 `nodes` 里 ⇒ 收进来会抢在 classifyCall 前面丢边）
+ * · **不收**：嵌套函数体内的东西（那是它自己的作用域）
+ */
+function collectLocalBindings(nodes: readonly SyntaxNodeLike[]): string[] {
+  const out: string[] = [];
+  const collectIds = (n: SyntaxNodeLike): void => {
+    if (n.type.includes('identifier') || n.type === 'shorthand_property_identifier_pattern') {
+      if (isValidIdentifier(n.text)) out.push(n.text);
+      return;
+    }
+    for (let k = 0; k < n.childCount; k++) {
+      const c = n.child(k);
+      if (c) collectIds(c);
+    }
+  };
+  const walk = (n: SyntaxNodeLike, depth: number): void => {
+    if (depth > 40) return;
+    // 嵌套函数 = 新作用域 ⇒ 不往里扫
+    if (
+      n.type === 'arrow_function' ||
+      n.type === 'function_expression' ||
+      n.type === 'function' ||
+      n.type === 'function_declaration' ||
+      n.type === 'generator_function'
+    ) {
+      return;
+    }
+    if (n.type === 'lexical_declaration' || n.type === 'variable_declaration') {
+      for (let i = 0; i < n.childCount; i++) {
+        const dec = n.child(i);
+        if (!dec || dec.type !== 'variable_declarator') continue;
+        const nameNode = dec.childForFieldName('name');
+        const valueNode = dec.childForFieldName('value');
+        if (!nameNode) continue;
+        const isFnValue =
+          !!valueNode &&
+          ['arrow_function', 'function_expression', 'function', 'generator_function'].includes(valueNode.type);
+        if (isFnValue) continue; // 函数值 = 符号，不收
+        // ★★★ 2026-10-27（T-#59 护栏）：**从 import 解构出来的名字不收**。
+        //   病史：`const { saveDSL } = await import('../../storage.js')` 被我当成"局部绑定"
+        //   ⇒ 判成 `external: local-binding` ⇒ **丢掉 5 条真边**（实测 edges 13588 → 13583）。
+        //   ⇒ 凡绑定值里带 `import(...)` 的声明，一律跳过（它们是**导入**，不是局部变量）。
+        if (valueNode && /(^|\s)(await\s+)?import\s*\(/.test(valueNode.text)) continue;
+        collectIds(nameNode);
+      }
+    }
+    for (let k = 0; k < n.childCount; k++) {
+      const c = n.child(k);
+      if (c) walk(c, depth + 1);
+    }
+  };
+  for (const n of nodes) walk(n, 0);
+  return out;
+}
+
 function extractCallsFromBody(
   node: SyntaxNodeLike,
   lang: LanguageEntry,
@@ -1877,7 +1944,15 @@ function extractCallsFromBody(
   scope: Set<string> = new Set()
 ): void {
   if (depth > 200) return;
-  if (isSymbolNode(node, lang)) return;
+  // ★★★ 2026-10-27（T-#59 修）：**declaration 不早退**。
+  //   病史：这里原本是无条件 `if (isSymbolNode(node, lang)) return;`
+  //   而 TS 的 `lexical_declaration` **本身是符号节点**（顶层 const 就是靠它成为符号的）
+  //   ⇒ **函数体内的 `const fn = new Function(...)` / `const { onChange } = opts` 整支被跳过**
+  //   ⇒ 下面的作用域收集**永远跑不到**（实测 `local 0` 的真因）。
+  //   ⇒ 只对 declaration 放行；function/class 仍然早退（它们的体由 `traverseAndExtractCalls` 负责，
+  //     放行会造成重复提取）。
+  const isDeclNodeHere = node.type === 'lexical_declaration' || node.type === 'variable_declaration';
+  if (isSymbolNode(node, lang) && !isDeclNodeHere) return;
   if (isCallNode(node, lang)) {
     const c = extractCallee(node, lang.name);
     if (c) {
@@ -1910,6 +1985,45 @@ function extractCallsFromBody(
       .filter((n): n is string => !!n);
     if (names.length > 0) childScope = new Set([...scope, ...names]);
   }
+  // ★★★ 2026-10-27（T-#59）：**函数体内的局部 const 绑定进作用域**（解构 + 非函数值）。
+  //
+  // ## 为什么
+  // 实测剩 89 条里有一大类是**局部绑定**却被当成"漏连"：
+  //   `const { onChange, onError } = opts`  ⇒ 解构出来的名字不在 `nodes`（`paramsOf` 只给 `opts`）
+  //   `const fn = cond ? a : b`            ⇒ 绑定值**不是函数** ⇒ 不进 nodes（T-#45 只收函数值）
+  //   `const run = opts.run ?? defaultRun` ⇒ 同上
+  // ⇒ 它们**不是符号**，引用它们**合法** ⇒ 该判 `local-binding`，不该 `failed`。
+  //
+  // ## 为什么不收"函数值"的 const
+  // `const walk = () => {}` **是符号**（在 `nodes` 里，T-#45/T-#52 已收）⇒ 若也塞进作用域，
+  // 下面的 `local: true` 会**抢在** `classifyCall` 前面把它判成 external ⇒ **丢掉真边**。
+  // ⇒ 只收**绑定值不是函数**的那些。
+  if (node.type === 'lexical_declaration' || node.type === 'variable_declaration') {
+    for (let i = 0; i < node.childCount; i++) {
+      const dec = node.child(i);
+      if (!dec || dec.type !== 'variable_declarator') continue;
+      const nameNode = dec.childForFieldName('name');
+      const valueNode = dec.childForFieldName('value');
+      if (!nameNode) continue;
+      const isFnValue =
+        !!valueNode &&
+        ['arrow_function', 'function_expression', 'function', 'generator_function'].includes(valueNode.type);
+      if (isFnValue) continue; // 函数值 = 符号，交给 nodes/classifyCall
+      const bound: string[] = [];
+      const collectIds = (n: SyntaxNodeLike): void => {
+        if (n.type.includes('identifier') || n.type === 'shorthand_property_identifier_pattern') {
+          if (isValidIdentifier(n.text)) bound.push(n.text);
+          return;
+        }
+        for (let k = 0; k < n.childCount; k++) {
+          const c = n.child(k);
+          if (c) collectIds(c);
+        }
+      };
+      collectIds(nameNode);
+      if (bound.length > 0) childScope = new Set([...childScope, ...bound]);
+    }
+  }
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i);
     if (child) extractCallsFromBody(child, lang, callerQn, calls, symbols, depth + 1, childScope);
@@ -1938,11 +2052,14 @@ function traverseAndExtractCalls(
       if (body) {
         funcStack.push(qn);
         // ★ T-#55：**本函数的参数进作用域** —— 引用参数不是符号（实测 resolve/reject/fn …）
-        const ownParams = new Set<string>(
-          paramsOf(node, lang.field_map.parameters || 'parameters', lang.name)
+        // ★ T-#59：**加上预扫的局部绑定**（`const fn = …` / 解构）—— 它们是兄弟关系，
+        //   递归时的 childScope 传不过去 ⇒ 必须在函数层提升。
+        const ownParams = new Set<string>([
+          ...paramsOf(node, lang.field_map.parameters || 'parameters', lang.name)
             .map((p) => p.name)
             .filter((n): n is string => !!n),
-        );
+          ...collectLocalBindings(body),
+        ]);
         if (kind === 'function' || kind === 'method') {
           // 本函数体调用（跳过嵌套函数子树）
           for (const child of body) extractCallsFromBody(child, lang, qn, calls, symbols, depth + 1, ownParams);
