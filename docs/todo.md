@@ -104,6 +104,7 @@
 | 编号 | 待办 | 在哪 | 状态 |
 |---|---|---|---|
 | T332 | 证夹具没跟上设计侧搬家（`run82` 取不到 DSL） | `certs/` · `.agent-io/design/` | 未修（`run82.dsl.json` 不存在） |
+| T-#98d | 三条门类证**跑不起来**（不在门表里所以没人发现）：`t352` 引已退场的 `listFeatures`、`t353` 引已退场的 `annotation_tools.js`、`t332` 走 `claimTask` 直接崩 | `certs/t352` · `t353` · `t332` | 未修（要重写成现口径，或按"真没用就删"退场） |
 | T285 | Go `uninstrument` 后残留空 `internal/` | `observe-lang-go` | 未做 |
 | T305 | `lint` 对「打断宿主」类问题 | `observe-lang-*` | 未做 |
 | T308 | Go 侧区间替换重叠 | `observe-lang-go` | 未做 |
