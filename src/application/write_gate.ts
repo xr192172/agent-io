@@ -67,6 +67,7 @@ import { listDesignSheets, getDSL, saveDSL } from '../infrastructure/storage.js'
 import { loadOverlay } from '../infrastructure/storage_overlay.js';
 // ★ 2026-10-28（重写计划层 · 第 3 步）：判据的唯一实现住 `rewrite_plan.ts#planGaps`，这里只调用
 import { readRewritePlan, planGaps, planFileFor } from './design/db/rewrite_plan.js';
+import { checkRewriteExit, renderExitCheck } from './design/db/plan_exit_check.js';
 // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：豁免判据的**取值域**住 `domain/geometry.ts`，
 //   本文件**只读**它（`nodes[].gate`）—— **不按路径前缀判**（路径前缀 = 本仓头号病根）。
 import type { DiagramStatus, NodeGate } from '../domain/geometry.js';
@@ -115,6 +116,14 @@ export interface WriteThroughOutcome {
   /** 同步失败的文件数 */
   failed?: number;
   /** 因"变动符号改名/删除"而重新打开的引用行数（>0 = 引用方被正确重算） */
+  /**
+   * ★★★ 2026-10-28（重写计划层 · 第 6 步）：**出口闭环读数**（每行一个文件）。
+   * 写完之后立刻对账：计划里的锚点落了没、文件变没变、有没有**计划外改动**。
+   * ★ 只对**有画布**的文件出声（没有计划的情况由写前的 `planGate` 点名，不在这里重复刷）。
+   * ★ 为什么挂在写穿结果上：这是**所有写路径共用**的那一处（async/sync 都经 `finishWriteThrough`），
+   *   挂别处就得逐工具各接一遍（同一判据住 N 处 = 本仓头号病）。
+   */
+  plan_exit?: string[];
   refsReopened?: number;
   /** 被重开的引用分布在多少个引用方文件里 */
   refsReopenedFiles?: number;
@@ -373,6 +382,17 @@ function finishWriteThrough(
   //     ⇒ ★ 而"没设"与"明确 false"对读端是**两件事**（★ 本仓一贯口径 ✓）⇒ 必须**明确 `false`** ✓
   //   ⇒ ★ 判据（★ 只此一处，两个方向都收）：
   //     ★ **有文件级失败 ⇒ 不 ok** ✓ · ★ **引用重算失败 ⇒ 明确 `false`**（不留 `undefined` ✓）
+  // ★ 2026-10-28（第 6 步）：**出口闭环** —— 写穿之后立刻对账（有画布的文件才出声）
+  try {
+    const lines: string[] = [];
+    for (const rel of rels) {
+      if (!readRewritePlan(root, rel)) continue; // 没计划 ⇒ 写前的 planGate 已经点名过，不重复刷
+      lines.push(renderExitCheck(checkRewriteExit(root, rel)));
+    }
+    if (lines.length) out.plan_exit = lines;
+  } catch {
+    /* 对账是增强：失败不连累写穿结果（但也不静默——写前 planGate 的 warning 仍在） */
+  }
   const hadFileFailures = (out.failed ?? 0) > 0;
   try {
     const r = resolveRefsAfterWrite(db, root, rels, keepPending);
