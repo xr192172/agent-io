@@ -62,11 +62,15 @@ chk(!('transpileToCjs' in harness), '②-b `transpileToCjs` **不再是导出**�
   chk(!!env, '③ `probeRunEnv(root)` 给出 env');
   chk(/--import\s+file:\/\//.test(String(env?.NODE_OPTIONS)), '③-b `NODE_OPTIONS` 里 `--import` 是 **file:// URL**（Windows 硬要求）', String(env?.NODE_OPTIONS).slice(0, 120));
   chk(String(env?.OBSERVE_EVENTS_FILE ?? '').startsWith(path.join(proj, '.agent', 'observe')), '③-c `OBSERVE_EVENTS_FILE` 落在**被观测项目**的 `.agent/observe/`', String(env?.OBSERVE_EVENTS_FILE ?? ''));
-  const dist = runEnv.probeLayerRoot();
+  // ★ 2026-10-28（T-#OBSERVE-8）：口径已从"排除某个目录"改为"排除**探针侧依赖闭包**"
+  //   ⇒ 断言排除清单里必须含探针本体（probe.js）与插桩器（instrument.js）
+  const ex = String(env?.AGENT_IO_PROBE_EXCLUDE ?? '').split(path.delimiter);
+  const hasProbe = ex.some((x) => x.endsWith('probe.js'));
+  const hasInstr = ex.some((x) => x.endsWith('instrument.js'));
   chk(
-    String(env?.AGENT_IO_PROBE_EXCLUDE ?? '').split(path.delimiter).some((x) => x === dist),
-    '③-d 排除清单**含**探针层目录**（只排自己，不排整个 dist）**（否则会插桩探针本体＝自伤）',
-    `${dist} ∈ [${String(env?.AGENT_IO_PROBE_EXCLUDE ?? '')}]`,
+    hasProbe && hasInstr,
+    '③-d 排除清单含**探针侧依赖闭包**（至少有 probe.js 与 instrument.js —— 否则插桩会自伤）',
+    `闭包成员在排除清单里：probe.js=${hasProbe} instrument.js=${hasInstr}`,
   );
   chk(fs.existsSync(runEnv.probeLoaderPath()), '③-e `probeLoaderPath()` 指向真实存在的 loader', runEnv.probeLoaderPath());
 }

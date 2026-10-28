@@ -16,6 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { probeClosure } from './probe_closure.js';
 
 /** 本模块所在目录（`dist/src/infrastructure/analysis/observe`）—— 不用 `../..` 手算式推断 */
 export const OBSERVE_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -95,7 +96,9 @@ export function probeRunEnv(root?: string): NodeJS.ProcessEnv | undefined {
       NODE_OPTIONS: `${prev} --import ${new URL(`file://${loader.replace(/\\/g, '/')}`).href}`.trim(),
       OBSERVE_EVENTS_FILE: events,
       AGENT_IO_PROBE_ROOT: projectRoot,
-      AGENT_IO_PROBE_EXCLUDE: [process.env.AGENT_IO_PROBE_EXCLUDE, probeLayerRoot()].filter(Boolean).join(path.delimiter),
+      // ★ 排除的是**探针侧依赖闭包**（不是某个目录）：闭包内一律不插桩，闭包外的 dist 可以插
+      //   ⇒ 观测面从 certs/ 扩到整个 src/（理由见 probe_closure.ts 头注释）
+      AGENT_IO_PROBE_EXCLUDE: [process.env.AGENT_IO_PROBE_EXCLUDE, ...probeClosure()].filter(Boolean).join(path.delimiter),
     };
   } catch {
     return undefined;

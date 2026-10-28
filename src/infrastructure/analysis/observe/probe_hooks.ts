@@ -26,6 +26,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// ★ 探针侧依赖闭包（hooks 线程里只算一次）：这些文件**绝不插桩**，否则自伤（理由见 shouldHandle）
+import { probeClosure } from './probe_closure.js';
+const probeClosureSet = new Set(probeClosure());
+
 const D = new URL('./', import.meta.url); // dist/.../observe/
 const EXTS = new Set(['.js', '.mjs', '.cjs']);
 const cache = new Map<string, { key: string; out: string | null }>();
@@ -41,11 +45,17 @@ function shouldHandle(url: string): boolean {
   }
   if (!EXTS.has(path.extname(p))) return false;
   if (p.includes(`${path.sep}node_modules${path.sep}`)) return false;
-  // 框架自身：dist 目录（含探针本体）与 loader 本体 —— 插桩它们只会自伤
-  // ★ 2026-10-28（T-#KIND-2）：别在 hooks 里手算 `../../..`（脆）；自根从**命名常量**来，并允许 env 覆盖：
-  //   本文件在 dist/src/infrastructure/analysis/observe ⇒ 自根是 dist（**不是** dist/src）
-  const selfRoot = process.env.AGENT_IO_PROBE_SELF_ROOT || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..'); // ★ 排除整个 dist（理由见 run_env.probeLayerRoot）
-  if (p.startsWith(selfRoot + path.sep)) return false;
+  // ★★★ 2026-10-28（T-#OBSERVE-8）：**排除的是"探针侧依赖闭包"，不是"某个目录"**。
+  //   一次静默自伤换来的结论：把口径收窄成"只排 observe/ 目录"后，**进程无输出、exit 0** ——
+  //   因为插桩器（`instrument.js`）依赖 `ts_kernel` 那一大批 dist 模块，而它跑在 **hooks 线程**里；
+  //   那些模块被插桩后注入的 `import {captureProbe} from './probe.js'` 会在"正在加载依赖的 hooks 线程"里
+  //   再触发加载 ⇒ 循环 ⇒ 静默死。
+  //   ⇒ 闭包内的文件一律不插桩（闭包**对 import 封闭**，证 `t418` 会验）；
+  //     闭包**之外**的 dist 代码可以安全插桩 ⇒ 观测面从 `certs/` 扩到整个 `src/`。
+  //   ★ env `AGENT_IO_PROBE_SELF_ROOT` 仍可强制排掉一整棵子树（排查用）。
+  const selfRoot = process.env.AGENT_IO_PROBE_SELF_ROOT;
+  if (selfRoot && p.startsWith(selfRoot + path.sep)) return false;
+  if (probeClosureSet.has(p)) return false;
   for (const ex of (process.env.AGENT_IO_PROBE_EXCLUDE ?? '').split(path.delimiter)) {
     if (ex && p.startsWith(ex)) return false;
   }
