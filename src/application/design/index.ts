@@ -973,16 +973,15 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'action=set（默认）：直接写 goals（结构化目标/方向，全量替换）与 edge_intents（"A 为何依赖 B" 与边界归属，' +
       '按 base 边 id 或 from+to 匹配挂载）到 overlay，随即 apply 回 base 并保存，让 get_dsl/serve 当下即可读到' +
       '（meta.goals 与 edge.intent），不依赖下一次代码扫描再生。' +
-      'action=propose：由 LLM 代拟意图改写提案（把当前意图 vs 将改意图算成 before/after 预览）进入人工审批闸门，' +
-      '**不写盘不碰 DSL**；人在工作台「代码审批」页签 approve 后才真正写入 overlay + base。' +
-      '★ 何时用哪个：确定要改、无需人拍板 → action=set 直接落；"改 why / 方向"这类应由人决策的变更 → action=propose。' +
-      '★ 安全策略前移（与"人只做决策审批、LLM 只做提案转述"的分层一致）：propose **永不直接落盘**；' +
+      '★ **action=propose 已退役（2026-10-22）**：分支早已删除，而 enum/描述还在宣称它 ⇒ 此前调 propose 会被**当成 set 直接写盘**（越权）。' +
+      '现在调它会**响亮报错且零副作用**。要走「先请人批再落」：代码/契约变更用 opl 立卡；设计声明变更用 observe action=proposals。' +
+                  '★ 安全策略前移（与"人只做决策审批、LLM 只做提案转述"的分层一致）：propose **永不直接落盘**；' +
       'project_dir 是审批台账的隔离桶名，应与人当前查看的项目一致，提案才会出现在他的审批列表里。',
     inputSchema: {
       action: z
         .enum(['set', 'propose'])
         .default('set')
-        .describe('set=直接写盘落 DSL（默认，get_dsl 当下可读到） | propose=只算 before/after 提案等人工审批，不写盘'),
+        .describe('set=直接写盘落 DSL（默认，get_dsl 当下可读到） | propose=**已退役**（调用会响亮报错、零副作用，见工具描述）'),
       feature: z.string().describe('feature 名（2 个 action 共用锚点）'),
       goals: z
         .array(
@@ -1025,7 +1024,20 @@ export const DESIGN_TOOLS: ToolDef[] = [
         ),
     },
     handler: wrapData(async (a) => {
-      const action = (a.action as 'set' | undefined) ?? 'set';
+      // ★★★ 2026-10-28（T-#OBSERVE-2 真实形态）：action 原来**读出来就没用过** ——
+      //   于是 action=propose 会被**当成 set 直接写盘** ⇒ 与"propose 永不直接落盘"的承诺**正好相反**，
+      //   是**越权写盘**（比"提了没人能批"严重得多）。propose 分支早在 2026-10-22 就退役了，
+      //   但 enum 与 description 还在宣称它 ⇒ 调用方毫无察觉。
+      //   ⇒ 现在：propose **响亮拒绝且零副作用**，并指出当前该走哪条路。
+      const action = (a.action as 'set' | 'propose' | undefined) ?? 'set';
+      if (action === 'propose') {
+        throw new Error(
+          'design_intent action=propose 已退役（2026-10-22）：它的分支早已删除，此前调用会被**当成 set 直接写盘**（越权），' +
+            '所以这里改成**响亮拒绝、零副作用**。' +
+            ' ⇒ 要做「先请人批再落」：① 代码/契约变更走 opl 立卡（publish 式）；② 设计声明变更走 observe action=proposals（提案库 + 四层门）。' +
+            ' ⇒ 确定要直接写意图：用 action=set（默认）。',
+        );
+      }
       const feature = requireStr(a, 'feature');
       const goals = Array.isArray(a.goals) ? (a.goals as unknown[]) : undefined;
       const edgeIntents = Array.isArray(a.edge_intents) ? (a.edge_intents as unknown[]) : undefined;
