@@ -360,9 +360,13 @@ export function planDependencyGaps(plan: RewritePlan | null): string[] {
  * ★ 为什么必须判：这两条错了，后面所有 entry 的锚点都建在错的前提上 —— 而"顺序对、判据强"都救不回来。
  */
 export function planKindGaps(plan: RewritePlan | null, fileExists: boolean): string[] {
-  if (!plan) return [];
+  if (!plan) return []; // 空计划 = 没有判断对象
   const gaps: string[] = [];
   for (const e of plan.entries) {
+    // ★ 2026-10-28（严格档真实误报 · 试点读数 #6）：**已完成的条目不判前提** ——
+    //   一条 `create` 做完之后文件当然存在；拿"文件已存在"去骂它，就是把"完成了"当成"前提错了"。
+    //   （实测：严格档因此拦了一次本该放行的真实改动 ⇒ 这是判据误伤，不是调用方错。）
+    if (e.status === 'done') continue;
     const who = `${e.kind}:${e.anchor?.symbol || '(缺 anchor)'}`;
     if (e.kind === 'create' && fileExists) {
       gaps.push(

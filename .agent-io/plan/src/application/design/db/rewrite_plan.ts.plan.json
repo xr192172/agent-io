@@ -9,7 +9,7 @@
       "detail": "新增判据：create 要求文件尚不存在、delete 要求文件存在（前提错了就是路线错）",
       "judgement_ref": "cert:t388#①",
       "judgement_kind": "behavior-cases",
-      "status": "open"
+      "status": "done"
     }
   ],
   "untouched_default": {
