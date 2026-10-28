@@ -931,10 +931,16 @@ function resolveDecisionTarget(dsl: DesignDSL, id: string | undefined, data: Rec
         `也不在 semantic.files 里。请用 get_dsl query=files 核对**仓库相对路径**或节点 id。`,
     );
   }
-  if (node.type !== 'file' && node.type !== 'doc' && node.type !== 'service') {
+  // ★★★ 2026-10-28（T-#DOMAIN-2）：**放开 `module`（目录 / 域）** —— 与「I1 起放开 service」同一个论证：
+  //   **架构决策的落点常是服务级节点** ⇒ **域级决策（这个目录为什么存在 / 边界在哪）的落点就是目录节点**。
+  //   ★ 为什么必须放开：`structure.domains.json` 有 60 个域，而设计册里**域节点带 decision 的 = 0 个** ——
+  //     不是没人写，是**写不进去**（此前一律被这一行拒）。而域级边界判据（`domain-independent`）
+  //     正是要给域写的东西；没有住所 ⇒ 分割 / 合并 / 废弃 / 删除都没有判据可挂。
+  if (node.type !== 'file' && node.type !== 'doc' && node.type !== 'service' && node.type !== 'module') {
     throw new Error(
       `decision.update 的目标节点 "${node.id}"（type=${node.type ?? '?'}）不是文件/文档/service 节点 ⇒ 拒绝。` +
-        `决策卡挂 type=file / type=doc / type=service 的节点（I1 起放开 service —— 架构决策的落点常是服务级节点）。`,
+        `决策卡挂 type=file / type=doc / type=service / **module（域）** 的节点` +
+        `（\`service\` 自 I1 放开；\`module\` 自 T-#DOMAIN-2 放开 —— 域级决策的落点就是目录节点）。`,
     );
   }
   return { node, path: nodePath(node as never) }; // ★ T-#35：不再读已删的 description（否则静默退成 id）

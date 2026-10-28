@@ -44,7 +44,7 @@
 - 默认跳过不产出 PASS/FAIL 的量具 / 探针 / 复位（清单 `NON_JUDGING`，带自检：台账证明它产出汇总 ⇒ 当场报警并照跑）。
 - `--all` 全跑 · `--exclude <串>` 排掉某张 · `<名字片段>` 点名跑。
 
-## 三、判据 8 kind
+## 三、判据 10 kind
 
 写在节点 `decision.expectations`，由 `judgeExpectations` 求值；`path` / `from` / `to` 一律仓库相对路径。
 
@@ -55,14 +55,20 @@
 | `signature-matches` | 符号签名 == 给定签名（比较前压空白） | `path` `symbol` `signature` | post |
 | `edge-exists` | **文件级**：`from` 依赖 `to` | `from` `to` | post |
 | `edge-absent` | **文件级**：`from` 不许依赖 `to` | `from` `to` | pre |
+| `domain-independent` | **域级**：域 `domain` 不许 import 域 `must_not_import[]` 里任何文件（按**域对聚合**，给条数 + 样例边） | `domain` `must_not_import[]`（非空） | pre |
 | `call-exists` | `path` 里的 `symbol` 调用了 `target` | `path` `symbol` `target` | post |
 | `source-has` | 源码文本必须含 `must[]` / 不许含 `mustNot[]`（只验文本，不懂语义） | `path` + `must[]` 或 `mustNot[]` 至少一个 | post |
 | `run` | 给 `input` 跑 `expect` 表达式 | `expect` | post |
+| `behavior-cases` | 给 `cases[]`（位置实参）跑函数，逐条比 `expect`（与 `run` 同一执行核） | `path` `symbol` `cases[]`（非空） | post |
 
 - 每条都要 `why`（非空），否则写入被拒。
 - `run` 专属字段：`input` / `input_ref` / `blocked_by`（有值 ⇒ 判 `pending`，不跑 `expect`）/ `mutants_ignore[]`（不参与突变的 input 字段）。`expect` 的求值域只有 `input` / `root` / `validateDSL` / `fs` / `path`，**没有 `import`** ⇒ 调不到项目模块，只能断言 `validateDSL` 或文件文本。要真跑被测函数得加 `target{module,fn}` + `cases[]`（未做，见 `INDEX.md` §四）。
 - `run` 只许读 + 判，不许副作用（写盘 / 改状态）。
 - `signature-matches` 比的是「设计侧存的签名（意图）」与「源码签名（事实）」。设计 DSL 该存签名，不该存从源码抽出来的结构化契约（派生量，会不同步）。
+- ★ `domain-independent` 的主体是**域 id**（`structure.domains.json` 的 `id`，不是层级名、不是路径）：
+  域表缺失 / 域 id 不认识 / 索引不可用 ⇒ 判 `unsupported`（**判不了 ≠ 合格**）。它存在的理由：
+  本仓有 167 个域对 / 1507 条跨域 import 边，**逐文件枚举不现实**；而分割 / 合并 / 废弃 / 删除的
+  必要条件（入度=0 / 双向密度 / 红条数单调下降）都只能在**域级**算。
 - `edge-exists` / `edge-absent` 的 `from` / `to` 是**文件路径**（来自 `cache.db` 的 import 依赖）；DSL `edges[].from/to` 是**节点 id**。同名不同义。
 - 求值结论四态：`pass` / `fail` / `unsupported`（判不了，单列，不算过也不算不过）/ `pending`。
 - 卡的结论五态（`cardStanding`）：`work` / `violated` / `blocked` / `satisfied` / `unknowable`，由 `RED_DISPOSITION` 派生。

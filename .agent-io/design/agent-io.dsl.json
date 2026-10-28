@@ -50,6 +50,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "解析层：把源码文本变成 AST 事实（符号 / import / 调用边 / 类型引用）。**它是所有判据的地基** —— 判据不许读索引冒充代码，就是要从这里现解析。",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "parse",
+              "must_not_import": [
+                "meta-view",
+                "meta-explore",
+                "observe-reconcile"
+              ],
+              "why": "解析层是地基：不许反向依赖任何 application 层域（否则地基压在上层上）"
+            }
+          ],
+          "updated_at": "2026-10-28T06:11:59.055Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -344,6 +361,22 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "死代码域：判定死语句 / 死导入。**它的判据是\"可达性\"** —— 谁都不引用的东西才是死的。",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "deadcode",
+              "must_not_import": [
+                "meta-view",
+                "meta-explore"
+              ],
+              "why": "分析域只吃索引与 AST；不许依赖任何产出/呈现层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:12:00.340Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -63387,13 +63420,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 104,
+  "_dsl_rev": 106,
   "_sync": {
-    "saved_at": "2026-10-28T04:05:55.047Z",
+    "saved_at": "2026-10-28T06:12:00.351Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 159357910,
+    "age": 166923214,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

@@ -265,6 +265,19 @@ export function assertValidExpectations(v: unknown): asserts v is Expectation[] 
     else if (kind === 'signature-matches') { need('path'); need('symbol'); need('signature'); }
     else if (kind === 'call-exists') { need('path'); need('symbol'); need('target'); }
     else if (kind === 'run') { need('expect'); }
+    else if (kind === 'domain-independent') {
+      // ★ 2026-10-28（T-#DOMAIN-2）：域级判据的形状 —— 主体是**域**（域表里的 id），不是文件路径。
+      need('domain');
+      const must = o.must_not_import;
+      if (!Array.isArray(must) || must.length === 0) {
+        throw new Error(
+          `${at}.must_not_import 必须是**非空**数组（kind=domain-independent）—— 说不出"不许依赖谁"的边界判据不算判据`,
+        );
+      }
+      if (must.some((x) => typeof x !== 'string' || x.trim() === '')) {
+        throw new Error(`${at}.must_not_import 每项必须是非空字符串（域 id）`);
+      }
+    }
     else if (kind === 'source-has') {
       need('path');
       const hasMust = Array.isArray(o.must) && o.must.length > 0;
