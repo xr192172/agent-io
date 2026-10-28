@@ -1036,6 +1036,14 @@ export function renderPlanReadings(
    * 拿不到 `close()` 的**批级**读数 ⇒ `out` 上常常没有 `plan_exit` / `plan_baseline`。
    * 当初正因为如此，`edit_code` 才自己重算一遍 —— **不是重复实现，是拿不到读数**。
    * ⇒ 把"拿不到就现算"收进**这一个函数**（写在一处、理由写在这里），调用方只管调。
+   *
+   * ## ★ 为什么"在 `commit()` 时就把读数算好"这条路**走不通**（2026-10-28 验证过，别再试）
+   * `checkRewriteExit` 的判据（锚点在不在、`body_hash` 变没变）**读的是索引** `cache.db`；
+   * 而 `commit()` 只落了盘、索引要等 `close()` 的 `syncSelfWritesSync` 才更新
+   * ⇒ 在 `commit()` 时算出来的读数是**对着旧索引**算的（会误报 not_yet / 看不见 `changed_unplanned`）。
+   * ⇒ 结构解只有一条：**写路只许有一种收尾**（统一走 `close()`，再按文件取读数），见 `docs/todo.md` T-#RP-3。
+   * ★ 本函数的回退**不是第二套判据**：它调的还是 `checkRewriteExit`，且此时调用方已自己 `syncFile`
+   *   ⇒ 索引是新的 ⇒ 与 `close()` 时算出的结果**等价**；差别只是"多做一次计算"，不是"另一把尺"。
    */
   ctx?: { root: string; rel: string },
 ): string {
