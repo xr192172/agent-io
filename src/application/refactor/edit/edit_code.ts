@@ -564,7 +564,16 @@ function assumptionNote(gateOut: GateReceipt | undefined): string {
   return `\n${head}${tail}`;
 }
 
-async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise<{
+/**
+ * ★ 2026-10-28（T-#RP-3）：本函数是**正文**（14 处 return 各管一种 op 的回执），
+ * 它**不负责收尾** —— 事务通过 `registerTxn` 交给外层 `editCodeInner`，
+ * 由外层统一 `close()`（唯一收尾）。这样"批级读数"自然回到回执里，不必现算。
+ */
+async function editCodeBody(
+  args: EditCodeArgs,
+  gateOut: GateReceipt | undefined,
+  registerTxn: (t: SourceWriteTxn) => void,
+): Promise<{
  message: string; data?: unknown }> {
   // ★ 2026-10-28（T245）：接住写穿回执 —— 画布读数（`plan_exit` / `plan_baseline`）在它身上，
   //   原来 `txn.commit()` 的返回值被**丢弃** ⇒ 回执只能自己再算一遍（同一判据住两处）。
@@ -620,6 +629,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
       authorize: args.authorize,
       ...(op === 'replace' || op === 'delete' ? { symbols: [{ file: relPath, symbol: args.symbol! }] } : {}),
     });
+    registerTxn(txn);
     if (gateOut) {
       gateOut.note = txn.task_gate;
       gateOut.exempted = txn.exemptions;
@@ -722,7 +732,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     return {
       message:
         `✓ 已替换 ${relPath} 的 ${args.symbol} body（L${body.startLine}-${body.endLine}），` +
-        `签名与大括号保留，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${preview}` + renderPlanReadings(_lastRec?.index ?? null, { root: projectRoot, rel: relPath }) + assumptionNote(gateOut),
+        `签名与大括号保留，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${preview}` + '' + assumptionNote(gateOut),
     };
   }
 
@@ -784,7 +794,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
       message:
         `✓ range 编辑 ${relPath} L${start}-L${end}（${count} 行 → ${aligned.length} 行），` +
         `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}\n${preview}` +
-        renderPlanReadings(_lastRec?.index ?? null, { root: projectRoot, rel: relPath }) + assumptionNote(gateOut),
+        '' + assumptionNote(gateOut),
     };
   }
 
@@ -830,7 +840,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
       message:
         `✓ replace_text ${relPath} L${plan.hit.start_line}（${plan.matchedLineCount} 行 → ${plan.hit.new_lines} 行，` +
         `匹配 L${plan.hit.level}·${plan.hit.label}）${plan.levelNote}，` +
-        `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${plan.preview}` + renderPlanReadings(_lastRec?.index ?? null, { root: projectRoot, rel: relPath }) + assumptionNote(gateOut),
+        `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${plan.preview}` + '' + assumptionNote(gateOut),
       data: { hit: plan.hit, index_synced: sync.status, ...(sync.symbol_diff ? { symbol_diff: sync.symbol_diff } : {}) },
     };
   }
@@ -995,7 +1005,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     return {
       message:
         `✓ 已删除 ${relPath} 的 ${delSym}（L${lineOp.startIdx + 1} 起 ${lineOp.count} 行），` +
-        `符号 ${before} → ${after}，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}` + renderPlanReadings(_lastRec?.index ?? null, { root: projectRoot, rel: relPath }) + assumptionNote(gateOut),
+        `符号 ${before} → ${after}，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}` + '' + assumptionNote(gateOut),
     };
   }
   if (op === 'insert') {
@@ -1018,7 +1028,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     message:
       `✓ 已替换 ${relPath} 的 ${args.symbol}（原 L${lineOp.startIdx + 1}-${lineOp.startIdx + lineOp.count}，` +
       `${lineOp.count} 行 → ${lineOp.insert.length} 行），索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}\n` +
-      `文件符号: ${before} → ${after}` + renderPlanReadings(_lastRec?.index ?? null, { root: projectRoot, rel: relPath }) + assumptionNote(gateOut),
+      `文件符号: ${before} → ${after}` + '' + assumptionNote(gateOut),
   };
 }
 
@@ -1259,6 +1269,53 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
  * 内层若给了更细的 `data`（如 `replace_text` 的 `hit`/`symbol_diff`）则合并保留。
  * ★ P-B：`targets` 非空 ⇒ 分派到批量编排（自带完整回执）。
  */
+/**
+ * ★★★ 2026-10-28（T-#RP-3 · 结构解 B）：**写路只许有一种收尾**。
+ *
+ * ## 之前为什么必须"现算"
+ * 正文（{@link editCodeBody}）逐分支 `txn.commit()` + 自己 `await syncFile(...)`，
+ * 而批级读数（`plan_exit` / `plan_baseline`）只在 `close()` 里产生
+ * ⇒ 回执拿不到 ⇒ 只能自己再算一遍（T245 查出的那层）。
+ *
+ * ## 现在
+ * 正文只落盘、**不收尾**；事务交到这里统一 `close()`：
+ * ① 自写登记 ② 写穿（读己之写立刻可信）③ **计算批级计划读数** ④ 刷写者自己的读集基线。
+ * ⇒ 读数从**唯一出处**来；`renderPlanReadings` 的回退分支因此不再需要。
+ *
+ * ★ 范围：**单文件路**（`op=replace/insert/delete/range/replace_text`）。批量 `targets[]` 走的是
+ *   另一个函数（`editCodeBatch`，它自有逐文件 sync + `files[]` 读数）—— 两路合并是下一步，见 todo T-#RP-3。
+ */
+async function editCodeInner(
+  args: EditCodeArgs,
+  gateOut?: GateReceipt,
+): Promise<{ message: string; data?: unknown }> {
+  let txn: SourceWriteTxn | null = null;
+  const r = await editCodeBody(args, gateOut, (t) => {
+    txn = t;
+  });
+  // ★ 唯一收尾：事务在这里关，批级读数在这里产生
+  let readings = '';
+  let planReadings: { plan_exit?: string[]; plan_baseline?: string[] } | null = null;
+  if (txn) {
+    try {
+      const outcome = (txn as SourceWriteTxn).close();
+      if (outcome) {
+        readings = renderPlanReadings(outcome);
+        planReadings = {
+          ...(outcome.plan_exit ? { plan_exit: outcome.plan_exit } : {}),
+          ...(outcome.plan_baseline ? { plan_baseline: outcome.plan_baseline } : {}),
+        };
+      }
+    } catch (e) {
+      readings = `\n★ 收尾失败（写已落盘，但索引写穿/计划读数没跑）：${(e as Error).message}`;
+    }
+  }
+  return {
+    message: r.message + readings,
+    data: { ...((r.data as Record<string, unknown> | undefined) ?? {}), ...(planReadings ?? {}) },
+  };
+}
+
 async function editCodeCore(args: EditCodeArgs): Promise<{ message: string; data: EditReceipt }> {
   if (Array.isArray(args.targets)) return editCodeBatch(args);
   const gateOut: GateReceipt = {};

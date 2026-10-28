@@ -1031,6 +1031,7 @@ export function planStrictMode(): boolean {
  */
 export function renderPlanReadings(
   out: WriteThroughOutcome | null | undefined,
+  /** @deprecated 2026-10-28（T-#RP-3 之后 edit_code 也走 `close()`）⇒ 读数恒从写穿结果来，本参数不再使用 */
   /**
    * ★ 2026-10-28（T245 复查的**第二层**真因）：`edit_code` 是**逐分支** `txn.commit()` + 自己 `syncFile`，
    * 拿不到 `close()` 的**批级**读数 ⇒ `out` 上常常没有 `plan_exit` / `plan_baseline`。
@@ -1051,14 +1052,7 @@ export function renderPlanReadings(
   const exit = planExitHumanLine(out);
   if (exit) parts.push(exit);
   for (const l of out?.plan_baseline ?? []) parts.push(`  ${l}`);
-  if (!parts.length && ctx && readRewritePlan(ctx.root, ctx.rel)) {
-    // 回退：批级读数没到 ⇒ 现算出口闭环（**同一判据实现** `checkRewriteExit`，本函数不另写判据）
-    try {
-      parts.push(`  ★ ${renderExitCheck(checkRewriteExit(ctx.root, ctx.rel))}`);
-    } catch {
-      /* 对账是增强：拿不到就不出声（写前的 planGate 已点名） */
-    }
-  }
+  // ★ T-#RP-3 之后**没有回退**：读数只从写穿结果来（写路统一收尾 close()）。\n  //   若这里为空 = 这次写没有画布 / 没有异常 ⇒ 闭嘴（与其它回执同一口径）。\n
   return parts.length ? '\n' + parts.join('\n') : '';
 }
 export function planExitHumanLine(out: WriteThroughOutcome | null | undefined): string {
