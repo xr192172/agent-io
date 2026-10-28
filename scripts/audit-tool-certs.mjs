@@ -22,13 +22,39 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-/** 收集工具名（工具定义形如 `  name: 'tool_name',`，散在各线的 index.ts / tool.ts 里） */
-function collectTools() {
+/** 从编译产物里读**运行时注册表**（唯一权威来源） */
+async function loadRegistryNames(regFile) {
+  const mod = await import(pathToFileURL(regFile).href);
+  const defs = mod.TOOL_DEFS;
+  if (!Array.isArray(defs)) throw new Error('注册表里没有 TOOL_DEFS');
+  return defs.map((t) => t.name);
+}
+
+/**
+ * 收集工具名 —— ★★ 2026-10-28（量具修正）：**从注册表取真源**，不再正则扫源码。
+ *
+ * ## 为什么改（量具不准 ⇒ 一切基于它的判断都错）
+ * 原来用 `/^\s*name:\s*'…',\s*$/` 扫全 `src/` ⇒ 把**非工具**的 `name:` 也算了进来：
+ * · `src/domain/chain_wiring.ts` 里 `name: 'refactor'`（链路名）
+ * · `src/domain/expectation_kinds.ts` 里 `name: 'cases'`（判据字段名）
+ * ⇒ 实测报「57 个工具」，而 `TOOL_DEFS` 只有 **55** 个。
+ * ★ 这正是本仓记过账的病：**量具不全 ⇒ 判断全错**。工具的权威定义只有一处 = 注册表。
+ */
+async function collectTools() {
   const found = new Map();
+  // ① 权威名单：编译产物里的注册表（跑本脚本前需 npm run build）
+  const regFile = path.join(ROOT, 'dist/src/application/tool_registry.js');
+  if (!fs.existsSync(regFile)) {
+    throw new Error('缺 dist 注册表：先 `npm run build`（本审计以注册表为真源，不再正则扫源码）');
+  }
+  // ★ 权威名单 = 运行时注册表本身（不是正则猜源码）
+  const names = await loadRegistryNames(regFile);
+  // ② 顺带标记每个工单的**定义文件**（只为报表可读，不参与判定）
+  const where = new Map();
   const walk = (dir) => {
     for (const n of fs.readdirSync(dir)) {
       const p = path.join(dir, n);
@@ -43,17 +69,19 @@ function collectTools() {
         continue;
       }
       if (!n.endsWith('.ts')) continue;
-      const src = fs.readFileSync(p, 'utf8');
-      const re = /^\s*name:\s*'([a-z][a-z0-9_]+)',\s*$/gm;
-      let m;
-      while ((m = re.exec(src))) if (!found.has(m[1])) found.set(m[1], path.relative(ROOT, p));
+      const text = fs.readFileSync(p, 'utf8');
+      if (!text.includes('inputSchema')) continue; // ★ 只认"像工具定义"的文件
+      for (const m of text.matchAll(/^\s*name: '([a-z][a-z0-9_]+)',\s*$/gm)) {
+        if (!where.has(m[1])) where.set(m[1], path.relative(ROOT, p));
+      }
     }
   };
   walk(path.join(ROOT, 'src'));
+  for (const n of new Set(names)) found.set(n, where.get(n) ?? '(dist)');
   return found;
 }
 
-const tools = collectTools();
+const tools = await collectTools();
 const certText = fs
   .readdirSync(path.join(ROOT, 'certs'))
   .filter((n) => n.endsWith('.mjs'))
