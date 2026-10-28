@@ -37,7 +37,7 @@ const TRIGGER_ROWS = [
 ['配 LLM 供应商 / Key 池 / 看用量', '`gateway_provider`', '单入口（原 `gateway_*` 4 个收敛成 1）；★ Key 的**家在这里**（`gateway.json`），环境变量只是导入源'],
 ['决定在哪打观测点（不做全量插桩）', '`recommend_observe_points` → `observe action=instrument`', '用索引/图 + AST 算「该在哪打日志」：高入度 / 最近真改 / 副作用边界 / 静默吞错 / 复杂度高地 / 文件热点；清单落 `.agent-io/observe-points.json` ⇒ 再 `observe action=instrument contract_from_points=true` **只插这些点**（推荐器与插桩器同源同命名，不漂移）'],
 ['重构后让 LLM 判一轮（拿不定的上抛给人）', '`refactor_judge`', '逐条裁 adopt / reject / uncertain（带置信度 + 理由）；uncertain 经 `alert_inbox` 入箱，下一次工具响应自动附带'],
-['重算翻译册（Go→TS 全量符号账）', '`translate_book`', '从事实库重算 `.agent-io/design/<f>.translate.json`（pending / blocked / judgments / external_deps 一次算清）；人写的 types / atoms / unknowns 原样保留'],
+['重算翻译册（Go→TS 全量符号账）', '`translate_go_ts book=true`', '从事实库重算 `.agent-io/design/<f>.translate.json`（pending / blocked / judgments / external_deps 一次算清）；人写的 types / atoms / unknowns 原样保留。★ 2026-10-28 吸收 `translate_book`（它是本工具的第一步：没册子就没有骨架/填孔/对拍）'],
   ['改一段代码（函数体 / range）', '`edit_code`', '按符号 / 行号 / range 定位；走写闸 + 重建索引'],
 ['批量串替换（先算清单 → 再落盘）', '`apply_refactor_plan`', '单一入口两种形态：给 `targets` ⇒ **只算清单**（只读：plan id + 命中级别 + diff）；给回执里的 `plan` ⇒ **落盘**（幂等，plan_id 指纹不符即报错）。★ 2026-10-28 合并 `plan_refactor`'],
   ['回滚代码改动', '`snapshot action=rollback`', '落盘前自动存快照；回滚立即写盘、不回滚本身、不可再撤回'],

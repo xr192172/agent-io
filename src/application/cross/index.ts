@@ -33,6 +33,12 @@ export const CROSS_TOOLS: ToolDef[] = [
       projectDir: z.string().optional().describe('Go 项目目录：一次翻译整个项目（枚举 .go、跨文件 import、镜像落盘）'),
       outDir: z.string().optional().describe('projectDir 模式下落盘根（镜像 source 结构）'),
       out: z.string().optional().describe('★ 单文件模式的目标 .ts 路径（原 translate_cli 的 --out）：把产出写进该文件。★ 两条规则：目标已存在且未 fill ⇒ **不覆盖**（防止丢弃已填的函数体）；机械骨架验证闸未过 ⇒ **整份不落盘**（原子性，避免半成品）'),
+      // ★★★ 2026-10-28（T-#CERT-1 · 吸收 translate_book）：**重算翻译册**是同一对象（翻译册）的**第一步**
+      //   —— 册子都没有，骨架/填孔/对拍无从谈起。原来它是独立工具且**零真实调用**（见 `npm run dogfood:coverage`
+      //   与 `scripts/audit-tool-reach.mjs`），而 `translate_book` 是本工具的前置步骤 ⇒ 合成一个入口。
+      book: z.boolean().optional().describe('★ true = **重算翻译册**（原 translate_book）：从事实库重算 .agent-io/design/<f>.translate.json，人写的 types/atoms/unknowns 原样保留；配 feature / target_language / dry_run'),
+      feature: z.string().optional().describe('book 用：册子名 = <feature>.translate.json 的前缀（如 task-system-plan）'),
+      target_language: z.string().optional().describe('book 用：目标语言（如 ts）；给了就必须与册子 meta.target_language 一致，否则抛 —— 换语言要另起册子'),
       fill: z.boolean().optional().describe('用 AGNES key 池 LLM 逐孔填函数体'),
       holes: z.boolean().optional().describe('★ 一并返回每个待填孔给 LLM 的 prompt（原 translate_cli 的 --holes），见 data.hole_prompts。★ 与 fill 同一条门：只在 fill=false 时给（fill 时那些 prompt 已被消费）'),
       batchSize: z.number().int().min(1).optional().describe('★ projectDir 模式：一批函数一次 LLM 调用（原 translate_cli 的 --batch-size），默认 5'),
@@ -43,7 +49,47 @@ export const CROSS_TOOLS: ToolDef[] = [
         .optional()
         .describe('★ 调用方显式给的对照用例（[{name?, args:[…]}]）：优先于仓库 *_test.go，同一批输入逐条比 Go 与 TS 输出'),
     },
-    handler: wrapData(async (a) => translateGoTsHandler(a)),
+    handler: wrapData(async (a) => {
+      // ★ 2026-10-28（吸收 translate_book）：book=true 走"重算册子"，其余走原本的骨架/填孔/对拍。
+      if (a.book === true) {
+        const root = requireStr(a, 'project_dir') || requireStr(a, 'projectDir');
+        const feature = requireStr(a, 'feature');
+        const dryRun = a.dry_run === true;
+        const bookPath = path.join(path.dirname(getDesignSheetFile(feature, root)), `${feature}.translate.json`);
+        const r = rebuildBook({
+          projectDir: root,
+          bookPath,
+          dryRun,
+          expectTargetLanguage: a.target_language == null ? undefined : String(a.target_language),
+        });
+        const st = r.stats;
+        const manual = st.blocked - (st.blockedByTerm + st.blockedByTermNull + st.blockedByCollision + st.blockedByExternalDep);
+        const lines = [
+          `翻译册重建 · ${feature}（Go→${r.targetLanguage ?? '?'}）· ` +
+            `${st.symbols} 符号（源侧 ${st.symbols - st.added} + added ${st.added}）/ pending ${st.pending} / blocked ${st.blocked} / unknowns ${r.unknowns} / external_deps ${r.externalDeps} · ` +
+            `${dryRun ? 'dry_run：未写盘' : '已写回'} ${path.relative(root, bookPath)}（${Math.round(r.size / 1024)} KB）`,
+          `blocked ${st.blocked} = 未覆盖术语 ${st.blockedByTerm} + 已定无目标 ${st.blockedByTermNull} + 同名撞车 ${st.blockedByCollision}` +
+            ` + 外部硬依赖 ${st.blockedByExternalDep} + 人工 ${manual}`,
+          `shapes ${st.shapes} 处 · 事实基线 scanRev=${st.scanRev ?? '（无）'} / schema v${st.dbSchemaVersion ?? '?'} / ${st.srcFiles} 个 go 文件` +
+            (dryRun ? ' · ★ 本次**没有**改动册子' : ''),
+        ];
+        return {
+          message: lines.join('\n'),
+          data: {
+            symbols: st.symbols,
+            pending: st.pending,
+            blocked: st.blocked,
+            added: st.added,
+            unknowns: r.unknowns,
+            external_deps: r.externalDeps,
+            book_path: bookPath,
+            size: r.size,
+            dry_run: dryRun,
+          },
+        };
+      }
+      return translateGoTsHandler(a);
+    }),
   },
 
   {
@@ -177,76 +223,6 @@ export const CROSS_TOOLS: ToolDef[] = [
         for (const c of r.complexity) lines.push(`  ${c.complexity}  ${c.file}:${c.line}  ${c.symbol}`);
       }
       return { message: lines.join('\n'), data: r };
-    }),
-  },
-
-  {
-    name: 'translate_book',
-    title: '重建翻译册（Go→TS 正向的全量符号账：pending / blocked / judgments / external_deps 一次算清）',
-    description:
-      '把 `(project_dir, feature)` 的翻译册 `.agent-io/design/<feature>.translate.json` **从事实库重算并写回**：' +
-      '源侧 = cache.db 里 language=\'go\' 的节点，目标侧 = TS 对应物（I3 与翻译管线同向：翻译 DSL judgments → 翻译 DB 投影 → 翻译代码）。' +
-      '人写的 `types`（术语表）/ `atoms` / `external_deps.strategy` / 人写的 `unknowns` 原样保留，`symbols` / `shapes` / `[auto]` unknowns / `external_deps.from` 面按 `cache.db` 现取重算。' +
-      '★ 术语表**参与**覆盖判定：补一条 `types` 后重跑，引用它的符号自动从 blocked 转 pending；' +
-      '`to:null` 的术语（真没有对应）**不算覆盖** —— 那一条仍 blocked，但计数单列 `blockedByTermNull`，理由换成「已定但无目标」。' +
-      '★ blocked 四档：term（术语未覆盖）/ term_null（已定无目标）/ collision（同名撞车）/ external_dep（外部硬依赖，见 external_deps 区块，strategy 初始空由模型填：npm_equiv / same_slot / http_bridge）。' +
-      '★ pending 符号挂 `judgments`（映射判据：symbol-exists / signature-matches / source-has 术语命中 —— 复用 expectations kinds）。' +
-      '★ 人的进度不倒退（translated / verified / diff / stubbed 与人工 blocked 原样保留）。' +
-      '★ `dry_run=true` 只算不写（回执 `size` = 若写回会是多大），先看读数再决定落盘。' +
-      '★ 失败**抛**（册子不存在 / `cache.db` 不存在 / 目标语言与册子不符），绝不返回一份空账。',
-    inputSchema: {
-      project_dir: z
-        .string()
-        .describe('被翻译项目的根：事实库 `.agent-io/cache.db` 与册子 `.agent-io/design/` 都在它下面（只读事实库）'),
-      feature: z.string().describe('册子名 = `<feature>.translate.json` 的前缀（如 `task-system-plan`）'),
-      target_language: z
-        .string()
-        .optional()
-        .describe('目标语言（如 `ts`）：给了就**必须**与册子 `meta.target_language` 一致，否则抛 —— 换语言要另起一份册子，不是改一个字段'),
-      dry_run: z.boolean().optional().describe('true = 只算不写（预览 blocked/unknowns 读数；回执 size 是「若写回多大」）'),
-    },
-    handler: wrapData(async (a) => {
-      const root = requireStr(a, 'project_dir');
-      const feature = requireStr(a, 'feature');
-      const dryRun = a.dry_run === true;
-      // ★ 目录与 feature 名**都走 storage 的唯一约定**（`getDesignSheetFile` 就是 `.agent-io/design/<f>.dsl.json`）
-      //   —— 不在这里另拼一份 `.agent-io/design` 字面量（那会长出第二处路径约定）。
-      const bookPath = path.join(path.dirname(getDesignSheetFile(feature, root)), `${feature}.translate.json`);
-      const r = rebuildBook({
-        projectDir: root,
-        bookPath,
-        dryRun,
-        expectTargetLanguage: a.target_language == null ? undefined : String(a.target_language),
-      });
-      const s = r.stats;
-      // ★ 每一项都能对上总数：人工 blocked（如人判的结构性阻断）不在自动四档里，所以单列，别让读者自己猜差额。
-      const manual = s.blocked - (s.blockedByTerm + s.blockedByTermNull + s.blockedByCollision + s.blockedByExternalDep);
-      const lines = [
-        // ★ 三个数必须能对上：`pending` / `blocked` 只数**源侧**符号，`added`（目标侧新增）单列
-        //   —— 而 `symbols` 是两者之和（meta.origin_rule：两类要分开报）。写法上直接给出拆分，别让读者自己减。
-        `翻译册重建 · ${feature}（Go→${r.targetLanguage ?? '?'}）· ` +
-          `${s.symbols} 符号（源侧 ${s.symbols - s.added} + added ${s.added}）/ pending ${s.pending} / blocked ${s.blocked} / unknowns ${r.unknowns} / external_deps ${r.externalDeps} · ` +
-          `${dryRun ? 'dry_run：未写盘' : '已写回'} ${path.relative(root, bookPath)}（${Math.round(r.size / 1024)} KB）`,
-        `blocked ${s.blocked} = 未覆盖术语 ${s.blockedByTerm} + 已定无目标 ${s.blockedByTermNull} + 同名撞车 ${s.blockedByCollision}` +
-          ` + 外部硬依赖 ${s.blockedByExternalDep} + 人工 ${manual}`,
-        `shapes ${s.shapes} 处 · 事实基线 scanRev=${s.scanRev ?? '（无）'} / schema v${s.dbSchemaVersion ?? '?'} / ${s.srcFiles} 个 go 文件` +
-          (dryRun ? ' · ★ 本次**没有**改动册子' : ''),
-      ];
-      return {
-        message: lines.join('\n'),
-        data: {
-          symbols: s.symbols,
-          pending: s.pending,
-          blocked: s.blocked,
-          // ★ 单列：`pending + blocked = symbols - added`（added 是目标侧新增，不计入这两个态）
-          added: s.added,
-          unknowns: r.unknowns,
-          external_deps: r.externalDeps,
-          book_path: bookPath,
-          size: r.size,
-          dry_run: dryRun,
-        },
-      };
     }),
   },
 ];
