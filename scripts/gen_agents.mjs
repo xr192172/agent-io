@@ -31,7 +31,7 @@ const TRIGGER_ROWS = [
   ['改文件名并联动全仓 import（单条或批量）', '`rename_files`', '整体先 `dry_run`，全部可落盘才落'],
   ['整块搬一个域到新位置', '`move_domain`', '先改 `structure.domains.json` 的 `dir`，再一次搬完全部源码 + 改写 import；搬什么由 `structure_gap` 判'],
 ['把一个模块级符号搬到别的文件（文件不变）', '`move_symbol`', '搬的是**符号**不是文件（与 `move_domain` 不同生态位）：自动把「仅引入该符号」的 importer 目标改到 `to_file`；v1 只 TS/JS，撞名 / namespace / `export *` 一律整体不动'],
-['看已记录的调用链轨迹', '`observe_trace`', '只读：消费 observe 记录下来的链路，排查「一次请求到底走了哪条链」'],
+['看已记录的调用链 / 查运行时事件 / 判一批事件', '`observe`（`action=trace` / `log` / `judge`）', '只读三合一（2026-10-28 合并）：`trace` 重建调用树排查「走了哪条链」，`log` 查 events.jsonl，`judge` 逐事件偏差判定（可带 `decls` 做链路契约）。插桩/还原看 `observe_instrument`，提案四层门看 `observe_proposals`'],
 ['建议 / 消歧易混名', '`suggest_renames` / `find_similar_names`', '前者给短名/无意义局部变量出建议（带理由），后者找孪生名（大小写 / 数字后缀 / 换位 typo）并按连通块聚类给 basis'],
 ['读项目文档（没有文档就写）', '`read_project_docs`', '不带 `name` 返清单（供挑）；带 `name` 返全文；带 `targets` 返命中该目标集的文档正文（与 `canvas_notes action=decide` 同一套匹配）'],
 ['配 LLM 供应商 / Key 池 / 看用量', '`gateway_provider`', '单入口（原 `gateway_*` 4 个收敛成 1）；★ Key 的**家在这里**（`gateway.json`），环境变量只是导入源'],

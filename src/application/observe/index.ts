@@ -98,74 +98,47 @@ export const OBSERVE_TOOLS: ToolDef[] = [
     }),
   },
 
-{
-    name: 'observe_log',
-    title: 'Query Observe runtime logs by file',
-    description:
-      '查询 Observe 运行时日志（events.jsonl）。可传 files 按文件路径过滤（精确/后缀/包含匹配），' +
-      '只返回命中路径的事件；不传 files 时默认只返回偏差，all=true 才全量。' +
-      '适用于：LLM 按需拉取某文件/某条链路的数据流与异常，而非全量丢出。',
-    inputSchema: {
-      events_file: z
-        .string()
-        .describe('Observe 事件文件路径（events.jsonl）。由插桩/哨兵运行时产生，如 <dataHome>/.agent-io/observe/events.jsonl'),
-      files: z
-        .array(z.string())
-        .optional()
-        .describe('按文件路径过滤（可多个）。传相对路径/文件名片段均可，精确或后缀/包含匹配'),
-      all: z
-        .boolean()
-        .optional()
-        .describe('不传 files 时：true=列出全部事件；false=只列偏差（默认）'),
-    },
-    handler: observeLogHandler,
-  },
-
   {
-    name: 'observe_trace',
-    title: 'Read recorded call-chain traces (LLM-facing replay)',
+    name: 'observe',
+    title: 'Observe 单入口（action=log | trace | judge）',
     description:
-      '读探针录制的事件（events.jsonl）→ 重建完整调用树 → 采样保留，返回结构化的调用链给 LLM 分析/总结/找根因。' +
-      '一针 = 一次采样的完整链路（前因后果在，每环节 probe / 入参 / 出参 / 耗时 / 缺帧），不裁剪不伪造。' +
-      '不给 trace_id：返回链路清单（trace_id、帧数、根函数、信号），供挑哪针展开。' +
-      '给 trace_id：展开该针完整调用树（文本树 + 结构化 JSON）。' +
-      'keep=all 返回全部链路不过滤（弥合默认 judge 丢纯对话长针的偏差）。' +
-      'events_path 缺省自动找探针 sink：OBSERVE_EVENTS_FILE > DS_OBSERVE_EVENTS > 系统临时目录 dsh_events.jsonl > cwd/runs.jsonl。',
+      '★ 观察线**只读三合一**的单入口（2026-10-28 合并试点）：' +
+      '\n· `action=log`（默认）查运行时事件 events.jsonl，可按文件过滤或全量；' +
+      '\n· `action=trace` 重建完整调用树并采样，返回结构化调用链（给 `trace_id` 展开某一针）；' +
+      '\n· `action=judge` 对一批事件做偏差判定（可带 `decls` 做链路契约判定）。' +
+      '\n\n★ **为什么能合**：三者**输入事实相同**（events.jsonl / 事件数组）、**判断性质相同**（只读、不写盘）、' +
+      '**前置条件相同**（都不需要设计册）。' +
+      '\n★ **为什么不并另两个**：`observe_instrument`（插桩/还原）与 `observe_proposals`（提案四层门）各有自己的 ' +
+      '`action` 命名空间与写盘副作用 —— 合并会撞命名空间，也会把写能力混进只读入口。' +
+      '\n\n参数按 action 取用（其余字段忽略）：log → `events_file` / `files` / `all`；' +
+      'trace → `events_path` / `events_text` / `keep` / `trace_id` / `limit`；' +
+      'judge → `events` / `decls` / `text` / `use_llm` / `project_root`。',
     inputSchema: {
-      events_path: z.string().optional().describe('录制事件 JSONL 路径；缺省自动找探针 sink（dsh_events.jsonl / runs.jsonl）'),
-      events_text: z.string().optional().describe('内联事件文本，优先于 events_path（调试用）'),
-      keep: z.enum(['all', 'default']).optional().describe("'all'=返回全部链路；'default'=采样只留代表针（默认）"),
-      trace_id: z.string().optional().describe('指定展开某条链路（trace_id）；不给则返回链路清单'),
-      limit: z.number().optional().describe('最多返回几针（防上下文撑爆；给 trace_id 时忽略）'),
+      action: z.enum(['log', 'trace', 'judge']).describe('log=查事件（默认）| trace=重建调用链 | judge=逐事件偏差判定'),
+      // ── log ──
+      events_file: z.string().optional().describe('[log] Observe 事件文件路径（events.jsonl）'),
+      files: z.array(z.string()).optional().describe('[log] 按文件路径过滤（精确 / 后缀 / 包含匹配）'),
+      all: z.boolean().optional().describe('[log] true=列出全部事件；false=只列偏差（默认）'),
+      // ── trace ──
+      events_path: z.string().optional().describe('[trace] 录制事件 JSONL 路径；缺省自动找探针 sink'),
+      events_text: z.string().optional().describe('[trace] 内联事件文本，优先于 events_path（调试用）'),
+      keep: z.enum(['all', 'default']).optional().describe("[trace] 'all'=返回全部链路；'default'=采样只留代表针"),
+      trace_id: z.string().optional().describe('[trace] 展开某条链路；不给则返回链路清单'),
+      limit: z.number().optional().describe('[trace] 最多返回几针（防上下文撑爆；给 trace_id 时忽略）'),
+      // ── judge ──
+      events: z.array(z.record(z.string(), z.unknown())).optional().describe('[judge] 要判定的事件数组（TSEvent 形状）'),
+      decls: z.array(z.record(z.string(), z.unknown())).optional().describe('[judge] 设计声明数组（可做链路契约判定）'),
+      text: z.boolean().optional().describe('[judge] true=人类可读报告；false=JSON（默认）'),
+      use_llm: z.boolean().optional().describe('[judge] true=对可疑事件做 LLM 复核（默认 false）'),
+      project_root: z.string().optional().describe('[judge] 被分析项目根（不传则不做设计对比）'),
     },
-    handler: observeTraceHandler,
-  },
-
-  {
-    name: 'observe_judge',
-    title: 'Judge a batch of Observe events',
-    description:
-      '对一批 Observe 事件执行偏差判定（语言无关）。传 events 数组（符合 TSEvent 形状：probe/fields[err/op/benign]，可含 trace_id/frame_id）。' +
-      '返回逐条判定 + 汇总（total/ok/deviation）。text=true 返回人类可读报告，否则返回 JSON。' +
-      '传 decls（设计声明数组）时额外执行链路契约判定（P2）：从事件 trace 三元组重建实测调用链，' +
-      '声明的调用序（decl.chain）必须是某条实测链的子序列，断裂报 chain-broken（含 trace_id 与实测窗口）。' +
-      '适用于：探针语言任意，统一收敛到这一处判定，不随语言复刻规则。',
-    inputSchema: {
-      events: z
-        .array(z.record(z.string(), z.unknown()))
-        .describe('要判定的事件数组（TSEvent 形状：probe 必填，fields 含 err/op/benign；链路判定需 trace_id/frame_id）'),
-      decls: z
-        .array(z.record(z.string(), z.unknown()))
-        .optional()
-        .describe('设计声明数组（dsl.json 的 decls 形状：rule/probe/expect/constraint/chain/origin/verified_by/status）。chain=["a","b","c"] 声明调用序，触发链路判定。**不传则自动从 <project_root>/.agent/observe/dsl.json 读当前权威声明**（要对着假设的声明集判才显式传）'),
-      text: z.boolean().optional().describe('true=返回人类可读报告；false=返回 JSON（默认 JSON）'),
-      use_llm: z.boolean().optional().describe('true=对可疑事件做 LLM 行为级复核（默认 false 纯规则秒判）'),
-      project_root: z
-        .string()
-        .optional()
-        .describe('被分析项目的根目录。**不传则不做设计对比**（只做逐事件规则判定）—— 故意不兜底 cwd（cwd 是另一个项目）。传了就会自动读 <root>/.agent/observe/dsl.json 并给出 undesigned（哪些探针还没纳入设计）清单'),
-    },
-    handler: observeJudgeHandler,
+    // ★ 拆注册不拆执行核：三个 handler 原样保留，只由一个入口按 action 分派
+    handler: ((a: unknown) => {
+      const action = String((a as Record<string, unknown>).action ?? 'log');
+      if (action === 'trace') return observeTraceHandler(a as never);
+      if (action === 'judge') return observeJudgeHandler(a as never);
+      return observeLogHandler(a as never);
+    }) as ToolDef['handler'],
   },
 
   {

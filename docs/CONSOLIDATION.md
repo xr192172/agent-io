@@ -47,7 +47,7 @@
 | `diagnose` / `diagnose_loop` | 症状诊断 vs 诊断闭环 | 分工在注册描述与 WHEN_OVERRIDES 双处明写（loop=闭环，diagnose=只诊断不写盘）；且 `diagnose_loop` 当前因 `test_contract` 模块缺失 import 断裂——把另一个工具吸收进一个跑不起来的入口不安全 |
 | `first_hop_args` / `next_hop_args` | 链入参装配（起手 vs 接续） | 同族互补（capability_map.ts 注释明写"同族"），合并需动 chain_wiring 对外口径，收益/风险比不划算 |
 | `consistency_check` / `detect_drift` | DSL expected_apis vs 代码 | 同读一对事实但产物不同：差异块+跨文件不变式（喂"分区域重写"工作流）vs 漂移台账+git changed 范围；实现两处（`intent/consistency.ts` / `intent/detect_drift.ts`），合并是一次设计决策不是普查可拍板的 |
-| `observe_log` / `observe_trace` / `observe_judge` | events.jsonl 三视图（原始查询/调用树/偏差判定） | 同数据源不同视图，聚合需一次设计决策；当前各自语义清晰无互相说谎 |
+| `observe`（`action=log` / `trace` / `judge`，2026-10-28 三合一）| events.jsonl 三视图（原始查询/调用树/偏差判定） | 同数据源不同视图，聚合需一次设计决策；当前各自语义清晰无互相说谎 |
 | `suggest_renames` / `find_similar_names` | 改名建议 | 缺陷类不同（短名/无意义 vs 孪生名消歧），WHEN_OVERRIDES 各有策展口径 |
 
 ## 保留工具的生态位一览（63 个）
@@ -55,7 +55,7 @@
 - **design（9）**：`import_project`（建档入口）/ `get_dsl`（统一读）/ `edit_dsl`（统一写）/ `render_design`（渲染）/ `consistency_check` / `detect_drift` / `design_line`（六步读数）/ `design_intent`（why 闸）/ `opl`（愿望→产线自驱）
 - **meta（16）**：`explore_code`（代码理解大入口）/ `capability_map`（导航）/ `capability_audit`（语言覆盖审计）/ `tool_usage`（使用读数）/ `contract_page`（符号六块一次给全）/ `read_project_docs` / `index_integrity`（索引自检）/ `sync_contracts`（契约回填）/ `diagnose` / `diagnose_loop` / `gateway_provider` / `observe_proposals` / `upgrade`（版本契约差）/ `archive` / `first_hop_args` / `next_hop_args`
 - **refactor（19）**：`edit_code`（符号级编辑）/ `rename_symbols` / `rename_files` / `move_symbol` / `move_domain` / `plan_refactor` + `apply_refactor_plan`（两半成对）/ `refactor_pipeline`（含 dead_imports 步）/ `deprecate_offline` / `find_references` / `impact_analysis` / `structure_gap` / `diff_views` / `annotate_functions` / `suggest_renames` / `find_similar_names` / `refactor_judge` / `rules` / `snapshot`
-- **observe（11）**：`observe_instrument`（插桩执行）/ `recommend_observe_points`（选点）/ `observe_log` / `observe_trace` / `observe_judge` / `reconcile_chain` / `reconcile_effects` / `run_tests` / `feature_line` / `memory_observe`（CDP 外部内存观测）/ `narrate_step`
+- **observe（9，2026-10-28 由 11 合并而来）**：`observe_instrument`（插桩执行）/ `recommend_observe_points`（选点）/ `observe_log` / `observe_trace` / `observe_judge` / `reconcile_chain` / `reconcile_effects` / `run_tests` / `feature_line` / `memory_observe`（CDP 外部内存观测）/ `narrate_step`
 - **cross（5）**：`translate_go_ts`（Go→TS 骨架+验证闸）/ `translate_book`（翻译册重算）/ `go_originals`（Go 原文 ground truth）/ `cross_repo_symbol_index`（撞名预检）/ `code_health`（三层体检）
 
 正交性说明（易误判的三对）：

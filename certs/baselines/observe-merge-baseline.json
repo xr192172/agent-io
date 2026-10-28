@@ -1,0 +1,212 @@
+{
+  "log": {
+    "tool": "observe_log",
+    "args": {
+      "events_file": "D:\\agentio\\dev\\agent-io\\certs\\baselines\\t407-fixture\\events.jsonl",
+      "all": true
+    },
+    "data": [
+      {
+        "probe": "fn.enter",
+        "rule": "design:silent-error-discard",
+        "result": "ok",
+        "reason": "err is nil — nothing was discarded",
+        "file": "src/demo.ts",
+        "fields": {
+          "fn": "demoFn",
+          "file": "src/demo.ts"
+        }
+      },
+      {
+        "probe": "io.call",
+        "rule": "design:silent-error-discard",
+        "result": "ok",
+        "reason": "err is nil — nothing was discarded",
+        "file": "src/demo.ts",
+        "fields": {
+          "op": "fetch",
+          "file": "src/demo.ts"
+        }
+      },
+      {
+        "probe": "fn.exit",
+        "rule": "design:silent-error-discard",
+        "result": "ok",
+        "reason": "err is nil — nothing was discarded",
+        "fields": {
+          "fn": "demoFn",
+          "ms": 12
+        }
+      },
+      {
+        "probe": "fn.enter",
+        "rule": "design:silent-error-discard",
+        "result": "ok",
+        "reason": "err is nil — nothing was discarded",
+        "file": "src/other.ts",
+        "fields": {
+          "fn": "otherFn",
+          "file": "src/other.ts"
+        }
+      }
+    ]
+  },
+  "log-default": {
+    "tool": "observe_log",
+    "args": {
+      "events_file": "D:\\agentio\\dev\\agent-io\\certs\\baselines\\t407-fixture\\events.jsonl"
+    },
+    "data": []
+  },
+  "trace": {
+    "tool": "observe_trace",
+    "args": {
+      "events_path": "D:\\agentio\\dev\\agent-io\\certs\\baselines\\t407-fixture\\events.jsonl"
+    },
+    "data": {
+      "source": "D:\\agentio\\dev\\agent-io\\certs\\baselines\\t407-fixture\\events.jsonl",
+      "total_traces": 0,
+      "dropped": 0,
+      "needles": []
+    }
+  },
+  "judge": {
+    "tool": "observe_judge",
+    "args": {
+      "events": [
+        {
+          "ts": "2026-10-28T10:00:00Z",
+          "probe": "fn.enter",
+          "trace_id": "tr-1",
+          "fields": {
+            "fn": "demoFn",
+            "file": "src/demo.ts"
+          }
+        },
+        {
+          "ts": "2026-10-28T10:00:01Z",
+          "probe": "io.call",
+          "trace_id": "tr-1",
+          "fields": {
+            "op": "fetch",
+            "file": "src/demo.ts"
+          }
+        },
+        {
+          "ts": "2026-10-28T10:00:02Z",
+          "probe": "fn.exit",
+          "trace_id": "tr-1",
+          "fields": {
+            "fn": "demoFn",
+            "ms": 12
+          }
+        },
+        {
+          "ts": "2026-10-28T10:00:03Z",
+          "probe": "fn.enter",
+          "trace_id": "tr-2",
+          "fields": {
+            "fn": "otherFn",
+            "file": "src/other.ts"
+          }
+        }
+      ]
+    },
+    "data": {
+      "total": 4,
+      "ok": 4,
+      "deviation": 0,
+      "entries": [
+        {
+          "verdict": {
+            "probe": "fn.enter",
+            "rule": "design:silent-error-discard",
+            "result": "ok",
+            "reason": "err is nil — nothing was discarded",
+            "fields": {
+              "fn": "demoFn",
+              "file": "src/demo.ts"
+            }
+          },
+          "event": {
+            "probe": "fn.enter",
+            "time": "2026-10-28T07:05:19.259Z",
+            "source": "llm-design",
+            "fields": {
+              "fn": "demoFn",
+              "file": "src/demo.ts"
+            },
+            "trace_id": "tr-1"
+          }
+        },
+        {
+          "verdict": {
+            "probe": "io.call",
+            "rule": "design:silent-error-discard",
+            "result": "ok",
+            "reason": "err is nil — nothing was discarded",
+            "fields": {
+              "op": "fetch",
+              "file": "src/demo.ts"
+            }
+          },
+          "event": {
+            "probe": "io.call",
+            "time": "2026-10-28T07:05:19.259Z",
+            "source": "llm-design",
+            "fields": {
+              "op": "fetch",
+              "file": "src/demo.ts"
+            },
+            "trace_id": "tr-1"
+          }
+        },
+        {
+          "verdict": {
+            "probe": "fn.exit",
+            "rule": "design:silent-error-discard",
+            "result": "ok",
+            "reason": "err is nil — nothing was discarded",
+            "fields": {
+              "fn": "demoFn",
+              "ms": 12
+            }
+          },
+          "event": {
+            "probe": "fn.exit",
+            "time": "2026-10-28T07:05:19.259Z",
+            "source": "llm-design",
+            "fields": {
+              "fn": "demoFn",
+              "ms": 12
+            },
+            "trace_id": "tr-1"
+          }
+        },
+        {
+          "verdict": {
+            "probe": "fn.enter",
+            "rule": "design:silent-error-discard",
+            "result": "ok",
+            "reason": "err is nil — nothing was discarded",
+            "fields": {
+              "fn": "otherFn",
+              "file": "src/other.ts"
+            }
+          },
+          "event": {
+            "probe": "fn.enter",
+            "time": "2026-10-28T07:05:19.259Z",
+            "source": "llm-design",
+            "fields": {
+              "fn": "otherFn",
+              "file": "src/other.ts"
+            },
+            "trace_id": "tr-2"
+          }
+        }
+      ],
+      "decls_source": "⚠ 未做设计对比：没传 decls 也没有 project_root。要对比\"哪些探针还没纳入设计\"，传 project_root（会自动读 <root>/.agent/observe/dsl.json）或直接传 decls。（本轮只做了逐事件规则判定。）"
+    }
+  }
+}
