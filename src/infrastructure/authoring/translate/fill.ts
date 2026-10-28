@@ -46,12 +46,40 @@ export interface FillResult {
 
 /** 把翻译器产出的函数体拼进骨架：首 `{` 到末 `}` 之间。骨架统一 `export function ...: Ret {\n  <体>\n}`。 */
 export function spliceBody(skeleton: string, body: string): string {
-  const open = skeleton.indexOf('{');
+  // ★★★ 2026-10-29（**结构 bug**）：原来用 `skeleton.indexOf('{')` 找函数体起点 ——
+  //   但**返回类型是对象字面量**时（`): { ID: string }[] {`），第一个 `{` 落在**类型里**，
+  //   于是函数体被拼进了返回类型 ⇒ `export function f(): {` 后面直接跟语句（TS1005/TS1108 一片）。
+  //   实测 retrieval_pipeline.ts 两处、sortByScore 一处。
+  //   ⇒ 从**最后一个** `}` 往前按括号配对，找到与它配对的 `{`，那才是函数体的开括号。
   const close = skeleton.lastIndexOf('}');
+  let open = -1;
+  if (close >= 0) {
+    let depth = 0;
+    for (let i = close; i >= 0; i--) {
+      const ch = skeleton[i];
+      if (ch === '}') depth++;
+      else if (ch === '{') {
+        depth--;
+        if (depth === 0) {
+          open = i;
+          break;
+        }
+      }
+    }
+  }
   if (open < 0 || close <= open) return skeleton;
   const head = skeleton.slice(0, open + 1);
   const tail = skeleton.slice(close);
   return `${head}\n${indentBody(body)}\n${tail}`;
+}
+
+/**
+ * Go 的**八进制字面量在 TS 非法**（`0644` → TS1121）。Go 里前导 0 就是八进制，
+ * 所以这是**文本形状本身就是答案**的场合（不是猜结构）：`0[0-7]+` → `0o...`。
+ * 放在 LLM 体与缓存回放的出口统一做；机械翻那条路已在 `body_mech` 里处理。
+ */
+export function normalizeLegacyOctal(body: string): string {
+  return body.replace(/(^|[^\w.])0([0-7]{2,})(?![\w.])/g, (_m, pre: string, digits: string) => `${pre}0o${digits}`);
 }
 
 /** 函数体整体缩进两级（对齐骨架体内） */
@@ -94,7 +122,7 @@ export async function fillUnit(u: TransUnit, translate: HoleTranslator, feedback
   } catch (e) {
     return { unit: u, filledSource: u.skeleton, ok: false, issues: [], error: `翻译器异常：${(e as Error).message}` };
   }
-  const filledSource = spliceBody(u.skeleton, body);
+  const filledSource = spliceBody(u.skeleton, normalizeLegacyOctal(body));
   if (body.trim() === '') {
     return { unit: u, filledSource, ok: false, issues: [], error: '翻译器返回空函数体' };
   }
