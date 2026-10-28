@@ -410,60 +410,6 @@ export const META_TOOLS: ToolDef[] = [
   },
 
   {
-    name: 'read_project_docs',
-    title: 'Read project docs (per-project docs/ folder)',
-    description:
-      '读取某 feature 的项目文档夹（<project_dir>/docs/，或受管目录 .agent-io/docs/<feature>/）。' +
-      '三种用法：不带 name= 返回清单（含 frontmatter 关联标签与预览，供 agent 挑）；带 name= 返回单篇全文；' +
-      '带 targets 返回命中该目标集（目录分组/步骤/文件）的文档正文（与 canvas_notes action=decide 的按批关联注入同一套匹配）。' +
-      '项目文档可丢进项目仓库 docs/ 作为 LLM 决策背景（需求/设计约定/约定规范），' +
-      'canvas_notes action=decide 会自动按批把命中文档注入决策上下文（TOC 全量 + 命中正文封顶）。',
-    inputSchema: {
-      feature: z.string().describe('feature 名（如 agent-io）'),
-      project_dir: z.string().optional().describe('项目根目录（缺省用 dsl.source_root）'),
-      name: z.string().optional().describe('文档 id（相对 docs/ 的路径）；给则返回该篇全文'),
-      targets: z
-        .object({
-          features: z.array(z.string()).optional().describe('分组名集合（★ 键名是 `features`，指思维导图那层的**目录分组**；「功能」只留给**人写的标记**）'),
-          steps: z.array(z.string()).optional().describe('步骤标题集合'),
-          files: z.array(z.string()).optional().describe('文件路径集合'),
-        })
-        .optional()
-        .describe('按批匹配目标集：返回命中文档正文'),
-    },
-    handler: wrapData(async (a) => {
-      const feature = typeof a.feature === 'string' ? a.feature : '';
-      if (!feature) return { message: '缺少 feature', isError: true };
-      const dsl = getDSL(feature);
-      const projectDir = typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : dsl?.source_root ?? '';
-      const man = listProjectDocs(projectDir, feature);
-      const name = typeof a.name === 'string' && a.name ? a.name : '';
-      if (name) {
-        const content = readProjectDoc(projectDir, feature, name);
-        if (content === null) return { message: `文档不存在：${name}`, isError: true };
-        return { message: `文档 \`${name}\`（${content.split('\n').length} 行）`, data: { id: name, content } };
-      }
-      const targets = a.targets && typeof a.targets === 'object' ? (a.targets as DocTargetSet) : undefined;
-      if (targets && ((targets.features ?? []).length > 0 || (targets.steps ?? []).length > 0 || (targets.files ?? []).length > 0)) {
-        const matched = matchDocsForTargets(man, targets);
-        const block = buildDocsPromptBlock(man, targets);
-        return {
-          message: `命中 ${matched.length}/${man.docs.length} 篇文档（frontmatter/文件名匹配）`,
-          data: { dir: man.dir, total: man.docs.length, matched: matched.map((d) => d.id), block },
-        };
-      }
-      return {
-        message: `项目文档 ${man.docs.length} 篇（${man.dir ?? '未找到 docs/ 目录'}）`,
-        data: {
-          dir: man.dir,
-          total: man.docs.length,
-          docs: man.docs.map((d) => ({ id: d.id, title: d.title, lines: d.lines, tagged: d.tagged, tags: d.tags })),
-        },
-      };
-    }),
-  },
-
-  {
     name: 'capability_map',
     title: '能力线导航：agent-io 工具分层地图',
     description:

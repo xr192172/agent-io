@@ -277,13 +277,60 @@ export const REFACTOR_TOOLS: ToolDef[] = [
             rename_file_if_matching: z.boolean().optional().describe('★ 仅 scope=module：true=符号是文件主导出时联动改文件名（默认 false）。scope=local 传 true 会拒该项（响亮报错，不静默忽略）'),
           }),
         )
-        .describe('待改名的条目（两种 scope 同形）'),
+        .optional()
+        .describe('待改名的条目（两种 scope 同形）。★ 走 analyze 只读形态时**不需要**它'),
+      // ★★★ 2026-10-28（T-#CERT-1 · 吸收 find_similar_names / suggest_renames）：
+      //   改名工具**自己就该能说"这几个名字容易看错/该改成什么"** —— 旧描述里就写着
+      //   "suggest_renames / find_similar_names 是它的上游只读分析层" ⇒ 同一件事分了三处。
+      //   给 analyze + file ⇒ 只读分析形态（不改任何文件、不需要 renames）。
+      analyze: z
+        .enum(['similar', 'suggest'])
+        .optional()
+        .describe('★ 只读分析形态：similar=易混孪生名聚类+消歧建议（原 find_similar_names）｜suggest=短名/无意义局部变量建议（原 suggest_renames）。给它就**不需要 renames**，且不改任何文件'),
+      file: z.string().optional().describe('★ analyze 形态必填：目标文件（相对 project_dir 或绝对路径）'),
+      max_clusters: z.number().optional().describe('analyze=similar：LLM 处理的最大聚类数（默认 20）'),
+      max: z.number().optional().describe('analyze=suggest：最多返回几条候选'),
+      min_len: z.number().optional().describe('analyze=suggest：短名判定阈值（默认按实现）'),
+      use_llm: z.boolean().optional().describe('analyze 形态：是否用 LLM 生成新名（默认 true；false/未配置则降级为仅检测）'),
       dry_run: z.boolean().optional().describe('true=只算全部预览 diff 不落盘（默认：module 先整体校验全通过才落盘；local 逐项改）'),
       report_literals: z.boolean().optional().describe('★ 仅 scope=module：true=扫描旧符号 snake 变体的字面量引用清单（错误提示/README 等纯字符串），仅报告不改动'),
     },
     handler: wrapData(async (a) => {
       // ★ 入口缺参守卫（CLI 面不做 zod 校验）：renames 是 schema 必填数组，缺失时原 handler
       //   直接 `a.renames.map(...)` ⇒ `Cannot read properties of undefined (reading 'map')`。
+      // ★ 只读分析形态（吸收 suggest_renames / find_similar_names）：算建议清单，不碰任何文件
+      if (a.analyze === 'similar' || a.analyze === 'suggest') {
+        const project_dir0 = requireStr(a, 'project_dir');
+        const file0 = requireStr(a, 'file');
+        if (a.analyze === 'similar') {
+          const opts0 = {
+            maxClusters: typeof a.max_clusters === 'number' ? a.max_clusters : undefined,
+            llm: a.use_llm === false ? null : undefined,
+          };
+          const result0 = await suggestDisambiguationsInFile({ project_dir: project_dir0, file: file0, opts: opts0 });
+          const items0 = disambiguationItems(result0, file0);
+          return {
+            message:
+              `识别到 ${result0.clusters.length} 个相似名聚类；` +
+              `LLM 消歧：${result0.llm ? '已启用' : '未启用/降级'}${result0.note ? `（${result0.note}）` : ''}；` +
+              `可直接改名的项 ${items0.length} 条，已附在 data.items（形如 {file,symbol,to}）供本工具 scope=local 使用。`,
+            data: { ...result0, items: items0 },
+          };
+        }
+        const opts1: SuggestOptions = {
+          max: typeof a.max === 'number' ? a.max : undefined,
+          minLen: typeof a.min_len === 'number' ? a.min_len : undefined,
+          llm: a.use_llm === false ? null : undefined,
+        };
+        const result1 = await suggestRenamesInFile({ project_dir: project_dir0, file: file0, opts: opts1 });
+        return {
+          message:
+            `识别到 ${result1.candidates.length} 个短名/无意义变量候选；` +
+            `LLM 建议：${result1.llm ? '已启用' : '未启用/降级'}${result1.note ? `（${result1.note}）` : ''}。` +
+            `建议名可直接作为本工具 scope="local" 的 renames 条目使用（{file, symbol, to}）。`,
+          data: result1,
+        };
+      }
       const renames = requireArr(a, 'renames', '[{file, symbol, to}]') as Array<{
         file: string;
         symbol: string;
@@ -1207,91 +1254,6 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         if (s.detail) parts.push(`\t\t${s.outcome === 'rolled_back' ? '回滚详情：' : ''}${s.detail}`);
       }
       return { message: parts.join('\n'), data: r };
-    }),
-  },
-
-  {
-    name: 'suggest_renames',
-    title: 'Suggest semantic names for short/unmeaningful variables',
-    description:
-      '智能化改名建议：识别文件中短名/无意义局部变量（含形参），结合纯逻辑候选识别 + LLM 命名建议，' +
-      '为每个候选给出 suggested（建议新名）与 reason（理由）。' +
-      'use_llm=true（默认）调 LLM 建议；false 或未配置 LLM 时降级为仅候选识别（suggested 留空）。' +
-      '返回 candidates 含 id/name/kind/parentFunction/refs/declLine/suggested/reason，' +
-      '可直接把 {file, symbol: name, to: suggested} 作为 rename_symbols(scope="local") 的 renames 条目完成批量改名' +
-      '（同文件同名绑定多于一个时再补 decl_line=声明行号；候选里的 declLine 是**行文本**、不是行号）。',
-    inputSchema: {
-      project_dir: z.string().describe('目标项目根目录（用于解析 file 为绝对路径）'),
-      file: z.string().describe('目标文件（相对 project_dir 或绝对路径）'),
-      min_len: z.number().optional().default(2).describe('短名长度阈值（默认 2，≤min_len 视为短名候选）'),
-      max: z.number().optional().default(40).describe('LLM 建议的候选数量上限（其余只识别不取名）'),
-      use_llm: z.boolean().optional().default(true).describe('是否用 LLM 生成命名建议（默认 true；false/未配置 LLM 则降级为仅候选识别）'),
-    },
-    handler: wrapData(async (a) => {
-      // ★ 入口缺参守卫（CLI 面不做 zod 校验）：project_dir / file 是 schema 必填，
-      //   缺失时原 handler 会抛 `The "path" argument must be of type string`（Node 原始异常）。
-      const project_dir = requireStr(a, 'project_dir');
-      const file = requireStr(a, 'file');
-      const opts: SuggestOptions = {
-        max: typeof a.max === 'number' ? a.max : undefined,
-        minLen: typeof a.min_len === 'number' ? a.min_len : undefined,
-        llm: a.use_llm === false ? null : undefined,
-      };
-      // ★ [C] 只转发：解析 file → 读源码 → 建议 全在受控操作契约（suggestRenamesInFile）
-      const result = await suggestRenamesInFile({
-        project_dir,
-        file,
-        opts,
-      });
-      return {
-        message:
-          `识别到 ${result.candidates.length} 个短名/无意义变量候选；` +
-          `LLM 建议：${result.llm ? '已启用' : '未启用/降级'}${result.note ? `（${result.note}）` : ''}。` +
-          `建议名可直接作为 rename_symbols(scope="local") 的 renames 条目使用（{file, symbol, to}）。`,
-        data: result,
-      };
-    }),
-  },
-
-  {
-    name: 'find_similar_names',
-    title: 'Detect confusable similar names and disambiguate',
-    description:
-      '相似名称检测与一键消歧：识别同一函数内"易看错"的孪生名（仅大小写不同 / 数字后缀 count-count2 / ' +
-      '相邻换位 typo total-totla / 小编辑距离），按相似度连通块聚类。每个 cluster 保留最清晰名 basis，' +
-      '其余为待改名 offenders；use_llm=true（默认）请 LLM 为每个 offender 建议语义化且与 basis 明显区分的新名。' +
-      'use_llm=false 或未配置 LLM 时降级为仅聚类（suggested 留空）。' +
-      '返回 clusters（含 offenders.suggested 与 reason）+ 可直接作为 rename_symbols(scope="local") 的 renames 条目使用的 items 数组（{file, symbol, to}），' +
-      '实现"检测→建议→批量改名"闭环。',
-    inputSchema: {
-      project_dir: z.string().describe('目标项目根目录（用于解析 file 为绝对路径）'),
-      file: z.string().describe('目标文件（相对 project_dir 或绝对路径）'),
-      max_clusters: z.number().optional().default(20).describe('LLM 处理的最大聚类数（其余仅检测不取名）'),
-      use_llm: z.boolean().optional().default(true).describe('是否用 LLM 生成消歧新名（默认 true；false/未配置 LLM 则降级为仅聚类）'),
-    },
-    handler: wrapData(async (a) => {
-      // ★ 入口缺参守卫（CLI 面不做 zod 校验）：project_dir / file 是 schema 必填，
-      //   缺失时原 handler 会抛 `The "path" argument must be of type string`（Node 原始异常）。
-      const project_dir = requireStr(a, 'project_dir');
-      const file = requireStr(a, 'file');
-      const opts = {
-        maxClusters: typeof a.max_clusters === 'number' ? a.max_clusters : undefined,
-        llm: a.use_llm === false ? null : undefined,
-      };
-      // ★ [C] 只转发：解析 file → 读源码 → 聚类+消歧 全在受控操作契约（suggestDisambiguationsInFile）
-      const result = await suggestDisambiguationsInFile({
-        project_dir,
-        file,
-        opts,
-      });
-      const items = disambiguationItems(result, file);
-      return {
-        message:
-          `识别到 ${result.clusters.length} 个相似名聚类；` +
-          `LLM 消歧：${result.llm ? '已启用' : '未启用/降级'}${result.note ? `（${result.note}）` : ''}；` +
-          `可直接改名的项 ${items.length} 条，已附在 data.items（形如 {file,symbol,to}）供 rename_symbols(scope="local") 使用。`,
-        data: { ...result, items },
-      };
     }),
   },
 

@@ -31,6 +31,9 @@ import { requireStr, optionalStr, optionalNum, optionalBool, optionalArr } from 
 // ★★★ T197：**args 的【键名】判据**（★ 与 plumbing 的【值形状】判据是两把尺）。
 import { assertExploreArgKeys, assertExploreRequired } from './explore_arg_spec.js';
 import { semanticSearch } from '../llm/semantic_search.js';
+import { listProjectDocs, readProjectDoc, matchDocsForTargets, buildDocsPromptBlock } from '../docs/project_docs.js';
+import type { DocTargetSet } from '../docs/project_docs.js';
+import { getDSL } from '../../../infrastructure/storage.js';
 import { analyzeHubs, analyzeImpact } from '../../../infrastructure/analysis/impact/index.js';
 import type { ImpactChangePoint } from '../../../infrastructure/analysis/impact/index.js';
 import { renderGranularityNote } from '../../refactor/parse_capability/parse_capability.js';
@@ -71,6 +74,8 @@ export const EXPLORE_ACTIONS = [
   'watch',
   // ★ 2026-10-28（吸收 impact_analysis）：改前看波及 —— 反向可达闭包 + 风险排序
   'impact',
+  // ★ 2026-10-28（吸收 read_project_docs）：读项目文档（清单 / 单篇 / 按目标集命中）
+  'docs',
 ] as const;
 
 export type ExploreAction = (typeof EXPLORE_ACTIONS)[number];
@@ -294,6 +299,33 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
         reviewer: optionalStr(args, 'reviewer'),
       });
       return toResult(r, true);
+    }
+    case 'docs': {
+      // ★★★ 2026-10-28（T-#CERT-1 · 吸收 read_project_docs）：**读项目文档**。
+      //   它与 read / facts 同属"读"这条线（读源码 / 读索引事实 / 读项目文档），本就该同一个入口。
+      const feature = requireStr(args, 'feature');
+      const dsl = getDSL(feature);
+      const projectDir = optionalStr(args, 'project_dir') || (dsl?.source_root ? String(dsl.source_root) : '');
+      const man = listProjectDocs(projectDir, feature);
+      const name = optionalStr(args, 'name') || '';
+      if (name) {
+        const content = readProjectDoc(projectDir, feature, name);
+        if (content === null) return { message: `文档不存在：${name}`, data: { id: name, found: false } };
+        return { message: `文档 \`${name}\`（${content.split('\n').length} 行）`, data: { id: name, content } };
+      }
+      const targets = args['targets'] && typeof args['targets'] === 'object' ? (args['targets'] as DocTargetSet) : undefined;
+      if (targets && ((targets.features ?? []).length > 0 || (targets.steps ?? []).length > 0 || (targets.files ?? []).length > 0)) {
+        const matched = matchDocsForTargets(man, targets);
+        const block = buildDocsPromptBlock(man, targets);
+        return {
+          message: `命中 ${matched.length}/${man.docs.length} 篇文档（frontmatter/文件名匹配）`,
+          data: { dir: man.dir, total: man.docs.length, matched: matched.map((d) => d.id), block },
+        };
+      }
+      return {
+        message: `项目文档 ${man.docs.length} 篇（${man.dir ?? '未找到 docs/ 目录'}）`,
+        data: man,
+      };
     }
     case 'impact': {
       // ★★★ 2026-10-28（T-#CERT-1 · 吸收 impact_analysis）：**改前风险闭包**。

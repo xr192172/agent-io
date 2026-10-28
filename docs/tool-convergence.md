@@ -91,7 +91,7 @@
 | `code_health` | 健康分（**伪指标**：多判据加权） | 拆判据：分层违规=已有 `domain-independent`；死代码=新 `dead-code`；复杂度=新 `metric`。**分数不做判据**（会诱导刷分） |
 
 ### ③ 只能合并（同生态位、能力不重叠）
-`find_similar_names` + `suggest_renames` → `rename_symbols` · `read_project_docs` → `explore_code`（能力须完整保留）
+~`find_similar_names` + `suggest_renames` → `rename_symbols`~ ✅ **已完成**（`analyze=similar\|suggest`）· ~`read_project_docs` → `explore_code`~ ✅ **已完成**（`action=docs`）—— 证 `t431` **14/0**
 
 ### ④ 真独有 ⇒ 不动
 

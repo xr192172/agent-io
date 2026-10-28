@@ -257,7 +257,7 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   //   `review_changes` 已不在注册表（本文件 §staleWhen 纪律：工具删了、说明忘删 ⇒ 删条目）。
   import_project: '扫描代码项目生成 DSL（文件节点+调用边+符号语义层）',
   design_intent: '设计意图(why)：直接写 overlay（goals + edge_intents）。★ action=propose 已退役（调用会响亮报错、零副作用）⇒ 要「先请人批再落」走 opl 立卡 / observe action=proposals',
-  rename_symbols: '标识符改名（两种作用域粒度：scope=module 跨文件模块级符号、全批原子；scope=local 文件内局部绑定、作用域隔离、逐项独立），dry_run 预览后落盘',
+  rename_symbols: '标识符改名（两种作用域粒度：scope=module 跨文件模块级符号、全批原子；scope=local 文件内局部绑定、作用域隔离、逐项独立），dry_run 预览后落盘（★ 2026-10-28 吸收 `suggest_renames` / `find_similar_names`：`analyze=similar|suggest` 只读分析形态）',
   rename_files: '批量文件改名（dry_run 计算影响面，原子阻断）',
   move_symbol: '跨文件移动模块级符号（自动重定向 importer 的 import 源，只改 source 不动使用点）',
   edit_code: '符号级替换（文件+函数+新函数体，AST 定位）',
@@ -268,8 +268,6 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   refactor_pipeline: '整条重构流水线（预览→执行→校验闭环）；含 dead_imports 步（显式 dead 清单或自动检测，TS/Go）',
   apply_refactor_plan: '批量文本替换的**单一入口，两种形态**（2026-10-28 合并 plan_refactor）：给 targets ⇒ **只算清单**（只读，输出 plan_id + 命中级别 + diff 预览）；给上一轮回执的 plan ⇒ **落盘**（幂等，plan_id 指纹不符即报错）',
   annotate_functions: '函数语义注释（TS/JS + Go）：扫覆盖→缺失用 LLM 补→@fnhash body 指纹同步过期；可配进 refactor_pipeline 的 function_annotation 步',
-  suggest_renames: '生成改名建议（就近相似名/命名规范）；混淆/压缩代码的短名还原可读也走这里——建议先由格式化梳理结构，再经 rename_symbols 应用，意图复原留人/LLM',
-  find_similar_names: '找相似命名（撞名/歧义排查）',
   refactor_judge: '重构后裁判：校验是否符合契约/无回归',
   snapshot: '代码快照统一入口（action=list/rollback）：列每次 edit_code/rename_files/move_symbol 落盘前自动存的撤回点，或回滚到某一份（省略=最近一份）；★ 回滚立即落盘、本身不可再撤回',
   diff_views: '多视图/多版本差异对比',
@@ -286,7 +284,7 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   code_health: '代码健康度扫描（含 unused_import 多语言）',
   translate_go_ts: '跨语言翻译：Go→TS 半自动（机械骨架+验证闸；fill 用 LLM 逐孔填；verify 跑行为对拍）',
   go_originals: '读 Go 源文件顶层符号原文（ground truth）：翻译/评审时对照 Go 原文，不对着 TS 壳猜',
-  explore_code: '代码理解统一入口（search/check_monolith/run_simulation/watch）（★ 2026-10-28 吸收 `impact_analysis`：action=impact 出改前风险闭包 / 热区盘点）',
+  explore_code: '代码理解统一入口（search/check_monolith/run_simulation/watch）（★ 2026-10-28 吸收 `impact_analysis`：action=impact 出改前风险闭包 / 热区盘点）（★ 2026-10-28 吸收 `read_project_docs`：`action=docs` 读项目文档）',
   // ★ 2026-10-11：契约页 / 类型页 —— "新用户第一站"要能导到它（否则又一条"声明了但没人点名"）。
   contract_page:
     '★ 契约页 / 类型页：给一个**符号名**一次给全 —— 定义在哪 / 字段成员 / 谁产生 / 谁消费 / 相关接法边 / b_terms 口径（查不到是一个明确的态，不是空数组）',
@@ -308,7 +306,6 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   observe_proposals:
     'observe 提案入口（action=list/show/approve/reject）—— ★ 同样是**给下一个接手的 Agent**：approve 走**四层门**（L1 规则/L2 LLM 复核/L3 覆盖/L4 定稿），★ 任一层不过即 **frozen**（提案 rejected、权威 DSL 不动，**别把 frozen 读成通过**）',
   gateway_provider: 'LLM 网关供应商/Key 池说明与状态',
-  read_project_docs: '读项目文档（README/活文档）',
   capability_map: '本工具：能力线导航（目录由注册表 TOOL_DEFS 自动派生）',
 };
 
