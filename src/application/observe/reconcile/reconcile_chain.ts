@@ -27,10 +27,10 @@ import path from 'node:path';
 import { getDSL } from '../../../infrastructure/storage.js';
 import { DATA_DIR_NAME, GO_OBSERVE_DIR_NAME } from '../../../infrastructure/data_dir.js';
 import { deriveDetailChain } from '../../design/derive/derive_chain.js';
-import { queryObserveLog } from '../../../infrastructure/analysis/observe/log_query.js';
-import { judgeEvent } from '../../../infrastructure/analysis/observe/judge.js';
-import { rebuildChains, matchChainDecl, type TSChainObs } from '../../../infrastructure/analysis/observe/chain.js';
-import { loadTSEvents, type TSEvent } from '../../../infrastructure/analysis/observe/probe.js';
+import { queryObserveLog } from '../../../infrastructure/analysis/observe/index.js';
+import { judgeEvent } from '../../../infrastructure/analysis/observe/index.js';
+import { rebuildChains, matchChainDecl, type TSChainObs } from '../../../infrastructure/analysis/observe/index.js';
+import { loadTSEvents, type TSEvent } from '../../../infrastructure/analysis/observe/index.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface ReconcileChainInput {

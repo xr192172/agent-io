@@ -284,7 +284,6 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   observe_instrument: '源码插桩探针（dry_run 可预览）',
   observe_trace: '读录制调用链回放：从 events.jsonl 重建结构化调用树（纯后端，LLM 分析用）',
   feature_line: '功能线：每个功能搭一条主链（功能→入口→调用节点），供沿线单步运行/投大屏点位',
-  narrate_step: '把某一步观测过程叙述成可读记录（低频候选，待真实使用评估）',
   // ★ I2b（2026-10-25）：behavior_baseline 工具注册已并入 behavior-cases 判据生态（observe 线拆注册），
   //   行为基线场景用决策卡的 behavior-cases 判据表达 ⇒ 此处描述条目同步删除（不留下指向不存在工具的词条）。
   run_tests: '运行测试并汇总结果',

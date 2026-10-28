@@ -8,8 +8,8 @@
  * ★ 只做「定位提案库 + 列」，不渲染：HTTP 面出 JSON、MCP 面出人话，那是序列化，属于各自的面。
  */
 
-import { defaultDSLDir } from '../../../infrastructure/analysis/observe/dsl_store.js';
-import { ProposalStore, type Proposal } from '../../../infrastructure/analysis/observe/proposal_store.js';
+import { defaultDSLDir } from '../../../infrastructure/analysis/observe/index.js';
+import { ProposalStore, type Proposal } from '../../../infrastructure/analysis/observe/index.js';
 import { validateProjectRoot } from '../../../infrastructure/dictionary.js';
 
 export type ListObserveProposalsResult =

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T05:39:53.240Z",
+  "generatedAt": "2026-10-28T06:41:31.352Z",
   "version": "0.1.3",
   "versionTag": {
     "packageJson": "0.1.3",
@@ -7,9 +7,9 @@
     "note": "tag 落后于 package.json version（0.1.0 → 0.1.3 之间未打 tag）。口径：package.json 是代码事实；v0.1.3 由主控在下次提交时补打，不回改 version 凑 tag。"
   },
   "tools": {
-    "count": 60,
+    "count": 59,
     "byLane": {
-      "observe": 11,
+      "observe": 10,
       "cross": 5,
       "design": 9,
       "meta": 16,
@@ -26,11 +26,6 @@
         "name": "reconcile_effects",
         "lane": "observe",
         "desc": "积木契约动静对账（Brick Harvest Phase 2c 合龙）：读 <project>/.agent/observe/events-*.jsonl 中的 effect 事件（Go 语言包（observe-lang-go）instrument --effects 插桩产生），与 DSL 契约候选对账——命中…"
-      },
-      {
-        "name": "narrate_step",
-        "lane": "observe",
-        "desc": "叙事砖（设计观察：吸收 manim 的\"声明式分镜\"——一个工序只讲一件事、靠连续进/出过渡连起来）。"
       },
       {
         "name": "observe_log",

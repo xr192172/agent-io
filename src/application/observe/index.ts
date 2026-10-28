@@ -38,8 +38,6 @@ import { getFeatureLine } from './capture/feature_line.js';
 import { ensureProjectIndex } from '../../infrastructure/index/index_freshness.js';
 import { memoryObserveHandler, memoryTargetsHandler } from './capture/memory_observe.js';
 import type { MemoryObserveInput } from './capture/memory_observe.js';
-import { narrateStep } from './capture/narrate_step.js';
-import type { NarrateStepInput } from './capture/narrate_step.js';
 import { recommendObservePoints } from './capture/observe_points.js';
 import { reconcileEffects } from './reconcile/reconcile_effects.js';
 import type { ReconcileEffectsInput } from './reconcile/reconcile_effects.js';
@@ -100,33 +98,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
     }),
   },
 
-  {
-    name: 'narrate_step',
-    title: 'Narrate a production-line step as a governed narrative brick',
-    description:
-      '叙事砖（设计观察：吸收 manim 的"声明式分镜"——一个工序只讲一件事、靠连续进/出过渡连起来）。' +
-      '给定一个产线工序文件，生成"进料口→工序→出料口"分镜序列：数据形态（input/output 针脚）由契约投影' +
-      '（actual_apis[0] 签名）产生，是代码事实、非 LLM 编造；分镜 facts 逐条引用真实针脚。' +
-      'write=true 时用自有 MCP 抽成砖接入体系：DSL semantic 落 brick_narr_* 条目' +
-      '（思维导图「🧱 已验证积木」区出卡）。防编造纪律同契约提取：' +
-      'LLM 结论只进 role.reasons/notes，不产生数据事实。' +
-      '（低频候选，待真实使用评估）',
-    inputSchema: {
-      feature: z.string().describe('feature 名'),
-      file: z.string().describe('工序涉及文件（相对路径，语义层锚点）；从 actual_apis[0] 契约投影取输入/输出针脚'),
-      title: z.string().optional().describe('工序名（缺省取该文件 responsibility）'),
-      detail: z.string().optional().describe('工序人话（缺省取该文件 responsibility）'),
-      write: z.boolean().optional().describe('false 只预演不落盘（不写砖不登记，默认 true）'),
-    },
-    handler: wrapData(async (a) => {
-      const feature = requireStr(a, 'feature');
-      const file = requireStr(a, 'file');
-      const r = narrateStep({ ...(a as unknown as NarrateStepInput), feature, file });
-      return { message: r.message, data: r };
-    }),
-  },
-
-  {
+{
     name: 'observe_log',
     title: 'Query Observe runtime logs by file',
     description:

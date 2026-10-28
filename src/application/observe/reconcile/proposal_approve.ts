@@ -10,9 +10,9 @@
  *   `conflict` = 状态机/门拒绝（HTTP 409）。★ 失败方向恒为「拒」—— 没有「半放行」。
  */
 
-import { approveGated, type ApproveResult } from '../../../infrastructure/analysis/observe/approve_gated.js';
-import { defaultDSLDir, DesignDSLStore } from '../../../infrastructure/analysis/observe/dsl_store.js';
-import { ProposalStore } from '../../../infrastructure/analysis/observe/proposal_store.js';
+import { approveGated, type ApproveResult } from '../../../infrastructure/analysis/observe/index.js';
+import { defaultDSLDir, DesignDSLStore } from '../../../infrastructure/analysis/observe/index.js';
+import { ProposalStore } from '../../../infrastructure/analysis/observe/index.js';
 import { validateProjectRoot } from '../../../infrastructure/dictionary.js';
 
 export interface ApproveObserveProposalInput {
