@@ -260,7 +260,11 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
       // ④a 自写登记（L1b）：写穿失败时读路径靠它兜 —— 必须**先**登记，否则失败就没兜底了
       recordSelfWrite(root, written, ctx.label);
       // ④b 同步写穿（L1a）：解析器已预热 ⇒ 当场直连；未预热 ⇒ 整批落回 L1b（绝不半同步）
-      const index = syncSelfWritesSync(root, written);
+      // ★★ 2026-10-28（T-#RP-3 续）：**逐文件读数必须喂回去** —— 原来这里没传 `opts.onFile`，
+      //   于是 `SourceWriteCtx.onFile`（`apply_writes` 靠它拿逐文件 `updated`）**从来没被调用过**
+      //   ⇒ 回执报 `index_synced:[{updated:false}]`，而 `index.synced=1`（真同步了）—— 读数自相矛盾。
+      //   ★ 这与 T150 / T245 同一族：**读数在中间层被丢**（不是算错，是没交出去）。
+      const index = syncSelfWritesSync(root, written, { ...(ctx.onFile ? { onFile: ctx.onFile } : {}) });
       // ④c 写者自己的读集基线刷到写后 —— 不刷会让同一个 actor 下一次写必然报一条假 stale
       refreshAfterOwnWrite(root, resolveActor(ctx.actor), written);
       return index;
