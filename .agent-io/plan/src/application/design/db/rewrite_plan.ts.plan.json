@@ -1,0 +1,42 @@
+{
+  "path": "src/application/design/db/rewrite_plan.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "planKindGaps"
+      },
+      "kind": "create",
+      "detail": "新增判据：create 要求文件尚不存在、delete 要求文件存在（前提错了就是路线错）",
+      "judgement_ref": "cert:t388#①",
+      "judgement_kind": "behavior-cases",
+      "status": "open"
+    }
+  ],
+  "untouched_default": {
+    "why": "本轮只在文件末尾新增一条判据，既有判据一律不动"
+  },
+  "symbols_at_freeze": [
+    "RewritePlanEntry",
+    "RewritePlan",
+    "planDir",
+    "planFileFor",
+    "readRewritePlan",
+    "writeRewritePlan",
+    "planGaps",
+    "planCoverageGaps",
+    "planUntouchedGaps",
+    "JudgementRef",
+    "parseJudgementRef",
+    "JudgementStrength",
+    "SEMANTIC_KINDS",
+    "EXISTENCE_KINDS",
+    "strengthOfKind",
+    "planJudgementGaps",
+    "planTopoOrder",
+    "planDependencyGaps"
+  ],
+  "frozen_at": "2026-10-28T01:40:50.205Z",
+  "base": {
+    "content_hash": "b4ef683c1c154b9095c206c167aa0cca5f183813"
+  }
+}

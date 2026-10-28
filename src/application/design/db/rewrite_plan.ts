@@ -36,6 +36,12 @@ export interface RewritePlanEntry {
   /** open = 待做；stale = 锚点对不上（只标不删）；done = 源码已到位且判据转绿 */
   status: 'open' | 'stale' | 'done';
   /**
+   * ★ 2026-10-28（试点读数 #2）：`judgement_ref` 是 `cert:` 形态时**必填** —— 证里的检查号不登记种类，
+   * 不声明就判不出强度。取值必须在已知分类里（`strengthOfKind` 认识的种类），**不许自造**。
+   * `decision:` 形态**忽略**它（种类从册里现读，不给人自报的机会）。
+   */
+  judgement_kind?: string;
+  /**
    * ★★★ 2026-10-28（迭代 ⑤）：**这条改动依赖哪些符号先落地**（写的是 `anchor.symbol`）。
    *
    * ## 为什么需要它（用户："设计阶段就了解一个功能的整条路线"）
@@ -68,6 +74,17 @@ export interface RewritePlan {
    * ★ 判据不住这里（这里是形状）：判定在 `planCoverageGaps`。
    */
   untouched?: Array<{ symbol: string; why: string }>;
+  /**
+   * ★★★ 2026-10-28（真实开发试点读数 #1）：**"其余都不动"的紧凑声明** ——
+   * 一个 18 个顶层符号的文件、只改 1 处，逐条写 18 个 `untouched` 手工不现实（我是脚本生成的）。
+   *
+   * ## 为什么它没有把"通读"变松
+   * 用了它就必须同时记 `symbols_at_freeze`（冻结那一刻的符号全集）。**快照之后出现的符号**不在里面
+   * ⇒ 判据仍会报"有新符号 ⇒ 重新通读并重新冻结"。⇒ 紧凑只省**打字**，不省**理解**。
+   */
+  untouched_default?: { why: string };
+  /** 冻结那一刻的**顶层符号全集**（`untouched_default` 的牙齿：新符号不在其中就会被抓） */
+  symbols_at_freeze?: string[];
 }
 
 /** 计划目录：`<proj>/.agent-io/plan`（`rootsOf().plan` 的唯一解析器，别在别处再拼） */
@@ -134,6 +151,21 @@ export function planCoverageGaps(plan: RewritePlan | null, symbolsInFile: readon
   if (!plan) return [];
   const planned = new Set(plan.entries.map((e) => e.anchor?.symbol).filter((s): s is string => !!s));
   const declared = new Set((plan.untouched ?? []).map((u) => u.symbol).filter(Boolean));
+
+  // ★ 紧凑声明（`untouched_default`）：省打字，不省理解 —— 快照之后**新增的符号**仍要被抓
+  if (plan.untouched_default) {
+    const frozen = new Set(plan.symbols_at_freeze ?? []);
+    if (!frozen.size) {
+      return [`用了 \`untouched_default\`（"其余都不动"）但**没记 \`symbols_at_freeze\`** ⇒ 无凭据，判不出那批符号当时是否存在`];
+    }
+    const fresh = [...new Set(symbolsInFile)].filter((s) => !planned.has(s) && !frozen.has(s));
+    if (!fresh.length) return [];
+    return [
+      `文件里有 ${fresh.length} 个**冻结之后才出现的符号**：${fresh.slice(0, 6).join(', ')}（\`untouched_default\` 没覆盖它们）` +
+        `\n      ⇒ 重新通读这几处，再重新冻结（\`apply:true\` 会刷新快照）`,
+    ];
+  }
+
   const silent = [...new Set(symbolsInFile)].filter((s) => !planned.has(s) && !declared.has(s));
   if (!silent.length) return [];
   return [
@@ -214,7 +246,10 @@ export function planJudgementGaps(
       );
       continue;
     }
-    const r = resolveKind(e);
+    // ★ 试点读数 #2：`cert:` 形态没有登记 kind ⇒ 允许**显式声明**（`judgement_kind`），
+    //   但必须在 `strengthOfKind` 认识的闭集里 —— 自造的种类会被判成 `unknown` 并点名。
+    let r = resolveKind(e);
+    if (r.why_not && e.judgement_kind) r = { kind: e.judgement_kind };
     if (r.why_not) {
       gaps.push(`${who} —— 判据解不出来：${r.why_not}（**判不出强度 ≠ 强度合格**）`);
       continue;
@@ -313,6 +348,30 @@ export function planDependencyGaps(plan: RewritePlan | null): string[] {
       `依赖**成环**（${nodes.join(', ')}）⇒ 路线不成立（没有拓扑序）。` +
         `\n      ⇒ 环上的每一条都自称"要等对方先做"，这种计划落不了地；先把它拆成单向依赖。`,
     );
+  }
+  return gaps;
+}
+/**
+ * ★★★ 2026-10-28（真实开发试点）：**`kind` 的前提检查** —— `create` / `delete` 的前提错了，路线就错了。
+ *
+ * 判据（两条）：
+ * · `kind:'create'` 但**文件已存在** ⇒ 该用 `rewrite`（"新建"与"改现有"是两件事，混了就会覆盖别人的活）；
+ * · `kind:'delete'` 但**文件不存在** ⇒ 已经是删掉的状态（计划过期或路径写错）。
+ * ★ 为什么必须判：这两条错了，后面所有 entry 的锚点都建在错的前提上 —— 而"顺序对、判据强"都救不回来。
+ */
+export function planKindGaps(plan: RewritePlan | null, fileExists: boolean): string[] {
+  if (!plan) return [];
+  const gaps: string[] = [];
+  for (const e of plan.entries) {
+    const who = `${e.kind}:${e.anchor?.symbol || '(缺 anchor)'}`;
+    if (e.kind === 'create' && fileExists) {
+      gaps.push(
+        `${who} —— \`create\` 但**文件已存在** ⇒ 该用 \`rewrite\`（"新建"与"改现有"是两件事；混了会覆盖已有的活）`,
+      );
+    }
+    if (e.kind === 'delete' && !fileExists) {
+      gaps.push(`${who} —— \`delete\` 但**文件不存在** ⇒ 已经是删掉的状态（计划过期，或路径写错）`);
+    }
   }
   return gaps;
 }

@@ -65,6 +65,7 @@ import {
   planCoverageGaps,
   planJudgementGaps,
   planDependencyGaps,
+  planKindGaps,
   planTopoOrder,
   type RewritePlan,
   type RewritePlanEntry,
@@ -479,6 +480,14 @@ export const DESIGN_TOOLS: ToolDef[] = [
         .array(z.any())
         .optional()
         .describe('★ 仅 action=plan：`{symbol, why}` = 该文件里**看过但不动**的符号（每个符号必须二选一表态，否则算"没通读"）'),
+      untouched_default: z
+        .boolean()
+        .optional()
+        .describe(
+          '★ 仅 action=plan：**其余都不动**的紧凑声明（省打字，不省理解——自动记 `symbols_at_freeze`；' +
+            '冻结之后新增的符号仍会以"没表态"被抓）',
+        ),
+      untouched_why: z.string().optional().describe('★ 仅 action=plan + untouched_default：那一批"不动"的统一理由'),
     },
     handler: wrapData(async (a) => {
       const action = (a.action as string | undefined) ?? 'report';
@@ -494,8 +503,19 @@ export const DESIGN_TOOLS: ToolDef[] = [
         const planPath = planFileFor(projectRoot, rel);
 
         // 读侧：没给 entries ⇒ 回放现有计划
+        const compact = a.untouched_default === true; // "其余都不动"（省打字，不省理解：自动记冻结快照）
         const plan = given
-          ? ({ path: rel, entries: given, ...(Array.isArray(a.untouched) ? { untouched: a.untouched as RewritePlan['untouched'] } : {}) } as RewritePlan)
+          ? ({
+              path: rel,
+              entries: given,
+              ...(Array.isArray(a.untouched) ? { untouched: a.untouched as RewritePlan['untouched'] } : {}),
+              ...(compact
+                ? {
+                    untouched_default: { why: String(a.untouched_why ?? '本轮只改 entries 里那几处') },
+                    symbols_at_freeze: symbolsInFileOf(projectRoot, rel),
+                  }
+                : {}),
+            } as RewritePlan)
           : readRewritePlan(projectRoot, rel);
 
         if (!plan) {
@@ -516,6 +536,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
           ...planCoverageGaps(plan, symbolsInFileOf(projectRoot, rel)),
           ...planJudgementGaps(plan, (e) => resolveJudgementKind(e)),
           ...planDependencyGaps(plan),
+          ...planKindGaps(plan, fs.existsSync(path.join(projectRoot, rel))),
         ];
         const route = planTopoOrder(plan);
 

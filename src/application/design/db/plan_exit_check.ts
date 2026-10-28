@@ -79,8 +79,10 @@ export function checkRewriteExit(projectRoot: string, relPath: string): ExitChec
     if (fs.existsSync(dbFile)) {
       const db = new DatabaseSync(dbFile, { readOnly: true });
       // ★ 排除 `kind='file'`（那是"文件节点"本身，名 = 文件名）——它不是符号，别混进"计划外符号"
+      // ★ 2026-10-28（真实开发试点读数 #5b）：**只算顶层符号**（`parent IS NULL`）—— 与覆盖判据
+      //   （`write_gate#symbolsInFileOf`）和设计 DB 投影**同一把尺**；否则内层 helper（`visit`）会被当成计划外。
       const rows = db
-        .prepare("SELECT name FROM nodes WHERE file_path = ? AND kind != 'file'")
+        .prepare("SELECT name FROM nodes WHERE file_path = ? AND kind != 'file' AND parent IS NULL")
         .all(rel) as Array<{ name: string }>;
       db.close();
       names = new Set(rows.map((r) => r.name));
@@ -95,6 +97,11 @@ export function checkRewriteExit(projectRoot: string, relPath: string): ExitChec
   const changed = nowHash && frozenHash ? nowHash !== frozenHash : null;
 
   const planned = new Set<string>();
+  // ★ 2026-10-28（真实开发试点读数 #5）：**"计划外符号"必须把"声明过的"扣掉** ——
+  //   否则用紧凑声明（`untouched_default`）的计划会被报成"19 个计划外符号"，全是噪声。
+  //   判据：`entries`（要改）+ `untouched`（看过不动）+ 紧凑声明覆盖的冻结快照 = **已表态**。
+  const declaredElsewhere = new Set<string>((plan.untouched ?? []).map((u) => u.symbol).filter(Boolean));
+  const frozenAll = new Set<string>(plan.symbols_at_freeze ?? []);
   for (const e of plan.entries) {
     const sym = e.anchor?.symbol ?? '';
     if (sym) planned.add(sym);
@@ -140,7 +147,13 @@ export function checkRewriteExit(projectRoot: string, relPath: string): ExitChec
     });
   }
 
-  if (names) for (const n of names) if (!planned.has(n)) out.unplanned.push(n);
+  if (names) {
+    for (const n of names) {
+      if (planned.has(n) || declaredElsewhere.has(n)) continue; // 已表态（要改 / 看过不动）
+      if (plan.untouched_default && frozenAll.has(n)) continue; // 紧凑声明覆盖（冻结时就在的符号）
+      out.unplanned.push(n);
+    }
+  }
   return out;
 }
 

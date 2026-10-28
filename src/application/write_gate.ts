@@ -75,6 +75,7 @@ import {
   planUntouchedGaps,
   planJudgementGaps,
   planDependencyGaps,
+  planKindGaps,
   parseJudgementRef,
 } from './design/db/rewrite_plan.js';
 import { checkRewriteExit, renderExitCheck } from './design/db/plan_exit_check.js';
@@ -1011,9 +1012,12 @@ export function symbolsInFileOf(projectRoot: string, rel: string): string[] {
     const dbFile = projectCacheDbPath(path.resolve(projectRoot));
     if (!fs.existsSync(dbFile)) return [];
     const db = new DatabaseSync(dbFile, { readOnly: true });
-    const rows = db.prepare("SELECT name FROM nodes WHERE file_path = ? AND kind != 'file'").all(rel) as Array<{
-      name: string;
-    }>;
+    // ★ 2026-10-28（真实开发试点发现）：**只算顶层符号**（`parent IS NULL`）——
+    //   内层 helper（实测：`planTopoOrder` 里的 `visit`）不该要求人"表态"，
+    //   它属于外层函数的实现细节。这条规则与设计 DB 投影（`design_db_projection.ts`）**同一把尺**。
+    const rows = db
+      .prepare("SELECT name FROM nodes WHERE file_path = ? AND kind != 'file' AND parent IS NULL")
+      .all(rel) as Array<{ name: string }>;
     db.close();
     return rows.map((r) => r.name);
   } catch {
@@ -1036,6 +1040,8 @@ function planGate(projectRoot: string, rels: readonly string[]): { warnings: str
       ...planJudgementGaps(plan, (e) => resolveJudgementKind(e)),
       // ★ 迭代 ⑤：**路线**（依赖/顺序）成不成立
       ...planDependencyGaps(plan),
+      // ★ 试点：\kind\ 的前提（create/delete 与文件现状对不上 ⇒ 路线建在错前提上）
+      ...planKindGaps(plan, fs.existsSync(path.join(projectRoot, rel))),
     ];
     if (!gaps.length) continue;
     const head = `· ${rel} 没有够格的重写计划（${gaps.length} 处）：`;
