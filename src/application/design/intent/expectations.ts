@@ -580,7 +580,7 @@ export async function judgeExpectations(
           break;
         }
         if (!evs.length) {
-          push(it, 'unsupported', `事件文件 \`${path.basename(eventsFile)}\` 里一条事件都没有 ⇒ 判不了（空 ≠ 没问题）`);
+          push(it, 'unsupported', `事件文件 \`${path.basename(eventsFile)}\` 里一条事件都没有 ⇒ 判不了（空 ≠ 没问题）。★ 下一步：npm run observe:collect -- <你要跑的命令>（先采一轮事件；入口见 T-#OBSERVE-8）`);
           break;
         }
         // ③ 选择集：**优先按框架规则 id（设计侧稳定名）**，probe 只作可选过滤（易变名）
