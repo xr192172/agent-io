@@ -42,8 +42,10 @@ function shouldHandle(url: string): boolean {
   if (!EXTS.has(path.extname(p))) return false;
   if (p.includes(`${path.sep}node_modules${path.sep}`)) return false;
   // 框架自身：dist 目录（含探针本体）与 loader 本体 —— 插桩它们只会自伤
-  const selfDist = path.resolve(fileURLToPath(D), '..', '..', '..'); // dist/src/infrastructure/analysis/observe → dist/src
-  if (p.startsWith(selfDist + path.sep)) return false;
+  // ★ 2026-10-28（T-#KIND-2）：别在 hooks 里手算 `../../..`（脆）；自根从**命名常量**来，并允许 env 覆盖：
+  //   本文件在 dist/src/infrastructure/analysis/observe ⇒ 自根是 dist（**不是** dist/src）
+  const selfRoot = process.env.AGENT_IO_PROBE_SELF_ROOT || path.resolve(fileURLToPath(D), '..', '..', '..', '..');
+  if (p.startsWith(selfRoot + path.sep)) return false;
   for (const ex of (process.env.AGENT_IO_PROBE_EXCLUDE ?? '').split(path.delimiter)) {
     if (ex && p.startsWith(ex)) return false;
   }

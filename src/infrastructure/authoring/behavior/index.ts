@@ -31,6 +31,8 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import path from 'node:path';
+// ★ 2026-10-28（T-#KIND-2）：跨切面能力归 observe；本文件不再自带一份
+import { probeRunEnv } from '../../analysis/observe/run_env.js';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import ts from 'typescript';
@@ -51,37 +53,6 @@ const JAVA_EXTS = ['.java'];
 const CS_EXTS = ['.cs'];
 const C_EXTS = ['.c', '.h'];
 
-/**
- * ★ 2026-10-28（T-#OBSERVE-6）：给"我们起的子进程"配一份**带内存插桩 loader 的 env**。
- *
- * · 只在 Node 运行时注入 `--import <probe_loader.js>`（其它语言不认这个变量 —— 会原样忽略）；
- * · 事件落点 `<cwd>/.agent/observe/events-<ts>.jsonl`（`runtime` 判据零配置自动发现的目录）；
- * · 任何一步拿不到（loader 不存在 / 目录建不出来）⇒ 返回 `undefined`，**调用方按原样 spawn**
- *   —— 观测是增强，**不许**让判据跑不起来。
- */
-export function probeRunEnv(root?: string): NodeJS.ProcessEnv | undefined {
-  try {
-    const loader = new URL('../../analysis/observe/probe_loader.js', import.meta.url);
-    if (!fs.existsSync(fileURLToPath(loader))) return undefined;
-    const projectRoot = root ?? process.cwd();
-    const dir = path.join(projectRoot, '.agent', 'observe');
-    fs.mkdirSync(dir, { recursive: true });
-    const events = path.join(dir, `events-${Date.now()}.jsonl`);
-    const prev = process.env.NODE_OPTIONS ?? '';
-    return {
-      ...process.env,
-      NODE_OPTIONS: `${prev} --import ${loader.href}`.trim(), // ★ Windows 上 `--import` 只认 file:// URL
-      OBSERVE_EVENTS_FILE: events,
-      AGENT_IO_PROBE_ROOT: projectRoot,
-      // ★ 排除框架自身 dist：否则会去插桩探针本体（自伤）
-      AGENT_IO_PROBE_EXCLUDE: [process.env.AGENT_IO_PROBE_EXCLUDE, fileURLToPath(new URL('../../../', import.meta.url))]
-        .filter(Boolean)
-        .join(path.delimiter),
-    };
-  } catch {
-    return undefined;
-  }
-}
 
 export type BehaviorLang = 'python' | 'node' | 'go' | 'java' | 'csharp' | 'c';
 
@@ -240,10 +211,16 @@ sys.exit(main())
  * 跨文件 import 会留下 require(...) 调用——子进程里解析不到即报错（v1 边界：须自包含）。
  * 返回 { js } 或 { error }（语法/转译失败）。
  */
-export function transpileToCjs(
+/**
+ * 把目标源码转成 **harness 要跑的那个模块格式**。
+ * ★ 2026-10-28（T-#KIND-2）：原来叫 `transpileToCjs`，但加了 ESM 选项后**名字与新行为矛盾**
+ *   （它能产 ESM）。改名并按 `module` 显式取值 —— 名字必须说真话。
+ * ★ `module:'esm'` 是**默认方向**：内存插桩靠 ESM loader hooks，而 **hooks 不拦截 CJS `require`**。
+ */
+export function transpileForHarness(
   abs: string,
   src: string,
-  opts: { esm?: boolean } = {},
+  opts: { module?: 'cjs' | 'esm' } = {},
 ): { js: string } | { error: string } {
   const out = ts.transpileModule(src, {
     compilerOptions: {
@@ -251,7 +228,7 @@ export function transpileToCjs(
       // ★ 2026-10-28（t412）：harness 改跑 **ESM 目标**（`esm:true`）——
       //   因为 **ESM loader hooks 不拦截 CJS `require`**：转 CJS 再 require ⇒ 内存插桩
       //   看不见用户代码（只观测到框架自己的 runner）。改 ESM 后 hooks 才能插到目标上。
-      module: opts.esm ? ts.ModuleKind.ESNext : ts.ModuleKind.CommonJS,
+      module: opts.module === 'cjs' ? ts.ModuleKind.CommonJS : ts.ModuleKind.ESNext,
       jsx: ts.JsxEmit.React,
       esModuleInterop: true,
       allowJs: true,
@@ -1101,7 +1078,7 @@ const nodePack: BehaviorLangPack = {
     // ★ 2026-10-28（t412）：**产出 ESM 目标**（`target.mjs`），由 runner 用 `import()` 加载。
     //   为什么：内存插桩靠 ESM loader hooks，而**hooks 不拦截 CJS `require`** ——
     //   转 CJS 再 require 会把用户代码挡在观测之外（实测只看到 runner 自己）。
-    const tr = transpileToCjs(targetAbs, content, { esm: true });
+    const tr = transpileForHarness(targetAbs, content, { module: 'esm' });
     if ('error' in tr) throw new Error(tr.error); // 交由执行器的 finally 清理
     write('target.mjs', tr.js);
     write('runner.mjs', nodeRunnerSource(spec));

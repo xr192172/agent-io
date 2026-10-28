@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { transpileToCjs } from '../../behavior/index.js';
+import { transpileForHarness } from '../../behavior/index.js';
 import { NODE_RUNNABLE_EXTS } from '../../../parse/index.js';
 import type {
   LanguageAdapter,
@@ -97,7 +97,7 @@ function nodeRunProbe(dir: string, file: SourceFile): DynamicGateItem {
     const tmpFile = path.join(tmpDir, mode === 'esm' ? 'probe.mjs' : 'probe.cjs');
     let jsContent = file.content;
     if (mode === 'transpile') {
-      const tr = transpileToCjs(path.join(dir, file.path), file.content);
+      const tr = transpileForHarness(path.join(dir, file.path), file.content);
       if ('error' in tr) {
         return { file: file.path, status: 'fail', detail: tr.error };
       }
