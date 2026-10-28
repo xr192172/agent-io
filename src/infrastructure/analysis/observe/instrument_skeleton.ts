@@ -268,6 +268,19 @@ export interface InstrumentHooks {
    * 语言包在这里做它自己的 AST 遍历与探针文本渲染。
    */
   collectSites(ctx: CollectSitesCtx): void;
+  /**
+   * ★★★ 2026-10-28（T-#OBSERVE-4 ②）：**从改写结果里认出"真正落进去的探针名"**。
+   *
+   * ## 为什么需要
+   * 台账原来记的是「**计划**的探针」（`insertions.map(i => i.site)`），不是「**实插**的」。
+   * 实测反例（本仓真文件）：`expectations.ts` 里嵌套表达式体箭头 `(d) => d.id === id` 的
+   * `enter/exit` **进了台账**，但**源码里没有** ⇒ 台账 101 / 源码 99。
+   * ★ 这比漏记更坏：**台账说"有"，源码里没有** ⇒ 一切基于台账的覆盖率判断都是假的。
+   *
+   * ⇒ 改写完成后用本正则**回读一遍**，只把真出现的探针记进台账；没落地的进 `unapplied`（诚实暴露）。
+   * ★ 不填（其它语言包）⇒ 退回"信任计划"（不擅自改口径）。
+   */
+  probeNamePattern?: RegExp;
   /** 可选的 deep 级插桩（TS 有；不支持的语言不实现）。 */
   collectDeepSites?(ctx: CollectSitesCtx): void;
 }
@@ -390,7 +403,33 @@ export async function instrumentFileWithHooks(
   let out = applyInsertions(content, all);
   if (head && headAt === 0) out = prependAfterShebang(out, head);
 
-  result.sites = insertions.map((i) => i.site);
+  // ★★★ 2026-10-28（T-#OBSERVE-4 ②）：**台账 ≡ 源码实有**。
+  //   原来这里记的是**计划**（`insertions.map(i => i.site)`），不是**实插**。
+  //   实测：嵌套表达式体箭头的探针进了台账却不在源码里（台账 101 / 源码 99）⇒
+  //   一切"覆盖率"判断都是假的。现在回读改写结果，只记真出现的；没落地的进 `unapplied`。
+  if (hooks.probeNamePattern) {
+    const flags = hooks.probeNamePattern.flags.includes('g') ? hooks.probeNamePattern.flags : hooks.probeNamePattern.flags + 'g';
+    const pat = new RegExp(hooks.probeNamePattern.source, flags);
+    const present = new Set<string>();
+    for (const m of out.matchAll(pat)) present.add(m[1]);
+    // ★ 保住"该 site 主探针在源码里"的那些，并**顺手把 extraProbes 也对账**：
+    //   extraProbes 是"同一次注入还带出的其它探针名"，它们同样可能没落地（实测就是它漏的）。
+    result.sites = insertions
+      .map((i) => i.site)
+      .filter((st) => present.has(String(st.probe)))
+      .map((st) =>
+        st.extraProbes ? { ...st, extraProbes: st.extraProbes.filter((p) => present.has(String(p))) } : st,
+      );
+    const gone: string[] = [];
+    for (const i of insertions) {
+      for (const nm of [i.site.probe, ...(i.site.extraProbes ?? [])]) {
+        if (nm && !present.has(String(nm))) gone.push(String(nm));
+      }
+    }
+    if (gone.length) result.unapplied = [...new Set(gone)];
+  } else {
+    result.sites = insertions.map((i) => i.site);
+  }
   // ★ 2026-10-28（T-#OBSERVE-5 ①）：**把改写结果交出去** —— `write:false` 时也填。
   //   在此之前它算完就扔，「内存落地器」只能自己再算一遍 = 第二份实现。
   result.content = out;

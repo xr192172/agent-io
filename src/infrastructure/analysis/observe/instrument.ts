@@ -151,6 +151,11 @@ export interface InstrumentFileResult {
    * · **无需改动**（已插过 / 0 插入点 / 解析失败 / 读失败）⇒ `undefined`（"没有变化"是有意义的信号，不拿原文冒充）。
    */
   content?: string;
+  /**
+   * ★ 2026-10-28（T-#OBSERVE-4 ②）：**计划了但没落进源码**的探针名。
+   * 非空 = **观测有洞，且是已知的洞**（比假装覆盖好）。只有 hooks 给了 `probeNamePattern` 才可能非空。
+   */
+  unapplied?: string[];
   error?: string;
 }
 
@@ -812,6 +817,9 @@ type Insertion = SkeletonInsertion;
 export const tsJsInstrumentHooks: InstrumentHooks = {
   lang: 'ts_js',
   markers: { core: PROBE_MARKER, deep: DEEP_MARKER },
+  // ★ 2026-10-28（T-#OBSERVE-4 ②）：**回读改写结果**用的探针名模式 —— 台账只记"源码里真有"的探针
+  //   （原来记的是**计划**，实测嵌套表达式体箭头的 extraProbes 会记账但不落地 ⇒ 台账说"有"源码里没有）
+  probeNamePattern: /captureProbe\(\s*["'`]([^"'`]+)["'`]/g,
   comment: '//',
   probeImport: (file, projectRoot) => relativeProbeImport(file, projectRoot),
   // ★ 2026-10-15：找根由骨架做 —— 这里只给**路标**与**措辞**（原先是个 15 行的钩子，两侧逐字相同）
