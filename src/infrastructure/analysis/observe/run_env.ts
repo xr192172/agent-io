@@ -31,6 +31,40 @@ export function frameworkDistRoot(): string {
   return path.resolve(OBSERVE_DIR, '..', '..', '..', '..');
 }
 
+/**
+ * ★★★ 2026-10-28（T-#OBSERVE-7 · 用户："测试数据要不要也随项目走"）：**事件文件保留策略**。
+ *
+ * 归属：运行时事件是**项目的事实** ⇒ 落在 `<project>/.agent/observe/`（随项目走，判据零配置从这读）；
+ * 但它**每跑一次一套、带时间戳** ⇒ 会无限增长。本仓 `.gitignore` 早已把 `.agent/` 排除（运行时数据不入库），
+ * 所以脏不到 git，但**磁盘会脏**。
+ *
+ * 策略：只留**最近 N 份** `events-*.jsonl`（默认 20，`AGENT_IO_EVENTS_KEEP` 可调）；
+ * ★ **只碰这个命名模式**（不删 `dsl.json` / 别人放进去的任何东西）；
+ * ★ 清理失败**不影响**本次观测（best-effort，绝不因为它让 spawn 失败）。
+ */
+export function pruneEvents(dir: string, keepRaw?: string): void {
+  try {
+    const keep = Math.max(1, Number(keepRaw ?? process.env.AGENT_IO_EVENTS_KEEP ?? 20) || 20);
+    const files = fs
+      .readdirSync(dir)
+      .filter((f) => /^events-.*\.jsonl$/.test(f))
+      .map((f) => {
+        const p = path.join(dir, f);
+        return { p, m: fs.statSync(p).mtimeMs };
+      })
+      .sort((a, b) => b.m - a.m);
+    for (const stale of files.slice(keep)) {
+      try {
+        fs.rmSync(stale.p, { force: true });
+      } catch {
+        /* best-effort */
+      }
+    }
+  } catch {
+    /* best-effort：清理失败不影响观测 */
+  }
+}
+
 export function probeRunEnv(root?: string): NodeJS.ProcessEnv | undefined {
   // ★ 总开关：观测是增强能力，必须能一键关掉
   if (process.env.AGENT_IO_PROBE_OFF === '1') return undefined;
@@ -40,6 +74,8 @@ export function probeRunEnv(root?: string): NodeJS.ProcessEnv | undefined {
     const projectRoot = root ?? process.cwd();
     const dir = path.join(projectRoot, '.agent', 'observe');
     fs.mkdirSync(dir, { recursive: true });
+    // ★ 先按保留策略清理旧的（只碰 events-*.jsonl），再落新文件
+    pruneEvents(dir);
     const events = path.join(dir, `events-${Date.now()}.jsonl`);
     const prev = process.env.NODE_OPTIONS ?? '';
     return {
