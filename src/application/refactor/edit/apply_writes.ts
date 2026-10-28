@@ -61,6 +61,10 @@ export interface WriteReceipt {
   index: WriteThroughOutcome | null;
   /** 逐文件索引同步结果（**只在** `index.mode === 'synced'` 时有值；否则为空数组） */
   index_synced: Array<{ file: string; updated: boolean }>;
+  /** ★ 2026-10-28：出口闭环读数（异常才出声） */
+  plan_exit?: string[];
+  /** ★ 2026-10-28：画布新陈代谢（吸收设计缺口 / 基线挪到写后） */
+  plan_baseline?: string[];
   /** 被拒绝落盘的文件（根外路径 ⇒ 无法快照/写穿）。有值即 `ok=false`。 */
   blocked?: string[];
   /**
@@ -142,6 +146,9 @@ async function applyWritesCore(
           ? written.map((rel) => ({ file: rel, updated: updatedByRel.get(rel) === true }))
           : [],
       ...(report.assumption_check ? { assumption_check: report.assumption_check } : {}),
+      // ★ 2026-10-28：**出口闭环与画布新陈代谢**必须带出去 —— 适配层丢读数 = 白判（本仓老毛病）。
+      ...(report.index?.plan_exit ? { plan_exit: report.index.plan_exit } : {}),
+      ...(report.index?.plan_baseline ? { plan_baseline: report.index.plan_baseline } : {}),
     },
     // ★ 闸的读数：`writeSourceFiles` 已经把 `note`（含豁免点名）放在这里了，本适配层只负责**带出去**。
     report.task_gate,

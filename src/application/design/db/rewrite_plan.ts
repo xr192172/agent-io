@@ -526,3 +526,39 @@ export function planChangeSetOfCard(
   }
   return out;
 }
+
+/**
+ * ★★★ 2026-10-28（用户："设计期是权威，设计有问题才会出现偏差"）：
+ * 把 **改了却没计划** 的符号**吸收进画布** —— 追加一条缺 `judgement_ref` 的 entry。
+ *
+ * ★ 为什么不是"留一条警告"：警告会被忽略、也不改变任何判据；吸收成 entry 之后
+ *   `planGaps` 会一直点名"缺 judgement_ref"，**闸不会自己变绿**，直到有人把设计补全。
+ *
+ * @param syms 出口闭环报出的 `changed_unplanned`（已点名的符号）
+ */
+export function absorbUnplanned(
+  plan: RewritePlan,
+  syms: readonly string[],
+  now: string = new Date().toISOString(),
+): { plan: RewritePlan; absorbed: string[] } {
+  const known = new Set(plan.entries.map((e) => e.anchor?.symbol).filter((s): s is string => !!s));
+  const fresh = [...new Set(syms)].filter((s) => !known.has(s));
+  if (!fresh.length) return { plan, absorbed: [] };
+  return {
+    plan: {
+      ...plan,
+      entries: [
+        ...plan.entries,
+        ...fresh.map((sym) => ({
+          anchor: { symbol: sym },
+          kind: 'rewrite' as const,
+          detail: '改完发现这个符号也动了 ⇒ **设计漏了**（补：它该改成什么样）',
+          judgement_ref: '',
+          status: 'open' as const,
+          note: `吸收于 ${now}`,
+        })),
+      ],
+    },
+    absorbed: fresh,
+  };
+}

@@ -57,7 +57,7 @@ import { DatabaseSync } from 'node:sqlite';
 import os from 'node:os';
 import path from 'node:path';
 import { getProjectCacheDb, beginBatch, endBatch, projectCacheDbPath, type Database } from '../infrastructure/index/db.js';
-import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls, type SyncStatus, type CrossFileResolveStats , toIndexKey, toRelPath } from '../infrastructure/index/symbols.js';
+import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls, contentHash, type SyncStatus, type CrossFileResolveStats , toIndexKey, toRelPath } from '../infrastructure/index/symbols.js';
 import { canParseFileSync } from '../infrastructure/parse/index.js';
 import { snapshotBeforeWrite, type FileSnapshotMeta } from './refactor/snapshot/file_snapshot.js';
 import { indexCoversDisk } from '../infrastructure/index/index_freshness.js';
@@ -73,6 +73,8 @@ import {
   planFileFor,
   planCoverageGaps,
   planUntouchedGaps,
+  absorbUnplanned,
+  writeRewritePlan,
   planJudgementGaps,
   planDependencyGaps,
   planKindGaps,
@@ -135,6 +137,8 @@ export interface WriteThroughOutcome {
    *   挂别处就得逐工具各接一遍（同一判据住 N 处 = 本仓头号病）。
    */
   plan_exit?: string[];
+  /** ★ 2026-10-28：画布基线的新陈代谢（吸收设计缺口 / 基线挪到写后）—— 不静默 */
+  plan_baseline?: string[];
   refsReopened?: number;
   /** 被重开的引用分布在多少个引用方文件里 */
   refsReopenedFiles?: number;
@@ -394,11 +398,46 @@ function finishWriteThrough(
   //   ⇒ ★ 判据（★ 只此一处，两个方向都收）：
   //     ★ **有文件级失败 ⇒ 不 ok** ✓ · ★ **引用重算失败 ⇒ 明确 `false`**（不留 `undefined` ✓）
   // ★ 2026-10-28（第 6 步）：**出口闭环** —— 写穿之后立刻对账（有画布的文件才出声）
+  // ★★ 2026-10-28（用户："流程还有哪里不对吗" → 自查发现**真会堵死路**的洞）：
+  //   出口闭环用的是**写之前**的冻结基线，所以它必须在这里跑；但画布基线**写完必须跟着往前挪**，
+  //   否则严格档下同一个文件**只能改一次**（实测：第二次写被"画布过期"拦，任务被锁死）。
+  //   顺序：① 用旧基线判（才知道"改了却没计划"）→ ② 吸收缺口进画布 → ③ 基线挪到写后。
   try {
     const lines: string[] = [];
+    const absorbed: string[] = [];
+    const refreshed: string[] = [];
     for (const rel of rels) {
-      if (!readRewritePlan(root, rel)) continue; // 没计划 ⇒ 写前的 planGate 已经点名过，不重复刷
-      lines.push(renderExitCheck(checkRewriteExit(root, rel)));
+      const plan = readRewritePlan(root, rel);
+      if (!plan) continue; // 没计划 ⇒ 写前的 planGate 已经点名过，不重复刷
+      const exit = checkRewriteExit(root, rel);
+      lines.push(renderExitCheck(exit));
+      // ② 设计缺口记账（改了却没计划 ⇒ 追加缺判据的 entry）
+      const ab = absorbUnplanned(plan, exit.changed_unplanned);
+      let next = ab.plan;
+      if (ab.absorbed.length) absorbed.push(...ab.absorbed.map((s) => `${rel}#${s}`));
+      // ③ 基线挪到写后（否则下一次写必被"画布过期"拦）
+      const abs = path.join(root, rel);
+      if (fs.existsSync(abs)) {
+        next = {
+          ...next,
+          frozen_at: new Date().toISOString(),
+          base: { content_hash: contentHash(fs.readFileSync(abs, 'utf-8')) },
+          fps_at_freeze: symbolFpsOf(root, rel),
+        };
+        writeRewritePlan(root, next);
+        refreshed.push(rel);
+      }
+    }
+    if (absorbed.length) {
+      out.plan_baseline = [
+        ...(out.plan_baseline ?? []),
+        `★ 记成设计缺口 ${absorbed.length} 处（改完发现画布没计划）：${absorbed.slice(0, 4).join(', ')}` +
+          `
+   ⇒ 这些条目**缺 judgement_ref** ⇒ 写前闸会一直点名，直到补全设计`,
+      ];
+    }
+    if (refreshed.length) {
+      out.plan_baseline = [...(out.plan_baseline ?? []), `★ 画布基线已挪到写后（${refreshed.length} 个文件）⇒ 下一次写不会被"画布过期"拦`];
     }
     if (lines.length) out.plan_exit = lines;
   } catch {
