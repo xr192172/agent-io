@@ -294,10 +294,10 @@ export async function applyRefactorPlan(args: {
       virtual.set(absPath, p.newContent); // 同文件后续项基于"本轮已应用"的内容决策
       decisions.push({ kind: 'pending', hit: p.hit });
     } catch (planErr) {
-      // 规划不出来：区分"已应用"（old 没了、new 在）与"真冲突"
-      const locOld = locateReplaceText(cur, it.old);
-      const locNew = locateReplaceText(cur, it.new);
-      if (!locOld.match && locNew.match) decisions.push({ kind: 'already_applied' });
+      // 规划不出来：区分"已应用"与"真冲突"。
+      // ★ 2026-10-28（T287）：判法**只住一处**（`classifyReplaceTextMiss`，经 `planReplaceText` 的
+      //   `code=ALREADY_APPLIED` 传出来）—— 此前这里自己 `locateReplaceText` 两遍，与那条路口径不同。
+      if ((planErr as Error & { code?: string }).code === 'ALREADY_APPLIED') decisions.push({ kind: 'already_applied' });
       else decisions.push({ kind: 'failed', error: (planErr as Error).message });
     }
   }

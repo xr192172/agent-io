@@ -385,6 +385,12 @@ export function planKindGaps(plan: RewritePlan | null, fileExists: boolean): str
     //   一条 `create` 做完之后文件当然存在；拿"文件已存在"去骂它，就是把"完成了"当成"前提错了"。
     //   （实测：严格档因此拦了一次本该放行的真实改动 ⇒ 这是判据误伤，不是调用方错。）
     if (e.status === 'done') continue;
+    // ★★ 2026-10-28（真实任务狗粮发现 · 我的建模错）：**`kind` 有层级** ——
+    //   · 有 `anchor.symbol` ⇒ **符号级**（在已有文件里新建/删除/改一个符号）⇒ 文件在不在**不是它的前提**；
+    //   · 没有 `anchor.symbol` ⇒ **文件级**（新建/删除整个文件）⇒ 才适用下面两条前提。
+    //   实测教训：给"在 fuzzy_match.ts 里新建 classifyReplaceTextMiss"报"create 但文件已存在"是**纯误报**。
+    const sym = e.anchor?.symbol;
+    if (sym) continue;
     const who = `${e.kind}:${e.anchor?.symbol || '(缺 anchor)'}`;
     if (e.kind === 'create' && fileExists) {
       gaps.push(
@@ -445,11 +451,14 @@ export function syncPlanStatuses(
   const entries = plan.entries.map((e, i) => {
     const v = verdicts.find((x) => x.index === i)?.verdict;
     const sym = e.anchor?.symbol ?? '(缺 anchor)';
-    if (e.status === 'open' && v === 'realized') {
+    // ★ 2026-10-28（真实任务狗粮）：**`stale` 不许是单向的** —— 它常常是"索引抖了一下"造成的
+    //   瞬时判定；一旦卡在 `stale`，出口闭环永远"状态无需推进"，条目永久卡死。
+    //   ⇒ `stale` + `realized` ⇒ `done`（stale 是警告，不是进度；"不倒退"只约束 done→open 那一侧）。
+    if ((e.status === 'open' || e.status === 'stale') && v === 'realized') {
       changes.push({ symbol: sym, from: 'open', to: 'done' });
       return { ...e, status: 'done' as const, done_at: now };
     }
-    if (e.status === 'open' && v === 'stale_anchor') {
+    if ((e.status === 'open' || e.status === 'stale') && v === 'stale_anchor') {
       changes.push({ symbol: sym, from: 'open', to: 'stale' });
       return { ...e, status: 'stale' as const };
     }

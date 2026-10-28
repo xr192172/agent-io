@@ -7129,7 +7129,192 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/refactor/edit/edit_code.ts"
+        "path": "src/application/refactor/edit/edit_code.ts",
+        "task": {
+          "id": "file_src_application_refactor_edit_edit_code_ts",
+          "summary": "【L1 待建构】核心层 · src/application/refactor/edit — 21 个函数（导入自 14 个模块）（src/application/refactor/edit/edit_code.ts） ← 节点 file_src_application_refactor_edit_edit_code_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_edit_code_ts\"].responsibility"
+          },
+          "owner": "agent:main",
+          "claimed_at": "2026-10-28T03:32:55.695Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/refactor/edit/edit_code.ts",
+                "content_hash": "f2644c99c840dfb6d8e051de75fbbe74f326d771"
+              }
+            ],
+            "computed_at": "2026-10-28T03:32:12.591Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-28T03:37:46.840Z",
+              "by": "llm",
+              "agent": "agent:main",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node certs/t397-replace-text-miss-cert.mjs",
+                "input": "a3ccb194effcbbcbfd163f2e394721a44a5e7914",
+                "code": "8ef50d504727fd8883c6340f92d209d0f1c653fa",
+                "covers": [
+                  "src/infrastructure/parse/fuzzy_match.ts"
+                ]
+              },
+              "observed": "PASS=7 FAIL=0；npm run verify 9/9；npm run gate 10/10",
+              "command": "node certs/t397-replace-text-miss-cert.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "replace_text 找不到 old_text 时必须区分「已经应用过」与「从没命中」——同一判据只住一处",
+          "expectations": [
+            {
+              "symbol": "classifyReplaceTextMiss",
+              "cases": [
+                {
+                  "expect": "{\"kind\":\"already_applied\",\"line\":2}",
+                  "given": [
+                    "function f(){\n  return 42;\n}\n",
+                    "return 1;",
+                    "return 42;"
+                  ]
+                }
+              ],
+              "why": "old_text 不在、new_text 在 L2 ⇒ 已经应用过（附行号）",
+              "path": "src/infrastructure/parse/fuzzy_match.ts",
+              "kind": "behavior-cases"
+            },
+            {
+              "symbol": "classifyReplaceTextMiss",
+              "cases": [
+                {
+                  "expect": "{\"kind\":\"not_found\"}",
+                  "given": [
+                    "function f(){\n  return 1;\n}\n",
+                    "return 99;",
+                    "return 42;"
+                  ]
+                }
+              ],
+              "why": "两个都不在 ⇒ 真没命中，仍报「未找到」",
+              "path": "src/infrastructure/parse/fuzzy_match.ts",
+              "kind": "behavior-cases"
+            }
+          ],
+          "updated_at": "2026-10-28T03:35:43.785Z",
+          "agent": "agent:main"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-28T03:35:24.798Z",
+            "decision": {
+              "summary": "replace_text 找不到 old_text 时必须区分「已经应用过」与「从没命中」——同一判据只住一处",
+              "expectations": [
+                {
+                  "why": "old_text 不在、new_text 在 ⇒ 已经应用过（此前一律报「未找到」）",
+                  "path": "src/infrastructure/parse/fuzzy_match.ts",
+                  "kind": "behavior-cases",
+                  "cases": [
+                    {
+                      "expect": "already_applied",
+                      "given": [
+                        "function f(){ return 42; }",
+                        "return 1;",
+                        "return 42;"
+                      ]
+                    }
+                  ],
+                  "symbol": "classifyReplaceTextMiss"
+                },
+                {
+                  "why": "两个都不在 ⇒ 真没命中，仍报「未找到」",
+                  "path": "src/infrastructure/parse/fuzzy_match.ts",
+                  "kind": "behavior-cases",
+                  "cases": [
+                    {
+                      "expect": "not_found",
+                      "given": [
+                        "function f(){ return 1; }",
+                        "return 99;",
+                        "return 42;"
+                      ]
+                    }
+                  ],
+                  "symbol": "classifyReplaceTextMiss"
+                }
+              ],
+              "updated_at": "2026-10-28T03:32:54.173Z",
+              "agent": "agent:main"
+            },
+            "note": "T287：期望值改成函数实际返回的对象形状（此前写成字符串，判据红是我的期望写错）",
+            "agent": "agent:main"
+          },
+          {
+            "at": "2026-10-28T03:35:43.785Z",
+            "decision": {
+              "summary": "replace_text 找不到 old_text 时必须区分「已经应用过」与「从没命中」——同一判据只住一处",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "given": [
+                        "function f(){ return 42; }",
+                        "return 1;",
+                        "return 42;"
+                      ],
+                      "expect": "{\"kind\":\"already_applied\",\"line\":2}"
+                    }
+                  ],
+                  "why": "old_text 不在、new_text 在 ⇒ 已经应用过（附行号）",
+                  "path": "src/infrastructure/parse/fuzzy_match.ts",
+                  "kind": "behavior-cases",
+                  "symbol": "classifyReplaceTextMiss"
+                },
+                {
+                  "cases": [
+                    {
+                      "given": [
+                        "function f(){ return 1; }",
+                        "return 99;",
+                        "return 42;"
+                      ],
+                      "expect": "{\"kind\":\"not_found\"}"
+                    }
+                  ],
+                  "why": "两个都不在 ⇒ 真没命中，仍报「未找到」",
+                  "path": "src/infrastructure/parse/fuzzy_match.ts",
+                  "kind": "behavior-cases",
+                  "symbol": "classifyReplaceTextMiss"
+                }
+              ],
+              "updated_at": "2026-10-28T03:35:24.798Z",
+              "agent": "agent:main"
+            },
+            "note": "T287：夹具改成多行，让行号有意义（单行夹具下 new_text 在 L1，我原来写 L2）",
+            "agent": "agent:main"
+          }
+        ],
+        "overlay": {
+          "path": "src/application/refactor/edit/edit_code.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "observed": "PASS=7 FAIL=0；npm run verify 9/9；npm run gate 10/10",
+            "command": "node certs/t397-replace-text-miss-cert.mjs",
+            "at": "2026-10-28T03:45:00Z",
+            "kind": "reading"
+          }
+        }
       },
       {
         "id": "file_src_application_refactor_edit_remove_dead_imports_ts",
@@ -50186,7 +50371,8 @@
           }
         ],
         "lines": 1262,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_refactor_edit_remove_dead_imports_ts",
@@ -62943,13 +63129,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 92,
+  "_dsl_rev": 98,
   "_sync": {
-    "saved_at": "2026-10-26T16:20:32.295Z",
+    "saved_at": "2026-10-28T03:37:46.935Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 30635158,
+    "age": 157669798,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

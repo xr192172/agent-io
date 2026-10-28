@@ -1,0 +1,47 @@
+{
+  "path": "src/application/refactor/pipeline/refactor_plan.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "applyRefactorPlan"
+      },
+      "kind": "rewrite",
+      "detail": "already_applied 判定改用错误码 ALREADY_APPLIED（不再自己 locate 两遍）—— 同一判据只住一处",
+      "judgement_ref": "decision:file_src_application_refactor_edit_edit_code_ts#1",
+      "judgement_kind": "behavior-cases",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_application_refactor_edit_edit_code_ts",
+  "untouched_default": {
+    "why": "本轮只改计划里那几处（重新冻结基线）"
+  },
+  "symbols_at_freeze": [
+    "RefactorTarget",
+    "PlanHit",
+    "RefactorPlanItem",
+    "RefactorPlanFile",
+    "RefactorPlan",
+    "SCHEMA",
+    "fingerprint",
+    "relOf",
+    "computePlanId",
+    "buildRefactorPlan",
+    "ApplyItemStatus",
+    "ApplyPlanItemResult",
+    "ApplyPlanResult",
+    "Decision",
+    "applyRefactorPlan"
+  ],
+  "fps_at_freeze": {
+    "fingerprint": "0f043b4ba09d72ac5fe4a6a5ff6779c625c22bee",
+    "relOf": "cc8e0cbdb738fa67d231de2d696caccabbb58fa9",
+    "computePlanId": "7a14c582a8ad470ed44c1dd30c60b2cdfbe2b371",
+    "buildRefactorPlan": "92f433826790da486d30e981c247c8582fc02aa0",
+    "applyRefactorPlan": "5cb160da89e993b6a72555758b8729d6d8e52247"
+  },
+  "frozen_at": "2026-10-28T03:35:55.428Z",
+  "base": {
+    "content_hash": "edea66152d170bdf4181646f22d772cab0e31532"
+  }
+}

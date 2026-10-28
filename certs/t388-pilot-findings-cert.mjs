@@ -60,18 +60,24 @@ const E = (sym, kind, extra = {}) => ({
   ...extra,
 });
 
+// ★ 文件级 entry（没有 anchor.symbol）—— create/delete 的前提检查只对它成立
+const FileEntry = (kind) => ({ ...E('f', kind), anchor: {} });
+
 // ── ① create 的前提 ─────────────────────────────────────
 {
-  const a = planKindGaps({ path: 'x', entries: [E('f', 'create')] }, true);
-  const b = planKindGaps({ path: 'x', entries: [E('f', 'create')] }, false);
+  const a = planKindGaps({ path: 'x', entries: [FileEntry('create')] }, true);
+  const b = planKindGaps({ path: 'x', entries: [FileEntry('create')] }, false);
   chk(a.length === 1 && /文件已存在/.test(a[0]), '① `create` 但文件已存在 ⇒ 报（该用 rewrite）', a[0]?.slice(0, 110) ?? '');
   chk(b.length === 0, '①-b `create` + 文件不存在 ⇒ 不报');
 }
 
 // ── ② delete 的前提 ─────────────────────────────────────
 {
-  const a = planKindGaps({ path: 'x', entries: [E('f', 'delete')] }, false);
-  const b = planKindGaps({ path: 'x', entries: [E('f', 'delete')] }, true);
+  const a = planKindGaps({ path: 'x', entries: [FileEntry('delete')] }, false);
+  const b = planKindGaps({ path: 'x', entries: [FileEntry('delete')] }, true);
+  // ★ 2026-10-28（真实任务狗粮）：**符号级** create 在已有文件里是正常的（新建符号，不是新建文件）
+  const c = planKindGaps({ path: 'x', entries: [E('newSymbol', 'create')] }, true);
+  chk(c.length === 0, '①-c **符号级** create（在已有文件里新建符号）⇒ **不报**（狗粮发现：此前是纯误报）');
   chk(a.length === 1 && /文件不存在/.test(a[0]), '② `delete` 但文件不存在 ⇒ 报（计划过期/路径错）', a[0]?.slice(0, 110) ?? '');
   chk(b.length === 0, '②-b `delete` + 文件存在 ⇒ 不报');
 }

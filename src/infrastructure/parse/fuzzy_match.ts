@@ -312,3 +312,31 @@ export function realignNewTextTo(newText: string, targetIndent: string, eol: str
   const out = ls.map((l) => (l.trim().length === 0 ? '' : targetIndent + l.slice(minIndent)));
   return out.join(eol);
 }
+
+/**
+ * ★★★ 2026-10-28（T287）：`old_text` 找不到时，**必须能区分两件事** ——
+ * 「**已经应用过**」（old 不在、new 在）与「**从没命中**」（两个都不在）。
+ *
+ * ## 为什么这是判据而不是文案
+ * 之前 `planReplaceText` 一律抛「未找到 old_text」⇒ 同一次编辑**应用第二次**时，
+ * 回执说"未找到"而盘上其实**早已是 new_text**。读回执的人会以为没生效，于是再改一次
+ * ——或者反过来以为改了、其实没改。**同一判据在 `refactor_plan` 里另有一份**（`locOld`/`locNew` 各 locate 一次），
+ * 两处口径不同 ⇒ 正是本仓头号病"同一判据住两处"。
+ *
+ * ## 判据（一条判据，两处共用）
+ * · `new_text` 非空 **且** 在内容里能定位到 ⇒ `already_applied`（附行号）；
+ * · 否则 ⇒ `not_found`（**不许**把"空 new_text"当成"已应用"：删除操作的新文本本来就是空）。
+ */
+export type ReplaceTextMiss =
+  | { kind: 'already_applied'; line: number }
+  | { kind: 'not_found' };
+
+export function classifyReplaceTextMiss(content: string, oldText: string, newText: string): ReplaceTextMiss {
+  // 空 old 不该走到这里（调用方已拒），但防御性返回 not_found —— "什么都没有"不是"已应用"
+  if (!oldText || !newText || !newText.trim()) return { kind: 'not_found' };
+  // 若 old 其实还在（比如调用方拿错了变量），这里不表态：那是"定位成功"的世界，不是"未命中"
+  if (locateReplaceText(content, oldText).match) return { kind: 'not_found' };
+  const locNew = locateReplaceText(content, newText);
+  if (locNew.match) return { kind: 'already_applied', line: locNew.match.startLine };
+  return { kind: 'not_found' };
+}

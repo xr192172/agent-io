@@ -70,7 +70,7 @@ import { toIndexKey } from '../../../infrastructure/index/symbols.js';
 // ★ 2026-10-28：出口闭环的一行读数（判据唯一实现在 plan_exit_check.ts，这里只调用）
 import { readRewritePlan } from '../../design/db/rewrite_plan.js';
 import { checkRewriteExit, renderExitCheck } from '../../design/db/plan_exit_check.js';
-import { locateReplaceText, realignNewTextTo, FUZZY_LEVEL_LABEL } from '../../../infrastructure/parse/fuzzy_match.js';
+import { locateReplaceText, realignNewTextTo, FUZZY_LEVEL_LABEL, classifyReplaceTextMiss } from '../../../infrastructure/parse/fuzzy_match.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export type EditCodeOp = 'replace' | 'insert' | 'delete' | 'range' | 'replace_text';
@@ -463,9 +463,19 @@ export async function planReplaceText(
     );
   }
   if (!loc.match) {
+    // ★ 2026-10-28（T287）：未命中**不等于没生效** —— 先判"是不是已经应用过"（同一判据只住 `classifyReplaceTextMiss`）。
+    const miss = classifyReplaceTextMiss(content, oldText, newText);
+    if (miss.kind === 'already_applied') {
+      const err = new Error(
+        `replace_text 看起来**已经应用过**：old_text 不在，但 new_text **已在 L${miss.line}**。` +
+          `⇒ 这次不必重复应用（若你确实要再改，请给出**当前**文本的上下文）。`,
+      );
+      (err as Error & { code?: string }).code = 'ALREADY_APPLIED';
+      throw err;
+    }
     throw new Error(
       `replace_text 未找到 old_text（L1 逐字 / L2 空白归一 / L3 缩进弹性 / L4 省略号占位 四级均未命中；` +
-        `${JSON.stringify(oldText.slice(0, 40))}）。请确认内容存在，或改用 range 编辑。`,
+        `${JSON.stringify(oldText.slice(0, 40))}），且 new_text 也不在文件里 ⇒ 两边都没有，确认是不是改错了文件。`,
     );
   }
   const m = loc.match;
