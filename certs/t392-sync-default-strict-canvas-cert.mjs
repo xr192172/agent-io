@@ -124,6 +124,7 @@ const E = (status = 'open') => ({
   await syncFile(getProjectCacheDb(PROJ), PROJ, path.join(PROJ, REL));
 
   let thrown = '';
+  process.env.AGENT_IO_REQUIRE_PLAN = '0'; // ★ 默认已开 ⇒ 这一条要显式关档才是"默认档"
   try {
     assertSourceWriteRegistered(PROJ, [path.join(PROJ, REL)]);
   } catch (e) {

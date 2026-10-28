@@ -32,6 +32,8 @@ const HOME = path.join(TMP, 'home');
 const PROJ = path.join(TMP, 'proj');
 fs.mkdirSync(HOME, { recursive: true });
 fs.mkdirSync(path.join(PROJ, 'src'), { recursive: true });
+// ★ 2026-10-28：本证测的不是计划闸，而严格档已改**默认开** ⇒ 显式关档
+process.env.AGENT_IO_REQUIRE_PLAN = '0';
 process.env.AGENT_IO_HOME = HOME;
 
 let P = 0;

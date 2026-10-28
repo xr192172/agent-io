@@ -79,6 +79,10 @@ cd agent-io && npm install && npm run build
 
 # 精简工具面（推荐日常用）：
 env: { "AGENT_IO_MCP_FACE": "minimal" }   # 高频工具优先，能力不减（atomic_call 可达其余）
+
+# 写源码的纪律（默认已开）：先写"画布" plan/<rel>.plan.json（改哪些符号/改成什么样/拿什么验/顺序），
+# 没画布或画布过期 ⇒ 拒绝落盘。只报不拦用 "0"。判据见 docs/GUIDE-GATE.md §4.4。
+env: { "AGENT_IO_REQUIRE_PLAN": "0" }
 ```
 
 第一个任务建议：让 Agent 对你的项目跑 `import_project`，然后 `get_dsl query=overview` 看全貌。

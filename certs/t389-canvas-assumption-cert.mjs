@@ -29,6 +29,8 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TMP = fs.mkdtempSync(path.join(HERE, '.work/tmp389canvas-'));
+// ★ 2026-10-28：本证测的不是计划闸，而严格档已改**默认开** ⇒ 显式关档
+process.env.AGENT_IO_REQUIRE_PLAN = '0';
 process.env.AGENT_IO_HOME = path.join(TMP, 'home');
 fs.mkdirSync(process.env.AGENT_IO_HOME, { recursive: true });
 const PROJ = path.join(TMP, 'proj');

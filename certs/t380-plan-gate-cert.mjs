@@ -85,8 +85,9 @@ saveDSL(
 }
 
 const run = (needPlan) => {
+  // ★ 2026-10-28（严格档改默认开）：`关` 必须显式给 `0` —— `delete` 现在等于**开**。
   if (needPlan) process.env.AGENT_IO_REQUIRE_PLAN = '1';
-  else delete process.env.AGENT_IO_REQUIRE_PLAN;
+  else process.env.AGENT_IO_REQUIRE_PLAN = '0';
   try {
     const out = assertSourceWriteRegistered(PROJ, [path.join(PROJ, REL)]);
     return { threw: false, warnings: out.warnings ?? [] };

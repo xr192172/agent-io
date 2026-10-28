@@ -960,6 +960,24 @@ export function exemptionLines(exempted: readonly GateExemption[]): string {
  * 与 `gateHumanLines(task_gate)` 同款：结构化读数在写穿结果里（机器侧），这里只出一行给人/agent 看。
  * ★ 只在**有异常**时出声（全绿闭嘴）—— 版面孔径与今晚"40 行散文"那条一致。
  */
+/**
+ * ★★★ 2026-10-28（用户："正好开个默认试试"）：**严格档默认开**，唯一读法住这里。
+ *
+ * ## 判据（三态）
+ * · `AGENT_IO_REQUIRE_PLAN=0` / `off` / `false` ⇒ **关**（只报不拦）—— 测试与批量迁移用它；
+ * · 其他任何值（含**不设**）⇒ **开**（没计划 / 画布过期 ⇒ 拒写）。
+ *
+ * ## 为什么敢默认开
+ * ① 计划成本已被压到「1 条 entry + 一句 why」（紧凑 `untouched_default` 实测四判据全过）；
+ * ② 误报只有一类（`create` 做完后文件已存在）且**已修**（跳过 `done`）；
+ * ③ 拦的只是**写源码**这一步，且错误里都带「怎么办」三步 —— 不是死路。
+ * ★ 关掉的口子必须留着：证 / 工具会在**没有画布**的临时项目上跑，不能因为默认开而全红。
+ */
+export function planStrictMode(): boolean {
+  const v = (process.env.AGENT_IO_REQUIRE_PLAN ?? '').toLowerCase();
+  return !(v === '0' || v === 'off' || v === 'false');
+}
+
 export function planExitHumanLine(out: WriteThroughOutcome | null | undefined): string {
   const lines = out?.plan_exit ?? [];
   if (!lines.length) return '';
@@ -978,7 +996,7 @@ export function planExitHumanLine(out: WriteThroughOutcome | null | undefined): 
  * 本仓此刻**一份计划都还没有** ⇒ 一上来就硬拦，等于让所有源码都改不动（那正是"闸堵死流程"）。
  * ⇒ 分两档：
  *   · **默认**：把缺口**逐文件点名**进 warnings（可见、可追，不静默）；
- *   · **严格**：`AGENT_IO_REQUIRE_PLAN=1` ⇒ **拒绝落盘**（迁移完成后由人打开这一档）。
+ *   · **严格（默认）**：没计划 / 画布过期 ⇒ **拒绝落盘**；`AGENT_IO_REQUIRE_PLAN=0` 退回"只点名"。
  * ★ 迁移口径与 T360 的 `judge_gate` 同一路数：**存量先记账，新规矩从人明确打开那一刻起生效**。
  */
 /**
@@ -1279,7 +1297,7 @@ export function assertSourceWriteRegistered(
   //   默认只点名（warnings），`AGENT_IO_REQUIRE_PLAN=1` 才拦。
   const inRootRels = [...new Set(files.map((f) => toIndexKey(path.resolve(projectRoot), f)).filter((r): r is string => !!r))];
   const planR = planGate(path.resolve(projectRoot), inRootRels);
-  if (planR.blocking.length && process.env.AGENT_IO_REQUIRE_PLAN === '1') {
+  if (planR.blocking.length && planStrictMode()) {
     throw new Error(
       `拒绝落盘（重写计划闸）：这次要改的 ${planR.blocking.length} 个文件**没有够格的重写计划** —— ` +
         `本仓纪律：写源码前必须"**通读 → 选定范围 → 写完细节**"，细节要落进 \`plan/<rel>.plan.json\`。\n` +
@@ -1313,7 +1331,7 @@ export function assertSourceWriteRegistered(
   // ★ 2026-10-28（T-#RP-2 收尾）：**严格档下"画布过期"要拦** —— 严格档本来就是人开的，
   //   开了还放过"你的计划是对着旧内容写的"，那严格档等于没开。默认档仍**只报不拦**（口径不变）。
   canvasStale = (ac.stale ?? []).filter((s) => s.via === 'canvas').map((s) => String(s.file));
-  if (canvasStale.length && process.env.AGENT_IO_REQUIRE_PLAN === '1') {
+  if (canvasStale.length && planStrictMode()) {
     throw new Error(
       `拒绝落盘（画布过期）：这次要改的 ${canvasStale.length} 个文件，**内容已经不是画布冻结时那一版** —— ` +
         `${canvasStale.join(', ')}\n` +
