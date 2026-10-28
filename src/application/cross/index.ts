@@ -18,17 +18,26 @@ import { analyzeHealth } from '../../infrastructure/analysis/health/index.js';
 import { detectReachableRoots } from '../../infrastructure/analysis/project_root/index.js';
 import { extractGoFromFile } from '../../infrastructure/authoring/translate/go_extractor.js';
 import { rebuildBook } from '../../infrastructure/authoring/translate/book.js';
+import { TRANSLATE_PAIRS, translatePair } from '../../infrastructure/authoring/translate/pairs.js';
 import { translateGoTsHandler } from '../../infrastructure/authoring/translate/tool.js';
 import { getDesignSheetFile } from '../../infrastructure/storage.js';
 import type { ToolDef } from '../types.js';
 
 export const CROSS_TOOLS: ToolDef[] = [
   {
-    name: 'translate_go_ts',
-    title: 'Go→TS 半自动翻译（骨架 + 可选 LLM 填 + 可选行为对拍）',
+    name: 'translate',
+    title: '跨语言半自动翻译（语言对由 `from`/`to` 指定；骨架 + 可选 LLM 填 + 可选行为对拍 + 重算翻译册）',
     description:
       '把 Go 源文件机械生成 TS 骨架 + 验证闸（默认），并给出一份**回执**：known（AST/常量/import/调用边的事实）/ unknowns（推测的惯用法映射、缺库、行为假设，**与 known 分开**）/ verification（只认对照测试；没测试就报 unverified，绝不当完成）；fill=true 用 AGNES key 池 LLM 逐孔填函数体（需 AGNES_KEY_POOL 或本地 key-pool-proxy）；verify=true 再对已填的纯函数跑 Go↔TS 行为对拍（需 go 工具链）。跨语言翻译：函数/方法/struct/接口/named 别名/多返回元组/map·slice·指针/泛型/chan(近似)。★ 本工具即原 `translate_cli` 的能力载体（该 CLI 已于 2026-10-06 删除；argv 面由 `cli.js translate_go_ts` 投影提供 —— 下文「原 translate_cli 的 …」是历史对应关系）。',
     inputSchema: {
+      // ★★★ 2026-10-28（正名：**语言对是数据，不是工具名**）：
+      //   本仓的翻译架构本来就是"**映射表 + 通用翻译器**"（`translate/pairs.ts#TRANSLATE_PAIRS`
+      //   的注释原话："全语言泛化的壳：新 (src,dst) 语义映射只在这里挂一张表（extractor + codegen），核心零改动"）。
+      //   而旧工具名 `translate_go_ts` 把语言对**写死在工具名里** ⇒ 加一对就得加一个工具名，
+      //   等于把注册表降级成"工具名枚举"。`book`（重算翻译册）更是**语言无关**的（册子只认 target_language）。
+      //   ⇒ 名字收成 `translate`，语言对走参数；不支持的对**响亮报错并列出已注册对**。
+      from: z.string().optional().describe('源语言（缺省 go）。必须与 to 组成已注册的语言对，否则报错并列出已注册对'),
+      to: z.string().optional().describe('目标语言（缺省 ts）。★ 不支持的语言对不会静默降级 —— 加一对 = 在 translate/pairs.ts 挂一张表'),
       file: z.string().optional().describe('Go 源文件路径（绝对或相对 cwd）；与 projectDir 二选一'),
       projectDir: z.string().optional().describe('Go 项目目录：一次翻译整个项目（枚举 .go、跨文件 import、镜像落盘）'),
       outDir: z.string().optional().describe('projectDir 模式下落盘根（镜像 source 结构）'),
@@ -50,6 +59,18 @@ export const CROSS_TOOLS: ToolDef[] = [
         .describe('★ 调用方显式给的对照用例（[{name?, args:[…]}]）：优先于仓库 *_test.go，同一批输入逐条比 Go 与 TS 输出'),
     },
     handler: wrapData(async (a) => {
+      // ★ 语言对先解析：**表里没有就是没有**，不静默降级成 go→ts
+      const fromLang = typeof a.from === 'string' && a.from ? a.from : 'go';
+      const toLang = typeof a.to === 'string' && a.to ? a.to : 'ts';
+      if (a.book !== true) {
+        const pair = translatePair(fromLang, toLang);
+        if (!pair) {
+          throw new Error(
+            `不支持的语言对 ${fromLang}→${toLang}。已注册：${Object.keys(TRANSLATE_PAIRS).join(', ')}。` +
+              `★ 加一对 = 在 src/infrastructure/authoring/translate/pairs.ts 的 TRANSLATE_PAIRS 挂一张表（extractor + codegen），核心零改动。`,
+          );
+        }
+      }
       // ★ 2026-10-28（吸收 translate_book）：book=true 走"重算册子"，其余走原本的骨架/填孔/对拍。
       if (a.book === true) {
         const root = requireStr(a, 'project_dir') || requireStr(a, 'projectDir');

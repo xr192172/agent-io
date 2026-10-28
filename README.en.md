@@ -48,7 +48,7 @@
 
 ### ⑥ 翻译 —— 跨语言迁移的双层架构
 - **翻译 DSL（映射意图）→ 翻译 DB（对应物投影）→ 往下写翻译代码**——与设计侧同构
-- **translate_go_ts**：Go→TS 骨架机械生成 + 验证闸 + **known/unknowns 回执**（事实与推测显式分离）
+- **translate**：跨语言半自动翻译（语言对 `from`/`to` 查 `TRANSLATE_PAIRS`，目前 `go-ts`）+ 验证闸 + **known/unknowns 回执**（事实与推测显式分离）+ `book=true` 重算翻译册
 - **硬依赖账**：不能翻译的依赖带策略字段（npm 等价 / 同位替代 / HTTP 桥接），由 Agent 按图决策
 
 <!-- FACTS:LANG:BEGIN（由 scripts/gen-facts.mjs 生成，勿手改） -->

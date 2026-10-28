@@ -282,7 +282,7 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   sync_contracts: '以注册表 zod schema 回填 DSL expected_apis',
   cross_repo_symbol_index: '跨仓库符号索引建立/反查',
   code_health: '代码健康度扫描（含 unused_import 多语言）',
-  translate_go_ts: '跨语言翻译：Go→TS 半自动（`book=true` 先重算翻译册 —— ★ 2026-10-28 吸收 `translate_book`；机械骨架+验证闸；fill 用 LLM 逐孔填；verify 跑行为对拍）',
+  translate: '跨语言半自动翻译**单一入口**（★ 2026-10-28 正名：语言对是**数据**不是工具名）：`from`/`to` 走 `translate/pairs.ts#TRANSLATE_PAIRS` 查表（目前仅 `go-ts` 一对；不支持的对**响亮报错并列出已注册对**）。`book=true` 重算翻译册（语言无关，吸收原 translate_book）；骨架 + 可选 LLM 填 + 可选行为对拍',
   go_originals: '读 Go 源文件顶层符号原文（ground truth）：翻译/评审时对照 Go 原文，不对着 TS 壳猜',
   explore_code: '代码理解统一入口（search/check_monolith/run_simulation/watch）（★ 2026-10-28 吸收 `impact_analysis`：action=impact 出改前风险闭包 / 热区盘点）（★ 2026-10-28 吸收 `read_project_docs`：`action=docs` 读项目文档）',
   // ★ 2026-10-11：契约页 / 类型页 —— "新用户第一站"要能导到它（否则又一条"声明了但没人点名"）。
