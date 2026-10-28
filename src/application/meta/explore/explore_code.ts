@@ -31,6 +31,9 @@ import { requireStr, optionalStr, optionalNum, optionalBool, optionalArr } from 
 // ★★★ T197：**args 的【键名】判据**（★ 与 plumbing 的【值形状】判据是两把尺）。
 import { assertExploreArgKeys, assertExploreRequired } from './explore_arg_spec.js';
 import { semanticSearch } from '../llm/semantic_search.js';
+import { analyzeHubs, analyzeImpact } from '../../../infrastructure/analysis/impact/index.js';
+import type { ImpactChangePoint } from '../../../infrastructure/analysis/impact/index.js';
+import { renderGranularityNote } from '../../refactor/parse_capability/parse_capability.js';
 import { ensureProjectIndex, ensureIndexAroundSeed } from '../../../infrastructure/index/index_freshness.js';
 // ★ action=facts（选择性读 DB）的判据全在下层，本文件只解参与渲染，不重推一遍：
 //   · `contentHash` = 「库与源码同源」的唯一哈希（= files.content_hash 存的同一个函数）；
@@ -66,6 +69,8 @@ export const EXPLORE_ACTIONS = [
   'run_simulation',
   'reset_simulation',
   'watch',
+  // ★ 2026-10-28（吸收 impact_analysis）：改前看波及 —— 反向可达闭包 + 风险排序
+  'impact',
 ] as const;
 
 export type ExploreAction = (typeof EXPLORE_ACTIONS)[number];
@@ -289,6 +294,38 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
         reviewer: optionalStr(args, 'reviewer'),
       });
       return toResult(r, true);
+    }
+    case 'impact': {
+      // ★★★ 2026-10-28（T-#CERT-1 · 吸收 impact_analysis）：**改前风险闭包**。
+      //   原来是一个独立工具；但"我要改这里会炸哪里"属于**代码理解**（本工具就是"理解代码/结构"的统一入口），
+      //   而且它曾经的 `diff_impact` 就是从本工具移出去给它让位的 ⇒ 现在搬回来。
+      //   ★ 行为与旧工具**逐字段一致**（同一对执行核 analyzeHubs / analyzeImpact，同一套文案）。
+      const root = requireStr(args, 'project_dir');
+      if (args['hubs']) {
+        const h = await analyzeHubs(root, typeof args['top'] === 'number' ? args['top'] : 10);
+        const lines = [`风险热区盘点 · ${root}（${h.fileCount} 文件 / ${h.edgeCount} 依赖边）`, '按"被直接依赖数"排序 —— 改这些文件会炸最多下游', ''];
+        for (const f of h.files) lines.push(`${f.risk === 'high' ? '⚠' : f.risk === 'medium' ? '·' : ' '} [${f.risk}] ${f.file}  被 ${f.dependents} 个文件依赖 / 依赖 ${f.dependencies} 个文件`);
+        return { message: lines.join('\n'), data: h };
+      }
+      const cps: ImpactChangePoint[] = Array.isArray(args['change_points'])
+        ? (args['change_points'] as Array<{ file: string; symbol?: string }>).map((c) => ({ file: c.file, symbol: c.symbol }))
+        : [];
+      const r = await analyzeImpact(root, cps, typeof args['max_depth'] === 'number' ? { maxDepth: args['max_depth'] } : {});
+      const lines = [
+        `影响面报告 · ${root}`,
+        `变更点 ${r.changePoints.length} 个，受影响文件 ${r.total} 个（直接 ${r.direct}，高风险 ${r.high_risk}）`,
+      ];
+      if (r.fell_back) lines.push('⚠ 存在符号级消费方解析失败 → 已保守降级为"改整个文件"的闭包');
+      if (r.missing.length > 0) lines.push(`⚠ 未定位到变更点：${r.missing.join(', ')}`);
+      const granImpact = renderGranularityNote(cps.map((c) => c.file), 'impact');
+      if (granImpact) lines.push(granImpact);
+      lines.push('');
+      if (r.files.length === 0) lines.push('（零波及：该变更点没有任何文件依赖链）');
+      for (const f of r.files) {
+        lines.push(`${f.risk === 'high' ? '⚠' : f.risk === 'medium' ? '·' : ' '} [${f.risk}] ${f.file}  (depth=${f.depth}, 被${f.dep_count}个文件依赖)`);
+        for (const s2 of f.sites) lines.push(`      ${s2.kind.padEnd(9)} L${s2.line}  ${s2.detail}`);
+      }
+      return { message: lines.join('\n'), data: r };
     }
     default: {
       const exhaustive: never = action;

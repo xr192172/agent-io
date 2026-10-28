@@ -54,7 +54,7 @@ const TRIGGER_ROWS = [
   ['改完看设计是否过时 / 欠实现', '`design_line action=drift`', '对比 expected_apis 与真实代码，四态含 `no_comparison`（没得比≠对齐）；`drift_mode=status` 复读台账。★ 2026-10-28 吸收 `detect_drift`'],
   ['常驻盯漂移', '`explore_code action=watch drift_on_change=true`', '文件一变即 rebuild + 过时判定 + pushAlert'],
   ['提交前健康检查', '`design_line action=judge` / `sync_contracts`', '跑整册判据批（四态：unsupported=判不了≠通过）+ 契约同步。★ 2026-10-28 吸收 `consistency_check`（其对账报表已被判据覆盖）'],
-  ['改前看影响面', '`impact_analysis hubs=true`', '反向可达闭包 + 风险排序'],
+  ['改前看影响面', '`explore_code action=impact`', '反向可达闭包 + 风险排序（`hubs=true` 切热区盘点）。★ 2026-10-28 吸收 `impact_analysis`；★ 写闸**自动**附带波及仍待做（T-#GATE-IMPACT）'],
   ['对账设计视图 / 实际视图', '`diff_views` / `reconcile_chain`', '波及方向'],
   ['两仓合并 / 迁移查撞名', '`cross_repo_symbol_index`', '顶层符号求交 = 冲突，求差 = 迁移范围'],
   ['Go → TS 翻译', '`translate_go_ts`', '机械骨架 + 验证闸；`fill` 逐孔填函数体；`verify` 行为对拍'],

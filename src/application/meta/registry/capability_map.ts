@@ -262,7 +262,6 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   move_symbol: '跨文件移动模块级符号（自动重定向 importer 的 import 源，只改 source 不动使用点）',
   edit_code: '符号级替换（文件+函数+新函数体，AST 定位）',
   find_references: '查某符号的引用点/外部导入者（影响面前置）',
-  impact_analysis: '计算一次改动的变更点/风险面',
   structure_gap: '结构意图 vs 现状四态读数（域表声明 vs 磁盘）：待搬清单 / 归属未定 / 待建域 —— 回答"这次分层还差多少、下一步搬什么"（判据是域表 + 目录扫描，不读符号索引）',
   // ★ I4（2026-10-25）：`remove_dead_imports` 工具面已吸收进 `refactor_pipeline`（dead_imports 步，
   //   同一份执行内核 + 同语义 verify）⇒ 策展条目随之删除。
@@ -287,7 +286,7 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   code_health: '代码健康度扫描（含 unused_import 多语言）',
   translate_go_ts: '跨语言翻译：Go→TS 半自动（机械骨架+验证闸；fill 用 LLM 逐孔填；verify 跑行为对拍）',
   go_originals: '读 Go 源文件顶层符号原文（ground truth）：翻译/评审时对照 Go 原文，不对着 TS 壳猜',
-  explore_code: '代码理解统一入口（search/check_monolith/run_simulation/watch）',
+  explore_code: '代码理解统一入口（search/check_monolith/run_simulation/watch）（★ 2026-10-28 吸收 `impact_analysis`：action=impact 出改前风险闭包 / 热区盘点）',
   // ★ 2026-10-11：契约页 / 类型页 —— "新用户第一站"要能导到它（否则又一条"声明了但没人点名"）。
   contract_page:
     '★ 契约页 / 类型页：给一个**符号名**一次给全 —— 定义在哪 / 字段成员 / 谁产生 / 谁消费 / 相关接法边 / b_terms 口径（查不到是一个明确的态，不是空数组）',

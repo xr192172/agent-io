@@ -1,0 +1,75 @@
+{
+  "hubs": {
+    "args": {
+      "project_dir": "D:/agentio/dev/agent-io",
+      "hubs": true,
+      "top": 10
+    },
+    "msg_sha": "1f6bbeb94cd9ee22341db1aadba6c52121f08b642c5242634c3cce46a39649df",
+    "msg_head": [
+      "风险热区盘点 · D:/agentio/dev/agent-io（632 文件 / 1458 依赖边）",
+      "按\"被直接依赖数\"排序 —— 改这些文件会炸最多下游"
+    ],
+    "data_sha": "844af6f524d4bc9b0f55957ffdc5f528592f9dad2841907a502e0ce191c9a755",
+    "data_keys": [
+      "root",
+      "files",
+      "fileCount",
+      "edgeCount",
+      "bounds"
+    ]
+  },
+  "change_points": {
+    "args": {
+      "project_dir": "D:/agentio/dev/agent-io",
+      "change_points": [
+        {
+          "file": "src/domain/expectation.ts"
+        }
+      ]
+    },
+    "msg_sha": "74b498e2d19f36fb59c41431fbefadf7e79bdca7d17d88f56333d8f1bd8c9058",
+    "msg_head": [
+      "影响面报告 · D:/agentio/dev/agent-io",
+      "变更点 1 个，受影响文件 198 个（直接 18，高风险 39）"
+    ],
+    "data_sha": "a859dde3337c4720240658a96528cacffdb7f21f79cd88d0e1d86c7ef1055ede",
+    "data_keys": [
+      "root",
+      "changePoints",
+      "missing",
+      "files",
+      "total",
+      "direct",
+      "high_risk",
+      "fell_back"
+    ]
+  },
+  "symbol": {
+    "args": {
+      "project_dir": "D:/agentio/dev/agent-io",
+      "change_points": [
+        {
+          "file": "src/application/design/intent/expectations.ts",
+          "symbol": "judgeExpectations"
+        }
+      ]
+    },
+    "msg_sha": "5a780c8bfa1cbcedd2f98866cebb72d812eb86d355fa65021962df8c53f884b7",
+    "msg_head": [
+      "影响面报告 · D:/agentio/dev/agent-io",
+      "变更点 1 个，受影响文件 20 个（直接 6，高风险 3）"
+    ],
+    "data_sha": "dac5629ec2180c96ae3464e9f9428c76436326beac02ffdd6cf088cbc9031415",
+    "data_keys": [
+      "root",
+      "changePoints",
+      "missing",
+      "files",
+      "total",
+      "direct",
+      "high_risk",
+      "fell_back"
+    ]
+  }
+}
