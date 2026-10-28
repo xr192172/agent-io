@@ -240,17 +240,30 @@ sys.exit(main())
  * 跨文件 import 会留下 require(...) 调用——子进程里解析不到即报错（v1 边界：须自包含）。
  * 返回 { js } 或 { error }（语法/转译失败）。
  */
-export function transpileToCjs(abs: string, src: string): { js: string } | { error: string } {
+export function transpileToCjs(
+  abs: string,
+  src: string,
+  opts: { esm?: boolean } = {},
+): { js: string } | { error: string } {
   const out = ts.transpileModule(src, {
     compilerOptions: {
       target: ts.ScriptTarget.ES2020,
-      module: ts.ModuleKind.CommonJS,
+      // ★ 2026-10-28（t412）：harness 改跑 **ESM 目标**（`esm:true`）——
+      //   因为 **ESM loader hooks 不拦截 CJS `require`**：转 CJS 再 require ⇒ 内存插桩
+      //   看不见用户代码（只观测到框架自己的 runner）。改 ESM 后 hooks 才能插到目标上。
+      module: opts.esm ? ts.ModuleKind.ESNext : ts.ModuleKind.CommonJS,
       jsx: ts.JsxEmit.React,
       esModuleInterop: true,
       allowJs: true,
       isolatedModules: true,
     },
-    fileName: abs,
+    // ★★★ 2026-10-28（t412 抓到的真 bug）：**`.mjs` 的转译必须"去掉 ESM 后缀"**。
+    //   TypeScript 对 `fileName: 'x.mjs'` 会**尊重它的 ESM 格式**（impliedNodeFormat=ESM），
+    //   于是即便 `module: CommonJS` 也**不把 `export` 转成 `exports`** ⇒ 产物仍是 ESM 语法，
+    //   而我们这边是 `createRequire(...)(target.cjs)` 加载 ⇒ `Unexpected token 'export'`。
+    //   实测：`.js`（含 `type:module`）都过，**只有 `.mjs` 挂** —— 而本仓 128 张证全是 `.mjs`。
+    //   ⇒ 给 TS 一个 `.js` 的 fileName（只影响"格式推断"，不影响语义），转译结果就是 CJS。
+    fileName: abs.replace(/\.(mjs|mts|cjs|cts)$/i, '.js'),
     reportDiagnostics: true,
   });
   const errs = (out.diagnostics ?? []).filter((d) => d.category === ts.DiagnosticCategory.Error);
@@ -270,7 +283,7 @@ export function transpileToCjs(abs: string, src: string): { js: string } | { err
  * 输出单行 JSON { source, stdout, results }（进程级失败时输出 { error }）。
  */
 export function nodeRunnerSource(spec: BehaviorSpec): string {
-  return `import { createRequire } from 'node:module';
+  return `import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 
 const FUNC_NAME = ${JSON.stringify(spec.function)};
@@ -335,7 +348,8 @@ let loadStdout = '';
 try {
   _capStart();
   try {
-    mod = createRequire(import.meta.url)(path.resolve(process.argv[2]));
+    // ★ ESM 加载（await import）：这样内存插桩的 load hook 才能看到目标模块（CJS require 看不到）
+    mod = await import(pathToFileURL(path.resolve(process.argv[2])).href);
   } finally {
     loadStdout = _capEnd();
   }
@@ -1021,7 +1035,7 @@ function runWithLangPack(spec: BehaviorSpec, pack: BehaviorLangPack): BehaviorRu
     //   ⇒ 注入内存插桩 loader：**同一次运行**既拿到函数输出（L2 比对用），也拿到探针事件（L3 判据用）。
     //   · 盘上源码**零改动**（loader 在内存里改写，见 `observe/probe_hooks.ts`）；
     //   · 拿不到 loader / 事件路径写不进 ⇒ **静默不加**（观测是增强，不许让判据跑不起来）。
-    const probeEnv = probeRunEnv();
+    const probeEnv = probeRunEnv(spec.project_dir); // ★ 事件落到**被观测项目**的 .agent/observe/ 下（不是 process.cwd()）
     const r = spawnSync(plan.run.cmd, plan.run.args, { cwd: plan.run.cwd ?? tmp, encoding: 'utf-8', timeout: pack.timeoutMs(spec), windowsHide: true, maxBuffer: 8 * 1024 * 1024, ...(probeEnv ? { env: probeEnv } : {}) });
 
     // ★ 顺序要紧：超时被终止时 Node **同时**置 error=ETIMEDOUT 与 signal=SIGTERM。
@@ -1084,11 +1098,14 @@ const nodePack: BehaviorLangPack = {
   toolchain: () => toolchainIssue('node', undefined),
   timeoutMs: (spec) => spec.timeout_ms ?? 60_000,
   build: ({ spec, content, targetAbs, write }) => {
-    const tr = transpileToCjs(targetAbs, content);
+    // ★ 2026-10-28（t412）：**产出 ESM 目标**（`target.mjs`），由 runner 用 `import()` 加载。
+    //   为什么：内存插桩靠 ESM loader hooks，而**hooks 不拦截 CJS `require`** ——
+    //   转 CJS 再 require 会把用户代码挡在观测之外（实测只看到 runner 自己）。
+    const tr = transpileToCjs(targetAbs, content, { esm: true });
     if ('error' in tr) throw new Error(tr.error); // 交由执行器的 finally 清理
-    write('target.cjs', tr.js);
+    write('target.mjs', tr.js);
     write('runner.mjs', nodeRunnerSource(spec));
-    return { run: { cmd: process.execPath, args: ['runner.mjs', 'target.cjs'] } };
+    return { run: { cmd: process.execPath, args: ['runner.mjs', 'target.mjs'] } };
   },
   parse: (s) => parseJsonTail(s, 'node'),
   execError: (e) => `node 不可用/执行异常: ${(e as Error).message}`,
