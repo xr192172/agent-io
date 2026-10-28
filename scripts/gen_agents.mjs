@@ -135,6 +135,7 @@ ${triggerTable}
 
 - 做完一项 ⇒ 写回执（commit message + \`.workbuddy/memory/YYYY-MM-DD.md\`）+ 从 \`docs/todo.md\` 删掉那一行；清单清空即删文件
 - **新增功能 ⇒ 在 \`docs/PITCH.md\` 追加一条卖点**（每条必须挂一张证 + 一个可复现读数；有边界就如实写 \`[未核]\`）——这份活文档就是收官材料，别等最后凭记忆补
+- **退役任何能力（工具 / 文件 / 链路 / action）⇒ 在 \`docs/RETIRED.md\` 记一条**：判据 + 现在用什么 + 代价；★ 退役要连 **enum / 描述 / AGENTS 触发行** 一起改，否则"退役"会变成"改语义"
 - 契约变更（工具名 / 签名 / 对外行为 / MCP 注册名）⇒ 同步 \`README.md\` / \`README.en.md\` / 本表；实现变更不碰文档
 - 新增代码 / 注释 / 文档不出现旧品牌串：\`design-canvas\` / \`DESIGN_CANVAS\` / \`design_canvas\` / \`DesignCanvas\`
 - 旧品牌串现查：\`grep -rn "design-canvas\\|DesignCanvas" src/ docs/\`

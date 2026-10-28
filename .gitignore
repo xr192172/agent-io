@@ -151,6 +151,8 @@ docs/*
 !docs/VISION.md
 # ★ 2026-10-28：**卖点合集是活资产，必须进 git** —— 收官材料靠它，丢了就要凭记忆重写。
 !docs/PITCH.md
+# ★ 2026-10-28：**删除台账也是活资产** —— 它防的是"重新发明"，比"它不在"的证有信息量。
+!docs/RETIRED.md
 !docs/accounting.jsonl
 !docs/board.md
 !docs/GOAL.md
