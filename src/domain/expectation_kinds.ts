@@ -175,12 +175,23 @@ export const KIND_SPECS: Record<string, KindSpec> = {
     phase: 'post',
     axis: 'runtime',
     subject: '', // 主体是事件流（events*.jsonl），不是源文件
+    // ★★★ 2026-10-28（用户："这个律我们不是 ast 或者框架自动提供的吗"）——**用户是对的**：
+    //   律（silent-error-discard / impact-blast-radius …）本来就由**框架**提供（`OBSERVE_RULE_TABLE`，
+    //   稳定 id 在 `OBSERVE_RULE_IDS`）。所以要写的**不是律**，而是"**这条律在本项目生效于哪些代码**"。
+    //   而选择依据该用 **rule id（设计侧，稳定）**，不该用 probe 名（实现侧，随插桩器变）——
+    //   这正是 T-#OBSERVE-4 ① 的结论。`probe` 保留为**可选**精确/前缀过滤（调试用）。
     fields: [
-      s('probe', { required: true, desc: '探针名（如 fn.exit / io.call）' }),
-      s('expect', { values: ['ok', 'deviation', 'absent'], desc: 'ok=全 ok（默认）| deviation=至少一条偏差（反例用法）| absent=一条都不许出现' }),
+      s('rule', { desc: '框架规则 id（如 design:silent-error-discard）；★ 律由框架提供，这里只声明适用范围' }),
+      s('probe', { desc: '可选：探针名过滤（支持尾部 * 前缀匹配）。★ 易变名，优先用 rule' }),
+      s('expect', {
+        values: ['ok', 'deviation', 'absent'],
+        desc: 'ok=全 ok（默认）| deviation=至少一条偏差（反例用法）| absent=一条都不许出现（按 rule/probe 命中集）',
+      }),
       s('events', { desc: '事件文件；缺省自动找 <root>/.agent/observe/events*.jsonl' }),
     ],
-    render: (e) => `runtime  ${String(e.probe)}  expect=${String(e.expect ?? 'ok')}`,
+    atLeastOneOf: ['rule', 'probe'],
+    render: (e) =>
+      `runtime  ${String(e.rule ?? '*')}${e.probe ? ` @${String(e.probe)}` : ''}  expect=${String(e.expect ?? 'ok')}`,
   },
 };
 

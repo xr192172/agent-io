@@ -93,7 +93,7 @@ export type Expectation =
    * · `'absent'` = 该 probe **一条都不许出现**。
    * 找不到事件文件 / 文件里一条事件都没有 ⇒ `unsupported`（**判不了 ≠ 通过**）。
    */
-  | { kind: 'runtime'; probe: string; expect?: 'ok' | 'deviation' | 'absent'; events?: string; why: string }
+  | { kind: 'runtime'; rule?: string; probe?: string; expect?: 'ok' | 'deviation' | 'absent'; events?: string; why: string }
   /**
    * ★★ 2026-10-09（T79）：**调用级**判据 —— 「`path` 里的 `symbol` 必须调用 `target`」。
    *

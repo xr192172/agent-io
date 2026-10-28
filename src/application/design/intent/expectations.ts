@@ -583,33 +583,54 @@ export async function judgeExpectations(
           push(it, 'unsupported', `事件文件 \`${path.basename(eventsFile)}\` 里一条事件都没有 ⇒ 判不了（空 ≠ 没问题）`);
           break;
         }
-        // ③ 只留该 probe 的事件
-        const hit = evs.filter((x) => String(x.probe) === e.probe);
+        // ③ 选择集：**优先按框架规则 id（设计侧稳定名）**，probe 只作可选过滤（易变名）
+        const probeSel = e.probe ? String(e.probe) : '';
+        const matchProbe = (p: string): boolean => {
+          if (!probeSel) return true;
+          if (probeSel.endsWith('*')) return p.startsWith(probeSel.slice(0, -1));
+          return p === probeSel;
+        };
+        const cand = evs.filter((x) => matchProbe(String(x.probe)));
+        const verdictsAll = cand.map((ev) => judgeEvent(ev as never));
+        const ruleSel = e.rule ? String(e.rule) : '';
+        const verdicts = ruleSel ? verdictsAll.filter((v) => v.rule === ruleSel) : verdictsAll;
+        const selLabel = ruleSel ? `规则 ${ruleSel}${probeSel ? ` @ ${probeSel}` : ''}` : `probe ${probeSel}`;
         const want = (e.expect ?? 'ok') as 'ok' | 'deviation' | 'absent';
+
+        // ★ 判不了的三态都要说清（"没跑到"最容易被读成"没问题"）：
+        //   · 选择集为空 ⇒ 该规则/探针在这批事件里**根本没出现**；
+        //   · 只给了 rule 而事件里没这条规则 ⇒ 同上。
+        if (!ruleSel && !probeSel) {
+          push(it, 'unsupported', 'runtime 判据要给 rule（框架规则 id）或 probe 至少一个 ⇒ 判不了');
+          break;
+        }
         if (want === 'absent') {
           push(
             it,
-            hit.length === 0 ? 'pass' : 'fail',
-            hit.length === 0
-              ? `probe ${e.probe} 一条都没出现（符合预期：不许出现）`
-              : `probe ${e.probe} **不该出现**，但出现了 ${hit.length} 条（如 ${JSON.stringify(hit[0]).slice(0, 120)}）`,
+            verdicts.length === 0 ? 'pass' : 'fail',
+            verdicts.length === 0
+              ? `${selLabel} 一条都没出现（符合预期：不许出现）`
+              : `${selLabel} **不该出现**，但出现了 ${verdicts.length} 条（如 ${verdicts[0].reason.slice(0, 110)}）`,
           );
           break;
         }
-        if (!hit.length) {
-          push(it, 'unsupported', `事件文件里没有 probe=${e.probe} 的记录 ⇒ 判不了（可能是没跑到 / 没插桩）`);
+        if (!verdicts.length) {
+          push(
+            it,
+            'unsupported',
+            `${selLabel} 在这批事件里没有记录 ⇒ 判不了（可能是没跑到 / 没插桩 —— 空 ≠ 没问题）`,
+          );
           break;
         }
-        // ④ 逐条判定
-        const verdicts = hit.map((ev) => judgeEvent(ev as never));
+        // ④ 聚合
         const bad = verdicts.filter((v) => v.result === 'deviation');
         if (want === 'deviation') {
           push(
             it,
             bad.length > 0 ? 'pass' : 'fail',
             bad.length > 0
-              ? `probe ${e.probe}：${hit.length} 条里有 ${bad.length} 条偏差（符合反例预期），如：${bad[0].reason.slice(0, 120)}`
-              : `probe ${e.probe}：${hit.length} 条全是 ok ⇒ **反例没成立**（这条判据没在测任何东西）`,
+              ? `${selLabel}：${verdicts.length} 条里有 ${bad.length} 条偏差（符合反例预期），如：${bad[0].reason.slice(0, 120)}`
+              : `${selLabel}：${verdicts.length} 条全是 ok ⇒ **反例没成立**（这条判据没在测任何东西）`,
           );
           break;
         }
@@ -617,11 +638,12 @@ export async function judgeExpectations(
           it,
           bad.length === 0 ? 'pass' : 'fail',
           bad.length === 0
-            ? `probe ${e.probe}：${hit.length} 条运行时事件全 ok（规则：${verdicts[0]?.rule ?? '?'}）`
-            : `probe ${e.probe}：${bad.length}/${hit.length} 条偏差 —— ${bad[0].rule}：${bad[0].reason.slice(0, 140)}`,
+            ? `${selLabel}：${verdicts.length} 条运行时事件全 ok`
+            : `${selLabel}：${bad.length}/${verdicts.length} 条偏差 —— ${bad[0].rule}：${bad[0].reason.slice(0, 140)}`,
         );
         break;
       }
+
 
       // ★★★ 2026-10-28（T-#CERT-1 · "能不能吸收进设计侧"）：**证判据** ——
       //   跑一张 `certs/*.mjs` 并读它的结论行。★ 副作用留在**证的进程**里（证自己建临时夹具），

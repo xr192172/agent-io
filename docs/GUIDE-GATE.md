@@ -61,12 +61,14 @@
 | `source-has` | 源码文本必须含 `must[]` / 不许含 `mustNot[]`（只验文本，不懂语义） | `path` + `must[]` 或 `mustNot[]` 至少一个 | post |
 | `run` | 给 `input` 跑 `expect` 表达式 | `expect` | post |
 | `behavior-cases` | 给 `cases[]`（位置实参）跑函数，逐条比 `expect`（与 `run` 同一执行核） | `path` `symbol` `cases[]`（非空） | post |
-| `runtime` | **运行时事件**（L3）：`probe` 的每条事件判定必须 `ok`；`expect=deviation` 则至少要有一条偏差（**反例用法**）；`expect=absent` 则一条都不许出现。★ **零配置**自动找 `<root>/.agent/observe/events*.jsonl`（取 mtime 最新）；无文件 / 空文件 / 无该 probe ⇒ `unsupported` | `probe` + 可选 `expect`(ok/deviation/absent) `events` | post |
+| `runtime` | **运行时事件**（L3）：**按框架规则 id 选**（`rule`，如 `design:silent-error-discard`）—— ★ **律由框架提供**（`OBSERVE_RULE_TABLE`），判据只声明"**这条律在本项目生效**"；`probe` 仅作可选过滤（易变名，支持尾部 `*` 前缀）。聚合：`expect=ok` 全 ok / `deviation` **至少一条偏差**（反例用法；全 ok 反而 fail —— 这条判据没在测东西）/ `absent` 一条都不许出现。★ 零配置找 `<root>/.agent/observe/events*.jsonl`；无文件 / 空文件 / **该规则没出现** ⇒ `unsupported` | `rule` 或 `probe` 至少一个（`atLeastOneOf`）+ 可选 `expect` `events` | post |
 
 - 每条都要 `why`（非空），否则写入被拒。
 - `run` 专属字段：`input` / `input_ref` / `blocked_by`（有值 ⇒ 判 `pending`，不跑 `expect`）/ `mutants_ignore[]`（不参与突变的 input 字段）。`expect` 的求值域只有 `input` / `root` / `validateDSL` / `fs` / `path`，**没有 `import`** ⇒ 调不到项目模块，只能断言 `validateDSL` 或文件文本。要真跑被测函数得加 `target{module,fn}` + `cases[]`（未做，见 `INDEX.md` §四）。
 - `run` 只许读 + 判，不许副作用（写盘 / 改状态）。
 - `signature-matches` 比的是「设计侧存的签名（意图）」与「源码签名（事实）」。设计 DSL 该存签名，不该存从源码抽出来的结构化契约（派生量，会不同步）。
+- ★ **静态管形状，运行管"真发生"**：`source-has` / AST 类判据能查"catch 块是空的"；
+  `runtime` 查"**错误真的发生且被吞**"。两者互补、**不重复实现**：前者便宜但可能有误报，后者贵但只在真跑时成立。
 - ★ `runtime` 的主体是**事件流**（探针写出的 `events*.jsonl`），不是源文件；它对应自动化测试框架的 **L3 层**
   （L1 静态 7 种 · L2 `behavior-cases` 同进程跑函数 · **L3 运行时**：真链路 / 静默吞错 / 重试）。
   ★ 判不了的三态（无文件 / 空文件 / 无该 probe）**都不算通过** —— 最容易被读成"没问题"的正是"没跑到"。

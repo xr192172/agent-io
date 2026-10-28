@@ -2508,6 +2508,9 @@
                   "why": {
                     "type": "string"
                   },
+                  "rule": {
+                    "type": "string"
+                  },
                   "probe": {
                     "type": "string"
                   },
@@ -2525,8 +2528,19 @@
                 },
                 "required": [
                   "kind",
-                  "probe",
                   "why"
+                ],
+                "anyOf": [
+                  {
+                    "required": [
+                      "rule"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "probe"
+                    ]
+                  }
                 ]
               }
             ]
@@ -3010,6 +3024,9 @@
                   "why": {
                     "type": "string"
                   },
+                  "rule": {
+                    "type": "string"
+                  },
                   "probe": {
                     "type": "string"
                   },
@@ -3027,8 +3044,19 @@
                 },
                 "required": [
                   "kind",
-                  "probe",
                   "why"
+                ],
+                "anyOf": [
+                  {
+                    "required": [
+                      "rule"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "probe"
+                    ]
+                  }
                 ]
               }
             ]
