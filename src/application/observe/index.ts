@@ -138,6 +138,17 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       // ── instrument / uninstrument / restore / ledger ──
       target: z.string().optional().describe('[instrument/ledger] 要插桩 / 还原 / 查台账的目标项目目录'),
       dry_run: z.boolean().optional().describe('[instrument] true=只预览探针点不写盘'),
+      // ★ 2026-10-28（T-#OBSERVE-4 ③）：推荐器 → 插桩器的桥
+      contract_probes: z
+        .array(z.string())
+        .optional()
+        .describe('[instrument] 契约模式：**只插这些探针点**（精确匹配 `<mod>.<fn>.<suffix>`）；不传=全量无脑插桩'),
+      contract_from_points: z
+        .boolean()
+        .optional()
+        .describe(
+          '[instrument] true=直接读 `<target>/.agent-io/observe-points.json` 的 `points[].key` 当契约清单（推荐器写的，与插桩器同源同命名）。★ 文件缺失/清单空 ⇒ 报错不插，绝不静默退回全量',
+        ),
       // ── proposals（与 review_changes 同一套规矩：确认人是下一个接手的 Agent）──
       id: z.string().optional().describe('[proposals] show/approve/reject 用：提案 id'),
       note: z.string().optional().describe('[proposals] reject 用：驳回理由'),
@@ -161,7 +172,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
         log: ['events_file', 'files', 'all'],
         trace: ['events_path', 'events_text', 'keep', 'trace_id', 'limit'],
         judge: ['events', 'decls', 'text', 'use_llm', 'project_root'],
-        instrument: ['target', 'dry_run'],
+        instrument: ['target', 'dry_run', 'contract_probes', 'contract_from_points'],
         uninstrument: ['target'],
         restore: ['target'],
         ledger: ['target'],

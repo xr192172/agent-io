@@ -35,7 +35,7 @@ const TRIGGER_ROWS = [
 ['建议 / 消歧易混名', '`suggest_renames` / `find_similar_names`', '前者给短名/无意义局部变量出建议（带理由），后者找孪生名（大小写 / 数字后缀 / 换位 typo）并按连通块聚类给 basis'],
 ['读项目文档（没有文档就写）', '`read_project_docs`', '不带 `name` 返清单（供挑）；带 `name` 返全文；带 `targets` 返命中该目标集的文档正文（与 `canvas_notes action=decide` 同一套匹配）'],
 ['配 LLM 供应商 / Key 池 / 看用量', '`gateway_provider`', '单入口（原 `gateway_*` 4 个收敛成 1）；★ Key 的**家在这里**（`gateway.json`），环境变量只是导入源'],
-['决定在哪打观测点（不做全量插桩）', '`recommend_observe_points`', '用索引/图 + AST 算「该在哪打日志」：高入度 / 最近真改 / 副作用边界 / 静默吞错 / 复杂度高地 / 文件热点'],
+['决定在哪打观测点（不做全量插桩）', '`recommend_observe_points` → `observe action=instrument`', '用索引/图 + AST 算「该在哪打日志」：高入度 / 最近真改 / 副作用边界 / 静默吞错 / 复杂度高地 / 文件热点；清单落 `.agent-io/observe-points.json` ⇒ 再 `observe action=instrument contract_from_points=true` **只插这些点**（推荐器与插桩器同源同命名，不漂移）'],
 ['重构后让 LLM 判一轮（拿不定的上抛给人）', '`refactor_judge`', '逐条裁 adopt / reject / uncertain（带置信度 + 理由）；uncertain 经 `alert_inbox` 入箱，下一次工具响应自动附带'],
 ['重算翻译册（Go→TS 全量符号账）', '`translate_book`', '从事实库重算 `.agent-io/design/<f>.translate.json`（pending / blocked / judgments / external_deps 一次算清）；人写的 types / atoms / unknowns 原样保留'],
   ['改一段代码（函数体 / range）', '`edit_code`', '按符号 / 行号 / range 定位；走写闸 + 重建索引'],

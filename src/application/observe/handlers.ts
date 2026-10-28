@@ -303,9 +303,44 @@ export const observeInstrumentHandler = wrapData(async (a) => {
   const dryRun = a.dry_run === true || a.dry_run === 'true' || a.dry_run === '1';
   const projectRoot = a.project_root as string | undefined;
   // 契约模式：contract_probes 非空数组时只注入声明的探针点；缺省/空数组 → 探索模式全量插桩
-  const contractProbes = Array.isArray(a.contract_probes) && a.contract_probes.length > 0
-    ? (a.contract_probes as string[])
-    : undefined;
+  // ★★★ 2026-10-28（T-#OBSERVE-4 ③ · 接上"推荐器 → 插桩器"）：
+  //   推荐器（`recommend_observe_points`）把清单写到 `<project>/.agent-io/observe-points.json`，
+  //   而插桩器**只认内联的 `contract_probes`** ⇒ 中间那一步要人**手工把文件内容抄进来**。
+  //   实测这就是"算得出该在哪打，却插不进去"的断点。
+  //   ⇒ 加 `contract_from_points: true`：直接读那份清单的 `points[].key`（就是探针名，同源同命名）。
+  //   ★ 文件缺失 / 解析失败 / 清单为空 ⇒ **响亮报错**（绝不静默退回全量 —— 那会打满探针还说是"按清单插的"）。
+  let fromPoints: string[] | undefined;
+  if (a.contract_from_points === true || a.contract_from_points === 'true') {
+    const pointsFile = path.join(target, '.agent-io', 'observe-points.json');
+    if (!fs.existsSync(pointsFile)) {
+      return {
+        message:
+          '`contract_from_points` 要求先跑推荐器：找不到 ' +
+          '  ⇒ 先 `recommend_observe_points`（它会写这份清单），或用 `contract_probes` 直接点名。',
+        data: [],
+      };
+    }
+    let keys: string[] = [];
+    try {
+      const parsed = JSON.parse(fs.readFileSync(pointsFile, 'utf8')) as {
+        points?: Array<{ key?: string }>;
+      };
+      keys = (parsed.points ?? []).map((p) => String(p?.key ?? '')).filter(Boolean);
+    } catch (e) {
+      return { message: '`contract_from_points` 读不了 ' + pointsFile + '：' + (e as Error).message, data: [] };
+    }
+    if (!keys.length) {
+      return {
+        message: pointsFile + ' 里一条 key 都没有 ⇒ 不插（**不退回全量**：那会把探针打满还谎称按清单插）',
+        data: [],
+      };
+    }
+    fromPoints = keys;
+  }
+  const contractProbes =
+    Array.isArray(a.contract_probes) && a.contract_probes.length > 0
+      ? (a.contract_probes as string[])
+      : fromPoints;
 
   // ★ 2026-10-05：语言分派从**硬编码的 `if (isGoProject(target))`** 改成**语言包注册表**
   //   （`infrastructure/analysis/observe/observe_langs.ts`），本 handler 退化成**薄壳**：挑包 → 调包 → 一份渲染。
