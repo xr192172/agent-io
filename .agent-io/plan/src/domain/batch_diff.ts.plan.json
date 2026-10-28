@@ -1,0 +1,30 @@
+{
+  "path": "src/domain/batch_diff.ts",
+  "card": "file_src_application_refactor_pipeline_refactor_plan_ts",
+  "frozen_at": "2026-10-28T04:05:02.493Z",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "planBatchDiffReport"
+      },
+      "kind": "create",
+      "detail": "纯函数：文件级 diff 一条、条目级仅该文件唯一时带；输出键序规范化",
+      "judgement_ref": "decision:file_src_application_refactor_pipeline_refactor_plan_ts#0",
+      "status": "open"
+    }
+  ],
+  "untouched_default": {
+    "why": "T150：只改 symbol_diff 读数这一处"
+  },
+  "symbols_at_freeze": [
+    "SymbolDiff",
+    "BatchDiffReport",
+    "planBatchDiffReport"
+  ],
+  "fps_at_freeze": {
+    "planBatchDiffReport": "16eae0b3a4904e9071070432d13e03d32c578669"
+  },
+  "base": {
+    "content_hash": "b7d40e980b7e1fb084b44b389028b4c571545aaa"
+  }
+}

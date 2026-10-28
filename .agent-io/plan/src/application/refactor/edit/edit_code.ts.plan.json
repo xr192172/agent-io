@@ -1,20 +1,20 @@
 {
   "path": "src/application/refactor/edit/edit_code.ts",
-  "card": "file_src_application_refactor_edit_edit_code_ts",
-  "frozen_at": "2026-10-28T03:52:04.720Z",
+  "card": "file_src_application_refactor_pipeline_refactor_plan_ts",
+  "frozen_at": "2026-10-28T04:05:02.497Z",
   "entries": [
     {
       "anchor": {
-        "symbol": "editCodeInner"
+        "symbol": "editCodeBatch"
       },
       "kind": "rewrite",
-      "detail": "回执改用 renderPlanReadings(_lastRec.index)，接住 txn.commit 的回执",
-      "judgement_ref": "decision:file_src_application_refactor_edit_edit_code_ts#0",
+      "detail": "批量回执带 files[]（文件级唯一出处），条目级不再各挂文件 diff",
+      "judgement_ref": "decision:file_src_application_refactor_pipeline_refactor_plan_ts#0",
       "status": "open"
     }
   ],
   "untouched_default": {
-    "why": "T245：只改回执读数这一处"
+    "why": "T150：只改 symbol_diff 读数这一处"
   },
   "symbols_at_freeze": [
     "EditCodeOp",
@@ -66,13 +66,13 @@
     "buildAmbiguityError": "e816e894c6144e20493d1837f1e1228bab93d3ac",
     "planReplaceText": "9bb34938089d0ba31a77878db2e00babf37c7542",
     "assumptionNote": "6d2026f454d1fcc54ef4eb46d5544457a6a21fbf",
-    "editCodeInner": "fa7c109cfbb9fff8d6120c3a63119dc6dfd27c7e",
-    "editCodeBatch": "c46aacef894e1a252a0c1cac829154b84edd1a98",
+    "editCodeInner": "a37aff2e0b4649424a16213cf4a2cfcbd86b2f98",
+    "editCodeBatch": "0c9ef86689a2e4616872a20f9eab7d2a00241fb5",
     "editCodeCore": "ff17b38778af85207587151042d23011df51e6c6",
     "touchedOf": "f08ff925fd751db7cc9f35a0db55a0abb27b49c4",
     "editCode": "f40afd4c621c3940cda11cfa37fb4fa91852472e"
   },
   "base": {
-    "content_hash": "e6b512110b51cc299d7b923a4c94404dec9f5aab"
+    "content_hash": "6a79de0e43e8a3f47f1caff7e1249bcaab17c844"
   }
 }

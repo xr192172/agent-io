@@ -195,6 +195,8 @@ export interface ApplyPlanItemResult {
 
 export interface ApplyPlanResult {
   ok: boolean;
+  /** ★ 2026-10-28（T150）：**文件级** symbol_diff（唯一出处，每个文件一条；条目级只在唯一时带） */
+  files?: Array<{ file: string; symbol_diff: { added: number; removed: number; changed: number } }>;
   plan_id: string;
   /** 本次是否真有任何文件被写盘（幂等重放 / 空清单 / 全冲突 ⇒ false） */
   written: boolean;
@@ -313,6 +315,8 @@ export async function applyRefactorPlan(args: {
   });
 
   let landed: EditBatchItem[] = [];
+  // ★ 2026-10-28（T150）：**文件级** symbol_diff（唯一出处；条目级不再各挂一份）
+  let filesDiff: Array<{ file: string; symbol_diff: { added: number; removed: number; changed: number } }> = [];
   let wrote = false;
   /** ★★★ 2026-10-20：闸的放行读数（含豁免点名）—— 从 `editCode` 的回执里接住，不许丢 */
   let gateNote: string | undefined;
@@ -333,6 +337,8 @@ export async function applyRefactorPlan(args: {
       authorize: args.authorize,
     });
     landed = r.data.items ?? [];
+    // ★ 2026-10-28（T150）：接住**文件级** symbol_diff（唯一出处）
+    filesDiff = (r.data as { files?: Array<{ file: string; symbol_diff: { added: number; removed: number; changed: number } }> }).files ?? [];
     wrote = r.data.written === true;
     // ★★★ 2026-10-20（回执线）：把闸的读数接住 —— 下面 `attachGateNote` 负责挂到回执上。
     gateNote = r.data.task_gate;
@@ -372,6 +378,8 @@ export async function applyRefactorPlan(args: {
     plan_id: plan.plan_id,
     written: wrote,
     items,
+    // ★ 2026-10-28（T150）：文件级 symbol_diff —— **唯一出处**（条目级只在"该文件整批内唯一"时带）
+    ...(filesDiff.length ? { files: filesDiff } : {}),
     total: items.length,
     applied,
     already_applied,

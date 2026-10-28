@@ -58,6 +58,8 @@ import { assertSourceWriteRegistered, reopenAndResolveAfterWrite, reopenNote, re
 //   索引当场就新了 ⇒ 不需要「待消费登记」；② `pendingSelfWrites` 自带 TTL（`now - at >= SELF_WRITE_TTL_MS ⇒ skip`）
 //   ⇒ 旧记录自动过期，不会产生假信号。⇒ 别为了「让它看起来接上了」去调 close()（那会多建一次索引）。
 import { openSourceWrite, type SourceWriteTxn, type SourceWriteReceipt } from '../../source_writer.js';
+// ★ 2026-10-28（T150）：纯函数住 domain（零依赖 ⇒ 判据执行核可加载）
+import { planBatchDiffReport } from '../../../domain/batch_diff.js';
 // ★ 2026-10-28（T245）：计划读数（出口闭环 / 画布新陈代谢）的**唯一渲染器**住 write_gate，本文件只调用
 import { renderPlanReadings } from '../../write_gate.js';
 // ★★★ P0 保鲜链第 1 环（2026-10-26）：**新建文件自动提议入册**。
@@ -392,8 +394,14 @@ export interface EditReceipt {
   no_op?: boolean;
   /** 落盘后索引同步状态 */
   index_synced?: string;
-  /** 符号 diff（落盘后才有） */
+  /** 符号 diff（落盘后才有；**条目级只在该文件整批内唯一出现时**才有 —— 见 T150） */
   symbol_diff?: { added: number; removed: number; changed: number };
+  /**
+   * ★ 2026-10-28（T150）：**文件级**符号 diff（每个文件一条，按文件名排序）—— 唯一出处。
+   * 判据：逐项 `symbol_diff` 之和必须等于这里该文件的 diff（条目级只在"该文件唯一"时才带 ⇒ 恒成立）。
+   * 仅批量 `targets[]` 时有值。
+   */
+  files?: Array<{ file: string; symbol_diff: { added: number; removed: number; changed: number } }>;
   /** ★ P-B 批量专有：逐项独立回报（每项一条，含失败项的 error） */
   items?: EditBatchItem[];
   /** ★ P-B 批量专有：目标项总数 */
@@ -1152,17 +1160,34 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     );
   }
 
-  const items: EditBatchItem[] = plans.map((p) => ({
+  // ★ 2026-10-28（T150）：**文件级读数只出现一次**（`files[]`）；条目级仅在该文件唯一时带（`perItem[i]`）
+  const diffReport = planBatchDiffReport(
+    Object.fromEntries([...symbolDiffByFile.entries()].map(([abs, d]) => [path.relative(projectRoot, abs).split(path.sep).join('/'), d!])),
+    plans.map((p) => path.relative(projectRoot, p.absPath).split(path.sep).join('/')),
+  );
+  /** 文件 → 它在 `plans` 里的第一个下标（同一个文件会被写一次、但可能对应多个条目） */
+  const itemIndexOf = new Map<string, number>();
+  plans.forEach((p, i) => {
+    const rel = path.relative(projectRoot, p.absPath).split(path.sep).join('/');
+    if (!itemIndexOf.has(rel)) itemIndexOf.set(rel, i);
+  });
+
+  const items: EditBatchItem[] = plans.map((p, i) => ({
     file: p.file,
     ok: p.ok,
     written: p.ok && writtenFiles.has(p.absPath),
     ...(p.hit ? { hit: p.hit } : {}),
     // ★ 2026-10-20：空操作项逐项点名（`written:false` + `no_op:true`）—— 不许只给一个 ✓ 就算完
     ...(p.noop ? { no_op: true, index_synced: '未重建（空操作：文件内容未变）' } : {}),
-    ...(p.ok && symbolDiffByFile.has(p.absPath) ? { symbol_diff: symbolDiffByFile.get(p.absPath)! } : {}),
+    // ★ 2026-10-28（T150）：条目级读数**只在"该文件在整批里唯一出现"时**才挂
+    //   （否则同一文件 N 项会把同一个文件级 diff 各挂一次 ⇒ 重复记账）。
+    ...(p.ok && diffReport.perItem[i] ? { symbol_diff: diffReport.perItem[i]! } : {}),
     ...(p.ok && indexStatusByFile.has(p.absPath) ? { index_synced: indexStatusByFile.get(p.absPath)! } : {}),
     ...(p.error ? { error: p.error } : {}),
   }));
+
+  // ★ 2026-10-28（T150）：文件级读数只出现一次（\iles[]\）—— 条目级不再重复挂
+  const filesDiff = diffReport.files;
 
   // ── 消息（供人读）：逐项一行 + 全部预览（dry-run 亦一次性给全）──
   const noopCount = plans.filter((p) => p.noop).length;
@@ -1217,6 +1242,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       //   （`dry_run` 不落盘 / 被 `atomic` 拦下），而不是留空字段让它看起来"没判也没事"。
       task_gate: gateNote ?? '（未判闸：dry_run 或 被 atomic 拦下 ⇒ 本批一个字节都没落盘）',
       items,
+      // ★ 2026-10-28（T150）：**文件级 symbol_diff 的唯一出处**（每个文件一条；条目级只在该文件唯一时带）
+      files: filesDiff,
       total: plans.length,
       succeeded,
       failed,
@@ -1305,3 +1332,4 @@ export async function editCode(args: EditCodeArgs): Promise<TouchedProduct<{ mes
   const r = await editCodeCore(args);
   return withTouched(r, touchedOf(args, r));
 }
+

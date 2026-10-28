@@ -7586,7 +7586,184 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/refactor/pipeline/refactor_plan.ts"
+        "path": "src/application/refactor/pipeline/refactor_plan.ts",
+        "task": {
+          "id": "file_src_application_refactor_pipeline_refactor_plan_ts",
+          "summary": "【L1 待建构】核心层 · src/application/refactor/pipeline — 5 个函数（导入自 7 个模块）（src/application/refactor/pipeline/refactor_plan.ts） ← 节点 file_src_application_refactor_pipeline_refactor_plan_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_pipeline_refactor_plan_ts\"].responsibility"
+          },
+          "owner": "agent:main",
+          "claimed_at": "2026-10-28T04:00:36.071Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/refactor/pipeline/refactor_plan.ts",
+                "name": "applyRefactorPlan",
+                "fp": "a67ab669f7cbc285486a81bb070610f01876c349"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/refactor/pipeline/refactor_plan.ts",
+                "content_hash": "edea66152d170bdf4181646f22d772cab0e31532"
+              }
+            ],
+            "computed_at": "2026-10-28T04:00:24.917Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-28T04:05:54.952Z",
+              "by": "llm",
+              "agent": "agent:main",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node certs/t399-symbol-diff-scope-cert.mjs",
+                "input": "968a5f1200e1f81c5c0ce88249b581a552af1c9a",
+                "code": "e4148f9c1ae23c2a71b45a89b8f0cac0ef3d0434",
+                "covers": [
+                  "src/domain/batch_diff.ts"
+                ]
+              },
+              "observed": "PASS=5 FAIL=0；verify 9/9；gate 10/10",
+              "command": "node certs/t399-symbol-diff-scope-cert.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "symbol_diff 的作用域是**文件**：文件级只出一条，条目级仅该文件唯一时带（不许重复记账）",
+          "expectations": [
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/batch_diff.ts",
+              "why": "同文件两项 ⇒ 文件级只一条、条目级不挂（重复记账的可算形态）",
+              "cases": [
+                {
+                  "expect": "{\"files\":[{\"file\":\"src/a.ts\",\"symbol_diff\":{\"added\":1,\"removed\":0,\"changed\":1}}],\"perItem\":[null,null]}",
+                  "given": [
+                    {
+                      "src/a.ts": {
+                        "added": 1,
+                        "changed": 1,
+                        "removed": 0
+                      }
+                    },
+                    [
+                      "src/a.ts",
+                      "src/a.ts"
+                    ]
+                  ]
+                }
+              ],
+              "symbol": "planBatchDiffReport"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/batch_diff.ts",
+              "why": "该文件只有一项 ⇒ 条目级仍带 diff（不丢信息）",
+              "cases": [
+                {
+                  "expect": "{\"files\":[{\"file\":\"src/a.ts\",\"symbol_diff\":{\"added\":1,\"removed\":0,\"changed\":1}}],\"perItem\":[{\"added\":1,\"removed\":0,\"changed\":1}]}",
+                  "given": [
+                    {
+                      "src/a.ts": {
+                        "added": 1,
+                        "changed": 1,
+                        "removed": 0
+                      }
+                    },
+                    [
+                      "src/a.ts"
+                    ]
+                  ]
+                }
+              ],
+              "symbol": "planBatchDiffReport"
+            }
+          ],
+          "updated_at": "2026-10-28T04:04:16.485Z",
+          "agent": "agent:main"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-28T04:04:16.485Z",
+            "decision": {
+              "summary": "symbol_diff 的作用域是**文件**：同一文件 N 项改动，逐项之和必须等于该文件整体 diff（不许重复记账）",
+              "expectations": [
+                {
+                  "symbol": "planBatchDiffReport",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "cases": [
+                    {
+                      "expect": "{\"files\":[{\"file\":\"src/a.ts\",\"symbol_diff\":{\"added\":1,\"removed\":0,\"changed\":1}}],\"perItem\":[null,null]}",
+                      "given": [
+                        {
+                          "src/a.ts": {
+                            "removed": 0,
+                            "changed": 1,
+                            "added": 1
+                          }
+                        },
+                        [
+                          "src/a.ts",
+                          "src/a.ts"
+                        ]
+                      ]
+                    }
+                  ],
+                  "why": "同文件两项 ⇒ 文件级只出现一次、条目级**不挂**（重复记账的可算形态）",
+                  "kind": "behavior-cases"
+                },
+                {
+                  "symbol": "planBatchDiffReport",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "cases": [
+                    {
+                      "expect": "{\"files\":[{\"file\":\"src/a.ts\",\"symbol_diff\":{\"added\":1,\"removed\":0,\"changed\":1}}],\"perItem\":[{\"added\":1,\"removed\":0,\"changed\":1}]}",
+                      "given": [
+                        {
+                          "src/a.ts": {
+                            "removed": 0,
+                            "changed": 1,
+                            "added": 1
+                          }
+                        },
+                        [
+                          "src/a.ts"
+                        ]
+                      ]
+                    }
+                  ],
+                  "why": "该文件只有一项 ⇒ 条目级仍带 diff（不丢信息）",
+                  "kind": "behavior-cases"
+                }
+              ],
+              "updated_at": "2026-10-28T04:00:34.362Z",
+              "agent": "agent:main"
+            },
+            "note": "T150：判据指向 domain 叶子模块（edit_code.ts 依赖太深，执行核加载不了）",
+            "agent": "agent:main"
+          }
+        ],
+        "overlay": {
+          "path": "src/application/refactor/pipeline/refactor_plan.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "command": "node certs/t399-symbol-diff-scope-cert.mjs",
+            "observed": "PASS=5 FAIL=0；verify 9/9；gate 10/10",
+            "kind": "reading",
+            "at": "2026-10-28T04:25:00Z"
+          }
+        }
       },
       {
         "id": "file_src_application_refactor_rename_move_domain_ts",
@@ -51071,7 +51248,8 @@
           }
         ],
         "lines": 385,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_refactor_rename_move_domain_ts",
@@ -63209,13 +63387,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 101,
+  "_dsl_rev": 104,
   "_sync": {
-    "saved_at": "2026-10-28T03:55:13.297Z",
+    "saved_at": "2026-10-28T04:05:55.047Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 158716160,
+    "age": 159357910,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

@@ -2122,6 +2122,9 @@
                 "const": "declared"
               },
               {
+                "const": "canvas"
+              },
+              {
                 "const": "node-path"
               }
             ]
