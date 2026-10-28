@@ -51,7 +51,7 @@ import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/t
 import { snapshotBeforeWrite } from '../snapshot/file_snapshot.js';
 import { assertSourceWriteRegistered, reopenAndResolveAfterWrite, reopenNote, resolveActor, exemptionLines, type GateExemption } from '../../write_gate.js';
 // ★★ 2026-10-22：落盘改走**唯一写原语**（`openSourceWrite` 事务：整批判一次闸 + 一份写前快照 + 逐文件 commit）。
-//   ★ 本工具**不调 `close()`**：它的索引写穿走自己的 `syncFile`（要 `symbol_diff` 读数）+ `reopenAndResolveAfterWrite`；
+//   ★★ 2026-10-28（T-#RP-3）：**已改为调 `close()`**（唯一收尾）—— 原来"走自己的 `syncFile`"的两条收尾已合一；
 //     `close()` 里的『登记自写 + 写穿 + 基线刷新』是给没有 async 索引通道的同步写路的替代品。
 // ★★★ 2026-10-23（澄清一处误判）：有人说「self-writes.json 自 10-13 起就是空的 ⇒ recordSelfWrite 没接到 edit_code」。
 //   **那不是缺陷，是设计**：① 本文件逐分支 `txn.commit()` 落盘后立刻 `await syncFile(...)`（:587/652/712/758/916/1076），
@@ -1121,6 +1121,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   let gateExempted: GateExemption[] = [];
   /** ★ 2026-10-21：假设检定读数（批量是 `replace_text` ⇒ **文件级**，`symbol:null`） */
   let gateAssumption: AssumptionCheck | undefined;
+  /** ★ 2026-10-28（T-#RP-3）：批量路的**批级计划读数**（统一 close() 之后才有） */
+  let batchPlanReadings: { plan_exit?: string[]; plan_baseline?: string[] } = {};
   /** ★ 2026-10-22：批量路的事务（整批一次判闸 + 一份写前快照）；干跑/被原子性拦下时**不建** */
   let batchTxn: SourceWriteTxn | undefined;
   if (!dry && !blockedByAtomic) {
@@ -1144,22 +1146,28 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     gateNote = batchTxn?.task_gate;
     gateExempted = batchTxn?.exemptions ?? [];
     gateAssumption = batchTxn?.assumption_check;
-    for (const absPath of [...new Set(plans.filter((p) => p.ok && !p.noop).map((p) => p.absPath))]) {
+    // ★★★ 2026-10-28（T-#RP-3 最后一步）：**两条收尾合一** ——
+    //   ① 先把所有文件落盘（逐文件一份快照的口径不变）；
+    //   ② 再**一次** `close()`：自写登记 + 写穿（含引用方重算）+ **批级计划读数** + 刷读集基线；
+    //   ③ 逐文件事实（status / symbol_diff）从批级结果 `byFile` 取 —— 不再每个文件各 sync 一次。
+    //   ★ 之前这里是"逐文件 commit + 逐文件 syncFile + 逐文件 reopen"，与单文件路各写一份；
+    //     T245 那次修的就是它的一半（读数别扔），这次把**收尾**也合一。
+    const toWrite = [...new Set(plans.filter((p) => p.ok && !p.noop).map((p) => p.absPath))];
+    for (const absPath of toWrite) batchTxn!.commit(absPath, virtual.get(absPath)!);
+    const outcome = batchTxn!.close();
+    const byFileOf = (outcome as { byFile?: Record<string, { status: string; symbol_diff?: { added: number; removed: number; changed: number } }> } | null)?.byFile ?? {};
+    for (const absPath of toWrite) {
       const rel = path.relative(projectRoot, absPath).split(path.sep).join('/');
-      // 逐文件一份快照（**不是**"一份含全部文件"）。粒度这条**证不出必要性**（见文件头「落盘形态」块），
-      // 但本笔**不动它**：改粒度 = 改**可观察**行为（`snapshot(action="list")` 条目数、`rollback latest` 的语义），
-      // 那是另一笔"行为变更"，与本笔的"同一件事有没有多份实现"无关。
-      batchTxn!.commit(absPath, virtual.get(absPath)!);
-      const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
-      // ★★★ T245（2026-10-13）：**别把算出来的东西扔掉** —— 原来是 `const _rw = await …; void _rw;`，
-      //   而**同一件事**在**内联四件套**那条路上是**报出来的**（`reopenNote(_rw)` 进了回执，
-      //   见本文件 `:507/:576/:637/:666`）。⇒ ★ "同一件事两处实现、一处报一处不报" = 本仓点名的病。
-      //   ⇒ 这里改用**同一个** `reopenNote`，且**并入同一个字段**（`index_synced`）——
-      //     ★ 与内联路的形状一致（`（${sync.status}${reopenNote(_rw)}）`），不新开字段 ⇒ 不改契约 ✓
-      const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
-      if (sync.symbol_diff) symbolDiffByFile.set(absPath, sync.symbol_diff);
-      indexStatusByFile.set(absPath, `${sync.status}${reopenNote(_rw)}`);
+      const f = byFileOf[rel];
+      if (f?.symbol_diff) symbolDiffByFile.set(absPath, f.symbol_diff);
+      indexStatusByFile.set(absPath, f?.status ?? 'unknown');
       writtenFiles.add(absPath);
+    }
+    if (outcome) {
+      batchPlanReadings = {
+        ...(outcome.plan_exit ? { plan_exit: outcome.plan_exit } : {}),
+        ...(outcome.plan_baseline ? { plan_baseline: outcome.plan_baseline } : {}),
+      };
     }
     // ★★★ 2026-10-21（读集比对）：**写后刷新写者自己的基线**（与单文件那条同一把尺）——
     //   否则同一 actor 第二次写同一文件，会拿"自己上一次写之前"的指纹来比 ⇒ 假 stale。
@@ -1234,6 +1242,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   // ★ 2026-10-20：空操作项**不出预览**（它的 diff 两侧逐字相同，只会让人以为“改了什么”）。
   const previews = plans.filter((p) => p.preview && !p.noop).map((p) => `— ${p.file}\n${p.preview}`);
   if (previews.length > 0) lines.push('', ...previews);
+  // ★ 2026-10-28（T-#RP-3）：批级计划读数（出口闭环 / 画布新陈代谢）—— 批量路此前**一条都没有**
+  for (const l of [...(batchPlanReadings.plan_exit ?? []), ...(batchPlanReadings.plan_baseline ?? [])]) lines.push('  ' + l);
   // ★★★ 2026-10-20：批量也要点名豁免（与单文件那条**同一句话**，来自 `exemptionLines`）
   if (gateExempted.length) lines.push('', exemptionLines(gateExempted));
   // ★ 2026-10-21：假设过期只在非空时加行（空不刷屏）；机器读数在 `data.assumption_check`。
@@ -1254,6 +1264,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       items,
       // ★ 2026-10-28（T150）：**文件级 symbol_diff 的唯一出处**（每个文件一条；条目级只在该文件唯一时带）
       files: filesDiff,
+      // ★ 2026-10-28（T-#RP-3）：批级计划读数（统一 close() 之后才有；此前批量路**完全没有**这两项）
+      ...batchPlanReadings,
       total: plans.length,
       succeeded,
       failed,

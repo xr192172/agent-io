@@ -104,7 +104,6 @@
 | T332 | 证夹具没跟上设计侧搬家（`run82` 取不到 DSL） | `certs/` · `.agent-io/design/` | 未修（`run82.dsl.json` 不存在） |
 | T-#98d-1 | ★ **`requires` 前置闸曾是死闸**（修 T-#98d 时挖到）：edge 意图 2026-10-23 并入设计册后，`applyOverlay` 投影只带 `reason`/`boundary`（把 `requires`/`status` 丢了），`loadOverlay` 也不重建 `edges` ⇒ `write_gate` 读到的 `overlay.edges` **恒空** ⇒ 谁写 `requires` 都不生效 | `src/domain/overlay.ts` · `storage_overlay.ts` · `geometry.ts` | ✅ 已修（投影带全字段 · loadOverlay 重建 · 契约补 `requires`/`status`）；证 `t332` **10/0** |
 | T-#98d-3 | `t352` / `t353` 的「留痕」判据改口径：批注层 2026-10-23 退场 ⇒ 不再落 `dsl.annotations` | `certs/t352` · `t353` | ✅ `t352` **17/0**；`t353` 33/6（6 条即 T-#98d-2） |
-| T-#RP-3 | **写路单一收尾**（结构解 B）：✅ 单文件路已合并（正文只落盘、外层统一 `close()`；回退分支已删）· ✅ `close()` 传 `ctx.onFile`（逐文件 `updated` 不再恒 false）· ✅ **`WriteThroughOutcome.byFile`**（逐文件事实进批级结果，合并的前置已就位）。**剩**：把 `editCodeBatch` 的逐分支 `syncFile` 换成统一 `close()`（现在能换了：`byFile` 已在，`files[]` 不会蒸发） | `edit_code.ts` | 迭代中（差最后一步） |
 | T-#RP-1 | **重写计划闸**：默认已翻（2026-10-28，`AGENT_IO_REQUIRE_PLAN` 三态，`=0` 只报）· 回执渲染✅ · 其它写工具文本渲染✅。**剩**：① 拿真实任务量一次严格档的误报率（本仓会被任务闸先拦 ⇒ 需要一张真领的卡）② 调 `planGaps` 粒度 | `src/application/write_gate.ts` · `design/db/rewrite_plan.ts` | 迭代中 |
 | T-#98d-old | 三条门类证跑不起来（已修，保留一行说明去向：t352 ✓ 17/0 · t332 ✓ 10/0 · t353 仅剩 T-#98d-2 那 6 条） | `certs/` | ✅ 已修 |
 | T285 | Go `uninstrument` 后残留空 `internal/` | `observe-lang-go` | 未做 |

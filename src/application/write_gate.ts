@@ -129,7 +129,10 @@ export interface WriteThroughOutcome {
    * 一旦改成统一 `close()`，那些 Map 就没了 ⇒ `files[]`（T150 刚立起来的）会**当场蒸发**。
    * ⇒ 先把事实放进批级结果，再谈合并：**顺序反了就是用一个读数蒸发换一次结构统一。**
    */
-  byFile?: Record<string, { status: SyncStatus | 'removed'; removed?: boolean }>;
+  byFile?: Record<
+    string,
+    { status: SyncStatus | 'removed'; removed?: boolean; symbol_diff?: { added: number; removed: number; changed: number } }
+  >;
   /** 同步成功（新建或更新）的文件数 */
   synced?: number;
   /** 判为 skipped（内容 hash 未变）的文件数 */
@@ -565,7 +568,10 @@ export function syncSelfWritesSync(
           continue;
         }
         const r = syncFileSync(db, root, abs);
-        out.byFile = { ...(out.byFile ?? {}), [rel]: { status: r.status } };
+        out.byFile = {
+          ...(out.byFile ?? {}),
+          [rel]: { status: r.status, ...(r.symbol_diff ? { symbol_diff: r.symbol_diff } : {}) },
+        };
         opts.onFile?.(rel, r.status);
         if (r.status === 'updated') out.synced = (out.synced ?? 0) + 1;
         else if (r.status === 'skipped') out.skippedFiles = (out.skippedFiles ?? 0) + 1;
