@@ -1012,18 +1012,42 @@ function collectSites(
               stmts.push(`return (${expr});`);
             }
             // ★ 一次替换同时表达 enter+exit（`removeTo` = 把原表达式换掉）
+            // ★★★ 2026-10-28（T-#OBSERVE-4 ② 深挖）：**必须给 `template`，否则内层编辑被丢**。
+            //   病：表达式体箭头的替换原来只给 `injected`（里面重贴的是**原文表达式**）⇒
+            //   `applyInsertions` 递归算好的内层编辑**被丢弃**（实测 `hasTemplate=false innerCount=1`）。
+            //   后果：`ids.filter((id) => !doms.some((d) => d.id === id))` 里层箭头**永远没有探针**
+            //   （台账多记 2 条、源码 0 条）。
+            //   ★ 坑：模板里**不能**复用 `stmts` 的下标 —— `stmts` 里既有探针行也有 `const tv = (原式)` 行，
+            //     拼接错位会生成**重复声明**（`const __cam_arrow2C40 = …` 两次 ⇒ SyntaxError）。
+            //   ⇒ 这里只用**探针行**与 `inner` 重建整个 body。
+            const enterLine = `captureProbe(${JSON.stringify(probeName + '.enter')}, { file: ${JSON.stringify(fileRel)}, args: ${argsObj}, level: 'core' });`;
+            const exitLine = `captureProbe(${JSON.stringify(probeName + '.exit')}, { file: ${JSON.stringify(fileRel)}, ret: TV, level: 'core' });`;
+            const tvName = `__cam_arrow${n.startPosition.row + 1}C${n.startPosition.column + 1}`;
+            const renderArrowBody = (innerExpr: string): string => {
+              const parts: string[] = [];
+              if (wantEnter) parts.push(enterLine);
+              if (wantExit) {
+                parts.push(`const ${tvName} = (${innerExpr});`);
+                parts.push(exitLine.replace('TV', tvName));
+                parts.push(`return ${tvName};`);
+              } else {
+                parts.push(`return (${innerExpr});`);
+              }
+              return `{ ${parts.join(' ')} }`;
+            };
             insertions.push({
               index: body.startIndex,
               removeTo: body.endIndex,
               site: {
                 probe: probeName + (wantEnter ? '.enter' : '.exit'),
-                // ★ 同上：一次替换同时表达 enter+exit ⇒ 另一个名字只用于记账
+                // ★ 一次替换同时表达 enter+exit ⇒ 另一个名字只用于记账
                 extraProbes: wantEnter && wantExit ? [probeName + '.exit'] : undefined,
                 file,
                 line: n.startPosition.row + 1,
                 kind: wantEnter ? 'enter' : 'exit',
                 level: 'core',
-                injected: `{ ${stmts.join(' ')} }`,
+                injected: renderArrowBody(expr),
+                template: renderArrowBody,
               },
             });
           }
