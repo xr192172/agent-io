@@ -51,6 +51,8 @@ export interface RewritePlanEntry {
    *   同时存 `order` 与 `depends_on` 就是"两处权威"，必然打架（本仓头号病）。
    */
   depends_on?: string[];
+  /** ★ 2026-10-28：落地时刻（`open → done` 自动推进时记；有它才能回看"什么时候做完的"） */
+  done_at?: string;
   /** 行号只作注记，**不参与判定** */
   note?: string;
 }
@@ -402,4 +404,40 @@ export function planChangeSet(plan: RewritePlan | null): Array<{ file: string; s
     out.push({ file, symbol: sym });
   }
   return out;
+}
+
+/**
+ * ★★★ 2026-10-28（用户："设计完后应该**坍缩成被改动的节点**" → 让它自转）：
+ * **按出口闭环的结论推进条目状态** —— 否则坍缩集永远停在"设计时的样子"：
+ * 活干完了，`status` 还是 `open` ⇒ 并发闸一直挡着已经做完的符号。
+ *
+ * ## 判据（严格三条，只推进不倒退）
+ * · `realized` 且当前 `open` ⇒ **`done`**（并记 `done_at`）；
+ * · `stale_anchor` 且当前 `open` ⇒ **`stale`**（锚点对不上 ⇒ 只标，等人看）；
+ * · 其余（`not_yet` / `unjudgeable` / 已 `done`）⇒ **不动**。
+ *
+ * ★ 为什么"只推进不倒退"：`done` 是**发生了什么**的记录（不是"现在是否满足"的判断）。
+ *   回退（`done → open`）会抹掉历史，也会让"改了又改"变成悄悄发生的事。
+ *   ⇒ 若一条 `done` 的锚点后来消失，出口闭环会报 `stale_anchor`，**读数里看得见**，但不自动改状态。
+ */
+export function syncPlanStatuses(
+  plan: RewritePlan,
+  verdicts: ReadonlyArray<{ index: number; verdict: 'realized' | 'not_yet' | 'stale_anchor' | 'unjudgeable' }>,
+  now: string = new Date().toISOString(),
+): { plan: RewritePlan; changes: Array<{ symbol: string; from: string; to: string }> } {
+  const changes: Array<{ symbol: string; from: string; to: string }> = [];
+  const entries = plan.entries.map((e, i) => {
+    const v = verdicts.find((x) => x.index === i)?.verdict;
+    const sym = e.anchor?.symbol ?? '(缺 anchor)';
+    if (e.status === 'open' && v === 'realized') {
+      changes.push({ symbol: sym, from: 'open', to: 'done' });
+      return { ...e, status: 'done' as const, done_at: now };
+    }
+    if (e.status === 'open' && v === 'stale_anchor') {
+      changes.push({ symbol: sym, from: 'open', to: 'stale' });
+      return { ...e, status: 'stale' as const };
+    }
+    return e;
+  });
+  return { plan: { ...plan, entries }, changes };
 }

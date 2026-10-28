@@ -71,6 +71,8 @@ import {
   type RewritePlanEntry,
 } from './db/rewrite_plan.js';
 import { resolveJudgementKind, symbolsInFileOf } from '../write_gate.js';
+import { syncPlanStatuses } from './db/rewrite_plan.js';
+import { checkRewriteExit } from './db/plan_exit_check.js';
 import { contentHash } from '../../infrastructure/index/symbols.js';
 
 import { importProject } from '../../infrastructure/graph/import_project.js';
@@ -488,6 +490,14 @@ export const DESIGN_TOOLS: ToolDef[] = [
             '冻结之后新增的符号仍会以"没表态"被抓）',
         ),
       untouched_why: z.string().optional().describe('★ 仅 action=plan + untouched_default：那一批"不动"的统一理由'),
+      sync_status: z
+        .boolean()
+        .optional()
+        .describe(
+          '★ 仅 action=plan：**按出口闭环推进条目状态**（realized ⇒ open→done；stale_anchor ⇒ open→stale）并写回画布。' +
+            '★ 只推进不倒退（`done` 是"发生过什么"的记录）。★ 为什么需要：不做它，坍缩集永远停在"设计时的样子"，' +
+            '并发闸会一直挡着已经做完的符号。',
+        ),
     },
     handler: wrapData(async (a) => {
       const action = (a.action as string | undefined) ?? 'report';
@@ -541,6 +551,25 @@ export const DESIGN_TOOLS: ToolDef[] = [
         const route = planTopoOrder(plan);
 
         // 写侧：给了 entries 且 apply=true ⇒ 补冻结指纹后落盘
+        // ★ 2026-10-28（坍缩集自转）：按出口闭环推进状态（只推进不倒退），并写回
+        let statusNote = '';
+        if (a.sync_status === true) {
+          const exit = checkRewriteExit(projectRoot, rel);
+          const synced = syncPlanStatuses(
+            plan,
+            exit.entries.map((x) => ({ index: x.index, verdict: x.verdict })),
+          );
+          if (synced.changes.length) {
+            writeRewritePlan(projectRoot, synced.plan);
+            statusNote =
+              `\n★ 状态推进 ${synced.changes.length} 条（出口闭环驱动）：` +
+              synced.changes.map((c) => `${c.symbol} ${c.from}→${c.to}`).join(' · ');
+            plan.entries = synced.plan.entries;
+          } else {
+            statusNote = '\n★ 状态无需推进（没有 realized / stale 的新条目）';
+          }
+        }
+
         let written = '';
         if (given && a.apply === true) {
           const abs = path.join(projectRoot, rel);
@@ -569,7 +598,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         } else {
           lines.push('', '★ 四条判据全过（想清楚了 / 看全了 / 判据能发现逻辑错 / 顺序成立）—— ★ 但全绿只是**必要条件**。');
         }
-        return { message: lines.join('\n') + written, data: { path: rel, plan, gaps, route } };
+        return { message: lines.join('\n') + written + statusNote, data: { path: rel, plan, gaps, route } };
       }
 
       if (action === 'gen-db') {

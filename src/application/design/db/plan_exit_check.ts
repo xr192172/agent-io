@@ -26,6 +26,8 @@ import { readRewritePlan, type RewritePlanEntry } from './rewrite_plan.js';
 
 /** 一条 entry 的闭环结论 */
 export interface ExitEntryVerdict {
+  /** ★ 条目在 plan.entries 里的序号（syncPlanStatuses 按它对账） */
+  index: number;
   entry: RewritePlanEntry;
   /** 该在的在 / 该没的没 */
   anchor_ok: boolean;
@@ -102,18 +104,20 @@ export function checkRewriteExit(projectRoot: string, relPath: string): ExitChec
   //   判据：`entries`（要改）+ `untouched`（看过不动）+ 紧凑声明覆盖的冻结快照 = **已表态**。
   const declaredElsewhere = new Set<string>((plan.untouched ?? []).map((u) => u.symbol).filter(Boolean));
   const frozenAll = new Set<string>(plan.symbols_at_freeze ?? []);
-  for (const e of plan.entries) {
+  for (let i = 0; i < plan.entries.length; i++) {
+    const e = plan.entries[i];
     const sym = e.anchor?.symbol ?? '';
     if (sym) planned.add(sym);
     if (e.judgement_ref?.trim()) out.judgement_ref_runs_needed.push(e.judgement_ref);
     if (names === null) {
-      out.entries.push({ entry: e, anchor_ok: false, changed_since_freeze: changed, verdict: 'unjudgeable', why: '索引不可用 ⇒ 判不了锚点' });
+      out.entries.push({ index: i, entry: e, anchor_ok: false, changed_since_freeze: changed, verdict: 'unjudgeable', why: '索引不可用 ⇒ 判不了锚点' });
       continue;
     }
     const exists = names.has(sym);
     if (e.kind === 'delete') {
       const ok = !exists;
       out.entries.push({
+        index: i,
         entry: e,
         anchor_ok: ok,
         changed_since_freeze: changed,
@@ -124,6 +128,7 @@ export function checkRewriteExit(projectRoot: string, relPath: string): ExitChec
     }
     if (!exists) {
       out.entries.push({
+        index: i,
         entry: e,
         anchor_ok: false,
         changed_since_freeze: changed,
@@ -134,6 +139,7 @@ export function checkRewriteExit(projectRoot: string, relPath: string): ExitChec
     }
     const done = changed === null ? null : changed;
     out.entries.push({
+      index: i,
       entry: e,
       anchor_ok: true,
       changed_since_freeze: changed,
