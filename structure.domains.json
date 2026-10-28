@@ -191,13 +191,6 @@
       "note": "**改 DSL 的操作原语族**：`edit_result`（编辑结果契约 ⇒ 底座）+ `node_ops` / `edge_ops` / `file_ops` / `api_ops` / `feature_ops`（各类操作的原子实现）+ `update_feature`（**聚合点**，一次 `edit_dsl` 调它串起上述操作）+ `status_tools`（状态回填）+ `annotation_tools`（人审标注）。★ 2026-10-03 从 `application/design/` 收进本域（依赖团 = edit_result）。"
     },
     {
-      "id": "design-bricks",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/design/bricks",
-      "note": "**积木族**：`brickify`（底座）/ `brick_bag`（积木盒）/ `classify_bricks`（分类）/ `cluster_narrator`（簇叙述）/ `render_brickwork`（积木墙渲染）/ `signal_review`（信号复核）/ `taxonomy`（**软件解剖学分类法** —— 自顶向下的先验骨架，与「分类」同族）。"
-    },
-    {
       "id": "design-workbench",
       "layer": "application",
       "role": "capability",
@@ -338,13 +331,6 @@
       "note": "跨项目/跨语言能力线（index.ts 即该线归属的唯一来源）：`translate_go_ts` 等工具。★ 2026-10-05（T42 方案 B 第 2b 步）：原 `project_root`（项目根自动定位 + import 动态闭包边界）已**归位**到 `infrastructure/analysis/project_root/`（另立 `project-root` 域）—— 它自身只 import infrastructure、且无模块反向 import 它，本就不属应用层。"
     },
     {
-      "id": "harvest",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/harvest",
-      "note": "积木收割线（index.ts 即该线归属的唯一来源）：`harvest_closure`（拎取闭包：internal/external/evidence）/ `extract_contracts`（契约提取：role + shapes + effects）/ `harvest_decisions`（决策卡候选补录）。★ 2026-10-05：积木盒（bricks）/ 抽取编排（harvest_from_url）/ 拼装·检索·瘦身·对账实现随用户裁定删除，设计文档保留在 docs/。"
-    },
-    {
       "id": "rf-rename-symbol",
       "layer": "infrastructure",
       "role": "analysis",
@@ -371,13 +357,6 @@
       "role": "capability",
       "dir": "src/presentation/mcp",
       "note": "MCP 接入面：`server` = stdio MCP 入口 / `server_registry` = 工具注册表（★ **工具 → 线归属的唯一事实源**，`LANE_SOURCES` 把各 `application/<线>/index.ts` 接到线 id）/ `lifecycle` = 长驻 server 的进程级稳定性兜底（unhandledRejection 保活；uncaughtException/SIGINT 先清 watch 句柄 + SQLite 锁再退出）/ `tool_warnings` = 跨工具告警的结构化通道 + 两级呈现（首次全文、之后摘要）。"
-    },
-    {
-      "id": "archify-r5",
-      "layer": "presentation",
-      "role": "capability",
-      "dir": "src/presentation/http/archify",
-      "note": "R5 Archify 渲染线（**已挂起，暂不开发**）：`archify_semantics`（编辑 IR 树 → 语义面）/ `archify_mappers`（语义面 → 各类图的官方 candidate）/ `archify_pipeline`（语义面 → 各类图各一张；validate 不达 showcase 只回诊断、**绝不造几何**）/ `archify_project`（编辑 IR 树 ↔ Archify 数据层契约适配 + 视觉令牌，只读非投影）。★ 2026-10-06 归位：`archify_runner`（Archify 官方命令的进程封装 —— validate / deliver）从 `presentation/cli/` 搬进本域并改名 —— 它**不是命令**（无 argv、只有导出函数），原先住在 `cli-surface`（那条规则是「每个文件 = 一条命令」）是**错位**；其唯一消费者就是同域的 `archify_pipeline`。★ 对外端点 `POST /api/archify-demo` 在 `presentation/http/serve.ts`。★ **中性数据层 `view_inputs.ts` 也归本域**（README + 架构规划书 §11.5 钦定保留；`src` 内零 importer，消费者是**外仓** dsl-workbench 前端 ⇒ **按依赖亲和归类，不按 importer 数**）。"
     },
     {
       "id": "behavior",
@@ -427,6 +406,27 @@
       "role": "capability",
       "dir": "src/infrastructure/authoring/version_upgrade",
       "note": "版本升级契约差检测与改写（静态门 / 动态门 / 语言适配器表）。★ 2026-10-05 从 `analysis/version_upgrade` 搬来 —— 同上，它改写代码"
+    },
+    {
+      "id": "design-db",
+      "layer": "application",
+      "role": "capability",
+      "dir": "src/application/design/db",
+      "note": "设计侧派生层：设计册 → design-db 投影；重写计划（画布）与出口闭环、判据执行（rewrite_plan / plan_exit_check / judgement_run）"
+    },
+    {
+      "id": "design-line",
+      "layer": "application",
+      "role": "capability",
+      "dir": "src/application/design/line",
+      "note": "设计链读数与设计 diff（report / rewrite 只拉签名 / 变更对比）"
+    },
+    {
+      "id": "design-rewrite",
+      "layer": "application",
+      "role": "capability",
+      "dir": "src/application/design/rewrite",
+      "note": "设计侧重写：签名层重写与符号 diff（rewrite / symbol_diff）"
     }
   ],
   "flatDirs": [
