@@ -242,6 +242,7 @@ const SEMANTIC_KINDS = new Set([
   'run',
   'domain-independent',
   'cert', // ★ 2026-10-28：一张证跑的是行为断言 ⇒ 能发现真错
+  'runtime', // ★ L3：真链路/静默吞错/重试 —— 逻辑错最容易在这里现形
 ]);
 const EXISTENCE_KINDS = new Set(['file-exists', 'source-has', 'symbol-exists', 'signature-matches']);
 

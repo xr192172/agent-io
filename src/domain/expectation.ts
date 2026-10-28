@@ -72,6 +72,26 @@ export type Expectation =
    */
   | { kind: 'cert'; cert: string; case?: string; why: string }
   /**
+   * ★★★ 2026-10-28（T-#OBSERVE-1）：**运行时判据** —— 自动化测试框架的 **L3 层**。
+   *
+   * ## 为什么非有它不可
+   * 现有 11 种判据只覆盖两层：
+   * · **L1 静态**（存在 / 签名 / 依赖边 / 调用 / 文本）—— 看的是"写成了什么"；
+   * · **L2 行为**（`behavior-cases`，同进程跑函数比输出）—— 看的是"函数返回什么"。
+   * 而 **L3 运行时**没人在看：**真进程 / 真链路 / 静默吞错 / 重试** ——
+   * `behavior-cases` 看不到"一次请求实际走了哪条链"，也看不到"错误被 catch 后没抛没记"。
+   * 那些事实只存在于**探针事件**（`events*.jsonl`）里，也就是观察线采到的东西。
+   *
+   * ## 判据（零配置）
+   * `probe` 必填（探针名，如 `fn.exit` / `io.call`）；`events` 可选（缺省**自动找**
+   * `<root>/.agent/observe/events*.jsonl`，取最新一份）；`expect` 三态：
+   * · `'ok'`（默认）= 该 probe 的每条事件判定都必须是 ok；
+   * · `'deviation'` = 至少一条必须是偏差（**反例用法**：证明这条规则真的能抓到东西）；
+   * · `'absent'` = 该 probe **一条都不许出现**。
+   * 找不到事件文件 / 文件里一条事件都没有 ⇒ `unsupported`（**判不了 ≠ 通过**）。
+   */
+  | { kind: 'runtime'; probe: string; expect?: 'ok' | 'deviation' | 'absent'; events?: string; why: string }
+  /**
    * ★★ 2026-10-09（T79）：**调用级**判据 —— 「`path` 里的 `symbol` 必须调用 `target`」。
    *
    * ## 为什么非有它不可（实测）
@@ -159,6 +179,7 @@ export type Expectation =
     };
 
 export const EXPECTATION_KINDS = [
+  'runtime',
   'cert',
   'domain-independent','file-exists', 'symbol-exists', 'signature-matches', 'edge-exists', 'edge-absent', 'call-exists', 'run', 'source-has', 'behavior-cases'] as const;
 
@@ -213,6 +234,7 @@ const PHASE_BY_KIND: Record<Expectation['kind'], ExpectationPhase> = {
   'edge-absent': 'pre', // ★ 前态判据：A 不许依赖 B —— 未施工时天然成立
   'domain-independent': 'pre', // ★ 同上，只是粒度从文件对升到**域对**（T-#DOMAIN-2）
   cert: 'post', // ★ 证判据：跑一张证取结论 ⇒ 后态（T-#CERT-1）
+  runtime: 'post', // ★ 运行时判据：跑起来才有事件 ⇒ 后态（T-#OBSERVE-1）
   'behavior-cases': 'post', // ★ 行为契约：跑起来才有输出可比 ⇒ 后态（与 run 同理）
   'call-exists': 'post',
 };
@@ -257,6 +279,7 @@ export function describeExpectation(e: Expectation): string {
     case 'edge-absent': return `edge-absent  ${normPath(e.from)} ⇸ ${normPath(e.to)}`;
     case 'domain-independent': return `domain-independent  ${e.domain} ⇸ ${e.must_not_import.join(' / ')}`;
     case 'cert': return `cert  ${e.cert}${e.case ? `#${e.case}` : ''}`;
+    case 'runtime': return `runtime  ${e.probe}  expect=${e.expect ?? 'ok'}`;
     case 'call-exists': return `call-exists  ${normPath(e.path)} :: ${e.symbol}() → ${e.target}()`;
     case 'run': return `run  ${String(e.expect).slice(0, 70)}`;
     case 'source-has': return `source-has  ${normPath(e.path)} :: must ${(e.must ?? []).length} / mustNot ${(e.mustNot ?? []).length}`;
@@ -286,6 +309,13 @@ export function assertValidExpectations(v: unknown): asserts v is Expectation[] 
     else if (kind === 'signature-matches') { need('path'); need('symbol'); need('signature'); }
     else if (kind === 'call-exists') { need('path'); need('symbol'); need('target'); }
     else if (kind === 'run') { need('expect'); }
+    else if (kind === 'runtime') {
+      // ★ 运行时判据：probe 必填；expect 只能取三态
+      need('probe');
+      if (o.expect !== undefined && !['ok', 'deviation', 'absent'].includes(String(o.expect))) {
+        throw new Error(`${at}.expect 只能是 ok / deviation / absent（kind=runtime）`);
+      }
+    }
     else if (kind === 'cert') {
       // ★ 证判据：证名必填（= certs/ 下文件名前缀）；case 可选（结论行里的用例标记）
       need('cert');
@@ -355,6 +385,8 @@ export function expectationSubjectPath(e: Expectation): string {
   if (e.kind === 'domain-independent') return '';
   // ★ 证判据的主体是**一张证**（`certs/<name>*.mjs`），不是某个源文件
   if (e.kind === 'cert') return '';
+  // ★ 运行时判据的主体是**事件流**（探针写出来的），不是某个源文件
+  if (e.kind === 'runtime') return '';
   if (e.kind === 'source-has') return normPath(e.path);
   return normPath(e.kind === 'edge-exists' || e.kind === 'edge-absent' ? e.from : e.path);
 }
@@ -365,6 +397,7 @@ export function expectationPaths(e: Expectation): string[] {
   if (e.kind === 'run') return [];
   if (e.kind === 'domain-independent') return []; // 域 → 文件集由求值器展开
   if (e.kind === 'cert') return []; // 证不牵动本项目源码
+  if (e.kind === 'runtime') return []; // 事件流不牵动本项目源码路径
   if (e.kind === 'source-has') return [normPath(e.path)];
   return e.kind === 'edge-exists' || e.kind === 'edge-absent' ? [normPath(e.from), normPath(e.to)] : [normPath(e.path)];
 }

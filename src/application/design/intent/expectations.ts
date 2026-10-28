@@ -33,6 +33,8 @@ import { normPath, normSignature, type Expectation } from '../../../domain/expec
 import { loadJudgeCache, saveJudgeCache, judgeCacheKey } from './judge_cache.js';
 // ★ 工作项 L（2026-10-24）：行为契约的执行核 —— 复用 behavior 基建（与 capture/verify 同一条执行路径）
 import { runHarness, type BehaviorSpec } from '../../../infrastructure/authoring/behavior/index.js';
+// ★ 2026-10-28（T-#OBSERVE-1）：运行时判据要用**同一套**事件判定规则（不另写一份）
+import { judgeEvent } from '../../../infrastructure/analysis/observe/judge.js';
 // ★ 2026-10-21（D-judge-port）：判定器的**形状**住 domain（端口 = `domain/judge_port.ts`），本文件只实现
 //   「怎么判」。★ 这不是第二把尺 —— 除了本文件，全仓没有第二个 `judgeExpectations`。
 import type {
@@ -528,6 +530,99 @@ export async function judgeExpectations(
         }
         break;
       }
+      // ★★★ 2026-10-28（T-#OBSERVE-1）：**运行时判据（L3）** —— 自动化测试框架的最后一层。
+      //   现有判据只到 L2（`behavior-cases` 同进程跑函数）；"真链路 / 静默吞错 / 重试"只存在于探针事件里。
+      //   判据：`probe` 必填；`events` 可选（缺省**自动找** `<root>/.agent/observe/events*.jsonl` 取最新）；
+      //   `expect`：ok（默认，每条都 ok）/ deviation（至少一条偏差，反例用法）/ absent（一条都不许出现）。
+      //   四态：找不到事件文件 / 文件里一条事件都没有 ⇒ `unsupported`（**判不了 ≠ 通过**）。
+      case 'runtime': {
+        // ① 找事件文件：显式 path 优先，否则自动发现（零配置）
+        let eventsFile: string | null = null;
+        if (e.events) {
+          const p = path.isAbsolute(e.events) ? e.events : path.join(root, normPath(e.events));
+          if (fs.existsSync(p)) eventsFile = p;
+        } else {
+          const dirs = [path.join(root, '.agent', 'observe'), path.join(root, '.agentio-data', 'observe')];
+          const cands: Array<{ f: string; m: number }> = [];
+          for (const d of dirs) {
+            if (!fs.existsSync(d)) continue;
+            for (const f of fs.readdirSync(d)) {
+              if (!/^events.*\.jsonl$/.test(f)) continue;
+              const full = path.join(d, f);
+              try {
+                cands.push({ f: full, m: fs.statSync(full).mtimeMs });
+              } catch {
+                /* 读不到就跳过 */
+              }
+            }
+          }
+          cands.sort((x, y) => y.m - x.m);
+          eventsFile = cands[0]?.f ?? null;
+        }
+        if (!eventsFile) {
+          push(it, 'unsupported', '找不到探针事件文件（`.agent/observe/events*.jsonl`）⇒ 运行时判不了（不是"没问题"）');
+          break;
+        }
+        // ② 读事件（坏行跳过，与 observe 线同口径）
+        const evs: Array<Record<string, unknown>> = [];
+        try {
+          for (const line of fs.readFileSync(eventsFile, 'utf8').split('\n')) {
+            if (!line.trim()) continue;
+            try {
+              const o = JSON.parse(line) as Record<string, unknown>;
+              if (typeof o.probe === 'string') evs.push(o);
+            } catch {
+              /* 坏行跳过 */
+            }
+          }
+        } catch (err) {
+          push(it, 'unsupported', `事件文件读不了 ⇒ 判不了：${(err as Error).message}`);
+          break;
+        }
+        if (!evs.length) {
+          push(it, 'unsupported', `事件文件 \`${path.basename(eventsFile)}\` 里一条事件都没有 ⇒ 判不了（空 ≠ 没问题）`);
+          break;
+        }
+        // ③ 只留该 probe 的事件
+        const hit = evs.filter((x) => String(x.probe) === e.probe);
+        const want = (e.expect ?? 'ok') as 'ok' | 'deviation' | 'absent';
+        if (want === 'absent') {
+          push(
+            it,
+            hit.length === 0 ? 'pass' : 'fail',
+            hit.length === 0
+              ? `probe ${e.probe} 一条都没出现（符合预期：不许出现）`
+              : `probe ${e.probe} **不该出现**，但出现了 ${hit.length} 条（如 ${JSON.stringify(hit[0]).slice(0, 120)}）`,
+          );
+          break;
+        }
+        if (!hit.length) {
+          push(it, 'unsupported', `事件文件里没有 probe=${e.probe} 的记录 ⇒ 判不了（可能是没跑到 / 没插桩）`);
+          break;
+        }
+        // ④ 逐条判定
+        const verdicts = hit.map((ev) => judgeEvent(ev as never));
+        const bad = verdicts.filter((v) => v.result === 'deviation');
+        if (want === 'deviation') {
+          push(
+            it,
+            bad.length > 0 ? 'pass' : 'fail',
+            bad.length > 0
+              ? `probe ${e.probe}：${hit.length} 条里有 ${bad.length} 条偏差（符合反例预期），如：${bad[0].reason.slice(0, 120)}`
+              : `probe ${e.probe}：${hit.length} 条全是 ok ⇒ **反例没成立**（这条判据没在测任何东西）`,
+          );
+          break;
+        }
+        push(
+          it,
+          bad.length === 0 ? 'pass' : 'fail',
+          bad.length === 0
+            ? `probe ${e.probe}：${hit.length} 条运行时事件全 ok（规则：${verdicts[0]?.rule ?? '?'}）`
+            : `probe ${e.probe}：${bad.length}/${hit.length} 条偏差 —— ${bad[0].rule}：${bad[0].reason.slice(0, 140)}`,
+        );
+        break;
+      }
+
       // ★★★ 2026-10-28（T-#CERT-1 · "能不能吸收进设计侧"）：**证判据** ——
       //   跑一张 `certs/*.mjs` 并读它的结论行。★ 副作用留在**证的进程**里（证自己建临时夹具），
       //   判据侧仍然只读 ⇒ 不破坏 `run` 那条"不许副作用"的边界。
