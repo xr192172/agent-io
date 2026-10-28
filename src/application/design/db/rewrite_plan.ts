@@ -84,6 +84,13 @@ export interface RewritePlan {
    * 用了它就必须同时记 `symbols_at_freeze`（冻结那一刻的符号全集）。**快照之后出现的符号**不在里面
    * ⇒ 判据仍会报"有新符号 ⇒ 重新通读并重新冻结"。⇒ 紧凑只省**打字**，不省**理解**。
    */
+  /**
+   * ★★★ 2026-10-28（用户："任务卡应该挂在**画布**和**探索后的改集**上"）：
+   * **这张画布属于哪张任务卡**。一个任务天然跨文件 ⇒ 一张卡可以有**多份**画布，
+   * 卡的改集 = 这些画布**坍缩集的并集**（见 `planChangeSetOfCard`）。
+   * ★ 只认这个显式字段来归属 —— **不按目录/文件名猜**（路径前缀判据是本仓头号病根）。
+   */
+  card?: string;
   untouched_default?: { why: string };
   /** 冻结那一刻的**顶层符号全集**（`untouched_default` 的牙齿：新符号不在其中就会被抓） */
   symbols_at_freeze?: string[];
@@ -440,4 +447,73 @@ export function syncPlanStatuses(
     return e;
   });
   return { plan: { ...plan, entries }, changes };
+}
+
+/**
+ * ★★★ 2026-10-28（用户："任务卡挂单文件节点是不是不太对，后续应该挂在**画布**和**探索后的改集**上"）：
+ * **一张卡可以拥有多份画布** —— 卡的改集 = 这些画布**坍缩集的并集**（跨文件）。
+ *
+ * ## 为什么这是对的
+ * 一个任务天然跨文件（例："加一条判据" = `rewrite_plan.ts` + `write_gate.ts` + 证）。
+ * 但现在的卡挂在**一个 DSL 节点**上，节点又是**单文件**的 ⇒ 卡的粒度被文件粒度绑死，
+ * 读集只能覆盖"节点指到的那一份"，其余文件既不进并发比对、也不进"看全了吗"的判据。
+ *
+ * ## 判据（怎么找"这张卡的画布"）
+ * 扫 `plan/` 下所有 `*.plan.json`，取 `card === cardId` 的那些。**只认显式归属** ——
+ * 不按目录/文件名猜（那正是本仓头号病根"路径前缀判据"）。
+ */
+export function planFilesForCard(projectRoot: string, cardId: string): string[] {
+  const dir = planDir(projectRoot);
+  const out: string[] = [];
+  const walk = (d: string): void => {
+    let names: string[];
+    try {
+      names = fs.readdirSync(d);
+    } catch {
+      return;
+    }
+    for (const n of names) {
+      const p = path.join(d, n);
+      let st: fs.Stats;
+      try {
+        st = fs.statSync(p);
+      } catch {
+        continue;
+      }
+      if (st.isDirectory()) {
+        walk(p);
+        continue;
+      }
+      if (!n.endsWith('.plan.json')) continue;
+      try {
+        const j = JSON.parse(fs.readFileSync(p, 'utf-8')) as RewritePlan;
+        if (j.card === cardId) out.push(String(j.path ?? '').split(path.sep).join('/'));
+      } catch {
+        // 坏文件不影响别的画布（读侧另有 `readRewritePlan` 如实报坏）
+      }
+    }
+  };
+  walk(dir);
+  return [...new Set(out)].sort();
+}
+
+/**
+ * **这张卡的改集**（跨文件）= 它名下所有画布坍缩集的并集。
+ * @returns 去重后的 `{file, symbol}[]`；卡没有任何画布 ⇒ 空数组（**如实空**，不猜）
+ */
+export function planChangeSetOfCard(
+  projectRoot: string,
+  cardId: string,
+): Array<{ file: string; symbol: string }> {
+  const seen = new Set<string>();
+  const out: Array<{ file: string; symbol: string }> = [];
+  for (const rel of planFilesForCard(projectRoot, cardId)) {
+    for (const c of planChangeSet(readRewritePlan(projectRoot, rel))) {
+      const key = `${c.file}#${c.symbol}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(c);
+    }
+  }
+  return out;
 }

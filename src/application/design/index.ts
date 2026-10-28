@@ -71,7 +71,7 @@ import {
   type RewritePlanEntry,
 } from './db/rewrite_plan.js';
 import { resolveJudgementKind, symbolsInFileOf } from '../write_gate.js';
-import { syncPlanStatuses } from './db/rewrite_plan.js';
+import { syncPlanStatuses, planChangeSetOfCard } from './db/rewrite_plan.js';
 import { checkRewriteExit } from './db/plan_exit_check.js';
 import { contentHash } from '../../infrastructure/index/symbols.js';
 
@@ -490,6 +490,13 @@ export const DESIGN_TOOLS: ToolDef[] = [
             '冻结之后新增的符号仍会以"没表态"被抓）',
         ),
       untouched_why: z.string().optional().describe('★ 仅 action=plan + untouched_default：那一批"不动"的统一理由'),
+      card: z
+        .string()
+        .optional()
+        .describe(
+          '★ 仅 action=plan：**这张画布属于哪张任务卡**（一个任务天然跨文件 ⇒ 一张卡可以有多份画布）。' +
+            '★ 卡的改集 = 它名下所有画布坍缩集的并集（`planChangeSetOfCard`）⇒ 并发闸才看得见全部文件。',
+        ),
       sync_status: z
         .boolean()
         .optional()
@@ -519,6 +526,8 @@ export const DESIGN_TOOLS: ToolDef[] = [
               path: rel,
               entries: given,
               ...(Array.isArray(a.untouched) ? { untouched: a.untouched as RewritePlan['untouched'] } : {}),
+              // ★ 2026-10-28：卡号随画布落盘（卡级改集的唯一归属凭证；只读模式沿用已存的）
+              ...(typeof a.card === 'string' && a.card.trim() ? { card: a.card.trim() } : {}),
               ...(compact
                 ? {
                     untouched_default: { why: String(a.untouched_why ?? '本轮只改 entries 里那几处') },
@@ -589,6 +598,15 @@ export const DESIGN_TOOLS: ToolDef[] = [
         const lines = [
           `重写计划 · ${rel} · ${plan.entries.length} 条改动 · ${(plan.untouched ?? []).length} 条"看过不动"`,
           route ? `  路线（拓扑序）：${route.join(' → ')}` : '  路线：**成环 ⇒ 不成立**（见缺口）',
+          ...(plan.card
+            ? [
+                `  卡 \`${plan.card}\` 的**改集**（名下全部画布坍缩集的并集，跨文件）：` +
+                  (() => {
+                    const cs = planChangeSetOfCard(projectRoot, plan.card);
+                    return cs.length ? cs.map((c) => `${c.file}#${c.symbol}`).join(' · ') : '（空 —— 已全部 done）';
+                  })(),
+              ]
+            : []),
         ];
         for (const e of plan.entries) {
           lines.push(`    · ${e.kind}:${e.anchor?.symbol ?? '(缺 anchor)'}  [${e.status}]${e.depends_on?.length ? ` ⤴ ${e.depends_on.join(',')}` : ''}`);

@@ -64,7 +64,7 @@ import type {
 } from '../domain/task_schema.js';
 import { todosForNode } from '../domain/task_schema.js';
 // ★ 2026-10-28：读集可来自**画布坍缩集**（判据唯一实现在 rewrite_plan.ts，这里只调用）
-import { readRewritePlan, planChangeSet } from './design/db/rewrite_plan.js';
+import { readRewritePlan, planChangeSet, planChangeSetOfCard } from './design/db/rewrite_plan.js';
 import { listDesignSheets } from '../infrastructure/storage.js';
 import { toIndexKey } from '../infrastructure/index/symbols.js';
 import { loadFileFacts, type FactsCache } from './read_set.js';
@@ -232,12 +232,27 @@ export function computeClaimReadSet(input: ClaimReadSetInput): ClaimReadSetResul
   //   优先级：显式声明（人当场拍板）→ **画布坍缩集**（设计产物，最准）→ 判据点名 → 整文件兜底。
   //   ★ 只用坍缩集（`status !== 'done'` 的符号），**不用展开态**：否则「我只是看过」也会被算成争用，
   //     两张卡明明不打架却被判冲突 —— 假阻塞比漏判更打击积极性。
-  const canvasPath = typeof input.node?.path === 'string' ? input.node.path.trim() : '';
-  if (canvasPath) {
-    try {
-      for (const c of planChangeSet(readRewritePlan(root, canvasPath))) addSymbol(c.file, c.symbol, 'canvas');
-    } catch {
-      // 画布坏了 ⇒ 如实跳过这一级（判据与节点兜底仍在；不因它把 claim 拖死）
+  // ★ 2026-10-28（用户："任务卡应该挂在**画布**和**探索后的改集**上"）：
+  //   卡的改集 = **它名下所有画布**坍缩集的并集（跨文件）；不再只用"节点 path 那一份"。
+  //   一张卡跨 3 个文件 ⇒ 3 份画布都算占位；否则并发闸对另外 2 个文件是瞎的。
+  let canvasHit = 0;
+  try {
+    for (const c of planChangeSetOfCard(root, input.cardId)) {
+      addSymbol(c.file, c.symbol, 'canvas');
+      canvasHit++;
+    }
+  } catch {
+    // 卡级扫描失败 ⇒ 不拖死 claim（下面还有单文件与判据兜底）
+  }
+  // 回落：卡没登记任何画布时，仍试**节点自己那份**（兼容"一张卡一个节点一份画布"的旧用法）
+  if (!canvasHit) {
+    const canvasPath = typeof input.node?.path === 'string' ? input.node.path.trim() : '';
+    if (canvasPath) {
+      try {
+        for (const c of planChangeSet(readRewritePlan(root, canvasPath))) addSymbol(c.file, c.symbol, 'canvas');
+      } catch {
+        // 画布坏了 ⇒ 如实跳过这一级（判据与节点兜底仍在）
+      }
     }
   }
 
