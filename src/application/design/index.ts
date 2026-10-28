@@ -553,7 +553,11 @@ export const DESIGN_TOOLS: ToolDef[] = [
         // 写侧：给了 entries 且 apply=true ⇒ 补冻结指纹后落盘
         // ★ 2026-10-28（坍缩集自转）：按出口闭环推进状态（只推进不倒退），并写回
         let statusNote = '';
-        if (a.sync_status === true) {
+        // ★ 2026-10-28：**只读模式下默认推进**（`sync_status` 缺省 = !given）。
+        //   理由：推进是"只前进不倒退"的低风险动作；而**刚写进去的新计划不该被自动改**
+        //   （调用方写 entries 时说的是"我要做这些"，不是"这些已经做完了"）。
+        const syncStatus = a.sync_status === true || (a.sync_status === undefined && !given);
+        if (syncStatus) {
           const exit = checkRewriteExit(projectRoot, rel);
           const synced = syncPlanStatuses(
             plan,

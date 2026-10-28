@@ -1290,6 +1290,7 @@ export function assertSourceWriteRegistered(
     );
   }
   let ac: AssumptionCheck;
+  let canvasStale: string[] = [];
   try {
     // ★ 2026-10-28（用户提议 → 落地）：把**画布冻结指纹**一并交给检定 ——
     //   读集要求"有人读过"（没读过就 checked:0，等于不设防）；画布是**显式冻结**的，恒有判据。
@@ -1308,6 +1309,19 @@ export function assertSourceWriteRegistered(
   } catch (e) {
     // ★ 检定是增强，不许把写入拖下水；但也**不许静默** ⇒ 读数里带 error。
     ac = { checked: 0, stale: [], readers: 0, error: (e as Error).message };
+  }
+  // ★ 2026-10-28（T-#RP-2 收尾）：**严格档下"画布过期"要拦** —— 严格档本来就是人开的，
+  //   开了还放过"你的计划是对着旧内容写的"，那严格档等于没开。默认档仍**只报不拦**（口径不变）。
+  canvasStale = (ac.stale ?? []).filter((s) => s.via === 'canvas').map((s) => String(s.file));
+  if (canvasStale.length && process.env.AGENT_IO_REQUIRE_PLAN === '1') {
+    throw new Error(
+      `拒绝落盘（画布过期）：这次要改的 ${canvasStale.length} 个文件，**内容已经不是画布冻结时那一版** —— ` +
+        `${canvasStale.join(', ')}\n` +
+        `★ 本仓纪律：画布冻结的 \`base.content_hash\` 变了 ⇒ 你**对着旧内容写的计划**，先重读再改（否则就是覆盖率最高的那种错）。\n` +
+        `★ 怎么办：① 重读这些文件（确认现在的样子）；② \`design_line { action:'plan', file:'<rel>', sync_status:true }\` ` +
+        `重跑闭环并刷新快照；③ 若计划本身要改 ⇒ 带新 \`entries\` 再从 \`apply:true\` 落盘。\n` +
+        `★ 关掉严格档：不设 \`AGENT_IO_REQUIRE_PLAN=1\` 即只报不拦（回执里仍会看到这一行）。`,
+    );
   }
   return {
     ...out,
