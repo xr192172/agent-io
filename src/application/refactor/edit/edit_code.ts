@@ -542,6 +542,29 @@ function planExitNote(projectRoot: string, relPath: string): string {
   }
 }
 
+/**
+ * ★★★ 2026-10-28（用户提议"读集限制改成画布限制" → 落地）：**画布/读集过期的一行读数**。
+ *
+ * ## 为什么它必须出现在回执里（实测病灶）
+ * `edit_code` 用旧 body **覆盖了我 4 分钟前刚加的修复**，回执只说"文件符号: 20 → 20" ——
+ * 一个字都没提"你覆盖了别人的改动"。⇒ 读数为真但**没进人眼**，等于没有。
+ *
+ * ## 判据
+ * `assumption.stale` 非空 ⇒ 出一行（**`via=canvas` 的排前面**：那是"你冻结的版本已经变了"，
+ * 比"某人读的东西变了"更该先看）。空 ⇒ 闭嘴（不制造假警报）。
+ */
+function assumptionNote(gateOut: GateReceipt | undefined): string {
+  const stale = gateOut?.assumption?.stale ?? [];
+  if (!stale.length) return '';
+  const byCanvas = stale.filter((s) => s.via === 'canvas');
+  const head = byCanvas.length
+    ? `★ **画布冻结的版本已经变了**（${byCanvas.length} 个文件）：${byCanvas.map((s) => s.file).join(', ')} ⇒ 你的计划是对着旧内容写的，先重读再改`
+    : '';
+  const rest = stale.filter((s) => s.via !== 'canvas');
+  const tail = rest.length ? `\n★ 另有 ${rest.length} 处读集过期（${rest.slice(0, 2).map((s) => `${s.file}${s.symbol ? '#' + s.symbol : ''}`).join(', ')}…）` : '';
+  return `\n${head}${tail}`;
+}
+
 async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise<{ message: string; data?: unknown }> {
   const { op } = args;
   const projectRoot = path.resolve(args.project_dir);
@@ -696,7 +719,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     return {
       message:
         `✓ 已替换 ${relPath} 的 ${args.symbol} body（L${body.startLine}-${body.endLine}），` +
-        `签名与大括号保留，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${preview}` + planExitNote(projectRoot, relPath),
+        `签名与大括号保留，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${preview}` + planExitNote(projectRoot, relPath) + assumptionNote(gateOut),
     };
   }
 
@@ -758,7 +781,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
       message:
         `✓ range 编辑 ${relPath} L${start}-L${end}（${count} 行 → ${aligned.length} 行），` +
         `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}\n${preview}` +
-        planExitNote(projectRoot, relPath),
+        planExitNote(projectRoot, relPath) + assumptionNote(gateOut),
     };
   }
 
@@ -804,7 +827,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
       message:
         `✓ replace_text ${relPath} L${plan.hit.start_line}（${plan.matchedLineCount} 行 → ${plan.hit.new_lines} 行，` +
         `匹配 L${plan.hit.level}·${plan.hit.label}）${plan.levelNote}，` +
-        `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${plan.preview}` + planExitNote(projectRoot, relPath),
+        `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${plan.preview}` + planExitNote(projectRoot, relPath) + assumptionNote(gateOut),
       data: { hit: plan.hit, index_synced: sync.status, ...(sync.symbol_diff ? { symbol_diff: sync.symbol_diff } : {}) },
     };
   }
@@ -969,7 +992,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     return {
       message:
         `✓ 已删除 ${relPath} 的 ${delSym}（L${lineOp.startIdx + 1} 起 ${lineOp.count} 行），` +
-        `符号 ${before} → ${after}，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}` + planExitNote(projectRoot, relPath),
+        `符号 ${before} → ${after}，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}` + planExitNote(projectRoot, relPath) + assumptionNote(gateOut),
     };
   }
   if (op === 'insert') {
@@ -992,7 +1015,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     message:
       `✓ 已替换 ${relPath} 的 ${args.symbol}（原 L${lineOp.startIdx + 1}-${lineOp.startIdx + lineOp.count}，` +
       `${lineOp.count} 行 → ${lineOp.insert.length} 行），索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}\n` +
-      `文件符号: ${before} → ${after}` + planExitNote(projectRoot, relPath),
+      `文件符号: ${before} → ${after}` + planExitNote(projectRoot, relPath) + assumptionNote(gateOut),
   };
 }
 

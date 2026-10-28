@@ -96,7 +96,8 @@ export interface StaleAssumption {
   /** 读的时间（ISO） */
   read_at: string;
   /** ★ Dependency 层命中：`via` = 变化来自"读过的符号所依赖的符号" */
-  via?: 'dependency';
+  /** ★ 2026-10-28：canvas = 这条来自**画布冻结指纹**（不是某个 agent 的读集） */
+  via?: 'dependency' | 'canvas';
   /** `via=dependency` 时：读者读的那个符号 */
   via_symbol?: string;
 }
@@ -565,6 +566,20 @@ export function checkAssumptions(input: {
   projectRoot: string;
   files: readonly string[];
   targets?: readonly AssumptionTarget[];
+  /**
+   * ★★★ 2026-10-28（用户提议："读集限制改成画布限制"）：**画布冻结指纹**。
+   *
+   * ## 为什么它比读集更靠得住
+   * 读集的前提是"有人**读过**"（`ReadSetEntry` 由读工具登记）⇒ 没读过就 `checked:0`，
+   * 于是"用旧认知覆盖别人刚写的代码"**零提示**（实测：`edit_code` 用旧 body 覆盖了 4 分钟前的修复，
+   * 回执只说"文件符号 20 → 20"）。
+   * 画布的 `base.content_hash` 是**显式冻结**的（写计划那一刻），不依赖"你读没读" ⇒ 判据恒成立。
+   *
+   * ## 判据（一条）
+   * 该文件**当前内容哈希** ≠ 画布冻结时的哈希 ⇒ 一条 `stale`（`via:'canvas'`、`reader:'canvas'`）。
+   * ★ 与读集那一路**并列**（不是替换）：读集管"我读到的还是不是现在这版"，画布管"我计划的是什么版本"。
+   */
+  canvas?: ReadonlyArray<{ file: string; content_hash: string }>;
 }): AssumptionCheck {
   const root = path.resolve(input.projectRoot);
   const rels = new Set<string>();
@@ -660,6 +675,25 @@ export function checkAssumptions(input: {
           });
         }
       }
+    }
+  }
+
+  // ── 画布一路（与读集并列；不依赖"有没有人读过"）──────────────────
+  for (const c of input.canvas ?? []) {
+    const rel = toIndexKey(root, c.file);
+    if (!rel) continue;
+    const facts = loadFileFacts(root, rel, cache);
+    checked++;
+    if (facts.file_fp && facts.file_fp !== c.content_hash) {
+      pushStale({
+        symbol: null,
+        file: rel,
+        reader: 'canvas', // ★ 读者标成 canvas：一眼看出这条来自画布，不是某个 agent 的读集
+        read_fp: shortFp(c.content_hash),
+        now_fp: shortFp(facts.file_fp),
+        read_at: new Date().toISOString(),
+        via: 'canvas',
+      });
     }
   }
 

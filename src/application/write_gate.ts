@@ -1291,10 +1291,19 @@ export function assertSourceWriteRegistered(
   }
   let ac: AssumptionCheck;
   try {
+    // ★ 2026-10-28（用户提议 → 落地）：把**画布冻结指纹**一并交给检定 ——
+    //   读集要求"有人读过"（没读过就 checked:0，等于不设防）；画布是**显式冻结**的，恒有判据。
+    const canvas = inRootRels
+      .map((rel) => {
+        const hash = readRewritePlan(path.resolve(projectRoot), rel)?.base?.content_hash;
+        return hash ? { file: rel, content_hash: hash } : null;
+      })
+      .filter((x): x is { file: string; content_hash: string } => !!x);
     ac = checkAssumptions({
       projectRoot,
       files,
       targets: opts?.symbols,
+      canvas,
     });
   } catch (e) {
     // ★ 检定是增强，不许把写入拖下水；但也**不许静默** ⇒ 读数里带 error。
