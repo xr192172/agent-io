@@ -70,6 +70,18 @@ export interface BookSymbol {
   scope: 'exported' | 'internal';
   origin: 'source' | 'added';
   state: string;
+  /**
+   * ★★★ 2026-10-28：**源侧事实的原文尾巴**（不参与状态机，纯投影）。
+   *
+   * 为什么加：设计侧曾栽在"漏字段漏边"上（实际侧加了字段，设计侧没跟上）。
+   * 翻译侧现在要守同一条不变量：**没有人工内容时，册子 ≡ 实际侧**（一个字段、一条边都不许丢）。
+   * ⇒ 签名原文（`sig`）、文档（`doc`）、片段边界（`end_line`）、以及**引用边**（`refs`）都必须在册里。
+   */
+  sig?: string | null;
+  doc?: string | null;
+  end_line?: number | null;
+  /** 源侧发出的引用边（call / type_ref）：`to` = 目标节点 id（跨文件全限定），`line` = 源侧行号 */
+  refs?: Array<{ to: string; kind: string; line: number | null }>;
   note?: string;
   /**
    * ★ I3 翻译 DSL 段：**映射判据**（per-symbol）—— 复用 `domain/expectation.ts` 的既有 kinds，
@@ -160,9 +172,21 @@ interface NodeRow {
   id: string;
   kind: string;
   name: string;
+  /** ★ 2026-10-28：跨包消歧用（同名的不同包符号靠它区分） */
+  qualified_name: string | null;
+  /** ★ 2026-10-28：语言列也读进来（册子要能自证"这条事实是 go 的"） */
+  language: string | null;
   file_path: string;
   start_line: number;
+  /** ★ 2026-10-28：片段边界（骨架落盘时算位置） */
+  end_line: number | null;
   parent: string | null;
+  /** ★★★ 2026-10-28（**权威在 signature**）：Go 签名原文。泛型实参 / 函数类型 / 多返回值
+   *   在 `params`+`return_type` 三列里**表达不全**（实测失真：`Channel<struct{}>`、`(arg: pattern, …)`）
+   *   ⇒ 册子必须带着原文，别只带拼出来的那半边。 */
+  signature: string | null;
+  /** ★ 2026-10-28：Go doc 注释 —— 目标侧 TS 注释的**唯一**来源 */
+  docstring: string | null;
   return_type: string | null;
   params: string | null;
   members: string | null;
@@ -368,7 +392,10 @@ function readSymbolRows(
   db: DatabaseSync,
   activeFiles: ReadonlySet<string>,
 ): { rows: NodeRow[]; internalRows: NodeRow[]; srcFiles: number; extFiles: Map<string, string[]> } {
-  const cols = `id, kind, name, file_path, start_line, parent, return_type, params, members, type_params, modifiers`;
+  // ★ 2026-10-28（**空人工内容 ⇒ 册子 ≡ 实际侧**）：把生成器要用的列一次读全。
+  //   原先只读 11/21 列，漏掉 signature / docstring / qualified_name / end_line / language
+  //   ⇒ 漏字段是**静默**的（册子没有任何对账）。
+  const cols = `id, kind, name, qualified_name, language, file_path, start_line, end_line, parent, signature, docstring, return_type, params, members, type_params, modifiers`;
   const base = `language='go' AND file_path LIKE '%.go' AND file_path NOT LIKE '%_test.go' AND file_path NOT LIKE '%/vendor/%' AND file_path NOT LIKE 'vendor/%'`;
   const kindIn = `kind IN ('function','method','const','var','type','interface','class','struct')`;
   // Go 导出 = 首字母大写：GLOB '[A-Z]*'
@@ -599,8 +626,37 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
         state,
         // ★ note 优先级：人写的（有且非 [auto]）> 本次自动。有 note 但不 sticky 时也保留人的说明。
         note: prev?.note && !prev.note.startsWith(AUTO_TAG) ? prev.note : auto,
+        // ★ 源侧事实原样投影（不判断、不改写）：漏了就是漏了，没有对账会静默
+        sig: row.signature ?? null,
+        doc: row.docstring ?? null,
+        end_line: row.end_line ?? null,
         ...(judgments && judgments.length ? { judgments } : {}),
       });
+    }
+
+    // ★★★ 2026-10-28（不变量：**空人工内容 ⇒ 册子 ≡ 实际侧**）：把源侧的**引用边**也投影进册。
+    //   call / type_ref 是 blocked（外部硬依赖）、shapes 聚合、以及"谁在用它"的判据原料 ——
+    //   原来册子**完全不碰 edges 表**，等于把实际侧 2/3 的边静默丢掉（无任何对账会报）。
+    try {
+      const edgeRows = db
+        .prepare(
+          `SELECT e.source AS src, e.target AS dst, e.kind AS kind, e.line AS line, e.provenance AS prov
+             FROM edges e JOIN nodes n ON n.id = e.source
+            WHERE n.language='go' AND e.kind IN ('call','type_ref')`,
+        )
+        .all() as Array<{ src: string; dst: string; kind: string; line: number | null; prov: string | null }>;
+      const byId = new Map<string, Array<{ to: string; kind: string; line: number | null; provenance?: string | null }>>();
+      for (const e of edgeRows) {
+        const arr = byId.get(e.src) ?? [];
+        arr.push({ to: e.dst, kind: e.kind, line: typeof e.line === 'number' ? e.line : null, provenance: e.prov ?? null });
+        byId.set(e.src, arr);
+      }
+      for (const sym of symbols) {
+        const r = sym.from ? byId.get(sym.from) : undefined;
+        if (r && r.length) sym.refs = r;
+      }
+    } catch {
+      // edges 表缺失（旧 schema）⇒ 不伪造 refs：**没读到 ≠ 没有边**
     }
 
     // shapes：按类聚合（结构没有身份 ⇒ 不逐条造 id）
