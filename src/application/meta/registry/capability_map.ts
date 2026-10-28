@@ -46,7 +46,7 @@ import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 //   ★ 依赖单向：本模块调它；它只 `import type` 本模块（类型导入被擦除 ⇒ 无运行时环）。
 import { renderFaces } from './tool_faces.js';
 
-export const LANE_IDS = ['design', 'refactor', 'observe', 'harvest', 'cross', 'meta'] as const;
+export const LANE_IDS = ['design', 'refactor', 'observe', 'cross', 'meta'] as const;
 export type LaneId = (typeof LANE_IDS)[number];
 
 /** 工具目录项：注册表里能拿到的元信息（只取派生日录需要的字段） */
@@ -146,17 +146,6 @@ export const LANE_META: ReadonlyArray<Omit<Lane, 'tools'>> = [
     //   为什么是它：它是**起点** —— 先用索引/图 + AST 打分算出「该在哪打点」（产出可编辑清单），
     //   再把清单交给 `observe_instrument`（contractProbes）只插这些点 ⇒ 「先定位、再插桩」的第一步。
     direct: ['recommend_observe_points'],
-  },
-  {
-    id: 'harvest',
-    label: '契约 / 闭包采集',
-    desc: '从文档/git/注释/闭包采集决策卡与契约。',
-    // ★★ 2026-10-14 补 `harvest_decisions` —— **这条线的门**（原来 `direct: []` ⇒ 编排面上不可达）。
-    //   依据同 `design` / `meta` 两处：**每条线要有门**，面无门 ⇒ 该线在编排面上不可达（原话见 `tool_faces.ts`）。
-    //   为什么是它：三个工具里**唯一有「入口」性质**的 —— 它「逐个文件问为什么存在」，适用面写着
-    //   「为没有决策卡历史的现有项目/外来代码补录活文档」（**从零开始采**）；另两个
-    //   （`harvest_closure` / `extract_contracts`）都**先要给定种子/文件范围**，是被按需调用的分析步、不构成入口。
-    direct: ['harvest_decisions'],
   },
   {
     id: 'cross',
@@ -303,9 +292,6 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   reconcile_effects: '对账函数/模块的实际效应与契约',
   memory_observe: '外部进程内存观测（CDP 外连，不插目标进程）：action=targets 列出本机 --inspect 进程 / status/baseline/track/gc/snapshot 定位 JS 堆 vs native 泄漏方向',
   recommend_observe_points: '★ 推荐该在哪打观测点（索引/图 + AST 语义打分，不做全量插桩）；输出可编辑清单 + 每条的理由',
-  harvest_decisions: '逐个文件问 LLM「这个文件为什么存在」产出决策线索（三份证据 code/history/docs 各抽一次；votes=支持证据数；三要素契约；★「判」可开可关：judge:false/无密钥⇒降级只给证据并明说，不静默）',
-  harvest_closure: '扫描闭包出产入盒三件套',
-  extract_contracts: '从代码提取契约（多语言 AST）',
   sync_contracts: '以注册表 zod schema 回填 DSL expected_apis',
   cross_repo_symbol_index: '跨仓库符号索引建立/反查',
   code_health: '代码健康度扫描（含 unused_import 多语言）',
@@ -987,7 +973,7 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
       `\n★ **怎么读**：① 想**直接上手** ⇒ 先看下面的「**链**」（标 [ran] = **当年真跑过**的路径；[ran] 是**标签**、**不是实时验证 ⇒ 不代表现在能通**，现在通不通看「链的完整判定」）；` +
       `② 想**自行搭配** ⇒ 再看「6 条线的完整清单」，原子工具都在那儿，随你组合。` +
       `\n目录由工具注册表自动派生（${toolCount} 工具 / ${LANE_IDS.length} 线），与注册表同源、不会脱节。` +
-      `\n前缀语义：observe_=观测、harvest_=采集、reconcile_=对账、rename_=改名、edit_=修改、render_=渲染。`;
+      `\n前缀语义：observe_=观测、reconcile_=对账、rename_=改名、edit_=修改、render_=渲染。`;
 
     if (lane) {
       if (!LANE_IDS.includes(lane)) {

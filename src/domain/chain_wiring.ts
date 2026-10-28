@@ -716,16 +716,6 @@ export const CHAINS: readonly Chain[] = [
       '而 `written_files` 是**源文件** ⇒ 中间缺"源文件 → 对应测试"的映射（**能力缺口**，今天没有工具给）。',
   },
   {
-    name: 'design-import',
-    steps: ['import_project', 'extract_contracts', 'find_references'],
-    evidence: 'verified',
-    note:
-      '2026-10-06 真跑 ⇒ **断在第 2 段**（`extract_contracts → find_references`）：**无已验证边**，' +
-      '真跑时 `find_references` 报"缺少必需参数 file"。★ 且它**根本不是一条链**：' +
-      '`extract_contracts` 是**终端分析工具**，产物里既无定位器也无符号名 ⇒ 交接不出对象。' +
-      '★ 这条链记的是"**看起来连得上 ≠ 是链**"这个反例。',
-  },
-  {
     name: 'design-loop',
     steps: ['import_project', 'edit_dsl', 'consistency_check', 'edit_code', 'consistency_check'],
     evidence: 'verified',

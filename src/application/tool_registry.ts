@@ -26,7 +26,6 @@ import { CROSS_TOOLS } from './cross/index.js';
 import { DESIGN_TOOLS } from './design/index.js';
 import { META_TOOLS } from './meta/index.js';
 import { REFACTOR_TOOLS } from './refactor/index.js';
-import { HARVEST_TOOLS } from './harvest/index.js';
 import { bindLaneOf, bindToolDefs, type LaneAssign, type LaneId } from './meta/registry/capability_map.js';
 import type { ToolDef } from './types.js';
 
@@ -47,7 +46,6 @@ export const LANE_SOURCES: ReadonlyArray<readonly [LaneId, readonly ToolDef[]]> 
   ['design', DESIGN_TOOLS],
   ['meta', META_TOOLS],
   ['refactor', REFACTOR_TOOLS],
-  ['harvest', HARVEST_TOOLS],
 ];
 
 export const TOOL_DEFS: ToolDef[] = LANE_SOURCES.flatMap(([, defs]) => [...defs]);

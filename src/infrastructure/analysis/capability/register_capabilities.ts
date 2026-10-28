@@ -5,7 +5,7 @@
  * 依据来自各工具的既有实现（实测分支点），不是臆造：
  *   - package_migration 的 cleanAlias：Go/TS 家族/Python 已走 AST 作用域守卫；
  *     其余语言仍回退正则（cleanAliasRegex）。
- *   - rename_symbol / contract_gate / extract_contracts：只实现了 go + ts 两条分支。
+ *   - rename_symbol / contract_gate：只实现了 go + ts 两条分支。
  *   - ts_kernel 的 parseFileFull：对 LANGUAGES 里"已安装"的语言做 符号/import/调用边/类型引用
  *     四产出，是通用 AST 根基（full_ast 覆盖全部已装语言）。
  *

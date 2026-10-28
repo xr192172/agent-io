@@ -30,7 +30,7 @@ import { probeInstalledLanguages } from '../src/infrastructure/parse/probe.ts';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 // ───────── 1. 工具清单（AST 静态提取 6 条能力线） ─────────
-const LANES = ['observe', 'cross', 'design', 'meta', 'refactor', 'harvest'];
+const LANES = ['observe', 'cross', 'design', 'meta', 'refactor'];
 function strOf(node) {
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
   if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken)

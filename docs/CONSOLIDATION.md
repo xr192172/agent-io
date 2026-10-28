@@ -8,7 +8,7 @@
 | 项 | 改前 | 改后 |
 |---|---|---|
 | 原子工具数（all 面，`TOOL_DEFS`） | 64 | **63** |
-| 分线 | observe 11 / cross 5 / design 9 / meta 16 / refactor 20 / harvest 3 | observe 11 / cross 5 / design 9 / meta 16 / refactor **19** / harvest 3 |
+| 分线 | observe 11 / cross 5 / design 9 / meta 16 / refactor 20 | observe 11 / cross 5 / design 9 / meta 16 / refactor **19** / harvest 3 |
 | 编排入口 `atomic_call` | 只在 composed/minimal 注册（不变） | 同左 |
 
 对拍：`tsc --noEmit` 改前后逐字一致（2 个既有 TS2307，见"诚实清单"）；全部测试 pass/fail 与基线一致（24 pass / 2 fail，fail 均为已知 test_contract 缺失根因）。
@@ -57,10 +57,9 @@
 - **refactor（19）**：`edit_code`（符号级编辑）/ `rename_symbols` / `rename_files` / `move_symbol` / `move_domain` / `plan_refactor` + `apply_refactor_plan`（两半成对）/ `refactor_pipeline`（含 dead_imports 步）/ `deprecate_offline` / `find_references` / `impact_analysis` / `structure_gap` / `diff_views` / `annotate_functions` / `suggest_renames` / `find_similar_names` / `refactor_judge` / `rules` / `snapshot`
 - **observe（11）**：`observe_instrument`（插桩执行）/ `recommend_observe_points`（选点）/ `observe_log` / `observe_trace` / `observe_judge` / `reconcile_chain` / `reconcile_effects` / `run_tests` / `feature_line` / `memory_observe`（CDP 外部内存观测）/ `narrate_step`
 - **cross（5）**：`translate_go_ts`（Go→TS 骨架+验证闸）/ `translate_book`（翻译册重算）/ `go_originals`（Go 原文 ground truth）/ `cross_repo_symbol_index`（撞名预检）/ `code_health`（三层体检）
-- **harvest（3）**：`harvest_closure`（拎取闭包）/ `extract_contracts`（契约提取）/ `harvest_decisions`（决策卡补录）
 
 正交性说明（易误判的三对）：
-- `find_references`（改/删前看波及）vs `impact_analysis`（反向可达闭包+风险排序）vs `harvest_closure`（正向"拎走要带什么"）——方向与粒度不同，`harvest_closure` 描述明写"与 impact_analysis 正交"。
+- `find_references`（改/删前看波及）vs `impact_analysis`（反向可达闭包+风险排序）（正向"拎走要带什么"那一维已随 harvest 线退役）——方向与粒度不同，`harvest_closure` 描述明写"与 impact_analysis 正交"。
 - `diff_views`（design vs live 两册 DSL 比对）vs `consistency_check`/`detect_drift`（DSL vs 代码）——比对对象不同。
 - `capability_map`（工具导航）vs `capability_audit`（语言×功能覆盖矩阵）vs `tool_usage`（用量/死工具）——三者回答的问题互不重叠，`capability_audit` 描述明写"与 capability_map 不是一回事"。
 

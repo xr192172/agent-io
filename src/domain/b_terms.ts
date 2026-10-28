@@ -280,7 +280,7 @@ export const B_TERMS: Record<string, BTerm> = {
       '`edge` / `file` / `api` 的 `id` **不是节点**，一个都不收。',
     debt: true,
     fix:
-      '**已非新词**：本轮之前已有 3 个产者 —— `harvest_closure.ts:462` / `derive_anim_flow.ts:515` / ' +
+      '**已非新词**：本轮之前已有产者 —— `derive_anim_flow.ts:515` / ' +
       '`reconcile_chain.ts:353`；2026-10-09 起 `edit_dsl`（`update_feature.ts`）亦产（口径见 meaning）。' +
       '与旧 `node_id: string`（单个）并存期间禁止混用。',
   },

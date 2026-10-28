@@ -35,7 +35,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Database } from '../index/db.js';
-import type { ExternalDep } from '../../application/harvest/harvest_closure.js';
+/**
+ * ★ 2026-10-28（harvest 线退役）：本类型原来从 `harvest/harvest_closure` 借；
+ * 那条线已删（三个工具零外部使用、`extract_contracts` 的产物从未落盘），类型归本文件自带。
+ */
+export interface ExternalDep {
+  /** 原始 import source 串（如 "github.com/foo/bar" / "react" / "fmt"） */
+  source: string;
+  class: 'stdlib' | 'third_party' | 'unresolved';
+  /** 闭包中有几个文件导入它 */
+  imported_by_files: number;
+}
 import { buildIndex, readGoModules, resolveImport, type FileEntry } from './import_project.js';
 // ★ v13（2026-10-20）：库与源码**同源**的判据（`files.content_hash`）—— 与 symbols.ts 同一把尺
 import { contentHash } from '../index/symbols.js';

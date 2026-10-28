@@ -1,10 +1,10 @@
 /**
  * import_graph —— 文件级依赖图共享构建器
  *
- * 从 cache.db 构建文件级 import 邻接表，供 harvest_closure（拎取闭包）与
- * extract_contracts（契约提取 role 判定）共用，保证两工具看到同一张依赖图。
+ * 从 cache.db 构建文件级 import 邻接表，供**死依赖判定**（`dead_deps`）与**影响面分析**复用，
+ * 保证它们看到同一张依赖图。★ 2026-10-28：原使用者 `harvest_closure` / `extract_contracts` 已退役。
  *
- * 数据源并集（与 harvest_closure v2 相同）：
+ * 数据源并集：
  *   a) edges 表 kind='import'：已解析的 TS 相对导入边
  *   b) imports 表原始记录经 resolveImport 权威解析（Go 包路径 / Python 点分模块
  *      不进 edges 表，必须重走与 import_project 相同的解析规则）
