@@ -327,8 +327,13 @@ function expr(node: SyntaxNodeLike | null): string | null {
       return 'null';
     case 'int_literal':
     case 'float_literal':
-    case 'rune_literal':
-      return node.text.replace(/_/g, '');
+    case 'rune_literal': {
+      const raw = node.text.replace(/_/g, '');
+      // ★★ 2026-10-29（对拍/tsc 抓到的）：Go 的**八进制字面量** `0644` 在 TS 里是**非法**（TS1121）
+      //   ⇒ 必须改写 `0o644`。规则纯文本形状（前导 0 + 全是 0-7 的数字），不是猜结构。
+      if (/^0[0-7]+$/.test(raw)) return '0o' + raw.slice(1);
+      return raw;
+    }
     case 'interpreted_string_literal':
       return node.text;
     case 'raw_string_literal':

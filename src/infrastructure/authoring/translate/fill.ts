@@ -98,6 +98,13 @@ export async function fillUnit(u: TransUnit, translate: HoleTranslator, feedback
   if (body.trim() === '') {
     return { unit: u, filledSource, ok: false, issues: [], error: '翻译器返回空函数体' };
   }
+  // ★★★ 2026-10-29（全仓跑抓到的违规）：LLM 有时把**整个函数外壳**（`export function name(...) {...}`）
+  //   一起返回，spliceBody 会把它嵌进外层函数体 ⇒ 生成 `export function` 嵌在函数里（TS1131/TS1128 语法错），
+  //   而结构闸没拦住，结果**静默产出坏文件**（实测 retrieval_pipeline.ts 两处）。
+  //   ⇒ 契约违反必须**显式失败**（进入纠错重试），不能静默落盘。
+  if (/^[ \t]*(export\s+)?(async\s+)?function\b/m.test(body.trim())) {
+    return { unit: u, filledSource: u.skeleton, ok: false, issues: [], error: '翻译器返回了函数外壳（只允许返回函数体，不含 export function 行）' };
+  }
   const issues = await verifySkeletons([{ ...u, bodyHole: false, skeleton: filledSource }]);
   return { unit: u, filledSource, ok: issues.length === 0, issues };
 }
