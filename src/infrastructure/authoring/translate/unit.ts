@@ -94,6 +94,11 @@ export interface TransUnit {
   result?: string | null;
   /** ★ 权威：返回类型结构化树（多返回值是 tuple；无返回值缺省） */
   resultRef?: TypeRef;
+  /**
+   * ★★★ 2026-10-29（T-#MECH-BODY）：**机械翻出来的函数体**（AST 同构改写，零 LLM）。
+   * 有值 ⇒ 上层直接用，**不必送 LLM**；undefined ⇒ 翻不动（有 defer/select/通道/类型断言 等），走 LLM。
+   */
+  mechBody?: string;
   /** Go 类型参数名（泛型），如 ['T']；渲染为 TS `<T, ...>` */
   typeParams?: string[];
   /** 各类型参数 → Go 约束原文（如 comparable/any/Ordered）；TS 无等价约束，仅传递提示 */

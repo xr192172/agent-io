@@ -568,6 +568,7 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
   // ★ 2026-10-28（T-#FILL-CACHE）：填孔缓存**在函数作用域**声明（回写发生在报告之后，不能只活在 fill 块里）
   const fillCache = opts.outDir ? loadFillCache(String(opts.outDir)) : {};
   let cacheHits = 0;
+  let mechCount = 0;
   if (opts.fill) {
     // ★ I3（2026-10-25）：翻译 DB 投影 + 术语表进 prompt（按图索骥的"图"）——
     //   根目录 `.agent-io/design/*.translate.json` 存在时按 `<rel>#<符号名>` 对齐注入。
@@ -583,6 +584,13 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
       const missUnits: typeof m.units = [];
       for (const u of m.units) {
         if (!u.bodyHole) continue;
+        // ★★★ 2026-10-29（T-#MECH-BODY）：**机械能翻的直接翻**（零 LLM、确定性），
+        //   翻不动的才进 missUnits 交给 LLM。这是"七成不该花钱"的落点。
+        if (u.mechBody) {
+          hits.push({ u, body: u.mechBody });
+          mechCount++;
+          continue;
+        }
         const key = `${m.rel}#${u.id}@${sha1(u.srcSnippet)}`;
         const hit = cache[key];
         if (hit?.body) hits.push({ u, body: hit.body });
@@ -651,6 +659,9 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
     if (opts.fill) {
       saveFillCache(outRoot, fillCache);
       if (cacheHits) diagnostics.push(`填孔缓存命中 ${cacheHits} 个（★ 未调用 LLM）`);
+    }
+    if (mechCount) {
+      diagnostics.push(`机械直翻 ${mechCount} 个函数体（★ 未调用 LLM：AST 同构改写）`);
     }
   }
 
