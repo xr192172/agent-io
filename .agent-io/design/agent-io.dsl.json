@@ -52,22 +52,79 @@
           "borderRadius": 8
         },
         "decision": {
-          "summary": "解析层：把源码文本变成 AST 事实（符号 / import / 调用边 / 类型引用）。**它是所有判据的地基** —— 判据不许读索引冒充代码，就是要从这里现解析。",
+          "summary": "parse（infrastructure）：src/infrastructure/parse",
           "expectations": [
             {
               "kind": "domain-independent",
               "domain": "parse",
               "must_not_import": [
-                "meta-view",
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
                 "meta-explore",
-                "observe-reconcile"
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
               ],
-              "why": "解析层是地基：不许反向依赖任何 application 层域（否则地基压在上层上）"
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
             }
           ],
-          "updated_at": "2026-10-28T06:11:59.055Z",
+          "updated_at": "2026-10-28T06:20:58.645Z",
           "agent": "agent:main"
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-28T06:20:58.645Z",
+            "decision": {
+              "summary": "解析层：把源码文本变成 AST 事实（符号 / import / 调用边 / 类型引用）。**它是所有判据的地基** —— 判据不许读索引冒充代码，就是要从这里现解析。",
+              "expectations": [
+                {
+                  "kind": "domain-independent",
+                  "domain": "parse",
+                  "must_not_import": [
+                    "meta-view",
+                    "meta-explore",
+                    "observe-reconcile"
+                  ],
+                  "why": "解析层是地基：不许反向依赖任何 application 层域（否则地基压在上层上）"
+                }
+              ],
+              "updated_at": "2026-10-28T06:11:59.055Z",
+              "agent": "agent:main"
+            },
+            "note": "层序律铺开（T-#DOMAIN-2）：第 2 批，6 个域",
+            "agent": "agent:main"
+          }
+        ]
       },
       {
         "id": "dir_src_infrastructure_index",
@@ -81,6 +138,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "index（infrastructure）：src/infrastructure/index",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "index",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:20:58.687Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -95,6 +202,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "observe（infrastructure）：src/infrastructure/analysis/observe",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "observe",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:20:57.165Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -123,6 +280,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "rf-rename-symbol（infrastructure）：src/infrastructure/analysis/rename_symbol",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "rf-rename-symbol",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:07.526Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -151,6 +358,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "contract-gate（infrastructure）：src/infrastructure/analysis/contract_gate",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "contract-gate",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:08.852Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -179,6 +436,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "rf-package-migration（infrastructure）：src/infrastructure/analysis/package_migration",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "rf-package-migration",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:07.561Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -193,6 +500,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "impact（infrastructure）：src/infrastructure/analysis/impact",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "impact",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:20:57.133Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -207,6 +564,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "health（infrastructure）：src/infrastructure/analysis/health",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "health",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:20:57.198Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -221,6 +628,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "cross-repo（infrastructure）：src/infrastructure/analysis/cross_repo",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "cross-repo",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:08.884Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -235,6 +692,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "project-root（infrastructure）：src/infrastructure/analysis/project_root",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "project-root",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:08.916Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -263,6 +770,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "diagnosis（infrastructure）：src/infrastructure/analysis/diagnosis",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "diagnosis",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:08.950Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -277,6 +834,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "structure（infrastructure）：src/infrastructure/analysis/structure",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "structure",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:20:57.068Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -333,6 +940,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "refactor（infrastructure）：src/infrastructure/analysis/refactor",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "refactor",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:20:58.503Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -347,6 +1004,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "capability（infrastructure）：src/infrastructure/analysis/capability",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "capability",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:20:57.232Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -363,21 +1070,78 @@
           "borderRadius": 8
         },
         "decision": {
-          "summary": "死代码域：判定死语句 / 死导入。**它的判据是\"可达性\"** —— 谁都不引用的东西才是死的。",
+          "summary": "deadcode（infrastructure）：src/infrastructure/analysis/deadcode",
           "expectations": [
             {
               "kind": "domain-independent",
               "domain": "deadcode",
               "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
                 "meta-view",
-                "meta-explore"
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
               ],
-              "why": "分析域只吃索引与 AST；不许依赖任何产出/呈现层"
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
             }
           ],
-          "updated_at": "2026-10-28T06:12:00.340Z",
+          "updated_at": "2026-10-28T06:20:57.102Z",
           "agent": "agent:main"
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-28T06:20:57.102Z",
+            "decision": {
+              "summary": "死代码域：判定死语句 / 死导入。**它的判据是\"可达性\"** —— 谁都不引用的东西才是死的。",
+              "expectations": [
+                {
+                  "kind": "domain-independent",
+                  "domain": "deadcode",
+                  "must_not_import": [
+                    "meta-view",
+                    "meta-explore"
+                  ],
+                  "why": "分析域只吃索引与 AST；不许依赖任何产出/呈现层"
+                }
+              ],
+              "updated_at": "2026-10-28T06:12:00.340Z",
+              "agent": "agent:main"
+            },
+            "note": "层序律铺开（T-#DOMAIN-2）：第 1 批，6 个域",
+            "agent": "agent:main"
+          }
+        ]
       },
       {
         "id": "dir_src_infrastructure_analysis",
@@ -405,6 +1169,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "behavior（infrastructure）：src/infrastructure/authoring/behavior",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "behavior",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:08.816Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -419,6 +1233,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "translate（infrastructure）：src/infrastructure/authoring/translate",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "translate",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:08.985Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -447,6 +1311,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "version-upgrade（infrastructure）：src/infrastructure/authoring/version_upgrade",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "version-upgrade",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:10.378Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -475,6 +1389,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "render（infrastructure）：src/infrastructure/render",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "render",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:00.045Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -489,6 +1453,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "graph（infrastructure）：src/infrastructure/graph",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "graph",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:00.011Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -503,6 +1517,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "text（infrastructure）：src/infrastructure/text",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "text",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:20:58.605Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -517,6 +1581,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "packages（infrastructure）：src/infrastructure/packages",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "packages",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:20:58.540Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -531,6 +1645,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "rules（infrastructure）：src/infrastructure/rules",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "rules",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:20:58.574Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -545,6 +1709,56 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "daemon（infrastructure）：src/infrastructure/daemon",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "daemon",
+              "must_not_import": [
+                "annotate",
+                "archify-r5",
+                "cross",
+                "daemon-server",
+                "deprecate_offline",
+                "design-board",
+                "design-bricks",
+                "design-derive",
+                "design-dsl-ops",
+                "design-intent",
+                "design-lifecycle",
+                "design-workbench",
+                "diff_views",
+                "edit",
+                "find",
+                "harvest",
+                "mcp-surface",
+                "meta-archive",
+                "meta-diagnosis",
+                "meta-docs",
+                "meta-explore",
+                "meta-impact",
+                "meta-integrity",
+                "meta-llm",
+                "meta-registry",
+                "meta-upgrade",
+                "meta-view",
+                "observe-capture",
+                "observe-reconcile",
+                "observe-runtime",
+                "parse_capability",
+                "patrol",
+                "pipeline",
+                "rename",
+                "rule_library",
+                "snapshot"
+              ],
+              "why": "层序律：infrastructure 不许依赖更高的 application / presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:00.078Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -573,6 +1787,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "design-dsl-ops（application）：src/application/design/dsl_ops",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "design-dsl-ops",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:02.927Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -587,6 +1818,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "design-intent（application）：src/application/design/intent",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "design-intent",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:04.463Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -601,6 +1849,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "design-derive（application）：src/application/design/derive",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "design-derive",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:02.994Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -615,6 +1880,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "design-board（application）：src/application/design/board",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "design-board",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:04.498Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -629,6 +1911,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "design-lifecycle（application）：src/application/design/lifecycle",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "design-lifecycle",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:03.025Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -671,6 +1970,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "design-workbench（application）：src/application/design/workbench",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "design-workbench",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:02.962Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -713,6 +2029,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "rename（application）：src/application/refactor/rename",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "rename",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:04.531Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -727,6 +2060,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "find（application）：src/application/refactor/find",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "find",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:04.562Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -741,6 +2091,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "edit（application）：src/application/refactor/edit",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "edit",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:05.897Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -755,6 +2122,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "pipeline（application）：src/application/refactor/pipeline",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "pipeline",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:05.968Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -769,6 +2153,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "rule_library（application）：src/application/refactor/rule_library",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "rule_library",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:05.931Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -783,6 +2184,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "annotate（application）：src/application/refactor/annotate",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "annotate",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:06.071Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -797,6 +2215,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "deprecate_offline（application）：src/application/refactor/deprecate_offline",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "deprecate_offline",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:07.422Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -811,6 +2246,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "diff_views（application）：src/application/refactor/diff_views",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "diff_views",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:06.037Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -825,6 +2277,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "parse_capability（application）：src/application/refactor/parse_capability",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "parse_capability",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:07.386Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -839,6 +2308,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "snapshot（application）：src/application/refactor/snapshot",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "snapshot",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:06.002Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -867,6 +2353,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "meta-integrity（application）：src/application/meta/integrity",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "meta-integrity",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:01.542Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -881,6 +2384,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "meta-explore（application）：src/application/meta/explore",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "meta-explore",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:00.175Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -895,6 +2415,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "meta-registry（application）：src/application/meta/registry",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "meta-registry",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:00.145Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -909,6 +2446,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "meta-view（application）：src/application/meta/view",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "meta-view",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:00.111Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -923,6 +2477,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "meta-llm（application）：src/application/meta/llm",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "meta-llm",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:01.510Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -937,6 +2508,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "meta-diagnosis（application）：src/application/meta/diagnosis",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "meta-diagnosis",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:01.433Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -951,6 +2539,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "meta-docs（application）：src/application/meta/docs",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "meta-docs",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:01.574Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -965,6 +2570,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "meta-impact（application）：src/application/meta/impact",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "meta-impact",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:01.471Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -979,6 +2601,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "meta-upgrade（application）：src/application/meta/upgrade",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "meta-upgrade",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:01.609Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -1007,6 +2646,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "observe-capture（application）：src/application/observe/capture",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "observe-capture",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:03.057Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -1021,6 +2677,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "observe-reconcile（application）：src/application/observe/reconcile",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "observe-reconcile",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:03.093Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -1035,6 +2708,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "observe-runtime（application）：src/application/observe/runtime",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "observe-runtime",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:04.392Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -1063,6 +2753,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "harvest（application）：src/application/harvest",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "harvest",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:07.491Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -1077,6 +2784,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "cross（application）：src/application/cross",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "cross",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:07.455Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -1091,6 +2815,23 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "patrol（application）：src/application/patrol",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "patrol",
+              "must_not_import": [
+                "archify-r5",
+                "daemon-server",
+                "mcp-surface"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层"
+            }
+          ],
+          "updated_at": "2026-10-28T06:21:04.424Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -63420,13 +65161,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 106,
+  "_dsl_rev": 161,
   "_sync": {
-    "saved_at": "2026-10-28T06:12:00.351Z",
+    "saved_at": "2026-10-28T06:21:10.390Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 166923214,
+    "age": 167473253,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
