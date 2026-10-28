@@ -104,6 +104,7 @@
 | T332 | 证夹具没跟上设计侧搬家（`run82` 取不到 DSL） | `certs/` · `.agent-io/design/` | 未修（`run82.dsl.json` 不存在） |
 | T-#98d-1 | ★ **`requires` 前置闸曾是死闸**（修 T-#98d 时挖到）：edge 意图 2026-10-23 并入设计册后，`applyOverlay` 投影只带 `reason`/`boundary`（把 `requires`/`status` 丢了），`loadOverlay` 也不重建 `edges` ⇒ `write_gate` 读到的 `overlay.edges` **恒空** ⇒ 谁写 `requires` 都不生效 | `src/domain/overlay.ts` · `storage_overlay.ts` · `geometry.ts` | ✅ 已修（投影带全字段 · loadOverlay 重建 · 契约补 `requires`/`status`）；证 `t332` **10/0** |
 | T-#98d-3 | `t352` / `t353` 的「留痕」判据改口径：批注层 2026-10-23 退场 ⇒ 不再落 `dsl.annotations` | `certs/t352` · `t353` | ✅ `t352` **17/0**；`t353` 33/6（6 条即 T-#98d-2） |
+| T-#CERT-1 | **29 个工具没有任何证**（2026-10-28 盘点：`node scripts/audit-tool-certs.mjs`，64 个工具里 35 个被证提到过、29 个一次都没出现）。★ 口径：提到≠验过，但**没提到的必定没验** ⇒ 无证清单是可靠欠账。**按风险排序建议**：① 破坏性优先（`move_domain` / `move_symbol` / `deprecate_offline` / `upgrade` / `sync_contracts`）② 读数为核心的（`code_health` / `run_tests` / `impact_analysis` / `detect_drift` —— 它们撒谎会影响别人的判断）③ 生成类（`translate_go_ts` / `translate_book`，215KB 子系统目前 0 证） | `certs/` · `scripts/audit-tool-certs.mjs` | 未做（清单已可复跑） |
 | T-#RP-1 | **重写计划闸**：默认已翻（2026-10-28，`AGENT_IO_REQUIRE_PLAN` 三态，`=0` 只报）· 回执渲染✅ · 其它写工具文本渲染✅。**剩**：① 拿真实任务量一次严格档的误报率（本仓会被任务闸先拦 ⇒ 需要一张真领的卡）② 调 `planGaps` 粒度 | `src/application/write_gate.ts` · `design/db/rewrite_plan.ts` | 迭代中 |
 | T-#98d-old | 三条门类证跑不起来（已修，保留一行说明去向：t352 ✓ 17/0 · t332 ✓ 10/0 · t353 仅剩 T-#98d-2 那 6 条） | `certs/` | ✅ 已修 |
 | T285 | Go `uninstrument` 后残留空 `internal/` | `observe-lang-go` | 未做 |
