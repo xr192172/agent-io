@@ -73,7 +73,6 @@
 | T261 | `edge-absent` 当「不许合并」的代理，间接且脆 | 同上 | 未做 |
 | T262 | `type-only import` 不建边，相关断言不可表达 | `src/infrastructure/index/` | 设计边界 |
 | T240 | `apply_literals` 不在工具 schema | `src/application/refactor/rename/rename_symbols.ts` | 未做（只有 `report_literals`） |
-| T245 | 两条写路仍是两份实现 | `src/application/write_gate.ts` · `apply_writes.ts` | 待查 |
 | T231 | 注释 / 字样一并改的默认要不要出声 | `rename_symbols` | 未决 |
 | T152 | 注释算不算引用 | `rename_symbols report_literals` | 未决 |
 | T150 | `apply_refactor_plan` 的 `symbol_diff` 读数不一致 | `src/application/refactor/pipeline/refactor_plan.ts` | 待查 |

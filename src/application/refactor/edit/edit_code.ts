@@ -57,7 +57,9 @@ import { assertSourceWriteRegistered, reopenAndResolveAfterWrite, reopenNote, re
 //   **那不是缺陷，是设计**：① 本文件逐分支 `txn.commit()` 落盘后立刻 `await syncFile(...)`（:587/652/712/758/916/1076），
 //   索引当场就新了 ⇒ 不需要「待消费登记」；② `pendingSelfWrites` 自带 TTL（`now - at >= SELF_WRITE_TTL_MS ⇒ skip`）
 //   ⇒ 旧记录自动过期，不会产生假信号。⇒ 别为了「让它看起来接上了」去调 close()（那会多建一次索引）。
-import { openSourceWrite, type SourceWriteTxn } from '../../source_writer.js';
+import { openSourceWrite, type SourceWriteTxn, type SourceWriteReceipt } from '../../source_writer.js';
+// ★ 2026-10-28（T245）：计划读数（出口闭环 / 画布新陈代谢）的**唯一渲染器**住 write_gate，本文件只调用
+import { renderPlanReadings } from '../../write_gate.js';
 // ★★★ P0 保鲜链第 1 环（2026-10-26）：**新建文件自动提议入册**。
 //   W0 实测：op=insert 在盘上新建的文件不在设计册 semantic.files ⇒ 判据/对账全覆盖不到，
 //   而这件事没有任何机制报出。⇒ 落盘后查一次册（只警告、不自动入册 —— 入册要带
@@ -69,7 +71,7 @@ import { assumptionLines, refreshAfterOwnWrite, type AssumptionCheck } from '../
 import { toIndexKey } from '../../../infrastructure/index/symbols.js';
 // ★ 2026-10-28：出口闭环的一行读数（判据唯一实现在 plan_exit_check.ts，这里只调用）
 import { readRewritePlan } from '../../design/db/rewrite_plan.js';
-import { checkRewriteExit, renderExitCheck } from '../../design/db/plan_exit_check.js';
+
 import { locateReplaceText, realignNewTextTo, FUZZY_LEVEL_LABEL, classifyReplaceTextMiss } from '../../../infrastructure/parse/fuzzy_match.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
@@ -529,28 +531,7 @@ interface GateReceipt {
   assumption?: AssumptionCheck;
 }
 
-/**
- * ★★★ 2026-10-28（重写计划层 · 迭代 ①）：**出口闭环的一行读数**。
- *
- * ## 为什么要有"人类可读"这一层
- * 回执的读者**就是 agent 自己**（模型），不是装饰 —— 结构化字段没人打印 = 写了没人读。
- * 但也不能刷屏（今晚刚为 40 行散文减过版面）：**只在有异常时出声**，全绿就闭嘴。
- *
- * ## 判据
- * 有画布 ∧（有 `not_yet` / `stale_anchor` / `unjudgeable` / 计划外符号）⇒ 出一行；
- * 否则空串。没有画布 ⇒ 空串（写前的 `planGate` 已经点名，不重复）。
- */
-function planExitNote(projectRoot: string, relPath: string): string {
-  try {
-    if (!readRewritePlan(projectRoot, relPath)) return '';
-    const r = checkRewriteExit(projectRoot, relPath);
-    const abnormal = r.entries.filter((e) => e.verdict !== 'realized').length + r.unplanned.length;
-    if (!abnormal) return '';
-    return `\n★ ${renderExitCheck(r)}`;
-  } catch {
-    return ''; // 对账是增强：失败不许把编辑拖下水（写前 planGate 的 warning 仍在）
-  }
-}
+
 
 /**
  * ★★★ 2026-10-28（用户提议"读集限制改成画布限制" → 落地）：**画布/读集过期的一行读数**。
@@ -575,7 +556,11 @@ function assumptionNote(gateOut: GateReceipt | undefined): string {
   return `\n${head}${tail}`;
 }
 
-async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise<{ message: string; data?: unknown }> {
+async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise<{
+ message: string; data?: unknown }> {
+  // ★ 2026-10-28（T245）：接住写穿回执 —— 画布读数（`plan_exit` / `plan_baseline`）在它身上，
+  //   原来 `txn.commit()` 的返回值被**丢弃** ⇒ 回执只能自己再算一遍（同一判据住两处）。
+  let _lastRec: SourceWriteReceipt | null = null;
   const { op } = args;
   const projectRoot = path.resolve(args.project_dir);
   const absPath = path.isAbsolute(args.file) ? args.file : path.resolve(projectRoot, args.file);
@@ -651,7 +636,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
       };
     }
     fs.mkdirSync(path.dirname(absPath), { recursive: true });
-    txn!.commit(absPath, content);
+    _lastRec = txn!.commit(absPath, content);
     const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
     const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
     // ★★★ P0 保鲜链第 1 环（2026-10-26）：**本笔在盘上产生了一个新路径** ⇒ 查一次设计册。
@@ -720,7 +705,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
           `[干跑] replace ${relPath} 的 ${args.symbol} body（L${body.startLine}-${body.endLine}），语法门通过，未写盘:\n${preview}`,
       };
     }
-    txn!.commit(absPath, newContent);
+    _lastRec = txn!.commit(absPath, newContent);
     const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
     const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
     const diffNote = sync.symbol_diff
@@ -729,7 +714,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     return {
       message:
         `✓ 已替换 ${relPath} 的 ${args.symbol} body（L${body.startLine}-${body.endLine}），` +
-        `签名与大括号保留，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${preview}` + planExitNote(projectRoot, relPath) + assumptionNote(gateOut),
+        `签名与大括号保留，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${preview}` + renderPlanReadings(_lastRec?.index ?? null, { root: projectRoot, rel: relPath }) + assumptionNote(gateOut),
     };
   }
 
@@ -780,7 +765,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
       };
     }
 
-    txn!.commit(absPath, newContent);
+    _lastRec = txn!.commit(absPath, newContent);
     const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
     const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
     const diffNote = sync.symbol_diff
@@ -791,7 +776,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
       message:
         `✓ range 编辑 ${relPath} L${start}-L${end}（${count} 行 → ${aligned.length} 行），` +
         `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}\n${preview}` +
-        planExitNote(projectRoot, relPath) + assumptionNote(gateOut),
+        renderPlanReadings(_lastRec?.index ?? null, { root: projectRoot, rel: relPath }) + assumptionNote(gateOut),
     };
   }
 
@@ -827,7 +812,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
         },
       };
     }
-    txn!.commit(absPath, plan.newContent);
+    _lastRec = txn!.commit(absPath, plan.newContent);
     const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
     const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
     const diffNote = sync.symbol_diff
@@ -837,7 +822,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
       message:
         `✓ replace_text ${relPath} L${plan.hit.start_line}（${plan.matchedLineCount} 行 → ${plan.hit.new_lines} 行，` +
         `匹配 L${plan.hit.level}·${plan.hit.label}）${plan.levelNote}，` +
-        `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${plan.preview}` + planExitNote(projectRoot, relPath) + assumptionNote(gateOut),
+        `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${plan.preview}` + renderPlanReadings(_lastRec?.index ?? null, { root: projectRoot, rel: relPath }) + assumptionNote(gateOut),
       data: { hit: plan.hit, index_synced: sync.status, ...(sync.symbol_diff ? { symbol_diff: sync.symbol_diff } : {}) },
     };
   }
@@ -985,7 +970,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
   }
 
   // ── 写盘 + 索引重建（新鲜度闭环） ──
-  txn!.commit(absPath, newContent);
+  _lastRec = txn!.commit(absPath, newContent);
   const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
   const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
 
@@ -1002,7 +987,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     return {
       message:
         `✓ 已删除 ${relPath} 的 ${delSym}（L${lineOp.startIdx + 1} 起 ${lineOp.count} 行），` +
-        `符号 ${before} → ${after}，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}` + planExitNote(projectRoot, relPath) + assumptionNote(gateOut),
+        `符号 ${before} → ${after}，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}` + renderPlanReadings(_lastRec?.index ?? null, { root: projectRoot, rel: relPath }) + assumptionNote(gateOut),
     };
   }
   if (op === 'insert') {
@@ -1025,7 +1010,7 @@ async function editCodeInner(args: EditCodeArgs, gateOut?: GateReceipt): Promise
     message:
       `✓ 已替换 ${relPath} 的 ${args.symbol}（原 L${lineOp.startIdx + 1}-${lineOp.startIdx + lineOp.count}，` +
       `${lineOp.count} 行 → ${lineOp.insert.length} 行），索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}\n` +
-      `文件符号: ${before} → ${after}` + planExitNote(projectRoot, relPath) + assumptionNote(gateOut),
+      `文件符号: ${before} → ${after}` + renderPlanReadings(_lastRec?.index ?? null, { root: projectRoot, rel: relPath }) + assumptionNote(gateOut),
   };
 }
 

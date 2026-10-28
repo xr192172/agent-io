@@ -1,20 +1,20 @@
 {
   "path": "src/application/refactor/edit/edit_code.ts",
+  "card": "file_src_application_refactor_edit_edit_code_ts",
+  "frozen_at": "2026-10-28T03:52:04.720Z",
   "entries": [
     {
       "anchor": {
-        "symbol": "planReplaceText"
+        "symbol": "editCodeInner"
       },
       "kind": "rewrite",
-      "detail": "未命中时改用 classifyReplaceTextMiss：已应用过 ⇒ 报「已经应用过」并带 code=ALREADY_APPLIED",
+      "detail": "回执改用 renderPlanReadings(_lastRec.index)，接住 txn.commit 的回执",
       "judgement_ref": "decision:file_src_application_refactor_edit_edit_code_ts#0",
-      "status": "done",
-      "done_at": "2026-10-28T03:34:44.963Z"
+      "status": "open"
     }
   ],
-  "card": "file_src_application_refactor_edit_edit_code_ts",
   "untouched_default": {
-    "why": "只改 planReplaceText 的未命中分支，其余不动"
+    "why": "T245：只改回执读数这一处"
   },
   "symbols_at_freeze": [
     "EditCodeOp",
@@ -41,7 +41,6 @@
     "ReplaceTextPlan",
     "planReplaceText",
     "GateReceipt",
-    "planExitNote",
     "assumptionNote",
     "editCodeInner",
     "editCodeBatch",
@@ -65,17 +64,15 @@
     "subBodyHint": "2224cba3aca2268c10d2052b41ce0e316511526e",
     "describeSymbolCtx": "7f3a061c14a166a78c04b3180d013e420623919a",
     "buildAmbiguityError": "e816e894c6144e20493d1837f1e1228bab93d3ac",
-    "planReplaceText": "679ecf8cf7b594ebec84b34a42dae58a51ba668e",
-    "planExitNote": "e6427241ea86fc179299486668e81d78e2fd344e",
+    "planReplaceText": "9bb34938089d0ba31a77878db2e00babf37c7542",
     "assumptionNote": "6d2026f454d1fcc54ef4eb46d5544457a6a21fbf",
-    "editCodeInner": "ccdfac35e3c6a12a0bb3cacd19c2117513b44927",
+    "editCodeInner": "fa7c109cfbb9fff8d6120c3a63119dc6dfd27c7e",
     "editCodeBatch": "c46aacef894e1a252a0c1cac829154b84edd1a98",
     "editCodeCore": "ff17b38778af85207587151042d23011df51e6c6",
     "touchedOf": "f08ff925fd751db7cc9f35a0db55a0abb27b49c4",
     "editCode": "f40afd4c621c3940cda11cfa37fb4fa91852472e"
   },
-  "frozen_at": "2026-10-28T03:33:09.887Z",
   "base": {
-    "content_hash": "f2644c99c840dfb6d8e051de75fbbe74f326d771"
+    "content_hash": "e6b512110b51cc299d7b923a4c94404dec9f5aab"
   }
 }

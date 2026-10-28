@@ -1017,6 +1017,42 @@ export function planStrictMode(): boolean {
   return !(v === '0' || v === 'off' || v === 'false');
 }
 
+/**
+ * ★★★ 2026-10-28（T245 复查出的真身）：**写路回执的"计划读数"只许有一份实现**。
+ *
+ * ## 两条写路原来各写一遍
+ * `apply_writes` 从写穿结果里读 `plan_exit` / `plan_baseline`；而 `edit_code` **自己调
+ * `checkRewriteExit` 重算一遍**（回执时算，不是写穿时算）⇒ 同一判据住两处，且 `plan_baseline`
+ * （画布基线新陈代谢："吸收设计缺口 / 基线已挪到写后"）在 `edit_code` 这条路上**被整个丢掉**。
+ *
+ * ## 判据（本函数就是判据）
+ * 只读 `WriteThroughOutcome` 上那两份读数，**不重算**：`plan_exit`（出口闭环）+
+ * `plan_baseline`（新陈代谢）。空 ⇒ 返回空串（全绿闭嘴，与其它回执同一口径）。
+ */
+export function renderPlanReadings(
+  out: WriteThroughOutcome | null | undefined,
+  /**
+   * ★ 2026-10-28（T245 复查的**第二层**真因）：`edit_code` 是**逐分支** `txn.commit()` + 自己 `syncFile`，
+   * 拿不到 `close()` 的**批级**读数 ⇒ `out` 上常常没有 `plan_exit` / `plan_baseline`。
+   * 当初正因为如此，`edit_code` 才自己重算一遍 —— **不是重复实现，是拿不到读数**。
+   * ⇒ 把"拿不到就现算"收进**这一个函数**（写在一处、理由写在这里），调用方只管调。
+   */
+  ctx?: { root: string; rel: string },
+): string {
+  const parts: string[] = [];
+  const exit = planExitHumanLine(out);
+  if (exit) parts.push(exit);
+  for (const l of out?.plan_baseline ?? []) parts.push(`  ${l}`);
+  if (!parts.length && ctx && readRewritePlan(ctx.root, ctx.rel)) {
+    // 回退：批级读数没到 ⇒ 现算出口闭环（**同一判据实现** `checkRewriteExit`，本函数不另写判据）
+    try {
+      parts.push(`  ★ ${renderExitCheck(checkRewriteExit(ctx.root, ctx.rel))}`);
+    } catch {
+      /* 对账是增强：拿不到就不出声（写前的 planGate 已点名） */
+    }
+  }
+  return parts.length ? '\n' + parts.join('\n') : '';
+}
 export function planExitHumanLine(out: WriteThroughOutcome | null | undefined): string {
   const lines = out?.plan_exit ?? [];
   if (!lines.length) return '';
