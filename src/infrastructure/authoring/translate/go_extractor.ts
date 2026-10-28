@@ -13,7 +13,7 @@
  */
 
 import { parseAstRoot, type SyntaxNodeLike } from '../../parse/index.js';
-import { DEFAULT_CONSTRAINTS, type TransUnit, type TranslateParam, type TranslateKind, type TranslateMethod, type DecisionShape } from './unit.js';
+import { DEFAULT_CONSTRAINTS, type TransUnit, type TranslateParam, type TranslateKind, type TypeRef, type TranslateMethod, type DecisionShape } from './unit.js';
 import { evalConstExpr, constToTsLiteral, type ConstValue } from './const_eval.js';
 import fs from 'node:fs';
 
@@ -24,6 +24,185 @@ function childField(node: SyntaxNodeLike, name: string): SyntaxNodeLike | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * ★★★ 2026-10-28（T-#TYPE-AST）：**AST 节点 → 结构化类型树**（一次到底，不再拍平成字符串）。
+ *
+ * 这是"消灭下游 15 处正则"的关键一步：tree-sitter 已经告诉我们每个节点是什么类型
+ * （`struct_type` / `function_type` / `map_type` / `slice_type` / `parameter_declaration` …），
+ * 以前在 `typeNode.text` 把它拍成文本，下游再猜回来 —— 猜错的代价是 5/55 文件语法错。
+ */
+function typeRefFromNode(node: SyntaxNodeLike | null): TypeRef {
+  if (!node) return { kind: 'unknown', text: '' };
+  const kids: SyntaxNodeLike[] = [];
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (!c) continue;
+    if ([',', '(', ')', '[', ']', '{', '}', ';', '.', '*', '<-', 'func', 'map', 'chan', 'struct', 'interface'].includes(c.type))
+      continue;
+    kids.push(c);
+  }
+  const last = (): TypeRef => typeRefFromNode(kids[kids.length - 1] ?? null);
+  switch (node.type) {
+    case 'type_identifier':
+    case 'identifier':
+      return { kind: 'ident', name: node.text };
+    case 'qualified_type': {
+      const names = kids.filter((k) => k.type === 'package_identifier' || k.type === 'type_identifier');
+      return { kind: 'qualified', pkg: names[0]?.text ?? '', name: names[1]?.text ?? node.text };
+    }
+    case 'pointer_type':
+      return { kind: 'pointer', elem: last() };
+    case 'slice_type':
+      return { kind: 'slice', elem: last() };
+    case 'array_type': {
+      const el = kids[kids.length - 1];
+      const len = kids.length > 1 ? kids[0].text : null;
+      return { kind: 'array', length: len, elem: typeRefFromNode(el ?? null) };
+    }
+    case 'map_type': {
+      const [k, v] = kids;
+      return { kind: 'map', key: typeRefFromNode(k ?? null), value: typeRefFromNode(v ?? null) };
+    }
+    case 'channel_type': {
+      const txt = node.text;
+      const dir: 'both' | 'send' | 'recv' = txt.startsWith('<-chan') ? 'recv' : /chan\s*<-/.test(txt) ? 'send' : 'both';
+      return { kind: 'chan', dir, elem: last() };
+    }
+    case 'function_type': {
+      const pl = kids.find((k) => k.type === 'parameter_list');
+      const rest = kids.filter((k) => k !== pl);
+      const params = pl ? paramRefsFromList(pl) : [];
+      const results: TypeRef[] = [];
+      for (const r of rest) {
+        if (r.type === 'parameter_list') for (const p of paramRefsFromList(r)) results.push(p.type);
+        else results.push(typeRefFromNode(r));
+      }
+      return { kind: 'func', params, results };
+    }
+    case 'struct_type': {
+      const list = kids.find((k) => k.type === 'field_declaration_list');
+      const fields: Array<{ name?: string; type: TypeRef; tag?: string }> = [];
+      if (list) {
+        for (let i = 0; i < list.childCount; i++) {
+          const fd = list.child(i);
+          if (!fd || fd.type !== 'field_declaration') continue;
+          const names: string[] = [];
+          let typeNode: SyntaxNodeLike | null = null;
+          let tag: string | undefined;
+          for (let j = 0; j < fd.childCount; j++) {
+            const c = fd.child(j);
+            if (!c) continue;
+            if (c.type === 'field_identifier') names.push(c.text);
+            else if (c.type === 'raw_string_literal') tag = c.text;
+            else if (c.type !== ',' && c.type !== ';') typeNode = c;
+          }
+          const tr = typeRefFromNode(typeNode);
+          if (!names.length) fields.push({ type: tr, tag }); // 嵌入字段
+          else for (const nm of names) fields.push({ name: nm, type: tr, tag });
+        }
+      }
+      return { kind: 'struct', fields };
+    }
+    case 'interface_type': {
+      const methods: Array<{ name: string; params: Array<{ name?: string; type: TypeRef }>; results: TypeRef[] }> = [];
+      const embeds: TypeRef[] = [];
+      const collect = (node2: SyntaxNodeLike): void => {
+        for (let i = 0; i < node2.childCount; i++) {
+          const c = node2.child(i);
+          if (!c) continue;
+          if (c.type === 'method_elem') {
+            let name = '';
+            let pl: SyntaxNodeLike | null = null;
+            const results: TypeRef[] = [];
+            for (let j = 0; j < c.childCount; j++) {
+              const k = c.child(j);
+              if (!k) continue;
+              if (k.type === 'field_identifier') name = k.text;
+              else if (k.type === 'parameter_list') {
+                if (!pl) pl = k;
+                else for (const p of paramRefsFromList(k)) results.push(p.type);
+              }
+            }
+            methods.push({ name, params: pl ? paramRefsFromList(pl) : [], results });
+          } else if (c.type === 'type_elem' || c.type === 'type_identifier' || c.type === 'qualified_type') {
+            embeds.push(typeRefFromNode(c));
+          } else if (c.childCount > 0) collect(c);
+        }
+      };
+      collect(node);
+      return { kind: 'interface', methods, embeds };
+    }
+    case 'generic_type': {
+      const base = kids.find((k) => k.type === 'type_identifier' || k.type === 'qualified_type') ?? kids[0];
+      const argsNode = kids.find((k) => k.type === 'type_arguments');
+      const args: TypeRef[] = [];
+      if (argsNode) for (const k of argTypes(argsNode)) args.push(typeRefFromNode(k));
+      return { kind: 'generic', base: typeRefFromNode(base ?? null), args };
+    }
+    case 'parenthesized_type': {
+      const inner = kids.find((k) => k.type !== '(' && k.type !== ')');
+      return typeRefFromNode(inner ?? null);
+    }
+    default:
+      // 兜底：**如实记原文**，不猜（下游见到 unknown 就回退到字符串映射）
+      return { kind: 'unknown', text: node.text };
+  }
+}
+
+/** `type_arguments` 里的实参节点（`[K, V]` → [K, V]） */
+function argTypes(node: SyntaxNodeLike): SyntaxNodeLike[] {
+  const out: SyntaxNodeLike[] = [];
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (!c) continue;
+    if (['[', ']', ','].includes(c.type)) continue;
+    out.push(c);
+  }
+  return out;
+}
+
+/** 返回类型节点 → TypeRef（单个 = 原样；多个 = tuple；无 = undefined） */
+function resultRefFromNode(node: SyntaxNodeLike | null): TypeRef | undefined {
+  if (!node) return undefined;
+  const pl =
+    node.type === 'parameter_list' ? node : (() => {
+      for (let i = 0; i < node.childCount; i++) {
+        const c = node.child(i);
+        if (c && c.type === 'parameter_list') return c;
+      }
+      return null;
+    })();
+  if (pl) {
+    const items = paramRefsFromList(pl).map((p) => p.type);
+    if (items.length === 0) return undefined;
+    return items.length === 1 ? items[0] : { kind: 'tuple', items };
+  }
+  return typeRefFromNode(node);
+}
+
+/** 参数列表 → [{name?, type: TypeRef}]（认分组写法 `a, b int`） */
+function paramRefsFromList(pl: SyntaxNodeLike): Array<{ name?: string; type: TypeRef }> {
+  const out: Array<{ name?: string; type: TypeRef }> = [];
+  for (let i = 0; i < pl.childCount; i++) {
+    const d = pl.child(i);
+    if (!d) continue;
+    if (d.type !== 'parameter_declaration' && d.type !== 'variadic_parameter_declaration') continue;
+    const names: string[] = [];
+    let typeNode: SyntaxNodeLike | null = null;
+    for (let j = 0; j < d.childCount; j++) {
+      const c = d.child(j);
+      if (!c) continue;
+      if (c.type === 'identifier') names.push(c.text);
+      else if (c.type !== ',' && c.type !== '(' && c.type !== ')') typeNode = c;
+    }
+    const tr = typeRefFromNode(typeNode);
+    const final = d.type === 'variadic_parameter_declaration' ? ({ kind: 'variadic', elem: tr } as TypeRef) : tr;
+    if (!names.length) out.push({ type: final });
+    else for (const nm of names) out.push({ name: nm, type: final });
+  }
+  return out;
 }
 
 /** 收集参数列表块里的每个 parameter_declaration（展开 `a, b int` 为两条） */
@@ -40,8 +219,9 @@ function extractParamList(block: SyntaxNodeLike): TranslateParam[] {
       const c = child.child(j);
       if (c && c.type === 'identifier') names.push(c.text);
     }
+    const tr = typeRefFromNode(typeNode);
     if (names.length === 0) names.push(`arg${idx}`);
-    for (const n of names) out.push({ name: n, type });
+    for (const n of names) out.push({ name: n, type, typeRef: tr });
     idx++;
   }
   return out;
@@ -193,6 +373,8 @@ function unitFromFunc(node: SyntaxNodeLike): TransUnit | null {
   const params = paramsNode ? extractParamList(paramsNode) : [];
   const resultNode = childField(node, 'result');
   const result = resultNode ? normResult(resultNode.text.trim()) : null;
+  // ★ 2026-10-28（T-#TYPE-AST）：返回类型的结构化树（多返回值 → tuple；无返回 → undefined）
+  const resultRef = resultRefFromNode(resultNode);
   const snippet = node.text.trim();
   const constraints = [...DEFAULT_CONSTRAINTS];
   appendBodyHints(snippet, constraints);
@@ -310,7 +492,7 @@ function unitFromTypeSpec(spec: SyntaxNodeLike): TransUnit | null {
 
   // struct → TS interface（数据字段）
   if (typeNode.type === 'struct_type') {
-    const fields: { name: string; type: string }[] = [];
+    const fields: { name: string; type: string; typeRef?: TypeRef }[] = [];
     const embedded: string[] = [];
     const list = childField(typeNode, 'field_declaration_list') || childField(typeNode, 'body') || findChildOfType(typeNode, 'field_declaration_list');
     if (list) {
@@ -324,7 +506,7 @@ function unitFromTypeSpec(spec: SyntaxNodeLike): TransUnit | null {
         for (let j = 0; j < fd.childCount; j++) {
           const c = fd.child(j);
           if (c && c.type === 'field_identifier') {
-            fields.push({ name: c.text, type });
+            fields.push({ name: c.text, type, typeRef: typeRefFromNode(typeNode2) });
             named = true;
           }
         }
@@ -345,7 +527,7 @@ function unitFromTypeSpec(spec: SyntaxNodeLike): TransUnit | null {
   }
 
   // 其它（type_identifier / array_type / map_type / pointer_type / func_type…）→ type 别名
-  return { ...base, typeKind: 'alias', aliasType: typeNode.text };
+  return { ...base, typeKind: 'alias', aliasType: typeNode.text, aliasTypeRef: typeRefFromNode(typeNode) };
 }
 
 /** 包级 const/var 描述符（name + 是否 var + 表达式节点），供 fixpoint 求值 */

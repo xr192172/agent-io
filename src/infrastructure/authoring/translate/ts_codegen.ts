@@ -12,7 +12,7 @@
  * 绝不硬译。
  */
 
-import { withConstraints, type TransUnit, type TranslateParam } from './unit.js';
+import { withConstraints, type TransUnit, type TranslateParam, type TypeRef } from './unit.js';
 
 /** 标量/名称型 1:1 映射（Go → TS） */
 const GO_TO_TS: Record<string, string> = {
@@ -44,6 +44,108 @@ export interface MappedType {
   ts: string;
   /** 需并入 constraints 的语义 note；无则省略 */
   note?: string;
+}
+
+/**
+ * ★★★ 2026-10-28（T-#TYPE-AST）：**渲染**结构化类型树 → TS 文本。
+ *
+ * 与 `mapGoType(string)` 的分工：
+ * · `mapGoType` 是**字符串入口**（老调用方 / 册子里的 `sig` / cache.db 的 `params[].type`）；
+ * · `renderTsType` 是**主路**：输入是 extractor 从 AST 直出的 `TypeRef`，**不做任何解析**。
+ * ★ 本函数刻意**零正则**（除以 `^\[\]` 这种必须有文本的场合外，一律走 kind 分派）——这就是"AST 发力"的落点。
+ */
+export function renderTsType(ref: TypeRef): MappedType {
+  switch (ref.kind) {
+    case 'ident': {
+      if (ref.name === 'error')
+        return { degree: 'unsupported', ts: 'Error | null', note: 'Go error 值为显式返回语义；TS 无内建对应，需 LLM/人审（映射为 Error | null 或抛异常）' };
+      const direct = GO_TO_TS[ref.name];
+      return { degree: 'direct', ts: direct ?? ref.name };
+    }
+    case 'qualified':
+      return { degree: 'direct', ts: `${ref.pkg}.${ref.name}` };
+    case 'pointer': {
+      const inner = renderTsType(ref.elem);
+      return { degree: inner.degree, ts: inner.ts, ...(inner.note ? { note: inner.note } : {}) };
+    }
+    case 'slice': {
+      // ★ 惯用特例与 mapGoType 保持一致（[]byte / []rune）
+      if (ref.elem.kind === 'ident' && ref.elem.name === 'byte') return { degree: 'direct', ts: 'Uint8Array' };
+      if (ref.elem.kind === 'ident' && ref.elem.name === 'rune') return { degree: 'direct', ts: 'number[]' };
+      const inner = renderTsType(ref.elem);
+      return { degree: inner.degree, ts: `${inner.ts}[]`, ...(inner.note ? { note: inner.note } : {}) };
+    }
+    case 'array': {
+      const inner = renderTsType(ref.elem);
+      return { degree: inner.degree, ts: `${inner.ts}[]`, ...(inner.note ? { note: inner.note } : {}) };
+    }
+    case 'map': {
+      const k = renderTsType(ref.key);
+      const v = renderTsType(ref.value);
+      return { degree: 'direct', ts: `Map<${k.ts}, ${v.ts}>` };
+    }
+    case 'chan': {
+      const el = renderTsType(ref.elem);
+      return {
+        degree: 'direct',
+        ts: `Channel<${el.ts}>`,
+        note: el.degree === 'unsupported' ? `chan 元素: ${el.note}` : 'chan → Channel<T> 垫片（近似；select/阻塞/竞态语义需人工核）',
+      };
+    }
+    case 'func': {
+      const ps = ref.params.map((p) => `${p.name ?? 'arg'}: ${renderTsType(p.type).ts}`);
+      const ret =
+        ref.results.length === 0 ? 'void' : ref.results.length === 1 ? renderTsType(ref.results[0]).ts : `[${ref.results.map((r) => renderTsType(r).ts).join(', ')}]`;
+      const anyUnsup = ref.results.some((r) => renderTsType(r).degree === 'unsupported') || ref.params.some((p) => renderTsType(p.type).degree === 'unsupported');
+      return { degree: anyUnsup ? 'unsupported' : 'direct', ts: `(${ps.join(', ')}) => ${ret}` };
+    }
+    case 'struct': {
+      if (!ref.fields.length) return { degree: 'direct', ts: 'Record<string, never>' };
+      const parts: string[] = [];
+      let anyUnsup = false;
+      for (const f of ref.fields) {
+        const m = renderTsType(f.type);
+        if (m.degree === 'unsupported') anyUnsup = true;
+        parts.push(`${f.name ?? f.type.kind === 'ident' ? (f.name ?? 'embedded') : (f.name ?? 'embedded')}: ${m.ts}`);
+      }
+      return { degree: anyUnsup ? 'unsupported' : 'direct', ts: `{ ${parts.join('; ')} }`, ...(anyUnsup ? { note: '匿名 struct 含不可机械翻译字段' } : {}) };
+    }
+    case 'interface': {
+      if (!ref.methods.length && !ref.embeds.length) return { degree: 'direct', ts: 'Record<string, never>' };
+      const parts: string[] = [];
+      let anyUnsup = false;
+      for (const mm of ref.methods) {
+        const fn = renderTsType({ kind: 'func', params: mm.params, results: mm.results });
+        if (fn.degree === 'unsupported') anyUnsup = true;
+        parts.push(`${mm.name}: ${fn.ts}`);
+      }
+      for (const e of ref.embeds) {
+        const m = renderTsType(e);
+        if (m.degree === 'unsupported') anyUnsup = true;
+        parts.push(`[key: string]: unknown /* embeds ${m.ts} */`);
+      }
+      return { degree: anyUnsup ? 'unsupported' : 'direct', ts: `{ ${parts.join('; ')} }`, ...(anyUnsup ? { note: '匿名 interface 含不可机械翻译方法' } : {}) };
+    }
+    case 'generic': {
+      const base = renderTsType(ref.base);
+      const args = ref.args.map((a) => renderTsType(a));
+      const anyUnsup = args.some((a) => a.degree === 'unsupported');
+      return { degree: anyUnsup ? 'unsupported' : 'direct', ts: `${base.ts.replace(/\./g, '_')}<${args.map((a) => a.ts).join(', ')}>` };
+    }
+    case 'variadic': {
+      const inner = renderTsType(ref.elem);
+      return { degree: inner.degree, ts: inner.ts, ...(inner.note ? { note: inner.note } : {}) };
+    }
+    case 'tuple': {
+      const items = ref.items.map((x) => renderTsType(x));
+      const anyUnsup = items.some((x) => x.degree === 'unsupported');
+      return { degree: anyUnsup ? 'unsupported' : 'direct', ts: `[${items.map((x) => x.ts).join(', ')}]` };
+    }
+    case 'unknown':
+    default:
+      // 兜底：回退到字符串映射（唯一的"字符串入口"，且只在 AST 给不出结构时用）
+      return mapGoType((ref as { text?: string }).text ?? '');
+  }
 }
 
 /**
@@ -303,8 +405,11 @@ function splitTopLevel(s: string): string[] {
   return out;
 }
 
-function mapParam({ name, type }: TranslateParam, notes: string[]): string {
-  const m = mapGoType(type);
+function mapParam(p: TranslateParam, notes: string[]): string {
+  // ★ 2026-10-28（T-#TYPE-AST）：**有结构化树就走渲染**（AST 主路），没有才回退字符串入口
+  const m = p.typeRef ? renderTsType(p.typeRef) : mapGoType(p.type);
+  const name = p.name;
+  const type = p.type;
   if (m.note) notes.push(`${name}: ${m.note}`);
   return `${name}: ${m.ts}`;
 }
@@ -354,7 +459,7 @@ function renderFuncSkeleton(u: TransUnit): { code: string; notes: string[] } {
   const params = (u.params ?? []).map((p) => mapParam(p, notes)).join(', ');
   let ret = '';
   if (u.result) {
-    const m = mapGoType(u.result);
+    const m = u.resultRef ? renderTsType(u.resultRef) : mapGoType(u.result);
     if (m.note) notes.push(`return: ${m.note}`);
     ret = `: ${m.ts}`;
   }
@@ -404,7 +509,7 @@ function renderTypeSkeleton(u: TransUnit): { code: string; notes: string[] } {
 
   // type 别名：`type MyInt int` → `export type MyInt = number;`
   if (u.typeKind === 'alias') {
-    const m = mapGoType(u.aliasType ?? '');
+    const m = u.aliasTypeRef ? renderTsType(u.aliasTypeRef) : mapGoType(u.aliasType ?? '');
     if (m.note) notes.push(`alias ${u.name}: ${m.note}`);
     return { code: `export type ${u.name}${typeParamString(u)} = ${m.ts};`, notes };
   }
@@ -416,7 +521,7 @@ function renderTypeSkeleton(u: TransUnit): { code: string; notes: string[] } {
         const params = mm.params.map((p) => mapParam(p, notes)).join(', ');
         let ret = 'void';
         if (mm.result) {
-          const m = mapGoType(mm.result);
+          const m = mm.resultRef ? renderTsType(mm.resultRef) : mapGoType(mm.result);
           if (m.note) notes.push(`${mm.name}: ${m.note}`);
           ret = m.ts;
         }
@@ -429,7 +534,7 @@ function renderTypeSkeleton(u: TransUnit): { code: string; notes: string[] } {
   // struct → interface（数据字段）
   const fields = (u.fields ?? [])
     .map((f) => {
-      const m = mapGoType(f.type);
+      const m = f.typeRef ? renderTsType(f.typeRef) : mapGoType(f.type);
       if (m.note) notes.push(`${f.name}: ${m.note}`);
       return `  ${f.name}: ${m.ts};`;
     })

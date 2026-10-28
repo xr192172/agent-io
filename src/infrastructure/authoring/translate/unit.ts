@@ -17,12 +17,50 @@
 /** 一条待译契约的类型类别 */
 export type TranslateKind = 'func' | 'type' | 'const';
 
+/**
+ * ★★★ 2026-10-28（T-#TYPE-AST）：**结构化类型树** —— 由 Go AST **直接映射**而来。
+ *
+ * ## 为什么需要它（取代"拍平成字符串 + 下游正则猜结构"）
+ * 原来 `go_extractor` 在 `const type = typeNode2.text` 这一步把 tree-sitter 的类型节点**拍成文本**，
+ * 下游 `ts_codegen.mapGoType` 再用 15 处正则把结构**猜回来**（struct 体 / interface 体 / 分组形参 /
+ * 泛型实参 / struct tag / 嵌套结构）—— 猜测必然出错（实测：5/55 文件语法错、8 处假签名）。
+ *
+ * ⇒ 现在 extractor 直接把 AST 映成这棵树，codegen 只做**渲染**（渲染输出文本是必然的，但输入不需要解析）。
+ * ★ `type`（原文）保留不删：人读、日志、以及"手上只有字符串"的老调用方仍用它；
+ *   `typeRef` 是**权威**，`type` 是**投影**——两者由同一棵树产生，不会分叉。
+ */
+export type TypeRef =
+  | { kind: 'ident'; name: string }
+  | { kind: 'qualified'; pkg: string; name: string }
+  | { kind: 'pointer'; elem: TypeRef }
+  | { kind: 'slice'; elem: TypeRef }
+  | { kind: 'array'; length: string | null; elem: TypeRef }
+  | { kind: 'map'; key: TypeRef; value: TypeRef }
+  | { kind: 'chan'; dir: 'both' | 'send' | 'recv'; elem: TypeRef }
+  | { kind: 'func'; params: Array<{ name?: string; type: TypeRef }>; results: TypeRef[] }
+  | {
+      kind: 'struct';
+      fields: Array<{ name?: string; type: TypeRef; tag?: string }>;
+    }
+  | {
+      kind: 'interface';
+      methods: Array<{ name: string; params: Array<{ name?: string; type: TypeRef }>; results: TypeRef[] }>;
+      embeds: TypeRef[];
+    }
+  | { kind: 'generic'; base: TypeRef; args: TypeRef[] }
+  | { kind: 'variadic'; elem: TypeRef }
+  | { kind: 'tuple'; items: TypeRef[] }
+  /** 兜底：解析不了就**如实记原文**（不猜） */
+  | { kind: 'unknown'; text: string };
+
 /** 参数/字段的最小结构化描述 */
 export interface TranslateParam {
   /** 本地名（Go 参数名 / struct 字段名） */
   name: string;
-  /** 源语言类型原文（如 'int' / '[]byte' / '*User'） */
+  /** 源语言类型原文（如 'int' / '[]byte' / '*User'）—— ★ 投影，不是权威 */
   type: string;
+  /** ★ 权威：结构化类型树（由 AST 直出；缺失时才回退到 `type` 字符串） */
+  typeRef?: TypeRef;
 }
 
 /** 接口的方法签名（用于 type→interface 单元） */
@@ -30,6 +68,8 @@ export interface TranslateMethod {
   name: string;
   params: TranslateParam[];
   result?: string | null;
+  /** ★ 权威：返回类型的结构化树（多返回值时是 tuple） */
+  resultRef?: TypeRef;
 }
 
 /**
@@ -50,8 +90,10 @@ export interface TransUnit {
   // —— func 用 ——
   /** 参数表（Go 展开成单参数单类型） */
   params?: TranslateParam[];
-  /** 返回类型原文；null / undefined = 无返回值 */
+  /** 返回类型原文；null / undefined = 无返回值 —— ★ 投影 */
   result?: string | null;
+  /** ★ 权威：返回类型结构化树（多返回值是 tuple；无返回值缺省） */
+  resultRef?: TypeRef;
   /** Go 类型参数名（泛型），如 ['T']；渲染为 TS `<T, ...>` */
   typeParams?: string[];
   /** 各类型参数 → Go 约束原文（如 comparable/any/Ordered）；TS 无等价约束，仅传递提示 */
@@ -70,12 +112,14 @@ export interface TransUnit {
   // —— type 用 ——
   /** 具体形态：struct → interface；interface → interface(方法签名)；alias → type 别名 */
   typeKind?: 'struct' | 'interface' | 'alias';
-  /** struct 字段表 */
-  fields?: { name: string; type: string }[];
+  /** struct 字段表（`type` 是投影，`typeRef` 是权威） */
+  fields?: { name: string; type: string; typeRef?: TypeRef; tag?: string }[];
   /** interface 方法签名表（typeKind='interface'） */
   methods?: TranslateMethod[];
   /** alias 的底层类型原文（typeKind='alias'） */
   aliasType?: string;
+  /** ★ 权威：alias 底层类型的结构化树 */
+  aliasTypeRef?: TypeRef;
 
   // —— 证据与目标 ——
   /** 源文件里该单元的完整原文（给 LLM 做翻译上下文；type 非孔则省略） */
