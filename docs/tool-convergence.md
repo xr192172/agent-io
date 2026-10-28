@@ -46,7 +46,7 @@
 
 | 步 | 内容 | 涉及判据 | 代价 |
 |---|---|---|---|
-| **1** | 纯工具内合并（不动判据）：`plan_refactor`→`apply_refactor_plan` · `render_design`→`get_dsl` · `feature_line`→`get_dsl` · `find_similar_names`+`suggest_renames`→`rename_symbols` · `tool_usage`→`capability_map` · `capability_audit`→`capability_map` | 无 | 每合并**先立等价性基线证**（照 `t407` 的做法） |
+| **1** | 纯工具内合并（不动判据）：**`plan_refactor`→`apply_refactor_plan` ✅ 已完成（证 `t425` 13/0，工具面 55→54）** · `render_design`→`get_dsl` · `feature_line`→`get_dsl` · `find_similar_names`+`suggest_renames`→`rename_symbols` · `tool_usage`→`capability_map` · `capability_audit`→`capability_map` | 无 | 每合并**先立等价性基线证**（照 `t407` 的做法） |
 | **2** | 变判据：`code_health` 拆成 `domain-independent`（分层）+ 新 `dead-code` + 新 `metric`（复杂度）；`impact_analysis` 变写闸前置；`detect_drift` 复核后退役 | 新增 2 个 kind（注册表 1 处） | 要写"判据覆盖了原来工具的全部读数"的对账 |
 | **3** | 只给**幸存者**补证（预计 5–6 张） | 无 | 小 |
 

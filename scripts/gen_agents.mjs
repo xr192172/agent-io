@@ -39,7 +39,7 @@ const TRIGGER_ROWS = [
 ['重构后让 LLM 判一轮（拿不定的上抛给人）', '`refactor_judge`', '逐条裁 adopt / reject / uncertain（带置信度 + 理由）；uncertain 经 `alert_inbox` 入箱，下一次工具响应自动附带'],
 ['重算翻译册（Go→TS 全量符号账）', '`translate_book`', '从事实库重算 `.agent-io/design/<f>.translate.json`（pending / blocked / judgments / external_deps 一次算清）；人写的 types / atoms / unknowns 原样保留'],
   ['改一段代码（函数体 / range）', '`edit_code`', '按符号 / 行号 / range 定位；走写闸 + 重建索引'],
-  ['批量串替换先算清单', '`plan_refactor` → `apply_refactor_plan`', '清单含 plan id + 命中级别 + diff；apply 幂等，指纹不符即报错'],
+['批量串替换（先算清单 → 再落盘）', '`apply_refactor_plan`', '单一入口两种形态：给 `targets` ⇒ **只算清单**（只读：plan id + 命中级别 + diff）；给回执里的 `plan` ⇒ **落盘**（幂等，plan_id 指纹不符即报错）。★ 2026-10-28 合并 `plan_refactor`'],
   ['回滚代码改动', '`snapshot action=rollback`', '落盘前自动存快照；回滚立即写盘、不回滚本身、不可再撤回'],
   ['理解代码 / 结构', '`explore_code`', '只读：语义搜索、分层、拆分建议、数据流'],
   ['清理无效 import', '`remove_dead_imports`', '删 dead_deps'],

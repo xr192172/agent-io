@@ -1689,64 +1689,6 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   },
 
   {
-    name: 'plan_refactor',
-    title: 'Compute a reviewable, replayable refactor plan (read-only)',
-    description:
-      '「先算清单 → 预览 → 批量落盘」的**第一半**（规划书 §16.3 P-C）：**只读**算出一份可审、可复跑、可落地的重构清单，不写任何文件。' +
-      '输入 targets=[{file, old_text, new_text}, ...]（与 edit_code 批量同形状，每项 = 文件内一次**唯一**文本替换）；' +
-      '输出结构化清单 data：plan_id（内容派生指纹）+ items（每项 file/old/new/**命中级别**/diff 预览）+ files（规划时刻源文件指纹 base_fingerprint 与"全应用后"指纹 post_fingerprint）+ summary（项数/文件数/按命中级别分布）。' +
-      '定位与语法门**复用** edit_code 的 replace_text 同一实现（4 级模糊级联：逐字→空白归一→缩进弹性→省略号占位；歧义即报错、绝不猜）。' +
-      '纪律（§21）：清单必须**全部可执行**——任一项规划不出来（old_text 不在/歧义/新引入语法错误）⇒ 报错并列全每项原因，不产出半成品；targets 为空 ⇒ 产出**显式空清单**（items=[]）。' +
-      '★ 把本品的 data **原样**交给 apply_refactor_plan 落盘（同一份清单 = 同一 plan_id；清单被改动会被指纹检出）。' +
-      '与 refactor_pipeline 的分工：pipeline 是"内置步骤自动检测"（dead import/语句/迁移）；本品是"**调用方给定清单**"的算清单入口（无自动检测，只算你要的那批替换）。' +
-      '★★★ **本族 = 【补丁族】——定位别用错（2026-10-11 正名）**：本品的每一项是 ' +
-      '`{file, old_text, new_text}`，即**文件内一次唯一文本替换** = **在旧文本上打补丁**。' +
-      '★ 按本仓既定理念（**不打补丁，而是局部整块重写** —— **把那一整块圈出来，然后让你去重写**），' +
-      '**重构的主路不是本族**，而是【**整块族**】：' +
-      '① `edit_code op=replace`（**整个符号**，按**符号名**定位，不看行号/不拿旧文本当定位）；' +
-      '② `move_symbol`（**整块符号跨文件**，自动重定向 importers）；' +
-      '③ `rename_files`（**整块文件级**改名/移动 + 全仓 import 改写）；' +
-      '④ 设计侧 `edit_dsl type=api op=update` + `data.expected_apis`（**整个契约块**）。' +
-      '⇒ ★ 本族的正当用途：**你确实只要改一小段文本**（改条注释、换个字面量），且**不涉及"这块功能该怎么分布"**。',
-    inputSchema: {
-      project_dir: z.string().describe('项目根目录（相对路径的锚点）'),
-      targets: z
-        .array(
-          z.object({
-            file: z.string().describe('目标文件（相对 project_dir 或绝对路径）'),
-            old_text: z.string().describe('要替换的旧文本（在文件内须恰好 1 处命中，否则报歧义）'),
-            new_text: z.string().describe('替换后的新文本（传空串=删除该文本）'),
-          }),
-        )
-        .describe('重构目标清单（每项 = 文件内一次唯一文本替换；空数组 ⇒ 显式空清单）'),
-    },
-    handler: wrapData(async (a) => {
-      const project_dir = requireStr(a, 'project_dir');
-      if (!Array.isArray(a.targets)) throw new Error('缺参数 "targets"（[{file, old_text, new_text}, ...]）');
-      const plan = await buildRefactorPlan({ project_dir, targets: a.targets as RefactorTarget[] });
-      const lines: string[] = [];
-      if (plan.summary.items === 0) {
-        lines.push(`[空清单] 没有可执行的替换项（targets 为空）—— plan_id ${plan.plan_id}，未写任何文件。`);
-      } else {
-        const levels = Object.entries(plan.summary.by_level)
-          .sort(([x], [y]) => Number(x) - Number(y))
-          .map(([lv, n]) => `L${lv}×${n}`)
-          .join(' ');
-        lines.push(
-          `清单 ${plan.plan_id}：${plan.summary.items} 项 / ${plan.summary.files} 个文件（命中级别 ${levels}）—— 只读，未写任何文件。`,
-        );
-        for (const it of plan.items) {
-          lines.push(
-            `  · ${it.file} L${it.hit.start_line}（L${it.hit.level}·${it.hit.label}）${it.hit.old_lines} 行 → ${it.hit.new_lines} 行`,
-          );
-        }
-        lines.push('', '把本回执的 data 原样交给 apply_refactor_plan 落盘（清单被改动会被 plan_id 指纹检出）。');
-      }
-      return { message: lines.join('\n'), data: plan };
-    }),
-  },
-
-  {
     name: 'apply_refactor_plan',
     title: 'Apply a refactor plan from plan_refactor (idempotent, fingerprint-checked)',
     description:
@@ -1764,7 +1706,21 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       //   经 a.actor 一路传到写闸 admitActor 的 explicit 位，env（AGENT_IO_ACTOR）只作回退。
       ...CALL_ACTOR_FIELD,
       project_dir: z.string().describe('项目根目录（清单里的相对路径以此为锚点）'),
-      plan: refactorPlanSchema.describe('plan_refactor 的 data 原样传入（含 plan_id / items / files / summary）'),
+      // ★★★ 2026-10-28（T-#CERT-1 步 1 · 合并 plan_refactor）：
+      //   一个工具两个形态 —— **给 targets ⇒ 只算清单（只读）**；**给 plan ⇒ 落盘（幂等）**。
+      //   原来这是两个工具（`plan_refactor` + `apply_refactor_plan`），但它们是**同一操作对象的两个半**：
+      //   同一份清单、同一个 plan_id、同一套定位实现 ⇒ 拆两个只会多一次往返 + 多一处描述漂移。
+      plan: refactorPlanSchema.optional().describe('上一轮本工具回执的 data 原样传入（含 plan_id / items / files / summary）；给了它就是落盘形态'),
+      targets: z
+        .array(
+          z.object({
+            file: z.string().describe('目标文件（相对 project_dir 或绝对路径）'),
+            old_text: z.string().describe('要替换的旧文本（在文件内须恰好 1 处命中，否则报歧义）'),
+            new_text: z.string().describe('替换后的新文本（传空串=删除该文本）'),
+          }),
+        )
+        .optional()
+        .describe('算清单形态的入参：每项 = 文件内一次唯一文本替换（空数组 ⇒ 显式空清单）。★ 给了 targets 就是**只读**，不落盘'),
       atomic: z
         .boolean()
         .optional()
@@ -1772,9 +1728,30 @@ export const REFACTOR_TOOLS: ToolDef[] = [
     },
     handler: wrapData(async (a) => {
       const project_dir = requireStr(a, 'project_dir');
+      // ★ 形态判定（合并后唯一入口）：给 targets ⇒ 算清单（只读）；给 plan ⇒ 落盘（幂等）。
+      if (Array.isArray(a.targets)) {
+        const plan0 = await buildRefactorPlan({ project_dir, targets: a.targets as RefactorTarget[] });
+        const lines0: string[] = [];
+        if (plan0.summary.items === 0) {
+          lines0.push(`[空清单] 没有可执行的替换项（targets 为空）—— plan_id ${plan0.plan_id}，未写任何文件。`);
+        } else {
+          const levels0 = Object.entries(plan0.summary.by_level)
+            .sort(([x], [y]) => Number(x) - Number(y))
+            .map(([lv, cnt]) => `L${lv}×${cnt}`)
+            .join(' ');
+          lines0.push(
+            `清单 ${plan0.plan_id}：${plan0.summary.items} 项 / ${plan0.summary.files} 个文件（命中级别 ${levels0}）—— 只读，未写任何文件。`,
+          );
+          for (const it of plan0.items) {
+            lines0.push(`  · ${it.file} L${it.hit.start_line}（L${it.hit.level}·${it.hit.label}）${it.hit.old_lines} 行 → ${it.hit.new_lines} 行`);
+          }
+          lines0.push('', '把本回执的 data 原样传回本工具（不带 targets）即落盘：清单被改动会被 plan_id 指纹检出。');
+        }
+        return { message: lines0.join('\n'), data: plan0 };
+      }
       const plan = a.plan;
       if (!plan || typeof plan !== 'object' || Array.isArray(plan)) {
-        throw new Error('缺参数 "plan"（把 plan_refactor 回执的 data 原样传入）');
+        throw new Error('缺参数：要么给 targets（算清单，只读），要么给 plan（上一轮回执的 data，落盘）');
       }
       const r = await applyRefactorPlan({
         project_dir,
