@@ -11,10 +11,12 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import ts from 'typescript';
 import { translateGoToTs } from './pairs.js';
 import { channelShimSource, collectQualified, renderGoStdShim } from './ts_codegen.js';
 import { collectExternalTypeRefs } from './referenced.js';
+import { spliceBody } from './fill.js';
 import { fillUnitsWithRetry, fillUnitsBatched } from './fill.js';
 import { createPooledBatchTranslator } from './llm.js';
 import { applyDeterministicFixers } from './fixers.js';
@@ -173,6 +175,48 @@ async function collectCallRefs(fileAbs: string, src: string): Promise<string[]> 
 export interface SymbolDef {
   file: string;
   isFunc: boolean;
+}
+
+/**
+ * ★★★ 2026-10-28（T-#FILL-CACHE）：**填孔结果缓存** —— 跨轮次"别把成功的再次送进去"。
+ *
+ * 为什么需要：`fillUnitsBatched` 在**一轮之内**已经只重试失败子集（不重发成功），
+ * 但**重跑整个项目**（改了一个文件想再试一次）会把所有孔重新送 LLM ⇒ 白花钱、还受抖动影响。
+ * ⇒ 成功的函数体按 `<rel>#<unitId>@<源片段指纹>` 落盘；下次同源同单元直接命中缓存，**不调 LLM**。
+ * ★ 指纹含源片段：**源变了就自动失效**，不会把旧实现贴到新签名上。
+ */
+function sha1(x: string): string {
+  return crypto.createHash('sha1').update(x).digest('hex').slice(0, 16);
+}
+
+/** 从「完整函数源码」里取出 `{ … }` 之间的函数体（写缓存用；与 `spliceBody` 互逆） */
+function spliceBodyOuter(filledSource: string): string {
+  const a = filledSource.indexOf('{');
+  const b = filledSource.lastIndexOf('}');
+  return a >= 0 && b > a ? filledSource.slice(a + 1, b) : '';
+}
+
+function fillCachePath(outDir: string): string {
+  return path.join(outDir, '.fill-cache.json');
+}
+
+function loadFillCache(outDir: string): Record<string, { body: string; at: string }> {
+  try {
+    const raw = fs.readFileSync(fillCachePath(outDir), 'utf8');
+    const j = JSON.parse(raw) as Record<string, { body: string; at: string }>;
+    return j && typeof j === 'object' ? j : {};
+  } catch {
+    return {}; // 没有缓存是常态
+  }
+}
+
+function saveFillCache(outDir: string, cache: Record<string, { body: string; at: string }>): void {
+  try {
+    fs.mkdirSync(outDir, { recursive: true });
+    fs.writeFileSync(fillCachePath(outDir), JSON.stringify(cache, null, 2), 'utf-8');
+  } catch {
+    // 缓存写失败不影响主流程（它只是省钱手段，不是判据）
+  }
 }
 
 /** 组装模块内容：import 头 + Channel 垫片（如需） + 各单元骨架；随后跑 C1 确定性 fixer 去未用 import/合 import。 */
@@ -521,6 +565,9 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
 
   // 第三遍（fill）：在 import 已算定的前提下逐模块注入「项目级调用约定」再填孔，
   // 让函数体引用对名；填完重建每个模块的 m.ts（门禁在填后输出上跑 = 填后 release gate）。
+  // ★ 2026-10-28（T-#FILL-CACHE）：填孔缓存**在函数作用域**声明（回写发生在报告之后，不能只活在 fill 块里）
+  const fillCache = opts.outDir ? loadFillCache(String(opts.outDir)) : {};
+  let cacheHits = 0;
   if (opts.fill) {
     // ★ I3（2026-10-25）：翻译 DB 投影 + 术语表进 prompt（按图索骥的"图"）——
     //   根目录 `.agent-io/design/*.translate.json` 存在时按 `<rel>#<符号名>` 对齐注入。
@@ -529,23 +576,48 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
     for (const m of modules) attachBookFacts(m.units, books, m.rel);
     for (const m of modules) {
       const note = buildProjectCallNote(m, defined, pctx) || undefined;
-      let filled: Awaited<ReturnType<typeof fillUnitsWithRetry>>;
-      if (useBatch) {
-        filled = await fillUnitsBatched(m.units, createPooledBatchTranslator(), {
+      // ★★★ 2026-10-28（T-#FILL-CACHE）：**先吃缓存** —— 同源同单元的孔直接贴回，不再送 LLM。
+      //   ★ 指纹含源片段 ⇒ 源变了自动失效，不会把旧实现贴到新签名上。
+      const cache = fillCache;
+      const hits: Array<{ u: (typeof m.units)[number]; body: string }> = [];
+      const missUnits: typeof m.units = [];
+      for (const u of m.units) {
+        if (!u.bodyHole) continue;
+        const key = `${m.rel}#${u.id}@${sha1(u.srcSnippet)}`;
+        const hit = cache[key];
+        if (hit?.body) hits.push({ u, body: hit.body });
+        else missUnits.push(u);
+      }
+      for (const h of hits) h.u.skeleton = spliceBody(h.u.skeleton, h.body);
+      if (hits.length) cacheHits += hits.length;
+      const unitsToFill = missUnits;
+      let filled: Awaited<ReturnType<typeof fillUnitsWithRetry>> = [];
+      if (!unitsToFill.length) {
+        // 全命中 ⇒ 一次 LLM 都不调
+        filled = [];
+      } else if (useBatch) {
+        filled = await fillUnitsBatched(unitsToFill, createPooledBatchTranslator(), {
           batchSize: opts.batchSize ?? 5,
           maxRetries: opts.maxRetries ?? 2,
           projectNote: note,
         });
       } else if (singleTranslator) {
-        filled = await fillUnitsWithRetry(m.units, singleTranslator, opts.maxRetries ?? 2, note);
+        filled = await fillUnitsWithRetry(unitsToFill, singleTranslator, opts.maxRetries ?? 2, note);
       } else {
         continue;
       }
       const byId = new Map(filled.map((f) => [f.unit.id, f]));
       for (const u of m.units) {
         const f = byId.get(u.id);
-        if (f?.ok) u.skeleton = f.filledSource;
+        if (f?.ok) {
+          u.skeleton = f.filledSource;
+          // ★ 成功的写进缓存：跨轮次**不再重发**（只重试失败的）
+          const bodyOnly = spliceBodyOuter(f.filledSource);
+          if (bodyOnly) cache[`${m.rel}#${u.id}@${sha1(u.srcSnippet)}`] = { body: bodyOnly, at: new Date().toISOString() };
+        }
       }
+      // ★ 2026-10-28：**进度日志**（长跑必须可观测）。没有它，卡在某一批时外面看到的是"什么都没有"。
+      process.stderr.write(`[translate] fill ${m.rel}: 命中${hits.length} 提交${unitsToFill.length} ok${filled.filter((f)=>f.ok).length} fail${filled.filter((f)=>!f.ok).length}\n`);
       const failed = filled.filter((f) => !f.ok);
       for (const f of failed) {
         m.fillFailures.set(f.unit.id, f.error ?? f.issues.map((i) => i.detail).join('；'));
@@ -574,6 +646,12 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
     const outRoot = path.resolve(opts.outDir);
     writeReport(outRoot, report);
     writeTypesMap(outRoot, typesMap);
+    // ★ 2026-10-28（T-#FILL-CACHE）：回写填孔缓存 —— 跨轮次**只重试失败的**，成功的不再送 LLM。
+    //   位置放在报告之后：缓存是"省钱手段"，不是判据；写失败也不影响产物。
+    if (opts.fill) {
+      saveFillCache(outRoot, fillCache);
+      if (cacheHits) diagnostics.push(`填孔缓存命中 ${cacheHits} 个（★ 未调用 LLM）`);
+    }
   }
 
   // 全工程 tsc 门禁：对内存模块树跑 TS preEmit，错误按根因聚类并入诊断（不阻断）
