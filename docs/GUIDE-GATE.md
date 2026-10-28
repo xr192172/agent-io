@@ -44,7 +44,7 @@
 - 默认跳过不产出 PASS/FAIL 的量具 / 探针 / 复位（清单 `NON_JUDGING`，带自检：台账证明它产出汇总 ⇒ 当场报警并照跑）。
 - `--all` 全跑 · `--exclude <串>` 排掉某张 · `<名字片段>` 点名跑。
 
-## 三、判据 10 kind
+## 三、判据 12 kind
 
 写在节点 `decision.expectations`，由 `judgeExpectations` 求值；`path` / `from` / `to` 一律仓库相对路径。
 
@@ -55,16 +55,21 @@
 | `signature-matches` | 符号签名 == 给定签名（比较前压空白） | `path` `symbol` `signature` | post |
 | `edge-exists` | **文件级**：`from` 依赖 `to` | `from` `to` | post |
 | `edge-absent` | **文件级**：`from` 不许依赖 `to` | `from` `to` | pre |
+| `cert` | **跑一张证**（`certs/<cert>*.mjs`）取结论：给了 `case` 取该条判据行，否则看汇总行 `PASS=n FAIL=0`。★ 副作用留在**证的进程**里（证自建临时夹具）⇒ 判据侧仍只读 | `cert` + 可选 `case` | post |
 | `domain-independent` | **域级**：域 `domain` 不许 import 域 `must_not_import[]` 里任何文件（按**域对聚合**，给条数 + 样例边） | `domain` `must_not_import[]`（非空） | pre |
 | `call-exists` | `path` 里的 `symbol` 调用了 `target` | `path` `symbol` `target` | post |
 | `source-has` | 源码文本必须含 `must[]` / 不许含 `mustNot[]`（只验文本，不懂语义） | `path` + `must[]` 或 `mustNot[]` 至少一个 | post |
 | `run` | 给 `input` 跑 `expect` 表达式 | `expect` | post |
 | `behavior-cases` | 给 `cases[]`（位置实参）跑函数，逐条比 `expect`（与 `run` 同一执行核） | `path` `symbol` `cases[]`（非空） | post |
+| `runtime` | **运行时事件**（L3）：`probe` 的每条事件判定必须 `ok`；`expect=deviation` 则至少要有一条偏差（**反例用法**）；`expect=absent` 则一条都不许出现。★ **零配置**自动找 `<root>/.agent/observe/events*.jsonl`（取 mtime 最新）；无文件 / 空文件 / 无该 probe ⇒ `unsupported` | `probe` + 可选 `expect`(ok/deviation/absent) `events` | post |
 
 - 每条都要 `why`（非空），否则写入被拒。
 - `run` 专属字段：`input` / `input_ref` / `blocked_by`（有值 ⇒ 判 `pending`，不跑 `expect`）/ `mutants_ignore[]`（不参与突变的 input 字段）。`expect` 的求值域只有 `input` / `root` / `validateDSL` / `fs` / `path`，**没有 `import`** ⇒ 调不到项目模块，只能断言 `validateDSL` 或文件文本。要真跑被测函数得加 `target{module,fn}` + `cases[]`（未做，见 `INDEX.md` §四）。
 - `run` 只许读 + 判，不许副作用（写盘 / 改状态）。
 - `signature-matches` 比的是「设计侧存的签名（意图）」与「源码签名（事实）」。设计 DSL 该存签名，不该存从源码抽出来的结构化契约（派生量，会不同步）。
+- ★ `runtime` 的主体是**事件流**（探针写出的 `events*.jsonl`），不是源文件；它对应自动化测试框架的 **L3 层**
+  （L1 静态 7 种 · L2 `behavior-cases` 同进程跑函数 · **L3 运行时**：真链路 / 静默吞错 / 重试）。
+  ★ 判不了的三态（无文件 / 空文件 / 无该 probe）**都不算通过** —— 最容易被读成"没问题"的正是"没跑到"。
 - ★ `domain-independent` 的主体是**域 id**（`structure.domains.json` 的 `id`，不是层级名、不是路径）：
   域表缺失 / 域 id 不认识 / 索引不可用 ⇒ 判 `unsupported`（**判不了 ≠ 合格**）。它存在的理由：
   本仓有 167 个域对 / 1507 条跨域 import 边，**逐文件枚举不现实**；而分割 / 合并 / 废弃 / 删除的
