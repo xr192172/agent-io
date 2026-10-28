@@ -284,6 +284,262 @@ function genericNames(row: NodeRow): Set<string> {
 }
 
 /**
+ * ★★★ 2026-10-28（T-#TERM-PARSE · **彻底解**）：按 **Go 类型文法**解析一段类型表达式，
+ * 只收集**类型位置**的标识符 —— 形参名 / 字段名 / 方法名一律不收集。
+ *
+ * ## 为什么不能再用"正则扫标识符"
+ * `unmappedGoTypes` 原来把类型表达式拍平后交给「标识符正则」扫。于是一段完全可翻的类型
+ * `func(pattern string, brain string) bool` 会把 `pattern` / `brain` 判成"未覆盖术语"
+ * ⇒ 符号被判 `blocked`，而这两个词**永远补不进术语表**（它们是形参名）⇒ **不可修的 blocked**。
+ *
+ * 本仓铁律是「判语法结构走 AST，正则只用于文本形状本身就是答案的场合」——这里显然不是那种场合，
+ * 所以补一个**针对类型文法的小解析器**（不引 tree-sitter：输入已经是 Go 侧的**类型表达式片段**，
+ * 不是完整源码；文法子集有限，逐条可测）。
+ *
+ * ## 认得的构造（Go 类型表达式子集）
+ * `*T` · `[]T` / `[N]T` · `map[K]V` · `chan T` / `<-chan T` / `chan<- T` ·
+ * `func(参数表) 返回值` · `struct{ 字段表 }` · `interface{ 方法表 }` · `Name[T1,T2]` · `(A, B)` 元组 · `...T`
+ */
+export function typeIdents(expr: string): string[] {
+  const toks = tokenizeGoType(expr);
+  const out = new Set<string>();
+  let i = 0;
+  const at = (): string | undefined => toks[i];
+  const eat = (t: string): boolean => {
+    if (toks[i] === t) {
+      i++;
+      return true;
+    }
+    return false;
+  };
+  const isIdent = (t: string | undefined): boolean => !!t && /^[A-Za-z_][\w]*$/.test(t);
+  /** 这个 token 能否开始一个类型 */
+  const canStartType = (t: string | undefined): boolean =>
+    !!t && (/^[A-Za-z_]/.test(t) || ['*', '[', '(', '<-'].includes(t));
+
+  /** 参数表：`(a int, b string)` / `(int, string)` / `(a, b int)` 三种写法都要认 */
+  function parseParams(): void {
+    if (!eat('(')) return;
+    // 先按顶层逗号切段
+    const segs: string[][] = [[]];
+    let depth2 = 0;
+    while (at() !== undefined && !(depth2 === 0 && at() === ')')) {
+      const t = at() as string;
+      if (t === '(' || t === '[' || t === '{') depth2++;
+      if (t === ')' || t === ']' || t === '}') depth2--;
+      if (depth2 === 0 && t === ',') {
+        segs.push([]);
+        i++;
+        continue;
+      }
+      segs[segs.length - 1].push(t);
+      i++;
+    }
+    eat(')');
+    // 判定：段里出现「名字 类型」（≥2 token 且首 token 是标识符）⇒ 该段有名；否则是裸类型
+    const named = segs.some((g) => g.length >= 2 && isIdent(g[0]) && canStartType(g[1]));
+    for (const g of segs) {
+      if (!g.length) continue;
+      if (named && isIdent(g[0]) && g.length >= 2) {
+        collectFromTokens(g.slice(1)); // 丢掉名字，解析类型
+      } else if (named && g.length === 1 && isIdent(g[0])) {
+        // `(a, b int)` 里的 `a`：名字，不是类型
+      } else {
+        collectFromTokens(g); // 裸类型段
+      }
+    }
+  }
+
+  /** 用一段独立 token 流走一遍类型解析（复用同一套规则，不递归主游标） */
+  function collectFromTokens(tokens: string[]): void {
+    const save = [toks.length, i];
+    // 简易做法：把这几个 token 拼回字符串再走一次（段内一般很短）
+    const sub = tokens.join(' ');
+    for (const id of typeIdents(sub)) out.add(id);
+    void save;
+  }
+
+  function parseResult(): void {
+    if (at() === '(') {
+      i++;
+      while (at() !== undefined && at() !== ')') {
+        parseType();
+        if (!eat(',')) break;
+      }
+      eat(')');
+      return;
+    }
+    parseType();
+  }
+
+  function parseStructBody(): void {
+    if (!eat('{')) return;
+    let depth2 = 0;
+    while (at() !== undefined) {
+      const t = at() as string;
+      if (depth2 === 0 && t === '}') {
+        i++;
+        break;
+      }
+      if (t === '{' || t === '(' || t === '[') depth2++;
+      if (t === '}' || t === ')' || t === ']') depth2--;
+      // 顶层：`名字 类型` ⇒ 名字不收集，类型递归（其它 token 直接跳过）
+      if (depth2 === 0 && isIdent(t)) {
+        const nxt = toks[i + 1];
+        if (isIdent(nxt)) {
+          i++; // 跳过字段名
+          parseType(); // 解析字段类型
+        } else {
+          i++; // 内嵌类型/空行
+        }
+        continue;
+      }
+      i++;
+    }
+  }
+
+  function parseInterfaceBody(): void {
+    if (!eat('{')) return;
+    let depth2 = 0;
+    while (at() !== undefined) {
+      const t = at() as string;
+      if (depth2 === 0 && t === '}') {
+        i++;
+        break;
+      }
+      if (depth2 === 0 && isIdent(t)) {
+        i++; // 方法名（不收集）
+        if (at() === '(') parseParams();
+        if (at() !== undefined && at() !== '}' && at() !== ';') parseResult();
+        continue;
+      }
+      if (t === '(' || t === '[' || t === '{') depth2++;
+      if (t === ')' || t === ']' || t === '}') depth2--;
+      i++;
+    }
+  }
+
+  function parseType(): void {
+    const t = at();
+    if (t === undefined) return;
+    if (t === '*') {
+      i++;
+      return parseType();
+    }
+    if (t === '...') {
+      i++;
+      return parseType();
+    }
+    if (t === '<-') {
+      i++;
+      if (at() === 'chan') i++;
+      return parseType();
+    }
+    if (t === '[') {
+      i++;
+      if (at() !== ']') parseType(); // 数组长度表达式（常量）或切片无内容
+      eat(']');
+      return parseType();
+    }
+    if (t === 'map') {
+      i++;
+      if (eat('[')) {
+        parseType();
+        eat(']');
+      }
+      return parseType();
+    }
+    if (t === 'chan') {
+      i++;
+      eat('<-');
+      return parseType();
+    }
+    if (t === 'func') {
+      i++;
+      parseParams();
+      if (at() !== undefined && ![')', ',', ';', '}'].includes(at() as string)) parseResult();
+      return;
+    }
+    if (t === 'struct') {
+      i++;
+      parseStructBody();
+      return;
+    }
+    if (t === 'interface') {
+      i++;
+      parseInterfaceBody();
+      return;
+    }
+    if (t === '(') {
+      i++;
+      while (at() !== undefined && at() !== ')') {
+        parseType();
+        if (!eat(',')) break;
+      }
+      eat(')');
+      return;
+    }
+    if (isIdent(t)) {
+      i++;
+      out.add(t); // ★ 只有这里收集：类型位置上的名字
+      if (at() === '[') {
+        i++;
+        while (at() !== undefined && at() !== ']') {
+          parseType();
+          if (!eat(',')) break;
+        }
+        eat(']');
+      }
+      return;
+    }
+    i++; // 其它（数字常量、'~'、'|' 等联合约束）跳过
+  }
+
+  while (i < toks.length) parseType();
+  return [...out];
+}
+
+/** Go 类型表达式的最小分词器：标识符 / 数字 / 多字符符号 / 单字符符号 */
+function tokenizeGoType(expr: string): string[] {
+  const out: string[] = [];
+  const s2 = expr.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+  for (let k = 0; k < s2.length; ) {
+    const c = s2[k];
+    if (/\s/.test(c)) {
+      k++;
+      continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = k + 1;
+      while (j < s2.length && /[\w]/.test(s2[j])) j++;
+      out.push(s2.slice(k, j));
+      k = j;
+      continue;
+    }
+    if (/[0-9]/.test(c)) {
+      let j = k + 1;
+      while (j < s2.length && /[\w.]/.test(s2[j])) j++;
+      out.push(s2.slice(k, j));
+      k = j;
+      continue;
+    }
+    if (s2.startsWith('...', k)) {
+      out.push('...');
+      k += 3;
+      continue;
+    }
+    if (s2.startsWith('<-', k)) {
+      out.push('<-');
+      k += 2;
+      continue;
+    }
+    out.push(c);
+    k++;
+  }
+  return out;
+}
+
+/**
  * 找出**术语表覆盖不到**的类型名（blocked 的唯一判据）。
  * ★ Go→TS 口径：类型表达式里的标识符（剥注释/字面量/限定前缀 `pkg.Type` 的 `pkg.`），
  *   排除 Go 内建（{@link GO_NOMINAL}）、仓内声明类型、泛型参数、术语表已覆盖的词。
@@ -296,10 +552,10 @@ export function unmappedGoTypes(
 ): string[] {
   const generics = genericNames(row);
   const bad = new Set<string>();
+  // ★ 2026-10-28（T-#TERM-PARSE）：**只取类型位置的标识符**（形参名/字段名/方法名不再混进来）。
+  //   原来这里是"拍平字符串 + 正则扫" ⇒ 制造不可修的 blocked（形参名永远补不进术语表）。
   for (const expr of typeExpressions(row)) {
-    const text = stripLiterals(stripComments(expr)).replace(/\b\w+\./g, ' ');
-    for (const m of text.matchAll(/[A-Za-z_][\w]*/g)) {
-      const w = m[0];
+    for (const w of typeIdents(expr)) {
       if (GO_NOMINAL.has(w) || declared.has(w) || covered?.has(w) || generics.has(w)) continue;
       if (w.length < 2) continue; // 单字母 = 泛型实参或占位
       bad.add(w);
