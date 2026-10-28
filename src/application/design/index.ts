@@ -55,6 +55,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { getDSL, requireProjectRoot } from '../../infrastructure/storage.js';
+import { collectExpectations } from '../../domain/expectation.js';
+import { judgeExpectations } from './intent/expectations.js';
 // ★ 2026-10-28（重写计划层）：判据与读写**全部复用**既有实现（`rewrite_plan` / `write_gate`），不在这里重写
 import {
   readRewritePlan,
@@ -360,48 +362,6 @@ export const DESIGN_TOOLS: ToolDef[] = [
 
 
   {
-    name: 'consistency_check',
-    title: 'Check design-code consistency',
-    description:
-      '对比 DSL 定义的 expected_apis 与实际代码实现，生成一致性报告（已实现/缺失/签名不匹配/代码新增），' +
-      '并验证跨文件不变式。只读检查。' +
-      '★ 传 `scope` ⇒ 只在**框定范围内**对账，并把差异折成「**差异块**」' +
-      '（块名稳定，由 `formatScope` 生成）—— 这就是"对比现状与设计 ⇒ 分区域重写"里**拿到区别的那一步**。',
-    inputSchema: {
-      feature: z.string().describe('feature 名'),
-      code_dir: z.string().optional(),
-      scope: z
-        .string()
-        .optional()
-        .describe(
-          '可选：**圈定范围**（文法唯一落点在 src/domain/scope.ts）：all | layer:main|error|detail | ' +
-            'swimlane:<id> | arch_layer:<id> | subtree:<node_id>[!] | nodes:a,b | files:p1,p2（尾 / 按前缀）。' +
-            '★ 不给 = 与原来完全一致（全量报告）；给了 ⇒ 只报该范围内的差异，**且按区域聚成块**。' +
-            '★ 块名稳定（同一片区域任何时候同一个名字）⇒ 可当"这块我改过了/还在欠账"的钥匙。',
-        ),
-      card_id: z
-        .string()
-        .optional()
-        .describe(
-          '★★ 2026-10-26（T-#15）：**对拍一个任务** —— 给卡 id，对拍范围直接取**该卡上的 `read_set.files`**' +
-            '（claim 时算好存在卡上，**读、不重算**；读集 = 任务卡的 declared + 决策卡的 expectations.path + 节点文件，三源归一）。' +
-            '★ 与 `scope` 二选一，`scope` 优先。' +
-            '★ 卡上没有 `read_set`（多半没 claim 过）⇒ 如实报「范围无法确定」，**不猜、不回落全仓**。',
-        ),
-      fail_on_violation: z
-        .boolean()
-        .optional()
-        .describe(
-          '★ 验收阻断开关（T74）。默认 false = **只报告、退出码恒 0**。' +
-            'true ⇒ 若决策卡上的 `expectations` 有**判定为不满足**的，**抛错并让调用方退出非 0**（唯一的失败通路）。' +
-            '★ 只对"不满足"阻断；"**判不了（unsupported）**"不计入（否则 Go/Python 上没法用）——' +
-            '但判不了的条数会同时出现在报告与抛出的错误里，**不许它悄悄溜过**。',
-        ),
-    },
-    handler: consistencyHandler,
-  },
-
-  {
     name: 'detect_drift',
     title: 'Detect live-doc drift against code',
     description:
@@ -433,14 +393,15 @@ export const DESIGN_TOOLS: ToolDef[] = [
       project_dir: z.string().describe('项目根目录（含 .agent-io/）'),
       feature: z.string().optional().describe('feature 名（action=report 必填；action=gen-db 省略 = design/ 下全部）'),
       action: z
-        .enum(['report', 'brief', 'gen-db', 'sync-signatures', 'rewrite', 'diff', 'plan'])
+        .enum(['report', 'brief', 'gen-db', 'sync-signatures', 'rewrite', 'diff', 'plan', 'judge'])
         .optional()
         .describe(
           'report=六步读数（默认，只读）· brief=开工简报（一个节点/文件：设计要什么 + 实际有什么 + 差在哪；只读）· ' +
             'gen-db=设计 DSL → 设计 DB（写 design-db/）· ' +
             'sync-signatures=⑥ 设计 DB → 源码，**只同步函数签名、不生成实现**（默认零写入，apply=true 才落盘）· ' +
             'rewrite=同一动作的旧名（保留兼容；输出里的 did_work/reason 一致）· ' +
-            'plan=**重写计划（画布）**：读/写 plan/<file>.plan.json（给 entries = 校验或落盘；不给 = 只读回放 + 缺口 + 路线）',
+            'plan=**重写计划（画布）**：读/写 plan/<file>.plan.json（给 entries = 校验或落盘；不给 = 只读回放 + 缺口 + 路线）· ' +
+            'judge=**跑整册判据批**（决策卡 expectations 全集，四态：pass/fail/unsupported/pending；★ 2026-10-28 吸收 `consistency_check` 的这块能力）',
         ),
       check: z
         .boolean()
@@ -500,6 +461,26 @@ export const DESIGN_TOOLS: ToolDef[] = [
     },
     handler: wrapData(async (a) => {
       const action = (a.action as string | undefined) ?? 'report';
+      // ★★★ 2026-10-28（T-#CERT-1 · 结构化重写而非合并）：**跑整册判据批**。
+      //   `consistency_check` 原本干两件事：① expected_apis vs 代码的对账报表；② 决策卡 expectations 整批判定。
+      //   ① 已被判据体系覆盖（`symbol-exists` / `signature-matches` / `edge-exists` / `call-exists`）；
+      //   ② 却是**唯一入口** —— 所以不能"删了完事"，要把 ② 搬到这里（设计链第 ⑤ 步：设计 vs 实际）。
+      if (action === 'judge') {
+        const feature = String(a.feature ?? '');
+        if (!feature) throw new Error('design_line action=judge 需要 feature');
+        const dsl = getDSL(feature);
+        if (!dsl) throw new Error(`feature "${feature}" 不存在`);
+        const expItems = collectExpectations(dsl as never);
+        const root = dsl.source_root ? String(dsl.source_root) : String(a.project_dir ?? '');
+        const rep = await judgeExpectations(root, expItems as never);
+        const tally: Record<string, number> = {};
+        for (const it of rep.items) tally[it.verdict] = (tally[it.verdict] ?? 0) + 1;
+        const lines = [`判据批「${feature}」：${rep.items.length} 条 · 四态 ${JSON.stringify(tally)}（★ unsupported = 判不了，**不算通过**）`];
+        const fails = rep.items.filter((x) => x.verdict === 'fail');
+        for (const it of fails.slice(0, 20)) lines.push(`  ✗ ${it.node_id}：${String(it.detail).slice(0, 140)}`);
+        if (fails.length > 20) lines.push(`  …… 另有 ${fails.length - 20} 条红`);
+        return { message: lines.join('\n'), data: { feature, root, tally, items: rep.items } };
+      }
       // ★★★ 2026-10-28（重写计划层 · 补"作者"）：**这条链唯一缺的入口** ——
       //   前面几轮把判据（planGaps / coverage / strength / dependency / exit）都立起来了，
       //   但**没有任何工具能写计划**（只有程序接口 `writeRewritePlan`）⇒ agent 只能手搓 JSON 落盘。

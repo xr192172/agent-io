@@ -78,7 +78,7 @@
 
 | 工具 | 覆盖它的东西 | 证据 |
 |---|---|---|
-| `consistency_check` | **判据体系**：线 1（expected_apis vs 代码）= `symbol-exists` + `signature-matches`；跨文件不变式 = `edge-exists` / `call-exists` | 代码自述：`update_feature.ts:445` "与 consistency_check **同一执行核** `judgeExpectations`" ⇒ 它只是那批判据的**汇总视图** |
+| ~~`consistency_check`~~ ✅ **已完成**（能力搬进 `design_line action=judge`，证 `t427` 9/0；执行核保留） | **判据体系**：线 1（expected_apis vs 代码）= `symbol-exists` + `signature-matches`；跨文件不变式 = `edge-exists` / `call-exists` | 代码自述：`update_feature.ts:445` "与 consistency_check **同一执行核** `judgeExpectations`" ⇒ 它只是那批判据的**汇总视图** |
 | `detect_drift` | `design_line action=diff`（设计链 vs 代码事实签名）已是同一判定 | `consistency.ts:154` 明说 `consistency_check` 与 `detect_drift` **共用同一套"对账三态术语"** ⇒ 同一件事的两个报表 |
 | `tool_usage` | `capability_map`（工具线读数）+ `scripts/audit-tool-certs.mjs` | 使用日志**被批量烟测污染**（每工具恰 17 次同日）⇒ 连"谁在用"都答不准 |
 
