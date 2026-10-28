@@ -985,7 +985,7 @@ export function planExitHumanLine(out: WriteThroughOutcome | null | undefined): 
  * 只认 `decision:<node_id>#<index>`（判据的唯一住处 = 册里节点的 `decision.expectations`）；
  * `cert:` 形态**解不出种类**（证的检查号不登记 kind）⇒ 如实报"解不出来"，不假装强。
  */
-function resolveJudgementKind(entry: { judgement_ref?: string }): { kind?: string; why_not?: string } {
+export function resolveJudgementKind(entry: { judgement_ref?: string }): { kind?: string; why_not?: string } {
   const parsed = parseJudgementRef(entry.judgement_ref);
   if (!parsed) return { why_not: '引用不是规范形态' };
   if (parsed.kind === 'cert') return { why_not: `\`cert:\` 形态不登记判据种类（${parsed.file}#${parsed.check}）` };
@@ -1006,7 +1006,7 @@ function resolveJudgementKind(entry: { judgement_ref?: string }): { kind?: strin
 }
 
 /** 该文件在**实际 DB**里的符号名（排除 `kind='file'`）；拿不到 ⇒ 空数组（判据如实降级，不猜） */
-function symbolsInFileOf(projectRoot: string, rel: string): string[] {
+export function symbolsInFileOf(projectRoot: string, rel: string): string[] {
   try {
     const dbFile = projectCacheDbPath(path.resolve(projectRoot));
     if (!fs.existsSync(dbFile)) return [];

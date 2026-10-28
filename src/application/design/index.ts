@@ -55,6 +55,22 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { getDSL, requireProjectRoot } from '../../infrastructure/storage.js';
+// ★ 2026-10-28（重写计划层）：判据与读写**全部复用**既有实现（`rewrite_plan` / `write_gate`），不在这里重写
+import {
+  readRewritePlan,
+  writeRewritePlan,
+  planFileFor,
+  planGaps,
+  planUntouchedGaps,
+  planCoverageGaps,
+  planJudgementGaps,
+  planDependencyGaps,
+  planTopoOrder,
+  type RewritePlan,
+  type RewritePlanEntry,
+} from './db/rewrite_plan.js';
+import { resolveJudgementKind, symbolsInFileOf } from '../write_gate.js';
+import { contentHash } from '../../infrastructure/index/symbols.js';
 
 import { importProject } from '../../infrastructure/graph/import_project.js';
 import type { ImportProjectInput } from '../../infrastructure/graph/import_project.js';
@@ -429,13 +445,14 @@ export const DESIGN_TOOLS: ToolDef[] = [
       project_dir: z.string().describe('项目根目录（含 .agent-io/）'),
       feature: z.string().optional().describe('feature 名（action=report 必填；action=gen-db 省略 = design/ 下全部）'),
       action: z
-        .enum(['report', 'brief', 'gen-db', 'sync-signatures', 'rewrite', 'diff'])
+        .enum(['report', 'brief', 'gen-db', 'sync-signatures', 'rewrite', 'diff', 'plan'])
         .optional()
         .describe(
           'report=六步读数（默认，只读）· brief=开工简报（一个节点/文件：设计要什么 + 实际有什么 + 差在哪；只读）· ' +
             'gen-db=设计 DSL → 设计 DB（写 design-db/）· ' +
             'sync-signatures=⑥ 设计 DB → 源码，**只同步函数签名、不生成实现**（默认零写入，apply=true 才落盘）· ' +
-            'rewrite=同一动作的旧名（保留兼容；输出里的 did_work/reason 一致）',
+            'rewrite=同一动作的旧名（保留兼容；输出里的 did_work/reason 一致）· ' +
+            'plan=**重写计划（画布）**：读/写 plan/<file>.plan.json（给 entries = 校验或落盘；不给 = 只读回放 + 缺口 + 路线）',
         ),
       check: z
         .boolean()
@@ -450,9 +467,90 @@ export const DESIGN_TOOLS: ToolDef[] = [
       prefix: z.string().optional().describe('★ 仅 action=sync-signatures/rewrite：只算某个前缀（如 src/domain/）'),
       node_id: z.string().optional().describe('★ 仅 action=brief：要看哪个节点（几何节点 id）；给了就用它定位文件与决策卡'),
       path: z.string().optional().describe('★ 仅 action=brief：也可以直接给仓库相对路径（node_id 与 path 二选一）'),
+      entries: z
+        .array(z.any())
+        .optional()
+        .describe(
+          '★ 仅 action=plan：一条改动 = { anchor:{symbol}, kind:rewrite|create|delete, detail, judgement_ref, status, depends_on? }。' +
+            '★ `judgement_ref` 必须是规范引用 `decision:<node_id>#<index>` 或 `cert:<证>#<检查号>`（自由文本判不出判据强度）。' +
+            '★ 不给 entries ⇒ 只读回放现有计划 + 缺口 + 路线。',
+        ),
+      untouched: z
+        .array(z.any())
+        .optional()
+        .describe('★ 仅 action=plan：`{symbol, why}` = 该文件里**看过但不动**的符号（每个符号必须二选一表态，否则算"没通读"）'),
     },
     handler: wrapData(async (a) => {
       const action = (a.action as string | undefined) ?? 'report';
+      // ★★★ 2026-10-28（重写计划层 · 补"作者"）：**这条链唯一缺的入口** ——
+      //   前面几轮把判据（planGaps / coverage / strength / dependency / exit）都立起来了，
+      //   但**没有任何工具能写计划**（只有程序接口 `writeRewritePlan`）⇒ agent 只能手搓 JSON 落盘。
+      //   本分支：不给 `entries` = 只读回放 + 缺口 + 路线；给了 = 校验（dry-run）或落盘（`apply=true`）。
+      if (action === 'plan') {
+        const rel = String(a.file ?? a.path ?? '').split(path.sep).join('/');
+        if (!rel) throw new Error('action=plan 需要 `file`（要写计划的源码路径，仓库相对）');
+        const projectRoot = String(a.project_dir);
+        const given = Array.isArray(a.entries) ? (a.entries as RewritePlanEntry[]) : null;
+        const planPath = planFileFor(projectRoot, rel);
+
+        // 读侧：没给 entries ⇒ 回放现有计划
+        const plan = given
+          ? ({ path: rel, entries: given, ...(Array.isArray(a.untouched) ? { untouched: a.untouched as RewritePlan['untouched'] } : {}) } as RewritePlan)
+          : readRewritePlan(projectRoot, rel);
+
+        if (!plan) {
+          return {
+            message:
+              `重写计划 · ${rel}：**还没有画布**（\`${path.relative(projectRoot, planPath).replace(/\\\\/g, '/')}\` 不存在）\n` +
+              `★ 下一步：先通读该文件在设计里指向的区域 → 给 \`entries\`（要改的符号 + 改成什么样 + 判据引用）\n` +
+              `  和 \`untouched\`（看过、不动 + 为什么），然后 \`apply:true\` 落盘。\n` +
+              `★ 每个符号必须二选一表态（否则算"没通读"）；判据引用用 \`decision:<node_id>#<index>\`。`,
+            data: { path: rel, plan: null },
+          };
+        }
+
+        // 缺口：四个判据一起跑（与写闸同一份实现，不重算一遍）
+        const gaps = [
+          ...planGaps(plan),
+          ...planUntouchedGaps(plan),
+          ...planCoverageGaps(plan, symbolsInFileOf(projectRoot, rel)),
+          ...planJudgementGaps(plan, (e) => resolveJudgementKind(e)),
+          ...planDependencyGaps(plan),
+        ];
+        const route = planTopoOrder(plan);
+
+        // 写侧：给了 entries 且 apply=true ⇒ 补冻结指纹后落盘
+        let written = '';
+        if (given && a.apply === true) {
+          const abs = path.join(projectRoot, rel);
+          const base = fs.existsSync(abs)
+            ? { content_hash: contentHash(fs.readFileSync(abs, 'utf-8')) }
+            : {};
+          writeRewritePlan(projectRoot, { ...plan, frozen_at: new Date().toISOString(), base });
+          written = `\n★ 已落盘：${path.relative(projectRoot, planPath).replace(/\\\\/g, '/')}（冻结指纹已记）`;
+        } else if (given) {
+          written = '\n★ 干跑：**没有落盘**（要落盘传 `apply:true`）';
+        }
+
+        const lines = [
+          `重写计划 · ${rel} · ${plan.entries.length} 条改动 · ${(plan.untouched ?? []).length} 条"看过不动"`,
+          route ? `  路线（拓扑序）：${route.join(' → ')}` : '  路线：**成环 ⇒ 不成立**（见缺口）',
+        ];
+        for (const e of plan.entries) {
+          lines.push(`    · ${e.kind}:${e.anchor?.symbol ?? '(缺 anchor)'}  [${e.status}]${e.depends_on?.length ? ` ⤴ ${e.depends_on.join(',')}` : ''}`);
+          lines.push(`        ${e.detail ?? '(缺 detail)'}`);
+          lines.push(`        验：${e.judgement_ref ?? '(缺 judgement_ref)'}`);
+        }
+        if (gaps.length) {
+          lines.push('', `★ 缺口 ${gaps.length} 处（写闸会用同一份判据点名）：`);
+          for (const g of gaps.slice(0, 8)) lines.push(`    - ${g.replace(/\n/g, '\n      ')}`);
+          if (gaps.length > 8) lines.push(`    …另有 ${gaps.length - 8} 处`);
+        } else {
+          lines.push('', '★ 四条判据全过（想清楚了 / 看全了 / 判据能发现逻辑错 / 顺序成立）—— ★ 但全绿只是**必要条件**。');
+        }
+        return { message: lines.join('\n') + written, data: { path: rel, plan, gaps, route } };
+      }
+
       if (action === 'gen-db') {
         const r = genDesignDb(String(a.project_dir), {
           feature: a.feature ? String(a.feature) : undefined,
