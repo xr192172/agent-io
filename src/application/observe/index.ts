@@ -194,6 +194,8 @@ export const OBSERVE_TOOLS: ToolDef[] = [
         restore: { fields: ['target'], need: ['target'] },
         ledger: { fields: ['target'], need: ['target'] },
         proposals: { fields: ['project_dir', 'feature', 'id', 'note', 'agent', 'use_llm', 'op'], need: [] },
+        // ★ 2026-10-28（合并 feature_line）：功能主链是**观测侧读数**，与 trace/trace 同族 ⇒ 进单入口
+        line: { fields: ['feature', 'project_dir', 'target', 'max_steps'], need: ['feature'] },
       };
       const SPEC: Record<string, string[]> = Object.fromEntries(
         Object.entries(ACTION_SPEC).map(([k, v]) => [k, v.fields]),
@@ -228,6 +230,32 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       const missing = (NEED[action] ?? []).filter((k) => args[k] === undefined || args[k] === '');
       if (missing.length) {
         throw new Error(`observe action=${action}: 缺必填 ${missing.join(' / ')} ⇒ 该动作要这些字段：${mine.join(' / ')}`);
+      }
+      // ★ 2026-10-28（合并 feature_line）：功能主链 —— 就地实现（原来是一个独立工具）
+      if (action === 'line') {
+        const feature = String(args.feature ?? '');
+        if (!feature) throw new Error('observe action=line: 缺必填 feature');
+        const sourceRoot = args.project_dir ? String(args.project_dir) : undefined;
+        const opts = {
+          target: args.target ? String(args.target) : undefined,
+          maxSteps: typeof args.max_steps === 'number' ? args.max_steps : undefined,
+        };
+        const r = getFeatureLine(feature, sourceRoot, opts as never);
+        // ★ 2026-10-28：本工具的 handler **不走 wrap**（各分支自己产 text）⇒ 这里必须自己拼 text + DATA 段，
+        //   否则返回 {message} 会被上层当"没有 text"丢掉（实测：输出空白）。
+        if (!r.ok) return { text: `功能线不可用：${r.note ?? '未知'}` };
+        if (r.features) {
+          const parts = [`功能线总览（${r.features.length} 个功能）：`, ...r.features.map((f) => `  - ${f.feature}：入口 ${f.entry}（链 ${f.steps ?? '?'} 步）`)];
+          if (r.note) parts.push(`  备注：${r.note}`);
+          return { text: `${parts.join('\n')}\n---DATA---\n${JSON.stringify({ ok: true, features: r.features })}` };
+        }
+        const line = r.line!;
+        const parts = [
+          `功能线「${line.feature}」：入口=${line.entry?.name ?? '—'}，主链 ${line.chain.length} 步：`,
+          ...line.chain.map((nd, i) => `  ${i + 1}. ${nd.name}（${nd.file}:${nd.line}）${nd.doc ? ' — ' + nd.doc : ''}`),
+        ];
+        if (r.note) parts.push(`  备注：${r.note}`);
+        return { text: `${parts.join('\n')}\n---DATA---\n${JSON.stringify({ ok: true, feature: line.feature, line })}` };
       }
       if (action === 'trace') return observeTraceHandler(a as never);
       if (action === 'judge') return observeJudgeHandler(a as never);
@@ -368,38 +396,4 @@ export const OBSERVE_TOOLS: ToolDef[] = [
     }),
   },
 
-  {
-    name: 'feature_line',
-    title: '功能线：每个功能搭一条主链（功能 → 入口函数 → 依次调用节点），供沿线单步运行/投屏',
-    description:
-      '把"这个功能是怎么一步步走的"搭成一条可读主链：对每个功能（DSL feature）挑一个入口函数' +
-      '（功能内不被本功能函数调用的根，否则按名启发 main/run/handle 等），再沿功能内调用边贪心走成有序链。' +
-      'target 留空 → 返回该项目所有功能的 入口+链长 总览；给 target=功能名 → 返回该功能 entry + chain（每个节点含 函数名/签名/文件/行/所属功能/语义注释 doc）。' +
-      '纯推导、不执行：要沿线跑入/出参请用 trace-exec；要投大屏点位由前端消费本条 line。只读，不改任何存储。',
-    inputSchema: {
-      feature: z.string().describe('feature 名（定位该项目的 cache.db + DSL feature_tree，给函数打功能标记）'),
-      project_dir: z.string().optional().describe('项目根目录（定位 cache.db；缺省按 feature 的导入缓存）'),
-      target: z.string().optional().describe('指定功能名；缺省返回所有功能 入口+链长 总览'),
-      max_steps: z.number().optional().describe('主链最大步数（默认 24）'),
-    },
-    handler: wrapData(async (a) => {
-      const feature = requireStr(a, 'feature');
-      const sourceRoot = a.project_dir ? String(a.project_dir) : undefined;
-      const opts = { target: a.target ? String(a.target) : undefined, maxSteps: typeof a.max_steps === 'number' ? a.max_steps : undefined };
-      const r = getFeatureLine(feature, sourceRoot, opts);
-      if (!r.ok) return { message: `功能线不可用：${r.note ?? '未知'}`, data: r };
-      if (r.features) {
-        const parts = [`功能线总览（${r.features.length} 个功能）：`, ...r.features.map((f) => `  - ${f.feature}：入口 ${f.entry}，主链 ${f.steps} 步`)];
-        if (r.note) parts.push(`  备注：${r.note}`);
-        return { message: parts.join('\n'), data: { ok: true, features: r.features } };
-      }
-      const line = r.line!;
-      const parts = [
-        `功能线「${line.feature}」：入口=${line.entry?.name ?? '—'}，主链 ${line.chain.length} 步：`,
-        ...line.chain.map((n, i) => `  ${i + 1}. ${n.name}（${n.file}:${n.line}）${n.doc ? ' — ' + n.doc : ''}`),
-      ];
-      if (r.note) parts.push(`  备注：${r.note}`);
-      return { message: parts.join('\n'), data: { ok: true, feature: line.feature, line } };
-    }),
-  },
 ];

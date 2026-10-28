@@ -124,7 +124,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'view: design（默认，活态设计）/ live（实际代码快照，仅 query=dsl/nodes/edges/node/files/file 生效，用于对比设计 vs 代码现状）。',
     inputSchema: {
       query: z
-        .enum(['dsl', 'features', 'nodes', 'edges', 'node', 'decisions', 'files', 'file', 'digest', 'scope', 'calls', 'functions', 'annotations', 'approvals', 'approval_history', 'snapshots', 'templates', 'simulation_state', 'diff', 'goals', 'edge_intents', 'tag', 'pool', 'todo', 'history', 'pending', 'overview'])
+        .enum(['render', 'dsl', 'features', 'nodes', 'edges', 'node', 'decisions', 'files', 'file', 'digest', 'scope', 'calls', 'functions', 'annotations', 'approvals', 'approval_history', 'snapshots', 'templates', 'simulation_state', 'diff', 'goals', 'edge_intents', 'tag', 'pool', 'todo', 'history', 'pending', 'overview'])
         .describe('查询类型：dsl=完整DSL, features=feature列表, nodes=节点摘要, edges=边摘要, node=节点详情, decisions=决策目录(按功能线分组), files=文件摘要, file=文件详情, digest=每文件一行紧凑认知索引(F职责/R关系/A契约/S高熵决策,只读派生), scope=**圈定范围**(按 layer/swimlane/arch_layer/subtree/files 解析成确定的文件集合,只读派生), calls=调用关系, functions=函数级大纲(目录→文件→函数+调用/被调用/回环), annotations=标注, approvals=**按审批状态看【全部】批注**（★ 默认含未提交的 `draft`；只要待审批的用 `status="pending_review"`）, approval_history=审批历史, snapshots=快照, templates=模板, simulation_state=仿真状态, diff=对比, goals=结构化目标(meta.goals), edge_intents=边级意图(edge.intent), tag=功能标记(人给文件节点打的"隶属某功能"标签:给 tag=成员+失联,省略=列全部标签), pool=**任务池**(把各节点上的 task 卡按状态归拢成池:candidate/claimed/done/void 各几张,只读派生;★ feature 不存在会抛,不返回空池), todo=**todo 待办列表**(顶层 `todos[]` —— ★ 默认只列**活卡** candidate+claimed：已完成 done 与**已作废 void**（`todo.retire` 落的）**不在待办里**；要看它们传 `state=done|void|all`；每项出 id/summary/state/owner/node_id/follows/retire_reason/history **与链位置**（环 n/m · 上一环 = follows），并附**墓碑**（物理删过的卡）；传 `chain=true` ⇒ 按继任链分组展示，history=**历史**(已了结 done/void 的卡由 todo.move_to_history 移出 todos[]，住**项目级独立库** `.agent-io/task-history.db` 的 task_history 表 —— ★ 不参与 cache.db 重建；可按 state/card_id/search/limit 查，每项含**整张卡原样** card_json 与入史理由), pending=**欠账视图**(只读直读 overlay 权威:列未完成锚点 progress!=done,含 progress_evidence 与决策卡 scope;★ 未登记 progress 的锚点不算欠账,不落盘), overview=**跨库总账**(一眼全貌:每个 feature 一行 活卡/done/void/归档/history/欠账 计数,只读派生不落盘;欠账口径与 pending 同一函数)' +
         // ★★★ I1（2026-10-25）：**expectation kinds 字段表进 schema**（此前只住在 domain/expectation.ts 的
         //   类型注释里，agent 在 MCP 面看不见 ⇒ 写判据只能试错）。★ 这里是**渲染**：判据唯一落点仍是
@@ -200,6 +200,12 @@ export const DESIGN_TOOLS: ToolDef[] = [
         .describe('★ 2026-10-23（批注层退场）：query=approvals 已删除，本字段不再有用。'),
       assignee: z.string().optional().describe('query=approvals 时：按指派人（assignee）过滤'),
       annotation_id: z.string().optional().describe('query=approval_history 时：标注 ID'),
+      // ★★★ 2026-10-28（T-#CERT-1 步 1 · 合并 render_design）：渲染是**同一条只读查询**的另一种产出形态
+      format: z
+        .enum(['mindmap', 'svg', 'markdown'])
+        .optional()
+        .describe('query=render 时：输出格式，默认 mindmap（原 render_design 的 format，行为逐字不变）'),
+      output_path: z.string().optional().describe('query=render 时：输出路径（svg / markdown 用）'),
       feature_a: z.string().optional().describe('query=diff 时：源 feature'),
       feature_b: z.string().optional().describe('query=diff 时：目标 feature'),
       view_b: z.enum(['design', 'live']).optional().describe('query=diff 时：feature_b 视图层级，默认跟随 view（design）；对比"设计 vs 代码现状"时传 live'),
@@ -351,28 +357,6 @@ export const DESIGN_TOOLS: ToolDef[] = [
     },
     handler: editDslHandler,
   },
-
-
-  {
-    name: 'render_design',
-    title: 'Render design DSL to mindmap/SVG/Markdown',
-    description:
-      '渲染设计 DSL：format=mindmap（默认，现行思维导图架构：root → 目录分组 → 文件；' +
-      '目录分组优先读设计视图语义分组容器，其次 feature_tree 功能树）/' +
-      'svg（矢量图）/ markdown（可读设计文档）。均用 feature 从存储读取。' +
-      '★ 2026-09-30：原 `format=html`（自包含单文件设计画布·星图）**已删除** —— ' +
-      '它是 lane 自己标注的"仅调试用"旧路径、渲染效果差，且前端（dsl-workbench）自取数据自行渲染；' +
-      'DSL 相关能力不受影响。',
-    inputSchema: {
-      feature: z.string().describe('feature 名（mindmap/svg/markdown 均从存储读取）'),
-      format: z.enum(['mindmap', 'svg', 'markdown']).optional().describe('输出格式，默认 mindmap（现行思维导图架构）'),
-      output_path: z.string().optional().describe('输出路径（svg / markdown 用）'),
-    },
-    handler: renderDesignHandler,
-  },
-
-
-
 
 
   {

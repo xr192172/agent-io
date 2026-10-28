@@ -630,7 +630,16 @@ export const editDslHandler = wrap(async (a) => {
 /** get_dsl：只读查询（复用 queryFeature）。
  * ★ 用 wrapData：queryFeature 返回 `{ message, data? }` —— data 是查询的结构化产物
  *   （dsl / nodes / edges / files / functions …），wrap 会在通道层静默丢弃它。 */
-export const getDslHandler = wrapData(async (a) => queryFeature(a as never));
+export const getDslHandler = wrapData(async (a) => {
+  // ★★★ 2026-10-28（T-#CERT-1 步 1 · 合并 render_design）：`query=render` 是同一条**只读查询**的
+  //   另一种产出形态（图 / 文档，而不是 JSON）⇒ 同一入口分派，行为**逐字沿用**原 `render_design` 的实现。
+  if ((a as { query?: string }).query === 'render') {
+    // render 的实现是 `wrap`（只产出人读回执，不产 data）⇒ 这里把它的 text 交回，行为逐字不变
+    const r = (await renderDesignHandler(a as never)) as unknown as { text?: string };
+    return { message: String(r?.text ?? '') };
+  }
+  return queryFeature(a as never);
+});
 
 
 /** render_design：渲染思维导图/HTML/SVG/Markdown（format 参数聚合导出；view 决定渲染设计或实际视图）

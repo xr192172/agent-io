@@ -251,9 +251,8 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   //   但**导航不点名、README 不点名、router 不点名** ⇒ 我上一轮甚至**提议再造一个 `query=outline`**
   //   （= 重复造已存在的东西）。⇒ 策展文本**少点名**的代价，比多写几个字贵得多。
   get_dsl:
-    '统一只读入口，query 参数查 DSL/features/nodes/edges/file/decisions/digest（一行式认知索引 F/R/A/S —— 想知道"这些文件都是干什么的"先看它）/calls/functions/diff/goals/tag（功能标记：人给文件节点打的"隶属某功能"标签）等 21 种',
+    '统一只读入口，query 参数查 DSL/features/nodes/edges/file/decisions/digest（一行式认知索引 F/R/A/S —— 想知道"这些文件都是干什么的"先看它）/calls/functions/diff/goals/tag（功能标记：人给文件节点打的"隶属某功能"标签）等 21 种（★ 2026-10-28 吸收 `render_design`：`query=render` + `format` 出 mindmap/svg/markdown）',
   edit_dsl: '统一写入口，operations 批量增删改节点/边/文件/API/binding/status/tag（功能标记：给文件节点打"隶属某功能"标签）',
-  render_design: '渲染并保存设计图（完整 DSL 模式产物）',
   // ★ I4（2026-10-25）清理陈旧策展条目：`manage_feature` / `render_brickwork` / `scaffold` /
   //   `review_changes` 已不在注册表（本文件 §staleWhen 纪律：工具删了、说明忘删 ⇒ 删条目）。
   consistency_check: '设计 DSL 与代码语义一致性体检',
@@ -278,13 +277,12 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   snapshot: '代码快照统一入口（action=list/rollback）：列每次 edit_code/rename_files/move_symbol 落盘前自动存的撤回点，或回滚到某一份（省略=最近一份）；★ 回滚立即落盘、本身不可再撤回',
   diff_views: '多视图/多版本差异对比',
   rules: '规则库统一入口（action=export/apply/check）—— export：把一次实际修复泛化成可复跑规则（$hole + 自动夹具，过「出生回归/反例不命中/幂等」三关才准落盘）；apply：三态（applied/todo/clean），唯一才动、歧义即停；check：当 lint 跑，带 CI 棘轮（只在"新增命中"上 fail）+ 规则自身夹具自检。两个写 action 默认 dry_run=true',
-  feature_line: '功能线：每个功能搭一条主链（功能→入口→调用节点），供沿线单步运行/投大屏点位',
   // ★ I2b（2026-10-25）：behavior_baseline 工具注册已并入 behavior-cases 判据生态（observe 线拆注册），
   //   行为基线场景用决策卡的 behavior-cases 判据表达 ⇒ 此处描述条目同步删除（不留下指向不存在工具的词条）。
   run_tests: '运行测试并汇总结果',
   reconcile_chain: '沿效应链逐级对账契约',
   reconcile_effects: '对账函数/模块的实际效应与契约',
-  memory_observe: '外部进程内存观测（CDP 外连，不插目标进程）：action=targets 列出本机 --inspect 进程 / status/baseline/track/gc/snapshot 定位 JS 堆 vs native 泄漏方向',
+  memory_observe: '外部进程内存观测（CDP 外连，不插目标进程）：action=targets 列出本机 --inspect 进程 / status/baseline/track/gc/snapshot 定位 JS 堆 vs native 泄漏方向（★ 2026-10-28 吸收 `feature_line`：`action=line` 出功能主链）',
   recommend_observe_points: '★ 推荐该在哪打观测点（索引/图 + AST 语义打分，不做全量插桩）；输出可编辑清单 + 每条的理由',
   sync_contracts: '以注册表 zod schema 回填 DSL expected_apis',
   cross_repo_symbol_index: '跨仓库符号索引建立/反查',
