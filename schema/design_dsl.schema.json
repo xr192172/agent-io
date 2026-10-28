@@ -2458,6 +2458,28 @@
                   "kind",
                   "why"
                 ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "cert"
+                  },
+                  "cert": {
+                    "type": "string"
+                  },
+                  "case": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "cert",
+                  "kind",
+                  "why"
+                ]
               }
             ]
           }
@@ -2888,6 +2910,28 @@
                   "domain",
                   "kind",
                   "must_not_import",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "cert"
+                  },
+                  "cert": {
+                    "type": "string"
+                  },
+                  "case": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "cert",
+                  "kind",
                   "why"
                 ]
               }

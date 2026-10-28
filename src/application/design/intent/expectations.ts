@@ -21,6 +21,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { getRawImportsOfFile, contentHash } from '../../../infrastructure/index/symbols.js';
@@ -527,6 +528,59 @@ export async function judgeExpectations(
         }
         break;
       }
+      // ★★★ 2026-10-28（T-#CERT-1 · "能不能吸收进设计侧"）：**证判据** ——
+      //   跑一张 `certs/*.mjs` 并读它的结论行。★ 副作用留在**证的进程**里（证自己建临时夹具），
+      //   判据侧仍然只读 ⇒ 不破坏 `run` 那条"不许副作用"的边界。
+      //   四态：证不存在 / 没有汇总行 / 找不到该用例 ⇒ `unsupported`（**判不了 ≠ 通过**）。
+      case 'cert': {
+        const name = String(e.cert ?? '').trim();
+        const certsDir = path.join(root, 'certs');
+        let certFile: string | null = null;
+        if (name && fs.existsSync(certsDir)) {
+          const hit = fs
+            .readdirSync(certsDir)
+            .filter((f) => f.endsWith('.mjs'))
+            .sort()
+            .find((f) => f === name || f.startsWith(name));
+          if (hit) certFile = path.join(certsDir, hit);
+        }
+        if (!certFile) {
+          push(it, 'unsupported', `证 \`${name}\` 不在 \`certs/\` ⇒ 判不了（不是"通过"）`);
+          break;
+        }
+        let out = '';
+        try {
+          out = execFileSync(process.execPath, [certFile], {
+            cwd: root,
+            encoding: 'utf8',
+            timeout: 600_000,
+            maxBuffer: 64 * 1024 * 1024,
+            env: { ...process.env },
+          });
+        } catch (err) {
+          // ★ 证失败时 stdout 里仍有逐条读数 ⇒ 解析它，别把"没拿到"当"通过"
+          const e2 = err as { stdout?: string; stderr?: string; message?: string };
+          out = String(e2.stdout ?? '') + '\n' + String(e2.stderr ?? '');
+        }
+        const want = e.case === undefined ? '' : String(e.case);
+        if (want) {
+          const line = out.split('\n').find((l) => (l.startsWith('✓') || l.startsWith('✗')) && l.includes(want));
+          if (!line) {
+            push(it, 'unsupported', `证 \`${path.basename(certFile)}\` 里找不到用例 \`${want}\` ⇒ 判不了`);
+            break;
+          }
+          push(it, line.startsWith('✓') ? 'pass' : 'fail', line.trim().slice(0, 220));
+          break;
+        }
+        const sum = out.match(/汇总：PASS=(\d+)\s+FAIL=(\d+)/);
+        if (!sum) {
+          push(it, 'unsupported', `证 \`${path.basename(certFile)}\` 没有输出汇总行 ⇒ 判不了`);
+          break;
+        }
+        push(it, sum[2] === '0' ? 'pass' : 'fail', `证 ${path.basename(certFile)}：PASS=${sum[1]} FAIL=${sum[2]}`);
+        break;
+      }
+
       // ★★★ 2026-10-28（T-#DOMAIN-2）：**域级边界判据** —— 现有 `edge-absent` 是文件对级，
       //   给目录前缀会判 `unsupported`（索引里没有"目录"这个文件）；而本仓有 167 个域对 / 1507 条跨域 import 边
       //   ⇒ 逐文件枚举不现实。本判据**按域对聚合**一次算清。

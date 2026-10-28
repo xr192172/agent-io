@@ -54,6 +54,24 @@ export type Expectation =
    */
   | { kind: 'domain-independent'; domain: string; must_not_import: string[]; why: string }
   /**
+   * ★★★ 2026-10-28（T-#CERT-1 · 用户问"这部分能不能吸收进设计侧"）：**证判据** ——
+   * 「这条契约由哪张证兜底」写进册，判据执行时**真去跑那张证**。
+   *
+   * ## 为什么需要它（实测撑起来的）
+   * 本仓 128 张证里 **100 张（78%）断言的是"盘上副作用"**（指纹 / 存在性 / 文件列表），
+   * 而现有判据种类**全是只读求值**（`run` 明文写着"只许读 + 判，不许副作用"）。
+   * ⇒ 副作用类的安全律（"dry-run 不许落盘"）用现有 kind **表达不了**。
+   *
+   * ## 但它**不破坏**只读边界
+   * 本判据**不往本项目写任何东西**：它只 `spawn` 一张证（`certs/*.mjs`，证自建临时夹具）
+   * 并读它的结论行。⇒ 副作用留在**证的进程**里，判据侧仍然只读。
+   *
+   * ## 判据
+   * `cert` = `certs/` 下**文件名前缀**（如 `t405`）；`case` 可选 = 结论行里的用例标记（如 `①`）。
+   * 证不存在 / 没有汇总行 / 找不到该用例 ⇒ `unsupported`（**判不了 ≠ 通过**）。
+   */
+  | { kind: 'cert'; cert: string; case?: string; why: string }
+  /**
    * ★★ 2026-10-09（T79）：**调用级**判据 —— 「`path` 里的 `symbol` 必须调用 `target`」。
    *
    * ## 为什么非有它不可（实测）
@@ -141,6 +159,7 @@ export type Expectation =
     };
 
 export const EXPECTATION_KINDS = [
+  'cert',
   'domain-independent','file-exists', 'symbol-exists', 'signature-matches', 'edge-exists', 'edge-absent', 'call-exists', 'run', 'source-has', 'behavior-cases'] as const;
 
 /**
@@ -193,6 +212,7 @@ const PHASE_BY_KIND: Record<Expectation['kind'], ExpectationPhase> = {
   'edge-exists': 'post',
   'edge-absent': 'pre', // ★ 前态判据：A 不许依赖 B —— 未施工时天然成立
   'domain-independent': 'pre', // ★ 同上，只是粒度从文件对升到**域对**（T-#DOMAIN-2）
+  cert: 'post', // ★ 证判据：跑一张证取结论 ⇒ 后态（T-#CERT-1）
   'behavior-cases': 'post', // ★ 行为契约：跑起来才有输出可比 ⇒ 后态（与 run 同理）
   'call-exists': 'post',
 };
@@ -236,6 +256,7 @@ export function describeExpectation(e: Expectation): string {
     case 'edge-exists': return `edge-exists  ${normPath(e.from)} → ${normPath(e.to)}`;
     case 'edge-absent': return `edge-absent  ${normPath(e.from)} ⇸ ${normPath(e.to)}`;
     case 'domain-independent': return `domain-independent  ${e.domain} ⇸ ${e.must_not_import.join(' / ')}`;
+    case 'cert': return `cert  ${e.cert}${e.case ? `#${e.case}` : ''}`;
     case 'call-exists': return `call-exists  ${normPath(e.path)} :: ${e.symbol}() → ${e.target}()`;
     case 'run': return `run  ${String(e.expect).slice(0, 70)}`;
     case 'source-has': return `source-has  ${normPath(e.path)} :: must ${(e.must ?? []).length} / mustNot ${(e.mustNot ?? []).length}`;
@@ -265,6 +286,13 @@ export function assertValidExpectations(v: unknown): asserts v is Expectation[] 
     else if (kind === 'signature-matches') { need('path'); need('symbol'); need('signature'); }
     else if (kind === 'call-exists') { need('path'); need('symbol'); need('target'); }
     else if (kind === 'run') { need('expect'); }
+    else if (kind === 'cert') {
+      // ★ 证判据：证名必填（= certs/ 下文件名前缀）；case 可选（结论行里的用例标记）
+      need('cert');
+      if (o.case !== undefined && typeof o.case !== 'string') {
+        throw new Error(`${at}.case 必须是字符串（结论行里的用例标记，如 "①"）`);
+      }
+    }
     else if (kind === 'domain-independent') {
       // ★ 2026-10-28（T-#DOMAIN-2）：域级判据的形状 —— 主体是**域**（域表里的 id），不是文件路径。
       need('domain');
@@ -325,6 +353,8 @@ export function expectationSubjectPath(e: Expectation): string {
   if (e.kind === 'run') return '';
   // ★ 2026-10-28：域级判据的主体是**域**（表里的一行），不是某个文件 ⇒ 同 run，不硬凑一个文件
   if (e.kind === 'domain-independent') return '';
+  // ★ 证判据的主体是**一张证**（`certs/<name>*.mjs`），不是某个源文件
+  if (e.kind === 'cert') return '';
   if (e.kind === 'source-has') return normPath(e.path);
   return normPath(e.kind === 'edge-exists' || e.kind === 'edge-absent' ? e.from : e.path);
 }
@@ -334,6 +364,7 @@ export function expectationPaths(e: Expectation): string[] {
   // ★ run 无路径（同 subjectPath 的理由）
   if (e.kind === 'run') return [];
   if (e.kind === 'domain-independent') return []; // 域 → 文件集由求值器展开
+  if (e.kind === 'cert') return []; // 证不牵动本项目源码
   if (e.kind === 'source-has') return [normPath(e.path)];
   return e.kind === 'edge-exists' || e.kind === 'edge-absent' ? [normPath(e.from), normPath(e.to)] : [normPath(e.path)];
 }

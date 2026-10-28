@@ -12748,7 +12748,20 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/refactor/deprecate_offline/deprecate_offline.ts"
+        "path": "src/application/refactor/deprecate_offline/deprecate_offline.ts",
+        "decision": {
+          "summary": "下线自研模块（判定 = 自研 + 无活跃消费）。★ 安全律：**缺省 `dry_run`**；`remove_file:true` 必须与 `dry_run:false` **同时给**才真删。",
+          "expectations": [
+            {
+              "kind": "cert",
+              "cert": "t405",
+              "case": "⑤",
+              "why": "这是唯一会**物理删除**文件的工具：缺省必须落在安全侧，且删文件要两个开关同时给（t405④⑤）"
+            }
+          ],
+          "updated_at": "2026-10-28T06:56:12.581Z",
+          "agent": "agent:main"
+        }
       },
       {
         "id": "file_src_application_refactor_diff_views_diff_views_ts",
@@ -13446,7 +13459,20 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/refactor/rename/move_domain.ts"
+        "path": "src/application/refactor/rename/move_domain.ts",
+        "decision": {
+          "summary": "按**域表**把整块域搬到新家（判据来源 = `structure_gap.relocate_moves`）。★ 安全律：域表没改 ⇒ 明确报「没有待搬的域」，**不动任何文件**（不猜、不静默）。",
+          "expectations": [
+            {
+              "kind": "cert",
+              "cert": "t405",
+              "case": "③",
+              "why": "整块搬迁代价最高：没有意图（域表未变）时必须拒绝执行而不是自作主张（t405③）"
+            }
+          ],
+          "updated_at": "2026-10-28T06:56:10.674Z",
+          "agent": "agent:main"
+        }
       },
       {
         "id": "file_src_application_refactor_rename_rename_file_ts",
@@ -13526,7 +13552,20 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/refactor/rename/symbol_move.ts"
+        "path": "src/application/refactor/rename/symbol_move.ts",
+        "decision": {
+          "summary": "跨文件搬一个**模块级符号**（文件不变、把「仅引入该符号」的 importer 指向新文件）。★ 安全律：`dry_run` 与「撞名/namespace/export*」一律**整体不动**（拒绝时盘上一个字节都不许动）。",
+          "expectations": [
+            {
+              "kind": "cert",
+              "cert": "t405",
+              "case": "①",
+              "why": "搬符号会改多个文件：dry-run 必须零副作用，否则等于\"预演就把人代码改了\"（t405①）"
+            }
+          ],
+          "updated_at": "2026-10-28T06:56:08.642Z",
+          "agent": "agent:main"
+        }
       },
       {
         "id": "file_src_application_refactor_rule_library_rule_apply_ts",
@@ -68497,13 +68536,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 279,
+  "_dsl_rev": 282,
   "_sync": {
-    "saved_at": "2026-10-28T06:32:31.023Z",
+    "saved_at": "2026-10-28T06:56:12.596Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 168153886,
+    "age": 169575459,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
