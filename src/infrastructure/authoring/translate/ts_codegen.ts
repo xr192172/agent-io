@@ -51,7 +51,9 @@ export interface MappedType {
  * 同一本"能机械 / 需 LLM"的账上对齐。
  */
 export function mapGoType(goType: string): MappedType {
-  const t = (goType || '').trim();
+  // ★★★ 2026-10-28（T-#TRANS-GEN ④）：**先剥 Go struct tag**（反引号里的 `json:"x"`）。
+  //   不剥会被当类型文本透传 ⇒ 生成 `Content: string \`json:"content"\``（TS 语法错）。
+  const t = (goType || '').replace(/`[^`]*`/g, '').trim();
   if (t === '') return { degree: 'direct', ts: 'void' };
 
   // 特殊字节/字符切片 → 惯用 JS 类型
@@ -115,14 +117,16 @@ export function mapGoType(goType: string): MappedType {
   if (t.startsWith('func')) {
     const fm = /^func\s*(?:\(([^)]*)\))?\s*(?:\s+(.+))?$/.exec(t);
     if (fm) {
-      const params = fm[1] ? fm[1].split(',').map((s) => s.trim()).filter(Boolean) : [];
+      // ★★★ 2026-10-28（T-#TRANS-GEN ①）：**按 Go 的分组形参解析**。
+      //   原来 `fm[1].split(',')` 逐段当"名字 类型"匹配 ⇒ `func(pattern, brain string)` 被读成
+      //   `(arg: pattern, brain: string)`（把形参名 `pattern` 当成了类型）。实测打穿 8/44 处。
+      const params = fm[1] !== undefined ? parseGoParamList(fm[1]) : [];
       const pOut: string[] = [];
       let anyUnsup = false;
       for (const p of params) {
-        const pm = /^([A-Za-z_]\w*)\s+(.+)$/.exec(p); // `a int` → name=a, type=int（名字可省略）
-        const mt = mapGoType(pm ? pm[2].trim() : p);
+        const mt = mapGoType(p.type);
         if (mt.degree === 'unsupported') anyUnsup = true;
-        pOut.push(`${pm ? pm[1] : 'arg'}: ${mt.ts}`);
+        pOut.push(`${p.name ?? 'arg'}: ${mt.ts}`);
       }
       let ret = 'void';
       if (fm[2] && fm[2].trim()) {
@@ -133,6 +137,61 @@ export function mapGoType(goType: string): MappedType {
       return { degree: anyUnsup ? 'unsupported' : 'direct', ts: `(${pOut.join(', ')}) => ${ret}` };
     }
     return { degree: 'unsupported', ts: '(...args: unknown[]) => unknown', note: '函数类型无法归类，需 LLM 换算签名' };
+  }
+  // ★★★ 2026-10-28（T-#TRANS-GEN ②）：**匿名 struct 字面量** —— 原来落到"未识别 ⇒ 透传"，
+  //   于是 `chan struct{}` 生成了 `Channel<struct{}>`（`struct{}` 不是 TS 类型）。实测打穿 5/55 文件。
+  const stM = /^struct\s*\{([\s\S]*)\}$/.exec(t);
+  if (stM) {
+    const body = stM[1].trim();
+    if (!body) return { degree: 'direct', ts: 'Record<string, never>' }; // 空结构体 = 无字段
+    const fields = splitTopLevelFields(body);
+    const parts: string[] = [];
+    let anyUnsup = false;
+    for (const f of fields) {
+      // ★ 2026-10-28：**必须用 [\s\S]** —— 嵌套 struct 的类型文本含换行，`.` 不匹配换行
+      //   ⇒ 原来直接落到"嵌入字段"兜底，生成 `Message_struct______Content_string_____: Message struct {`（TS 语法错）。
+      const nm = /^([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s+([\s\S]+)$/.exec(f);
+      if (!nm) {
+        // 内嵌字段：类型名直接当字段名（Go 的嵌入语义在 TS 无对应 ⇒ 如实标注）
+        const emb = mapGoType(f);
+        if (emb.degree === 'unsupported') anyUnsup = true;
+        parts.push(`${f.replace(/[^\w]/g, '_')}: ${emb.ts}`);
+        continue;
+      }
+      const names = nm[1].split(',').map((x) => x.trim());
+      const mt = mapGoType(nm[2].trim());
+      if (mt.degree === 'unsupported') anyUnsup = true;
+      for (const name of names) parts.push(`${name}: ${mt.ts}`);
+    }
+    return {
+      degree: anyUnsup ? 'unsupported' : 'direct',
+      ts: `{ ${parts.join('; ')} }`,
+      ...(anyUnsup ? { note: '匿名 struct 含不可机械翻译字段' } : {}),
+    };
+  }
+  // ★ 2026-10-28：**匿名 interface 字面量** `interface{ Do(a int) error }` → 对象类型（方法签名）
+  const ifM = /^interface\s*\{([\s\S]*)\}$/.exec(t);
+  if (ifM) {
+    const body = ifM[1].trim();
+    if (!body) return { degree: 'direct', ts: 'Record<string, never>' };
+    const methods = splitTopLevelFields(body);
+    const parts: string[] = [];
+    let anyUnsup = false;
+    for (const m2 of methods) {
+      const mm = /^([A-Za-z_]\w*)\s*(\([\s\S]*)$/.exec(m2);
+      if (!mm) {
+        parts.push(`[key: string]: unknown /* ${m2.slice(0, 40)} */`);
+        continue;
+      }
+      const sig = mapGoType(`func${mm[2]}`);
+      if (sig.degree === 'unsupported') anyUnsup = true;
+      parts.push(`${mm[1]}: ${sig.ts}`);
+    }
+    return {
+      degree: anyUnsup ? 'unsupported' : 'direct',
+      ts: `{ ${parts.join('; ')} }`,
+      ...(anyUnsup ? { note: '匿名 interface 含不可机械翻译方法' } : {}),
+    };
   }
   // 泛型类型实参（Go 用方括号）：`Name[K, V]` / `List[int]` → 逐实参映射成 TS `Name<K, V>`
   const genSB = /^([A-Za-z_][\w.]*)\[([^\]]+)\]$/.exec(t);
@@ -162,6 +221,67 @@ export function mapGoType(goType: string): MappedType {
   }
   // 未识别 → 假定是用户类型/结构体名，透传（type 单元已机械生成 interface）
   return { degree: 'direct', ts: t };
+}
+
+/**
+ * ★★★ 2026-10-28（T-#TRANS-GEN ①）：解析 Go 形参表，**认分组写法**。
+ *
+ * Go 允许 `(a, b int, c string)`：同类型的多个名字共享一个类型。原来按逗号逐段当"名字 类型"匹配
+ * ⇒ `pattern` 被当类型、`a`/`b` 只认到一个 ⇒ 生成 `(arg: pattern, brain: string)` 这种假签名。
+ *
+ * 规则：先按顶层逗号切段；若**任一段**呈"名字 类型"（≥2 token 且首 token 是标识符）⇒ 整表是"有名字"风格，
+ * 此时单 token 段是**待接的下一个类型的名字组**（累积到遇到带类型的段为止）；否则整表是裸类型。
+ */
+function parseGoParamList(s: string): Array<{ name?: string; type: string }> {
+  const segs = splitTopLevel(s)
+    .map((x) => x.trim())
+    .filter(Boolean);
+  if (!segs.length) return [];
+  const named = segs.some((g) => /^[A-Za-z_]\w*\s+\S/.test(g));
+  const out: Array<{ name?: string; type: string }> = [];
+  if (!named) return segs.map((type) => ({ type }));
+  let pending: string[] = [];
+  for (const seg of segs) {
+    const m = /^([A-Za-z_]\w*)\s+([\s\S]+)$/.exec(seg);
+    if (m) {
+      const names = [...pending, m[1]];
+      pending = [];
+      for (const nm of names) out.push({ name: nm, type: m[2].trim() });
+    } else if (/^[A-Za-z_]\w*$/.test(seg)) {
+      pending.push(seg); // `a, b int` 里的 `a`
+    } else {
+      for (const nm of pending.splice(0)) out.push({ name: nm, type: 'unknown' });
+      out.push({ type: seg }); // 裸类型混入（保底，不猜）
+    }
+  }
+  for (const nm of pending) out.push({ name: nm, type: 'unknown' });
+  return out;
+}
+
+/**
+ * ★★★ 2026-10-28（T-#TRANS-GEN ⑤）：按**括号深度**切字段/方法（`;` 或换行，且只在深度 0）。
+ *
+ * 原来直接 `.split(/[;\n]/)` ⇒ 内层匿名 struct 会被切碎：
+ * `{ Message: struct{ Content string } }` 变成 `Message: struct {` + `Content: string` + `}`
+ * ⇒ 生成 `{ Message: struct {; Content: string; _: }`（TS 语法错，实测 4 个 error 全出自此）。
+ */
+function splitTopLevelFields(body: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let cur = '';
+  for (const ch of body) {
+    if (ch === '{' || ch === '(' || ch === '[') depth++;
+    else if (ch === '}' || ch === ')' || ch === ']') depth--;
+    const isCut = depth === 0 && (ch === ';' || ch === '\n');
+    if (isCut) {
+      if (cur.trim()) out.push(cur.trim());
+      cur = '';
+      continue;
+    }
+    cur += ch;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
 }
 
 /** 在括号深度 0 处按逗号切分（`a, (b, c), d` → [a, (b, c), d]） */
@@ -239,7 +359,14 @@ function renderFuncSkeleton(u: TransUnit): { code: string; notes: string[] } {
     ret = `: ${m.ts}`;
   }
   // A3 决策表：锁定 switch 判别式 + case/default 分支（机械 1:1），仅分支动作留空待 LLM
-  const hole = u.decision ? '\n' + renderDecisionBody(u) : u.bodyHole ? '\n  // TODO(translate): 待 LLM 翻译 Go 函数体' : '';
+  // ★★★ 2026-10-28（T-#TRANS-GEN ③）：孔体**要炸**，不要静默返回。
+  //   原来只有一行注释 ⇒ 空函数体在 TS 里**编译得过**，运行时返回 undefined（声明 `: boolean` 却返回 undefined）
+  //   ⇒ 那是**假绿**：看起来骨架齐了，其实一行都没译。现在没译就立刻抛。
+  const hole = u.decision
+    ? '\n' + renderDecisionBody(u)
+    : u.bodyHole
+      ? "\n  throw new Error('TODO(translate): 待 LLM 翻译 Go 函数体');"
+      : '';
   return { code: `export function ${u.name}${typeParamString(u)}(${params})${ret} {${hole}\n}`, notes };
 }
 
