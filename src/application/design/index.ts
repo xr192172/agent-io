@@ -56,6 +56,7 @@ import path from 'node:path';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { getDSL, requireProjectRoot } from '../../infrastructure/storage.js';
 import { collectExpectations } from '../../domain/expectation.js';
+import { detectDrift } from './intent/detect_drift.js';
 import { judgeExpectations } from './intent/expectations.js';
 // ★ 2026-10-28（重写计划层）：判据与读写**全部复用**既有实现（`rewrite_plan` / `write_gate`），不在这里重写
 import {
@@ -362,24 +363,6 @@ export const DESIGN_TOOLS: ToolDef[] = [
 
 
   {
-    name: 'detect_drift',
-    title: 'Detect live-doc drift against code',
-    description:
-      '活文档↔代码漂移检测：对比 design DSL 的 expected_apis 与当前代码，判定「设计是否过时 / 是否欠实现」，' +
-      '并持久化漂移台账。scope=changed（默认）只对 git 变更命中的在册文件下判定（相对 since_ref，默认 HEAD=未提交改动），' +
-      '★ 其余在册文件**未判存量漂移** —— 回执会显式声明缺口数（机读字段 `unchecked_ledger_files`），存量请 scope=all 全量对标。' +
-      'mode=check 重新计算（默认），mode=status 只读最近一次台账。只读，不改 DSL；要同步设计请用 edit_dsl / import_project。',
-    inputSchema: {
-      feature: z.string().describe('feature 名'),
-      code_dir: z.string().optional().describe('代码根目录（默认 feature 的 source_root，手工 DSL 回退 <cwd>/scaffold/<feature>）'),
-      scope: z.enum(['changed', 'all']).optional().describe('检查范围：changed=仅 git 变更文件（默认）；all=全量对标'),
-      since_ref: z.string().optional().describe('changed 模式 git 参照版本，默认 HEAD（只看未提交改动）'),
-      mode: z.enum(['check', 'status']).optional().describe('check=重新计算并写台账（默认）；status=只读最近一次台账'),
-    },
-    handler: detectDriftHandler,
-  },
-
-  {
     name: 'design_line',
     title: 'Design line: six-step reading',
     description:
@@ -393,7 +376,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       project_dir: z.string().describe('项目根目录（含 .agent-io/）'),
       feature: z.string().optional().describe('feature 名（action=report 必填；action=gen-db 省略 = design/ 下全部）'),
       action: z
-        .enum(['report', 'brief', 'gen-db', 'sync-signatures', 'rewrite', 'diff', 'plan', 'judge'])
+        .enum(['report', 'brief', 'gen-db', 'sync-signatures', 'rewrite', 'diff', 'plan', 'judge', 'drift'])
         .optional()
         .describe(
           'report=六步读数（默认，只读）· brief=开工简报（一个节点/文件：设计要什么 + 实际有什么 + 差在哪；只读）· ' +
@@ -401,7 +384,8 @@ export const DESIGN_TOOLS: ToolDef[] = [
             'sync-signatures=⑥ 设计 DB → 源码，**只同步函数签名、不生成实现**（默认零写入，apply=true 才落盘）· ' +
             'rewrite=同一动作的旧名（保留兼容；输出里的 did_work/reason 一致）· ' +
             'plan=**重写计划（画布）**：读/写 plan/<file>.plan.json（给 entries = 校验或落盘；不给 = 只读回放 + 缺口 + 路线）· ' +
-            'judge=**跑整册判据批**（决策卡 expectations 全集，四态：pass/fail/unsupported/pending；★ 2026-10-28 吸收 `consistency_check` 的这块能力）',
+            'judge=**跑整册判据批**（决策卡 expectations 全集，四态：pass/fail/unsupported/pending；★ 2026-10-28 吸收 `consistency_check` 的这块能力）' +
+            '· drift=**活文档↔代码漂移**（对比 expected_apis 与真实代码，四态含 `no_comparison`；写漂移台账；★ 2026-10-28 吸收 `detect_drift`）',
         ),
       check: z
         .boolean()
@@ -416,6 +400,10 @@ export const DESIGN_TOOLS: ToolDef[] = [
       prefix: z.string().optional().describe('★ 仅 action=sync-signatures/rewrite：只算某个前缀（如 src/domain/）'),
       node_id: z.string().optional().describe('★ 仅 action=brief：要看哪个节点（几何节点 id）；给了就用它定位文件与决策卡'),
       path: z.string().optional().describe('★ 仅 action=brief：也可以直接给仓库相对路径（node_id 与 path 二选一）'),
+      // ★ drift（原 detect_drift 的入参）
+      drift_scope: z.enum(['changed', 'all']).optional().describe('[drift] changed=仅 git 变更文件（默认）；all=全量对账'),
+      since_ref: z.string().optional().describe('[drift] changed 模式的 git 参照版本，默认 HEAD'),
+      drift_mode: z.enum(['check', 'status']).optional().describe('[drift] check=重新计算（默认）；status=只读最近一次漂移台账'),
       entries: z
         .array(z.any())
         .optional()
@@ -782,6 +770,21 @@ export const DESIGN_TOOLS: ToolDef[] = [
           `边：扫描遗漏 ${d.missedEdges.length} · 真要建 ${d.realMissingEdges.length} · 只在实际侧 ${d.onlyLiveEdges.length}`,
         ];
         return { message: L.join('\n'), data: d };
+      }
+      // ★★★ 2026-10-28（T-#CERT-1 · 吸收 detect_drift）：活文档↔代码漂移。
+      //   它与 `action=judge` 同一个执行核（`checkConsistencyReport`）+ 两层叠加：**四态含 \`no_comparison\`**（没得比 ≠ 对齐）+ **漂移台账**。
+      //   原来是一个独立工具；现在进设计链读数（第 ⑤ 步"设计 vs 实际"），把台账留在原处。
+      if (action === 'drift') {
+        const f = a.feature ? String(a.feature) : '';
+        if (!f) throw new Error('design_line action=drift 需要 feature');
+        const r = await detectDrift({
+          feature: f,
+          code_dir: a.code_dir ? String(a.code_dir) : undefined,
+          scope: (a.drift_scope as 'changed' | 'all' | undefined) ?? undefined,
+          since_ref: a.since_ref ? String(a.since_ref) : undefined,
+          mode: (a.drift_mode as 'check' | 'status' | undefined) ?? undefined,
+        } as never);
+        return { message: (r as { message?: string }).message ?? String(r), data: r };
       }
       if (action === 'brief') {
         const feature = a.feature ? String(a.feature) : '';

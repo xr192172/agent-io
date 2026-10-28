@@ -255,7 +255,6 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   edit_dsl: '统一写入口，operations 批量增删改节点/边/文件/API/binding/status/tag（功能标记：给文件节点打"隶属某功能"标签）',
   // ★ I4（2026-10-25）清理陈旧策展条目：`manage_feature` / `render_brickwork` / `scaffold` /
   //   `review_changes` 已不在注册表（本文件 §staleWhen 纪律：工具删了、说明忘删 ⇒ 删条目）。
-  detect_drift: '检测 DSL 与代码语义漂移',
   import_project: '扫描代码项目生成 DSL（文件节点+调用边+符号语义层）',
   design_intent: '设计意图(why)：直接写 overlay（goals + edge_intents）。★ action=propose 已退役（调用会响亮报错、零副作用）⇒ 要「先请人批再落」走 opl 立卡 / observe action=proposals',
   rename_symbols: '标识符改名（两种作用域粒度：scope=module 跨文件模块级符号、全批原子；scope=local 文件内局部绑定、作用域隔离、逐项独立），dry_run 预览后落盘',
