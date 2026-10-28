@@ -149,7 +149,15 @@ export const OBSERVE_TOOLS: ToolDef[] = [
         .describe(
           '[instrument] true=直接读 `<target>/.agent-io/observe-points.json` 的 `points[].key` 当契约清单（推荐器写的，与插桩器同源同命名）。★ 文件缺失/清单空 ⇒ 报错不插，绝不静默退回全量',
         ),
+      // ★ 2026-10-28：`agent` 在 handler 的 SPEC 与 COMMON_FIELDS 里都认，但 **schema 里没声明**
+      //   ⇒ 严格校验下**根本传不进来**（"声明三处、只对两处"的典型）。补上。
+      agent: z.string().optional().describe('[全部] 谁在调用（审计/台账用；任何 action 都接受）'),
       // ── proposals（与 review_changes 同一套规矩：确认人是下一个接手的 Agent）──
+      // ★ 2026-10-28（结构检查抓到的真 bug）：`ACTION_SPEC.proposals` 认 `project_dir` / `feature`，
+      //   但 **schema 里从未声明**（全文那两处声明属于别的工具）⇒ 实际调用时**传不进来**
+      //   ⇒ `observe action=proposals` 等于残缺。补上。
+      project_dir: z.string().optional().describe('[proposals] 提案库所在项目根（缺省当前目录）'),
+      feature: z.string().optional().describe('[proposals] 只看某个 feature 的提案'),
       id: z.string().optional().describe('[proposals] show/approve/reject 用：提案 id'),
       note: z.string().optional().describe('[proposals] reject 用：驳回理由'),
       // ── judge ──
@@ -168,26 +176,31 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       const args = a as Record<string, unknown>;
       const action = String(args.action ?? 'log');
       // 每个 action 认哪些字段（白名单：只列该动作真正会读的）
-      const SPEC: Record<string, string[]> = {
-        log: ['events_file', 'files', 'all'],
-        trace: ['events_path', 'events_text', 'keep', 'trace_id', 'limit'],
-        judge: ['events', 'decls', 'text', 'use_llm', 'project_root'],
-        instrument: ['target', 'dry_run', 'contract_probes', 'contract_from_points'],
-        uninstrument: ['target'],
-        restore: ['target'],
-        ledger: ['target'],
-        proposals: ['project_dir', 'feature', 'id', 'note', 'agent', 'use_llm', 'op'],
+      // ★★★ 2026-10-28（用户："有没有需要结构化重写的点"）：**原来这里是两张手写表 + 一条"永远放行"名单**，
+      //   而 zod schema 是**第三处**声明同一个事实 ⇒ 加参数必忘一处。实测代价（今天两次）：
+      //   · `contract_probes` 加进了 schema 与 handler，却**没进 SPEC** ⇒ 被当"陌生人点名"拒；
+      //   · `dry_run / use_llm / project_dir / feature / agent` 靠一条**魔法白名单**才可用 ⇒ 新人看不出为什么。
+      //   ⇒ 现在只有**一张** `ACTION_SPEC`：`fields`（认哪些）+ `need`（必填哪些）；
+      //     SPEC/NEED 都由它派生；魔法白名单**删掉**（那些字段在各 action 的 fields 里显式列出）。
+      const ACTION_SPEC: Record<string, { fields: string[]; need: string[] }> = {
+        log: { fields: ['events_file', 'files', 'all'], need: ['events_file'] },
+        trace: { fields: ['events_path', 'events_text', 'keep', 'trace_id', 'limit'], need: [] },
+        judge: { fields: ['events', 'decls', 'text', 'use_llm', 'project_root'], need: ['events'] },
+        instrument: {
+          fields: ['target', 'dry_run', 'contract_probes', 'contract_from_points'],
+          need: ['target'],
+        },
+        uninstrument: { fields: ['target'], need: ['target'] },
+        restore: { fields: ['target'], need: ['target'] },
+        ledger: { fields: ['target'], need: ['target'] },
+        proposals: { fields: ['project_dir', 'feature', 'id', 'note', 'agent', 'use_llm', 'op'], need: [] },
       };
-      const NEED: Record<string, string[]> = {
-        log: ['events_file'],
-        trace: [],
-        judge: ['events'],
-        instrument: ['target'],
-        uninstrument: ['target'],
-        restore: ['target'],
-        ledger: ['target'],
-        proposals: [],
-      };
+      const SPEC: Record<string, string[]> = Object.fromEntries(
+        Object.entries(ACTION_SPEC).map(([k, v]) => [k, v.fields]),
+      );
+      const NEED: Record<string, string[]> = Object.fromEntries(
+        Object.entries(ACTION_SPEC).map(([k, v]) => [k, v.need]),
+      );
       const mine = SPEC[action];
       if (!mine) {
         throw new Error(
@@ -195,10 +208,14 @@ export const OBSERVE_TOOLS: ToolDef[] = [
             `（proposals 的子动作用 op=list/show/approve/reject）`,
         );
       }
+      // ★ 只留一个**显式声明**的公共字段。原来那条魔法清单把 5 个字段对所有 action 放行，
+      //   等于"没有守卫"（`contract_probes` 就是被它挡住的）。`agent` = 谁在提问，对任何动作都有意义；
+      //   其余一律按 action 精确匹配。
+      const COMMON_FIELDS = ['agent'];
       const strangers = Object.keys(args).filter((k) => {
         if (k === 'action') return false;
         if (mine.includes(k)) return false;
-        if (['project_dir', 'feature', 'agent', 'dry_run', 'use_llm'].includes(k)) return false;
+        if (COMMON_FIELDS.includes(k)) return false;
         return Object.values(SPEC).some((v) => v.includes(k));
       });
       if (strangers.length) {
