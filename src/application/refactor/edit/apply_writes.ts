@@ -143,7 +143,14 @@ async function applyWritesCore(
       //   后者会与"同步了但这个文件内容没变（skipped）"混为一谈，读的人没法分辨。
       index_synced:
         report.index?.mode === 'synced'
-          ? written.map((rel) => ({ file: rel, updated: updatedByRel.get(rel) === true }))
+          ? written.map((rel) => ({
+              file: rel,
+              // ★ 2026-10-28（T-#RP-3 前置）：优先用**批级结果里的逐文件明细**（唯一出处）；
+              //   `updatedByRel` 只是兜底（老路径/无 byFile 时才有值）。
+              updated: (report.index as { byFile?: Record<string, { status: string }> }).byFile?.[rel]
+                ? (report.index as { byFile?: Record<string, { status: string }> }).byFile![rel].status === 'updated'
+                : updatedByRel.get(rel) === true,
+            }))
           : [],
       ...(report.assumption_check ? { assumption_check: report.assumption_check } : {}),
       // ★ 2026-10-28：**出口闭环与画布新陈代谢**必须带出去 —— 适配层丢读数 = 白判（本仓老毛病）。

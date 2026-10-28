@@ -120,6 +120,16 @@ export interface WriteThroughOutcome {
   mode: 'synced' | 'deferred' | 'skipped';
   /** 人读说明（`skipped`/`deferred` 时给出理由） */
   note?: string;
+  /**
+   * ★★★ 2026-10-28（T-#RP-3 前置）：**逐文件明细** —— 批级结果里必须有"每个文件发生了什么"。
+   *
+   * ## 为什么必须有它
+   * 合并"两条收尾"（`edit_code` 的逐分支 sync vs `source_writer.close()`）之前，
+   * 逐文件事实只存在于**调用方自己的 Map** 里（`symbolDiffByFile` / `indexStatusByFile`）。
+   * 一旦改成统一 `close()`，那些 Map 就没了 ⇒ `files[]`（T150 刚立起来的）会**当场蒸发**。
+   * ⇒ 先把事实放进批级结果，再谈合并：**顺序反了就是用一个读数蒸发换一次结构统一。**
+   */
+  byFile?: Record<string, { status: SyncStatus | 'removed'; removed?: boolean }>;
   /** 同步成功（新建或更新）的文件数 */
   synced?: number;
   /** 判为 skipped（内容 hash 未变）的文件数 */
@@ -550,10 +560,12 @@ export function syncSelfWritesSync(
       try {
         if (!fs.existsSync(abs)) {
           removeFile(db, root, abs);
+          out.byFile = { ...(out.byFile ?? {}), [rel]: { status: 'removed', removed: true } };
           out.removed = (out.removed ?? 0) + 1;
           continue;
         }
         const r = syncFileSync(db, root, abs);
+        out.byFile = { ...(out.byFile ?? {}), [rel]: { status: r.status } };
         opts.onFile?.(rel, r.status);
         if (r.status === 'updated') out.synced = (out.synced ?? 0) + 1;
         else if (r.status === 'skipped') out.skippedFiles = (out.skippedFiles ?? 0) + 1;
