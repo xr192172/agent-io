@@ -311,9 +311,6 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   gateway_provider: 'LLM 网关供应商/Key 池说明与状态',
   read_project_docs: '读项目文档（README/活文档）',
   capability_map: '本工具：能力线导航（目录由注册表 TOOL_DEFS 自动派生）',
-  // ★ 2026-10-11（BB 笔）："什么被用过"的那半 —— 注册表无门/覆盖工具的缺口。只读。
-  tool_usage:
-    '工具使用 / 覆盖读数（只读）：用过哪些工具/各多少次（复用 npm run dogfood 的口径）+ ★ 死工具（注册了但从未用过）+ ★ 过期记录（用过但已不在注册表）—— 两个集合的权威来源都写在读数里',
 };
 
 // ─────────────────────────────────────────────────────────────

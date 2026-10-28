@@ -58,6 +58,7 @@
     "new-observe-lang": "node scripts/new-observe-lang.mjs",
     "translate": "node dist/src/presentation/cli/cli.js translate_go_ts",
     "dogfood": "node dist/src/infrastructure/dogfood_stats.js",
+    "dogfood:coverage": "node scripts/dogfood-coverage.mjs",
     "brickify": "node dist/src/presentation/cli/brickify_cli.js",
     "signal-review": "node dist/src/presentation/cli/cli.js signal_review",
     "split-stage": "node dist/src/presentation/cli/cli.js split_stage",

@@ -69,7 +69,7 @@ const baseline = JSON.parse(fs.readFileSync(path.join(HERE, 'baselines/design-vi
   const names = TOOL_DEFS.map((t) => t.name);
   chk(!names.includes('render_design'), '① `render_design` **不在注册表**');
   chk(!names.includes('feature_line'), '①-b `feature_line` **不在注册表**');
-  chk(names.length === 52, '①-c 工具面 **54 → 52**', `实际 ${names.length}`);
+  chk(names.length <= 52, '①-c 工具面 **≤ 52**（合并只降不升；写死数字会随后续合并假红）', `实际 ${names.length}`);
 }
 
 // ── ② 渲染等价 ────────────────────────────────────────

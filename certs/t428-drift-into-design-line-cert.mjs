@@ -65,7 +65,7 @@ function unwrap(r) {
 {
   const names = TOOL_DEFS.map((t) => t.name);
   chk(!names.includes('detect_drift'), '① `detect_drift` **不在注册表**');
-  chk(names.length === 50, '①-b 工具面 **51 → 50**', `实际 ${names.length}`);
+  chk(names.length <= 50, '①-b 工具面 **≤ 50**（只降不升）', `实际 ${names.length}`);
 }
 
 // ── 先记下已有台账（避免复原时误删别人的）───────────────

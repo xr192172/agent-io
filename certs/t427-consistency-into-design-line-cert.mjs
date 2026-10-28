@@ -48,7 +48,7 @@ const { TOOL_DEFS } = await import(D + 'application/tool_registry.js');
 {
   const names = TOOL_DEFS.map((t) => t.name);
   chk(!names.includes('consistency_check'), '① `consistency_check` **不在注册表**');
-  chk(names.length === 51, '①-b 工具面 **52 → 51**', `实际 ${names.length}`);
+  chk(names.length <= 51, '①-b 工具面 **≤ 51**（只降不升；后续还并了 detect_drift / tool_usage）', `实际 ${names.length}`);
 }
 
 // ── ② design_line action=judge 能跑出四态 ──────────────
@@ -75,7 +75,12 @@ const { TOOL_DEFS } = await import(D + 'application/tool_registry.js');
 // ── ⑤ 执行核仍在（detect_drift / serve 还在用）─────────
 {
   const names = TOOL_DEFS.map((t) => t.name);
-  chk(names.includes('detect_drift'), '⑤ `detect_drift` 仍在注册表（它复用 `checkConsistencyReport` 执行核）');
+  // ★ 2026-10-28 更新前提：`detect_drift` 后来自己也被并进 `design_line action=drift`（证 t428）
+  //   ⇒ 这里要证的**不是"旧工具还在"**，而是**执行核仍有消费方**（`detect_drift.ts` 仍在，且仍调 `checkConsistencyReport`）。
+  chk(
+    fs.existsSync(path.join(ROOT, 'src/application/design/intent/detect_drift.ts')) || names.includes('detect_drift'),
+    '⑤ 执行核仍有消费方（`detect_drift.ts` 仍在，或旧工具仍注册）',
+  );
   const driftSrc = fs.readFileSync(path.join(ROOT, 'src/application/design/intent/detect_drift.ts'), 'utf8');
   chk(/checkConsistencyReport/.test(driftSrc), '⑤-b 执行核 `checkConsistencyReport` **仍被 detect_drift 引用**（只删了报表外壳，没删能力）');
   chk(fs.existsSync(path.join(ROOT, 'src/application/design/intent/consistency.ts')), '⑤-c 执行核文件 `intent/consistency.ts` **仍在**');

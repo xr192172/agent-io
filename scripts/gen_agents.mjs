@@ -61,7 +61,7 @@ const TRIGGER_ROWS = [
   ['改完函数验证行为', '`edit_dsl`（decision expectation `behavior-cases`）', '行为基线已并入判据生态（I2b）：期望输出写在 behavior-cases 判据里（同一执行核 runHarness），不再用 capture/verify 快照工具'],
   ['项目体检', '`code_health`', '死代码 / 圈复杂度 / 分层违规 → 健康分 + 清单'],
   ['查语言支持度 / 缺口', '`capability_audit`', '语言 × 功能的 AST 覆盖缺口（只读）；与 `capability_map`（工具导航）不同'],
-  ['查工具使用 / 死工具 / 过期记录', '`tool_usage`', '只读：使用与覆盖读数、注册了没被用、用过但已不在注册表'],
+  ['查工具使用 / 死工具 / 过期记录', '`npm run dogfood:coverage`（脚本）', '★ 2026-10-28 从 `tool_usage` 迁出：烟测覆盖读数（死工具 / 过期记录）属开发期审计，不该占 MCP 工具位；口径未变（默认排除 via=sweep|gate）'],
   ['升级语言 / 工具链版本', '`upgrade`', '`scan` 只读报契约差（可选 `gate` / `dynamic`）；`apply` = 串替换 → 基线提交 → 验证 → 失败回退（需 git）'],
   ['一次修复沉淀成规则', '`rules action=export/apply/check`', 'export 过出生回归 / 反例 / 幂等三关才落盘；apply 三态 `applied` / `todo` / `clean`（缺省 dry-run）；check 只在新命中上 fail'],
   ['症状 → 根因 → 修复', '`diagnose` / `diagnose_loop`', '`diagnose_loop` 缺省 `apply=false`，不提交 git'],

@@ -579,34 +579,6 @@ export const META_TOOLS: ToolDef[] = [
   },
 
   {
-    // ★★ BB 笔（2026-10-11）：「**"什么被保证 / 什么被用过"没有工具面**」——
-    //   ① `usage.jsonl` 只有**不在注册表**的 `npm run dogfood` 能读；
-    //   ② 且它只答"共 N 次调用 + 一张成功率表"，答不了「**注册了但从未用过**」与「**用过但已不在注册表**」
-    //      —— 而那正是"该收敛哪个工具 / 哪些记录已过期"的直接依据。
-    //   ⇒ 本工具把这份读数**接进工具面**：复用 `dogfood_stats` 的统计（**不重造**），补上**集合差**那一维。
-    //   ★ 它是只读的：**不写任何盘**（尤其**绝不碰**那份"只加不减"的原始日志）。
-    name: 'tool_usage',
-    title: 'Tool usage & coverage: what has been used, what is dead, what is stale',
-    description:
-      '**工具使用 / 覆盖读数**（只读，不写盘）：回答**"什么被用过"**这一半 —— 以及只有它答得了的两维：\n' +
-      '① **用过哪些工具、各调了多少次 / 成功失败**（复用 `npm run dogfood` 的统计口径，`dogfood_stats.ts`，**一行统计都不重造**）；\n' +
-      '② ★ **注册了但从未用过**（= **死工具**；数据源 = **注册表 − usage 里出现过的 tool**）；\n' +
-      '③ ★ **用过但已不在注册表**（= **过期记录**；数据源 = **usage 里出现过的 tool − 注册表**）。\n' +
-      '★ **两个集合的权威来源**都写在读数里（不自己拼一份）：用过的集合 = 日志文件真实路径；' +
-      '注册过的集合 = 注册表 `TOOL_DEFS`（`application/tool_registry.ts` 的唯一汇总点）。\n' +
-      '★ 与 `capability_map` 分工：那个是"**该用哪个**"（导航），本工具是"**实际用了什么 / 还差什么**"（覆盖）。\n' +
-      '★ 日志 `usage.jsonl` 是**原始记录（只加不减）** ⇒ 本工具**只读它**，绝不删除/清空。',
-    inputSchema: {},
-    handler: wrapData(async () => {
-      // ★ 注册表**注入式**取自唯一汇总点（`listToolDefs()` = 加载期 bindToolDefs(TOOL_DEFS) 的产物）
-      //   —— 本工具**不自己拼一份工具清单**（那就是第二份注册表，必然漂移）。
-      const registry = listToolDefs().map((d) => d.name);
-      const c = computeDogfoodCoverage(registry, 'src/application/tool_registry.ts 的 TOOL_DEFS（工具注册唯一汇总点）');
-      return { message: renderDogfoodCoverage(c), data: c };
-    }),
-  },
-
-  {
     // ★ T15 切片（2026-10-05）：原先只存在于 `capability_cli`（CLI-only）⇒ 能力被藏在 MCP 面之外。    //   ★ 顺带更正一条误判：T15 原写"`capability_cli` 的 MCP 等价物已存在（`capability_map`）⇒ 只需删 CLI"。
     //     **错** —— 两者只有名字像：`capability_map` 是「6 条能力线 × 工具」的**工具导航**（零语言），
     //     本工具审的是「功能 × 语言」的**支持度矩阵**（`diagnoseCapabilities`）。删 CLI 会丢一个能力。
