@@ -160,7 +160,6 @@ function hasUnsupported(node: SyntaxNodeLike, depth = 0): boolean {
   if (depth > 40) return true; // 防御：太深就当不认识（不猜）
   const t = node.type;
   if (HARD.has(t)) return true;
-  if (isTypeSensitiveBinary(node)) return true;
   if (!isIgnorable(node) && !NEUTRAL.has(t) && !OK_EXPR.has(t) && !OK_STMT.has(t)) return true;
   for (let i = 0; i < node.childCount; i++) {
     const c = node.child(i);
@@ -180,8 +179,16 @@ export function canMechTranslate(block: SyntaxNodeLike): boolean {
  * 为什么要有它：覆盖率的提升必须**按真实频次**补形态，不能拍脑袋加白名单。
  * 这个函数让"翻不动的函数"自己说出卡在哪个节点，统计出来再决定下一步补什么。
  */
-export function mechBlocker(block: SyntaxNodeLike | null): { type: string; text: string } | null {
+export function mechBlocker(block: SyntaxNodeLike | null, env?: MechTypeEnv): { type: string; text: string } | null {
   if (!block) return null;
+  // ★ 先看"判据 + 翻译"的合并结论：判据通过但翻译失败 ⇒ 报翻译现场（这才是天花板之下的真实阻碍）
+  if (!hasUnsupported(block)) {
+    LAST_FAIL = null;
+    const body = translateGoBodyMech(block, env);
+    if (body !== null) return null;
+    if (LAST_FAIL) return LAST_FAIL;
+    return { type: 'UNKNOWN_TRANSLATE_NULL', text: '' };
+  }
   const walk = (node: SyntaxNodeLike, depth: number): { type: string; text: string } | null => {
     if (depth > 40) return { type: 'DEPTH_LIMIT', text: node.text.slice(0, 40) };
     const t = node.type;
@@ -200,6 +207,107 @@ export function mechBlocker(block: SyntaxNodeLike | null): { type: string; text:
     return null;
   };
   return walk(block, 0);
+}
+
+/**
+ * ★★★ 2026-10-29（T-#MECH-TYPES）：**极小的类型环境** —— 只为了回答一个决定性问题：
+ * "这个 `/` `%` 的操作数是整型还是浮点？"
+ *
+ * 为什么必须知道：Go 的 `7/2 == 3`（整型截断），TS 的 `7/2 == 3.5`。
+ * 上一版因为没有类型环境，见到 `/` `%` 一律判"翻不动"（覆盖率因此从 81.9% 掉到 80.1%）。
+ * 现在把**函数签名里的参数类型**传进来，再用最小推断认局部变量：
+ *   字面量 → int / float64；`len(x)` → int；整型运算 → int；其它 → 不知道（不知道就不翻）。
+ *
+ * ★ 边界：这不是类型检查器，只是"够用来判整除"的一点点信息。不知道就返回 null ⇒ 交 LLM，绝不猜。
+ */
+export type MechTypeEnv = Map<string, string>;
+
+const INT_RE = /^(u?int(8|16|32|64)?|byte|rune|uintptr)$/;
+const FLOAT_RE = /^float(32|64)$/;
+const isIntT = (t: string | null | undefined): boolean => !!t && INT_RE.test(t);
+const isFloatT = (t: string | null | undefined): boolean => !!t && FLOAT_RE.test(t);
+
+/** 最小类型推断：只认得出决定"整除与否"的几种形态；认不出返回 null */
+function typeOfExpr(node: SyntaxNodeLike | null, env: MechTypeEnv): string | null {
+  if (!node) return null;
+  switch (node.type) {
+    case 'identifier':
+      return env.get(node.text) ?? null;
+    case 'int_literal':
+      return 'int';
+    case 'float_literal':
+      return 'float64';
+    case 'parenthesized_expression':
+      return typeOfExpr(node.child(1), env);
+    case 'call_expression': {
+      const fn = node.child(0)?.text ?? '';
+      if (fn === 'len' || fn === 'cap') return 'int';
+      if (INT_RE.test(fn) || FLOAT_RE.test(fn)) return fn; // 内建转换：int(x) / float64(x)
+      return null;
+    }
+    case 'unary_expression': {
+      const op = node.child(0)?.text ?? '';
+      const t = typeOfExpr(node.child(1), env);
+      if (op === '&' || op === '*') return t;
+      return t;
+    }
+    case 'binary_expression': {
+      const l = typeOfExpr(node.child(0), env);
+      const r = typeOfExpr(node.child(2), env);
+      if (isFloatT(l) || isFloatT(r)) return 'float64';
+      if (isIntT(l) && isIntT(r)) return 'int';
+      return null;
+    }
+    default:
+      return null;
+  }
+}
+
+/**
+ * 预扫描：按**书写顺序**把 `x := <expr>` 推断出的局部类型记进环境（Go 要求先声明后用，所以单趟够用）。
+ * 推断不出的不记（⇒ 用到时 typeOfExpr 返回 null ⇒ 不翻）。
+ */
+function inferLocals(block: SyntaxNodeLike, env: MechTypeEnv): void {
+  const visit = (node: SyntaxNodeLike): void => {
+    if (node.type === 'short_var_declaration' || node.type === 'assignment_statement') {
+      const lists = kids(node, 'expression_list');
+      const lhs = lists[0];
+      const rhs = lists[1];
+      if (lhs && rhs && lhs.childCount === 1 && rhs.childCount === 1) {
+        const nameNode = lhs.child(0);
+        if (nameNode && nameNode.type === 'identifier' && nameNode.text !== '_') {
+          const t = typeOfExpr(rhs.child(0), env);
+          if (t) env.set(nameNode.text, t);
+        }
+      }
+    }
+    if (node.type === 'var_declaration') {
+      // var x int = 3 / var x int
+      for (let i = 0; i < node.childCount; i++) {
+        const spec = node.child(i);
+        if (!spec || spec.type !== 'var_spec') continue;
+        let name: string | null = null;
+        let ty: string | null = null;
+        for (let j = 0; j < spec.childCount; j++) {
+          const c = spec.child(j);
+          if (!c) continue;
+          if (c.type === 'identifier' && !name) name = c.text;
+          else if (['type_identifier', 'qualified_type'].includes(c.type) && !ty) ty = c.text;
+        }
+        if (name && ty) env.set(name, ty);
+        else if (name) {
+          const lists = kids(node, 'expression_list');
+          const t = lists.length ? typeOfExpr(lists[0], env) : null;
+          if (t) env.set(name, t);
+        }
+      }
+    }
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i);
+      if (c) visit(c);
+    }
+  };
+  visit(block);
 }
 
 /** Go 内建转换 → TS 惯用式（只收**等价**的；`int(x)` 用 Math.trunc 而不是取整语义近似） */
@@ -233,6 +341,20 @@ function field(node: SyntaxNodeLike, name: string): SyntaxNodeLike | null {
     return null;
   }
 }
+
+/** 当前类型环境（`translateGoBodyMech` 设置；递归里只读） */
+let ME: MechTypeEnv = new Map();
+
+/**
+ * ★ 2026-10-29：**翻译失败的现场** —— 判据报道"能翻"、但 `stmt`/`expr` 返回 null 时，
+ * 记下那一刻的节点类型，供 `mechBlocker` 如实上报。
+ * 没有这个，"判据通过率 80%" 会被误读成"能翻 80%"（实际能翻 46%）—— 差的那 34% 就是这么藏起来的。
+ */
+let LAST_FAIL: { type: string; text: string } | null = null;
+const fail = (node: SyntaxNodeLike | null, why = ''): null => {
+  if (!LAST_FAIL && node) LAST_FAIL = { type: node.type + (why ? ':' + why : ''), text: node.text.slice(0, 50) };
+  return null;
+};
 
 /** 表达式 → TS 源码（翻不动返回 null） */
 function expr(node: SyntaxNodeLike | null): string | null {
@@ -275,7 +397,7 @@ function expr(node: SyntaxNodeLike | null): string | null {
       if (argsNode) {
         for (let i = 0; i < argsNode.childCount; i++) {
           const c = argsNode.child(i);
-          if (!c || c.type === '(' || c.type === ')' || c.type === ',') continue;
+          if (!c || c.type === '(' || c.type === ')' || c.type === ',' || c.type === 'comment') continue;
           const a = expr(c);
           if (a === null) return null;
           args.push(a);
@@ -295,12 +417,32 @@ function expr(node: SyntaxNodeLike | null): string | null {
     }
     case 'argument_list':
       return null;
+    // ★ 2026-10-29：**包装节点要解包**（它们是 AST 的语法糖层，不是表达式）
+    //   `literal_element`（复合字面量元素）×80、`variadic_argument`（`args...`）×9 —— 不认它们，
+    //   这两类函数全被判"翻不动"，实测占阻碍的第一名。
+    case 'literal_element': {
+      const inner = node.child(0);
+      return inner ? expr(inner) : fail(node, 'empty-literal-element');
+    }
+    case 'variadic_argument': {
+      // TS 的展开写法是 `...x`（Go 是 `x...`）
+      const inner = node.child(0);
+      const v = inner ? expr(inner) : null;
+      return v === null ? fail(node, 'variadic-inner') : `...${v}`;
+    }
     case 'binary_expression': {
       const l = expr(node.child(0));
       const op = node.child(1)?.text ?? '';
       const r = expr(node.child(2));
       if (l === null || r === null) return null;
-      if (op === '/' || op === '%') return null; // ★ 整型/浮点语义不同，缺类型环境不猜
+      // ★ 2026-10-29（T-#MECH-TYPES）：按**类型环境**判整除
+      if (op === '/' || op === '%') {
+        const lt = typeOfExpr(node.child(0), ME);
+        const rt = typeOfExpr(node.child(2), ME);
+        if (isIntT(lt) && isIntT(rt)) return op === '/' ? `Math.trunc(${l} / ${r})` : `${l} % ${r}`;
+        if (isFloatT(lt) || isFloatT(rt)) return `${l} ${op} ${r}`;
+        return null; // 不知道类型 ⇒ 不猜，交 LLM
+      }
       const OPMAP: Record<string, string> = { '==': '===', '!=': '!==' };
       return `${l} ${OPMAP[op] ?? op} ${r}`;
     }
@@ -358,7 +500,7 @@ function expr(node: SyntaxNodeLike | null): string | null {
       const elems: string[] = [];
       for (let i = 0; i < body.childCount; i++) {
         const c = body.child(i);
-        if (!c || ['{', '}', ','].includes(c.type)) continue;
+        if (!c || ['{', '}', ',', 'comment'].includes(c.type)) continue;
         if (c.type === 'keyed_element') {
           const k = c.child(0);
           const v = expr(c.child(2) ?? c.child(1));
@@ -378,7 +520,7 @@ function expr(node: SyntaxNodeLike | null): string | null {
       return `{ ${elems.join(', ')} }`;
     }
     default:
-      return null;
+      return fail(node, 'no-expr-handler');
   }
 }
 
@@ -682,7 +824,7 @@ function stmt(node: SyntaxNodeLike, indent: string, opts: StmtOpts = {}): string
       return out.join('\n');
     }
     default:
-      return null;
+      return fail(node, 'no-stmt-handler');
   }
 }
 
@@ -698,9 +840,12 @@ function stmt(node: SyntaxNodeLike, indent: string, opts: StmtOpts = {}): string
  * ★ 只处理**函数体直接子层**的 defer；出现在循环/if 里的 defer **执行时机不同**（每次迭代一次 vs 函数退出），
  *   那不翻 —— 判据里用"直接子层 defer 数 == 全树 defer 数"来保证，多一个就 `null`。
  */
-export function translateGoBodyMech(block: SyntaxNodeLike | null): string | null {
+export function translateGoBodyMech(block: SyntaxNodeLike | null, env?: MechTypeEnv): string | null {
   if (!block) return null;
   if (!canMechTranslate(block)) return null;
+  // ★ 类型环境：入参由调用方给（签名里的参数类型），局部再由 inferLocals 补
+  ME = new Map(env ?? []);
+  inferLocals(block, ME);
 
   // ① 收集**直接子层**的 defer（按出现顺序），并从语句流里摘掉
   const defers: string[] = [];

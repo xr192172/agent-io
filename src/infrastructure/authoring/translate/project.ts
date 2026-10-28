@@ -595,7 +595,11 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
         }
         const key = `${m.rel}#${u.id}@${sha1(u.srcSnippet)}`;
         const hit = cache[key];
-        if (hit?.body) hits.push({ u, body: hit.body });
+        // ★★★ 2026-10-29：**缓存回放也要过契约检查** —— 否则修好的规则被旧坏体抵消：
+        //   实测 retrieve_pipeline 的 LLM 体里带 `export function` 外壳（嵌进外层 ⇒ 语法错），
+        //   缓存会把它原样放回来，重跑多少次都还是错。判坏 ⇒ 当 miss 重新填。
+        const cacheOk = !!hit?.body && !/^[ \t]*(export\s+)?(async\s+)?function\b/m.test(hit.body.trim());
+        if (cacheOk) hits.push({ u, body: hit.body });
         else missUnits.push(u);
       }
       for (const h of hits) h.u.skeleton = spliceBody(h.u.skeleton, h.body);

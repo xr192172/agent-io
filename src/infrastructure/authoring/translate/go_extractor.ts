@@ -443,7 +443,11 @@ function unitFromFunc(node: SyntaxNodeLike): TransUnit | null {
       break;
     }
   }
-  const mechBody = translateGoBodyMech(bodyBlock) ?? undefined;
+  // ★ 2026-10-29（T-#MECH-TYPES）：把**签名里的参数类型**当类型环境传进去
+  //   ⇒ 翻译器能判 `n / 2` 是整除（Math.trunc）还是浮点除；判不出才交 LLM。
+  const mechEnv = new Map<string, string>();
+  for (const p of params) mechEnv.set(p.name, p.type);
+  const mechBody = translateGoBodyMech(bodyBlock, mechEnv) ?? undefined;
   const srcLine = node.startPosition.row + 1;
   if (recv) {
     // 方法：receiver 作首参（泛型 receiver 用全类型如 Pair<T>）；命名带类型基名前缀防撞名
