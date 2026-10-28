@@ -208,5 +208,38 @@
       ],
       "decls_source": "⚠ 未做设计对比：没传 decls 也没有 project_root。要对比\"哪些探针还没纳入设计\"，传 project_root（会自动读 <root>/.agent/observe/dsl.json）或直接传 decls。（本轮只做了逐事件规则判定。）"
     }
+  },
+  "instrument-ledger": {
+    "tool": "observe_instrument",
+    "args": {
+      "target": "D:/agentio/dev/agent-io/certs/baselines/t407-fixture",
+      "action": "ledger"
+    },
+    "data": {
+      "root": "D:\\agentio\\dev\\agent-io\\certs\\baselines\\t407-fixture",
+      "ledger": null,
+      "summary": null
+    }
+  },
+  "instrument-dry": {
+    "tool": "observe_instrument",
+    "args": {
+      "target": "D:/agentio/dev/agent-io/certs/baselines/t407-fixture",
+      "dry_run": true
+    },
+    "data": []
+  },
+  "proposals-list": {
+    "tool": "observe_proposals",
+    "args": {
+      "project_dir": "D:/agentio/dev/agent-io/certs/baselines/t407-fixture",
+      "action": "list"
+    },
+    "data": {
+      "action": "list",
+      "dir": "D:\\agentio\\dev\\agent-io\\certs\\baselines\\t407-fixture\\.agent\\observe",
+      "count": 0,
+      "proposals": []
+    }
   }
 }

@@ -279,7 +279,6 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   snapshot: '代码快照统一入口（action=list/rollback）：列每次 edit_code/rename_files/move_symbol 落盘前自动存的撤回点，或回滚到某一份（省略=最近一份）；★ 回滚立即落盘、本身不可再撤回',
   diff_views: '多视图/多版本差异对比',
   rules: '规则库统一入口（action=export/apply/check）—— export：把一次实际修复泛化成可复跑规则（$hole + 自动夹具，过「出生回归/反例不命中/幂等」三关才准落盘）；apply：三态（applied/todo/clean），唯一才动、歧义即停；check：当 lint 跑，带 CI 棘轮（只在"新增命中"上 fail）+ 规则自身夹具自检。两个写 action 默认 dry_run=true',
-  observe_instrument: '源码插桩探针（dry_run 可预览）',
   feature_line: '功能线：每个功能搭一条主链（功能→入口→调用节点），供沿线单步运行/投大屏点位',
   // ★ I2b（2026-10-25）：behavior_baseline 工具注册已并入 behavior-cases 判据生态（observe 线拆注册），
   //   行为基线场景用决策卡的 behavior-cases 判据表达 ⇒ 此处描述条目同步删除（不留下指向不存在工具的词条）。

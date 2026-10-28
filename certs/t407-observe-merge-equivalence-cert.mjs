@@ -6,11 +6,16 @@
  * 合并省的是上下文与漂移面，代价是**可发现性**与**报错泛化**。所以验收不能"看着差不多"，
  * 必须是**同一批夹具、合并前后回执逐字段对比** —— 本证就是这件事。
  *
- * ## 合并了什么（以及**故意不合并**什么）
+ * ## 用户裁定（2026-10-28）：接口形状不是约束
+ * 「命名空间什么的都无所谓，我要的是**最后达成的效果可以被替代**的话就替代掉，你完全可以重写」
+ * ⇒ 原先按"action 冲突 / 副作用不同"保留的两个工具，**全部并入**；形状（action 套 action、参数名）随便改，
+ *   只要**每个动作的效果逐字段不变**。这就是本证的验收口径。
+ *
+ * ## 合并了什么
  * - 合并：`observe_log` / `observe_trace` / `observe_judge` → `observe { action: log | trace | judge }`
  *   依据：**输入事实相同**（events.jsonl / 事件数组）、**判断性质相同**（只读）、**前置条件相同**（不需要设计册）。
- * - **不合并**：`observe_instrument`（插桩/还原）、`observe_proposals`（提案四层门）——
- *   它们各有自己的 `action` 命名空间**且会写盘**；合进来会撞命名空间，也会把写能力混进只读入口。
+ * - 也合并：`observe_instrument`（instrument/uninstrument/restore/ledger）与
+ *   `observe_proposals`（list/show/approve/reject，子动作走 `op`）——**执行核原样保留**，只改入口形状。
  *
  * ## 判据（每条亲手跑）
  *   ① 基线里每个场景（4 个）用新入口重放 ⇒ `data` **深度相等**（逐字段，不靠肉眼）；
@@ -107,13 +112,26 @@ const cli = (tool, args) =>
 
 // ── ① 逐场景等价（合并前 vs 合并后，data 深度比较）────────
 const baseline = JSON.parse(fs.readFileSync(path.join(ROOT, 'certs/baselines/observe-merge-baseline.json'), 'utf8'));
-const actionOf = { log: 'log', 'log-default': 'log', trace: 'trace', judge: 'judge' };
+// ★ 用户裁定（2026-10-28）："接口形状不是约束，效果可替代就替代" ⇒ **5 个全并成 1 个**。
+//   映射规则：动作名进 `action`（proposals 的子动作进 `op`）；参数名不改。
+const mapOf = {
+  log: { action: 'log' },
+  'log-default': { action: 'log' },
+  trace: { action: 'trace' },
+  judge: { action: 'judge' },
+  'instrument-ledger': { action: 'ledger' },
+  'instrument-dry': { action: 'instrument' },
+  'proposals-list': { action: 'proposals', op: 'list' },
+};
 let same = 0;
 const diffs = [];
 for (const [name, b] of Object.entries(baseline)) {
   let after = null;
   try {
-    after = extractData(cli('observe', { action: actionOf[name], ...b.args }));
+    // ★ 基线里存的是**旧工具的 action**（如 proposals 的 list）⇒ 重放时必须摘掉，
+    //   否则它会覆盖新入口的 action（这是夹具问题，不是产品问题 —— 实测踩过一次）。
+    const { action: _drop, ...restArgs } = b.args ?? {};
+    after = extractData(cli('observe', { ...mapOf[name], ...restArgs }));
   } catch (e) {
     after = extractData(String(e.stdout ?? '') + String(e.stderr ?? ''));
   }
@@ -135,10 +153,9 @@ chk(same === Object.keys(baseline).length, `① 基线 ${Object.keys(baseline).l
   const D = 'file://' + path.join(ROOT, 'dist/src/').replace(/\\/g, '/');
   const { TOOL_DEFS } = await import(D + 'application/tool_registry.js');
   const names = new Set(TOOL_DEFS.map((t) => t.name));
-  chk(names.has('observe_instrument') && names.has('observe_proposals'), '③ `observe_instrument` / `observe_proposals` **仍在注册表**（各有 action 命名空间 + 写盘 ⇒ 故意不并）');
-  const gone = ['observe_log', 'observe_trace', 'observe_judge'].filter((n) => names.has(n));
-  chk(gone.length === 0 && names.has('observe'), '③-b 三个旧名字**已摘**、`observe` 在册', `残留：${gone.join(',') || '(无)'}`);
-  chk(TOOL_DEFS.length === 57, '⑤ 工具数 59 → **57**（3 并 1）', `实际 ${TOOL_DEFS.length}`);
+  chk(names.size === 55, '③ 工具数 57 → **55**（5 个 observe_* 并成 1 个 `observe`）', `实际 ${names.size}`);
+  const gone = ['observe_log', 'observe_trace', 'observe_judge', 'observe_instrument', 'observe_proposals'].filter((n) => names.has(n));
+  chk(gone.length === 0 && names.has('observe'), '③-b **五个旧名字全部已摘**、只剩单入口 `observe`', `残留：${gone.join(',') || '(无)'}`);
 }
 
 // ── ④ 非法 action 不静默退回 ────────────────────────────

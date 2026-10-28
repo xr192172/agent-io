@@ -44,6 +44,8 @@ import type { ReconcileEffectsInput } from './reconcile/reconcile_effects.js';
 import { runTests } from './runtime/run_tests.js';
 import { checkStaleBuild, formatStaleText } from './runtime/stale_check.js';
 import { observeInstrumentHandler, observeJudgeHandler, observeLogHandler, observeTraceHandler, reconcileChainHandler } from './handlers.js';
+// ★ 2026-10-28：observe_proposals 的执行核（从 meta/index.ts 抽出一份实现，注册已并进本入口）
+import { observeProposalsHandler } from '../meta/proposals/handler.js';
 import { fileURLToPath } from 'node:url';
 import type { ToolDef } from '../types.js';
 
@@ -114,7 +116,15 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       'trace → `events_path` / `events_text` / `keep` / `trace_id` / `limit`；' +
       'judge → `events` / `decls` / `text` / `use_llm` / `project_root`。',
     inputSchema: {
-      action: z.enum(['log', 'trace', 'judge']).describe('log=查事件（默认）| trace=重建调用链 | judge=逐事件偏差判定'),
+      action: z
+        .enum(['log', 'trace', 'judge', 'instrument', 'uninstrument', 'restore', 'ledger', 'proposals'])
+        .describe(
+          'log=查事件（默认）| trace=重建调用链 | judge=逐事件偏差判定 | instrument=插桩 | uninstrument/restore=一键全拔 | ledger=只看探针台账 | proposals=observe 提案（配 op=list/show/approve/reject）',
+        ),
+      op: z
+        .enum(['list', 'show', 'approve', 'reject'])
+        .optional()
+        .describe('[proposals] 子动作：list=列（默认）| show=看一条 | approve=走四层门 | reject=驳回'),
       // ── log ──
       events_file: z.string().optional().describe('[log] Observe 事件文件路径（events.jsonl）'),
       files: z.array(z.string()).optional().describe('[log] 按文件路径过滤（精确 / 后缀 / 包含匹配）'),
@@ -125,6 +135,12 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       keep: z.enum(['all', 'default']).optional().describe("[trace] 'all'=返回全部链路；'default'=采样只留代表针"),
       trace_id: z.string().optional().describe('[trace] 展开某条链路；不给则返回链路清单'),
       limit: z.number().optional().describe('[trace] 最多返回几针（防上下文撑爆；给 trace_id 时忽略）'),
+      // ── instrument / uninstrument / restore / ledger ──
+      target: z.string().optional().describe('[instrument/ledger] 要插桩 / 还原 / 查台账的目标项目目录'),
+      dry_run: z.boolean().optional().describe('[instrument] true=只预览探针点不写盘'),
+      // ── proposals（与 review_changes 同一套规矩：确认人是下一个接手的 Agent）──
+      id: z.string().optional().describe('[proposals] show/approve/reject 用：提案 id'),
+      note: z.string().optional().describe('[proposals] reject 用：驳回理由'),
       // ── judge ──
       events: z.array(z.record(z.string(), z.unknown())).optional().describe('[judge] 要判定的事件数组（TSEvent 形状）'),
       decls: z.array(z.record(z.string(), z.unknown())).optional().describe('[judge] 设计声明数组（可做链路契约判定）'),
@@ -134,9 +150,17 @@ export const OBSERVE_TOOLS: ToolDef[] = [
     },
     // ★ 拆注册不拆执行核：三个 handler 原样保留，只由一个入口按 action 分派
     handler: ((a: unknown) => {
-      const action = String((a as Record<string, unknown>).action ?? 'log');
+      const args = a as Record<string, unknown>;
+      const action = String(args.action ?? 'log');
       if (action === 'trace') return observeTraceHandler(a as never);
       if (action === 'judge') return observeJudgeHandler(a as never);
+      if (action === 'instrument' || action === 'uninstrument' || action === 'restore' || action === 'ledger') {
+        // ★ 形状可重写：把"动作在 action 里"翻译成 instrument handler 期望的形态
+        return observeInstrumentHandler({ ...args, action: action === 'instrument' ? 'instrument' : action } as never);
+      }
+      if (action === 'proposals') {
+        return observeProposalsHandler({ ...args, action: String(args.op ?? 'list') } as never);
+      }
       return observeLogHandler(a as never);
     }) as ToolDef['handler'],
   },
@@ -164,48 +188,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
     handler: reconcileChainHandler,
   },
 
-  {
-    name: 'observe_instrument',
-    title: 'Auto-instrument or restore a TS/Go project',
-    description:
-      '对目标项目插桩（TS/Go）。★ **用前必读三条**（都是实测踩出来的）：' +
-      '① **插完 ≠ 有数据** —— 探针默认**不出事件**（无 sink 时是 no-op，且不报错）：' +
-      '   被测项目要在入口接一次 sink（回执里给了**准确**接法；scope 模式还要挂 globalThis.__probeScope）。' +
-      '② **TS 必须传 `project_root`**（= 本仓根）—— 不传会**响亮报错**（不再静默生成一个指进被测项目的坏 import）。' +
-      '③ **Go 不需要改被测工程的 go.mod** —— 探针包会被**拷进**被测工程 `internal/camprobe/`，' +
-      '   `uninstrument` 时连它一起删（被测工程零构建配置改动）。' +
-      '按语言分派：Go 走 observe-lang-go 语言包（go/ast 注入 camprobe.Capture，函数出/入/return/catch/IO）；' +
-      'TS 走 TS AST（captureProbe）。均幂等（已含探针文件跳过）。' +
-      'action：instrument=插桩（默认）| uninstrument/restore=一键全拔（从备份拷回原文件 + 删备份 + 删拷入的探针包）' +
-      '| ledger=只看探针台账（只读）| lint=**插桩体检**（只读：按台账跑结构不变量 —— 漏插 / 撞名 / 零探针文件）。' +
-      'dry_run=true 只预览不写盘（★ 也不拷探针包）。写盘前自动备份，git 可兜底。' +
-      'TS 写盘后自动生成探针台账（.agent-io/observe-ledger.json）。' +
-      '契约模式：contract_probes 传探针 id 数组则只注入这些探针点；缺省=探索模式全量插桩。',
-    inputSchema: {
-      action: z
-        .enum(['instrument', 'uninstrument', 'restore', 'ledger', 'lint'])
-        .optional()
-        .describe(
-          'instrument=插桩（默认）；uninstrument/restore=一键全拔（还原+清备份）；' +
-            'ledger=只看探针台账（只读，不写盘）；' +
-            '★ lint=**插桩体检**（只读）：按台账跑两条结构不变量 —— ① 每个函数恰一条 enter、至少一条 exit' +
-            '（缺=漏插；`enter>1`=**撞名**） ② 不得有"零探针文件"。★ 只覆盖**结构类**（名字/配对/覆盖），秒级、不用跑；' +
-            '运行时问题（取值时机/序列化/事件顺序）它看不见 ⇒ 仍需端到端。',
-        ),
-      target: z.string().describe('要插桩 / 还原 / 查台账的目标项目目录（绝对，或相对 cwd —— 入口会归一为绝对再交给语言包）'),
-      dry_run: z.boolean().optional().describe('true=只预览探针点不写盘（默认 false）'),
-      contract_probes: z
-        .array(z.string())
-        .optional()
-        .describe('契约模式探针 id 数组（如 ["store.save.writefile"]），只注入这些探针点；缺省=探索模式全量插桩'),
-      project_root: z.string().optional().describe('agent-io 根（TS 探针实现所在仓库根），用于计算相对 import 路径，默认自动推断'),
-      deep: z.boolean().optional().describe('仅 Go：开启 deep 级插桩（函数内变量赋值捕获），默认 false'),
-      effects: z.boolean().optional().describe('仅 Go：开启 effect 级插桩（包级变量写/chan send/资源获取观测），默认 false'),
-      scope: z.boolean().optional().describe('仅 TS：开启 scope 模式（try/finally 包裹函数体注入 enterScope/exitScope，录带帧调用树），默认 false（captureProbe 点探针）'),
-    },
-    handler: observeInstrumentHandler,
-  },
-
+  
   {
     name: 'recommend_observe_points',
     title: 'Recommend where to instrument (observe points)',
