@@ -132,6 +132,8 @@
 | T-#GW-STATS | **网关 stats 持久化写 0**：24 次真实调用后 `gateway.stats.json` 仍为 0（内存 `getStats()` 才对）⇒ 该文件**不能当进度读数**；我据此误判「全仓卡住」并杀掉了正在跑的进程 | `src/infrastructure/llm_gateway.ts` | 未修 |
 | T-#FILL-MISS | 填孔失败集中在**批中缺块**（LLM 少输出某些 `<unit>` 块）⇒ 失败后**自动降级为单孔重试**，不要整批再试 | `translate/fill.ts` | 未开工 |
 | T-#MECH-BODY | ✅ 首版已落（2026-10-29）：`body_mech.ts` 机械翻函数体 + extractor 产出 `mechBody` + project 优先用机械体；5 文件实测机械 16 个 / **fail 8→0** / 408s→352s。**覆盖仅 16%**（天花板 72.6%）⇒ 待补：三式 for 的 init/post、`_ = x`、切片/map 操作、errors 传播；每补一个形态都要对拍验 | `translate/body_mech.ts` | 进行中 |
+| T-#MECH-TYPES | 机械翻缺**类型环境**：/ % 整型 vs 浮点语义不同 ⇒ 现在一律交 LLM（覆盖率 81.9%→80.1% 的代价）。解法：把签名里的 param/return 类型（	ypeRef）传进 ody_mech，即可翻 
+/2→Math.trunc(n/2)、int(x) 精确化 | `translate/body_mech.ts` | 未开工 |
 | T-#CERT-1 | **20 个无证工具**（`scripts/audit-tool-certs.mjs`，量具已修为以注册表为真源：55 工具 / 35 提到 / **20 无证**）。★ **顺序已纠正**（2026-10-28 用户："A 这批几乎全部可以吸收进设计侧"）⇒ **先收敛、后补证**：A 档 11 个读数工具几乎全可吸收/合并（见 `docs/tool-convergence.md`），给"注定要合并的工具"写证是浪费。**步 1** 纯工具内合并（`plan_refactor`→`apply_refactor_plan`、`render_design`+`feature_line`→`get_dsl`、`find_similar_names`+`suggest_renames`→`rename_symbols`、`tool_usage`+`capability_audit`→`capability_map`）；**步 2** 变判据（`code_health`→`domain-independent`+新 `dead-code`+新 `metric`；`impact_analysis`→写闸前置；`detect_drift` 复核后退役）；**步 3** 只给幸存者补证（预计 5–6 张） | `docs/tool-convergence.md` · 各线 index.ts | 顺序已定（步 1 未开工） |
 | T-#RP-1 | **重写计划闸**：默认已翻（2026-10-28，`AGENT_IO_REQUIRE_PLAN` 三态，`=0` 只报）· 回执渲染✅ · 其它写工具文本渲染✅。**剩**：① 拿真实任务量一次严格档的误报率（本仓会被任务闸先拦 ⇒ 需要一张真领的卡）② 调 `planGaps` 粒度 | `src/application/write_gate.ts` · `design/db/rewrite_plan.ts` | 迭代中 |
 | T-#98d-old | 三条门类证跑不起来（已修，保留一行说明去向：t352 ✓ 17/0 · t332 ✓ 10/0 · t353 仅剩 T-#98d-2 那 6 条） | `certs/` | ✅ 已修 |

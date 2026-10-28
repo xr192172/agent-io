@@ -123,15 +123,45 @@ const NEUTRAL = new Set([
   'escape_sequence',
 ]);
 
+/**
+ * 一个节点是否「可以不管」——判据分三层，**全部走 AST，不靠类型名文本猜**：
+ * 1. **匿名 token**（`isNamed === false`）：关键字 / 标点 / 运算符 / 换行 —— tree-sitter 已经把
+ *    "它是不是语法骨架"这件事告诉我们了，不需要维护一张标点清单，也不需要 `startsWith('"')` 这种猜法；
+ * 2. **纯空白 token**（`text` 全空白）：换行节点的 `type` 就是换行符本身；
+ * 3. 命名节点（`isNamed !== false`）：必须在 `OK_EXPR` / `OK_STMT` 里，否则算不认识。
+ *
+ * ★ 2026-10-29 修正：原来用 `t.startsWith('"')` 判"这是个匿名 token" —— 那是在**猜节点类型的字符串形状**
+ *   （正是本仓反对的那种用法）。`isNamed` 是 tree-sitter 直接给的结构信息，改用它。
+ */
+/**
+ * ★★★ 2026-10-29（**对拍抓到的第二个语义缺口**）：Go 的 `/` `%` 在整型与浮点上语义不同
+ * （`7/2 = 3` vs TS `3.5`），而**函数体翻译器手里没有类型环境**（不知道操作数是 int 还是 float）
+ * ⇒ 不猜：见到 `/`、`%` 一律判"翻不动"，交 LLM。
+ * **[未核]** 若把签名里的参数/返回类型作为类型环境传进来，这一类（以及 `int(x)` 的精确性）就能解；
+ *   那是下一步（`T-#MECH-TYPES`），不是现在假装能翻。
+ */
+function isTypeSensitiveBinary(node: SyntaxNodeLike): boolean {
+  if (node.type !== 'binary_expression') return false;
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (c && (c.type === '/' || c.type === '%')) return true;
+  }
+  return false;
+}
+
+function isIgnorable(node: SyntaxNodeLike): boolean {
+  if (node.isNamed === false) return true;
+  if (!/\S/.test(node.type)) return true;
+  return false;
+}
+
 /** 整棵子树里有没有不认识/不敢碰的节点（有 ⇒ 不翻） */
 function hasUnsupported(node: SyntaxNodeLike, depth = 0): boolean {
   if (depth > 40) return true; // 防御：太深就当不认识（不猜）
   const t = node.type;
-  // 纯空白 token（tree-sitter 的换行节点 type 就是换行符）不是「不认识」，是噪声。
-  // 不放过它，任何多行函数体都会被判「翻不动」（实测 0/100 全是它）。
-  if (/^\s*$/.test(t)) return false;
   if (HARD.has(t)) return true;
-  if (!NEUTRAL.has(t) && !OK_EXPR.has(t) && !OK_STMT.has(t) && !t.startsWith('"')) return true;
+  if (isTypeSensitiveBinary(node)) return true;
+  if (!isIgnorable(node) && !NEUTRAL.has(t) && !OK_EXPR.has(t) && !OK_STMT.has(t)) return true;
   for (let i = 0; i < node.childCount; i++) {
     const c = node.child(i);
     if (c && hasUnsupported(c, depth + 1)) return true;
@@ -155,9 +185,9 @@ export function mechBlocker(block: SyntaxNodeLike | null): { type: string; text:
   const walk = (node: SyntaxNodeLike, depth: number): { type: string; text: string } | null => {
     if (depth > 40) return { type: 'DEPTH_LIMIT', text: node.text.slice(0, 40) };
     const t = node.type;
-    if (/^\s*$/.test(t)) return null;
     if (HARD.has(t)) return { type: t, text: node.text.slice(0, 60) };
-    if (!NEUTRAL.has(t) && !OK_EXPR.has(t) && !OK_STMT.has(t) && !t.startsWith('"')) {
+    if (isTypeSensitiveBinary(node)) return { type: 'DIV_OR_MOD(type-sensitive)', text: node.text.slice(0, 60) };
+    if (!isIgnorable(node) && !NEUTRAL.has(t) && !OK_EXPR.has(t) && !OK_STMT.has(t)) {
       return { type: t, text: node.text.slice(0, 60) };
     }
     for (let i = 0; i < node.childCount; i++) {
@@ -270,6 +300,7 @@ function expr(node: SyntaxNodeLike | null): string | null {
       const op = node.child(1)?.text ?? '';
       const r = expr(node.child(2));
       if (l === null || r === null) return null;
+      if (op === '/' || op === '%') return null; // ★ 整型/浮点语义不同，缺类型环境不猜
       const OPMAP: Record<string, string> = { '==': '===', '!=': '!==' };
       return `${l} ${OPMAP[op] ?? op} ${r}`;
     }
@@ -304,7 +335,19 @@ function expr(node: SyntaxNodeLike | null): string | null {
       // Go 反引号原文 → TS 模板串（转义反引号）
       return '`' + node.text.slice(1, -1).replace(/`/g, '\\`') + '`';
     case 'composite_literal': {
-      const t = node.child(0)?.text ?? '';
+      // ★ 2026-10-29 结构化修正：字面量种类看**类型节点的 `type`**（AST 直接给），
+      //   不再用 `text.startsWith('[]')` / `startsWith('map[')` 去猜 Type 文本的形状
+      //   —— 那正是「用字符串形状冒充结构」的旧毛病。
+      const typeNode = node.child(0);
+      const kindOf = (n: SyntaxNodeLike | null): 'slice' | 'map' | 'struct' | 'other' => {
+        if (!n) return 'other';
+        if (n.type === 'slice_type' || n.type === 'array_type') return 'slice';
+        if (n.type === 'map_type') return 'map';
+        if (n.type === 'struct_type' || n.type === 'type_identifier' || n.type === 'qualified_type' || n.type === 'generic_type')
+          return 'struct';
+        return 'other';
+      };
+      const litKind = kindOf(typeNode);
       const body = kids(node, 'literal_value')[0];
       if (!body) return null;
       const elems: string[] = [];
@@ -324,9 +367,9 @@ function expr(node: SyntaxNodeLike | null): string | null {
           elems.push(v);
         }
       }
-      // 切片/数组字面量 → 数组；struct/map 字面量 → 对象
-      if (t.startsWith('[]') || t.startsWith('[')) return `[${elems.join(', ')}]`;
-      if (t.startsWith('map[')) return `new Map([${elems.join(', ')}])`;
+      // 切片/数组字面量 → 数组；map 字面量 → Map；struct 字面量 → 对象
+      if (litKind === 'slice') return `[${elems.join(', ')}]`;
+      if (litKind === 'map') return `new Map([${elems.join(', ')}])`;
       return `{ ${elems.join(', ')} }`;
     }
     default:
@@ -335,8 +378,16 @@ function expr(node: SyntaxNodeLike | null): string | null {
 }
 
 /** 语句 → TS 源码（翻不动返回 null） */
-function stmt(node: SyntaxNodeLike, indent: string): string | null {
+type StmtOpts = {
+  /** 行内模式：**不输出结尾分号**（for 的 init/post 位置用），避免"先生成带分号再 replace 掉" */
+  inline?: boolean;
+  /** 声明关键字覆盖：for 的 init 必须是 `let`（在 TS 里 const 不能做循环变量） */
+  declKw?: 'let' | 'const';
+};
+
+function stmt(node: SyntaxNodeLike, indent: string, opts: StmtOpts = {}): string | null {
   const pad = indent;
+  const semi = opts.inline ? '' : ';';
   // ★ 换行/空白/注释是**子节点**（不是语句）——不放过就会被当成"翻不动"（实测所有函数体都栽在这）
   if (/^\s*$/.test(node.type) || node.type === 'comment') return '';
   switch (node.type) {
@@ -355,7 +406,7 @@ function stmt(node: SyntaxNodeLike, indent: string): string | null {
       return '';
     case 'expression_statement': {
       const e = expr(node.child(0));
-      return e === null ? null : `${pad}${e};`;
+      return e === null ? null : `${pad}${e}${semi}`;
     }
     case 'short_var_declaration': {
       // `a, b := f()` → `let [a, b] = f()`；`x := 1` → `const x = 1`
@@ -379,12 +430,16 @@ function stmt(node: SyntaxNodeLike, indent: string): string | null {
       }
       if (!lhsKids.length || !rhsKids.length) return null;
       // 多值：Go 语义 = 解构（前提是右值是单次调用）
+      // ★ 关键字也走**结构化覆盖**（for 的 init 用 let），不再事后 `replace(/^const /, 'let ')` 改文本
+      // ★★★ 2026-10-29（**对拍抓到的真 bug**）：Go 的 `:=` 声明的变量**是可变的**，
+      //   原来单值声明翻成 `const` ⇒ 后面 `t += x` 运行时抛 "Assignment to constant variable"
+      //   （对拍 3/3 case diff 才发现；肉眼看代码"完全对"）。⇒ 一律 `let`，绝不 `const`。
+      const kw = opts.declKw ?? 'let';
       if (lhsKids.length > 1) {
-        if (rhsKids.length === 1) return `${pad}let [${lhsKids.join(', ')}] = ${rhsKids[0]};`;
-        return `${pad}let [${lhsKids.join(', ')}] = [${rhsKids.join(', ')}];`;
+        if (rhsKids.length === 1) return `${pad}${kw} [${lhsKids.join(', ')}] = ${rhsKids[0]}${semi}`;
+        return `${pad}${kw} [${lhsKids.join(', ')}] = [${rhsKids.join(', ')}]${semi}`;
       }
-      const kw = rhsKids.length > 1 ? 'let' : 'const';
-      return `${pad}${kw} ${lhsKids[0]} = ${rhsKids.length > 1 ? `[${rhsKids.join(', ')}]` : rhsKids[0]};`;
+      return `${pad}${kw} ${lhsKids[0]} = ${rhsKids.length > 1 ? `[${rhsKids.join(', ')}]` : rhsKids[0]}${semi}`;
     }
     case 'assignment_statement': {
       const lists = kids(node, 'expression_list');
@@ -414,13 +469,13 @@ function stmt(node: SyntaxNodeLike, indent: string): string | null {
         r.push(v);
       }
       if (!l.length || !r.length) return null;
-      return `${pad}${l.join(', ')} ${op} ${r.length > 1 ? `[${r.join(', ')}]` : r[0]};`;
+      return `${pad}${l.join(', ')} ${op} ${r.length > 1 ? `[${r.join(', ')}]` : r[0]}${semi}`;
     }
     case 'inc_statement':
     case 'dec_statement': {
       const t = node.type === 'inc_statement' ? '++' : '--';
       const target = expr(node.child(0));
-      return target === null ? null : `${pad}${target}${t};`;
+      return target === null ? null : `${pad}${target}${t}${semi}`;
     }
     case 'return_statement': {
       const lists = kids(node, 'expression_list');
@@ -440,30 +495,40 @@ function stmt(node: SyntaxNodeLike, indent: string): string | null {
       const cond = expr(field(node, 'condition') ?? node.child(1));
       if (cond === null) return null;
       const blocks = kids(node, 'block');
-      const elseNode = (() => {
-        for (let i = 0; i < node.childCount; i++) {
-          const c = node.child(i);
-          if (c && c.type === 'else_clause') return c;
-        }
-        return null;
-      })();
       const thenBlock = blocks[0];
       if (!thenBlock) return null;
       const thenS = stmt(thenBlock, pad + '  ');
       if (thenS === null) return null;
       let out = `${pad}if (${cond}) {\n${thenS}\n${pad}}`;
-      if (elseNode) {
-        const inner = elseNode.child(1);
-        if (inner?.type === 'if_statement') {
+
+      // ★★★ 2026-10-29（**对拍抓到的静默丢分支**）：tree-sitter-go 的 `else` **不是** `else_clause` 包装，
+      //   而是匿名关键字 token `else` + 紧跟的 `if_statement` 或 `block`。
+      //   原来只找 `else_clause` ⇒ **`else if` / `else` 整段被丢掉**，而判据还报"翻得出"
+      //   （生成 `if {...} return 0;`：少一条分支，语义变了却看不出来 —— 比翻不动更坏）。
+      //   ⇒ 见到 `else` 就必须翻出分支；找不到分支就 `null`，**绝不静默丢 else**。
+      let elseIdx = -1;
+      for (let i = 0; i < node.childCount; i++) {
+        const c = node.child(i);
+        if (c && (c.type === 'else' || c.type === 'else_clause')) {
+          elseIdx = i;
+          break;
+        }
+      }
+      if (elseIdx >= 0) {
+        const wrapper = node.child(elseIdx);
+        const inner = wrapper && wrapper.type === 'else_clause' ? (wrapper.child(1) ?? wrapper.child(0)) : node.child(elseIdx + 1);
+        if (!inner) return null;
+        if (inner.type === 'if_statement') {
           const s2 = stmt(inner, pad);
           if (s2 === null) return null;
           return `${out} else ${s2.trimStart()}`;
         }
-        if (inner?.type === 'block') {
+        if (inner.type === 'block') {
           const s2 = stmt(inner, pad + '  ');
           if (s2 === null) return null;
-          out += ` else {\n${s2}\n${pad}}`;
+          return `${out} else {\n${s2}\n${pad}}`;
         }
+        return null; // else 后面既不是 block 也不是 if ⇒ 不猜
       }
       return out;
     }
@@ -481,7 +546,7 @@ function stmt(node: SyntaxNodeLike, indent: string): string | null {
         if (lhs) for (let i = 0; i < lhs.childCount; i++) {
           const c = lhs.child(i);
           if (!c || c.type === ',') continue;
-          if (c.type !== 'identifier') return null;
+          if (c.type !== 'identifier' && c.text !== '_') return null;
           names.push(c.text);
         }
         const idx = names[0] === '_' ? null : names[0];
@@ -496,29 +561,45 @@ function stmt(node: SyntaxNodeLike, indent: string): string | null {
       }
       // 三式 for：翻成 for(init; cond; post)；条件式 for：while
       const fc = kids(node, 'for_clause')[0] ?? node;
-      const cond = field(fc, 'condition') ?? field(node, 'condition');
+      // ★ 2026-10-29：`for n > 1 {}` 的条件**没有 field**（tree-sitter-go 直接挂在 child(1)）⇒
+      //   只找 field 会得到 null，整条 while 判成"翻不动"（实测 Halve/CountDown 夹具挂在这）。
+      const cond =
+        field(fc, 'condition') ??
+        field(node, 'condition') ??
+        (() => {
+          for (let i = 0; i < node.childCount; i++) {
+            const c = node.child(i);
+            if (!c) continue;
+            if (['for', 'for_clause', 'block'].includes(c.type)) continue;
+            if (!/\S/.test(c.type)) continue;
+            return c;
+          }
+          return null;
+        })();
       const init = field(fc, 'initializer') ?? field(node, 'initializer');
       const update = field(fc, 'update') ?? field(node, 'update');
       if (init || update) {
-        const initRaw = init ? stmt(init, '') : null;
-        if (init && initRaw === null) return null;
-        const initS = initRaw === null ? null : initRaw.replace(/;$/, '');
-        const updRaw = update ? stmt(update, '') : null;
-        if (update && updRaw === null) return null;
-        const updS = updRaw === null ? null : updRaw.replace(/;$/, '');
+        // ★ 行内模式 + 声明关键字覆盖（结构性产出，不做"生成后再改文本"）
+        const initS = init ? stmt(init, '', { inline: true, declKw: 'let' }) : null;
+        if (init && initS === null) return null;
+        const updS = update ? stmt(update, '', { inline: true }) : null;
+        if (update && updS === null) return null;
         if (initS === null && init) return null;
         if (updS === null && update) return null;
         const condS = cond ? expr(cond) : null;
         if (cond && condS === null) return null;
-        const initSql = (initS ?? '').replace(/^const /, 'let ');
-        return `${pad}for (${initSql}; ${condS ?? ''}; ${updS ?? ''}) {\n${bodyS}\n${pad}}`;
+        return `${pad}for (${initS ?? ''}; ${condS ?? ''}; ${updS ?? ''}) {\n${bodyS}\n${pad}}`;
       }
       const condS = cond ? expr(cond) : null;
       if (condS === null) return null;
       return `${pad}while (${condS}) {\n${bodyS}\n${pad}}`;
     }
     case 'expression_switch_statement': {
-      const v = expr(field(node, 'value') ?? node.child(1));
+      // ★ 2026-10-29：判别式可能是 `expression_list` 包一层 ⇒ 先剥再翻（否则 expr 直接 null，
+      //   整条 switch 判成"翻不动"，实测 KindOf 夹具就这么挂的）。
+      const discNode = field(node, 'value') ?? node.child(1);
+      const discInner = discNode && discNode.type === 'expression_list' ? discNode.child(0) : discNode;
+      const v = expr(discInner);
       if (v === null) return null;
       const parts: string[] = [];
       for (let i = 0; i < node.childCount; i++) {
@@ -552,7 +633,7 @@ function stmt(node: SyntaxNodeLike, indent: string): string | null {
       const out: string[] = [];
       for (let i = 0; i < node.childCount; i++) {
         const c = node.child(i);
-        if (!c || c.type === 'case' || c.type === ':' || c.type === 'expression_list') continue;
+        if (!c || c.type === 'case' || c.type === 'default' || c.type === ':' || c.type === 'expression_list') continue;
         const s = stmt(c, pad);
         if (s === null) return null;
         if (s !== '') out.push(s);
