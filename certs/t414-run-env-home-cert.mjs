@@ -12,7 +12,7 @@
  *   ① `probeRunEnv` **只在** `observe/run_env.js` 导出（harness 不再自带一份）；
  *   ② `transpileForHarness` 已导出、`transpileToCjs` **不再是导出**（无遗留双名）；
  *   ③ `run_env` 提供的 env 契约：`NODE_OPTIONS` 是 **file:// URL**（Windows 硬要求）、
- *      `OBSERVE_EVENTS_FILE` 落在**被观测项目**的 `.agent/observe/`、`AGENT_IO_PROBE_EXCLUDE` 含框架 dist 根；
+ *      `OBSERVE_EVENTS_FILE` 落在**被观测项目**的 `.agent/observe/`、`AGENT_IO_PROBE_EXCLUDE` 含**探针层目录**（只排自己，不排整个 dist）；
  *   ④ 总开关：`AGENT_IO_PROBE_OFF=1` ⇒ 返回 `undefined`（增强能力可关）；
  *   ⑤ 自根覆盖：删掉 loader 时返回 `undefined`（拿不到就不注入 —— 不制造半开状态）。
  *
@@ -62,10 +62,10 @@ chk(!('transpileToCjs' in harness), '②-b `transpileToCjs` **不再是导出**�
   chk(!!env, '③ `probeRunEnv(root)` 给出 env');
   chk(/--import\s+file:\/\//.test(String(env?.NODE_OPTIONS)), '③-b `NODE_OPTIONS` 里 `--import` 是 **file:// URL**（Windows 硬要求）', String(env?.NODE_OPTIONS).slice(0, 120));
   chk(String(env?.OBSERVE_EVENTS_FILE ?? '').startsWith(path.join(proj, '.agent', 'observe')), '③-c `OBSERVE_EVENTS_FILE` 落在**被观测项目**的 `.agent/observe/`', String(env?.OBSERVE_EVENTS_FILE ?? ''));
-  const dist = runEnv.frameworkDistRoot();
+  const dist = runEnv.probeLayerRoot();
   chk(
     String(env?.AGENT_IO_PROBE_EXCLUDE ?? '').split(path.delimiter).some((x) => x === dist),
-    '③-d 排除清单**含框架 dist 根**（否则会插桩探针本体＝自伤）',
+    '③-d 排除清单**含**探针层目录**（只排自己，不排整个 dist）**（否则会插桩探针本体＝自伤）',
     `${dist} ∈ [${String(env?.AGENT_IO_PROBE_EXCLUDE ?? '')}]`,
   );
   chk(fs.existsSync(runEnv.probeLoaderPath()), '③-e `probeLoaderPath()` 指向真实存在的 loader', runEnv.probeLoaderPath());

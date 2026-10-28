@@ -25,9 +25,20 @@ export function probeLoaderPath(): string {
   return path.join(OBSERVE_DIR, 'probe_loader.js');
 }
 
-/** 框架自身的 dist 根（要在插桩里排除，否则会自伤） */
-export function frameworkDistRoot(): string {
-  // dist/src/infrastructure/analysis/observe → dist
+/**
+ * **探针层目录**（要在插桩里排除，否则插桩器会插桩自己 → 递归 / 自伤）。
+ *
+ * ★★ 2026-10-28（真实验发现的错）：原来这里排除的是**整个 dist** ——
+ *   于是「观测我们自己的框架代码」变成不可能（实测：跑一张证只看到证文件，dist 里 0 条事件）。
+ *   正确口径是**只排除探针层**（`infrastructure/analysis/observe`）：它才是"插桩器自己"，
+ *   其余 dist 代码是**被观测对象**，必须能插。
+ */
+export function probeLayerRoot(): string {
+  // ★★ 2026-10-28 实测（先收窄成 observe 目录，结果**静默自伤**）：
+  //   探针（probe.js）的依赖闭包里还有 dist 其它模块；那些模块被插桩后又 import 探针 ⇒ 循环
+  //   ⇒ 进程**没有任何输出、exit code 0**（最难查的那类失败）。
+  //   ⇒ 在"**探针依赖闭包排除**"做出来之前，口径保持**整个 dist**：
+  //     可观测的是 dist 之外的代码（certs/、脚本、以及将来受管项目里的源码）。
   return path.resolve(OBSERVE_DIR, '..', '..', '..', '..');
 }
 
@@ -84,7 +95,7 @@ export function probeRunEnv(root?: string): NodeJS.ProcessEnv | undefined {
       NODE_OPTIONS: `${prev} --import ${new URL(`file://${loader.replace(/\\/g, '/')}`).href}`.trim(),
       OBSERVE_EVENTS_FILE: events,
       AGENT_IO_PROBE_ROOT: projectRoot,
-      AGENT_IO_PROBE_EXCLUDE: [process.env.AGENT_IO_PROBE_EXCLUDE, frameworkDistRoot()].filter(Boolean).join(path.delimiter),
+      AGENT_IO_PROBE_EXCLUDE: [process.env.AGENT_IO_PROBE_EXCLUDE, probeLayerRoot()].filter(Boolean).join(path.delimiter),
     };
   } catch {
     return undefined;

@@ -44,7 +44,7 @@ function shouldHandle(url: string): boolean {
   // 框架自身：dist 目录（含探针本体）与 loader 本体 —— 插桩它们只会自伤
   // ★ 2026-10-28（T-#KIND-2）：别在 hooks 里手算 `../../..`（脆）；自根从**命名常量**来，并允许 env 覆盖：
   //   本文件在 dist/src/infrastructure/analysis/observe ⇒ 自根是 dist（**不是** dist/src）
-  const selfRoot = process.env.AGENT_IO_PROBE_SELF_ROOT || path.resolve(fileURLToPath(D), '..', '..', '..', '..');
+  const selfRoot = process.env.AGENT_IO_PROBE_SELF_ROOT || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..'); // ★ 排除整个 dist（理由见 run_env.probeLayerRoot）
   if (p.startsWith(selfRoot + path.sep)) return false;
   for (const ex of (process.env.AGENT_IO_PROBE_EXCLUDE ?? '').split(path.delimiter)) {
     if (ex && p.startsWith(ex)) return false;

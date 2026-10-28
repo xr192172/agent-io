@@ -22,6 +22,19 @@
           "bg": "#152141",
           "color": "#90caf9",
           "borderRadius": 8
+        },
+        "decision": {
+          "summary": "本仓的**验证脚本**（certs/*.mjs）。运行时判据：**不许静默吞错** —— 律由框架提供（`design:silent-error-discard`），这里只声明「它对本域生效」。",
+          "expectations": [
+            {
+              "kind": "runtime",
+              "rule": "design:silent-error-discard",
+              "expect": "ok",
+              "why": "观测线（L3）第一次真实使用：certs 的运行时事件里静默错误丢弃必须为 0"
+            }
+          ],
+          "updated_at": "2026-10-28T09:12:37.375Z",
+          "agent": "agent:main"
         }
       },
       {
@@ -68536,13 +68549,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 282,
+  "_dsl_rev": 283,
   "_sync": {
-    "saved_at": "2026-10-28T06:56:12.596Z",
+    "saved_at": "2026-10-28T09:12:37.391Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 169575459,
+    "age": 177760254,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
