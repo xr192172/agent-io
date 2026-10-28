@@ -2191,10 +2191,10 @@
                   "kind": {
                     "const": "file-exists"
                   },
-                  "path": {
+                  "why": {
                     "type": "string"
                   },
-                  "why": {
+                  "path": {
                     "type": "string"
                   }
                 },
@@ -2210,13 +2210,13 @@
                   "kind": {
                     "const": "symbol-exists"
                   },
+                  "why": {
+                    "type": "string"
+                  },
                   "path": {
                     "type": "string"
                   },
                   "symbol": {
-                    "type": "string"
-                  },
-                  "why": {
                     "type": "string"
                   }
                 },
@@ -2233,6 +2233,9 @@
                   "kind": {
                     "const": "signature-matches"
                   },
+                  "why": {
+                    "type": "string"
+                  },
                   "path": {
                     "type": "string"
                   },
@@ -2240,9 +2243,6 @@
                     "type": "string"
                   },
                   "signature": {
-                    "type": "string"
-                  },
-                  "why": {
                     "type": "string"
                   }
                 },
@@ -2260,13 +2260,13 @@
                   "kind": {
                     "const": "edge-exists"
                   },
+                  "why": {
+                    "type": "string"
+                  },
                   "from": {
                     "type": "string"
                   },
                   "to": {
-                    "type": "string"
-                  },
-                  "why": {
                     "type": "string"
                   }
                 },
@@ -2283,13 +2283,13 @@
                   "kind": {
                     "const": "edge-absent"
                   },
+                  "why": {
+                    "type": "string"
+                  },
                   "from": {
                     "type": "string"
                   },
                   "to": {
-                    "type": "string"
-                  },
-                  "why": {
                     "type": "string"
                   }
                 },
@@ -2304,33 +2304,10 @@
                 "type": "object",
                 "properties": {
                   "kind": {
-                    "const": "domain-independent"
-                  },
-                  "domain": {
-                    "type": "string"
-                  },
-                  "must_not_import": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
+                    "const": "call-exists"
                   },
                   "why": {
                     "type": "string"
-                  }
-                },
-                "required": [
-                  "domain",
-                  "kind",
-                  "must_not_import",
-                  "why"
-                ]
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "kind": {
-                    "const": "call-exists"
                   },
                   "path": {
                     "type": "string"
@@ -2339,9 +2316,6 @@
                     "type": "string"
                   },
                   "target": {
-                    "type": "string"
-                  },
-                  "why": {
                     "type": "string"
                   }
                 },
@@ -2357,90 +2331,18 @@
                 "type": "object",
                 "properties": {
                   "kind": {
-                    "const": "source-has"
-                  },
-                  "path": {
-                    "type": "string"
-                  },
-                  "must": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "mustNot": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "why": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "kind",
-                  "path",
-                  "why"
-                ]
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "kind": {
-                    "const": "behavior-cases"
-                  },
-                  "path": {
-                    "type": "string"
-                  },
-                  "symbol": {
-                    "type": "string"
-                  },
-                  "cases": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "given": {
-                          "type": "array",
-                          "items": {}
-                        },
-                        "expect": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "expect",
-                        "given"
-                      ]
-                    }
-                  },
-                  "why": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "cases",
-                  "kind",
-                  "path",
-                  "symbol",
-                  "why"
-                ]
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "kind": {
                     "const": "run"
                   },
-                  "input": {},
+                  "why": {
+                    "type": "string"
+                  },
+                  "input": {
+                    "type": "object"
+                  },
                   "input_ref": {
                     "type": "string"
                   },
                   "expect": {
-                    "type": "string"
-                  },
-                  "why": {
                     "type": "string"
                   },
                   "blocked_by": {
@@ -2463,15 +2365,131 @@
                 "type": "object",
                 "properties": {
                   "kind": {
+                    "const": "source-has"
+                  },
+                  "why": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "must": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "mustNot": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "kind",
+                  "path",
+                  "why"
+                ],
+                "anyOf": [
+                  {
+                    "required": [
+                      "must"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "mustNot"
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "behavior-cases"
+                  },
+                  "why": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "symbol": {
+                    "type": "string"
+                  },
+                  "cases": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "given": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "expect": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "given",
+                        "expect"
+                      ]
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "cases",
+                  "kind",
+                  "path",
+                  "symbol",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "domain-independent"
+                  },
+                  "why": {
+                    "type": "string"
+                  },
+                  "domain": {
+                    "type": "string"
+                  },
+                  "must_not_import": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "domain",
+                  "kind",
+                  "must_not_import",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
                     "const": "cert"
+                  },
+                  "why": {
+                    "type": "string"
                   },
                   "cert": {
                     "type": "string"
                   },
                   "case": {
-                    "type": "string"
-                  },
-                  "why": {
                     "type": "string"
                   }
                 },
@@ -2487,10 +2505,14 @@
                   "kind": {
                     "const": "runtime"
                   },
+                  "why": {
+                    "type": "string"
+                  },
                   "probe": {
                     "type": "string"
                   },
                   "expect": {
+                    "type": "string",
                     "enum": [
                       "ok",
                       "deviation",
@@ -2498,9 +2520,6 @@
                     ]
                   },
                   "events": {
-                    "type": "string"
-                  },
-                  "why": {
                     "type": "string"
                   }
                 },
@@ -2674,10 +2693,10 @@
                   "kind": {
                     "const": "file-exists"
                   },
-                  "path": {
+                  "why": {
                     "type": "string"
                   },
-                  "why": {
+                  "path": {
                     "type": "string"
                   }
                 },
@@ -2693,13 +2712,13 @@
                   "kind": {
                     "const": "symbol-exists"
                   },
+                  "why": {
+                    "type": "string"
+                  },
                   "path": {
                     "type": "string"
                   },
                   "symbol": {
-                    "type": "string"
-                  },
-                  "why": {
                     "type": "string"
                   }
                 },
@@ -2716,6 +2735,9 @@
                   "kind": {
                     "const": "signature-matches"
                   },
+                  "why": {
+                    "type": "string"
+                  },
                   "path": {
                     "type": "string"
                   },
@@ -2723,9 +2745,6 @@
                     "type": "string"
                   },
                   "signature": {
-                    "type": "string"
-                  },
-                  "why": {
                     "type": "string"
                   }
                 },
@@ -2743,13 +2762,13 @@
                   "kind": {
                     "const": "edge-exists"
                   },
+                  "why": {
+                    "type": "string"
+                  },
                   "from": {
                     "type": "string"
                   },
                   "to": {
-                    "type": "string"
-                  },
-                  "why": {
                     "type": "string"
                   }
                 },
@@ -2766,13 +2785,13 @@
                   "kind": {
                     "const": "edge-absent"
                   },
+                  "why": {
+                    "type": "string"
+                  },
                   "from": {
                     "type": "string"
                   },
                   "to": {
-                    "type": "string"
-                  },
-                  "why": {
                     "type": "string"
                   }
                 },
@@ -2789,6 +2808,9 @@
                   "kind": {
                     "const": "call-exists"
                   },
+                  "why": {
+                    "type": "string"
+                  },
                   "path": {
                     "type": "string"
                   },
@@ -2796,9 +2818,6 @@
                     "type": "string"
                   },
                   "target": {
-                    "type": "string"
-                  },
-                  "why": {
                     "type": "string"
                   }
                 },
@@ -2814,90 +2833,18 @@
                 "type": "object",
                 "properties": {
                   "kind": {
-                    "const": "source-has"
-                  },
-                  "path": {
-                    "type": "string"
-                  },
-                  "must": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "mustNot": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "why": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "kind",
-                  "path",
-                  "why"
-                ]
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "kind": {
-                    "const": "behavior-cases"
-                  },
-                  "path": {
-                    "type": "string"
-                  },
-                  "symbol": {
-                    "type": "string"
-                  },
-                  "cases": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "given": {
-                          "type": "array",
-                          "items": {}
-                        },
-                        "expect": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "expect",
-                        "given"
-                      ]
-                    }
-                  },
-                  "why": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "cases",
-                  "kind",
-                  "path",
-                  "symbol",
-                  "why"
-                ]
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "kind": {
                     "const": "run"
                   },
-                  "input": {},
+                  "why": {
+                    "type": "string"
+                  },
+                  "input": {
+                    "type": "object"
+                  },
                   "input_ref": {
                     "type": "string"
                   },
                   "expect": {
-                    "type": "string"
-                  },
-                  "why": {
                     "type": "string"
                   },
                   "blocked_by": {
@@ -2920,7 +2867,99 @@
                 "type": "object",
                 "properties": {
                   "kind": {
+                    "const": "source-has"
+                  },
+                  "why": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "must": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "mustNot": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "kind",
+                  "path",
+                  "why"
+                ],
+                "anyOf": [
+                  {
+                    "required": [
+                      "must"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "mustNot"
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "behavior-cases"
+                  },
+                  "why": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "symbol": {
+                    "type": "string"
+                  },
+                  "cases": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "given": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "expect": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "given",
+                        "expect"
+                      ]
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "cases",
+                  "kind",
+                  "path",
+                  "symbol",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
                     "const": "domain-independent"
+                  },
+                  "why": {
+                    "type": "string"
                   },
                   "domain": {
                     "type": "string"
@@ -2929,10 +2968,8 @@
                     "type": "array",
                     "items": {
                       "type": "string"
-                    }
-                  },
-                  "why": {
-                    "type": "string"
+                    },
+                    "minItems": 1
                   }
                 },
                 "required": [
@@ -2948,13 +2985,13 @@
                   "kind": {
                     "const": "cert"
                   },
+                  "why": {
+                    "type": "string"
+                  },
                   "cert": {
                     "type": "string"
                   },
                   "case": {
-                    "type": "string"
-                  },
-                  "why": {
                     "type": "string"
                   }
                 },
@@ -2970,10 +3007,14 @@
                   "kind": {
                     "const": "runtime"
                   },
+                  "why": {
+                    "type": "string"
+                  },
                   "probe": {
                     "type": "string"
                   },
                   "expect": {
+                    "type": "string",
                     "enum": [
                       "ok",
                       "deviation",
@@ -2981,9 +3022,6 @@
                     ]
                   },
                   "events": {
-                    "type": "string"
-                  },
-                  "why": {
                     "type": "string"
                   }
                 },

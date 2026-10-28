@@ -30,6 +30,9 @@
  *   · `edge-absent`        A **不许**依赖 B（"边界归属"最需要这条）
  */
 import type { DesignDSL } from './types.js';
+// ★ 2026-10-28（T-#KIND-1）：**判据 kind 的单一事实源**在 `expectation_kinds.ts` ——
+//   名字清单 / 形状校验 / 人读渲染 / 主体路径 全从它派生；本文件只留 **TS 类型联合**（编译器兜底）。
+import { KIND_SPECS, EXPECTATION_KINDS as KIND_NAMES, validateExpectation, renderExpectation as renderBySpec, subjectPathOf, pathsOf } from './expectation_kinds.js';
 
 /** ★ 五种可判定的检查项。`why` 是**必填**：一条说不出理由的验收项，将来没人敢删。 */
 export type Expectation =
@@ -178,10 +181,7 @@ export type Expectation =
       mutants_ignore?: string[];
     };
 
-export const EXPECTATION_KINDS = [
-  'runtime',
-  'cert',
-  'domain-independent','file-exists', 'symbol-exists', 'signature-matches', 'edge-exists', 'edge-absent', 'call-exists', 'run', 'source-has', 'behavior-cases'] as const;
+export const EXPECTATION_KINDS: readonly string[] = KIND_NAMES; // ★ 由注册表派生（不手写）
 
 /**
  * ★★★ 判据的**阶段**维度（2026-10-16 · T10）。下面 ①②③ 就是判它是不是补丁的那三条特征
@@ -271,94 +271,22 @@ export function normSignature(s: string): string {
 
 /** 一行描述（用于报告；★ 展示层不许自己拼字符串 —— 那是第二份格式） */
 export function describeExpectation(e: Expectation): string {
-  switch (e.kind) {
-    case 'file-exists': return `file-exists  ${normPath(e.path)}`;
-    case 'symbol-exists': return `symbol-exists  ${normPath(e.path)} :: ${e.symbol}`;
-    case 'signature-matches': return `signature-matches  ${normPath(e.path)} :: ${e.symbol}  =  ${e.signature}`;
-    case 'edge-exists': return `edge-exists  ${normPath(e.from)} → ${normPath(e.to)}`;
-    case 'edge-absent': return `edge-absent  ${normPath(e.from)} ⇸ ${normPath(e.to)}`;
-    case 'domain-independent': return `domain-independent  ${e.domain} ⇸ ${e.must_not_import.join(' / ')}`;
-    case 'cert': return `cert  ${e.cert}${e.case ? `#${e.case}` : ''}`;
-    case 'runtime': return `runtime  ${e.probe}  expect=${e.expect ?? 'ok'}`;
-    case 'call-exists': return `call-exists  ${normPath(e.path)} :: ${e.symbol}() → ${e.target}()`;
-    case 'run': return `run  ${String(e.expect).slice(0, 70)}`;
-    case 'source-has': return `source-has  ${normPath(e.path)} :: must ${(e.must ?? []).length} / mustNot ${(e.mustNot ?? []).length}`;
-    case 'behavior-cases': return `behavior-cases  ${normPath(e.path)} :: ${e.symbol}() × ${e.cases.length} case`;
-  }
+  // ★ 渲染由注册表派生（原来是一个 12 分支 switch）
+  return renderBySpec(e as unknown as { kind: string } & Record<string, unknown>);
 }
+
 
 /** 校验一条检查项的形状（★ 写入路径要用它**响亮拒绝**，而不是让坏数据进 DSL 后静默不判） */
 export function assertValidExpectations(v: unknown): asserts v is Expectation[] {
+  // ★ 2026-10-28（T-#KIND-1）：**形状校验由注册表派生**。
+  //   原来这里每种 kind 一段 if 沙盒（12 段，加 kind 必忘一处）；现在规则只有一份 `KIND_SPECS`。
   if (!Array.isArray(v)) throw new Error(`expectations 必须是数组，收到 ${typeof v}`);
   v.forEach((x, i) => {
-    const at = `expectations[${i}]`;
-    if (!x || typeof x !== 'object') throw new Error(`${at} 必须是对象`);
-    const o = x as Record<string, unknown>;
-    const kind = o.kind;
-    if (typeof kind !== 'string' || !(EXPECTATION_KINDS as readonly string[]).includes(kind)) {
-      throw new Error(`${at}.kind 非法（"${String(kind)}"）⇒ 只能取 ${EXPECTATION_KINDS.join(' / ')}`);
-    }
-    const need = (k: string): void => {
-      if (typeof o[k] !== 'string' || (o[k] as string).trim() === '') throw new Error(`${at}.${k} 必填且非空（kind=${kind}）`);
-    };
-    if (typeof o.why !== 'string' || (o.why as string).trim() === '') {
-      throw new Error(`${at}.why 必填（一条说不出理由的验收项，将来没人敢删）`);
-    }
-    if (kind === 'file-exists') need('path');
-    else if (kind === 'symbol-exists') { need('path'); need('symbol'); }
-    else if (kind === 'signature-matches') { need('path'); need('symbol'); need('signature'); }
-    else if (kind === 'call-exists') { need('path'); need('symbol'); need('target'); }
-    else if (kind === 'run') { need('expect'); }
-    else if (kind === 'runtime') {
-      // ★ 运行时判据：probe 必填；expect 只能取三态
-      need('probe');
-      if (o.expect !== undefined && !['ok', 'deviation', 'absent'].includes(String(o.expect))) {
-        throw new Error(`${at}.expect 只能是 ok / deviation / absent（kind=runtime）`);
-      }
-    }
-    else if (kind === 'cert') {
-      // ★ 证判据：证名必填（= certs/ 下文件名前缀）；case 可选（结论行里的用例标记）
-      need('cert');
-      if (o.case !== undefined && typeof o.case !== 'string') {
-        throw new Error(`${at}.case 必须是字符串（结论行里的用例标记，如 "①"）`);
-      }
-    }
-    else if (kind === 'domain-independent') {
-      // ★ 2026-10-28（T-#DOMAIN-2）：域级判据的形状 —— 主体是**域**（域表里的 id），不是文件路径。
-      need('domain');
-      const must = o.must_not_import;
-      if (!Array.isArray(must) || must.length === 0) {
-        throw new Error(
-          `${at}.must_not_import 必须是**非空**数组（kind=domain-independent）—— 说不出"不许依赖谁"的边界判据不算判据`,
-        );
-      }
-      if (must.some((x) => typeof x !== 'string' || x.trim() === '')) {
-        throw new Error(`${at}.must_not_import 每项必须是非空字符串（域 id）`);
-      }
-    }
-    else if (kind === 'source-has') {
-      need('path');
-      const hasMust = Array.isArray(o.must) && o.must.length > 0;
-      const hasMustNot = Array.isArray(o.mustNot) && o.mustNot.length > 0;
-      if (!hasMust && !hasMustNot) throw new Error(`${at} 必须给 must[] 或 mustNot[] 至少一个（kind=source-has）`);
-    }
-    else if (kind === 'behavior-cases') {
-      need('path'); need('symbol');
-      // ★ 空 cases = 校验失败：说不出"给什么输入、断什么输出"的判据不许进册
-      if (!Array.isArray(o.cases) || o.cases.length === 0) {
-        throw new Error(`${at}.cases 必须是**非空**数组（kind=behavior-cases）—— 说不出验收输入的判据不许进册`);
-      }
-      (o.cases as unknown[]).forEach((c, ci) => {
-        const cat = `${at}.cases[${ci}]`;
-        if (!c || typeof c !== 'object') throw new Error(`${cat} 必须是对象（{ given, expect }）`);
-        const co = c as Record<string, unknown>;
-        if (!Array.isArray(co.given)) throw new Error(`${cat}.given 必须是数组（位置实参，对齐 BehaviorCase.args）`);
-        if (typeof co.expect !== 'string' || (co.expect as string).trim() === '') throw new Error(`${cat}.expect 必填且非空（期望输出）`);
-      });
-    }
-    else { need('from'); need('to'); }
+    const problem = validateExpectation(x, `expectations[${i}]`);
+    if (problem) throw new Error(problem);
   });
 }
+
 
 /**
  * ★★ 一条检查项的**「主体路径」**—— 失败时**该改哪个文件**（2026-10-09，T78）。
@@ -379,28 +307,16 @@ export function assertValidExpectations(v: unknown): asserts v is Expectation[] 
  * ★ 只此一处算主体路径；别在展示层再推一遍（那是判据分叉）。
  */
 export function expectationSubjectPath(e: Expectation): string {
-  // ★ run 没有主体文件 —— 它验的是「跑起来」，不是「某个文件」⇒ 返回空串（不硬凑一个文件）
-  if (e.kind === 'run') return '';
-  // ★ 2026-10-28：域级判据的主体是**域**（表里的一行），不是某个文件 ⇒ 同 run，不硬凑一个文件
-  if (e.kind === 'domain-independent') return '';
-  // ★ 证判据的主体是**一张证**（`certs/<name>*.mjs`），不是某个源文件
-  if (e.kind === 'cert') return '';
-  // ★ 运行时判据的主体是**事件流**（探针写出来的），不是某个源文件
-  if (e.kind === 'runtime') return '';
-  if (e.kind === 'source-has') return normPath(e.path);
-  return normPath(e.kind === 'edge-exists' || e.kind === 'edge-absent' ? e.from : e.path);
+  // ★ 由注册表派生：不是"文件主体"的 kind（run / domain-independent / cert / runtime）返回 ''，不硬凑
+  return subjectPathOf(e as unknown as { kind: string } & Record<string, unknown>);
 }
+
 
 /** 一条检查项**涉及的全部路径**（主体 + 对端）—— 报告里说清"牵动了谁"，但**不计入块的归属** */
 export function expectationPaths(e: Expectation): string[] {
-  // ★ run 无路径（同 subjectPath 的理由）
-  if (e.kind === 'run') return [];
-  if (e.kind === 'domain-independent') return []; // 域 → 文件集由求值器展开
-  if (e.kind === 'cert') return []; // 证不牵动本项目源码
-  if (e.kind === 'runtime') return []; // 事件流不牵动本项目源码路径
-  if (e.kind === 'source-has') return [normPath(e.path)];
-  return e.kind === 'edge-exists' || e.kind === 'edge-absent' ? [normPath(e.from), normPath(e.to)] : [normPath(e.path)];
+  return pathsOf(e as unknown as { kind: string } & Record<string, unknown>);
 }
+
 /** 汇总某个 DSL 里所有决策卡上的 expectations（★ 只读、不改；供对账用） */
 export function collectExpectations(dsl: DesignDSL): Array<{ node_id: string; node_label: string; expectation: Expectation }> {
   const out: Array<{ node_id: string; node_label: string; expectation: Expectation }> = [];
