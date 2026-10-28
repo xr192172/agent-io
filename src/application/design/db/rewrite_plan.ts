@@ -230,7 +230,18 @@ export function parseJudgementRef(ref: string | undefined): JudgementRef | null 
 /** 判据强度：`semantic` 能发现逻辑错 · `existence` 发现不了 · `unknown` 判不出（不假装） */
 export type JudgementStrength = 'semantic' | 'existence' | 'unknown';
 
-const SEMANTIC_KINDS = new Set(['behavior-cases', 'call-exists', 'edge-absent', 'edge-exists', 'run']);
+// ★ 2026-10-28（T-#DOMAIN-2）：`domain-independent` 归**语义类** —— 它发现的是"边界越权"
+//   （域 A 的代码 import 了不该依赖的域 B），这是**真错**，不是"存在性"能发现的。
+//   为什么不单列第三类（`structure`）：强度判据的用途是"这条判据能不能发现逻辑错"，
+//   而边界越权**就是**一种逻辑错（架构层）；多一档只会让下游要多处理一种情况，收益不抵成本。
+const SEMANTIC_KINDS = new Set([
+  'behavior-cases',
+  'call-exists',
+  'edge-absent',
+  'edge-exists',
+  'run',
+  'domain-independent',
+]);
 const EXISTENCE_KINDS = new Set(['file-exists', 'source-has', 'symbol-exists', 'signature-matches']);
 
 /** 由一个判据的 `kind` 判强度（不认识 ⇒ `unknown`，**不许当成强**） */

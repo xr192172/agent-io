@@ -2304,6 +2304,32 @@
                 "type": "object",
                 "properties": {
                   "kind": {
+                    "const": "domain-independent"
+                  },
+                  "domain": {
+                    "type": "string"
+                  },
+                  "must_not_import": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "domain",
+                  "kind",
+                  "must_not_import",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
                     "const": "call-exists"
                   },
                   "path": {
@@ -2836,6 +2862,32 @@
                 "required": [
                   "expect",
                   "kind",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "domain-independent"
+                  },
+                  "domain": {
+                    "type": "string"
+                  },
+                  "must_not_import": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "domain",
+                  "kind",
+                  "must_not_import",
                   "why"
                 ]
               }

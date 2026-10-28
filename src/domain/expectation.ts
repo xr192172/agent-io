@@ -39,6 +39,21 @@ export type Expectation =
   | { kind: 'edge-exists'; from: string; to: string; why: string }
   | { kind: 'edge-absent'; from: string; to: string; why: string }
   /**
+   * ★★★ 2026-10-28（T-#DOMAIN-2）：**域级边界判据** —— 「域 `domain` 不许 import 域 `must_not_import` 里的任何文件」。
+   *
+   * ## 为什么现有 `edge-absent` 不够（实测）
+   * `edge-absent` 是**文件对级**：给目录前缀（如 `src/infrastructure/parse`）会判 `unsupported`
+   * （索引里没有"目录"这个文件）。而本仓有 **167 个域对 / 1507 条跨域 import 边** ⇒ 逐文件枚举不现实。
+   *
+   * ## 判据（域对聚合，一次算清）
+   * 从域表（`structure.domains.json` 的 `dir`）+ 索引的 import 边聚合：
+   * **域 A 的任一文件 → 域 B 的任一文件**存在 import 边 ⇒ `fail`（并给出条数与样例）；
+   * 域对之间零边 ⇒ `pass`。★ 域表取不到 / 索引不全 ⇒ `unsupported`（**判不了 ≠ 合格**）。
+   *
+   * 用途：分割 / 合并 / 废弃 / 删除的**必要条件**可算形态（入度=0 ⇒ 删除候选；双向高密度 ⇒ 合并候选）。
+   */
+  | { kind: 'domain-independent'; domain: string; must_not_import: string[]; why: string }
+  /**
    * ★★ 2026-10-09（T79）：**调用级**判据 —— 「`path` 里的 `symbol` 必须调用 `target`」。
    *
    * ## 为什么非有它不可（实测）
@@ -125,7 +140,8 @@ export type Expectation =
       mutants_ignore?: string[];
     };
 
-export const EXPECTATION_KINDS = ['file-exists', 'symbol-exists', 'signature-matches', 'edge-exists', 'edge-absent', 'call-exists', 'run', 'source-has', 'behavior-cases'] as const;
+export const EXPECTATION_KINDS = [
+  'domain-independent','file-exists', 'symbol-exists', 'signature-matches', 'edge-exists', 'edge-absent', 'call-exists', 'run', 'source-has', 'behavior-cases'] as const;
 
 /**
  * ★★★ 判据的**阶段**维度（2026-10-16 · T10）。下面 ①②③ 就是判它是不是补丁的那三条特征
@@ -176,6 +192,7 @@ const PHASE_BY_KIND: Record<Expectation['kind'], ExpectationPhase> = {
   'signature-matches': 'post',
   'edge-exists': 'post',
   'edge-absent': 'pre', // ★ 前态判据：A 不许依赖 B —— 未施工时天然成立
+  'domain-independent': 'pre', // ★ 同上，只是粒度从文件对升到**域对**（T-#DOMAIN-2）
   'behavior-cases': 'post', // ★ 行为契约：跑起来才有输出可比 ⇒ 后态（与 run 同理）
   'call-exists': 'post',
 };
@@ -218,6 +235,7 @@ export function describeExpectation(e: Expectation): string {
     case 'signature-matches': return `signature-matches  ${normPath(e.path)} :: ${e.symbol}  =  ${e.signature}`;
     case 'edge-exists': return `edge-exists  ${normPath(e.from)} → ${normPath(e.to)}`;
     case 'edge-absent': return `edge-absent  ${normPath(e.from)} ⇸ ${normPath(e.to)}`;
+    case 'domain-independent': return `domain-independent  ${e.domain} ⇸ ${e.must_not_import.join(' / ')}`;
     case 'call-exists': return `call-exists  ${normPath(e.path)} :: ${e.symbol}() → ${e.target}()`;
     case 'run': return `run  ${String(e.expect).slice(0, 70)}`;
     case 'source-has': return `source-has  ${normPath(e.path)} :: must ${(e.must ?? []).length} / mustNot ${(e.mustNot ?? []).length}`;
@@ -292,6 +310,8 @@ export function assertValidExpectations(v: unknown): asserts v is Expectation[] 
 export function expectationSubjectPath(e: Expectation): string {
   // ★ run 没有主体文件 —— 它验的是「跑起来」，不是「某个文件」⇒ 返回空串（不硬凑一个文件）
   if (e.kind === 'run') return '';
+  // ★ 2026-10-28：域级判据的主体是**域**（表里的一行），不是某个文件 ⇒ 同 run，不硬凑一个文件
+  if (e.kind === 'domain-independent') return '';
   if (e.kind === 'source-has') return normPath(e.path);
   return normPath(e.kind === 'edge-exists' || e.kind === 'edge-absent' ? e.from : e.path);
 }
@@ -300,6 +320,7 @@ export function expectationSubjectPath(e: Expectation): string {
 export function expectationPaths(e: Expectation): string[] {
   // ★ run 无路径（同 subjectPath 的理由）
   if (e.kind === 'run') return [];
+  if (e.kind === 'domain-independent') return []; // 域 → 文件集由求值器展开
   if (e.kind === 'source-has') return [normPath(e.path)];
   return e.kind === 'edge-exists' || e.kind === 'edge-absent' ? [normPath(e.from), normPath(e.to)] : [normPath(e.path)];
 }

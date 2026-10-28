@@ -527,6 +527,78 @@ export async function judgeExpectations(
         }
         break;
       }
+      // ★★★ 2026-10-28（T-#DOMAIN-2）：**域级边界判据** —— 现有 `edge-absent` 是文件对级，
+      //   给目录前缀会判 `unsupported`（索引里没有"目录"这个文件）；而本仓有 167 个域对 / 1507 条跨域 import 边
+      //   ⇒ 逐文件枚举不现实。本判据**按域对聚合**一次算清。
+      //
+      //   判据：域 `domain` 的任一文件 → `must_not_import` 里任一域的任一文件存在 import 边 ⇒ fail（给条数 + 样例）。
+      //   四态：域表拿不到 / 域 id 不认识 ⇒ `unsupported`（**判不了 ≠ 合格**）。
+      case 'domain-independent': {
+        const tableFile = path.join(root, 'structure.domains.json');
+        if (!fs.existsSync(tableFile)) {
+          push(it, 'unsupported', '域表 `structure.domains.json` 不存在 ⇒ 域边界判不了');
+          break;
+        }
+        let doms: Array<{ id: string; dir: string; layer?: string }> = [];
+        try {
+          const raw = JSON.parse(fs.readFileSync(tableFile, 'utf8')) as {
+            domains?: Array<{ id: string; dir: string; layer?: string }>;
+          };
+          doms = (raw.domains ?? []).map((d) => ({ ...d, dir: normPath(d.dir) }));
+        } catch (err) {
+          push(it, 'unsupported', `域表解析失败 ⇒ 判不了：${(err as Error).message}`);
+          break;
+        }
+        const mine = doms.find((d) => d.id === e.domain);
+        if (!mine) {
+          push(it, 'unsupported', `域表里没有域 \`${e.domain}\` ⇒ 判不了（不是"没有依赖"）`);
+          break;
+        }
+        const targetIds = e.must_not_import ?? [];
+        const missing = targetIds.filter((id) => !doms.some((d) => d.id === id));
+        if (missing.length) {
+          push(it, 'unsupported', `must_not_import 里有域表不认识的域：${missing.join(', ')} ⇒ 判不了`);
+          break;
+        }
+        const domOf = (p: string): string | null => {
+          const q = normPath(p);
+          let best: { id: string; len: number } | null = null;
+          for (const d of doms) {
+            if (q === d.dir || q.startsWith(d.dir + '/')) {
+              if (!best || d.dir.length > best.len) best = { id: d.id, len: d.dir.length };
+            }
+          }
+          return best?.id ?? null;
+        };
+        let bad = 0;
+        const samples: string[] = [];
+        try {
+          const db = getProjectCacheDb(root);
+          const rows = db.prepare("SELECT source, target FROM edges WHERE kind = 'import'").all() as Array<{
+            source: string;
+            target: string;
+          }>;
+          for (const r of rows) {
+            if (domOf(r.source) !== mine.id) continue;
+            const toDom = domOf(r.target);
+            if (!toDom || !targetIds.includes(toDom)) continue;
+            bad += 1;
+            if (samples.length < 3) samples.push(`${r.source} → ${r.target}`);
+          }
+        } catch (err) {
+          push(it, 'unsupported', `索引不可用 ⇒ 域边界判不了：${(err as Error).message}`);
+          break;
+        }
+        push(
+          it,
+          bad === 0 ? 'pass' : 'fail',
+          bad === 0
+            ? `域 ${mine.id}（${mine.dir}）**未**依赖 ${targetIds.join(' / ')}（符合预期）`
+            : `域 ${mine.id}（${mine.dir}）**不该**依赖 ${targetIds.join(' / ')}，但有 ${bad} 条 import：${samples.join('；')}`,
+        );
+        break;
+      }
+
       case 'edge-exists':
       case 'edge-absent': {
         const from = normPath(e.from);
