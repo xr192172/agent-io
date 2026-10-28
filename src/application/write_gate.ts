@@ -1024,6 +1024,24 @@ export function resolveJudgementKind(entry: { judgement_ref?: string }): { kind?
   }
 }
 
+/** ★ 2026-10-28：该文件**每个顶层符号的 `body_hash`**（画布冻结用；拿不到 ⇒ 空对象，如实降级） */
+export function symbolFpsOf(projectRoot: string, rel: string): Record<string, string> {
+  try {
+    const dbFile = projectCacheDbPath(path.resolve(projectRoot));
+    if (!fs.existsSync(dbFile)) return {};
+    const db = new DatabaseSync(dbFile, { readOnly: true });
+    const rows = db
+      .prepare("SELECT name, body_hash FROM nodes WHERE file_path = ? AND kind != 'file' AND parent IS NULL")
+      .all(rel) as Array<{ name: string; body_hash: string | null }>;
+    db.close();
+    const out: Record<string, string> = {};
+    for (const x of rows) if (x.body_hash) out[x.name] = x.body_hash;
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 /** 该文件在**实际 DB**里的符号名（排除 `kind='file'`）；拿不到 ⇒ 空数组（判据如实降级，不猜） */
 export function symbolsInFileOf(projectRoot: string, rel: string): string[] {
   try {

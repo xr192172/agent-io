@@ -70,7 +70,7 @@ import {
   type RewritePlan,
   type RewritePlanEntry,
 } from './db/rewrite_plan.js';
-import { resolveJudgementKind, symbolsInFileOf } from '../write_gate.js';
+import { resolveJudgementKind, symbolsInFileOf, symbolFpsOf } from '../write_gate.js';
 import { syncPlanStatuses, planChangeSetOfCard } from './db/rewrite_plan.js';
 import { checkRewriteExit } from './db/plan_exit_check.js';
 import { contentHash } from '../../infrastructure/index/symbols.js';
@@ -532,6 +532,8 @@ export const DESIGN_TOOLS: ToolDef[] = [
                 ? {
                     untouched_default: { why: String(a.untouched_why ?? '本轮只改 entries 里那几处') },
                     symbols_at_freeze: symbolsInFileOf(projectRoot, rel),
+                    // ★ 设计期权威的凭据：冻结时每个符号的 body_hash（改完才知道"改了却没计划"）
+                    fps_at_freeze: symbolFpsOf(projectRoot, rel),
                   }
                 : {}),
             } as RewritePlan)
@@ -572,6 +574,26 @@ export const DESIGN_TOOLS: ToolDef[] = [
             plan,
             exit.entries.map((x) => ({ index: x.index, verdict: x.verdict })),
           );
+          // ★★★ 2026-10-28（用户："设计期权威，设计有问题才会出现这种情况"）：
+          //   实际改动**超出画布**的符号 ⇒ 不是"留一条警告算了"，而是**把缺口记进画布**：
+          //   追加一条 entry（缺 judgement_ref ⇒ planGaps 会一直点名，直到有人把设计补全）。
+          const absorbed = exit.changed_unplanned.filter((sym) => !synced.plan.entries.some((e) => e.anchor?.symbol === sym));
+          if (absorbed.length) {
+            synced.plan = {
+              ...synced.plan,
+              entries: [
+                ...synced.plan.entries,
+                ...absorbed.map((sym) => ({
+                  anchor: { symbol: sym },
+                  kind: 'rewrite' as const,
+                  detail: '改完发现这个符号也动了 ⇒ **设计漏了**（补：它该改成什么样）',
+                  judgement_ref: '',
+                  status: 'open' as const,
+                })),
+              ],
+            };
+            synced.changes.push(...absorbed.map((sym) => ({ symbol: sym, from: '(无计划)', to: 'open（待补设计）' })));
+          }
           if (synced.changes.length) {
             writeRewritePlan(projectRoot, synced.plan);
             statusNote =

@@ -94,6 +94,15 @@ export interface RewritePlan {
   untouched_default?: { why: string };
   /** 冻结那一刻的**顶层符号全集**（`untouched_default` 的牙齿：新符号不在其中就会被抓） */
   symbols_at_freeze?: string[];
+  /**
+   * ★★★ 2026-10-28（用户："设计期按理来说是**权威**，如果设计期设计的有问题才会出现这种情况"）：
+   * 冻结那一刻**每个顶层符号的 body_hash**。有了它，"实际改动超出画布"才**算得出来**（而不是一句口号）：
+   * 改完之后某符号的 body_hash ≠ 这里的值、又不在 `entries` 里 ⇒ **设计漏了这一处**。
+   *
+   * ★ 为什么必须记在画布上：设计期权威的前提是**设计期的样子留得住**；
+   *   只记名字（`symbols_at_freeze`）只知道"当时有哪些符号"，不知道"当时它们长什么样"。
+   */
+  fps_at_freeze?: Record<string, string>;
 }
 
 /** 计划目录：`<proj>/.agent-io/plan`（`rootsOf().plan` 的唯一解析器，别在别处再拼） */

@@ -44,6 +44,15 @@ export interface ExitCheckResult {
   entries: ExitEntryVerdict[];
   /** ★ 计划**之外**的符号（本次改了却没计划 ⇒ 静默风险，必须报出来） */
   unplanned: string[];
+  /**
+   * ★★★ 2026-10-28（用户："设计期按理来说是**权威**，如果设计期设计的有问题才会出现这种情况"）：
+   * **改了、但计划里没有的符号** —— 判据：body_hash 与画布冻结时不同，且不在 entries 的锚点里。
+   *
+   * 这是"设计漏了"的**可算形态**：不是一句"可能有计划外改动"，而是点名到符号。
+   * ★ 与 unplanned 的区别：unplanned = **没表态**（可能只是没写 untouched）；
+   *   changed_unplanned = **真的动了却没计划** ⇒ 这一条才说明"设计期漏了"。
+   */
+  changed_unplanned: string[];
   /** 判据是否转绿**不在本模块的能力范围**（如实标注）；调用方要拿 `judgement_ref` 另跑 */
   judgement_ref_runs_needed: string[];
   error?: string;
@@ -64,6 +73,7 @@ export function checkRewriteExit(projectRoot: string, relPath: string): ExitChec
     file_exists: fs.existsSync(abs),
     entries: [],
     unplanned: [],
+    changed_unplanned: [],
     judgement_ref_runs_needed: [],
   };
   if (!plan) {
@@ -151,6 +161,29 @@ export function checkRewriteExit(projectRoot: string, relPath: string): ExitChec
             ? `\`${sym}\` 在，但文件**自冻结以来没变过** ⇒ 改动没落地`
             : `\`${sym}\` 在；但画布没记冻结指纹（\`base.content_hash\`）⇒ 判不出"改没改"`,
     });
+  }
+
+  // ★ 设计期权威 ⇒ 偏差要**算得出**：冻结时记了每个符号的 body_hash 才能判"改了却没计划"
+  const fpsAtFreeze = plan.fps_at_freeze ?? null;
+  const plannedAnchors = new Set(plan.entries.map((e) => e.anchor?.symbol).filter((s): s is string => !!s));
+  if (fpsAtFreeze && Object.keys(fpsAtFreeze).length) {
+    try {
+      const dbFile = projectCacheDbPath(root);
+      if (fs.existsSync(dbFile)) {
+        const db = new DatabaseSync(dbFile, { readOnly: true });
+        const rows = db
+          .prepare("SELECT name, body_hash FROM nodes WHERE file_path = ? AND kind != 'file' AND parent IS NULL")
+          .all(rel) as Array<{ name: string; body_hash: string | null }>;
+        db.close();
+        for (const row of rows) {
+          const before = fpsAtFreeze[row.name];
+          if (!before || plannedAnchors.has(row.name)) continue; // 没记过 / 有计划 ⇒ 不算"没计划"
+          if (row.body_hash && row.body_hash !== before) out.changed_unplanned.push(row.name);
+        }
+      }
+    } catch {
+      // 索引不可用 ⇒ 这一条不判（上面的 error 已如实标注"锚点存在性判不了"）
+    }
   }
 
   if (names) {
