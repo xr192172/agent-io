@@ -74,6 +74,7 @@ import {
   planCoverageGaps,
   planUntouchedGaps,
   planJudgementGaps,
+  planDependencyGaps,
   parseJudgementRef,
 } from './design/db/rewrite_plan.js';
 import { checkRewriteExit, renderExitCheck } from './design/db/plan_exit_check.js';
@@ -1033,6 +1034,8 @@ function planGate(projectRoot: string, rels: readonly string[]): { warnings: str
       ...planCoverageGaps(plan, symbolsInFileOf(projectRoot, rel)),
       // ★ 迭代 ④：判据**强不强**（存在性判据发现不了逻辑错）
       ...planJudgementGaps(plan, (e) => resolveJudgementKind(e)),
+      // ★ 迭代 ⑤：**路线**（依赖/顺序）成不成立
+      ...planDependencyGaps(plan),
     ];
     if (!gaps.length) continue;
     const head = `· ${rel} 没有够格的重写计划（${gaps.length} 处）：`;

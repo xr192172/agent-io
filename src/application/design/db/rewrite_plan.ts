@@ -35,6 +35,16 @@ export interface RewritePlanEntry {
   judgement_ref: string;
   /** open = 待做；stale = 锚点对不上（只标不删）；done = 源码已到位且判据转绿 */
   status: 'open' | 'stale' | 'done';
+  /**
+   * ★★★ 2026-10-28（迭代 ⑤）：**这条改动依赖哪些符号先落地**（写的是 `anchor.symbol`）。
+   *
+   * ## 为什么需要它（用户："设计阶段就了解一个功能的整条路线"）
+   * 结构化重写是**有序**的：改签名 → 改调用方 → 改测试。没有这一格，"路线"只能待在模型脑子里，
+   * 而脑子会被上下文压缩（今晚实测两次）。有了它，顺序变成**可判**的（见 `planDependencyGaps`）。
+   * ★ **不引入 `order` 字段**：拓扑序可由 `depends_on` **派生**（`planTopoOrder`）——
+   *   同时存 `order` 与 `depends_on` 就是"两处权威"，必然打架（本仓头号病）。
+   */
+  depends_on?: string[];
   /** 行号只作注记，**不参与判定** */
   note?: string;
 }
@@ -218,6 +228,91 @@ export function planJudgementGaps(
     } else if (s === 'unknown') {
       gaps.push(`${who} —— 判据种类 \`${String(r.kind ?? '?')}\` 不在已知分类里 ⇒ **判不出强度**（不假装强）`);
     }
+  }
+  return gaps;
+}
+/**
+ * ★★★ 2026-10-28（迭代 ⑤）：**路线（拓扑序）与顺序判据**。
+ *
+ * ## 为什么顺序必须可判
+ * 结构化重写是有序的：**改签名 → 改调用方 → 改测试**。顺序错了就是编译不过 ——
+ * 而"顺序"原来只住在模型脑子里（上下文一压缩就没了）。`depends_on` 把它写下来，
+ * 本函数负责两件事：**算出路线**（`planTopoOrder`）与**抓顺序违规**（`planDependencyGaps`）。
+ *
+ * ## 判据（四条，缺一不可）
+ * ① 依赖必须指向**本计划里存在的锚点**（拼错 / 漏写 ⇒ 路线是假的）；
+ * ② **不许自依赖**（`f` 依赖 `f`）；
+ * ③ **不许成环**（成环 = 路线不成立；报出环上的符号）；
+ * ④ **顺序不许被违反**：某条已 `status:'done'`，而它依赖的条目**还没 done** ⇒ 报
+ *    （这是"结构化重写"真正落地的那一条 —— 先做的没做完就往下做）。
+ */
+export function planTopoOrder(plan: RewritePlan | null): string[] | null {
+  if (!plan) return null;
+  const nodes = plan.entries.map((e) => e.anchor?.symbol).filter((s): s is string => !!s);
+  const deps = new Map<string, string[]>();
+  for (const s of nodes) deps.set(s, []);
+  for (const e of plan.entries) {
+    const s = e.anchor?.symbol;
+    if (!s) continue;
+    for (const d of e.depends_on ?? []) if (deps.has(d)) deps.get(s)!.push(d);
+  }
+  const out: string[] = [];
+  const temp = new Set<string>();
+  const perm = new Set<string>();
+  let cyclic = false;
+  const visit = (n: string): void => {
+    if (perm.has(n) || cyclic) return;
+    if (temp.has(n)) {
+      cyclic = true;
+      return;
+    }
+    temp.add(n);
+    for (const d of deps.get(n) ?? []) visit(d);
+    temp.delete(n);
+    perm.add(n);
+    out.push(n);
+  };
+  for (const n of nodes) visit(n);
+  return cyclic ? null : out; // null = 成环 ⇒ 没有合法路线（不编一个出来）
+}
+
+/** 依赖/顺序的缺口（空数组 = 路线成立且没有被违反） */
+export function planDependencyGaps(plan: RewritePlan | null): string[] {
+  if (!plan) return [];
+  const gaps: string[] = [];
+  const anchors = new Set(plan.entries.map((e) => e.anchor?.symbol).filter((s): s is string => !!s));
+  const statusOf = new Map<string, string>();
+  for (const e of plan.entries) if (e.anchor?.symbol) statusOf.set(e.anchor.symbol, e.status);
+
+  for (const e of plan.entries) {
+    const who = `${e.kind}:${e.anchor?.symbol || '(缺 anchor)'}`;
+    for (const d of e.depends_on ?? []) {
+      if (d === e.anchor?.symbol) {
+        gaps.push(`${who} —— **自依赖**（依赖了自己）`);
+        continue;
+      }
+      if (!anchors.has(d)) {
+        gaps.push(
+          `${who} —— 依赖 \`${d}\`，但**本计划里没有这个锚点**（拼错？还是它该作为一条 entry / untouched 写进来？）`,
+        );
+        continue;
+      }
+      // ④ 顺序被违反：本条目已完成，而依赖还没完成
+      if (e.status === 'done' && statusOf.get(d) !== 'done') {
+        gaps.push(
+          `${who} —— **顺序被违反**：它标了 \`done\`，但它依赖的 \`${d}\` 还是 \`${statusOf.get(d) ?? '(无)'}\`` +
+            `\n      ⇒ 结构化重写是有序的（改签名 → 改调用方 → 改测试），先做的那条没完成就往下做，等于赌编译。`,
+        );
+      }
+    }
+  }
+
+  if (planTopoOrder(plan) === null) {
+    const nodes = plan.entries.map((e) => e.anchor?.symbol).filter((s): s is string => !!s);
+    gaps.push(
+      `依赖**成环**（${nodes.join(', ')}）⇒ 路线不成立（没有拓扑序）。` +
+        `\n      ⇒ 环上的每一条都自称"要等对方先做"，这种计划落不了地；先把它拆成单向依赖。`,
+    );
   }
   return gaps;
 }

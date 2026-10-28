@@ -78,7 +78,8 @@ saveDSL(
   dsl.geometry.nodes[0].task = { id: 'file_src_a_ts', summary: 'T380 夹具', state: 'claimed', owner: 'agent:g380' };
   dsl.geometry.nodes[0].decision = {
     summary: 'T380 夹具判据',
-    expectations: [{ kind: 'file-exists', path: `${REL}.todo`, why: '未满足 ⇒ 可领' }],
+    // ★ 2026-10-28（迭代 ④之后）："够格"的计划要求 `judgement_ref` 是**规范引用**且指向**语义类**判据
+    expectations: [{ kind: 'call-exists', path: REL, symbol: 'g', target: 'f', why: 'g 必须调 f（语义类判据）' }],
   };
   saveDSL(dsl, PROJ);
 }
@@ -116,8 +117,10 @@ const run = (needPlan) => {
     path: REL,
     frozen_at: '2026-10-28T02:30:00+08:00',
     entries: [
-      { anchor: { symbol: 'f' }, kind: 'rewrite', detail: '返回值改成 2', judgement_ref: 'cert:t380/②', status: 'open' },
+      { anchor: { symbol: 'f' }, kind: 'rewrite', detail: '返回值改成 2', judgement_ref: 'decision:file_src_a_ts#0', status: 'open' },
     ],
+    // ★ 2026-10-28（迭代 ③之后）：`g` 也要表态（要么改、要么 untouched）—— 否则算"没通读"
+    untouched: [{ symbol: 'g', why: 't380 夹具：g 只是调用方，本轮不动' }],
   });
   const r = run(false);
   chk(!r.threw && !(r.warnings ?? []).some((w) => w.includes('没有够格的重写计划')), '② 有计划且够格 ⇒ **不点名**（放行且不吵）', `warnings=${(r.warnings ?? []).length}`);
