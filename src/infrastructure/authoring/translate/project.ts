@@ -581,6 +581,7 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
       //   ★ 指纹含源片段 ⇒ 源变了自动失效，不会把旧实现贴到新签名上。
       const cache = fillCache;
       const hits: Array<{ u: (typeof m.units)[number]; body: string }> = [];
+      let mechInModule = 0;
       const missUnits: typeof m.units = [];
       for (const u of m.units) {
         if (!u.bodyHole) continue;
@@ -589,6 +590,7 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
         if (u.mechBody) {
           hits.push({ u, body: u.mechBody });
           mechCount++;
+          mechInModule++;
           continue;
         }
         const key = `${m.rel}#${u.id}@${sha1(u.srcSnippet)}`;
@@ -597,7 +599,8 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
         else missUnits.push(u);
       }
       for (const h of hits) h.u.skeleton = spliceBody(h.u.skeleton, h.body);
-      if (hits.length) cacheHits += hits.length;
+      // ★ 机械体不算「缓存命中」（两种零 LLM 的正交来源，混在一起两个读数都失真）
+      if (hits.length > mechInModule) cacheHits += hits.length - mechInModule;
       const unitsToFill = missUnits;
       let filled: Awaited<ReturnType<typeof fillUnitsWithRetry>> = [];
       if (!unitsToFill.length) {

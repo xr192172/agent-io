@@ -103,7 +103,7 @@
 ```
 
 **边界（`[未核]`）**
-- 当前机械覆盖只到 **16%**，离 72.6% 的天花板还远（缺口：三式 `for` 的 init/post、`_ = x`、切片/map 操作…）；
+- 机械覆盖 **81.9%**（511/624）：`defer`→`try/finally` 一把 +119；剩余 18% 是真该给 LLM 的（闭包捕获 / 类型断言 / 匿名 struct tag / `select` / `chan` / `go`）；
   每补一个形态都要**靠对拍验**，不许直接扩白名单；
 - 机械翻**翻不平**的语义差：Go `int` 64 位截断 vs TS `number` f64；字符串按字节 vs UTF-16；`nil` 切片 vs `[]`
   ⇒ 必须靠 `translate verify=true`（`verify_behavior` 对拍 Go 与 TS 同批输入）兜；

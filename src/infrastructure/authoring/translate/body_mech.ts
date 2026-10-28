@@ -47,6 +47,7 @@ const OK_EXPR = new Set([
   'composite_literal',
   'literal_value',
   'literal_element',
+  'type_conversion_expression',
   'keyed_element',
   'type_identifier',
   'pointer_type',
@@ -85,13 +86,15 @@ const OK_STMT = new Set([
   'empty_statement',
   'var_declaration',
   'const_declaration',
+  'defer_statement',
   'var_spec',
   'const_spec',
 ]);
 
 /** 明确的硬构造：出现即放弃（哪怕其它都认识） */
 const HARD = new Set([
-  'defer_statement',
+  // ★ defer 已从 HARD 移出：`defer f()` 在**函数体直接子层**时能机械翻成 `try/finally`（见 translateGoBodyMech）。
+  //   **嵌套**（循环/if 里的 defer）仍然不翻 —— 那会改变执行时机，属语义决策。
   'go_statement',
   'select_statement',
   'communication_case',
@@ -115,6 +118,9 @@ const NEUTRAL = new Set([
   'return', 'if', 'else', 'for', 'range', 'switch', 'case', 'default', 'break', 'continue',
   'var', 'const', 'func', 'type', 'package', 'import', 'chan', 'map', 'struct', 'interface', 'go', 'defer', 'select',
   '_', 'string', 'int',
+  // ★ 2026-10-29：字符串字面量里的转义（`\n` 等）是 token，不是语义节点 —— 出现在 NEUTRAL 之外
+  //   曾把 26 个纯字符串函数判成「翻不动」。字面量整段按 `node.text` 输出，转义原样保留。
+  'escape_sequence',
 ]);
 
 /** 整棵子树里有没有不认识/不敢碰的节点（有 ⇒ 不翻） */
@@ -136,6 +142,34 @@ function hasUnsupported(node: SyntaxNodeLike, depth = 0): boolean {
 /** 函数体是否可机械翻译（**先判后翻**，判不过就不翻） */
 export function canMechTranslate(block: SyntaxNodeLike): boolean {
   return !hasUnsupported(block);
+}
+
+/**
+ * ★ 2026-10-29：**诊断用** —— 返回第一个卡住的节点（`{type, text}`），没有则 `null`。
+ *
+ * 为什么要有它：覆盖率的提升必须**按真实频次**补形态，不能拍脑袋加白名单。
+ * 这个函数让"翻不动的函数"自己说出卡在哪个节点，统计出来再决定下一步补什么。
+ */
+export function mechBlocker(block: SyntaxNodeLike | null): { type: string; text: string } | null {
+  if (!block) return null;
+  const walk = (node: SyntaxNodeLike, depth: number): { type: string; text: string } | null => {
+    if (depth > 40) return { type: 'DEPTH_LIMIT', text: node.text.slice(0, 40) };
+    const t = node.type;
+    if (/^\s*$/.test(t)) return null;
+    if (HARD.has(t)) return { type: t, text: node.text.slice(0, 60) };
+    if (!NEUTRAL.has(t) && !OK_EXPR.has(t) && !OK_STMT.has(t) && !t.startsWith('"')) {
+      return { type: t, text: node.text.slice(0, 60) };
+    }
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i);
+      if (c) {
+        const r = walk(c, depth + 1);
+        if (r) return r;
+      }
+    }
+    return null;
+  };
+  return walk(block, 0);
 }
 
 /** Go 内建转换 → TS 惯用式（只收**等价**的；`int(x)` 用 Math.trunc 而不是取整语义近似） */
@@ -242,7 +276,13 @@ function expr(node: SyntaxNodeLike | null): string | null {
     case 'unary_expression': {
       const op = node.child(0)?.text ?? '';
       const v = expr(node.child(1));
-      return v === null ? null : `${op}${v}`;
+      if (v === null) return null;
+      // ★ 2026-10-29：Go 的指针运算符在 TS **不存在**：
+      //   `&x`（取址）与 `*x`（解引用）在 JS 引用语义下都是"这个值本身" ⇒ 直接去掉运算符。
+      //   不处理就会生成 `const cp = *entry;` `return &cp;`（TS 语法错，实测 3 处）。
+      if (op === '&' || op === '*') return v;
+      if (op === '^') return `~${v}`; // Go 一元 ^ = 按位取反（TS 是 ~）
+      return `${op}${v}`;
     }
     case 'parenthesized_expression': {
       const inner = node.child(1);
@@ -304,7 +344,7 @@ function stmt(node: SyntaxNodeLike, indent: string): string | null {
       const out: string[] = [];
       for (let i = 0; i < node.childCount; i++) {
         const c = node.child(i);
-        if (!c || c.type === '{' || c.type === '}' || c.type === 'comment') continue;
+        if (!c || c.type === '{' || c.type === '}' || c.type === 'comment' || c.type === 'defer_statement') continue;
         const s = stmt(c, pad + '  ');
         if (s === null) return null;
         if (s !== '') out.push(s);
@@ -563,11 +603,51 @@ function stmt(node: SyntaxNodeLike, indent: string): string | null {
 /**
  * 顶层入口：把函数体（`block` 节点）机械翻成 TS 函数体源码。
  * 返回 `null` = **不翻**（上层走 LLM）；返回字符串 = 可以确定地翻出来。
+ *
+ * ## `defer` 的处置（★ 2026-10-29，覆盖 +144 个函数的那个形态）
+ * Go `defer f()` = **函数返回时**执行，且**后进先出**。TS 对应物就是 `try/finally`：
+ * ```
+ * defer a(); defer b();  剩余语句  →   try { 剩余语句 } finally { b(); a(); }
+ * ```
+ * ★ 只处理**函数体直接子层**的 defer；出现在循环/if 里的 defer **执行时机不同**（每次迭代一次 vs 函数退出），
+ *   那不翻 —— 判据里用"直接子层 defer 数 == 全树 defer 数"来保证，多一个就 `null`。
  */
 export function translateGoBodyMech(block: SyntaxNodeLike | null): string | null {
   if (!block) return null;
   if (!canMechTranslate(block)) return null;
-  const body = stmt(block, '');
-  if (body === null) return null;
-  return body;
+
+  // ① 收集**直接子层**的 defer（按出现顺序），并从语句流里摘掉
+  const defers: string[] = [];
+  let totalDefer = 0;
+  const countDefer = (n: SyntaxNodeLike): void => {
+    if (n.type === 'defer_statement') totalDefer++;
+    for (let i = 0; i < n.childCount; i++) {
+      const c = n.child(i);
+      if (c) countDefer(c);
+    }
+  };
+  countDefer(block);
+  for (let i = 0; i < block.childCount; i++) {
+    const c = block.child(i);
+    if (!c || c.type !== 'defer_statement') continue;
+    const call = c.child(1); // defer 后面那个调用表达式
+    const src = call ? expr(call) : null;
+    if (src === null) return null;
+    defers.push(src);
+  }
+  // ② 嵌套 defer（不在直接子层）⇒ 执行时机不同 ⇒ 不翻
+  if (totalDefer !== defers.length) return null;
+
+  // ③ 剩余语句照常翻
+  const rest = stmt(block, '');
+  if (rest === null) return null;
+
+  if (!defers.length) return rest;
+  // ④ LIFO：finally 里**反序**调用
+  const fin = defers
+    .slice()
+    .reverse()
+    .map((d) => `    ${d};`)
+    .join('\n');
+  return `  try {\n${rest}\n  } finally {\n${fin}\n  }`;
 }
