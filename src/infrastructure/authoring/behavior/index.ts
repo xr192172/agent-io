@@ -28,6 +28,7 @@
 
 import { DATA_DIR_NAME } from '../../data_dir.js';
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -49,6 +50,38 @@ const GO_EXTS = ['.go'];
 const JAVA_EXTS = ['.java'];
 const CS_EXTS = ['.cs'];
 const C_EXTS = ['.c', '.h'];
+
+/**
+ * ★ 2026-10-28（T-#OBSERVE-6）：给"我们起的子进程"配一份**带内存插桩 loader 的 env**。
+ *
+ * · 只在 Node 运行时注入 `--import <probe_loader.js>`（其它语言不认这个变量 —— 会原样忽略）；
+ * · 事件落点 `<cwd>/.agent/observe/events-<ts>.jsonl`（`runtime` 判据零配置自动发现的目录）；
+ * · 任何一步拿不到（loader 不存在 / 目录建不出来）⇒ 返回 `undefined`，**调用方按原样 spawn**
+ *   —— 观测是增强，**不许**让判据跑不起来。
+ */
+export function probeRunEnv(root?: string): NodeJS.ProcessEnv | undefined {
+  try {
+    const loader = new URL('../../analysis/observe/probe_loader.js', import.meta.url);
+    if (!fs.existsSync(fileURLToPath(loader))) return undefined;
+    const projectRoot = root ?? process.cwd();
+    const dir = path.join(projectRoot, '.agent', 'observe');
+    fs.mkdirSync(dir, { recursive: true });
+    const events = path.join(dir, `events-${Date.now()}.jsonl`);
+    const prev = process.env.NODE_OPTIONS ?? '';
+    return {
+      ...process.env,
+      NODE_OPTIONS: `${prev} --import ${loader.href}`.trim(), // ★ Windows 上 `--import` 只认 file:// URL
+      OBSERVE_EVENTS_FILE: events,
+      AGENT_IO_PROBE_ROOT: projectRoot,
+      // ★ 排除框架自身 dist：否则会去插桩探针本体（自伤）
+      AGENT_IO_PROBE_EXCLUDE: [process.env.AGENT_IO_PROBE_EXCLUDE, fileURLToPath(new URL('../../../', import.meta.url))]
+        .filter(Boolean)
+        .join(path.delimiter),
+    };
+  } catch {
+    return undefined;
+  }
+}
 
 export type BehaviorLang = 'python' | 'node' | 'go' | 'java' | 'csharp' | 'c';
 
@@ -983,7 +1016,13 @@ function runWithLangPack(spec: BehaviorSpec, pack: BehaviorLangPack): BehaviorRu
       }
     }
 
-    const r = spawnSync(plan.run.cmd, plan.run.args, { cwd: plan.run.cwd ?? tmp, encoding: 'utf-8', timeout: pack.timeoutMs(spec), windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
+    // ★★★ 2026-10-28（T-#OBSERVE-6 · 用户定位"遵规范就没有外部"）：**L2 与 L3 一次运行同时产出**。
+    //   这里正是 L2 判据（`behavior-cases`）**真正跑用户代码**的地方 —— 本来就我们起进程、本来就在判据链上。
+    //   ⇒ 注入内存插桩 loader：**同一次运行**既拿到函数输出（L2 比对用），也拿到探针事件（L3 判据用）。
+    //   · 盘上源码**零改动**（loader 在内存里改写，见 `observe/probe_hooks.ts`）；
+    //   · 拿不到 loader / 事件路径写不进 ⇒ **静默不加**（观测是增强，不许让判据跑不起来）。
+    const probeEnv = probeRunEnv();
+    const r = spawnSync(plan.run.cmd, plan.run.args, { cwd: plan.run.cwd ?? tmp, encoding: 'utf-8', timeout: pack.timeoutMs(spec), windowsHide: true, maxBuffer: 8 * 1024 * 1024, ...(probeEnv ? { env: probeEnv } : {}) });
 
     // ★ 顺序要紧：超时被终止时 Node **同时**置 error=ETIMEDOUT 与 signal=SIGTERM。
     //   先判 error 会把"死循环/环境卡顿"这个硬信号误报成"语言不可用"（python 处的原注释）。
