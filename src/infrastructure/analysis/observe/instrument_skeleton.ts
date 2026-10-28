@@ -391,6 +391,9 @@ export async function instrumentFileWithHooks(
   if (head && headAt === 0) out = prependAfterShebang(out, head);
 
   result.sites = insertions.map((i) => i.site);
+  // ★ 2026-10-28（T-#OBSERVE-5 ①）：**把改写结果交出去** —— `write:false` 时也填。
+  //   在此之前它算完就扔，「内存落地器」只能自己再算一遍 = 第二份实现。
+  result.content = out;
   if (applyWrite) {
     // 写盘前先备份原文件（幂等：已备份则保留最早原版），供 --uninstrument 一键还原
     const backupRoot = opts.backupRoot ?? projectRoot;
