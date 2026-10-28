@@ -75,7 +75,7 @@
 | T240 | `apply_literals` 不在工具 schema | `src/application/refactor/rename/rename_symbols.ts` | 未做（只有 `report_literals`） |
 | T231 | 注释 / 字样一并改的默认要不要出声 | `rename_symbols` | 未决 |
 | T152 | 注释算不算引用 | `rename_symbols report_literals` | 未决 |
-| T150 | `apply_refactor_plan` 的 `symbol_diff` 读数不一致 | `src/application/refactor/pipeline/refactor_plan.ts` | 待查 |
+| T150 | **`apply_refactor_plan` 逐项 `symbol_diff` 重复记账**（2026-10-28 复现）：同一文件 2 项改动 ⇒ 每项都报 `{added:1,changed:1}`，加起来 `added 2 / changed 2`，**实况是 added 1 / changed 1**（第二项把第一项的 diff 又算了一遍）。★ 判据：**逐项之和必须等于该文件整体 diff**。结构解：`symbol_diff` 的**作用域是文件**，就该在文件级出现一次（`files: [{file, symbol_diff}]`），不该挂在 item 上。 | `src/application/refactor/pipeline/refactor_plan.ts` · `edit_code.ts` 的 batch item | 待修（结构层：读数作用域与挂载层级不一致，与 T245 同一病） |
 | T151 | 没有「跑本仓唯一总门」的工具 | `scripts/verify.mjs` | 未做 |
 | T126 | `Touched` 是否加「类型」锚点 | — | 未决 |
 | T125 | 「备菜」+ `mode=field` 缺「所属」限定 | `src/application/refactor/` | 未做 |
