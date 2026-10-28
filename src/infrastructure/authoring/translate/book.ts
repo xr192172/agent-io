@@ -236,11 +236,31 @@ const stripComments = (s: string): string =>
 const stripLiterals = (s: string): string => s.replace(/'[^']*'|"[^"]*"|`[^`]*`/g, ' ');
 
 /** 一个节点的全部类型表达式（返回 / 形参 / 成员）。★ 先剥注释 —— 不剥会数出注释里的英文词。 */
+/**
+ * ★★★ 2026-10-28（修**假 blocked**）：把 `func(...)` 段里的**形参名**剥掉，只留类型。
+ *
+ * 病（实测复现）：表达式 `func(pattern string, brain string) bool` 拍平后交给
+ * {@link unmappedGoTypes} 的**标识符正则**扫 ⇒ `pattern` / `brain` 被当成"未覆盖术语"，
+ * 符号被判 `blocked`。而这两个词**永远补不进术语表**（它们不是术语，是形参名）
+ * ⇒ 制造一个**不可修的 blocked**（人无从下手，该修的是解析，不是术语表）。
+ *
+ * ★ 这正是"**第二处权威**"的实际伤害：`typeExpressions` 把结构化事实**拍平成字符串再正则二次解读**，
+ *   与 `ts_codegen`（真 AST 解析）可能得出相反结论。这里先补最扎眼的一处；
+ *   彻底解法见 todo：类型位置应由解析器给出，而不是正则扫。
+ */
+function stripFuncParamNames(expr: string): string {
+  return expr.replace(/func\s*\(([^)]*)\)/g, (_m, inner: string) => {
+    // 去掉 "名字 类型" 里的名字（保留类型）；逗号/空格分隔
+    const kept = inner.replace(/([A-Za-z_]\w*)\s+(?=[*\[\]A-Za-z_])/g, '');
+    return `func(${kept})`;
+  });
+}
+
 export function typeExpressions(row: NodeRow): string[] {
   const out: string[] = [];
-  if (row.return_type) out.push(row.return_type);
-  for (const p of parseJson<Array<{ type?: string }>>(row.params, [])) if (p?.type) out.push(p.type);
-  for (const m of parseJson<Array<{ type?: string }>>(row.members, [])) if (m?.type) out.push(m.type);
+  if (row.return_type) out.push(stripFuncParamNames(row.return_type));
+  for (const p of parseJson<Array<{ type?: string }>>(row.params, [])) if (p?.type) out.push(stripFuncParamNames(p.type));
+  for (const m of parseJson<Array<{ type?: string }>>(row.members, [])) if (m?.type) out.push(stripFuncParamNames(m.type));
   return out;
 }
 
