@@ -109,7 +109,6 @@ import { indexIntegrity, renderIntegrity } from './integrity/index_integrity.js'
 //   `npm run dogfood`（`dogfood_stats.ts`）此前是**唯一**读得到那份日志的入口，而它**不在工具面**里
 //   ⇒ agent 拿不到。本工具**复用**它的统计（一行都不重造），只补「注册表 − 用过的 / 用过的 − 注册表」两维。
 import { computeDogfoodCoverage, renderDogfoodCoverage } from '../../infrastructure/dogfood_coverage.js';
-import { decideCanvasNotes } from './llm/llm_decider.js';
 import { buildDocsPromptBlock, listProjectDocs, matchDocsForTargets, readProjectDoc } from './docs/project_docs.js';
 import type { DocTargetSet } from './docs/project_docs.js';
 import { exploreCodeHandler, syncContractsHandler } from './handlers.js';

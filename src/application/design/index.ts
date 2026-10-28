@@ -975,8 +975,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       '（meta.goals 与 edge.intent），不依赖下一次代码扫描再生。' +
       '★ **action=propose 已退役（2026-10-22）**：分支早已删除，而 enum/描述还在宣称它 ⇒ 此前调 propose 会被**当成 set 直接写盘**（越权）。' +
       '现在调它会**响亮报错且零副作用**。要走「先请人批再落」：代码/契约变更用 opl 立卡；设计声明变更用 observe action=proposals。' +
-                  '★ 安全策略前移（与"人只做决策审批、LLM 只做提案转述"的分层一致）：propose **永不直接落盘**；' +
-      'project_dir 是审批台账的隔离桶名，应与人当前查看的项目一致，提案才会出现在他的审批列表里。',
+      '★ 本工具**只有 set 一个写端**：任何声称"只预览/等审批"的 action 都不存在（propose 已退役，见上）。',
     inputSchema: {
       action: z
         .enum(['set', 'propose'])
@@ -1014,7 +1013,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         )
         .optional()
         .describe('边级意图：按 base 边 id 或 from+to 匹配挂载 reason/boundary —— 2 个 action 共用'),
-      project_dir: z.string().optional().describe('propose 用：审批台账的隔离桶名（查看 PR 的项目目录）；缺省取 feature 的 source_root'),
+      project_dir: z.string().optional().describe('项目根（定位 overlay / cache.db；缺省取 feature 的 source_root）'),
       agent: z
         .string()
         .optional()

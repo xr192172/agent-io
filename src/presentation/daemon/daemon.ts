@@ -239,7 +239,7 @@ function scheduleLoopTrigger(projectDir: string, broadcast: (event: string, data
         //   但该工具**从未注册过**（59 个工具清单里 `proposal` 零命中）—— `760dc63` 改文案时
         //   编了一个名字（它的注释还自陈"改为指向 TS 侧工具"）。
         //   ⇒ 现指向**真实存在的出口**：审批开在 HTTP（T62 已补，2026-10-06），
-        //     与 `code_workbench` 的 `/api/code/*` 同形；`reviewer` 必填（第三方会话身份）。
+        //     形制参照：`reviewer` 必填（第三方会话身份）—— **没有**"审批页签"那套（2026-10-28 已退役）。
         const line =
           `[loop 回流] ${projectDir} 产生 ${newProposals.length} 条新提案` +
           `（${newProposals.map((p) => p.replace('.json', '')).join(', ')}）· ` +

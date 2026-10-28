@@ -77,7 +77,7 @@ export interface RenameFileInput {
   /**
    * ★ 2026-10-20（A7 闭合）：**本次写入者身份**（A7 写闸用；与 claim 时 `data.owner` 同一个值）。
    * 不传 ⇒ 落回 `AGENT_IO_ACTOR` ⇒ 都没有就"提醒 + 放行"（解析口径唯一在 `write_gate#resolveActor`）。
-   * ★ 为什么必须在这里：本函数是 rename_files / code_workbench 的**唯一落盘层**，它拿不到身份
+   * ★ 为什么必须在这里：本函数是 rename_files 的**唯一落盘层**，它拿不到身份
    *   就永远是"谁在写 = null"。
    */
   actor?: string;

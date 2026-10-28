@@ -259,7 +259,7 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   consistency_check: '设计 DSL 与代码语义一致性体检',
   detect_drift: '检测 DSL 与代码语义漂移',
   import_project: '扫描代码项目生成 DSL（文件节点+调用边+符号语义层）',
-  design_intent: '设计意图(why)统一入口（action=set=直接写 overlay：goals + edge_intents / propose=只算审批卡不写盘，人 approve 才落）',
+  design_intent: '设计意图(why)：直接写 overlay（goals + edge_intents）。★ action=propose 已退役（调用会响亮报错、零副作用）⇒ 要「先请人批再落」走 opl 立卡 / observe action=proposals',
   rename_symbols: '标识符改名（两种作用域粒度：scope=module 跨文件模块级符号、全批原子；scope=local 文件内局部绑定、作用域隔离、逐项独立），dry_run 预览后落盘',
   rename_files: '批量文件改名（dry_run 计算影响面，原子阻断）',
   move_symbol: '跨文件移动模块级符号（自动重定向 importer 的 import 源，只改 source 不动使用点）',
