@@ -163,6 +163,43 @@ function argTypes(node: SyntaxNodeLike): SyntaxNodeLike[] {
   return out;
 }
 
+/**
+ * 返回类型节点兜底（★ 2026-10-28 重写）。
+ *
+ * 上一版按"第二个 parameter_list 就是返回值"猜 ⇒ **方法**上全错：方法有**两个** parameter_list
+ * （接收者 `(st *SkillTree)` + 形参 `(nodes ...*SkillNode)`），于是把形参表当成了返回类型，
+ * 生成了 `: ...*SkillNode`（TS 语法错）。
+ * ⇒ 现在以**函数名（identifier）的位置**为准：**名字之后**的第一个 parameter_list 是形参，
+ *   其后的第二个 parameter_list 或类型类节点才是返回值。接收者在名字之前，自然被排除。
+ */
+function findResultNode(node: SyntaxNodeLike): SyntaxNodeLike | null {
+  let nameIdx = -1;
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (c && c.type === 'identifier') {
+      nameIdx = i;
+      break;
+    }
+  }
+  if (nameIdx < 0) return null;
+  let paramsSeen = false;
+  for (let i = nameIdx + 1; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (!c) continue;
+    if (c.type === 'parameter_list') {
+      if (!paramsSeen) {
+        paramsSeen = true;
+        continue; // 名字后的第一组 = 形参
+      }
+      return c; // 第二组 = 返回值列表
+    }
+    if (!paramsSeen) continue;
+    if (['block', 'comment', 'type_parameter_list', '{', '(', ')', '}', ',', ';'].includes(c.type)) continue;
+    return c; // 单返回值（类型类节点）
+  }
+  return null;
+}
+
 /** 返回类型节点 → TypeRef（单个 = 原样；多个 = tuple；无 = undefined） */
 function resultRefFromNode(node: SyntaxNodeLike | null): TypeRef | undefined {
   if (!node) return undefined;
@@ -371,10 +408,17 @@ function unitFromFunc(node: SyntaxNodeLike): TransUnit | null {
   const method = nameNode.text;
   const paramsNode = childField(node, 'parameters');
   const params = paramsNode ? extractParamList(paramsNode) : [];
-  const resultNode = childField(node, 'result');
-  const result = resultNode ? normResult(resultNode.text.trim()) : null;
+  // ★★ 2026-10-28（补漏）：`childField(node,'result')` 在**单返回值/方法**上常取不到
+  //   ⇒ 那 4 个残留 TS2503（`time.Time` / `json.RawMessage` / `mem.Embedder`）都是"有返回类型文本、
+  //   但没有 resultRef"造成的。这里补一个**结构兜底**：参数表之后的第二个 parameter_list 或最后一个类型节点。
+  const resultNode = childField(node, 'result') ?? findResultNode(node);
+  // ★ 2026-10-28（variadicResultGuard）：**返回类型不可能以 `...` 开头**（那是形参的可变标记）。
+  //   不加这条守卫时，`func (st *SkillTree) upsertSkillNodesLocked(nodes ...*SkillNode)`（无返回值）
+  //   会把 `...*SkillNode` 当成返回类型 ⇒ 生成 `: ...*SkillNode`（TS 语法错）。
+  const variadicResultGuard = !!resultNode && resultNode.text.trim().startsWith('...');
+  const result = resultNode && !variadicResultGuard ? normResult(resultNode.text.trim()) : null;
   // ★ 2026-10-28（T-#TYPE-AST）：返回类型的结构化树（多返回值 → tuple；无返回 → undefined）
-  const resultRef = resultRefFromNode(resultNode);
+  const resultRef = variadicResultGuard ? undefined : resultRefFromNode(resultNode);
   const snippet = node.text.trim();
   const constraints = [...DEFAULT_CONSTRAINTS];
   appendBodyHints(snippet, constraints);
@@ -394,9 +438,9 @@ function unitFromFunc(node: SyntaxNodeLike): TransUnit | null {
     const qn = `${recv.base}_${method}`;
     // 方法自身无类型参数时，继承 receiver 的泛型实参作为自由函数的 <T...>
     const typeParams = ownTypeParams.length ? ownTypeParams : recv.typeArgs;
-    return { id: qn, kind: 'func', dstLang: 'ts', name: qn, params, result, typeParams, typeParamConstraints, typeParamBounds, srcSnippet: snippet, srcLine, skeleton: '', bodyHole: true, constraints, decision };
+    return { id: qn, kind: 'func', dstLang: 'ts', name: qn, params, result, resultRef, typeParams, typeParamConstraints, typeParamBounds, srcSnippet: snippet, srcLine, skeleton: '', bodyHole: true, constraints, decision };
   }
-  return { id: method, kind: 'func', dstLang: 'ts', name: method, params, result, typeParams: ownTypeParams, typeParamConstraints, typeParamBounds, srcSnippet: snippet, srcLine, skeleton: '', bodyHole: true, constraints, decision };
+  return { id: method, kind: 'func', dstLang: 'ts', name: method, params, result, resultRef, typeParams: ownTypeParams, typeParamConstraints, typeParamBounds, srcSnippet: snippet, srcLine, skeleton: '', bodyHole: true, constraints, decision };
 }
 
 /** 取函数体顶层第一个 expression_switch_statement → 判别式 + 分支标签（A3）。无则 undefined */

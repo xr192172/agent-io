@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
 import { translateGoToTs } from './pairs.js';
-import { channelShimSource } from './ts_codegen.js';
+import { channelShimSource, collectQualified, renderGoStdShim } from './ts_codegen.js';
 import { collectExternalTypeRefs } from './referenced.js';
 import { fillUnitsWithRetry, fillUnitsBatched } from './fill.js';
 import { createPooledBatchTranslator } from './llm.js';
@@ -179,7 +179,22 @@ export interface SymbolDef {
 function assembleModule(m: ProjectModule): void {
   const body = m.units.map((u) => u.skeleton).join('\n\n') + (m.units.length ? '\n' : '');
   const shim = body.includes('Channel<') ? channelShimSource() : '';
-  m.ts = applyDeterministicFixers([m.imports.join('\n'), shim, body].filter((s) => s !== '').join('\n'));
+  // ★★★ 2026-10-28（T-#STD-SHIM）：Go std 包（`sync`/`time`/`context` …）在 TS 里没有命名空间
+  //   ⇒ 实测 tsc 报 TS2503 ×127。这里从**结构化类型树**收集本模块用到的 `pkg.Name`（不扫文本、不用正则），
+  //   就地为该模块生成 ambient 声明：只让名字能解析，不假装实现。
+  const stdNames = new Set<string>();
+  for (const u of m.units) {
+    for (const p of u.params ?? []) collectQualified(p.typeRef, stdNames);
+    collectQualified(u.resultRef, stdNames);
+    collectQualified(u.aliasTypeRef, stdNames);
+    for (const f of u.fields ?? []) collectQualified(f.typeRef, stdNames);
+    for (const mm of u.methods ?? []) {
+      for (const p of mm.params) collectQualified(p.typeRef, stdNames);
+      collectQualified(mm.resultRef, stdNames);
+    }
+  }
+  const stdShim = renderGoStdShim(stdNames);
+  m.ts = applyDeterministicFixers([m.imports.join('\n'), shim, stdShim, body].filter((s) => s !== '').join('\n'));
 }
 
 /**
