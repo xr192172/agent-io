@@ -148,10 +148,59 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       use_llm: z.boolean().optional().describe('[judge] true=对可疑事件做 LLM 复核（默认 false）'),
       project_root: z.string().optional().describe('[judge] 被分析项目根（不传则不做设计对比）'),
     },
-    // ★ 拆注册不拆执行核：三个 handler 原样保留，只由一个入口按 action 分派
+    // ★ 拆注册不拆执行核：五个 handler 原样保留，只由一个入口按 action 分派。
+    // ★★ 2026-10-28（可用性实测修）：单入口最大的坑是"**参数传错却静默生效**"——
+    //   实测 `action=log` 加上 `events_path`（那是 trace 的参数）时，只报"需要 events_file"，
+    //   用户会以为自己给对了路径。⇒ 入口先做**按 action 的参数守卫**：
+    //   ① 缺必填 ⇒ 列出该 action 需要的字段；② 给了别的 action 的专属字段 ⇒ **点名**是谁的。
     handler: ((a: unknown) => {
       const args = a as Record<string, unknown>;
       const action = String(args.action ?? 'log');
+      // 每个 action 认哪些字段（白名单：只列该动作真正会读的）
+      const SPEC: Record<string, string[]> = {
+        log: ['events_file', 'files', 'all'],
+        trace: ['events_path', 'events_text', 'keep', 'trace_id', 'limit'],
+        judge: ['events', 'decls', 'text', 'use_llm', 'project_root'],
+        instrument: ['target', 'dry_run'],
+        uninstrument: ['target'],
+        restore: ['target'],
+        ledger: ['target'],
+        proposals: ['project_dir', 'feature', 'id', 'note', 'agent', 'use_llm', 'op'],
+      };
+      const NEED: Record<string, string[]> = {
+        log: ['events_file'],
+        trace: [],
+        judge: ['events'],
+        instrument: ['target'],
+        uninstrument: ['target'],
+        restore: ['target'],
+        ledger: ['target'],
+        proposals: [],
+      };
+      const mine = SPEC[action];
+      if (!mine) {
+        throw new Error(
+          `observe: 不认识 action="${action}" ⇒ 只能是 ${Object.keys(SPEC).join(' / ')}` +
+            `（proposals 的子动作用 op=list/show/approve/reject）`,
+        );
+      }
+      const strangers = Object.keys(args).filter((k) => {
+        if (k === 'action') return false;
+        if (mine.includes(k)) return false;
+        if (['project_dir', 'feature', 'agent', 'dry_run', 'use_llm'].includes(k)) return false;
+        return Object.values(SPEC).some((v) => v.includes(k));
+      });
+      if (strangers.length) {
+        const owner = strangers
+          .map((k) => `${k}（属于 ${Object.entries(SPEC).find(([, v]) => v.includes(k))?.[0] ?? '?'}）`)
+          .join('、');
+        throw new Error(`observe action=${action}: 收到不属于本动作的参数 —— ${owner}。本动作只认：${mine.join(' / ')}`);
+      }
+      // ★ 顺序很重要：先报"你传错了参数"（信息量最大），再报"你缺什么" —— 实测反了会误导。
+      const missing = (NEED[action] ?? []).filter((k) => args[k] === undefined || args[k] === '');
+      if (missing.length) {
+        throw new Error(`observe action=${action}: 缺必填 ${missing.join(' / ')} ⇒ 该动作要这些字段：${mine.join(' / ')}`);
+      }
       if (action === 'trace') return observeTraceHandler(a as never);
       if (action === 'judge') return observeJudgeHandler(a as never);
       if (action === 'instrument' || action === 'uninstrument' || action === 'restore' || action === 'ledger') {
