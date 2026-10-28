@@ -73,6 +73,7 @@ import {
 import { resolveJudgementKind, symbolsInFileOf, symbolFpsOf } from '../write_gate.js';
 import { syncPlanStatuses, planChangeSetOfCard } from './db/rewrite_plan.js';
 import { checkRewriteExit } from './db/plan_exit_check.js';
+import { runPlanJudgements, renderJudgementLine } from './db/judgement_run.js';
 import { contentHash } from '../../infrastructure/index/symbols.js';
 
 import { importProject } from '../../infrastructure/graph/import_project.js';
@@ -497,6 +498,13 @@ export const DESIGN_TOOLS: ToolDef[] = [
           '★ 仅 action=plan：**这张画布属于哪张任务卡**（一个任务天然跨文件 ⇒ 一张卡可以有多份画布）。' +
             '★ 卡的改集 = 它名下所有画布坍缩集的并集（`planChangeSetOfCard`）⇒ 并发闸才看得见全部文件。',
         ),
+      run_judgements: z
+        .boolean()
+        .optional()
+        .describe(
+          '★ 仅 action=plan：**真跑**条目上的判据（`decision:<node_id>#<index>` ⇒ 走 `judgeExpectations` 执行核）。' +
+            '缺省 = 只读模式下开、写模式关（刚写的计划还没改代码，跑了没意义）。★ 这是"发现逻辑 bug"的那一步。',
+        ),
       sync_status: z
         .boolean()
         .optional()
@@ -617,6 +625,21 @@ export const DESIGN_TOOLS: ToolDef[] = [
           written = '\n★ 干跑：**没有落盘**（要落盘传 `apply:true`）';
         }
 
+        // ★ 2026-10-28（"能发现逻辑 bug"的最后一里）：**真跑判据** ——
+        //   只读模式缺省开、写模式缺省关（刚写的计划还没改代码，跑了没意义）。
+        let judgementNote = '';
+        let judgements: Awaited<ReturnType<typeof runPlanJudgements>> = [];
+        if (!given && a.run_judgements !== false) {
+          try {
+            judgements = await runPlanJudgements(projectRoot, plan);
+            const jl = renderJudgementLine(judgements);
+            if (jl) judgementNote = '\n' + jl;
+            else if (judgements.length) judgementNote = `\n★ 判据执行 ${judgements.length} 条**全部通过**`;
+          } catch (e) {
+            judgementNote = `\n★ 判据执行失败（**不等于通过**）：${(e as Error).message}`;
+          }
+        }
+
         const lines = [
           `重写计划 · ${rel} · ${plan.entries.length} 条改动 · ${(plan.untouched ?? []).length} 条"看过不动"`,
           route ? `  路线（拓扑序）：${route.join(' → ')}` : '  路线：**成环 ⇒ 不成立**（见缺口）',
@@ -642,7 +665,10 @@ export const DESIGN_TOOLS: ToolDef[] = [
         } else {
           lines.push('', '★ 四条判据全过（想清楚了 / 看全了 / 判据能发现逻辑错 / 顺序成立）—— ★ 但全绿只是**必要条件**。');
         }
-        return { message: lines.join('\n') + written + statusNote, data: { path: rel, plan, gaps, route } };
+        return {
+          message: lines.join('\n') + written + statusNote + judgementNote,
+          data: { path: rel, plan, gaps, route, ...(judgements.length ? { judgements } : {}) },
+        };
       }
 
       if (action === 'gen-db') {
