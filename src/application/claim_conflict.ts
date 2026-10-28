@@ -63,6 +63,8 @@ import type {
   TaskSpec,
 } from '../domain/task_schema.js';
 import { todosForNode } from '../domain/task_schema.js';
+// ★ 2026-10-28：读集可来自**画布坍缩集**（判据唯一实现在 rewrite_plan.ts，这里只调用）
+import { readRewritePlan, planChangeSet } from './design/db/rewrite_plan.js';
 import { listDesignSheets } from '../infrastructure/storage.js';
 import { toIndexKey } from '../infrastructure/index/symbols.js';
 import { loadFileFacts, type FactsCache } from './read_set.js';
@@ -223,6 +225,19 @@ export function computeClaimReadSet(input: ClaimReadSetInput): ClaimReadSetResul
     for (const s of input.declared.symbols ?? []) {
       if (!s.file || !s.name) continue; // 形状已在 `parseDeclaredReadSet` 拒过；这里只做类型收窄
       addSymbol(s.file, s.name, 'declared');
+    }
+  }
+
+// ── ①' 画布**坍缩集**（用户 2026-10-28：「画布展开时设计完后应该坍缩成被改动的节点」）──
+  //   优先级：显式声明（人当场拍板）→ **画布坍缩集**（设计产物，最准）→ 判据点名 → 整文件兜底。
+  //   ★ 只用坍缩集（`status !== 'done'` 的符号），**不用展开态**：否则「我只是看过」也会被算成争用，
+  //     两张卡明明不打架却被判冲突 —— 假阻塞比漏判更打击积极性。
+  const canvasPath = typeof input.node?.path === 'string' ? input.node.path.trim() : '';
+  if (canvasPath) {
+    try {
+      for (const c of planChangeSet(readRewritePlan(root, canvasPath))) addSymbol(c.file, c.symbol, 'canvas');
+    } catch {
+      // 画布坏了 ⇒ 如实跳过这一级（判据与节点兜底仍在；不因它把 claim 拖死）
     }
   }
 

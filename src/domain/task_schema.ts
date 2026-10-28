@@ -583,7 +583,10 @@ export interface TaskReadSetFile {
  * · `node-path` = 节点自己的文件（最粗的兜底，只有到文件级）。
  * ★ 优先序 = 上面这个顺序；可以**同时存在**（显式声明为主，其余补齐）。
  */
-export type TaskReadSetBasis = 'declared' | 'expectations' | 'node-path';
+export type TaskReadSetBasis = 'declared' | 'canvas' | 'expectations' | 'node-path';
+// ★ 2026-10-28（用户：「画布在展开时设计完后应该**坍缩成被改动的节点**」）：
+//   `canvas` = 读集来自**画布的坍缩集**（`entries` 里 `status !== 'done'` 的符号）——
+//   比 `expectations`（判据点名）与 `node-path`（整文件兜底）都准，因为它是「这一轮真要动的」。
 
 /** 一张卡**上一次 claim** 时算出的读集（形状与语义见 `TaskReadSetSymbol` 上方那段） */
 export interface TaskReadSet {

@@ -379,3 +379,27 @@ export function planKindGaps(plan: RewritePlan | null, fileExists: boolean): str
   }
   return gaps;
 }
+
+/**
+ * ★★★ 2026-10-28（用户原话：「画布在展开时设计完后应该**坍缩成被改动的节点**」）：
+ * **坍缩集** = 画布"设计完"之后的形态 —— 只剩**真要动**的符号（`status !== 'done'`）。
+ *
+ * ## 为什么并发冲突要的正是这一份
+ * 画布的**展开态**是给「通读 + 想清楚」用的（`untouched` / `symbols_at_freeze` / 判据细节）；
+ * 而「我要碰什么」只取决于**要改的那几个符号** ⇒ 拿展开态去比冲突，会把「我只是看过」也算成争用，
+ * 于是两张卡明明不打架却被判冲突（**假阻塞比漏判更打击积极性**）。
+ *
+ * @returns `{file, symbol}[]`（只含未完成的 entry；`done` 的不再抢）
+ */
+export function planChangeSet(plan: RewritePlan | null): Array<{ file: string; symbol: string }> {
+  if (!plan) return [];
+  const file = plan.path.split(path.sep).join('/');
+  const out: Array<{ file: string; symbol: string }> = [];
+  for (const e of plan.entries) {
+    if (e.status === 'done') continue;
+    const sym = e.anchor?.symbol;
+    if (!sym) continue;
+    out.push({ file, symbol: sym });
+  }
+  return out;
+}
