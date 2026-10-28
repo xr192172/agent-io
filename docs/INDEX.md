@@ -84,7 +84,8 @@
 | `GOAL.md` | 为什么做这个 |
 | `VISION.md` | 用户对每个功能的描述（原话） |
 | `DESIGN.md` | 缺陷台账（A/C/D 节） |
-| `GUIDE-GATE.md` | 门的清单（verify 6 道门 / 证的四态 / 判据 8 kind） |
+| `GUIDE-GATE.md` | 门的清单（verify 9 道门 / 证的四态 / 判据 12 kind） |
+| `PITCH.md` | **卖点合集（活文档）**：每条卖点挂一张证 + 一个可复现读数；收官材料，新功能就追加一条 |
 | `GUIDE-USAGE.md` | 工具与流程（工具表 / 典型流程 / 派子代理） |
 | `dogfood.md` | 用本仓工具时的体验（表） |
 | `DISCUSSION.md` | 讨论留下的判断（**别处没有且仍成立**的：直链边界 / DSL 全量+笔迹 / 语义不可代验）；历史过程在 git |
