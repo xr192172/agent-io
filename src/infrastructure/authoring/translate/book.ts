@@ -110,6 +110,14 @@ export interface BookExternalDep {
   /** 非 stdlib 的 Go import 路径（首段含 '.'，如 github.com/x/y） */
   from: string;
   strategy: ExternalDepStrategy;
+  /**
+   * ★★★ 2026-10-29（**删掉 any 垫片的前提**）：**机器可读的目标模块名**。
+   * 只有 strategy（"怎么替"）不够 —— 生成 import 需要"替成什么"（`node:sqlite` / `onnxruntime-node` / 相对路径）。
+   * · `same_slot` 且指向本仓子包 ⇒ 相对模块路径（如 `./logging/logging`）；
+   * · 目标为**内建/无 import**（如 `String.normalize`）⇒ 空串（表示"不需要 import"，此时调用点需改写，缺改写就显式报错）；
+   * · 空/缺省 ⇒ 尚未定 ⇒ **不生成任何垫片**（宁可红，不要 any 假绿）。
+   */
+  target?: string;
   note?: string;
   /** 引用该依赖的源 .go 文件（仓库相对路径；每次重算） */
   usedBy?: string[];

@@ -62,86 +62,13 @@ export interface MappedType {
  * 骨架阶段的目标是"能编译、结构可读"，不是"能跑"（能跑要填孔）。
  * ★ 只对**已知的 Go std 包**这么做：第三方包（`github.com/...`）走 external_deps，不伪造。
  */
-export const GO_STD_PKGS = new Set([
-  'sync', 'time', 'context', 'bytes', 'strings', 'errors', 'fmt', 'os', 'io', 'math', 'sort', 'strconv',
-  'bufio', 'net', 'url', 'tls', 'http', 'regexp', 'atomic', 'runtime', 'filepath', 'rand', 'sha256',
-  'base64', 'json', 'sql', 'log', 'flag', 'path', 'unicode', 'utf8', 'hex', 'gzip', 'tar', 'zip',
-  'crc32', 'md5', 'sha1', 'sha512', 'hmac', 'aes', 'cipher', 'subtle', 'big', 'bits', 'cmplx', 'reflect',
-]);
 
 /** 收集一棵 TypeRef 里的**限定类型**（`pkg.Name`），只收 Go std 包 */
-export function collectQualified(ref: TypeRef | undefined, out: Set<string>): void {
-  if (!ref) return;
-  switch (ref.kind) {
-    case 'qualified':
-      // ★ 2026-10-28：**所有**限定名都收（不只 std）—— 实测剩余 13 个 TS2503 是
-      //   `memory.`（本仓包名）、`mem`/`ort`/`exec`（cgo / 外部）。骨架阶段一律"只声明不实现"，
-      //   并在文件头注明哪些是 std、哪些是外部（不假装它们有实现）。
-      out.add(`${ref.pkg}.${ref.name}`);
-      return;
-    case 'pointer':
-    case 'slice':
-    case 'variadic':
-      return collectQualified(ref.elem, out);
-    case 'array':
-      return collectQualified(ref.elem, out);
-    case 'map':
-      collectQualified(ref.key, out);
-      return collectQualified(ref.value, out);
-    case 'chan':
-      return collectQualified(ref.elem, out);
-    case 'func':
-      for (const p of ref.params) collectQualified(p.type, out);
-      for (const r of ref.results) collectQualified(r, out);
-      return;
-    case 'struct':
-      for (const f of ref.fields) collectQualified(f.type, out);
-      return;
-    case 'interface':
-      for (const mm of ref.methods) {
-        for (const p of mm.params) collectQualified(p.type, out);
-        for (const r of mm.results) collectQualified(r, out);
-      }
-      for (const e of ref.embeds) collectQualified(e, out);
-      return;
-    case 'generic':
-      collectQualified(ref.base, out);
-      for (const a of ref.args) collectQualified(a, out);
-      return;
-    case 'tuple':
-      for (const i of ref.items) collectQualified(i, out);
-      return;
-    default:
-      return;
-  }
-}
 
 /**
  * 把 `pkg.Name` 集合渲染成**模块内**的 ambient 声明（不导出、不实现、只让 tsc 认名字）。
  * ★ 用 `const X: any` + `type X = any` 两行覆盖**值位**与**类型位**两种用法。
  */
-export function renderGoStdShim(names: Iterable<string>): string {
-  const byPkg = new Map<string, Set<string>>();
-  for (const q of names) {
-    const i = q.indexOf('.');
-    if (i < 0) continue;
-    const pkg = q.slice(0, i);
-    const nm = q.slice(i + 1);
-    if (!byPkg.has(pkg)) byPkg.set(pkg, new Set());
-    byPkg.get(pkg)!.add(nm);
-  }
-  if (!byPkg.size) return '';
-  const lines: string[] = ['// Go std 垫片（骨架阶段只声明不实现；★ 能跑要填孔 + 真实现）'];
-  for (const pkg of [...byPkg.keys()].sort()) {
-    lines.push(`declare namespace ${pkg} {`);
-    for (const nm of [...byPkg.get(pkg)!].sort()) {
-      lines.push(`  const ${nm}: any;`);
-      lines.push(`  type ${nm} = any;`);
-    }
-    lines.push('}');
-  }
-  return lines.join('\n');
-}
 
 export function renderTsType(ref: TypeRef): MappedType {
   switch (ref.kind) {

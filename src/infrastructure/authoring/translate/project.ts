@@ -14,14 +14,14 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import ts from 'typescript';
 import { translateGoToTs } from './pairs.js';
-import { channelShimSource, collectQualified, renderGoStdShim } from './ts_codegen.js';
+import { channelShimSource } from './ts_codegen.js';
 import { collectExternalTypeRefs } from './referenced.js';
 import { spliceBody, normalizeLegacyOctal } from './fill.js';
 import { fillUnitsWithRetry, fillUnitsBatched } from './fill.js';
 import { createPooledBatchTranslator } from './llm.js';
 import { applyDeterministicFixers } from './fixers.js';
 // ★ I3：翻译 DB 投影 + 术语表进 prompt（按图索骥）
-import { attachBookFacts, loadTranslateBooks } from './book.js';
+import { attachBookFacts, loadTranslateBooks, type TranslateBook } from './book.js';
 import type { SkippedDecl } from './go_extractor.js';
 import { parseFileFull } from '../../parse/index.js';
 import type { TransUnit } from './unit.js';
@@ -219,28 +219,66 @@ function saveFillCache(outDir: string, cache: Record<string, { body: string; at:
   }
 }
 
-/** 组装模块内容：import 头 + Channel 垫片（如需） + 各单元骨架；随后跑 C1 确定性 fixer 去未用 import/合 import。 */
-function assembleModule(m: ProjectModule): void {
-  const body = m.units.map((u) => u.skeleton).join('\n\n') + (m.units.length ? '\n' : '');
-  const shim = body.includes('Channel<') ? channelShimSource() : '';
-  // ★★★ 2026-10-28（T-#STD-SHIM）：Go std 包（`sync`/`time`/`context` …）在 TS 里没有命名空间
-  //   ⇒ 实测 tsc 报 TS2503 ×127。这里从**结构化类型树**收集本模块用到的 `pkg.Name`（不扫文本、不用正则），
-  //   就地为该模块生成 ambient 声明：只让名字能解析，不假装实现。
-  const stdNames = new Set<string>();
-  for (const u of m.units) {
-    // ★ 2026-10-29（T-#SHIM-VALUE）：**值位置**的 pkg.Member（filepath.Join / os.OpenFile …）
-    for (const q of u.usedQualified ?? []) stdNames.add(q);
-    for (const p of u.params ?? []) collectQualified(p.typeRef, stdNames);
-    collectQualified(u.resultRef, stdNames);
-    collectQualified(u.aliasTypeRef, stdNames);
-    for (const f of u.fields ?? []) collectQualified(f.typeRef, stdNames);
-    for (const mm of u.methods ?? []) {
-      for (const p of mm.params) collectQualified(p.typeRef, stdNames);
-      collectQualified(mm.resultRef, stdNames);
+/**
+ * ★ 册子的 `external_deps` → **包名 → 目标模块** 的表（第 2 层消费第 1 层的决策）。
+ * 包名取 import 路径末段（`.../logging` → `logging`），与 Go 的引用写法一致。
+ */
+function buildDepTable(books: TranslateBook[]): Map<string, { target?: string; strategy?: string }> {
+  const t = new Map<string, { target?: string; strategy?: string }>();
+  for (const b of books) {
+    for (const d of b.external_deps ?? []) {
+      const pkg = (d.from ?? '').split('/').pop() ?? '';
+      if (pkg) t.set(pkg, { target: d.target, strategy: d.strategy });
     }
   }
-  const stdShim = renderGoStdShim(stdNames);
-  m.ts = applyDeterministicFixers([m.imports.join('\n'), shim, stdShim, body].filter((s) => s !== '').join('\n'));
+  return t;
+}
+
+/**
+ * 组装模块内容：import 头 + Channel 垫片（如需） + **册子决定的外部依赖 import** + 各单元骨架；
+ * 随后跑 C1 确定性 fixer 去未用 import/合 import。
+ *
+ * ★★★ 2026-10-29（**删掉 any 垫片**）：原来这里生成 `declare namespace pkg { const X: any; type X = any }`
+ * —— 那是"因为第 1 层缺位而长出来的替代品"：把**未知**伪装成**已知 any**，正是我们一直在打的假绿。
+ * 现在册子有了 `external_deps[].target`（机器可读的目标模块名），就按它发**真 import**；
+ * **没有 target 就一个垫片都不发**（宁可红，让缺口显形），并把缺口写进 diagnostics。
+ */
+function assembleModule(m: ProjectModule, depTable: Map<string, { target?: string; strategy?: string }>, diag: string[]): void {
+  const body = m.units.map((u) => u.skeleton).join('\n\n') + (m.units.length ? '\n' : '');
+  const shim = body.includes('Channel<') ? channelShimSource() : '';
+
+  // 本模块用到的**外部包名**（值位置 pkg.Member 的前缀 + 类型位置的限定前缀）
+  const usedPkgs = new Set<string>();
+  for (const u of m.units) {
+    for (const q of u.usedQualified ?? []) {
+      const i = q.indexOf('.');
+      if (i > 0) usedPkgs.add(q.slice(0, i));
+    }
+  }
+
+  const depImports: string[] = [];
+  const missing: string[] = [];
+  for (const pkg of [...usedPkgs].sort()) {
+    const dep = depTable.get(pkg);
+    if (!dep) {
+      // 不在册子的依赖表里（可能是 std 包：sync/time/os …）⇒ 记账，不伪造
+      missing.push(pkg);
+      continue;
+    }
+    if (dep.target === '') continue; // 同包 / 内建：不需要 import
+    if (!dep.target) {
+      missing.push(`${pkg}（strategy=${dep.strategy ?? '未定'}，缺 target）`);
+      continue;
+    }
+    depImports.push(`import * as ${pkg} from '${dep.target}';`);
+  }
+  if (missing.length) {
+    diag.push(`${m.rel}: 外部包未定目标模块（**不生成 any 垫片**）：${[...new Set(missing)].join(', ')}`);
+  }
+
+  m.ts = applyDeterministicFixers(
+    [m.imports.join('\n'), shim, depImports.join('\n'), body].filter((s) => s !== '').join('\n'),
+  );
 }
 
 /**
@@ -646,7 +684,8 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
       }
     }
   }
-  for (const m of modules) assembleModule(m);
+  const depTable = buildDepTable(loadTranslateBooks(root));
+  for (const m of modules) assembleModule(m, depTable, diagnostics);
 
   // A1 显式失败清单：降级不再静默吞掉
   const report = buildReport(modules, opts.fill === true);
