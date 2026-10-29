@@ -3,35 +3,26 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "zeroValueOf"
+        "symbol": "embeddedFieldName"
       },
       "kind": "create",
-      "detail": "新增导出纯函数 zeroValueOf(typeText): string —— Go 类型文本 → 零值字面量：`[]T`→`[]`、`map[K]V`→`new Map()`、`string`→`''`、数值→`0`、`bool`→`false`、指针/接口/error→`null`。抽成纯函数是为了能被 behavior-cases 判（语义类判据）",
-      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_go_extractor_ts#1",
+      "detail": "新增导出纯函数 embeddedFieldName(typeText)：Go 嵌入字段的隐式字段名（去指针、去泛型实参、取最后一段）—— `graphNode`→`graphNode`、`*SkillNode`→`SkillNode`、`pkg.Base[T]`→`Base`",
+      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_go_extractor_ts#3",
       "status": "open"
     },
     {
       "anchor": {
-        "symbol": "namedResultsOf"
-      },
-      "kind": "create",
-      "detail": "新增纯函数 namedResultsOf(resultNode) —— 从 Go 的 result parameter_list 取**命名返回值**（名字 + 类型文本 + **声明顺序**）；名字为 `_` 的跳过",
-      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_go_extractor_ts#1",
-      "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "unitFromFunc"
+        "symbol": "unitFromTypeSpec"
       },
       "kind": "rewrite",
-      "detail": "命名返回值建模：① 取 namedResults；② 机械体前置 `let <name> = <零值>`（Go 里它们是入口零值变量）；③ 把机械体里的**裸 `return;`** 折成 `return [<按声明序>];`（Go 的裸 return 返回命名结果）",
-      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_go_extractor_ts#1",
+      "detail": "struct 字段循环里，嵌入字段（无 field_identifier）不再只记约束：按 embeddedFieldName 落成显式成员（TS 用组合表达 Go 的嵌入），同时保留「提升字段未展开」的约束提示",
+      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_go_extractor_ts#3",
       "status": "open"
     }
   ],
   "card": "file_src_infrastructure_authoring_translate_go_extractor_ts",
   "untouched_default": {
-    "why": "本次只动命名返回值这一条链（zeroValueOf / namedResultsOf / unitFromFunc 的体装配），其余符号与 T-#NAMED-RESULTS 无关"
+    "why": "本次只动 struct 字段循环这一处（+ 一个纯函数），其余符号与 T-#EMBEDDED-FIELD 无关"
   },
   "symbols_at_freeze": [
     "childField",
@@ -51,6 +42,8 @@
     "extractTypeParamBounds",
     "appendBodyHints",
     "normResult",
+    "zeroValueOf",
+    "namedResultsOf",
     "unitFromFunc",
     "detectDecision",
     "findChildOfType",
@@ -92,15 +85,16 @@
     "findChildOfType": "ea7660d68d723c6f58675e58c7c2b2d8ce5af022",
     "methodFromElem": "e8fe9740e2b60611722a0274fb993598c264b97c",
     "extractInterfaceMethods": "3189342649dc6471fd7ddfdc0b9cf5c458d1cc73",
-    "unitFromTypeSpec": "b2b4e9a8ccdd2b70e8cdb46b82afbe61b16177b1",
+    "embeddedFieldName": "2549d7dbfb02308b7e709906ba9eaa1463f642d2",
+    "unitFromTypeSpec": "497dabad7cb148410307d8b6e7708f1c8c50c270",
     "firstExprChild": "0e2ee3fc7e66cd20edfdf00e9b3ea889f3944a9d",
     "constDeclFromSpec": "db39bc5a686f9ffc755bd9db5dc0522384e26698",
     "collect": "55c8e5cab35cdc36743aadb1689fc18b31410fea",
     "extractGoFromFile": "e97924758a09047df1d6c8132204ffa3b59e832e",
     "extractGo": "fdf2bf522b68719de3027501e4c94dcf6bbd8d46"
   },
-  "frozen_at": "2026-10-29T16:57:46.563Z",
+  "frozen_at": "2026-10-29T17:40:02.064Z",
   "base": {
-    "content_hash": "e2e5cc89eca27c17d229e9a80ba55ac69dcc9dc3"
+    "content_hash": "d4a2ac00db746688e61fe1ea4899f409f8c68780"
   }
 }

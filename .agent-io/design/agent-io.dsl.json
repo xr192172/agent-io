@@ -16003,7 +16003,7 @@
         "arch_layer": "core",
         "path": "src/infrastructure/authoring/translate/go_extractor.ts",
         "decision": {
-          "summary": "go_extractor：iota 常量落值（已完成）+ 命名返回值建模（T-#NAMED-RESULTS：前置零值 + 裸 return 折成返回元组）",
+          "summary": "go_extractor：iota 落值（done）· 命名返回值建模（done）· 嵌入字段落成显式成员（T-#EMBEDDED-FIELD）",
           "expectations": [
             {
               "kind": "source-has",
@@ -16027,19 +16027,27 @@
               "phase": "post",
               "path": "src/infrastructure/authoring/translate/go_extractor.ts",
               "symbol": "zeroValueOf",
-              "why": "命名返回值前置零值必须走一个可判的纯函数（zeroValueOf）；落地后本判据升级为 behavior-cases 判其行为"
+              "why": "命名返回值前置零值必须走一个可判的纯函数 zeroValueOf"
+            },
+            {
+              "kind": "call-exists",
+              "phase": "post",
+              "path": "src/infrastructure/authoring/translate/go_extractor.ts",
+              "symbol": "unitFromTypeSpec",
+              "target": "embeddedFieldName",
+              "why": "嵌入字段的隐式字段名必须走 embeddedFieldName（否则就是「整行丢掉」，实测 CachedNode.graphNode 消失、node.Type 全报 TS2339）"
             }
           ],
-          "updated_at": "2026-10-29T16:59:36.640Z",
+          "updated_at": "2026-10-29T17:39:51.024Z",
           "agent": "agent-io-cli"
         },
         "task": {
           "id": "file_src_infrastructure_authoring_translate_go_extractor_ts",
           "summary": "T-#IOTA：const 组内省略值成员按 iota 落成带字面量的常量（否则产物只有引用没有声明 ⇒ TS2304）",
-          "state": "done",
+          "state": "candidate",
           "judge_gate": "strict",
-          "owner": "agent:agent-io-cli",
-          "claimed_at": "2026-10-29T16:57:39.214Z",
+          "owner": null,
+          "claimed_at": null,
           "read_set": {
             "symbols": [
               {
@@ -16049,32 +16057,32 @@
               },
               {
                 "file": "src/infrastructure/authoring/translate/go_extractor.ts",
-                "name": "namedResultsOf",
+                "name": "embeddedFieldName",
                 "fp": ""
               },
               {
                 "file": "src/infrastructure/authoring/translate/go_extractor.ts",
-                "name": "unitFromFunc",
-                "fp": "7e9efbcb06f56392ef97b2826b2283ab90cc16c2"
+                "name": "unitFromTypeSpec",
+                "fp": "568a31adf6b358ca2e540bd2b52c300120d2dd7f"
               },
               {
                 "file": "src/infrastructure/authoring/translate/go_extractor.ts",
                 "name": "zeroValueOf",
-                "fp": ""
+                "fp": "1b17987836b79a41aa99396463275d54122c2f49"
               }
             ],
             "files": [
               {
                 "path": "src/infrastructure/authoring/translate/go_extractor.ts",
-                "content_hash": "b960325553f86ad89537411f4318d1698d8e9dfc"
+                "content_hash": "e2e5cc89eca27c17d229e9a80ba55ac69dcc9dc3"
               }
             ],
-            "computed_at": "2026-10-29T16:57:39.126Z",
+            "computed_at": "2026-10-29T17:39:58.823Z",
             "basis": [
               "canvas",
               "expectations"
             ],
-            "note": "2 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/authoring/translate/go_extractor.ts#zeroValueOf / src/infrastructure/authoring/translate/go_extractor.ts#namedResultsOf"
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/authoring/translate/go_extractor.ts#embeddedFieldName"
           },
           "evidence": [
             {
@@ -16112,11 +16120,15 @@
               "command": "node certs/t453-replay-baseline-cert.mjs"
             }
           ],
-          "reopened_at": "2026-10-29T16:57:39.214Z",
-          "reopen_reason": "上一轮 iota 已收口；新目标 T-#NAMED-RESULTS",
-          "reopened_from": "agent:agent-io-cli"
+          "reopened_at": "2026-10-29T17:39:58.899Z",
+          "reopen_reason": "上一轮命名返回值已收口；新目标 T-#EMBEDDED-FIELD",
+          "reopened_from": "agent:agent-io-cli",
+          "prepared_snapshot": null,
+          "release_reason": "产物未变（336→336），先定位 CachedNode 的 fields 来源再决定是否收口",
+          "released_by": "agent:agent-io-cli",
+          "released_at": "2026-10-29T17:41:47.091Z"
         },
-        "status": "done",
+        "status": "draft",
         "decision_history": [
           {
             "at": "2026-10-29T16:37:58.526Z",
@@ -16355,6 +16367,41 @@
                 }
               ],
               "updated_at": "2026-10-29T16:58:14.062Z",
+              "agent": "agent-io-cli"
+            },
+            "agent": "agent-io-cli"
+          },
+          {
+            "at": "2026-10-29T17:39:51.024Z",
+            "decision": {
+              "summary": "go_extractor：iota 常量落值（已完成）+ 命名返回值建模（T-#NAMED-RESULTS：前置零值 + 裸 return 折成返回元组）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/go_extractor.ts",
+                  "must": [
+                    "iotaIdx"
+                  ],
+                  "why": "iota 序列必须落值；否则产物只有引用没有声明"
+                },
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/go_extractor.ts",
+                  "symbol": "collect",
+                  "target": "constDeclFromSpec",
+                  "why": "const 收集链必须经过 constDeclFromSpec（唯一的 const 单元构造点）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/go_extractor.ts",
+                  "symbol": "zeroValueOf",
+                  "why": "命名返回值前置零值必须走一个可判的纯函数（zeroValueOf）；落地后本判据升级为 behavior-cases 判其行为"
+                }
+              ],
+              "updated_at": "2026-10-29T16:59:36.640Z",
               "agent": "agent-io-cli"
             },
             "agent": "agent-io-cli"
@@ -64101,7 +64148,7 @@
         ],
         "lines": 514,
         "layer": "core",
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_go_tests_ts",
@@ -69104,13 +69151,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 306,
+  "_dsl_rev": 307,
   "_sync": {
-    "saved_at": "2026-10-29T17:31:59.767Z",
+    "saved_at": "2026-10-29T17:41:47.122Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 294122630,
+    "age": 294709985,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

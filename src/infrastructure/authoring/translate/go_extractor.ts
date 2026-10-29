@@ -672,6 +672,19 @@ function extractInterfaceMethods(iface: SyntaxNodeLike): TranslateMethod[] {
   return methods;
 }
 
+/**
+ * ★★★ T-#EMBEDDED-FIELD：Go 嵌入字段的**隐式字段名**。
+ * `graphNode` → `graphNode`；`*SkillNode` → `SkillNode`；`pkg.Base` → `Base`；`pkg.Base[T]` → `Base`。
+ * 抽成纯函数是为了能被判据直接验（`call-exists` / `behavior-cases`），而不是靠读代码印象。
+ */
+export function embeddedFieldName(typeText: string): string {
+  let t = String(typeText ?? '').trim();
+  if (t.startsWith('*')) t = t.slice(1).trim();
+  const noGeneric = t.replace(/\[[^\]]*\]$/, '');
+  const seg = noGeneric.split('.').pop() ?? noGeneric;
+  return seg.trim();
+}
+
 /** 顶层 type 单元：struct → interface；interface → interface(方法)；其余 → type 别名 */
 function unitFromTypeSpec(spec: SyntaxNodeLike): TransUnit | null {
   const nameNode = childField(spec, 'name');
@@ -701,7 +714,15 @@ function unitFromTypeSpec(spec: SyntaxNodeLike): TransUnit | null {
             named = true;
           }
         }
-        if (!named) embedded.push(type); // 嵌入字段（无独立 name）：机械展开会丢字段提升语义，跳过并如实标注
+        // ★★★ T-#EMBEDDED-FIELD：**嵌入字段（anonymous field）必须落成成员**，不能再整行丢掉。
+        //   Go：`type CachedNode struct { graphNode; Dirty bool }` —— `graphNode` 有个**隐式字段名**
+        //   （类型名去掉包名/指针）。丢掉它 ⇒ 产物 interface 里既没有 `graphNode`，
+        //   `node.graphNode` 直接 TS2339；而它的**提升字段**（`node.Type`）也全无处可寻。
+        //   TS 等价形态 = **组合**（显式成员）；提升字段的镜像另记约束（跨类型展开不在这一步做，宁缺不假）。
+        if (!named) {
+          embedded.push(type);
+          fields.push({ name: embeddedFieldName(type), type, typeRef: typeRefFromNode(typeNode2) });
+        }
       }
     }
     const constraints = [...base.constraints];
