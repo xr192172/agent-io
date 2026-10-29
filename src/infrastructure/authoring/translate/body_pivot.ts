@@ -66,7 +66,12 @@ export type IrExpr =
   | { k: 'int'; value: string }
   | { k: 'str'; raw: string }
   | { k: 'sel'; x: IrExpr; member: string }
-  | { k: 'call'; fn: IrExpr; args: IrExpr[] }
+  /**
+   * 普通函数调用。★ `spreadLast`：Go 的 `f(a, xs...)` —— **最后一个实参要展开**。
+   * 轴心只记"这里要展开这个实参"（语义），TS 渲染成 `...xs`、Python 渲染成 `*xs`。
+   * （这是证 t454 抓到的分叉：pivot 漏了展开 ⇒ `Sprintf(format, args)` 而 legacy 是 `...args`。）
+   */
+  | { k: 'call'; fn: IrExpr; args: IrExpr[]; spreadLast?: boolean }
   | { k: 'bin'; op: string; l: IrExpr; r: IrExpr }
   /**
    * ★★★ **内建槽**：`len` / `cap` / `append` 这类**语言无关语义**（"长度"/"追加"）。
@@ -540,14 +545,25 @@ function liftExpr(n: SyntaxNodeLike): IrExpr | null {
       if (!fn) return null;
       const argList = parts.find((c) => c.type === 'argument_list');
       const args: IrExpr[] = [];
+      let spreadLast = false;
       if (argList) {
         for (const a of kidsOf(argList)) {
+          // ★ Go `f(a, xs...)`：tree-sitter 里是 `variadic_argument` 节点（实测），
+          //   里面才是真正的表达式。漏掉它会让展开语义整个丢掉。
+          if (a.type === 'variadic_argument') {
+            const inner = kidsOf(a)[0] ?? null;
+            const e = inner ? liftExpr(inner) : null;
+            if (!e) return null;
+            args.push(e);
+            spreadLast = true;
+            continue;
+          }
           const e = liftExpr(a);
           if (!e) return null;
           args.push(e);
         }
       }
-      return { k: 'call', fn, args };
+      return { k: 'call', fn, args, ...(spreadLast ? { spreadLast } : {}) };
     }
     case 'index_expression': {
       const parts = kidsOf(n);
@@ -808,8 +824,16 @@ function projectTsExpr(e: IrExpr): string {
       return e.raw;
     case 'sel':
       return `${projectTsExpr(e.x)}.${e.member}`;
-    case 'call':
-      return `${projectTsExpr(e.fn)}(${e.args.map(projectTsExpr).join(', ')})`;
+    case 'call': {
+      // ★ Go 内置 `delete(m, k)` 不是 JS 的 delete 运算符（证 t454 抓到 pivot 与 legacy 分叉）
+      if (e.fn.k === 'ident' && e.fn.name === 'delete' && e.args.length === 2) {
+        return `${projectTsExpr(e.args[0])}.delete(${projectTsExpr(e.args[1])})`;
+      }
+      const rendered = e.args.map((a, i) =>
+        e.spreadLast && i === e.args.length - 1 ? '...' + projectTsExpr(a) : projectTsExpr(a),
+      );
+      return `${projectTsExpr(e.fn)}(${rendered.join(', ')})`;
+    }
     case 'bin': {
       // ★ TS 渲染器的决定：Go 的 `==` / `!=` 落成严格相等 `===` / `!==`。
       //   轴心只说"这是相等比较"，具体写法归渲染器（Rust 渲染器会是 `==`）。

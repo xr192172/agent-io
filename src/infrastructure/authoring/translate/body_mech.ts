@@ -1075,6 +1075,19 @@ export function translateGoBodyMech(
     LAST_IR = null;
   }
   if (!block) return null;
+  return translateGoBodyLegacy(block, env);
+}
+
+/**
+ * ★★★ 2026-10-29（`T-#KILL-LEGACY` 步 2）：**只走 legacy 直连**的入口（导出）。
+ *
+ * 为什么需要它：`translateGoBodyMech` **优先走轴心**，外部无法单独观察 legacy；
+ * 而"两份实现会不会分叉"必须能被**独立观测** —— 否则证 `t454` 自己就成了第三份实现。
+ * ⇒ 把 legacy 尾巴抽成这个函数：`translateGoBodyMech` 与 `t454` **共用同一份代码**。
+ *
+ * 收编完成后本函数与 `createTranslator` 一并删除（届时 `t454` 会因找不到它而报错 ⇒ 强制同步清理）。
+ */
+export function translateGoBodyLegacy(block: SyntaxNodeLike, env?: MechTypeEnv): string | null {
   return createTranslator(env).translate(block);
 }
 
