@@ -61,7 +61,56 @@ export function squashImports(source: string): string {
   return [...importLines, ...other].join('\n');
 }
 
+
+/**
+ * ★★★ 2026-10-29（**T-#SHADOW** · 画布已申报，判据 `decision:file_src_..._project_ts#0`）：
+ * **本仓导出名遮蔽目标语言内置全局**。
+ *
+ * 实测一处就制造 **TS2555 ×122**：
+ * ```ts
+ * import { Error } from './logging/logging';   // 用户项目导出 Error
+ * throw new Error('TODO(translate): …');       // ⇒ Expected at least 2 arguments, but got 1
+ * ```
+ * 因为本地 `Error` **遮蔽了 JS 内置 Error**，我们生成的每个 `new Error(单参)` 都变非法。
+ *
+ * ## 为什么只改 import（而不是"全局改名"）
+ * 「把所有自由 `Error` 改名」**必然错**：`new Error(TODO)` 里那个指的就是 **JS 全局**
+ * —— 同名两义，全局改名会把对的也改坏（实测 122 → 122，一个没少）。
+ * ⇒ 只在 **import 说明符**上加别名（`Error as Error$go`），让 `Error` 恢复指向内置全局。
+ *
+ * ## 已知残留（[未核]）
+ * body 里若把 `logging.Error(...)` 写成**裸 `Error(...)`**，别名后会静默命中 JS 全局。
+ * 方向是安全侧：多参调用会触发 tsc 报错（不静默）；单参调用语义略有偏差。
+ * 彻底解法见 todo `T-#SHADOW-USES`（把体里的限定引用一并改写）。
+ */
+const TS_BUILTIN_GLOBALS = new Set([
+  'Error', 'Object', 'Array', 'Map', 'Set', 'WeakMap', 'WeakSet', 'String', 'Number', 'Boolean',
+  'Date', 'JSON', 'Math', 'Promise', 'Symbol', 'RegExp', 'Function', 'BigInt', 'Proxy', 'Reflect',
+  'Infinity', 'NaN', 'undefined', 'globalThis', 'parseInt', 'parseFloat', 'isNaN', 'isFinite',
+  'console', 'process', 'Buffer', 'structuredClone',
+]);
+
+export function aliasBuiltinShadowing(source: string): string {
+  const lines = source.split('\n');
+  const out: string[] = [];
+  for (const line of lines) {
+    // 只处理"具名 import 且无 type 前缀"的行（文本形状本身就是答案：import 语法只有这几种写法）
+    const m = /^import\s*\{([^}]*)\}\s*from\s*(['"][^'"]+['"])\s*;?$/.exec(line);
+    if (!m) {
+      out.push(line);
+      continue;
+    }
+    const names = m[1]
+      .split(',')
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .map((x) => (TS_BUILTIN_GLOBALS.has(x) ? `${x} as ${x}$go` : x));
+    out.push(`import { ${names.join(', ')} } from ${m[2]};`);
+  }
+  return out.join('\n');
+}
+
 /** 组合所有确定性 fixer（保持原有顺序；幂等） */
 export function applyDeterministicFixers(source: string): string {
-  return fixUnusedImports(squashImports(source));
+  return fixUnusedImports(aliasBuiltinShadowing(squashImports(source)));
 }
