@@ -1,86 +1,89 @@
 /**
- * ★★★ 2026-10-29（T-#LANG-TERMS）：**语言层名词表**（随工具走，不随项目走）。
+ * ★★★ 2026-10-29（T-#STD-TERMS-AUTO）：语言层名词表**从适配模块的实际导出**取，不手写。
  *
- * ## 为什么必须有这一层
- * 用户问："名词层和语言有关还是和项目有关？和项目有关的话每个项目都要重填？"
- * —— 当时的 `types[]` **把三种东西混在一张表里**：
+ * ## 为什么必须这样
+ * 手写表的根本问题不是麻烦，是**会漂移**：表里写 `Context` 支持，`_go_std/context.ts` 里其实没导出
+ * ⇒ 册子判定"已覆盖"，下游拿不到名字 ⇒ **又一次假绿**（今天已栽 5 次）。
+ * 改成从 `renderGoStdAdapter(pkg)` 的**导出面**生成：**表就是实现的投影**，不可能不一致。
  *
- * | 层 | 例子 | 复用范围 | 谁定 |
- * |---|---|---|---|
- * | **语言层**（本文件） | `Context` `http` `Request` `Cmd` `Time` … | **跨项目 100% 复用** | 工具内置 |
- * | 项目层（册子 `types[]`） | `fix` `principle` `promoted` | 项目相关 | 人定 |
- * | 同形直译 | `Builder` `SkillTree` | 不需要决定 | 机器自动 |
- *
- * 实测：某项目 40 个"待定名字"里 **11 个是语言层**——它们出现在 `blocked` 里
- * **是工具没接上，不是用户该填**。这就是"每项目重填"的根源。
- *
- * ## 数据从哪来（不靠手写）
- * 语言层的名字**已经在 `_go_std/*` 适配模块里存在**（我们导出 `Context`/`Request`/`Cmd`…）。
- * 所以理想形态是：**从适配模块的导出自动生成这张表**（`T-#STD-TERMS-AUTO`）。
- * 现在先用显式表 + 一条对账（`t450` 会检查"表里的名字适配模块是否真的导出"），
- * 避免"表说支持、实现却没有"的假绿。
- *
- * ## 规则（判据，不是注释）
- * · 值为字符串 ⇒ 目标侧用这个名字（通常是同名）；
- * · 值为 `null` ⇒ **明确没有对应**（如 cgo `mem`），仍算"已决定"，不阻塞；
- * · 不在表里 ⇒ 语言层没有决策，回落项目层 `types[]`，再没有才 `blocked`。
+ * ## 边界（用户定的规矩）
+ * · 本文件的表**只放语言层**（Go 标准库/标准概念 ↔ TS 适配模块）；
+ * · **项目自己的领域词一律不进这里**，随项目配置走（`<proj>/.agent-io/design/<f>.translate.json` 的 `types[]`）；
+ * · 这条由证 `t450` 强制检查（语言表里出现项目词 ⇒ 报红）。
  */
-export const GO_TS_LANG_TERMS: Record<string, string | null> = {
-  // —— Go 标准库包名（映射到 `_go_std/<pkg>`，名字保持一致最可追溯）——
-  context: 'context',
-  http: 'http',
-  time: 'time',
-  exec: 'exec',
-  sql: 'sql',
-  json: 'json',
-  fmt: 'fmt',
-  log: 'log',
-  os: 'os',
-  io: 'io',
-  sync: 'sync',
-  sort: 'sort',
-  math: 'math',
-  strings: 'strings',
-  strconv: 'strconv',
-  filepath: 'filepath',
-  unicode: 'unicode',
-  sha256: 'sha256',
-  hex: 'hex',
-  fnv: 'fnv',
-  slices: 'slices',
-  bytes: 'bytes',
-  bufio: 'bufio',
-  runtime: 'runtime',
-  signal: 'signal',
-  syscall: 'syscall',
-  atomic: 'atomic',
-  heap: 'heap',
-  norm: 'norm',
-  errors: 'errors',
+import { renderGoStdAdapter } from './go_std.js';
 
-  // —— Go 标准库/生态里的**类型名**（适配模块里已有同名实现）——
-  Context: 'Context',
-  Request: 'Request',
-  ResponseWriter: 'ResponseWriter',
-  Cmd: 'Cmd',
-  File: 'File',
-  FileInfo: 'FileInfo',
-  DirEntry: 'DirEntry',
-  Scanner: 'Scanner',
-  Reader: 'Reader',
-  Writer: 'Writer',
+/** Go std 包 → TS 适配模块里导出的名字集合（从生成源码的**导出面**取） */
+export function deriveStdExports(): Map<string, Set<string>> {
+  const out = new Map<string, Set<string>>();
+  const PKGS = [
+    'strings', 'time', 'os', 'filepath', 'fmt', 'json', 'context', 'sort', 'log', 'sync', 'errors',
+    'slices', 'signal', 'syscall', 'atomic', 'heap', 'unicode', 'strconv', 'math', 'sha256', 'hex',
+    'fnv', 'bytes', 'bufio', 'runtime', 'norm', 'exec', 'io', 'sql', 'http', 'mem', 'ort',
+  ];
+  for (const pkg of PKGS) {
+    const src = renderGoStdAdapter(pkg);
+    if (!src) continue;
+    const names = new Set<string>();
+    // 导出面：`export const X` / `export function X` / `export class X` / `export interface X`
+    const re = /export\s+(?:const|function|class|interface|type)\s+([A-Za-z_$][\w$]*)/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(src)) !== null) names.add(m[1]);
+    // `export const { a, b }` 形式少见，这里不处理（若出现会在 t450 里暴露为"缺名"）
+    out.set(pkg, names);
+  }
+  return out;
+}
 
-  // —— 语义不同、需要换名的（**语言层决策，与项目无关**）——
-  // `time.Time` 在 TS 侧我们用 epoch 毫秒 number（见 `_go_std/time` 的声明）
-  Time: 'number',
+/** 语言层已决策的名字 → 目标侧名字（`null` = 明确无对应） */
+export interface LangTermDecision {
+  /** 目标侧名字；null = 明确没有对应 */
+  to: string | null;
+  /** 依据：哪个适配模块的导出（对账用；包名本身则填 `pkg:<name>`） */
+  from: string;
+}
 
-  // —— 明确"没有对应"的（cgo/平台专用）——
-  mem: null,
-  syscall_unsafe: null,
-  Pointer: null,
-};
+/**
+ * 生成语言层名词表：**只收"适配模块真的导出了"的名字**。
+ * ⇒ 表与实现同源，不可能出现"说支持但没实现"。
+ */
+export function buildLangTerms(): Record<string, LangTermDecision> {
+  const table: Record<string, LangTermDecision> = {};
+  const exportsByPkg = deriveStdExports();
 
-/** 语言层已决定的名字数（供对账与回执） */
+  // ① 包名 → 同名（TS 侧 `import * as pkg from './_go_std/pkg'`）
+  for (const pkg of exportsByPkg.keys()) table[pkg] = { to: pkg, from: `pkg:${pkg}` };
+
+  // ② 标准类型名 → 同名（**只在某个适配模块真的导出它时**才收）
+  const TYPE_LIKE = [
+    'Context', 'Request', 'ResponseWriter', 'Cmd', 'File', 'FileInfo', 'DirEntry',
+    'Scanner', 'Reader', 'Writer', 'Mutex', 'RWMutex', 'Once', 'WaitGroup', 'Ticker',
+    'Form', 'Interface', 'Hash64a', 'ServeMux',
+  ];
+  for (const name of TYPE_LIKE) {
+    for (const [pkg, set] of exportsByPkg) {
+      if (set.has(name)) {
+        table[name] = { to: name, from: `${pkg}#${name}` };
+        break;
+      }
+    }
+  }
+
+  // ③ 语义不同、必须换名的（语言层决策；每条都要写明依据）
+  table['Time'] = { to: 'number', from: 'time#Time（epoch ms）' };
+
+  // ④ 明确"无对应"（判 null，仍算已决定、不阻塞）
+  table['mem'] = { to: null, from: 'mem（cgo 内存 API）' };
+  table['Pointer'] = { to: null, from: 'mem#Pointer' };
+
+  return table;
+}
+
+/** 语言层词表（快照，供 book 使用；由 `buildLangTerms` 生成，不手写） */
+export const GO_TS_LANG_TERMS: Record<string, string | null> = Object.fromEntries(
+  Object.entries(buildLangTerms()).map(([k, v]) => [k, v.to]),
+);
+
 export function langTermCount(): number {
   return Object.keys(GO_TS_LANG_TERMS).length;
 }
