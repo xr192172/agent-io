@@ -169,6 +169,96 @@ function missingReturnIssue(u: TransUnit): VerifyIssue[] {
   visit(sf);
   return found ? [found] : [];
 }
+/**
+ * ★★★ 2026-10-29（T-#BODY-SCOPE）：**作用域检查** —— 填孔验收的最后一格判据。
+ *
+ * ## 为什么需要它（用户问出来的）
+ * `TS2304 Cannot find name 'retrievers'` 这类错，来自**body 里引用了不存在的名字**
+ * （字段写成裸标识符 / 骨架少了参数 / 拼错函数名）。等 tsc 统计太晚，而且分不清根因。
+ * 这里在**填孔验收**阶段就用 TS 解析器查：body 里引用的每个名字，必须满足其一：
+ *   ① 是函数/方法参数；② 是同函数内的 let/const/var/class/function 声明；
+ *   ③ 是 import 进来的；④ 是语言/运行时全局（白名单，显式列）。
+ *
+ * ## 边界（诚实，防误杀）
+ * · **只看表达式位置**：`ts.isTypeNode` 的子树整体跳过（签名里的类型名不在本单元声明，天然是"外部"）；
+ * · 属性访问的**属性名**不算引用（`b.retrievers` 里的 `retrievers` 不查）；对象字面量的键同理；
+ * · 全局白名单是**显式列表**（不是"猜"）；漏了的全局会造成误报 ⇒ 宁可在证里暴露，也不放宽成"全不查"；
+ * · 只报**前 3 个**未声明名字（够用于重试提示，不刷屏）。
+ *
+ * ## [未核]
+ * 闭包/嵌套函数的作用域、`with`、动态 `eval` 未建模；TS 的 `declare` 合并也未处理。
+ * 这些在机械/LLM 体里罕见；出现时会被当作"未声明"（**误报方向是安全的那一侧**）。
+ */
+const SCOPE_GLOBALS = new Set([
+  'console', 'JSON', 'Math', 'Number', 'String', 'Boolean', 'Object', 'Array', 'Set', 'Map', 'WeakMap',
+  'WeakSet', 'Promise', 'Error', 'TypeError', 'RangeError', 'Date', 'RegExp', 'Symbol', 'BigInt',
+  'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'Infinity', 'NaN', 'undefined', 'null', 'true', 'false',
+  'globalThis', 'this', 'arguments', 'require', 'module', 'exports', 'process', 'Buffer', 'structuredClone',
+  'ArrayBuffer', 'SharedArrayBuffer', 'Uint8Array', 'Int8Array', 'Int32Array', 'Uint32Array', 'Float32Array',
+  'Float64Array', 'DataView', 'Atomics', 'TextEncoder', 'TextDecoder', 'setTimeout', 'clearTimeout',
+  'setInterval', 'clearInterval', 'queueMicrotask', 'fetch', 'URL', 'URLSearchParams', 'crypto', 'void',
+  'yield', 'await', 'new', 'typeof', 'instanceof', 'in', 'of', 'delete',
+]);
+
+export function undeclaredNameIssues(u: TransUnit): VerifyIssue[] {
+  const sf = ts.createSourceFile(`__sk_${u.id}.ts`, u.skeleton, ts.ScriptTarget.ES2022, true);
+  const declared = new Set<string>(SCOPE_GLOBALS);
+
+  /** 收集"本文件内已声明"的名字（只收顶层 + 函数参数 + 函数体内的局部声明） */
+  const collect = (node: ts.Node, into: Set<string>): void => {
+    if (ts.isParameter(node) && ts.isIdentifier(node.name)) into.add(node.name.text);
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) into.add(node.name.text);
+    if (ts.isFunctionDeclaration(node) && node.name) into.add(node.name.text);
+    if (ts.isClassDeclaration(node) && node.name) into.add(node.name.text);
+    if (ts.isImportDeclaration(node) && node.importClause) {
+      const nc = node.importClause;
+      if (nc.name) into.add(nc.name.text);
+      const nb = nc.namedBindings;
+      if (nb && ts.isNamedImports(nb)) for (const el of nb.elements) into.add(el.name.text);
+      if (nb && ts.isNamespaceImport(nb)) into.add(nb.name.text);
+    }
+    if (ts.isCatchClause(node) && node.variableDeclaration && ts.isIdentifier(node.variableDeclaration.name)) {
+      into.add(node.variableDeclaration.name.text);
+    }
+    ts.forEachChild(node, (c) => collect(c, into));
+  };
+  collect(sf, declared);
+
+  const missing: string[] = [];
+  const visit = (node: ts.Node): void => {
+    // 类型位置整体跳过（签名里的类型名天然是"外部"）
+    if (ts.isTypeNode(node)) return;
+    // 属性名 / 键名不算引用
+    if (ts.isPropertyAccessExpression(node)) {
+      visit(node.expression);
+      return;
+    }
+    if (ts.isPropertyAssignment(node)) {
+      visit(node.initializer);
+      return;
+    }
+    if (ts.isIdentifier(node)) {
+      const name = node.text;
+      const parent = node.parent;
+      const isDeclName =
+        (ts.isVariableDeclaration(parent) && parent.name === node) ||
+        (ts.isParameter(parent) && parent.name === node) ||
+        (ts.isFunctionDeclaration(parent) && parent.name === node) ||
+        (ts.isPropertyAccessExpression(parent) && parent.name === node);
+      if (!isDeclName && !declared.has(name) && !missing.includes(name)) missing.push(name);
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+
+  return missing.slice(0, 3).map((n) => ({
+    id: u.id,
+    gate: 'structure' as const,
+    detail: `引用未声明的名字 ${n}（body 里裸用了不存在的变量/字段）`,
+  }));
+}
+
 export async function verifySkeletons(units: TransUnit[]): Promise<VerifyIssue[]> {
   const issues: VerifyIssue[] = [];
   for (const u of units) {
@@ -190,6 +280,8 @@ export async function verifySkeletons(units: TransUnit[]): Promise<VerifyIssue[]
     issues.push(...tscGrammarIssues(u));
     // ★ T-#FILL-TSC：返回值结构检查（TS2355 的确定性代理）
     issues.push(...missingReturnIssue(u));
+    // ★ T-#BODY-SCOPE：作用域检查（引用的名字必须已声明/已导入/是全局）
+    issues.push(...undeclaredNameIssues(u));
   }
   return issues;
 }
