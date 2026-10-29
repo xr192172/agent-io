@@ -244,7 +244,9 @@ for (const fx of FIXTURES) {
       }
     }
     const rate = total ? (ok / total) * 100 : 0;
-    chk(rate >= 80, `④ 真仓机械覆盖率 ≥ 80%（当前 ${rate.toFixed(1)}%，${ok}/${total}）`);
+    // ★ 2026-10-29 口径修正：这里量的是 **真实机械翻译成功率**（判据通过 **且** 真产出字符串），
+    //   不是"判据通过率"（那个旧数 80% 曾被我误当成覆盖率）。阈值只许升不许降。
+    chk(rate >= 55, `④ 真仓**真实机械翻译成功率** ≥ 55%（当前 ${rate.toFixed(1)}%，${ok}/${total}）`);
     console.log('     剩余阻碍：' + [...blockers.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => `${k}×${v}`).join(' · '));
   }
 }

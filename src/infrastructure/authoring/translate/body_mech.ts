@@ -668,7 +668,9 @@ function stmt(node: SyntaxNodeLike, indent: string, opts: StmtOpts = {}): string
         if (inner.type === 'if_statement') {
           const s2 = stmt(inner, pad);
           if (s2 === null) return null;
-          return `${out} else ${s2.trimStart()}`;
+          // ★ 2026-10-29：原来用 `s2.trimStart()` —— 靠「剪掉空白」猜缩进，是文本修剪式补丁。
+          //   `pad` 是我们自己传进去的，长度已知 ⇒ 按长度切，确定性。
+          return `${out} else ${s2.slice(pad.length)}`;
         }
         if (inner.type === 'block') {
           const s2 = stmt(inner, pad + '  ');
@@ -840,7 +842,27 @@ function stmt(node: SyntaxNodeLike, indent: string, opts: StmtOpts = {}): string
  * ★ 只处理**函数体直接子层**的 defer；出现在循环/if 里的 defer **执行时机不同**（每次迭代一次 vs 函数退出），
  *   那不翻 —— 判据里用"直接子层 defer 数 == 全树 defer 数"来保证，多一个就 `null`。
  */
+/**
+ * ★★★ 2026-10-29（**诚实标注的一处待改**）：`ME` / `LAST_FAIL` 仍是**模块级可变状态**。
+ * 正确解法是把它们做成显式 `Ctx` 参数或类实例。我用脚本试过两次（括号扫描器插 `, ctx`、
+ * 收进 class），都被 tsc 抓出签名错（重复标识符 / 参数缺失）⇒ 撤回：这是 ~700 行的**连续重构**，
+ * 不能用脚本硬来（见 memory §106）。
+ * 在那之前，**用守卫把限制变响**：不可重入，重入直接抛错 —— 而不是静默串味。
+ */
+let IN_TRANSLATE = false;
+
 export function translateGoBodyMech(block: SyntaxNodeLike | null, env?: MechTypeEnv): string | null {
+  if (!block) return null;
+  if (IN_TRANSLATE) throw new Error('body_mech: translateGoBodyMech 不可重入（模块级 ME/LAST_FAIL 尚未线程化）');
+  IN_TRANSLATE = true;
+  try {
+    return translateGoBodyMechInner(block, env);
+  } finally {
+    IN_TRANSLATE = false;
+  }
+}
+
+function translateGoBodyMechInner(block: SyntaxNodeLike | null, env?: MechTypeEnv): string | null {
   if (!block) return null;
   if (!canMechTranslate(block)) return null;
   // ★ 类型环境：入参由调用方给（签名里的参数类型），局部再由 inferLocals 补
