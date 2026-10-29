@@ -745,6 +745,31 @@ const stmt = (node: SyntaxNodeLike, indent: string, opts: StmtOpts = {}): string
       if (!thenBlock) return null;
       const thenS = stmt(thenBlock, pad + '  ');
       if (thenS === null) return null;
+
+      // ★★★ 2026-10-29（T-#LEGACY-IF-INIT）：**取 init**。Go 的 `if err := f(); err != nil {}`
+      //   里 init 是 condition **之前**的 `short_var_declaration` / 赋值语句。
+      //   原来只读 `field(node,'condition')` ⇒ **init 整条被丢**，于是体里引用 `err`/`ok`/
+      //   `existing` 全部变成 `TS2304 Cannot find name`（实测 62+39+27 = 128 处）。
+      //   pivot 侧已修（body_pivot），这里是**第二份实现**（legacy）补同一课。
+      const condNode = field(node, 'condition');
+      let initS: string | null = null;
+      for (let i = 0; i < node.childCount; i++) {
+        const c = node.child(i);
+        if (!c || c.isNamed === false) continue;
+        if (condNode && c === condNode) break;
+        if (
+          c.type === 'short_var_declaration' ||
+          c.type === 'assignment_statement' ||
+          c.type === 'expression_statement'
+        ) {
+          initS = stmt(c, pad + '  ');
+          if (initS === null) return null;
+          break;
+        }
+      }
+      /** 有 init ⇒ 用块包住，保留 Go 的作用域语义（名字不外泄到外层） */
+      const wrap = (body: string): string => (initS === null ? body : `${pad}{\n${initS}\n${body}\n${pad}}`);
+
       let out = `${pad}if (${cond}) {\n${thenS}\n${pad}}`;
 
       // ★★★ 2026-10-29（**对拍抓到的静默丢分支**）：tree-sitter-go 的 `else` **不是** `else_clause` 包装，
@@ -769,16 +794,16 @@ const stmt = (node: SyntaxNodeLike, indent: string, opts: StmtOpts = {}): string
           if (s2 === null) return null;
           // ★ 2026-10-29：原来用 `s2.trimStart()` —— 靠「剪掉空白」猜缩进，是文本修剪式补丁。
           //   `pad` 是我们自己传进去的，长度已知 ⇒ 按长度切，确定性。
-          return `${out} else ${s2.slice(pad.length)}`;
+          return wrap(`${out} else ${s2.slice(pad.length)}`);
         }
         if (inner.type === 'block') {
           const s2 = stmt(inner, pad + '  ');
           if (s2 === null) return null;
-          return `${out} else {\n${s2}\n${pad}}`;
+          return wrap(`${out} else {\n${s2}\n${pad}}`);
         }
         return null; // else 后面既不是 block 也不是 if ⇒ 不猜
       }
-      return out;
+      return wrap(out);
     }
     case 'for_statement': {
       const rng = kids(node, 'range_clause')[0];
