@@ -257,6 +257,69 @@ type StmtOpts = {
  * ★ 只处理**函数体直接子层**的 defer；出现在循环/if 里的 defer **执行时机不同**（每次迭代一次 vs 函数退出），
  *   那不翻 —— 判据里用"直接子层 defer 数 == 全树 defer 数"来保证，多一个就 `null`。
  */
+/**
+ * Go 零值（只认能确定的三种）：make([]T, n) 要按元素类型填零值，认不出就不翻。
+ */
+function zeroValueOf(typeNode: SyntaxNodeLike | null): string | null {
+  if (!typeNode) return null;
+  const t = typeNode.text.trim();
+  if (/^(u?int(8|16|32|64)?|float(32|64)|byte|rune|uintptr)$/.test(t)) return '0';
+  if (t === 'string') return '""';
+  if (t === 'bool') return 'false';
+  return null;
+}
+
+/** 结构化类型渲染（只服务 make / convert 位置，按 node.type 分派，不用文本猜） */
+function tsTypeFromNode(typeNode: SyntaxNodeLike | null): string | null {
+  if (!typeNode) return null;
+  switch (typeNode.type) {
+    case 'map_type': {
+      const kids2 = [];
+      for (let i = 0; i < typeNode.childCount; i++) {
+        const c = typeNode.child(i);
+        if (c && !['map', '[', ']', ','].includes(c.type)) kids2.push(c);
+      }
+      const k = tsTypeFromNode(kids2[0] ?? null);
+      const v = tsTypeFromNode(kids2[1] ?? null);
+      return k && v ? `Map<${k}, ${v}>` : null;
+    }
+    case 'slice_type':
+    case 'array_type': {
+      const el = tsTypeFromNode(typeNode.child(typeNode.childCount - 1));
+      return el ? `${el}[]` : null;
+    }
+    case 'pointer_type':
+      return tsTypeFromNode(typeNode.child(typeNode.childCount - 1));
+    case 'channel_type': {
+      const el = tsTypeFromNode(typeNode.child(typeNode.childCount - 1));
+      return el ? `Channel<${el}>` : null;
+    }
+    case 'type_identifier': {
+      const t = typeNode.text;
+      if (t === 'byte' || t === 'rune') return 'number';
+      if (/^(u?int|float|uintptr)/.test(t)) return 'number';
+      if (t === 'string') return 'string';
+      if (t === 'bool') return 'boolean';
+      return t;
+    }
+    case 'qualified_type':
+      return typeNode.text.split('.').join('_');
+    default:
+      return null;
+  }
+}
+
+/** call 实参表的第一个非标点子节点下标（跳过 '('） */
+function firstNonPunct(argsNode: SyntaxNodeLike): number {
+  for (let i = 0; i < argsNode.childCount; i++) {
+    const c = argsNode.child(i);
+    if (!c) continue;
+    if (['(', ')', ','].includes(c.type)) continue;
+    return i;
+  }
+  return -1;
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // ★★★ 2026-10-29（**把补丁改掉**）：`env` 与"翻译失败现场"曾经是两个**模块级可变变量**
 // （`ME` / `LAST_FAIL`）—— 那是补丁：并行/嵌套调用会互相串味，"谁设置的"也看不出来，
@@ -390,6 +453,38 @@ const expr = (node: SyntaxNodeLike | null): string | null  => {
       const argsNode = kids(node, 'argument_list')[0] ?? null;
       const fname = fnNode?.text ?? '';
       const conv = GO_CONV[fname];
+
+      // ★★★ 2026-10-29：**make 必须最先处理** —— 它的第一个实参是**类型**（`make(map[string]bool)`），
+      //   而下面那圈 `expr(c)` 会对类型节点返回 null ⇒ 整个调用翻不动。
+      //   （第一版我把 make 分支放在参数渲染之后 ⇒ 永远到不了，覆盖率一点没动。又一个"顺序即正确性"的教训。）
+      if (fnNode?.type === 'identifier' && fname === 'make') {
+        const typeArgIdx = argsNode ? firstNonPunct(argsNode) : -1;
+        const typeArg = typeArgIdx >= 0 && argsNode ? argsNode.child(typeArgIdx) : null;
+        if (!typeArg) return fail(node, 'make-no-type');
+        const extra: string[] = [];
+        if (argsNode) {
+          for (let i = typeArgIdx + 1; i < argsNode.childCount; i++) {
+            const c = argsNode.child(i);
+            if (!c || c.type === ',' || c.type === ')') continue;
+            const v = expr(c);
+            if (v === null) return fail(node, 'make-arg');
+            extra.push(v);
+          }
+        }
+        if (typeArg.type === 'map_type') return 'new Map()';
+        if (typeArg.type === 'channel_type') {
+          const el = tsTypeFromNode(typeArg.child(typeArg.childCount - 1));
+          return el ? `new Channel<${el}>()` : fail(node, 'make-chan');
+        }
+        if (typeArg.type === 'slice_type') {
+          const zero = zeroValueOf(typeArg.child(typeArg.childCount - 1));
+          if (extra.length === 0) return '[]';
+          if (zero === null) return fail(node, 'make-slice-zero');
+          return `new Array(${extra[0]}).fill(${zero})`;
+        }
+        return fail(node, 'make-other');
+      }
+
       const args: string[] = [];
       if (argsNode) {
         for (let i = 0; i < argsNode.childCount; i++) {
@@ -406,14 +501,24 @@ const expr = (node: SyntaxNodeLike | null): string | null  => {
       if (fnNode?.type === 'identifier') {
         if (fname === 'len' && args.length === 1) return `${args[0]}.length`;
         if (fname === 'append' && args.length >= 2) return `[...${args[0]}, ${args.slice(1).join(', ')}]`;
-        if (fname === 'make' && args.length >= 3) return args[2]; // make([]T, n, cap) → 由调用方给数组? 保守：不猜
       }
-      if (fname === 'make') return null; // make 语义多样（map/slice/chan）⇒ 不猜
       const fn = expr(fnNode);
       return fn === null ? null : `${fn}(${args.join(', ')})`;
     }
     case 'argument_list':
       return null;
+    // ★★★ 2026-10-29：**`make(T, …)` 的类型实参**会走到 expr（实测挡住 66 个函数：
+    //   `make(map[string]bool)` ×29、`make([]T, n)` ×37）。make 的语义是"分配并置**零值**"，
+    //   所以能不能翻取决于元素类型的零值是否可确定 —— 定不了就不翻（不猜）。
+    case 'slice_type':
+    case 'array_type':
+    case 'map_type':
+    case 'struct_type':
+    case 'pointer_type':
+    case 'type_identifier':
+    case 'qualified_type':
+    case 'generic_type':
+      return fail(node, 'type-in-expr-position');
     // ★ 2026-10-29：**包装节点要解包**（它们是 AST 的语法糖层，不是表达式）
     //   `literal_element`（复合字面量元素）×80、`variadic_argument`（`args...`）×9 —— 不认它们，
     //   这两类函数全被判"翻不动"，实测占阻碍的第一名。
