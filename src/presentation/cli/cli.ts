@@ -34,6 +34,12 @@
  */
 import fs from 'node:fs';
 import { TOOL_DEFS } from '../../application/tool_registry.js';
+// ★ T-#EXPECTATION-VOCAB：`--schema` 要自描述 data 键表 —— 引**唯一判据表**，不复制常量。
+import {
+  EDGE_DATA_KEYS,
+  FILE_DATA_KEYS,
+  NODE_DATA_KEYS,
+} from '../../application/design/dsl_ops/op_data_spec.js';
 // ★ 只为 `coerceKeyValues` 的形参标注用（type-only ⇒ 运行时零成本）
 import type { ToolDef } from '../../application/types.js';
 import { invokeTool } from '../mcp/server_registry.js';
@@ -256,6 +262,23 @@ if (argv.includes('--schema')) {
       '',
       ...req.map(fmt),
       ...(opt.length ? ['', '可选:', ...opt.map(fmt)] : []),
+      // ★★★ 2026-10-29（D-#EXPECTATION-VOCAB）：`edit_dsl` 的 **data 键表**与**判据宿主**必须自描述。
+      //   实测代价：今天为写一条判据撞墙 4 次（goals 键名 → edge 的 id 层级 → evidence 形状 →
+      //   decision 不在 file 上），每次都浪费在"键在哪一层/叫什么/什么形状"。
+      //   这里直接引**唯一判据表**（不复制，避免第二权威）。
+      ...(def.name === 'edit_dsl'
+        ? [
+            '',
+            '★ data 的键表（唯一判据表 design/dsl_ops/op_data_spec.ts；给了不认的键会**拒绝**，不静默忽略）:',
+            `   file : ${FILE_DATA_KEYS.join(' / ')}`,
+            `   node : ${NODE_DATA_KEYS.join(' / ')}`,
+            `   edge : ${EDGE_DATA_KEYS.join(' / ')}`,
+            '★ 操作信封上的字段（**不在** data 里）: op / type / id',
+            '★ 判据 decision.expectations[] 只住 **node**；file 节点用 expected_behavior；',
+            '   引用形态 decision:<node_id>#<index> 里的 node_id 是**那个 node**，不是 file。',
+            '★ evidence 形状: [{ type: "trace"|"diff"|"node"|"edge"|"metric", ref }]',
+          ]
+        : []),
       '',
       `调法: cli ${def.name} --json '{${req.map((r) => `"${r.k}":…`).join(', ')}}'`,
       '',
