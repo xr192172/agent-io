@@ -30,7 +30,11 @@ export type IrStmt =
   | { k: 'assign'; target: IrExpr; op: string; value: IrExpr }
   | { k: 'block'; body: IrStmt[] }
   /** 条件分支。`else` 可以是块，也可以是**嵌套的 if**（Go 的 `else if`） */
-  | { k: 'if'; cond: IrExpr; then: IrStmt[]; else?: IrStmt[] | IrStmt }
+  /**
+   * 条件分支。★ `init` = Go `if err := f(); err != nil {}` 里的**初始化语句**。
+   * 丢掉它 ⇒ `TS2304 Cannot find name 'err'`（实测 **两条路径都丢**：pivot 与 legacy 各一份）。
+   */
+  | { k: 'if'; init?: IrStmt; cond: IrExpr; then: IrStmt[]; else?: IrStmt[] | IrStmt }
   /** 三式 / 无条件循环 */
   | { k: 'for'; init?: IrStmt; cond?: IrExpr; post?: IrStmt; body: IrStmt[] }
   /** 条件循环（Go 的 `for cond {}`） */
@@ -237,14 +241,27 @@ function liftStmt(n: SyntaxNodeLike, depth = 0): IrStmt | null {
       return { k: 'block', body: inner as IrStmt[] };
     }
     case 'if_statement': {
-      // 条件：第一个非括号子节点里 condition 字段（tree-sitter-go 的 field 名稳定）
-      let condNode: SyntaxNodeLike | null = null;
-      for (let i = 0; i < n.childCount; i++) {
-        const c = n.child(i);
-        if (c && c.isNamed !== false && c.type !== 'block' && c.type !== 'if_statement' && c.type !== 'else') {
-          condNode = c;
+      // ★ 先分离 **init**（`if x := f(); cond {}`）与 **condition**：
+      //   tree-sitter-go 里 condition 有 field，init 没有 ⇒ 取"condition 之前的命名语句"。
+      const condField = fieldOf(n, 'condition');
+      let initStmt: IrStmt | null = null;
+      for (const c of kidsOf(n)) {
+        if (c.type === 'block' || c.type === 'if_statement' || c.type === 'else') continue;
+        if (condField && c === condField) break;
+        if (c.type === 'short_var_declaration' || c.type === 'assignment_statement' || c.type === 'expression_statement') {
+          initStmt = liftStmt(c, depth + 1);
+          if (!initStmt) return failLift(c, 'if-init-not-supported');
           break;
         }
+      }
+      // 条件：优先用 field，其次退回"第一个非 init/非 block 的命名子节点"
+      let condNode: SyntaxNodeLike | null = condField;
+      for (let i = 0; i < n.childCount; i++) {
+        const c = n.child(i);
+        if (!c || c.isNamed === false) continue;
+        if (['block', 'if_statement', 'else', 'short_var_declaration', 'assignment_statement', 'expression_statement'].includes(c.type)) continue;
+        condNode = c;
+        break;
       }
       if (!condNode) return null;
       const cond = liftExpr(condNode);
@@ -268,7 +285,10 @@ function liftStmt(n: SyntaxNodeLike, depth = 0): IrStmt | null {
           break;
         }
       }
-      if (elseIdx < 0) return { k: 'if', cond, then: thenIr.body };
+      const withInit = (
+        o: { k: 'if'; cond: IrExpr; then: IrStmt[]; else?: IrStmt[] | IrStmt },
+      ): Extract<IrStmt, { k: 'if' }> => (initStmt ? { ...o, init: initStmt } : o);
+      if (elseIdx < 0) return withInit({ k: 'if', cond, then: thenIr.body });
       const wrapper = n.child(elseIdx);
       const inner =
         wrapper && wrapper.type === 'else_clause' ? (wrapper.child(1) ?? wrapper.child(0)) : n.child(elseIdx + 1);
@@ -276,11 +296,11 @@ function liftStmt(n: SyntaxNodeLike, depth = 0): IrStmt | null {
       if (inner.type === 'if_statement') {
         const nested = liftStmt(inner, depth + 1);
         if (!nested) return null;
-        return { k: 'if', cond, then: thenIr.body, else: nested };
+        return withInit({ k: 'if', cond, then: thenIr.body, else: nested });
       }
       const elseIr = liftStmt(inner, depth + 1);
       if (!elseIr || elseIr.k !== 'block') return null;
-      return { k: 'if', cond, then: thenIr.body, else: elseIr.body };
+      return withInit({ k: 'if', cond, then: thenIr.body, else: elseIr.body });
     }
     case 'return_statement': {
       const list = kidsOf(n).find((c) => c.type === 'expression_list');
@@ -732,6 +752,11 @@ function projectTsStmt(s: IrStmt, indent: number): string {
     }
     case 'if': {
       const thenBody = projectTsBody(s.then, indent + 1);
+      if (s.init) {
+        // ★ Go 的 `if init; cond` 里 init 的作用域限于该 if ⇒ TS 用块包住，名字不外泄
+        const inner = projectTsBody([{ k: 'if', cond: s.cond, then: s.then, ...(s.else ? { else: s.else } : {}) }], indent + 1);
+        return `{\n${indentStr(indent + 1)}${projectTsStmt(s.init, indent + 1)}\n${inner}\n${indentStr(indent)}}`;
+      }
       let out = `if (${projectTsExpr(s.cond)}) {\n${thenBody}\n${indentStr(indent)}}`;
       if (s.else) {
         if (Array.isArray(s.else)) {
