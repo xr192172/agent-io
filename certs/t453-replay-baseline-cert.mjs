@@ -64,6 +64,26 @@ try {
   realLog = String(e.stdout ?? '') + String(e.stderr ?? '');
 }
 const real = countErrors(realLog);
+/**
+ * ★★★ 2026-10-29（**差点被假绿骗**）：一次改动让 `builder.ts` 从 730 行掉到 796 行、**161→188 个 TODO 孔**，
+ * tsc 错误数从 431 掉到 **22** —— 看起来"修好了 409 个"，其实是**函数体退化成空孔**（丢体）。
+ * ⇒ 基线必须同时锁**错误数**与**空孔数**：孔数涨 = 丢体 = 红。
+ */
+const HOLES = (() => {
+  let n = 0;
+  const walk = (d) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) { walk(p); continue; }
+      if (!e.name.endsWith('.ts')) continue;
+      const src = fs.readFileSync(p, 'utf8');
+      n += (src.match(/TODO\(translate\)/g) ?? []).length;
+    }
+  };
+  const root = path.join(DIR, 'src');
+  if (fs.existsSync(root)) walk(root);
+  return n;
+})();
 const sum = Object.values(real.byCode).reduce((a, b) => a + b, 0);
 chk(real.total === sum, '① **计数自洽**：分类求和 = 总数（同一实现，不设第二口径）', `total ${real.total} = ΣbyCode ${sum}`);
 
@@ -79,14 +99,15 @@ const base = fs.existsSync(BASE_FILE) ? JSON.parse(fs.readFileSync(BASE_FILE, 'u
 if (SET || !base) {
   fs.writeFileSync(
     BASE_FILE,
-    JSON.stringify({ errors: real.total, dir: DIR, at: new Date().toISOString(), note: '零 LLM 回放（AGENT_IO_REPLAY_ONLY=1）tsc 错误数' }, null, 2) + '\n',
+    JSON.stringify({ errors: real.total, holes: HOLES, dir: DIR, at: new Date().toISOString(), note: '零 LLM 回放 tsc 错误数 + TODO 空孔数（孔数涨=丢体=红）' }, null, 2) + '\n',
   );
-  chk(true, SET ? '③ **重设基线**（--set）' : '③ 首次建立基线', `errors=${real.total} dir=${DIR}`);
+  chk(true, SET ? '③ **重设基线**（--set）' : '③ 首次建立基线', `errors=${real.total} · holes=${HOLES} · dir=${DIR}`);
 } else {
   const delta = real.total - base.errors;
+  const holeDelta = typeof base.holes === 'number' ? HOLES - base.holes : 0;
   chk(
-    delta <= 0,
-    '③ **棘轮**：当前回放错误数不得高于基线',
+    delta <= 0 && holeDelta <= 0,
+    '③ **棘轮**：错误数不高于基线 **且** TODO 空孔数不高于基线（孔数涨=丢体）',
     `基线 ${base.errors} · 当前 ${real.total} · 差 ${delta >= 0 ? '+' : ''}${delta}` +
       (delta > 0
         ? '\n     ' +
