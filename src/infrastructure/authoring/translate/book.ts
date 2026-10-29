@@ -149,6 +149,12 @@ export interface TranslateBook {
 }
 
 export interface BookGenOptions {
+  /**
+   * ★★★ 2026-10-29（T-#BOOK-ALLSYM）：**收全量符号**（含未导出、未变更文件）。
+   * 缺省 false = 既有增量策略（只收「已动过文件」的内部符号）——不静默改老行为。
+   * 翻译骨架需要全量：否则未变更文件里的内部符号没有 `sigTs`，骨架只能回落 AST 二次推导。
+   */
+  allSymbols?: boolean;
   /** 被分析项目根（cache.db 所在） */
   projectDir: string;
   /** 要读写的册子路径 */
@@ -683,6 +689,7 @@ function openBookDb(projectDir: string): DatabaseSync {
 function readSymbolRows(
   db: DatabaseSync,
   activeFiles: ReadonlySet<string>,
+  allSymbols = false,
 ): { rows: NodeRow[]; internalRows: NodeRow[]; srcFiles: number; extFiles: Map<string, string[]> } {
   // ★ 2026-10-28（**空人工内容 ⇒ 册子 ≡ 实际侧**）：把生成器要用的列一次读全。
   //   原先只读 11/21 列，漏掉 signature / docstring / qualified_name / end_line / language
@@ -696,7 +703,15 @@ function readSymbolRows(
     .all() as unknown as NodeRow[];
   // 未导出：小写开头；只收「已动过文件」
   const files = [...activeFiles];
-  const internalRows = files.length
+  // ★ 2026-10-29（T-#BOOK-ALLSYM）：`allSymbols` ⇒ **全量内部符号**（翻译骨架需要）；
+  //   缺省仍按"已动过文件"（增量语义不变）。
+  const internalRows = allSymbols
+    ? (db
+        .prepare(
+          `SELECT ${cols} FROM nodes WHERE language='go'` + ` AND ${kindIn} AND name NOT GLOB '[A-Z]*' ORDER BY file_path, start_line`,
+        )
+        .all() as unknown as NodeRow[])
+    : files.length
     ? (db
         .prepare(
           `SELECT ${cols} FROM nodes WHERE language='go' AND file_path IN (${files.map(() => '?').join(',')})` +
@@ -830,7 +845,7 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
     const activeFiles = new Set(
       book.symbols.filter((s) => s.from && STICKY_STATES.has(s.state)).map((s) => String(s.from).split('#')[0]),
     );
-    const { rows, internalRows, srcFiles, extFiles } = readSymbolRows(db, activeFiles);
+    const { rows, internalRows, srcFiles, extFiles } = readSymbolRows(db, activeFiles, opts.allSymbols);
     const declared = new Set(
       (
         db.prepare(`SELECT DISTINCT name FROM nodes WHERE language='go' AND kind IN ('type','interface','class','struct')`).all() as Array<{ name: string }>

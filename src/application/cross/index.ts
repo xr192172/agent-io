@@ -82,6 +82,9 @@ export const CROSS_TOOLS: ToolDef[] = [
           bookPath,
           dryRun,
           expectTargetLanguage: a.target_language == null ? undefined : String(a.target_language),
+          // ★ 2026-10-29（T-#BOOK-ALLSYM）：翻译骨架需要**全量符号**（否则未变更文件的内部符号没有 sigTs，
+          //   骨架只能回落 AST 二次推导）。设计侧重建可传 false 走增量。
+          allSymbols: true,
         });
         const st = r.stats;
         const manual = st.blocked - (st.blockedByTerm + st.blockedByTermNull + st.blockedByCollision + st.blockedByExternalDep);
