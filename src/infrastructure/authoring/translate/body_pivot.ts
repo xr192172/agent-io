@@ -214,7 +214,13 @@ export function liftGoBody(block: SyntaxNodeLike): IrStmt[] | null {
   const out: IrStmt[] = [];
   for (const s of stmts) {
     const lifted = liftStmt(s);
-    if (!lifted) return null;
+    if (!lifted) {
+      // ★★★ 2026-10-29（T-#KILL-LEGACY 步 0）：**每次拒绝都必须有原因**。
+      //   实测 387 个阻塞里 **184 个"未记原因"** ⇒ 无法按频次排优先级，也就无法"逐组搬进 pivot"。
+      //   ⇒ 若 liftStmt 内部没记原因，这里用**节点类型**兜底（failLift 幂等：已记的保留）。
+      failLift(s, `stmt-not-recorded:${s.type}`);
+      return null;
+    }
     out.push(lifted);
   }
   return out;
