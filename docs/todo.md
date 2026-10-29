@@ -141,7 +141,6 @@
 | T-#ONE-ASSEMBLY | 单文件模式（`tool.ts`）与项目模式（`project.ts`）是**两条装配路径**，册子消费只接了后者 ⇒ 收口成一条 | `translate/{tool,project}.ts` | 未开工 |
 | T-#STD-TAIL | std 余下小包适配：`slices` `signal` `syscall` `atomic` `heap` `unicode` `strconv` `math` `sha256` `hex` `fnv` `bytes` `bufio` `runtime` `norm` `exec` `io` `sql` `http` `mem`（各 1–12 个成员） | `translate/go_std.ts` | 进行中（11/33 包已完成，覆盖 ~86% 引用） |
 | T-#REF-TYPES | 引用改写覆盖率 15.1% → 更高：用册子 `sigTs` 的**返回类型**给「局部变量 = 函数调用」补类型，再改写（现在只认参数/局部注解/interface 字段） | `translate/ref_rewrite.ts` + 册子 | 未开工 |
-| T-#PIVOT-SLOTS | 轴心第 3 步：特性槽 + 失真账（7 条硬轴：int 位宽/str 编码/null/mut/err/conc/own） | `translate/book.ts` | 未开工 |
 | T-#PIVOT-ROUNDTRIP | 轴心第 4 步：**回译探针** `Go→pivot→TS→pivot→Go`，断言差异 100% 在失真账里 | `certs/` | 未开工 |
 | T-#BUILD-VAR | **Go build tag 变体未建模**：`local_embedder_nocgo.go` 与 `local_embedder.go` 各定义一次 `LocalEmbedder` ⇒ 反向映射 7 组同名、输出 `TS2300`（Duplicate identifier）×9 | `translate/book.ts` | 未开工（证 t443 逼出来的） |
 | T-#PIVOT-TYPEREF-IDS | `pivot` 里的 `ident.name` 仍是**源侧文本**，未解析成轴心 `id` ⇒ 跨语言重名解析不了（第三语言到来前必须解决） | `translate/book_ts.ts` | 未开工 |

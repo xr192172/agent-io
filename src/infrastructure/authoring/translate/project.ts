@@ -17,6 +17,7 @@ import { translateGoToTs } from './pairs.js';
 import { channelShimSource } from './ts_codegen.js';
 import { collectQualifiedPkgs, renderGoStdAdapter } from './go_std.js';
 import { buildMethodIndex, rewriteMethodCalls } from './ref_rewrite.js';
+import { lossinessOfUnit } from './pivot.js';
 import { collectExternalTypeRefs } from './referenced.js';
 import { spliceBody, normalizeLegacyOctal } from './fill.js';
 import { fillUnitsWithRetry, fillUnitsBatched } from './fill.js';
@@ -655,6 +656,34 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
     }
     if (fromBook || bookMiss) {
       diagnostics.push(`骨架签名来源：册子 sigTs ${fromBook} 个 · 回落 AST 推导 ${bookMiss} 个`);
+      // ★★★ 2026-10-29（T-#PIVOT-SLOTS）：**失真账进回执** —— 从册子的 pivot 类型树算出
+      //   「源槽位 × 目标能力」的已知语义偏离（算出来的，不落第二份）。
+      const lossByTag = new Map<string, number>();
+      let lossyUnits = 0;
+      let lossyTotal = 0;
+      for (const mm of modules) {
+        for (const u of mm.units) {
+          const refs = [...(u.params ?? []).map((p) => p.typeRef), u.resultRef].filter(Boolean) as never[];
+          let entries;
+          try {
+            entries = lossinessOfUnit(refs, 'go', 'ts');
+          } catch {
+            continue;
+          }
+          lossyTotal++;
+          const real = entries.filter((e) => e.loss !== 'exact');
+          if (real.length) lossyUnits++;
+          for (const e of real) lossByTag.set(e.loss, (lossByTag.get(e.loss) ?? 0) + 1);
+        }
+      }
+      if (lossyTotal) {
+        const top = [...lossByTag.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+        diagnostics.push(
+          `失真账：${lossyUnits}/${lossyTotal} 个单元含已知语义偏离（${((lossyUnits / lossyTotal) * 100).toFixed(1)}%）· ` +
+            top.map(([k, v]) => `${k}×${v}`).join(" · ") +
+            `（**编译通过 ≠ 行为等价**，逐条见 t445 读数）`,
+        );
+      }
     }
   }
 
