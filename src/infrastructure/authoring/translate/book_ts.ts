@@ -152,3 +152,35 @@ export async function fillBookTsSignatures(projectDir: string, bookPath: string)
   fs.writeFileSync(bookPath, JSON.stringify(book, null, 2), 'utf8');
   return stats;
 }
+
+/**
+ * ★★★ 2026-10-29（T-#SKELETON-FROM-BOOK）：在册子里找某单元对应的符号。
+ * 册子的 `from` 是 `<rel>#<Go 符号>`；**方法**在册里记 `AddFix`、在单元里记 `Builder_AddFix`
+ * ⇒ 按 `kind==='method'` 做 `*_<name>` 后缀匹配（结构化分派，不靠猜）。
+ */
+export function findBookSymbol(books: TranslateBook[], rel: string, u: TransUnit): BookSymbol | null {
+  const want = `${rel}#`;
+  for (const b of books) {
+    for (const s of b.symbols ?? []) {
+      if (!s.from || !s.sigTs) continue;
+      if (!s.from.startsWith(want)) continue;
+      const name = s.from.slice(want.length);
+      if (name === u.name || name === u.id) return s;
+      if (s.kind === 'method' && (u.name.endsWith('_' + name) || u.id.endsWith('_' + name))) return s;
+    }
+  }
+  return null;
+}
+
+/**
+ * 把册子的 `sigTs` 排成骨架：**只排版，不推类型**。
+ * · `interface …` / `type …` ⇒ 整行导出（无函数体）；
+ * · const ⇒ `export const <sigTs>`；
+ * · 其余按函数处理 ⇒ `export function <sigTs> { 孔 }`（孔体随后由机械翻/填孔替换）。
+ */
+export function skeletonFromSigTs(sigTs: string, u: TransUnit): string {
+  const sig = sigTs.trim();
+  if (/^(interface|type)\b/.test(sig)) return `export ${sig}`;
+  if (u.kind === 'const') return `export const ${sig}`;
+  return `export function ${sig} {\n  throw new Error('TODO(translate): 待 LLM 翻译 Go 函数体');\n}`;
+}

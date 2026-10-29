@@ -22,6 +22,7 @@ import { createPooledBatchTranslator } from './llm.js';
 import { applyDeterministicFixers } from './fixers.js';
 // ★ I3：翻译 DB 投影 + 术语表进 prompt（按图索骥）
 import { attachBookFacts, loadTranslateBooks, type TranslateBook } from './book.js';
+import { findBookSymbol, skeletonFromSigTs } from './book_ts.js';
 import type { SkippedDecl } from './go_extractor.js';
 import { parseFileFull } from '../../parse/index.js';
 import type { TransUnit } from './unit.js';
@@ -590,6 +591,32 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
   }
   if (stdlibUndefined.size) diagnostics.push(`项目内未定义的导出类型（Go stdlib/外部，需 LLM/人工）：${[...stdlibUndefined].sort().join(', ')}`);
   if (conflicted.size) diagnostics.push(`同名顶层符号多文件冲突（未 import，需人工消歧）：${[...conflicted].sort().join(', ')}`);
+
+  // ★★★ 2026-10-29（T-#SKELETON-FROM-BOOK）：**骨架由册子出，不由 AST 再推一次**。
+  //   用户指出的病：第 2 层用 `TypeRef(AST 直出)` 渲染类型 ⇒ **把册子绕过了**（同一份事实解释两次，
+  //   而且册子里的名词决策——术语、依赖、`to` 名——根本没参与）。
+  //   正确流向：`AST → 册子(sigTs) → 骨架(只排版)`。
+  //   这里：册子有 `sigTs` 就用它当签名头（`export function <sigTs> { 体 }` / `export interface …`），
+  //   没有才回落到 ts_codegen 的 AST 推导，并**记账**（缺口要显形，不静默）。
+  let fromBook = 0;
+  let bookMiss = 0;
+  {
+    const booksForSig = loadTranslateBooks(root);
+    for (const mm of modules) {
+      for (const u of mm.units) {
+        const sym = findBookSymbol(booksForSig, mm.rel, u);
+        if (sym?.sigTs) {
+          u.skeleton = skeletonFromSigTs(sym.sigTs, u);
+          fromBook++;
+        } else {
+          bookMiss++;
+        }
+      }
+    }
+    if (fromBook || bookMiss) {
+      diagnostics.push(`骨架签名来源：册子 sigTs ${fromBook} 个 · 回落 AST 推导 ${bookMiss} 个`);
+    }
+  }
 
   // A2 语义上下文：全局函数签名 + 类型字段表，注入 fill 让 LLM 保留跨文件语义
   const pctx: ProjectCallContext = { funcSkel: new Map(), typeSkel: new Map() };
