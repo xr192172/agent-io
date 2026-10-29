@@ -18,6 +18,8 @@ import { channelShimSource } from './ts_codegen.js';
 import { collectQualifiedPkgs, renderGoStdAdapter } from './go_std.js';
 import { buildMethodIndex, rewriteMethodCalls } from './ref_rewrite.js';
 import { CAPABILITIES, lossinessOfUnit } from './pivot.js';
+// ★ T-#TSC-DRIVEN-FIX 步 2：管线内后处理（用 tsc 报错当接收者类型口径）
+import { applyTscDrivenFixes } from './tsc_fix.js';
 import { renderSlotShim } from './slots.js';
 import { setValueStructTypes } from './body_pivot.js';
 import { collectExternalTypeRefs } from './referenced.js';
@@ -975,6 +977,22 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
       // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：`outAbs` = `opts.outDir/<tsRel>`（调用方指定的生成物目录）
       //   ⇒ 归主体 = 产物（翻译出的 TS），不是用户源码 ⇒ 不过闸。
       fs.writeFileSync(outAbs, m.ts, 'utf-8');
+    }
+
+    // ★★★ 2026-10-29（T-#TSC-DRIVEN-FIX 步 2）：**管线内**后处理 —— 必须在这里，
+    //   否则补丁打在输出目录、回放会覆盖 ⇒ 数字不可复现（上一版就是这个毛病，626 进不了基线）。
+    //   开关：AGENT_IO_TSC_FIX=1。失败即 no-op（绝不改坏产物）。
+    if (process.env.AGENT_IO_TSC_FIX === '1') {
+      try {
+        const r = applyTscDrivenFixes(path.resolve(opts.outDir), diagnostics);
+        if (r && r.changed && r.after >= r.before - r.changed + 1) {
+          diagnostics.push(
+            `[tsc-fix] 验收未过：总数只降 ${r.before - r.after}，改写 ${r.changed}（此消彼长）`,
+          );
+        }
+      } catch (e) {
+        diagnostics.push('[tsc-fix] 后处理异常（已忽略）：' + (e instanceof Error ? e.message : String(e)));
+      }
     }
   }
 
