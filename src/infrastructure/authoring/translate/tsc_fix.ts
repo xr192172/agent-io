@@ -234,12 +234,36 @@ export function applyTscDrivenFixes(outDir: string, notes: string[]): TscFixResu
   };
 
   // ① 逐条判定可改写（接收者类型是简单标识符 + 目标自由函数在同文件/同目录存在）
-  const byFile = new Map<string, Array<{ prop: string; target: string; definedIn: string }>>();
+  /**
+   * ★★★ 2026-10-29（读代码读出来的）：**槽位方法表**。
+   * `Time → number`（epoch ms）之后，Go 的方法 `t.Format(layout)` 在 TS 里成了
+   * `number.Format(…)` —— tsc 直接报 TS2339（因为它知道接收者类型是 `number`）。
+   * 这类不改写就永远错。tsc 的报错**已经把接收者类型算好了** ⇒ 按类型查这张表即可，
+   * 不需要任何推断。
+   */
+  const SLOT_METHODS: Record<string, string[]> = {
+    number: [
+      'Format', 'UTC', 'Local', 'Unix', 'UnixMilli', 'Year', 'Month', 'Day', 'Hour', 'Minute', 'Second',
+      'Add', 'AddDate', 'Sub', 'Before', 'After', 'Equal', 'IsZero', 'Truncate', 'Round',
+    ],
+  };
+    const byFile = new Map<string, Array<{ prop: string; target: string; definedIn: string }>>();
   let rewritable = 0;
   for (const d of diags) {
     if (!/^[A-Za-z_$][\w$]*$/.test(d.typeText)) {
       bump(`类型不是简单标识符:${d.typeText.slice(0, 24)}`);
       continue;
+    }
+    // ★ 槽位方法：接收者是 `number` 且属性是 Time 的方法 ⇒ 自由函数就叫 prop 本身
+    if (SLOT_METHODS[d.typeText]?.includes(d.prop)) {
+      const idx = 'src/_go_std/time.ts';
+      const definedIn = [...exportsByFile.keys()].find((f) => f.endsWith('_go_std/time.ts') && exportsByFile.get(f)?.has(d.prop));
+      if (definedIn) {
+        if (!byFile.has(d.rel)) byFile.set(d.rel, []);
+        byFile.get(d.rel)!.push({ prop: d.prop, target: d.prop, definedIn });
+        rewritable++;
+        continue;
+      }
     }
     const target = `${d.typeText}_${d.prop}`;
     // ★ 目录归一：`path.posix.dirname('sleep.ts')` 返回 `'.'`（不是 `''`）。

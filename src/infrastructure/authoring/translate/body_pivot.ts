@@ -865,9 +865,17 @@ function projectTsExpr(e: IrExpr): string {
       if (e.kind === 'slice') return `[${e.elems.map((x) => projectTsExpr(x.value)).join(', ')}]`;
       if (e.kind === 'map')
         return `new Map([${e.elems.map((x) => `[${x.key ? projectTsExpr(x.key) : 'undefined'}, ${projectTsExpr(x.value)}]`).join(', ')}])`;
-      return `{ ${e.elems
-        .map((x) => `${x.key ? projectTsExpr(x.key) : 'undefined'}: ${projectTsExpr(x.value)}`)
-        .join(', ')} }`;
+      {
+        const obj = `{ ${e.elems
+          .map((x) => `${x.key ? projectTsExpr(x.key) : 'undefined'}: ${projectTsExpr(x.value)}`)
+          .join(', ')} }`;
+        // ★★★ 2026-10-29（**读代码读出来的**，不是量出来的）：Go 的 `&Server{cfg: cfg}` 起的是
+        //   **具类型**的值，我们渲染成裸对象字面量 ⇒ TS 推断成 `{ cfg: ServerConfig }`
+        //   ⇒ 后面 `s.graphPath = …` 全报 TS2339（一眼就看得出来）。
+        //   轴心**本来就记了** `typeText`（`Server`），只是渲染时没输出 ⇒ 补类型断言。
+        const tn = e.typeText ? e.typeText.replace(/^\*+/, '') : '';
+        return tn ? `(${obj} as ${tn})` : obj;
+      }
     }
     case 'slice':
       // TS 渲染器：`x.slice(lo ?? 0, hi)`
