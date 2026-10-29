@@ -90,6 +90,21 @@ export interface BookSymbol {
     typeParams?: string[];
     value?: string;
   };
+  /**
+   * ★★★ 2026-10-29（T-#BUILD-VAR）：**Go build tag 变体**（同一符号在互斥文件里各定义一次）。
+   * 例：`local_embedder.go`（默认构建）与 `local_embedder_nocgo.go`（`-tags nocgo`）
+   * 各定义一次 `LocalEmbedder` —— **不是重名冲突**，是同一逻辑符号的两个编译变体。
+   *
+   * 为什么必须建模：
+   *   ① 不建模 ⇒ 册子把它们判成"同名撞车"（blocked），实际无冲突；
+   *   ② 不建模 ⇒ 两个变体被**同时渲染进同一份 TS** ⇒ `TS2300 Duplicate identifier`（实测 ×9）。
+   */
+  variant?: {
+    /** 变体族名（去掉 tag 后缀的文件主干），如 `local_embedder` */
+    group: string;
+    /** 构建标签；`null` = 默认构建（**保留这个**） */
+    tag: string | null;
+  };
   /** 目标侧投影（按语言分槽）。**轴心本身不存这些** —— 它们属于渲染器。 */
   targets?: {
     ts?: {
@@ -972,7 +987,17 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
       return { row, scope, id, targets, target, bad, uncovered, nullTerms, exts };
     });
     const byTarget = new Map<string, number>();
-    for (const m of mapped) { const n = tsTargetName(m); if (n) byTarget.set(n, (byTarget.get(n) ?? 0) + 1); }
+    // ★ T-#BUILD-VAR（**计数口径也要一致**）：`byTarget` 只统计**默认构建**的符号 ——
+    //   否则带 tag 的变体仍会把默认那一侧"算成撞车"（第一版只让 tagged 侧不判撞车，
+    //   默认侧却因为计数含 tagged 而继续报撞车，残留 6 组）。
+    for (const m of mapped) {
+      const n = tsTargetName(m);
+      if (!n) continue;
+      const base = String(m.row.file_path).split('/').pop() ?? '';
+      const stem = base.replace(/\.go$/, '');
+      if (/_(cgo|nocgo|onnx|windows|linux|darwin|arm64|amd64|386)$/.test(stem)) continue; // 变体不参与
+      byTarget.set(n, (byTarget.get(n) ?? 0) + 1);
+    }
 
     // ★ 上游轴心（若存在）：一份中立事实，供本目标语言册子**投影**
     const pivotUpstream: Record<string, unknown> = (() => {
@@ -998,7 +1023,14 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
     let blockedByExternalDep = 0;
     for (const { row, scope, id, targets, target, bad, uncovered, nullTerms, exts } of mapped) {
       const prev = before.get(row.id);
-      const collision = (byTarget.get(tsTargetName({ targets }) ?? '') ?? 0) > 1;
+      // ★ T-#BUILD-VAR：**带 tag 的变体不参与撞车计数** —— 它们与默认构建互斥，
+        //   判成撞车会让册子 blocked（实际无冲突），也会让两份同时渲染（TS2300）。
+        const selfIsTagged = (() => {
+          const b = String(row.file_path).split('/').pop() ?? '';
+          const stem = b.replace(/\.go$/, '');
+          return /_(cgo|nocgo|onnx|windows|linux|darwin|arm64|amd64|386)$/.test(stem);
+        })();
+        const collision = !selfIsTagged && (byTarget.get(tsTargetName({ targets }) ?? '') ?? 0) > 1;
       // ★★★ 2026-10-29（**第 1 层的决策必须影响账**）：原来只要文件 import 了非 stdlib 包就判 `external_dep`
       //   并 blocked，**完全不看 `external_deps[].strategy` 填没填** ⇒ 人把 8 条策略全填了，318 个符号照样 blocked
       //   ⇒ 第 2 层无从消费（又一处「决策不生效」）。现在：该文件的外部依赖**全部**定了 strategy
@@ -1041,6 +1073,17 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
         from: row.id,
         // ★ 中立身份：文件 + 接收者 + 名字（不含目标语言痕迹）
         id: `${row.file_path}#${row.parent ? row.parent + '.' : ''}${row.name}`,
+        // ★ T-#BUILD-VAR：按**文件名后缀**判构建标签（`_nocgo` / `_windows` …）
+        ...(() => {
+          const base = String(row.file_path).split('/').pop() ?? '';
+          const stem = base.replace(/\.go$/, '');
+          const m = /^(.*)_(cgo|nocgo|onnx|windows|linux|darwin|arm64|amd64|386)$/.exec(stem);
+          return {
+            variant: m
+              ? { group: m[1], tag: m[2] }
+              : { group: stem, tag: null },
+          };
+        })(),
         ...(targets ? { targets } : {}),
         kind: row.kind, // ★ 从 nodes.kind 现取，不手写
         scope,

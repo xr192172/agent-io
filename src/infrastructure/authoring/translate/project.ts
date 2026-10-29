@@ -566,7 +566,15 @@ function verifyProjectTree(modules: ProjectModule[]): TscCluster[] {
  */
 export async function translateGoProject(projectDir: string, opts: ProjectOptions = {}): Promise<ProjectResult> {
   const root = path.resolve(projectDir);
-  const files = walkGoFiles(root);
+  const allFiles = walkGoFiles(root);
+  // ★★★ 2026-10-29（T-#BUILD-VAR，**输出侧**）：Go 的 build tag 变体文件（`*_nocgo.go` / `*_windows.go` …）
+  //   与默认构建**互斥**。册子已经不把它们算撞车；但**渲染侧**如果不跳过，
+  //   两份同名的 `LocalEmbedder` 会被同时写进同一份 TS ⇒ `TS2300 Duplicate identifier`（实测 ×9）。
+  //   TS 没有 build tag ⇒ 只能**保留默认构建**，变体文件明确跳过（记进诊断，不静默）。
+  const VARIANT_RE = /_(cgo|nocgo|onnx|windows|linux|darwin|arm64|amd64|386)\.go$/;
+  const skippedVariants = allFiles.filter((f) => VARIANT_RE.test(f));
+  const files = allFiles.filter((f) => !VARIANT_RE.test(f));
+
   // ★★★ 2026-10-29（T-#SHIM-ORDER，**顺序也是正确性**）：`mechBody` 在 **extract 阶段**就已经算好了，
   //   所以"值类型 struct 名集合"必须在 **extract 之前**注入 —— 否则渲染器不知道哪些赋值该插 `copy()`，
   //   插入数会静默为 0（这正是我第一版犯的错：注入点写在了 assembly 阶段，晚了一步）。
@@ -586,6 +594,12 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
   const singleTranslator = opts.fill && opts.translator ? opts.translator : null;
   const useBatch = opts.fill && !opts.translator;
   const diagnostics: string[] = [];
+  if (skippedVariants.length) {
+    diagnostics.push(
+      `build tag 变体文件 ${skippedVariants.length} 个已跳过（与默认构建互斥，同时渲染会 TS2300）：` +
+        skippedVariants.map((f) => f.split(/[\\/]/).pop()).slice(0, 6).join(', '),
+    );
+  }
   /** ★ tsc 门禁读数（**编译 ≠ 行为**；只有真跑了才有值） */
   let tsc: ProjectResult['tsc'];
 

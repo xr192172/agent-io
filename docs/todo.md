@@ -141,7 +141,6 @@
 | T-#ONE-ASSEMBLY | 单文件模式（`tool.ts`）与项目模式（`project.ts`）是**两条装配路径**，册子消费只接了后者 ⇒ 收口成一条 | `translate/{tool,project}.ts` | 未开工 |
 | T-#STD-TAIL | std 余下小包适配：`slices` `signal` `syscall` `atomic` `heap` `unicode` `strconv` `math` `sha256` `hex` `fnv` `bytes` `bufio` `runtime` `norm` `exec` `io` `sql` `http` `mem`（各 1–12 个成员） | `translate/go_std.ts` | 进行中（11/33 包已完成，覆盖 ~86% 引用） |
 | T-#REF-TYPES | 引用改写覆盖率 15.1% → 更高：用册子 `sigTs` 的**返回类型**给「局部变量 = 函数调用」补类型，再改写（现在只认参数/局部注解/interface 字段） | `translate/ref_rewrite.ts` + 册子 | 未开工 |
-| T-#BUILD-VAR | **Go build tag 变体未建模**：`local_embedder_nocgo.go` 与 `local_embedder.go` 各定义一次 `LocalEmbedder` ⇒ 反向映射 7 组同名、输出 `TS2300`（Duplicate identifier）×9 | `translate/book.ts` | 未开工（证 t443 逼出来的） |
 | T-#PIVOT-TYPEREF-IDS | `pivot` 里的 `ident.name` 仍是**源侧文本**，未解析成轴心 `id` ⇒ 跨语言重名解析不了（第三语言到来前必须解决） | `translate/book_ts.ts` | 未开工 |
 | T-#PIVOT-RESULTNAMES | 轴心不存**结果名**（Go 命名结果 `(principle, fix string)` 名字丢失）—— 文档性信息缺失，回译探针已如实标注 | `translate/book_ts.ts` | 未开工（小） |
 | T-#BODY-IR-EXPAND | 体 IR 扩面：竖切已通（90/624 = 14.4%，`t447` 等价）。继续铺 `if`/`for`/`switch`/`defer`/字面量集合，每铺一类必须保 `t447` + `t441` 双绿 | `translate/body_pivot.ts` | 进行中 |
@@ -149,7 +148,6 @@
 | T-#SHIM-SITES | copy() 真正的位置：① 值类型 struct 参数**函数入口** ② 返回 struct 值 ③ `append(slice, structVal)` ④ 字段赋值。每接一处须报"插了多少处"（现在是 0/109，机制通了但数据没生效） | `translate/{body_pivot,body_mech}.ts` | 未开工 |
 | T-#KILL-LEGACY | **最大结构债**：`body_mech` 两套路径并存（pivot + legacy ~500 行）。按规则组迁进 lift/project，每组 `t447`+`t441` 双绿，迁完删 legacy | `translate/{body_mech,body_pivot}.ts` | 未开工（下一步） |
 | T-#FEATURE-MATRIX | **特色矩阵**（8 语言 × ~30 构造，三态 ✓/~ /✗）：发现轴心的 **Go 偏心**（哪一维只有 Go 是 ✓），并按"多少语言需要"重排铺面。不做"更完美的语言"，做"缺口显式" | `docs/` + `translate/pivot.ts` | 未开工 |
-| T-#BUILD-VAR | Go build tag 变体未建模：`local_embedder.go` 与 `local_embedder_nocgo.go` 各定义一次 `LocalEmbedder` ⇒ 剩 30 个 blocked 里的撞车、以及输出 `TS2300 Duplicate identifier` | `translate/book.ts` | 未开工 |
 | T-#CERT-1 | **20 个无证工具**（`scripts/audit-tool-certs.mjs`，量具已修为以注册表为真源：55 工具 / 35 提到 / **20 无证**）。★ **顺序已纠正**（2026-10-28 用户："A 这批几乎全部可以吸收进设计侧"）⇒ **先收敛、后补证**：A 档 11 个读数工具几乎全可吸收/合并（见 `docs/tool-convergence.md`），给"注定要合并的工具"写证是浪费。**步 1** 纯工具内合并（`plan_refactor`→`apply_refactor_plan`、`render_design`+`feature_line`→`get_dsl`、`find_similar_names`+`suggest_renames`→`rename_symbols`、`tool_usage`+`capability_audit`→`capability_map`）；**步 2** 变判据（`code_health`→`domain-independent`+新 `dead-code`+新 `metric`；`impact_analysis`→写闸前置；`detect_drift` 复核后退役）；**步 3** 只给幸存者补证（预计 5–6 张） | `docs/tool-convergence.md` · 各线 index.ts | 顺序已定（步 1 未开工） |
 | T-#RP-1 | **重写计划闸**：默认已翻（2026-10-28，`AGENT_IO_REQUIRE_PLAN` 三态，`=0` 只报）· 回执渲染✅ · 其它写工具文本渲染✅。**剩**：① 拿真实任务量一次严格档的误报率（本仓会被任务闸先拦 ⇒ 需要一张真领的卡）② 调 `planGaps` 粒度 | `src/application/write_gate.ts` · `design/db/rewrite_plan.ts` | 迭代中 |
 | T-#98d-old | 三条门类证跑不起来（已修，保留一行说明去向：t352 ✓ 17/0 · t332 ✓ 10/0 · t353 仅剩 T-#98d-2 那 6 条） | `certs/` | ✅ 已修 |
