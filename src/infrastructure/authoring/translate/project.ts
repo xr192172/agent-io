@@ -16,7 +16,7 @@ import ts from 'typescript';
 import { translateGoToTs } from './pairs.js';
 import { channelShimSource, collectQualified, renderGoStdShim } from './ts_codegen.js';
 import { collectExternalTypeRefs } from './referenced.js';
-import { spliceBody } from './fill.js';
+import { spliceBody, normalizeLegacyOctal } from './fill.js';
 import { fillUnitsWithRetry, fillUnitsBatched } from './fill.js';
 import { createPooledBatchTranslator } from './llm.js';
 import { applyDeterministicFixers } from './fixers.js';
@@ -602,7 +602,8 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
         if (cacheOk) hits.push({ u, body: hit.body });
         else missUnits.push(u);
       }
-      for (const h of hits) h.u.skeleton = spliceBody(h.u.skeleton, h.body);
+      // ★ 2026-10-29：**缓存/机械回放也要走八进制归一** —— 上一遍残留的 TS1121 就是这条路径漏了归一化。
+      for (const h of hits) h.u.skeleton = spliceBody(h.u.skeleton, normalizeLegacyOctal(h.body));
       // ★ 机械体不算「缓存命中」（两种零 LLM 的正交来源，混在一起两个读数都失真）
       if (hits.length > mechInModule) cacheHits += hits.length - mechInModule;
       const unitsToFill = missUnits;

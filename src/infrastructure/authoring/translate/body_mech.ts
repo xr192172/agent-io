@@ -501,8 +501,12 @@ const expr = (node: SyntaxNodeLike | null): string | null  => {
         if (c.type === 'keyed_element') {
           const k = c.child(0);
           const v = expr(c.child(2) ?? c.child(1));
-          if (!k || v === null) return null;
-          elems.push(`${k.text}: ${v}`);
+          const kSrc = k ? expr(k) : null;
+          if (!k || v === null || kSrc === null) return fail(node, 'map-key');
+          // ★★★ 2026-10-29（tsc 抓到的）：**map 字面量的元素必须是 [k, v] 元组**！
+          //   原来一律输出 `k: v` ⇒ 生成 `new Map(["id": n.ID, ...])`（TS1005 一片）。
+          //   键也必须走 expr（`cfg.ModelPath` 这类选择子原样 text 会变成字符串键）。
+          elems.push(litKind === 'map' ? `[${kSrc}, ${v}]` : `${kSrc}: ${v}`);
         } else {
           // literal_element 是包装节点，要解包取里面的真表达式
           const inner = c.type === 'literal_element' ? c.child(0) : c;
