@@ -28,7 +28,9 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
-const SRC = process.argv[2] ?? 'D:/agentio/dev/agent-memory';
+// ★ 参数解析：只取**不以 -- 开头**的第一个位置参数当源目录（否则 `--write-ledger` 会被当成路径）
+const SRC = process.argv.slice(2).find((a) => !a.startsWith('--') && !/^[^/\\]*$/.test('')) ?? 'D:/agentio/dev/agent-memory';
+
 const D = 'file:///' + path.join(ROOT, 'dist/src').replace(/\\/g, '/') + '/';
 const { parseAstRoot } = await import(D + 'infrastructure/parse/index.js');
 const { liftGoBody, projectTsBody } = await import(D + 'infrastructure/authoring/translate/body_pivot.js');
@@ -125,6 +127,19 @@ for (const f of files) {
 //   实测 pivot 修好 TS2451（`let` 重复声明）后与 legacy 产生 28 处分叉，而**错的是 legacy**。
 //   ⇒ 判据改为：**未登记的分叉才红**；已登记的分叉要求带原因，并在 legacy 被修/删后**必须消失**
 //     （stale 检查）。这样"分叉"从"禁止"变成"必须显式记账"。
+// ★ 登账入口：`--write-ledger "<原因>"` 把当前分叉全部登记（带原因），后续新增分叉仍会红。
+if (process.argv.includes('--write-ledger')) {
+  const why = process.argv[process.argv.indexOf('--write-ledger') + 1] ?? '(原因未填)';
+  const prev = fs.existsSync(path.join(HERE, 'known-divergences.json'))
+    ? JSON.parse(fs.readFileSync(path.join(HERE, 'known-divergences.json'), 'utf8'))
+    : { note: '', allowed: [] };
+  const map = new Map((prev.allowed ?? []).map((x) => [`${x.file}#${x.fn}`, x]));
+  for (const d of diffs) map.set(`${d.file}#${d.fn}`, { file: d.file, fn: d.fn, why, pivot: d.pivot.slice(0, 80), legacy: d.legacy.slice(0, 80) });
+  const out = { note: prev.note ?? '', allowed: [...map.values()] };
+  fs.writeFileSync(path.join(HERE, 'known-divergences.json'), JSON.stringify(out, null, 2) + '\n');
+  console.log(`已登记 ${out.allowed.length} 条分叉（原因：${why}）`);
+  process.exit(0);
+}
 const LEDGER = path.join(HERE, 'known-divergences.json');
 const ledger = fs.existsSync(LEDGER) ? JSON.parse(fs.readFileSync(LEDGER, 'utf8')) : { allowed: [] };
 const allowedKeys = new Set((ledger.allowed ?? []).map((x) => `${x.file}#${x.fn}`));
