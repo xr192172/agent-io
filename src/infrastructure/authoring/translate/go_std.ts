@@ -76,7 +76,39 @@ const HEAD = (pkg: string, notes: string): string =>
  * 返回某 Go 包的适配模块源码；不覆盖的包返回 `null`（⇒ 上层显式报缺，不发任何垫片）。
  * ★ 每个实现都尽量贴 Go 语义；**做不到的地方抛错并注明**，不猜。
  */
+/**
+ * ★★★ T-#ADAPTER-GAPS：**按实测补齐的导出**（不预铺，缺哪个补哪个）。
+ *
+ * 为什么单独一块：`tsc_fix` 的槽位方法表里出现的名字，适配器**必须真有导出**，
+ * 否则改写会被静默跳过（实测 `number` 上 6 条：Sub/UTC/String/UnixNano）。
+ * 同理 `os.Rename`(×多) / `os.UserHomeDir` / `strings.TrimRight` / `time.ParseDuration`
+ * 报 `does not exist on type 'typeof import(…)'` —— 都是 package 级函数缺导出。
+ *
+ * ★ 只补实测缺的：不把 Go 标准库整面墙铺出来（铺面=成本且没人验）。
+ */
+function extraExportsFor(pkg: string): string {
+  if (pkg === 'time') {
+    return `\nexport const UTC = (t: Time): Time => t; // Time 已是 epoch ms（UTC 语义天然成立）\nexport const Sub = (a: Time, b: Time): Duration => a - b;\nexport const String = (t: Time): string => new Date(t).toISOString();\nexport const UnixNano = (t: Time): number => t * 1e6;\nexport const ParseDuration = (s: string): [Duration, Error | null] => {\n  const m = /^(-?\\d+(?:\\.\\d+)?)(ns|us|µs|ms|s|m|h)$/.exec(s.trim());\n  if (!m) return [0, new Error('time.ParseDuration: 不支持的时长 ' + s)];\n  const v = Number(m[1]);\n  const u = m[2];\n  const ms = u === 'h' ? 3_600_000 : u === 'm' ? 60_000 : u === 's' ? 1000 : u === 'ms' ? 1 : u === 'us' || u === 'µs' ? 1e-3 : 1e-6;\n  return [v * ms, null];\n};\n`;
+  }
+  if (pkg === 'os') {
+    return `\nexport const Rename = (a: string, b: string): Error | null => {\n  try {\n    fs.renameSync(a, b);\n    return null;\n  } catch (e) {\n    return e as Error;\n  }\n};\nexport const UserHomeDir = (): [string, Error | null] => {\n  const h = process.env.HOME ?? process.env.USERPROFILE ?? '';\n  return h ? [h, null] : ['', new Error('os.UserHomeDir: 无法确定 HOME')];\n};\n`;
+  }
+  if (pkg === 'strings') {
+    return `\nexport const TrimRight = (s: string, cut: string): string => {\n  let out = s;\n  while (cut && out.endsWith(cut)) out = out.slice(0, -cut.length);\n  return out;\n};\nexport const TrimLeft = (s: string, cut: string): string => {\n  let out = s;\n  while (cut && out.startsWith(cut)) out = out.slice(cut.length);\n  return out;\n};\n`;
+  }
+  return '';
+}
+
+/**
+ * ★ T-#ADAPTER-GAPS：包装一层 —— 原始模板原样产出，末尾追加 `extraExportsFor(pkg)`。
+ *   抽成包装（而不是改 20 处模板串）是为了**只改一处、可判（call-exists）**。
+ */
 export function renderGoStdAdapter(pkg: string): string | null {
+  const base = renderGoStdAdapterRaw(pkg);
+  return base === null ? null : base + extraExportsFor(pkg);
+}
+
+function renderGoStdAdapterRaw(pkg: string): string | null {
   switch (pkg) {
     case 'strings':
       return (

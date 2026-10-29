@@ -19329,6 +19329,101 @@
         },
         "arch_layer": "utility",
         "path": "tests/helpers/i1_fixture.ts"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_go_std_ts",
+        "label": "go_std.ts",
+        "type": "file",
+        "path": "src/infrastructure/authoring/translate/go_std.ts",
+        "decision": {
+          "summary": "T-#ADAPTER-GAPS：按实测补齐 _go_std 导出（time: UTC/Sub/String/UnixNano/ParseDuration；os: Rename/UserHomeDir；strings: TrimRight/TrimLeft），追加点只有一处：renderGoStdAdapter → extraExportsFor",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "phase": "post",
+              "path": "src/infrastructure/authoring/translate/go_std.ts",
+              "symbol": "renderGoStdAdapter",
+              "target": "extraExportsFor",
+              "why": "补齐导出必须走同一条追加链；哪个 case 自己另铺一份，「槽位表名字都要有导出」就保证不了（实测 15 条静默跳过就是这类）"
+            },
+            {
+              "kind": "source-has",
+              "phase": "post",
+              "path": "src/infrastructure/authoring/translate/go_std.ts",
+              "must": [
+                "Rename",
+                "ParseDuration"
+              ],
+              "why": "实测缺的两个 package 函数（os.Rename / time.ParseDuration）必须在适配器里出现"
+            }
+          ],
+          "updated_at": "2026-10-29T17:31:21.778Z",
+          "agent": "agent-io-cli"
+        },
+        "task": {
+          "id": "file_src_infrastructure_authoring_translate_go_std_ts",
+          "summary": "T-#ADAPTER-GAPS：按实测补齐 _go_std 导出（time: UTC/Sub/String/UnixNano/ParseDuration；os: Rename/UserHomeDir；strings: TrimRight/TrimLeft），追加点只有一处：renderGoStdAdapter → extraExportsFor",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:agent-io-cli",
+          "claimed_at": "2026-10-29T17:31:29.611Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/authoring/translate/go_std.ts",
+                "name": "extraExportsFor",
+                "fp": ""
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/go_std.ts",
+                "name": "renderGoStdAdapter",
+                "fp": "14f2c7c3ca8e29cc5c7ac523074eb1608eff1829"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/authoring/translate/go_std.ts",
+                "content_hash": "3a36f0d61938ace6b6c597532850a1a3bda210a2"
+              }
+            ],
+            "computed_at": "2026-10-29T17:31:29.443Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/authoring/translate/go_std.ts#extraExportsFor"
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-29T17:31:59.639Z",
+              "by": "llm",
+              "agent": "agent:agent-io-cli",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node certs/t453-replay-baseline-cert.mjs",
+                "input": "1ce88f5a56a1e04af011689634a1e1cae270fd78",
+                "code": "eb97b3c71dab4d62c8f24b20b21f734b7c233173",
+                "covers": [
+                  "src/infrastructure/authoring/translate/go_std.ts"
+                ]
+              },
+              "observed": "errors 346→336（-10）· holes 195 未涨 · 补齐 time/os/strings 九个导出",
+              "command": "node certs/t453-replay-baseline-cert.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/infrastructure/authoring/translate/go_std.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node certs/t453-replay-baseline-cert.mjs",
+            "observed": "errors 346→336（-10）· holes 195 未涨 · 补齐 time/os/strings 九个导出",
+            "at": "2026-10-30T01:31:58.4595109+08:00"
+          }
+        }
       }
     ],
     "edges": [
@@ -68942,6 +69037,12 @@
         "responsibility": "工具层 · tests/helpers — 4 个函数（导入自 4 个模块）",
         "lines": 68,
         "layer": "utility"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_go_std_ts",
+        "path": "src/infrastructure/authoring/translate/go_std.ts",
+        "responsibility": "go_std.ts",
+        "status": "done"
       }
     ]
   },
@@ -69003,13 +69104,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 304,
+  "_dsl_rev": 306,
   "_sync": {
-    "saved_at": "2026-10-29T16:59:38.527Z",
+    "saved_at": "2026-10-29T17:31:59.767Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 292181390,
+    "age": 294122630,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
