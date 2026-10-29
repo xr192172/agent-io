@@ -32,6 +32,8 @@ import type { SkippedDecl } from './go_extractor.js';
 import { parseFileFull } from '../../parse/index.js';
 import type { TransUnit } from './unit.js';
 import type { VerifyIssue } from './verify.js';
+// ★★★ 2026-10-29（T-#CACHE-GATE）：缓存体消费前必须过**当前**判据，否则新判据只管未来。
+import { undeclaredNameIssues } from './verify.js';
 import { skipDirSet } from '../../parse/source_exts.js';
 
 /** 项目内跳过的噪声目录（不进 .go 扫描） */
@@ -750,6 +752,8 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
   // ★ 2026-10-28（T-#FILL-CACHE）：填孔缓存**在函数作用域**声明（回写发生在报告之后，不能只活在 fill 块里）
   const fillCache = opts.outDir ? loadFillCache(String(opts.outDir)) : {};
   let cacheHits = 0;
+  /** ★ T-#CACHE-GATE：缓存体被当前判据判坏、作废重填的个数 */
+  let staleCache = 0;
   let mechCount = 0;
   if (opts.fill) {
     // ★ I3（2026-10-25）：翻译 DB 投影 + 术语表进 prompt（按图索骥的"图"）——
@@ -775,12 +779,29 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
           mechInModule++;
           continue;
         }
-        const key = `v2|${m.rel}#${u.id}@${sha1(u.srcSnippet)}`;
+        // ★★★ 2026-10-29（T-#CACHE-GATE）：键里带**判据版本** `v3`。
+        //   缓存体是否合格，取决于"生成它时的判据"与"现在消费它时的判据"是否一致。
+        //   不带版本 ⇒ 新加的判据只约束未来，旧体照样被放回（实测 66 个 `err` 就是这么来的）。
+        const key = `v3|${m.rel}#${u.id}@${sha1(u.srcSnippet)}`;
         const hit = cache[key];
-        // ★★★ 2026-10-29：**缓存回放也要过契约检查** —— 否则修好的规则被旧坏体抵消：
-        //   实测 retrieve_pipeline 的 LLM 体里带 `export function` 外壳（嵌进外层 ⇒ 语法错），
-        //   缓存会把它原样放回来，重跑多少次都还是错。判坏 ⇒ 当 miss 重新填。
-        const cacheOk = !!hit?.body && !/^[ \t]*(export\s+)?(async\s+)?function\b/m.test(hit.body.trim());
+        // ★ 缓存回放也要过契约检查（两关）：
+        //   ① 不许带 `export function` 外壳（嵌进外层 ⇒ 语法错，t442 的教训）；
+        //   ② **作用域判据**（t452）：引用的名字必须已声明/已导入/是全局 —— 判坏即当 miss 重填。
+        let cacheOk = !!hit?.body && !/^[ \t]*(export\s+)?(async\s+)?function\b/m.test(hit.body.trim());
+        if (cacheOk && hit?.body) {
+          const probe = {
+            ...u,
+            skeleton: spliceBody(u.skeleton, normalizeLegacyOctal(hit.body)),
+          } as (typeof m.units)[number];
+          const scopeIssues = undeclaredNameIssues(probe);
+          if (scopeIssues.length) {
+            cacheOk = false;
+            staleCache += 1;
+            if (diagnostics.length < 40) {
+              diagnostics.push(`缓存体不合规作废（${m.rel} ${u.name}）：${scopeIssues[0].detail}`);
+            }
+          }
+        }
         if (cacheOk) hits.push({ u, body: hit.body });
         else missUnits.push(u);
       }
@@ -819,11 +840,12 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
           u.skeleton = f.filledSource;
           // ★ 成功的写进缓存：跨轮次**不再重发**（只重试失败的）
           const bodyOnly = spliceBodyOuter(f.filledSource);
-          if (bodyOnly) cache[`v2|${m.rel}#${u.id}@${sha1(u.srcSnippet)}`] = { body: bodyOnly, at: new Date().toISOString() };
+          if (bodyOnly) cache[`v3|${m.rel}#${u.id}@${sha1(u.srcSnippet)}`] = { body: bodyOnly, at: new Date().toISOString() };
         }
       }
       // ★ 2026-10-28：**进度日志**（长跑必须可观测）。没有它，卡在某一批时外面看到的是"什么都没有"。
-      process.stderr.write(`[translate] fill ${m.rel}: 命中${hits.length} 提交${unitsToFill.length} ok${filled.filter((f)=>f.ok).length} fail${filled.filter((f)=>!f.ok).length}\n`);
+      if (staleCache) process.stderr.write(`[cache-gate] ${m.rel}: ${staleCache} 个缓存体被当前判据判坏、作废重填\n`);
+  process.stderr.write(`[translate] fill ${m.rel}: 命中${hits.length} 提交${unitsToFill.length} ok${filled.filter((f)=>f.ok).length} fail${filled.filter((f)=>!f.ok).length}\n`);
       const failed = filled.filter((f) => !f.ok);
       for (const f of failed) {
         m.fillFailures.set(f.unit.id, f.error ?? f.issues.map((i) => i.detail).join('；'));

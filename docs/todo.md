@@ -148,8 +148,8 @@
 | T-#KILL-LEGACY | **最大结构债**：`body_mech` 两套路径并存（pivot + legacy ~500 行）。按规则组迁进 lift/project，每组 `t447`+`t441` 双绿，迁完删 legacy | `translate/{body_mech,body_pivot}.ts` | 未开工（下一步） |
 | T-#FEATURE-MATRIX | **特色矩阵**（8 语言 × ~30 构造，三态 ✓/~ /✗）：发现轴心的 **Go 偏心**（哪一维只有 Go 是 ✓），并按"多少语言需要"重排铺面。不做"更完美的语言"，做"缺口显式" | `docs/` + `translate/pivot.ts` | 未开工 |
 | T-#FREEZE-BODYIR | 按 `docs/PIVOT-VERDICT.md`：体 IR **冻结在 38%**，不再铺面（单语言对无收益）；未来做第三种语言时才继续 | `translate/body_pivot.ts` | 已决定 |
-| T-#CACHE-GATE | **判据前置到缓存消费点**：读缓存体后先跑当前判据（t442/t452），不过的作废；缓存键带判据版本 `v3`。见 `docs/CACHE-GATE.md` | `translate/project.ts` | 未开工（高优先） |
 | T-#KILL-LEGACY | `body_mech.ts` 有**两条并行体路径**（pivot + legacy ~500 行）。`if init` 只修了 pivot 一侧，legacy 同样丢 ⇒ 同一事实两份实现。移植规则组到 lift/project 后删 legacy，保持 t447+t441 双绿 | `translate/body_mech.ts` | 未开工 |
+| T-#BASELINE-1031 | 把「零 LLM 回放 = **1031 错**」定为**棘轮基线**：确定性层改动不得让它上升（`replayOnly` 5 秒可测）。升版/换规则后需重新确认基线 | `certs/` + `translate/project.ts` | 未开工 |
 | T-#CERT-1 | **20 个无证工具**（`scripts/audit-tool-certs.mjs`，量具已修为以注册表为真源：55 工具 / 35 提到 / **20 无证**）。★ **顺序已纠正**（2026-10-28 用户："A 这批几乎全部可以吸收进设计侧"）⇒ **先收敛、后补证**：A 档 11 个读数工具几乎全可吸收/合并（见 `docs/tool-convergence.md`），给"注定要合并的工具"写证是浪费。**步 1** 纯工具内合并（`plan_refactor`→`apply_refactor_plan`、`render_design`+`feature_line`→`get_dsl`、`find_similar_names`+`suggest_renames`→`rename_symbols`、`tool_usage`+`capability_audit`→`capability_map`）；**步 2** 变判据（`code_health`→`domain-independent`+新 `dead-code`+新 `metric`；`impact_analysis`→写闸前置；`detect_drift` 复核后退役）；**步 3** 只给幸存者补证（预计 5–6 张） | `docs/tool-convergence.md` · 各线 index.ts | 顺序已定（步 1 未开工） |
 | T-#RP-1 | **重写计划闸**：默认已翻（2026-10-28，`AGENT_IO_REQUIRE_PLAN` 三态，`=0` 只报）· 回执渲染✅ · 其它写工具文本渲染✅。**剩**：① 拿真实任务量一次严格档的误报率（本仓会被任务闸先拦 ⇒ 需要一张真领的卡）② 调 `planGaps` 粒度 | `src/application/write_gate.ts` · `design/db/rewrite_plan.ts` | 迭代中 |
 | T-#98d-old | 三条门类证跑不起来（已修，保留一行说明去向：t352 ✓ 17/0 · t332 ✓ 10/0 · t353 仅剩 T-#98d-2 那 6 条） | `certs/` | ✅ 已修 |
