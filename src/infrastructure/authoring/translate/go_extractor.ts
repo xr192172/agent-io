@@ -16,6 +16,7 @@ import { parseAstRoot, type SyntaxNodeLike } from '../../parse/index.js';
 import { DEFAULT_CONSTRAINTS, type TransUnit, type TranslateParam, type TranslateKind, type TypeRef, type TranslateMethod, type DecisionShape } from './unit.js';
 import { evalConstExpr, constToTsLiteral, type ConstValue } from './const_eval.js';
 import { translateGoBodyMech } from './body_mech.js';
+import { isValueStructType, noteShimInsert } from './body_pivot.js';
 import fs from 'node:fs';
 
 /** 从 Go AST 节点取字段子节点（tree-sitter 字段名访问，防御 null） */
@@ -504,7 +505,16 @@ function unitFromFunc(node: SyntaxNodeLike): TransUnit | null {
   //   ⇒ 翻译器能判 `n / 2` 是整除（Math.trunc）还是浮点除；判不出才交 LLM。
   const mechEnv = new Map<string, string>();
   for (const p of params) mechEnv.set(p.name, p.type);
-  const mechBody = translateGoBodyMech(bodyBlock, mechEnv) ?? undefined;
+  // ★★★ T-#SHIM-SITES（**最高频的复制位置：函数入口**）：Go 的值类型 struct 参数是**复制**传入的，
+  //   TS 收到引用 ⇒ 入口显式 copy 一次才顶住值语义。
+  //   放在**调用方**（不是 pivot 分支里）：这样 **pivot 与 legacy 两条路径都覆盖**
+  //   （第一版放在 pivot 分支 ⇒ 只覆盖 38% 的体）。
+  const valueParamsForMech = params.filter((p) => p.typeRef && p.typeRef.kind === 'ident').map((p) => p.name);
+  const rawMech = translateGoBodyMech(bodyBlock, mechEnv);
+  const entryCopies = valueParamsForMech.filter((nm) => isValueStructType(mechEnv.get(nm) ?? null));
+  if (rawMech && entryCopies.length) noteShimInsert(entryCopies.length);
+  const entryCopy = entryCopies.length ? entryCopies.map((nm) => `  ${nm} = copy(${nm});`).join('\n') + '\n' : '';
+  const mechBody = rawMech ? entryCopy + rawMech : undefined;
   const srcLine = node.startPosition.row + 1;
   if (recv) {
     // 方法：receiver 作首参（泛型 receiver 用全类型如 Pair<T>）；命名带类型基名前缀防撞名

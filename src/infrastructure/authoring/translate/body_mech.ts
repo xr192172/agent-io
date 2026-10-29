@@ -23,7 +23,7 @@
  */
 
 import type { SyntaxNodeLike } from '../../parse/index.js';
-import { liftGoBody, projectTsBody, setTypeResolver } from './body_pivot.js';
+import { isValueStructType, liftGoBody, projectTsBody, setTypeResolver, noteShimInsert } from './body_pivot.js';
 
 /** 支持的表达式节点类型（不含任一 ⇒ 不翻） */
 const OK_EXPR = new Set([
@@ -1007,7 +1007,12 @@ const blocker = (block: SyntaxNodeLike | null): { type: string; text: string } |
 }
 
 /** 把一个 Go 函数体机械翻成 TS 函数体源码；翻不动返回 \`null\`（上层走 LLM）。 */
-export function translateGoBodyMech(block: SyntaxNodeLike | null, env?: MechTypeEnv): string | null {
+export function translateGoBodyMech(
+  block: SyntaxNodeLike | null,
+  env?: MechTypeEnv,
+  /** 值类型 struct 参数名（调用方算好，用于函数入口插 copy()） */
+  valueParams?: string[],
+): string | null {
 
   // ★★★ 2026-10-29（T-#PIVOT-LIFTPROJ）：**优先走轴心** —— `lift_go → 体 IR → project_ts`。
   //   走不通（遇到未覆盖构造）就回落下面的 legacy 直连；**绝不半翻**。
@@ -1016,8 +1021,10 @@ export function translateGoBodyMech(block: SyntaxNodeLike | null, env?: MechType
     // ★ T-#SHIM-APPLY：把本函数的类型环境交给渲染器 —— 它据此决定哪些赋值要插 copy()
     setTypeResolver(env ? (name) => env.get(name) ?? null : null);
     const ir = liftGoBody(block);
+    // ★ 入口 copy 不在这里做：它要**同时覆盖 pivot 与 legacy 两条路径** ⇒ 提到调用方（go_extractor）
     if (ir) return projectTsBody(ir);
-  }  if (!block) return null;
+  }
+  if (!block) return null;
   return createTranslator(env).translate(block);
 }
 

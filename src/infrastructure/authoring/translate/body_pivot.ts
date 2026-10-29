@@ -132,6 +132,21 @@ export function setValueStructTypes(types: Iterable<string>): void {
 export function setTypeResolver(fn: ((name: string) => string | null) | null): void {
   RESOLVE_TYPE = fn;
 }
+
+let SHIM_INSERTS = 0;
+export function noteShimInsert(n: number): void {
+  SHIM_INSERTS += n;
+}
+export function shimInsertCount(): number {
+  return SHIM_INSERTS;
+}
+export function resetShimInsertCount(): void {
+  SHIM_INSERTS = 0;
+}
+export function isValueStructType(goType: string | null): boolean {
+  if (!goType) return false;
+  return VALUE_STRUCTS.has(goType.replace(/^\*+/, ''));
+}
 /** 这个名字当前是否是**值类型 struct**（决定是否插 copy） */
 function isValueStructIdent(name: string): boolean {
   if (!RESOLVE_TYPE) return false;
