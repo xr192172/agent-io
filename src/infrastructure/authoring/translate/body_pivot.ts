@@ -37,7 +37,13 @@ export type IrStmt =
   | { k: 'while'; cond: IrExpr; body: IrStmt[] }
   /** 遍历（Go 的 `for k, v := range x`）——**轴心只说"遍历"，TS 用 for-of/下标，Rust 用 iter()** */
   | { k: 'range'; index: string | null; value: string | null; target: IrExpr; body: IrStmt[] }
-  | { k: 'incdec'; target: IrExpr; op: '++' | '--' };
+  | { k: 'incdec'; target: IrExpr; op: '++' | '--' }
+  /**
+   * `defer f()`：语义是"**函数返回时**执行，后进先出"。
+   * ★ 轴心只在**函数体直接子层**接受它（嵌套 defer 的执行时机不同：每次迭代 vs 函数退出），
+   *   嵌套的一律 lift→null（回落 legacy，legacy 同样不翻）。
+   */
+  | { k: 'defer'; call: IrExpr };
 
 /** 体 IR：表达式 */
 export type IrExpr =
@@ -61,10 +67,15 @@ export type IrExpr =
   | { k: 'bool'; value: boolean }
   /** Go `nil` ⇒ 轴心的"空值"槽（TS 渲染器落 `null`，与 legacy 一致） */
   | { k: 'nil' }
-  | { k: 'slice'; x: IrExpr; lo: IrExpr | null; hi: IrExpr | null };
+  | { k: 'slice'; x: IrExpr; lo: IrExpr | null; hi: IrExpr | null }
+  /**
+   * 复合字面量（Go 的 `[]T{…}` / `map[K]V{…}` / `T{…}`）。
+   * 轴心只区分**三种容器语义**；具体语法（数组/Map/对象）归渲染器。
+   */
+  | { k: 'composite'; kind: 'slice' | 'map' | 'struct'; elems: Array<{ key?: IrExpr; value: IrExpr }> };
 
 /** 列举本竖切支持的节点类型（未列出的一律 lift→null） */
-const OK_STMT = new Set(['block', 'return_statement', 'expression_statement', 'short_var_declaration', 'assignment_statement', 'if_statement', 'for_statement', 'inc_dec_statement', 'var_declaration']);
+const OK_STMT = new Set(['block', 'return_statement', 'expression_statement', 'short_var_declaration', 'assignment_statement', 'if_statement', 'for_statement', 'inc_dec_statement', 'var_declaration', 'defer_statement']);
 const OK_EXPR = new Set([
   'identifier',
   'int_literal',
@@ -82,6 +93,10 @@ const OK_EXPR = new Set([
   'float_literal',
   'rune_literal',
   'slice_expression',
+  'composite_literal',
+  'literal_value',
+  'keyed_element',
+  'literal_element',
   'expression_list',
   'argument_list',
 ]);
@@ -113,11 +128,11 @@ function kidsOf(n: SyntaxNodeLike): SyntaxNodeLike[] {
   return out;
 }
 
-function liftStmt(n: SyntaxNodeLike): IrStmt | null {
+function liftStmt(n: SyntaxNodeLike, depth = 0): IrStmt | null {
   if (!OK_STMT.has(n.type)) return null;
   switch (n.type) {
     case 'block': {
-      const inner = kidsOf(n).map(liftStmt);
+      const inner = kidsOf(n).map((c) => liftStmt(c, depth + 1));
       if (inner.some((x) => !x)) return null;
       return { k: 'block', body: inner as IrStmt[] };
     }
@@ -141,7 +156,7 @@ function liftStmt(n: SyntaxNodeLike): IrStmt | null {
       }
       const thenBlock = blocks[0];
       if (!thenBlock) return null;
-      const thenIr = liftStmt(thenBlock);
+      const thenIr = liftStmt(thenBlock, depth + 1);
       if (!thenIr || thenIr.k !== 'block') return null;
       // ★★ else：tree-sitter-go 里 `else` 是**匿名 token**，不是 else_clause 包装
       //   （legacy 注释里记过这条坑：漏了会静默丢分支）。见到 else 必须有分支，找不到就 null。
@@ -159,11 +174,11 @@ function liftStmt(n: SyntaxNodeLike): IrStmt | null {
         wrapper && wrapper.type === 'else_clause' ? (wrapper.child(1) ?? wrapper.child(0)) : n.child(elseIdx + 1);
       if (!inner) return null;
       if (inner.type === 'if_statement') {
-        const nested = liftStmt(inner);
+        const nested = liftStmt(inner, depth + 1);
         if (!nested) return null;
         return { k: 'if', cond, then: thenIr.body, else: nested };
       }
-      const elseIr = liftStmt(inner);
+      const elseIr = liftStmt(inner, depth + 1);
       if (!elseIr || elseIr.k !== 'block') return null;
       return { k: 'if', cond, then: thenIr.body, else: elseIr.body };
     }
@@ -207,6 +222,15 @@ function liftStmt(n: SyntaxNodeLike): IrStmt | null {
       }
       return { k: 'assign', target, op, value };
     }
+    case 'defer_statement': {
+      // ★ 只在函数体直接子层接受（depth 0）——嵌套 defer 的执行时机不同，不翻
+      if (depth !== 0) return null;
+      const parts = kidsOf(n);
+      const call = parts[parts.length - 1] ?? null;
+      if (!call) return null;
+      const ir = liftExpr(call);
+      return ir ? { k: 'defer', call: ir } : null;
+    }
     case 'var_declaration': {
       // `var x T = v` / `var x T`：只支持**单名**（多名会变成多条语句，先不铺）
       const specs: SyntaxNodeLike[] = [];
@@ -248,7 +272,7 @@ function liftStmt(n: SyntaxNodeLike): IrStmt | null {
     case 'for_statement': {
       const bodyBlock = kidsOf(n).find((c) => c.type === 'block');
       if (!bodyBlock) return null;
-      const bodyIr = liftStmt(bodyBlock);
+      const bodyIr = liftStmt(bodyBlock, depth + 1);
       if (!bodyIr || bodyIr.k !== 'block') return null;
       const rng = kidsOf(n).find((c) => c.type === 'range_clause');
       if (rng) {
@@ -383,6 +407,39 @@ function liftExpr(n: SyntaxNodeLike): IrExpr | null {
       // Go 的按位取反是 `^x`，TS 是 `~x`
       return { k: 'unary', op: op === '^' ? '^' : op, x };
     }
+    case 'composite_literal': {
+      const typeNode = n.child(0) ?? null;
+      // ★ 种类看**类型节点的 AST type**（结构化），不看类型文本形状（legacy 已记为旧毛病）
+      const kindOf = (t: SyntaxNodeLike | null): 'slice' | 'map' | 'struct' | null => {
+        if (!t) return null;
+        if (t.type === 'slice_type' || t.type === 'array_type') return 'slice';
+        if (t.type === 'map_type') return 'map';
+        if (['struct_type', 'type_identifier', 'qualified_type', 'generic_type'].includes(t.type)) return 'struct';
+        return null;
+      };
+      const kind = kindOf(typeNode);
+      if (!kind) return null;
+      const body = kidsOf(n).find((c) => c.type === 'literal_value');
+      if (!body) return null;
+      const elems: Array<{ key?: IrExpr; value: IrExpr }> = [];
+      for (const c of kidsOf(body)) {
+        if (c.type === 'keyed_element') {
+          const parts = kidsOf(c);
+          if (parts.length < 2) return null;
+          const key = liftExpr(parts[0]);
+          const value = liftExpr(parts[parts.length - 1]);
+          if (!key || !value) return null;
+          elems.push({ key, value });
+        } else {
+          const inner = c.type === 'literal_element' ? (kidsOf(c)[0] ?? null) : c;
+          if (!inner) return null;
+          const value = liftExpr(inner);
+          if (!value) return null;
+          elems.push({ value });
+        }
+      }
+      return { k: 'composite', kind, elems };
+    }
     case 'nil':
       return { k: 'nil' };
     case 'float_literal':
@@ -439,6 +496,21 @@ function normalizeInt(text: string): string {
 
 /** **体 IR → TS 文本**（只此一处决定 TS 语法；Rust 渲染器会是另一个函数） */
 export function projectTsBody(stmts: IrStmt[], indent = 1): string {
+  // ★★★ defer 是**结构变换**（不是语句渲染）：Go 在函数返回时按 LIFO 执行 ⇒ TS 用 try/finally。
+  //   只在直接子层接受（lift 已保证）；嵌套 defer 在 lift 阶段就被拒了。
+  const defers = stmts.filter((s): s is Extract<IrStmt, { k: 'defer' }> => s.k === 'defer');
+  if (defers.length) {
+    const rest = stmts.filter((s) => s.k !== 'defer');
+    const restText = rest.length
+      ? rest.map((s) => indentStr(indent + 1) + projectTsStmt(s, indent + 1)).join('\n')
+      : '';
+    const finText = defers
+      .slice()
+      .reverse() // LIFO
+      .map((d) => indentStr(indent + 1) + projectTsExpr(d.call) + ';')
+      .join('\n');
+    return `${indentStr(indent)}try {\n${restText}\n${indentStr(indent)}} finally {\n${finText}\n${indentStr(indent)}}`;
+  }
   return stmts.map((s) => indentStr(indent) + projectTsStmt(s, indent)).join('\n');
 }
 
@@ -545,6 +617,15 @@ function projectTsExpr(e: IrExpr): string {
       return e.value ? 'true' : 'false';
     case 'nil':
       return 'null';
+    case 'composite': {
+      // TS 渲染器：切片 → 数组；map → `new Map([[k, v], …])`（**必须元组**，不是 `k: v`）；struct → 对象字面量
+      if (e.kind === 'slice') return `[${e.elems.map((x) => projectTsExpr(x.value)).join(', ')}]`;
+      if (e.kind === 'map')
+        return `new Map([${e.elems.map((x) => `[${x.key ? projectTsExpr(x.key) : 'undefined'}, ${projectTsExpr(x.value)}]`).join(', ')}])`;
+      return `{ ${e.elems
+        .map((x) => `${x.key ? projectTsExpr(x.key) : 'undefined'}: ${projectTsExpr(x.value)}`)
+        .join(', ')} }`;
+    }
     case 'slice':
       // TS 渲染器：`x.slice(lo ?? 0, hi)`
       return `${projectTsExpr(e.x)}.slice(${e.lo ? projectTsExpr(e.lo) : '0'}${e.hi ? ', ' + projectTsExpr(e.hi) : ''})`;
