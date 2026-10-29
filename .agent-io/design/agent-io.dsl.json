@@ -26293,6 +26293,39 @@
         "to": "dir_src_infrastructure_index",
         "label": "imports ×2",
         "type": "dashed"
+      },
+      {
+        "id": "edge_translate_extract_to_book",
+        "from": "file_src_infrastructure_authoring_translate_go_extractor_ts",
+        "to": "file_src_infrastructure_authoring_translate_book_ts",
+        "label": "提取事实 → 账目（边界判据 t451）",
+        "type": "data",
+        "intent": {
+          "reason": "提取事实→账目：由 t451（AST↔pivot 参数对账）保证零漏采；此边界漏采会静默传到填孔（变参 retrievers 曾因此丢失）。",
+          "boundary": "参数个数/名字/变参必须与源 AST 一致"
+        }
+      },
+      {
+        "id": "edge_translate_book_to_prompts",
+        "from": "file_src_infrastructure_authoring_translate_book_ts",
+        "to": "file_src_infrastructure_authoring_translate_prompts_ts",
+        "label": "账目 → 填孔题面（字段表必须进题面）",
+        "type": "data",
+        "intent": {
+          "reason": "账目→填孔题面：bookFacts 必须带类型字段表（pivot.fields），否则 LLM 不知道目标侧有哪些字段（T-#PROMPT-FACTS，实测注入 17 个单元）。",
+          "boundary": "题面必须含对照信息，不只是签名+原文"
+        }
+      },
+      {
+        "id": "edge_translate_fixers_to_project",
+        "from": "file_src_infrastructure_authoring_translate_fixers_ts",
+        "to": "file_src_infrastructure_authoring_translate_project_ts",
+        "label": "确定性修整 → 装配（禁遮蔽内置全局）",
+        "type": "data",
+        "intent": {
+          "reason": "确定性修整入口：导入生成若让本地导出名遮蔽 JS 全局（logging 的 Error）⇒ TS2555×122。正解 namespace import；禁用全局改自由标识符（同名两义，实测 122→122）。",
+          "boundary": "本仓符号名不得与目标语言内置全局同名"
+        }
       }
     ]
   },
@@ -68590,13 +68623,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 285,
+  "_dsl_rev": 289,
   "_sync": {
-    "saved_at": "2026-10-29T11:49:34.865Z",
+    "saved_at": "2026-10-29T11:54:34.245Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 273577728,
+    "age": 273877108,
     "dbSchemaVersion": 17,
     "via": "tool:design_intent"
   },
