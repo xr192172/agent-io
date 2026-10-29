@@ -247,11 +247,28 @@ export function applyTscDrivenFixes(outDir: string, notes: string[]): TscFixResu
       'Add', 'AddDate', 'Sub', 'Before', 'After', 'Equal', 'IsZero', 'Truncate', 'Round',
     ],
   };
-    const byFile = new Map<string, Array<{ prop: string; target: string; definedIn: string }>>();
+    /**
+   * ★★★ 2026-10-29（**读 tsc 报错一眼看出**）：`Property 'length' does not exist on type 'Map<…>'`
+   *   ⇒ 这是 `len(map)` 被渲染成 `.length`。tsc **已经算好接收者类型是 Map** ⇒ 按位置把
+   *   `.length` 改成 `.size` 即可（不改表达式结构、不重复求值、不做推断）。
+   *   ★ 之前试过"内联三元"版本：接收者被**重复求值**且表达式变复杂 ⇒ 产物 546→584 更差，已回退。
+   */
+  const MAP_PROP_RENAME: Record<string, string> = { length: 'size' };
+  /** 按 (文件, 行, 属性) 精确改名的清单 */
+  const propRenames = new Map<string, Array<{ line: number; from: string; to: string }>>();
+  const byFile = new Map<string, Array<{ prop: string; target: string; definedIn: string }>>();
   let rewritable = 0;
   for (const d of diags) {
     if (!/^[A-Za-z_$][\w$]*$/.test(d.typeText)) {
       bump(`类型不是简单标识符:${d.typeText.slice(0, 24)}`);
+      continue;
+    }
+    // ★ Map 上的属性改名：tsc 说接收者是 Map<…> 且属性是 length ⇒ 改成 size
+    // ★ 注意：parseTs2339 会把泛型参数截掉（`Map<string, boolean>` → `Map`），所以判 `Map`。
+    if (d.typeText === 'Map' && MAP_PROP_RENAME[d.prop]) {
+      if (!propRenames.has(d.rel)) propRenames.set(d.rel, []);
+      propRenames.get(d.rel)!.push({ line: d.line, from: d.prop, to: MAP_PROP_RENAME[d.prop] });
+      rewritable++;
       continue;
     }
     // ★ 槽位方法：接收者是 `number` 且属性是 Time 的方法 ⇒ 自由函数就叫 prop 本身
@@ -288,9 +305,34 @@ export function applyTscDrivenFixes(outDir: string, notes: string[]): TscFixResu
     rewritable++;
   }
 
-  // ② 改写 + 补 import
   let changed = 0;
   let imports = 0;
+
+  // ②a 属性改名（lines.length → lines.size，按诊断行精确匹配）
+  for (const [rel, list] of propRenames) {
+    const abs = path.join(srcRoot, rel);
+    if (!fs.existsSync(abs)) continue;
+    const sf2 = ts.createSourceFile(abs, fs.readFileSync(abs, 'utf8'), ts.ScriptTarget.ES2022, true);
+    const edits2: Array<{ start: number; end: number; text: string }> = [];
+    const visit2 = (node: ts.Node): void => {
+      if (ts.isPropertyAccessExpression(node) && node.name.text === 'length') {
+        const { line } = sf2.getLineAndCharacterOfPosition(node.getStart(sf2));
+        const hit = list.find((r) => r.line === line + 1 && r.from === 'length');
+        if (hit) {
+          edits2.push({ start: node.name.getStart(sf2), end: node.name.getEnd(), text: hit.to });
+          changed++;
+        }
+      }
+      ts.forEachChild(node, visit2);
+    };
+    visit2(sf2);
+    if (!edits2.length) continue;
+    let src2 = fs.readFileSync(abs, 'utf8');
+    for (const e of edits2.sort((a, b) => b.start - a.start)) src2 = src2.slice(0, e.start) + e.text + src2.slice(e.end);
+    fs.writeFileSync(abs, src2);
+  }
+
+  // ② 改写 + 补 import
   for (const [rel, list] of byFile) {
     const abs = path.join(srcRoot, rel);
     if (!fs.existsSync(abs)) continue;
