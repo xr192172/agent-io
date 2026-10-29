@@ -788,7 +788,15 @@ function projectTsStmt(s: IrStmt, indent: number): string {
         const src = simple ? `(${t} instanceof Map ? ${t}.values() : ${t})` : t;
         return `for (const ${s.value} of ${src}) {\n${bodyText}\n${indentStr(indent)}}`;
       }
-      if (s.index) return `for (let ${s.index} = 0; ${s.index} < ${t}.length; ${s.index}++) {\n${bodyText}\n${indentStr(indent)}}`;
+      if (s.index) {
+        // ★★★ 2026-10-29（**抽查读出来的**）：Go 的 `for f := range m` **只取键**（map）或下标（切片）。
+        //   原来一律发数字 for 循环 ⇒ 对 map 拿到的是 0,1,2… 而 Go 里是**键**
+        //   ⇒ `Argument of type 'number' is not assignable to parameter of type 'string'`（×42 一类）。
+        //   `.keys()` **两种载体都对**：Map 给键、数组/字符串给下标 ⇒ 一个写法覆盖，无需类型信息。
+        const simple2 = /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(t);
+        if (simple2) return `for (const ${s.index} of ${t}.keys()) {\n${bodyText}\n${indentStr(indent)}}`;
+        return `for (let ${s.index} = 0; ${s.index} < ${t}.length; ${s.index}++) {\n${bodyText}\n${indentStr(indent)}}`;
+      }
       return `for (const _ of ${t}) {\n${bodyText}\n${indentStr(indent)}}`;
     }
     case 'jump':

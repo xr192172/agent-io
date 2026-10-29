@@ -836,7 +836,12 @@ const stmt = (node: SyntaxNodeLike, indent: string, opts: StmtOpts = {}): string
             return `${pad}for (const ${val} of ${src}) {\n${bodyS}\n${pad}}`;
           })();
         }
-        if (idx) return `${pad}for (let ${idx} = 0; ${idx} < ${target}.length; ${idx}++) {\n${bodyS}\n${pad}}`;
+        if (idx) {
+        // ★ 2026-10-29：index-only range ⇒ `.keys()`（Map 给键 / 数组给下标），与 pivot 同形保 t454
+        const simple3 = /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(target);
+        if (simple3) return `${pad}for (const ${idx} of ${target}.keys()) {\n${bodyS}\n${pad}}`;
+        return `${pad}for (let ${idx} = 0; ${idx} < ${target}.length; ${idx}++) {\n${bodyS}\n${pad}}`;
+      }
         return `${pad}for (const _ of ${target}) {\n${bodyS}\n${pad}}`;
       }
       // 三式 for：翻成 for(init; cond; post)；条件式 for：while
