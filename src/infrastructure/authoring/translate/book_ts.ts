@@ -47,6 +47,12 @@ export interface PivotUnit {
   shape?: TypeRef;
   typeParams?: string[];
   value?: string;
+  /**
+   * ★★★ 2026-10-29（T-#PROMPT-FACTS）：**结构体字段表**（名 + 类型树）。
+   * 用途：填孔 prompt 里必须告诉 LLM "这个类型有哪些字段" —— 否则它只能靠 Go 原文猜，
+   * 或者干脆把字段名写成裸标识符（`TS2304 Cannot find name 'retrievers'` 的另一类来源）。
+   */
+  fields?: Array<{ name: string; ref: TypeRef }>;
 }
 
 /** TransUnit → PivotUnit（结构化，落盘用） */
@@ -72,6 +78,7 @@ export function pivotOf(u: TransUnit): PivotUnit {
   if (params.length) out.params = params;
   if (u.resultRef) out.result = u.resultRef;
   if (u.kind === 'type') out.shape = (u.aliasTypeRef ?? { kind: 'struct', fields: [] }) as TypeRef;
+  if (u.fields?.length) out.fields = u.fields.map((f) => ({ name: f.name, ref: (f.typeRef ?? { kind: 'ident', name: String(f.type ?? 'unknown') }) as TypeRef }));
   if (u.typeParams?.length) out.typeParams = [...u.typeParams];
   if (u.kind === 'const' && u.value) out.value = u.value;
   return out;

@@ -89,6 +89,7 @@ export interface BookSymbol {
     shape?: unknown;
     typeParams?: string[];
     value?: string;
+    fields?: Array<{ name: string; ref: unknown }>;
   };
   /**
    * ★★★ 2026-10-29（T-#BUILD-VAR）：**Go build tag 变体**（同一符号在互斥文件里各定义一次）。
@@ -1555,6 +1556,23 @@ export function attachBookFacts(units: TransUnit[], books: TranslateBook[], relF
         ...(u.fields ?? []).map((f) => f.type),
         u.aliasType ?? '',
       ].join(' ');
+      // ★★★ T-#PROMPT-FACTS：**字段表进 prompt** —— LLM 必须知道类型有哪些字段，
+      //   否则它要么照 Go 原文猜、要么把字段写成裸标识符（TS2304 的一类来源）。
+      //   来源是册子的 `pivot.fields`（结构化事实），不是文本扫描。
+      const wanted = new Set<string>();
+      for (const p of u.params ?? []) {
+        const t = String(p.type ?? '').replace(/^\.\.\./, '').replace(/^\*+/, '').replace(/\[\]$/, '');
+        if (t) wanted.add(t);
+      }
+      for (const T of wanted) {
+        const sym = b.symbols.find((x) => String(x.id ?? '').endsWith('#' + T));
+        const fields = sym?.pivot?.fields ?? [];
+        if (!fields.length) continue;
+        facts.push(
+          `【${T} 的字段】` + fields.map((f) => f.name).join(', ') + '（使用时要带接收者，如 b.字段名）',
+        );
+        if (facts.length >= 12) return;
+      }
       const tt = termTables[bi];
       for (const w of [...tt.covered, ...tt.nullTarget.keys()]) {
         if (facts.length >= 12) break;
