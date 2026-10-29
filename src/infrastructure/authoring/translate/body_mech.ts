@@ -501,7 +501,9 @@ const expr = (node: SyntaxNodeLike | null): string | null  => {
       // 内建函数：len/cap → .length；append → spread
       if (fnNode?.type === 'identifier') {
         if (fname === 'len' && args.length === 1) return `${args[0]}.length`;
-        if (fname === 'append' && args.length >= 2) return `[...${args[0]}, ${args.slice(1).join(', ')}]`;
+        // ★ 2026-10-29：Go 内置 `delete(m, k)` ≠ JS 的 delete 运算符 ⇒ Map 用 `m.delete(k)`
+      if (fname === 'delete' && args.length === 2) return `${args[0]}.delete(${args[1]})`;
+      if (fname === 'append' && args.length >= 2) return `[...${args[0]}, ${args.slice(1).join(', ')}]`;
       }
       const fn = expr(fnNode);
       return fn === null ? null : `${fn}(${args.join(', ')})`;
@@ -890,7 +892,12 @@ const stmt = (node: SyntaxNodeLike, indent: string, opts: StmtOpts = {}): string
           }
           const bodyS = stmt(c, pad + '  ');
           if (bodyS === null) return null;
-          parts.push(`${pad}  case ${labels.join(', ')}:${bodyS ? '\n' + bodyS : ''}\n${pad}    break;`);
+          // ★★★ 2026-10-29（**第三次栽在"两份实现"**）：pivot 已改成堆叠 case，legacy 这里还是
+      //   `case a, b:` ⇒ TS 语法错（TS2695 只是表象）。TS 的正解是**堆叠 case 标签**。
+      parts.push(
+        labels.map((l) => `${pad}  case ${l}:`).join('\n') +
+          `${bodyS ? '\n' + bodyS : ''}\n${pad}    break;`,
+      );
         } else if (c.type === 'default_case') {
           const bodyS = stmt(c, pad + '  ');
           if (bodyS === null) return null;

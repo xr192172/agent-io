@@ -695,8 +695,15 @@ function indentStr(n: number): string {
 
 function projectTsStmt(s: IrStmt, indent: number): string {
   switch (s.k) {
-    case 'return':
-      return `return${s.values.length ? ' ' + s.values.map(projectTsExpr).join(', ') : ''};`;
+    case 'return': {
+      // ★★★ 2026-10-29：**多返回值必须包数组**。原来用 `join(', ')` ⇒ 生成 `return X, nil`
+      //   是 TS 的**逗号表达式**（左侧求值即丢弃）⇒ `TS2695 Left side of comma operator is unused`。
+      //   Go 的多返回值语义 = 元组 ⇒ TS 侧用数组承载（legacy 早就是这么做的，pivot 漏了）。
+      if (s.values.length <= 1) {
+        return `return${s.values.length ? ' ' + projectTsExpr(s.values[0]) : ''};`;
+      }
+      return `return [${s.values.map(projectTsExpr).join(', ')}];`;
+    }
     case 'expr':
       return `${projectTsExpr(s.value)};`;
     case 'declare': {
@@ -748,8 +755,13 @@ function projectTsStmt(s: IrStmt, indent: number): string {
     case 'switch': {
       const lines: string[] = [];
       for (const c of s.cases) {
-        const head = c.labels ? `case ${c.labels.map(projectTsExpr).join(', ')}:` : 'default:';
-        lines.push(indentStr(indent + 1) + head);
+        // ★★★ 2026-10-29：**TS 不接受 `case a, b:`**（Go 允许）。原来 `join(', ')` ⇒ 语法错
+        //   （表象是 TS2695）。正解是**堆叠 case 标签**，TS 的 fallthrough 语义正好等于 Go 的多值 case。
+        if (c.labels) {
+          for (const l of c.labels) lines.push(indentStr(indent + 1) + `case ${projectTsExpr(l)}:`);
+        } else {
+          lines.push(indentStr(indent + 1) + 'default:');
+        }
         if (c.body.length) lines.push(projectTsBody(c.body, indent + 2));
         // ★ 与 legacy 一致：每个 case 一律补 break（fallthrough 已在 lift 阶段被拒）
         lines.push(indentStr(indent + 2) + 'break;');
@@ -827,6 +839,13 @@ function projectTsExpr(e: IrExpr): string {
       // TS 渲染器：`x.slice(lo ?? 0, hi)`
       return `${projectTsExpr(e.x)}.slice(${e.lo ? projectTsExpr(e.lo) : '0'}${e.hi ? ', ' + projectTsExpr(e.hi) : ''})`;
     case 'builtin': {
+      // ★★★ 2026-10-29：Go 内置 `delete(m, k)` **不是** JS 的 `delete` 运算符——
+      //   直译为 `delete(m, k)` 会变成"逗号表达式 + delete 关键字"（实测 TS2695）。
+      //   Map 的删除在 TS 侧是 `m.delete(k)`。
+      if (e.name === 'delete' && e.args.length === 2) {
+        return `${projectTsExpr(e.args[0])}.delete(${projectTsExpr(e.args[1])})`;
+      }
+      // fallthrough 到通用 builtin 渲染 {
       // TS 渲染器的决定：长度 → `.length`；追加 → 展开运算符
       if (e.name === 'len' || e.name === 'cap') return `${projectTsExpr(e.args[0])}.length`;
       if (e.name === 'append') {
