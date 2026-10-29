@@ -264,6 +264,17 @@ function buildDepTable(books: TranslateBook[]): Map<string, { target?: string; s
  * 现在册子有了 `external_deps[].target`（机器可读的目标模块名），就按它发**真 import**；
  * **没有 target 就一个垫片都不发**（宁可红，让缺口显形），并把缺口写进 diagnostics。
  */
+/**
+ * ★ 2026-10-29（读报错一眼看出来的）：模块 → 生成物目录里共享模块（`_go_std/<pkg>` / `_slots/<x>`）的
+ * **相对 import 路径**。原来写死 `'./_go_std/' + pkg` ⇒ 子目录模块（`cmd/memoryd/…`）全
+ * `TS2307 Cannot find module`（实测 ×39）。
+ */
+function relToStd(fromRel: string, target: string): string {
+  const fromDir = path.posix.dirname(String(fromRel).replace(/\\/g, '/'));
+  const rel = path.posix.relative(fromDir === '.' ? '' : fromDir, target);
+  return rel.startsWith('.') ? rel : './' + rel;
+}
+
 function assembleModule(
   m: ProjectModule,
   depTable: Map<string, { target?: string; strategy?: string }>,
@@ -321,7 +332,10 @@ function assembleModule(
     const adapter = renderGoStdAdapter(pkg);
     if (adapter !== null) {
       adaptersToWrite.set(pkg, adapter);
-      depImports.push(`import * as ${pkg} from './_go_std/${pkg}';`);
+      // ★★★ 2026-10-29（**读报错一眼看出来的**）：适配器 import 的相对路径要按**本文件所在目录**算。
+      //   原来写死 `'./_go_std/<pkg>'` ⇒ 子目录文件（如 `cmd/memoryd/embedder_cgo.ts`）全报
+      //   `TS2307 Cannot find module './_go_std/mem'`（实测 ×39）。
+      depImports.push(`import * as ${pkg} from '${relToStd(m.tsRel, `_go_std/${pkg}`)}';`);
       continue;
     }
     missing.push(pkg);
