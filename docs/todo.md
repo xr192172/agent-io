@@ -149,7 +149,6 @@
 | T-#FEATURE-MATRIX | **特色矩阵**（8 语言 × ~30 构造，三态 ✓/~ /✗）：发现轴心的 **Go 偏心**（哪一维只有 Go 是 ✓），并按"多少语言需要"重排铺面。不做"更完美的语言"，做"缺口显式" | `docs/` + `translate/pivot.ts` | 未开工 |
 | T-#BODY-SCOPE | 填孔验收加**AST 作用域检查**：body 里引用的名字必须已声明/已导入（`TS2304 ×450` 里很大一类是"裸用字段/未声明局部"，比等 tsc 更早更准） | `translate/fill.ts` | 未开工 |
 | T-#PROMPT-FACTS | 把**接收者/参数类型的字段表**（册子 `pivot.shape`）喂进填孔 prompt —— 现在 `bookFacts` 实测 **0 条**（名词层全判同形后无"术语命中"可报），LLM 因此不知道 `Builder` 有哪些字段 | `translate/{prompts,book}.ts` | 未开工（高优先） |
-| T-#VARIADIC-AUDIT | 变参修复只查了 `NewBuilder`。应全仓核对：每个 Go 变参都在签名里出现且类型是 `T[]`（可做成 `t451`） | `certs/` | 未开工 |
 | T-#CERT-1 | **20 个无证工具**（`scripts/audit-tool-certs.mjs`，量具已修为以注册表为真源：55 工具 / 35 提到 / **20 无证**）。★ **顺序已纠正**（2026-10-28 用户："A 这批几乎全部可以吸收进设计侧"）⇒ **先收敛、后补证**：A 档 11 个读数工具几乎全可吸收/合并（见 `docs/tool-convergence.md`），给"注定要合并的工具"写证是浪费。**步 1** 纯工具内合并（`plan_refactor`→`apply_refactor_plan`、`render_design`+`feature_line`→`get_dsl`、`find_similar_names`+`suggest_renames`→`rename_symbols`、`tool_usage`+`capability_audit`→`capability_map`）；**步 2** 变判据（`code_health`→`domain-independent`+新 `dead-code`+新 `metric`；`impact_analysis`→写闸前置；`detect_drift` 复核后退役）；**步 3** 只给幸存者补证（预计 5–6 张） | `docs/tool-convergence.md` · 各线 index.ts | 顺序已定（步 1 未开工） |
 | T-#RP-1 | **重写计划闸**：默认已翻（2026-10-28，`AGENT_IO_REQUIRE_PLAN` 三态，`=0` 只报）· 回执渲染✅ · 其它写工具文本渲染✅。**剩**：① 拿真实任务量一次严格档的误报率（本仓会被任务闸先拦 ⇒ 需要一张真领的卡）② 调 `planGaps` 粒度 | `src/application/write_gate.ts` · `design/db/rewrite_plan.ts` | 迭代中 |
 | T-#98d-old | 三条门类证跑不起来（已修，保留一行说明去向：t352 ✓ 17/0 · t332 ✓ 10/0 · t353 仅剩 T-#98d-2 那 6 条） | `certs/` | ✅ 已修 |
