@@ -43,7 +43,18 @@ export type IrStmt =
    * ★ 轴心只在**函数体直接子层**接受它（嵌套 defer 的执行时机不同：每次迭代 vs 函数退出），
    *   嵌套的一律 lift→null（回落 legacy，legacy 同样不翻）。
    */
-  | { k: 'defer'; call: IrExpr };
+  | { k: 'defer'; call: IrExpr }
+  /**
+   * `continue` / `break`：轴心只记"继续/跳出"，不记层数（Go 无标签时也是一层）。
+   * `[未核]` 带标签的 `break L` / `continue L` 未支持（会因 labeled_statement 失败）。
+   */
+  | { k: 'jump'; op: 'continue' | 'break' }
+  /**
+   * `switch`。`labels === null` 表示 default 分支。
+   * ★ `[未核]` Go 的 **fallthrough** 未建模（legacy 也不支持：每个 case 一律补 `break;`），
+   *   带 fallthrough 的 case 会**语义不同**——这类体应显式判"不翻"，见 lift 里的检查。
+   */
+  | { k: 'switch'; disc: IrExpr; cases: Array<{ labels: IrExpr[] | null; body: IrStmt[] }> };
 
 /** 体 IR：表达式 */
 export type IrExpr =
@@ -75,9 +86,35 @@ export type IrExpr =
   | { k: 'composite'; kind: 'slice' | 'map' | 'struct'; elems: Array<{ key?: IrExpr; value: IrExpr }> };
 
 /** 列举本竖切支持的节点类型（未列出的一律 lift→null） */
-const OK_STMT = new Set(['block', 'return_statement', 'expression_statement', 'short_var_declaration', 'assignment_statement', 'if_statement', 'for_statement', 'inc_dec_statement', 'var_declaration', 'defer_statement']);
+export const OK_STMT = new Set(['block', 'return_statement', 'expression_statement', 'short_var_declaration', 'assignment_statement', 'if_statement', 'for_statement', 'inc_dec_statement', 'var_declaration', 'defer_statement', 'expression_switch_statement', 'continue_statement', 'break_statement']);
+export /**
+ * ★★★ 2026-10-29（**"return null 必须带原因"**）：lift 的失败点记录。
+ * 之前 lift 一律 `return null`，外部只知道"翻不动"，**不知道卡在哪个构造** ⇒
+ * 只能靠"猜 + 试"决定下一步铺什么（本仓反复吃过的亏）。这里把**第一个失败点**记下来：
+ * 节点类型 + 一句为什么 + 该节点的文本片段（便于人工核对）。
+ */
+let LIFT_FAIL: { type: string; why: string; snippet: string } | null = null;
+
+/** 记录失败点并返回 null（唯一入口，保证不会漏记） */
+export function failLift(n: { type: string; text?: string } | null, why: string): null {
+  if (!LIFT_FAIL) {
+    LIFT_FAIL = { type: n?.type ?? '(null-node)', why, snippet: String(n?.text ?? '').slice(0, 60) };
+  }
+  return null;
+}
+
+/** 读最近一次 lift 失败点（诊断用；`liftGoBody` 每次开始会清空） */
+export function lastLiftFail(): { type: string; why: string; snippet: string } | null {
+  return LIFT_FAIL;
+}
+
 const OK_EXPR = new Set([
+  // ★ `f(x...)` 的 `x...` 是 variadic_argument 包装，解包即可（TS 侧同一个值）
+  'variadic_argument',
   'identifier',
+  // ★ 2026-10-29（阻塞点直方图第一名：114 个体）：结构体字面量的键是 `field_identifier`，
+  //   不是 `identifier` —— 漏了它，凡带 `T{Field: v}` 的体全被判"翻不动"。
+  'field_identifier',
   'int_literal',
   'interpreted_string_literal',
   'raw_string_literal',
@@ -109,6 +146,7 @@ const ignorable = (n: SyntaxNodeLike): boolean => n.isNamed === false || !/\S/.t
  * `env` 只用于判断"能不能翻"，不参与 IR 结构。
  */
 export function liftGoBody(block: SyntaxNodeLike): IrStmt[] | null {
+  LIFT_FAIL = null;
   const stmts = kidsOf(block);
   const out: IrStmt[] = [];
   for (const s of stmts) {
@@ -123,13 +161,16 @@ function kidsOf(n: SyntaxNodeLike): SyntaxNodeLike[] {
   const out: SyntaxNodeLike[] = [];
   for (let i = 0; i < n.childCount; i++) {
     const c = n.child(i);
-    if (c && !ignorable(c)) out.push(c);
+    // ★ 2026-10-29（失败点直方图抓到的**我自己的 bug**）：**注释是命名节点**，
+    //   漏掉这行会让带注释的函数体整条被判"翻不动"——实测 **80 个**体卡在这（占阻塞的 19%）。
+    //   legacy 把 comment 当空语句（返回 ''），这里等价跳过。
+    if (c && !ignorable(c) && c.type !== 'comment') out.push(c);
   }
   return out;
 }
 
 function liftStmt(n: SyntaxNodeLike, depth = 0): IrStmt | null {
-  if (!OK_STMT.has(n.type)) return null;
+  if (!OK_STMT.has(n.type)) return failLift(n, 'stmt-not-supported');
   switch (n.type) {
     case 'block': {
       const inner = kidsOf(n).map((c) => liftStmt(c, depth + 1));
@@ -222,6 +263,49 @@ function liftStmt(n: SyntaxNodeLike, depth = 0): IrStmt | null {
       }
       return { k: 'assign', target, op, value };
     }
+    case 'expression_switch_statement': {
+      const discNode = fieldOf(n, 'value') ?? n.child(1) ?? null;
+      const discInner = discNode && discNode.type === 'expression_list' ? (kidsOf(discNode)[0] ?? null) : discNode;
+      if (!discInner) return null;
+      const disc = liftExpr(discInner);
+      if (!disc) return null;
+      const cases: Array<{ labels: IrExpr[] | null; body: IrStmt[] }> = [];
+      for (const c of kidsOf(n)) {
+        if (c.type !== 'expression_case' && c.type !== 'default_case') continue;
+        // ★ fallthrough 未建模 ⇒ 见到就整条不翻（宁可交 LLM，也不静默改变控制流）
+        let hasFallthrough = false;
+        for (let i = 0; i < c.childCount; i++) {
+          const k = c.child(i);
+          if (k && k.type === 'fallthrough_statement') hasFallthrough = true;
+        }
+        if (hasFallthrough) return null;
+        let labels: IrExpr[] | null = null;
+        if (c.type === 'expression_case') {
+          const list = kidsOf(c).find((x) => x.type === 'expression_list');
+          if (!list) return null;
+          labels = [];
+          for (const k of kidsOf(list)) {
+            const e = liftExpr(k);
+            if (!e) return null;
+            labels.push(e);
+          }
+        }
+        const body: IrStmt[] = [];
+        for (const k of kidsOf(c)) {
+          if (k.type === 'expression_list' || k.type === 'fallthrough_statement') continue;
+          const st = liftStmt(k, depth + 1);
+          if (!st) return null;
+          body.push(st);
+        }
+        cases.push({ labels, body });
+      }
+      if (!cases.length) return null;
+      return { k: 'switch', disc, cases };
+    }
+    case 'continue_statement':
+      return { k: 'jump', op: 'continue' };
+    case 'break_statement':
+      return { k: 'jump', op: 'break' };
     case 'defer_statement': {
       // ★ 只在函数体直接子层接受（depth 0）——嵌套 defer 的执行时机不同，不翻
       if (depth !== 0) return null;
@@ -326,9 +410,10 @@ function fieldOf(n: SyntaxNodeLike, name: string): SyntaxNodeLike | null {
 }
 
 function liftExpr(n: SyntaxNodeLike): IrExpr | null {
-  if (!OK_EXPR.has(n.type)) return null;
+  if (!OK_EXPR.has(n.type)) return failLift(n, 'expr-not-supported');
   switch (n.type) {
     case 'identifier':
+    case 'field_identifier':
       return { k: 'ident', name: n.text };
     case 'int_literal':
       return { k: 'int', value: normalizeInt(n.text) };
@@ -385,6 +470,11 @@ function liftExpr(n: SyntaxNodeLike): IrExpr | null {
       const x = liftExpr(parts[0]);
       const idx = liftExpr(parts[1]);
       return x && idx ? { k: 'index', x, idx } : null;
+    }
+    case 'variadic_argument': {
+      const inner = kidsOf(n)[0];
+      if (!inner) return null;
+      return liftExpr(inner);
     }
     case 'parenthesized_expression': {
       const inner = kidsOf(n)[0];
@@ -562,8 +652,21 @@ function projectTsStmt(s: IrStmt, indent: number): string {
       if (s.index) return `for (let ${s.index} = 0; ${s.index} < ${t}.length; ${s.index}++) {\n${bodyText}\n${indentStr(indent)}}`;
       return `for (const _ of ${t}) {\n${bodyText}\n${indentStr(indent)}}`;
     }
+    case 'jump':
+      return `${s.op};`;
     case 'incdec':
       return `${projectTsExpr(s.target)}${s.op};`;
+    case 'switch': {
+      const lines: string[] = [];
+      for (const c of s.cases) {
+        const head = c.labels ? `case ${c.labels.map(projectTsExpr).join(', ')}:` : 'default:';
+        lines.push(indentStr(indent + 1) + head);
+        if (c.body.length) lines.push(projectTsBody(c.body, indent + 2));
+        // ★ 与 legacy 一致：每个 case 一律补 break（fallthrough 已在 lift 阶段被拒）
+        lines.push(indentStr(indent + 2) + 'break;');
+      }
+      return `switch (${projectTsExpr(s.disc)}) {\n${lines.join('\n')}\n${indentStr(indent)}}`;
+    }
     case 'if': {
       const thenBody = projectTsBody(s.then, indent + 1);
       let out = `if (${projectTsExpr(s.cond)}) {\n${thenBody}\n${indentStr(indent)}}`;
