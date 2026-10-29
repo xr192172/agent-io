@@ -321,8 +321,11 @@ function assembleModule(
 
   // ★ T-#SHIM-APPLY：体里出现 copy( ⇒ 补槽垫片 import（这是**生成符号存在性检查**，
   //   不是语义解析：copy 只可能由我们的渲染器产出）
+  // ★ 2026-10-29（**结构化替换正则**）：读单元上的 `usesSlot` 事实，不回头看自己生成的文本。
   const slotImports: string[] = [];
-  if (/(^|[^.\w])copy\(/.test(body)) slotImports.push("import { copy } from './_slots/value';");
+  const usedSlots = new Set<string>();
+  for (const u of m.units) for (const sl of u.usesSlot ?? []) usedSlots.add(sl);
+  if (usedSlots.has('value')) slotImports.push("import { copy } from './_slots/value';");
 
   m.ts = applyDeterministicFixers(
     [m.imports.join('\n'), shim, depImports.join('\n'), slotImports.join('\n'), body].filter((s) => s !== '').join('\n'),

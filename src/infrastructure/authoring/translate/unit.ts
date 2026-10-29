@@ -78,6 +78,11 @@ export interface TranslateMethod {
  * 需要的字段，无需再回源文件。
  */
 export interface TransUnit {
+  /**
+   * ★★★ 2026-10-29（结构化替换正则）：本单元用到哪些**槽垫片**（如 `value`）。
+   * 由生成方（extractor/渲染器）显式记录 ⇒ 上层补 import 时**读事实，不回头看自己的文本**。
+   */
+  usesSlot?: string[];
   /** 稳定标识：源语言限定名（如顶层函数名 'Add' / 类型名 'User'） */
   id: string;
   /** 'func' | 'type' */
