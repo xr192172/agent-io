@@ -478,6 +478,8 @@ export const TempDir = (): string => '/tmp';
         HEAD('fmt', '· 只覆盖**语法层动词**（%s %q %d %f %t %x %b %o %c %v %w）；· **%T / %#v / %+v 遇即抛**（TS 类型擦除，运行时没有类型名与字段声明顺序）') +
         `import { goSprintf } from './strings';
 export const Errorf = (format: string, ...args: unknown[]): Error => new Error(goSprintf(format, args));
+// 2026-10-29：fmt 模板原先缺 Sprintf（TS2339 "Property 'Sprintf' does not exist" ×21）
+export const Sprintf = (format: string, ...args: unknown[]): string => goSprintf(format, args);
 export const Sprint = (...args: unknown[]): string =>
   args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join('');
 export const Sprintln = (...args: unknown[]): string => Sprint(...args) + '\\n';

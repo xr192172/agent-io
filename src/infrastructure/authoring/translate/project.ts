@@ -336,6 +336,12 @@ function assembleModule(
   for (const u of m.units) for (const sl of u.usesSlot ?? []) usedSlots.add(sl);
   if (usedSlots.has('value')) slotImports.push("import { copy } from './_slots/value';");
 
+  // ★★ 2026-10-29 **[未修] 全局遮蔽**：本地模块导出名与 JS 内置全局同名时会遮蔽全局
+  //   （实测 `import { Error } from './logging/logging'` ⇒ `TS2555 ×122`：`new Error('…')` 被要求 2 个参数）。
+  //   **试过的错解**：把所有自由 `Error` 改名 ⇒ 会连我们生成的 `throw new Error(TODO)` 一起改，
+  //   因为**同一个名字有两个意思**（导入的 `logging.Error` vs JS 全局 `Error`），全局改名必然错。
+  //   正确方向（`T-#SHADOW`）：冲突模块改 **namespace import**（`import * as logging`），
+  //   Go 侧限定引用 `logging.Error(...)` 天然映射过去，且不动全局。
   m.ts = applyDeterministicFixers(
     [m.imports.join('\n'), shim, depImports.join('\n'), slotImports.join('\n'), body].filter((s) => s !== '').join('\n'),
   );
