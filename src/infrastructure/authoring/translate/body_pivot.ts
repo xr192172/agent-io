@@ -780,7 +780,13 @@ function projectTsStmt(s: IrStmt, indent: number): string {
           const inner = indentStr(indent + 1) + `const ${s.value} = ${t}[${s.index}];\n` + bodyText;
           return `for (let ${s.index} = 0; ${s.index} < ${t}.length; ${s.index}++) {\n${inner}\n${indentStr(indent)}}`;
         }
-        return `for (const ${s.value} of ${t}) {\n${bodyText}\n${indentStr(indent)}}`;
+        // ★★★ 2026-10-29（**抽查读出来的**）：Go 的 `for _, v := range m` 里 v 是**值**；
+        //   TS 直接 `for (const v of m)` 拿到的是 **Map 的条目元组** [k, v]
+        //   ⇒ `Property 'Type' does not exist on type '[string, CachedNode]'`（×36）。
+        //   正解按载体分流：Map 取 `.values()`，数组就直接迭代。
+        const simple = /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(t);
+        const src = simple ? `(${t} instanceof Map ? ${t}.values() : ${t})` : t;
+        return `for (const ${s.value} of ${src}) {\n${bodyText}\n${indentStr(indent)}}`;
       }
       if (s.index) return `for (let ${s.index} = 0; ${s.index} < ${t}.length; ${s.index}++) {\n${bodyText}\n${indentStr(indent)}}`;
       return `for (const _ of ${t}) {\n${bodyText}\n${indentStr(indent)}}`;

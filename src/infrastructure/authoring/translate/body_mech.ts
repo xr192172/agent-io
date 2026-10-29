@@ -829,7 +829,12 @@ const stmt = (node: SyntaxNodeLike, indent: string, opts: StmtOpts = {}): string
         if (val && val !== '_') {
           return idx
             ? `${pad}for (let ${idx} = 0; ${idx} < ${target}.length; ${idx}++) {\n${pad}  const ${val} = ${target}[${idx}];\n${bodyS}\n${pad}}`
-            : `${pad}for (const ${val} of ${target}) {\n${bodyS}\n${pad}}`;
+            : (() => {
+            // ★ 2026-10-29：`for _, v := range map` ⇒ v 是值，Map 要 .values()（与 pivot 同形，保 t454 0 分叉）
+            const simple = /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(target);
+            const src = simple ? `(${target} instanceof Map ? ${target}.values() : ${target})` : target;
+            return `${pad}for (const ${val} of ${src}) {\n${bodyS}\n${pad}}`;
+          })();
         }
         if (idx) return `${pad}for (let ${idx} = 0; ${idx} < ${target}.length; ${idx}++) {\n${bodyS}\n${pad}}`;
         return `${pad}for (const _ of ${target}) {\n${bodyS}\n${pad}}`;
