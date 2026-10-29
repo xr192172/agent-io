@@ -198,6 +198,11 @@ function spliceBodyOuter(filledSource: string): string {
   return a >= 0 && b > a ? filledSource.slice(a + 1, b) : '';
 }
 
+// ★ 2026-10-29（**缓存投毒事故的修复**）：缓存键原来只有 `<rel>#<id>@<源哈希>`，**不含装配版本** ——
+//   装配层修好之后，旧缓存里那些"按坏骨架拼出来的 body"仍会命中并原样回放（实测残留类型片段在 body 里 ⇒ TS1005）。
+//   ⇒ 键加 `v2|` 前缀：装配/签名规则变更后升版本，旧条目自然失效（不删文件，只是不再命中）。
+const FILL_CACHE_VERSION = 'v2';
+
 function fillCachePath(outDir: string): string {
   return path.join(outDir, '.fill-cache.json');
 }
@@ -680,7 +685,7 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
           mechInModule++;
           continue;
         }
-        const key = `${m.rel}#${u.id}@${sha1(u.srcSnippet)}`;
+        const key = `v2|${m.rel}#${u.id}@${sha1(u.srcSnippet)}`;
         const hit = cache[key];
         // ★★★ 2026-10-29：**缓存回放也要过契约检查** —— 否则修好的规则被旧坏体抵消：
         //   实测 retrieve_pipeline 的 LLM 体里带 `export function` 外壳（嵌进外层 ⇒ 语法错），
@@ -716,7 +721,7 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
           u.skeleton = f.filledSource;
           // ★ 成功的写进缓存：跨轮次**不再重发**（只重试失败的）
           const bodyOnly = spliceBodyOuter(f.filledSource);
-          if (bodyOnly) cache[`${m.rel}#${u.id}@${sha1(u.srcSnippet)}`] = { body: bodyOnly, at: new Date().toISOString() };
+          if (bodyOnly) cache[`v2|${m.rel}#${u.id}@${sha1(u.srcSnippet)}`] = { body: bodyOnly, at: new Date().toISOString() };
         }
       }
       // ★ 2026-10-28：**进度日志**（长跑必须可观测）。没有它，卡在某一批时外面看到的是"什么都没有"。
