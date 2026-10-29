@@ -220,6 +220,9 @@ export async function fillBookTsSignatures(projectDir: string, bookPath: string)
       ts.signature = sig;
       if (!s.pivot) stats.pivot++;
       s.pivot = pivot;
+      // ★ 轴心的**结构层**：把该单元 lift 出来的体 IR 一并挂上（随后写进 pivot 产物）。
+      //   拿不到就留空 —— **不伪造**（未覆盖的构造本来没有 IR，那是 LLM 的活）。
+      if (u.ir) (s as { ir?: unknown[] }).ir = u.ir;
       stats.rendered++;
     }
   }
@@ -231,7 +234,9 @@ export async function fillBookTsSignatures(projectDir: string, bookPath: string)
   const pivotMap: Record<string, unknown> = {};
   for (const sym of book.symbols ?? []) {
     if (!sym.pivot || !sym.id) continue;
-    pivotMap[sym.id] = { from: sym.from, ...sym.pivot };
+    // ★ 轴心产物 = 名词层（pivot）+ 结构层（body IR）。两层写进**同一个**上游事实文件。
+    const ir = (sym as { ir?: unknown[] }).ir;
+    pivotMap[sym.id] = { from: sym.from, ...sym.pivot, ...(ir ? { body: ir } : {}) };
   }
   fs.writeFileSync(
     pivotPath,

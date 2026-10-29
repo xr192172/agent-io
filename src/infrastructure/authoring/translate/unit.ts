@@ -78,6 +78,8 @@ export interface TranslateMethod {
  * 需要的字段，无需再回源文件。
  */
 export interface TransUnit {
+  /** ★ 轴心的**结构层**：该单元的体 IR（语言中立）。由 lift 产出，随 pivot 产物落盘。 */
+  ir?: unknown[];
   /**
    * ★★★ 2026-10-29（结构化替换正则）：本单元用到哪些**槽垫片**（如 `value`）。
    * 由生成方（extractor/渲染器）显式记录 ⇒ 上层补 import 时**读事实，不回头看自己的文本**。

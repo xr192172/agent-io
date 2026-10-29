@@ -15,7 +15,7 @@
 import { parseAstRoot, type SyntaxNodeLike } from '../../parse/index.js';
 import { DEFAULT_CONSTRAINTS, type TransUnit, type TranslateParam, type TranslateKind, type TypeRef, type TranslateMethod, type DecisionShape } from './unit.js';
 import { evalConstExpr, constToTsLiteral, type ConstValue } from './const_eval.js';
-import { translateGoBodyMech } from './body_mech.js';
+import { lastLiftedIr, translateGoBodyMech } from './body_mech.js';
 import { isValueStructType, noteShimInsert } from './body_pivot.js';
 import fs from 'node:fs';
 
@@ -516,6 +516,7 @@ function unitFromFunc(node: SyntaxNodeLike): TransUnit | null {
   const entryCopy = entryCopies.length ? entryCopies.map((nm) => `  ${nm} = copy(${nm});`).join('\n') + '\n' : '';
   const mechBody = rawMech ? entryCopy + rawMech : undefined;
   const usesSlot = entryCopies.length ? ['value'] : undefined;
+  const bodyIr = lastLiftedIr() ?? undefined;
   const srcLine = node.startPosition.row + 1;
   if (recv) {
     // 方法：receiver 作首参（泛型 receiver 用全类型如 Pair<T>）；命名带类型基名前缀防撞名
@@ -523,9 +524,9 @@ function unitFromFunc(node: SyntaxNodeLike): TransUnit | null {
     const qn = `${recv.base}_${method}`;
     // 方法自身无类型参数时，继承 receiver 的泛型实参作为自由函数的 <T...>
     const typeParams = ownTypeParams.length ? ownTypeParams : recv.typeArgs;
-    return { id: qn, kind: 'func', dstLang: 'ts', name: qn, params, result, resultRef, ...(mechBody ? { mechBody } : {}), ...(usesSlot ? { usesSlot } : {}), typeParams, typeParamConstraints, typeParamBounds, srcSnippet: snippet, srcLine, skeleton: '', bodyHole: true, constraints, decision };
+    return { id: qn, kind: 'func', dstLang: 'ts', name: qn, params, result, resultRef, ...(mechBody ? { mechBody } : {}), ...(usesSlot ? { usesSlot } : {}), ...(bodyIr ? { ir: bodyIr } : {}), typeParams, typeParamConstraints, typeParamBounds, srcSnippet: snippet, srcLine, skeleton: '', bodyHole: true, constraints, decision };
   }
-  return { id: method, kind: 'func', dstLang: 'ts', name: method, params, result, resultRef, ...(mechBody ? { mechBody } : {}), ...(usesSlot ? { usesSlot } : {}), typeParams: ownTypeParams, typeParamConstraints, typeParamBounds, srcSnippet: snippet, srcLine, skeleton: '', bodyHole: true, constraints, decision };
+  return { id: method, kind: 'func', dstLang: 'ts', name: method, params, result, resultRef, ...(mechBody ? { mechBody } : {}), ...(usesSlot ? { usesSlot } : {}), ...(bodyIr ? { ir: bodyIr } : {}), typeParams: ownTypeParams, typeParamConstraints, typeParamBounds, srcSnippet: snippet, srcLine, skeleton: '', bodyHole: true, constraints, decision };
 }
 
 /** 取函数体顶层第一个 expression_switch_statement → 判别式 + 分支标签（A3）。无则 undefined */

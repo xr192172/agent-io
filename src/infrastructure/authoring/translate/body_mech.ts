@@ -1007,6 +1007,20 @@ const blocker = (block: SyntaxNodeLike | null): { type: string; text: string } |
 }
 
 /** 把一个 Go 函数体机械翻成 TS 函数体源码；翻不动返回 \`null\`（上层走 LLM）。 */
+/**
+ * ★★★ 2026-10-29（**轴心该有第二个层**）：最近一次 lift 成功的**体 IR**。
+ * 体 IR 原来只在内存里活一次就扔 —— 和早前 `TypeRef` 一模一样的病。
+ * 现在由调用方（extractor）取走、落到轴心产物 `<feature>.pivot.json` 的 `body` 字段里，
+ * 这样轴心才真正包含"名词层 + 结构层"两层。
+ *
+ * 【未核】用模块级变量传值是权宜（`translateGoBodyMech` 改成返回 `{text, ir}` 会波及调用方）；
+ * 一旦有第二个调用方依赖它，必须改成显式返回。
+ */
+let LAST_IR: unknown[] | null = null;
+export function lastLiftedIr(): unknown[] | null {
+  return LAST_IR;
+}
+
 export function translateGoBodyMech(
   block: SyntaxNodeLike | null,
   env?: MechTypeEnv,
@@ -1022,7 +1036,11 @@ export function translateGoBodyMech(
     setTypeResolver(env ? (name) => env.get(name) ?? null : null);
     const ir = liftGoBody(block);
     // ★ 入口 copy 不在这里做：它要**同时覆盖 pivot 与 legacy 两条路径** ⇒ 提到调用方（go_extractor）
-    if (ir) return projectTsBody(ir);
+    if (ir) {
+      LAST_IR = ir as unknown[];
+      return projectTsBody(ir);
+    }
+    LAST_IR = null;
   }
   if (!block) return null;
   return createTranslator(env).translate(block);
