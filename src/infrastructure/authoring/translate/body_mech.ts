@@ -23,6 +23,7 @@
  */
 
 import type { SyntaxNodeLike } from '../../parse/index.js';
+import { liftGoBody, projectTsBody } from './body_pivot.js';
 
 /** 支持的表达式节点类型（不含任一 ⇒ 不翻） */
 const OK_EXPR = new Set([
@@ -1007,7 +1008,14 @@ const blocker = (block: SyntaxNodeLike | null): { type: string; text: string } |
 
 /** 把一个 Go 函数体机械翻成 TS 函数体源码；翻不动返回 \`null\`（上层走 LLM）。 */
 export function translateGoBodyMech(block: SyntaxNodeLike | null, env?: MechTypeEnv): string | null {
-  if (!block) return null;
+
+  // ★★★ 2026-10-29（T-#PIVOT-LIFTPROJ）：**优先走轴心** —— `lift_go → 体 IR → project_ts`。
+  //   走不通（遇到未覆盖构造）就回落下面的 legacy 直连；**绝不半翻**。
+  //   等价性由证 t447 兜（走轴心的 90 个体与 legacy 去空白逐字符相同）。
+  if (block) {
+    const ir = liftGoBody(block);
+    if (ir) return projectTsBody(ir);
+  }  if (!block) return null;
   return createTranslator(env).translate(block);
 }
 
