@@ -1,0 +1,22 @@
+{
+  "path": "src/infrastructure/authoring/translate/fingerprint.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "translatorFingerprint"
+      },
+      "kind": "create",
+      "detail": "新建 fingerprint.ts：导出 translatorFingerprint()（本目录 .js 内容哈希，进程内缓存，读不到降级 nofp）与 resetTranslatorFingerprintCache()。它是册子身份的唯一来源，project.ts 与 book.ts 都从这里取，不许各处自算",
+      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_project_ts#0",
+      "status": "stale"
+    }
+  ],
+  "card": "file_src_infrastructure_authoring_translate_project_ts",
+  "untouched_default": {
+    "why": "新文件，只有一个导出函数"
+  },
+  "symbols_at_freeze": [],
+  "fps_at_freeze": {},
+  "frozen_at": "2026-10-29T18:04:55.874Z",
+  "base": {}
+}
