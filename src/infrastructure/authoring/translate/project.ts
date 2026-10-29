@@ -16,6 +16,7 @@ import ts from 'typescript';
 import { translateGoToTs } from './pairs.js';
 import { channelShimSource } from './ts_codegen.js';
 import { collectQualifiedPkgs, renderGoStdAdapter } from './go_std.js';
+import { buildMethodIndex, rewriteMethodCalls } from './ref_rewrite.js';
 import { collectExternalTypeRefs } from './referenced.js';
 import { spliceBody, normalizeLegacyOctal } from './fill.js';
 import { fillUnitsWithRetry, fillUnitsBatched } from './fill.js';
@@ -254,9 +255,22 @@ function assembleModule(
   m: ProjectModule,
   depTable: Map<string, { target?: string; strategy?: string }>,
   adaptersToWrite: Map<string, string>,
+  methodIndex: Map<string, Set<string>>,
+  refStats: { rewrites: number; unknown: number; samples: string[] },
   diag: string[],
 ): void {
-  const body = m.units.map((u) => u.skeleton).join('\n\n') + (m.units.length ? '\n' : '');
+  // ★★★ 2026-10-29（T-#REF-REWRITE）：**逐单元**做方法调用改写 ——
+  //   必须逐单元（不是拼完整个模块再改），否则同名形参在不同函数里会互相污染类型表。
+  const body = m.units
+    .map((u) => {
+      if (!methodIndex.size) return u.skeleton;
+      const r = rewriteMethodCalls(u.skeleton, methodIndex);
+      refStats.rewrites += r.rewrites;
+      refStats.unknown += r.unknownReceiver;
+      for (const smp of r.samples) if (refStats.samples.length < 12) refStats.samples.push(`${m.rel}: ${smp}`);
+      return r.code;
+    })
+    .join('\n\n') + (m.units.length ? '\n' : '');
   const shim = body.includes('Channel<') ? channelShimSource() : '';
 
   // 本模块用到的**外部包名**：值位置（usedQualified）+ 类型位置（TypeRef 里的 qualified）
@@ -736,10 +750,19 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
       }
     }
   }
-  const depTable = buildDepTable(loadTranslateBooks(root));
+  const booksForAssembly = loadTranslateBooks(root);
+  const depTable = buildDepTable(booksForAssembly);
+  // ★ T-#REF-REWRITE：方法表（册子 `symbols` 里 kind=method 的 → `类型名 → Set<方法名>`）
+  const allSymbols = booksForAssembly.flatMap((b) => b.symbols ?? []);
+  const methodIndex = buildMethodIndex(allSymbols);
+  const refStats = { rewrites: 0, unknown: 0, samples: [] as string[] };
   // ★ T-#STD-ADAPTER：本次用到的 Go std 适配模块（pkg → 源码），随后落盘到 <outDir>/_go_std/
   const adaptersToWrite = new Map<string, string>();
-  for (const m of modules) assembleModule(m, depTable, adaptersToWrite, diagnostics);
+  for (const m of modules) assembleModule(m, depTable, adaptersToWrite, methodIndex, refStats, diagnostics);
+  if (methodIndex.size) {
+    diagnostics.push(`引用改写：${refStats.rewrites} 处（类型未知未改写 ${refStats.unknown} 处）`);
+    for (const smp of refStats.samples.slice(0, 4)) diagnostics.push(`  · ${smp}`);
+  }
   if (opts.outDir && adaptersToWrite.size) {
     const dir = path.join(String(opts.outDir), '_go_std');
     fs.mkdirSync(dir, { recursive: true });

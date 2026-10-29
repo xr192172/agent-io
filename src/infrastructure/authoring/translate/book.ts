@@ -171,6 +171,11 @@ export interface BookGenOptions {
 }
 
 export interface BookGenStats {
+  /**
+   * ★ 2026-10-29：重建后自动刷新的 `sigTs` 条数（-1 = 刷新失败，不假装成功）。
+   * `sigTs` 来自 AST 语义（`fillBookTsSignatures`），本函数只投影 cache.db，算不出来。
+   */
+  sigTsRendered?: number;
   symbols: number;
   /** ★ 其中 scope='internal' 的条数（只统计「已动过文件」的未导出符号） */
   internalSymbols: number;
@@ -945,6 +950,12 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
         note: prev?.note && !prev.note.startsWith(AUTO_TAG) ? prev.note : auto,
         // ★ 源侧事实原样投影（不判断、不改写）：漏了就是漏了，没有对账会静默
         sig: row.signature ?? null,
+        // ★★★ 2026-10-29：**`sigTs` 也是派生事实，重算不该抹掉它**。
+        //   它由 `fillBookTsSignatures` 从 AST 算出；本函数只从 cache.db 投影，算不出来。
+        //   不回填的后果实测：册子 792 符号 `sigTs` 归零 ⇒ 骨架"册子出的签名" 92.5% → 0%
+        //   （第 3 次「人的填写不倒退」失守：strategy 保住了、target 保住了、sigTs 又丢了）。
+        ...(prev?.sigTs ? { sigTs: prev.sigTs } : {}),
+        ...(prev?.sigTsNote ? { sigTsNote: prev.sigTsNote } : {}),
         doc: row.docstring ?? null,
         end_line: row.end_line ?? null,
         ...(judgments && judgments.length ? { judgments } : {}),

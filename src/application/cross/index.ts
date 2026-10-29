@@ -18,6 +18,7 @@ import { analyzeHealth } from '../../infrastructure/analysis/health/index.js';
 import { detectReachableRoots } from '../../infrastructure/analysis/project_root/index.js';
 import { extractGoFromFile } from '../../infrastructure/authoring/translate/go_extractor.js';
 import { rebuildBook } from '../../infrastructure/authoring/translate/book.js';
+import { fillBookTsSignatures } from '../../infrastructure/authoring/translate/book_ts.js';
 import { TRANSLATE_PAIRS, translatePair } from '../../infrastructure/authoring/translate/pairs.js';
 import { translateGoTsHandler } from '../../infrastructure/authoring/translate/tool.js';
 import { getDesignSheetFile } from '../../infrastructure/storage.js';
@@ -86,6 +87,18 @@ export const CROSS_TOOLS: ToolDef[] = [
           //   骨架只能回落 AST 二次推导）。设计侧重建可传 false 走增量。
           allSymbols: true,
         });
+        // ★★★ 2026-10-29：**重建后立刻刷新 `sigTs`** —— `rebuildBook` 只投影 cache.db 的事实，
+        //   算不出 TS 签名；不刷新的话骨架会退回到"从 AST 二次翻译"（实测 92.5% → 0%）。
+        if (!dryRun) {
+          try {
+            const sigSt = await fillBookTsSignatures(root, bookPath);
+            r.stats.sigTsRendered = sigSt.rendered;
+          } catch {
+            // 刷新失败不阻断重建（册子本身仍可用），但不能假装成功
+            r.stats.sigTsRendered = -1;
+          }
+        }
+
         const st = r.stats;
         const manual = st.blocked - (st.blockedByTerm + st.blockedByTermNull + st.blockedByCollision + st.blockedByExternalDep);
         const lines = [
