@@ -180,6 +180,41 @@ export interface TranslateBook {
   [k: string]: unknown;
 }
 
+/**
+ * ★★★ 2026-10-29（T-#TERM-DISPOSITION）：**每个名字都要有判定与依据** —— 包括"同形直译"。
+ *
+ * ## 用户的问题
+ * > 「同形直译的不用标记吗？」
+ *
+ * **要标记。** 因为"不登记"意味着**沉默**，而沉默分不清两件事：
+ *   · 机器判定过「这个名字在 TS 侧同形即可」；
+ *   · 压根没人看过。
+ * 今天我自己就栽在这：按"名字不在 types[] 里"算欠账，得"79 个未定"，
+ * 实际真欠账只有 4 个 —— 其余全是**同形直译被当成了未定**。
+ *
+ * ## 四态（每一态都有判定依据，不再有"沉默"）
+ * | kind | 含义 | 依据 |
+ * |---|---|---|
+ * | `lang` | 语言层已定（工具内置，实现驱动） | `lang_terms.ts` |
+ * | `none` | 语言层判定"目标侧无对应" | `lang_terms.ts` 里 value=null |
+ * | `project` | 项目层已定（人填） | 册子 `types[]` |
+ * | `same-name` | **同形直译**：名字本身是合法 TS 标识符 ⇒ 保持同名 | 标识符形态（形状即答案） |
+ * | `undecided` | **真欠账**（需人定） | 以上都不满足 |
+ */
+export type TermDispositionKind = 'lang' | 'none' | 'project' | 'same-name' | 'undecided';
+
+export interface TermDisposition {
+  /** 被引用的名字（类型名/概念名） */
+  name: string;
+  kind: TermDispositionKind;
+  /** 目标侧名字（`none` 为 null；`undecided` 缺省） */
+  to?: string | null;
+  /** 判定依据（人可复核） */
+  why: string;
+  /** 被多少个符号引用 */
+  used: number;
+}
+
 export interface BookGenOptions {
   /**
    * ★★★ 2026-10-29（T-#BOOK-ALLSYM）：**收全量符号**（含未导出、未变更文件）。
@@ -1183,6 +1218,68 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
         }
       }
     }
+    // ★★★ 2026-10-29（T-#TERM-DISPOSITION）：给**每个被引用的名字**算一个显式判定（含同形直译）。
+    //   动机（用户）："同形直译的不用标记吗？" —— 不标记 = 沉默 = 分不清"判定过"与"没人看"，
+    //   我自己就因此把"同形直译"误算成"79 个欠账"（真欠账只有 4 个）。
+    const termDispositions: TermDisposition[] = (() => {
+      const used = new Map<string, number>();
+      const bump = (n: string): void => {
+        used.set(n, (used.get(n) ?? 0) + 1);
+      };
+      for (const sym of symbols) {
+        const refs: unknown[] = [];
+        for (const p of sym.pivot?.params ?? []) refs.push(p.ref);
+        if (sym.pivot?.result) refs.push(sym.pivot.result);
+        for (const r of refs) {
+          const ref = r as { kind?: string; name?: string; pkg?: string };
+          // ★ 限定类型（`context.Context` / `http.Request`）也是"名字"，必须纳入判定 ——
+          //   否则语言层那 53 条永远统计不到（第一版只收 ident，四态里只有 same-name，典型的漏采）。
+          if (ref?.kind === 'qualified' && ref.name) {
+            if (ref.pkg) bump(ref.pkg);
+            bump(ref.name);
+            continue;
+          }
+          if (ref?.kind !== 'ident' || !ref.name) continue;
+          bump(ref.name);
+        }
+      }
+      const out: TermDisposition[] = [];
+      for (const [name, count] of [...used.entries()].sort((a, b) => b[1] - a[1])) {
+        if (name in GO_TS_LANG_TERMS) {
+          const to = GO_TS_LANG_TERMS[name];
+          out.push({
+            name,
+            kind: to === null ? 'none' : 'lang',
+            to,
+            why: to === null ? '语言层判定：目标侧无对应' : '语言层已定（工具内置，实现驱动）',
+            used: count,
+          });
+          continue;
+        }
+        if (terms.covered.has(name)) {
+          out.push({ name, kind: 'project', to: terms.coveredTo.get(name) ?? name, why: '项目层 types[] 已定', used: count });
+          continue;
+        }
+        if (terms.nullTarget.has(name)) {
+          out.push({ name, kind: 'none', to: null, why: '项目层判定：明确无对应', used: count });
+          continue;
+        }
+        // ★ 同形直译：名字本身是**合法 TS 标识符**（形状本身即答案，不需要语义解析）
+        if (/^[A-Za-z_$][\w$]*$/.test(name)) {
+          out.push({
+            name,
+            kind: 'same-name',
+            to: name,
+            why: '同形直译：名字是合法 TS 标识符 ⇒ 保持同名（机器判定，非沉默）',
+            used: count,
+          });
+          continue;
+        }
+        out.push({ name, kind: 'undecided', why: '既非语言层也非项目层，且不是合法标识符 ⇒ 需人定', used: count });
+      }
+      return out;
+    })();
+
     const external_deps: BookExternalDep[] = [...depByPkg.values()].sort((a, b) => a.from.localeCompare(b.from));
 
     const out: TranslateBook = {
@@ -1191,6 +1288,9 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
       shapes,
       unknowns,
       external_deps,
+      // ★ T-#TERM-DISPOSITION：**每个被引用的名字的显式判定**（含"同形直译"）。
+      //   不标记 = 沉默 = 分不清"判定过"与"没人看"——我自己就因此把同形直译误算成"79 个欠账"。
+      terms: { dispositions: termDispositions },
       meta: {
         ...book.meta,
         // ★ 基线跟着每次生成走：「这份账反映哪一代事实」只有一处（别留两个 baseline 互相打架）
