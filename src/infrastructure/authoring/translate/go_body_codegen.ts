@@ -60,8 +60,16 @@ function goStmt(s: IrStmt, indent: number): string {
       return `for ${init}; ${cond}; ${post} {\n${renderGoBody(s.body, indent + 1)}\n${pad}}`;
     }
     case 'range': {
-      const names = [s.index, s.value].filter(Boolean).join(', ');
-      const head = names ? `${names} := range ${goExpr(s.target)}` : `range ${goExpr(s.target)}`;
+      // ★★★ 2026-10-29（体回译抓到的真 bug）：Go 的 `for i, v := range` 是**位置绑定** ——
+      //   只写一个名字绑的是**下标**，不是值！原来 `[s.index, s.value].filter(Boolean)` 把
+      //   `for _, it := range items`（index=null, value='it'）渲染成 `for it := range items`，
+      //   再 lift 回来就成了 index='it' ⇒ 结构不等构（实测占剩余 35 个里的大多数）。
+      //   ⇒ 有 value 时必须显式保留 `_` 占位。
+      let head: string;
+      if (s.index && s.value) head = `${s.index}, ${s.value} := range ${goExpr(s.target)}`;
+      else if (s.index) head = `${s.index} := range ${goExpr(s.target)}`;
+      else if (s.value) head = `_, ${s.value} := range ${goExpr(s.target)}`;
+      else head = `range ${goExpr(s.target)}`;
       return `for ${head} {\n${renderGoBody(s.body, indent + 1)}\n${pad}}`;
     }
     case 'defer':
