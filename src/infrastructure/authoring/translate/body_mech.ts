@@ -828,7 +828,11 @@ const stmt = (node: SyntaxNodeLike, indent: string, opts: StmtOpts = {}): string
         const val = names[1];
         if (val && val !== '_') {
           return idx
-            ? `${pad}for (let ${idx} = 0; ${idx} < ${target}.length; ${idx}++) {\n${pad}  const ${val} = ${target}[${idx}];\n${bodyS}\n${pad}}`
+            ? ((() => {
+            const simple4 = /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(target);
+            if (simple4) return `${pad}for (const [${idx}, ${val}] of ${target}.entries()) {\n${bodyS}\n${pad}}`;
+            return `${pad}for (let ${idx} = 0; ${idx} < ${target}.length; ${idx}++) {\n${pad}  const ${val} = ${target}[${idx}];\n${bodyS}\n${pad}}`;
+          })())
             : (() => {
             // ★ 2026-10-29：`for _, v := range map` ⇒ v 是值，Map 要 .values()（与 pivot 同形，保 t454 0 分叉）
             const simple = /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(target);

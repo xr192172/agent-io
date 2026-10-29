@@ -777,6 +777,15 @@ function projectTsStmt(s: IrStmt, indent: number): string {
       // ★ TS 渲染器的决定（与 legacy 逐字一致）：有值名则按"是否同时要下标"分两种写法
       if (s.value) {
         if (s.index) {
+          // ★★★ 2026-10-29（**抽查确认的共因**）：Go 的 `for k, v := range m` 里 k 是**键**、v 是**值**。
+          //   原来发"数字下标 + m[i]" ⇒ 键变成 0,1,2…，值变成条目元组
+          //   ⇒ `Argument of type 'number' is not assignable to parameter of type 'string'`（×40 一类）。
+          //   `entries()` **两种载体都对**：Map 给 [k, v]、数组给 [index, value] ⇒ 写法统一，无需类型信息。
+          const simple3 = /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(t);
+          if (simple3) {
+            const inner2 = indentStr(indent + 1) + bodyText;
+            return `for (const [${s.index}, ${s.value}] of ${t}.entries()) {\n${inner2}\n${indentStr(indent)}}`;
+          }
           const inner = indentStr(indent + 1) + `const ${s.value} = ${t}[${s.index}];\n` + bodyText;
           return `for (let ${s.index} = 0; ${s.index} < ${t}.length; ${s.index}++) {\n${inner}\n${indentStr(indent)}}`;
         }
