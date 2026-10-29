@@ -78,6 +78,14 @@ export interface BookSymbol {
    * ⇒ 签名原文（`sig`）、文档（`doc`）、片段边界（`end_line`）、以及**引用边**（`refs`）都必须在册里。
    */
   sig?: string | null;
+  /**
+   * ★★★ 2026-10-29（T-#BOOK-TS-SIG）：**已经翻好的 TS 签名** —— 册子阶段翻一次，下游骨架直接用。
+   * `sig` 是 Go 原文（投影，给人读/留证据）；`sigTs` 是**目标侧权威**。
+   * 为什么要它：同一份事实被解释两次（册子拼 Go 文本 → 骨架再从 AST 推 TS）必然不同步。
+   */
+  sigTs?: string;
+  /** `sigTs` 里含 unsupported 度类型时的说明（不静默降级成 any） */
+  sigTsNote?: string;
   doc?: string | null;
   end_line?: number | null;
   /** 源侧发出的引用边（call / type_ref）：`to` = 目标节点 id（跨文件全限定），`line` = 源侧行号 */

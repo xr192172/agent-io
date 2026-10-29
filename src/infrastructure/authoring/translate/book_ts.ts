@@ -1,0 +1,154 @@
+/**
+ * ★★★ 2026-10-29（T-#BOOK-TS-SIG）：**册子阶段就把签名翻成 TS** —— 让"翻译"只发生一次。
+ *
+ * ## 为什么（用户的判断）
+ * > 「生成翻译侧的时候，本身就有一道翻译过程，实际 db 里面的很多字段在这个阶段就应该翻译完」
+ *
+ * 现在册子 `sig` 存的是 **Go 原文**（`Builder.AddFix(skillID string, fix string)`），
+ * 下游骨架再自己从 AST 推一遍 TS 类型 —— **同一份事实被解释两次**，两处都可能不同步。
+ * 这里给每个符号补一个 **`sigTs`**：用 extractor 已经直出的 `TypeRef`（AST 事实）渲染，
+ * 落到册子。下游骨架**直接取 `sigTs`**，不再自己推。
+ *
+ * ## 边界（诚实）
+ * · 只覆盖能拿到 AST 的源文件（册子里 `from` 指向 `.go`）；拿不到就跳过并如实计数，**不猜**；
+ * · 渲染不出来的类型位置（`degree === 'unsupported'`）在 `sigTsNote` 里留原话，不静默 `any`；
+ * · 这一步**零 LLM**：纯渲染，输入是 AST 事实 + 阶段 1 的术语（后续接入 termMap）。
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { extractGoFromFile } from './go_extractor.js';
+import { renderTsType } from './ts_codegen.js';
+import type { TransUnit } from './unit.js';
+import type { TranslateBook, BookSymbol } from './book.js';
+
+export interface BookTsSigStats {
+  /** 册子里带 `from` 的符号数 */
+  symbols: number;
+  /** 成功写入 `sigTs` 的条数 */
+  rendered: number;
+  /** 源文件缺失 / 解析失败而跳过的条数（**不猜**） */
+  skipped: number;
+  /** 渲染里含 unsupported 度（语义需人审）的条数 */
+  unsupported: number;
+}
+
+/** 把一个 TransUnit 渲染成 TS 签名文本（不含 `export`；方法首参是 receiver） */
+function renderUnitSig(u: TransUnit): { sig: string; unsupported: boolean } {
+  let unsupported = false;
+  /** 无 TypeRef 时的**文本兜底**：只做"去掉指针号"这种文本形状变换（`*Builder` → `Builder`），不猜结构 */
+  const fromText = (goType: string | undefined): string => {
+    const t = (goType ?? '').trim();
+    if (!t) return 'unknown';
+    if (/^(u?int(8|16|32|64)?|uintptr)$/.test(t)) return 'number';
+    if (/^float(32|64)$/.test(t)) return 'number';
+    if (t === 'string') return 'string';
+    if (t === 'bool') return 'boolean';
+    const noPtr = t.replace(/^\*+/, '');
+    if (/^[A-Za-z_][\w]*(\.\w+)?(<[^>]*>)?(\[\])?$/.test(noPtr)) return noPtr.replace(/\./g, '_');
+    return 'unknown';
+  };
+  const t = (ref: Parameters<typeof renderTsType>[0] | undefined, goTypeText?: string): string => {
+    if (!ref) return fromText(goTypeText);
+    const m = renderTsType(ref);
+    if (m.degree === 'unsupported') unsupported = true;
+    return m.ts;
+  };
+
+  if (u.kind === 'const') return { sig: `${u.name}: ${u.value ?? 'unknown'}`, unsupported };
+
+  if (u.typeKind === 'struct') {
+    const fields = (u.fields ?? []).map((f) => `  ${f.name}: ${t(f.typeRef)};`).join('\n');
+    return { sig: `interface ${u.name} {\n${fields}\n}`, unsupported };
+  }
+  if (u.typeKind === 'interface') {
+    const ms = (u.methods ?? [])
+      .map((m) => {
+        const ps = m.params.map((p) => `${p.name}: ${t(p.typeRef)}`).join(', ');
+        return `  ${m.name}(${ps}): ${m.resultRef ? t(m.resultRef) : 'void'};`;
+      })
+      .join('\n');
+    return { sig: `interface ${u.name} {\n${ms}\n}`, unsupported };
+  }
+  if (u.typeKind === 'alias') {
+    return { sig: `type ${u.name} = ${t(u.aliasTypeRef)}`, unsupported };
+  }
+
+  // func / method
+  const ps = (u.params ?? []).map((p) => `${p.name}: ${t(p.typeRef, p.type)}`).join(', ');
+  const ret = u.resultRef ? t(u.resultRef) : 'void';
+  const tp = u.typeParams?.length ? `<${u.typeParams.join(', ')}>` : '';
+  return { sig: `${u.name}${tp}(${ps}): ${ret}`, unsupported };
+}
+
+/**
+ * 读册子 → 按文件解析 Go 源码（复用 extractor 的 TypeRef）→ 渲染 `sigTs` → 写回。
+ * ★ 幂等：重复跑只是重算同样的东西。
+ */
+export async function fillBookTsSignatures(projectDir: string, bookPath: string): Promise<BookTsSigStats> {
+  const raw = fs.readFileSync(bookPath, 'utf8');
+  const book = JSON.parse(raw) as TranslateBook;
+  const stats: BookTsSigStats = { symbols: 0, rendered: 0, skipped: 0, unsupported: 0 };
+
+  // 按文件分组（`from` = `<repo相对路径>#<符号名>`）
+  const byFile = new Map<string, BookSymbol[]>();
+  for (const s of book.symbols ?? []) {
+    if (!s.from) continue;
+    stats.symbols++;
+    const i = s.from.indexOf('#');
+    if (i < 0) continue;
+    const rel = s.from.slice(0, i);
+    if (!rel.endsWith('.go')) continue;
+    if (!byFile.has(rel)) byFile.set(rel, []);
+    byFile.get(rel)!.push(s);
+  }
+
+  for (const [rel, syms] of byFile) {
+    const abs = path.join(projectDir, rel);
+    if (!fs.existsSync(abs)) {
+      stats.skipped += syms.length;
+      continue;
+    }
+    let units: TransUnit[] = [];
+    try {
+      const r = await extractGoFromFile(abs);
+      units = r.units;
+    } catch {
+      stats.skipped += syms.length;
+      continue;
+    }
+    const byName = new Map<string, TransUnit>();
+    for (const u of units) {
+      byName.set(u.id, u);
+      byName.set(u.name, u);
+    }
+    for (const s of syms) {
+      const name = s.from!.slice(s.from!.indexOf('#') + 1);
+      // ★ 2026-10-29：**方法名对不上**是 299 条被跳过的真因 —— 册子记 `AddFix`，
+      //   而 extractor 的单元 id 是 `Builder_AddFix`（接收者前缀）。按 kind 分派匹配，不靠猜：
+      //   · method  → 找 `*_<name>` 结尾的单元；
+      //   · 其它    → 精确 id / 去限定名后再试。
+      let u = byName.get(name) ?? byName.get(name.split('.').pop() ?? name);
+      if (!u && s.kind === 'method') {
+        u = units.find((x) => x.id.endsWith('_' + name) || x.name.endsWith('_' + name));
+      }
+      if (!u && name.includes('.')) {
+        const short = name.split('.').pop()!;
+        u = units.find((x) => x.id.endsWith('_' + short) || x.name === short);
+      }
+      if (!u) {
+        stats.skipped++;
+        continue;
+      }
+      const { sig, unsupported } = renderUnitSig(u);
+      if (unsupported) {
+        stats.unsupported++;
+        s.sigTsNote = '含 unsupported 度类型（Go 语义无 TS 等价物，需人审）';
+      }
+      s.sigTs = sig;
+      stats.rendered++;
+    }
+  }
+
+  fs.writeFileSync(bookPath, JSON.stringify(book, null, 2), 'utf8');
+  return stats;
+}
