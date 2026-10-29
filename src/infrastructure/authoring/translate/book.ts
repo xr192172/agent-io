@@ -667,6 +667,12 @@ export function unmappedGoTypes(
     for (const w of typeIdents(expr)) {
       if (GO_NOMINAL.has(w) || declared.has(w) || covered?.has(w) || generics.has(w)) continue;
       if (w.length < 2) continue; // 单字母 = 泛型实参或占位
+      // ★★★ 2026-10-29（**口径收窄**）：小写开头 ⇒ **不进术语表**。
+      //   实测 25 个"待定名字"里 22 个是**形参名/命名结果**（`alive` `dead` `retErr` `synced` …），
+      //   它们不需要术语决策（同形即可）。Go 的导出规则决定**类型名几乎总是大写**；
+      //   未导出类型（`graphNode`）同样走同形直译。
+      //   ⇒ 术语表只收"需要换名 / 需要判无对应"的**类型名**。
+      if (/^[a-z]/.test(w)) continue;
       bad.add(w);
     }
   }

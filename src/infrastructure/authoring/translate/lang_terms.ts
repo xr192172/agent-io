@@ -71,6 +71,12 @@ export function buildLangTerms(): Record<string, LangTermDecision> {
 
   // ③ 语义不同、必须换名的（语言层决策；每条都要写明依据）
   table['Time'] = { to: 'number', from: 'time#Time（epoch ms）' };
+  // `time.Duration` 我们统一用**毫秒 number**（见 `_go_std/time`），与 Time 同一决策
+  table['Duration'] = { to: 'number', from: 'time#Duration（毫秒）' };
+  table['Handler'] = { to: 'Handler', from: 'http#HandlerFunc' };
+  table['RawMessage'] = { to: 'RawMessage', from: 'json#RawMessage' };
+  // `sql.DB` ⇒ 我们用 `_go_std/sql` 的 DB 接口（Open 返回它），名字保持一致
+  table['DB'] = { to: 'DB', from: 'sql#DB' };
 
   // ④ 明确"无对应"（判 null，仍算已决定、不阻塞）
   table['mem'] = { to: null, from: 'mem（cgo 内存 API）' };

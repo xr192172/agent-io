@@ -499,7 +499,9 @@ export const Fprintf = (w: { write(s: string): void }, format: string, ...args: 
     case 'json':
       return (
         HEAD('json', '· Marshal/MarshalIndent 直接 JSON.stringify（Go 的 struct tag / omitempty 语义丢失 [未核]）；· Unmarshal 到带类型目标只能 plain object 赋值') +
-        `export const Marshal = (v: unknown): [Uint8Array, Error | null] => {
+        `/** \`json.RawMessage\` ⇒ 原始字节（不做二次编解码） */
+export type RawMessage = Uint8Array;
+export const Marshal = (v: unknown): [Uint8Array, Error | null] => {
   try {
     return [new TextEncoder().encode(JSON.stringify(v)), null];
   } catch (e) {
@@ -1102,6 +1104,7 @@ export const MethodPost = 'POST';
 export const MethodPut = 'PUT';
 export const MethodDelete = 'DELETE';
 export type HandlerFunc = (w: ResponseWriter, r: Request) => void;
+export type Handler = HandlerFunc;
 export interface ResponseWriter {
   Header(): { Set(k: string, v: string): void };
   Write(b: Uint8Array): [number, Error | null];
