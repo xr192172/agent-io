@@ -27,7 +27,11 @@ function goStmt(s: IrStmt, indent: number): string {
     case 'expr':
       return goExpr(s.value);
     case 'declare':
-      return s.value ? `var ${s.name} = ${goExpr(s.value)}` : `var ${s.name}`;
+      // ★ 2026-10-29（体回译的真根因）：Go 里 **`var x` 非法**（必须带类型或值）。
+      //   原来无值时渲染 `var x` ⇒ 不是合法 Go ⇒ tree-sitter 出 ERROR 节点
+      //   ⇒ 回环 lift 失败、或被容错解析粘成别的结构（43 个不等构里绝大多数是这个）。
+      //   ⇒ 无值时补 `any`（再 lift 时类型被忽略，结构仍一致）。
+      return s.value ? `var ${s.name} = ${goExpr(s.value)}` : `var ${s.name} any`;
     case 'assign':
       return `${goExpr(s.target)} ${s.op} ${goExpr(s.value)}`;
     case 'incdec':
@@ -105,7 +109,9 @@ export function goExpr(e: IrExpr): string {
       const items = e.elems
         .map((x) => (x.key ? `${goExpr(x.key)}: ${goExpr(x.value)}` : goExpr(x.value)))
         .join(', ');
-      const t = e.kind === 'map' ? 'map[string]int' : e.kind === 'slice' ? '[]int' : 'struct{ x int }';
+      // ★ 2026-10-29（T-#RT-COMPOSITE）：优先用**真类型**复原，占位只作兜底
+      const t =
+        e.typeText ?? (e.kind === 'map' ? 'map[string]int' : e.kind === 'slice' ? '[]int' : 'struct{ x int }');
       return `${t}{${items}}`;
     }
     case 'builtin':

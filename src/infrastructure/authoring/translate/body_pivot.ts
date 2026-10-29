@@ -83,7 +83,19 @@ export type IrExpr =
    * 复合字面量（Go 的 `[]T{…}` / `map[K]V{…}` / `T{…}`）。
    * 轴心只区分**三种容器语义**；具体语法（数组/Map/对象）归渲染器。
    */
-  | { k: 'composite'; kind: 'slice' | 'map' | 'struct'; elems: Array<{ key?: IrExpr; value: IrExpr }> };
+  | {
+      k: 'composite';
+      kind: 'slice' | 'map' | 'struct';
+      elems: Array<{ key?: IrExpr; value: IrExpr }>;
+      /**
+       * ★ 2026-10-29（T-#RT-COMPOSITE）：**真类型**（如 `[]SkillToolDef`）。
+       * 回译（IR→Go）必须用它复原；用占位（`[]int`）会让回环 lift 失败
+       * —— 实测 236 个体里 43 个不等构，多数根因在这。
+       * `[未核]` 这是**源语言拼写**；完全中立应存 `TypeRef`，
+       * 但 `body_pivot` 不能 import `go_extractor`（会成环）⇒ 先用文本，后续搬到名词层解析。
+       */
+      typeText?: string;
+    };
 
 /** 列举本竖切支持的节点类型（未列出的一律 lift→null） */
 export const OK_STMT = new Set(['block', 'return_statement', 'expression_statement', 'short_var_declaration', 'assignment_statement', 'if_statement', 'for_statement', 'inc_dec_statement', 'var_declaration', 'defer_statement', 'expression_switch_statement', 'continue_statement', 'break_statement']);
@@ -575,7 +587,7 @@ function liftExpr(n: SyntaxNodeLike): IrExpr | null {
           elems.push({ value });
         }
       }
-      return { k: 'composite', kind, elems };
+      return { k: 'composite', kind, elems, ...(typeNode ? { typeText: typeNode.text } : {}) };
     }
     case 'nil':
       return { k: 'nil' };
