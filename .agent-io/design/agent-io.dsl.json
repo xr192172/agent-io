@@ -16001,7 +16001,49 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/infrastructure/authoring/translate/go_extractor.ts"
+        "path": "src/infrastructure/authoring/translate/go_extractor.ts",
+        "decision": {
+          "summary": "T-#IOTA：const 组内省略值成员按 iota 落成带字面量的常量（否则产物只有引用没有声明 ⇒ TS2304）",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "phase": "post",
+              "path": "src/infrastructure/authoring/translate/go_extractor.ts",
+              "must": [
+                "iotaIdx"
+              ],
+              "why": "iota 序列必须落值；现产物里 AbsorbSucceeded 只有引用无声明"
+            }
+          ],
+          "updated_at": "2026-10-29T16:16:53.523Z",
+          "agent": "agent-io-cli"
+        },
+        "task": {
+          "id": "file_src_infrastructure_authoring_translate_go_extractor_ts",
+          "summary": "T-#IOTA：const 组内省略值成员按 iota 落成带字面量的常量（否则产物只有引用没有声明 ⇒ TS2304）",
+          "state": "candidate",
+          "judge_gate": "strict",
+          "owner": null,
+          "claimed_at": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/infrastructure/authoring/translate/go_extractor.ts",
+                "content_hash": "bbfdcafe89aff6476a295f30f389209a96c5d698"
+              }
+            ],
+            "computed_at": "2026-10-29T16:17:05.952Z",
+            "basis": [
+              "expectations"
+            ]
+          },
+          "prepared_snapshot": null,
+          "release_reason": "go_extractor.ts 的 T-#IOTA 本轮不落盘（缺冻结重写计划），卡释放、决策卡判据保留",
+          "released_by": "agent:agent-io-cli",
+          "released_at": "2026-10-29T16:17:49.000Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_go_tests_ts",
@@ -63636,7 +63678,8 @@
           }
         ],
         "lines": 514,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_go_tests_ts",
@@ -68633,13 +68676,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 296,
+  "_dsl_rev": 297,
   "_sync": {
-    "saved_at": "2026-10-29T12:36:35.152Z",
+    "saved_at": "2026-10-29T16:17:49.031Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 276398015,
+    "age": 289671894,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
