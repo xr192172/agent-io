@@ -151,7 +151,7 @@
 | T-#KILL-LEGACY | `body_mech.ts` 有**两条并行体路径**（pivot + legacy ~500 行）。`if init` 只修了 pivot 一侧，legacy 同样丢 ⇒ 同一事实两份实现。移植规则组到 lift/project 后删 legacy，保持 t447+t441 双绿 | `translate/body_mech.ts` | 未开工 |
 | T-#BASELINE-1010 | 把「零 LLM 回放 = **1010 错**」定为**棘轮基线**（确定性层改动不得让它上升；replayOnly 5 秒可测） | certs/ | 未开工 |
 | T-#SHADOW | **全局遮蔽**：本地模块导出名与 JS 内置全局同名（`logging` 的 `Error`）⇒ `TS2555 ×122`。正解：冲突模块改 **namespace import**（`import * as logging`），Go 侧 `logging.Error(...)` 天然映射。**禁用**"全局改自由标识符"（同名两义，会把全局的那份也改坏） | `translate/project.ts` | 未开工（高优先） |
-| D-#EDGE-DERIVE | 设计侧**边派生已退役**（`derive_chain`/`derive_algorithm` 于 2026-10-21 移出工具面，「调用 146-179 次、成功 0-3 次」）⇒ 任何项目的 `geometry.edges` 恒为 0，「设计侧只有点没有线」。要么给一条**能成功的派生路径**（import 图 → file 边，可从 AST 直接算，不需要 LLM），要么明确「边只能手写」并给批量入口 | `design/derive/*` · `application/cross/index.ts` | 未开工 |
+| D-#EDGE-DERIVE | 边派生已退役 ⇒ **不要**把 1382 条 import 边灌进 DSL（可随时从 AST 重算，写进去只会漂移成假账）。正解：**按需派生视图**（脚本/AST 现算），DSL 只留**不可派生的语义边**。参考实现 .agent-io/scratch/derive-edges.mjs（1 秒算出全仓 1382 条） | design/derive/* | 方案已定，待落成工具 |
 | D-#EDIT-DSL-ERR-LAYER | `edit_dsl` 报错**不说"在哪一层"**：`edge.add 需要 id` 连报 3 次，id 实际在 **op 信封**（不在 `data`，`EDGE_DATA_KEYS` 里也没有）；`design_intent` 的 `goals` 只报「类型/取值不符」不说哪个键（实际 `{id?,title*,description?,status?}`）。应在错误里给出**期望形状 + 层级** | `application/design/dsl_ops/*` | 未开工 |
 | D-#SCHEMA-FULL | `npm run tool -- <t> --schema` 输出被截断，而关键信息在**工具描述**里（`edit_dsl` 描述 12990 字写着「唯一判据表在 `dsl_ops/op_data_spec.ts`」）。给出 `--schema --full` 或直接把 zod 展开/json schema 打全 | `presentation/cli/*` | 未开工 |
 | D-#EDGE-INTENT-MATCH | `design_intent.edge_intents` 用 `from`+`to`（文件路径）**匹配不到新加的边**，必须用边 id ⇒ 3/3 全"未匹配"。应兼容路径匹配，或在回执里直接给出可用的边 id 列表 | `application/design/design_intent.ts` | 未开工 |
