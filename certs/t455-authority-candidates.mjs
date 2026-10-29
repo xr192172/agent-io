@@ -118,6 +118,34 @@ for (const f of fs.readdirSync(DIR).filter((x) => x.endsWith('.ts')).sort()) {
   }
 }
 
+/**
+ * ★★★ 用户提的第三个信号：**上下游是否相同**（structural clone / sandwich）。
+ *   一条"管道"= 上游文件 → 本文件 → 下游文件。两条管道的上下游相同时，中间那两份实现就是双权威嫌疑。
+ *   ★ 顺带白捡一个判据：**上游为空 = 死代码里的第二份实现**（本仓实测：go_body_codegen.ts 无人 import）。
+ */
+const importersOf = (() => {
+  const map = new Map(); // 文件路径尾（不含 .ts） → Set<import 它的文件>
+  const all = [];
+  const walk = (d) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith('.ts')) all.push(p);
+    }
+  };
+  walk(path.resolve(ROOT, 'src'));
+  for (const f of all) {
+    const txt = fs.readFileSync(f, 'utf8');
+    for (const m of txt.matchAll(/from\s+'(\.[^']+)'/g)) {
+      const target = path.posix.basename(m[1]).replace(/\.js$/, '');
+      if (!map.has(target)) map.set(target, new Set());
+      map.get(target).add(path.basename(f));
+    }
+  }
+  return map;
+})();
+const importers = (file) => importersOf.get(file.replace(/\.ts$/, '')) ?? new Set();
+
 /** 两函数之间有没有调用关系（粗判：一方的名字出现在对方体里） */
 const calls = (a, b) =>
   new RegExp(`\\b${b.name}\\s*\\(`).test(a.node.getText(a.sf)) || new RegExp(`\\b${a.name}\\s*\\(`).test(b.node.getText(b.sf));
@@ -154,6 +182,8 @@ for (let i = 0; i < fns.length; i++) {
       ioJ: Number(ioJ.toFixed(2)),
       tags: [...a.tags].filter((x) => b.tags.has(x)).slice(0, 8),
       why: byTag ? 'tag' : 'io',
+      liveA: importers(a.file).size,
+      liveB: importers(b.file).size,
       lines: Math.min(linesA, linesB),
     });
   }
@@ -168,7 +198,7 @@ const stillGray = [...gray.values()].filter((x) => String(x.until ?? '') > today
 console.log(`扫描 ${fns.length} 个顶层函数 · 嫌疑对 ${suspects.length} · 白 ${wl.size} · 灰 ${gray.size}（在期内 ${stillGray.length}）`);
 for (const s of suspects.slice(0, 12)) {
   console.log(
-    `  [tag ${s.tagJ} / io ${s.ioJ}] ${s.a}  <>  ${s.b}${s.tags.length ? `\n      共同标签: ${s.tags.join(', ')}` : ''}`,
+    `  [tag ${s.tagJ} / io ${s.ioJ}] ${s.a}(↑${s.liveA})  <>  ${s.b}(↑${s.liveB})${s.liveA === 0 || s.liveB === 0 ? '  ★ 死代码里的第二份' : ''}${s.tags.length ? `\n      共同标签: ${s.tags.join(', ')}` : ''}`,
   );
 }
 

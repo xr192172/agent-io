@@ -394,3 +394,66 @@ translateGoToTs→renderTsSkeleton→renderConstSkeleton <> …→renderFuncSkel
 ### 这两次失败的价值
 不是"又没做成"，而是：**可证伪验收让我在半小时内否掉了两版算法**，
 而不是做完一周才发现它报的全是兄弟分支——那正是又一个"量具"。
+
+---
+
+## 十二、第三个信号：**上下游相同**（structural clone / sandwich）—— 立刻抓到一个大发现
+
+### 用户提的信号
+> 「有一两条同样的管道都 import 同样的，或者说都有同一个文件作为上游和同一个文件作为下游，
+>   并且处理的数据大幅度相同。」
+
+这在文献里有名字：
+- **structural clones**（Kapser & Godfrey）：设计层重复 —— "同样的邻居 + 中间那份重复实现"；
+- **sandwich / bottleneck**（Sangal 等, OOPSLA'05 依赖模型）：上下游相同、中间可替换的结构单元。
+两者都比"函数相似度"更接近我们的病，而且**算起来极便宜**（只看 import 关系与引用计数）。
+
+### 实测：一加进 t455，四条"真·双权威"全部落在 ↑0 的文件里
+
+```
+body_pivot.ts#projectTsExpr(↑4)      <>  go_body_codegen.ts#goExpr(↑0)      ★ 死代码里的第二份
+body_pivot.ts#projectTsStmt(↑4)      <>  go_body_codegen.ts#goStmt(↑0)      ★ 死代码里的第二份
+go_codegen.ts#renderGoType(↑0)       <>  ts_codegen.ts#renderTsType(↑5)     ★ 死代码里的第二份
+go_codegen.ts#renderGoType(↑0)       <>  pivot.ts#slotsOf(↑1)               ★ 死代码里的第二份
+```
+（`↑n` = 有多少个文件 import 它。）
+
+**`go_body_codegen.ts` 与 `go_codegen.ts` 的 importers 都是 0。**
+交叉核对：只有**证文件**在 import 它们 ——
+```
+certs/t449-body-roundtrip-cert.mjs → go_body_codegen
+certs/t446-pivot-roundtrip-probe.mjs → go_codegen
+```
+生产代码**没有任何一处**引用它们。
+
+### 这说明什么（重要）
+
+1. 我昨天判为"真·双权威"的两条（`projectTsExpr<>goExpr`、`projectTsStmt<>goStmt`），
+   其实是**死代码里保留的第二份渲染实现** —— 不是"活的两条管道抢权威"，而是"旧的没删干净"。
+2. ⇒ **双权威分两类，处置完全不同**：
+
+| 类型 | 特征 | 处置 |
+|---|---|---|
+| **死代码里的第二份** | 上游为空（importers=0） | **删**（最便宜，风险最低） |
+| **活着的双管道** | 上下游均有、中间实现不同 | 并流（一条委托另一条） |
+
+3. ⇒ "上下游"这个信号的价值：**它不判语义就把两类分开了**。
+   今天所有函数级相似度算法都在这件事上打转，而 import 计数一句话解决。
+
+### 判据形态（P0 内就能用，不需要等 P1）
+```
+for 每对嫌疑 (A, B):
+  if A.importers = 0 或 B.importers = 0  →  分类为「死代码里的第二份」，建议删（不报警为"活的双权威"）
+  else if 上下游集合相同 且 数据相似      →  分类为「活的双管道」，建议并流（P1 才拦）
+  else                                   →  分类为「邻居不同」，降级/进灰名单
+```
+
+### 下一步（比原计划更划算）
+1. 先用**上下游信号**把 20 对全部分类（死/活/邻居不同），人只需判"活的双管道"那一小撮；
+2. 死的那批走正常删除流程（证 t449/t446 里对它们的引用要一起改）；
+3. 活的再用**字段级载荷 + 差分**取证；
+4. 仍不写判据、不开写闸。
+
+### [未核]
+- importers=0 也可能是**动态 import / 反射 / 外部调用**（本仓没有，但换项目要查）；
+- 证文件引用它们说明"证本身依赖死代码"——删的时候要连证一起改成引用活实现（否则证在验死代码）。
