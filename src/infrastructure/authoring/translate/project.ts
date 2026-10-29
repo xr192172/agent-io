@@ -228,6 +228,8 @@ function assembleModule(m: ProjectModule): void {
   //   就地为该模块生成 ambient 声明：只让名字能解析，不假装实现。
   const stdNames = new Set<string>();
   for (const u of m.units) {
+    // ★ 2026-10-29（T-#SHIM-VALUE）：**值位置**的 pkg.Member（filepath.Join / os.OpenFile …）
+    for (const q of u.usedQualified ?? []) stdNames.add(q);
     for (const p of u.params ?? []) collectQualified(p.typeRef, stdNames);
     collectQualified(u.resultRef, stdNames);
     collectQualified(u.aliasTypeRef, stdNames);

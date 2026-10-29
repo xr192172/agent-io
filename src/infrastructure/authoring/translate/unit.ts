@@ -92,6 +92,13 @@ export interface TransUnit {
   params?: TranslateParam[];
   /** 返回类型原文；null / undefined = 无返回值 —— ★ 投影 */
   result?: string | null;
+  /**
+   * ★★★ 2026-10-29（T-#SHIM-VALUE）：**函数体里出现的「包名.成员」**（值位置，如 `filepath.Join` / `os.OpenFile`）。
+   * 为什么单独一栏：类型位置的 `pkg.Type` 走 `TypeRef` 就能收；而**值位置**（调用、常量）在函数体里，
+   * 类型树看不到 ⇒ 垫片收不到 ⇒ tsc 报 TS2304 ×789。
+   * 判定方式**不用猜**：只认本文件 `import` 里声明过的包名（Go 的语义事实），不是"小写就可能是包"。
+   */
+  usedQualified?: string[];
   /** ★ 权威：返回类型结构化树（多返回值是 tuple；无返回值缺省） */
   resultRef?: TypeRef;
   /**

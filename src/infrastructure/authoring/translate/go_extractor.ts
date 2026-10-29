@@ -165,6 +165,63 @@ function argTypes(node: SyntaxNodeLike): SyntaxNodeLike[] {
 }
 
 /**
+ * ★★★ 2026-10-29（T-#SHIM-VALUE）：从 Go 的 `import_declaration` 取**包名**（不是猜），
+ * 再据此在函数体里精确收集 `pkg.Member`（值位置：调用、常量）。
+ * 包名规则：有别名用别名；否则取 import 路径最后一段（`path/filepath` → `filepath`）。
+ */
+function collectImportedPkgs(root: SyntaxNodeLike): Set<string> {
+  const out = new Set<string>();
+  for (let i = 0; i < root.childCount; i++) {
+    const decl = root.child(i);
+    if (!decl || decl.type !== 'import_declaration') continue;
+    const specs: SyntaxNodeLike[] = [];
+    const dig = (n: SyntaxNodeLike): void => {
+      for (let j = 0; j < n.childCount; j++) {
+        const c = n.child(j);
+        if (!c) continue;
+        if (c.type === 'import_spec') specs.push(c);
+        else if (c.childCount > 0) dig(c);
+      }
+    };
+    dig(decl);
+    for (const sp of specs) {
+      let alias: string | null = null;
+      let pathText = '';
+      for (let k = 0; k < sp.childCount; k++) {
+        const c = sp.child(k);
+        if (!c) continue;
+        if (c.type === 'package_identifier') alias = c.text;
+        else if (c.type === 'interpreted_string_literal') pathText = c.text.slice(1, -1);
+      }
+      if (alias && alias !== '_' && alias !== '.') out.add(alias);
+      else if (pathText) {
+        const seg = pathText.split('/').pop() ?? '';
+        if (seg) out.add(seg);
+      }
+    }
+  }
+  return out;
+}
+
+/** 全文件扫一遍：`pkg.Member` 且 pkg 在 import 表里 ⇒ 收进值位置清单 */
+function collectValueQualified(root: SyntaxNodeLike, pkgs: Set<string>): string[] {
+  const out = new Set<string>();
+  const walk = (n: SyntaxNodeLike): void => {
+    if (n.type === 'selector_expression') {
+      const op = n.child(0);
+      const fld = n.child(2) ?? n.child(1);
+      if (op && op.type === 'identifier' && pkgs.has(op.text) && fld) out.add(op.text + '.' + fld.text);
+    }
+    for (let i = 0; i < n.childCount; i++) {
+      const c = n.child(i);
+      if (c) walk(c);
+    }
+  };
+  walk(root);
+  return [...out];
+}
+
+/**
  * 返回类型节点兜底（★ 2026-10-28 重写）。
  *
  * 上一版按"第二个 parameter_list 就是返回值"猜 ⇒ **方法**上全错：方法有**两个** parameter_list
@@ -710,6 +767,9 @@ export async function extractGo(filePath: string, source: string): Promise<Extra
   if (!parsed?.root) return { units: [], skipped: [], error: `Go 解析失败（可解析性未知）：${filePath}` };
   const units: TransUnit[] = [];
   const consts: ConstDecl[] = [];
+  // ★ T-#SHIM-VALUE：本文件 import 的包名 → 函数体值位置的 pkg.Member
+  const pkgs = collectImportedPkgs(parsed.root);
+  const valueQualified = collectValueQualified(parsed.root, pkgs);
   const skipped: SkippedDecl[] = [];
   for (let i = 0; i < parsed.root.childCount; i++) {
     const c = parsed.root.child(i);
@@ -753,5 +813,6 @@ export async function extractGo(filePath: string, source: string): Promise<Extra
       constraints: [...DEFAULT_CONSTRAINTS],
     });
   }
+  if (valueQualified.length) for (const u of units) u.usedQualified = valueQualified;
   return { units, skipped };
 }
