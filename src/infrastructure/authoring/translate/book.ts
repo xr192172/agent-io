@@ -829,6 +829,11 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
     }
 
     const before = new Map(book.symbols.filter((s) => s.from).map((s) => [s.from as string, s]));
+    // ★ 2026-10-29：**人已定 strategy 的外部依赖表** —— blocked 判定要用它（否则决策落不了账）
+    const depStrategy = new Map<string, string>();
+    for (const d of book.external_deps ?? []) {
+      if (d.from && d.strategy) depStrategy.set(d.from, d.strategy);
+    }
     // origin=added 的原样保留；只补一个缺省 scope（老册子没有这个键）。★ 内容不重算。
     const kept: BookSymbol[] = book.symbols.filter((s) => !s.from).map((s) => ({ ...s, scope: s.scope ?? ('exported' as const) }));
     // ★ 人写的术语表**参与**覆盖判定（否则「补 types 后重跑即解锁」是空话）
@@ -860,13 +865,18 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
     for (const { row, scope, to, target, bad, uncovered, nullTerms, exts } of mapped) {
       const prev = before.get(row.id);
       const collision = (byTarget.get(to) ?? 0) > 1;
+      // ★★★ 2026-10-29（**第 1 层的决策必须影响账**）：原来只要文件 import 了非 stdlib 包就判 `external_dep`
+      //   并 blocked，**完全不看 `external_deps[].strategy` 填没填** ⇒ 人把 8 条策略全填了，318 个符号照样 blocked
+      //   ⇒ 第 2 层无从消费（又一处「决策不生效」）。现在：该文件的外部依赖**全部**定了 strategy
+      //   ⇒ 不再 blocked（降为 pending：名词层已决定"用什么替身"，剩下是结构层的事）。
+      const extUndecided = exts.filter((e) => !depStrategy.get(e));
       const kind: 'term' | 'term_null' | 'collision' | 'external_dep' | null = uncovered.length
         ? 'term'
         : nullTerms.length
           ? 'term_null'
           : collision
             ? 'collision'
-            : exts.length
+            : extUndecided.length
               ? 'external_dep'
               : null;
       let state = kind ? 'blocked' : 'pending';
