@@ -116,6 +116,12 @@ export function collectExports(srcRoot: string): Map<string, Map<string, number>
         if (!hasExport) continue;
         if (ts.isFunctionDeclaration(st) && st.name) names.set(st.name.text, st.parameters.length);
         else if (ts.isClassDeclaration(st) && st.name) names.set(st.name.text, -1);
+        // ★★★ 2026-10-29（抽查：`as MergeRequest` 报 Cannot find name）：**类型也要收进来**。
+        //   原来只收 function/const/class ⇒ `interface` / `type` 永远补不上 import
+        //   （`MergeRequest` 明明在 graph_writer.ts 里 `export interface`）。
+        else if (ts.isInterfaceDeclaration(st) && st.name) names.set(st.name.text, -1);
+        else if (ts.isTypeAliasDeclaration(st) && st.name) names.set(st.name.text, -1);
+        else if (ts.isEnumDeclaration(st) && st.name) names.set(st.name.text, -1);
         if (ts.isVariableStatement(st)) {
           for (const d of st.declarationList.declarations) {
             if (!ts.isIdentifier(d.name)) continue;
