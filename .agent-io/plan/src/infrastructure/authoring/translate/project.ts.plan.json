@@ -1,0 +1,77 @@
+{
+  "path": "src/infrastructure/authoring/translate/project.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "assembleModule"
+      },
+      "kind": "rewrite",
+      "detail": "在模块装配末尾引入「全局遮蔽」修整：若本地模块导出名与目标语言内置全局同名（实测 logging 的 Error 遮蔽 JS 内置 Error ⇒ TS2555×122），改为 namespace import（import * as logging），使 Go 侧限定引用 logging.Error(...) 天然映射；禁用「全局改自由标识符」（同名两义，实测 122→122）。边界判据：replayOnly 回放基线（当前 1010）必须下降 ~122，否则说明方向又错，立即回滚。",
+      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_project_ts#0"
+    }
+  ],
+  "card": "T-#SHADOW",
+  "untouched_default": {
+    "why": "本次只改导入生成这一处；其余符号与 T-#SHADOW 无关，按画布约定统一表态为不动。"
+  },
+  "symbols_at_freeze": [
+    "SKIP_DIRS",
+    "walkGoFiles",
+    "ProjectModule",
+    "ReportEntry",
+    "TypesMapEntry",
+    "ConflictEntry",
+    "ProjectResult",
+    "ProjectOptions",
+    "toPosix",
+    "relImportPath",
+    "collectCallRefs",
+    "SymbolDef",
+    "sha1",
+    "spliceBodyOuter",
+    "FILL_CACHE_VERSION",
+    "fillCachePath",
+    "loadFillCache",
+    "saveFillCache",
+    "buildDepTable",
+    "assembleModule",
+    "buildReport",
+    "writeReport",
+    "buildTypesMap",
+    "detectConflicts",
+    "writeTypesMap",
+    "ProjectCallContext",
+    "buildProjectCallNote",
+    "TscCluster",
+    "TS_CODE_LABEL",
+    "clusterKeyFor",
+    "verifyProjectTree",
+    "translateGoProject"
+  ],
+  "fps_at_freeze": {
+    "walkGoFiles": "eeff1f4fc0850a63d30ca149b3ff3eef284da9dd",
+    "toPosix": "cff0df617883650a1ad88e96643a257513d31068",
+    "relImportPath": "5d4c777aef48dcf2a1fb5694afa5b4a96b457eaf",
+    "collectCallRefs": "b33e11fa279a77f88ac9e65f342a93df7f5507c0",
+    "sha1": "ed4ab12980d0066b4f9a09b75205433d16febe3b",
+    "spliceBodyOuter": "0be65dac04f56fcae91f33f18c836ae4c730b5cc",
+    "fillCachePath": "3b7141552a110ca26091e675c7b76c0ffe1e940d",
+    "loadFillCache": "183ce2fd163baf1b5701b016060196fbb1a63243",
+    "saveFillCache": "a8d90ec412a9a0cf7ebede91504bc73116b3ee1d",
+    "buildDepTable": "2c95c0ab2a0d76d042a4dc899b7ccceb5f6dd18f",
+    "assembleModule": "95b20d72469ecb7bdebee76e607cca8ddc6a9e0c",
+    "buildReport": "d1add5fa078cfea725b0ee6936934e3f593f9a7a",
+    "writeReport": "e5deee0716f0696f38e59223863340179d7aa4a9",
+    "buildTypesMap": "d66a574518432e3a7ab10c01f92b964ac3e4755d",
+    "detectConflicts": "95e78107954f1a50bf2991cb1416c6c8e9380421",
+    "writeTypesMap": "cdc2d8d1b906f8d1b6aa67d5aed1c45d793f119e",
+    "buildProjectCallNote": "1daf60777b95e9cc6026c89a7de6fb25e96a9c78",
+    "clusterKeyFor": "976676c2573d3cad709243feac5215ec1d076c0e",
+    "verifyProjectTree": "7db0ccffdbf4c210a40e97dacc8f94fe697a61bc",
+    "translateGoProject": "da36e3c76dcda78539a02f4b02c8f4a959dda5d5"
+  },
+  "frozen_at": "2026-10-29T12:36:48.933Z",
+  "base": {
+    "content_hash": "0a3dfebea5f2e38d3041bb29af1c9e3e5163a123"
+  }
+}

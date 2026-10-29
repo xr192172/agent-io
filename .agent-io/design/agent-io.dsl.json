@@ -16065,7 +16065,39 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/infrastructure/authoring/translate/project.ts"
+        "path": "src/infrastructure/authoring/translate/project.ts",
+        "decision": {
+          "summary": "装配（assembleModule）必须经过确定性修整：本节点在 import 图中真实引用 fixers.ts（1382 条相对 import 边测量所得）。判据 = 该边存在；修整入口若让本仓导出名遮蔽目标语言内置全局（logging 的 Error ⇒ TS2555×122），由 fixers.ts 侧的 namespace import 处置。",
+          "expectations": [
+            {
+              "kind": "edge-exists",
+              "from": "src/infrastructure/authoring/translate/project.ts",
+              "to": "src/infrastructure/authoring/translate/fixers.ts",
+              "why": "project.ts 引用 fixers.ts（AST import 图实测）；该边一旦消失说明确定性修整被绕过"
+            }
+          ],
+          "updated_at": "2026-10-29T12:36:35.139Z",
+          "agent": "dsh-session"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-29T12:36:35.139Z",
+            "decision": {
+              "summary": "装配（assembleModule）必须经过确定性修整：本节点在 import 图中真实引用 fixers.ts（1382 条相对 import 边测量所得）。判据 = 该边存在；修整入口若让本仓导出名遮蔽目标语言内置全局（logging 的 Error ⇒ TS2555×122），由 fixers.ts 侧的 namespace import 处置。",
+              "expectations": [
+                {
+                  "kind": "edge-exists",
+                  "from": "file_src_infrastructure_authoring_translate_project_ts",
+                  "to": "file_src_infrastructure_authoring_translate_fixers_ts",
+                  "why": "project.ts 引用 fixers.ts（AST import 图实测）；该边一旦消失说明确定性修整被绕过"
+                }
+              ],
+              "updated_at": "2026-10-29T12:36:06.472Z",
+              "agent": "dsh-session"
+            },
+            "agent": "dsh-session"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_authoring_translate_prompts_ts",
@@ -68601,15 +68633,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 294,
+  "_dsl_rev": 296,
   "_sync": {
-    "saved_at": "2026-10-29T12:03:59.026Z",
+    "saved_at": "2026-10-29T12:36:35.152Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 274441889,
+    "age": 276398015,
     "dbSchemaVersion": 17,
-    "via": "tool:design_intent"
+    "via": "edit_dsl:edit_dsl"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",
