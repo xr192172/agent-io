@@ -3,35 +3,35 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "ConstDecl"
+        "symbol": "zeroValueOf"
       },
-      "kind": "rewrite",
-      "detail": "expr 放宽为 SyntaxNodeLike | null：iota 序列里省略值的成员没有值节点",
+      "kind": "create",
+      "detail": "新增导出纯函数 zeroValueOf(typeText): string —— Go 类型文本 → 零值字面量：`[]T`→`[]`、`map[K]V`→`new Map()`、`string`→`''`、数值→`0`、`bool`→`false`、指针/接口/error→`null`。抽成纯函数是为了能被 behavior-cases 判（语义类判据）",
       "judgement_ref": "decision:file_src_infrastructure_authoring_translate_go_extractor_ts#1",
       "status": "open"
     },
     {
       "anchor": {
-        "symbol": "constDeclFromSpec"
+        "symbol": "namedResultsOf"
       },
-      "kind": "rewrite",
-      "detail": "省略值的 const 成员不再 return null：无值节点返回 src 为空的单元",
+      "kind": "create",
+      "detail": "新增纯函数 namedResultsOf(resultNode) —— 从 Go 的 result parameter_list 取**命名返回值**（名字 + 类型文本 + **声明顺序**）；名字为 `_` 的跳过",
       "judgement_ref": "decision:file_src_infrastructure_authoring_translate_go_extractor_ts#1",
       "status": "open"
     },
     {
       "anchor": {
-        "symbol": "collect"
+        "symbol": "unitFromFunc"
       },
       "kind": "rewrite",
-      "detail": "const 收集循环：带值且含 iota 的成员、以及省略值的成员，都把 iota 换成本组下标后落成整数字面量；纯整数与一步算术支持，复杂表达式不猜（跳过并留 skipped 记录）",
+      "detail": "命名返回值建模：① 取 namedResults；② 机械体前置 `let <name> = <零值>`（Go 里它们是入口零值变量）；③ 把机械体里的**裸 `return;`** 折成 `return [<按声明序>];`（Go 的裸 return 返回命名结果）",
       "judgement_ref": "decision:file_src_infrastructure_authoring_translate_go_extractor_ts#1",
       "status": "open"
     }
   ],
   "card": "file_src_infrastructure_authoring_translate_go_extractor_ts",
   "untouched_default": {
-    "why": "本次只动 const 收集这一条链（ConstDecl 类型 + constDeclFromSpec + collect 的 const 分支）"
+    "why": "本次只动命名返回值这一条链（zeroValueOf / namedResultsOf / unitFromFunc 的体装配），其余符号与 T-#NAMED-RESULTS 无关"
   },
   "symbols_at_freeze": [
     "childField",
@@ -85,7 +85,9 @@
     "extractTypeParamBounds": "1227806d58e9b786054d10c5c13c1b6336f9f255",
     "appendBodyHints": "de02a29c11af35f50819e1102a21ab8491b8d3f1",
     "normResult": "59057bfdc1ca2d7c06dff3bc186d48a3a8eadd32",
-    "unitFromFunc": "7e4422277a4d9af81d4bc0abe09f3f87507f3fbc",
+    "zeroValueOf": "7d842ec5b7f5fc1074a277fe33e95ea86c0751b0",
+    "namedResultsOf": "952673eb0b17e8144fac1116fb91182152805f99",
+    "unitFromFunc": "574fcde3a776f4a9a8252e988d537b4ac6f2aeaa",
     "detectDecision": "19e4d83fd0b601490f43b5ef8c35de2607911018",
     "findChildOfType": "ea7660d68d723c6f58675e58c7c2b2d8ce5af022",
     "methodFromElem": "e8fe9740e2b60611722a0274fb993598c264b97c",
@@ -97,8 +99,8 @@
     "extractGoFromFile": "e97924758a09047df1d6c8132204ffa3b59e832e",
     "extractGo": "fdf2bf522b68719de3027501e4c94dcf6bbd8d46"
   },
-  "frozen_at": "2026-10-29T16:40:50.830Z",
+  "frozen_at": "2026-10-29T16:57:46.563Z",
   "base": {
-    "content_hash": "b960325553f86ad89537411f4318d1698d8e9dfc"
+    "content_hash": "e2e5cc89eca27c17d229e9a80ba55ac69dcc9dc3"
   }
 }

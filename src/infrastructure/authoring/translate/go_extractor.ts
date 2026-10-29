@@ -469,6 +469,47 @@ function normResult(s: string): string {
 
 /** func/方法 单元：`func Add(...)` 或 `func (u *User) Greet(...)` → TransUnit(kind='func')
  *  方法映射为 TS 自由函数：receiver 作首参，名取 `${recvType}_${method}`（防同文件多类型方法撞名）。 */
+/**
+ * ★★★ T-#NAMED-RESULTS：Go 类型文本 → **零值**字面量（TS 侧写法）。
+ *
+ * 命名返回值在 Go 里是**函数入口就存在的零值变量**；TS 没有这个概念，
+ * 必须在体首显式落 `let x = <零值>`，否则 `dead = append(dead, id)` 直接 TS2304。
+ * ★ 抽成纯函数是为了能被 `behavior-cases` 判（存在性判据发现不了这里的行为错）。
+ */
+export function zeroValueOf(typeText: string): string {
+  const t = String(typeText ?? '').trim();
+  if (t.startsWith('[]')) return '[]';
+  if (t.startsWith('map[')) return 'new Map()';
+  if (t === 'string') return "''";
+  if (t === 'bool') return 'false';
+  if (/^(u?int(8|16|32|64)?|uintptr|byte|rune|float(32|64))$/.test(t)) return '0';
+  // 指针 / 接口 / error / 具名结构 / 未知：Go 的零值是 nil ⇒ TS 侧 null（宁缺不假）
+  return 'null';
+}
+
+/**
+ * ★★★ T-#NAMED-RESULTS：从 Go 的 result `parameter_list` 取**命名返回值**
+ * （名字 + 类型文本 + **声明顺序**）。`_` 跳过。无命名（只有类型）⇒ 空数组。
+ */
+function namedResultsOf(resultNode: SyntaxNodeLike | null): Array<{ name: string; typeText: string }> {
+  if (!resultNode || resultNode.type !== 'parameter_list') return [];
+  const out: Array<{ name: string; typeText: string }> = [];
+  for (let i = 0; i < resultNode.childCount; i++) {
+    const d = resultNode.child(i);
+    if (!d || d.type !== 'parameter_declaration') continue;
+    const names: string[] = [];
+    let typeText = '';
+    for (let j = 0; j < d.childCount; j++) {
+      const c = d.child(j);
+      if (!c) continue;
+      if (c.type === 'identifier') names.push(c.text);
+      else if (c.isNamed !== false) typeText = c.text;
+    }
+    for (const nm of names) if (nm !== '_') out.push({ name: nm, typeText });
+  }
+  return out;
+}
+
 function unitFromFunc(node: SyntaxNodeLike): TransUnit | null {
   const nameNode = childField(node, 'name');
   if (!nameNode) return null;
@@ -486,6 +527,8 @@ function unitFromFunc(node: SyntaxNodeLike): TransUnit | null {
   const result = resultNode && !variadicResultGuard ? normResult(resultNode.text.trim()) : null;
   // ★ 2026-10-28（T-#TYPE-AST）：返回类型的结构化树（多返回值 → tuple；无返回 → undefined）
   const resultRef = variadicResultGuard ? undefined : resultRefFromNode(resultNode);
+  // ★ T-#NAMED-RESULTS：命名返回值（名字/类型/声明顺序）—— 之前完全没取 ⇒ 体里 dead/alive 无声明
+  const namedResults = namedResultsOf(resultNode);
   const snippet = node.text.trim();
   const constraints = [...DEFAULT_CONSTRAINTS];
   appendBodyHints(snippet, constraints);
@@ -522,7 +565,17 @@ function unitFromFunc(node: SyntaxNodeLike): TransUnit | null {
   const entryCopies = valueParamsForMech.filter((nm) => isValueStructType(mechEnv.get(nm) ?? null));
   if (rawMech && entryCopies.length) noteShimInsert(entryCopies.length);
   const entryCopy = entryCopies.length ? entryCopies.map((nm) => `  ${nm} = copy(${nm});`).join('\n') + '\n' : '';
-  const mechBody = rawMech ? entryCopy + rawMech : undefined;
+  // ★★★ T-#NAMED-RESULTS：命名返回值 = **入口零值变量** + **裸 return 返回它们**。
+  //   ① 前置 `let x = <零值>`（Go 里它们一直存在；不落就是 TS2304）
+  //   ② 裸 `return;` → `return [按声明序]`（Go 的裸 return 就是这个语义；顺序按**声明**不是字母序）
+  const namedPrelude = namedResults.length
+    ? namedResults.map((r) => `  let ${r.name} = ${zeroValueOf(r.typeText)};\n`).join('')
+    : '';
+  const rawMechNamed =
+    rawMech && namedResults.length
+      ? rawMech.replace(/^(\s*)return;\s*$/gm, `$1return [${namedResults.map((r) => r.name).join(', ')}];`)
+      : rawMech;
+  const mechBody = rawMechNamed ? entryCopy + namedPrelude + rawMechNamed : undefined;
   const usesSlot = entryCopies.length ? ['value'] : undefined;
   const bodyIr = lastLiftedIr() ?? undefined;
   const srcLine = node.startPosition.row + 1;
