@@ -31,21 +31,33 @@ export interface RefRewriteResult {
 
 /** 册子 → 方法名索引：`类型名 → Set<方法名>`（`to` 形如 `builder.ts#Builder_AddFix`） */
 export function buildMethodIndex(
-  symbols: Array<{ to?: string | null; kind?: string }>,
+  symbols: Array<{ id?: string; to?: string | null; kind?: string; targets?: { ts?: { name?: string } } }>,
 ): Map<string, Set<string>> {
   const idx = new Map<string, Set<string>>();
-  for (const s of symbols) {
-    if (s.kind !== 'method' || !s.to) continue;
-    const hash = s.to.indexOf('#');
-    if (hash < 0) continue;
-    const sym = s.to.slice(hash + 1);
-    const us = sym.indexOf('_');
-    if (us <= 0) continue;
-    const typeName = sym.slice(0, us);
-    const methodName = sym.slice(us + 1);
-    if (!typeName || !methodName) continue;
+  const add = (typeName: string, methodName: string): void => {
+    if (!typeName || !methodName) return;
     if (!idx.has(typeName)) idx.set(typeName, new Set());
     idx.get(typeName)!.add(methodName);
+  };
+  for (const s of symbols) {
+    if (s.kind !== 'method') continue;
+    // ★★★ 2026-10-29（T-#PIVOT-NEUTRAL）：**优先用轴心的中立 id**（`<file>#<Type>.<method>`）——
+    //   旧实现从 TS 名 `Builder_AddFix` 反解类型与方法，那是"让下游去解析目标语言命名规则"，
+    //   换成第二种目标语言就会碎。中立 id 才是轴心该提供的东西。
+    if (s.id && s.id.includes('#')) {
+      const short = s.id.slice(s.id.indexOf('#') + 1);
+      const dot = short.indexOf('.');
+      if (dot > 0) {
+        add(short.slice(0, dot), short.slice(dot + 1));
+        continue;
+      }
+    }
+    // 兜底：只有目标名时（老数据），仍按 TS 规则解析
+    const name = s.targets?.ts?.name ?? s.to ?? null;
+    if (!name) continue;
+    const us = name.indexOf('_');
+    if (us <= 0) continue;
+    add(name.slice(0, us), name.slice(us + 1));
   }
   return idx;
 }

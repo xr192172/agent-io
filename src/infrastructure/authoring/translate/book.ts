@@ -59,9 +59,33 @@ import type { TransUnit } from './unit.js';
 
 // ── 类型 ────────────────────────────────────────────────────────────────
 
+/** 目标侧 TS 名（渲染器视角；轴心不关心）。null = 尚未定出目标。 */
+export function tsTargetName(s: { targets?: { ts?: { name?: string } } }): string | null {
+  const t = s.targets?.ts;
+  return t && t.name ? t.name : null;
+}
+
 export interface BookSymbol {
   from: string | null;
-  to: string | null;
+  /**
+   * ★★★ 2026-10-29（T-#PIVOT-NEUTRAL）：**轴心中的中立身份**（**不含任何目标语言痕迹**）。
+   * 形如 `skill_tree.go#SkillTree.Load` / `builder.go#NewBuilder` —— 文件 + Go 侧接收者 + 名字。
+   * 为什么必须中立：旧字段 `to` 把三件事塞进一个字符串（目标文件、目标命名规则 `Type_Method`、
+   * 目标扩展名 `.ts`）⇒ 第三种语言会**继承 TS 的命名习语**（用户说的"中转语言漂移"）。
+   */
+  id: string;
+  /** 目标侧投影（按语言分槽）。**轴心本身不存这些** —— 它们属于渲染器。 */
+  targets?: {
+    ts?: {
+      file: string;
+      /** TS 侧符号名（如 `Builder_AddFix`），由 TS 渲染器决定，不是轴心事实 */
+      name: string;
+      /** 已翻好的 TS 签名（册子阶段翻一次，骨架直接用） */
+      signature?: string;
+      /** 签名里含 unsupported 度类型时的说明（不静默降级 any） */
+      signatureNote?: string;
+    };
+  };
   kind: string;
   /**
    * 入账面两档：`exported` = Go 首字母大写（含导出类型的方法）；`internal` = 未导出，
@@ -78,14 +102,6 @@ export interface BookSymbol {
    * ⇒ 签名原文（`sig`）、文档（`doc`）、片段边界（`end_line`）、以及**引用边**（`refs`）都必须在册里。
    */
   sig?: string | null;
-  /**
-   * ★★★ 2026-10-29（T-#BOOK-TS-SIG）：**已经翻好的 TS 签名** —— 册子阶段翻一次，下游骨架直接用。
-   * `sig` 是 Go 原文（投影，给人读/留证据）；`sigTs` 是**目标侧权威**。
-   * 为什么要它：同一份事实被解释两次（册子拼 Go 文本 → 骨架再从 AST 推 TS）必然不同步。
-   */
-  sigTs?: string;
-  /** `sigTs` 里含 unsupported 度类型时的说明（不静默降级成 any） */
-  sigTsNote?: string;
   doc?: string | null;
   end_line?: number | null;
   /** 源侧发出的引用边（call / type_ref）：`to` = 目标节点 id（跨文件全限定），`line` = 源侧行号 */
@@ -882,25 +898,27 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
       ...internalRows.map((row) => ({ row, scope: 'internal' as const })),
     ].map(({ row, scope }) => {
       const target = tsPath(row.file_path, srcPrefix, targetPrefix);
-      const to = `${target}#${tsSymbolName(row)}`;
+      // ★ 中立 id（轴心身份）：文件 + 接收者 + Go 名字；TS 的名字/文件进 targets.ts
+      const id = `${row.file_path}#${row.parent ? row.parent + '.' : ''}${row.name}`;
+      const targets = { ts: { file: target, name: tsSymbolName(row) } };
       const bad = unmappedGoTypes(row, declared, terms.covered);
       // ★ 同一个 bad 里混着两种病：真正「没人定」vs「定完了、结论是翻不了（to:null）」⇒ 分开
       const uncovered = bad.filter((n) => !terms.nullTarget.has(n));
       const nullTerms = bad.filter((n) => terms.nullTarget.has(n));
       const exts = extFiles.get(row.file_path) ?? [];
-      return { row, scope, to, target, bad, uncovered, nullTerms, exts };
+      return { row, scope, id, targets, target, bad, uncovered, nullTerms, exts };
     });
     const byTarget = new Map<string, number>();
-    for (const m of mapped) if (m.to) byTarget.set(m.to, (byTarget.get(m.to) ?? 0) + 1);
+    for (const m of mapped) { const n = tsTargetName(m); if (n) byTarget.set(n, (byTarget.get(n) ?? 0) + 1); }
 
     const symbols: BookSymbol[] = [];
     let blockedByTerm = 0;
     let blockedByTermNull = 0;
     let blockedByCollision = 0;
     let blockedByExternalDep = 0;
-    for (const { row, scope, to, target, bad, uncovered, nullTerms, exts } of mapped) {
+    for (const { row, scope, id, targets, target, bad, uncovered, nullTerms, exts } of mapped) {
       const prev = before.get(row.id);
-      const collision = (byTarget.get(to) ?? 0) > 1;
+      const collision = (byTarget.get(tsTargetName({ targets }) ?? '') ?? 0) > 1;
       // ★★★ 2026-10-29（**第 1 层的决策必须影响账**）：原来只要文件 import 了非 stdlib 包就判 `external_dep`
       //   并 blocked，**完全不看 `external_deps[].strategy` 填没填** ⇒ 人把 8 条策略全填了，318 个符号照样 blocked
       //   ⇒ 第 2 层无从消费（又一处「决策不生效」）。现在：该文件的外部依赖**全部**定了 strategy
@@ -930,10 +948,10 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
         kind === 'term_null'
           ? `${AUTO_TAG} 术语已定但无 TS 目标：${nullTerms.join(', ')} ⇒ 要改的是**结构**（字段/参数由什么承载），不是换个类型名；见 unknowns。`
           : kind === 'collision'
-            ? `${AUTO_TAG} 同名撞车：${byTarget.get(to)} 个源符号都映射到 ${to} ⇒ 需人工改名。`
+            ? `${AUTO_TAG} 同名撞车：${byTarget.get(tsTargetName({ targets }) ?? '')} 个源符号都映射到 ${tsTargetName({ targets }) ?? ''} ⇒ 需人工改名。`
             : kind === 'external_dep'
               ? `${AUTO_TAG} 外部硬依赖：本文件 import "${exts[0]}"${exts.length > 1 ? ` 等 ${exts.length} 条` : ''} ⇒ TS 侧无对应物；先在 external_deps 给它定 strategy（npm_equiv / same_slot / http_bridge）再翻。`
-              : autoNote(row, uncovered.length ? uncovered : bad, to);
+              : autoNote(row, uncovered.length ? uncovered : bad, tsTargetName({ targets }) ?? '');
 
       // ★ 翻译 DSL 段：映射判据挂在**未 blocked** 的符号上（blocked 的先解决术语/依赖，判了也是假红噪音）
       const termHits = state === 'pending' ? coveredTermHits(row, declared, terms) : [];
@@ -941,7 +959,9 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
 
       symbols.push({
         from: row.id,
-        to,
+        // ★ 中立身份：文件 + 接收者 + 名字（不含目标语言痕迹）
+        id: `${row.file_path}#${row.parent ? row.parent + '.' : ''}${row.name}`,
+        ...(targets ? { targets } : {}),
         kind: row.kind, // ★ 从 nodes.kind 现取，不手写
         scope,
         origin: 'source',
@@ -954,8 +974,7 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
         //   它由 `fillBookTsSignatures` 从 AST 算出；本函数只从 cache.db 投影，算不出来。
         //   不回填的后果实测：册子 792 符号 `sigTs` 归零 ⇒ 骨架"册子出的签名" 92.5% → 0%
         //   （第 3 次「人的填写不倒退」失守：strategy 保住了、target 保住了、sigTs 又丢了）。
-        ...(prev?.sigTs ? { sigTs: prev.sigTs } : {}),
-        ...(prev?.sigTsNote ? { sigTsNote: prev.sigTsNote } : {}),
+        ...(prev?.targets ? { targets: JSON.parse(JSON.stringify(prev.targets)) } : {}),
         doc: row.docstring ?? null,
         end_line: row.end_line ?? null,
         ...(judgments && judgments.length ? { judgments } : {}),
@@ -1029,9 +1048,9 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
     const collisionGroups = new Map<string, string[]>();
     for (const s of symbols) {
       if (s.state !== 'blocked' || !String(s.note).includes('同名撞车')) continue;
-      const arr = collisionGroups.get(s.to as string) ?? [];
+      const arr = collisionGroups.get(tsTargetName(s) as string) ?? [];
       arr.push(s.from as string);
-      collisionGroups.set(s.to as string, arr);
+      collisionGroups.set(tsTargetName(s) as string, arr);
     }
     // 外部硬依赖：按包分组（与 external_deps 区块同一份数据）
     const extByPkg = new Map<string, string[]>();
@@ -1331,7 +1350,7 @@ export function attachBookFacts(units: TransUnit[], books: TranslateBook[], relF
         if (c.length !== 1) return; // 无命中或多命中 ⇒ 不注入（不猜）
       }
       const hit = exact ?? b.symbols.filter((s) => s.from?.endsWith(`#${u.name}`))[0];
-      facts.push(`${hit.from} → ${hit.to ?? '（blocked，无投影）'} · ${hit.state}${hit.note ? ` · ${hit.note}` : ''}`);
+      facts.push(`${hit.from} → ${tsTargetName(hit) ?? '（blocked，无投影）'} · ${hit.state}${hit.note ? ` · ${hit.note}` : ''}`);
       // 术语命中：只挑该单元类型面里出现的词
       const typeText = [
         ...(u.params ?? []).map((p) => p.type),

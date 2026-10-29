@@ -140,11 +140,13 @@ export async function fillBookTsSignatures(projectDir: string, bookPath: string)
         continue;
       }
       const { sig, unsupported } = renderUnitSig(u);
+      // ★ 轴心中立化后：TS 签名落在 `targets.ts.signature`（渲染器槽位），不是轴心事实
+      const ts = (s.targets ??= {}).ts ?? (s.targets.ts = { file: '', name: '' });
       if (unsupported) {
         stats.unsupported++;
-        s.sigTsNote = '含 unsupported 度类型（Go 语义无 TS 等价物，需人审）';
+        ts.signatureNote = '含 unsupported 度类型（Go 语义无 TS 等价物，需人审）';
       }
-      s.sigTs = sig;
+      ts.signature = sig;
       stats.rendered++;
     }
   }
@@ -162,7 +164,7 @@ export function findBookSymbol(books: TranslateBook[], rel: string, u: TransUnit
   const want = `${rel}#`;
   for (const b of books) {
     for (const s of b.symbols ?? []) {
-      if (!s.from || !s.sigTs) continue;
+      if (!s.from || !s.targets?.ts?.signature) continue;
       if (!s.from.startsWith(want)) continue;
       const name = s.from.slice(want.length);
       if (name === u.name || name === u.id) return s;

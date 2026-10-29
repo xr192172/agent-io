@@ -644,8 +644,9 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
     for (const mm of modules) {
       for (const u of mm.units) {
         const sym = findBookSymbol(booksForSig, mm.rel, u);
-        if (sym?.sigTs) {
-          u.skeleton = skeletonFromSigTs(sym.sigTs, u);
+        const symSig = sym?.targets?.ts?.signature;
+        if (symSig) {
+          u.skeleton = skeletonFromSigTs(symSig, u);
           fromBook++;
         } else {
           bookMiss++;
