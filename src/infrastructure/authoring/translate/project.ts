@@ -15,6 +15,7 @@ import crypto from 'node:crypto';
 import ts from 'typescript';
 import { translateGoToTs } from './pairs.js';
 import { channelShimSource } from './ts_codegen.js';
+import { collectQualifiedPkgs, renderGoStdAdapter } from './go_std.js';
 import { collectExternalTypeRefs } from './referenced.js';
 import { spliceBody, normalizeLegacyOctal } from './fill.js';
 import { fillUnitsWithRetry, fillUnitsBatched } from './fill.js';
@@ -244,16 +245,29 @@ function buildDepTable(books: TranslateBook[]): Map<string, { target?: string; s
  * 现在册子有了 `external_deps[].target`（机器可读的目标模块名），就按它发**真 import**；
  * **没有 target 就一个垫片都不发**（宁可红，让缺口显形），并把缺口写进 diagnostics。
  */
-function assembleModule(m: ProjectModule, depTable: Map<string, { target?: string; strategy?: string }>, diag: string[]): void {
+function assembleModule(
+  m: ProjectModule,
+  depTable: Map<string, { target?: string; strategy?: string }>,
+  adaptersToWrite: Map<string, string>,
+  diag: string[],
+): void {
   const body = m.units.map((u) => u.skeleton).join('\n\n') + (m.units.length ? '\n' : '');
   const shim = body.includes('Channel<') ? channelShimSource() : '';
 
-  // 本模块用到的**外部包名**（值位置 pkg.Member 的前缀 + 类型位置的限定前缀）
+  // 本模块用到的**外部包名**：值位置（usedQualified）+ 类型位置（TypeRef 里的 qualified）
   const usedPkgs = new Set<string>();
   for (const u of m.units) {
     for (const q of u.usedQualified ?? []) {
       const i = q.indexOf('.');
       if (i > 0) usedPkgs.add(q.slice(0, i));
+    }
+    for (const p of u.params ?? []) collectQualifiedPkgs(p.typeRef, usedPkgs);
+    collectQualifiedPkgs(u.resultRef, usedPkgs);
+    collectQualifiedPkgs(u.aliasTypeRef, usedPkgs);
+    for (const f of u.fields ?? []) collectQualifiedPkgs(f.typeRef, usedPkgs);
+    for (const mm of u.methods ?? []) {
+      for (const p of mm.params) collectQualifiedPkgs(p.typeRef, usedPkgs);
+      collectQualifiedPkgs(mm.resultRef, usedPkgs);
     }
   }
 
@@ -261,20 +275,26 @@ function assembleModule(m: ProjectModule, depTable: Map<string, { target?: strin
   const missing: string[] = [];
   for (const pkg of [...usedPkgs].sort()) {
     const dep = depTable.get(pkg);
-    if (!dep) {
-      // 不在册子的依赖表里（可能是 std 包：sync/time/os …）⇒ 记账，不伪造
-      missing.push(pkg);
+    if (dep) {
+      if (dep.target === '') continue; // 同包 / 内建：不需要 import
+      if (!dep.target) {
+        missing.push(`${pkg}（strategy=${dep.strategy ?? '未定'}，缺 target）`);
+        continue;
+      }
+      depImports.push(`import * as ${pkg} from '${dep.target}';`);
       continue;
     }
-    if (dep.target === '') continue; // 同包 / 内建：不需要 import
-    if (!dep.target) {
-      missing.push(`${pkg}（strategy=${dep.strategy ?? '未定'}，缺 target）`);
+    // ★ T-#STD-ADAPTER：Go std ⇒ **生成真适配模块**（不是 any 垫片）
+    const adapter = renderGoStdAdapter(pkg);
+    if (adapter !== null) {
+      adaptersToWrite.set(pkg, adapter);
+      depImports.push(`import * as ${pkg} from './_go_std/${pkg}';`);
       continue;
     }
-    depImports.push(`import * as ${pkg} from '${dep.target}';`);
+    missing.push(pkg);
   }
   if (missing.length) {
-    diag.push(`${m.rel}: 外部包未定目标模块（**不生成 any 垫片**）：${[...new Set(missing)].join(', ')}`);
+    diag.push(`${m.rel}: 外部包未定目标模块且无适配器（**不生成 any 垫片**）：${[...new Set(missing)].join(', ')}`);
   }
 
   m.ts = applyDeterministicFixers(
@@ -712,7 +732,15 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
     }
   }
   const depTable = buildDepTable(loadTranslateBooks(root));
-  for (const m of modules) assembleModule(m, depTable, diagnostics);
+  // ★ T-#STD-ADAPTER：本次用到的 Go std 适配模块（pkg → 源码），随后落盘到 <outDir>/_go_std/
+  const adaptersToWrite = new Map<string, string>();
+  for (const m of modules) assembleModule(m, depTable, adaptersToWrite, diagnostics);
+  if (opts.outDir && adaptersToWrite.size) {
+    const dir = path.join(String(opts.outDir), '_go_std');
+    fs.mkdirSync(dir, { recursive: true });
+    for (const [pkg, src] of adaptersToWrite) fs.writeFileSync(path.join(dir, pkg + '.ts'), src, 'utf8');
+    diagnostics.push(`生成 Go std 适配模块 ${adaptersToWrite.size} 个：${[...adaptersToWrite.keys()].sort().join(', ')}`);
+  }
 
   // A1 显式失败清单：降级不再静默吞掉
   const report = buildReport(modules, opts.fill === true);

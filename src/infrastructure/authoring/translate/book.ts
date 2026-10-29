@@ -1095,6 +1095,10 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
           depByPkg.set(p, {
             from: p,
             strategy: prev?.strategy ?? '',
+            // ★★★ 2026-10-29：**`target` 也要「人的填写不倒退」** —— 上一版只回填 strategy，
+            //   `target`（机器可读的目标模块名）每次重算都被丢掉 ⇒ 第 2 层拿不到 import 目标
+            //   （实测 8 条 target 全丢，只能回落成「缺 target」报错）。
+            ...(prev?.target !== undefined ? { target: prev.target } : {}),
             ...(prev?.note ? { note: prev.note } : {}),
             usedBy: [fp],
           });
