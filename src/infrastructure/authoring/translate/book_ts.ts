@@ -18,8 +18,71 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { extractGoFromFile } from './go_extractor.js';
 import { renderTsType } from './ts_codegen.js';
-import type { TransUnit } from './unit.js';
+import type { TransUnit, TypeRef } from './unit.js';
 import type { TranslateBook, BookSymbol } from './book.js';
+
+/**
+ * ★★★ 2026-10-29（T-#PIVOT-TYPEREF）：**把单元的结构化成 pivot 事实**（落盘进册子）。
+ *
+ * 为什么：`TypeRef` 原来只在内存里活一次就被丢掉 ⇒ 类型永远"每次重新推一遍"，
+ * 这就是"同一份事实被解释两次"的根。落盘之后：
+ *   · 类型成为**两种语言共同读写的实体**（Go 适配器写，任何目标渲染器读）；
+ *   · `targets.ts.signature` 退化成**缓存**（能由 pivot 重算 ⇒ 不是第二处权威）。
+ *
+ * 中立性：存的是**结构化类型树 + 源侧名字**（`ident: Builder`），不含目标语言命名/语法。
+ * `[未核]` 名字目前仍按源侧文本解析；改成"按轴心 id 解析"是 `T-#PIVOT-TYPEREF-IDS`。
+ */
+export interface PivotParam {
+  name: string;
+  ref: TypeRef;
+}
+export interface PivotUnit {
+  kind: 'func' | 'method' | 'type' | 'const';
+  typeKind?: string;
+  params?: PivotParam[];
+  result?: TypeRef;
+  /** type 类符号的形状（struct/interface/alias） */
+  shape?: TypeRef;
+  typeParams?: string[];
+  value?: string;
+}
+
+/** TransUnit → PivotUnit（结构化，落盘用） */
+export function pivotOf(u: TransUnit): PivotUnit {
+  const params: PivotParam[] = [];
+  for (const p of u.params ?? []) {
+    // 接收者是合成首参、没有 typeRef ⇒ 用类型文本造最小引用（文本形状即答案，去掉指针号）
+    const ref: TypeRef =
+      p.typeRef ?? { kind: 'ident', name: (p.type ?? 'unknown').replace(/^\*+/, '') || 'unknown' };
+    params.push({ name: p.name, ref });
+  }
+  const out: PivotUnit = { kind: (u.kind as PivotUnit['kind']) ?? 'func' };
+  if (u.typeKind) out.typeKind = u.typeKind;
+  if (params.length) out.params = params;
+  if (u.resultRef) out.result = u.resultRef;
+  if (u.kind === 'type') out.shape = (u.aliasTypeRef ?? { kind: 'struct', fields: [] }) as TypeRef;
+  if (u.typeParams?.length) out.typeParams = [...u.typeParams];
+  if (u.kind === 'const' && u.value) out.value = u.value;
+  return out;
+}
+
+/**
+ * **签名只从 pivot 出**（单一权威）。`targets.ts.signature` 是本函数结果的缓存。
+ * `name` 由目标渲染器给（轴心不管命名）——这里只是 TS 渲染器的一个实现。
+ */
+export function tsSignatureFromPivot(p: PivotUnit, name: string): { sig: string; unsupported: boolean } {
+  let unsupported = false;
+  const t = (ref: TypeRef | undefined): string => {
+    if (!ref) return 'unknown';
+    const m = renderTsType(ref);
+    if (m.degree === 'unsupported') unsupported = true;
+    return m.ts;
+  };
+  const ps = (p.params ?? []).map((x) => `${x.name}: ${t(x.ref)}`).join(', ');
+  const ret = p.result ? t(p.result) : 'void';
+  const tp = p.typeParams?.length ? `<${p.typeParams.join(', ')}>` : '';
+  return { sig: `${name}${tp}(${ps}): ${ret}`, unsupported };
+}
 
 export interface BookTsSigStats {
   /** 册子里带 `from` 的符号数 */
@@ -30,6 +93,8 @@ export interface BookTsSigStats {
   skipped: number;
   /** 渲染里含 unsupported 度（语义需人审）的条数 */
   unsupported: number;
+  /** ★ 落了结构化类型树（`pivot`）的符号数 */
+  pivot: number;
 }
 
 /** 把一个 TransUnit 渲染成 TS 签名文本（不含 `export`；方法首参是 receiver） */
@@ -87,7 +152,7 @@ function renderUnitSig(u: TransUnit): { sig: string; unsupported: boolean } {
 export async function fillBookTsSignatures(projectDir: string, bookPath: string): Promise<BookTsSigStats> {
   const raw = fs.readFileSync(bookPath, 'utf8');
   const book = JSON.parse(raw) as TranslateBook;
-  const stats: BookTsSigStats = { symbols: 0, rendered: 0, skipped: 0, unsupported: 0 };
+  const stats: BookTsSigStats = { symbols: 0, rendered: 0, skipped: 0, unsupported: 0, pivot: 0 };
 
   // 按文件分组（`from` = `<repo相对路径>#<符号名>`）
   const byFile = new Map<string, BookSymbol[]>();
@@ -139,7 +204,13 @@ export async function fillBookTsSignatures(projectDir: string, bookPath: string)
         stats.skipped++;
         continue;
       }
-      const { sig, unsupported } = renderUnitSig(u);
+      // ★ 先落 pivot（类型事实），再由 pivot 重算签名 —— 签名不再是独立写入的第二处权威
+      const pivot = pivotOf(u);
+      const tsName = (s.targets?.ts?.name ?? u.name) as string;
+      const rendered =
+        u.kind === 'type' || u.kind === 'const' ? renderUnitSig(u) : tsSignatureFromPivot(pivot, tsName);
+      const sig = rendered.sig;
+      const unsupported = rendered.unsupported;
       // ★ 轴心中立化后：TS 签名落在 `targets.ts.signature`（渲染器槽位），不是轴心事实
       const ts = (s.targets ??= {}).ts ?? (s.targets.ts = { file: '', name: '' });
       if (unsupported) {
@@ -147,6 +218,8 @@ export async function fillBookTsSignatures(projectDir: string, bookPath: string)
         ts.signatureNote = '含 unsupported 度类型（Go 语义无 TS 等价物，需人审）';
       }
       ts.signature = sig;
+      if (!s.pivot) stats.pivot++;
+      s.pivot = pivot;
       stats.rendered++;
     }
   }

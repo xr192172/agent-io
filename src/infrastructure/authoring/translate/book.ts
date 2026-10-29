@@ -65,6 +65,7 @@ export function tsTargetName(s: { targets?: { ts?: { name?: string } } }): strin
   return t && t.name ? t.name : null;
 }
 
+/** 轴心的结构化类型事实（由 `book_ts.pivotOf` 写入，语言中立） */
 export interface BookSymbol {
   from: string | null;
   /**
@@ -74,6 +75,20 @@ export interface BookSymbol {
    * 目标扩展名 `.ts`）⇒ 第三种语言会**继承 TS 的命名习语**（用户说的"中转语言漂移"）。
    */
   id: string;
+  /**
+   * ★★★ 2026-10-29（T-#PIVOT-TYPEREF）：**轴心的结构化类型事实**（params/result/shape 都是 TypeRef 树）。
+   * 落盘的理由：类型树原来只在内存活一次即丢 ⇒ 每次下游都重新推一遍（"同一份事实解释两次"）。
+   * 有了它，`targets.*.signature` 只是**缓存**，可以由它重算。
+   */
+  pivot?: {
+    kind: string;
+    typeKind?: string;
+    params?: Array<{ name: string; ref: unknown }>;
+    result?: unknown;
+    shape?: unknown;
+    typeParams?: string[];
+    value?: string;
+  };
   /** 目标侧投影（按语言分槽）。**轴心本身不存这些** —— 它们属于渲染器。 */
   targets?: {
     ts?: {
@@ -975,6 +990,8 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
         //   不回填的后果实测：册子 792 符号 `sigTs` 归零 ⇒ 骨架"册子出的签名" 92.5% → 0%
         //   （第 3 次「人的填写不倒退」失守：strategy 保住了、target 保住了、sigTs 又丢了）。
         ...(prev?.targets ? { targets: JSON.parse(JSON.stringify(prev.targets)) } : {}),
+        // ★ pivot 是 AST 派生事实：用 cache.db 的重算算不出来 ⇒ 必须回填（第 4 次同类教训）
+        ...(prev?.pivot ? { pivot: JSON.parse(JSON.stringify(prev.pivot)) } : {}),
         doc: row.docstring ?? null,
         end_line: row.end_line ?? null,
         ...(judgments && judgments.length ? { judgments } : {}),
