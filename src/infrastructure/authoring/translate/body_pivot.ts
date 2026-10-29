@@ -615,10 +615,20 @@ function liftExpr(n: SyntaxNodeLike): IrExpr | null {
       const elems: Array<{ key?: IrExpr; value: IrExpr }> = [];
       for (const c of kidsOf(body)) {
         if (c.type === 'keyed_element') {
+          // ★ 收编第 1 组（单一改动，按纪律单独量）：tree-sitter-go 把 keyed_element 的键/值
+          //   各包在 `literal_element` 里 ⇒ 直接 liftExpr(parts[0]) 拿到 literal_element（无分支）⇒ null
+          //   ⇒ **整个带键结构体字面量判翻不动**（`MergeRequest{Source:"a"}` FAIL，`MergeRequest{}` OK）。
+          const unwrap = (x: SyntaxNodeLike | undefined): SyntaxNodeLike | null => {
+            if (!x) return null;
+            if (x.type === 'literal_element') return kidsOf(x)[0] ?? null;
+            return x;
+          };
           const parts = kidsOf(c);
           if (parts.length < 2) return null;
-          const key = liftExpr(parts[0]);
-          const value = liftExpr(parts[parts.length - 1]);
+          const kNode = unwrap(parts[0]);
+          const vNode = unwrap(parts[parts.length - 1]);
+          const key = kNode ? liftExpr(kNode) : null;
+          const value = vNode ? liftExpr(vNode) : null;
           if (!key || !value) return null;
           elems.push({ key, value });
         } else {
@@ -872,6 +882,9 @@ function projectTsExpr(e: IrExpr): string {
       // fallthrough 到通用 builtin 渲染 {
       // TS 渲染器的决定：长度 → `.length`；追加 → 展开运算符
       if (e.name === 'len' || e.name === 'cap') return `${projectTsExpr(e.args[0])}.length`;
+      // ★ 2026-10-29 [已回退] 试过 `len` 落 `(x instanceof Map ? x.size : x.length)`：
+      //   产物反而 546 → **584**（接收者被重复求值 + 复合表达式让 tsc 报更多类型错）。
+      //   正确做法需要**类型信息**（判定该值是 Map 还是数组），见 todo T-#LEN-MAP-TYPED。
       if (e.name === 'append') {
         const [head, ...rest] = e.args;
         return `[...${projectTsExpr(head)}, ${rest.map(projectTsExpr).join(', ')}]`;
