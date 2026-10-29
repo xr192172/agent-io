@@ -120,14 +120,25 @@ for (const f of files) {
   }
 }
 
-// ① 一致率（两边都认得的体）
+// ① 分叉必须被**登记**（★ 2026-10-29 修正判据口径）
+//   原来要求"必须完全相等"，但那会把**改进的一侧**判红：
+//   实测 pivot 修好 TS2451（`let` 重复声明）后与 legacy 产生 28 处分叉，而**错的是 legacy**。
+//   ⇒ 判据改为：**未登记的分叉才红**；已登记的分叉要求带原因，并在 legacy 被修/删后**必须消失**
+//     （stale 检查）。这样"分叉"从"禁止"变成"必须显式记账"。
+const LEDGER = path.join(HERE, 'known-divergences.json');
+const ledger = fs.existsSync(LEDGER) ? JSON.parse(fs.readFileSync(LEDGER, 'utf8')) : { allowed: [] };
+const allowedKeys = new Set((ledger.allowed ?? []).map((x) => `${x.file}#${x.fn}`));
+const undeclared = diffs.filter((d) => !allowedKeys.has(`${d.file}#${d.fn}`));
+const stale = [...allowedKeys].filter((k) => !diffs.some((d) => `${d.file}#${d.fn}` === k));
 chk(
-  diffs.length === 0,
-  '① **两边都认得的体，输出必须等价**（去空白比较）',
-  `两边可译 ${both} · 不一致 ${diffs.length} · 仅 pivot ${onlyPivot} · 仅 legacy ${onlyLegacy} · 都不可译 ${neither}` +
-    (diffs.length
-      ? '\n     ' + diffs.slice(0, 3).map((d) => `${d.file}#${d.fn}\n       pivot : ${d.pivot}\n       legacy: ${d.legacy}`).join('\n     ')
-      : ''),
+  undeclared.length === 0 && stale.length === 0,
+  '① **分叉必须已登记**（未登记=红；已登记但已消失=也要清账）',
+  `两边可译 ${both} · 分叉 ${diffs.length} · 已登记 ${allowedKeys.size} · 未登记 ${undeclared.length} · 陈旧账 ${stale.length}` +
+    ` · 仅 pivot ${onlyPivot} · 仅 legacy ${onlyLegacy} · 都不可译 ${neither}` +
+    (undeclared.length
+      ? '\n     未登记：' + undeclared.slice(0, 3).map((d) => `${d.file}#${d.fn}`).join(' · ')
+      : '') +
+    (stale.length ? '\n     陈旧：' + stale.slice(0, 3).join(' · ') : ''),
 );
 
 // ② 反向控制：改一个字符必须判不一致
