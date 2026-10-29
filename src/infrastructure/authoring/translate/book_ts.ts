@@ -224,6 +224,32 @@ export async function fillBookTsSignatures(projectDir: string, bookPath: string)
     }
   }
 
+  // ★★★ 2026-10-29（**层次拨正**）：轴心是册子的**上游**，不是册子的一个字段。
+  //   这里把语言中立的事实地图写成独立产物 `<feature>.pivot.json`：
+  //   目标是**一份轴心 → N 个语言册子**（现在只有 ts，但结构上不再把轴心埋进目标侧文件里）。
+  const pivotPath = bookPath.replace(/\.translate\.json$/, '.pivot.json');
+  const pivotMap: Record<string, unknown> = {};
+  for (const sym of book.symbols ?? []) {
+    if (!sym.pivot || !sym.id) continue;
+    pivotMap[sym.id] = { from: sym.from, ...sym.pivot };
+  }
+  fs.writeFileSync(
+    pivotPath,
+    JSON.stringify(
+      {
+        kind: 'pivot',
+        version: 1,
+        feature: book.feature,
+        srcLang: 'go',
+        note: '语言中立的轴心事实（由 AST 萃取）。册子是它的**投影**，不是它的容器。',
+        symbols: pivotMap,
+      },
+      null,
+      2,
+    ),
+    'utf8',
+  );
+
   fs.writeFileSync(bookPath, JSON.stringify(book, null, 2), 'utf8');
   return stats;
 }

@@ -926,6 +926,23 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
     const byTarget = new Map<string, number>();
     for (const m of mapped) { const n = tsTargetName(m); if (n) byTarget.set(n, (byTarget.get(n) ?? 0) + 1); }
 
+    // ★ 上游轴心（若存在）：一份中立事实，供本目标语言册子**投影**
+    const pivotUpstream: Record<string, unknown> = (() => {
+      try {
+        const p = opts.bookPath.replace(/\.translate\.json$/, '.pivot.json');
+        if (!fs.existsSync(p)) return {};
+        const j = JSON.parse(fs.readFileSync(p, 'utf8')) as { symbols?: Record<string, Record<string, unknown>> };
+        const out: Record<string, unknown> = {};
+        for (const [id, v] of Object.entries(j.symbols ?? {})) {
+          const { from: _f, kind: _k, ...rest } = v as Record<string, unknown>;
+          out[id] = rest;
+        }
+        return out;
+      } catch {
+        return {};
+      }
+    })();
+
     const symbols: BookSymbol[] = [];
     let blockedByTerm = 0;
     let blockedByTermNull = 0;
@@ -990,8 +1007,9 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
         //   不回填的后果实测：册子 792 符号 `sigTs` 归零 ⇒ 骨架"册子出的签名" 92.5% → 0%
         //   （第 3 次「人的填写不倒退」失守：strategy 保住了、target 保住了、sigTs 又丢了）。
         ...(prev?.targets ? { targets: JSON.parse(JSON.stringify(prev.targets)) } : {}),
-        // ★ pivot 是 AST 派生事实：用 cache.db 的重算算不出来 ⇒ 必须回填（第 4 次同类教训）
-        ...(prev?.pivot ? { pivot: JSON.parse(JSON.stringify(prev.pivot)) } : {}),
+        // ★★★ 2026-10-29（**层次拨正**）：pivot 不再从"上一版册子"回填 —— 那是**下游保管上游事实**。
+        //   现在从**上游产物** `<feature>.pivot.json` 读（一份轴心 → N 个语言册子）。
+        ...(pivotUpstream[id] ? { pivot: pivotUpstream[id] as never } : {}),
         doc: row.docstring ?? null,
         end_line: row.end_line ?? null,
         ...(judgments && judgments.length ? { judgments } : {}),
