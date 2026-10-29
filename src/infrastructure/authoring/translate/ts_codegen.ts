@@ -488,7 +488,12 @@ function renderFuncSkeleton(u: TransUnit): { code: string; notes: string[] } {
     : u.bodyHole
       ? "\n  throw new Error('TODO(translate): 待 LLM 翻译 Go 函数体');"
       : '';
-  return { code: `export function ${u.name}${typeParamString(u)}(${params})${ret} {${hole}\n}`, notes };
+  // ★ 2026-10-29（tsc 抓到的最后一个错）：**签名必须单行** —— 匿名 struct 返回类型会被渲染成多行
+  //   `{\n  ID: string; … }`，拼进 `export function …(` 就把声明拆断了（TS1005）。类型不需要换行。
+  // ★ 2026-10-29：**整条签名压成一行**（不只是返回类型）——
+  //   匿名 struct 字段串里可能带换行，`params` 也可能带；只压 ret 不够（实测仍断行 ⇒ TS1005）。
+  const sigHead = `export function ${u.name}${typeParamString(u)}(${params})${ret}`.replace(/\s+/g, ' ');
+  return { code: `${sigHead} {${hole}\n}`, notes };
 }
 
 /** Go case 标签 → TS case 标签（字符串/反引号字面量转单引号；数字/布尔/标识符合原） */

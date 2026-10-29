@@ -60,8 +60,17 @@ export function collectQualifiedPkgs(ref: TypeRef | undefined, out: Set<string>)
   }
 }
 
+const NL = String.fromCharCode(10);
 const HEAD = (pkg: string, notes: string): string =>
-  `// ${pkg} 适配模块（T-#STD-ADAPTER）—— Go 语义的 TS 真实现。\n${notes}\n`;
+  `// ${pkg} 适配模块（T-#STD-ADAPTER）—— Go 语义的 TS 真实现。${NL}` +
+  // ★ 2026-10-29（tsc 抓到的两处）：① 注释必须**逐行**加 `//`（否则生成文件第 2 行是散文 ⇒ TS1127）；
+  //   ② 这里的换行必须用 `String.fromCharCode(10)`，不能写 `'\n'` —— 后者会被后续"把生成源码里的
+  //   `'\n'` 转义成 `'\\n'`"的替换连带改掉，导致注释与正文粘成一行。
+  notes
+    .split(NL)
+    .map((l) => '// ' + l)
+    .join(NL) +
+  NL;
 
 /**
  * 返回某 Go 包的适配模块源码；不覆盖的包返回 `null`（⇒ 上层显式报缺，不发任何垫片）。
@@ -471,7 +480,7 @@ export const TempDir = (): string => '/tmp';
 export const Errorf = (format: string, ...args: unknown[]): Error => new Error(goSprintf(format, args));
 export const Sprint = (...args: unknown[]): string =>
   args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join('');
-export const Sprintln = (...args: unknown[]): string => Sprint(...args) + '\n';
+export const Sprintln = (...args: unknown[]): string => Sprint(...args) + '\\n';
 export const Printf = (format: string, ...args: unknown[]): void => {
   process.stdout.write(goSprintf(format, args));
 };
@@ -604,16 +613,571 @@ export const SearchInts = (a: number[], x: number): number => {
         HEAD('log', '· 走 stderr（Go 默认）；· `Fatalf` 只置 exitCode 不立刻退出（避免把宿主进程打掉）') +
         `import { goSprintf } from './strings';
 export const Printf = (format: string, ...args: unknown[]): void => {
-  process.stderr.write(goSprintf(format, args) + '\n');
+  process.stderr.write(goSprintf(format, args) + '\\n');
 };
 export const Println = (...args: unknown[]): void => {
-  process.stderr.write(args.map(String).join(' ') + '\n');
+  process.stderr.write(args.map(String).join(' ') + '\\n');
 };
 export const Fatalf = (format: string, ...args: unknown[]): void => {
   Printf(format, ...args);
   process.exitCode = 1;
 };
 export const Flags = (): void => {};
+`
+      );
+
+    case 'slices':
+      return (
+        HEAD('slices', '· 泛型切片工具；Index/SortFunc 等按 Go 语义') +
+        `export const Contains = <T>(xs: T[], v: T): boolean => xs.includes(v);
+export const Index = <T>(xs: T[], v: T): number => xs.indexOf(v);
+export const Sort = <T>(xs: T[], cmp: (a: T, b: T) => number): void => {
+  xs.sort(cmp);
+};
+export const SortFunc = Sort;
+export const Reverse = <T>(xs: T[]): void => {
+  xs.reverse();
+};
+export const Clone = <T>(xs: T[]): T[] => xs.slice();
+export const Equal = <T>(a: T[], b: T[]): boolean => a.length === b.length && a.every((x, i) => x === b[i]);
+`
+      );
+
+    case 'signal':
+      return (
+        HEAD('signal', '· 映射到 process.on；Go 的 chan 语义由回调替代（`[未核]`：调用点若 select 该 chan 需改写）') +
+        `export const Notify = (ch: { send(sig: string): void }, ...sigs: string[]): void => {
+  for (const s of sigs) process.on(s as NodeJS.Signals, () => ch.send(s));
+};
+export const Stop = (ch: unknown): void => {};
+export const SIGTERM = 'SIGTERM';
+export const SIGINT = 'SIGINT';
+export const SIGHUP = 'SIGHUP';
+`
+      );
+
+    case 'syscall':
+      return (
+        HEAD('syscall', '· 只提供常量与极少数调用；Go 的 errno/结构体语义不做 [未核]') +
+        `export const SIGTERM = 15;
+export const SIGINT = 2;
+export const SIGKILL = 9;
+export const SIGHUP = 1;
+export const Getpid = (): number => process.pid;
+export const Getenv = (k: string): string => process.env[k] ?? '';
+`
+      );
+
+    case 'atomic':
+      return (
+        HEAD(
+          'atomic',
+          '· 用 SharedArrayBuffer + Atomics 实现**真原子**；· Go 的 `&x` 在 TS 里是对象引用 ⇒ ' +
+            '只对**经本模块访问**的变量成立；`[未核]`：绕过本模块的直接读写仍非原子',
+        ) +
+        `const store = new WeakMap<object, Int32Array>();
+function cell(p: object): Int32Array {
+  let a = store.get(p);
+  if (!a) {
+    a = new Int32Array(new SharedArrayBuffer(4));
+    store.set(p, a);
+  }
+  return a;
+}
+export const LoadInt32 = (p: object): number => Atomics.load(cell(p), 0);
+export const StoreInt32 = (p: object, v: number): void => {
+  Atomics.store(cell(p), 0, v | 0);
+};
+export const AddInt32 = (p: object, d: number): number => Atomics.add(cell(p), 0, d | 0) + (d | 0);
+export const SwapInt32 = (p: object, v: number): number => Atomics.exchange(cell(p), 0, v | 0);
+export const CompareAndSwapInt32 = (p: object, oldV: number, newV: number): boolean =>
+  Atomics.compareExchange(cell(p), 0, oldV | 0, newV | 0) === (oldV | 0);
+export const LoadInt64 = LoadInt32;
+export const StoreInt64 = StoreInt32;
+export const AddInt64 = AddInt32;
+export const LoadUint32 = (p: object): number => Atomics.load(cell(p), 0) >>> 0;
+export const StoreUint32 = StoreInt32;
+export const AddUint32 = AddInt32;
+`
+      );
+
+    case 'heap':
+      return (
+        HEAD('heap', '· 实现 Go 的 container/heap 接口（Len/Less/Swap/Push/Pop）+ sift 上浮下沉') +
+        `export interface Interface {
+  Len(): number;
+  Less(i: number, j: number): boolean;
+  Swap(i: number, j: number): void;
+  Push(x: unknown): void;
+  Pop(): unknown;
+}
+function up(h: Interface, j: number): void {
+  for (;;) {
+    const i = (j - 1) >> 1;
+    if (i === j || !h.Less(j, i)) break;
+    h.Swap(i, j);
+    j = i;
+  }
+}
+function down(h: Interface, i0: number, n: number): boolean {
+  let i = i0;
+  for (;;) {
+    let j1 = 2 * i + 1;
+    if (j1 >= n || j1 < 0) break;
+    const j2 = j1 + 1;
+    let j = j1;
+    if (j2 < n && h.Less(j2, j1)) j = j2;
+    if (!h.Less(j, i)) break;
+    h.Swap(i, j);
+    i = j;
+  }
+  return i > i0;
+}
+export const Init = (h: Interface): void => {
+  const n = h.Len();
+  for (let i = (n >> 1) - 1; i >= 0; i--) down(h, i, n);
+};
+export const Push = (h: Interface, x: unknown): void => {
+  h.Push(x);
+  up(h, h.Len() - 1);
+};
+export const Pop = (h: Interface): unknown => {
+  const n = h.Len() - 1;
+  h.Swap(0, n);
+  down(h, 0, n);
+  return h.Pop();
+};
+export const Fix = (h: Interface, i: number): void => {
+  if (!down(h, i, h.Len())) up(h, i);
+};
+`
+      );
+
+    case 'unicode':
+      return (
+        HEAD('unicode', '· 属性判定走 Unicode Property Escapes（`\\p{…}`）；类别名大小写不同 ⇒ 只映射常用几类 [未核]') +
+        `export const IsSpace = (r: number): boolean => /^\\s$/u.test(String.fromCodePoint(r));
+export const IsDigit = (r: number): boolean => /^[0-9]$/.test(String.fromCodePoint(r));
+export const IsLetter = (r: number): boolean => /^\\p{L}$/u.test(String.fromCodePoint(r));
+export const IsUpper = (r: number): boolean => /^\\p{Lu}$/u.test(String.fromCodePoint(r));
+export const IsLower = (r: number): boolean => /^\\p{Ll}$/u.test(String.fromCodePoint(r));
+export const IsPunct = (r: number): boolean => /^\\p{P}$/u.test(String.fromCodePoint(r));
+export const ToLower = (r: number): number => String.fromCodePoint(r).toLowerCase().codePointAt(0) ?? r;
+export const ToUpper = (r: number): number => String.fromCodePoint(r).toUpperCase().codePointAt(0) ?? r;
+export const Mn = 0;
+export const Cc = 0;
+export const Cf = 0;
+export const Zs = 0;
+export const P = 0;
+export const S = 0;
+export const Is = (rangeTab: number, r: number): boolean => false;
+`
+      );
+
+    case 'strconv':
+      return (
+        HEAD('strconv', '· Go 返回 `(T, error)` ⇒ 这里返回 `[T, Error|null]`（与本仓多返回值约定一致）') +
+        `export const Atoi = (s: string): [number, Error | null] => {
+  const n = Number.parseInt(s, 10);
+  return Number.isNaN(n) ? [0, new Error('strconv.Atoi: invalid syntax')] : [n, null];
+};
+export const Itoa = (n: number): string => String(Math.trunc(n));
+export const ParseFloat = (s: string, bits: number): [number, Error | null] => {
+  const n = Number.parseFloat(s);
+  return Number.isNaN(n) ? [0, new Error('strconv.ParseFloat: invalid syntax')] : [n, null];
+};
+export const ParseInt = (s: string, base: number, bits: number): [number, Error | null] => {
+  const n = Number.parseInt(s, base);
+  return Number.isNaN(n) ? [0, new Error('strconv.ParseInt: invalid syntax')] : [n, null];
+};
+export const FormatInt = (n: number, base: number): string => Math.trunc(n).toString(base);
+export const FormatFloat = (n: number, fmt: string, prec: number, bits: number): string => String(n);
+export const Quote = (s: string): string => JSON.stringify(s);
+export const Unquote = (s: string): [string, Error | null] => {
+  try {
+    return [JSON.parse(s), null];
+  } catch (e) {
+    return ['', e as Error];
+  }
+};
+`
+      );
+
+    case 'math':
+      return (
+        HEAD('math', '· `Float32bits/frombits` 用 DataView 真实现（Go 是 IEEE-754 位模式）') +
+        `export const Sqrt = Math.sqrt;
+export const Abs = Math.abs;
+export const Floor = Math.floor;
+export const Ceil = Math.ceil;
+export const Round = Math.round;
+export const Trunc = Math.trunc;
+export const Pow = Math.pow;
+export const Log = Math.log;
+export const Max = Math.max;
+export const Min = Math.min;
+export const Inf = (sign: number): number => (sign >= 0 ? Infinity : -Infinity);
+export const IsNaN = Number.isNaN;
+const buf = new ArrayBuffer(4);
+const f32 = new Float32Array(buf);
+const u32 = new Uint32Array(buf);
+export const Float32bits = (f: number): number => {
+  f32[0] = f;
+  return u32[0];
+};
+export const Float32frombits = (b: number): number => {
+  u32[0] = b >>> 0;
+  return f32[0];
+};
+export const MaxInt64 = Number.MAX_SAFE_INTEGER;
+export const MaxInt32 = 2147483647;
+export const MinInt64 = Number.MIN_SAFE_INTEGER;
+`
+      );
+
+    case 'sha256':
+      return (
+        HEAD('sha256', '· 走 node:crypto；Go 的 `Sum256([]byte) [32]byte` 返回 Uint8Array') +
+        `import { createHash } from 'node:crypto';
+export const Sum256 = (data: Uint8Array): Uint8Array => createHash('sha256').update(data).digest();
+export const New = () => createHash('sha256');
+`
+      );
+
+    case 'hex':
+      return (
+        HEAD('hex', '· 走 Buffer 的 hex 编解码（Go 是小写十六进制，一致）') +
+        `export const EncodeToString = (b: Uint8Array): string => Buffer.from(b).toString('hex');
+export const DecodeString = (s: string): [Uint8Array, Error | null] => {
+  try {
+    return [new Uint8Array(Buffer.from(s, 'hex')), null];
+  } catch (e) {
+    return [new Uint8Array(), e as Error];
+  }
+};
+`
+      );
+
+    case 'fnv':
+      return (
+        HEAD('fnv', '· FNV-1a 64 位手写实现（node:crypto 没有 fnv）；Go 用 uint64 溢出 ⇒ 这里用 BigInt 保精度') +
+        `const MASK64 = (1n << 64n) - 1n;
+const OFFSET = 14695981039346656037n;
+const PRIME = 1099511628211n;
+export class Hash64a {
+  private h = OFFSET;
+  Write(b: Uint8Array): void {
+    for (const byte of b) {
+      this.h ^= BigInt(byte);
+      this.h = (this.h * PRIME) & MASK64;
+    }
+  }
+  Sum64(): bigint {
+    return this.h;
+  }
+}
+export const New64a = (): Hash64a => new Hash64a();
+`
+      );
+
+    case 'bytes':
+      return (
+        HEAD('bytes', '· `NewReader` 返回可 Read 的包装；Go 的 io.Reader 语义用方法近似（`[未核]`：部分读/EOF 语义）') +
+        `export class Reader {
+  private pos = 0;
+  constructor(private b: Uint8Array) {}
+  Read(p: Uint8Array): [number, Error | null] {
+    const n = Math.min(p.length, this.b.length - this.pos);
+    p.set(this.b.subarray(this.pos, this.pos + n));
+    this.pos += n;
+    return [n, null];
+  }
+  Bytes(): Uint8Array {
+    return this.b.subarray(this.pos);
+  }
+}
+export const NewReader = (b: Uint8Array): Reader => new Reader(b);
+export const NewBuffer = (b: Uint8Array) => ({
+  Bytes: () => b,
+  Write: (x: Uint8Array) => {
+    const out = new Uint8Array(b.length + x.length);
+    out.set(b);
+    out.set(x, b.length);
+    return [x.length, null] as [number, Error | null];
+  },
+});
+export const Contains = (b: Uint8Array, sub: Uint8Array): boolean =>
+  Buffer.from(b).includes(Buffer.from(sub));
+export const TrimSpace = (b: Uint8Array): Uint8Array => new TextEncoder().encode(new TextDecoder().decode(b).trim());
+export const Fields = (b: Uint8Array): Uint8Array[] =>
+  new TextDecoder()
+    .decode(b)
+    .split(/\\s+/)
+    .filter(Boolean)
+    .map((s) => new TextEncoder().encode(s));
+`
+      );
+
+    case 'bufio':
+      return (
+        HEAD('bufio', '· `NewScanner` 提供 Scan/Text 行迭代（Go 默认按行切）；`Scan()` 返回 boolean') +
+        `export class Scanner {
+  private lines: string[];
+  private i = -1;
+  constructor(input: string | { read(): string }) {
+    const text = typeof input === 'string' ? input : input.read();
+    this.lines = text.split(/\\r?\\n/);
+  }
+  Scan(): boolean {
+    this.i++;
+    return this.i < this.lines.length;
+  }
+  Text(): string {
+    return this.lines[this.i] ?? '';
+  }
+  Err(): Error | null {
+    return null;
+  }
+}
+export const NewScanner = (input: string | { read(): string }): Scanner => new Scanner(input);
+`
+      );
+
+    case 'runtime':
+      return (
+        HEAD('runtime', '· `GOOS/GOARCH` 走 process.platform/arch 映射；`GC`/`NumGoroutine` 无对应（返回近似）[未核]') +
+        `export const GOOS = process.platform === 'win32' ? 'windows' : process.platform === 'darwin' ? 'darwin' : 'linux';
+export const GOARCH = process.arch === 'x64' ? 'amd64' : process.arch === 'arm64' ? 'arm64' : process.arch;
+export const NumCPU = (): number => 1;
+export const NumGoroutine = (): number => 1;
+export const GC = (): void => {};
+export const Caller = (skip: number): [number, string, number, boolean] => [0, '', 0, false];
+`
+      );
+
+    case 'norm':
+      return (
+        HEAD('norm', '· 走 String.prototype.normalize（NFD/NFC/NFKC/NFKD 都有原生支持）') +
+        `export class Form {
+  constructor(private f: 'NFC' | 'NFD' | 'NFKC' | 'NFKD') {}
+  String(s: string): string {
+    return s.normalize(this.f);
+  }
+  IsNormalString(s: string): boolean {
+    return s === s.normalize(this.f);
+  }
+  Bytes(b: Uint8Array): Uint8Array {
+    return new TextEncoder().encode(new TextDecoder().decode(b).normalize(this.f));
+  }
+}
+export const NFC = new Form('NFC');
+export const NFD = new Form('NFD');
+export const NFKC = new Form('NFKC');
+export const NFKD = new Form('NFKD');
+`
+      );
+
+    case 'exec':
+      return (
+        HEAD('exec', '· 走 node:child_process 同步执行；`Command` 返回可链式对象（Go 的 Cmd 链式 API 只做子集）') +
+        `import { execFileSync } from 'node:child_process';
+export class Cmd {
+  private args: string[] = [];
+  constructor(private name: string) {}
+  Arg(...a: string[]): Cmd {
+    this.args.push(...a);
+    return this;
+  }
+  Output(): [Uint8Array, Error | null] {
+    try {
+      return [new Uint8Array(execFileSync(this.name, this.args)), null];
+    } catch (e) {
+      return [new Uint8Array(), e as Error];
+    }
+  }
+  Run(): Error | null {
+    try {
+      execFileSync(this.name, this.args, { stdio: 'ignore' });
+      return null;
+    } catch (e) {
+      return e as Error;
+    }
+  }
+}
+export const Command = (name: string, ...args: string[]): Cmd => {
+  const c = new Cmd(name);
+  if (args.length) c.Arg(...args);
+  return c;
+};
+export const CommandContext = (_ctx: unknown, name: string, ...args: string[]): Cmd => Command(name, ...args);
+`
+      );
+
+    case 'io':
+      return (
+        HEAD('io', '· `ReadAll` 读出全部字节；`LimitReader` 返回截断包装') +
+        `export const ReadAll = (r: { read(): string | Uint8Array }): [Uint8Array, Error | null] => {
+  try {
+    const v = r.read();
+    return [typeof v === 'string' ? new TextEncoder().encode(v) : v, null];
+  } catch (e) {
+    return [new Uint8Array(), e as Error];
+  }
+};
+export const LimitReader = (r: { read(n?: number): string | Uint8Array }, n: number) => ({
+  read: (): string | Uint8Array => {
+    const v = r.read(n);
+    return typeof v === 'string' ? v.slice(0, n) : v.subarray(0, n);
+  },
+});
+export const EOF = new Error('EOF');
+export const Writer = class {};
+export const Reader = class {};
+`
+      );
+
+    case 'sql':
+      return (
+        HEAD('sql', '· 走 node:sqlite（本仓已在用）；`Open` 返回库句柄；`ErrNoRows` 是哨兵错误 [未核]：驱动差异') +
+        `import { DatabaseSync } from 'node:sqlite';
+export interface DB {
+  Exec(q: string, ...args: unknown[]): [unknown, Error | null];
+  Query(q: string, ...args: unknown[]): [unknown[], Error | null];
+  Close(): Error | null;
+}
+export const Open = (driver: string, dsn: string): [DB | null, Error | null] => {
+  try {
+    const db = new DatabaseSync(dsn);
+    return [
+      {
+        Exec: (q: string, ...args: unknown[]) => {
+          try {
+            db.exec(q);
+            return [null, null];
+          } catch (e) {
+            return [null, e as Error];
+          }
+        },
+        Query: (q: string, ...args: unknown[]) => {
+          try {
+            return [db.prepare(q).all(...(args as never[])), null];
+          } catch (e) {
+            return [[], e as Error];
+          }
+        },
+        Close: () => {
+          try {
+            db.close();
+            return null;
+          } catch (e) {
+            return e as Error;
+          }
+        },
+      },
+      null,
+    ];
+  } catch (e) {
+    return [null, e as Error];
+  }
+};
+export const ErrNoRows = new Error('sql: no rows in result set');
+`
+      );
+
+    case 'http':
+      return (
+        HEAD('http', '· 服务端走 node:http（只覆盖本仓用到的 HandlerFunc/常量子集）；客户端方法未实现 ⇒ 显式抛 [未核]') +
+        `import * as nodeHttp from 'node:http';
+export const StatusOK = 200;
+export const StatusBadRequest = 400;
+export const StatusUnauthorized = 401;
+export const StatusForbidden = 403;
+export const StatusNotFound = 404;
+export const StatusMethodNotAllowed = 405;
+export const StatusInternalServerError = 500;
+export const StatusBadGateway = 502;
+export const StatusServiceUnavailable = 503;
+export const MethodGet = 'GET';
+export const MethodPost = 'POST';
+export const MethodPut = 'PUT';
+export const MethodDelete = 'DELETE';
+export type HandlerFunc = (w: ResponseWriter, r: Request) => void;
+export interface ResponseWriter {
+  Header(): { Set(k: string, v: string): void };
+  Write(b: Uint8Array): [number, Error | null];
+  WriteHeader(code: number): void;
+}
+export interface Request {
+  Method: string;
+  URL: string;
+  Body: unknown;
+}
+export const Error = (w: ResponseWriter, msg: string, code: number): void => {
+  w.WriteHeader(code);
+  w.Write(new TextEncoder().encode(msg));
+};
+export class ServeMux {
+  private routes = new Map<string, HandlerFunc>();
+  HandleFunc(pattern: string, h: HandlerFunc): void {
+    this.routes.set(pattern, h);
+  }
+  Serve(port: number): void {
+    nodeHttp
+      .createServer((req, res) => {
+        const h = this.routes.get(req.url ?? '/');
+        if (!h) {
+          res.statusCode = 404;
+          res.end();
+          return;
+        }
+        const w: ResponseWriter = {
+          Header: () => ({ Set: (k, v) => res.setHeader(k, v) }),
+          Write: (b) => {
+            res.write(Buffer.from(b));
+            return [b.length, null];
+          },
+          WriteHeader: (c) => {
+            res.statusCode = c;
+          },
+        };
+        h(w, { Method: req.method ?? 'GET', URL: req.url ?? '/', Body: req });
+        res.end();
+      })
+      .listen(port);
+  }
+}
+export const NewServeMux = (): ServeMux => new ServeMux();
+export const ListenAndServe = (addr: string, h: { Serve(port: number): void }): Error | null => {
+  const port = Number(addr.split(':').pop() ?? '0');
+  h.Serve(port);
+  return null;
+};
+`
+      );
+
+    case 'mem':
+      return (
+        HEAD('mem', '· cgo 专用包（C 内存 API）⇒ TS 侧**无等价物**，全部显式抛 [未核]，由册子里的外部依赖策略决定替代品') +
+        `const fail = (name: string) => (): never => {
+  throw new Error('mem.' + name + ': cgo 内存 API 在 TS 无等价物（见册子 external_deps 策略）');
+};
+export const Pointer = fail('Pointer');
+export const NewServer = fail('NewServer');
+export const NewLocalEmbedder = fail('NewLocalEmbedder');
+`
+      );
+
+    case 'ort':
+      return (
+        HEAD('ort', '· ONNX Runtime（Go 绑定）⇒ 册子决定 npm_equiv = `onnxruntime-node`；此处只做接口占位并显式抛 [未核]') +
+        `const fail = (name: string) => (): never => {
+  throw new Error('ort.' + name + ': 需接 onnxruntime-node（册子 external_deps 已定 npm_equiv）');
+};
+export const SetSharedLibraryPath = fail('SetSharedLibraryPath');
+export const InitializeEnvironment = fail('InitializeEnvironment');
+export const NewDynamicAdvancedSession = fail('NewDynamicAdvancedSession');
+export const NewShape = fail('NewShape');
+export const NewTensor = fail('NewTensor');
 `
       );
 

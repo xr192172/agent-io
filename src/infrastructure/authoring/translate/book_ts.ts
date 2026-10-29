@@ -179,8 +179,12 @@ export function findBookSymbol(books: TranslateBook[], rel: string, u: TransUnit
  * · 其余按函数处理 ⇒ `export function <sigTs> { 孔 }`（孔体随后由机械翻/填孔替换）。
  */
 export function skeletonFromSigTs(sigTs: string, u: TransUnit): string {
-  const sig = sigTs.trim();
-  if (/^(interface|type)\b/.test(sig)) return `export ${sig}`;
+  // ★ 2026-10-29（tsc 抓到的最后一个错）：`sigTs` 里的**结构体返回类型是多行的**
+  //   （`): {\n  ID: string; … }[]`），拼进 `export function <sig> {` 会把声明拆断（TS1005）。
+  //   ⇒ 函数签名压成单行（类型本身不需要换行；interface/type 分支仍保留多行）。
+  const raw = sigTs.trim();
+  if (/^(interface|type)\b/.test(raw.replace(/\s+/g, ' '))) return `export ${raw}`;
+  const sig = raw.replace(/\s*\n\s*/g, ' ').replace(/\s{2,}/g, ' ');
   if (u.kind === 'const') return `export const ${sig}`;
   return `export function ${sig} {\n  throw new Error('TODO(translate): 待 LLM 翻译 Go 函数体');\n}`;
 }
