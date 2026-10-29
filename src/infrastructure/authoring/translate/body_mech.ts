@@ -179,35 +179,6 @@ export function canMechTranslate(block: SyntaxNodeLike): boolean {
  * 为什么要有它：覆盖率的提升必须**按真实频次**补形态，不能拍脑袋加白名单。
  * 这个函数让"翻不动的函数"自己说出卡在哪个节点，统计出来再决定下一步补什么。
  */
-export function mechBlocker(block: SyntaxNodeLike | null, env?: MechTypeEnv): { type: string; text: string } | null {
-  if (!block) return null;
-  // ★ 先看"判据 + 翻译"的合并结论：判据通过但翻译失败 ⇒ 报翻译现场（这才是天花板之下的真实阻碍）
-  if (!hasUnsupported(block)) {
-    LAST_FAIL = null;
-    const body = translateGoBodyMech(block, env);
-    if (body !== null) return null;
-    if (LAST_FAIL) return LAST_FAIL;
-    return { type: 'UNKNOWN_TRANSLATE_NULL', text: '' };
-  }
-  const walk = (node: SyntaxNodeLike, depth: number): { type: string; text: string } | null => {
-    if (depth > 40) return { type: 'DEPTH_LIMIT', text: node.text.slice(0, 40) };
-    const t = node.type;
-    if (HARD.has(t)) return { type: t, text: node.text.slice(0, 60) };
-    if (isTypeSensitiveBinary(node)) return { type: 'DIV_OR_MOD(type-sensitive)', text: node.text.slice(0, 60) };
-    if (!isIgnorable(node) && !NEUTRAL.has(t) && !OK_EXPR.has(t) && !OK_STMT.has(t)) {
-      return { type: t, text: node.text.slice(0, 60) };
-    }
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i);
-      if (c) {
-        const r = walk(c, depth + 1);
-        if (r) return r;
-      }
-    }
-    return null;
-  };
-  return walk(block, 0);
-}
 
 /**
  * ★★★ 2026-10-29（T-#MECH-TYPES）：**极小的类型环境** —— 只为了回答一个决定性问题：
@@ -228,7 +199,84 @@ const isIntT = (t: string | null | undefined): boolean => !!t && INT_RE.test(t);
 const isFloatT = (t: string | null | undefined): boolean => !!t && FLOAT_RE.test(t);
 
 /** 最小类型推断：只认得出决定"整除与否"的几种形态；认不出返回 null */
-function typeOfExpr(node: SyntaxNodeLike | null, env: MechTypeEnv): string | null {
+
+/**
+ * 预扫描：按**书写顺序**把 `x := <expr>` 推断出的局部类型记进环境（Go 要求先声明后用，所以单趟够用）。
+ * 推断不出的不记（⇒ 用到时 typeOfExpr 返回 null ⇒ 不翻）。
+ */
+
+/** Go 内建转换 → TS 惯用式（只收**等价**的；`int(x)` 用 Math.trunc 而不是取整语义近似） */
+const GO_CONV: Record<string, (a: string) => string> = {
+  int: (a) => `Math.trunc(${a})`,
+  int32: (a) => `Math.trunc(${a})`,
+  int64: (a) => `Math.trunc(${a})`,
+  uint: (a) => `Math.trunc(${a})`,
+  float64: (a) => a, // number 即 f64
+  float32: (a) => a,
+  string: (a) => `String(${a})`,
+  bool: (a) => `Boolean(${a})`,
+  rune: (a) => `Math.trunc(${a})`,
+  byte: (a) => `Math.trunc(${a})`,
+};
+
+/** 收集某类直接子节点 */
+function kids(node: SyntaxNodeLike, type: string): SyntaxNodeLike[] {
+  const out: SyntaxNodeLike[] = [];
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (c && c.type === type) out.push(c);
+  }
+  return out;
+}
+
+function field(node: SyntaxNodeLike, name: string): SyntaxNodeLike | null {
+  try {
+    return node.childForFieldName(name) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+type StmtOpts = {
+  /** 行内模式：**不输出结尾分号**（for 的 init/post 位置用），避免"先生成带分号再 replace 掉" */
+  inline?: boolean;
+  /** 声明关键字覆盖：for 的 init 必须是 `let`（在 TS 里 const 不能做循环变量） */
+  declKw?: 'let' | 'const';
+};
+
+
+/**
+ * 顶层入口：把函数体（`block` 节点）机械翻成 TS 函数体源码。
+ * 返回 `null` = **不翻**（上层走 LLM）；返回字符串 = 可以确定地翻出来。
+ *
+ * ## `defer` 的处置（★ 2026-10-29，覆盖 +144 个函数的那个形态）
+ * Go `defer f()` = **函数返回时**执行，且**后进先出**。TS 对应物就是 `try/finally`：
+ * ```
+ * defer a(); defer b();  剩余语句  →   try { 剩余语句 } finally { b(); a(); }
+ * ```
+ * ★ 只处理**函数体直接子层**的 defer；出现在循环/if 里的 defer **执行时机不同**（每次迭代一次 vs 函数退出），
+ *   那不翻 —— 判据里用"直接子层 defer 数 == 全树 defer 数"来保证，多一个就 `null`。
+ */
+// ══════════════════════════════════════════════════════════════════════════
+// ★★★ 2026-10-29（**把补丁改掉**）：`env` 与"翻译失败现场"曾经是两个**模块级可变变量**
+// （`ME` / `LAST_FAIL`）—— 那是补丁：并行/嵌套调用会互相串味，"谁设置的"也看不出来，
+// 只能靠一个 `IN_TRANSLATE` 守卫把限制喊出来。现在它们是**每次翻译新建的实例状态**：
+// 一次翻译 = 一个 `createTranslator()`，函数体通过闭包共享这份状态，**模块级零可变状态**。
+// ══════════════════════════════════════════════════════════════════════════
+export interface MechState {
+  env: MechTypeEnv;
+  fail: { type: string; text: string } | null;
+}
+
+function createTranslator(env?: MechTypeEnv) {
+  const state: MechState = { env: new Map(env ?? []), fail: null };
+
+const fail = (node: SyntaxNodeLike | null, why = ''): null => {
+  if (!state.fail && node) state.fail = { type: node.type + (why ? ':' + why : ''), text: node.text.slice(0, 50) };
+  return null;
+};
+
+const typeOfExpr = (node: SyntaxNodeLike | null, env: MechTypeEnv): string | null  => {
   if (!node) return null;
   switch (node.type) {
     case 'identifier':
@@ -263,11 +311,7 @@ function typeOfExpr(node: SyntaxNodeLike | null, env: MechTypeEnv): string | nul
   }
 }
 
-/**
- * 预扫描：按**书写顺序**把 `x := <expr>` 推断出的局部类型记进环境（Go 要求先声明后用，所以单趟够用）。
- * 推断不出的不记（⇒ 用到时 typeOfExpr 返回 null ⇒ 不翻）。
- */
-function inferLocals(block: SyntaxNodeLike, env: MechTypeEnv): void {
+const inferLocals = (block: SyntaxNodeLike, env: MechTypeEnv): void  => {
   const visit = (node: SyntaxNodeLike): void => {
     if (node.type === 'short_var_declaration' || node.type === 'assignment_statement') {
       const lists = kids(node, 'expression_list');
@@ -310,54 +354,7 @@ function inferLocals(block: SyntaxNodeLike, env: MechTypeEnv): void {
   visit(block);
 }
 
-/** Go 内建转换 → TS 惯用式（只收**等价**的；`int(x)` 用 Math.trunc 而不是取整语义近似） */
-const GO_CONV: Record<string, (a: string) => string> = {
-  int: (a) => `Math.trunc(${a})`,
-  int32: (a) => `Math.trunc(${a})`,
-  int64: (a) => `Math.trunc(${a})`,
-  uint: (a) => `Math.trunc(${a})`,
-  float64: (a) => a, // number 即 f64
-  float32: (a) => a,
-  string: (a) => `String(${a})`,
-  bool: (a) => `Boolean(${a})`,
-  rune: (a) => `Math.trunc(${a})`,
-  byte: (a) => `Math.trunc(${a})`,
-};
-
-/** 收集某类直接子节点 */
-function kids(node: SyntaxNodeLike, type: string): SyntaxNodeLike[] {
-  const out: SyntaxNodeLike[] = [];
-  for (let i = 0; i < node.childCount; i++) {
-    const c = node.child(i);
-    if (c && c.type === type) out.push(c);
-  }
-  return out;
-}
-
-function field(node: SyntaxNodeLike, name: string): SyntaxNodeLike | null {
-  try {
-    return node.childForFieldName(name) ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/** 当前类型环境（`translateGoBodyMech` 设置；递归里只读） */
-let ME: MechTypeEnv = new Map();
-
-/**
- * ★ 2026-10-29：**翻译失败的现场** —— 判据报道"能翻"、但 `stmt`/`expr` 返回 null 时，
- * 记下那一刻的节点类型，供 `mechBlocker` 如实上报。
- * 没有这个，"判据通过率 80%" 会被误读成"能翻 80%"（实际能翻 46%）—— 差的那 34% 就是这么藏起来的。
- */
-let LAST_FAIL: { type: string; text: string } | null = null;
-const fail = (node: SyntaxNodeLike | null, why = ''): null => {
-  if (!LAST_FAIL && node) LAST_FAIL = { type: node.type + (why ? ':' + why : ''), text: node.text.slice(0, 50) };
-  return null;
-};
-
-/** 表达式 → TS 源码（翻不动返回 null） */
-function expr(node: SyntaxNodeLike | null): string | null {
+const expr = (node: SyntaxNodeLike | null): string | null  => {
   if (!node) return null;
   switch (node.type) {
     case 'identifier':
@@ -437,8 +434,8 @@ function expr(node: SyntaxNodeLike | null): string | null {
       if (l === null || r === null) return null;
       // ★ 2026-10-29（T-#MECH-TYPES）：按**类型环境**判整除
       if (op === '/' || op === '%') {
-        const lt = typeOfExpr(node.child(0), ME);
-        const rt = typeOfExpr(node.child(2), ME);
+        const lt = typeOfExpr(node.child(0), state.env);
+        const rt = typeOfExpr(node.child(2), state.env);
         if (isIntT(lt) && isIntT(rt)) return op === '/' ? `Math.trunc(${l} / ${r})` : `${l} % ${r}`;
         if (isFloatT(lt) || isFloatT(rt)) return `${l} ${op} ${r}`;
         return null; // 不知道类型 ⇒ 不猜，交 LLM
@@ -524,15 +521,7 @@ function expr(node: SyntaxNodeLike | null): string | null {
   }
 }
 
-/** 语句 → TS 源码（翻不动返回 null） */
-type StmtOpts = {
-  /** 行内模式：**不输出结尾分号**（for 的 init/post 位置用），避免"先生成带分号再 replace 掉" */
-  inline?: boolean;
-  /** 声明关键字覆盖：for 的 init 必须是 `let`（在 TS 里 const 不能做循环变量） */
-  declKw?: 'let' | 'const';
-};
-
-function stmt(node: SyntaxNodeLike, indent: string, opts: StmtOpts = {}): string | null {
+const stmt = (node: SyntaxNodeLike, indent: string, opts: StmtOpts = {}): string | null  => {
   const pad = indent;
   const semi = opts.inline ? '' : ';';
   // ★ 换行/空白/注释是**子节点**（不是语句）——不放过就会被当成"翻不动"（实测所有函数体都栽在这）
@@ -830,44 +819,13 @@ function stmt(node: SyntaxNodeLike, indent: string, opts: StmtOpts = {}): string
   }
 }
 
-/**
- * 顶层入口：把函数体（`block` 节点）机械翻成 TS 函数体源码。
- * 返回 `null` = **不翻**（上层走 LLM）；返回字符串 = 可以确定地翻出来。
- *
- * ## `defer` 的处置（★ 2026-10-29，覆盖 +144 个函数的那个形态）
- * Go `defer f()` = **函数返回时**执行，且**后进先出**。TS 对应物就是 `try/finally`：
- * ```
- * defer a(); defer b();  剩余语句  →   try { 剩余语句 } finally { b(); a(); }
- * ```
- * ★ 只处理**函数体直接子层**的 defer；出现在循环/if 里的 defer **执行时机不同**（每次迭代一次 vs 函数退出），
- *   那不翻 —— 判据里用"直接子层 defer 数 == 全树 defer 数"来保证，多一个就 `null`。
- */
-/**
- * ★★★ 2026-10-29（**诚实标注的一处待改**）：`ME` / `LAST_FAIL` 仍是**模块级可变状态**。
- * 正确解法是把它们做成显式 `Ctx` 参数或类实例。我用脚本试过两次（括号扫描器插 `, ctx`、
- * 收进 class），都被 tsc 抓出签名错（重复标识符 / 参数缺失）⇒ 撤回：这是 ~700 行的**连续重构**，
- * 不能用脚本硬来（见 memory §106）。
- * 在那之前，**用守卫把限制变响**：不可重入，重入直接抛错 —— 而不是静默串味。
- */
-let IN_TRANSLATE = false;
-
-export function translateGoBodyMech(block: SyntaxNodeLike | null, env?: MechTypeEnv): string | null {
-  if (!block) return null;
-  if (IN_TRANSLATE) throw new Error('body_mech: translateGoBodyMech 不可重入（模块级 ME/LAST_FAIL 尚未线程化）');
-  IN_TRANSLATE = true;
-  try {
-    return translateGoBodyMechInner(block, env);
-  } finally {
-    IN_TRANSLATE = false;
-  }
-}
-
-function translateGoBodyMechInner(block: SyntaxNodeLike | null, env?: MechTypeEnv): string | null {
-  if (!block) return null;
+const translate = (blockArg: SyntaxNodeLike | null): string | null => {
+  if (!blockArg) return null;
+  const block: SyntaxNodeLike = blockArg;
   if (!canMechTranslate(block)) return null;
   // ★ 类型环境：入参由调用方给（签名里的参数类型），局部再由 inferLocals 补
-  ME = new Map(env ?? []);
-  inferLocals(block, ME);
+  state.env = new Map(env ?? []);
+  inferLocals(block, state.env);
 
   // ① 收集**直接子层**的 defer（按出现顺序），并从语句流里摘掉
   const defers: string[] = [];
@@ -903,4 +861,49 @@ function translateGoBodyMechInner(block: SyntaxNodeLike | null, env?: MechTypeEn
     .map((d) => `    ${d};`)
     .join('\n');
   return `  try {\n${rest}\n  } finally {\n${fin}\n  }`;
+}
+
+const blocker = (block: SyntaxNodeLike | null): { type: string; text: string } | null => {
+  if (!block) return null;
+  // ★ 先看"判据 + 翻译"的合并结论：判据通过但翻译失败 ⇒ 报翻译现场（这才是天花板之下的真实阻碍）
+  if (!hasUnsupported(block)) {
+    state.fail = null;
+    const body = translate(block);
+    if (body !== null) return null;
+    if (state.fail) return state.fail;
+    return { type: 'UNKNOWN_TRANSLATE_NULL', text: '' };
+  }
+  const walk = (node: SyntaxNodeLike, depth: number): { type: string; text: string } | null => {
+    if (depth > 40) return { type: 'DEPTH_LIMIT', text: node.text.slice(0, 40) };
+    const t = node.type;
+    if (HARD.has(t)) return { type: t, text: node.text.slice(0, 60) };
+    if (isTypeSensitiveBinary(node)) return { type: 'DIV_OR_MOD(type-sensitive)', text: node.text.slice(0, 60) };
+    if (!isIgnorable(node) && !NEUTRAL.has(t) && !OK_EXPR.has(t) && !OK_STMT.has(t)) {
+      return { type: t, text: node.text.slice(0, 60) };
+    }
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i);
+      if (c) {
+        const r = walk(c, depth + 1);
+        if (r) return r;
+      }
+    }
+    return null;
+  };
+  return walk(block, 0);
+}
+
+  return { translate, blocker };
+}
+
+/** 把一个 Go 函数体机械翻成 TS 函数体源码；翻不动返回 \`null\`（上层走 LLM）。 */
+export function translateGoBodyMech(block: SyntaxNodeLike | null, env?: MechTypeEnv): string | null {
+  if (!block) return null;
+  return createTranslator(env).translate(block);
+}
+
+/** 诊断：返回第一个卡住的节点（判据 ∩ 翻译），没有则 \`null\`。 */
+export function mechBlocker(block: SyntaxNodeLike | null, env?: MechTypeEnv): { type: string; text: string } | null {
+  if (!block) return null;
+  return createTranslator(env).blocker(block);
 }
