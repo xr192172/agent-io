@@ -126,6 +126,12 @@ export interface ProjectResult {
 }
 
 export interface ProjectOptions {
+  /**
+   * ★★★ 2026-10-29（**零 LLM 可复现读数**）：只回放「机械直翻 + 填孔缓存」，**不调用 LLM**。
+   * 缺的孔保持 `throw TODO`。这样 tsc 读数**跨 run 可比** —— 否则每次都重写 body，
+   * 指标会在 8.8%~15.1% 之间乱跳（实测过）。全仓典型耗时 < 20 秒。
+   */
+  replayOnly?: boolean;
   /** 落盘根（不传则不写盘） */
   outDir?: string;
   /** 用 AGNES key 池 LLM 填函数体 */
@@ -784,6 +790,14 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
       if (hits.length > mechInModule) cacheHits += hits.length - mechInModule;
       const unitsToFill = missUnits;
       let filled: Awaited<ReturnType<typeof fillUnitsWithRetry>> = [];
+      // ★ 也支持环境变量（避免为了一个开关去改工具契约）：AGENT_IO_REPLAY_ONLY=1
+      const replayOnly = opts.replayOnly ?? process.env.AGENT_IO_REPLAY_ONLY === '1';
+      if (replayOnly && unitsToFill.length) {
+        // ★ 回放模式（零 LLM）：缺的孔**留空**（保持 TODO 孔），如实计数，绝不调模型。
+        //   这样 tsc 读数只随"确定性层"变化 ⇒ 跨 run 可比。
+        diagnostics.push(`回放模式：${unitsToFill.length} 个孔无缓存（保持 TODO 孔），未调用 LLM`);
+        unitsToFill.length = 0;
+      }
       if (!unitsToFill.length) {
         // 全命中 ⇒ 一次 LLM 都不调
         filled = [];
