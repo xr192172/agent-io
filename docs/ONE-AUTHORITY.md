@@ -344,3 +344,53 @@ for 每对 FlowPath (P, Q):
 - 静态调用图对**动态分派/回调/队列**会断链（本仓 `translate` 里有 provider 回调），需要运行时 trace 补；
 - 跨进程/跨语言的链路（Go 源仓 → TS 产物仓）目前只做**单进程内**路径；
 - "触发不同族"如何机械判定（入口函数 vs 命令行 vs 定时）——先用入口所在的 domain + 入口名族判。
+
+---
+
+## 十一、P0′ 探针的两次失败（可证伪验收起作用了）
+
+`certs/t456-flow-authority-probe.mjs`：从入口出发枚举流转路径，比**载荷**、报「同一批货两条管道」，
+并带**已知答案**做验收（真例必须报出、假例必须不报）。**目前 2 PASS / 1 FAIL，未通过。**
+
+### 失败一：要求"阶段几乎全不交" ⇒ 0 命中
+
+真实的双管道**共享主干后才分叉**：
+```
+extractGo → collect → unitFromFunc → translateGoBodyMech ─┬─▶ liftGoBody → projectTsBody   （新路径）
+                                                          └─▶ translateGoBodyLegacy        （旧路径）
+```
+我第一版要求 `stageDisjoint ≥ 0.7`、且"阶段互相包含就跳过" ⇒ 共享 4 跳的两条分支被当成"委托"排除，命中 0。
+
+**修法**：先求**最长公共前缀（LCP）**，只比**岔开之后的那段**；LCP=0 视为不同触发。
+
+### 失败二：载荷取"参数/返回类型" ⇒ 报出来的全是"兄弟分支"
+
+改完之后命中 9 对，但全是这种：
+```
+extractGo→collect→unitFromFunc       <>  extractGo→collect→unitFromTypeSpec   载荷 1.0
+translateGoToTs→renderTsSkeleton→renderConstSkeleton <> …→renderFuncSkeleton   载荷 1.0
+```
+它们**是合法的兄弟分支**（处理不同构造），但**类型签名完全一样**
+（都是 `(node: SyntaxNodeLike) => TransUnit | null`）⇒ 载荷相似度恒为 1 ⇒ 无法区分。
+
+**结论：类型级载荷不够。** 必须下沉到**字段级**——
+这正是用户说的"吃进去/吐出来"：一个 hop 的载荷 = 它**读了输入的哪些字段** ∪ **写了输出的哪些字段**。
+`unitFromFunc` 读的是 `name/parameters/result`，`unitFromTypeSpec` 读的是 `name/type` ⇒ 这样才能分开。
+
+### 目前状态（如实）
+```
+① 报得出东西            ✓（9 对，非恒空）
+② 已知真例必须报出      ✗（真例那两条在 LCP 之后只有 1 跳，且类型签名不同 ⇒ 载荷相似度不足 0.6）
+③ 已知假例必须不报      ✓（slotsOf / renderGoType / collectQualifiedPkgs 无组合被报）
+```
+
+### 下一步（P0″）
+1. 载荷改**字段级**：每 hop 取「读字段集 ∪ 写字段集」，来自 AST（成员访问 / 赋值左值）；
+2. 真例要能报出，需要把"中段实现"作为**阶段**纳入：
+   `translateGoBodyMech` 之后的两条尾段本身只有 1 跳，
+   ⇒ 判定应允许**比较"分叉点之下的子图"**，而不是逐跳对齐（长度不等时按集合比）；
+3. 仍然只读、不写判据、不开写闸；精度 ≥80% 才谈 P1。
+
+### 这两次失败的价值
+不是"又没做成"，而是：**可证伪验收让我在半小时内否掉了两版算法**，
+而不是做完一周才发现它报的全是兄弟分支——那正是又一个"量具"。
