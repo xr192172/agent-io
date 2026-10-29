@@ -58,10 +58,13 @@ export type IrExpr =
   | { k: 'paren'; x: IrExpr }
   /** 一元运算；`&x`/`*x`（Go 指针）在轴心里**不带运算符**——JS 引用语义下就是值本身 */
   | { k: 'unary'; op: string; x: IrExpr }
-  | { k: 'bool'; value: boolean };
+  | { k: 'bool'; value: boolean }
+  /** Go `nil` ⇒ 轴心的"空值"槽（TS 渲染器落 `null`，与 legacy 一致） */
+  | { k: 'nil' }
+  | { k: 'slice'; x: IrExpr; lo: IrExpr | null; hi: IrExpr | null };
 
 /** 列举本竖切支持的节点类型（未列出的一律 lift→null） */
-const OK_STMT = new Set(['block', 'return_statement', 'expression_statement', 'short_var_declaration', 'assignment_statement', 'if_statement', 'for_statement', 'inc_dec_statement']);
+const OK_STMT = new Set(['block', 'return_statement', 'expression_statement', 'short_var_declaration', 'assignment_statement', 'if_statement', 'for_statement', 'inc_dec_statement', 'var_declaration']);
 const OK_EXPR = new Set([
   'identifier',
   'int_literal',
@@ -75,6 +78,10 @@ const OK_EXPR = new Set([
   'unary_expression',
   'true',
   'false',
+  'nil',
+  'float_literal',
+  'rune_literal',
+  'slice_expression',
   'expression_list',
   'argument_list',
 ]);
@@ -199,6 +206,32 @@ function liftStmt(n: SyntaxNodeLike): IrStmt | null {
         if (c && !c.isNamed && /^(\+|-|\*|\/|%|&|\||\^|<<|>>)?=$/.test(c.type)) op = c.type;
       }
       return { k: 'assign', target, op, value };
+    }
+    case 'var_declaration': {
+      // `var x T = v` / `var x T`：只支持**单名**（多名会变成多条语句，先不铺）
+      const specs: SyntaxNodeLike[] = [];
+      for (let i = 0; i < n.childCount; i++) {
+        const c = n.child(i);
+        if (c && c.type === 'var_spec') specs.push(c);
+      }
+      if (specs.length !== 1) return null;
+      const sp = specs[0];
+      const ids: string[] = [];
+      let valList: SyntaxNodeLike | null = null;
+      for (let i = 0; i < sp.childCount; i++) {
+        const c = sp.child(i);
+        if (!c) continue;
+        if (c.type === 'identifier') ids.push(c.text);
+        else if (c.type === 'expression_list') valList = c;
+      }
+      if (ids.length !== 1) return null;
+      if (valList) {
+        const values = kidsOf(valList);
+        if (values.length !== 1) return null;
+        const value = liftExpr(values[0]);
+        return value ? { k: 'declare', name: ids[0], value, mutable: true } : null;
+      }
+      return { k: 'declare', name: ids[0], value: null, mutable: true };
     }
     case 'inc_dec_statement': {
       const parts = kidsOf(n);
@@ -350,6 +383,24 @@ function liftExpr(n: SyntaxNodeLike): IrExpr | null {
       // Go 的按位取反是 `^x`，TS 是 `~x`
       return { k: 'unary', op: op === '^' ? '^' : op, x };
     }
+    case 'nil':
+      return { k: 'nil' };
+    case 'float_literal':
+    case 'rune_literal':
+      return { k: 'int', value: normalizeInt(n.text) };
+    case 'slice_expression': {
+      const operand = fieldOf(n, 'operand') ?? kidsOf(n)[0] ?? null;
+      if (!operand) return null;
+      const x = liftExpr(operand);
+      if (!x) return null;
+      const loNode = fieldOf(n, 'start');
+      const hiNode = fieldOf(n, 'end');
+      const lo = loNode ? liftExpr(loNode) : null;
+      const hi = hiNode ? liftExpr(hiNode) : null;
+      if (loNode && !lo) return null;
+      if (hiNode && !hi) return null;
+      return { k: 'slice', x, lo, hi };
+    }
     case 'true':
       return { k: 'bool', value: true };
     case 'false':
@@ -379,8 +430,11 @@ function liftExpr(n: SyntaxNodeLike): IrExpr | null {
 
 /** Go 老式八进制 `0644` → TS `0o644`（与 legacy 的 `normalizeLegacyOctal` 同规则） */
 function normalizeInt(text: string): string {
-  if (/^0[0-7]+$/.test(text)) return '0o' + text.slice(1);
-  return text;
+  // ★ 与 legacy 同规则：Go 允许 `1_000` 分隔符，TS 不允许 ⇒ 先去掉；
+  //   再处理 Go 老式八进制 `0644`（TS1121 非法）⇒ `0o644`。
+  const raw = text.replace(/_/g, '');
+  if (/^0[0-7]+$/.test(raw)) return '0o' + raw.slice(1);
+  return raw;
 }
 
 /** **体 IR → TS 文本**（只此一处决定 TS 语法；Rust 渲染器会是另一个函数） */
@@ -489,6 +543,11 @@ function projectTsExpr(e: IrExpr): string {
       return `${e.op === '^' ? '~' : e.op}${projectTsExpr(e.x)}`;
     case 'bool':
       return e.value ? 'true' : 'false';
+    case 'nil':
+      return 'null';
+    case 'slice':
+      // TS 渲染器：`x.slice(lo ?? 0, hi)`
+      return `${projectTsExpr(e.x)}.slice(${e.lo ? projectTsExpr(e.lo) : '0'}${e.hi ? ', ' + projectTsExpr(e.hi) : ''})`;
     case 'builtin': {
       // TS 渲染器的决定：长度 → `.length`；追加 → 展开运算符
       if (e.name === 'len' || e.name === 'cap') return `${projectTsExpr(e.args[0])}.length`;
