@@ -66,7 +66,17 @@ export function buildMethodIndex(
  * 对一段 TS 源码做方法调用改写。
  * @param methodIndex `类型名 → Set<方法名>`（来自册子）
  */
-export function rewriteMethodCalls(code: string, methodIndex: Map<string, Set<string>>): RefRewriteResult {
+export function rewriteMethodCalls(
+  code: string,
+  methodIndex: Map<string, Set<string>>,
+  /**
+   * ★★★ 2026-10-29（T-#REF-TYPES）：**函数名 → 返回类型名**（来自册子 `pivot.result`）。
+   * 用途：`b := NewBuilder(...)` 这种"局部变量类型由**函数返回值**决定"的写法，
+   * 以前靠类型注解推不出来 ⇒ 该变量的字段/方法调用**一律不改写**（实测覆盖率只有 15.1%）。
+   * 有了这张表，这类局部变量也能定型 ⇒ 改写覆盖率上升。
+   */
+  returnTypes?: Map<string, string>,
+): RefRewriteResult {
   const sf = ts.createSourceFile('__rewrite.ts', code, ts.ScriptTarget.ES2022, true);
   /** 变量/参数 → TS 类型名（只认简单类型注解，匿名对象/泛型不求值） */
   const types = new Map<string, string>();
@@ -84,6 +94,17 @@ export function rewriteMethodCalls(code: string, methodIndex: Map<string, Set<st
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
       const t = simpleTypeName(node.type);
       if (t) types.set(node.name.text, t);
+      // ★ T-#REF-TYPES：`x := F(...)` / `const x = F(...)` 且 F 的返回类型已知 ⇒ 给 x 定型
+      else if (node.initializer && ts.isCallExpression(node.initializer) && returnTypes) {
+        const callee = node.initializer.expression;
+        const fnName = ts.isIdentifier(callee)
+          ? callee.text
+          : ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.name)
+            ? callee.name.text
+            : null;
+        const inferred = fnName ? returnTypes.get(fnName) : undefined;
+        if (inferred) types.set(node.name.text, inferred);
+      }
     }
     ts.forEachChild(node, collect);
   };

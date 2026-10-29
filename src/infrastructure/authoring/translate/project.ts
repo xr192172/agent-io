@@ -259,6 +259,7 @@ function assembleModule(
   depTable: Map<string, { target?: string; strategy?: string }>,
   adaptersToWrite: Map<string, string>,
   methodIndex: Map<string, Set<string>>,
+  returnTypes: Map<string, string>,
   refStats: { rewrites: number; unknown: number; samples: string[] },
   diag: string[],
 ): void {
@@ -267,7 +268,7 @@ function assembleModule(
   const body = m.units
     .map((u) => {
       if (!methodIndex.size) return u.skeleton;
-      const r = rewriteMethodCalls(u.skeleton, methodIndex);
+      const r = rewriteMethodCalls(u.skeleton, methodIndex, returnTypes);
       refStats.rewrites += r.rewrites;
       refStats.unknown += r.unknownReceiver;
       for (const smp of r.samples) if (refStats.samples.length < 12) refStats.samples.push(`${m.rel}: ${smp}`);
@@ -841,10 +842,22 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
   // ★ T-#REF-REWRITE：方法表（册子 `symbols` 里 kind=method 的 → `类型名 → Set<方法名>`）
   const allSymbols = booksForAssembly.flatMap((b) => b.symbols ?? []);
   const methodIndex = buildMethodIndex(allSymbols);
+  // ★ T-#REF-TYPES：**函数名 → 返回类型名**（来自册子 `pivot.result`）——
+  //   让 `b := NewBuilder(...)` 这类"类型由返回值决定"的局部变量也能定型，
+  //   从而它的字段/方法调用可以被改写（此前覆盖率只有 15.1%，根因就是这类变量类型未知）。
+  const returnTypes = new Map<string, string>();
+  for (const sym of allSymbols) {
+    const r = (sym.pivot as { result?: { kind?: string; name?: string } } | undefined)?.result;
+    if (!r || r.kind !== 'ident' || !r.name) continue;
+    const short = String(sym.id ?? '').split('#').pop()?.split('.').pop();
+    if (short) returnTypes.set(short, r.name);
+    const tsName = sym.targets?.ts?.name;
+    if (tsName) returnTypes.set(tsName, r.name);
+  }
   const refStats = { rewrites: 0, unknown: 0, samples: [] as string[] };
   // ★ T-#STD-ADAPTER：本次用到的 Go std 适配模块（pkg → 源码），随后落盘到 <outDir>/_go_std/
   const adaptersToWrite = new Map<string, string>();
-  for (const m of modules) assembleModule(m, depTable, adaptersToWrite, methodIndex, refStats, diagnostics);
+  for (const m of modules) assembleModule(m, depTable, adaptersToWrite, methodIndex, returnTypes, refStats, diagnostics);
   if (methodIndex.size) {
     diagnostics.push(`引用改写：${refStats.rewrites} 处（类型未知未改写 ${refStats.unknown} 处）`);
     for (const smp of refStats.samples.slice(0, 4)) diagnostics.push(`  · ${smp}`);

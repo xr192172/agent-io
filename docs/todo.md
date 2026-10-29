@@ -140,7 +140,6 @@
 | T-#TERM-46 | 册子 46 个**未覆盖术语**（Go→TS 名词）待人定：填补 `types` 表 | `agent-memory/.agent-io/design/memory.translate.json` | 待人工 |
 | T-#ONE-ASSEMBLY | 单文件模式（`tool.ts`）与项目模式（`project.ts`）是**两条装配路径**，册子消费只接了后者 ⇒ 收口成一条 | `translate/{tool,project}.ts` | 未开工 |
 | T-#STD-TAIL | std 余下小包适配：`slices` `signal` `syscall` `atomic` `heap` `unicode` `strconv` `math` `sha256` `hex` `fnv` `bytes` `bufio` `runtime` `norm` `exec` `io` `sql` `http` `mem`（各 1–12 个成员） | `translate/go_std.ts` | 进行中（11/33 包已完成，覆盖 ~86% 引用） |
-| T-#REF-TYPES | 引用改写覆盖率 15.1% → 更高：用册子 `sigTs` 的**返回类型**给「局部变量 = 函数调用」补类型，再改写（现在只认参数/局部注解/interface 字段） | `translate/ref_rewrite.ts` + 册子 | 未开工 |
 | T-#PIVOT-TYPEREF-IDS | `pivot` 里的 `ident.name` 仍是**源侧文本**，未解析成轴心 `id` ⇒ 跨语言重名解析不了（第三语言到来前必须解决） | `translate/book_ts.ts` | 未开工 |
 | T-#PIVOT-RESULTNAMES | 轴心不存**结果名**（Go 命名结果 `(principle, fix string)` 名字丢失）—— 文档性信息缺失，回译探针已如实标注 | `translate/book_ts.ts` | 未开工（小） |
 | T-#BODY-IR-EXPAND | 体 IR 扩面：竖切已通（90/624 = 14.4%，`t447` 等价）。继续铺 `if`/`for`/`switch`/`defer`/字面量集合，每铺一类必须保 `t447` + `t441` 双绿 | `translate/body_pivot.ts` | 进行中 |
