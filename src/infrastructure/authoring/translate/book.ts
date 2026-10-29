@@ -49,6 +49,7 @@
  */
 
 import { DatabaseSync } from 'node:sqlite';
+import { GO_TS_LANG_TERMS } from './lang_terms.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Expectation } from '../../../domain/expectation.js';
@@ -646,6 +647,18 @@ export function termCoverage(types: ReadonlyArray<Record<string, unknown>>): Ter
   const covered = new Set<string>();
   const coveredTo = new Map<string, string>();
   const nullTarget = new Map<string, { from: string; note: string }>();
+  // ★★★ 2026-10-29（T-#LANG-TERMS）：**语言层名词表先铺底**（随工具走，不随项目走）。
+  //   用户的问题："名词层和语言有关还是项目有关？和项目有关那每个项目都要重填？"
+  //   —— 当时的 `types[]` 混了三种东西；实测某项目 40 个"待定"里 11 个是语言层
+  //   （`Context`/`http`/`Request`/`Cmd`…），它们出现在 blocked 里**是工具没接上**。
+  //   铺底后：项目层只需补自己的领域词（`fix`/`principle`/`promoted` 这类）。
+  for (const [k, v] of Object.entries(GO_TS_LANG_TERMS)) {
+    if (v === null) nullTarget.set(k, { from: k, note: '语言层判定：目标侧无对应' });
+    else {
+      covered.add(k);
+      coveredTo.set(k, v);
+    }
+  }
   for (const t of types) {
     const from = typeof t.from === 'string' ? t.from : '';
     const note = typeof t.note === 'string' ? t.note : '';
