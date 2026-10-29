@@ -672,7 +672,8 @@ function unitFromTypeSpec(spec: SyntaxNodeLike): TransUnit | null {
 interface ConstDecl {
   name: string;
   isVar: boolean;
-  expr: SyntaxNodeLike;
+  /** ★ T-#IOTA：iota 序列里**省略值**的成员没有值节点 ⇒ 类型上必须允许 null */
+  expr: SyntaxNodeLike | null;
   src: string;
   line: number;
 }
@@ -699,8 +700,9 @@ function constDeclFromSpec(spec: SyntaxNodeLike, isVar: boolean): ConstDecl | nu
   const nameNode = childField(spec, 'name');
   const valNode = childField(spec, 'value') || firstExprChild(spec);
   const name = nameNode?.text;
-  if (!name || !valNode) return null;
-  return { name, isVar, expr: valNode, src: valNode.text.trim(), line: spec.startPosition.row + 1 };
+  // ★ T-#IOTA：省略值的成员（Go 的 iota 序列）也要能建单元 —— 原来直接 return null ⇒ 静默丢弃
+  if (!name) return null;
+  return { name, isVar, expr: valNode, src: valNode?.text.trim() ?? '', line: spec.startPosition.row + 1 };
 }
 
 /** 深度遍历 AST，收集目标单元。const/var 仅收包级（顶层），把表达式攒进 consts 待求值。 */
@@ -734,12 +736,54 @@ function collect(node: SyntaxNodeLike, units: TransUnit[], consts: ConstDecl[], 
   // 包级 const/var（仅顶层；多 spec 的 declaration 逐条收）
   if (topLevel && (node.type === 'const_declaration' || node.type === 'var_declaration')) {
     const specType = node.type === 'const_declaration' ? 'const_spec' : 'var_spec';
+    let iotaIdx = -1;
+    let prevSrc: string | null = null;
     const isVar = node.type === 'var_declaration';
     for (let i = 0; i < node.childCount; i++) {
       const spec = node.child(i);
       if (!spec || spec.type !== specType) continue;
+      iotaIdx += 1;
       const d = constDeclFromSpec(spec, isVar);
-      if (d) consts.push(d);
+      if (!d) continue;
+      // ★ T-#IOTA：**带值但含 iota 的成员**（如首个 `AbsorbSucceeded = iota`）也要落值 ——
+      //   否则首个成员永远求不出（`iota` 不是编译期字面量）⇒ 后面成员全部跟着没有声明。
+      if (d.expr && /\biota\b/.test(d.src)) {
+        const t = d.src.replace(/\biota\b/g, String(iotaIdx)).trim();
+        let nv: number | null = /^-?\d+$/.test(t) ? Number(t) : null;
+        const m2 = /^(-?\d+)\s*([+\-*\/])\s*(-?\d+)$/.exec(t);
+        if (nv === null && m2) {
+          const a = Number(m2[1]);
+          const b = Number(m2[3]);
+          nv = m2[2] === '+' ? a + b : m2[2] === '-' ? a - b : m2[2] === '*' ? a * b : a / b;
+        }
+        if (nv !== null) {
+          prevSrc = String(nv);
+          const f2 = { type: 'int_literal', text: String(nv), isNamed: true, childCount: 0 } as unknown as SyntaxNodeLike;
+          consts.push({ ...d, expr: f2, src: String(nv) });
+          continue;
+        }
+      }
+      if (d.expr) {
+        prevSrc = d.src;
+        consts.push(d);
+        continue;
+      }
+      // ★ T-#IOTA：省略值 = 重复上一表达式，把 iota 换成本组下标；只支持纯整数与一步算术（不猜）
+      if (!prevSrc) continue;
+      const exprTxt = prevSrc.replace(/\biota\b/g, String(iotaIdx)).trim();
+      let iv: number | null = null;
+      if (/^-?\d+$/.test(exprTxt)) iv = Number(exprTxt);
+      else {
+        const mm = /^(-?\d+)\s*([+\-*\/])\s*(-?\d+)$/.exec(exprTxt);
+        if (mm) {
+          const a = Number(mm[1]);
+          const b = Number(mm[3]);
+          iv = mm[2] === '+' ? a + b : mm[2] === '-' ? a - b : mm[2] === '*' ? a * b : a / b;
+        }
+      }
+      if (iv === null) continue;
+      const fake = { type: 'int_literal', text: String(iv), isNamed: true, childCount: 0 } as unknown as SyntaxNodeLike;
+      consts.push({ ...d, expr: fake, src: String(iv) });
     }
     return;
   }
@@ -803,6 +847,11 @@ export async function extractGo(filePath: string, source: string): Promise<Extra
     progressed = false;
     const still = [];
     for (const d of pending) {
+      // ★ T-#IOTA：省略值且 iota 算不出来的成员（expr=null）不参与求值，直接落到 skipped
+      if (!d.expr) {
+        still.push(d);
+        continue;
+      }
       const v = evalConstExpr(d.expr, (n) => constVals.get(n)?.v ?? null);
       if (v) {
         constVals.set(d.name, { v, isVar: d.isVar });
