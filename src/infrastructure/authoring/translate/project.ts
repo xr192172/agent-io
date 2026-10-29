@@ -282,6 +282,36 @@ function localTypeNamesOf(units: ReadonlyArray<{ kind?: string; name?: string }>
   return out;
 }
 
+/**
+ * ★★★ T-#CACHE-KEY-VERSION：**翻译器指纹**（本目录下所有 .js 的内容哈希，进程内缓存一次）。
+ *
+ * ## 它补的是什么洞
+ * 回放缓存原来的键是 `v3|<rel>#<unit>@sha1(srcSnippet)` —— **只含 Go 源**。
+ * ⇒ 改 extractor / codegen / 渲染器之后，同一个 Go 源仍命中旧体，产物不变，
+ *   看起来像「改了没生效」（实测：嵌入字段改动落地后 336→336、接口完全没变）。
+ * ⇒ 键里必须含**翻译器版本**；而手工 bump 版本号迟早忘（和「声明了机制」同一类病），
+ *   所以直接取**本目录编译产物的内容哈希**：翻译器一变键就变，不变则键稳定（跨 build 也一样）。
+ */
+let TRANSLATOR_FP: string | null = null;
+function translatorFingerprint(): string {
+  if (TRANSLATOR_FP) return TRANSLATOR_FP;
+  try {
+    const dir = new URL('.', import.meta.url);
+    const files = fs
+      .readdirSync(dir)
+      .filter((f) => String(f).endsWith('.js'))
+      .map(String)
+      .sort();
+    const h = crypto.createHash('sha1');
+    for (const f of files) h.update(f).update(fs.readFileSync(new URL('./' + f, dir)));
+    TRANSLATOR_FP = h.digest('hex').slice(0, 12);
+  } catch {
+    // 拿不到就如实降级成固定串（不假装有指纹）
+    TRANSLATOR_FP = 'nofp';
+  }
+  return TRANSLATOR_FP;
+}
+
 function assembleModule(
   m: ProjectModule,
   depTable: Map<string, { target?: string; strategy?: string }>,
@@ -812,7 +842,8 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
         // ★★★ 2026-10-29（T-#CACHE-GATE）：键里带**判据版本** `v3`。
         //   缓存体是否合格，取决于"生成它时的判据"与"现在消费它时的判据"是否一致。
         //   不带版本 ⇒ 新加的判据只约束未来，旧体照样被放回（实测 66 个 `err` 就是这么来的）。
-        const key = `v3|${m.rel}#${u.id}@${sha1(u.srcSnippet)}`;
+        // ★ T-#CACHE-KEY-VERSION：键 = 翻译器指纹 + Go 源指纹（缺前者 ⇒ 改渲染器永远不生效）
+    const key = `v4|${translatorFingerprint()}|${m.rel}#${u.id}@${sha1(u.srcSnippet)}`;
         const hit = cache[key];
         // ★ 缓存回放也要过契约检查（两关）：
         //   ① 不许带 `export function` 外壳（嵌进外层 ⇒ 语法错，t442 的教训）；
@@ -870,7 +901,11 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
           u.skeleton = f.filledSource;
           // ★ 成功的写进缓存：跨轮次**不再重发**（只重试失败的）
           const bodyOnly = spliceBodyOuter(f.filledSource);
-          if (bodyOnly) cache[`v3|${m.rel}#${u.id}@${sha1(u.srcSnippet)}`] = { body: bodyOnly, at: new Date().toISOString() };
+          if (bodyOnly)
+        cache[`v4|${translatorFingerprint()}|${m.rel}#${u.id}@${sha1(u.srcSnippet)}`] = {
+          body: bodyOnly,
+          at: new Date().toISOString(),
+        };
         }
       }
       // ★ 2026-10-28：**进度日志**（长跑必须可观测）。没有它，卡在某一批时外面看到的是"什么都没有"。

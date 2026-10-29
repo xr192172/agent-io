@@ -3,16 +3,26 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "assembleModule"
+        "symbol": "translatorFingerprint"
+      },
+      "kind": "create",
+      "detail": "新增 translatorFingerprint()：本目录所有 .js 内容哈希（进程内缓存一次；读不到降级 nofp）",
+      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_project_ts#0",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "translateGoProject"
       },
       "kind": "rewrite",
-      "detail": "在模块装配末尾引入「全局遮蔽」修整：若本地模块导出名与目标语言内置全局同名（实测 logging 的 Error 遮蔽 JS 内置 Error ⇒ TS2555×122），改为 namespace import（import * as logging），使 Go 侧限定引用 logging.Error(...) 天然映射；禁用「全局改自由标识符」（同名两义，实测 122→122）。边界判据：replayOnly 回放基线（当前 1010）必须下降 ~122，否则说明方向又错，立即回滚。",
-      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_project_ts#0"
+      "detail": "缓存键 v3|<rel>#<unit>@sha1(srcSnippet) → v4|<翻译器指纹>|<rel>#<unit>@<src 指纹>；读/写两处同形",
+      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_project_ts#0",
+      "status": "open"
     }
   ],
-  "card": "T-#SHADOW",
+  "card": "file_src_infrastructure_authoring_translate_project_ts",
   "untouched_default": {
-    "why": "本次只改导入生成这一处；其余符号与 T-#SHADOW 无关，按画布约定统一表态为不动。"
+    "why": "本次只动回放缓存键这一条链"
   },
   "symbols_at_freeze": [
     "SKIP_DIRS",
@@ -34,6 +44,8 @@
     "loadFillCache",
     "saveFillCache",
     "buildDepTable",
+    "relToStd",
+    "localTypeNamesOf",
     "assembleModule",
     "buildReport",
     "writeReport",
@@ -59,7 +71,10 @@
     "loadFillCache": "183ce2fd163baf1b5701b016060196fbb1a63243",
     "saveFillCache": "a8d90ec412a9a0cf7ebede91504bc73116b3ee1d",
     "buildDepTable": "2c95c0ab2a0d76d042a4dc899b7ccceb5f6dd18f",
-    "assembleModule": "95b20d72469ecb7bdebee76e607cca8ddc6a9e0c",
+    "relToStd": "2aa582445d0ce836d424344c38b61d8decb2e90b",
+    "localTypeNamesOf": "ec41fec2deafc6e53ec3ac37e191070adb64c5cf",
+    "translatorFingerprint": "7d96273fa67222debb4976c4f50c1393b6bf5f85",
+    "assembleModule": "7b07783badecc675c9c23a439a115debe3ac996f",
     "buildReport": "d1add5fa078cfea725b0ee6936934e3f593f9a7a",
     "writeReport": "e5deee0716f0696f38e59223863340179d7aa4a9",
     "buildTypesMap": "d66a574518432e3a7ab10c01f92b964ac3e4755d",
@@ -68,10 +83,10 @@
     "buildProjectCallNote": "1daf60777b95e9cc6026c89a7de6fb25e96a9c78",
     "clusterKeyFor": "976676c2573d3cad709243feac5215ec1d076c0e",
     "verifyProjectTree": "7db0ccffdbf4c210a40e97dacc8f94fe697a61bc",
-    "translateGoProject": "da36e3c76dcda78539a02f4b02c8f4a959dda5d5"
+    "translateGoProject": "f98961049544709f8ec83b004370c17b0c30191e"
   },
-  "frozen_at": "2026-10-29T12:36:48.933Z",
+  "frozen_at": "2026-10-29T17:53:21.009Z",
   "base": {
-    "content_hash": "0a3dfebea5f2e38d3041bb29af1c9e3e5163a123"
+    "content_hash": "52f9e40d0238ab9f7e721e72451f0cb202c61d71"
   }
 }
