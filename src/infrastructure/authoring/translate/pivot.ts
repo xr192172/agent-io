@@ -93,8 +93,8 @@ export interface Capability {
       module: string;
       /** 是否通过一致性证（证号写进 note，便于对账） */
       certified: boolean;
-      /** 渲染器是否已在该插的位置插入（false ⇒ 账不变绿） */
-      applied: boolean;
+      /** 渲染器插入状态：true=已插入（账可变绿）· 'partial'=只插了部分位置（**账不变绿**）· false=未插 */
+      applied: boolean | 'partial';
       why?: string;
     }
   >;
@@ -126,7 +126,8 @@ export const CAPABILITIES: Record<string, Capability> = {
       // ★ 值语义：Go 的 struct 赋值是**复制**，TS 是引用别名 ⇒ 用 copy() 顶。
       //   certified=true 由证 t448 背书（真值语义：改副本不影响原件，含反向控制）；
       //   applied=false ⇒ **失真账暂不变绿**（渲染器还没在正确位置插入）——这是刻意的诚实。
-      'mut.value': { slot: 'mut.value', module: '_slots/value', certified: true, applied: false, why: 'structuredClone' },
+      // applied='partial'：只在"值类型 struct 的赋值"处插入；**入参/返回值尚未插入** ⇒ 账不变绿
+      'mut.value': { slot: 'mut.value', module: '_slots/value', certified: true, applied: 'partial', why: 'structuredClone' },
       // ★ CSP 通道：已有 _go_std 适配，但"调度公平性"无证 ⇒ certified=false
       'conc.csp': { slot: 'conc.csp', module: '_go_std/http', certified: false, applied: false, why: '调度公平性无证' },
     },
@@ -249,14 +250,14 @@ export function lossOfSlot(slot: Slot, dst: Capability): LossEntry {
         // ★ 有 shim 且**既认证又被渲染器插入** ⇒ 值语义被顶住 ⇒ exact。
         //   只认证但没插入（applied=false）⇒ 仍然记失真（shim 存在 ≠ 语义已顶）。
         const shim = dst.shims?.['mut.value'];
-        if (shim && shim.certified && shim.applied) {
+        if (shim && shim.certified && shim.applied === true) {
           return { axis: 'mut', loss: 'exact', why: `经 ${shim.module} 的 copy() 顶替值语义（已认证+已插入）` };
         }
-        if (shim && shim.certified && !shim.applied) {
+        if (shim && shim.certified && shim.applied !== true) {
           return {
             axis: 'mut',
             loss: 'mut-value-copy',
-            why: `copyshim 已认证（${shim.module}）但渲染器尚未插入 ⇒ 失真仍在`,
+            why: `copy shim 已认证（${shim.module}）但插入状态=${String(shim.applied)}（未插满）⇒ 失真仍在`,
           };
         }
         return {

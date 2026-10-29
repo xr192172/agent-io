@@ -19,6 +19,7 @@ import { collectQualifiedPkgs, renderGoStdAdapter } from './go_std.js';
 import { buildMethodIndex, rewriteMethodCalls } from './ref_rewrite.js';
 import { CAPABILITIES, lossinessOfUnit } from './pivot.js';
 import { renderSlotShim } from './slots.js';
+import { setValueStructTypes } from './body_pivot.js';
 import { collectExternalTypeRefs } from './referenced.js';
 import { spliceBody, normalizeLegacyOctal } from './fill.js';
 import { fillUnitsWithRetry, fillUnitsBatched } from './fill.js';
@@ -318,8 +319,13 @@ function assembleModule(
     diag.push(`${m.rel}: 外部包未定目标模块且无适配器（**不生成 any 垫片**）：${[...new Set(missing)].join(', ')}`);
   }
 
+  // ★ T-#SHIM-APPLY：体里出现 copy( ⇒ 补槽垫片 import（这是**生成符号存在性检查**，
+  //   不是语义解析：copy 只可能由我们的渲染器产出）
+  const slotImports: string[] = [];
+  if (/(^|[^.\w])copy\(/.test(body)) slotImports.push("import { copy } from './_slots/value';");
+
   m.ts = applyDeterministicFixers(
-    [m.imports.join('\n'), shim, depImports.join('\n'), body].filter((s) => s !== '').join('\n'),
+    [m.imports.join('\n'), shim, depImports.join('\n'), slotImports.join('\n'), body].filter((s) => s !== '').join('\n'),
   );
 }
 
@@ -558,6 +564,21 @@ function verifyProjectTree(modules: ProjectModule[]): TscCluster[] {
 export async function translateGoProject(projectDir: string, opts: ProjectOptions = {}): Promise<ProjectResult> {
   const root = path.resolve(projectDir);
   const files = walkGoFiles(root);
+  // ★★★ 2026-10-29（T-#SHIM-ORDER，**顺序也是正确性**）：`mechBody` 在 **extract 阶段**就已经算好了，
+  //   所以"值类型 struct 名集合"必须在 **extract 之前**注入 —— 否则渲染器不知道哪些赋值该插 `copy()`，
+  //   插入数会静默为 0（这正是我第一版犯的错：注入点写在了 assembly 阶段，晚了一步）。
+  {
+    const early = loadTranslateBooks(root);
+    const structs = new Set<string>();
+    for (const b of early) {
+      for (const sym of b.symbols ?? []) {
+        if (sym.pivot?.typeKind !== 'struct' || !sym.id) continue;
+        const short = sym.id.includes('#') ? sym.id.slice(sym.id.indexOf('#') + 1) : sym.id;
+        structs.add(short.split('.').pop() ?? short);
+      }
+    }
+    setValueStructTypes(structs);
+  }
   // 内置 key 池 → 批量填（省共享 prompt 常量）；显式注入 translator → 单孔路径（测试桩 / 自建 provider）
   const singleTranslator = opts.fill && opts.translator ? opts.translator : null;
   const useBatch = opts.fill && !opts.translator;
@@ -782,6 +803,23 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
     }
   }
   const booksForAssembly = loadTranslateBooks(root);
+
+  // ★ T-#SHIM-APPLY：把**值类型 struct** 的名字交给体渲染器（决定哪些赋值要插 copy()）。
+  //   来源是册子的 pivot.typeKind（结构化事实），不是猜类型名文本。
+  {
+    const bookStructs = new Set<string>();
+    for (const b of booksForAssembly) {
+      for (const sym of b.symbols ?? []) {
+        const pk = sym.pivot?.typeKind;
+        if (pk === 'struct' && sym.id) {
+          const short = sym.id.includes('#') ? sym.id.slice(sym.id.indexOf('#') + 1) : sym.id;
+          bookStructs.add(short.split('.').pop() ?? short);
+        }
+      }
+    }
+    setValueStructTypes(bookStructs);
+    if (bookStructs.size) diagnostics.push(`值类型 struct ${bookStructs.size} 个（用于 copy() 插入判定）`);
+  }
   const depTable = buildDepTable(booksForAssembly);
   // ★ T-#REF-REWRITE：方法表（册子 `symbols` 里 kind=method 的 → `类型名 → Set<方法名>`）
   const allSymbols = booksForAssembly.flatMap((b) => b.symbols ?? []);

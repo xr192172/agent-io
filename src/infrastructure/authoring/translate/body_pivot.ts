@@ -108,6 +108,38 @@ export function lastLiftFail(): { type: string; why: string; snippet: string } |
   return LIFT_FAIL;
 }
 
+/**
+ * ★★★ 2026-10-29（T-#SHIM-APPLY）：**让渲染器在"Go 会复制"的位置插入 `copy()`**。
+ *
+ * ## 为什么需要注入
+ * Go 的 struct 是**值语义**（赋值都复制），TS 对象是引用别名。`t445` 测出这条失真
+ * **100% 覆盖**每个翻译单元。用 `_slots/value.ts#copy` 顶掉它，但"哪里该复制"必须靠
+ * **类型信息**判断 —— 那正是 pivot 提供的 `TypeRef`。
+ *
+ * ## 边界（如实，别当它已完美）
+ * · 只处理**已识别**位置：`x := y` / `var x = y` 且 y 是**值类型 struct**；
+ * · 函数**入参**（Go 传值）与**返回值**暂未插入 ⇒ `applied` 只能 `'partial'`，
+ *   失真账**不得**整条变绿（今天反复栽过假绿）；
+ * · `[未核]` Go 是**逐字段浅拷贝**、这里是**整体深拷贝** ⇒ 在"本该共享子对象"处会改行为。
+ */
+let VALUE_STRUCTS = new Set<string>();
+/** 名字 → Go 类型文本（每次翻译时由 body_mech 从它自己的类型环境注入） */
+let RESOLVE_TYPE: ((name: string) => string | null) | null = null;
+
+export function setValueStructTypes(types: Iterable<string>): void {
+  VALUE_STRUCTS = new Set(types);
+}
+export function setTypeResolver(fn: ((name: string) => string | null) | null): void {
+  RESOLVE_TYPE = fn;
+}
+/** 这个名字当前是否是**值类型 struct**（决定是否插 copy） */
+function isValueStructIdent(name: string): boolean {
+  if (!RESOLVE_TYPE) return false;
+  const t = RESOLVE_TYPE(name);
+  if (!t) return false;
+  return VALUE_STRUCTS.has(t.replace(/^\*+/, ''));
+}
+
 const OK_EXPR = new Set([
   // ★ `f(x...)` 的 `x...` 是 variadic_argument 包装，解包即可（TS 侧同一个值）
   'variadic_argument',
@@ -614,9 +646,13 @@ function projectTsStmt(s: IrStmt, indent: number): string {
       return `return${s.values.length ? ' ' + s.values.map(projectTsExpr).join(', ') : ''};`;
     case 'expr':
       return `${projectTsExpr(s.value)};`;
-    case 'declare':
+    case 'declare': {
       // ★ Go 的 `:=` 一律落 `let`（不能用 const：Go 里后续可以再赋值，实测过 const 会炸）
-      return `${s.mutable ? 'let' : 'const'} ${s.name}${s.value ? ' = ' + projectTsExpr(s.value) : ''};`;
+      let v = s.value ? projectTsExpr(s.value) : null;
+      // ★ T-#SHIM-APPLY：值类型 struct 的赋值在 Go 里是**复制** ⇒ 显式 copy() 顶住
+      if (s.value && s.value.k === 'ident' && isValueStructIdent(s.value.name)) v = `copy(${v})`;
+      return `${s.mutable ? 'let' : 'const'} ${s.name}${v ? ' = ' + v : ''};`;
+    }
     case 'assign':
       return `${projectTsExpr(s.target)} ${s.op} ${projectTsExpr(s.value)};`;
     case 'block':

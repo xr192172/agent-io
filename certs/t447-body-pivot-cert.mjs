@@ -34,7 +34,9 @@ const SRC = process.argv[2] ?? 'D:/agentio/dev/agent-memory';
 const D = 'file:///' + path.join(ROOT, 'dist/src').replace(/\\/g, '/') + '/';
 const { parseAstRoot } = await import(D + 'infrastructure/parse/index.js');
 const { translateGoBodyMech } = await import(D + 'infrastructure/authoring/translate/body_mech.js');
-const { liftGoBody, projectTsBody } = await import(D + 'infrastructure/authoring/translate/body_pivot.js');
+const { liftGoBody, projectTsBody, setValueStructTypes, setTypeResolver } = await import(
+  D + 'infrastructure/authoring/translate/body_pivot.js'
+);
 
 let P = 0;
 let F = 0;
@@ -129,6 +131,24 @@ console.log(`\n── 覆盖率读数 ──`);
 console.log(`   有体函数 ${bodies} 个 · 100% 落在本竖切 ${covered} 个（${((covered / bodies) * 100).toFixed(1)}%）`);
 console.log(`   其余 ${bodies - covered} 个回落 legacy 直连（未覆盖构造，**不半翻**）`);
 if (sample) console.log(`   等价样本（${sample.file}）：${sample.src}`);
+
+// ④ copy 插入（T-#SHIM-APPLY）：值类型 struct 的赋值要插 copy()，非 struct 不插
+{
+  const ir = [{ k: 'declare', name: 'b2', value: { k: 'ident', name: 'b1' }, mutable: true }];
+  setValueStructTypes(['Builder']);
+  setTypeResolver((n) => (n === 'b1' ? 'Builder' : n === 'b1' ? null : n));
+  setTypeResolver((n) => (n === 'b1' ? 'Builder' : null));
+  const withStruct = projectTsBody(ir);
+  setTypeResolver((n) => (n === 'b1' ? 'string' : null));
+  const withScalar = projectTsBody(ir);
+  setTypeResolver(null);
+  const hasCopy = (t) => t.includes('copy(b1)');
+  chk(
+    hasCopy(withStruct) && !hasCopy(withScalar),
+    '④ **copy 插入**：值类型 struct 的赋值插 `copy()`，非 struct **不插**（反向控制）',
+    `struct → ${withStruct.trim()} · scalar → ${withScalar.trim()}`,
+  );
+}
 
 // ③ 反向控制
 {

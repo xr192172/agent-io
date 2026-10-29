@@ -23,7 +23,7 @@
  */
 
 import type { SyntaxNodeLike } from '../../parse/index.js';
-import { liftGoBody, projectTsBody } from './body_pivot.js';
+import { liftGoBody, projectTsBody, setTypeResolver } from './body_pivot.js';
 
 /** 支持的表达式节点类型（不含任一 ⇒ 不翻） */
 const OK_EXPR = new Set([
@@ -1013,6 +1013,8 @@ export function translateGoBodyMech(block: SyntaxNodeLike | null, env?: MechType
   //   走不通（遇到未覆盖构造）就回落下面的 legacy 直连；**绝不半翻**。
   //   等价性由证 t447 兜（走轴心的 90 个体与 legacy 去空白逐字符相同）。
   if (block) {
+    // ★ T-#SHIM-APPLY：把本函数的类型环境交给渲染器 —— 它据此决定哪些赋值要插 copy()
+    setTypeResolver(env ? (name) => env.get(name) ?? null : null);
     const ir = liftGoBody(block);
     if (ir) return projectTsBody(ir);
   }  if (!block) return null;
