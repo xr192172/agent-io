@@ -58,6 +58,21 @@ interface Diag {
   typeText: string;
 }
 
+/**
+ * ★★★ 2026-10-29（读报错看出来的）：**TS2304 多半是"名字存在但没导入"**。
+ * 例：`let req = ({ … } as MergeRequest);` —— `MergeRequest` 在别的模块里，本文件没 import。
+ * ⇒ tsc 指名的名字，如果能找到**导出它的模块**，补一条 import 即可（零推断）。
+ */
+export function parseTs2304(log: string): Array<{ rel: string; line: number; name: string }> {
+  const out: Array<{ rel: string; line: number; name: string }> = [];
+  const re = /^(?:src\/)?([^(\r\n]+)\((\d+),\d+\): error TS2304: Cannot find name '([^']+)'/gm;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(log)) !== null) {
+    out.push({ rel: m[1].trim().replace(/^src\//, ''), line: Number(m[2]), name: m[3] });
+  }
+  return out;
+}
+
 export function parseTs2339(log: string): Diag[] {
   const out: Diag[] = [];
   // ★ 字符类不能含换行：`[^(]+` 会跨行吞掉前导 \n（实测 rel 变成 "\nsrc/builder.ts" ⇒ 目录判定全错）。
@@ -224,10 +239,43 @@ export function applyTscDrivenFixes(outDir: string, notes: string[]): TscFixResu
 
   const { log, total: before } = runTsc(srcRoot, proj);
   const diags = parseTs2339(log);
+  // ★ TS2304-IMPORT：名字找不到 ⇒ 若能找到导出它的模块，补 import（tsc 指名的名字，零推断）
+  const missing = parseTs2304(log);
   if (!diags.length) return { diags: 0, rewritable: 0, changed: 0, imports: 0, before, after: before, skipped: {} };
 
   currentSrcRoot = srcRoot;
   const exportsByFile = collectExports(srcRoot);
+
+  // ★ TS2304-IMPORT：按名字建"导出者"索引（同目录优先）
+  let importFixed = 0;
+  {
+    const byName = new Map<string, string[]>();
+    for (const [f, names] of exportsByFile) for (const nm of names.keys()) {
+      if (!byName.has(nm)) byName.set(nm, []);
+      byName.get(nm)!.push(f);
+    }
+    const need = new Map<string, Map<string, Set<string>>>();
+    for (const d of missing) {
+      const cands = byName.get(d.name);
+      if (!cands || !cands.length) continue;
+      const dir = path.posix.dirname(d.rel);
+      const pick = cands.find((f) => f !== d.rel && path.posix.dirname(f) === dir) ?? cands.find((f) => f !== d.rel);
+      if (!pick) continue;
+      const ip = (() => {
+        const r = path.posix.relative(dir === '.' ? '' : dir, pick).replace(/\.ts$/, '');
+        return r.startsWith('.') ? r : './' + r;
+      })();
+      if (!need.has(d.rel)) need.set(d.rel, new Map());
+      const m2 = need.get(d.rel)!;
+      if (!m2.has(ip)) m2.set(ip, new Set());
+      m2.get(ip)!.add(d.name);
+    }
+    for (const [rel, m2] of need) {
+      const abs = path.join(srcRoot, rel);
+      if (!fs.existsSync(abs)) continue;
+      importFixed += injectImports(abs, m2);
+    }
+  }
   const skipped: Record<string, number> = {};
   const bump = (k: string): void => {
     skipped[k] = (skipped[k] ?? 0) + 1;
@@ -360,7 +408,7 @@ export function applyTscDrivenFixes(outDir: string, notes: string[]): TscFixResu
   }
 
   const { total: after } = runTsc(srcRoot, proj);
-  const res: TscFixResult = { diags: diags.length, rewritable, changed, imports, before, after, skipped };
+  const res: TscFixResult = { diags: diags.length, rewritable, changed, imports: imports + importFixed, before, after, skipped };
   const top = Object.entries(skipped)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)

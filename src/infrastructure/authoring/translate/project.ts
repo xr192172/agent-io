@@ -18,6 +18,7 @@ import { channelShimSource } from './ts_codegen.js';
 import { collectQualifiedPkgs, renderGoStdAdapter } from './go_std.js';
 import { buildMethodIndex, rewriteMethodCalls } from './ref_rewrite.js';
 import { CAPABILITIES, lossinessOfUnit } from './pivot.js';
+import { setLocalTypeNames } from './body_pivot.js';
 // ★ T-#TSC-DRIVEN-FIX 步 2：管线内后处理（用 tsc 报错当接收者类型口径）
 import { applyTscDrivenFixes } from './tsc_fix.js';
 import { renderSlotShim } from './slots.js';
@@ -275,6 +276,12 @@ function relToStd(fromRel: string, target: string): string {
   return rel.startsWith('.') ? rel : './' + rel;
 }
 
+function localTypeNamesOf(units: ReadonlyArray<{ kind?: string; name?: string }>): Set<string> {
+  const out = new Set<string>();
+  for (const u of units) if (u.kind === 'type' && u.name) out.add(String(u.name));
+  return out;
+}
+
 function assembleModule(
   m: ProjectModule,
   depTable: Map<string, { target?: string; strategy?: string }>,
@@ -301,6 +308,7 @@ function assembleModule(
   // 本模块用到的**外部包名**：值位置（usedQualified）+ 类型位置（TypeRef 里的 qualified）
   const usedPkgs = new Set<string>();
   for (const u of m.units) {
+
     for (const q of u.usedQualified ?? []) {
       const i = q.indexOf('.');
       if (i > 0) usedPkgs.add(q.slice(0, i));

@@ -150,6 +150,17 @@ let RESOLVE_TYPE: ((name: string) => string | null) | null = null;
 export function setValueStructTypes(types: Iterable<string>): void {
   VALUE_STRUCTS = new Set(types);
 }
+/**
+ * ★★★ 2026-10-29：**本模块自己声明的类型名**（供 `as T` 判定）。
+ * 教训：一开始无条件给结构体复合字面量加 `as <typeText>`（546→533 有效），
+ * 但 `typeText` 可能是**别的文件里的类型**（没 import ⇒ TS2304）或**根本不是类型**
+ * （Go 常量 `contractGatePolicy`）。⇒ 只在**本文件声明过**时才加断言。
+ */
+let LOCAL_TYPE_NAMES: ReadonlySet<string> = new Set<string>();
+export function setLocalTypeNames(names: ReadonlySet<string>): void {
+  LOCAL_TYPE_NAMES = names;
+}
+
 export function setTypeResolver(fn: ((name: string) => string | null) | null): void {
   RESOLVE_TYPE = fn;
 }
@@ -873,6 +884,9 @@ function projectTsExpr(e: IrExpr): string {
         //   **具类型**的值，我们渲染成裸对象字面量 ⇒ TS 推断成 `{ cfg: ServerConfig }`
         //   ⇒ 后面 `s.graphPath = …` 全报 TS2339（一眼就看得出来）。
         //   轴心**本来就记了** `typeText`（`Server`），只是渲染时没输出 ⇒ 补类型断言。
+        // ★ 2026-10-29 [已回退门限] 只在"本文件声明的类型"上加断言会让产物变差（440→452）：
+        //   有些类型在同一模块但不在 `kind==='type'` 的单元里 ⇒ 断言被误删。
+        //   缺 import 的问题改由 tsc 驱动补（TS2304 ⇒ 找到导出该名字的模块并 import）。
         const tn = e.typeText ? e.typeText.replace(/^\*+/, '') : '';
         return tn ? `(${obj} as ${tn})` : obj;
       }
