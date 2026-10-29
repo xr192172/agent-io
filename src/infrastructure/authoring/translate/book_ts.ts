@@ -35,6 +35,8 @@ import type { TranslateBook, BookSymbol } from './book.js';
 export interface PivotParam {
   name: string;
   ref: TypeRef;
+  /** ★ Go 变参（`...T`）⇒ TS 渲染成 `...name: T[]` */
+  rest?: boolean;
 }
 export interface PivotUnit {
   kind: 'func' | 'method' | 'type' | 'const';
@@ -51,6 +53,15 @@ export interface PivotUnit {
 export function pivotOf(u: TransUnit): PivotUnit {
   const params: PivotParam[] = [];
   for (const p of u.params ?? []) {
+    // ★ 变参：type 文本以 `...` 开头（extractParamList 现在会把变参收进来）
+    if (typeof p.type === 'string' && p.type.startsWith('...')) {
+      params.push({
+        name: p.name,
+        ref: { kind: 'variadic', elem: { kind: 'ident', name: p.type.slice(3).replace(/^\*+/, '') } } as TypeRef,
+        rest: true,
+      });
+      continue;
+    }
     // 接收者是合成首参、没有 typeRef ⇒ 用类型文本造最小引用（文本形状即答案，去掉指针号）
     const ref: TypeRef =
       p.typeRef ?? { kind: 'ident', name: (p.type ?? 'unknown').replace(/^\*+/, '') || 'unknown' };
@@ -78,7 +89,8 @@ export function tsSignatureFromPivot(p: PivotUnit, name: string): { sig: string;
     if (m.degree === 'unsupported') unsupported = true;
     return m.ts;
   };
-  const ps = (p.params ?? []).map((x) => `${x.name}: ${t(x.ref)}`).join(', ');
+  // ★ TS 的 rest 参数类型必须是数组：`...name: T[]`
+  const ps = (p.params ?? []).map((x) => `${x.rest ? '...' : ''}${x.name}: ${t(x.ref)}${x.rest ? '[]' : ''}`).join(', ');
   const ret = p.result ? t(p.result) : 'void';
   const tp = p.typeParams?.length ? `<${p.typeParams.join(', ')}>` : '';
   return { sig: `${name}${tp}(${ps}): ${ret}`, unsupported };

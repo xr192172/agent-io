@@ -307,9 +307,17 @@ function extractParamList(block: SyntaxNodeLike): TranslateParam[] {
   let idx = 0;
   for (let i = 0; i < block.childCount; i++) {
     const child = block.child(i);
-    if (!child || child.type !== 'parameter_declaration') continue;
+    // ★★★ 2026-10-29（**TS2304 的一大根因**）：原来只收 `parameter_declaration`，
+    //   **`variadic_parameter_declaration` 被整条跳过** ⇒ 签名里少了变参
+    //   （`NewBuilder(heatStore, c, retrievers ...Retriever)` 只剩前两个参数）。
+    //   LLM 照着 Go 原文写 `retrievers`，TS 里却没这个参数 ⇒ `Cannot find name 'retrievers'`。
+    //   ⇒ 变参必须进签名（渲染成 `...name: T[]`）。
+    if (!child || (child.type !== 'parameter_declaration' && child.type !== 'variadic_parameter_declaration')) continue;
     const typeNode = childField(child, 'type');
-    const type = typeNode ? typeNode.text : 'unknown';
+    // ★ 变参：类型文本带 `...` 前缀 ⇒ 下游（pivotOf）据此产出 rest 参数 `...name: T[]`
+    const rawType = typeNode ? typeNode.text : 'unknown';
+    const type =
+      child.type === 'variadic_parameter_declaration' ? '...' + rawType : rawType;
     const names: string[] = [];
     for (let j = 0; j < child.childCount; j++) {
       const c = child.child(j);
