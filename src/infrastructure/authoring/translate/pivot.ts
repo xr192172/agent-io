@@ -68,6 +68,36 @@ export interface Capability {
   err: 'return-tuple' | 'throw' | 'result-type';
   conc: 'csp' | 'eventloop' | 'threads' | 'async';
   own: 'gc' | 'manual' | 'borrow';
+  /**
+   * ★★★ 2026-10-29（T-#SLOT-SHIM）：**"拿自己写的原生组件去顶"的登记处**。
+   *
+   * ## 为什么这是轴心的关键一环
+   * 有些槽目标语言**原生没有**，但可以**写一个原生实现去顶**（用户的原话：
+   * 「用他们原生的东西写一个对方有的对应生态位的东西，然后每次翻译就把这个拿去顶」）。
+   *
+   * ## 通用性的关键：shim 绑**槽**，不绑**语言对**
+   * 写 `ChannelSlot.ts`（语义 = 带缓冲/可关闭/可 select 的通道）之后，
+   * **任何源语言**的通道都能顶进去（Go `chan`、Rust `mpsc`、Erlang mailbox）⇒ 成本是 **N×S**，不是 N²。
+   *
+   * ## 判据（防假绿，今天反复栽过）
+   * · `certified`：**必须**有一张一致性证（含反向控制），证明这个 shim 真的实现了该槽语义；
+   * · `applied`：**渲染器必须真的在正确位置插入了它**。
+   *   两者缺一 ⇒ 失真账**保持原样**（shim 存在 ≠ 语义已经被顶掉）。
+   */
+  shims?: Record<
+    string,
+    {
+      /** 槽标识，如 `mut.value` / `conc.csp` */
+      slot: string;
+      /** 生成到产物里的模块路径（相对项目 src） */
+      module: string;
+      /** 是否通过一致性证（证号写进 note，便于对账） */
+      certified: boolean;
+      /** 渲染器是否已在该插的位置插入（false ⇒ 账不变绿） */
+      applied: boolean;
+      why?: string;
+    }
+  >;
 }
 
 /** 声明式能力表（**唯一的语言知识入口**；目前只有两端） */
@@ -92,6 +122,14 @@ export const CAPABILITIES: Record<string, Capability> = {
     err: 'return-tuple', // ★ 本项目的约定：适配器返回 [T, Error|null]
     conc: 'eventloop',
     own: 'gc',
+    shims: {
+      // ★ 值语义：Go 的 struct 赋值是**复制**，TS 是引用别名 ⇒ 用 copy() 顶。
+      //   certified=true 由证 t448 背书（真值语义：改副本不影响原件，含反向控制）；
+      //   applied=false ⇒ **失真账暂不变绿**（渲染器还没在正确位置插入）——这是刻意的诚实。
+      'mut.value': { slot: 'mut.value', module: '_slots/value', certified: true, applied: false, why: 'structuredClone' },
+      // ★ CSP 通道：已有 _go_std 适配，但"调度公平性"无证 ⇒ certified=false
+      'conc.csp': { slot: 'conc.csp', module: '_go_std/http', certified: false, applied: false, why: '调度公平性无证' },
+    },
   },
 };
 
@@ -208,6 +246,19 @@ export function lossOfSlot(slot: Slot, dst: Capability): LossEntry {
       };
     case 'mut':
       if (dst.mut === 'reference') {
+        // ★ 有 shim 且**既认证又被渲染器插入** ⇒ 值语义被顶住 ⇒ exact。
+        //   只认证但没插入（applied=false）⇒ 仍然记失真（shim 存在 ≠ 语义已顶）。
+        const shim = dst.shims?.['mut.value'];
+        if (shim && shim.certified && shim.applied) {
+          return { axis: 'mut', loss: 'exact', why: `经 ${shim.module} 的 copy() 顶替值语义（已认证+已插入）` };
+        }
+        if (shim && shim.certified && !shim.applied) {
+          return {
+            axis: 'mut',
+            loss: 'mut-value-copy',
+            why: `copyshim 已认证（${shim.module}）但渲染器尚未插入 ⇒ 失真仍在`,
+          };
+        }
         return {
           axis: 'mut',
           loss: 'mut-value-copy',

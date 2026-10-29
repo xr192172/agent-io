@@ -17,7 +17,8 @@ import { translateGoToTs } from './pairs.js';
 import { channelShimSource } from './ts_codegen.js';
 import { collectQualifiedPkgs, renderGoStdAdapter } from './go_std.js';
 import { buildMethodIndex, rewriteMethodCalls } from './ref_rewrite.js';
-import { lossinessOfUnit } from './pivot.js';
+import { CAPABILITIES, lossinessOfUnit } from './pivot.js';
+import { renderSlotShim } from './slots.js';
 import { collectExternalTypeRefs } from './referenced.js';
 import { spliceBody, normalizeLegacyOctal } from './fill.js';
 import { fillUnitsWithRetry, fillUnitsBatched } from './fill.js';
@@ -798,6 +799,23 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
     fs.mkdirSync(dir, { recursive: true });
     for (const [pkg, src] of adaptersToWrite) fs.writeFileSync(path.join(dir, pkg + '.ts'), src, 'utf8');
     diagnostics.push(`生成 Go std 适配模块 ${adaptersToWrite.size} 个：${[...adaptersToWrite.keys()].sort().join(', ')}`);
+
+  // ★★★ 2026-10-29（T-#SLOT-SHIM）：**槽垫片落盘**（"拿原生组件去顶"的产物）。
+  //   注意：落盘 ≠ 已被渲染器插入；失真账只在 `applied=true` 时才变绿（证 t448 ③ 守着这条）。
+  if (opts.outDir) {
+    const slotShims = Object.values(CAPABILITIES['ts'].shims ?? {}).filter((x) => x.certified);
+    const written: string[] = [];
+    for (const sh of slotShims) {
+      const src = renderSlotShim(sh.slot);
+      if (!src) continue;
+      const rel = sh.module + '.ts';
+      const abs = path.join(String(opts.outDir), rel);
+      fs.mkdirSync(path.dirname(abs), { recursive: true });
+      fs.writeFileSync(abs, src, 'utf8');
+      written.push(`${rel}${sh.applied ? '（已插入）' : '（**未插入**，仅落盘）'}`);
+    }
+    if (written.length) diagnostics.push(`生成槽垫片 ${written.length} 个：${written.join(', ')}`);
+  }
   }
 
   // A1 显式失败清单：降级不再静默吞掉
