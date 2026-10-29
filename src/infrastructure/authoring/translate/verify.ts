@@ -12,6 +12,7 @@
  */
 
 import { parseAstRoot } from '../../parse/index.js';
+import ts from 'typescript';
 import type { TransUnit } from './unit.js';
 
 export interface VerifyIssue {
@@ -105,6 +106,69 @@ function countTopLevelParams(s: string): number {
  * 对一批单元做骨架验证。返回全部发现的 issue；任一语法闸失败即该单元不可用。
  * 依赖 tree-sitter .ts 解析（仓库已装 typescript 语言包）。
  */
+
+/**
+ * ★★★ 2026-10-29（T-#FILL-TSC）：**用 TS 自己的语法器查语法** —— tree-sitter 放过的错它不放。
+ *
+ * 为什么不满足于 tree-sitter：`TS1184 "Modifiers cannot appear here"` 属于 **TS 的语法规则**，
+ * tree-sitter 的容错语法会照收 ⇒ 坏体照样落盘（全仓 173 个 TS1184 全是从填孔 body 进来的）。
+ * 这里只取 **parseDiagnostics（纯语法，不建 program）**：单函数骨架必然缺 import/类型，
+ * 语义诊断会是噪声 —— 只要语法这一档。
+ */
+function tscGrammarIssues(u: TransUnit): VerifyIssue[] {
+  const out: VerifyIssue[] = [];
+  const fileName = "__sk_" + u.id + ".ts";
+  const sf = ts.createSourceFile(fileName, u.skeleton, ts.ScriptTarget.ES2022, true);
+  const diags = (sf as unknown as { parseDiagnostics?: ts.Diagnostic[] }).parseDiagnostics ?? [];
+  for (const d of diags.slice(0, 3)) {
+    const msg = ts.flattenDiagnosticMessageText(d.messageText, ' ');
+    out.push({ id: u.id, gate: 'syntax', detail: "TS" + d.code + ": " + msg });
+  }
+  return out;
+}
+
+/**
+ * ★ 2026-10-29（T-#FILL-TSC）：**返回值结构检查**（`TS2355` 的确定性代理判据）。
+ * 声明了非 `void/any/undefined` 返回类型，体里既无 `return <值>` 也无 `throw` ⇒ 必然报 TS2355。
+ * 用 AST 判，不建 program。
+ */
+function missingReturnIssue(u: TransUnit): VerifyIssue[] {
+  const fileName = "__sk_" + u.id + ".ts";
+  const sf = ts.createSourceFile(fileName, u.skeleton, ts.ScriptTarget.ES2022, true);
+  let found: VerifyIssue | null = null;
+  const scanReturns = (body: ts.Node): { hasValueReturn: boolean; hasThrow: boolean } => {
+    let hasValueReturn = false;
+    let hasThrow = false;
+    const scan = (n: ts.Node): void => {
+      if (ts.isReturnStatement(n) && n.expression) hasValueReturn = true;
+      if (ts.isThrowStatement(n)) hasThrow = true;
+      ts.forEachChild(n, scan);
+    };
+    scan(body);
+    return { hasValueReturn, hasThrow };
+  };
+  const visit = (node: ts.Node): void => {
+    if (found) return;
+    if (ts.isFunctionDeclaration(node) && node.body) {
+      const ret = node.type ? node.type.getText(sf).trim() : '';
+      const returnsNothing = !ret || /^(void|any|undefined)$/.test(ret);
+      if (!returnsNothing) {
+        const r = scanReturns(node.body);
+        if (!r.hasValueReturn && !r.hasThrow) {
+          found = {
+            id: u.id,
+            gate: 'structure',
+            detail: "声明返回 " + ret + "，但函数体既无 return <值> 也无 throw（必报 TS2355）",
+          };
+          return;
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  return found ? [found] : [];
+}
 export async function verifySkeletons(units: TransUnit[]): Promise<VerifyIssue[]> {
   const issues: VerifyIssue[] = [];
   for (const u of units) {
@@ -122,6 +186,10 @@ export async function verifySkeletons(units: TransUnit[]): Promise<VerifyIssue[]
     }
     const structural = structureCheck(u);
     if (structural) issues.push({ id: u.id, gate: 'structure', detail: structural });
+    // ★ T-#FILL-TSC：tree-sitter 之后再过一遍 **TS 语法器**（拦 TS1184 这类 TS 自己的语法规则）
+    issues.push(...tscGrammarIssues(u));
+    // ★ T-#FILL-TSC：返回值结构检查（TS2355 的确定性代理）
+    issues.push(...missingReturnIssue(u));
   }
   return issues;
 }
