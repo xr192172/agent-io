@@ -46,7 +46,7 @@ try {
   chk(tables.has('occurrences') && occMissing.length === 0, '① occurrences 表存在且列齐', occMissing.length ? `缺列：${occMissing.join(', ')}` : `列：${[...occCols].join(', ')}`);
 
   const fCols = colsOf('fields');
-  const fWant = ['structure', 'name', 'ordinal', 'type', 'json_tag', 'embedded'];
+  const fWant = ['file', 'structure', 'name', 'ordinal', 'type', 'json_tag', 'embedded']; // ★ file = 出处（build tag 变体靠它区分）
   const fMissing = fWant.filter((c) => !fCols.has(c));
   chk(tables.has('fields') && fMissing.length === 0, '② fields 表存在且列齐', fMissing.length ? `缺列：${fMissing.join(', ')}` : `列：${[...fCols].join(', ')}`);
 
@@ -60,9 +60,10 @@ try {
     const back = db.prepare('SELECT symbol_id, role, member FROM occurrences WHERE file_id=1').get();
     rwOk = back?.symbol_id === 'sym_a' && back?.role === 'selection' && back?.member === 'graphNode';
     detail = JSON.stringify(back);
-    db.prepare("INSERT INTO fields (structure, name, ordinal, type, json_tag, embedded) VALUES ('CachedNode','graphNode',0,'graphNode',null,1)").run();
+    db.prepare("INSERT INTO fields (file, structure, name, ordinal, type, json_tag, embedded) VALUES ('graph_cache.go','CachedNode','graphNode',0,'graphNode',null,1)").run();
     try {
-      db.prepare("INSERT INTO fields (structure, name, ordinal) VALUES ('CachedNode','graphNode',9)").run();
+      // 同 (file, structure, name) 再插一次 ⇒ 主键必须拒绝；**不同 file 允许同名**（build tag 变体）
+      db.prepare("INSERT INTO fields (file, structure, name, ordinal) VALUES ('graph_cache.go','CachedNode','graphNode',9)").run();
       pkOk = false; // 主键没生效
     } catch {
       pkOk = true;

@@ -234,14 +234,19 @@ CREATE TABLE IF NOT EXISTS occurrences (
 );
 CREATE INDEX IF NOT EXISTS idx_occurrences_symbol ON occurrences(symbol_id);
 CREATE INDEX IF NOT EXISTS idx_occurrences_pos ON occurrences(file_id, line, col);
+-- 结构体字段账（F1）：ordinal 用于位置式复合字面量 T{a,b,c} 的字段归属；embedded 标嵌入字段；json_tag 供跨语言契约。
+-- ★ file：**出处**（相对路径）—— 没有它就无法区分 build tag 互斥变体里的同名结构体
+--   （实测：local_embedder.go 的 cgo 变体与 local_embedder_nocgo.go 的 !cgo 变体都叫 LocalEmbedder，字段完全不同；
+--    按名字聚合会把两者并集 ⇒ t460 对拍出现假分叉）。事实必须带出处。
 CREATE TABLE IF NOT EXISTS fields (
+    file TEXT NOT NULL DEFAULT '',
     structure TEXT NOT NULL,
     name TEXT NOT NULL,
     ordinal INTEGER NOT NULL,
     type TEXT,
     json_tag TEXT,
     embedded INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (structure, name)
+    PRIMARY KEY (file, structure, name)
 );
 
 -- 向量缓存（持久层）：model:sha256(文本) → 向量。跨进程重启存活，

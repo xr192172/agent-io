@@ -29,6 +29,9 @@ type Occurrence struct {
 }
 
 type Field struct {
+	// ★ File：字段声明的**出处文件**（相对路径）。build tag 互斥变体里会有同名结构体
+	// （如 LocalEmbedder 的 cgo / !cgo 两个文件），没有出处就只能按名字聚合 ⇒ 并集 ⇒ 假分叉。
+	File      string `json:"file"`
 	Structure string `json:"structure"`
 	Name      string `json:"name"`
 	Ordinal   int    `json:"ordinal"`
@@ -144,6 +147,7 @@ func main() {
 			for i := 0; i < st.NumFields(); i++ {
 				f := st.Field(i)
 				out.Fields = append(out.Fields, Field{
+					File:      relPath(abs, p.Fset.Position(obj.Pos()).Filename),
 					Structure: n,
 					Name:      f.Name(),
 					Ordinal:   i,

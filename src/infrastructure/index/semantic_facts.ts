@@ -46,6 +46,8 @@ interface RawOccurrence {
   member?: string;
 }
 interface RawField {
+  /** ★ 出处文件（相对路径）：build tag 互斥变体的同名结构体靠它区分，缺了就会并集 */
+  file: string;
   structure: string;
   name: string;
   ordinal: number;
@@ -148,7 +150,7 @@ export function fillSemanticFacts(db: Database, projectRoot: string): SemanticFa
     'INSERT INTO occurrences (file_id, line, col, symbol_id, role, structure, member) VALUES (?, ?, ?, ?, ?, ?, ?)',
   );
   const insField = db.prepare(
-    'INSERT OR REPLACE INTO fields (structure, name, ordinal, type, json_tag, embedded) VALUES (?, ?, ?, ?, ?, ?)',
+    'INSERT OR REPLACE INTO fields (file, structure, name, ordinal, type, json_tag, embedded) VALUES (?, ?, ?, ?, ?, ?, ?)',
   );
 
   let occN = 0;
@@ -167,7 +169,7 @@ export function fillSemanticFacts(db: Database, projectRoot: string): SemanticFa
       occN++;
     }
     for (const f of raw.fields ?? []) {
-      insField.run(f.structure, f.name, f.ordinal, f.type ?? null, f.jsonTag ?? null, f.embedded ? 1 : 0);
+      insField.run(f.file ?? '', f.structure, f.name, f.ordinal, f.type ?? null, f.jsonTag ?? null, f.embedded ? 1 : 0);
       fieldN++;
     }
     db.exec('COMMIT');

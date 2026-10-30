@@ -391,6 +391,14 @@ export function openDb(dbFile: string = requireDbFile()): Database {
   // ★ v16：**先对齐形状再跑 SCHEMA_SQL** —— 旧库的 identifiers 还没有 file_id 列，
   //   而 SCHEMA_SQL 里有 CREATE INDEX ... ON identifiers(name, file_id) ⇒ 会直接 no such column。
   const migrationNote = migrateCacheIfNeeded(db);
+  // ★ F1b 增列：fields 是**派生表**（每次 import 重算）⇒ 旧库缺 file 列时直接重建，
+  //   不做逐列 ALTER（重建代价 = 下次 import 重填，无数据语义损失）；形状仍由 SCHEMA_SQL 一处定义。
+  try {
+    const fieldCols = db.prepare('PRAGMA table_info(fields)').all() as Array<{ name: string }>;
+    if (fieldCols.length > 0 && !fieldCols.some((c) => c.name === 'file')) db.exec('DROP TABLE fields');
+  } catch {
+    /* 表不存在 ⇒ 交给 SCHEMA_SQL 建 */
+  }
   db.exec(SCHEMA_SQL);
   // v3 增列：旧库的 nodes 表已存在，CREATE TABLE IF NOT EXISTS 不会补 sym_hash 列，
   // 显式 ALTER（新库建表已含该列，重复加列报错吞掉）

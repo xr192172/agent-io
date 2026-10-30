@@ -6,21 +6,21 @@
         "symbol": "SCHEMA_SQL"
       },
       "kind": "rewrite",
-      "detail": "新增两张语义层事实表：occurrences(file_id,line,col,symbol_id,role=def|use|selection|type,structure,member) 与 fields(structure,name,ordinal,type,json_tag,embedded)；与 nodes/edges 并列、纯新增派生数据、旧库 IF NOT EXISTS 自动补建（不参与清库迁移）；语义层失败时允许为空并标 syntax-only，不猜",
+      "detail": "fields 表加 file TEXT NOT NULL DEFAULT 出处列，主键改 (file,structure,name)；db.ts 在 SCHEMA_SQL 前对缺 file 列的派生表做 DROP 重建；同步改 gofacts 输出、semantic_facts 插入、t458 列断言与主键测试、t460 按 (file,structure) 对拍",
       "judgement_ref": "decision:file_src_infrastructure_index_schema_ts#0",
       "status": "open"
     }
   ],
   "card": "file_src_infrastructure_index_schema_ts",
   "untouched_default": {
-    "why": "本次只加两张派生表，不动任何既有表结构"
+    "why": "只加出处列与相应调用点，不动其他表与索引逻辑"
   },
   "symbols_at_freeze": [
     "SCHEMA_SQL"
   ],
   "fps_at_freeze": {},
-  "frozen_at": "2026-10-30T01:58:02.679Z",
+  "frozen_at": "2026-10-30T02:33:14.740Z",
   "base": {
-    "content_hash": "9cb7c70d81e69689b2835ab849130a0c0f1fb424"
+    "content_hash": "2fd28a67bff80f13f0f97134c151371d69595544"
   }
 }

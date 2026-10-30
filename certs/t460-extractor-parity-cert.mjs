@@ -83,9 +83,12 @@ try {
   chk(sf.ok, '① 语义层可用（否则本证 unsupported，不算通过）', `via=${sf.via} packages=${sf.packages} files=${sf.files} typeErrors=${sf.typeErrors}${sf.reason ? ` · ${sf.reason}` : ''}`);
 
   if (sf.ok) {
-    for (const row of db.prepare('SELECT structure, name, ordinal, type, embedded FROM fields ORDER BY structure, ordinal').all()) {
-      if (!semanticByStruct.has(row.structure)) semanticByStruct.set(row.structure, new Map());
-      semanticByStruct.get(row.structure).set(row.name, { ordinal: row.ordinal, type: row.type, embedded: !!row.embedded });
+    // ★ 按 **(file, structure)** 聚合，不是按结构体名 —— 否则 build tag 互斥变体（同名不同字段）
+    //   会被并集，产生假分叉（实测：LocalEmbedder 的 cgo / !cgo 两个文件）。
+    for (const row of db.prepare('SELECT file, structure, name, ordinal, type, embedded FROM fields ORDER BY structure, ordinal').all()) {
+      const sk = `${row.file}::${row.structure}`;
+      if (!semanticByStruct.has(sk)) semanticByStruct.set(sk, { structure: row.structure, fields: new Map() });
+      semanticByStruct.get(sk).fields.set(row.name, { ordinal: row.ordinal, type: row.type, embedded: !!row.embedded });
     }
 
     // 右：我们的 extractor
@@ -99,14 +102,17 @@ try {
       }
       for (const u of r.units ?? []) {
         if (u.typeKind !== 'struct' || !u.fields?.length) continue;
-        if (!ourByStruct.has(u.name)) ourByStruct.set(u.name, new Map());
-        for (const fl of u.fields) ourByStruct.get(u.name).set(fl.name, { type: fl.type });
+        const sk = `${f}::${u.name}`;
+        if (!ourByStruct.has(sk)) ourByStruct.set(sk, new Map());
+        for (const fl of u.fields) ourByStruct.get(sk).set(fl.name, { type: fl.type });
       }
     }
 
     let compared = 0;
-    for (const [struct, sem] of semanticByStruct) {
-      const ours = ourByStruct.get(struct);
+    for (const [sk, semPack] of semanticByStruct) {
+      const struct = semPack.structure;
+      const sem = semPack.fields;
+      const ours = ourByStruct.get(sk);
       if (!ours) continue;
       compared++;
       for (const [name, s] of sem) {
@@ -123,7 +129,7 @@ try {
         if (!sem.has(name)) divergences.push({ kind: 'extra', struct, field: name, why: '我们的 extractor 产出了 go/types 里没有的字段' });
       }
     }
-    chk(compared > 0, '② **比得上东西**（不是恒空）', `可比结构体 ${compared} 对 · 语义字段总数 ${[...semanticByStruct.values()].reduce((a, m) => a + m.size, 0)}`);
+    chk(compared > 0, '② **比得上东西**（不是恒空）', `可比 (file,structure) ${compared} 对 · 语义字段总数 ${[...semanticByStruct.values()].reduce((a, p) => a + p.fields.size, 0)}`);
   }
   db.close();
 } finally {

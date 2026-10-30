@@ -17564,30 +17564,23 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_db_ts\"].responsibility"
           },
-          "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T09:26:29.900Z",
+          "owner": "agent:agent-io-cli",
+          "claimed_at": "2026-10-30T02:33:55.867Z",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [
-              {
-                "file": "src/infrastructure/roots.ts",
-                "name": "rootsOf",
-                "fp": "cfb5e27b70d9a6ac0183bcd35ac2c9052a4b8f9e"
-              }
-            ],
+            "symbols": [],
             "files": [
               {
                 "path": "src/infrastructure/index/db.ts",
-                "content_hash": "e849c89389ea90ab84d093d13153e9c90d7efde6"
+                "content_hash": "0ace2c249635dcb18d6d243b3c55f892e073964d"
               },
               {
                 "path": "src/infrastructure/roots.ts",
-                "content_hash": "f1051b5bde16d860e7bfe34b10a6244beafb7cfc"
+                "content_hash": "8b0d1e941c7399077e528ea03b3661db2bcf2339"
               }
             ],
-            "computed_at": "2026-10-26T09:26:29.766Z",
+            "computed_at": "2026-10-30T02:33:55.787Z",
             "basis": [
-              "declared",
               "expectations"
             ]
           },
@@ -17639,10 +17632,28 @@
                   "src/infrastructure/roots.ts"
                 ]
               }
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T02:35:43.797Z",
+              "by": "llm",
+              "agent": "agent:agent-io-cli",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node certs/t458-semantic-facts-cert.mjs",
+                "input": "a4940f9fab9f77b7f2e9b7f730cc9a6d6b0eaa99",
+                "code": "590cef3d77013befe343040bb16204d1a7fa2017",
+                "covers": [
+                  "src/infrastructure/index/db.ts",
+                  "src/infrastructure/roots.ts"
+                ]
+              },
+              "observed": "派生表形状变更就地重建（缺 file 列 ⇒ DROP，由 SCHEMA_SQL 重建）；既有 5 表不受影响；t458 4/0",
+              "command": "node certs/t458-semantic-facts-cert.mjs"
             }
           ],
-          "reopened_at": null,
-          "reopen_reason": "T-#8：删 featureCacheDbPath 与 findCacheDb 的候选①（实测 0 产物）",
+          "reopened_at": "2026-10-30T02:33:55.867Z",
+          "reopen_reason": "t460 暴露：事实缺出处 ⇒ fields 加 file 列；派生表形状变更时就地重建",
           "reopened_from": "agent:wish-machine"
         },
         "status": "done",
@@ -17690,9 +17701,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "all_green": true,
-            "kind": "expectations",
-            "unsupported": 0
+            "kind": "reading",
+            "command": "node certs/t458-semantic-facts-cert.mjs",
+            "observed": "派生表形状变更就地重建（缺 file 列 ⇒ DROP，由 SCHEMA_SQL 重建）；既有 5 表不受影响；t458 4/0",
+            "at": "2026-10-30T02:35:42.480Z"
           },
           "signature": "v2:83038fd904a5"
         },
@@ -17965,7 +17977,7 @@
         "arch_layer": "data",
         "path": "src/infrastructure/index/schema.ts",
         "decision": {
-          "summary": "F1：新增 occurrences 与 fields 两张语义层事实表（纯新增派生表，旧库自动补建，不改既有表）；真实验收 = 证 t458（4/0）",
+          "summary": "F1 语义层事实表：occurrences + fields；fields 带 file 出处（build tag 互斥变体的同名结构体靠它区分）",
           "expectations": [
             {
               "kind": "source-has",
@@ -17973,12 +17985,13 @@
               "path": "src/infrastructure/index/schema.ts",
               "must": [
                 "occurrences",
-                "fields"
+                "fields",
+                "file TEXT NOT NULL DEFAULT"
               ],
-              "why": "两表必须出现在 SCHEMA_SQL；结构可用性由证 t458 另行验证（该证已 4/0，但 cert 判据目前被判 unsupported，故不挂在卡上）"
+              "why": "两张表 + 出处列必须出现在 SCHEMA_SQL；结构可用性由 t458 另行验证"
             }
           ],
-          "updated_at": "2026-10-30T01:59:27.057Z",
+          "updated_at": "2026-10-30T02:32:17.333Z",
           "agent": "agent-io-cli"
         },
         "task": {
@@ -17987,18 +18000,24 @@
           "state": "done",
           "judge_gate": "strict",
           "owner": "agent:agent-io-cli",
-          "claimed_at": "2026-10-30T01:56:38.359Z",
+          "claimed_at": "2026-10-30T02:32:24.722Z",
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/infrastructure/index/schema.ts",
+                "name": "SCHEMA_SQL",
+                "fp": "ff44d226831ae5bf443169d5f2eb5de5045b3a69"
+              }
+            ],
             "files": [
               {
                 "path": "src/infrastructure/index/schema.ts",
-                "content_hash": "4c81ca4c4e9be0067001830ec9e3ce92a4dab9db"
+                "content_hash": "9cb7c70d81e69689b2835ab849130a0c0f1fb424"
               }
             ],
-            "computed_at": "2026-10-30T01:56:38.282Z",
+            "computed_at": "2026-10-30T02:32:24.646Z",
             "basis": [
-              "expectations"
+              "canvas"
             ]
           },
           "evidence": [
@@ -18018,8 +18037,28 @@
               },
               "observed": "T458 PASS=4 FAIL=0：occurrences/fields 两表存在、列齐、能写能查、fields 主键生效、既有 5 表不受影响",
               "command": "node certs/t458-semantic-facts-cert.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T02:35:43.635Z",
+              "by": "llm",
+              "agent": "agent:agent-io-cli",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node certs/t458-semantic-facts-cert.mjs && node certs/t460-extractor-parity-cert.mjs",
+                "input": "b4849ac2237068494f1223ca20c4038fecf6b911",
+                "code": "1fb1999c30f9a635ee9cc3fbe125001765515c15",
+                "covers": [
+                  "src/infrastructure/index/schema.ts"
+                ]
+              },
+              "observed": "t458 4/0（fields 列含 file，主键 (file,structure,name)；同 file 重复插被拒）· t460 4/0（分叉 6→3，build tag 假分叉全部消失）",
+              "command": "node certs/t458-semantic-facts-cert.mjs && node certs/t460-extractor-parity-cert.mjs"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-30T02:32:24.722Z",
+          "reopen_reason": "t460 暴露的根因：按名字聚合会并集 build tag 变体",
+          "reopened_from": "agent:agent-io-cli"
         },
         "status": "done",
         "decision_history": [
@@ -18070,6 +18109,27 @@
               "agent": "agent-io-cli"
             },
             "agent": "agent-io-cli"
+          },
+          {
+            "at": "2026-10-30T02:32:17.333Z",
+            "decision": {
+              "summary": "F1：新增 occurrences 与 fields 两张语义层事实表（纯新增派生表，旧库自动补建，不改既有表）；真实验收 = 证 t458（4/0）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "phase": "post",
+                  "path": "src/infrastructure/index/schema.ts",
+                  "must": [
+                    "occurrences",
+                    "fields"
+                  ],
+                  "why": "两表必须出现在 SCHEMA_SQL；结构可用性由证 t458 另行验证（该证已 4/0，但 cert 判据目前被判 unsupported，故不挂在卡上）"
+                }
+              ],
+              "updated_at": "2026-10-30T01:59:27.057Z",
+              "agent": "agent-io-cli"
+            },
+            "agent": "agent-io-cli"
           }
         ],
         "overlay": {
@@ -18078,9 +18138,9 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "command": "node certs/t458-semantic-facts-cert.mjs",
-            "observed": "T458 PASS=4 FAIL=0：occurrences/fields 两表存在、列齐、能写能查、fields 主键生效、既有 5 表不受影响",
-            "at": "2026-10-30T09:59:27.2276994+08:00"
+            "command": "node certs/t458-semantic-facts-cert.mjs && node certs/t460-extractor-parity-cert.mjs",
+            "observed": "t458 4/0（fields 列含 file，主键 (file,structure,name)；同 file 重复插被拒）· t460 4/0（分叉 6→3，build tag 假分叉全部消失）",
+            "at": "2026-10-30T02:35:42.480Z"
           }
         }
       },
@@ -69508,13 +69568,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 320,
+  "_dsl_rev": 323,
   "_sync": {
-    "saved_at": "2026-10-30T02:17:57.602Z",
+    "saved_at": "2026-10-30T02:35:43.906Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 325680465,
+    "age": 326746769,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
