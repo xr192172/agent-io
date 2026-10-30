@@ -89,7 +89,15 @@ console.log(`[regen] 生成 → ${tmp}（临时），源 ${GO_SRC}`);
 // ★ 直接调 CLI（不要 `npm run tool`：Windows 下 execFileSync 带 shell 会失败/吞退出码）
 execFileSync(
   process.execPath,
-  [path.join(ROOT, 'dist/src/presentation/cli/cli.js'), 'translate', '--json', JSON.stringify({ from: 'go', to: 'ts', projectDir: GO_SRC, outDir: tmp })],
+  [
+    path.join(ROOT, 'dist/src/presentation/cli/cli.js'),
+    'translate',
+    '--json',
+    // ★★★ 必须 `fill: true`：project.ts 里 **mechBody + 填空缓存**整块都在 `if (opts.fill)` 内。
+    //   不传 ⇒ 那条确定性回放完全不执行 ⇒ 产物全是 TODO 孔（实测 617 孔 / 错误 48 的假象就是这么来的）。
+    //   回放模式（AGENT_IO_REPLAY_ONLY=1）下 LLM 部分会被优雅跳过，只做 mechBody + 缓存回放。
+    JSON.stringify({ from: 'go', to: 'ts', projectDir: GO_SRC, outDir: tmp, fill: true }),
+  ],
   {
     cwd: ROOT,
     stdio: 'inherit',

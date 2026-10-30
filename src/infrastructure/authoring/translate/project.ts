@@ -887,6 +887,7 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
       if (legacyHit && diagnostics.length < 40) {
         diagnostics.push(`旧格式缓存 key 命中并迁移：${legacyHit} 条（key 版本升级缺迁移路径，见 T-#FILLCACHE-LEGACY）`);
       }
+
       const unitsToFill = missUnits;
       let filled: Awaited<ReturnType<typeof fillUnitsWithRetry>> = [];
       // ★ 也支持环境变量（避免为了一个开关去改工具契约）：AGENT_IO_REPLAY_ONLY=1

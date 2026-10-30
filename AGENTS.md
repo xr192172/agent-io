@@ -73,11 +73,14 @@ t453 守双棘轮 · t454 守双实现分叉账
 node scripts/regen-translate.mjs          # = npm run regen:translate
 ```
 
-- 它自己生成（`projectDir` + `outDir` 是唯一能写出产物的路径；单文件 `out` 模式会被骨架验证闸拦、不落盘）、
+- 它自己生成（`projectDir` + `outDir` + **`fill:true`** 是唯一能写出**带函数体**产物的路径；
+  单文件 `out` 模式会被骨架验证闸拦、不落盘）、
   自己读数（files / holes / errors）、**变差就非零退出**、读数落 `.agent-io/regen-report.json`；
+- ★★ **`fill:true` 不是可选项**：`project.ts` 里 **mechBody + 填空缓存**整块都在 `if (opts.fill)` 内。
+  不传 ⇒ 那条确定性回放完全不执行 ⇒ 产物全是 TODO 孔（实测：不传 = 617 孔/48 错；传 = **164 孔/22 错**）。
+  回放模式（`AGENT_IO_REPLAY_ONLY=1`）下 LLM 部分会被优雅跳过，只做 mechBody + 缓存回放；
 - **产物目录不在 git 里** ⇒ 覆盖即不可回滚。脚本先写**同盘临时目录**、再把旧目录改成 `src.bak-<ts>` 备份 ⇒ 手工可回滚
   （2026-10-30 就是因为"猜着跑、无备份"把 188 孔基线毁成 617 且不可恢复）；
-- ★ 已知边界：该路径**不查** `project.ts` 的填空缓存（834 条历史函数体在这条路上用不到）⇒ 孔数偏高，见 `T-#REPLAY-REGEN`。
 - **绝不要**用 `npm run tool -- translate --json ...` 手工拼参数去覆盖产物目录（我踩过两次）。
 
 ## 一、动作 → 工具
