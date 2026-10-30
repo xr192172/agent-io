@@ -1,0 +1,51 @@
+{
+  "path": "scripts/verify.mjs",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "GATES"
+      },
+      "kind": "rewrite",
+      "detail": "在 GATES 末尾（`];` 之前）追加第 10 条 gate：{ name: '测试', kind: 'gate', cmd: 'node', args: ['scripts/run-tests.mjs'], why: … }。沿用既有门框架（kind:'gate' 计入 total、FAIL 计 fail、SKIP 只给可选外部工具链），不新造输出口径；why 里写清它挡的事故（11 个测试文件此前 0 道门跑它们）与门自己判红的三条（失败>0 / 0 个用例被执行 / 任何 skip·todo）。",
+      "judgement_ref": "decision:file_scripts_verify_mjs#1",
+      "status": "open"
+    }
+  ],
+  "card": "file_scripts_verify_mjs",
+  "untouched_default": {
+    "why": "其余 16 个符号（ROOT / C / requireFromHere / has / localTsc / tsGate / gates / fail / skip / tail / clip / total / line 等）看过不动：本轮只往 GATES 末尾追加第 10 条门，既有 9 道门与三态输出口径一字不改"
+  },
+  "symbols_at_freeze": [
+    "ROOT",
+    "C",
+    "requireFromHere",
+    "localTsc",
+    "tsGate",
+    "GATES",
+    "has",
+    "run",
+    "gates",
+    "fail",
+    "skip",
+    "tail",
+    "t0",
+    "r",
+    "ms",
+    "tag",
+    "label",
+    "clip",
+    "total",
+    "line"
+  ],
+  "fps_at_freeze": {
+    "localTsc": "53b6642c9e74c24bf019a895232b5d0be2227a64",
+    "tsGate": "a06007c07bbd69059605e38d073cebf69cdf4ed6",
+    "has": "264ac38d9c09969bf19147debd575369ad647981",
+    "run": "9aadc74cf35af2a684311c5f0a57aa5c958b17f3",
+    "clip": "fae41ee93c38d1d1cda2d7570867bf18d8027fa5"
+  },
+  "frozen_at": "2026-10-30T09:27:22.984Z",
+  "base": {
+    "content_hash": "52587f9b84b43665a91dd2d2b051cfe7089b8a33"
+  }
+}

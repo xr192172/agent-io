@@ -10201,7 +10201,232 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "scripts/verify.mjs"
+        "path": "scripts/verify.mjs",
+        "decision": {
+          "summary": "总门：9 道门 + 新增第 10 道「测试」（scripts/run-tests.mjs 真跑 tests/ 的 11 个文件 42 个用例，0 用例/任何 skip 判红）",
+          "updated_at": "2026-10-30T09:26:45.642Z",
+          "agent": "subagent:test-gate",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "scripts/verify.mjs",
+              "must": [
+                "scripts/run-tests.mjs",
+                "name: '测试'"
+              ],
+              "mustNot": [
+                "AGENT_IO_SKIP_TESTS"
+              ],
+              "why": "第 10 道门必须真在总门里：GATES 要有一条 name:'测试'、命令是 scripts/run-tests.mjs 的 kind:'gate'；改回'测试不进总门'就红（此前 11 个测试文件 0 道门跑它们）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "scripts/verify.mjs",
+              "symbol": "tsGate",
+              "target": "localTsc",
+              "why": "ts 门必须经 localTsc 解析本地编译器：改成 npx tsc 兜底就会在 typescript 未装时取到 npm 同名占位包并退 0（2026-10-06 T61 实测的假绿灯）"
+            }
+          ]
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-30T09:24:29.458Z",
+            "decision": {
+              "summary": "总门：9 道门 + 新增第 10 道「测试」（scripts/run-tests.mjs 真跑 tests/ 的 11 个文件 42 个用例，0 用例/任何 skip 判红）",
+              "updated_at": "2026-10-30T09:24:29.415Z",
+              "agent": "subagent:test-gate"
+            },
+            "note": "第 10 道门必须真在总门里：scripts/verify.mjs 的 GATES 要有一条 name:'测试'、命令 scripts/run-tests.mjs 的 kind:'gate'。此前 11 个测试文件 0 道门跑它们（i1_doc_alignment 的正则断言过一句已被改掉的工具描述，靠人工发现才修上）。",
+            "agent": "subagent:test-gate"
+          },
+          {
+            "at": "2026-10-30T09:24:50.049Z",
+            "decision": {
+              "summary": "总门：9 道门 + 新增第 10 道「测试」（scripts/run-tests.mjs 真跑 tests/ 的 11 个文件 42 个用例，0 用例/任何 skip 判红）",
+              "updated_at": "2026-10-30T09:24:29.458Z",
+              "agent": "subagent:test-gate",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "scripts/verify.mjs",
+                  "must": [
+                    "scripts/run-tests.mjs",
+                    "name: '测试'"
+                  ],
+                  "mustNot": [
+                    "AGENT_IO_SKIP_TESTS"
+                  ],
+                  "why": "第 10 道门必须真在总门里：GATES 要有一条 name:'测试'、命令是 scripts/run-tests.mjs 的 kind:'gate'；改回'测试不进总门'就红（此前 11 个测试文件 0 道门跑它们）"
+                }
+              ]
+            },
+            "note": "tests/ 下 11 个 *.test.ts（42 个用例）此前没有 runner：scripts/verify.mjs 的 9 道门里没有测试门，tests/i1_doc_alignment.test.ts 的正则曾断言一句已被改掉的工具描述。新建 scripts/run-tests.mjs（第 10 道门的执行核，逐文件取 TAP 计数，0 用例/任何 skip 判红）并给它立节点；同时在 scripts/verify.mjs 节点上挂一条 source-has，钉住总门真的调了 scripts/run-tests.mjs。",
+            "agent": "subagent:test-gate"
+          },
+          {
+            "at": "2026-10-30T09:25:20.105Z",
+            "decision": {
+              "summary": "总门：9 道门 + 新增第 10 道「测试」（scripts/run-tests.mjs 真跑 tests/ 的 11 个文件 42 个用例，0 用例/任何 skip 判红）",
+              "updated_at": "2026-10-30T09:24:50.049Z",
+              "agent": "subagent:test-gate",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "scripts/verify.mjs",
+                  "must": [
+                    "scripts/run-tests.mjs",
+                    "name: '测试'"
+                  ],
+                  "mustNot": [
+                    "AGENT_IO_SKIP_TESTS"
+                  ],
+                  "why": "第 10 道门必须真在总门里：GATES 要有一条 name:'测试'、命令是 scripts/run-tests.mjs 的 kind:'gate'；改回'测试不进总门'就红（此前 11 个测试文件 0 道门跑它们）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "scripts/verify.mjs",
+                  "must": [
+                    "scripts/run-tests.mjs",
+                    "name: '测试'"
+                  ],
+                  "mustNot": [
+                    "AGENT_IO_SKIP_TESTS"
+                  ],
+                  "why": "第 10 道门必须真在总门里：GATES 要有一条 name:'测试'、命令是 scripts/run-tests.mjs 的 kind:'gate'；改回'测试不进总门'就红（此前 11 个测试文件 0 道门跑它们）"
+                }
+              ]
+            },
+            "note": "上一批误写重复判据（scripts/verify.mjs 的 source-has 出现 2 条完全相同），按 index=1 删掉重复那条，只留 1 条；随后给两张卡 publish。"
+          },
+          {
+            "at": "2026-10-30T09:26:32.956Z",
+            "decision": {
+              "summary": "总门：9 道门 + 新增第 10 道「测试」（scripts/run-tests.mjs 真跑 tests/ 的 11 个文件 42 个用例，0 用例/任何 skip 判红）",
+              "updated_at": "2026-10-30T09:25:20.105Z",
+              "agent": "subagent:test-gate",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "scripts/verify.mjs",
+                  "must": [
+                    "scripts/run-tests.mjs",
+                    "name: '测试'"
+                  ],
+                  "mustNot": [
+                    "AGENT_IO_SKIP_TESTS"
+                  ],
+                  "why": "第 10 道门必须真在总门里：GATES 要有一条 name:'测试'、命令是 scripts/run-tests.mjs 的 kind:'gate'；改回'测试不进总门'就红（此前 11 个测试文件 0 道门跑它们）"
+                }
+              ]
+            },
+            "note": "scripts/verify.mjs 的画布条目要用语义类判据（source-has 是存在类，planGate 会点名'永远发现不了逻辑错'）⇒ 在 file_scripts_verify_mjs 上补一条 call-exists：run() 必须真的 spawnSync 子进程，不 spawn 就等于'门没跑却说绿'（本仓 2026-10-06 的 npx tsc 假绿灯就是这一类）。",
+            "agent": "subagent:test-gate"
+          },
+          {
+            "at": "2026-10-30T09:26:45.595Z",
+            "decision": {
+              "summary": "总门：9 道门 + 新增第 10 道「测试」（scripts/run-tests.mjs 真跑 tests/ 的 11 个文件 42 个用例，0 用例/任何 skip 判红）",
+              "updated_at": "2026-10-30T09:26:32.956Z",
+              "agent": "subagent:test-gate",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "scripts/verify.mjs",
+                  "must": [
+                    "scripts/run-tests.mjs",
+                    "name: '测试'"
+                  ],
+                  "mustNot": [
+                    "AGENT_IO_SKIP_TESTS"
+                  ],
+                  "why": "第 10 道门必须真在总门里：GATES 要有一条 name:'测试'、命令是 scripts/run-tests.mjs 的 kind:'gate'；改回'测试不进总门'就红（此前 11 个测试文件 0 道门跑它们）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "scripts/verify.mjs",
+                  "symbol": "run",
+                  "target": "spawnSync",
+                  "why": "总门的 run(g) 必须真的 spawnSync 跑子进程：不 spawn = 门没跑却报 PASS（同族事故=2026-10-06 的 npx tsc 假绿灯，typescript 缺失时取到占位包并退 0）"
+                }
+              ]
+            },
+            "note": "把上一条 call-exists 的 target 从 spawnSync 改成 localTsc：scripts/verify.mjs 的 run() 里调用链抽不出 spawnSync（实测回执说它只调 has），而 tsGate→localTsc 才是这一门真正的语义（ts 门必须走本地编译器，不许 npx 兜底）。"
+          },
+          {
+            "at": "2026-10-30T09:26:45.642Z",
+            "decision": {
+              "summary": "总门：9 道门 + 新增第 10 道「测试」（scripts/run-tests.mjs 真跑 tests/ 的 11 个文件 42 个用例，0 用例/任何 skip 判红）",
+              "updated_at": "2026-10-30T09:26:45.595Z",
+              "agent": "subagent:test-gate",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "scripts/verify.mjs",
+                  "must": [
+                    "scripts/run-tests.mjs",
+                    "name: '测试'"
+                  ],
+                  "mustNot": [
+                    "AGENT_IO_SKIP_TESTS"
+                  ],
+                  "why": "第 10 道门必须真在总门里：GATES 要有一条 name:'测试'、命令是 scripts/run-tests.mjs 的 kind:'gate'；改回'测试不进总门'就红（此前 11 个测试文件 0 道门跑它们）"
+                }
+              ]
+            },
+            "note": "把上一条 call-exists 的 target 从 spawnSync 改成 localTsc：scripts/verify.mjs 的 run() 里调用链抽不出 spawnSync（实测回执说它只调 has），而 tsGate→localTsc 才是这一门真正的语义（ts 门必须走本地编译器，不许 npx 兜底）。"
+          }
+        ],
+        "task": {
+          "id": "file_scripts_verify_mjs",
+          "summary": "总门：9 道门 + 新增第 10 道「测试」（scripts/run-tests.mjs 真跑 tests/ 的 11 个文件 42 个用例，0 用例/任何 skip 判红）",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:test-gate",
+          "claimed_at": "2026-10-30T09:25:29.056Z",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "scripts/verify.mjs",
+                "content_hash": "2248d69a289e3062fa0c6cf03e2d51a9998ee58d"
+              }
+            ],
+            "computed_at": "2026-10-30T09:25:28.984Z",
+            "basis": [
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T09:35:51.953Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify",
+                "input": "1412e00ca497e6e26d80daf852d94d10e5863c47",
+                "code": "63ebd316a84f2630dddfb12ae2f01a4a0e8e3c6d",
+                "covers": [
+                  "scripts/verify.mjs"
+                ]
+              },
+              "observed": "10 道门：ts 类型 1749ms / MCP 工具签名 1256ms / Go 编译 770ms / Go 静态检查 319ms / 实现夹具 601ms / domain 五值 73ms / 设计 DB 结构 281ms / 两段式领取 1025ms / 证据选量 2849ms / 测试 17073ms。前 9 道 PASS；第 10 道「测试」FAIL（退出码 1）= i1_face_minimal 的 2 条红（consistency_check 已退役但 tool_faces.ts:59 的 MINIMAL_FACE_TOOLS 仍列它 ⇒ facesOf().unknown 非空），非本卡范围。",
+              "command": "npm run verify"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "scripts/verify.mjs",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-10-30T17:40:00+08:00",
+            "command": "npm run verify",
+            "observed": "10 道门：ts 类型 1749ms / MCP 工具签名 1256ms / Go 编译 770ms / Go 静态检查 319ms / 实现夹具 601ms / domain 五值 73ms / 设计 DB 结构 281ms / 两段式领取 1025ms / 证据选量 2849ms / 测试 17073ms。前 9 道 PASS；第 10 道「测试」FAIL（退出码 1）= i1_face_minimal 的 2 条红（consistency_check 已退役但 tool_faces.ts:59 的 MINIMAL_FACE_TOOLS 仍列它 ⇒ facesOf().unknown 非空），非本卡范围。"
+          }
+        }
       },
       {
         "id": "file_scripts_verify_grammar_rebuild_mjs",
@@ -26771,6 +26996,242 @@
             "at": "2026-10-30T17:14:50.224Z"
           }
         }
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_module_build_ts",
+        "label": "module_build.ts",
+        "type": "file",
+        "path": "src/infrastructure/authoring/translate/module_build.ts"
+      },
+      {
+        "id": "file_scripts_run-tests_mjs",
+        "label": "run-tests.mjs",
+        "type": "file",
+        "path": "scripts/run-tests.mjs",
+        "decision": {
+          "summary": "测试门执行核：tests/ 下 11 个文件 42 个用例逐文件真跑，按 TAP 计数判红（0 用例 / 任何 skip 都红）",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "scripts/run-tests.mjs",
+              "symbol": "runOne",
+              "target": "failuresOf",
+              "why": "逐文件跑一次的那个函数必须把 TAP 原文交给 failuresOf 取'第一行真实错误'：不接这条边，报红时只说'有一坨红'（说不出哪个用例、错在哪行），门就退回到 2026-10-05 之前'没人跑门'的状态"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "command": "node scripts/run-tests.mjs",
+                "summary": "测试门：文件 11 / 用例 42 / 通过 40 / 失败 2 / 跳过 0"
+              },
+              "expect": "(() => {\n  const m = String(input.summary).match(/测试门：文件 (\\d+) \\/ 用例 (\\d+) \\/ 通过 (\\d+) \\/ 失败 (\\d+) \\/ 跳过 (\\d+)/);\n  if (!m) return false;\n  const [files, tests, pass, fail, skipped] = m.slice(1).map(Number);\n  return files >= 11 && tests >= 11 && pass + fail === tests && skipped === 0;\n})()",
+              "why": "被执行的规模不许缩水：文件 ≥ 11 且用例 ≥ 11（读数来源 = 2026-10-30 `node scripts/run-tests.mjs` 全跑，末行「文件 11 / 用例 42」）；且 pass+fail 必须等于用例数（不许有用例既不算过也不算败 = 静默跳过）；跳过必须 0。断言故意**不看失败数** —— 失败数由门自己的退出码判，这里只钉'真的跑了多少'"
+            },
+            {
+              "kind": "source-has",
+              "path": "scripts/run-tests.mjs",
+              "must": [
+                "# tests",
+                "0 个用例被执行",
+                "--import",
+                "tsx"
+              ],
+              "mustNot": [
+                "test.skip(",
+                "it.skip(",
+                "describe.skip(",
+                "skip: true",
+                "todo: true"
+              ],
+              "why": "空跑=没跑：必须有 0 用例判红的字面量（0 个用例被执行）且计数走 runner 自己的 TAP 汇总行（# tests）；mustNot 五条防'用 skip/todo 把门关掉'（★ 写**调用形态**不写裸名：裸 `t.skip` 会被 `tot.skipped` 子串误命中 = 假红，2026-10-30 实测）"
+            }
+          ],
+          "updated_at": "2026-10-30T09:33:58.615Z",
+          "agent": "subagent:test-gate"
+        },
+        "task": {
+          "id": "file_scripts_run-tests_mjs",
+          "summary": "测试门执行核：tests/ 下 11 个文件 42 个用例逐文件真跑，按 TAP 计数判红（0 用例 / 任何 skip 都红）",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:test-gate",
+          "claimed_at": "2026-10-30T09:25:28.896Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "scripts/run-tests.mjs",
+                "name": "runOne",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "scripts/run-tests.mjs",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-10-30T09:25:28.813Z",
+            "basis": [
+              "expectations"
+            ],
+            "note": "1 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T09:35:51.748Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs",
+                "input": "724314ca3ffea242f91792c5b712420b878472ab",
+                "code": "c80643cd1f41435332ecf2e4f3aa15163daad65b",
+                "covers": [
+                  "scripts/run-tests.mjs"
+                ]
+              },
+              "observed": "测试门：文件 11 / 用例 42 / 通过 40 / 失败 2 / 跳过 0（11 个 *.test.ts 全部被发现并逐个真跑；42 = TAP # tests 合计）。★ 0 用例判红已实测：--filter no_such_test ⇒ 文件 0 / 用例 0 ⇒ 退出码 1。★ 变异反证：往 tests/i1_doc_alignment.test.ts 注入必败断言 ⇒ --filter i1_doc_alignment 由 6/6 绿变 5/6 红（退出码 1）、全跑由 失败 2 变 失败 3；还原后 git diff 为空、6/6 复绿。",
+              "command": "node scripts/run-tests.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-10-30T09:31:53.817Z",
+            "decision": {
+              "summary": "测试门执行核：tests/ 下 11 个文件 42 个用例逐文件真跑，按 TAP 计数判红（0 用例 / 任何 skip 都红）",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "scripts/run-tests.mjs",
+                  "symbol": "runOne",
+                  "target": "failuresOf",
+                  "why": "逐文件跑一次的那个函数必须把 TAP 原文交给 failuresOf 取'第一行真实错误'：不接这条边，报红时只说'有一坨红'（说不出哪个用例、错在哪行），门就退回到 2026-10-05 之前'没人跑门'的状态"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "scripts/run-tests.mjs",
+                  "must": [
+                    "# tests",
+                    "0 个用例被执行",
+                    "--import",
+                    "tsx"
+                  ],
+                  "mustNot": [
+                    "test.skip",
+                    "t.skip",
+                    "skip: true",
+                    "todo: true"
+                  ],
+                  "why": "空跑=没跑：必须有 0 用例判红的字面量（0 个用例被执行）且计数走 runner 自己的 TAP 汇总行（# tests）；mustNot 四条防'用 skip/todo 把门关掉'——那会把'有测试没裁判'重演一遍且更隐蔽"
+                }
+              ],
+              "updated_at": "2026-10-30T09:24:50.001Z",
+              "agent": "subagent:test-gate"
+            },
+            "note": "给 scripts/run-tests.mjs 补第 3 条判据：用**真实读数**钉住'执行了几个文件 / 几个用例'。读数来源 = 2026-10-30 本机 `node scripts/run-tests.mjs` 全跑输出末行「测试门：文件 11 / 用例 42 / 通过 40 / 失败 2 / 跳过 0」（11 = tests/*.test.ts 计数，42 = 11 个文件的 node:test 用例合计；2 红是 i1_face_minimal 的 consistency_check 漂移，另账）。",
+            "agent": "subagent:test-gate"
+          },
+          {
+            "at": "2026-10-30T09:33:58.568Z",
+            "decision": {
+              "summary": "测试门执行核：tests/ 下 11 个文件 42 个用例逐文件真跑，按 TAP 计数判红（0 用例 / 任何 skip 都红）",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "scripts/run-tests.mjs",
+                  "symbol": "runOne",
+                  "target": "failuresOf",
+                  "why": "逐文件跑一次的那个函数必须把 TAP 原文交给 failuresOf 取'第一行真实错误'：不接这条边，报红时只说'有一坨红'（说不出哪个用例、错在哪行），门就退回到 2026-10-05 之前'没人跑门'的状态"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "scripts/run-tests.mjs",
+                  "must": [
+                    "# tests",
+                    "0 个用例被执行",
+                    "--import",
+                    "tsx"
+                  ],
+                  "mustNot": [
+                    "test.skip",
+                    "t.skip",
+                    "skip: true",
+                    "todo: true"
+                  ],
+                  "why": "空跑=没跑：必须有 0 用例判红的字面量（0 个用例被执行）且计数走 runner 自己的 TAP 汇总行（# tests）；mustNot 四条防'用 skip/todo 把门关掉'——那会把'有测试没裁判'重演一遍且更隐蔽"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "command": "node scripts/run-tests.mjs",
+                    "summary": "测试门：文件 11 / 用例 42 / 通过 40 / 失败 2 / 跳过 0"
+                  },
+                  "expect": "(() => {\n  const m = String(input.summary).match(/测试门：文件 (\\d+) \\/ 用例 (\\d+) \\/ 通过 (\\d+) \\/ 失败 (\\d+) \\/ 跳过 (\\d+)/);\n  if (!m) return false;\n  const [files, tests, pass, fail, skipped] = m.slice(1).map(Number);\n  return files >= 11 && tests >= 11 && pass + fail === tests && skipped === 0;\n})()",
+                  "why": "被执行的规模不许缩水：文件 ≥ 11 且用例 ≥ 11（读数来源 = 2026-10-30 `node scripts/run-tests.mjs` 全跑，末行「文件 11 / 用例 42」）；且 pass+fail 必须等于用例数（不许有用例既不算过也不算败 = 静默跳过）；跳过必须 0。断言故意**不看失败数** —— 失败数由门自己的退出码判，这里只钉'真的跑了多少'"
+                }
+              ],
+              "updated_at": "2026-10-30T09:31:53.817Z",
+              "agent": "subagent:test-gate"
+            },
+            "note": "判据 source-has 的 mustNot \"t.skip\" 是**假红**（子串陷阱）：scripts/run-tests.mjs L146 的 `tot.skipped` 里含 \"t.skip\"。改成精确的调用形态（test.skip( / it.skip( / describe.skip( / skip: true / todo: true），仍然钉住'不许用 skip/todo 关掉门'这条。",
+            "agent": "subagent:test-gate"
+          },
+          {
+            "at": "2026-10-30T09:33:58.615Z",
+            "decision": {
+              "summary": "测试门执行核：tests/ 下 11 个文件 42 个用例逐文件真跑，按 TAP 计数判红（0 用例 / 任何 skip 都红）",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "scripts/run-tests.mjs",
+                  "symbol": "runOne",
+                  "target": "failuresOf",
+                  "why": "逐文件跑一次的那个函数必须把 TAP 原文交给 failuresOf 取'第一行真实错误'：不接这条边，报红时只说'有一坨红'（说不出哪个用例、错在哪行），门就退回到 2026-10-05 之前'没人跑门'的状态"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "command": "node scripts/run-tests.mjs",
+                    "summary": "测试门：文件 11 / 用例 42 / 通过 40 / 失败 2 / 跳过 0"
+                  },
+                  "expect": "(() => {\n  const m = String(input.summary).match(/测试门：文件 (\\d+) \\/ 用例 (\\d+) \\/ 通过 (\\d+) \\/ 失败 (\\d+) \\/ 跳过 (\\d+)/);\n  if (!m) return false;\n  const [files, tests, pass, fail, skipped] = m.slice(1).map(Number);\n  return files >= 11 && tests >= 11 && pass + fail === tests && skipped === 0;\n})()",
+                  "why": "被执行的规模不许缩水：文件 ≥ 11 且用例 ≥ 11（读数来源 = 2026-10-30 `node scripts/run-tests.mjs` 全跑，末行「文件 11 / 用例 42」）；且 pass+fail 必须等于用例数（不许有用例既不算过也不算败 = 静默跳过）；跳过必须 0。断言故意**不看失败数** —— 失败数由门自己的退出码判，这里只钉'真的跑了多少'"
+                }
+              ],
+              "updated_at": "2026-10-30T09:33:58.568Z",
+              "agent": "subagent:test-gate"
+            },
+            "note": "判据 source-has 的 mustNot \"t.skip\" 是**假红**（子串陷阱）：scripts/run-tests.mjs L146 的 `tot.skipped` 里含 \"t.skip\"。改成精确的调用形态（test.skip( / it.skip( / describe.skip( / skip: true / todo: true），仍然钉住'不许用 skip/todo 关掉门'这条。",
+            "agent": "subagent:test-gate"
+          }
+        ],
+        "overlay": {
+          "path": "scripts/run-tests.mjs",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-10-30T17:40:00+08:00",
+            "command": "node scripts/run-tests.mjs",
+            "observed": "测试门：文件 11 / 用例 42 / 通过 40 / 失败 2 / 跳过 0（11 个 *.test.ts 全部被发现并逐个真跑；42 = TAP # tests 合计）。★ 0 用例判红已实测：--filter no_such_test ⇒ 文件 0 / 用例 0 ⇒ 退出码 1。★ 变异反证：往 tests/i1_doc_alignment.test.ts 注入必败断言 ⇒ --filter i1_doc_alignment 由 6/6 绿变 5/6 红（退出码 1）、全跑由 失败 2 变 失败 3；还原后 git diff 为空、6/6 复绿。"
+          }
+        }
+      },
+      {
+        "id": "file_docs_GUIDE-GATE_md",
+        "label": "GUIDE-GATE.md",
+        "type": "doc",
+        "path": "docs/GUIDE-GATE.md",
+        "title": "门 / 证 / 判据 的唯一住处"
+      },
+      {
+        "id": "file_docs_RETIRED_md",
+        "label": "RETIRED.md",
+        "type": "doc",
+        "path": "docs/RETIRED.md",
+        "title": "删除台账（退役能力：判据 / 替代路径 / 代价）"
       }
     ],
     "edges": [
@@ -59048,7 +59509,8 @@
           }
         ],
         "lines": 280,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_scripts_verify_grammar_rebuild_mjs",
@@ -76422,6 +76884,12 @@
         "path": "src/domain/gate_error.ts",
         "responsibility": "gate_error.ts",
         "status": "done"
+      },
+      {
+        "id": "file_scripts_run-tests_mjs",
+        "path": "scripts/run-tests.mjs",
+        "responsibility": "run-tests.mjs",
+        "status": "done"
       }
     ]
   },
@@ -76483,13 +76951,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 415,
+  "_dsl_rev": 431,
   "_sync": {
-    "saved_at": "2026-10-30T09:14:54.805Z",
+    "saved_at": "2026-10-30T09:35:52.095Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 350697668,
+    "age": 351954958,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

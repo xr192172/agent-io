@@ -214,6 +214,25 @@ const GATES = [
       '★ 它挡的事故：「建了没接」再发生一次 —— 函数全绿、没人调，而代码读起来完全正常。',
   },
 
+  // ★★★ 2026-10-30（第十道）：**测试门** —— 此前 `tests/` 下 11 个 `*.test.ts` **没有任何 runner 在跑**。
+  //   为什么这算"病"而不是"待办"：`docs/GUIDE-GATE.md` 的门表就是"跑过什么"的唯一账本，
+  //   不在账上的一律等于**没跑**（本文件开头那句：返回 0 的含义 = 每一道门都真跑过并通过）。
+  //   实测代价：`tests/i1_doc_alignment.test.ts` 的正则断言过一句**已被改掉的工具描述**，
+  //   靠人工发现才修上 —— 有测试、没裁判，比没测试更糟（它让人以为有）。
+  //   ★ 门自己判红的三条**住在** `scripts/run-tests.mjs`（本文件不复述、也不另数一遍）：
+  //     退出码/失败数 · **0 个用例被执行** · **任何 skip/todo**。
+  //   ★ 默认**全跑**；`--filter` 只给内环定向用，**不许**出现在这条 args 里（那等于给总门开个关掉的门）。
+  {
+    name: '测试',
+    kind: 'gate',
+    cmd: 'node',
+    args: ['scripts/run-tests.mjs'],
+    why:
+      '★ tests/ 下 11 个文件 42 个用例逐文件真跑（node:test + tsx，读源码不读 dist）⇒ 按 TAP 计数判红：' +
+      '失败>0 / **0 个用例被执行** / **任何 skip·todo** 都算红（空跑等于没跑，这条最要紧）。' +
+      '★ 它挡的事故：「有测试、没裁判」—— 11 个文件的断言早已可能失效，而没有人会知道。',
+  },
+
 ];
 
 const has = (b) => { try { return spawnSync(b, ['version'], { encoding: 'utf8', shell: process.platform === 'win32' }).status === 0; } catch { return false; } };

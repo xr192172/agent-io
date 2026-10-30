@@ -90,28 +90,34 @@ after(() => {
   fs.rmSync(HOME, { recursive: true, force: true });
 });
 
-test('翻译 DB 生成：Go 样例 → 投影（to 与管线同源 / pending 与 blocked 四档读数）', () => {
+test('翻译 DB 生成：Go 样例 → 投影（targets 与管线同源 / pending 与 blocked 读数）', () => {
   const bookPath = path.join(projRoot, '.agent-io', 'design', 'demo.translate.json');
   const r = rebuildBook({ projectDir: projRoot, bookPath, expectTargetLanguage: 'ts' });
   const s = r.stats;
-  // 6 个源符号：Add/Stamp/User_Greet/Store pending；Fetch(term_null)/Raw(external_dep) blocked
+  // 6 个源符号：Add/Stamp/User_Greet/Store/Raw pending；Fetch(LegacyBlob 已定 to:null) blocked
+  // ★ 2026-10-29（bdec9da9「blocked 90 → 0」）起**外部硬依赖不再单独 block**：名词层已决定"用什么替身"，
+  //   剩下是结构层的事 ⇒ Raw 由 blocked 降为 pending。旧断言（blocked=2 / blockedByExternalDep=1）
+  //   断言的是**已退役**的语义，按 docs/RETIRED.md 口径退役（见该表「翻译册 external_dep 不再 block」）。
   assert.equal(s.symbols, 6);
-  assert.equal(s.pending, 4);
-  assert.equal(s.blocked, 2);
+  assert.equal(s.pending, 5);
+  assert.equal(s.blocked, 1);
   assert.equal(s.blockedByTerm, 0);
   assert.equal(s.blockedByTermNull, 1);
   assert.equal(s.blockedByCollision, 0);
-  assert.equal(s.blockedByExternalDep, 1);
+  assert.equal(s.blockedByExternalDep, 0);
   const next = JSON.parse(fs.readFileSync(bookPath, 'utf-8')) as TranslateBook;
   const byFrom = new Map(next.symbols.map((x) => [x.from, x]));
-  // to = tsPath（.go→.ts 镜像）+ tsSymbolName（方法 = recv_method；顶层原名）—— 与 go_extractor/pipeline 同源
-  assert.equal(byFrom.get('src/user.go#Add')!.to, 'src/user.ts#Add');
-  assert.equal(byFrom.get('src/user.go#User_Greet')!.to, 'src/user.ts#User_Greet');
-  assert.equal(byFrom.get('src/legacy.go#Raw')!.state, 'blocked');
-  assert.match(byFrom.get('src/legacy.go#Raw')!.note!, /外部硬依赖/);
+  // ★ 单串 `to` 已退役（book.ts 头注释：它把"目标文件 / 命名规则 Type_Method / 符号名"三件事塞进一个字符串）
+  //   ⇒ 现在读 `targets.ts = {file, name}`，与 fill 管线同一个 tsPath / tsSymbolName。
+  assert.equal(byFrom.get('src/user.go#Add')!.targets!.ts.file, 'src/user.ts');
+  assert.equal(byFrom.get('src/user.go#Add')!.targets!.ts.name, 'Add');
+  assert.equal(byFrom.get('src/user.go#User_Greet')!.targets!.ts.name, 'User_Greet');
+  assert.equal(byFrom.get('src/legacy.go#Fetch')!.state, 'blocked');
   assert.match(byFrom.get('src/legacy.go#Fetch')!.note!, /术语已定但无 TS 目标/);
-  // judgments 只挂 pending 符号
-  assert.equal(byFrom.get('src/legacy.go#Raw')!.judgments, undefined);
+  // ★ Raw：外部硬依赖已不再 block ⇒ pending（旧断言 state='blocked' + note /外部硬依赖/ 已退役）
+  assert.equal(byFrom.get('src/legacy.go#Raw')!.state, 'pending');
+  // judgments 只挂 pending 符号（blocked 的 Fetch **整个字段缺席**，不是空数组）
+  assert.equal(byFrom.get('src/legacy.go#Fetch')!.judgments, undefined);
   assert.ok(byFrom.get('src/user.go#Add')!.judgments!.length > 0);
 });
 
@@ -166,12 +172,13 @@ test('管线消费：attachBookFacts 注入投影事实与术语命中，buildHo
   const units = [mkUnit('Stamp', [{ name: 't', type: 'Timestamp' }]), mkUnit('NoBookSym', [{ name: 'x', type: 'int' }])];
   const n = attachBookFacts(units, books, 'src/user.go');
   assert.equal(n, 1); // NoBookSym 在册上无命中 ⇒ 不注入（不猜）
-  assert.ok(units[0].bookFacts!.some((f) => f.startsWith('src/user.go#Stamp → src/user.ts#Stamp')));
+  assert.ok(units[0].bookFacts!.some((f) => f.startsWith('src/user.go#Stamp → Stamp'))); // ★ 「源 → 目标符号 · 状态」：单串 `to` 退役后不再带目标文件路径（目标文件走 targets.ts.file）
   assert.ok(units[0].bookFacts!.some((f) => f.includes('术语 Timestamp → number (ms)')));
 
   const prompt = buildHolePrompt(units[0] as never);
   assert.match(prompt, /【翻译 DB 投影与术语表（按图索骥，优先照此映射）】/);
-  assert.match(prompt, /- src\/user\.go#Stamp → src\/user\.ts#Stamp/);
+  // ★ 单串 `to` 退役后投影行是「源 → 目标符号」（目标文件不进这一行，走 targets.ts.file）
+  assert.match(prompt, /- src\/user\.go#Stamp → Stamp · pending/);
   assert.match(prompt, /- 术语 Timestamp → number \(ms\)/);
   // 无 bookFacts 的单元不渲染该区块（没册子是常态）
   const bare = mkUnit('Bare', []);

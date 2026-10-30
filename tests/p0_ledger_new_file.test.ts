@@ -17,8 +17,40 @@ import { newFileLedgerWarning } from '../src/application/design/ledger_membershi
 import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
 import type { DesignDSL } from '../src/domain/types.js';
 
+/**
+ * ★ 2026-10-30（补前置，不动断言）：2026-10-28 起「重写计划闸」**默认严格档** ⇒ 没有
+ * `plan/<rel>.plan.json` 的写源码请求会**在落盘前被拒**（`write_gate.ts#assertSourceWriteRegistered`）。
+ * 本证要验的是"新建文件未入册"的**警告**，所以必须先把**每一道写门前置**补齐 —— 4 条断言原文一字不改。
+ */
+function writePlan(project: string, rel: string, symbol: string): void {
+  const p = path.join(project, '.agent-io', 'plan', `${rel}.plan.json`);
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(
+    p,
+    JSON.stringify(
+      {
+        path: rel,
+        entries: [
+          { anchor: { symbol }, kind: 'create', detail: `新建 ${symbol}（本证只验入册警告）`, judgement_ref: 'decision:probe_node#0', status: 'open' },
+        ],
+      },
+      null,
+      2,
+    ),
+    'utf-8',
+  );
+}
+
 /** 落一份带 semantic.files 的设计册（source_root 指向给定项目根） */
 function writeSheet(home: string, feature: string, sourceRoot: string, ledgerPaths: string[]): void {
+  // ★ 画布的 judgement_ref 必须能解到一条**语义类**判据（存在类会被计划闸点名为"永远发现不了逻辑错"）：
+  //   这里放一条 call-exists（probe 调 helper），它只用来解开画布，**不参与本证的任何断言**。
+  fs.mkdirSync(path.join(sourceRoot, 'src'), { recursive: true });
+  fs.writeFileSync(
+    path.join(sourceRoot, 'src', 'probe.ts'),
+    'export function helper() { return 1; }\nexport function probe() {\n  return helper();\n}\n',
+    'utf-8',
+  );
   const dsl: DesignDSL = {
     feature,
     title: feature,
@@ -28,6 +60,18 @@ function writeSheet(home: string, feature: string, sourceRoot: string, ledgerPat
         { id: 'svc_1', label: 'svc', type: 'service', x: 0, y: 0 },
         // 文件节点声明豁免：本证只验"入册警告"，不验任务闸（否则在册路径会被任务闸拦下）
         ...ledgerPaths.map((p, i) => ({ id: `f${i}`, label: p, type: 'file', path: p, x: 0, y: 0, gate: 'exempt' as const })),
+        {
+          id: 'probe_node',
+          label: 'probe',
+          type: 'service',
+          x: 0,
+          y: 0,
+          decision: {
+            expectations: [
+              { kind: 'call-exists', path: 'src/probe.ts', symbol: 'probe', target: 'helper', why: '画布锚点：probe 调 helper（存在类判据解不开画布）' },
+            ],
+          },
+        },
       ],
       edges: [],
     },
@@ -47,6 +91,7 @@ test('P0-1 · 新建文件不在册 ⇒ 回执含「新文件未入册」警告�
   try {
     process.env.AGENT_IO_HOME = home;
     writeSheet(home, 'p0ledger', project, ['src/known.ts']);
+    writePlan(project, 'src/brand_new.ts', 'hello');
 
     const r = await editCode({
       project_dir: project,
@@ -72,6 +117,7 @@ test('P0-1 · 路径已在册 ⇒ 不加噪声（回执无警告段）', async (
     process.env.AGENT_IO_HOME = home;
     // 册里先列好这个路径（人已入册，文件此刻才落盘是合法顺序）
     writeSheet(home, 'p0ledger', project, ['src/known.ts']);
+    writePlan(project, 'src/known.ts', 'hello');
 
     const r = await editCode({
       project_dir: project,

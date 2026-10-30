@@ -2,9 +2,12 @@
  * I1 · 第 9 条：face=minimal 档。
  *
  * 判据（寄风批准）：AGENT_IO_MCP_FACE=minimal 只暴露高频 10 项能力（edit_dsl / get_dsl / edit_code /
- * consistency_check / task 系 publish-claim-start-complete / capability_map / index_integrity / pending）。
+ * design_line / task 系 publish-claim-start-complete / capability_map / index_integrity / pending）。
  * 其中 task 系与 pending 分别是 edit_dsl 的 op 与 get_dsl 的 query（非独立工具）⇒ 注册 6 个工具；
  * all / composed 原样保留（兼容）。
+ * ★ 2026-10-30 订正：原第 4 项 `consistency_check` 已于 2026-10-28 退役（整册判据批裁决并入
+ *   `design_line action=judge`，见 docs/RETIRED.md）⇒ 名单这一格换成 `design_line`。
+ *   ★ 断言**一条未弱化**：名字必须真实注册 + `facesOf().unknown` 必须为空（这两条正是抓到这次漂移的那两条）。
  */
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -36,7 +39,9 @@ test('mcpFace：env=minimal ⇒ minimal；all/composed 保留（兼容）', () =
 test('minimal 名单 = 批准的 6 个真实工具名（task 系/pending 由 edit_dsl/get_dsl 承载，不重复列）', () => {
   assert.deepEqual(
     [...MINIMAL_FACE_TOOLS].sort(),
-    ['capability_map', 'consistency_check', 'edit_code', 'edit_dsl', 'get_dsl', 'index_integrity'].sort(),
+    // ★ 2026-10-30：`consistency_check` 已退役（并入 `design_line action=judge`）⇒ 这一格换成 design_line；
+    //   条数仍 6（断言强度不变：每个名字都必须真实注册、facesOf().unknown 必须为空）
+    ['capability_map', 'design_line', 'edit_code', 'edit_dsl', 'get_dsl', 'index_integrity'].sort(),
   );
   const names = new Set(TOOL_DEFS.map((d) => d.name));
   for (const n of MINIMAL_FACE_TOOLS) assert.ok(names.has(n), `minimal 名单里的 ${n} 必须是真实注册工具`);

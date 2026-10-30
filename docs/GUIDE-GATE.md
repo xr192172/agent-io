@@ -2,7 +2,7 @@
 
 > 只有现状。门/判据变了就**改这张表**：不新开文档、不写"为什么"、不记历史。
 
-## 一、`npm run verify` 的 6 道门
+## 一、`npm run verify` 的 10 道门
 
 | # | 门 | 查什么 | 跑什么 | 红了怎么办 |
 |---|---|---|---|---|
@@ -11,7 +11,11 @@
 | 3 | Go 编译 | `observe-lang-go` 全部包 | `go build ./...`（cwd=`observe-lang-go`） | 改 Go 源码；机器没 `go` ⇒ SKIP |
 | 4 | Go 静态检查 | 同上 | `go vet ./...`（cwd=`observe-lang-go`） | 按 vet 报的改；没 `go` ⇒ SKIP |
 | 5 | 实现夹具 | `cardStanding` 五个行为分支（`satisfied` / `work` / `violated` / `blocked` / `unknowable`） | `node scripts/impl-fixture.mjs` | 改实现；**不改夹具的期望值** |
-| 6 | 设计 DB 结构 | `design-db/*.calls.json` 与 `design/*.dsl.json` 的一致性（只读入库文件，不读 `cache.db`）：`//source` 持有者、`requirements`、`requirements_calls` 的调用方与条数、缺/多副本、真冲突 | `node scripts/gen-db-check.mjs` | 重跑 `design_line action=gen-db` 重生成投影；报 `真冲突`（两 feature 对同一文件互斥）⇒ 改设计，重跑修不好 |
+| 6 | domain 五值 | `cardStanding` 五值（`work` / `violated` / `blocked` / `satisfied` / `unknowable`）× 前后态，喂假 Judge（不碰 fs、不建库） | `node certs/t358-domain-five-values-cert.mjs` | 改实现；**不动那张假 Judge**（38 条断言就是它的读数口径） |
+| 7 | 设计 DB 结构 | `design-db/*.calls.json` 与 `design/*.dsl.json` 的一致性（只读入库文件，不读 `cache.db`）：`//source` 持有者、`requirements`、`requirements_calls` 的调用方与条数、缺/多副本、真冲突 | `node scripts/gen-db-check.mjs` | 重跑 `design_line action=gen-db` 重生成投影；报 `真冲突`（两 feature 对同一文件互斥）⇒ 改设计，重跑修不好 |
+| 8 | 两段式领取 | `preparing` 第 5 态 + `prepared_snapshot` 事务：claim 判据空 ⇒ preparing（不是 claimed）· start 删快照+改态同一次落盘 · release/expire 按快照逐字还原 · 存量卡留痕不拦 | `node certs/t360-two-phase-claim-cert.mjs` | 改实现；这四条都是"值"不是"形状"，`tsc` 抓不到 |
+| 9 | 证据选量 | `evidenceFreshness` 四个分桶（valid→skip / stale→rerun / unverifiable→rerun / L1 不复用）+ `verify-changed` 的分区性质 + `--no-reuse` 退回旧行为 | `node certs/t366-evidence-plan-cert.mjs` | 改实现；它挡的是"建了没接"（函数全绿、没人调） |
+| 10 | 测试 | `tests/*.test.ts` **逐个文件真跑**（`node:test` + `tsx`，读源码不读 `dist`），按 TAP 计数判红：失败>0 · **0 个用例被执行** · **任何 `skip`/`todo`** · 0 个测试文件 | `node scripts/run-tests.mjs`（默认全跑；`--filter` 只给内环） | 修失败的断言或实现。**不许 `skip`/`todo` 把门关掉**（那会把"有测试没裁判"重演一遍）；断言已过时 ⇒ 按 `docs/RETIRED.md` 口径退役那一条 |
 
 总门三态：
 
