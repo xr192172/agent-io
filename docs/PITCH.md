@@ -203,7 +203,7 @@ Go 结构体 118 · TS 接口 148 · 同名可比 118
 
 **读数**（`node certs/t460-extractor-parity-cert.mjs`）：
 ```
-可比结构体 116 对 · 语义字段 740 · 分叉 6 条（missing=0 · extra=3 · type-diff=3）
-三类真因：函数类型分组形参未分发 / build tag 变体并集 / 归一化残留
+可比 (file,structure) 116 对 · 语义字段 740 · 分叉 **0**（missing=0 · extra=0 · type-diff=0）
+清零路径：fields 加 file 出处（3 条 build tag 假分叉消失）→ 分组形参语法规范化 → tag 剥除顺序修正（6 → 0）
 ```
 ⇒ 每条分叉都有 `why` + `fix` 任务，账不许变成永久豁免。

@@ -45,6 +45,17 @@ const chk = (ok, label, extra = '') => {
 };
 
 /**
+ * ★ Go 语法规范化：`(a, b T)` ≡ `(a T, b T)`（Go 规范里是同一类型）。
+ *   我们的 extractor 存的是**源码原文**（`func(pattern, brain string)`），
+ *   而 TypeRef 侧已经展开过（`paramRefsFromList` 会把每个名字各出一条）；
+ *   go/types 打印的也是展开形 ⇒ 文本比对必须先把分组形参展开，否则是假分叉。
+ */
+function expandGrouped(_m, names, type) {
+  const list = names.split(',').map((s) => s.trim()).filter(Boolean);
+  return '(' + list.map((n) => `${n} ${type}`).join(', ') + ')';
+}
+
+/**
  * 类型文本归一化：**只留标识符骨架**。
  * 理由：两边（我们的渲染器 vs go/types）排版必然不同（空白 / 分号 / tag 的引号转义），
  * 排版不算实质差异；但**标识符序列**必须一致 ——
@@ -55,9 +66,15 @@ const norm = (t) =>
   String(t ?? '')
     .replace(/github\.com\/[^/]+\/[^./]+\./g, '')
     .replace(/[A-Za-z0-9_./-]+\/([A-Za-z_][A-Za-z0-9_]*)\./g, '$1.')
+    // ★ tag 剥除要按**文本形态**分治（踩过坑：go/types 的 tag 是 "json:\"x\"" 带转义引号，
+    //   直接跑 "[^"]*" 会在转义处**错配**，把 tag 值残留成标识符 ⇒ 假分叉）：
+    //   ① 转义引号 → 单引号占位（避免与 "[^"]*" 打架）② 剥反引号串 ③ 剥双引号串 ④ 剥单引号串
+    .replace(/\\"/g, "'")
     .replace(/`[^`]*`/g, '')
-    .replace(/"[^"]*"/g, '') // 去 tag 值（两边引号转义写法不同）
-    .replace(/json:[^A-Za-z0-9_]+/g, '')
+    .replace(/"[^"]*"/g, '')
+    .replace(/'[^']*'/g, '')
+    .replace(/json\s*:[^A-Za-z0-9_]+/g, '')
+    .replace(/\((\s*[A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)+\s+)([A-Za-z_][\w.[\]*]*)/g, expandGrouped) // ★ Go 语法规范化：分组形参
     .match(/[A-Za-z_][A-Za-z0-9_]*/g)
     ?.join('.') ?? '';
 
