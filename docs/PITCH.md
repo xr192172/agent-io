@@ -207,3 +207,17 @@ Go 结构体 118 · TS 接口 148 · 同名可比 118
 清零路径：fields 加 file 出处（3 条 build tag 假分叉消失）→ 分组形参语法规范化 → tag 剥除顺序修正（6 → 0）
 ```
 ⇒ 每条分叉都有 `why` + `fix` 任务，账不许变成永久豁免。
+
+### 32. 接口契约审计（`t462`）
+
+**卖点**：Go 是**隐式实现**，编译器不会提醒"这个接口没人实现"，也不会提醒"两个接口方法集完全相同"。
+这两类病只能靠事实层查，而它们正好对应两条硬原则：**0 实现 = 死契约**、**方法集重复 = 两处权威**。
+
+**读数**（`node certs/t462-interface-contract-cert.mjs`）：
+```
+接口 16 个 · 问题 3 条（no-impl 2 / duplicate-methodset 1）
+· MemorySource       0 实现（源码自述 Phase 5 reserved）
+· SessionRepository  0 实现（SetSessionRepository 永远拿到 nil）
+· LLMClient ≡ sender 方法集逐字相同（同一行为两处权威）
+```
+★ 16 这个数与**独立只读盘点**（子代理，不看我们的结论）完全一致 ⇒ 交叉验证。

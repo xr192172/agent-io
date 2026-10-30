@@ -14,6 +14,7 @@ import (
 	"go/types"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
@@ -55,6 +56,17 @@ type Func struct {
 	Results []string `json:"results"`
 }
 
+// Iface —— **接口契约账**：接口有哪些方法、谁实现了它。
+//   为什么要有：Go 是**隐式实现**，编译器只在你写了 `var _ I = (*T)(nil)` 时才提醒“没人实现”。
+//   实测病：`SessionRepository` / `MemorySource` 两个接口**零实现**（注释写着 "Phase 5 reserved"），
+//   而 `sender` 与 `LLMClient` **方法集逐字相同**（同一行为的第二处权威）。这些只有靠事实层能查出来。
+type Iface struct {
+	File    string   `json:"file"`
+	Name    string   `json:"name"`
+	Methods []string `json:"methods"`    // 方法名（按名字排序后的列表，用于方法集指纹）
+	Impls   []string `json:"impls"`      // 结构上满足该接口的具名类型（包内 scope 内枚举）
+}
+
 type Out struct {
 	OK          bool         `json:"ok"`
 	Reason      string       `json:"reason,omitempty"`
@@ -64,6 +76,7 @@ type Out struct {
 	Occurrences []Occurrence `json:"occurrences"`
 	Fields      []Field      `json:"fields"`
 	Funcs       []Func       `json:"funcs"`
+	Ifaces      []Iface      `json:"ifaces"`
 }
 
 // symID：稳定符号标识（不用行号）：<pkgpath>.<Name>；字段为 <Recv>.<Member>
@@ -213,6 +226,49 @@ func main() {
 			out.Funcs = append(out.Funcs, f)
 		}
 	}
+	// ⑤ 接口契约：接口方法集 + 实现者（同 scope 内逐个具名类型做 types.Implements）
+	for _, fp := range pkgs {
+		if fp.Types == nil {
+			continue
+		}
+		scope := fp.Types.Scope()
+		for _, n := range scope.Names() {
+			obj := scope.Lookup(n)
+			// ★ 只认**类型声明**：`var ErrX error = ...` 的 underlying 也是 interface ⇒ 会假报成接口
+			//   （实测假报了 ErrEmbedderNotConfigured / errLocalEmbedderRequiresCGO 两个错误变量，
+			//     并连带产出一条假的 duplicate-methodset）。
+			if _, isType := obj.(*types.TypeName); !isType {
+				continue
+			}
+			iface, ok := obj.Type().Underlying().(*types.Interface)
+			if !ok {
+				continue
+			}
+			sig := make([]string, 0, iface.NumMethods())
+			for i := 0; i < iface.NumMethods(); i++ {
+				sig = append(sig, iface.Method(i).Name())
+			}
+			sort.Strings(sig)
+			f := Iface{File: relPath(abs, fp.Fset.Position(obj.Pos()).Filename), Name: n, Methods: sig}
+			for _, tn := range scope.Names() {
+				tobj := scope.Lookup(tn)
+				named, isNamed := tobj.Type().(*types.Named)
+				if !isNamed {
+					continue
+				}
+				// 拿到 *types.Named 就说明是具名类型；不必再判 Kind（*types.TypeName 没有 Kind 方法，踩过）
+				if _, isI := named.Underlying().(*types.Interface); isI {
+					continue
+				}
+				if types.Implements(named, iface) || types.Implements(types.NewPointer(named), iface) {
+					f.Impls = append(f.Impls, tn)
+				}
+			}
+			sort.Strings(f.Impls)
+			out.Ifaces = append(out.Ifaces, f)
+		}
+	}
+
 	emit(out)
 }
 

@@ -67,6 +67,12 @@ interface RawFunc {
   params: RawParam[];
   results: string[];
 }
+interface RawIface {
+  file: string;
+  name: string;
+  methods: string[];
+  impls: string[];
+}
 interface RawOut {
   ok: boolean;
   reason?: string;
@@ -76,6 +82,7 @@ interface RawOut {
   occurrences: RawOccurrence[];
   fields: RawField[];
   funcs: RawFunc[];
+  ifaces?: RawIface[];
 }
 
 // ★ 抽取器是 **Go 源码**（dist 里没有 .go）⇒ 优先查找编译产物同级，回落仓库源码目录
@@ -183,6 +190,7 @@ export function fillSemanticFacts(db: Database, projectRoot: string): SemanticFa
     db.exec('DELETE FROM occurrences');
     db.exec('DELETE FROM fields');
     db.exec('DELETE FROM signatures');
+    db.exec('DELETE FROM contracts');
     for (const o of raw.occurrences ?? []) {
       const fid = idOf.get(String(o.file).replace(/\\/g, '/'));
       if (!fid) continue;
@@ -216,6 +224,13 @@ export function fillSemanticFacts(db: Database, projectRoot: string): SemanticFa
         insSig.run(fn.file ?? '', recv, fn.name, 'decl', 0, null, null);
         sigN++;
       }
+    }
+    // 接口契约账（方法集 + 实现者）
+    const insIface = db.prepare(
+      'INSERT OR REPLACE INTO contracts (file, name, methods, impls) VALUES (?, ?, ?, ?)',
+    );
+    for (const it of raw.ifaces ?? []) {
+      insIface.run(it.file ?? '', it.name, JSON.stringify(it.methods ?? []), JSON.stringify(it.impls ?? []));
     }
     db.exec('COMMIT');
   } catch (e) {

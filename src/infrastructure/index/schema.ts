@@ -264,6 +264,18 @@ CREATE TABLE IF NOT EXISTS signatures (
     PRIMARY KEY (file, structure, name, kind, ordinal)
 );
 
+-- 接口契约账（F2）：接口的方法集与**实现者**。
+--   为什么需要：Go 隐式实现 ⇒ 编译器不提醒「没人实现」；而「方法集完全相同」的两个接口
+--   就是**同一行为的两处权威**（实测：sender ≡ LLMClient）。这两类病只能靠事实层查。
+--   methods / impls 都是**排序后的 JSON 数组** ⇒ 方法集相同的接口指纹相同，可直接分组比对。
+CREATE TABLE IF NOT EXISTS contracts (
+    file TEXT NOT NULL DEFAULT '',
+    name TEXT NOT NULL,
+    methods TEXT NOT NULL,   -- JSON 数组（方法名，已排序）
+    impls TEXT NOT NULL,     -- JSON 数组（结构上满足的具名类型，已排序）
+    PRIMARY KEY (file, name)
+);
+
 -- 向量缓存（持久层）：model:sha256(文本) → 向量。跨进程重启存活，
 -- 符号文本+模型不变直接查表，重启后首个语义查询不再全量 embed。
 -- 纯新增派生数据，不参与 schema_versions 清库迁移（旧库 IF NOT EXISTS 自动补建）。
