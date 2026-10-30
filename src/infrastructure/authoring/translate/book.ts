@@ -1007,6 +1007,24 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
     }
 
     // ★ 上游轴心（若存在）：一份中立事实，供本目标语言册子**投影**
+    /**
+     * ★ T-#BOOK-FIELDS：结构体字段的**语义事实**（`fields` 表：structure/name/ordinal/type/json_tag/embedded）。
+     *   表不存在（老库）⇒ 空表，不报错、不猜。
+     */
+    const semanticFields = new Map<string, Array<{ name: string; type: string; ordinal: number; jsonTag: string | null; embedded: boolean }>>();
+    try {
+      const rows = db
+        .prepare('SELECT structure, name, ordinal, type, json_tag, embedded FROM fields ORDER BY structure, ordinal')
+        .all() as Array<{ structure: string; name: string; ordinal: number; type: string; json_tag: string | null; embedded: number }>;
+      for (const r of rows) {
+        const arr = semanticFields.get(r.structure) ?? [];
+        arr.push({ name: r.name, type: r.type, ordinal: r.ordinal, jsonTag: r.json_tag, embedded: !!r.embedded });
+        semanticFields.set(r.structure, arr);
+      }
+    } catch {
+      /* 老库没有 fields 表 ⇒ 空表 */
+    }
+
     const pivotUpstream: Record<string, unknown> = (() => {
       try {
         const p = opts.bookPath.replace(/\.translate\.json$/, '.pivot.json');
@@ -1100,6 +1118,10 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
         note: prev?.note && !prev.note.startsWith(AUTO_TAG) ? prev.note : auto,
         // ★ 源侧事实原样投影（不判断、不改写）：漏了就是漏了，没有对账会静默
         sig: row.signature ?? null,
+        // ★★★ T-#BOOK-FIELDS（2026-10-30）：**字段级事实进册子**（来自语义层 `fields` 表，不是 AST 文本）。
+        //   为什么：册子原来只有符号级 `sig`；字段（名/顺序/json tag/是否嵌入/**精确类型**）只有 AST 有，
+        //   而语义层（go/packages）给的字段是**类型检查后**的真相 ⇒ 骨架与填空 prompt 都应吃这份。
+        ...(semanticFields.has(row.name) ? { fields: semanticFields.get(row.name) } : {}),
         // ★★★ 2026-10-29：**`sigTs` 也是派生事实，重算不该抹掉它**。
         //   它由 `fillBookTsSignatures` 从 AST 算出；本函数只从 cache.db 投影，算不出来。
         //   不回填的后果实测：册子 792 符号 `sigTs` 归零 ⇒ 骨架"册子出的签名" 92.5% → 0%
