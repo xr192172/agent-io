@@ -250,7 +250,8 @@ CREATE TABLE IF NOT EXISTS fields (
 );
 
 -- 函数/方法签名账（F2 扩面）：一个形参/返回值一行，便于逐位对拍。
---   kind = param | result；ordinal = 位置（0 起）；param_name 对 result 通常为空。
+--   kind = param | result | decl；ordinal = 位置（0 起）；param_name 对 result 通常为空。
+--   ★ kind='decl' 是**零形参零返回值**函数的存在足迹（否则它一行都不插 ⇒ 整条签名从库里消失）。
 --   structure = 接收者类型名（'' = 普通函数）；file = 出处（同名方法在不同文件/变体里靠它区分）。
 CREATE TABLE IF NOT EXISTS signatures (
     file TEXT NOT NULL DEFAULT '',

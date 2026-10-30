@@ -208,6 +208,14 @@ export function fillSemanticFacts(db: Database, projectRoot: string): SemanticFa
         insSig.run(fn.file ?? '', recv, fn.name, 'result', i, null, t ?? null);
         sigN++;
       });
+      // ★★★ 零形参 + 零返回值的函数必须留一行『存在』足迹（kind='decl'）。
+      //   否则它**一行都不插** ⇒ 整个签名从库里消失 ⇒ 对拍报 missing-func。
+      //   实测踩坑：`func (gw *GraphWriter) Stop()`、`func main()`、`func Vocabulary()` 全都“凭空消失”，
+      //   而 gofacts 的 JSON 里明明有（633 个 funcs / 3 个 Stop）⇒ 问题在**落库**不在抽取。
+      if ((fn.params ?? []).length === 0 && (fn.results ?? []).length === 0) {
+        insSig.run(fn.file ?? '', recv, fn.name, 'decl', 0, null, null);
+        sigN++;
+      }
     }
     db.exec('COMMIT');
   } catch (e) {

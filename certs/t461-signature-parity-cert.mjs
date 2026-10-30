@@ -107,7 +107,9 @@ try {
       const k = `${r.file}::${r.structure}::${r.name}`;
       if (!sem.has(k)) sem.set(k, { params: [], results: [], struct: r.structure, name: r.name });
       const v = sem.get(k);
-      (r.kind === 'param' ? v.params : v.results).push({ name: r.param_name ?? '', type: r.type ?? '' });
+      // ★ kind='decl' 只是「零形参零返回值」的**存在足迹**，不能塞进 results（塞了会报 result-count 假分叉）。
+      if (r.kind === 'param') v.params.push({ name: r.param_name ?? '', type: r.type ?? '' });
+      else if (r.kind === 'result') v.results.push({ name: '', type: r.type ?? '' });
     }
 
     // 右：我们的 extractor
@@ -195,7 +197,7 @@ function classifySource(dir, files) {
     for (const m of txt.matchAll(/^type\s+([A-Za-z_]\w*)/gm)) typeNames.add(m[1]);
     for (const m of txt.matchAll(/^(?:var|const)\s+([A-Za-z_]\w*)/gm)) varConst.add(m[1]);
     // ★ 分组声明 `type (` / `const (` / `var (` 里的成员（单条正则抓不到 ⇒ 假 unknown）
-    for (const blk of txt.matchAll(/^(type|var|const)\s*\(([\s\S]*?)\n\)/gm)) {
+    for (const blk of txt.matchAll(/^(type|var|const)\s*\(([\s\S]*?)^\)/gm)) {
       for (const m of blk[2].matchAll(/^\s*([A-Za-z_]\w*)/gm)) {
         (blk[1] === 'type' ? typeNames : varConst).add(m[1]);
       }
@@ -220,6 +222,8 @@ const categorize = (d) => {
   }
   if (d.kind === 'extra-func') {
     if (srcIndex.buildTagFiles.has(d.key.split('::')[0])) return 'build-tag-variant';
+    // ★ 我们有、go/types 的 Defs 里没有的**接口方法**（interface 里声明的方法不是包级函数声明）
+    if (srcIndex.ifaceMethods.has(name)) return 'interface-method(ours-only)';
     if (srcIndex.typeNames.has(name)) return 'non-func-decl(type)';
     if (srcIndex.varConst.has(name)) return 'non-func-decl(var/const)';
     return 'unknown-extra';
