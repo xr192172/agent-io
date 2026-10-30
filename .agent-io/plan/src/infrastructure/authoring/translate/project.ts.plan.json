@@ -84,7 +84,7 @@
     "relToStd": "2aa582445d0ce836d424344c38b61d8decb2e90b",
     "localTypeNamesOf": "ec41fec2deafc6e53ec3ac37e191070adb64c5cf",
     "translatorFingerprint": "7d96273fa67222debb4976c4f50c1393b6bf5f85",
-    "assembleModule": "22a7beff661ea87639b548ba004cab543ba2cc07",
+    "assembleModule": "a714fd8934dfc4d18ac706ba9913772f18e15aa3",
     "buildReport": "d1add5fa078cfea725b0ee6936934e3f593f9a7a",
     "writeReport": "e5deee0716f0696f38e59223863340179d7aa4a9",
     "buildTypesMap": "d66a574518432e3a7ab10c01f92b964ac3e4755d",
@@ -93,10 +93,10 @@
     "buildProjectCallNote": "1daf60777b95e9cc6026c89a7de6fb25e96a9c78",
     "clusterKeyFor": "976676c2573d3cad709243feac5215ec1d076c0e",
     "verifyProjectTree": "7db0ccffdbf4c210a40e97dacc8f94fe697a61bc",
-    "translateGoProject": "75eec36d756cce81b91eb207df0d0be41af801d8"
+    "translateGoProject": "8327cac0f59a76cbd2ed34e73d3757776e5aa50b"
   },
-  "frozen_at": "2026-10-30T05:36:17.230Z",
+  "frozen_at": "2026-10-30T05:42:39.270Z",
   "base": {
-    "content_hash": "d017044a68810db769449047d36f5c6b2ecf97c0"
+    "content_hash": "edcf7fdda5dd262ba5b3a3ce0c5c3b0045560728"
   }
 }

@@ -37,6 +37,13 @@ import { attachBookFacts, loadTranslateBooks, type TranslateBook } from './book.
  *   之间没有现成通道；而这些名字又必须进导入表（否则 TS2304）。挂在模块对象上最省事且不污染契约。
  */
 const INTRODUCED_BY_MODULE = new WeakMap<object, Set<string>>();
+
+/**
+ * ★ T-#PKG-BARREL：本次翻译里**所有产出目录**（相对路径，如 `logging` / `cmd/memoryd`）。
+ *   用途：判断某个 Go 包名是不是"我们自己也在翻译的仓内包" ⇒ 该 `import * as pkg from '<dir>/index'`。
+ *   为什么用模块级集合：导入装配在 `assembleModule` 里，`modules` 数组不在其作用域（踩过 TS2552）。
+ */
+const PKG_DIRS = new Set<string>();
 import { findBookSymbol, skeletonFromSigTs } from './book_ts.js';
 import type { SkippedDecl } from './go_extractor.js';
 import { parseFileFull } from '../../parse/index.js';
@@ -370,9 +377,29 @@ function assembleModule(
     }
   }
 
+  // ★★★ T-#PKG-BARREL（2026-10-30）：**体内的包级调用也要算进 `usedPkgs`**。
+  //   病灶：`logging.Error("memory:builder", …)` 是 Go 的**包级调用**，产物原样保留 ⇒ 需要
+  //   `import * as logging from './logging/index'`。而 `usedPkgs` 原来只收**类型位置**的限定名 +
+  //   `u.usedQualified`（也没覆盖到体内包调用）⇒ 90 条 `Cannot find name 'logging'`。
+  //   判据：正文里出现 `小写标识符.` 且该标识符**正好是本仓某个产出目录名** ⇒ 是包名（不是局部变量）。
+  for (const mt of body.matchAll(/\b([a-z][a-z0-9_]{1,20})\./g)) {
+    const p = mt[1];
+    if ([...PKG_DIRS].some((d) => d === p || d.endsWith('/' + p))) usedPkgs.add(p);
+  }
+
   const depImports: string[] = [];
   const missing: string[] = [];
   for (const pkg of [...usedPkgs].sort()) {
+    // ★★★ T-#PKG-BARREL 修正（2026-10-30）：**仓内包判断必须放在最前**。
+    //   病灶：册子把 `logging` 记成"外部依赖"且 `target` 为空 ⇒ 走 `if (dep) { if (!dep.target) continue; }`
+    //   ⇒ 直接跳过、永不 import（实测 `Cannot find name 'logging'` ×90）。
+    //   但 `logging` 是**我们自己也在翻译的仓内包**（产出目录里有 `logging/`）⇒ 它根本不是外部依赖，
+    //   应该是 `import * as logging from './logging/index'`（桶）。
+    const inRepoDir = [...PKG_DIRS].find((d) => d === pkg || d.endsWith('/' + pkg));
+    if (inRepoDir) {
+      depImports.push(`import * as ${pkg} from '${relImportPath(m.tsRel, `${inRepoDir}/index`)}';`);
+      continue;
+    }
     const dep = depTable.get(pkg);
     if (dep) {
       if (dep.target === '') continue; // 同包 / 内建：不需要 import
@@ -393,9 +420,16 @@ function assembleModule(
       depImports.push(`import * as ${pkg} from '${relToStd(m.tsRel, `_go_std/${pkg}`)}';`);
       continue;
     }
-    missing.push(pkg);
-  }
-  if (missing.length) {
+      // ★★★ T-#PKG-BARREL（2026-10-30）：**仓内包**（我们也在翻译它）也要能 `import *`。
+      //   病灶：`logging.Warn(...)` 里的 `logging` 是 Go 包（`github.com/jifeng/agent-memory/logging`），
+      //   它既不在 `depTable`（那是第三方依赖）也不是 stdlib ⇒ 只进 `missing` 诊断、**不生成 import**
+      //   ⇒ 产物 `Cannot find name 'logging'` ×90（630 条里的第 1 大簇）。
+      //   语义差：Go 的**包 = 命名空间**（一个目录 N 个文件共享）；TS 的模块 = 文件。
+      //   所以结构上缺一件东西：**barrel**（`<pkg>/index.ts` 桶文件）。桶在落盘段生成，这里只引用它。
+      // （仓内包已在循环开头处理掉，见上）
+      missing.push(pkg);
+    }
+    if (missing.length) {
     diag.push(`${m.rel}: 外部包未定目标模块且无适配器（**不生成 any 垫片**）：${[...new Set(missing)].join(', ')}`);
   }
 
@@ -1047,6 +1081,11 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
   const refStats = { rewrites: 0, unknown: 0, samples: [] as string[] };
   // ★ T-#STD-ADAPTER：本次用到的 Go std 适配模块（pkg → 源码），随后落盘到 <outDir>/_go_std/
   const adaptersToWrite = new Map<string, string>();
+  PKG_DIRS.clear();
+  for (const m of modules) {
+    const cut = m.tsRel.lastIndexOf('/');
+    if (cut > 0) PKG_DIRS.add(m.tsRel.slice(0, cut));
+  }
   for (const m of modules) assembleModule(m, depTable, adaptersToWrite, methodIndex, returnTypes, refStats, diagnostics);
   // ★★★ T-#BODY-CROSS-IMPORT（2026-10-30）：**改写后补 import**。
   //   为什么必须在改写**之后**：导入表原本由改写前的 AST（`callRefsRaw`）算，
@@ -1151,6 +1190,35 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
       // ★ 裸调留在此处（**不搬**，2026-10-22 分类收口）：`outAbs` = `opts.outDir/<tsRel>`（调用方指定的生成物目录）
       //   ⇒ 归主体 = 产物（翻译出的 TS），不是用户源码 ⇒ 不过闸。
       fs.writeFileSync(outAbs, m.ts, 'utf-8');
+    }
+
+    // ★★★ T-#PKG-BARREL：为每个**含模块的目录**写一个 barrel（`index.ts`）——
+    //   把 Go 的"一个包 = 一个命名空间"映射成 TS 的"一个目录 = 一个桶"。
+    //   没有它，`import * as logging from './logging/index'` 无处可指（实测 `logging` 缺名 ×90）。
+    {
+      const byDir = new Map<string, string[]>();
+      for (const mm of modules) {
+        const dir = mm.tsRel.includes('/') ? mm.tsRel.slice(0, mm.tsRel.lastIndexOf('/')) : '';
+        if (!dir) continue;
+        const stem = mm.tsRel.slice(dir.length + 1).replace(/\.ts$/, '');
+        const arr = byDir.get(dir) ?? [];
+        arr.push(stem);
+        byDir.set(dir, arr);
+      }
+      let barrels = 0;
+      for (const [dir, stems] of byDir) {
+        if (stems.includes('index')) continue; // 目录里已有 index.ts ⇒ 它就是桶，别覆盖
+        const abs = path.join(path.resolve(opts.outDir), dir, 'index.ts');
+        if (fs.existsSync(abs)) continue;
+        const body = stems.sort().map((s) => `export * from './${s}';`).join('\n');
+        fs.writeFileSync(
+          abs,
+          `// Go 包 ${dir} 的桶（barrel）· T-#PKG-BARREL：Go 的包命名空间在 TS 没有对应物，用桶顶\n${body}\n`,
+          'utf-8',
+        );
+        barrels++;
+      }
+      if (barrels) diagnostics.push(`生成包桶 ${barrels} 个（Go 包 → TS barrel）`);
     }
 
     // ★★★ 2026-10-29（T-#TSC-DRIVEN-FIX 步 2）：**管线内**后处理 —— 必须在这里，
