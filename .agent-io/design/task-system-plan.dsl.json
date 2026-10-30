@@ -5136,288 +5136,6 @@
         "path": "src/application/design/dsl_ops/edit_result.ts"
       },
       {
-        "id": "file_src_application_design_dsl_ops_feature_ops_ts",
-        "label": "feature_ops.ts",
-        "x": 12760,
-        "y": 10988,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core",
-        "decision": {
-          "summary": "feature 级生命周期原语：`createFeature` 造一份空骨架、`cloneFeature` 整份深拷贝成新 feature。★ 它只负责\"开一张空白图纸 / 复制一张图纸\"：**不填内容**（节点 / 边 / 语义由 dsl_ops 其它 op 写）、**不判 DSL 结构合法性**（validator 的事）、**不落进度**（新建读作 `draft` 是 `resolveDiagramStatus` 的读侧默认，不是写进 base 的值）。",
-          "expectations": [
-            {
-              "kind": "file-exists",
-              "path": "src/application/design/dsl_ops/feature_ops.ts",
-              "why": "动作要有落点（基线）"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/application/design/dsl_ops/feature_ops.ts",
-              "symbol": "createFeature",
-              "why": "新建 feature 的唯一入口"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/application/design/dsl_ops/feature_ops.ts",
-              "symbol": "cloneFeature",
-              "why": "克隆入口（★ 返回形状是 CloneFeatureResult，不是 EditResult）"
-            },
-            {
-              "kind": "run",
-              "input": {
-                "id": "feature_demo",
-                "type": "feature_diagram",
-                "feature": "demo",
-                "version": "1.0.0",
-                "title": "demo",
-                "geometry": {
-                  "layout": "vertical_flow",
-                  "width": 800,
-                  "height": 600,
-                  "nodes": [],
-                  "edges": []
-                },
-                "semantic": {
-                  "files": [],
-                  "multi_file_invariants": []
-                },
-                "annotations": []
-              },
-              "expect": "validateDSL(input).valid === true",
-              "why": "★ createFeature 的产出就是这份骨架 —— 它必须**自己合法**（schema 认空图）。这条把\"骨架形状\"从注释变成可判事实"
-            },
-            {
-              "kind": "run",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/feature_ops.ts'), 'utf8'); return s.split('/^[a-zA-Z0-9_-]+$/').length - 1 === 2 && s.includes(\"'feature_' + target_feature\"); })()",
-              "why": "★ 两件事：名字闸必须**两条路径都有**（create 与 clone 同一把尺，出现 2 次），且 clone 必须**重写 id** —— 漏了就把副本写成同一个 id"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/application/design/dsl_ops/feature_ops.ts",
-              "symbol": "CloneFeatureInput",
-              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/application/design/dsl_ops/feature_ops.ts",
-              "symbol": "CloneFeatureResult",
-              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/application/design/dsl_ops/feature_ops.ts",
-              "symbol": "CreateFeatureInput",
-              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
-            }
-          ],
-          "acceptance": "`feature` / `target_feature` 不匹配 `^[a-zA-Z0-9_-]+$` 或已存在 ⇒ 抛错（两条路径同一把尺）；`createFeature` 产出的骨架能过 `validateDSL`（valid===true —— 空图本身合法）；`cloneFeature` 把 `id` 重写为 `feature_<target>`、`feature` 改名、无 title 时标题追加 `(副本)`，且是深拷贝（改副本不回写源）。",
-          "updated_at": "2026-10-19T01:47:19.634Z",
-          "agent": "all-externalize"
-        },
-        "decision_history": [
-          {
-            "at": "2026-10-19T01:47:19.561Z",
-            "decision": {
-              "summary": "feature 级生命周期原语：`createFeature` 造一份空骨架、`cloneFeature` 整份深拷贝成新 feature。★ 它只负责\"开一张空白图纸 / 复制一张图纸\"：**不填内容**（节点 / 边 / 语义由 dsl_ops 其它 op 写）、**不判 DSL 结构合法性**（validator 的事）、**不落进度**（新建读作 `draft` 是 `resolveDiagramStatus` 的读侧默认，不是写进 base 的值）。",
-              "expectations": [
-                {
-                  "kind": "file-exists",
-                  "path": "src/application/design/dsl_ops/feature_ops.ts",
-                  "why": "动作要有落点（基线）"
-                },
-                {
-                  "kind": "symbol-exists",
-                  "path": "src/application/design/dsl_ops/feature_ops.ts",
-                  "symbol": "createFeature",
-                  "why": "新建 feature 的唯一入口"
-                },
-                {
-                  "kind": "symbol-exists",
-                  "path": "src/application/design/dsl_ops/feature_ops.ts",
-                  "symbol": "cloneFeature",
-                  "why": "克隆入口（★ 返回形状是 CloneFeatureResult，不是 EditResult）"
-                },
-                {
-                  "kind": "run",
-                  "input": {
-                    "id": "feature_demo",
-                    "type": "feature_diagram",
-                    "feature": "demo",
-                    "version": "1.0.0",
-                    "title": "demo",
-                    "geometry": {
-                      "layout": "vertical_flow",
-                      "width": 800,
-                      "height": 600,
-                      "nodes": [],
-                      "edges": []
-                    },
-                    "semantic": {
-                      "files": [],
-                      "multi_file_invariants": []
-                    },
-                    "annotations": []
-                  },
-                  "expect": "validateDSL(input).valid === true",
-                  "why": "★ createFeature 的产出就是这份骨架 —— 它必须**自己合法**（schema 认空图）。这条把\"骨架形状\"从注释变成可判事实"
-                },
-                {
-                  "kind": "run",
-                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/feature_ops.ts'), 'utf8'); return s.split('/^[a-zA-Z0-9_-]+$/').length - 1 === 2 && s.includes(\"'feature_' + target_feature\"); })()",
-                  "why": "★ 两件事：名字闸必须**两条路径都有**（create 与 clone 同一把尺，出现 2 次），且 clone 必须**重写 id** —— 漏了就把副本写成同一个 id"
-                }
-              ],
-              "acceptance": "`feature` / `target_feature` 不匹配 `^[a-zA-Z0-9_-]+$` 或已存在 ⇒ 抛错（两条路径同一把尺）；`createFeature` 产出的骨架能过 `validateDSL`（valid===true —— 空图本身合法）；`cloneFeature` 把 `id` 重写为 `feature_<target>`、`feature` 改名、无 title 时标题追加 `(副本)`，且是深拷贝（改副本不回写源）。",
-              "updated_at": "2026-10-19T00:39:02.212Z",
-              "agent": "design-filler"
-            },
-            "agent": "all-externalize"
-          },
-          {
-            "at": "2026-10-19T01:47:19.597Z",
-            "decision": {
-              "summary": "feature 级生命周期原语：`createFeature` 造一份空骨架、`cloneFeature` 整份深拷贝成新 feature。★ 它只负责\"开一张空白图纸 / 复制一张图纸\"：**不填内容**（节点 / 边 / 语义由 dsl_ops 其它 op 写）、**不判 DSL 结构合法性**（validator 的事）、**不落进度**（新建读作 `draft` 是 `resolveDiagramStatus` 的读侧默认，不是写进 base 的值）。",
-              "expectations": [
-                {
-                  "kind": "file-exists",
-                  "path": "src/application/design/dsl_ops/feature_ops.ts",
-                  "why": "动作要有落点（基线）"
-                },
-                {
-                  "kind": "symbol-exists",
-                  "path": "src/application/design/dsl_ops/feature_ops.ts",
-                  "symbol": "createFeature",
-                  "why": "新建 feature 的唯一入口"
-                },
-                {
-                  "kind": "symbol-exists",
-                  "path": "src/application/design/dsl_ops/feature_ops.ts",
-                  "symbol": "cloneFeature",
-                  "why": "克隆入口（★ 返回形状是 CloneFeatureResult，不是 EditResult）"
-                },
-                {
-                  "kind": "run",
-                  "input": {
-                    "id": "feature_demo",
-                    "type": "feature_diagram",
-                    "feature": "demo",
-                    "version": "1.0.0",
-                    "title": "demo",
-                    "geometry": {
-                      "layout": "vertical_flow",
-                      "width": 800,
-                      "height": 600,
-                      "nodes": [],
-                      "edges": []
-                    },
-                    "semantic": {
-                      "files": [],
-                      "multi_file_invariants": []
-                    },
-                    "annotations": []
-                  },
-                  "expect": "validateDSL(input).valid === true",
-                  "why": "★ createFeature 的产出就是这份骨架 —— 它必须**自己合法**（schema 认空图）。这条把\"骨架形状\"从注释变成可判事实"
-                },
-                {
-                  "kind": "run",
-                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/feature_ops.ts'), 'utf8'); return s.split('/^[a-zA-Z0-9_-]+$/').length - 1 === 2 && s.includes(\"'feature_' + target_feature\"); })()",
-                  "why": "★ 两件事：名字闸必须**两条路径都有**（create 与 clone 同一把尺，出现 2 次），且 clone 必须**重写 id** —— 漏了就把副本写成同一个 id"
-                },
-                {
-                  "kind": "symbol-exists",
-                  "path": "src/application/design/dsl_ops/feature_ops.ts",
-                  "symbol": "CloneFeatureInput",
-                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
-                }
-              ],
-              "acceptance": "`feature` / `target_feature` 不匹配 `^[a-zA-Z0-9_-]+$` 或已存在 ⇒ 抛错（两条路径同一把尺）；`createFeature` 产出的骨架能过 `validateDSL`（valid===true —— 空图本身合法）；`cloneFeature` 把 `id` 重写为 `feature_<target>`、`feature` 改名、无 title 时标题追加 `(副本)`，且是深拷贝（改副本不回写源）。",
-              "updated_at": "2026-10-19T01:47:19.561Z",
-              "agent": "all-externalize"
-            },
-            "agent": "all-externalize"
-          },
-          {
-            "at": "2026-10-19T01:47:19.634Z",
-            "decision": {
-              "summary": "feature 级生命周期原语：`createFeature` 造一份空骨架、`cloneFeature` 整份深拷贝成新 feature。★ 它只负责\"开一张空白图纸 / 复制一张图纸\"：**不填内容**（节点 / 边 / 语义由 dsl_ops 其它 op 写）、**不判 DSL 结构合法性**（validator 的事）、**不落进度**（新建读作 `draft` 是 `resolveDiagramStatus` 的读侧默认，不是写进 base 的值）。",
-              "expectations": [
-                {
-                  "kind": "file-exists",
-                  "path": "src/application/design/dsl_ops/feature_ops.ts",
-                  "why": "动作要有落点（基线）"
-                },
-                {
-                  "kind": "symbol-exists",
-                  "path": "src/application/design/dsl_ops/feature_ops.ts",
-                  "symbol": "createFeature",
-                  "why": "新建 feature 的唯一入口"
-                },
-                {
-                  "kind": "symbol-exists",
-                  "path": "src/application/design/dsl_ops/feature_ops.ts",
-                  "symbol": "cloneFeature",
-                  "why": "克隆入口（★ 返回形状是 CloneFeatureResult，不是 EditResult）"
-                },
-                {
-                  "kind": "run",
-                  "input": {
-                    "id": "feature_demo",
-                    "type": "feature_diagram",
-                    "feature": "demo",
-                    "version": "1.0.0",
-                    "title": "demo",
-                    "geometry": {
-                      "layout": "vertical_flow",
-                      "width": 800,
-                      "height": 600,
-                      "nodes": [],
-                      "edges": []
-                    },
-                    "semantic": {
-                      "files": [],
-                      "multi_file_invariants": []
-                    },
-                    "annotations": []
-                  },
-                  "expect": "validateDSL(input).valid === true",
-                  "why": "★ createFeature 的产出就是这份骨架 —— 它必须**自己合法**（schema 认空图）。这条把\"骨架形状\"从注释变成可判事实"
-                },
-                {
-                  "kind": "run",
-                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/feature_ops.ts'), 'utf8'); return s.split('/^[a-zA-Z0-9_-]+$/').length - 1 === 2 && s.includes(\"'feature_' + target_feature\"); })()",
-                  "why": "★ 两件事：名字闸必须**两条路径都有**（create 与 clone 同一把尺，出现 2 次），且 clone 必须**重写 id** —— 漏了就把副本写成同一个 id"
-                },
-                {
-                  "kind": "symbol-exists",
-                  "path": "src/application/design/dsl_ops/feature_ops.ts",
-                  "symbol": "CloneFeatureInput",
-                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
-                },
-                {
-                  "kind": "symbol-exists",
-                  "path": "src/application/design/dsl_ops/feature_ops.ts",
-                  "symbol": "CloneFeatureResult",
-                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
-                }
-              ],
-              "acceptance": "`feature` / `target_feature` 不匹配 `^[a-zA-Z0-9_-]+$` 或已存在 ⇒ 抛错（两条路径同一把尺）；`createFeature` 产出的骨架能过 `validateDSL`（valid===true —— 空图本身合法）；`cloneFeature` 把 `id` 重写为 `feature_<target>`、`feature` 改名、无 title 时标题追加 `(副本)`，且是深拷贝（改副本不回写源）。",
-              "updated_at": "2026-10-19T01:47:19.597Z",
-              "agent": "all-externalize"
-            },
-            "agent": "all-externalize"
-          }
-        ],
-        "path": "src/application/design/dsl_ops/feature_ops.ts"
-      },
-      {
         "id": "file_src_application_design_dsl_ops_file_ops_ts",
         "label": "file_ops.ts",
         "x": 13460,
@@ -19100,23 +18818,15 @@
                 "start_index"
               ],
               "why": "★ 必须真的用 span（现在该文件里 start_index 出现 0 次）"
-            },
-            {
-              "kind": "source-has",
-              "path": "src/application/refactor/edit/remove_dead_imports.ts",
-              "must": [
-                "\\r?\\n"
-              ],
-              "why": "★ end_index 不含结尾换行 ⇒ 删整句必须自己吃掉一个 \\r?\\n（子代理实测）"
             }
           ],
           "rationale": "今天把 `imports` 的 span 补全到 100%（`.ts` 1731/1731）。子代理实测三条约束：① 偏移是 **UTF-16 码元**，JS `slice` 直接可用（29 条逐条验证零不符）；② **`end_index` 不含结尾换行** ⇒ 删整句要自己吃掉一个 `\\r?\\n`；③ **准入判据按文件**（污染是按文件全有/全无，mixed=0）：该文件所有 import 行都有 span 才用，否则退回文本判据。★ 这是今天第二次「体检修正」的落点：`find_references` / `field_refs` 本来就是「正则定位 + AST 分类」，只有这一个文件是**真·纯正则**。",
           "consequences": "① 删 import 不再需要 8 种形态的正则（一个 `[si, ei)` 切全吃）；② 必须保留**文本兜底**（没有 span 的文件）；③ ★ 这是**改代码**的工具，风险最高 —— 任何删除都要有「删了什么」的回执（路径 + 行号 + 原句）。",
           "acceptance": "对至少 3 个真实文件跑一遍：删掉的 import 与旧实现**完全一致**（逐条对比 `source` + 行号）；没有 span 的文件走兜底且不报错；删完的文件能被 `npx tsc` 解析（语法没坏）。",
           "status": "active",
-          "updated_at": "2026-10-20T01:55:37.846Z",
+          "updated_at": "2026-10-30T19:09:46.554Z",
           "author": "llm",
-          "agent": "workbuddy"
+          "agent": "subagent:clear-reds"
         },
         "task": {
           "id": "file_src_application_refactor_edit_remove_dead_imports_ts",
@@ -19149,7 +18859,42 @@
             "unsupported": 0
           }
         },
-        "path": "src/application/refactor/edit/remove_dead_imports.ts"
+        "path": "src/application/refactor/edit/remove_dead_imports.ts",
+        "decision_history": [
+          {
+            "at": "2026-10-30T19:09:46.554Z",
+            "decision": {
+              "summary": "删死 import 的**定位**改用 `cache.db` 的 `imports.start_index / end_index`（整句 span），不再用 9 条正则去猜 8 种 import 形态（`import {}` / `import type {}` / `import X` / `import \"x\"` / `export * from` / `export {} from` / `const x = require` / 行首判定）。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/edit/remove_dead_imports.ts",
+                  "must": [
+                    "start_index"
+                  ],
+                  "why": "★ 必须真的用 span（现在该文件里 start_index 出现 0 次）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/edit/remove_dead_imports.ts",
+                  "must": [
+                    "\\r?\\n"
+                  ],
+                  "why": "★ end_index 不含结尾换行 ⇒ 删整句必须自己吃掉一个 \\r?\\n（子代理实测）"
+                }
+              ],
+              "rationale": "今天把 `imports` 的 span 补全到 100%（`.ts` 1731/1731）。子代理实测三条约束：① 偏移是 **UTF-16 码元**，JS `slice` 直接可用（29 条逐条验证零不符）；② **`end_index` 不含结尾换行** ⇒ 删整句要自己吃掉一个 `\\r?\\n`；③ **准入判据按文件**（污染是按文件全有/全无，mixed=0）：该文件所有 import 行都有 span 才用，否则退回文本判据。★ 这是今天第二次「体检修正」的落点：`find_references` / `field_refs` 本来就是「正则定位 + AST 分类」，只有这一个文件是**真·纯正则**。",
+              "consequences": "① 删 import 不再需要 8 种形态的正则（一个 `[si, ei)` 切全吃）；② 必须保留**文本兜底**（没有 span 的文件）；③ ★ 这是**改代码**的工具，风险最高 —— 任何删除都要有「删了什么」的回执（路径 + 行号 + 原句）。",
+              "acceptance": "对至少 3 个真实文件跑一遍：删掉的 import 与旧实现**完全一致**（逐条对比 `source` + 行号）；没有 span 的文件走兜底且不报错；删完的文件能被 `npx tsc` 解析（语法没坏）。",
+              "status": "active",
+              "updated_at": "2026-10-20T01:55:37.846Z",
+              "author": "llm",
+              "agent": "workbuddy"
+            },
+            "note": "清 task-system-plan 册里 5 条恒红/写错的 source-has 判据 + 1 个文件已物理删除的节点：① file_src_application_design_dsl_ops_feature_ops_ts 的 src/application/design/dsl_ops/feature_ops.ts 已被 3a063f2e 删除（docs/RETIRED.md:53），整节点下线（含其 7 条判据，其中 1 条 run 指向不存在的文件）；② remove_dead_imports.ts 的 must[\"\\\\r?\\\\n\"] 只出现在注释里，expectation_kinds.ts#matchSourceHas 匹配前剥注释 ⇒ 结构性恒红；③ rewrite.ts 的 must[\"落盘后\"] 4 处全在注释；④ gen_design_db.ts 的 reverse_calls/reverseByFile 已于 2026-10-28 显式删除（同文件 L407 自述）；⑤ project_task-system-plan 的 recordTaskHistory 真身在 dsl_ops/task_ops.ts 与 infrastructure/task_history.ts（不在 intent/expectations.ts）⇒ must 收窄成 judgeExpectations；PROJECT_KINDS 在 src 从未实现（git grep 只命中 .agent-io/design/task-system-plan.dsl.json）",
+            "agent": "subagent:clear-reds"
+          }
+        ]
       },
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
@@ -56737,15 +56482,6 @@
             {
               "kind": "source-has",
               "must": [
-                "reverse_calls",
-                "reverseByFile"
-              ],
-              "path": "src/application/design/db/gen_design_db.ts",
-              "why": "反向调用投影的两个关键写法：reverseByFile 索引（一次性建）+ reverse_calls 字段落进投影"
-            },
-            {
-              "kind": "source-has",
-              "must": [
                 "设计侧 DB 要能回答"
               ],
               "path": "docs/VISION.md",
@@ -56756,9 +56492,9 @@
           "consequences": "所有 359 份投影都会新增字段（一次性全量重写）；消费方（契约门）读旧字段不受影响（新增可选字段）。",
           "acceptance": "① gen-db 重跑后 design-db/<rel>.calls.json 含 reverse_calls 且与 cache.db 边表反向一致（抽检）；② npm run verify 9/9；③ design_line gen-db 报告 written/unchanged 无真冲突。",
           "status": "active",
-          "updated_at": "2026-10-24T01:41:22.932Z",
+          "updated_at": "2026-10-30T19:09:46.750Z",
           "author": "llm",
-          "agent": "workbuddy",
+          "agent": "subagent:clear-reds",
           "thread": "影响面"
         },
         "status": "done",
@@ -56877,6 +56613,41 @@
               "thread": "影响面"
             },
             "note": "收口被拒的根因是我把判据 must 抄错了（VISION.md 原文是『设计侧 DB 要能回答』，我写成『设计 DB 要能回答』）——对齐原文后 reverse_calls 与两条判据均已满足，src/application/design/db/gen_design_db_ts 收口。"
+          },
+          {
+            "at": "2026-10-30T19:09:46.750Z",
+            "decision": {
+              "summary": "设计 DB 每文件投影新增 reverse_calls（谁调我：一跳反向调用，事实取 cache.db 边表反向索引），回答「改这里会炸哪里」的第一跳；跨文件传递闭包由消费者沿 reverse_calls 行走，不落库（渐进式披露）。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "reverse_calls",
+                    "reverseByFile"
+                  ],
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "why": "反向调用投影的两个关键写法：reverseByFile 索引（一次性建）+ reverse_calls 字段落进投影"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "设计侧 DB 要能回答"
+                  ],
+                  "path": "docs/VISION.md",
+                  "why": "本卡的依据：VISION.md 影响面行（原文『设计侧 DB 要能回答「改这里会炸哪里」』，❌）——设计文档说了、此前没人做"
+                }
+              ],
+              "rationale": "docs/VISION.md 影响面行（❌ 设计 DB 只有 symbols/imports/calls，无闭包；两条路都没接）——选 A 路（calls 反向自足算）因它与 gen-db 的「事实全取 cache.db」同构，不引第二份事实源；一跳反向先落库，跨文件闭包可由消费者沿 reverse_calls 行走（渐进式披露：DSL 浅 → DB 深一层）。",
+              "consequences": "所有 359 份投影都会新增字段（一次性全量重写）；消费方（契约门）读旧字段不受影响（新增可选字段）。",
+              "acceptance": "① gen-db 重跑后 design-db/<rel>.calls.json 含 reverse_calls 且与 cache.db 边表反向一致（抽检）；② npm run verify 9/9；③ design_line gen-db 报告 written/unchanged 无真冲突。",
+              "status": "active",
+              "updated_at": "2026-10-24T01:41:22.932Z",
+              "author": "llm",
+              "agent": "workbuddy",
+              "thread": "影响面"
+            },
+            "note": "清 task-system-plan 册里 5 条恒红/写错的 source-has 判据 + 1 个文件已物理删除的节点：① file_src_application_design_dsl_ops_feature_ops_ts 的 src/application/design/dsl_ops/feature_ops.ts 已被 3a063f2e 删除（docs/RETIRED.md:53），整节点下线（含其 7 条判据，其中 1 条 run 指向不存在的文件）；② remove_dead_imports.ts 的 must[\"\\\\r?\\\\n\"] 只出现在注释里，expectation_kinds.ts#matchSourceHas 匹配前剥注释 ⇒ 结构性恒红；③ rewrite.ts 的 must[\"落盘后\"] 4 处全在注释；④ gen_design_db.ts 的 reverse_calls/reverseByFile 已于 2026-10-28 显式删除（同文件 L407 自述）；⑤ project_task-system-plan 的 recordTaskHistory 真身在 dsl_ops/task_ops.ts 与 infrastructure/task_history.ts（不在 intent/expectations.ts）⇒ must 收窄成 judgeExpectations；PROJECT_KINDS 在 src 从未实现（git grep 只命中 .agent-io/design/task-system-plan.dsl.json）",
+            "agent": "subagent:clear-reds"
           }
         ],
         "overlay": {
@@ -57077,14 +56848,6 @@
               "kind": "source-has",
               "path": "src/application/design/rewrite/rewrite.ts",
               "must": [
-                "落盘后"
-              ],
-              "why": "落盘后必须重算（2026-10-19 的教训）"
-            },
-            {
-              "kind": "source-has",
-              "path": "src/application/design/rewrite/rewrite.ts",
-              "must": [
                 "did_work"
               ],
               "why": "★ 本次是否真的做了事（现在四种情况都 ok:true）"
@@ -57102,9 +56865,9 @@
           "consequences": "① 输出层加 `did_work`（本次是否真的做了事）；② 没做事时给 `reason` 枚举（`no_design_copy` / `path_not_found` / `uncomparable_kind` / `no_diff`）；③ 名字/描述要说清「只同步签名，不生成实现」（现在叫 rewrite，UI 描述像编辑器）；④ 语法门拦截时也要走标准信封（现在无 `---DATA---`、exit 0）。",
           "acceptance": "对三种输入各跑一次：不存在的路径 / 设计 DB 未覆盖的文件 / 真的没差异 —— 三者都能从 `---DATA---` 里区分（`reason` 不同）；有差异时 `did_work:true` 且 `applied>0`。",
           "status": "active",
-          "updated_at": "2026-10-20T03:31:17.643Z",
+          "updated_at": "2026-10-30T19:09:46.653Z",
           "author": "llm",
-          "agent": "workbuddy"
+          "agent": "subagent:clear-reds"
         },
         "status": "done",
         "decision_history": [
@@ -57144,6 +56907,58 @@
             "note": "给 src/application/design/rewrite/rewrite.ts 的决策卡加两条判据：did_work 与具体 reason",
             "author": "llm",
             "agent": "workbuddy"
+          },
+          {
+            "at": "2026-10-30T19:09:46.653Z",
+            "decision": {
+              "summary": "⑥「设计 DB → 源码」的执行器（`design_line action=rewrite`）。只做一件事：源码签名与设计签名不一致时，把源码改回设计签名。★ 2026-10-20 体检发现：它的 `ok:true` 同时表示「做了且复核干净 / 没事可做 / 路径写错 / 这类符号我不管」——**四种情况输出逐字相同**。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/rewrite/rewrite.ts",
+                  "why": "⑥ 的执行器住这里"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/rewrite/rewrite.ts",
+                  "symbol": "rewriteSymbols",
+                  "why": "主入口（可单测）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/rewrite/rewrite.ts",
+                  "must": [
+                    "落盘后"
+                  ],
+                  "why": "落盘后必须重算（2026-10-19 的教训）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/rewrite/rewrite.ts",
+                  "must": [
+                    "did_work"
+                  ],
+                  "why": "★ 本次是否真的做了事（现在四种情况都 ok:true）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/rewrite/rewrite.ts",
+                  "must": [
+                    "no_design_copy"
+                  ],
+                  "why": "★ 至少一个具体 reason（区分\"没覆盖\"与\"路径错\"）"
+                }
+              ],
+              "rationale": "工具链体检（子代理调 33 次工具）实测：`file=不存在的路径` 与 `file=设计DB未覆盖的文件` 与真的没差异，三者输出一字不差（都是 `✓ 没有可重写的签名差异` + `{\"differ\":[],\"applied\":null,\"ok\":true}`）。⇒ 自动化只能靠人读中文判断成败。",
+              "consequences": "① 输出层加 `did_work`（本次是否真的做了事）；② 没做事时给 `reason` 枚举（`no_design_copy` / `path_not_found` / `uncomparable_kind` / `no_diff`）；③ 名字/描述要说清「只同步签名，不生成实现」（现在叫 rewrite，UI 描述像编辑器）；④ 语法门拦截时也要走标准信封（现在无 `---DATA---`、exit 0）。",
+              "acceptance": "对三种输入各跑一次：不存在的路径 / 设计 DB 未覆盖的文件 / 真的没差异 —— 三者都能从 `---DATA---` 里区分（`reason` 不同）；有差异时 `did_work:true` 且 `applied>0`。",
+              "status": "active",
+              "updated_at": "2026-10-20T03:31:17.643Z",
+              "author": "llm",
+              "agent": "workbuddy"
+            },
+            "note": "清 task-system-plan 册里 5 条恒红/写错的 source-has 判据 + 1 个文件已物理删除的节点：① file_src_application_design_dsl_ops_feature_ops_ts 的 src/application/design/dsl_ops/feature_ops.ts 已被 3a063f2e 删除（docs/RETIRED.md:53），整节点下线（含其 7 条判据，其中 1 条 run 指向不存在的文件）；② remove_dead_imports.ts 的 must[\"\\\\r?\\\\n\"] 只出现在注释里，expectation_kinds.ts#matchSourceHas 匹配前剥注释 ⇒ 结构性恒红；③ rewrite.ts 的 must[\"落盘后\"] 4 处全在注释；④ gen_design_db.ts 的 reverse_calls/reverseByFile 已于 2026-10-28 显式删除（同文件 L407 自述）；⑤ project_task-system-plan 的 recordTaskHistory 真身在 dsl_ops/task_ops.ts 与 infrastructure/task_history.ts（不在 intent/expectations.ts）⇒ must 收窄成 judgeExpectations；PROJECT_KINDS 在 src 从未实现（git grep 只命中 .agent-io/design/task-system-plan.dsl.json）",
+            "agent": "subagent:clear-reds"
           }
         ],
         "overlay": {
@@ -59254,24 +59069,15 @@
           "expectations": [
             {
               "kind": "source-has",
-              "must": [
-                "judgeExpectations",
-                "recordTaskHistory"
-              ],
               "path": "src/application/design/intent/expectations.ts",
-              "why": "主工程的核心机制锚：判据求值器与入史（各项目卡依赖的能力在本仓实现）"
-            },
-            {
-              "kind": "source-has",
               "must": [
-                "PROJECT_KINDS"
+                "judgeExpectations"
               ],
-              "path": "src/application/design/dsl_ops/op_data_spec.ts",
-              "why": "项目状态机（lab/active/archived）需在 op 词表登记后才可流转"
+              "why": "主工程的核心机制锚：判据求值器（judgeExpectations）必须在本仓实现。★ 2026-10-31 收窄：原 must 还写着 recordTaskHistory，但它的真身在 dsl_ops/task_ops.ts + infrastructure/task_history.ts，不在本文件 —— 主语挂错文件，改成逐文件各锚一条"
             }
           ],
-          "updated_at": "2026-10-26T15:59:33.079Z",
-          "agent": "agent:wish-machine"
+          "updated_at": "2026-10-30T19:09:47.061Z",
+          "agent": "subagent:clear-reds"
         },
         "decision_history": [
           {
@@ -59301,6 +59107,67 @@
             },
             "note": "T-#32：summary 里不再写根路径（权威是 source_root）—— 原文写的是已过期的 D:/project_develop/design-canvas",
             "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-10-30T19:09:46.845Z",
+            "decision": {
+              "summary": "项目卡 · task-system-plan（active·主册）：agent-io 本体开发。本项目同时是『项目管理体系』的承载册——全部项目卡的跨项目总览读端在此实现（§11）。★ 根路径**不写在这里**：它的权威是册顶层的 `source_root`（散文里再写一遍 = 第五处“散文当结构”，必与 source_root 分叉）。验收判据：判据全量求值全绿。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "judgeExpectations",
+                    "recordTaskHistory"
+                  ],
+                  "path": "src/application/design/intent/expectations.ts",
+                  "why": "主工程的核心机制锚：判据求值器与入史（各项目卡依赖的能力在本仓实现）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "PROJECT_KINDS"
+                  ],
+                  "path": "src/application/design/dsl_ops/op_data_spec.ts",
+                  "why": "项目状态机（lab/active/archived）需在 op 词表登记后才可流转"
+                }
+              ],
+              "updated_at": "2026-10-26T15:59:33.079Z",
+              "agent": "agent:wish-machine"
+            },
+            "note": "清 task-system-plan 册里 5 条恒红/写错的 source-has 判据 + 1 个文件已物理删除的节点：① file_src_application_design_dsl_ops_feature_ops_ts 的 src/application/design/dsl_ops/feature_ops.ts 已被 3a063f2e 删除（docs/RETIRED.md:53），整节点下线（含其 7 条判据，其中 1 条 run 指向不存在的文件）；② remove_dead_imports.ts 的 must[\"\\\\r?\\\\n\"] 只出现在注释里，expectation_kinds.ts#matchSourceHas 匹配前剥注释 ⇒ 结构性恒红；③ rewrite.ts 的 must[\"落盘后\"] 4 处全在注释；④ gen_design_db.ts 的 reverse_calls/reverseByFile 已于 2026-10-28 显式删除（同文件 L407 自述）；⑤ project_task-system-plan 的 recordTaskHistory 真身在 dsl_ops/task_ops.ts 与 infrastructure/task_history.ts（不在 intent/expectations.ts）⇒ must 收窄成 judgeExpectations；PROJECT_KINDS 在 src 从未实现（git grep 只命中 .agent-io/design/task-system-plan.dsl.json）",
+            "agent": "subagent:clear-reds"
+          },
+          {
+            "at": "2026-10-30T19:09:46.940Z",
+            "decision": {
+              "summary": "项目卡 · task-system-plan（active·主册）：agent-io 本体开发。本项目同时是『项目管理体系』的承载册——全部项目卡的跨项目总览读端在此实现（§11）。★ 根路径**不写在这里**：它的权威是册顶层的 `source_root`（散文里再写一遍 = 第五处“散文当结构”，必与 source_root 分叉）。验收判据：判据全量求值全绿。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "judgeExpectations",
+                    "recordTaskHistory"
+                  ],
+                  "path": "src/application/design/intent/expectations.ts",
+                  "why": "主工程的核心机制锚：判据求值器与入史（各项目卡依赖的能力在本仓实现）"
+                }
+              ],
+              "updated_at": "2026-10-30T19:09:46.845Z",
+              "agent": "subagent:clear-reds"
+            },
+            "note": "清 task-system-plan 册里 5 条恒红/写错的 source-has 判据 + 1 个文件已物理删除的节点：① file_src_application_design_dsl_ops_feature_ops_ts 的 src/application/design/dsl_ops/feature_ops.ts 已被 3a063f2e 删除（docs/RETIRED.md:53），整节点下线（含其 7 条判据，其中 1 条 run 指向不存在的文件）；② remove_dead_imports.ts 的 must[\"\\\\r?\\\\n\"] 只出现在注释里，expectation_kinds.ts#matchSourceHas 匹配前剥注释 ⇒ 结构性恒红；③ rewrite.ts 的 must[\"落盘后\"] 4 处全在注释；④ gen_design_db.ts 的 reverse_calls/reverseByFile 已于 2026-10-28 显式删除（同文件 L407 自述）；⑤ project_task-system-plan 的 recordTaskHistory 真身在 dsl_ops/task_ops.ts 与 infrastructure/task_history.ts（不在 intent/expectations.ts）⇒ must 收窄成 judgeExpectations；PROJECT_KINDS 在 src 从未实现（git grep 只命中 .agent-io/design/task-system-plan.dsl.json）",
+            "agent": "subagent:clear-reds"
+          },
+          {
+            "at": "2026-10-30T19:09:47.061Z",
+            "decision": {
+              "summary": "项目卡 · task-system-plan（active·主册）：agent-io 本体开发。本项目同时是『项目管理体系』的承载册——全部项目卡的跨项目总览读端在此实现（§11）。★ 根路径**不写在这里**：它的权威是册顶层的 `source_root`（散文里再写一遍 = 第五处“散文当结构”，必与 source_root 分叉）。验收判据：判据全量求值全绿。",
+              "expectations": [],
+              "updated_at": "2026-10-30T19:09:46.940Z",
+              "agent": "subagent:clear-reds"
+            },
+            "note": "清 task-system-plan 册里 5 条恒红/写错的 source-has 判据 + 1 个文件已物理删除的节点：① file_src_application_design_dsl_ops_feature_ops_ts 的 src/application/design/dsl_ops/feature_ops.ts 已被 3a063f2e 删除（docs/RETIRED.md:53），整节点下线（含其 7 条判据，其中 1 条 run 指向不存在的文件）；② remove_dead_imports.ts 的 must[\"\\\\r?\\\\n\"] 只出现在注释里，expectation_kinds.ts#matchSourceHas 匹配前剥注释 ⇒ 结构性恒红；③ rewrite.ts 的 must[\"落盘后\"] 4 处全在注释；④ gen_design_db.ts 的 reverse_calls/reverseByFile 已于 2026-10-28 显式删除（同文件 L407 自述）；⑤ project_task-system-plan 的 recordTaskHistory 真身在 dsl_ops/task_ops.ts 与 infrastructure/task_history.ts（不在 intent/expectations.ts）⇒ must 收窄成 judgeExpectations；PROJECT_KINDS 在 src 从未实现（git grep 只命中 .agent-io/design/task-system-plan.dsl.json）",
+            "agent": "subagent:clear-reds"
           }
         ]
       },
@@ -60223,12 +60090,6 @@
         "id": "contains_src_application_design_dsl_ops_src_application_design_dsl_ops_edit_result_ts",
         "from": "dir_src_application_design_dsl_ops",
         "to": "file_src_application_design_dsl_ops_edit_result_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_application_design_dsl_ops_src_application_design_dsl_ops_feature_ops_ts",
-        "from": "dir_src_application_design_dsl_ops",
-        "to": "file_src_application_design_dsl_ops_feature_ops_ts",
         "label": "contains"
       },
       {
@@ -62648,13 +62509,6 @@
       {
         "id": "dep_src_application_design_dsl_ops_edge_ops_ts_src_application_design_dsl_ops_edit_result_ts",
         "from": "file_src_application_design_dsl_ops_edge_ops_ts",
-        "to": "file_src_application_design_dsl_ops_edit_result_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
-        "id": "dep_src_application_design_dsl_ops_feature_ops_ts_src_application_design_dsl_ops_edit_result_ts",
-        "from": "file_src_application_design_dsl_ops_feature_ops_ts",
         "to": "file_src_application_design_dsl_ops_edit_result_ts",
         "label": "imports",
         "type": "dashed"
@@ -86392,50 +86246,6 @@
           }
         ],
         "lines": 18,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_application_design_dsl_ops_feature_ops_ts",
-        "path": "src/application/design/dsl_ops/feature_ops.ts",
-        "responsibility": "核心层 · src/application/design/dsl_ops — 2 个 API（导入自 3 个模块）",
-        "symbols": [
-          {
-            "name": "CreateFeatureInput",
-            "kind": "interface",
-            "line": 13,
-            "end_line": 17,
-            "signature": "CreateFeatureInput()"
-          },
-          {
-            "name": "CloneFeatureInput",
-            "kind": "interface",
-            "line": 79,
-            "end_line": 83,
-            "signature": "CloneFeatureInput()"
-          },
-          {
-            "name": "CloneFeatureResult",
-            "kind": "interface",
-            "line": 85,
-            "end_line": 91,
-            "signature": "CloneFeatureResult()"
-          },
-          {
-            "name": "createFeature",
-            "kind": "function",
-            "line": 19,
-            "end_line": 72,
-            "signature": "createFeature(input: CreateFeatureInput): EditResult"
-          },
-          {
-            "name": "cloneFeature",
-            "kind": "function",
-            "line": 92,
-            "end_line": 128,
-            "signature": "cloneFeature(input: CloneFeatureInput): CloneFeatureResult"
-          }
-        ],
-        "lines": 129,
         "layer": "core"
       },
       {
@@ -112965,11 +112775,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-30T09:50:01.094Z",
+    "saved_at": "2026-10-30T19:09:47.099Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 770278283,
+    "age": 803864288,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -114648,7 +114458,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 1509,
+  "_dsl_rev": 1516,
   "feature_tree": {
     "features": [
       {

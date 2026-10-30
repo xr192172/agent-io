@@ -10808,14 +10808,6 @@
           "summary": "gen-db：路径取法 path 优先（与 write_gate 同口径）",
           "expectations": [
             {
-              "kind": "source-has",
-              "must": [
-                ".path ?? raw.description"
-              ],
-              "path": "src/application/design/db/gen_design_db.ts",
-              "why": "实测：只取 description ⇒ 手写节点的散文变成 design-db 文件名（整句中文）。write_gate 早就是 path 优先，gen-db 是唯一例外"
-            },
-            {
               "kind": "symbol-exists",
               "path": "src/application/design/db/gen_design_db.ts",
               "symbol": "genDesignDb",
@@ -10829,9 +10821,9 @@
             "path-fact",
             "structural"
           ],
-          "updated_at": "2026-10-26T15:43:03.947Z",
+          "updated_at": "2026-10-30T19:10:09.238Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
+          "agent": "subagent:clear-reds"
         },
         "decision_history": [
           {
@@ -10868,6 +10860,40 @@
             "note": "T-#28：散文当结构第四处 —— gen-db 拿 description 当路径（判据已按实际写法校正）",
             "author": "llm",
             "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-10-30T19:10:09.238Z",
+            "decision": {
+              "summary": "gen-db：路径取法 path 优先（与 write_gate 同口径）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    ".path ?? raw.description"
+                  ],
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "why": "实测：只取 description ⇒ 手写节点的散文变成 design-db 文件名（整句中文）。write_gate 早就是 path 优先，gen-db 是唯一例外"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "genDesignDb",
+                  "why": "生成器本体必须仍在（回归底线）"
+                }
+              ],
+              "acceptance": "① gen-db 算路径必须 **`path` 优先、回落 `description`**（与 `write_gate#nodeFilePath` 同口径）；② 手写节点的散文 description 不得再变成 design-db 的文件名；③ 不得改变已带 path 的扫描节点的产出。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "path-fact",
+                "structural"
+              ],
+              "updated_at": "2026-10-26T15:43:03.947Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "删 file_src_application_design_db_gen_design_db_ts 上那条 source-has must[\".path ?? raw.description\"]：src/application/design/db/gen_design_db.ts:272 已于 T-#37 把 AnyNode.description 整个删掉、只认 path（注释原文『AnyNode.description 已删 ⇒ 只认 path』）⇒ 该断言串永远不可能再出现，恒红；且 description 已不在类型里，写回它 tsc 直接编不过，判据冗余",
+            "agent": "subagent:clear-reds"
           }
         ],
         "overlay": {
@@ -83369,13 +83395,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 524,
+  "_dsl_rev": 525,
   "_sync": {
-    "saved_at": "2026-10-30T18:48:56.495Z",
+    "saved_at": "2026-10-30T19:10:09.256Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 385139358,
+    "age": 386412119,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

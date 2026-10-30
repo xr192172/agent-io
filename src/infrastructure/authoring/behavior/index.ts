@@ -1069,6 +1069,85 @@ const pythonPack: BehaviorLangPack = {
   execError: (e) => `python 不可用/执行异常: ${(e as Error).message}`,
 };
 
+/** 相对说明符解析时试的扩展名（顺序即优先级）。 */
+const REL_IMPORT_EXTS = ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs'];
+
+/** 从 `fromAbs` 出发解析相对说明符 `spec` 到盘上的真文件（找不到 ⇒ null，不猜）。 */
+function resolveRelImport(fromAbs: string, spec: string): string | null {
+  const base = path.resolve(path.dirname(fromAbs), spec);
+  const noExt = base.replace(/\.(js|mjs|cjs|jsx|ts|tsx|mts|cts)$/i, '');
+  const cands = [base, ...REL_IMPORT_EXTS.map((e) => noExt + e), ...REL_IMPORT_EXTS.map((e) => path.join(base, 'index' + e))];
+  for (const c of cands) {
+    try {
+      if (fs.statSync(c).isFile()) return c;
+    } catch {
+      /* 下一个候选 */
+    }
+  }
+  return null;
+}
+
+/** 收集一个模块源码里的**相对**模块说明符（静态 import / export-from / 动态 import()）。 */
+function relativeSpecsOf(fileAbs: string, src: string): string[] {
+  const sf = ts.createSourceFile(fileAbs, src, ts.ScriptTarget.ES2020, true);
+  const out: string[] = [];
+  const push = (lit: ts.Expression | undefined): void => {
+    if (lit && ts.isStringLiteralLike(lit) && lit.text.startsWith('.')) out.push(lit.text);
+  };
+  const visit = (n: ts.Node): void => {
+    if (ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) {
+      push(n.moduleSpecifier);
+    } else if (ts.isCallExpression(n) && n.expression.kind === ts.SyntaxKind.ImportKeyword) {
+      push(n.arguments[0]);
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  return out;
+}
+
+/**
+ * ★ 2026-10-31（subagent:clear-reds）：**把目标的相对 import 闭包一起拷进临时目录**。
+ *
+ * ## 为什么需要（这条是「判据有没有行为落点」的前提）
+ * harness 原来只写 `target.mjs`（**单文件**转译）⇒ 目标里任何 `import './x.js'` 在 tmp 里
+ * **解析不到** ⇒ `behavior-cases` 只能判 `unsupported`（"判不了 ≠ 通过" ⇒ 那条判据等于不存在）。
+ * 实测代价：`src/domain/expectation.ts#normSignature` 那条判据恒报
+ * `Cannot find module …\dc-beh-node-xxxx\expectation_kinds.js`。
+ *
+ * ## 口径（三条，都不新造解析）
+ * · **只搬相对说明符**，且**保持说明符路径不变**：源码写 `./expectation_kinds.js`、盘上是
+ *   `expectation_kinds.ts` ⇒ 转译后写到 tmp 的 `expectation_kinds.js`（说明符一字不改，解析即成立）；
+ * · **递归**搬被搬模块自己的相对 import（`visited` 按绝对路径去重，防环）；
+ * · 裸包名（`node:fs` / `typescript` …）**不搬** —— tmp 里照样走 node 自己的解析规则。
+ * · 解析不到 / 转译失败 ⇒ **不报错**：让子进程用 node 原话报（与搬之前同形，不吞真话）。
+ */
+function copyRelativeImportClosure(args: {
+  entryAbs: string;
+  entrySrc: string;
+  entryTmpRel: string;
+  write(rel: string, content: string): void;
+  visited: Set<string>;
+}): void {
+  for (const spec of relativeSpecsOf(args.entryAbs, args.entrySrc)) {
+    const realAbs = resolveRelImport(args.entryAbs, spec);
+    if (!realAbs || args.visited.has(realAbs)) continue;
+    args.visited.add(realAbs);
+    const tmpRel = path.posix.normalize(path.posix.join(path.posix.dirname(args.entryTmpRel), spec.replace(/\\/g, '/')));
+    if (tmpRel.startsWith('..')) continue; // 说明符指到 tmp 之外 ⇒ 不搬（不猜一个位置出来）
+    let src = '';
+    try {
+      src = fs.readFileSync(realAbs, 'utf-8');
+    } catch {
+      continue;
+    }
+    const tr = transpileForHarness(realAbs, src, { module: 'esm' });
+    if ('error' in tr) continue; // 转译不了 ⇒ 不写半成品，交给子进程报"找不到模块"
+    args.write(tmpRel, tr.js);
+    copyRelativeImportClosure({ ...args, entryAbs: realAbs, entrySrc: src, entryTmpRel: tmpRel });
+  }
+}
+
 const nodePack: BehaviorLangPack = {
   lang: 'node',
   exts: [...NODE_EXTS],
@@ -1081,6 +1160,16 @@ const nodePack: BehaviorLangPack = {
     const tr = transpileForHarness(targetAbs, content, { module: 'esm' });
     if ('error' in tr) throw new Error(tr.error); // 交由执行器的 finally 清理
     write('target.mjs', tr.js);
+    // ★★★ 2026-10-31（subagent:clear-reds）：**tmp 必须是 ESM 项目**（`{"type":"module"}`）。
+    //   为什么：搬进来的闭包成员只能保持**说明符原样的扩展名**（源码写 `./text_strip.js`、
+    //   盘上是 `.ts` ⇒ tmp 里就得叫 `text_strip.js`）。而 `.js` 在无 `type` 的目录里，
+    //   插桩器 `detectModuleSystem` 会走"看内容"那一档 —— `text_strip.ts` 的**注释**里就写着
+    //   `require('…')` ⇒ 被误判成 CJS ⇒ 注入 `require(...)` ⇒ 本 loader 强制 `format:'module'`
+    //   ⇒ 实测 `ReferenceError: require is not defined in ES module scope`（打断目标，判据变 unsupported）。
+    //   写一个 package.json 让它命中"② package.json 的 type"这条硬规则，内容启发式根本不参与。
+    write('package.json', '{"type":"module"}');
+    // ★ 2026-10-31：目标带相对 import 时，把闭包一起搬进 tmp（否则只能判 unsupported）
+    copyRelativeImportClosure({ entryAbs: targetAbs, entrySrc: content, entryTmpRel: 'target.mjs', write, visited: new Set([targetAbs]) });
     write('runner.mjs', nodeRunnerSource(spec));
     return { run: { cmd: process.execPath, args: ['runner.mjs', 'target.mjs'] } };
   },
