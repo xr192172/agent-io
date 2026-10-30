@@ -23,7 +23,10 @@ edit_dsl（给节点写判据）→ design_line action=plan（四条判据全过
    先用 `symbol-exists` 把代码写进去，再把判据升级为 `behavior-cases` / `call-exists`。
 2. **强度要够**：`source-has` 属存在类，**永远发现不了逻辑错**（计划闸会点名）。
    能写 `behavior-cases`（给输入比输出）/ `call-exists` / `cert`（跑证）就别用 `source-has`。
-3. **改判据后必须 `design_line action=gen-db`**，否则 `npm run verify` 的「设计 DB 结构」会红。
+3. **改判据后必须全量重生成设计 DB：`npm run design:gen-db`**（或 `design_line action=gen-db` **不带 `feature`**），
+   否则 `npm run verify` 的「设计 DB 结构」会红。
+   ★ **要全量，理由在读数里**：带 `feature` 只重生成那一个切片的投影，`//source` 与「持有者列表」对不上
+   ⇒ `npm run verify` 的同一道门实测报 **陈旧 361 / 缺 2 / 多 159**（2026-10-30 撞到）；全量 = `features=3 / files=746`。
 
 ### 0.3 计划（画布）三个坑
 

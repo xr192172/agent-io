@@ -1,0 +1,40 @@
+{
+  "path": "src/application/design/intent/expectations.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "judgeSourceHas"
+      },
+      "kind": "rewrite",
+      "detail": "把 judgeSourceHas 的两行 src.includes 匹配换成 matchSourceHas(p, src, e.must, e.mustNot) 解构，并在头注释写明剥注释只对代码扩展名生效",
+      "judgement_ref": "decision:file_src_application_design_intent_expectations_ts#3",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_application_design_intent_expectations_ts",
+  "untouched_default": {
+    "why": "只改这一处匹配核委派；缓存通道与其它 kind 分支不动"
+  },
+  "symbols_at_freeze": [
+    "findExpectationConflicts",
+    "indexStaleFor",
+    "ensureIndexFreshForJudge",
+    "depFactsIncomplete",
+    "judgeSymbolOrSignature",
+    "judgeSourceHas",
+    "judgeExpectations"
+  ],
+  "fps_at_freeze": {
+    "findExpectationConflicts": "db331258352c0d9ed8e3acc6ba837548374c9e00",
+    "indexStaleFor": "aadbb30daf84bce130f473931dc37859f5f00a67",
+    "ensureIndexFreshForJudge": "2e67bee39649293f9dbdf254ba5dd277e3317a6b",
+    "depFactsIncomplete": "2261d97a535a3f5ced3c21232aaf4ee8983171de",
+    "judgeSymbolOrSignature": "3908481d7454d56ccd18e60fb23bc006a4880e3e",
+    "judgeSourceHas": "fa01b87055b1fc301fc1147d3955bec2e9138850",
+    "judgeExpectations": "a75d58f82fc6b626666ce7cab954274813f24e7b"
+  },
+  "frozen_at": "2026-10-30T07:12:13.179Z",
+  "base": {
+    "content_hash": "facd6945ea28e8723c89065c2cff3c1a96648dcc"
+  }
+}

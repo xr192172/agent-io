@@ -1,0 +1,50 @@
+{
+  "path": "src/domain/expectation_kinds.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "matchSourceHas"
+      },
+      "kind": "rewrite",
+      "detail": "接着写 matchSourceHas 本体：text = stripCommentsFor(path, src)，返回 {missMust: must 里不在 text 的, hitMustNot: mustNot 里在 text 的}；放在 isEmpty 之前、pathsOf 之后",
+      "judgement_ref": "decision:file_src_application_design_intent_expectations_ts#0",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_application_design_intent_expectations_ts",
+  "untouched_default": {
+    "why": "同上一轮：只加匹配核本体，12 种判据声明与派生函数一个字不动"
+  },
+  "symbols_at_freeze": [
+    "FieldType",
+    "FieldSpec",
+    "KindSpec",
+    "s",
+    "sArr",
+    "norm",
+    "KIND_SPECS",
+    "EXPECTATION_KINDS",
+    "phaseOfKind",
+    "renderExpectation",
+    "subjectPathOf",
+    "pathsOf",
+    "isEmpty",
+    "validateExpectation"
+  ],
+  "fps_at_freeze": {
+    "s": "5da7915ffb246b17b1795a27c42c0948fa21c991",
+    "sArr": "a0fc7be5bd3c54f5ed19923fbb471c8a551aaaef",
+    "norm": "0a8bb39e7c75b89fde518de27d81f0b998cd011d",
+    "phaseOfKind": "3ffe2baaec5719d468826900fd7e8ed15f8f77a4",
+    "renderExpectation": "ba586fd731c8d9cf3d6ba99415edb6be7d98bacf",
+    "subjectPathOf": "61fc508c4962819554e466822de0bc8dbb6ca5b2",
+    "pathsOf": "8964a608331b8efecb729c55bc3c450b3b93d86d",
+    "matchSourceHas": "2f1e3ecab529babccbca1fdc9d795136a35d3a96",
+    "isEmpty": "17c82b1d63d5329fac44aa8a3f4fe387c743b415",
+    "validateExpectation": "fcfe445f427e570dcf2efe9f7027aecbaa211e28"
+  },
+  "frozen_at": "2026-10-30T07:11:35.112Z",
+  "base": {
+    "content_hash": "98e4bc29391a70da4a7b7544d6414f785514cd5e"
+  }
+}

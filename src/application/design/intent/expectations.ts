@@ -29,6 +29,9 @@ import { parseFileSymbols, isSupportedFile } from '../../../infrastructure/parse
 // ★ T79：调用边读取**复用现成那一处**（别在这再写一份 SQL）
 import { queryFileCalls } from '../../meta/explore/query_feature.js';
 import { normPath, normSignature, type Expectation } from '../../../domain/expectation.js';
+// ★ 2026-10-30（subagent:rule-strip）：`source-has` 的**匹配核**住 domain（纯函数）—— 它先剥注释再匹配，
+//   本文件只读文件、渲染四态。判据见 `domain/expectation_kinds.ts#matchSourceHas` 的头注释。
+import { matchSourceHas } from '../../../domain/expectation_kinds.js';
 // ★ 2026-10-24（judge-cache 第一阶）：**一阶文件哈希缓存** —— 「没变的文件不再测」（判据见 judgeExpectations 内注）
 import { loadJudgeCache, saveJudgeCache, judgeCacheKey } from './judge_cache.js';
 // ★ 工作项 L（2026-10-24）：行为契约的执行核 —— 复用 behavior 基建（与 capture/verify 同一条执行路径）
@@ -285,7 +288,17 @@ async function judgeSymbolOrSignature(
   };
 }
 
-/** ★ source-has 的**判定核**（同上，从 judgeExpectations 原样抽出 —— 2026-10-19 源码文本判据：不装 input） */
+/**
+ * ★ source-has 的**判定核**（同上，从 judgeExpectations 原样抽出 —— 2026-10-19 源码文本判据：不装 input）
+ *
+ * ★★ 2026-10-30（subagent:rule-strip）：**匹配前先剥注释** —— 匹配核住 domain
+ * （`domain/expectation_kinds.ts#matchSourceHas`，剥注释器是零依赖的 `domain/text_strip.ts`）。
+ * · 原来纯子串 ⇒ 注释里出现也算命中 ⇒ C1/C3 两张卡为把
+ *   `mustNot:["INTRODUCED_BY_MODULE"]` / `["PKG_DIRS"]` 变绿**只能删注释里的病史**；
+ *   现在注释不算数 ⇒ 判据不再惩罚"记录病史"；
+ * · 只对**代码扩展名**剥（`.md` 的 `//source`、`.json` 的 `//` 都不是注释，统一剥会把文档判据吃掉）；
+ * · 本函数只剩两件事：**读文件**、把 `{missMust, hitMustNot}` 渲染成四态。
+ */
 function judgeSourceHas(
   root: string,
   e: Extract<Expectation, { kind: 'source-has' }>,
@@ -296,8 +309,8 @@ function judgeSourceHas(
     return { verdict: 'fail', detail: `${p} **不存在**（查的是 ${abs}）` };
   }
   const src = fs.readFileSync(abs, 'utf-8');
-  const missMust = (e.must ?? []).filter((t) => !src.includes(t));
-  const hitMustNot = (e.mustNot ?? []).filter((t) => src.includes(t));
+  // ★ 唯一匹配核：剥注释 → includes。不许在这里再写一套（判据一处）
+  const { missMust, hitMustNot } = matchSourceHas(p, src, e.must ?? [], e.mustNot ?? []);
   if (missMust.length || hitMustNot.length) {
     const parts = [];
     if (missMust.length) parts.push(`缺 must：${missMust.map((t) => JSON.stringify(t.slice(0, 40))).join(' / ')}`);

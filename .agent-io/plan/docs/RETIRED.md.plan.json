@@ -1,0 +1,34 @@
+{
+  "path": "docs/RETIRED.md",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "台账"
+      },
+      "kind": "rewrite",
+      "detail": "修正 2026-10-30 那行的替代路径：call-exists 的 target 由局部符号 importProject.isScannedNodeId 改成顶层 carryOverNodeGates（gen-db 的 requirements_calls 只认 parent IS NULL 的符号，局部符号解析不到家 ⇒ 「设计 DB 结构」门恒红）",
+      "judgement_ref": "decision:file_src_application_design_intent_expectations_ts#3",
+      "status": "open"
+    }
+  ],
+  "untouched": [
+    {
+      "symbol": "退役四种性质",
+      "why": "分类表是判据，本次不动"
+    },
+    {
+      "symbol": "纪律",
+      "why": "四条纪律不动"
+    },
+    {
+      "symbol": "待观察",
+      "why": "与本次无关"
+    }
+  ],
+  "card": "file_src_application_design_intent_expectations_ts",
+  "frozen_at": "2026-10-30T07:15:47.816Z",
+  "base": {
+    "content_hash": "e9b3d0f3078a443d39bea1921fdfa1f09bcb708b"
+  },
+  "fps_at_freeze": {}
+}

@@ -1,0 +1,54 @@
+{
+  "path": "AGENTS-RULES.md",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "0.2 判据的三条硬要求"
+      },
+      "kind": "rewrite",
+      "detail": "第 3 条由「改判据后必须 design_line action=gen-db」改成「必须全量：npm run design:gen-db（或 design_line action=gen-db 不带 feature）」，并写明带 feature 只重生成一个切片 ⇒ verify 的「设计 DB 结构」门报陈旧 361 / 缺 2 / 多 159",
+      "judgement_ref": "decision:file_scripts_gen_agents_mjs#2",
+      "status": "open"
+    }
+  ],
+  "untouched": [
+    {
+      "symbol": "零、开发纪律（必读 · 违反必回退）",
+      "why": "引言与正文出处说明，本次不动（改了会连带 AGENTS.md 头部口径，超出这张卡）"
+    },
+    {
+      "symbol": "0.1 改代码一律走设计线",
+      "why": "九步链本身没变；本次只改第 2 步的重生成口径，九步顺序不动"
+    },
+    {
+      "symbol": "0.3 计划（画布）三个坑",
+      "why": "与 gen-db 无关，不动"
+    },
+    {
+      "symbol": "0.4 调试方法：读代码 > 任何统计",
+      "why": "与 gen-db 无关，不动"
+    },
+    {
+      "symbol": "0.5 验收：双棘轮 + 已知答案",
+      "why": "与 gen-db 无关，不动"
+    },
+    {
+      "symbol": "0.6 事实分两层（别混）",
+      "why": "与 gen-db 无关，不动"
+    },
+    {
+      "symbol": "0.7 三条会自动咬人的小事",
+      "why": "与 gen-db 无关，不动"
+    },
+    {
+      "symbol": "0.8 重生成翻译产物：只有一条命令",
+      "why": "讲的是翻译产物 regen-translate，不是设计 DB，不动"
+    }
+  ],
+  "card": "file_scripts_gen_agents_mjs",
+  "frozen_at": "2026-10-30T07:05:56.774Z",
+  "base": {
+    "content_hash": "c0c1b4a8e78dc32d4857e043095cf4a60ecd15b2"
+  },
+  "fps_at_freeze": {}
+}

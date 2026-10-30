@@ -87,6 +87,14 @@ node scripts/patrol.mjs                                    # 只报告：陈旧�
 - `unsupported` 会**双向拦**（claim 与 complete 都拒）。
 - ★ **别写实现字面串进 `must`**：`must:["const pkgDirs = new Set<string>();"]` 这种谁改个传参就假红；
   `mustNot` 才是"防第二份复活"的正解。
+- ★★★ **判据不许锚在注释散文上**（2026-10-30 实测）。`source-has` 自 2026-10-30 起**匹配前剥注释**
+  （`src/domain/text_strip.ts#stripComments` ← `expectation_kinds.ts#matchSourceHas`；只剥
+  `.ts/.tsx/.js/.jsx/.mjs/.cjs`，**`.md` 的 `//source`、`.json` 的 `//` 不是注释** ⇒ 原文匹配）。
+  ⇒ 想断言"某条注释里的不变量存在"= **判错了对象**：剥完注释它没有主体，必然恒红。
+  实测代价：3 条判据因此翻面（`node_ops#2` 的 `update 也要同步`/`delete 也要同步`、`update_feature#0` 的
+  `live_only`/`两层闸`、`task_history#1` 的 `task-history.jsonl`）—— 它们一直在**测注释散文**，不是测代码；
+  全部改成锚代码（`call-exists` 锚调用边，或钉**代码字面量**如 `carrier: 'tasks.jsonl'`）。
+  ★ 别开"注释豁免口子"（`AGENT_IO_STRIP_SCOPE` 之类）：那是第二处权威，下次又说不清谁算数。
 
 ## 6. 会咬人的小事
 
@@ -110,7 +118,7 @@ node scripts/patrol.mjs                                    # 只报告：陈旧�
 | `behavior-cases` 的 `given` 只吃字符串 | 对象/表实参报 `given/1: must be string` | "吃一张表"的函数写不了行为判据 |
 | `behavior-cases` 要求目标零依赖 | 目标文件 import 了别的模块 ⇒ `目标文件加载失败` | 得先抽纯函数文件 |
 | `judge` 里有陈旧红 | `file_src_application_design_db_gen_design_db_ts` 的 `source-has must=".path ?? raw.description"` 与该文件实际不符 | 全批永远不是零红，容易麻痹 |
-| 判据 `source-has` 纯子串 | 注释里出现也算命中 | 写 `must`/`mustNot` 时要连注释一起清 |
+| ~~判据 `source-has` 纯子串~~ **已修 2026-10-30** | ~~注释里出现也算命中~~ 已改成**匹配前剥注释**（`src/domain/text_strip.ts#stripComments` ← `expectation_kinds.ts#matchSourceHas`，只剥代码扩展名） | 写 `must`/`mustNot` 不用再清注释了；★ 但**别锚注释散文**（见 §5：剥完注释它没有主体） |
 
 ## 9. 动手前自查六问（写不出答案就先别写）
 

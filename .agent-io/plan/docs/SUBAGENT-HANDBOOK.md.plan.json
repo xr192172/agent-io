@@ -1,0 +1,58 @@
+{
+  "path": "docs/SUBAGENT-HANDBOOK.md",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "8. 已知缺陷"
+      },
+      "kind": "rewrite",
+      "detail": "§8 表格里「判据 source-has 纯子串」那行改成「已修（2026-10-30）」，指向 src/domain/text_strip.ts#stripComments 与 expectation_kinds.ts#matchSourceHas，避免缺陷表继续宣称一个已修的事",
+      "judgement_ref": "decision:file_src_application_design_intent_expectations_ts#0",
+      "status": "open"
+    }
+  ],
+  "untouched": [
+    {
+      "symbol": "0. 环境事实",
+      "why": "不动"
+    },
+    {
+      "symbol": "1. 调用姿势",
+      "why": "不动"
+    },
+    {
+      "symbol": "2. 写入 = 设计线九步",
+      "why": "不动"
+    },
+    {
+      "symbol": "3. 六条闸门规矩",
+      "why": "不动"
+    },
+    {
+      "symbol": "4. 读数纪律",
+      "why": "不动"
+    },
+    {
+      "symbol": "5. 判据怎么选",
+      "why": "上一轮已改完（新条目已落盘），本轮不动"
+    },
+    {
+      "symbol": "6. 会咬人的小事",
+      "why": "不动"
+    },
+    {
+      "symbol": "7. 交付",
+      "why": "不动"
+    },
+    {
+      "symbol": "9. 动手前自查六问",
+      "why": "不动"
+    }
+  ],
+  "card": "file_src_application_design_intent_expectations_ts",
+  "frozen_at": "2026-10-30T07:14:19.038Z",
+  "base": {
+    "content_hash": "c44d2650e37365789777b78660ba60871cf0ec93"
+  },
+  "fps_at_freeze": {}
+}

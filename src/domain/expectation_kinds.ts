@@ -22,8 +22,12 @@
  *   忘了同步 ⇒ 求值器里访问字段会**编译不过**（比运行时才发现强）；
  * · **求值器 `switch`** —— 留在 `intent/expectations.ts`（要 fs/db，属 application 层）。
  *
- * ★ 本文件**零依赖**（domain 层不许引 zod / fs）—— 所以字段表是声明式数据，不是 zod schema。
+ * ★ 本文件**不引外部依赖**（domain 层不许引 zod / fs）—— 所以字段表是声明式数据，不是 zod schema。
+ * ★ 2026-10-30（T-#KIND 后续 · source-has 剥注释）：唯一的 import 是**同域**的
+ *   `./text_strip.js`（零依赖剥注释器）—— 下面 `matchSourceHas` 靠它把注释从判定文本里剔掉。
  */
+
+import { stripCommentsFor } from './text_strip.js';
 
 /** 字段类型：够表达现有 12 种判据；不要为了"通用"提前长成 ORM */
 export type FieldType = 'string' | 'string[]' | 'number' | 'boolean' | 'object' | 'object[]';
@@ -225,6 +229,39 @@ export function pathsOf(e: { kind: string } & Record<string, unknown>): string[]
   if (spec.axis === 'edge') return [norm(e.from), norm(e.to)];
   if (spec.subject === '') return [];
   return [norm(e.path)];
+}
+
+/**
+ * ★★★ 2026-10-30（subagent:rule-strip）：**`source-has` 的匹配核**（纯函数；判据执行核 `judgeSourceHas` 只做 fs 读取与四态渲染）。
+ *
+ * ## 判据
+ * `must` / `mustNot` 在 **`stripCommentsFor(path, src)` 之后的文本**上匹配（不是原文）。
+ *
+ * ## 为什么（实测代价，2026-10-30）
+ * 原来是纯子串 ⇒ **注释里出现也算命中**。C1/C3 两张卡为了把
+ * `mustNot:["INTRODUCED_BY_MODULE"]` / `["PKG_DIRS"]` 变绿，**只能把注释里的旧名字删掉** ——
+ * 判据在**惩罚"记录病史"**，而本仓文化是病史留痕（自相矛盾）。
+ *
+ * ## 为什么按扩展名限定（不统一剥）
+ * **markdown 的 `//source`、JSON 里的 `//` 都不是注释** ⇒ 统一剥会把文档 / 数据判据的字面量
+ * 当注释吃掉。只有代码扩展名才剥（判据住在 `text_strip.ts#isCodeText`，这里不重复一套）。
+ *
+ * ## 为什么住 domain
+ * 判据执行核要调它，而 **domain 不许依赖 infrastructure**；剥注释器 `text_strip.ts` 是**零 import**
+ * （`behavior-cases` 的 harness 会把目标文件单独转译再 import）。⇒ 判据共三处：
+ * `text_strip.ts`（怎么剥）· 本函数（匹配什么）· `judgeSourceHas`（读文件、渲染四态）。
+ */
+export function matchSourceHas(
+  path: string,
+  src: string,
+  must: readonly string[] = [],
+  mustNot: readonly string[] = [],
+): { missMust: string[]; hitMustNot: string[] } {
+  const text = stripCommentsFor(path, src);
+  return {
+    missMust: must.filter((t) => !text.includes(t)),
+    hitMustNot: mustNot.filter((t) => text.includes(t)),
+  };
 }
 
 const isEmpty = (v: unknown): boolean =>

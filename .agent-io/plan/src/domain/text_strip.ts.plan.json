@@ -1,0 +1,24 @@
+{
+  "path": "src/domain/text_strip.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "stripComments"
+      },
+      "kind": "create",
+      "detail": "新建零 import 的 src/domain/text_strip.ts：stripComments（只剥行注释与块注释，字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText（.ts/.tsx/.js/.jsx/.mjs/.cjs 白名单）+ stripCommentsFor（代码文本才剥，.md/.json 原文返回）",
+      "judgement_ref": "decision:file_src_application_design_intent_expectations_ts#1",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_application_design_intent_expectations_ts",
+  "frozen_at": "2026-10-30T07:11:01.175Z",
+  "base": {
+    "content_hash": "8f87cacdeb9c0c2df9ff746a685146c9646710dd"
+  },
+  "fps_at_freeze": {
+    "isCodeText": "e2b19b26b0e06439127e10f46f72d4500c1dc680",
+    "stripComments": "b175b039c5dd5015e00d16556d3b2a3a8e8181c6",
+    "stripCommentsFor": "ba39a65c365e3abc0a5214560c31fdef45935143"
+  }
+}

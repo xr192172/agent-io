@@ -9289,35 +9289,59 @@
                 "AGENTS-RULES.md"
               ],
               "why": "脚本必须真的去读 AGENTS-RULES.md 并注入；只改 AGENTS.md 产物会被下次 build 覆盖"
+            },
+            {
+              "kind": "source-has",
+              "path": "AGENTS-RULES.md",
+              "must": [
+                "必须全量重生成设计 DB",
+                "npm run design:gen-db"
+              ],
+              "mustNot": [
+                "**改判据后必须 `design_line action=gen-db`**"
+              ],
+              "why": "0.2 第 3 条必须写成「全量」：带 feature 只重生成那一个切片 ⇒ //source 与持有者列表对不上 ⇒ npm run verify 的「设计 DB 结构」门实测报陈旧 361 / 缺 2 / 多 159（2026-10-30）；旧的「只写 gen-db」三种口径都合规，正是这句话被踩的那个洞"
+            },
+            {
+              "kind": "call-exists",
+              "path": "scripts/gen_agents.mjs",
+              "symbol": "buildAgents",
+              "target": "readRules",
+              "why": "AGENTS.md 的第零节必须由 scripts/gen_agents.mjs#buildAgents 经 readRules() 从 AGENTS-RULES.md 注入：改 AGENTS-RULES.md 后只跑 npm run build 就能重建产物，_check 也不漂（这条边断了 = 正文又被手改进模板字面量）"
             }
           ],
-          "updated_at": "2026-10-30T02:17:56.151Z",
-          "agent": "agent-io-cli"
+          "updated_at": "2026-10-30T07:05:07.315Z",
+          "agent": "subagent:rule-strip"
         },
         "task": {
           "id": "file_scripts_gen_agents_mjs",
           "summary": "AGENTS.md 是 DSH 自动加载的必读文件；它由本脚本生成 ⇒ 开发纪律必须写进模板源头（第零节），不许手改产物",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:agent-io-cli",
-          "claimed_at": "2026-10-30T02:14:37.588Z",
+          "owner": "subagent:rule-strip",
+          "claimed_at": "2026-10-30T07:05:18.940Z",
           "read_set": {
             "symbols": [
               {
                 "file": "scripts/gen_agents.mjs",
                 "name": "buildAgents",
-                "fp": "9722d4815388aea27ba3d609a041ea69022ebefb"
+                "fp": "59eed7b3956d9aa4da45bc072c231d3a6f02366c"
               }
             ],
             "files": [
               {
+                "path": "AGENTS-RULES.md",
+                "content_hash": "e1dadd2cfde4be1798ac16faef728d6de0d8bfdf"
+              },
+              {
                 "path": "scripts/gen_agents.mjs",
-                "content_hash": "355075e9cfc7cf409ddefe91e978b417c0661b26"
+                "content_hash": "e70b56793e669ef86a00f9c5a0f0db09a9f38a4c"
               }
             ],
-            "computed_at": "2026-10-30T02:14:37.512Z",
+            "computed_at": "2026-10-30T07:05:18.862Z",
             "basis": [
-              "canvas"
+              "canvas",
+              "expectations"
             ]
           },
           "evidence": [
@@ -9337,8 +9361,29 @@
               },
               "observed": "AGENTS.md 已重建且 --check 一致；第零节 0.1-0.7 全部就位；正文唯一住处 AGENTS-RULES.md",
               "command": "node scripts/gen_agents.mjs && node scripts/gen_agents.mjs --check"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T07:06:51.981Z",
+              "by": "llm",
+              "agent": "subagent:rule-strip",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/gen_agents.mjs --check && npm run verify",
+                "input": "d5a9d3ead50903bda3136a764d70bb31aecac629",
+                "code": "3a81ec208f35582a174b3c689f7b5654033b18bb",
+                "covers": [
+                  "AGENTS-RULES.md",
+                  "scripts/gen_agents.mjs"
+                ]
+              },
+              "observed": "AGENTS.md 已同步重建（0.2 第 3 条现为「必须全量重生成设计 DB：npm run design:gen-db（或 design_line action=gen-db 不带 feature）」+ 陈旧 361/缺 2/多 159 与 features=3/files=746 两个读数）；--check 退出 0；npm run verify 9/9 PASS（含「设计 DB 结构」）；judge 136 条 135 pass / 1 fail（唯一红是 gen_design_db.ts 的既有陈旧红）",
+              "command": "node scripts/gen_agents.mjs --check && npm run verify"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-30T07:05:18.940Z",
+          "reopen_reason": "改 AGENTS-RULES.md 0.2 第 3 条：gen-db 必须全量（带 feature 实测陈旧 361 / 缺 2 / 多 159）",
+          "reopened_from": "agent:agent-io-cli"
         },
         "status": "done",
         "decision_history": [
@@ -9361,6 +9406,62 @@
               "agent": "agent-io-cli"
             },
             "agent": "agent-io-cli"
+          },
+          {
+            "at": "2026-10-30T07:05:07.274Z",
+            "decision": {
+              "summary": "AGENTS.md 是 DSH 自动加载的必读文件；由本脚本生成 ⇒ 开发纪律正文放仓库根 AGENTS-RULES.md（纯 md，可手改），生成器 readRules() 注入模板第零节，禁止把长文塞进模板字面量",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "phase": "post",
+                  "path": "scripts/gen_agents.mjs",
+                  "must": [
+                    "readRules",
+                    "AGENTS-RULES.md"
+                  ],
+                  "why": "脚本必须真的去读 AGENTS-RULES.md 并注入；只改 AGENTS.md 产物会被下次 build 覆盖"
+                }
+              ],
+              "updated_at": "2026-10-30T02:17:56.151Z",
+              "agent": "agent-io-cli"
+            },
+            "note": "AGENTS-RULES.md 0.2 第 3 条只写「改判据后必须 design_line action=gen-db」，而带 feature 只重生成一个切片 ⇒ npm run verify 的「设计 DB 结构」门实测报陈旧 361 / 缺 2 / 多 159；钉住全量口径 npm run design:gen-db，并用 call-exists scripts/gen_agents.mjs#buildAgents → readRules 守住「AGENTS.md 由 AGENTS-RULES.md 注入」这条边",
+            "agent": "subagent:rule-strip"
+          },
+          {
+            "at": "2026-10-30T07:05:07.315Z",
+            "decision": {
+              "summary": "AGENTS.md 是 DSH 自动加载的必读文件；由本脚本生成 ⇒ 开发纪律正文放仓库根 AGENTS-RULES.md（纯 md，可手改），生成器 readRules() 注入模板第零节，禁止把长文塞进模板字面量",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "phase": "post",
+                  "path": "scripts/gen_agents.mjs",
+                  "must": [
+                    "readRules",
+                    "AGENTS-RULES.md"
+                  ],
+                  "why": "脚本必须真的去读 AGENTS-RULES.md 并注入；只改 AGENTS.md 产物会被下次 build 覆盖"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "AGENTS-RULES.md",
+                  "must": [
+                    "必须全量重生成设计 DB",
+                    "npm run design:gen-db"
+                  ],
+                  "mustNot": [
+                    "**改判据后必须 `design_line action=gen-db`**"
+                  ],
+                  "why": "0.2 第 3 条必须写成「全量」：带 feature 只重生成那一个切片 ⇒ //source 与持有者列表对不上 ⇒ npm run verify 的「设计 DB 结构」门实测报陈旧 361 / 缺 2 / 多 159（2026-10-30）；旧的「只写 gen-db」三种口径都合规，正是这句话被踩的那个洞"
+                }
+              ],
+              "updated_at": "2026-10-30T07:05:07.274Z",
+              "agent": "subagent:rule-strip"
+            },
+            "note": "AGENTS-RULES.md 0.2 第 3 条只写「改判据后必须 design_line action=gen-db」，而带 feature 只重生成一个切片 ⇒ npm run verify 的「设计 DB 结构」门实测报陈旧 361 / 缺 2 / 多 159；钉住全量口径 npm run design:gen-db，并用 call-exists scripts/gen_agents.mjs#buildAgents → readRules 守住「AGENTS.md 由 AGENTS-RULES.md 注入」这条边",
+            "agent": "subagent:rule-strip"
           }
         ],
         "overlay": {
@@ -9369,9 +9470,9 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "command": "node scripts/gen_agents.mjs && node scripts/gen_agents.mjs --check",
-            "observed": "AGENTS.md 已重建且 --check 一致；第零节 0.1-0.7 全部就位；正文唯一住处 AGENTS-RULES.md",
-            "at": "2026-10-30T10:17:56.3375743+08:00"
+            "at": "2026-10-30T15:06:47+08:00",
+            "command": "node scripts/gen_agents.mjs --check && npm run verify",
+            "observed": "AGENTS.md 已同步重建（0.2 第 3 条现为「必须全量重生成设计 DB：npm run design:gen-db（或 design_line action=gen-db 不带 feature）」+ 陈旧 361/缺 2/多 159 与 features=3/files=746 两个读数）；--check 退出 0；npm run verify 9/9 PASS（含「设计 DB 结构」）；judge 136 条 135 pass / 1 fail（唯一红是 gen_design_db.ts 的既有陈旧红）"
           },
           "signature": "v2:f13d721acf63"
         }
@@ -10729,13 +10830,18 @@
               "why": "节点写入口必须仍在（回归底线）"
             },
             {
-              "kind": "source-has",
-              "must": [
-                "update 也要同步",
-                "delete 也要同步"
-              ],
+              "kind": "call-exists",
               "path": "src/application/design/dsl_ops/node_ops.ts",
-              "why": "add / update / delete 三条路径必须都同步 —— 漏 delete 则语义表留孤儿条目"
+              "symbol": "updateNode",
+              "target": "syncSemanticFileForFileNode",
+              "why": "★ 原判据锚在注释散文上（node_ops.ts L597「update 也要同步」），剥注释后暴露；改为锚代码：updateNode 必须调 syncSemanticFileForFileNode（L600），否则改 file 节点的 path 时 semantic.files 不同步"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/node_ops.ts",
+              "symbol": "deleteNode",
+              "target": "removeSemanticFileForFileNode",
+              "why": "★ 原判据锚在注释散文上（node_ops.ts L651「delete 也要同步」），剥注释后暴露；改为锚代码：deleteNode 必须调 removeSemanticFileForFileNode（L653），否则 semantic.files 留孤儿条目、读它的判据会假装文件还在册里"
             }
           ],
           "rationale": "几何节点（geometry.nodes）与语义文件（semantic.files）由两个不同 op 写且互不同步 ⇒ 同一事实两处，必分叉。实测后果：docs/VISION.md 建了 file 节点但 semantic.files 仍 0 命中 ⇒ D1 [覆盖] 永远红，且没有合法写入口能修（type:'file' 被写闸拒、node.add 不写语义表）。",
@@ -10746,9 +10852,9 @@
             "semantic-files",
             "structural"
           ],
-          "updated_at": "2026-10-26T13:34:46.219Z",
+          "updated_at": "2026-10-30T07:09:53.844Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
+          "agent": "subagent:rule-strip"
         },
         "overlay": {
           "path": "src/application/design/dsl_ops/node_ops.ts",
@@ -10841,6 +10947,159 @@
             "note": "T-#22 续2：delete 同步（同族第三个缺口）",
             "author": "llm",
             "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-10-30T07:09:53.759Z",
+            "decision": {
+              "summary": "node.add/update/delete：file 型节点都必须同步 semantic.files（两张表不许分叉）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "semantic"
+                  ],
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "why": "node_ops.ts 原对 semantic 零引用 ⇒ 两张表分叉"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "symbol": "addNode",
+                  "why": "节点写入口必须仍在（回归底线）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "update 也要同步",
+                    "delete 也要同步"
+                  ],
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "why": "add / update / delete 三条路径必须都同步 —— 漏 delete 则语义表留孤儿条目"
+                }
+              ],
+              "rationale": "几何节点（geometry.nodes）与语义文件（semantic.files）由两个不同 op 写且互不同步 ⇒ 同一事实两处，必分叉。实测后果：docs/VISION.md 建了 file 节点但 semantic.files 仍 0 命中 ⇒ D1 [覆盖] 永远红，且没有合法写入口能修（type:'file' 被写闸拒、node.add 不写语义表）。",
+              "acceptance": "① node.add / node.update / **node.delete** 三条路径在 file 型节点上都同步维护 semantic.files；② delete 分支必须删掉对应语义条目（不留孤儿）；③ 不得改变非 file 节点行为。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "semantic-files",
+                "structural"
+              ],
+              "updated_at": "2026-10-26T13:34:46.219Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "三条判据原来锚在注释散文上，剥注释后暴露为假红，一律改锚代码：node_ops#2 改成 updateNode→syncSemanticFileForFileNode / deleteNode→removeSemanticFileForFileNode 两条 call-exists；task_history#1（path=src/infrastructure/roots.ts）must 改成代码字面量 carrier: 'tasks.jsonl' 与 role: 'tasks'（roots.ts L100）；update_feature#0 退休，改 call-exists importProject→isScannedNodeId 指两层闸的真实入口",
+            "agent": "subagent:rule-strip"
+          },
+          {
+            "at": "2026-10-30T07:09:53.801Z",
+            "decision": {
+              "summary": "node.add/update/delete：file 型节点都必须同步 semantic.files（两张表不许分叉）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "semantic"
+                  ],
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "why": "node_ops.ts 原对 semantic 零引用 ⇒ 两张表分叉"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "symbol": "addNode",
+                  "why": "节点写入口必须仍在（回归底线）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "update 也要同步",
+                    "delete 也要同步"
+                  ],
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "why": "add / update / delete 三条路径必须都同步 —— 漏 delete 则语义表留孤儿条目"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "symbol": "updateNode",
+                  "target": "syncSemanticFileForFileNode",
+                  "why": "★ 原判据锚在注释散文上（node_ops.ts L597「update 也要同步」），剥注释后暴露；改为锚代码：updateNode 必须调 syncSemanticFileForFileNode（L600），否则改 file 节点的 path 时 semantic.files 不同步"
+                }
+              ],
+              "rationale": "几何节点（geometry.nodes）与语义文件（semantic.files）由两个不同 op 写且互不同步 ⇒ 同一事实两处，必分叉。实测后果：docs/VISION.md 建了 file 节点但 semantic.files 仍 0 命中 ⇒ D1 [覆盖] 永远红，且没有合法写入口能修（type:'file' 被写闸拒、node.add 不写语义表）。",
+              "acceptance": "① node.add / node.update / **node.delete** 三条路径在 file 型节点上都同步维护 semantic.files；② delete 分支必须删掉对应语义条目（不留孤儿）；③ 不得改变非 file 节点行为。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "semantic-files",
+                "structural"
+              ],
+              "updated_at": "2026-10-30T07:09:53.759Z",
+              "author": "llm",
+              "agent": "subagent:rule-strip"
+            },
+            "note": "三条判据原来锚在注释散文上，剥注释后暴露为假红，一律改锚代码：node_ops#2 改成 updateNode→syncSemanticFileForFileNode / deleteNode→removeSemanticFileForFileNode 两条 call-exists；task_history#1（path=src/infrastructure/roots.ts）must 改成代码字面量 carrier: 'tasks.jsonl' 与 role: 'tasks'（roots.ts L100）；update_feature#0 退休，改 call-exists importProject→isScannedNodeId 指两层闸的真实入口",
+            "agent": "subagent:rule-strip"
+          },
+          {
+            "at": "2026-10-30T07:09:53.844Z",
+            "decision": {
+              "summary": "node.add/update/delete：file 型节点都必须同步 semantic.files（两张表不许分叉）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "semantic"
+                  ],
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "why": "node_ops.ts 原对 semantic 零引用 ⇒ 两张表分叉"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "symbol": "addNode",
+                  "why": "节点写入口必须仍在（回归底线）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "update 也要同步",
+                    "delete 也要同步"
+                  ],
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "why": "add / update / delete 三条路径必须都同步 —— 漏 delete 则语义表留孤儿条目"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "symbol": "updateNode",
+                  "target": "syncSemanticFileForFileNode",
+                  "why": "★ 原判据锚在注释散文上（node_ops.ts L597「update 也要同步」），剥注释后暴露；改为锚代码：updateNode 必须调 syncSemanticFileForFileNode（L600），否则改 file 节点的 path 时 semantic.files 不同步"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "symbol": "deleteNode",
+                  "target": "removeSemanticFileForFileNode",
+                  "why": "★ 原判据锚在注释散文上（node_ops.ts L651「delete 也要同步」），剥注释后暴露；改为锚代码：deleteNode 必须调 removeSemanticFileForFileNode（L653），否则 semantic.files 留孤儿条目、读它的判据会假装文件还在册里"
+                }
+              ],
+              "rationale": "几何节点（geometry.nodes）与语义文件（semantic.files）由两个不同 op 写且互不同步 ⇒ 同一事实两处，必分叉。实测后果：docs/VISION.md 建了 file 节点但 semantic.files 仍 0 命中 ⇒ D1 [覆盖] 永远红，且没有合法写入口能修（type:'file' 被写闸拒、node.add 不写语义表）。",
+              "acceptance": "① node.add / node.update / **node.delete** 三条路径在 file 型节点上都同步维护 semantic.files；② delete 分支必须删掉对应语义条目（不留孤儿）；③ 不得改变非 file 节点行为。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "semantic-files",
+                "structural"
+              ],
+              "updated_at": "2026-10-30T07:09:53.801Z",
+              "author": "llm",
+              "agent": "subagent:rule-strip"
+            },
+            "note": "三条判据原来锚在注释散文上，剥注释后暴露为假红，一律改锚代码：node_ops#2 改成 updateNode→syncSemanticFileForFileNode / deleteNode→removeSemanticFileForFileNode 两条 call-exists；task_history#1（path=src/infrastructure/roots.ts）must 改成代码字面量 carrier: 'tasks.jsonl' 与 role: 'tasks'（roots.ts L100）；update_feature#0 退休，改 call-exists importProject→isScannedNodeId 指两层闸的真实入口",
+            "agent": "subagent:rule-strip"
           }
         ],
         "path": "src/application/design/dsl_ops/node_ops.ts"
@@ -11118,20 +11377,27 @@
           "expectations": [
             {
               "kind": "source-has",
-              "must": [
-                "live_only",
-                "两层闸"
-              ],
-              "path": "src/application/design/dsl_ops/update_feature.ts",
-              "why": "注释必须指向真实存在的安全路径与保护（现状），而不是历史"
-            },
-            {
-              "kind": "source-has",
               "mustNot": [
                 "曾让人误以为"
               ],
               "path": "src/application/design/dsl_ops/update_feature.ts",
               "why": "历史叙事（“当年误了谁”）不该住源文件 —— 它的家在册的 rationale/note 与 commit message"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/graph/import_project.ts",
+              "must": [
+                "allow_design_drop",
+                "lostIntent"
+              ],
+              "why": "意图级那层（重建会抹掉 decision/task 时默认拒绝）没有具名函数，只能钉代码字面量：allow_design_drop（L1294 真·知情同意开关）与 lostIntent（L1298 意图损失集合）都是**代码标识符**，不是注释"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/graph/import_project.ts",
+              "symbol": "importProject",
+              "target": "carryOverNodeGates",
+              "why": "★ 原判据（live_only / 两层闸）锚在注释散文上（update_feature.ts L873-874），剥注释后暴露；两层闸的可索引真身：importProject 调 carryOverNodeGates（重建时把节点 gate 按 id 搬回、不抹，L1331），意图级那层由 must:[\"allow_design_drop\",\"lostIntent\"] 钉住（L1294/L1298）。★ 边界：isScannedNodeId 是 importProject 内的局部箭头函数（parent 非空），gen-db 的 requirements_calls 解析不到它，故不作 target"
             }
           ],
           "acceptance": "① 注释只写“现在是什么”（decision 住 base + 重建会丢 + 谁保护它 + 安全路径），不写“当年怎么退役/曾经误过谁”；② 历史叙事住本卡的 rationale/note，不住源文件；③ 判据只看现状文本。",
@@ -11141,9 +11407,9 @@
             "gate",
             "comment-discipline"
           ],
-          "updated_at": "2026-10-26T11:58:22.812Z",
+          "updated_at": "2026-10-30T07:15:34.852Z",
           "author": "llm",
-          "agent": "agent:wish-machine",
+          "agent": "subagent:rule-strip",
           "rationale": "【历史，2026-10-26】T75 曾用 syncDecisionsToOverlay 把 decision 同步进 overlay（防 base 重建冲掉）；2026-10-19 因“设计只住一处”（写两处会分叉）主动退役 —— 但退役所依赖的前提“design/ 重建不碰它”对 rebuild_design=true 不成立（实测会碰）。真正的保护在 import_project 的两层闸（节点级 willDrop + 意图级 lostIntent，默认拒绝、两层一次报全）。原注释写“收口处会调 syncDecisionsToOverlay”是过期信息，曾误导一次判断（以为决策卡有 overlay 保护）。"
         },
         "overlay": {
@@ -11194,6 +11460,309 @@
             "note": "T-#18：注释只留现状，历史搬进本卡",
             "author": "llm",
             "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-10-30T07:09:53.977Z",
+            "decision": {
+              "summary": "decision 写入口：只住 base；rebuild_design 会抹掉它，由 import_project 两层闸保护",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "live_only",
+                    "两层闸"
+                  ],
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "why": "注释必须指向真实存在的安全路径与保护（现状），而不是历史"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "曾让人误以为"
+                  ],
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "why": "历史叙事（“当年误了谁”）不该住源文件 —— 它的家在册的 rationale/note 与 commit message"
+                }
+              ],
+              "acceptance": "① 注释只写“现在是什么”（decision 住 base + 重建会丢 + 谁保护它 + 安全路径），不写“当年怎么退役/曾经误过谁”；② 历史叙事住本卡的 rationale/note，不住源文件；③ 判据只看现状文本。",
+              "status": "active",
+              "tags": [
+                "decision",
+                "gate",
+                "comment-discipline"
+              ],
+              "updated_at": "2026-10-26T11:58:22.812Z",
+              "author": "llm",
+              "agent": "agent:wish-machine",
+              "rationale": "【历史，2026-10-26】T75 曾用 syncDecisionsToOverlay 把 decision 同步进 overlay（防 base 重建冲掉）；2026-10-19 因“设计只住一处”（写两处会分叉）主动退役 —— 但退役所依赖的前提“design/ 重建不碰它”对 rebuild_design=true 不成立（实测会碰）。真正的保护在 import_project 的两层闸（节点级 willDrop + 意图级 lostIntent，默认拒绝、两层一次报全）。原注释写“收口处会调 syncDecisionsToOverlay”是过期信息，曾误导一次判断（以为决策卡有 overlay 保护）。"
+            },
+            "note": "三条判据原来锚在注释散文上，剥注释后暴露为假红，一律改锚代码：node_ops#2 改成 updateNode→syncSemanticFileForFileNode / deleteNode→removeSemanticFileForFileNode 两条 call-exists；task_history#1（path=src/infrastructure/roots.ts）must 改成代码字面量 carrier: 'tasks.jsonl' 与 role: 'tasks'（roots.ts L100）；update_feature#0 退休，改 call-exists importProject→isScannedNodeId 指两层闸的真实入口",
+            "agent": "subagent:rule-strip"
+          },
+          {
+            "at": "2026-10-30T07:09:54.022Z",
+            "decision": {
+              "summary": "decision 写入口：只住 base；rebuild_design 会抹掉它，由 import_project 两层闸保护",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "live_only",
+                    "两层闸"
+                  ],
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "why": "注释必须指向真实存在的安全路径与保护（现状），而不是历史"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "曾让人误以为"
+                  ],
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "why": "历史叙事（“当年误了谁”）不该住源文件 —— 它的家在册的 rationale/note 与 commit message"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "symbol": "importProject",
+                  "target": "isScannedNodeId",
+                  "why": "★ 原判据（live_only / 两层闸）锚在注释散文上（update_feature.ts L873-874），剥注释后暴露；两层闸的真实入口在 import_project.ts#importProject，节点级那层的判据委派给 isScannedNodeId（前缀集合 SCANNED_ID_PREFIXES 一处权威，L1073/L1237），改为锚这条调用边"
+                }
+              ],
+              "acceptance": "① 注释只写“现在是什么”（decision 住 base + 重建会丢 + 谁保护它 + 安全路径），不写“当年怎么退役/曾经误过谁”；② 历史叙事住本卡的 rationale/note，不住源文件；③ 判据只看现状文本。",
+              "status": "active",
+              "tags": [
+                "decision",
+                "gate",
+                "comment-discipline"
+              ],
+              "updated_at": "2026-10-30T07:09:53.977Z",
+              "author": "llm",
+              "agent": "subagent:rule-strip",
+              "rationale": "【历史，2026-10-26】T75 曾用 syncDecisionsToOverlay 把 decision 同步进 overlay（防 base 重建冲掉）；2026-10-19 因“设计只住一处”（写两处会分叉）主动退役 —— 但退役所依赖的前提“design/ 重建不碰它”对 rebuild_design=true 不成立（实测会碰）。真正的保护在 import_project 的两层闸（节点级 willDrop + 意图级 lostIntent，默认拒绝、两层一次报全）。原注释写“收口处会调 syncDecisionsToOverlay”是过期信息，曾误导一次判断（以为决策卡有 overlay 保护）。"
+            },
+            "note": "三条判据原来锚在注释散文上，剥注释后暴露为假红，一律改锚代码：node_ops#2 改成 updateNode→syncSemanticFileForFileNode / deleteNode→removeSemanticFileForFileNode 两条 call-exists；task_history#1（path=src/infrastructure/roots.ts）must 改成代码字面量 carrier: 'tasks.jsonl' 与 role: 'tasks'（roots.ts L100）；update_feature#0 退休，改 call-exists importProject→isScannedNodeId 指两层闸的真实入口",
+            "agent": "subagent:rule-strip"
+          },
+          {
+            "at": "2026-10-30T07:09:54.065Z",
+            "decision": {
+              "summary": "decision 写入口：只住 base；rebuild_design 会抹掉它，由 import_project 两层闸保护",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "live_only",
+                    "两层闸"
+                  ],
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "why": "注释必须指向真实存在的安全路径与保护（现状），而不是历史"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "曾让人误以为"
+                  ],
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "why": "历史叙事（“当年误了谁”）不该住源文件 —— 它的家在册的 rationale/note 与 commit message"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "symbol": "importProject",
+                  "target": "isScannedNodeId",
+                  "why": "★ 原判据（live_only / 两层闸）锚在注释散文上（update_feature.ts L873-874），剥注释后暴露；两层闸的真实入口在 import_project.ts#importProject，节点级那层的判据委派给 isScannedNodeId（前缀集合 SCANNED_ID_PREFIXES 一处权威，L1073/L1237），改为锚这条调用边"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "must": [
+                    "allow_design_drop",
+                    "lostIntent"
+                  ],
+                  "why": "意图级那层（重建会抹掉 decision/task 时默认拒绝）没有具名函数，只能钉代码字面量：allow_design_drop（L1294 真·知情同意开关）与 lostIntent（L1298 意图损失集合）都是**代码标识符**，不是注释"
+                }
+              ],
+              "acceptance": "① 注释只写“现在是什么”（decision 住 base + 重建会丢 + 谁保护它 + 安全路径），不写“当年怎么退役/曾经误过谁”；② 历史叙事住本卡的 rationale/note，不住源文件；③ 判据只看现状文本。",
+              "status": "active",
+              "tags": [
+                "decision",
+                "gate",
+                "comment-discipline"
+              ],
+              "updated_at": "2026-10-30T07:09:54.022Z",
+              "author": "llm",
+              "agent": "subagent:rule-strip",
+              "rationale": "【历史，2026-10-26】T75 曾用 syncDecisionsToOverlay 把 decision 同步进 overlay（防 base 重建冲掉）；2026-10-19 因“设计只住一处”（写两处会分叉）主动退役 —— 但退役所依赖的前提“design/ 重建不碰它”对 rebuild_design=true 不成立（实测会碰）。真正的保护在 import_project 的两层闸（节点级 willDrop + 意图级 lostIntent，默认拒绝、两层一次报全）。原注释写“收口处会调 syncDecisionsToOverlay”是过期信息，曾误导一次判断（以为决策卡有 overlay 保护）。"
+            },
+            "note": "三条判据原来锚在注释散文上，剥注释后暴露为假红，一律改锚代码：node_ops#2 改成 updateNode→syncSemanticFileForFileNode / deleteNode→removeSemanticFileForFileNode 两条 call-exists；task_history#1（path=src/infrastructure/roots.ts）must 改成代码字面量 carrier: 'tasks.jsonl' 与 role: 'tasks'（roots.ts L100）；update_feature#0 退休，改 call-exists importProject→isScannedNodeId 指两层闸的真实入口",
+            "agent": "subagent:rule-strip"
+          },
+          {
+            "at": "2026-10-30T07:10:25.310Z",
+            "decision": {
+              "summary": "decision 写入口：只住 base；rebuild_design 会抹掉它，由 import_project 两层闸保护",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "曾让人误以为"
+                  ],
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "why": "历史叙事（“当年误了谁”）不该住源文件 —— 它的家在册的 rationale/note 与 commit message"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "symbol": "importProject",
+                  "target": "isScannedNodeId",
+                  "why": "★ 原判据（live_only / 两层闸）锚在注释散文上（update_feature.ts L873-874），剥注释后暴露；两层闸的真实入口在 import_project.ts#importProject，节点级那层的判据委派给 isScannedNodeId（前缀集合 SCANNED_ID_PREFIXES 一处权威，L1073/L1237），改为锚这条调用边"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "must": [
+                    "allow_design_drop",
+                    "lostIntent"
+                  ],
+                  "why": "意图级那层（重建会抹掉 decision/task 时默认拒绝）没有具名函数，只能钉代码字面量：allow_design_drop（L1294 真·知情同意开关）与 lostIntent（L1298 意图损失集合）都是**代码标识符**，不是注释"
+                }
+              ],
+              "acceptance": "① 注释只写“现在是什么”（decision 住 base + 重建会丢 + 谁保护它 + 安全路径），不写“当年怎么退役/曾经误过谁”；② 历史叙事住本卡的 rationale/note，不住源文件；③ 判据只看现状文本。",
+              "status": "active",
+              "tags": [
+                "decision",
+                "gate",
+                "comment-discipline"
+              ],
+              "updated_at": "2026-10-30T07:09:54.065Z",
+              "author": "llm",
+              "agent": "subagent:rule-strip",
+              "rationale": "【历史，2026-10-26】T75 曾用 syncDecisionsToOverlay 把 decision 同步进 overlay（防 base 重建冲掉）；2026-10-19 因“设计只住一处”（写两处会分叉）主动退役 —— 但退役所依赖的前提“design/ 重建不碰它”对 rebuild_design=true 不成立（实测会碰）。真正的保护在 import_project 的两层闸（节点级 willDrop + 意图级 lostIntent，默认拒绝、两层一次报全）。原注释写“收口处会调 syncDecisionsToOverlay”是过期信息，曾误导一次判断（以为决策卡有 overlay 保护）。"
+            },
+            "note": "call-exists 的 target 是索引里的 callee 短名（expectations.ts L463 取 # 之后全串）：两层闸的节点级判据是 import_project.ts 内的局部箭头函数，索引名是 importProject.isScannedNodeId（L1073 定义 / L1237 调用），target 写裸名 isScannedNodeId 判不到边",
+            "agent": "subagent:rule-strip"
+          },
+          {
+            "at": "2026-10-30T07:10:25.363Z",
+            "decision": {
+              "summary": "decision 写入口：只住 base；rebuild_design 会抹掉它，由 import_project 两层闸保护",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "曾让人误以为"
+                  ],
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "why": "历史叙事（“当年误了谁”）不该住源文件 —— 它的家在册的 rationale/note 与 commit message"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "must": [
+                    "allow_design_drop",
+                    "lostIntent"
+                  ],
+                  "why": "意图级那层（重建会抹掉 decision/task 时默认拒绝）没有具名函数，只能钉代码字面量：allow_design_drop（L1294 真·知情同意开关）与 lostIntent（L1298 意图损失集合）都是**代码标识符**，不是注释"
+                }
+              ],
+              "acceptance": "① 注释只写“现在是什么”（decision 住 base + 重建会丢 + 谁保护它 + 安全路径），不写“当年怎么退役/曾经误过谁”；② 历史叙事住本卡的 rationale/note，不住源文件；③ 判据只看现状文本。",
+              "status": "active",
+              "tags": [
+                "decision",
+                "gate",
+                "comment-discipline"
+              ],
+              "updated_at": "2026-10-30T07:10:25.310Z",
+              "author": "llm",
+              "agent": "subagent:rule-strip",
+              "rationale": "【历史，2026-10-26】T75 曾用 syncDecisionsToOverlay 把 decision 同步进 overlay（防 base 重建冲掉）；2026-10-19 因“设计只住一处”（写两处会分叉）主动退役 —— 但退役所依赖的前提“design/ 重建不碰它”对 rebuild_design=true 不成立（实测会碰）。真正的保护在 import_project 的两层闸（节点级 willDrop + 意图级 lostIntent，默认拒绝、两层一次报全）。原注释写“收口处会调 syncDecisionsToOverlay”是过期信息，曾误导一次判断（以为决策卡有 overlay 保护）。"
+            },
+            "note": "call-exists 的 target 是索引里的 callee 短名（expectations.ts L463 取 # 之后全串）：两层闸的节点级判据是 import_project.ts 内的局部箭头函数，索引名是 importProject.isScannedNodeId（L1073 定义 / L1237 调用），target 写裸名 isScannedNodeId 判不到边",
+            "agent": "subagent:rule-strip"
+          },
+          {
+            "at": "2026-10-30T07:15:34.801Z",
+            "decision": {
+              "summary": "decision 写入口：只住 base；rebuild_design 会抹掉它，由 import_project 两层闸保护",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "曾让人误以为"
+                  ],
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "why": "历史叙事（“当年误了谁”）不该住源文件 —— 它的家在册的 rationale/note 与 commit message"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "must": [
+                    "allow_design_drop",
+                    "lostIntent"
+                  ],
+                  "why": "意图级那层（重建会抹掉 decision/task 时默认拒绝）没有具名函数，只能钉代码字面量：allow_design_drop（L1294 真·知情同意开关）与 lostIntent（L1298 意图损失集合）都是**代码标识符**，不是注释"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "symbol": "importProject",
+                  "target": "importProject.isScannedNodeId",
+                  "why": "★ 原判据（live_only / 两层闸）锚在注释散文上（update_feature.ts L873-874），剥注释后暴露；两层闸的真实入口在 import_project.ts#importProject，节点级那层的判据委派给局部符号 importProject.isScannedNodeId（前缀集合 SCANNED_ID_PREFIXES 一处权威，L1073 定义 / L1237 调用）⇒ target 必须写索引里的全名"
+                }
+              ],
+              "acceptance": "① 注释只写“现在是什么”（decision 住 base + 重建会丢 + 谁保护它 + 安全路径），不写“当年怎么退役/曾经误过谁”；② 历史叙事住本卡的 rationale/note，不住源文件；③ 判据只看现状文本。",
+              "status": "active",
+              "tags": [
+                "decision",
+                "gate",
+                "comment-discipline"
+              ],
+              "updated_at": "2026-10-30T07:10:25.363Z",
+              "author": "llm",
+              "agent": "subagent:rule-strip",
+              "rationale": "【历史，2026-10-26】T75 曾用 syncDecisionsToOverlay 把 decision 同步进 overlay（防 base 重建冲掉）；2026-10-19 因“设计只住一处”（写两处会分叉）主动退役 —— 但退役所依赖的前提“design/ 重建不碰它”对 rebuild_design=true 不成立（实测会碰）。真正的保护在 import_project 的两层闸（节点级 willDrop + 意图级 lostIntent，默认拒绝、两层一次报全）。原注释写“收口处会调 syncDecisionsToOverlay”是过期信息，曾误导一次判断（以为决策卡有 overlay 保护）。"
+            },
+            "note": "gen-db 的 requirements_calls 只认 parent IS NULL 的顶层符号（gen_design_db.ts 的 qHome：SELECT file_path FROM nodes WHERE name = ? AND parent IS NULL）⇒ target 写局部符号 importProject.isScannedNodeId 解析不到家、投影恒为空 ⇒ npm run verify 的「设计 DB 结构」门报陈旧 1。改用 importProject 真调用的顶层符号 carryOverNodeGates（import_project.ts L1331）",
+            "agent": "subagent:rule-strip"
+          },
+          {
+            "at": "2026-10-30T07:15:34.852Z",
+            "decision": {
+              "summary": "decision 写入口：只住 base；rebuild_design 会抹掉它，由 import_project 两层闸保护",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "曾让人误以为"
+                  ],
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "why": "历史叙事（“当年误了谁”）不该住源文件 —— 它的家在册的 rationale/note 与 commit message"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "must": [
+                    "allow_design_drop",
+                    "lostIntent"
+                  ],
+                  "why": "意图级那层（重建会抹掉 decision/task 时默认拒绝）没有具名函数，只能钉代码字面量：allow_design_drop（L1294 真·知情同意开关）与 lostIntent（L1298 意图损失集合）都是**代码标识符**，不是注释"
+                }
+              ],
+              "acceptance": "① 注释只写“现在是什么”（decision 住 base + 重建会丢 + 谁保护它 + 安全路径），不写“当年怎么退役/曾经误过谁”；② 历史叙事住本卡的 rationale/note，不住源文件；③ 判据只看现状文本。",
+              "status": "active",
+              "tags": [
+                "decision",
+                "gate",
+                "comment-discipline"
+              ],
+              "updated_at": "2026-10-30T07:15:34.801Z",
+              "author": "llm",
+              "agent": "subagent:rule-strip",
+              "rationale": "【历史，2026-10-26】T75 曾用 syncDecisionsToOverlay 把 decision 同步进 overlay（防 base 重建冲掉）；2026-10-19 因“设计只住一处”（写两处会分叉）主动退役 —— 但退役所依赖的前提“design/ 重建不碰它”对 rebuild_design=true 不成立（实测会碰）。真正的保护在 import_project 的两层闸（节点级 willDrop + 意图级 lostIntent，默认拒绝、两层一次报全）。原注释写“收口处会调 syncDecisionsToOverlay”是过期信息，曾误导一次判断（以为决策卡有 overlay 保护）。"
+            },
+            "note": "gen-db 的 requirements_calls 只认 parent IS NULL 的顶层符号（gen_design_db.ts 的 qHome：SELECT file_path FROM nodes WHERE name = ? AND parent IS NULL）⇒ target 写局部符号 importProject.isScannedNodeId 解析不到家、投影恒为空 ⇒ npm run verify 的「设计 DB 结构」门报陈旧 1。改用 importProject 真调用的顶层符号 carryOverNodeGates（import_project.ts L1331）",
+            "agent": "subagent:rule-strip"
           }
         ],
         "path": "src/application/design/dsl_ops/update_feature.ts"
@@ -11669,7 +12238,161 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/design/intent/expectations.ts"
+        "path": "src/application/design/intent/expectations.ts",
+        "decision": {
+          "summary": "source-has 的 must / mustNot 在**剥注释之后**的文本上匹配（只剥代码扩展名）；判定核是 domain 层 expectSourceHas 的纯函数 matchSourceHas，剥注释器是 src/domain/text_strip.ts（零 import）；application 层只留 fs 读取与四态渲染",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/domain/expectation_kinds.ts",
+              "symbol": "matchSourceHas",
+              "target": "stripCommentsFor",
+              "why": "source-has 的 must/mustNot 必须在**剥注释之后**的文本上匹配：纯子串会让注释里的旧名字也算命中，C1/C3 两张卡为把 mustNot:[\"INTRODUCED_BY_MODULE\"] / [\"PKG_DIRS\"] 变绿只能删注释里的病史。这条边断了 = 判据又在惩罚记录病史"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/text_strip.ts",
+              "symbol": "stripComments",
+              "why": "零依赖纯函数（behavior-cases 的 harness 会把目标文件单独转译）：行注释里的 PKG_DIRS 必须没了、块注释同样、而字符串字面量里的 // 必须原样保留（否则 http 的 // 会吃掉半行）",
+              "cases": [
+                {
+                  "given": [
+                    "const a = 1; // PKG_DIRS\nconst b = 2;"
+                  ],
+                  "expect": "const a = 1; \nconst b = 2;"
+                },
+                {
+                  "given": [
+                    "const u = \"http://x//y\"; // INTRODUCED_BY_MODULE"
+                  ],
+                  "expect": "const u = \"http://x//y\"; "
+                },
+                {
+                  "given": [
+                    "/* PKG_DIRS */ const c = 3;"
+                  ],
+                  "expect": " const c = 3;"
+                }
+              ]
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/text_strip.ts",
+              "symbol": "stripCommentsFor",
+              "why": "扩展名限定：只有代码文本才剥注释。markdown 的 //source 与 JSON 的 // 都不是注释 ⇒ 文档/数据判据按原文匹配，否则 design-db 的 //source 行会被当行注释吃掉",
+              "cases": [
+                {
+                  "given": [
+                    "docs/X.md",
+                    "a //source b"
+                  ],
+                  "expect": "a //source b"
+                },
+                {
+                  "given": [
+                    "src/x.ts",
+                    "a //source b"
+                  ],
+                  "expect": "a "
+                },
+                {
+                  "given": [
+                    "data/x.json",
+                    "{\"u\":\"a//b\"}"
+                  ],
+                  "expect": "{\"u\":\"a//b\"}"
+                }
+              ]
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/intent/expectations.ts",
+              "symbol": "judgeSourceHas",
+              "target": "matchSourceHas",
+              "why": "判定核必须委派给 domain 层的 matchSourceHas（唯一实现）；本文件只留 fs 读取与四态渲染，不许自己再写一套 includes 匹配"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/intent/expectations.ts",
+              "mustNot": [
+                "src.includes(t)"
+              ],
+              "why": "防第二份复活：对原文 src 直接 includes 的老匹配不许回来（它看不到注释，判据就会再次惩罚记录病史）"
+            }
+          ],
+          "updated_at": "2026-10-30T07:09:41.969Z",
+          "agent": "subagent:rule-strip"
+        },
+        "task": {
+          "id": "file_src_application_design_intent_expectations_ts",
+          "summary": "source-has 的 must / mustNot 在**剥注释之后**的文本上匹配（只剥代码扩展名）；判定核是 domain 层 expectSourceHas 的纯函数 matchSourceHas，剥注释器是 src/domain/text_strip.ts（零 import）；application 层只留 fs 读取与四态渲染",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:rule-strip",
+          "claimed_at": "2026-10-30T07:10:37.635Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/intent/expectations.ts",
+                "name": "judgeSourceHas",
+                "fp": "899a7febc243b6d5f70c473b56422731bbb0293b"
+              },
+              {
+                "file": "src/domain/expectation_kinds.ts",
+                "name": "matchSourceHas",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/intent/expectations.ts",
+                "content_hash": "80e24da0f35fde0ef875ce5633aea7d3659b1b9a"
+              },
+              {
+                "path": "src/domain/expectation_kinds.ts",
+                "content_hash": "2a65a5fc7050d3c523a3ee409cb0611a03163fa5"
+              }
+            ],
+            "computed_at": "2026-10-30T07:10:37.559Z",
+            "basis": [
+              "expectations"
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/domain/expectation_kinds.ts#matchSourceHas"
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T07:16:49.360Z",
+              "by": "llm",
+              "agent": "subagent:rule-strip",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify && node dist/src/presentation/cli/cli.js design_line --json {action:judge,feature:agent-io}",
+                "input": "1a5a9481fd95cf74359fab291ea740ea8b7028db",
+                "code": "0633d700c984b233544e30119d2ed83b6229623f",
+                "covers": [
+                  "src/application/design/intent/expectations.ts",
+                  "src/domain/expectation_kinds.ts",
+                  "src/domain/text_strip.ts"
+                ]
+              },
+              "observed": "5 条判据全绿：call-exists src/domain/expectation_kinds.ts#matchSourceHas→stripCommentsFor（L260）· behavior-cases src/domain/text_strip.ts#stripComments 3/3 · stripCommentsFor 3/3（含 .md 的 //source 原样保留）· call-exists expectations.ts#judgeSourceHas→matchSourceHas（L313）· source-has mustNot src.includes(t) 全无。全文 143 条 142 pass / 1 fail（1 fail = gen_design_db.ts 的 .path ?? raw.description 既有陈旧红，另一张卡）。npm run verify 9/9 全过；npm run build 绿（dist 749 产物 / 0 孤儿 / 0 缺失）；翻译产物直跑 tsc errors=435 / TS2304=97 / holes=164，与基线逐字一致",
+              "command": "npm run build && npm run verify && node dist/src/presentation/cli/cli.js design_line --json {action:judge,feature:agent-io}"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/design/intent/expectations.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-10-30T15:34:00+08:00",
+            "command": "npm run build && npm run verify && node dist/src/presentation/cli/cli.js design_line --json {action:judge,feature:agent-io}",
+            "observed": "5 条判据全绿：call-exists src/domain/expectation_kinds.ts#matchSourceHas→stripCommentsFor（L260）· behavior-cases src/domain/text_strip.ts#stripComments 3/3 · stripCommentsFor 3/3（含 .md 的 //source 原样保留）· call-exists expectations.ts#judgeSourceHas→matchSourceHas（L313）· source-has mustNot src.includes(t) 全无。全文 143 条 142 pass / 1 fail（1 fail = gen_design_db.ts 的 .path ?? raw.description 既有陈旧红，另一张卡）。npm run verify 9/9 全过；npm run build 绿（dist 749 产物 / 0 孤儿 / 0 缺失）；翻译产物直跑 tsc errors=435 / TS2304=97 / holes=164，与基线逐字一致"
+          }
+        }
       },
       {
         "id": "file_src_application_design_intent_judge_cache_ts",
@@ -20173,11 +20896,12 @@
             },
             {
               "kind": "source-has",
-              "must": [
-                "task-history.jsonl"
-              ],
               "path": "src/infrastructure/roots.ts",
-              "why": "roots 里 history 角色的跟踪产物必须指向 .jsonl（文本），而不是 .db（二进制）"
+              "must": [
+                "carrier: 'tasks.jsonl'",
+                "role: 'tasks'"
+              ],
+              "why": "★ 原判据锚在注释散文上（roots.ts L32「task-history.jsonl」是 2026-10-27 退役的旧名），剥注释后暴露；这两串都是**代码字面量**（roots.ts L100 { role: 'tasks', ... carrier: 'tasks.jsonl' }），不是注释 —— history 角色已退场并入 tasks，文本移交载体是 tasks.jsonl"
             }
           ],
           "acceptance": "① 每次写入/删除后都把历史导出一份 JSONL 文本（<storageRoot>/task-history.jsonl），供 git 跟踪与 review；② 导出失败不得影响主写（只告警）；③ roots.ts 里 history 角色的跟踪产物是 .jsonl，.db 由通用 *.db* 规则忽略。",
@@ -20187,9 +20911,9 @@
             "root",
             "git"
           ],
-          "updated_at": "2026-10-26T10:54:46.737Z",
+          "updated_at": "2026-10-30T07:09:53.932Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
+          "agent": "subagent:rule-strip"
         },
         "overlay": {
           "path": "src/infrastructure/task_history.ts",
@@ -20202,7 +20926,90 @@
           },
           "signature": "v2:e4caa2d2b738"
         },
-        "path": "src/infrastructure/task_history.ts"
+        "path": "src/infrastructure/task_history.ts",
+        "decision_history": [
+          {
+            "at": "2026-10-30T07:09:53.889Z",
+            "decision": {
+              "summary": "已了结任务卡的归档库：.db 是工作库、.jsonl 是可随仓移交的文本镜像",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "exportTaskHistoryJsonl"
+                  ],
+                  "path": "src/infrastructure/task_history.ts",
+                  "why": "任务历史要能随仓移交（derivable=false），但 .db 是二进制、不可 diff ⇒ 必须导出文本镜像"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "task-history.jsonl"
+                  ],
+                  "path": "src/infrastructure/roots.ts",
+                  "why": "roots 里 history 角色的跟踪产物必须指向 .jsonl（文本），而不是 .db（二进制）"
+                }
+              ],
+              "acceptance": "① 每次写入/删除后都把历史导出一份 JSONL 文本（<storageRoot>/task-history.jsonl），供 git 跟踪与 review；② 导出失败不得影响主写（只告警）；③ roots.ts 里 history 角色的跟踪产物是 .jsonl，.db 由通用 *.db* 规则忽略。",
+              "status": "active",
+              "tags": [
+                "task-history",
+                "root",
+                "git"
+              ],
+              "updated_at": "2026-10-26T10:54:46.737Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "三条判据原来锚在注释散文上，剥注释后暴露为假红，一律改锚代码：node_ops#2 改成 updateNode→syncSemanticFileForFileNode / deleteNode→removeSemanticFileForFileNode 两条 call-exists；task_history#1（path=src/infrastructure/roots.ts）must 改成代码字面量 carrier: 'tasks.jsonl' 与 role: 'tasks'（roots.ts L100）；update_feature#0 退休，改 call-exists importProject→isScannedNodeId 指两层闸的真实入口",
+            "agent": "subagent:rule-strip"
+          },
+          {
+            "at": "2026-10-30T07:09:53.932Z",
+            "decision": {
+              "summary": "已了结任务卡的归档库：.db 是工作库、.jsonl 是可随仓移交的文本镜像",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "exportTaskHistoryJsonl"
+                  ],
+                  "path": "src/infrastructure/task_history.ts",
+                  "why": "任务历史要能随仓移交（derivable=false），但 .db 是二进制、不可 diff ⇒ 必须导出文本镜像"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "task-history.jsonl"
+                  ],
+                  "path": "src/infrastructure/roots.ts",
+                  "why": "roots 里 history 角色的跟踪产物必须指向 .jsonl（文本），而不是 .db（二进制）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/roots.ts",
+                  "must": [
+                    "carrier: 'tasks.jsonl'",
+                    "role: 'tasks'"
+                  ],
+                  "why": "★ 原判据锚在注释散文上（roots.ts L32「task-history.jsonl」是 2026-10-27 退役的旧名），剥注释后暴露；这两串都是**代码字面量**（roots.ts L100 { role: 'tasks', ... carrier: 'tasks.jsonl' }），不是注释 —— history 角色已退场并入 tasks，文本移交载体是 tasks.jsonl"
+                }
+              ],
+              "acceptance": "① 每次写入/删除后都把历史导出一份 JSONL 文本（<storageRoot>/task-history.jsonl），供 git 跟踪与 review；② 导出失败不得影响主写（只告警）；③ roots.ts 里 history 角色的跟踪产物是 .jsonl，.db 由通用 *.db* 规则忽略。",
+              "status": "active",
+              "tags": [
+                "task-history",
+                "root",
+                "git"
+              ],
+              "updated_at": "2026-10-30T07:09:53.889Z",
+              "author": "llm",
+              "agent": "subagent:rule-strip"
+            },
+            "note": "三条判据原来锚在注释散文上，剥注释后暴露为假红，一律改锚代码：node_ops#2 改成 updateNode→syncSemanticFileForFileNode / deleteNode→removeSemanticFileForFileNode 两条 call-exists；task_history#1（path=src/infrastructure/roots.ts）must 改成代码字面量 carrier: 'tasks.jsonl' 与 role: 'tasks'（roots.ts L100）；update_feature#0 退休，改 call-exists importProject→isScannedNodeId 指两层闸的真实入口",
+            "agent": "subagent:rule-strip"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_text_arg_suggest_ts",
@@ -21099,6 +21906,24 @@
             "command": "node dist/src/presentation/cli/cli.js translate --json {\"book\":true,\"project_dir\":\"D:/agentio/dev/agent-memory\",\"feature\":\"task-system-plan\"} ; node %TEMP%/c3-diff.mjs ; node %TEMP%/c3-book-vs-artifact.mjs",
             "observed": "fields[].tsType 与产物 interface 的一致性 720/733 → 730/730（与 sigTs 一致数同为 730 ⇒ 两把尺一致:true）；13 处不一致（atomic.Bool/Bool、http.Client/Client、memory.ToolDef[]/ToolDef[]、4 个带 Go tag 的非法匿名 struct 等）→ 0；signatureFieldsFrom 未落册（改用 interfaceFields 一处开关，project.ts 侧以 renderedBookFieldCount 求和）；产物 87 文件字节不变、errors 435 / holes 164 不变"
           }
+        }
+      },
+      {
+        "id": "file_src_domain_text_strip_ts",
+        "label": "text_strip.ts",
+        "type": "file",
+        "path": "src/domain/text_strip.ts",
+        "decision": {
+          "summary": "零依赖剥注释器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）；供 source-has 的匹配核 matchSourceHas 调用",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/text_strip.ts",
+              "why": "新文件必须真在盘上：源文件由 edit_code op=insert 新建（4 符号 CODE_EXTS / isCodeText / stripComments / stripCommentsFor），这是它应该存在的依据"
+            }
+          ],
+          "updated_at": "2026-10-30T07:17:31.129Z",
+          "agent": "subagent:rule-strip"
         }
       }
     ],
@@ -54912,7 +55737,8 @@
         "path": "src/application/design/intent/expectations.ts",
         "responsibility": "核心层 · src/application/design/intent — 6 个函数（导入自 12 个模块）",
         "lines": 571,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_design_intent_judge_cache_ts",
@@ -70737,6 +71563,11 @@
         "path": "src/infrastructure/authoring/translate/book_ts.ts",
         "responsibility": "book_ts.ts",
         "status": "done"
+      },
+      {
+        "id": "file_src_domain_text_strip_ts",
+        "path": "src/domain/text_strip.ts",
+        "responsibility": "text_strip.ts"
       }
     ]
   },
@@ -70798,13 +71629,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 357,
+  "_dsl_rev": 375,
   "_sync": {
-    "saved_at": "2026-10-30T06:57:57.147Z",
+    "saved_at": "2026-10-30T07:17:31.143Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 342480010,
+    "age": 343654006,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
