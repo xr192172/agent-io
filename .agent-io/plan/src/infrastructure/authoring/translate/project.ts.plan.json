@@ -93,10 +93,10 @@
     "buildProjectCallNote": "1daf60777b95e9cc6026c89a7de6fb25e96a9c78",
     "clusterKeyFor": "976676c2573d3cad709243feac5215ec1d076c0e",
     "verifyProjectTree": "7db0ccffdbf4c210a40e97dacc8f94fe697a61bc",
-    "translateGoProject": "0c0eedc96a25bf3a1deb123a2daa09a6dc002876"
+    "translateGoProject": "75eec36d756cce81b91eb207df0d0be41af801d8"
   },
-  "frozen_at": "2026-10-30T05:03:39.479Z",
+  "frozen_at": "2026-10-30T05:36:17.230Z",
   "base": {
-    "content_hash": "e2bf9dee428d1316389bcfb5e539e2ca76d312c4"
+    "content_hash": "d017044a68810db769449047d36f5c6b2ecf97c0"
   }
 }

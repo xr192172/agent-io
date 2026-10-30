@@ -124,7 +124,12 @@ execFileSync(
   {
     cwd: ROOT,
     stdio: 'inherit',
-    env: { ...process.env, AGENT_IO_REPLAY_ONLY: '1', AGENT_IO_TSC_FIX: '1' },
+    // ★ T-#REGEN-NONDET 排查开关：`--no-fix` 关掉 tsc 驱动修复（它会写回缓存 ⇒ 可能造成读数抖动）
+    env: {
+      ...process.env,
+      AGENT_IO_REPLAY_ONLY: '1',
+      ...(args.includes('--no-fix') ? { AGENT_IO_TSC_FIX: '0' } : { AGENT_IO_TSC_FIX: '1' }),
+    },
     timeout: 30 * 60 * 1000,
   },
 );

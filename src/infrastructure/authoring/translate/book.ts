@@ -1582,6 +1582,20 @@ export function attachBookFacts(units: TransUnit[], books: TranslateBook[], relF
         if (c.length !== 1) return; // 无命中或多命中 ⇒ 不注入（不猜）
       }
       const hit = exact ?? b.symbols.filter((s) => s.from?.endsWith(`#${u.name}`))[0];
+      // ★★★ T-#SKELETON-FROM-BOOK-FIELDS（用户点名的那半）：**把字段语义喂进填充 prompt**。
+      //   以前 prompt 只有符号级事实（目标名/状态），LLM 得自己猜结构体长什么样；
+      //   现在把语义层的字段表（名/TS 类型/json tag/是否嵌入）直接给它 ⇒ 翻译准确率应更高。
+      //   只对 type 单元注入（函数体不需要整张字段表），并计入 12 行上限。
+      const hitFields = (hit as { fields?: Array<{ name: string; tsType: string; jsonTag?: string | null; embedded?: boolean }> }).fields;
+      if (u.kind === 'type' && Array.isArray(hitFields) && hitFields.length && facts.length < 12) {
+        facts.push(
+          `字段表（语义层，共 ${hitFields.length} 个）：` +
+            hitFields
+              .slice(0, 12)
+              .map((f) => `${f.name}: ${f.tsType}${f.jsonTag ? ` /* JSON ${f.jsonTag} */` : ''}${f.embedded ? '（嵌入）' : ''}`)
+              .join(' · '),
+        );
+      }
       facts.push(`${hit.from} → ${tsTargetName(hit) ?? '（blocked，无投影）'} · ${hit.state}${hit.note ? ` · ${hit.note}` : ''}`);
       // 术语命中：只挑该单元类型面里出现的词
       const typeText = [

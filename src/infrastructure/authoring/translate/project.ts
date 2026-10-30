@@ -740,6 +740,26 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
     }
     // ★ T-#BODY-CROSS-IMPORT：**改写引入的自由函数**也要落地
     //   （`callRefsRaw` 来自改写前的 AST，看不到 `NremReplay_SetDreamSender`）
+    // ★★★ T-#SKELETON-FROM-BOOK-FIELDS：**册子字段里的类型名也要进导入表**。
+    //   病灶：导入表由 AST TypeRef 收（`collectExternalTypeRefs`），而册子字段可能引用 AST 侧
+    //   没出现的类型（嵌入/分组声明/语义补全）⇒ 渲染出 `Retriever` 却没 import ⇒ TS2304。
+    const fromBookFieldTypes = new Set<string>();
+    for (const u of m.units) {
+      const bf = (u as { bookFieldTypes?: Array<{ name: string; type: string }> }).bookFieldTypes;
+      if (!bf) continue;
+      for (const f of bf) {
+        for (const id of String(f.type).match(/[A-Z][A-Za-z0-9_]*/g) ?? []) fromBookFieldTypes.add(id);
+      }
+    }
+    for (const name of fromBookFieldTypes) {
+      if (['Map', 'Set', 'Record', 'Array', 'Promise', 'Channel', 'Error', 'Uint8Array', 'Date', 'RegExp'].includes(name)) continue;
+      const owner = modules.find((mm) => mm !== m && mm.units.some((u) => u.name === name));
+      if (!owner) continue;
+      const line = `import { ${name} } from '${relImportPath(m.rel, owner.rel)}';`;
+      if (!m.imports.includes(line) && !m.imports.some((l) => l.includes(`{ ${name} `) || l.includes(`{ ${name} }`))) {
+        m.imports.push(line);
+      }
+    }
     for (const name of INTRODUCED_BY_MODULE.get(m) ?? []) {
       const def = defined.get(name);
       if (!def || !def.isFunc) continue;
@@ -777,11 +797,30 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
   //   没有才回落到 ts_codegen 的 AST 推导，并**记账**（缺口要显形，不静默）。
   let fromBook = 0;
   let bookMiss = 0;
+  /** ★ T-#SKELETON-FROM-BOOK-FIELDS：结构体字段来自册子（语义层）的单元数 */
+  let bookFieldsUsed = 0;
   {
     const booksForSig = loadTranslateBooks(root);
     for (const mm of modules) {
       for (const u of mm.units) {
         const sym = findBookSymbol(booksForSig, mm.rel, u);
+        // ★★★ T-#SKELETON-FROM-BOOK-FIELDS（2026-10-30）：**结构体 interface 由册子字段出**。
+        //   册子的 `fields[].tsType` 来自**语义层**（go/packages 类型检查后），比 AST 文本更可信；
+        //   而且这是「一处权威」：字段的类型不再由 AST 推第二遍。
+        //   回落：册子里没有该符号的 fields ⇒ 保持 AST 推导（不猜）。
+        if (u.kind === 'type' && Array.isArray((sym as { fields?: unknown[] } | undefined)?.fields)) {
+          const bf = (sym as { fields?: Array<{ name?: string; tsType?: string; type?: string }> }).fields ?? [];
+          const mapped = bf
+            .filter((f) => f.name && (f.tsType || f.type))
+            .map((f) => ({ name: String(f.name), type: String(f.tsType ?? f.type) }));
+          if (mapped.length) {
+            // ★★★ 只在**渲染时**优先册子，**不动 `u.fields`**：
+            //   `u.fields`（AST TypeRef）还要供**导入表**收集类型引用（`collectExternalTypeRefs`）。
+            //   实测教训：直接覆盖 `u.fields` ⇒ 导入表收不到类型 ⇒ `TS2304` 从 90 涨到 **300**。
+            (u as { bookFieldTypes?: Array<{ name: string; type: string }> }).bookFieldTypes = mapped;
+            bookFieldsUsed++;
+          }
+        }
         const symSig = sym?.targets?.ts?.signature;
         if (symSig) {
           u.skeleton = skeletonFromSigTs(symSig, u);
@@ -792,7 +831,10 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
       }
     }
     if (fromBook || bookMiss) {
-      diagnostics.push(`骨架签名来源：册子 sigTs ${fromBook} 个 · 回落 AST 推导 ${bookMiss} 个`);
+      diagnostics.push(
+        `骨架签名来源：册子 sigTs ${fromBook} 个 · 回落 AST 推导 ${bookMiss} 个` +
+          (bookFieldsUsed ? ` · **结构体字段来自册子（语义层）${bookFieldsUsed} 个**` : ''),
+      );
       // ★★★ 2026-10-29（T-#PIVOT-SLOTS）：**失真账进回执** —— 从册子的 pivot 类型树算出
       //   「源槽位 × 目标能力」的已知语义偏离（算出来的，不落第二份）。
       const lossByTag = new Map<string, number>();
