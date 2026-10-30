@@ -30,7 +30,8 @@
  * stripping 解析不了这种后缀映射）⇒ 不需要 `npm run build`，测试读的是**源码**而不是 dist。
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -40,6 +41,21 @@ const C = { r: '\x1b[31m', g: '\x1b[32m', y: '\x1b[33m', d: '\x1b[90m', b: '\x1b
 const args = process.argv.slice(2);
 const fi = args.indexOf('--filter');
 const filter = fi >= 0 ? (args[fi + 1] ?? '') : '';
+
+// ★★★ 2026-10-30（T-#REG-POLLUTE）：**测试跑在自己的数据根里** —— 与 `certs/run-all-certs.mjs` 同一笔修法。
+// 病：测试若 `importProject` 一个 temp 夹具项目，登记会落进**真数据仓**（`<包根>/.agentio-data/projects.json`），
+//     而运行期一过那条登记就永远指向一个不存在的目录 ⇒ 注册表（总任务视图的钥匙）被幽灵条目弄脏。
+// 修法：本次 run 建一个 temp 根 ⇒ **每个测试文件一个子目录**当 `AGENT_IO_HOME` ⇒ 跑完整棵删掉。
+// ★ 注入 `AGENT_IO_HOME` 而不是 `AGENT_IO_DATA_ROOT`：`getStorageRoot()` 里 ① DATA_ROOT 优先于 ② HOME，
+//   钉外层 DATA_ROOT 会把测试自己钉的 `AGENT_IO_HOME`（`i1_*` / `p0_*` 全都自己钉了 mkdtemp）**抢掉**；
+//   用 HOME 则"测试自己的声明永远赢"，没钉的那几个才落到这里。
+const RUN_HOME_ROOT = mkdtempSync(path.join(os.tmpdir(), 'agent-io-tests-home-'));
+const INJECT_VAR = process.env.AGENT_IO_DATA_ROOT?.trim() ? 'AGENT_IO_DATA_ROOT' : 'AGENT_IO_HOME';
+function testDataHome(rel) {
+  const dir = path.join(RUN_HOME_ROOT, rel.replace(/[^\w.-]/g, '_'));
+  mkdirSync(dir, { recursive: true });
+  return INJECT_VAR === 'AGENT_IO_HOME' ? path.join(dir, 'home') : dir;
+}
 
 /** 测试文件清单（`tests/*.test.ts`；`tests/helpers/` 是夹具，不是用例） */
 function testFiles() {
@@ -97,7 +113,8 @@ function runOne(rel) {
     // ★ shell:false（`process.execPath` 在 Windows 上含空格，经 cmd 会被截断 —— 见 verify.mjs 的 ts 门）
     shell: false,
     maxBuffer: 32 * 1024 * 1024,
-    env: { ...process.env },
+    // ★ 2026-10-30：每文件一个自己的数据根（见 RUN_HOME_ROOT 那段论证）
+    env: { ...process.env, [INJECT_VAR]: testDataHome(rel) },
   });
   const out = `${r.stdout ?? ''}${r.stderr ?? ''}`;
   return { rel, ms: Date.now() - t0, status: r.status, out, ...tapCounts(out), failures: failuresOf(out) };
@@ -106,6 +123,7 @@ function runOne(rel) {
 const files = testFiles();
 console.log(`${C.b}测试门 —— tests/*.test.ts 真跑${C.x}  ${C.d}（node:test + tsx；逐文件取 TAP 计数）${C.x}`);
 if (filter) console.log(`${C.y}★ --filter ${JSON.stringify(filter)}：这是**定向**跑，不进总门口径${C.x}`);
+console.log(`${C.d}★ 数据隔离：每文件注入 ${INJECT_VAR}=${RUN_HOME_ROOT}/<文件>（跑完整棵删掉 ⇒ 真数据仓不碰）${C.x}`);
 console.log('');
 
 let bad = 0;
@@ -139,6 +157,13 @@ for (const f of files) {
     }
     if (r.skipped || r.todo) console.log(`        ${C.r}有 skip/todo ⇒ 这些用例没跑；本仓不许用它关掉门（要退役就按 docs/RETIRED.md 删断言）${C.x}`);
   }
+}
+
+// ★ 2026-10-30：整棵 temp 数据根删掉（每个测试文件那棵子目录一起没；删不掉不影响判定）
+try {
+  rmSync(RUN_HOME_ROOT, { recursive: true, force: true });
+} catch {
+  /* 删不掉不影响判定 */
 }
 
 console.log('');

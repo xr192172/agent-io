@@ -50,9 +50,69 @@ export function normRoot(p: string): string {
     .replace(/\/+$/, '');
 }
 
+/** `project_root` 必须是**绝对**路径：`C:/x`、`C:\x`、UNC `\\srv\share`（posix 上 `/x` 也算）。 */
+function isAbsoluteRoot(p: string): boolean {
+  if (/^[A-Za-z]:[\\/]/.test(p)) return true; // C:/… · C:\…
+  if (/^[\\/]{2}[^\\/]/.test(p)) return true; // \\server\share（UNC）
+  return process.platform !== 'win32' && p.startsWith('/');
+}
+
+/** 能否落到磁盘上**真实存在的目录**（连 stat 都拿不到 ⇒ 也算失效）。 */
+function isLiveDir(p: string): boolean {
+  try {
+    return fs.statSync(p).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * ★★★ 2026-10-30：**加载自净** —— 注册表记不住"不存在的东西"。
+ *
+ * ## 为什么（实测两个 footgun）
+ * ① **相对路径是歧义源**：`task-system-plan` 的 `project_root` 曾写成 `"."` ⇒ 同一条登记在不同 cwd 下
+ *    解析成**不同项目**（当时没出事只是碰巧从包根启动）。⇒ ★ **相对路径一律判坏**：注册表的语义是
+ *    "这台机器上的某个**绝对**目录"，相对路径表达不了这件事，留着只会让读端靠 cwd 猜。
+ * ② **临时夹具目录会被删**：证/测试跑出的幽灵项目（`t192flow` / `isofix` / `sp` / `tp` …）登记时目录
+ *    真实存在，跑完 temp 一删，登记就只剩噪声 ⇒ 而注册表是**总任务视图的钥匙**，脏条目会把跨项目聚合读数弄脏。
+ *
+ * ## 判据（两条，任一不成立 ⇒ 剪）
+ *   · `project_root` 是**绝对路径**；
+ *   · `project_root` 现在**是磁盘上一个真实目录**。
+ * ⇒ 剪掉后**写回文件**（文件与内存必须一致：只在内存里剪 = 每次读都重剪一遍、读数与文件长期不符），
+ *   并且只打**一行** stderr（读一次一行，**不是每条一行** —— 热路径上不许刷屏）。
+ * ★ 正常条目**一个都不动**：全部通过时本函数**不写盘、不出声**（原样返回入参对象）。
+ */
+function pruneStaleEntries(reg: ProjectRegistry, file: string): ProjectRegistry {
+  const stale: string[] = [];
+  const kept: Record<string, RegistryEntry> = {};
+  for (const [feature, entry] of Object.entries(reg.features)) {
+    const root = entry && typeof entry.project_root === 'string' ? normRoot(entry.project_root) : '';
+    if (!root || !isAbsoluteRoot(root) || !isLiveDir(root)) {
+      stale.push(feature);
+      continue;
+    }
+    kept[feature] = entry;
+  }
+  if (stale.length === 0) return reg;
+  process.stderr.write(`[project_registry] 剪掉 ${stale.length} 条失效条目：${stale.join(', ')}\n`);
+  const cleaned: ProjectRegistry = { version: reg.version, features: kept };
+  try {
+    writeRegistry(cleaned);
+  } catch (e) {
+    process.stderr.write(
+      `[project_registry] 失效条目**写回失败**（本次只在内存里剪掉，文件下次加载会再剪一遍）：${file}\n  ${String(
+        (e as Error).message,
+      ).slice(0, 200)}\n`,
+    );
+  }
+  return cleaned;
+}
+
 /**
  * 读注册表。**不存在 ⇒ 返回空表**（不是错误：第一次用还没有任何登记）。
  * ★ 坏文件 ⇒ 也返回空表但**打警告**（不静默：损坏的登记表会让所有 feature 退回旧位置）。
+ * ★★ **加载自净**（`pruneStaleEntries`）：每条登记当场校验，失效的剪掉并写回文件 —— 论证见那个函数。
  */
 export function readRegistry(): ProjectRegistry {
   const f = registryFile();
@@ -60,7 +120,7 @@ export function readRegistry(): ProjectRegistry {
     const raw = fs.readFileSync(f, 'utf8');
     const j = JSON.parse(raw) as Partial<ProjectRegistry>;
     const features = (j.features ?? {}) as Record<string, RegistryEntry>;
-    return { version: typeof j.version === 'number' ? j.version : 1, features };
+    return pruneStaleEntries({ version: typeof j.version === 'number' ? j.version : 1, features }, f);
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code !== 'ENOENT') {
       console.warn(

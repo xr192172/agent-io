@@ -532,9 +532,11 @@ export function saveDesignSheet(dsl: DesignDSL, baseDir?: string): string {
  *   · **库里 0 张、册上有** ⇒ 用册上的（还没投影过；下一次落盘会投影过去）。
  *   ★ 与册上的内容**逐张相同**时不重写、不出声（避免热路径刷屏）。
  *
- * ## 现在还没做的事（别读成"已完成"）
- * 册**仍然**会写 `todos`（slice 2a 的双写还在）—— 所以这一刻是"读库、写两边"。
- * 等 slice 2c 证过对拍稳定，再停写册上的 `todos`、把角色改 `derivable:false` 并补 `tasks.jsonl` 镜像。
+ * ## 现在的口径（2026-10-30 校正：这一段的旧说法已过期）
+ * 落盘侧**已经不再写** `todos` —— `saveDSL` / `saveDesignSheet` 都在写盘前过一遍 `withoutTodos`
+ * （slice 2c 已落地）⇒ 实测三本册的 `todos` 全是 null，卡的唯一家是 `tasks.db`。
+ * ⇒ 所以本函数是"**读时从库补回**"的那一半：册只答"设计要什么"，卡的家在库；
+ *   内存里的 `dsl.todos` 仍然是**全量**的（调用方 `task_ops` / `write_gate` / `query_feature` 一个都不用改）。
  */
 function hydrateTodosFromTasks(dsl: DesignDSL, baseDir?: string): DesignDSL {
   const root = projectRootOf(dsl.feature) ?? dsl.source_root ?? baseDir ?? null;

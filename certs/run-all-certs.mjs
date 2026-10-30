@@ -24,6 +24,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -163,6 +164,37 @@ const rows = [];
 let crashed = 0;
 let failed = 0;
 
+// ★★★ 2026-10-30（T-#REG-POLLUTE）：**每张证跑在【自己的】数据根里** —— 断掉"证污染真注册表"这条源。
+//
+// ## 病（实测）
+// 有几张证会 `importProject` 一个 **temp 夹具项目**，而它们**自己没有钉** `AGENT_IO_HOME`
+// （实测 6 张：`t192-flow` / `t193-card` / `t434` / `t435` / `t436` / `t437`）⇒ 那次登记会落进
+// **真数据仓** `<包根>/.agentio-data/projects.json`。历史累积的 `run82` / `iso` / `sp` / `ds` / `tp` /
+// `t192flow` / `t193card` 全是这么来的（登记时刻的 temp 目录一删，就成了**永远指向不存在目录**的幽灵条目）。
+// 而注册表是**总任务视图的钥匙** ⇒ 污染它就把跨项目聚合读数弄脏。
+//
+// ## 修法（只改既有脚本的环境注入，不新增门）
+// 本次 run 建一个 temp 根 ⇒ **每张证一个子目录**当它的 `AGENT_IO_HOME` ⇒ 它的 feature 登记 /
+// judge-cache / live / design 全落在这棵 temp 里；**跑完整棵删掉**。
+//
+// ## 为什么注入 `AGENT_IO_HOME` 而不是 `AGENT_IO_DATA_ROOT`（★ 这条是硬理由，不是偏好）
+// `storage.ts#getStorageRoot()` 的优先级是 **① `AGENT_IO_DATA_ROOT` → ② `AGENT_IO_HOME`** ⇒
+// 外层钉 `AGENT_IO_DATA_ROOT` 会**抢掉证自己钉的 `AGENT_IO_HOME`**（`t361` / `t369` / `t374` / `t375`
+// 那些"数据家 = `<HOME>/.agent-io`"的断言当场变红）。用 `AGENT_IO_HOME` 则"**证自己的声明永远赢**"：
+// 已钉 HOME 的 90 张行为一字不变，没钉的那 6 张才落到这里。
+// ★ 若调用方**自己**钉了 `AGENT_IO_DATA_ROOT`（显式声明优先），那本次就沿用它当基座、仍然每张证一个子目录。
+const RUN_HOME_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-io-certs-home-'));
+const INJECT_VAR = process.env.AGENT_IO_DATA_ROOT?.trim() ? 'AGENT_IO_DATA_ROOT' : 'AGENT_IO_HOME';
+function certDataHome(f) {
+  const dir = path.join(RUN_HOME_ROOT, f.replace(/[^\w.-]/g, '_'));
+  fs.mkdirSync(dir, { recursive: true });
+  return INJECT_VAR === 'AGENT_IO_HOME' ? path.join(dir, 'home') : dir;
+}
+console.log(
+  `★ 证隔离：本次 run 的临时数据根 = ${RUN_HOME_ROOT}\n` +
+    `   每张证注入 $${INJECT_VAR}=<上面那棵里的自己的子目录>（跑完整棵删掉）⇒ 真数据仓一个字节都不碰`,
+);
+
 for (const f of files) {
   // ★ 2026-10-30：**跑前整份还原**这一步随 `t185-reset.mjs` 一起退役（那张复位脚本 + run82 夹具家族
   //   证已删，见 `docs/RETIRED.md`）⇒ 现在每张证自己负责还原（`run-all-certs` 不再替谁摆状态）。
@@ -174,8 +206,15 @@ for (const f of files) {
   //   而当时的量具**根本没有时间列** ⇒ ★ 我只能**猜**是谁慢（★ 那正是本仓反复栽的"用没量过的判据下结论"）。
   //   ★ 判据：**"慢"也要有出处** —— 谁是瓶颈必须能从读数里读出来，不能靠印象。
   const t0 = Date.now();
+  let env;
   try {
-    out = execFileSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], shell: true });
+    env = { ...process.env, [INJECT_VAR]: certDataHome(f) };
+  } catch (e) {
+    console.log(`   ★ ${f}：隔离目录建不出来 ⇒ 本张照旧跑（可能污染真数据仓）：${String(e && e.message)}`);
+    env = { ...process.env };
+  }
+  try {
+    out = execFileSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], shell: true, env });
   } catch (e) {
     rc = typeof e.status === 'number' ? e.status : -1;
     out = String(e.stdout ?? '') + String(e.stderr ?? '');
@@ -215,6 +254,14 @@ for (const f of files) {
           : '✓';
   console.log(`${String(rc).padStart(2)}  ${String(pass).padStart(3)}/${String(fail).padEnd(2)}  ${f.padEnd(28)} ${tag}  ${(ms / 1000).toFixed(1)}s`);
 }
+// ★ 2026-10-30：**整棵 temp 数据根删掉**（证的数据是一次性的；留着的后果 = 下一轮"幽灵登记"的来源）
+try {
+  fs.rmSync(RUN_HOME_ROOT, { recursive: true, force: true });
+  console.log(`★ 证隔离：临时数据根已删（${RUN_HOME_ROOT}）`);
+} catch (e) {
+  console.log(`★ 证隔离：临时数据根**删不掉**（不影响判定，手工清一下）：${RUN_HOME_ROOT} —— ${String(e && e.message)}`);
+}
+
 // ★ T224：**耗时排行** —— "慢"必须有出处；前 8 名 + 合计，能直接看出瓶颈在哪。
 const totalMs = rows.reduce((a, r) => a + r.ms, 0);
 const slowest = [...rows].sort((a, b) => b.ms - a.ms).slice(0, 8);
