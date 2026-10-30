@@ -3,18 +3,32 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "三、判据 12 kind"
+        "symbol": "§七 闸门规则登记表"
       },
-      "detail": "§七 的族码数与合计：E-TASK 7→8、E-CLAIM 15→18、合计 66→70，并同步覆盖率段（带 messageStartsWith 的码 45/66→49/70、自洽 45/45→49/49、结构性接不上 21/66→21/70）—— 依据是本卡在 src/domain/gate_error.ts#GATE_RULES 追加的 E-TASK-008 与 E-CLAIM-016/017/018 四条码。",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#15",
+      "detail": "§七 的码数表：E-CRIT 5 → 6，合计 71 → 72（新增 E-CRIT-006）；逐条内容仍只住 src/domain/gate_error.ts#GATE_RULES，本表只登记族 + 码数（防第二份事实）",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#4",
       "kind": "rewrite",
       "status": "open"
     }
   ],
+  "untouched": [
+    {
+      "symbol": "§一~§六",
+      "why": "本卡只同步码数；写门规矩 / 判据规矩 / 重写计划 / 覆盖面等章节与 E-CRIT-006 无关，不动"
+    },
+    {
+      "symbol": "§七 稳定性约定 / 反查口径 / 覆盖率实况 / 端到端",
+      "why": "那几段讲的是「散文→码」反查与包装层透传，本卡新增的码走结构化抛点（E-CRIT-006 前缀在报文首句），不改反查口径也不改那几段读数"
+    },
+    {
+      "symbol": "末尾那条 run 判据说明（逐条内容只在 GATE_RULES）",
+      "why": "那句话本身随码数变化仍然成立（文档声明数 == 表里真实码数）—— 它指向的机器源没换，不动"
+    }
+  ],
   "card": "file_docs_GUIDE-GATE_md",
-  "frozen_at": "2026-10-30T14:58:51.742Z",
+  "frozen_at": "2026-10-30T18:21:56.999Z",
   "base": {
-    "content_hash": "a1d55b3b74ee3eb95016af42c8938039551864ce"
+    "content_hash": "d568630b3cbebce67699962a63e175c7aa365be4"
   },
   "fps_at_freeze": {}
 }

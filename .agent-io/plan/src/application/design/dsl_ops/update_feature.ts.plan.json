@@ -3,17 +3,17 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "updateFeatureCore"
+        "symbol": "applyDecisionOp"
       },
+      "detail": "两处 assertValidExpectations（expectation.add 的 L1031 / data.expectations 的 L1052）与 applyDecisionWrite（L1170）都带上 readSource: expectationSourceReader(dsl.source_root) —— 让 edit_dsl {type:'decision'} 这条路也过 E-CRIT-006（否则给 behavior-cases 打一条有值 import 的目标文件仍能落盘）",
+      "judgement_ref": "decision:file_src_application_design_dsl_ops_update_feature_ts#2",
       "kind": "rewrite",
-      "detail": "op 循环 catch：restoreRaw() 之后由 `throw new Error(两句外层文案)` 改为 `throw withGateCodes(同样两句外层文案, e)` —— 文案逐字不变（结果 27 个 op 循环 assert 与本处 2 条判据都能对着原文比对），只是当内层是 E-CLAIM-* / E-CRIT-* / E-EVD-* 时多一个 ---DATA--- 段（data.errors[].code）；内层没带码时 withGateCodes 返回普通 Error = 旧行为",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#12",
       "status": "open"
     }
   ],
   "card": "file_src_application_design_dsl_ops_update_feature_ts",
   "untouched_default": {
-    "why": "本笔只改 op 循环的 catch 一处（+1 行 import）：外层两句文案（`操作 i/N 失败，已回滚全部 K 个已应用变更` / `失败原因: …`）逐字不变，只是把内层结构化码经 withGateCodes 带出去；applyOperation / 各 op 实现 / 自洽性闸 / 回滚字节基线一字不动，故其余符号全部不动"
+    "why": "只动 applyDecisionOp 里那三处调用点（传 readSource）与顶部 import 行；decision 其余字段的校验（rationale / alternatives / scope / author…）、op 循环、canvases 一律不动"
   },
   "symbols_at_freeze": [
     "FeatureOperation",
@@ -45,7 +45,7 @@
     "applyApiOp"
   ],
   "fps_at_freeze": {
-    "updateFeatureCore": "957f654b75f6c82b996c530e07305cf553efe095",
+    "updateFeatureCore": "053f24001da3dbcf16a36cf6db51c13be143af92",
     "touchedOf": "0295417295ca4ef6089d798773d3b03414f29c8e",
     "touchedNodeIds": "1da886fadf08987d5429161b56297fb796633b11",
     "previewBatchExpectations": "195e49bf901198dd676019d9453a17e8ce209320",
@@ -62,14 +62,14 @@
     "resolveDecisionTarget": "9fcf036dd14a75cbdfa7a93ce5aa941bcc39d92c",
     "parseAlternatives": "6c13a69a0fb142e5108f2fc5b258bd34f4874b65",
     "parseDissent": "4d72b1f6bbeffedfa551c4db35234b397025a3f9",
-    "applyDecisionOp": "d4e3b0cc18aecfd596f862861a81b1c7409815fb",
+    "applyDecisionOp": "6aa045dd6f6285349b44292b301f8100389bdfd9",
     "applyNodeOp": "e302bee974acb9bc04786fc852f4633195c4f47a",
     "applyEdgeOp": "8ed7a679f184922ba810931ef365237d7135ba72",
     "applyFileOp": "040c5dc0cb3f133ab214e3877af307435cc456d8",
     "applyApiOp": "52d78c8a3c7b7f65c1d9db59fc477ff47740808a"
   },
-  "frozen_at": "2026-10-30T08:47:36.041Z",
+  "frozen_at": "2026-10-30T18:20:31.184Z",
   "base": {
-    "content_hash": "760917400a63d7722c75df7913837277fda2982f"
+    "content_hash": "db8081330b09b14ae27eb5eb93974739f6d6d9bd"
   }
 }

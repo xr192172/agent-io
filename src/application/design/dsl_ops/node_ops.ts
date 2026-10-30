@@ -8,6 +8,8 @@ import type { DesignDSL, Node, NodeStyle, NodeContent, DiagramStatus, NodeLayer,
 //   （写进来的值必须在那两个里 —— 与 `path` 的 `normalizeNodePath` 同一个道理：入口自己把关）。
 import { NODE_GATES, type NodeGate } from '../../../domain/geometry.js';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
+import fs from 'node:fs';
+import path from 'node:path';
 import type { EditResult } from './edit_result.js';
 // ★★ 2026-10-09（T74）：`expectations` 会被程序判 ⇒ 写进来时校验（坏形状响亮拒绝）
 import { assertValidExpectations } from '../../../domain/expectation.js';
@@ -17,6 +19,32 @@ import { parseScope, formatScope } from '../../../domain/scope.js';
 // ★★★ T328（2026-10-15，进度轴收归）：进度的**唯一权威写入**是 `overlay` 锚点的 `progress`
 //   （+ evidence 闸）。node 的 add/update 只是**入口** ⇒ 一律路由到 `updateStatus`，**不再裸写** base 的 `Node.status`。
 import { updateStatus } from './status_tools.js';
+
+/**
+ * ★★★ 2026-10-31（subagent:b1a-landing · 判据 `E-CRIT-006`）：**把 feature 的 `source_root` 变成"读仓库相对路径源码"的回调**。
+ *
+ * ## 为什么回调而不是在本文件里直接判
+ * 判据的形状校验住在 `domain/expectation.ts#assertValidExpectations`（domain 不许碰 fs）⇒
+ * "目标文件有没有值 import"只能由**应用层**读出来再传进去。本函数就是那唯一的"读法"，
+ * `node.add` / `node.update` / `edit_dsl {type:'decision'}` 三处共用 —— 不许各写一套。
+ *
+ * ## 边界（诚实）
+ * · 根为空 / 不是字符串 ⇒ `undefined`（纯设计 / 无根场景 ⇒ 这条校验**不生效**，与既有“不给根就不判”同口径）；
+ * · 文件不存在 / 读失败 ⇒ 回调回 `null`（交给判据四态，**不在这里拒** —— 否则“还没写”会被当成“写错了”）。
+ */
+export function expectationSourceReader(root: string | undefined | null): ((rel: string) => string | null) | undefined {
+  const r = typeof root === 'string' ? root.trim() : '';
+  if (!r) return undefined;
+  return (rel: string): string | null => {
+    try {
+      const abs = path.join(r, rel);
+      if (!fs.existsSync(abs)) return null;
+      return fs.readFileSync(abs, 'utf8');
+    } catch {
+      return null;
+    }
+  };
+}
 
 /** 形状卡轻校验：type 枚举 + properties/items 递归（防止渲染垃圾） */
 function assertValidSchema(s: AnimationValueSchema, path: string): void {
@@ -266,7 +294,10 @@ export function addNode(input: AddNodeInput): EditResult {
   if (decision?.expectations !== undefined) assertValidExpectations(decision.expectations);
   // ★★ 决策身份注入（与 `node.update` 同款，走同一个纯函数）：顶层 `agent` 落进决策卡（+ `updated_at`），
   //   不再静默丢弃。（首版无旧版可压栈 ⇒ 不产生 history，与 update 的版本演进一致。）
-  const nodeDecision = decision === undefined ? undefined : applyDecisionWrite(undefined, undefined, decision, { agent }).decision;
+  const nodeDecision =
+    decision === undefined
+      ? undefined
+      : applyDecisionWrite(undefined, undefined, decision, { agent, readSource: expectationSourceReader(dsl.source_root) }).decision;
 
   const style: NodeStyle = {};
   if (bg) style.bg = bg;
@@ -392,7 +423,7 @@ export interface UpdateNodeInput {
  *   全程**没有任何一处报错**（§2.3「不报错的错」）。`expectations` 早有 `assertValidExpectations` 守，
  *   另两个**一直没有守**。
  */
-function assertDecisionFieldShapes(next: NodeDecision): void {
+function assertDecisionFieldShapes(next: NodeDecision, readSource?: (rel: string) => string | null): void {
   const raw: unknown = next;
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     throw new Error(
@@ -410,7 +441,7 @@ function assertDecisionFieldShapes(next: NodeDecision): void {
   }
   // ★★ 2026-10-09（T74）：`expectations` 是**会被程序判**的字段 ⇒ 写进来时必须**响亮拒绝**坏形状，
   //   不许"存进去了但判定器读不懂"（那会变成一条永远不判的假验收）。唯一尺 = `assertValidExpectations`。
-  if (next.expectations !== undefined) assertValidExpectations(next.expectations);
+  if (next.expectations !== undefined) assertValidExpectations(next.expectations, { readSource });
 }
 
 /**
@@ -438,7 +469,14 @@ export function applyDecisionWrite(
   prevDecision: NodeDecision | undefined,
   history: DecisionHistoryEntry[] | undefined,
   next: NodeDecision | null | undefined,
-  opts?: { author?: DecisionAuthor; agent?: string; note?: string; now?: string },
+  opts?: {
+    author?: DecisionAuthor;
+    agent?: string;
+    note?: string;
+    now?: string;
+    /** ★ E-CRIT-006：读目标文件源码的回调（读不到 ⇒ null）。缺省 ⇒ 这条校验不生效（纯设计场景）。 */
+    readSource?: (rel: string) => string | null;
+  },
 ): { decision: NodeDecision | undefined; decision_history: DecisionHistoryEntry[] | undefined } {
   // 未传 decision 字段：不改
   if (next === undefined) return { decision: prevDecision, decision_history: history };
@@ -450,7 +488,7 @@ export function applyDecisionWrite(
   const now = opts?.now ?? new Date().toISOString();
   // ★★★ 2026-10-18：决策卡**子字段形状**先判（唯一判据见 `assertDecisionFieldShapes`）——
   //   非法形状 ⇒ 抛；**不许**静默落一个"读端读不懂"的决策卡。
-  assertDecisionFieldShapes(next);
+  assertDecisionFieldShapes(next, opts?.readSource);
   // 新决策：时间戳恒打；author（类别）/ agent（身份）**传入才打**（不伪造）
   //
   // ★★★ T255（2026-10-14）：**这里从【覆盖】改成【合并】。**
@@ -578,6 +616,7 @@ export function updateNode(input: UpdateNodeInput): EditResult {
       author,
       agent,
       note: decision_note,
+      readSource: expectationSourceReader(dsl.source_root),
     });
     if (nd === undefined) {
       delete node.decision;

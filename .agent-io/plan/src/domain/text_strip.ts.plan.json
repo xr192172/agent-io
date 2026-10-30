@@ -3,22 +3,74 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "stripComments"
+        "symbol": "scanValueImports"
       },
-      "kind": "create",
-      "detail": "新建零 import 的 src/domain/text_strip.ts：stripComments（只剥行注释与块注释，字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText（.ts/.tsx/.js/.jsx/.mjs/.cjs 白名单）+ stripCommentsFor（代码文本才剥，.md/.json 原文返回）",
-      "judgement_ref": "decision:file_src_application_design_intent_expectations_ts#1",
+      "detail": "把语句卡改成全文 `\\b(import|export)\\b` 后按 statementAt 切句（不再锚行首）—— 行首锚定会让“先剥注释”变成死代码：同行块注释 `const a = 1; /* import ts from 'x' */` 与注释里被注掉的真 import 都只能靠 stripComments 挡住",
+      "judgement_ref": "decision:file_src_domain_text_strip_ts#2",
+      "kind": "rewrite",
       "status": "open"
     }
   ],
-  "card": "file_src_application_design_intent_expectations_ts",
-  "frozen_at": "2026-10-30T07:11:01.175Z",
+  "untouched": [
+    {
+      "symbol": "ValueImportScan",
+      "why": "接口形状（count + samples 最多 3）本轮不变"
+    },
+    {
+      "symbol": "maskStringBodies",
+      "why": "字符串体掩码本轮不变（它管“字符串里长得像 import”，与注释无关）"
+    },
+    {
+      "symbol": "statementAt",
+      "why": "语句边界切分本轮不变"
+    },
+    {
+      "symbol": "namedListHasValue",
+      "why": "具名列表判值本轮不变"
+    },
+    {
+      "symbol": "isValueImportStatement",
+      "why": "分类口径本轮不变（值 / type / 混合 / 副作用 / require）"
+    },
+    {
+      "symbol": "collapseWs",
+      "why": "样本压空白不变"
+    },
+    {
+      "symbol": "SAMPLE_MAX",
+      "why": "样本长度上限不变"
+    },
+    {
+      "symbol": "CODE_EXTS",
+      "why": "扩展名白名单本轮不变"
+    },
+    {
+      "symbol": "isCodeText",
+      "why": "扩展名判定本轮不变（它的 behavior-cases 判据也不动）"
+    },
+    {
+      "symbol": "stripComments",
+      "why": "剥注释器本体本轮一字不改 —— 本卡只是让 scanValueImports 真去用它"
+    },
+    {
+      "symbol": "stripCommentsFor",
+      "why": "source-has 的分派入口本轮不变"
+    }
+  ],
+  "card": "file_src_domain_text_strip_ts",
+  "frozen_at": "2026-10-30T18:23:03.821Z",
   "base": {
-    "content_hash": "8f87cacdeb9c0c2df9ff746a685146c9646710dd"
+    "content_hash": "543d97a8c8baf6eeb13765676c040eec0743c065"
   },
   "fps_at_freeze": {
     "isCodeText": "e2b19b26b0e06439127e10f46f72d4500c1dc680",
     "stripComments": "b175b039c5dd5015e00d16556d3b2a3a8e8181c6",
-    "stripCommentsFor": "ba39a65c365e3abc0a5214560c31fdef45935143"
+    "stripCommentsFor": "ba39a65c365e3abc0a5214560c31fdef45935143",
+    "maskStringBodies": "d0f4b79ec13aa983443f4e3149651f58aaaa3c94",
+    "statementAt": "bbcfd79485eaf67ac7f201a2b12c287d8ff0038e",
+    "namedListHasValue": "a35df6cdfc48464fbfa2fa95f3b96d4ebb59bb0b",
+    "isValueImportStatement": "33b0e50a49ddea0be6464fe15bef89929afdc4a5",
+    "collapseWs": "1256f60a370b723ed86a163c6d6eaab98132c55b",
+    "scanValueImports": "f3526fc6896a8d949a9a2675a4d4d083d47b4988"
   }
 }

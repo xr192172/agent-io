@@ -27,7 +27,7 @@ import { syncTagsToOverlay, syncLifecycleToOverlay } from '../../../infrastructu
 import type { EditResult } from './edit_result.js';
 import { addNode, updateNode, deleteNode } from './node_ops.js';
 import type { AddNodeInput, UpdateNodeInput } from './node_ops.js';
-import { applyDecisionWrite } from './node_ops.js';
+import { applyDecisionWrite, expectationSourceReader } from './node_ops.js';
 // ★ T256：`expectations` 的形状校验器 —— ★ 与 `node_ops.ts:9` 同一处实现（不另写一把尺）
 import { assertValidExpectations } from '../../../domain/expectation.js';
 import { addEdge, deleteEdge } from './edge_ops.js';
@@ -1028,7 +1028,7 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
     const cur = target.node.decision?.expectations ?? [];
     const e = data.expectation;
     if (e === undefined) throw new Error('expectation.add 必须给 data.expectation（单条期望）');
-    assertValidExpectations([e] as never);
+    assertValidExpectations([e] as never, { readSource: expectationSourceReader(dsl.source_root) });
     decision.expectations = [...cur, e as NonNullable<NodeDecision['expectations']>[number]];
   } else if (op.op === 'expectation.remove') {
     const cur = target.node.decision?.expectations ?? [];
@@ -1049,7 +1049,7 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
     if (idx < 0 || idx >= cur.length) throw new Error(`expectation.remove 的 index 越界：${idx}（共 ${cur.length} 条）`);
     decision.expectations = cur.filter((_, i) => i !== idx);
   } else if (data.expectations !== undefined) {
-    assertValidExpectations(data.expectations);
+    assertValidExpectations(data.expectations, { readSource: expectationSourceReader(dsl.source_root) });
     decision.expectations = data.expectations as NodeDecision['expectations'];
   }
   // ★★★ 2026-10-11（T174）：下面这 4 个字段**原先都是"形状不对就静默丢弃"** ——
@@ -1171,6 +1171,8 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
     author,
     agent,
     note,
+    // ★ E-CRIT-006：`edit_dsl {type:'decision'}` 这条路也要在写判据那一刻就拒（同一个读法，不另写一套）
+    readSource: expectationSourceReader(dsl.source_root),
   });
   if (nd === undefined) throw new Error('decision.update 内部错误：写入结果为 undefined（summary 已非空，不应发生）');
   target.node.decision = nd;

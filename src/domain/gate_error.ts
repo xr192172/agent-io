@@ -93,6 +93,8 @@ const SRC = {
   gc: "scripts/gen-db-check.mjs",
   // ★ 2026-10-30（带异议领卡）：三道门的判定内核 + 合并后收口读数（dissent_spec.ts 零依赖纯函数）
   ds: "src/domain/dissent_spec.ts",
+  // ★ 2026-10-31（E-CRIT-006）：判据形状校验的唯一入口 —— 值 import 扫描的"拒"就抛在这里
+  ex: "src/domain/expectation.ts",
 } as const;
 
 /**
@@ -588,6 +590,20 @@ export const GATE_RULES: readonly GateRule[] = [
     fix: "补索引、补判据（把 unsupported 清零）",
     doc: DOC.gate,
     where: { path: SRC.tm, symbol: "cardStanding", messageStartsWith: "只回了部分条目" },
+  },
+  {
+    code: "E-CRIT-006",
+    family: "E-CRIT",
+    what: "`behavior-cases` 判据的 `path` 指向的文件有**值 import**（`import x` / `import {a, b}` / `import * as ns` / 副作用 `import '…'` / `require('…')` / `export … from` 任一）",
+    why:
+      "harness 会把目标文件**单独转译再 import** ⇒ 有值 import 就 load 失败 ⇒ 那条行为判据根本没有**行为落点**；" +
+      "人只能退成 `source-has`（存在类，永远发现不了逻辑错）⇒ 必漂 ⇒ 被删 ⇒ 落点还是没有 ⇒ 再发明一个量具",
+    fix:
+      "① 把被考的决策抽成 `src/domain/` 下的**零依赖纯函数**（范例 `src/domain/import_names.ts`），判据打那个函数；" +
+      "② 或改用他种判据（`call-exists` / `signature-matches` / `run`）；" +
+      "★ `import type` / 具名全是 `type` / `export type` **不算**（类型被擦除，不 load）",
+    doc: DOC.gate,
+    where: { path: SRC.ex, symbol: "behaviorTargetValueImportProblem", messageStartsWith: "E-CRIT-006" },
   },
   {
     code: "E-EVD-001",

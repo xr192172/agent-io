@@ -5,15 +5,15 @@
       "anchor": {
         "symbol": "GATE_RULES"
       },
-      "detail": "GATE_RULES 加 E-WRITE-004（租约代际失效）：what/why/fix/doc/write + where = write_gate#evaluateTaskGate + messageStartsWith '拒绝落盘（任务闸 · 租约代际）'",
-      "judgement_ref": "decision:file_src_domain_task_machine_ts#2",
+      "detail": "族尾追加 E-CRIT-006（号只增不复用）：what=behavior-cases 的 path 指向的文件有值 import（import x / {a,b} / * as ns / 副作用 / require / export … from 任一）；why=harness 单独转译该文件会 load 失败 ⇒ 行为判据根本没有落点；fix=抽零依赖纯函数（范例 src/domain/import_names.ts）或改用他种判据；where=(src/domain/expectation.ts, assertValidExpectations, 前缀 'E-CRIT-006')",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#3",
       "kind": "rewrite",
       "status": "open"
     }
   ],
-  "card": "file_src_domain_task_machine_ts",
+  "card": "file_src_domain_gate_error_ts",
   "untouched_default": {
-    "why": "gate_error 的其余码表（E-PLAN/E-TASK/E-CLAIM/E-CRIT/E-EVD/E-REASON/E-GENDB）本次不动：只追加一条 E-WRITE-004"
+    "why": "只在 GATE_RULES 数组的 E-CRIT 族尾追加一条 E-CRIT-006；既有的 71 条码一个字节不动（号不复用、语义不改是发布约定），gateRuleOf / gateRuleCodes / gateRuleByMessage / GateError 等函数一律不动"
   },
   "symbols_at_freeze": [
     "GateRuleWhere",
@@ -49,8 +49,8 @@
     "innerGateRules": "bef859670824a2b6506b7d55b34db880448f7f3b",
     "carriedCodesFromJson": "047b4397b56f8c75e10d42f6ee6636b6a9353aa8"
   },
-  "frozen_at": "2026-10-30T16:02:13.805Z",
+  "frozen_at": "2026-10-30T18:21:56.997Z",
   "base": {
-    "content_hash": "f83e7eea5fc81ef6ceb7a69dbab14a0fd791e9e9"
+    "content_hash": "8df5b1d14aaf564354751e7130650e53f6ddf434"
   }
 }

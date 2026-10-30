@@ -1,0 +1,49 @@
+{
+  "path": "src/domain/expectation.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "assertValidExpectations"
+      },
+      "detail": "加可选第二参数 ctx?: { readSource?: (rel) => string | null }，转发给 validateExpectation（形状校验仍只有那一把尺）；形状全过后对 kind==='behavior-cases' 的 path 做值 import 扫描：isCodeText 才扫、读不到源码就不在这里拒；scan.count>0 抛 E-CRIT-006（带路径 + 处数 + 前 3 条样本 + 两条出路）",
+      "judgement_ref": "decision:file_src_domain_expectation_ts#0",
+      "kind": "rewrite",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_domain_expectation_ts",
+  "untouched_default": {
+    "why": "只改 assertValidExpectations 一个函数（+ 新增一个导入 scanValueImports/isCodeText 的 import 与 E-CRIT-006 的报文构造函数）；Expectation 联合类型、normPath / normSignature / describeExpectation / postExpectations 等一律不动"
+  },
+  "symbols_at_freeze": [
+    "Expectation",
+    "EXPECTATION_KINDS",
+    "ExpectationPhase",
+    "PHASE_BY_KIND",
+    "expectationPhase",
+    "postExpectations",
+    "normPath",
+    "normSignature",
+    "describeExpectation",
+    "assertValidExpectations",
+    "expectationSubjectPath",
+    "expectationPaths",
+    "collectExpectations"
+  ],
+  "fps_at_freeze": {
+    "expectationPhase": "464a1298efd2210e6427acbd3e32733126ba1be9",
+    "postExpectations": "03b3db6877c06b8714ad46309a9977efd61750fd",
+    "normPath": "3ff8c70223c50e22f737a6c5dd585144557ae173",
+    "normSignature": "ab55e3a3691ff4b0cc4b9857400cd8feff8a2f5e",
+    "describeExpectation": "32f3f6c095c42d95153aacd1c11330fcde117b98",
+    "assertValidExpectations": "84627e7690e66c90c9802b521da0c38b6bf397ab",
+    "behaviorTargetValueImportProblem": "e08b6839a6be08dc7f696bff2a9db57b962d8b85",
+    "expectationSubjectPath": "56ab1454a7b26fc27c0668be647922a4a9ceb452",
+    "expectationPaths": "aa6abd32d5e47d126add0f0edcb0b41fea7504dc",
+    "collectExpectations": "22180a6d9fce5358537e7f0bcd45e5e710005ae9"
+  },
+  "frozen_at": "2026-10-30T18:18:47.976Z",
+  "base": {
+    "content_hash": "583beb0fc4997527e29da6c517c55109428705fe"
+  }
+}

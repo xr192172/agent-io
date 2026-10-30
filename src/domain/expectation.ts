@@ -33,6 +33,9 @@ import type { DesignDSL } from './types.js';
 // ★ 2026-10-28（T-#KIND-1）：**判据 kind 的单一事实源**在 `expectation_kinds.ts` ——
 //   名字清单 / 形状校验 / 人读渲染 / 主体路径 全从它派生；本文件只留 **TS 类型联合**（编译器兜底）。
 import { KIND_SPECS, EXPECTATION_KINDS as KIND_NAMES, validateExpectation, renderExpectation as renderBySpec, subjectPathOf, pathsOf } from './expectation_kinds.js';
+// ★★ 2026-10-31（subagent:b1a-landing · `E-CRIT-006`）：值 import 扫描（`text_strip.ts` 是零依赖纯函数）——
+//   "behavior-cases 的目标文件能不能被单独转译再 import"就靠它判；本文件**自己不碰 fs**。
+import { isCodeText, scanValueImports } from './text_strip.js';
 
 /** ★ 五种可判定的检查项。`why` 是**必填**：一条说不出理由的验收项，将来没人敢删。 */
 export type Expectation =
@@ -277,7 +280,11 @@ export function describeExpectation(e: Expectation): string {
 
 
 /** 校验一条检查项的形状（★ 写入路径要用它**响亮拒绝**，而不是让坏数据进 DSL 后静默不判） */
-export function assertValidExpectations(v: unknown): asserts v is Expectation[] {
+export function assertValidExpectations(
+  v: unknown,
+  /** ★ E-CRIT-006：读目标文件源码的回调（读不到 ⇒ null）。缺省 ⇒ 这条校验不生效。 */
+  ctx?: { readSource?: (path: string) => string | null },
+): asserts v is Expectation[] {
   // ★ 2026-10-28（T-#KIND-1）：**形状校验由注册表派生**。
   //   原来这里每种 kind 一段 if 沙盒（12 段，加 kind 必忘一处）；现在规则只有一份 `KIND_SPECS`。
   if (!Array.isArray(v)) throw new Error(`expectations 必须是数组，收到 ${typeof v}`);
@@ -285,6 +292,57 @@ export function assertValidExpectations(v: unknown): asserts v is Expectation[] 
     const problem = validateExpectation(x, `expectations[${i}]`);
     if (problem) throw new Error(problem);
   });
+  // ★★★ 2026-10-31（subagent:b1a-landing · `E-CRIT-006`）：**形状对了还不够 —— 目标文件得有行为落点**。
+  //   为什么接在这里而不在 `validateExpectation` 里：形状校验是纯形状、domain 不许碰 fs；
+  //   而"目标文件有没有值 import"必须读文件 ⇒ 由调用方把读源码的能力传进来（`ctx.readSource`）。
+  //   ★ 不传 ctx ⇒ 这条校验不生效（纯设计 / 无根场景），与既有的"不给根就不判"同一口径。
+  const read = ctx?.readSource;
+  if (read) {
+    v.forEach((x, i) => {
+      const problem = behaviorTargetValueImportProblem(x, read, `expectations[${i}]`);
+      if (problem) throw new Error(problem);
+    });
+  }
+}
+
+/**
+ * ★★★ 2026-10-31（subagent:b1a-landing）：**`E-CRIT-006` 的唯一判据 + 唯一报文**。
+ *
+ * ## 它拦的是什么（用户点名的根因）
+ * 「框架自动判它对不对」的前提是**有行为落点**：`behavior-cases` 会把目标文件**单独转译再 import**
+ * ⇒ 文件里有值 import（`import ts from 'typescript'` 这类）就 load 失败 ⇒ 那条行为判据写不出来
+ * ⇒ 人只能退成 `source-has`（存在类，永远发现不了逻辑错）⇒ 必漂 ⇒ 被删 ⇒ 落点还是没有 ⇒ 再发明一个量具。
+ * ⇒ 在**写判据那一刻**就拒，并给出两条出路（抽零依赖纯函数 / 换判据种类）。
+ *
+ * ## 口径（三条，别的都不猜）
+ * ① `count === 0` ⇒ 通过；② `count > 0` ⇒ 拒（报文带路径 + 处数 + 前 3 条样本 + 两条出路）；
+ * ③ **文件不存在 / 读不到 / 不是代码扩展名** ⇒ **不在这里拒** —— 那是判据四态（`fail` / `unsupported`）的活，
+ *    在这里抢就会把"还没写"当成"写错了"。
+ */
+function behaviorTargetValueImportProblem(
+  e: unknown,
+  readSource: (path: string) => string | null,
+  at: string,
+): string | null {
+  const o = (e ?? {}) as Record<string, unknown>;
+  if (o.kind !== 'behavior-cases' || typeof o.path !== 'string') return null;
+  const rel = normPath(o.path);
+  if (!isCodeText(rel)) return null; // 非代码文本没有"load"这回事
+  let src: string | null = null;
+  try {
+    src = readSource(rel);
+  } catch {
+    src = null; // 读不到 ⇒ 交给四态，不在这里拒
+  }
+  if (src === null) return null;
+  const scan = scanValueImports(src);
+  if (scan.count === 0) return null;
+  const sample = scan.samples.length ? `例：${scan.samples.join(' / ')}` : '';
+  return (
+    `E-CRIT-006 · ${at} · behavior-cases 的目标文件 ${rel} 有 **${scan.count} 处值 import**（${sample}）` +
+    `⇒ harness 单独转译该文件会 load 失败（判据根本没有行为落点）。\n` +
+    ` 要么把被考的决策抽成 src/domain/ 下的零依赖纯函数（范例：src/domain/import_names.ts），要么改用它种判据。`
+  );
 }
 
 
