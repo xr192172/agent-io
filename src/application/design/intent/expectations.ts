@@ -32,6 +32,9 @@ import { normPath, normSignature, type Expectation } from '../../../domain/expec
 // ★ 2026-10-30（subagent:rule-strip）：`source-has` 的**匹配核**住 domain（纯函数）—— 它先剥注释再匹配，
 //   本文件只读文件、渲染四态。判据见 `domain/expectation_kinds.ts#matchSourceHas` 的头注释。
 import { matchSourceHas } from '../../../domain/expectation_kinds.js';
+// ★ 2026-10-31（B1b）：behavior-cases 的比对核搬进 domain（零依赖纯函数 ⇒ 10 条 behavior-cases 直接跑；
+//   容器只许精确 repr 那条假绿守卫从此可判，不再只能写成 source-has）
+import { sameBehaviorRet } from '../../../domain/behavior_compare.js';
 // ★ 2026-10-24（judge-cache 第一阶）：**一阶文件哈希缓存** —— 「没变的文件不再测」（判据见 judgeExpectations 内注）
 // ★★ 2026-10-31（假绿事故）：新鲜度来源改成 `diskFileHash`（**判定时现读磁盘**），索引不再参与
 import { loadJudgeCache, saveJudgeCache, judgeCacheKey, diskFileHash } from './judge_cache.js';
@@ -556,23 +559,15 @@ export async function judgeExpectations(
               return typeof v === 'string' ? v : JSON.stringify(v);
             } catch { return ret; }
           };
-          const same = (ret: string, expect: string): boolean => {
-            if (ret === expect) return true; // expect 本就写成 repr 形态（如 "5" / "true" / "{\"a\":1}"）
-            let v: unknown;
-            try { v = JSON.parse(ret); } catch { return false; } // ret 不是 JSON ⇒ 只能靠上面那条精确相等
-            // ★★ 2026-10-30（D4 假绿守卫）：**容器只许精确 repr 相等** —— repr 已经对不上了，容器再走
-            //   `String()` 会退化成 "[object Object]" / "1,2" ⇒ `expect:"[object Object]"` 对**任意**
-            //   对象数组输出都 PASS（实测假绿）。只有标量（数字 / 布尔 / null / 字符串）才走裸串口径。
-            if (v !== null && typeof v === 'object') return false;
-            return String(v) === expect;
-          };
+          // ★ 2026-10-31（B1b）：比对核转调 src/domain/behavior_compare.ts#sameBehaviorRet ——
+          //   口径逐字不变（repr 精确相等优先 / 解析失败即 false / 容器只许精确 repr / 标量才走裸串口径）。
           const bad: string[] = [];
           for (let i = 0; i < e.cases.length; i++) {
             const c = e.cases[i];
             const r = run.results.find((x) => x.case === `case-${i + 1}`);
             if (!r) { bad.push(`case-${i + 1}（输入 ${JSON.stringify(c.given)}）harness 未产出该 case`); continue; }
             if (!r.ok) { bad.push(`case-${i + 1} 输入 ${JSON.stringify(c.given)}：**抛错** ${r.error}`); continue; }
-            if (!same(r.ret ?? '', c.expect)) {
+            if (!sameBehaviorRet(r.ret ?? '', c.expect)) {
               bad.push(`case-${i + 1} 输入 ${JSON.stringify(c.given)}：期望 \`${c.expect}\`，实得 \`${shown(r.ret ?? '')}\``);
             }
           }

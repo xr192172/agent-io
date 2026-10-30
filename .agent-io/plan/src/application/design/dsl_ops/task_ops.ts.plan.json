@@ -3,44 +3,17 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "touchTaskHeartbeat"
+        "symbol": "applyTaskPlanOp"
       },
-      "detail": "心跳的写盘入口（给写闸用）：tempcard → shouldTouchHeartbeat 判 <60s 跳过；返回 touched/fresh/{error}，绝不抛",
-      "judgement_ref": "decision:file_src_domain_task_machine_ts#3",
-      "kind": "create",
-      "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "renewTask"
-      },
-      "detail": "续租回执的 TTL/年龄读数从小时改分钟（10 分钟用小时表达会读成 0h）",
-      "judgement_ref": "decision:file_src_domain_task_machine_ts#3",
       "kind": "rewrite",
-      "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "expireTasks"
-      },
-      "detail": "回收回执的 TTL 读数从小时改分钟（原来 TTL=0h 属信息归零）",
-      "judgement_ref": "decision:file_src_domain_task_machine_ts#3",
-      "kind": "rewrite",
-      "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "claimTask"
-      },
-      "detail": "CAS 拒绝里的租约读数改为分钟，并补一句\"过期的代价不是不能接管，而是接管要先通读并逐条表态\"",
-      "judgement_ref": "decision:file_src_domain_task_machine_ts#2",
-      "kind": "rewrite",
+      "detail": "criteria 写前改为 isParsableExpect(expect) 判能不能写 + 失败时用 expectEvaluator 的 SyntaxError 原文拼拒绝文案（文案格式逐字不变，不再引 parseExpectError）",
+      "judgement_ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#5",
       "status": "open"
     }
   ],
-  "card": "file_src_domain_task_machine_ts",
+  "card": "file_src_application_design_dsl_ops_task_ops_ts",
   "untouched_default": {
-    "why": "只改回执读数与文案（小时→分钟）；task_ops 其余写端与状态机不动"
+    "why": "只换 criteria 的写前试解析这一处；同文件其余 op（claim/start/complete/void…）本次不动"
   },
   "symbols_at_freeze": [
     "signTaskActor",
@@ -129,7 +102,7 @@
     "reopenTask": "deb4df2fa92800327105874106caa36a5a0774a7",
     "relaunchTask": "80e9947dd680b8acc323a05bb91b4fac415cb5d5",
     "startTask": "6ffd929fda9068ff5933089ad426dfe195499e01",
-    "applyTaskPlanOp": "726f70b13a923deca0c7239fb92359369465d94b",
+    "applyTaskPlanOp": "d75b957f4e27840c0ead018b8a4ebc92af215459",
     "applyTaskOp": "c05c92508666aed2c578bae067d4dcddee3876d0",
     "publishFromDiff": "4437516625db1acf7f4411b91ab90f0ac3b5b501",
     "voidTask": "d58162b76581238510dcaeb5f3ce428bbca5cb0c",
@@ -147,8 +120,8 @@
     "applyTodoOp": "ced3a1fe83e4e845e9ba80435f8d8028d3585678",
     "importTodoCards": "38c912bada051d320fd4b3c80e0d25911e20901c"
   },
-  "frozen_at": "2026-10-30T16:08:07.334Z",
+  "frozen_at": "2026-10-30T18:44:20.270Z",
   "base": {
-    "content_hash": "07bd5f908422e256c966ccd9f7d522fb8134dc6e"
+    "content_hash": "9c9eda214795057fd2d4ecb156b8736189bbd96c"
   }
 }

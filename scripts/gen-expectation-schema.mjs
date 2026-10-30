@@ -26,44 +26,16 @@ const SCHEMA = path.join(ROOT, 'schema/design_dsl.schema.json');
 const { KIND_SPECS } = await import(pathToFileURL(path.join(ROOT, 'src/domain/expectation_kinds.ts')).href);
 const KIND_NAMES = new Set(Object.keys(KIND_SPECS));
 
-const typeMap = (f) => {
-  switch (f.type) {
-    case 'string':
-      return f.values ? { type: 'string', enum: [...f.values] } : { type: 'string' };
-    case 'number':
-      return { type: 'number' };
-    case 'boolean':
-      return { type: 'boolean' };
-    case 'object':
-      return { type: 'object' };
-    case 'string[]':
-      return { type: 'array', items: { type: 'string' }, ...(f.minItems ? { minItems: f.minItems } : {}) };
-    // ★★ 2026-10-30（D4）：given 放宽成 **JSON 值数组** —— 只声明 array，**不写 items**（= 任意元素）。
-    //   ★ 绝不能漏这一处（漏了会落到 default → {}）：那样 given:"5"（非数组）也会 PASS ⇒ 静默放宽过头（实测）。
-    case 'json[]':
-      return { type: 'array', ...(f.minItems ? { minItems: f.minItems } : {}) };
-    case 'object[]':
-      return {
-        type: 'array',
-        items: f.items
-          ? {
-              type: 'object',
-              properties: Object.fromEntries(f.items.map((sub) => [sub.name, typeMap(sub)])),
-              required: f.items.filter((x) => x.required).map((x) => x.name),
-            }
-          : { type: 'object' },
-        ...(f.minItems ? { minItems: f.minItems } : {}),
-      };
-    default:
-      return {};
-  }
-};
+// ★ 2026-10-31（B1b）：7 个 type 分支的渲染核搬进 src/domain/expectation_branch.ts#jsonSchemaTypeOf
+//   （零依赖纯函数 ⇒ 8 条 behavior-cases 现跑判）；本脚本只留 kind 联合体的整体装配（下面的 branchOf）。
+//   ★ 加载方式与本文件引入 expectation_kinds.ts 同一条（tsx 直跑 .ts，不走 dist）。
+const { jsonSchemaTypeOf } = await import(pathToFileURL(path.join(ROOT, 'src/domain/expectation_branch.ts')).href);
 
 const branchOf = (spec) => {
   const properties = {
     kind: { const: spec.kind },
     why: { type: 'string' },
-    ...Object.fromEntries(spec.fields.map((f) => [f.name, typeMap(f)])),
+    ...Object.fromEntries(spec.fields.map((f) => [f.name, jsonSchemaTypeOf(f)])),
   };
   const required = ['kind', 'why', ...spec.fields.filter((f) => f.required).map((f) => f.name)].sort();
   const b = { type: 'object', properties, required };

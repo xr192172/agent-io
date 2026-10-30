@@ -1,0 +1,22 @@
+{
+  "path": "src/domain/expectation_branch.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "jsonSchemaTypeOf"
+      },
+      "kind": "create",
+      "detail": "新建零依赖纯函数：判据字段形状 → JSON Schema 片段（7 个 type 分支；json[] 必须显式 {type:\"array\"} 且不写 items）",
+      "judgement_ref": "decision:file_src_domain_expectation_branch_ts#0",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_domain_expectation_branch_ts",
+  "frozen_at": "2026-10-30T18:37:56.460Z",
+  "base": {
+    "content_hash": "9a9f92d04f75b7084378fc9c662e57ef7353bc3d"
+  },
+  "fps_at_freeze": {
+    "jsonSchemaTypeOf": "e41a1b56d95b2edb4ae56c7652bae637c1430dd4"
+  }
+}

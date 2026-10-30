@@ -11503,33 +11503,43 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_task_ops_ts\"].responsibility"
           },
-          "owner": "subagent:dissent",
-          "claimed_at": "2026-10-30T14:55:46.166Z",
+          "owner": "subagent:b1b-exec-goal",
+          "claimed_at": "2026-10-30T18:36:18.404Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "claimTask",
-                "fp": "2574657ac8538682302208acd86b83c5103ea42c"
+                "fp": "1a307c47a68243fbd328dfcc753ab18960080633"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "completeTask",
-                "fp": "598d489556e037d66bb5e0b54b70c982ca761a01"
+                "name": "expireTasks",
+                "fp": "44bc98341edf8929e611503d3b54188127dc73c9"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "renewTask",
+                "fp": "a196320dd68920046567ec6b209b5d9174625f97"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "touchTaskHeartbeat",
+                "fp": "12c41a9dc431340f08b744cf0b9b629f6699abe0"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "564a4f57a39e11d9fa667615171b790db3f1500e"
+                "content_hash": "07bd5f908422e256c966ccd9f7d522fb8134dc6e"
               }
             ],
-            "computed_at": "2026-10-30T14:55:46.100Z",
+            "computed_at": "2026-10-30T18:36:18.336Z",
             "basis": [
-              "canvas",
-              "expectations"
-            ]
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -11580,18 +11590,38 @@
               },
               "observed": "判据批 agent-io：共 186 条 · 185 pass / 1 fail（唯一 fail = src/application/design/db/gen_design_db.ts 的 source-has 陈旧红）",
               "command": "node dist/src/presentation/cli/cli.js design_line --json {\"action\":\"judge\",\"feature\":\"agent-io\"}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T18:48:56.344Z",
+              "by": "llm",
+              "agent": "subagent:b1b-exec-goal",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+                "input": "f526680412736f2e5d4c6d176ff91189fa18a160",
+                "code": "639bb78c344949232c0bb28e2da9a8f56616937f",
+                "covers": [
+                  "src/application/design/dsl_ops/task_ops.ts"
+                ]
+              },
+              "observed": "199 条 · pass 198 / fail 1；本节点新增 call-exists applyTaskPlanOp→isParsableExpect 通过；被删的 source-has must:[\"new Function\"] 语义由 expect_expr.ts 的 8 条 case 接住（`1 +` / `if (true) {}` / 空串必须 false）；拒绝文案格式与抽取前逐字相同（原文由 task_ops 自己的 catch 从 expectEvaluator 取）",
+              "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}"
             }
           ],
-          "reopened_at": "2026-10-30T14:55:46.166Z",
-          "reopen_reason": "带异议领卡：在 src/application/design/dsl_ops/task_ops.ts 的 claimTask 接 validateSupersedes（三道门）、completeTask 接 validateMergedReading（E-TASK-008）—— 两条 call-exists 判据此刻都红。上一轮 basis-switch 已收口，本轮取写权。",
-          "reopened_from": "subagent:basis-switch",
+          "reopened_at": "2026-10-30T18:36:18.404Z",
+          "reopen_reason": "把 criteria 写前试解析换成转调 src/domain/expect_expr.ts#isParsableExpect / parseExpectError（报错文案逐字不变，删掉的那条 source-has 由 8 条 behavior-cases 接住）",
+          "reopened_from": "subagent:dissent",
           "expired_from": {
             "owner": "agent:wish-machine",
             "claimed_at": "2026-10-26T13:14:39.734Z",
             "age_hours": 89.1,
             "ttl_ms": 7200000
           },
-          "expired_at": "2026-10-30T06:18:54.824Z"
+          "expired_at": "2026-10-30T06:18:54.824Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-10-30T18:48:56.346Z"
         },
         "status": "done",
         "decision": {
@@ -11605,14 +11635,6 @@
               ],
               "path": "src/application/design/dsl_ops/task_ops.ts",
               "why": "项目级判据（criteria）的写入口 —— 实测 src/ 里 design_completeness 零引用 ⇒ 它只有读端没有写端"
-            },
-            {
-              "kind": "source-has",
-              "must": [
-                "new Function"
-              ],
-              "path": "src/application/design/dsl_ops/task_ops.ts",
-              "why": "expect 写前必须试解析：design:check 用 new Function 求值，写坏一个字节就让整道门崩"
             },
             {
               "kind": "source-has",
@@ -11642,6 +11664,13 @@
               "symbol": "completeTask",
               "target": "validateMergedReading",
               "why": "接线判据（第二半：合并后整体重跑）：带 supersedes 的卡收口时 completeTask 必须调 validateMergedReading 核「合并后整册 judge 读数」—— 摘掉它，「各自都对、合起来不对」这种失效模式就没人拦（E-TASK-008 变成永不触发的死码）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "applyTaskPlanOp",
+              "target": "isParsableExpect",
+              "why": "重构不变量：写 criteria 之前必须**转调** src/domain/expect_expr.ts#isParsableExpect（零依赖 ⇒ 8 条 behavior-cases 现跑判：`1 +` / `if (true) {}` / 空串都必须判 false），不许把 new Function 试解析重新内联回本文件。原 source-has must:['new Function'] 只能证明那个构造器字面还在。"
             }
           ],
           "acceptance": "① task_plan.update 必须能写 `criteria`（按 id upsert）；② **transition 写端必须支持 `state`**（kind: ready|blocked|unimplemented）—— 实测 D4 要求每条有 state.kind，而写端产不出，导致 t_prepare/t_start/t_abandon 三条永远缺；③ `expect` 写前必须用 new Function 试解析。",
@@ -11651,9 +11680,9 @@
             "criteria",
             "state-machine"
           ],
-          "updated_at": "2026-10-30T14:55:01.559Z",
+          "updated_at": "2026-10-30T18:35:37.599Z",
           "author": "llm",
-          "agent": "subagent:dissent"
+          "agent": "subagent:b1b-exec-goal"
         },
         "overlay": {
           "path": "src/application/design/dsl_ops/task_ops.ts",
@@ -11661,9 +11690,10 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "command": "node dist/src/presentation/cli/cli.js design_line --json {\"action\":\"judge\",\"feature\":\"agent-io\"}",
-            "observed": "判据批 agent-io：共 186 条 · 185 pass / 1 fail（唯一 fail = src/application/design/db/gen_design_db.ts 的 source-has 陈旧红）",
-            "at": "2026-10-30T15:10:00.000Z"
+            "at": "2026-10-31T02:52:00+08:00",
+            "by": "llm",
+            "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+            "observed": "199 条 · pass 198 / fail 1；本节点新增 call-exists applyTaskPlanOp→isParsableExpect 通过；被删的 source-has must:[\"new Function\"] 语义由 expect_expr.ts 的 8 条 case 接住（`1 +` / `if (true) {}` / 空串必须 false）；拒绝文案格式与抽取前逐字相同（原文由 task_ops 自己的 catch 从 expectEvaluator 取）"
           },
           "signature": "v2:4a83526193ed"
         },
@@ -11861,6 +11891,130 @@
             },
             "note": "给 3 个节点各挂一条语义类判据：src/domain/task_schema.ts 的 supersedes 放宽 + disputed_by（run 钉三处形状）、src/application/design/dsl_ops/op_data_spec.ts 的 task 键表收 supersedes、task_ops.ts 的两条调用边（claimTask→validateSupersedes、completeTask→validateMergedReading）。前两个节点此前没有决策卡，故用 decision.update 首版写入 summary + 判据。",
             "agent": "subagent:dissent"
+          },
+          {
+            "at": "2026-10-30T18:35:37.544Z",
+            "decision": {
+              "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "design_completeness",
+                    "criteria"
+                  ],
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "why": "项目级判据（criteria）的写入口 —— 实测 src/ 里 design_completeness 零引用 ⇒ 它只有读端没有写端"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "new Function"
+                  ],
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "why": "expect 写前必须试解析：design:check 用 new Function 求值，写坏一个字节就让整道门崩"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "unimplemented"
+                  ],
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "why": "transition 写端必须支持 state.kind 的三个取值（ready/blocked/unimplemented）—— 否则 D4 永远红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "claimTask",
+                  "target": "claimBasisLine",
+                  "why": "claim 回执里那句「冲突基准 = …」必须经 claim_conflict.ts#claimBasisLine 渲染（唯一实现），不许在 task_ops.ts 里自己拼一遍文案：两处文案一改就漂（本仓最贵的病是第二份判据/第二份留痕）。这条也是本节点第一个语义类（能发现逻辑错的）判据 —— 原有 3 条 source-has 只是存在类。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "claimTask",
+                  "target": "validateSupersedes",
+                  "why": "接线判据（本卡第一道门）：claimTask 的改集相交分支必须调 domain/dissent_spec.ts#validateSupersedes —— 摘掉这一行，E-CLAIM-005 的拒绝就退回「一律拒」，用户要的「读完对方设计 → 结构化重写 → 告知对方」这条路径不复存在。★ 诚实边界：函数级判据，分辨不出它调在哪一行分支上；分支本身由 validateSupersedes 的 behavior-cases + 三次真拒绝反证"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "completeTask",
+                  "target": "validateMergedReading",
+                  "why": "接线判据（第二半：合并后整体重跑）：带 supersedes 的卡收口时 completeTask 必须调 validateMergedReading 核「合并后整册 judge 读数」—— 摘掉它，「各自都对、合起来不对」这种失效模式就没人拦（E-TASK-008 变成永不触发的死码）"
+                }
+              ],
+              "acceptance": "① task_plan.update 必须能写 `criteria`（按 id upsert）；② **transition 写端必须支持 `state`**（kind: ready|blocked|unimplemented）—— 实测 D4 要求每条有 state.kind，而写端产不出，导致 t_prepare/t_start/t_abandon 三条永远缺；③ `expect` 写前必须用 new Function 试解析。",
+              "status": "active",
+              "tags": [
+                "task-plan",
+                "criteria",
+                "state-machine"
+              ],
+              "updated_at": "2026-10-30T14:55:01.559Z",
+              "author": "llm",
+              "agent": "subagent:dissent"
+            },
+            "note": "删 source-has must [\"new Function\"]：试解析已抽到 src/domain/expect_expr.ts#isParsableExpect（求值域唯一名单 EXPECT_EVAL_PARAMS 同住该文件），由 8 条 behavior-cases 判",
+            "agent": "subagent:b1b-exec-goal"
+          },
+          {
+            "at": "2026-10-30T18:35:37.599Z",
+            "decision": {
+              "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "design_completeness",
+                    "criteria"
+                  ],
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "why": "项目级判据（criteria）的写入口 —— 实测 src/ 里 design_completeness 零引用 ⇒ 它只有读端没有写端"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "unimplemented"
+                  ],
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "why": "transition 写端必须支持 state.kind 的三个取值（ready/blocked/unimplemented）—— 否则 D4 永远红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "claimTask",
+                  "target": "claimBasisLine",
+                  "why": "claim 回执里那句「冲突基准 = …」必须经 claim_conflict.ts#claimBasisLine 渲染（唯一实现），不许在 task_ops.ts 里自己拼一遍文案：两处文案一改就漂（本仓最贵的病是第二份判据/第二份留痕）。这条也是本节点第一个语义类（能发现逻辑错的）判据 —— 原有 3 条 source-has 只是存在类。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "claimTask",
+                  "target": "validateSupersedes",
+                  "why": "接线判据（本卡第一道门）：claimTask 的改集相交分支必须调 domain/dissent_spec.ts#validateSupersedes —— 摘掉这一行，E-CLAIM-005 的拒绝就退回「一律拒」，用户要的「读完对方设计 → 结构化重写 → 告知对方」这条路径不复存在。★ 诚实边界：函数级判据，分辨不出它调在哪一行分支上；分支本身由 validateSupersedes 的 behavior-cases + 三次真拒绝反证"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "completeTask",
+                  "target": "validateMergedReading",
+                  "why": "接线判据（第二半：合并后整体重跑）：带 supersedes 的卡收口时 completeTask 必须调 validateMergedReading 核「合并后整册 judge 读数」—— 摘掉它，「各自都对、合起来不对」这种失效模式就没人拦（E-TASK-008 变成永不触发的死码）"
+                }
+              ],
+              "acceptance": "① task_plan.update 必须能写 `criteria`（按 id upsert）；② **transition 写端必须支持 `state`**（kind: ready|blocked|unimplemented）—— 实测 D4 要求每条有 state.kind，而写端产不出，导致 t_prepare/t_start/t_abandon 三条永远缺；③ `expect` 写前必须用 new Function 试解析。",
+              "status": "active",
+              "tags": [
+                "task-plan",
+                "criteria",
+                "state-machine"
+              ],
+              "updated_at": "2026-10-30T18:35:37.544Z",
+              "author": "llm",
+              "agent": "subagent:b1b-exec-goal"
+            },
+            "note": "B1 批（4 条零搬迁 source-has 换 behavior-cases，2026-10-31 subagent:b1b-exec-goal）：① 删 file_src_application_design_intent_expectations_ts#5 的 source-has（must \"typeof v === 'object') return false\"）⇒ 决策抽成 src/domain/behavior_compare.ts#sameBehaviorRet（零 import，10 case）；② 删 file_src_domain_gate_error_ts#12 的 source-has（scripts/gen-expectation-schema.mjs 的 \"case 'json[]':\"）⇒ 抽成 src/domain/expectation_branch.ts#jsonSchemaTypeOf（8 case）；③ 删 file_src_application_observe_runtime_stale_check_ts#1 的 source-has（must .build-manifest.json/createHash/basis）⇒ 抽成 src/domain/stale_verdict.ts#staleDecision + basisOf（7+4 case）；④ 删 file_src_application_design_dsl_ops_task_ops_ts#1 的 source-has（must \"new Function\"）⇒ 抽成 src/domain/expect_expr.ts#isParsableExpect（8 case）。同时给 3 个旧节点各补 1 条语义类 call-exists，守住「被抽走的决策不许内联回来」。",
+            "agent": "subagent:b1b-exec-goal"
           }
         ],
         "path": "src/application/design/dsl_ops/task_ops.ts"
@@ -13048,27 +13202,23 @@
               "why": "防第二份复活：对原文 src 直接 includes 的老匹配不许回来（它看不到注释，判据就会再次惩罚记录病史）"
             },
             {
-              "kind": "source-has",
+              "kind": "call-exists",
               "path": "src/application/design/intent/expectations.ts",
-              "must": [
-                "typeof v === 'object') return false"
-              ],
-              "mustNot": [
-                "String(JSON.parse(ret)) === expect"
-              ],
-              "why": "假绿守卫：cases[].expect 的比对里，容器（对象/数组）输出只许精确 repr 相等 —— 旧兜底 String(JSON.parse(ret)) 对容器退化成 \"[object Object]\" / \"1,2\"，实测 expect:\"[object Object]\" 对任意对象数组输出都 PASS。两条一起钉：容器分支必须 return false；旧的一行兜底不许复活（防第二份）"
+              "symbol": "judgeExpectations",
+              "target": "sameBehaviorRet",
+              "why": "重构不变量：cases[].expect 的比对必须**转调** src/domain/behavior_compare.ts#sameBehaviorRet（零依赖 ⇒ 10 条 behavior-cases 现跑判），不许把容器假绿守卫重新内联回本文件 —— 一内联就又只剩 source-has（存在类，永远发现不了逻辑错）。语义类判据（能发现逻辑错），不是存在类。"
             }
           ],
-          "updated_at": "2026-10-30T09:10:30.889Z",
-          "agent": "subagent:given-json"
+          "updated_at": "2026-10-30T18:35:37.312Z",
+          "agent": "subagent:b1b-exec-goal"
         },
         "task": {
           "id": "file_src_application_design_intent_expectations_ts",
           "summary": "source-has 的 must / mustNot 在**剥注释之后**的文本上匹配（只剥代码扩展名）；判定核是 domain 层 expectSourceHas 的纯函数 matchSourceHas，剥注释器是 src/domain/text_strip.ts（零 import）；application 层只留 fs 读取与四态渲染",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:given-json",
-          "claimed_at": "2026-10-30T09:03:47.542Z",
+          "owner": "subagent:b1b-exec-goal",
+          "claimed_at": "2026-10-30T18:36:18.110Z",
           "read_set": {
             "symbols": [
               {
@@ -13077,53 +13227,26 @@
                 "fp": ""
               },
               {
-                "file": "docs/SUBAGENT-HANDBOOK.md",
-                "name": "8. 已知缺陷",
-                "fp": ""
-              },
-              {
                 "file": "src/application/design/intent/expectations.ts",
-                "name": "judgeSourceHas",
-                "fp": "94d4a82c2f1c0a522d9bbf54f8e9ff93095abeeb"
-              },
-              {
-                "file": "src/domain/expectation_kinds.ts",
-                "name": "matchSourceHas",
-                "fp": "1b3b8ee6bb001a59fcc38a130a0a327edf3a5758"
-              },
-              {
-                "file": "src/domain/text_strip.ts",
-                "name": "stripComments",
-                "fp": "a3ac15fe3edd0b01a892a2a05dab14f509c35da2"
+                "name": "judgeExpectations",
+                "fp": "9ca754cc46199f897bda7da5f7f78158fa285378"
               }
             ],
             "files": [
               {
                 "path": "docs/RETIRED.md",
-                "content_hash": "e9b3d0f3078a443d39bea1921fdfa1f09bcb708b"
-              },
-              {
-                "path": "docs/SUBAGENT-HANDBOOK.md",
-                "content_hash": "c36f674a4f81a656965c287e01591511f8290476"
+                "content_hash": "6095891112414495dc88fdf6bd1ce8f042a5f1fa"
               },
               {
                 "path": "src/application/design/intent/expectations.ts",
-                "content_hash": "facd6945ea28e8723c89065c2cff3c1a96648dcc"
-              },
-              {
-                "path": "src/domain/expectation_kinds.ts",
-                "content_hash": "98e4bc29391a70da4a7b7544d6414f785514cd5e"
-              },
-              {
-                "path": "src/domain/text_strip.ts",
-                "content_hash": "8f87cacdeb9c0c2df9ff746a685146c9646710dd"
+                "content_hash": "531b104b9cca4e1dd491942fae90d4d960087dea"
               }
             ],
-            "computed_at": "2026-10-30T09:03:47.454Z",
+            "computed_at": "2026-10-30T18:36:18.028Z",
             "basis": [
               "canvas"
             ],
-            "note": "2 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：docs/RETIRED.md#台账 / docs/SUBAGENT-HANDBOOK.md#8. 已知缺陷"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：docs/RETIRED.md#台账"
           },
           "evidence": [
             {
@@ -13163,11 +13286,33 @@
               },
               "observed": "假绿守卫已落盘（src/application/design/intent/expectations.ts:522-530）：容器（对象/数组）输出只许精确 repr 相等，标量才走 String(v)。反证（真 judgeExpectations 执行核，src/domain/gate_error.ts#gateErrorsOf 输出 [{code:zzz}]）：摘掉守卫时 expect:\"[object Object]\" ⇒ pass（假绿，实测）；恢复后同样 expect ⇒ fail（行为差异 1/1），expect:\"[{\\\"code\\\":\\\"zzz\\\"]\" ⇒ pass，反例控制 expect:\"zzz\" ⇒ fail。变异反证：摘掉该行 ⇒ 本节点 source-has must \"typeof v === 'object') return false\" 当场红（judge 168 条 3 fail）；judge 改前 164 条 163 pass/1 fail → 改后 168 条 167 pass/1 fail（既有 164 条结论一条未变）；npm run verify 9/9 PASS",
               "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}' && node %TEMP%\\d4-probe.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T18:48:53.281Z",
+              "by": "llm",
+              "agent": "subagent:b1b-exec-goal",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+                "input": "6b03078e3b6dbda2a74c5de414d8662a01485dc9",
+                "code": "c2eedfb6a845ec8f43cb8f51bb46c4ebea16d698",
+                "covers": [
+                  "src/application/design/intent/expectations.ts",
+                  "src/domain/expectation_kinds.ts",
+                  "src/domain/text_strip.ts"
+                ]
+              },
+              "observed": "199 条 · pass 198 / fail 1；本节点新增的 call-exists judgeExpectations→sameBehaviorRet 通过（回执点名 L570 的调用）；被删的 source-has#5 语义由 behavior_compare.ts 的 10 条 case 接住（容器不许 String() 兜底）；同文件其余 5 条判据仍绿",
+              "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}"
             }
           ],
-          "reopened_at": "2026-10-30T09:03:47.542Z",
-          "reopen_reason": "D4 假绿守卫：src/application/design/intent/expectations.ts 的 same() 里 String(JSON.parse(ret)) 兜底对容器退化成 [object Object]（实测 expect:\"[object Object]\" 对任意对象数组输出 PASS）⇒ 改成容器只许精确 repr 相等",
-          "reopened_from": "subagent:rule-strip"
+          "reopened_at": "2026-10-30T18:36:18.110Z",
+          "reopen_reason": "把 cases[].expect 的比对核闭包 same 换成转调 src/domain/behavior_compare.ts#sameBehaviorRet（行为逐字不变，删掉的那条 source-has 由 10 条 behavior-cases 接住）",
+          "reopened_from": "subagent:given-json",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-10-30T18:48:53.281Z"
         },
         "status": "done",
         "overlay": {
@@ -13176,9 +13321,10 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}' && node %TEMP%\\d4-probe.mjs",
-            "observed": "假绿守卫已落盘（src/application/design/intent/expectations.ts:522-530）：容器（对象/数组）输出只许精确 repr 相等，标量才走 String(v)。反证（真 judgeExpectations 执行核，src/domain/gate_error.ts#gateErrorsOf 输出 [{code:zzz}]）：摘掉守卫时 expect:\"[object Object]\" ⇒ pass（假绿，实测）；恢复后同样 expect ⇒ fail（行为差异 1/1），expect:\"[{\\\"code\\\":\\\"zzz\\\"]\" ⇒ pass，反例控制 expect:\"zzz\" ⇒ fail。变异反证：摘掉该行 ⇒ 本节点 source-has must \"typeof v === 'object') return false\" 当场红（judge 168 条 3 fail）；judge 改前 164 条 163 pass/1 fail → 改后 168 条 167 pass/1 fail（既有 164 条结论一条未变）；npm run verify 9/9 PASS",
-            "at": "2026-10-30T17:14:50.224Z"
+            "at": "2026-10-31T02:52:00+08:00",
+            "by": "llm",
+            "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+            "observed": "199 条 · pass 198 / fail 1；本节点新增的 call-exists judgeExpectations→sameBehaviorRet 通过（回执点名 L570 的调用）；被删的 source-has#5 语义由 behavior_compare.ts 的 10 条 case 接住（容器不许 String() 兜底）；同文件其余 5 条判据仍绿"
           }
         },
         "decision_history": [
@@ -13270,6 +13416,195 @@
             },
             "note": "D4 落地后校准判据（3 处）：① validateDSL 从 120 错降到 1 错，剩下的 1 条是既有 [anchor_broken] module_build.ts 有册无节点（HEAD 版 DSL 同样 1 条，ajv 早期 return 时被遮住）⇒ 把 run 判据改成『given 相关错误 0 且除既有 anchor_broken 外 0 错』；② 补 behavior-cases 直喂对象到 gateErrorsOf（given:[] / [null] / [{data:{errors:[{code:zzz},{code:7},null]}}]）；③ 给节点 file_src_application_design_intent_expectations_ts 挂假绿守卫的 source-has（must: 容器 return false / mustNot: 旧 String(JSON.parse(ret)) 兜底）",
             "agent": "subagent:given-json"
+          },
+          {
+            "at": "2026-10-30T18:35:37.248Z",
+            "decision": {
+              "summary": "source-has 的 must / mustNot 在**剥注释之后**的文本上匹配（只剥代码扩展名）；判定核是 domain 层 expectSourceHas 的纯函数 matchSourceHas，剥注释器是 src/domain/text_strip.ts（零 import）；application 层只留 fs 读取与四态渲染",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "matchSourceHas",
+                  "target": "stripCommentsFor",
+                  "why": "source-has 的 must/mustNot 必须在**剥注释之后**的文本上匹配：纯子串会让注释里的旧名字也算命中，C1/C3 两张卡为把 mustNot:[\"INTRODUCED_BY_MODULE\"] / [\"PKG_DIRS\"] 变绿只能删注释里的病史。这条边断了 = 判据又在惩罚记录病史"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "stripComments",
+                  "why": "零依赖纯函数（behavior-cases 的 harness 会把目标文件单独转译）：行注释里的 PKG_DIRS 必须没了、块注释同样、而字符串字面量里的 // 必须原样保留（否则 http 的 // 会吃掉半行）",
+                  "cases": [
+                    {
+                      "given": [
+                        "const a = 1; // PKG_DIRS\nconst b = 2;"
+                      ],
+                      "expect": "const a = 1; \nconst b = 2;"
+                    },
+                    {
+                      "given": [
+                        "const u = \"http://x//y\"; // INTRODUCED_BY_MODULE"
+                      ],
+                      "expect": "const u = \"http://x//y\"; "
+                    },
+                    {
+                      "given": [
+                        "/* PKG_DIRS */ const c = 3;"
+                      ],
+                      "expect": " const c = 3;"
+                    }
+                  ]
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "stripCommentsFor",
+                  "why": "扩展名限定：只有代码文本才剥注释。markdown 的 //source 与 JSON 的 // 都不是注释 ⇒ 文档/数据判据按原文匹配，否则 design-db 的 //source 行会被当行注释吃掉",
+                  "cases": [
+                    {
+                      "given": [
+                        "docs/X.md",
+                        "a //source b"
+                      ],
+                      "expect": "a //source b"
+                    },
+                    {
+                      "given": [
+                        "src/x.ts",
+                        "a //source b"
+                      ],
+                      "expect": "a "
+                    },
+                    {
+                      "given": [
+                        "data/x.json",
+                        "{\"u\":\"a//b\"}"
+                      ],
+                      "expect": "{\"u\":\"a//b\"}"
+                    }
+                  ]
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "symbol": "judgeSourceHas",
+                  "target": "matchSourceHas",
+                  "why": "判定核必须委派给 domain 层的 matchSourceHas（唯一实现）；本文件只留 fs 读取与四态渲染，不许自己再写一套 includes 匹配"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "mustNot": [
+                    "src.includes(t)"
+                  ],
+                  "why": "防第二份复活：对原文 src 直接 includes 的老匹配不许回来（它看不到注释，判据就会再次惩罚记录病史）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "must": [
+                    "typeof v === 'object') return false"
+                  ],
+                  "mustNot": [
+                    "String(JSON.parse(ret)) === expect"
+                  ],
+                  "why": "假绿守卫：cases[].expect 的比对里，容器（对象/数组）输出只许精确 repr 相等 —— 旧兜底 String(JSON.parse(ret)) 对容器退化成 \"[object Object]\" / \"1,2\"，实测 expect:\"[object Object]\" 对任意对象数组输出都 PASS。两条一起钉：容器分支必须 return false；旧的一行兜底不许复活（防第二份）"
+                }
+              ],
+              "updated_at": "2026-10-30T09:10:30.889Z",
+              "agent": "subagent:given-json"
+            },
+            "note": "删 source-has must \"typeof v === 'object') return false\" / mustNot \"String(JSON.parse(ret)) === expect\"：决策已抽到 src/domain/behavior_compare.ts#sameBehaviorRet，由 10 条 behavior-cases 判（容器只许精确 repr 这一条语义直接落在 case-5/6）",
+            "agent": "subagent:b1b-exec-goal"
+          },
+          {
+            "at": "2026-10-30T18:35:37.312Z",
+            "decision": {
+              "summary": "source-has 的 must / mustNot 在**剥注释之后**的文本上匹配（只剥代码扩展名）；判定核是 domain 层 expectSourceHas 的纯函数 matchSourceHas，剥注释器是 src/domain/text_strip.ts（零 import）；application 层只留 fs 读取与四态渲染",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "matchSourceHas",
+                  "target": "stripCommentsFor",
+                  "why": "source-has 的 must/mustNot 必须在**剥注释之后**的文本上匹配：纯子串会让注释里的旧名字也算命中，C1/C3 两张卡为把 mustNot:[\"INTRODUCED_BY_MODULE\"] / [\"PKG_DIRS\"] 变绿只能删注释里的病史。这条边断了 = 判据又在惩罚记录病史"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "stripComments",
+                  "why": "零依赖纯函数（behavior-cases 的 harness 会把目标文件单独转译）：行注释里的 PKG_DIRS 必须没了、块注释同样、而字符串字面量里的 // 必须原样保留（否则 http 的 // 会吃掉半行）",
+                  "cases": [
+                    {
+                      "given": [
+                        "const a = 1; // PKG_DIRS\nconst b = 2;"
+                      ],
+                      "expect": "const a = 1; \nconst b = 2;"
+                    },
+                    {
+                      "given": [
+                        "const u = \"http://x//y\"; // INTRODUCED_BY_MODULE"
+                      ],
+                      "expect": "const u = \"http://x//y\"; "
+                    },
+                    {
+                      "given": [
+                        "/* PKG_DIRS */ const c = 3;"
+                      ],
+                      "expect": " const c = 3;"
+                    }
+                  ]
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "stripCommentsFor",
+                  "why": "扩展名限定：只有代码文本才剥注释。markdown 的 //source 与 JSON 的 // 都不是注释 ⇒ 文档/数据判据按原文匹配，否则 design-db 的 //source 行会被当行注释吃掉",
+                  "cases": [
+                    {
+                      "given": [
+                        "docs/X.md",
+                        "a //source b"
+                      ],
+                      "expect": "a //source b"
+                    },
+                    {
+                      "given": [
+                        "src/x.ts",
+                        "a //source b"
+                      ],
+                      "expect": "a "
+                    },
+                    {
+                      "given": [
+                        "data/x.json",
+                        "{\"u\":\"a//b\"}"
+                      ],
+                      "expect": "{\"u\":\"a//b\"}"
+                    }
+                  ]
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "symbol": "judgeSourceHas",
+                  "target": "matchSourceHas",
+                  "why": "判定核必须委派给 domain 层的 matchSourceHas（唯一实现）；本文件只留 fs 读取与四态渲染，不许自己再写一套 includes 匹配"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "mustNot": [
+                    "src.includes(t)"
+                  ],
+                  "why": "防第二份复活：对原文 src 直接 includes 的老匹配不许回来（它看不到注释，判据就会再次惩罚记录病史）"
+                }
+              ],
+              "updated_at": "2026-10-30T18:35:37.248Z",
+              "agent": "subagent:b1b-exec-goal"
+            },
+            "note": "B1 批（4 条零搬迁 source-has 换 behavior-cases，2026-10-31 subagent:b1b-exec-goal）：① 删 file_src_application_design_intent_expectations_ts#5 的 source-has（must \"typeof v === 'object') return false\"）⇒ 决策抽成 src/domain/behavior_compare.ts#sameBehaviorRet（零 import，10 case）；② 删 file_src_domain_gate_error_ts#12 的 source-has（scripts/gen-expectation-schema.mjs 的 \"case 'json[]':\"）⇒ 抽成 src/domain/expectation_branch.ts#jsonSchemaTypeOf（8 case）；③ 删 file_src_application_observe_runtime_stale_check_ts#1 的 source-has（must .build-manifest.json/createHash/basis）⇒ 抽成 src/domain/stale_verdict.ts#staleDecision + basisOf（7+4 case）；④ 删 file_src_application_design_dsl_ops_task_ops_ts#1 的 source-has（must \"new Function\"）⇒ 抽成 src/domain/expect_expr.ts#isParsableExpect（8 case）。同时给 3 个旧节点各补 1 条语义类 call-exists，守住「被抽走的决策不许内联回来」。",
+            "agent": "subagent:b1b-exec-goal"
           }
         ]
       },
@@ -14469,20 +14804,28 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_observe_runtime_stale_check_ts\"].responsibility"
           },
-          "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T07:55:06.838Z",
+          "owner": "subagent:b1b-exec-goal",
+          "claimed_at": "2026-10-30T18:36:18.254Z",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/application/observe/runtime/stale_check.ts",
+                "name": "checkStaleBuild",
+                "fp": "1d7288f6864da27082a60c62d02cd18ac3951463"
+              }
+            ],
             "files": [
               {
                 "path": "src/application/observe/runtime/stale_check.ts",
-                "content_hash": "91a7d122c7d736dd0a56595cf1d6a5fd6e4510c1"
+                "content_hash": "e452fb0d850eb0ca4350e98b02a5ac6778eac0b1"
               }
             ],
-            "computed_at": "2026-10-26T07:54:42.514Z",
+            "computed_at": "2026-10-30T18:36:18.189Z",
             "basis": [
-              "declared"
+              "declared",
+              "expectations",
+              "node-path"
             ]
           },
           "evidence": [
@@ -14500,8 +14843,31 @@
                   "src/application/observe/runtime/stale_check.ts"
                 ]
               }
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T18:48:56.108Z",
+              "by": "llm",
+              "agent": "subagent:b1b-exec-goal",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+                "input": "70d90d79eefe2d161a8404fd691699094995bc4c",
+                "code": "31a59691bf6ca924ef379d0d9d790a890ef1648a",
+                "covers": [
+                  "src/application/observe/runtime/stale_check.ts"
+                ]
+              },
+              "observed": "199 条 · pass 198 / fail 1；本节点 symbol-exists checkStaleBuild 仍绿、新增 call-exists checkStaleBuild→staleDecision 通过；两级判定的行为由 stale_verdict.ts 的 7+4 条 case 判（含「mtime+size 一致 ⇒ 免哈希」「哈希相同 ⇒ none」）",
+              "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}"
             }
-          ]
+          ],
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "reopened_at": "2026-10-30T18:36:18.254Z",
+          "reopen_reason": "把 checkStaleBuild 的两级判定换成转调 src/domain/stale_verdict.ts#staleDecision + basisOf（行为逐字不变，删掉的那条 source-has 由 7+4 条 behavior-cases 接住）",
+          "reopened_from": "agent:wish-machine",
+          "last_heartbeat_at": "2026-10-30T18:48:56.108Z"
         },
         "status": "done",
         "decision": {
@@ -14514,14 +14880,11 @@
               "why": "唯一判据入口必须是一个具名函数（两个消费方都吃它的返回形状）"
             },
             {
-              "kind": "source-has",
-              "must": [
-                ".build-manifest.json",
-                "createHash",
-                "basis"
-              ],
+              "kind": "call-exists",
               "path": "src/application/observe/runtime/stale_check.ts",
-              "why": "判据必须基于构建清单 + 内容哈希，且无清单时要如实标 basis（不许假装是哈希判的）"
+              "symbol": "checkStaleBuild",
+              "target": "staleDecision",
+              "why": "重构不变量：两级判定（mtime/size 只做触发、内容哈希才是判定、无清单退回 mtime）必须**转调** src/domain/stale_verdict.ts#staleDecision（零依赖 ⇒ 7 条 behavior-cases 现跑判），本文件只留 fs/crypto 读取与 StaleEntry 渲染。原来的 source-has must:[.build-manifest.json, createHash, basis] 连『判定真的走哈希』都不判（三个串生产者也要用）。"
             }
           ],
           "acceptance": "① dist 是否最新只有一个判据实现（本文件），MCP 响应注入与 run_tests 前置都调它；② 判定基于内容哈希（mtime/size 只做触发），增量编译跳 emit 不误报；③ 无清单时退回 mtime 并如实标 basis。",
@@ -14530,22 +14893,86 @@
             "freshness",
             "single-judge"
           ],
-          "updated_at": "2026-10-26T07:55:06.802Z",
+          "updated_at": "2026-10-30T18:35:37.486Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
+          "agent": "subagent:b1b-exec-goal"
         },
         "overlay": {
           "path": "src/application/observe/runtime/stale_check.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "all_green": true,
-            "kind": "expectations",
-            "unsupported": 0
+            "kind": "reading",
+            "at": "2026-10-31T02:52:00+08:00",
+            "by": "llm",
+            "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+            "observed": "199 条 · pass 198 / fail 1；本节点 symbol-exists checkStaleBuild 仍绿、新增 call-exists checkStaleBuild→staleDecision 通过；两级判定的行为由 stale_verdict.ts 的 7+4 条 case 判（含「mtime+size 一致 ⇒ 免哈希」「哈希相同 ⇒ none」）"
           },
           "signature": "v2:0f3814260583"
         },
-        "path": "src/application/observe/runtime/stale_check.ts"
+        "path": "src/application/observe/runtime/stale_check.ts",
+        "decision_history": [
+          {
+            "at": "2026-10-30T18:35:37.431Z",
+            "decision": {
+              "summary": "stale_check 是「dist 是否最新」的唯一判据实现：mtime 只做触发，内容哈希才是判定",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/observe/runtime/stale_check.ts",
+                  "symbol": "checkStaleBuild",
+                  "why": "唯一判据入口必须是一个具名函数（两个消费方都吃它的返回形状）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    ".build-manifest.json",
+                    "createHash",
+                    "basis"
+                  ],
+                  "path": "src/application/observe/runtime/stale_check.ts",
+                  "why": "判据必须基于构建清单 + 内容哈希，且无清单时要如实标 basis（不许假装是哈希判的）"
+                }
+              ],
+              "acceptance": "① dist 是否最新只有一个判据实现（本文件），MCP 响应注入与 run_tests 前置都调它；② 判定基于内容哈希（mtime/size 只做触发），增量编译跳 emit 不误报；③ 无清单时退回 mtime 并如实标 basis。",
+              "status": "active",
+              "tags": [
+                "freshness",
+                "single-judge"
+              ],
+              "updated_at": "2026-10-26T07:55:06.802Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "删 source-has must [.build-manifest.json, createHash, basis]：判定逻辑已抽到 src/domain/stale_verdict.ts#staleDecision + basisOf，由 7+4 条 behavior-cases 判",
+            "agent": "subagent:b1b-exec-goal"
+          },
+          {
+            "at": "2026-10-30T18:35:37.486Z",
+            "decision": {
+              "summary": "stale_check 是「dist 是否最新」的唯一判据实现：mtime 只做触发，内容哈希才是判定",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/observe/runtime/stale_check.ts",
+                  "symbol": "checkStaleBuild",
+                  "why": "唯一判据入口必须是一个具名函数（两个消费方都吃它的返回形状）"
+                }
+              ],
+              "acceptance": "① dist 是否最新只有一个判据实现（本文件），MCP 响应注入与 run_tests 前置都调它；② 判定基于内容哈希（mtime/size 只做触发），增量编译跳 emit 不误报；③ 无清单时退回 mtime 并如实标 basis。",
+              "status": "active",
+              "tags": [
+                "freshness",
+                "single-judge"
+              ],
+              "updated_at": "2026-10-30T18:35:37.431Z",
+              "author": "llm",
+              "agent": "subagent:b1b-exec-goal"
+            },
+            "note": "B1 批（4 条零搬迁 source-has 换 behavior-cases，2026-10-31 subagent:b1b-exec-goal）：① 删 file_src_application_design_intent_expectations_ts#5 的 source-has（must \"typeof v === 'object') return false\"）⇒ 决策抽成 src/domain/behavior_compare.ts#sameBehaviorRet（零 import，10 case）；② 删 file_src_domain_gate_error_ts#12 的 source-has（scripts/gen-expectation-schema.mjs 的 \"case 'json[]':\"）⇒ 抽成 src/domain/expectation_branch.ts#jsonSchemaTypeOf（8 case）；③ 删 file_src_application_observe_runtime_stale_check_ts#1 的 source-has（must .build-manifest.json/createHash/basis）⇒ 抽成 src/domain/stale_verdict.ts#staleDecision + basisOf（7+4 case）；④ 删 file_src_application_design_dsl_ops_task_ops_ts#1 的 source-has（must \"new Function\"）⇒ 抽成 src/domain/expect_expr.ts#isParsableExpect（8 case）。同时给 3 个旧节点各补 1 条语义类 call-exists，守住「被抽走的决策不许内联回来」。",
+            "agent": "subagent:b1b-exec-goal"
+          }
+        ]
       },
       {
         "id": "file_src_application_observe_runtime_watch_project_tool_ts",
@@ -24082,14 +24509,6 @@
               "why": "接线判据：op 循环的 catch 必须走 withGateCodes —— 摘掉这一行调用，内层 E-CLAIM-* / E-CRIT-* / E-EVD-* 又会被外层两句文案吃掉（实测两次真拒绝：start 被拒… 与 expectations 必须是数组… 都取不到码）。★ 诚实边界：它是**函数级**判据（updateFeatureCore→withGateCodes），分辨不出是哪一行的调用；catch 分支本身由 behavior-cases（carriedCodesFromJson 6 case）+ 端到端两次真拒绝反证"
             },
             {
-              "kind": "source-has",
-              "path": "scripts/gen-expectation-schema.mjs",
-              "must": [
-                "case 'json[]':"
-              ],
-              "why": "防有人把 schema 生成器 typeMap 的 json[] 分支删回去：删了就落到 default ⇒ {}，given:'5'（非数组）也 PASS（实测，静默放宽过头）。这条只钉分支存在；schema 产物的真判据是那条 run（validateDSL 0 错）"
-            },
-            {
               "kind": "run",
               "expect": "(() => {\n  const dsl = JSON.parse(fs.readFileSync(path.join(root, '.agent-io/design/agent-io.dsl.json'), 'utf8'));\n  const r = validateDSL(dsl);\n  const isGiven = (e) => /\\/cases\\/\\d+\\/given(\\/\\d+)?: must be string$/.test(e);\n  if (r.errors.some(isGiven)) return false;\n  return r.errors.filter((e) => !/^\\[anchor_broken\\]/.test(e)).length === 0;\n})()",
               "why": "given 放宽的可判基线：改前 validateDSL(.agent-io/design/agent-io.dsl.json) 实测 120 错（8 条 cases/*/given/* must be string）；改后 1 错 = 既有 [anchor_broken] semantic.files 里 module_build.ts 有册无节点（HEAD 版 DSL 同样 1 条，与 given 无关，另一笔账）。这条钉两件事：① given 相关错误必须 0（把 json[] 改回 string[] 立刻红）② 除那条既有结构错外 0 错"
@@ -24145,16 +24564,16 @@
               "why": "gateRuleCodes() 必须逐字回 72 个码（本卡追加 E-CRIT-006：behavior-cases 目标文件有值 import ⇒ 写判据那一刻就拒；号只增不复用，插在 E-CRIT-005 之后）、顺序 = 表序、无重复：这是「文档声明数 == 表长度」那条 run 判据的机器依据"
             }
           ],
-          "updated_at": "2026-10-30T18:24:01.513Z",
-          "agent": "subagent:b1a-landing"
+          "updated_at": "2026-10-30T18:35:37.365Z",
+          "agent": "subagent:b1b-exec-goal"
         },
         "task": {
           "id": "file_src_domain_gate_error_ts",
           "summary": "闸门规则的唯一事实源：GATE_RULES（65 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号）+ gateRuleOf / gateRuleCodes 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。★ 本轮只定义、不接线。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:b1a-landing",
-          "claimed_at": "2026-10-30T18:21:38.943Z",
+          "owner": "subagent:b1b-exec-goal",
+          "claimed_at": "2026-10-30T18:36:18.556Z",
           "read_set": {
             "symbols": [
               {
@@ -24178,11 +24597,6 @@
                 "fp": "012f7546bd59ff5c412baad2eeb7ed4d0c9c227f"
               },
               {
-                "file": "src/application/design/dsl_ops/update_feature.ts",
-                "name": "updateFeatureCore",
-                "fp": "679a80cadd063a1f244d712979d1d56760ef639e"
-              },
-              {
                 "file": "src/domain/expectation_kinds.ts",
                 "name": "FieldType",
                 "fp": "5b6cc326d7890f993192599ac8c414f5485f7e88"
@@ -24195,12 +24609,7 @@
               {
                 "file": "src/domain/gate_error.ts",
                 "name": "GATE_RULES",
-                "fp": "e96659ac141c05c8c20bc766a6c893e9bb3efe8b"
-              },
-              {
-                "file": "src/domain/gate_error.ts",
-                "name": "GateError",
-                "fp": "58230f13946e443abfeb17349bcff76c4f80e785"
+                "fp": "2629b5db70925367d919a4b7b3c32e264fbaca8e"
               },
               {
                 "file": "tests/i1_doc_alignment.test.ts",
@@ -24222,28 +24631,23 @@
                 "content_hash": "3152d6f9a6900b54367899679b91152148d72b78"
               },
               {
-                "path": "src/application/design/dsl_ops/update_feature.ts",
-                "content_hash": "db8081330b09b14ae27eb5eb93974739f6d6d9bd"
-              },
-              {
                 "path": "src/domain/expectation_kinds.ts",
                 "content_hash": "acfca46800be901597cabc3df445f00182c29443"
               },
               {
                 "path": "src/domain/gate_error.ts",
-                "content_hash": "f83e7eea5fc81ef6ceb7a69dbab14a0fd791e9e9"
+                "content_hash": "8df5b1d14aaf564354751e7130650e53f6ddf434"
               },
               {
                 "path": "tests/i1_doc_alignment.test.ts",
                 "content_hash": "9ba186f74772b6cd151e106023e1870ee4a89fa1"
               }
             ],
-            "computed_at": "2026-10-30T18:21:38.884Z",
+            "computed_at": "2026-10-30T18:36:18.494Z",
             "basis": [
-              "canvas",
-              "expectations"
+              "canvas"
             ],
-            "note": "3 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：.workbuddy/memory/2026-10-30.md#3. 闸门码表的「散文 → 码」覆盖率补全（子代理 subagent:code-coverage） / docs/SUBAGENT-HANDBOOK.md#3. 闸门规矩 / docs/SUBAGENT-HANDBOOK.md#8. 已知缺陷"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；3 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：.workbuddy/memory/2026-10-30.md#3. 闸门码表的「散文 → 码」覆盖率补全（子代理 subagent:code-coverage） / docs/SUBAGENT-HANDBOOK.md#3. 闸门规矩 / docs/SUBAGENT-HANDBOOK.md#8. 已知缺陷"
           },
           "evidence": [
             {
@@ -24388,12 +24792,33 @@
               },
               "observed": "build 绿；judge 读数「判据批「agent-io」：195 条 · 四态 {\"pass\":194,\"fail\":1}」—— 唯一 fail 仍是既有 file_src_application_design_db_gen_design_db_ts 的 source-has（缺 must:\".path ?? raw.description\"），与 E-CRIT-006 无关；gateRuleCodes 的逐字断言已换成 72 码（含 E-CRIT-006）并转绿；两条读文件比fam计数的 run 判据也仍绿（E-CRIT 5→6、合计 71→72 同步）",
               "command": "npm run build && node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T18:48:55.903Z",
+              "by": "llm",
+              "agent": "subagent:b1b-exec-goal",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+                "input": "428077073647cebe3a2649845df46eeea9dc51ca",
+                "code": "1d2fc2908bd5bf9e1bc0f814335558e43f1c0b50",
+                "covers": [
+                  "src/application/design/dsl_ops/update_feature.ts",
+                  "src/domain/gate_error.ts"
+                ]
+              },
+              "observed": "199 条 · pass 198 / fail 1；本节点原 15 条判据全绿（其中 #12 的 run 判据 = validateDSL 的 given 相关错为 0）；被删的 source-has（scripts/gen-expectation-schema.mjs 的 `case 'json[]':`）语义由 expectation_branch.ts#jsonSchemaTypeOf 的 8 条 case 接住；`npm run build` 重生成 schema 回执「内容无变化」",
+              "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}"
             }
           ],
-          "reopened_at": "2026-10-30T18:21:38.943Z",
-          "reopen_reason": "本卡在 GATE_RULES 族尾追加 E-CRIT-006（码 71→72，号只增不复用）",
-          "reopened_from": "agent:main",
-          "prepared_snapshot": null
+          "reopened_at": "2026-10-30T18:36:18.556Z",
+          "reopen_reason": "scripts/gen-expectation-schema.mjs 的 typeMap 换成转调 src/domain/expectation_branch.ts#jsonSchemaTypeOf（生成的 schema 产物逐字不变，删掉的那条 source-has 由 8 条 behavior-cases 接住）",
+          "reopened_from": "subagent:b1a-landing",
+          "prepared_snapshot": null,
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-10-30T18:48:55.904Z"
         },
         "status": "done",
         "decision_history": [
@@ -29955,6 +30380,304 @@
             },
             "note": "同步既有判据 decision:file_src_domain_gate_error_ts#15：gateRuleCodes 的逐字断言从 71 码换成 72 码（新增 E-CRIT-006 插在 E-CRIT-005 之后）—— 否则 judge 会从 1 fail 变 2 fail（实测已出现该红）",
             "agent": "subagent:b1a-landing"
+          },
+          {
+            "at": "2026-10-30T18:35:37.365Z",
+            "decision": {
+              "summary": "闸门规则的唯一事实源：GATE_RULES（66 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号；其中 **45 条带 messageStartsWith** 可被 gateRuleByMessage 反查）+ gateRuleOf / gateRuleCodes / gateRuleByMessage 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "why": "码表必须真在盘上：65 条码是本卡全部交付物，文件不在则余下判据都无处落"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GATE_RULES",
+                  "why": "唯一事实源必须是导出常量（design_line action=rules 直读它，不复制表）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GateError",
+                  "why": "结构化拒绝载体必须先定义（本轮不接线，但类型要在）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleOf",
+                  "cases": [
+                    {
+                      "given": [
+                        "E-PLAN-001"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "E-NOPE-999"
+                      ],
+                      "expect": "undefined"
+                    }
+                  ],
+                  "why": "gateRuleOf('E-PLAN-001') 必须取回同一条（含 what/why/fix/doc/where），'E-NOPE-999' 必须 undefined（不许造兜底）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const fams = [\"E-PLAN\",\"E-TASK\",\"E-CLAIM\",\"E-CRIT\",\"E-EVD\",\"E-WRITE\",\"E-REASON\",\"E-GENDB\"];\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const doc = fs.readFileSync(path.join(root, 'docs/GUIDE-GATE.md'), 'utf8');\n  const cnt = (f) => (src.match(new RegExp(\"code: [\\\"']\" + f + \"-[0-9]{3}[\\\"']\", 'g')) || []).length;\n  for (const f of fams) {\n    const row = doc.match(new RegExp('\\\\| `' + f + '` \\\\|[^|]*\\\\|\\\\s*([0-9]+)\\\\s*\\\\|'));\n    if (!row) return false;\n    if (Number(row[1]) !== cnt(f) || cnt(f) === 0) return false;\n  }\n  const total = (doc.match(/码数合计[^0-9]*([0-9]+)/) || [])[1];\n  const all = (src.match(/code: [\"']E-[A-Z]+-[0-9]{3}[\"']/g) || []).length;\n  return Number(total) === all && all === fams.reduce((s, f) => s + cnt(f), 0);\n})()",
+                  "why": "docs/GUIDE-GATE.md §七 的\"族 + 码数\"必须与 src/domain/gate_error.ts 里真实码数逐族相等（合计 65）：文档漂了当场红（引号两种口径都认）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorsOf",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "E-WRITE-001"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"data\":{\"errors\":[{\"code\":\"E-WRITE-001\"}]}}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "gateErrorsOf 只认「真的带 data.errors 数组的对象」：纯字符串必须回 [] —— 哪怕是码名 E-WRITE-001、哪怕是 data.errors 的 JSON 字面量（不许在 catch 里靠字符串嗅探猜码，那会把散文又变成第二个码表）；同时它永不抛，因为它在 wrap/wrapData 的 catch 里跑"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorCodesFromJson",
+                  "cases": [
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-WRITE-001\",\"E-PLAN-001\"]}"
+                      ],
+                      "expect": "[\"E-WRITE-001\",\"E-PLAN-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"error\",\"message\":\"x\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"null\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"duck\",\"codes\":[\"E-EVD-001\"]}"
+                      ],
+                      "expect": "[\"E-EVD-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-NOPE-999\"]}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "四条取码分支逐条钉住（cases[].given 只吃字符串，故用 gateErrorCodesFromJson 这一条判据专用桥把 JSON 造回入参）：① GateError ⇒ data.errors 顺序逐字保留 ② 普通 Error ⇒ [] ③ null ⇒ []（绝不抛）④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点复用）⑤ 未知码 E-NOPE-999 不许被凭空认成一条规则；桥不解析码表、不做判定"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleByMessage",
+                  "cases": [
+                    {
+                      "given": [
+                        "没有重写计划（`plan/<rel>.plan.json` 不存在）⇒ 先通读 + 选范围 + 写细节"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "拒绝落盘（任务闸）：这次要改的 2 个文件**没有挂到任何已领取的任务上** —— 本仓纪律：改源码可以，但**不领任务不许悄悄改**。"
+                      ],
+                      "expect": "{\"code\":\"E-TASK-001\",\"family\":\"E-TASK\",\"what\":\"该文件在覆盖它的节点上没有 state=claimed 的卡\",\"why\":\"不领任务就悄悄改 = 没人对这笔改动负责\",\"fix\":\"publish + claim 该节点；★ 一张卡跨 N 文件 = 要 N 张卡\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/write_gate.ts\",\"symbol\":\"evaluateTaskGate\",\"messageStartsWith\":\"拒绝落盘（任务闸）\"}}"
+                    },
+                    {
+                      "given": [
+                        "publish 被拒：节点 \"x\" 上有一张 **state=claimed** 的任务卡"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "乱码 ¶∎ 123 没有重写"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "  计划里  0 条改动 ⇒ 先说明要改哪个符号、改成什么  "
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-002\",\"family\":\"E-PLAN\",\"what\":\"画布 entries 为空（0 条改动）\",\"why\":\"0 条改动等于没表态：覆盖判据无从判\",\"fix\":\"至少一条 {anchor:{symbol}, kind:\\\"rewrite\\\", detail, judgement_ref, status:\\\"open\\\"}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"计划里 0 条改动\"}}"
+                    },
+                    {
+                      "given": [
+                        "claim 被拒（读集冲突 · **强制**）：这张卡要碰的东西已被 2 张活跃卡占住 ⇒ **两张卡必须分开做**"
+                      ],
+                      "expect": "{\"code\":\"E-CLAIM-005\",\"family\":\"E-CLAIM\",\"what\":\"声明的读集与另一张 claimed 卡相交\",\"why\":\"读集相交 = 两边会改同一处，必对撞\",\"fix\":\"拆卡；或用 data.read_set 精确声明真要碰的符号/文件\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/claim_conflict.ts\",\"symbol\":\"claimConflictMessage\",\"messageStartsWith\":\"claim 被拒（读集冲突\"}}"
+                    }
+                  ],
+                  "why": "散文 → 码的反查必须可判：① 真实计划闸散文（rewrite_plan.ts#planGaps 首句）⇒ E-PLAN-001 ② 真实任务闸散文 ⇒ E-TASK-001 ③ \"publish 被拒\" 被 E-CLAIM-012/013/014 三条同长前缀并列命中 ⇒ undefined（歧义不猜，这是本仓口径）④ 空串 ⇒ undefined ⑤ 乱码 ⇒ undefined ⑥ 首尾带空白 + 内部双空格 ⇒ 归一化后仍取回 E-PLAN-002 ⑦ \"claim 被拒（读集冲突\" 比 \"claim 被拒（读集\" 长 ⇒ 最长前缀优先取 E-CLAIM-005（不许退化到短的 006）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"((?:[^\"\\\\]|\\\\.)*)\"|'((?:[^'\\\\]|\\\\.)*)')/g;\n  const vals = [];\n  let m;\n  while ((m = re.exec(src))) {\n    const body = m[2] !== undefined ? m[2] : m[3];\n    vals.push(body.replace(/\\\\(.)/g, '$1').replace(/\\s+/g, ' ').trim());\n  }\n  if (!vals.length) return false;\n  if (vals.some((v) => v === '')) return false;\n  return new Set(vals).size === vals.length;\n})()",
+                  "why": "自洽：对 GATE_RULES 里每一条有 messageStartsWith 的码，gateRuleByMessage(该前缀) 必须回同一条码。等价判据（不必再实现一遍查表）：把全部前缀按 gateRuleByMessage 的同一把尺归一化（连续空白压一格 + trim）后**两两互不相同**即可 —— 因为输入 m 就是某条自己的前缀 P，能命中 m 的前缀只能是 P 的前缀，其中长度等于 |P| 的只可能是 P 本身 ⇒ 并列只可能来自**两条前缀完全相同**（2026-10-30 实测：E-TASK-004/005 与 E-CLAIM-012/013/014 就是这种同长并列 ⇒ 恒 undefined）。空前缀不算（gateRuleByMessage 里 `!prefix` 直接跳过）⇒ 表里写了空串等于没写，也判红。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*')/g;\n  const n = (src.match(re) || []).length;\n  return n >= 45;\n})()",
+                  "why": "覆盖率棘轮（写死 45）：66 条码里**带 messageStartsWith 的必须 ≥ 45**（2026-10-30 本卡实测填完 = 45/66）—— 写死这个数是为了防以后有人删前缀把可反查的码悄悄删掉（删一条就红）。为什么不是 66：剩下 21 条**结构性接不上**（原文开头是可变的 who / action / expectations[下标]、或压根不是一句拒绝、或与邻码同一句），逐条原因见 docs/GUIDE-GATE.md §七。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "carriedCodesFromJson",
+                  "cases": [
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"error\",\"message\":\"start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据（phase=post）0 条 ⇒ 先补判据再 start\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-CLAIM-011\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"error\",\"message\":\"expectations 必须是数组，收到 string\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-CRIT-001\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"gate\",\"codes\":[\"E-WRITE-001\"]}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-WRITE-001\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"duck\",\"codes\":[\"E-EVD-001\"]}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-EVD-001\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"error\",\"message\":\"内层是一句与码表首句无关的散文（故意一条都命中不了）\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"null\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[]}"
+                    }
+                  ],
+                  "why": "包装层透传的行为契约（6 个 case）：① 内层 new Error(\"start 被拒（判据还是空的）…\") ⇒ 外层文案**逐字不变**且 codes=[\"E-CLAIM-011\"]（gateErrorsOf 空 ⇒ gateRuleByMessage 反查）② 内层 \"expectations 必须是数组，收到 string\" ⇒ codes=[\"E-CRIT-001\"]（实测那次真拒绝）③ 内层已是 GateError（E-WRITE-001）⇒ 结构化优先，逐字保留④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点）⑤ 内层是与码表首句无关的散文 ⇒ codes=[]（**不带错码**，退回旧行为：wrap 不会多出 ---DATA---）⑥ 内层 null ⇒ codes=[] 且**绝不抛**（它在 catch 里跑）。外层 message 每个 case 都按原样回传（逐字比对，改一个标点就红）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "updateFeatureCore",
+                  "target": "withGateCodes",
+                  "why": "接线判据：op 循环的 catch 必须走 withGateCodes —— 摘掉这一行调用，内层 E-CLAIM-* / E-CRIT-* / E-EVD-* 又会被外层两句文案吃掉（实测两次真拒绝：start 被拒… 与 expectations 必须是数组… 都取不到码）。★ 诚实边界：它是**函数级**判据（updateFeatureCore→withGateCodes），分辨不出是哪一行的调用；catch 分支本身由 behavior-cases（carriedCodesFromJson 6 case）+ 端到端两次真拒绝反证"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "scripts/gen-expectation-schema.mjs",
+                  "must": [
+                    "case 'json[]':"
+                  ],
+                  "why": "防有人把 schema 生成器 typeMap 的 json[] 分支删回去：删了就落到 default ⇒ {}，given:'5'（非数组）也 PASS（实测，静默放宽过头）。这条只钉分支存在；schema 产物的真判据是那条 run（validateDSL 0 错）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const dsl = JSON.parse(fs.readFileSync(path.join(root, '.agent-io/design/agent-io.dsl.json'), 'utf8'));\n  const r = validateDSL(dsl);\n  const isGiven = (e) => /\\/cases\\/\\d+\\/given(\\/\\d+)?: must be string$/.test(e);\n  if (r.errors.some(isGiven)) return false;\n  return r.errors.filter((e) => !/^\\[anchor_broken\\]/.test(e)).length === 0;\n})()",
+                  "why": "given 放宽的可判基线：改前 validateDSL(.agent-io/design/agent-io.dsl.json) 实测 120 错（8 条 cases/*/given/* must be string）；改后 1 错 = 既有 [anchor_broken] semantic.files 里 module_build.ts 有册无节点（HEAD 版 DSL 同样 1 条，与 given 无关，另一笔账）。这条钉两件事：① given 相关错误必须 0（把 json[] 改回 string[] 立刻红）② 除那条既有结构错外 0 错"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorsOf",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "data": {
+                            "errors": [
+                              {
+                                "code": "zzz"
+                              },
+                              {
+                                "code": 7
+                              },
+                              null
+                            ]
+                          }
+                        }
+                      ],
+                      "expect": "[{\"code\":\"zzz\"}]"
+                    },
+                    {
+                      "given": [],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        null
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "直喂真值（不再走 gateErrorCodesFromJson 桥）：① 对象实参 {data:{errors:[…]}} ⇒ 3 个条目里只留 code 是字符串的那条（数字 7 / null 被滤掉），实得 [{\"code\":\"zzz\"}] ② given:[] ⇒ fn() 收到 undefined ⇒ [] ③ given:[null] ⇒ []。改前这 3 条写不进来（ajv: cases/0/given/0: must be string）"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "[\"E-PLAN-001\",\"E-PLAN-002\",\"E-PLAN-003\",\"E-PLAN-004\",\"E-PLAN-005\",\"E-PLAN-006\",\"E-PLAN-007\",\"E-PLAN-008\",\"E-PLAN-009\",\"E-PLAN-010\",\"E-PLAN-011\",\"E-PLAN-012\",\"E-PLAN-013\",\"E-PLAN-014\",\"E-PLAN-015\",\"E-PLAN-016\",\"E-PLAN-017\",\"E-PLAN-018\",\"E-PLAN-019\",\"E-PLAN-020\",\"E-PLAN-021\",\"E-PLAN-022\",\"E-PLAN-023\",\"E-TASK-001\",\"E-TASK-002\",\"E-TASK-003\",\"E-TASK-004\",\"E-TASK-005\",\"E-TASK-006\",\"E-TASK-007\",\"E-TASK-008\",\"E-CLAIM-001\",\"E-CLAIM-002\",\"E-CLAIM-003\",\"E-CLAIM-004\",\"E-CLAIM-005\",\"E-CLAIM-006\",\"E-CLAIM-007\",\"E-CLAIM-008\",\"E-CLAIM-009\",\"E-CLAIM-010\",\"E-CLAIM-011\",\"E-CLAIM-012\",\"E-CLAIM-013\",\"E-CLAIM-014\",\"E-CLAIM-015\",\"E-CLAIM-016\",\"E-CLAIM-017\",\"E-CLAIM-018\",\"E-CRIT-001\",\"E-CRIT-002\",\"E-CRIT-003\",\"E-CRIT-004\",\"E-CRIT-005\",\"E-CRIT-006\",\"E-EVD-001\",\"E-EVD-002\",\"E-EVD-003\",\"E-EVD-004\",\"E-EVD-005\",\"E-WRITE-001\",\"E-WRITE-002\",\"E-WRITE-003\",\"E-WRITE-004\",\"E-REASON-001\",\"E-REASON-002\",\"E-REASON-003\",\"E-REASON-004\",\"E-REASON-005\",\"E-REASON-006\",\"E-GENDB-001\",\"E-GENDB-002\"]",
+                      "given": [
+                        ""
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleCodes",
+                  "why": "gateRuleCodes() 必须逐字回 72 个码（本卡追加 E-CRIT-006：behavior-cases 目标文件有值 import ⇒ 写判据那一刻就拒；号只增不复用，插在 E-CRIT-005 之后）、顺序 = 表序、无重复：这是「文档声明数 == 表长度」那条 run 判据的机器依据"
+                }
+              ],
+              "updated_at": "2026-10-30T18:24:01.513Z",
+              "agent": "subagent:b1a-landing"
+            },
+            "note": "删 source-has（path=scripts/gen-expectation-schema.mjs, must \"case 'json[]':\"）：分支渲染决策已抽到 src/domain/expectation_branch.ts#jsonSchemaTypeOf，由 8 条 behavior-cases 判",
+            "agent": "subagent:b1b-exec-goal"
           }
         ],
         "overlay": {
@@ -29962,10 +30685,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-31T02:55:00+08:00",
-            "command": "npm run build && node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'",
             "kind": "reading",
-            "observed": "build 绿；judge 读数「判据批「agent-io」：195 条 · 四态 {\"pass\":194,\"fail\":1}」—— 唯一 fail 仍是既有 file_src_application_design_db_gen_design_db_ts 的 source-has（缺 must:\".path ?? raw.description\"），与 E-CRIT-006 无关；gateRuleCodes 的逐字断言已换成 72 码（含 E-CRIT-006）并转绿；两条读文件比fam计数的 run 判据也仍绿（E-CRIT 5→6、合计 71→72 同步）"
+            "at": "2026-10-31T02:52:00+08:00",
+            "by": "llm",
+            "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+            "observed": "199 条 · pass 198 / fail 1；本节点原 15 条判据全绿（其中 #12 的 run 判据 = validateDSL 的 given 相关错为 0）；被删的 source-has（scripts/gen-expectation-schema.mjs 的 `case 'json[]':`）语义由 expectation_branch.ts#jsonSchemaTypeOf 的 8 条 case 接住；`npm run build` 重生成 schema 回执「内容无变化」"
           }
         }
       },
@@ -32507,6 +33231,744 @@
             "command": "design_line {\"action\":\"judge\",\"feature\":\"agent-io\"}（变异 A / 变异 B / 还原 各一次）",
             "kind": "reading",
             "observed": "变异A（删 ownerFileOf 的 `__multi__` 分支）⇒ fail 2：case-4 期望 [] 实得 [\"A\"]；变异B（删 selfRel 排除）⇒ fail 2：case-3 期望 [] 实得 [\"A\"]；还原后 sha256 回到 B0E87650…，pass 191 / fail 1（唯一红仍是 gen_design_db.ts）"
+          }
+        }
+      },
+      {
+        "id": "file_src_domain_behavior_compare_ts",
+        "label": "behavior_compare.ts",
+        "type": "file",
+        "path": "src/domain/behavior_compare.ts",
+        "title": "零依赖纯函数 = behavior-cases 判据的比对核 sameBehaviorRet（repr 精确相等优先；标量才走裸串口径；容器只许精确 repr —— 不许 String() 兜成 [object Object]）",
+        "decision": {
+          "summary": "零依赖纯函数（src/domain/behavior_compare.ts）：sameBehaviorRet 是 behavior-cases 判据里「设计声明的 expect vs harness 实测 repr」的比对核 —— ① repr 精确相等即一致 ② repr 不是 JSON 则不猜 ③ 标量（数字/布尔/null/字符串）才允许裸串口径 ④ 容器（对象/数组）只许精确 repr 相等。从 src/application/design/intent/expectations.ts#judgeExpectations 的闭包 same 抽出，口径逐字不变。",
+          "author": "llm",
+          "expectations": [
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/behavior_compare.ts",
+              "symbol": "sameBehaviorRet",
+              "cases": [
+                {
+                  "given": [
+                    "\"abc\"",
+                    "abc"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "5",
+                    "5"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "5",
+                    "05"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "{\"a\":1}",
+                    "{\"a\":1}"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "{\"a\":1}",
+                    "[object Object]"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "[1,2]",
+                    "1,2"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "null",
+                    "null"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "true",
+                    "true"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "not-json",
+                    "not-json"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "not-json",
+                    "x"
+                  ],
+                  "expect": "false"
+                }
+              ],
+              "why": "这是 behavior-cases 判据自己的假绿守卫（2026-10-30 D4 事故）：旧兜底 String(JSON.parse(ret)) 对容器退化成 \"[object Object]\" / \"1,2\"，实测 expect:\"[object Object]\" 对**任意**对象数组输出都 PASS。10 个 case 分开钉四件事：① repr 精确相等优先（case-4 对象 / case-2 数字）② 标量才走裸串口径（case-1 字符串 / case-7 null / case-8 布尔）③ **容器必须 false**（case-5 对象 + case-6 数组 —— 删掉 `typeof v === 'object'` 那一行这两条立刻红）④ 非 JSON 只认精确相等（case-9 相等 / case-10 不相等）。原实现住在 expectations.ts#judgeExpectations（9 个值 import ⇒ harness load 不了）⇒ 只能写成 source-has，永远发现不了逻辑错。"
+            }
+          ],
+          "updated_at": "2026-10-30T18:35:37.014Z",
+          "agent": "subagent:b1b-exec-goal"
+        },
+        "task": {
+          "id": "file_src_domain_behavior_compare_ts",
+          "summary": "零依赖纯函数（src/domain/behavior_compare.ts）：sameBehaviorRet 是 behavior-cases 判据里「设计声明的 expect vs harness 实测 repr」的比对核 —— ① repr 精确相等即一致 ② repr 不是 JSON 则不猜 ③ 标量（数字/布尔/null/字符串）才允许裸串口径 ④ 容器（对象/数组）只许精确 repr 相等。从 src/application/design/intent/expectations.ts#judgeExpectations 的闭包 same 抽出，口径逐字不变。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:b1b-exec-goal",
+          "claimed_at": "2026-10-30T18:36:04.964Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/domain/behavior_compare.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-10-30T18:36:04.761Z",
+            "basis": [
+              "declared",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-10-30T18:48:50.744Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T18:48:50.744Z",
+              "by": "llm",
+              "agent": "subagent:b1b-exec-goal",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+                "input": "10e48361d0f43b425a6cf95dd5c7e113cf353062",
+                "code": "2a57e57aab17e187d8a61bfff8b630ead7f3eeda",
+                "covers": [
+                  "src/domain/behavior_compare.ts"
+                ]
+              },
+              "observed": "199 条 · pass 198 / fail 1（唯一红 = gen_design_db.ts 既有 source-has）；src/domain/behavior_compare.ts#sameBehaviorRet 10/10 case 一致（金丝雀 harness 现跑）；变异「删掉 `if (v !== null && typeof v === 'object') return false;`」⇒ 2/10 红（case-5 期望 false 实得 true），还原后 sha256 23aaceed4df6… 逐字节相同",
+              "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/behavior_compare.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-10-31T02:52:00+08:00",
+            "by": "llm",
+            "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+            "observed": "199 条 · pass 198 / fail 1（唯一红 = gen_design_db.ts 既有 source-has）；src/domain/behavior_compare.ts#sameBehaviorRet 10/10 case 一致（金丝雀 harness 现跑）；变异「删掉 `if (v !== null && typeof v === 'object') return false;`」⇒ 2/10 红（case-5 期望 false 实得 true），还原后 sha256 23aaceed4df6… 逐字节相同"
+          }
+        }
+      },
+      {
+        "id": "file_src_domain_expectation_branch_ts",
+        "label": "expectation_branch.ts",
+        "type": "file",
+        "path": "src/domain/expectation_branch.ts",
+        "title": "零依赖纯函数 = 判据注册表 → JSON Schema 片段的渲染核 jsonSchemaTypeOf（7 个 type 分支；json[] 必须显式成 {type:'array'} 且不写 items）",
+        "decision": {
+          "summary": "零依赖纯函数（src/domain/expectation_branch.ts）：jsonSchemaTypeOf 把判据字段形状渲染成 JSON Schema 片段（7 个 type 分支，未知 type 落 {}）。原实现住 scripts/gen-expectation-schema.mjs#typeMap，只能靠 source-has must:[\"case 'json[]':\"] 守「分支还在」；抽到 domain 后 8 个 case 给输入比输出，`json[]` 被改成 {} 或 {type:'object'} 都会当场翻红。",
+          "author": "llm",
+          "expectations": [
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/expectation_branch.ts",
+              "symbol": "jsonSchemaTypeOf",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "name": "given",
+                      "type": "json[]"
+                    }
+                  ],
+                  "expect": "{\"type\":\"array\"}"
+                },
+                {
+                  "given": [
+                    {
+                      "name": "given",
+                      "type": "json[]",
+                      "minItems": 2
+                    }
+                  ],
+                  "expect": "{\"type\":\"array\",\"minItems\":2}"
+                },
+                {
+                  "given": [
+                    {
+                      "name": "must",
+                      "type": "string[]",
+                      "minItems": 1
+                    }
+                  ],
+                  "expect": "{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"minItems\":1}"
+                },
+                {
+                  "given": [
+                    {
+                      "name": "must",
+                      "type": "string"
+                    }
+                  ],
+                  "expect": "{\"type\":\"string\"}"
+                },
+                {
+                  "given": [
+                    {
+                      "name": "k",
+                      "type": "string",
+                      "values": [
+                        "a",
+                        "b"
+                      ]
+                    }
+                  ],
+                  "expect": "{\"type\":\"string\",\"enum\":[\"a\",\"b\"]}"
+                },
+                {
+                  "given": [
+                    {
+                      "name": "x",
+                      "type": "nope"
+                    }
+                  ],
+                  "expect": "{}"
+                },
+                {
+                  "given": [
+                    {
+                      "name": "items",
+                      "type": "object[]",
+                      "items": [
+                        {
+                          "name": "a",
+                          "type": "string",
+                          "required": true
+                        },
+                        {
+                          "name": "b",
+                          "type": "number"
+                        }
+                      ]
+                    }
+                  ],
+                  "expect": "{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"number\"}},\"required\":[\"a\"]}}"
+                },
+                {
+                  "given": [
+                    {
+                      "name": "o",
+                      "type": "object[]"
+                    }
+                  ],
+                  "expect": "{\"type\":\"array\",\"items\":{\"type\":\"object\"}}"
+                }
+              ],
+              "why": "typeMap 的 7 个 type 分支逐条钉住，其中 case-1 是原来那条 source-has 唯一想保的东西：`json[]` 必须显式成 {type:'array'} **且不写 items**（= 任意元素）—— 删掉这个分支就落到 default ⇒ {}，那样 given:'5'（非数组）也 PASS（2026-10-30 D4 实测静默放宽过头）。case-2 钉 minItems 追加；case-6 是反例（未知 type 不许瞎造 schema）；case-7/8 钉 object[] 的两条路（带子字段 ⇒ properties + required 过滤；不带 ⇒ items:{type:'object'}）。"
+            }
+          ],
+          "updated_at": "2026-10-30T18:35:37.076Z",
+          "agent": "subagent:b1b-exec-goal"
+        },
+        "task": {
+          "id": "file_src_domain_expectation_branch_ts",
+          "summary": "零依赖纯函数（src/domain/expectation_branch.ts）：jsonSchemaTypeOf 把判据字段形状渲染成 JSON Schema 片段（7 个 type 分支，未知 type 落 {}）。原实现住 scripts/gen-expectation-schema.mjs#typeMap，只能靠 source-has must:[\"case 'json[]':\"] 守「分支还在」；抽到 domain 后 8 个 case 给输入比输出，`json[]` 被改成 {} 或 {type:'object'} 都会当场翻红。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:b1b-exec-goal",
+          "claimed_at": "2026-10-30T18:36:05.209Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/domain/expectation_branch.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-10-30T18:36:05.123Z",
+            "basis": [
+              "declared",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-10-30T18:48:51.206Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T18:48:51.205Z",
+              "by": "llm",
+              "agent": "subagent:b1b-exec-goal",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+                "input": "eaac0357ec13ba310dd4234d39001e343712f12e",
+                "code": "1e31478e55b07a656938a1fe62578cb38eb93e93",
+                "covers": [
+                  "src/domain/expectation_branch.ts"
+                ]
+              },
+              "observed": "199 条 · pass 198 / fail 1；expectation_branch.ts#jsonSchemaTypeOf 8/8 case 一致；变异「删掉 `case 'json[]':`」⇒ case-1 期望 {\"type\":\"array\"} 实得 {}（2/8 红），还原后 sha256 52f87cc33e15… 逐字节相同；且 `npm run build` 回执「已按注册表重写 2 处判据联合体（12 个 kind）（内容无变化）」⇒ schema/design_dsl.schema.json 逐字节不变（搬运行为等价）",
+              "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/expectation_branch.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-10-31T02:52:00+08:00",
+            "by": "llm",
+            "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+            "observed": "199 条 · pass 198 / fail 1；expectation_branch.ts#jsonSchemaTypeOf 8/8 case 一致；变异「删掉 `case 'json[]':`」⇒ case-1 期望 {\"type\":\"array\"} 实得 {}（2/8 红），还原后 sha256 52f87cc33e15… 逐字节相同；且 `npm run build` 回执「已按注册表重写 2 处判据联合体（12 个 kind）（内容无变化）」⇒ schema/design_dsl.schema.json 逐字节不变（搬运行为等价）"
+          }
+        }
+      },
+      {
+        "id": "file_src_domain_stale_verdict_ts",
+        "label": "stale_verdict.ts",
+        "type": "file",
+        "path": "src/domain/stale_verdict.ts",
+        "title": "零依赖纯函数 = 「dist 是否最新」的判定核（staleDecision 两级判定 + 省一次哈希 + basisOf 如实标依据）",
+        "decision": {
+          "summary": "零依赖纯函数（src/domain/stale_verdict.ts）：staleDecision 承载 stale_check 的两级判定（产物缺失 ⇒ missing；清单无记录 ⇒ 退回 mtime；mtime+size 一致 ⇒ none 且**免哈希**；否则 need-hash；哈希相同 ⇒ none；不同 ⇒ changed），basisOf 承载「无清单时如实标 mtime」。原判定住 src/application/observe/runtime/stale_check.ts（fs/path/crypto 3 个值 import），只能写成 source-has。",
+          "author": "llm",
+          "expectations": [
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/stale_verdict.ts",
+              "symbol": "staleDecision",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "outExists": false,
+                      "srcMtime": 1000,
+                      "outMtime": 0,
+                      "size": 3,
+                      "hash": null,
+                      "rec": null
+                    }
+                  ],
+                  "expect": "\"missing\""
+                },
+                {
+                  "given": [
+                    {
+                      "outExists": true,
+                      "srcMtime": 1000,
+                      "outMtime": 900,
+                      "size": 3,
+                      "hash": null,
+                      "rec": null
+                    }
+                  ],
+                  "expect": "\"changed\""
+                },
+                {
+                  "given": [
+                    {
+                      "outExists": true,
+                      "srcMtime": 900,
+                      "outMtime": 1000,
+                      "size": 3,
+                      "hash": null,
+                      "rec": null
+                    }
+                  ],
+                  "expect": "\"none\""
+                },
+                {
+                  "given": [
+                    {
+                      "outExists": true,
+                      "srcMtime": 1000.4,
+                      "outMtime": 1000,
+                      "size": 3,
+                      "hash": null,
+                      "rec": {
+                        "mtime": 1000,
+                        "size": 3,
+                        "hash": "aaa"
+                      }
+                    }
+                  ],
+                  "expect": "\"none\""
+                },
+                {
+                  "given": [
+                    {
+                      "outExists": true,
+                      "srcMtime": 2000,
+                      "outMtime": 1500,
+                      "size": 4,
+                      "hash": null,
+                      "rec": {
+                        "mtime": 1000,
+                        "size": 3,
+                        "hash": "aaa"
+                      }
+                    }
+                  ],
+                  "expect": "\"need-hash\""
+                },
+                {
+                  "given": [
+                    {
+                      "outExists": true,
+                      "srcMtime": 2000,
+                      "outMtime": 1500,
+                      "size": 4,
+                      "hash": "aaa",
+                      "rec": {
+                        "mtime": 1000,
+                        "size": 3,
+                        "hash": "aaa"
+                      }
+                    }
+                  ],
+                  "expect": "\"none\""
+                },
+                {
+                  "given": [
+                    {
+                      "outExists": true,
+                      "srcMtime": 2000,
+                      "outMtime": 1500,
+                      "size": 4,
+                      "hash": "bbb",
+                      "rec": {
+                        "mtime": 1000,
+                        "size": 3,
+                        "hash": "aaa"
+                      }
+                    }
+                  ],
+                  "expect": "\"changed\""
+                }
+              ],
+              "why": "「dist 是否最新」这条判据的全部逻辑（原来只剩 source-has must:[.build-manifest.json, createHash, basis] —— 而那三个串抽不抽都还在：生产者 writeBuildManifest 还要写清单、算哈希，所以那条判据连『判定真的用了哈希』都不判）。7 个 case 逐层：① 产物缺失 ⇒ missing ② 清单无记录且产物旧 ⇒ changed ③ 清单无记录且产物新 ⇒ none ④ mtime（**取整** 1000.4→1000）+ size 一致 ⇒ none，**故意给 hash:null** 证明这一步根本不读哈希（免哈希的省钱路）⑤ 前一步不成立且还没哈希 ⇒ need-hash（删掉这条分支会错误地判 changed）⑥ 哈希相同 ⇒ none（增量编译『改了又改回』跳 emit 的假阳性死在这一步，删掉它 case-6 变 changed）⑦ 哈希不同 ⇒ changed。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/stale_verdict.ts",
+              "symbol": "basisOf",
+              "cases": [
+                {
+                  "given": [
+                    null
+                  ],
+                  "expect": "\"mtime\""
+                },
+                {
+                  "given": [
+                    {}
+                  ],
+                  "expect": "\"manifest\""
+                },
+                {
+                  "given": [
+                    {
+                      "files": {}
+                    }
+                  ],
+                  "expect": "\"manifest\""
+                },
+                {
+                  "given": [],
+                  "expect": "\"mtime\""
+                }
+              ],
+              "why": "「无清单时必须退回 mtime 并**如实标注** basis，不许假装是哈希判的」—— 抽取前那是一行 `manifest ? 'manifest' : 'mtime'`，靠 source-has 的 must:['basis'] 兜（只能证明字段名字面在，证明不了真的按有没有清单分流）。4 个 case 钉两头：null / undefined ⇒ mtime（含『根本没有清单文件』这一路），任何对象（哪怕 files 为空）⇒ manifest。"
+            }
+          ],
+          "updated_at": "2026-10-30T18:35:37.131Z",
+          "agent": "subagent:b1b-exec-goal"
+        },
+        "task": {
+          "id": "file_src_domain_stale_verdict_ts",
+          "summary": "零依赖纯函数（src/domain/stale_verdict.ts）：staleDecision 承载 stale_check 的两级判定（产物缺失 ⇒ missing；清单无记录 ⇒ 退回 mtime；mtime+size 一致 ⇒ none 且**免哈希**；否则 need-hash；哈希相同 ⇒ none；不同 ⇒ changed），basisOf 承载「无清单时如实标 mtime」。原判定住 src/application/observe/runtime/stale_check.ts（fs/path/crypto 3 个值 import），只能写成 source-has。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:b1b-exec-goal",
+          "claimed_at": "2026-10-30T18:36:05.440Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/domain/stale_verdict.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-10-30T18:36:05.370Z",
+            "basis": [
+              "declared",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-10-30T18:48:51.890Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T18:48:51.889Z",
+              "by": "llm",
+              "agent": "subagent:b1b-exec-goal",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+                "input": "85b9144d90ee837cdd156cffdae524989f721a65",
+                "code": "33584e0be133d4939869f26948ab8c18e26c3a1c",
+                "covers": [
+                  "src/domain/stale_verdict.ts"
+                ]
+              },
+              "observed": "199 条 · pass 198 / fail 1；stale_verdict.ts#staleDecision 7/7 + #basisOf 4/4 case 一致；变异「把 `f.hash === f.rec.hash ? 'none' : 'changed'` 改成恒 'changed'」⇒ case-6 期望 \"none\" 实得 changed（1/7 红），还原后 sha256 1b41b43936a8… 逐字节相同",
+              "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/stale_verdict.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-10-31T02:52:00+08:00",
+            "by": "llm",
+            "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+            "observed": "199 条 · pass 198 / fail 1；stale_verdict.ts#staleDecision 7/7 + #basisOf 4/4 case 一致；变异「把 `f.hash === f.rec.hash ? 'none' : 'changed'` 改成恒 'changed'」⇒ case-6 期望 \"none\" 实得 changed（1/7 红），还原后 sha256 1b41b43936a8… 逐字节相同"
+          }
+        }
+      },
+      {
+        "id": "file_src_domain_expect_expr_ts",
+        "label": "expect_expr.ts",
+        "type": "file",
+        "path": "src/domain/expect_expr.ts",
+        "title": "零依赖纯函数 = 项目级判据 expect 的写前试解析（isParsableExpect / parseExpectError + 唯一求值域 EXPECT_EVAL_PARAMS）",
+        "decision": {
+          "summary": "零依赖纯函数（src/domain/expect_expr.ts）：EXPECT_EVAL_PARAMS 是与 scripts/design-check.mjs 一致的 10 个求值域参数名（唯一名单），expectEvaluator 只构造不求值、语法坏就抛 SyntaxError（错误消息留给调用方渲染），isParsableExpect 是它的布尔视图（用**不绑变量**的 catch{} —— 绑了 catch 变量就会被插桩记成 err 非空的 catch 事件，design:silent-error-discard 会把「坏语法必须判 false」的用例判成偏差）。原实现住 src/application/design/dsl_ops/task_ops.ts（20+ 值 import）里，只能写成 source-has must:['new Function']。",
+          "author": "llm",
+          "expectations": [
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/expect_expr.ts",
+              "symbol": "isParsableExpect",
+              "cases": [
+                {
+                  "given": [
+                    "dsl.id === \"x\""
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "results.length > 0 && KINDS.includes(\"source-has\")"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "(() => 1)()"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "1 +"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "{"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "if (true) {}"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "a = = b"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    ""
+                  ],
+                  "expect": "false"
+                }
+              ],
+              "why": "项目级判据 expect 的**写前试解析**必须可判：scripts/design-check.mjs 用同一个 new Function 求值每一条 expect，写坏一个字节会让**整道门崩**（不是『这条红』）。原 source-has must:['new Function'] 连『试解析的结果有没有被用』都不判（把 catch 改成吞掉，它照样绿）。8 个 case：① 合法比较 ② 引用求值域里的 results / KINDS ③ IIFE ④ 不完整表达式 `1 +`（删掉 try/catch 或恒回 true ⇒ 这里红）⑤ 半个对象字面量 ⑥ **语句塞进表达式位**（`return (if (true) {});` 是语法错 —— 这是最容易漏的一类）⑦ 双等号拆开 ⑧ 空串（调用方先判非空，这里只判语法 ⇒ 空串落 `return ();` 也是语法错）。"
+            }
+          ],
+          "updated_at": "2026-10-30T18:44:30.304Z",
+          "agent": "subagent:b1b-exec-goal"
+        },
+        "task": {
+          "id": "file_src_domain_expect_expr_ts",
+          "summary": "零依赖纯函数（src/domain/expect_expr.ts）：EXPECT_EVAL_PARAMS 是与 scripts/design-check.mjs 一致的 10 个求值域参数名（唯一名单），parseExpectError 用 new Function 试解析 expect 并回错误消息（可解析 ⇒ null），isParsableExpect 是同一实现的布尔视图（写端只要『能不能写』）。原实现住 src/application/design/dsl_ops/task_ops.ts（20+ 值 import）里，只能写成 source-has must:['new Function']。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:b1b-exec-goal",
+          "claimed_at": "2026-10-30T18:36:05.672Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/domain/expect_expr.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-10-30T18:36:05.603Z",
+            "basis": [
+              "declared",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-10-30T18:48:52.346Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T18:48:52.346Z",
+              "by": "llm",
+              "agent": "subagent:b1b-exec-goal",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+                "input": "593dcaafee44be3e6a82510dae7dffc7f1b571e4",
+                "code": "e1e274741299443ccfccd78e810f744f14c96375",
+                "covers": [
+                  "src/domain/expect_expr.ts"
+                ]
+              },
+              "observed": "199 条 · pass 198 / fail 1；expect_expr.ts#isParsableExpect 8/8 case 一致；变异「试解析恒回 true」⇒ 5/8 红（case-4 期望 false 实得 true），还原后 sha256 2859cf17beac… 逐字节相同。★ 另有读数：把消息取成带 catch(e) 的 parseExpectError 时，本文件的 canary 用例每坏语法一次就记一条 err 非空 catch 事件 ⇒ dir_certs 的 design:silent-error-discard 判 5/61 偏差翻红；改成不绑变量的 catch{} 后该红消失",
+              "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}"
+            }
+          ]
+        },
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-10-30T18:44:30.304Z",
+            "decision": {
+              "summary": "零依赖纯函数（src/domain/expect_expr.ts）：EXPECT_EVAL_PARAMS 是与 scripts/design-check.mjs 一致的 10 个求值域参数名（唯一名单），parseExpectError 用 new Function 试解析 expect 并回错误消息（可解析 ⇒ null），isParsableExpect 是同一实现的布尔视图（写端只要『能不能写』）。原实现住 src/application/design/dsl_ops/task_ops.ts（20+ 值 import）里，只能写成 source-has must:['new Function']。",
+              "author": "llm",
+              "expectations": [
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expect_expr.ts",
+                  "symbol": "isParsableExpect",
+                  "cases": [
+                    {
+                      "given": [
+                        "dsl.id === \"x\""
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "results.length > 0 && KINDS.includes(\"source-has\")"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "(() => 1)()"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "1 +"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "{"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "if (true) {}"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "a = = b"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "false"
+                    }
+                  ],
+                  "why": "项目级判据 expect 的**写前试解析**必须可判：scripts/design-check.mjs 用同一个 new Function 求值每一条 expect，写坏一个字节会让**整道门崩**（不是『这条红』）。原 source-has must:['new Function'] 连『试解析的结果有没有被用』都不判（把 catch 改成吞掉，它照样绿）。8 个 case：① 合法比较 ② 引用求值域里的 results / KINDS ③ IIFE ④ 不完整表达式 `1 +`（删掉 try/catch 或恒回 true ⇒ 这里红）⑤ 半个对象字面量 ⑥ **语句塞进表达式位**（`return (if (true) {});` 是语法错 —— 这是最容易漏的一类）⑦ 双等号拆开 ⑧ 空串（调用方先判非空，这里只判语法 ⇒ 空串落 `return ();` 也是语法错）。"
+                }
+              ],
+              "updated_at": "2026-10-30T18:35:37.187Z",
+              "agent": "subagent:b1b-exec-goal"
+            },
+            "note": "把 parseExpectError（带 catch(e) 的消息视图）换成 expectEvaluator + 不绑 catch 的布尔视图：拒绝文案由 task_ops 自己的 catch 渲染（逐字不变），构造点仍只有一处。",
+            "author": "llm",
+            "agent": "subagent:b1b-exec-goal"
+          }
+        ],
+        "overlay": {
+          "path": "src/domain/expect_expr.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-10-31T02:52:00+08:00",
+            "by": "llm",
+            "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+            "observed": "199 条 · pass 198 / fail 1；expect_expr.ts#isParsableExpect 8/8 case 一致；变异「试解析恒回 true」⇒ 5/8 红（case-4 期望 false 实得 true），还原后 sha256 2859cf17beac… 逐字节相同。★ 另有读数：把消息取成带 catch(e) 的 parseExpectError 时，本文件的 canary 用例每坏语法一次就记一条 err 非空 catch 事件 ⇒ dir_certs 的 design:silent-error-discard 判 5/61 偏差翻红；改成不绑变量的 catch{} 后该红消失"
           }
         }
       }
@@ -81822,6 +83284,30 @@
         "path": "src/domain/import_names.ts",
         "responsibility": "零依赖纯函数 = 「该补哪些 import」的决策核心：ownerFileOf（名字 → 提供它的文件；未定义 / __multi__ / 空 file 一律 null）+ pickImportNames（跳过已声明、不 import 自己、__multi__ 不猜、按 refs 出现顺序去重）。供 infrastructure/authoring/translate/module_build.ts 的薄适配器调用 —— 决策住 domain 才能被 behavior-cases 直接跑。",
         "status": "done"
+      },
+      {
+        "id": "file_src_domain_behavior_compare_ts",
+        "path": "src/domain/behavior_compare.ts",
+        "responsibility": "零依赖纯函数 = behavior-cases 判据的比对核 sameBehaviorRet（repr 精确相等优先；标量才走裸串口径；容器只许精确 repr —— 不许 String() 兜成 [object Object]）",
+        "status": "done"
+      },
+      {
+        "id": "file_src_domain_expectation_branch_ts",
+        "path": "src/domain/expectation_branch.ts",
+        "responsibility": "零依赖纯函数 = 判据注册表 → JSON Schema 片段的渲染核 jsonSchemaTypeOf（7 个 type 分支；json[] 必须显式成 {type:'array'} 且不写 items）",
+        "status": "done"
+      },
+      {
+        "id": "file_src_domain_stale_verdict_ts",
+        "path": "src/domain/stale_verdict.ts",
+        "responsibility": "零依赖纯函数 = 「dist 是否最新」的判定核（staleDecision 两级判定 + 省一次哈希 + basisOf 如实标依据）",
+        "status": "done"
+      },
+      {
+        "id": "file_src_domain_expect_expr_ts",
+        "path": "src/domain/expect_expr.ts",
+        "responsibility": "零依赖纯函数 = 项目级判据 expect 的写前试解析（isParsableExpect / parseExpectError + 唯一求值域 EXPECT_EVAL_PARAMS）",
+        "status": "done"
       }
     ]
   },
@@ -81883,13 +83369,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 504,
+  "_dsl_rev": 524,
   "_sync": {
-    "saved_at": "2026-10-30T18:24:32.174Z",
+    "saved_at": "2026-10-30T18:48:56.495Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 383675037,
+    "age": 385139358,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

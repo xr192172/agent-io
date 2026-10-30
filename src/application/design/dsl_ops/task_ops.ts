@@ -64,6 +64,9 @@ import {
   type CardStanding,
   type ClaimIntent,
 } from '../../../domain/task_machine.js';
+// ★ 2026-10-31（B1b）：expect 的写前试解析搬进 src/domain/expect_expr.ts（零依赖 ⇒ 8 条 behavior-cases 现跑判）；
+//   求值域唯一名单 EXPECT_EVAL_PARAMS 也住那里，本文件不再自抄一份参数表。
+import { expectEvaluator, isParsableExpect } from '../../../domain/expect_expr.js';
 // ★ 2026-10-21（D-judge-port）：判定器的**实现**住 application，由这里**注入**给 domain 的状态机
 //   （`cardStanding` / `isSatisfied` 的 `opts.judge`）—— domain 不再向上 import application。
 // ★ 2026-10-23（增量测试 · 选量）：`indexStaleFor` = 「索引是否与源码一致」的**既有那一把尺** ——
@@ -3084,27 +3087,17 @@ export function applyTaskPlanOp(feature: string, op: TaskOpRequest): EditResult 
     if (!expect.trim()) {
       throw new Error(`task_plan.update 被拒：判据 \`${cid}\` 的 \`expect\` 必须是非空字符串。`);
     }
-    // ★ 写前试解析 —— 求值域必须与 design-check.mjs 逐字一致，否则"能过写端却跑不起来"
-    try {
-      // eslint-disable-next-line no-new-func
-      new Function(
-        'dsl',
-        'nodes',
-        'paths',
-        'fs',
-        'path',
-        'root',
-        'mutateReport',
-        'callReport',
-        'results',
-        'KINDS',
-        `"use strict"; return (${expect});`,
-      );
-    } catch (e) {
+    // ★ 写前试解析 —— 求值域必须与 design-check.mjs 逐字一致（唯一名单 = domain/expect_expr.ts#EXPECT_EVAL_PARAMS），
+    //   否则"能过写端却跑不起来"。能不能写由 isParsableExpect 判；报错原文由 expectEvaluator 抛出的同一个构造器给出。
+    if (!isParsableExpect(expect)) {
+      let detail = '';
+      try {
+        expectEvaluator(expect);
+      } catch (e) {
+        detail = String((e as Error).message);
+      }
       throw new Error(
-        `task_plan.update 被拒：判据 \`${cid}\` 的 \`expect\` 语法不成立（design:check 会**整体崩**）—— ${String(
-          (e as Error).message,
-        )}`,
+        `task_plan.update 被拒：判据 \`${cid}\` 的 \`expect\` 语法不成立（design:check 会**整体崩**）—— ${detail}`,
       );
     }
     const dc = (tp.design_completeness as Record<string, unknown> | undefined) ?? {};

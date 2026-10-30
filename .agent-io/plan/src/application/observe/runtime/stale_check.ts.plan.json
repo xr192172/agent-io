@@ -1,0 +1,47 @@
+{
+  "path": "src/application/observe/runtime/stale_check.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "checkStaleBuild"
+      },
+      "kind": "rewrite",
+      "detail": "把内联的两级判定（outM<0 / 无 rec 退回 mtime / mtime+size 短路 / sha1 比较）换成转调 src/domain/stale_verdict.ts#staleDecision（先 hash:null 问一次，回 need-hash 才算哈希再问）与 basisOf",
+      "judgement_ref": "decision:file_src_application_observe_runtime_stale_check_ts#1",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_application_observe_runtime_stale_check_ts",
+  "untouched_default": {
+    "why": "只换判定核；清单读写（readBuildManifest / writeBuildManifest）、walkSrcSources、distOutFor、formatStaleText 本次不动"
+  },
+  "symbols_at_freeze": [
+    "BuildManifest",
+    "BUILD_MANIFEST_NAME",
+    "buildManifestPath",
+    "readBuildManifest",
+    "writeBuildManifest",
+    "StaleEntry",
+    "StaleCheckResult",
+    "GEN_SRC_RE",
+    "walkSrcSources",
+    "distOutFor",
+    "mtimeOf",
+    "checkStaleBuild",
+    "formatStaleText"
+  ],
+  "fps_at_freeze": {
+    "buildManifestPath": "607b147f793a0beb5c253a6d86a4df14b7c04300",
+    "readBuildManifest": "41ff1b77c4ea53cf445ee94551245b6b0d2099e6",
+    "writeBuildManifest": "1bf8bd1dd763d2cf0e9182931c9604456ea72097",
+    "walkSrcSources": "5a9c3940a334f269017af49c61f8f8a40d1fc47b",
+    "distOutFor": "3f863b7c1c7beecc4e0f8e8df1a1bd08d2bea7fd",
+    "mtimeOf": "11b2952b6f07de458916c258312e2bbe17a77ea4",
+    "checkStaleBuild": "79752c54efa02ca6447556ed70c8892aadbf3ecc",
+    "formatStaleText": "6f7d848b343474019b20f5265a81a89ca06b49d2"
+  },
+  "frozen_at": "2026-10-30T18:39:27.597Z",
+  "base": {
+    "content_hash": "6078eb2f64f8680fef8133af9fbe63cb3b504f44"
+  }
+}

@@ -18,6 +18,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+// ★ 2026-10-31（B1b）：两级判定（mtime/size 只触发、内容哈希才是判定、无清单退回 mtime）搬进
+//   src/domain/stale_verdict.ts（零依赖纯函数 ⇒ 7+4 条 behavior-cases 现跑判）；本文件只留 IO 与渲染。
+import { basisOf, staleDecision } from '../../../domain/stale_verdict.js';
 
 // ─────────────────────────────────────────────────────────────
 // ★★★ 2026-10-26（T-②）：**本文件是「dist 是否最新」的【唯一判据实现】**。
@@ -189,7 +192,7 @@ export function checkStaleBuild(root: string): StaleCheckResult {
   const sources: string[] = [];
   walkSrcSources(rootAbs, sources);
   const manifest = readBuildManifest(rootAbs);
-  const basis: 'manifest' | 'mtime' = manifest ? 'manifest' : 'mtime';
+  const basis = basisOf(manifest);
   const entries: StaleEntry[] = [];
   for (const srcAbs of sources) {
     const rel = path.relative(rootAbs, srcAbs).replace(/\\/g, '/');
@@ -202,43 +205,21 @@ export function checkStaleBuild(root: string): StaleCheckResult {
     }
     const srcM = mtimeOf(srcAbs);
     const outM = mtimeOf(outAbs);
-    if (outM < 0) {
-      entries.push({
-        src: rel,
-        out: path.relative(rootAbs, outAbs).replace(/\\/g, '/'),
-        missing: true,
-        srcMtime: Math.round(srcM),
-        outMtime: 0,
-        why: 'missing',
-      });
-      continue;
-    }
-    const rec = manifest?.files?.[rel];
-    if (!rec) {
-      // 清单里没这条（新增文件 / 旧清单）⇒ 退回 mtime 判
-      if (outM < srcM) {
-        entries.push({
-          src: rel,
-          out: path.relative(rootAbs, outAbs).replace(/\\/g, '/'),
-          missing: false,
-          srcMtime: Math.round(srcM),
-          outMtime: Math.round(outM),
-          why: 'changed',
-        });
-      }
-      continue;
-    }
-    // 第一级：mtime/size 与构建时一致 ⇒ 一定没变（免哈希）
-    if (Math.round(srcM) === rec.mtime && buf.length === rec.size) continue;
-    // 第二级：内容哈希 —— 相同则不算 stale（增量编译跳 emit 的假阳性死在这一步）
-    if (crypto.createHash('sha1').update(buf).digest('hex') === rec.hash) continue;
+    const rec = manifest?.files?.[rel] ?? null;
+    const facts = { outExists: outM >= 0, srcMtime: srcM, outMtime: outM, size: buf.length, rec };
+    // ★ 2026-10-31（B1b）：判定住 src/domain/stale_verdict.ts#staleDecision（零依赖 ⇒ 7 条 behavior-cases 现跑判）。
+    //   先问一次「要不要哈希」（mtime+size 与清单一致时**不读哈希**，省一次 IO）；回 need-hash 才算一次再问。
+    let verdict = staleDecision({ ...facts, hash: null });
+    if (verdict === 'need-hash') verdict = staleDecision({ ...facts, hash: crypto.createHash('sha1').update(buf).digest('hex') });
+    if (verdict === 'need-hash') throw new Error('内部不一致：已给 hash 仍回 need-hash（src/domain/stale_verdict.ts#staleDecision 被改坏）');
+    if (verdict === 'none') continue;
     entries.push({
       src: rel,
       out: path.relative(rootAbs, outAbs).replace(/\\/g, '/'),
-      missing: false,
+      missing: verdict === 'missing',
       srcMtime: Math.round(srcM),
-      outMtime: Math.round(outM),
-      why: 'changed',
+      outMtime: verdict === 'missing' ? 0 : Math.round(outM),
+      why: verdict,
     });
   }
   entries.sort((a, b) => a.src.localeCompare(b.src));

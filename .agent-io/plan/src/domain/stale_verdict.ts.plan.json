@@ -1,0 +1,32 @@
+{
+  "path": "src/domain/stale_verdict.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "staleDecision"
+      },
+      "kind": "create",
+      "detail": "新建零依赖纯函数：dist 是否最新的两级判定（missing / 退回 mtime / mtime+size 免哈希 / need-hash / 哈希相同 none / changed）",
+      "judgement_ref": "decision:file_src_domain_stale_verdict_ts#0",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "basisOf"
+      },
+      "kind": "create",
+      "detail": "新建零依赖纯函数：本次判定依据（有清单 ⇒ manifest；无清单 ⇒ mtime，如实标注不假装）",
+      "judgement_ref": "decision:file_src_domain_stale_verdict_ts#1",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_domain_stale_verdict_ts",
+  "frozen_at": "2026-10-30T18:37:58.239Z",
+  "base": {
+    "content_hash": "781f1a96877f7d736a754b03a53f04e3092cbf79"
+  },
+  "fps_at_freeze": {
+    "staleDecision": "1feac081ea22f1f59abda0e61a367520fa3f441c",
+    "basisOf": "4c6bd6d89fe1956a5fcf467fc2100e2bd4c81753"
+  }
+}
