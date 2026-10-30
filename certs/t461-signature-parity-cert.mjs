@@ -49,13 +49,16 @@ function expandGrouped(_m, names, type) {
 /** 只留标识符骨架（与 t460 同口径） */
 const norm = (t) =>
   String(t ?? '')
+    // ★ 第一步：**本项目**的类型是 `github.com/<org>/<repo>.Type` —— 整条前缀（含仓库名）都要去干净，
+    //   否则下面那条规则只留到 `agent-memory.Type`，与我们的 `Type` 对不上（踩过：442 条假分叉）。
     .replace(/github\.com\/[^/]+\/[^./]+\./g, '')
-    // ★ 我们的类型文本用**包内短名**（`[]memory.Message`），go/types 用全路径 ⇒ 归一化掉包限定符
-    // ★ 先剥**整条导入路径**（github.com/jifeng/agent-memory/logging.LogLevel → logging.LogLevel），
-    //   再剥**小写包限定符**（logging.LogLevel → LogLevel）。上一版只剥到第一段仓库名 ⇒ 剩 3 条假分叉。
-    .replace(/[A-Za-z0-9_.-]+(?:\/[A-Za-z0-9_./-]+)+\//g, '')
+    // ★ 第二步：导入路径归一化：**任意深度**的路径只留包名（`net/http.Handler` → `http.Handler`，
+    //   `github.com/x/y/logging.LogLevel` → `logging.LogLevel`）。
+    //   上一版要求路径以 `/` 结尾 ⇒ `net/http.Handler` 漏掉（3 条假 named-result + 13 条假 param-type）。
+    .replace(/(?:[A-Za-z0-9_.-]+\/)+([A-Za-z0-9_]+)\./g, '$1.')
+    // ★ 第三步：剥**小写包限定符**（`memory.Message` → `Message`、`http.Handler` → `Handler`）。
+    //   两边写法不同：我们用包内短名（`mem.Embedder`/`memory.Response`），go/types 打全路径 ⇒ 都必须剥。
     .replace(/\b[a-z][A-Za-z0-9_]*\./g, '')
-    .replace(/[A-Za-z0-9_./-]+\/([A-Za-z_][A-Za-z0-9_]*)\./g, '$1.')
     .replace(/\\"/g, "'")
     .replace(/`[^`]*`/g, '')
     .replace(/"[^"]*"/g, '')

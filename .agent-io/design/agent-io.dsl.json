@@ -16141,10 +16141,10 @@
         "task": {
           "id": "file_src_infrastructure_authoring_translate_go_extractor_ts",
           "summary": "T-#IOTA：const 组内省略值成员按 iota 落成带字面量的常量（否则产物只有引用没有声明 ⇒ TS2304）",
-          "state": "candidate",
+          "state": "done",
           "judge_gate": "strict",
-          "owner": null,
-          "claimed_at": null,
+          "owner": "agent:agent-io-cli",
+          "claimed_at": "2026-10-30T03:19:15.640Z",
           "read_set": {
             "symbols": [
               {
@@ -16155,12 +16155,12 @@
               {
                 "file": "src/infrastructure/authoring/translate/go_extractor.ts",
                 "name": "embeddedFieldName",
-                "fp": ""
+                "fp": "dde9b8bc52caa8cca9cd6c8d14a142e1ca657026"
               },
               {
                 "file": "src/infrastructure/authoring/translate/go_extractor.ts",
                 "name": "unitFromTypeSpec",
-                "fp": "568a31adf6b358ca2e540bd2b52c300120d2dd7f"
+                "fp": "dcac340323f6125d88baf596be6b612088830b38"
               },
               {
                 "file": "src/infrastructure/authoring/translate/go_extractor.ts",
@@ -16171,15 +16171,14 @@
             "files": [
               {
                 "path": "src/infrastructure/authoring/translate/go_extractor.ts",
-                "content_hash": "e2e5cc89eca27c17d229e9a80ba55ac69dcc9dc3"
+                "content_hash": "d4a2ac00db746688e61fe1ea4899f409f8c68780"
               }
             ],
-            "computed_at": "2026-10-29T17:39:58.823Z",
+            "computed_at": "2026-10-30T03:19:15.560Z",
             "basis": [
               "canvas",
               "expectations"
-            ],
-            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/authoring/translate/go_extractor.ts#embeddedFieldName"
+            ]
           },
           "evidence": [
             {
@@ -16215,17 +16214,31 @@
               },
               "observed": "errors 358→346（-12）· holes 195 未涨 · explorer.ts 出现 let alive=[]/let dead=[] 与 return [alive, dead]",
               "command": "node certs/t453-replay-baseline-cert.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T03:32:06.722Z",
+              "by": "llm",
+              "agent": "agent:agent-io-cli",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node certs/t461-signature-parity-cert.mjs && AGENT_IO_REPLAY_ONLY=1 AGENT_IO_TSC_FIX=1 node certs/t453-replay-baseline-cert.mjs",
+                "input": "a83d9fe10cff23cb64c1b90847c6f73566cb4e7a",
+                "code": "492f5fb22bfbd5100d4901620d8526ae10f9aff0",
+                "covers": [
+                  "src/infrastructure/authoring/translate/go_extractor.ts"
+                ]
+              },
+              "observed": "t461：named-result-slot 10→0、param-type 13→0（形参与返回值类型全对齐）；剩下 103 条 = interface-method 43（范围外）+ extra 60（待查）。t453 4/0：errors/holes 未上升。",
+              "command": "node certs/t461-signature-parity-cert.mjs && AGENT_IO_REPLAY_ONLY=1 AGENT_IO_TSC_FIX=1 node certs/t453-replay-baseline-cert.mjs"
             }
           ],
           "reopened_at": "2026-10-29T17:39:58.899Z",
           "reopen_reason": "上一轮命名返回值已收口；新目标 T-#EMBEDDED-FIELD",
           "reopened_from": "agent:agent-io-cli",
-          "prepared_snapshot": null,
-          "release_reason": "产物未变（336→336），先定位 CachedNode 的 fields 来源再决定是否收口",
-          "released_by": "agent:agent-io-cli",
-          "released_at": "2026-10-29T17:41:47.091Z"
+          "prepared_snapshot": null
         },
-        "status": "draft",
+        "status": "done",
         "decision_history": [
           {
             "at": "2026-10-29T16:37:58.526Z",
@@ -16510,9 +16523,9 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "command": "node certs/t453-replay-baseline-cert.mjs",
-            "observed": "errors 358→346（-12）· holes 195 未涨 · explorer.ts 出现 let alive=[]/let dead=[] 与 return [alive, dead]",
-            "at": "2026-10-30T00:59:37.2219916+08:00"
+            "command": "node certs/t461-signature-parity-cert.mjs && AGENT_IO_REPLAY_ONLY=1 AGENT_IO_TSC_FIX=1 node certs/t453-replay-baseline-cert.mjs",
+            "observed": "t461：named-result-slot 10→0、param-type 13→0（形参与返回值类型全对齐）；剩下 103 条 = interface-method 43（范围外）+ extra 60（待查）。t453 4/0：errors/holes 未上升。",
+            "at": "2026-10-30T03:32:01.569Z"
           },
           "signature": "v2:c70d8e1a63f1"
         }
@@ -64563,7 +64576,7 @@
         ],
         "lines": 514,
         "layer": "core",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_go_tests_ts",
@@ -69568,13 +69581,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 323,
+  "_dsl_rev": 324,
   "_sync": {
-    "saved_at": "2026-10-30T03:08:42.638Z",
+    "saved_at": "2026-10-30T03:32:06.831Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 328725501,
+    "age": 330129694,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

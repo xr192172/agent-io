@@ -18,6 +18,26 @@
       "detail": "struct 字段循环里，嵌入字段（无 field_identifier）不再只记约束：按 embeddedFieldName 落成显式成员（TS 用组合表达 Go 的嵌入），同时保留「提升字段未展开」的约束提示",
       "judgement_ref": "decision:file_src_infrastructure_authoring_translate_go_extractor_ts#3",
       "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "paramRefsFromList"
+      },
+      "kind": "rewrite",
+      "detail": "改完发现这个符号也动了 ⇒ **设计漏了**（补：它该改成什么样）",
+      "judgement_ref": "",
+      "status": "open",
+      "note": "吸收于 2026-10-30T03:29:43.001Z"
+    },
+    {
+      "anchor": {
+        "symbol": "normResult"
+      },
+      "kind": "rewrite",
+      "detail": "改完发现这个符号也动了 ⇒ **设计漏了**（补：它该改成什么样）",
+      "judgement_ref": "",
+      "status": "open",
+      "note": "吸收于 2026-10-30T03:29:43.001Z"
     }
   ],
   "card": "file_src_infrastructure_authoring_translate_go_extractor_ts",
@@ -68,7 +88,7 @@
     "collectValueQualified": "21f168eb32eed3ea42feb5297a8fc4177de17faa",
     "findResultNode": "b3fec1ab37e09f285e6fe7383798b76953e3fea8",
     "resultRefFromNode": "ebeb374099f1c40c133e304d540a1a4edfd44a25",
-    "paramRefsFromList": "624173b5ecdab2e4267c46a3e478303a50754ef1",
+    "paramRefsFromList": "dcb8d23beb7cbcc43b03d078e4708b79a288d56c",
     "extractParamList": "7c39a6b9ae52bdc17318a73d197bfa0f7a7f8aa5",
     "parseReceiver": "47116da8fc1f7f81fb73f93bcf01abf5b7e2316d",
     "extractTypeParams": "ad27ba3968a76824e1c7dacac27d660534e53558",
@@ -77,7 +97,7 @@
     "boundFromConstraint": "4cb08420b739a1515aa7bd5ee1efd82552febfeb",
     "extractTypeParamBounds": "1227806d58e9b786054d10c5c13c1b6336f9f255",
     "appendBodyHints": "de02a29c11af35f50819e1102a21ab8491b8d3f1",
-    "normResult": "59057bfdc1ca2d7c06dff3bc186d48a3a8eadd32",
+    "normResult": "2454f0bf59302a5c3f2ec3c87fb71ad6e8ec6af6",
     "zeroValueOf": "7d842ec5b7f5fc1074a277fe33e95ea86c0751b0",
     "namedResultsOf": "952673eb0b17e8144fac1116fb91182152805f99",
     "unitFromFunc": "574fcde3a776f4a9a8252e988d537b4ac6f2aeaa",
@@ -93,8 +113,8 @@
     "extractGoFromFile": "e97924758a09047df1d6c8132204ffa3b59e832e",
     "extractGo": "fdf2bf522b68719de3027501e4c94dcf6bbd8d46"
   },
-  "frozen_at": "2026-10-29T17:40:02.064Z",
+  "frozen_at": "2026-10-30T03:29:43.001Z",
   "base": {
-    "content_hash": "d4a2ac00db746688e61fe1ea4899f409f8c68780"
+    "content_hash": "63e199fcc75eac02b429250877bebaf7b0438b9c"
   }
 }

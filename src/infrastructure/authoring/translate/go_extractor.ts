@@ -280,26 +280,39 @@ function resultRefFromNode(node: SyntaxNodeLike | null): TypeRef | undefined {
 
 /** 参数列表 → [{name?, type: TypeRef}]（认分组写法 `a, b int`） */
 function paramRefsFromList(pl: SyntaxNodeLike): Array<{ name?: string; type: TypeRef }> {
-  const out: Array<{ name?: string; type: TypeRef }> = [];
-  for (let i = 0; i < pl.childCount; i++) {
-    const d = pl.child(i);
-    if (!d) continue;
-    if (d.type !== 'parameter_declaration' && d.type !== 'variadic_parameter_declaration') continue;
-    const names: string[] = [];
-    let typeNode: SyntaxNodeLike | null = null;
-    for (let j = 0; j < d.childCount; j++) {
-      const c = d.child(j);
-      if (!c) continue;
-      if (c.type === 'identifier') names.push(c.text);
-      else if (c.type !== ',' && c.type !== '(' && c.type !== ')') typeNode = c;
+    const out: Array<{ name?: string; type: TypeRef }> = [];
+    // ★★★ T-#EXTRACTOR-NAMEDRESULT（同一根因）：Go 的分组声明 `(a, b T)` 中类型只写在最后一个名字上。
+    //   tree-sitter 会把 `a` 与 `b T` 拆成两个 parameter_declaration ⇒ 第一项没有 typeNode。
+    //   旧实现遇到没有类型的第一项会原样 push（类型被推成名字）⇒ 形参与命名返回值都会错。
+    //   正确做法：先攒「只有名字」的声明，遇到带类型的声明时**统一赋值**（这就是 Go 规范）。
+    let pending: string[] = [];
+    for (let i = 0; i < pl.childCount; i++) {
+      const d = pl.child(i);
+      if (!d) continue;
+      if (d.type !== 'parameter_declaration' && d.type !== 'variadic_parameter_declaration') continue;
+      const names: string[] = [];
+      let typeNode: SyntaxNodeLike | null = null;
+      for (let j = 0; j < d.childCount; j++) {
+        const c = d.child(j);
+        if (!c) continue;
+        if (c.type === 'identifier') names.push(c.text);
+        else if (c.type !== ',' && c.type !== '(' && c.type !== ')') typeNode = c;
+      }
+      if (!typeNode) {
+        for (let k = 0; k < names.length; k++) pending.push(names[k]);
+        continue;
+      }
+      const tr = typeRefFromNode(typeNode);
+      const final = d.type === 'variadic_parameter_declaration' ? ({ kind: 'variadic', elem: tr } as TypeRef) : tr;
+      if (pending.length) {
+        for (let k = 0; k < pending.length; k++) out.push({ name: pending[k], type: final });
+        pending = [];
+      }
+      if (!names.length) out.push({ type: final });
+      else for (let k = 0; k < names.length; k++) out.push({ name: names[k], type: final });
     }
-    const tr = typeRefFromNode(typeNode);
-    const final = d.type === 'variadic_parameter_declaration' ? ({ kind: 'variadic', elem: tr } as TypeRef) : tr;
-    if (!names.length) out.push({ type: final });
-    else for (const nm of names) out.push({ name: nm, type: final });
+    return out;
   }
-  return out;
-}
 
 /** 收集参数列表块里的每个 parameter_declaration（展开 `a, b int` 为两条） */
 function extractParamList(block: SyntaxNodeLike): TranslateParam[] {
@@ -451,21 +464,32 @@ function appendBodyHints(snippet: string, constraints: string[]): void {
 
 /** 归一化返回类型：去命名返回的名字，`(x int, err error)` → `(int, error)`；`(x int)` → `int` */
 function normResult(s: string): string {
-  const t = s.trim();
-  if (t.startsWith('(') && t.endsWith(')')) {
-    const parts = t
-      .slice(1, -1)
-      .split(',')
-      .map((p) => p.trim())
-      .filter(Boolean)
-      .map((p) => {
-        const m = /^[A-Za-z_]\w*\s+(.+)$/.exec(p);
-        return m ? m[1].trim() : p;
-      });
-    return parts.length === 1 ? parts[0] : '(' + parts.join(', ') + ')';
+    const t = s.trim();
+    if (!(t.startsWith('(') && t.endsWith(')'))) return t;
+    const parts = t.slice(1, -1).split(',').map((p) => p.trim()).filter(Boolean);
+    // ★★★ T-#EXTRACTOR-NAMEDRESULT：Go 的**分组声明**把类型只写在最后一个名字上 ——
+    //   `(principle, fix string)` 里 principle 与 fix **都是 string**。
+    //   旧实现逐项剥名 ⇒ 第一项没类型就原样留下 ⇒ 产出 `(principle, string)`（把**结果名当类型**）。
+    //   判据：只要有任意一项是「名字 类型」形态，就是分组命名；裸标识符 = 待定名字，由后面第一个带类型的项统一赋值。
+    //   若**全部**是裸标识符，则是无名类型列表 `(int, string)`，原样返回。
+    const named = parts.some((p) => /^[A-Za-z_]\w*\s+\S/.test(p));
+    if (!named) return parts.length === 1 ? parts[0] : '(' + parts.join(', ') + ')';
+    const res: string[] = [];
+    let pending: string[] = [];
+    for (const p of parts) {
+      const m = /^([A-Za-z_]\w*)\s+([\s\S]+)$/.exec(p);
+      if (m) {
+        for (let i = 0; i < pending.length; i++) res.push(m[2].trim());
+        pending = [];
+        res.push(m[2].trim());
+      } else {
+        pending.push(p);
+      }
+    }
+    // 兜底：尾部仍有"只有名字没有类型"= 源不合法；原样保留，不猜
+    for (let i = 0; i < pending.length; i++) res.push(pending[i]);
+    return res.length === 1 ? res[0] : '(' + res.join(', ') + ')';
   }
-  return t;
-}
 
 /** func/方法 单元：`func Add(...)` 或 `func (u *User) Greet(...)` → TransUnit(kind='func')
  *  方法映射为 TS 自由函数：receiver 作首参，名取 `${recvType}_${method}`（防同文件多类型方法撞名）。 */
