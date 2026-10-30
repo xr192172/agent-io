@@ -815,6 +815,8 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
   /** ★ T-#CACHE-GATE：缓存体被当前判据判坏、作废重填的个数 */
   let staleCache = 0;
   let mechCount = 0;
+  /** ★ T-#FILLCACHE-LEGACY：旧格式 key 命中数（迁移读数；迁移完应长期为 0 且缓存不减） */
+  let legacyHit = 0;
   if (opts.fill) {
     // ★ I3（2026-10-25）：翻译 DB 投影 + 术语表进 prompt（按图索骥的"图"）——
     //   根目录 `.agent-io/design/*.translate.json` 存在时按 `<rel>#<符号名>` 对齐注入。
@@ -844,7 +846,16 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
         //   不带版本 ⇒ 新加的判据只约束未来，旧体照样被放回（实测 66 个 `err` 就是这么来的）。
         // ★ T-#CACHE-KEY-VERSION：键 = 翻译器指纹 + Go 源指纹（缺前者 ⇒ 改渲染器永远不生效）
     const key = `v4|${translatorFingerprint()}|${m.rel}#${u.id}@${sha1(u.srcSnippet)}`;
-        const hit = cache[key];
+        // ★★★ T-#FILLCACHE-LEGACY（2026-10-30）：**key 版本升级没有迁移路径** ⇒ 旧体全部不可达。
+        //   病史：缓存 key 从 `rel#id@sha1(src)` 升级成 `v4|<指纹>|rel#id@sha1(src)`（两次改进：
+        //   T-#CACHE-KEY-VERSION 防「旧体贴新签名」、指纹防「改渲染器不生效」）。两次都对，
+        //   但**存量 834 条旧体从此再也命中不了** ⇒ 产物孔数从 188 涨到 617（"错误暴跌+孔暴涨"）。
+        //   修法：新 key 不中 ⇒ **回落旧 key**，但**照样过下面两道契约检查**（不因为"旧"就直接用），
+        //   命中后按新 key 写回（一次迁移，之后走快路径）。
+        const legacyKey = `${m.rel}#${u.id}@${sha1(u.srcSnippet)}`;
+        const hit = cache[key] ?? cache[legacyKey];
+        if (!cache[key] && cache[legacyKey]) legacyHit += 1;
+
         // ★ 缓存回放也要过契约检查（两关）：
         //   ① 不许带 `export function` 外壳（嵌进外层 ⇒ 语法错，t442 的教训）；
         //   ② **作用域判据**（t452）：引用的名字必须已声明/已导入/是全局 —— 判坏即当 miss 重填。
@@ -863,13 +874,19 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
             }
           }
         }
-        if (cacheOk) hits.push({ u, body: hit.body });
-        else missUnits.push(u);
+        if (cacheOk && hit) {
+          hits.push({ u, body: hit.body });
+          // 迁移：旧 key 命中后按新 key 落一份，下次直接快路径（缓存条目不变多，是**改键**）
+          if (!cache[key]) cache[key] = { body: hit.body, at: new Date().toISOString() };
+        } else missUnits.push(u);
       }
       // ★ 2026-10-29：**缓存/机械回放也要走八进制归一** —— 上一遍残留的 TS1121 就是这条路径漏了归一化。
       for (const h of hits) h.u.skeleton = spliceBody(h.u.skeleton, normalizeLegacyOctal(h.body));
       // ★ 机械体不算「缓存命中」（两种零 LLM 的正交来源，混在一起两个读数都失真）
       if (hits.length > mechInModule) cacheHits += hits.length - mechInModule;
+      if (legacyHit && diagnostics.length < 40) {
+        diagnostics.push(`旧格式缓存 key 命中并迁移：${legacyHit} 条（key 版本升级缺迁移路径，见 T-#FILLCACHE-LEGACY）`);
+      }
       const unitsToFill = missUnits;
       let filled: Awaited<ReturnType<typeof fillUnitsWithRetry>> = [];
       // ★ 也支持环境变量（避免为了一个开关去改工具契约）：AGENT_IO_REPLAY_ONLY=1

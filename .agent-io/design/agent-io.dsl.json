@@ -16658,34 +16658,43 @@
         "task": {
           "id": "file_src_infrastructure_authoring_translate_project_ts",
           "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
           "owner": "agent:agent-io-cli",
-          "claimed_at": "2026-10-29T17:52:40.736Z",
+          "claimed_at": "2026-10-30T04:03:05.148Z",
           "read_set": {
             "symbols": [
               {
+                "file": "src/infrastructure/authoring/translate/fingerprint.ts",
+                "name": "translatorFingerprint",
+                "fp": ""
+              },
+              {
                 "file": "src/infrastructure/authoring/translate/project.ts",
                 "name": "translateGoProject",
-                "fp": "6992ecb809009e1e194e4e46be675e77cd74e648"
+                "fp": "cb1da5f1e1042d926cd57bf99a4209e28949ff69"
               },
               {
                 "file": "src/infrastructure/authoring/translate/project.ts",
                 "name": "translatorFingerprint",
-                "fp": ""
+                "fp": "d6727d338703e067d211a7ff1e72826102d47608"
               }
             ],
             "files": [
               {
+                "path": "src/infrastructure/authoring/translate/fingerprint.ts",
+                "content_hash": ""
+              },
+              {
                 "path": "src/infrastructure/authoring/translate/project.ts",
-                "content_hash": "ab88c5e1d76469e718b8d2a84ac98556c47c27b1"
+                "content_hash": "52f9e40d0238ab9f7e721e72451f0cb202c61d71"
               }
             ],
-            "computed_at": "2026-10-29T17:52:40.661Z",
+            "computed_at": "2026-10-30T04:03:05.072Z",
             "basis": [
               "canvas"
             ],
-            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/authoring/translate/project.ts#translatorFingerprint"
+            "note": "1 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
           },
           "evidence": [
             {
@@ -16705,9 +16714,12 @@
               "observed": "键改为 v4|<翻译器指纹>|<rel>#<unit>@<src指纹>；回放仍 336（说明此前读数不依赖缓存伪影），holes 195 未涨",
               "command": "node certs/t453-replay-baseline-cert.mjs"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-30T04:03:05.148Z",
+          "reopen_reason": "T-#REPLAY-REGEN：孔 188→617 根因 = 缓存 key 版本升级无迁移",
+          "reopened_from": "agent:agent-io-cli"
         },
-        "status": "done",
+        "status": "in_progress",
         "overlay": {
           "path": "src/infrastructure/authoring/translate/project.ts",
           "kind": "file",
@@ -64772,7 +64784,7 @@
         ],
         "lines": 588,
         "layer": "core",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_prompts_ts",
@@ -69595,13 +69607,13 @@
   ],
   "_dsl_rev": 325,
   "_sync": {
-    "saved_at": "2026-10-30T03:44:42.715Z",
+    "saved_at": "2026-10-30T04:03:05.179Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 330885578,
+    "age": 331988042,
     "dbSchemaVersion": 17,
-    "via": "tool:design_intent"
+    "via": "edit_dsl:edit_dsl"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",
