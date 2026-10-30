@@ -26,7 +26,7 @@ import type { SyntaxNodeLike } from '../../parse/index.js';
 export type IrStmt =
   | { k: 'return'; values: IrExpr[] }
   | { k: 'expr'; value: IrExpr }
-  | { k: 'declare'; name: string; value: IrExpr | null; mutable: boolean }
+  | { k: 'declare'; name: string; alsoNames?: string[]; value: IrExpr | null; mutable: boolean } // ★ alsoNames = 多值短声明的其余名字（`d, ok := f()` ⇒ name='d', alsoNames=['ok']）
   | { k: 'assign'; target: IrExpr; op: string; value: IrExpr }
   | { k: 'block'; body: IrStmt[] }
   /** 条件分支。`else` 可以是块，也可以是**嵌套的 if**（Go 的 `else if`） */
@@ -339,20 +339,45 @@ function liftStmt(n: SyntaxNodeLike, depth = 0): IrStmt | null {
     }
     case 'short_var_declaration': {
       const lists = kidsOf(n).filter((c) => c.type === 'expression_list');
-      if (lists.length !== 2) return null;
+      if (lists.length !== 2) return failLift(n, 'short-var:lists≠2');
       const lhs = kidsOf(lists[0]);
       const rhs = kidsOf(lists[1]);
-      if (lhs.length !== 1 || rhs.length !== 1) return null;
-      if (lhs[0].type !== 'identifier') return null;
-      const value = liftExpr(rhs[0]);
-      return value ? { k: 'declare', name: lhs[0].text, value, mutable: true } : null;
+      // ★★★ 多值短声明 `d, ok := ret.(*DeepRetriever)`：Go 里极常见（实测这是**最大一类**翻不动 —— 125 条）。
+      //   旧实现要求 lhs 恰好 1 个 ⇒ **静默 return null**（连原因都不记）⇒ 直方图只看到语句级兜底。
+      //   TS 侧多返回值本来就是元组 `[A, B]` ⇒ 天然可以 `let [d, ok] = …`。
+      if (!lhs.length || !rhs.length) return failLift(n, 'short-var:空列表');
+      if (lhs.some((x) => x.type !== 'identifier')) return failLift(n, 'short-var:lhs 非全标识符');
+      if (lhs.length !== rhs.length && rhs.length !== 1) return failLift(n, `short-var:${lhs.length}≠${rhs.length} 且右值不是单表达式`);
+      const value = rhs.length === 1 ? liftExpr(rhs[0]) : null;
+      if (rhs.length === 1) {
+        if (!value) return failLift(rhs[0], 'short-var:右值翻不动');
+        return { k: 'declare', name: lhs[0].text, alsoNames: lhs.slice(1).map((x) => x.text), value, mutable: true };
+      }
+      // 多右值（`a, b := f(), g()`）⇒ 合成一个元组右侧，产物出 `[a, b] = [f(), g()]`
+      const tuple = rhs.map((x) => liftExpr(x));
+      if (tuple.some((x) => !x)) return failLift(rhs[tuple.findIndex((x) => !x)] ?? n, 'short-var:元组右值翻不动');
+      return {
+        k: 'declare',
+        name: lhs[0].text,
+        alsoNames: lhs.slice(1).map((x) => x.text),
+        value: { k: 'tuple', items: tuple as IrExpr[] } as unknown as IrExpr,
+        mutable: true,
+      };
     }
     case 'assignment_statement': {
       const lists = kidsOf(n).filter((c) => c.type === 'expression_list');
-      if (lists.length !== 2) return null;
+      if (lists.length !== 2) return failLift(n, 'assign:lists≠2');
       const lhs = kidsOf(lists[0]);
       const rhs = kidsOf(lists[1]);
-      if (lhs.length !== 1 || rhs.length !== 1) return null;
+      // ★ 多目标赋值 `a, b = f()`：合成的元组目标交给产物侧渲染成 `[a, b] = …`
+      if (lhs.length > 1 && rhs.length === 1) {
+        const t = liftExpr(rhs[0]);
+        if (!t) return failLift(rhs[0], 'assign:多目标右值翻不动');
+        const names = lhs.map((x) => x.text);
+        if (lhs.some((x) => x.type !== 'identifier')) return failLift(n, 'assign:多目标非全标识符');
+        return { k: 'assign', target: { k: 'ident', name: `[${names.join(', ')}]` } as unknown as IrExpr, op: '=', value: t };
+      }
+      if (lhs.length !== 1 || rhs.length !== 1) return failLift(n, 'assign:多右值未支持');
       const target = liftExpr(lhs[0]);
       const value = liftExpr(rhs[0]);
       if (!target || !value) return null;
@@ -748,7 +773,9 @@ function projectTsStmt(s: IrStmt, indent: number): string {
       let v = s.value ? projectTsExpr(s.value) : null;
       // ★ T-#SHIM-APPLY：值类型 struct 的赋值在 Go 里是**复制** ⇒ 显式 copy() 顶住
       if (s.value && s.value.k === 'ident' && isValueStructIdent(s.value.name)) v = `copy(${v})`;
-      return `${s.mutable ? 'let' : 'const'} ${s.name}${v ? ' = ' + v : ''};`;
+      // ★ 多值：`let [d, ok] = <expr>;`（Go 多返回值在 TS 侧就是元组类型）
+      const lhs = s.alsoNames?.length ? `[${[s.name, ...s.alsoNames].join(', ')}]` : s.name;
+      return `${s.mutable ? 'let' : 'const'} ${lhs}${v ? ' = ' + v : ''};`;
     }
     case 'assign':
       return `${projectTsExpr(s.target)} ${s.op} ${projectTsExpr(s.value)};`;
