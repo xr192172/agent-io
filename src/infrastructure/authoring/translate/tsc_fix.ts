@@ -20,7 +20,11 @@
  * - 只处理 `TS2339` 且接收者类型是**简单标识符**的那些；`{ cfg: ServerConfig }`/`[string, X]`
  *   这类匿名/元组类型**不处理**（不是方法没拍平的问题，见 todo 的四个真根因）；
  * - 只在**同目录或同文件**里找自由函数（确定性优先，不做全仓搜索）；
- * - 需要 `outDir/tsconfig.json` 存在，否则本模块 no-op（不猜）。
+ * - tsc 的**输入必须是本次产物**：在被改写目录里生成一份只覆盖它自己的 tsconfig（`include: **\/*.ts`）
+ *   再跑 tsc。★ 不能沿用上层 tsconfig 的 `include`（产物 tsconfig 里是 `src/**` = **上一版产物**）⇒
+ *   那会让同一份输入连跑两次得到不同产物（实测 435↔367 交替）；
+ * - 前置缺失（没有 tsconfig / tsc 跑不起来）⇒ **不静默**：返回 `ran=false` 且往 diagnostics 写
+ *   `[tsc-fix] skipped: …`（旧实现 `return null` 零痕迹，读数漂了没人知道）。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -35,19 +39,80 @@ export interface TscFixResult {
   before: number;
   after: number;
   skipped: Record<string, number>;
+  /** ★ 本次是否真跑了。false ⇒ 前置缺失，`notes` 里必有一条 `[tsc-fix] skipped: …`（不许静默） */
+  ran: boolean;
+  /** ran=false 的原因（可读、含路径）；ran=true 时为空串 */
+  skipReason: string;
+  /** 实际喂给 tsc 的 tsconfig —— **必在被改写目录内**（"输入 = 本次产物"的可审计证据） */
+  tsconfig: string;
 }
 
-/** 跑一次 tsc，返回 { log, total }（total = 错误条数，唯一红线口径） */
-function runTsc(outDir: string, projDir: string): { log: string; total: number } {
-  const tsconfig = path.join(projDir, 'tsconfig.json');
+/**
+ * 跑一次 tsc。
+ * ★ `cwd` 必须是**被改写的目录**：tsc 的报错路径是相对 `cwd` 打印的 ⇒ 只有这样才能保证
+ *   报错里的相对路径 == 产物相对路径（否则会出现 `src/x.ts` 这种指向别处的路径）。
+ */
+function runTsc(cwdDir: string, tsconfig: string): { log: string; total: number; broken: string } {
   const tscBin = path.join(process.cwd(), 'node_modules', 'typescript', 'bin', 'tsc');
   const useLocal = fs.existsSync(tscBin);
   const r = useLocal
-    ? spawnSync(process.execPath, [tscBin, '-p', tsconfig, '--noEmit'], { cwd: projDir, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
-    : spawnSync('npx', ['tsc', '-p', tsconfig, '--noEmit'], { cwd: outDir, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, shell: true });
+    ? spawnSync(process.execPath, [tscBin, '-p', tsconfig, '--noEmit'], { cwd: cwdDir, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+    : spawnSync('npx', ['tsc', '-p', tsconfig, '--noEmit'], { cwd: cwdDir, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, shell: true });
   const log = String(r.stdout ?? '') + String(r.stderr ?? '');
   const total = (log.match(/error TS\d+/g) ?? []).length;
-  return { log, total };
+  // ★ 不变量：tsc 没跑起来 / tsconfig 本身不合法（TS5xxx = 配置错）时，`total` **不是**"产物错误数"。
+  //   拿它当读数 ⇒ 后处理按假诊断改写（实测：compilerOptions 写成数字枚举 ⇒ 511 条全是 TS5024）。
+  const broken = r.error ? `tsc 未能运行：${r.error.message}` : ((log.match(/error TS5\d{3}: [^\r\n]*/) ?? [])[0] ?? '');
+  return { log, total, broken };
+}
+
+/** 向上最多 4 层找 `tsconfig.json`（**只**为拿 compilerOptions，见 `writeSelfTsconfig`） */
+function findBaseTsconfig(srcRoot: string): { found: string | null; searched: string[] } {
+  const searched: string[] = [];
+  let dir = srcRoot;
+  for (let i = 0; i < 4; i++) {
+    const p = path.join(dir, 'tsconfig.json');
+    searched.push(p);
+    if (fs.existsSync(p)) return { found: p, searched };
+    const up = path.dirname(dir);
+    if (up === dir) break;
+    dir = up;
+  }
+  return { found: null, searched };
+}
+
+/**
+ * 在**被改写的目录里**生成一份只覆盖它自己的 tsconfig，喂给 tsc。
+ *
+ * ★ 不变量：`include` 一律覆盖成 `**\/*.ts`（= 本目录自己的文件）。base 的 `include`
+ *   （产物 tsconfig 里是 `src/**`）指的是**上一版产物** ⇒ 用它就是"拿旧诊断打新产物"：
+ *   同一份输入连跑两次，产物在 435↔367 之间交替（实测）。
+ * ★ 只继承 base 的 `compilerOptions`：错误口径必须一致（`typeRoots` 决定 `console`/`process`
+ *   这些全局是否可用，实测差 23 条）。
+ * ★ 边界：base 的 `extends` 不解析（本仓产物 tsconfig 无 extends）；有 extends 时选项可能不全。
+ */
+function writeSelfTsconfig(srcRoot: string, base: string): string {
+  const read = ts.readConfigFile(base, ts.sys.readFile);
+  const raw = (read.config?.compilerOptions ?? {}) as Record<string, unknown>;
+  const abs = path.join(srcRoot, '.tsconfig.tscfix.json');
+  fs.writeFileSync(abs, JSON.stringify({ compilerOptions: { ...raw, noEmit: true }, include: ['**/*.ts'] }, null, 2) + '\n', 'utf8');
+  return abs;
+}
+
+/**
+ * 把本次读数写到 `AGENT_IO_TSC_FIX_REPORT` 指定的文件（住哪由调用方定；未设则只留 diagnostics）。
+ * ★ 为什么要有它：`[tsc-fix]` 的读数此前**只进 tool 回执**，不落 `regen-report.json` ⇒
+ *   "跳过没有 / 改写多少 / 前后几条"没人能复核，读数漂了也看不见。
+ */
+function emitReport(res: TscFixResult): void {
+  const to = process.env.AGENT_IO_TSC_FIX_REPORT;
+  if (!to) return;
+  try {
+    fs.mkdirSync(path.dirname(to), { recursive: true });
+    fs.writeFileSync(to, JSON.stringify(res, null, 2) + '\n', 'utf8');
+  } catch {
+    /* 落不了盘不影响改写本身（读数在 diagnostics 里仍有一份） */
+  }
 }
 
 interface Diag {
@@ -223,31 +288,75 @@ function injectImports(abs: string, need: Map<string, Set<string>>): number {
 
 /**
  * 主管线后处理：跑 tsc → 改写 → 补 import → 复跑，返回前后总数。
- * **不在管线里抛错**（后处理失败就当没做，绝不改坏产物）。
+ * **不在管线里抛错**（后处理失败就当没做，绝不改坏产物）；**但前置缺失必留一条 `[tsc-fix] skipped:` 诊断**
+ * —— "没跑"必须能被人看见，否则读数会继续漂（旧实现直接 `return null`，零痕迹）。
  */
-export function applyTscDrivenFixes(outDir: string, notes: string[]): TscFixResult | null {
-  // ★ 落盘的 outDir 可能**就是** src 目录（调用方传 .../src）⇒ 自己往上找 tsconfig，
-  //   srcRoot 用 outDir 本身。写死 'outDir/src' 会让后处理**静默 no-op**（第一次接线就这样白跑一趟）。
+export function applyTscDrivenFixes(outDir: string, notes: string[]): TscFixResult {
+  // ★ 落盘的 outDir 可能**就是** src 目录（调用方传 .../src）⇒ srcRoot 用 outDir 本身。
+  //   写死 'outDir/src' 会让后处理**静默 no-op**（第一次接线就这样白跑一趟）。
   const srcRoot = outDir;
-  if (!fs.existsSync(srcRoot)) return null;
-  let proj = outDir;
-  let found = false;
-  for (let i = 0; i < 4; i++) {
-    if (fs.existsSync(path.join(proj, 'tsconfig.json'))) {
-      found = true;
-      break;
-    }
-    const up = path.dirname(proj);
-    if (up === proj) break;
-    proj = up;
-  }
-  if (!found) return null;
+  const skip = (reason: string): TscFixResult => {
+    notes.push(`[tsc-fix] skipped: ${reason}`);
+    const res: TscFixResult = {
+      diags: 0,
+      rewritable: 0,
+      changed: 0,
+      imports: 0,
+      before: 0,
+      after: 0,
+      skipped: {},
+      ran: false,
+      skipReason: reason,
+      tsconfig: '',
+    };
+    emitReport(res);
+    return res;
+  };
+  if (!fs.existsSync(srcRoot)) return skip(`outDir 不存在：${srcRoot}`);
+  // ★ base 只用来拿 compilerOptions；**tsc 的输入永远是 srcRoot 自己**（见 writeSelfTsconfig）。
+  const base = findBaseTsconfig(srcRoot);
+  if (!base.found) return skip(`no tsconfig at ${srcRoot}（向上 4 层都没有；试过 ${base.searched.join(' · ')}）`);
 
-  const { log, total: before } = runTsc(srcRoot, proj);
+  const selfTsconfig = writeSelfTsconfig(srcRoot, base.found);
+  try {
+    const res = fixWithSelfTsconfig(srcRoot, selfTsconfig, notes);
+    emitReport(res);
+    return res;
+  } finally {
+    // ★ 探针 tsconfig 不留在产物目录里（产物目录只该有产物）
+    try {
+      fs.rmSync(selfTsconfig, { force: true });
+    } catch {
+      /* 删不掉不影响读数 */
+    }
+  }
+}
+
+/** 真正的改写流程：输入 = `tsconfig`（覆盖 `srcRoot` 自己），输出 = 改写后的 `srcRoot` */
+function fixWithSelfTsconfig(srcRoot: string, tsconfig: string, notes: string[]): TscFixResult {
+  const { log, total: before, broken } = runTsc(srcRoot, tsconfig);
+  if (broken) {
+    const reason = `tsc 不可用：${broken}`;
+    notes.push(`[tsc-fix] skipped: ${reason}`);
+    return {
+      diags: 0,
+      rewritable: 0,
+      changed: 0,
+      imports: 0,
+      before: 0,
+      after: 0,
+      skipped: {},
+      ran: false,
+      skipReason: reason,
+      tsconfig,
+    };
+  }
   const diags = parseTs2339(log);
   // ★ TS2304-IMPORT：名字找不到 ⇒ 若能找到导出它的模块，补 import（tsc 指名的名字，零推断）
   const missing = parseTs2304(log);
-  if (!diags.length) return { diags: 0, rewritable: 0, changed: 0, imports: 0, before, after: before, skipped: {} };
+  if (!diags.length) {
+    return { diags: 0, rewritable: 0, changed: 0, imports: 0, before, after: before, skipped: {}, ran: true, skipReason: '', tsconfig };
+  }
 
   currentSrcRoot = srcRoot;
   const exportsByFile = collectExports(srcRoot);
@@ -413,8 +522,19 @@ export function applyTscDrivenFixes(outDir: string, notes: string[]): TscFixResu
     imports += injectImports(abs, need);
   }
 
-  const { total: after } = runTsc(srcRoot, proj);
-  const res: TscFixResult = { diags: diags.length, rewritable, changed, imports: imports + importFixed, before, after, skipped };
+  const { total: after } = runTsc(srcRoot, tsconfig);
+  const res: TscFixResult = {
+    diags: diags.length,
+    rewritable,
+    changed,
+    imports: imports + importFixed,
+    before,
+    after,
+    skipped,
+    ran: true,
+    skipReason: '',
+    tsconfig,
+  };
   const top = Object.entries(skipped)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)

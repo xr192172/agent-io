@@ -19,9 +19,20 @@
  *   · 产物目录**不在 git 里** ⇒ 覆盖即不可回滚 ⇒ 故本脚本**先写临时目录**，再整体替换。
  *
  * ## 用法
- *   node scripts/regen-translate.mjs                 # 生成 + 读数 + 与上次比对
+ *   node scripts/regen-translate.mjs                 # 生成 + 读数 + 与上次比对（**开** tsc-fix）
  *   node scripts/regen-translate.mjs --into <dir>    # 指定产物目录（默认 agent-memory-ts2）
+ *   node scripts/regen-translate.mjs --no-fix        # 关掉 tsc 驱动改写（决定论模式，读数=未改写产物）
  *   node scripts/regen-translate.mjs --allow-worse   # 变差也放行（需在提交信息里说明原因）
+ *   node scripts/regen-translate.mjs --help          # 打印这段
+ *
+ * ## `--no-fix` 到底管什么（★ 别猜，这是它的全部作用）
+ * 它**只**把子进程的 `AGENT_IO_TSC_FIX` 置 `'0'`；而 `project.ts` 里那一处后处理的门是
+ * `if (process.env.AGENT_IO_TSC_FIX === '1')` ⇒ 置 0 就**完全不调用** `applyTscDrivenFixes`
+ * （零改写、零 tsc 后处理）。反过来：**开** tsc-fix 的唯一方式就是 `AGENT_IO_TSC_FIX=1`（本脚本默认）。
+ * ⇒ 「关掉 tsc-fix」的正确方式 = `--no-fix`（或等价地 `AGENT_IO_TSC_FIX=0`）；
+ *   别的开关（`--into` / `--allow-worse`）与它**无关**。
+ * ★ 本脚本会把 tsc-fix 自己的读数（是否跳过 / 改写几条 / 前后 errors）落进 `regen-report.json`
+ *   的 `tscFix` 字段 —— 关掉时该字段写 `enabled:false`，所以"这次到底跑没跑 fix"有据可查。
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -38,8 +49,25 @@ const INTO = (() => {
   return path.resolve(i >= 0 ? args[i + 1] : 'D:/agentio/dev/agent-memory-ts2/src');
 })();
 const ALLOW_WORSE = args.includes('--allow-worse');
+const NO_FIX = args.includes('--no-fix');
 const GO_SRC = process.env.AGENT_IO_CORPUS ?? 'D:/agentio/dev/agent-memory';
 const REPORT = path.join(ROOT, '.agent-io/regen-report.json');
+
+if (args.includes('--help') || args.includes('-h')) {
+  console.log(
+    [
+      'node scripts/regen-translate.mjs [--into <dir>] [--no-fix] [--allow-worse]',
+      '',
+      '  （无参）        生成 → 读数（files/holes/errors）→ 与上次比对；变差非零退出',
+      '  --into <dir>    产物目录（默认 D:/agentio/dev/agent-memory-ts2/src）',
+      '  --no-fix        置 AGENT_IO_TSC_FIX=0 ⇒ **完全不跑** tsc 驱动改写（决定论模式）',
+      '  --allow-worse   变差也放行（需在提交信息里说明原因）',
+      '',
+      '读数落 .agent-io/regen-report.json（含 tscFix 字段：ran/skipReason/changed/before/after）。',
+    ].join('\n'),
+  );
+  process.exit(0);
+}
 
 const countHoles = (dir) => {
   let n = 0;
@@ -99,6 +127,11 @@ const countErrors = (dir) => {
 fs.mkdirSync(path.dirname(INTO), { recursive: true });
 const tmp = fs.mkdtempSync(path.join(path.dirname(INTO), '.regen-tmp-'));
 
+// ★ tsc-fix 的读数落在**外面**（不进产物目录）：由 `AGENT_IO_TSC_FIX_REPORT` 指定，
+//   子进程写、本脚本读进 `regen-report.json` 后删掉 ⇒ 读数只有一处权威。
+const fixReportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'regen-tscfix-'));
+const fixReport = path.join(fixReportDir, 'tsc-fix.json');
+
 // ★★★ T-#REGEN-CACHE（2026-10-30）：**把历史填空缓存带进临时目录**。
 //   填空缓存的家是 `<outDir>/.fill-cache.json`；我们生成到临时目录 ⇒ 默认**看不到** `src/.fill-cache.json`
 //   ⇒ 每次都是冷启动（834 条历史体全丢）⇒ 产物在 372 / 450 之间漂移，读数**不可复现**。
@@ -124,11 +157,13 @@ execFileSync(
   {
     cwd: ROOT,
     stdio: 'inherit',
-    // ★ T-#REGEN-NONDET 排查开关：`--no-fix` 关掉 tsc 驱动修复（它会写回缓存 ⇒ 可能造成读数抖动）
+    // ★ T-#REGEN-NONDET 排查开关：`--no-fix` 把 AGENT_IO_TSC_FIX 置 '0' ⇒ project.ts 的门不成立
+    //   ⇒ **完全不跑** tsc 驱动改写（它会写回缓存 ⇒ 可能造成读数抖动）。这是它唯一的作用。
     env: {
       ...process.env,
       AGENT_IO_REPLAY_ONLY: '1',
-      ...(args.includes('--no-fix') ? { AGENT_IO_TSC_FIX: '0' } : { AGENT_IO_TSC_FIX: '1' }),
+      AGENT_IO_TSC_FIX: NO_FIX ? '0' : '1',
+      AGENT_IO_TSC_FIX_REPORT: fixReport,
     },
     timeout: 30 * 60 * 1000,
   },
@@ -153,6 +188,47 @@ console.log(`[regen] 已写入 ${INTO}`);
 // ③ **在最终位置测量**（tsconfig 的 include 才指向刚生成的这些文件）
 const holes = countHoles(INTO);
 const err = countErrors(INTO);
+
+/**
+ * ★ tsc-fix 的读数（以前只进 tool 回执 ⇒ 不落盘 ⇒ "跳过没有 / 改写多少"没人能复核）。
+ * 四态：`enabled:false`（--no-fix 关掉了）/ `ran:false` + `skipReason`（前置缺失，已被 diagnostics 记录）/
+ * 没有读数文件 / 真跑了（`changed` + `before→after`）。
+ */
+const tscFix = (() => {
+  if (NO_FIX) {
+    return { enabled: false, ran: false, skipReason: 'AGENT_IO_TSC_FIX=0（--no-fix）', changed: 0, before: null, after: null };
+  }
+  if (!fs.existsSync(fixReport)) {
+    return { enabled: true, ran: false, skipReason: '没产出 tsc-fix 读数（AGENT_IO_TSC_FIX_REPORT 未被写入）', changed: 0, before: null, after: null };
+  }
+  try {
+    const r = JSON.parse(fs.readFileSync(fixReport, 'utf8'));
+    return {
+      enabled: true,
+      ran: Boolean(r.ran),
+      skipReason: String(r.skipReason ?? ''),
+      changed: r.changed ?? 0,
+      rewritable: r.rewritable ?? 0,
+      diags: r.diags ?? 0,
+      imports: r.imports ?? 0,
+      before: r.before ?? null,
+      after: r.after ?? null,
+      tsconfig: String(r.tsconfig ?? ''),
+      skippedTop: Object.entries(r.skipped ?? {})
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([k, v]) => `${v}× ${k}`),
+    };
+  } catch (e) {
+    return { enabled: true, ran: false, skipReason: 'tsc-fix 读数解析失败：' + (e instanceof Error ? e.message : String(e)), changed: 0, before: null, after: null };
+  }
+})();
+try {
+  fs.rmSync(fixReportDir, { recursive: true, force: true });
+} catch {
+  /* 删不掉不影响判定 */
+}
+
 const reading = {
   at: new Date().toISOString(),
   into: INTO,
@@ -164,11 +240,20 @@ const reading = {
   semantic: err.semantic ?? 0,
   note: err.note ?? '',
   masked: (err.syntax ?? 0) > 0 ? '⚠ 存在语法错 ⇒ tsc 跳过语义检查，semantic 数偏小（不可用于比较）' : '',
+  tscFix,
 };
 console.log(
   `[regen] 读数：files=${reading.files} · holes=${reading.holes} · errors=${reading.errors}` +
     `（语法 ${reading.syntax} / 语义 ${reading.semantic}）` +
     (reading.masked ? ` ${reading.masked}` : ''),
+);
+console.log(
+  `[regen] tsc-fix：` +
+    (tscFix.enabled
+      ? tscFix.ran
+        ? `改写 ${tscFix.changed} · errors ${tscFix.before}→${tscFix.after}`
+        : `未跑（${tscFix.skipReason}）`
+      : '关掉了（--no-fix）'),
 );
 
 const prev = fs.existsSync(REPORT) ? JSON.parse(fs.readFileSync(REPORT, 'utf8')) : null;

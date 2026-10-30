@@ -1230,11 +1230,12 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
 
     // ★★★ 2026-10-29（T-#TSC-DRIVEN-FIX 步 2）：**管线内**后处理 —— 必须在这里，
     //   否则补丁打在输出目录、回放会覆盖 ⇒ 数字不可复现（上一版就是这个毛病，626 进不了基线）。
-    //   开关：AGENT_IO_TSC_FIX=1。失败即 no-op（绝不改坏产物）。
+    //   开关：AGENT_IO_TSC_FIX=1（**唯一开关**；`regen-translate.mjs --no-fix` 就是把它置 0）。
+    //   前置缺失不抛错、不静默：`applyTscDrivenFixes` 自己往 diagnostics 写 `[tsc-fix] skipped: …`。
     if (process.env.AGENT_IO_TSC_FIX === '1') {
       try {
         const r = applyTscDrivenFixes(path.resolve(opts.outDir), diagnostics);
-        if (r && r.changed && r.after >= r.before - r.changed + 1) {
+        if (r.ran && r.changed && r.after >= r.before - r.changed + 1) {
           diagnostics.push(
             `[tsc-fix] 验收未过：总数只降 ${r.before - r.after}，改写 ${r.changed}（此消彼长）`,
           );
